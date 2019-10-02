@@ -14,7 +14,6 @@ Inductive Sigma_pattern : Set :=
   | sp_exists (x : EVar) (phi : Sigma_pattern)
   | sp_muXphi (X : SVar) (phi : Sigma_pattern).
 
-
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof.
   decide equality.
@@ -33,17 +32,20 @@ Proof.
   exact (string_dec id id0).
 Defined.
 
-
 Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
 match phi with
  | sp_var x => true
- | sp_set Y => if (svar_eq_dec Y X) then (Nat.even nc) else false
+ | sp_set Y => if (svar_eq_dec Y X)
+               then (Nat.even nc)
+               else false
  | sp_const sigma => true
  | sp_app phi1 phi2 => andb (spos_accumulated phi1 X nc) (spos_accumulated phi2 X nc)
  | sp_bottom => true
  | sp_impl phi1 phi2 => andb (spos_accumulated phi1 X (S nc)) (spos_accumulated phi2 X nc)
  | sp_exists x phi => spos_accumulated phi X nc
- | sp_muXphi Y phi => spos_accumulated phi X nc (* name colision *)
+ | sp_muXphi Y phi => if (svar_eq_dec Y X)
+                      then true
+                      else (spos_accumulated phi X nc)
 end.
 
 Fixpoint strictly_positive (phi : Sigma_pattern) (X : SVar) : bool :=  spos_accumulated phi X 0.
@@ -67,14 +69,21 @@ Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   sp_not (sp_exists x (sp_not phi)).
 (*nuX.phi*)
 
-Fixpoint eSubstitution (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) := 
-  match phi with
-   | sp_var x' => if evar_eq_dec x x' then psi else sp_var x'
-   | sp_set X => sp_set X
-   | sp_const sigma => sp_const sigma
-   | sp_app phi1 phi2 => sp_app (eSubstitution phi1 psi x)
+Fixpoint eSubstitution (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar)
+  := match phi with
+ | sp_var x' => if evar_eq_dec x x' 
+                then psi 
+                else sp_var x'
+ | sp_set X => sp_set X
+ | sp_const sigma => sp_const sigma
+ | sp_app phi1 phi2 => sp_app (eSubstitution phi1 psi x)
+                              (eSubstitution phi2 psi x)
+ | sp_bottom => sp_bottom
+ | sp_impl phi1 phi2 => sp_impl (eSubstitution phi1 psi x)
                                 (eSubstitution phi2 psi x)
- | sp_exists x' phi' => sp_exists x' (eSubstitution phi' psi x)
+ | sp_exists x' phi' => if (svar_eq_dec x' x) 
+                        then sp_exists x' phi'
+                        else sp_exists x' (eSubstitution phi' psi x)
  | sp_muXphi X phi' => sp_muXphi X (eSubstitution phi' psi x)
 end.
 
