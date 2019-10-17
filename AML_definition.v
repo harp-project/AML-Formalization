@@ -131,6 +131,21 @@ Definition X_i_X_i_nX := (sp_impl (set "X") ((sp_impl (set "X") (sp_not (set "X"
 
 Eval compute in (strictly_positive X_i_X_i_nX (svar_c "X") = false).
 Eval compute in (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
+Check negb.
+
+(* Fixpoint is_free (phi : Sigma_pattern) (x : EVar) : bool :=
+  match phi with
+  | sp_var y => negb (x = y)
+  | sp_set X => true
+  | sp_const sigma => true
+  | sp_app phi1 phi2 => andb (is_free phi1 x) (is_free phi2 x)
+  | sp_bottom => true
+  | sp_impl phi1 phi2 => andb (is_free phi1 x) (is_free phi2 x)
+  | sp_exists y phi => andb (negb (x = y)) (is_free phi x)
+  end
+. *)
+
+Check e_subst_var.
 
 Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
 (*   (* Propositional tautology*)
@@ -142,10 +157,10 @@ Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
       (sp_and phi1 (sp_impl phi1 phi2))
       phi2
 
-  (* Existential quatifier*)
+ (*  (* Existential quatifier*)
   | E_ex {phi y : Sigma_pattern} {x : EVar} (p : x : EVar, ) :
     proof_step (e_subst_var phi y x) (sp_exists x phi)
-
+ *)
 (*    (* Existential generalization *)
   | E_gen phi1 phi2 x :
     if not (FV x phi2) then
