@@ -69,22 +69,44 @@ Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   sp_not (sp_exists x (sp_not phi)).
 (*nuX.phi*)
 
-Fixpoint eSubstitution (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
+Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
   match phi with
-  | sp_var x' => if evar_eq_dec x x' 
-                  then psi 
-                  else sp_var x'
+  | sp_var x' =>
+      if evar_eq_dec x x'
+      then psi
+      else sp_var x'
   | sp_set X => sp_set X
   | sp_const sigma => sp_const sigma
-  | sp_app phi1 phi2 => sp_app (eSubstitution phi1 psi x)
-                                (eSubstitution phi2 psi x)
+  | sp_app phi1 phi2 => sp_app (e_subst_var phi1 psi x)
+                                (e_subst_var phi2 psi x)
   | sp_bottom => sp_bottom
-  | sp_impl phi1 phi2 => sp_impl (eSubstitution phi1 psi x)
-                                  (eSubstitution phi2 psi x)
-  | sp_exists x' phi' => if (evar_eq_dec x' x) 
-                          then sp_exists x' phi'
-                          else sp_exists x' (eSubstitution phi' psi x)
-  | sp_mu X phi' => sp_mu X (eSubstitution phi' psi x)
+  | sp_impl phi1 phi2 => sp_impl (e_subst_var phi1 psi x)
+                                  (e_subst_var phi2 psi x)
+  | sp_exists x' phi' =>
+      if (evar_eq_dec x' x)
+      then sp_exists x' phi'
+      else sp_exists x' (e_subst_var phi' psi x)
+  | sp_mu X phi' => sp_mu X (e_subst_var phi' psi x)
+end.
+
+Fixpoint e_subst_set (phi : Sigma_pattern) (psi : Sigma_pattern) (X : SVar) :=
+  match phi with
+  | sp_var x => sp_var x
+  | sp_set X' =>
+      if svar_eq_dec X X'
+      then psi
+      else sp_set X'
+  | sp_const sigma => sp_const sigma
+  | sp_app phi1 phi2 => sp_app (e_subst_set phi1 psi X)
+                                (e_subst_set phi2 psi X)
+  | sp_bottom => sp_bottom
+  | sp_impl phi1 phi2 => sp_impl (e_subst_set phi1 psi X)
+                                  (e_subst_set phi2 psi X)
+  | sp_exists x' phi' => sp_exists x' (e_subst_set phi' psi X)
+  | sp_mu X' phi' =>
+      if (svar_eq_dec X' X)
+      then sp_mu X' phi'
+      else sp_mu X' (e_subst_set phi' psi X)
 end.
 
 Definition var (name : string) : Sigma_pattern :=
@@ -110,3 +132,75 @@ Definition X_i_X_i_nX := (sp_impl (set "X") ((sp_impl (set "X") (sp_not (set "X"
 Eval compute in (strictly_positive X_i_X_i_nX (svar_c "X") = false).
 Eval compute in (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
 
+Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
+(*   (* Propositional tautology*)
+  | E_prop_tau phi : phi  *)
+
+  (* Modus ponens *)
+  | E_mod_pon (phi1 phi2 : Sigma_pattern) :
+    proof_step
+      (sp_and phi1 (sp_impl phi1 phi2))
+      phi2
+
+  (* Existential quatifier*)
+  | E_ex {phi y : Sigma_pattern} {x : EVar} (p : x : EVar, ) :
+    proof_step (e_subst_var phi y x) (sp_exists x phi)
+
+(*    (* Existential generalization *)
+  | E_gen phi1 phi2 x :
+    if not (FV x phi2) then
+      proof_step
+        (sp_impl phi1 phi2)
+        (sp_impl (sp_exists x phi1) phi2)
+    else
+      fail_state
+ *)
+  (* Set variable substitution *)
+  | E_subst (phi psi : Sigma_pattern) (X : SVar) :
+    proof_step
+      phi
+      (e_subst_set phi psi X)
+
+(*
+  (* Existence *)
+  | E_existence x :
+    sp_exists x x
+
+  (* Propagation bottom *)
+  | E_prop_bot C :
+
+  (* Propagation disjunction *)
+  | E_prop_dis phi1 phi2 C
+
+  (* Propagation exist *)
+  | E_prop_ex phi x C
+
+  (* Framing *)
+  | E_framing phi1 phi2 C
+
+  (* Pre-fixpoint *)
+  | E_pre_fixp phi X
+
+  (* Knaster-Tarski *)
+  | E_KT phi psi X
+
+  (* Singleton *)
+  | E_singleton c1 c2 x phi *)
+.
+
+(*
+Inductive context : Sigma_pattern -> Set :=
+  | box
+  | sp_app context Sigma_pattern
+  | sp_app Sigma_pattern context
+.
+ *)
+(* TO DO:
+    - free variables: Context -> Set
+    - eSubstitution for sets OK
+x occurs free
+x occurs bound
+instance of x is bound or not -> identify the location in the tree
+
+box, context : define inductively
+ *)
