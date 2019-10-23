@@ -248,7 +248,6 @@ Inductive got_tau : Sigma_pattern -> Prop :=
   | E_singleton c1 c2 x phi *)
 .
 
-<<<<<<< HEAD
 (*
 Inductive context : Sigma_pattern -> Set :=
   | box
@@ -256,13 +255,11 @@ Inductive context : Sigma_pattern -> Set :=
   | sp_app Sigma_pattern context
 .
  *)
-=======
 (* Inductive proof_result : ? :=
   | success (?)
   | fail
 . *)
 
->>>>>>> Proof rules begun
 (* TO DO:
     - free variables: Context -> Set
     - eSubstitution for sets OK
