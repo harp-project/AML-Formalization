@@ -147,7 +147,52 @@ Check negb.
 
 Check e_subst_var.
 
-Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
+Inductive application_context : Set :=
+  | pattern (p : Sigma_pattern)
+  | box
+.
+
+(* Inductive context : Sigma_pattern -> Set :=
+  | box
+  | sp_app context Sigma_pattern
+  | sp_app Sigma_pattern context
+.
+ *)
+
+Inductive got : Sigma_pattern -> Prop :=
+  (* Modus ponens *)
+  | E_mod_pon phi1 phi2 : got phi1 -> got (sp_impl phi1 phi2) -> got phi2
+
+  (* Existential quantifier*)
+  | E_ex_quan phi x y:
+    got (sp_impl (e_subst_var phi y x) (sp_exists x phi))
+
+  (* Existential generalization *)
+  | E_ex_gen
+  (* Set Variable Substitution *)
+  | E_svar_subst phi psi X : got phi -> got (e_subst_set phi psi X)
+
+  (* Existence *)
+  | E_existence x : got (sp_var x) -> got (sp_exists x (sp_var x))
+
+
+(*   (*propagation*)
+  | E_prop_bot : got  *)
+.
+
+Inductive got' : Sigma_partern -> Prop :=
+  (* Existential quatifier*)
+  | E_ex_quan : got' (sp_impl (e_subst_var phi y x) _)
+.
+
+Inductive got_tau : Sigma_pattern -> Prop :=
+  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
+.
+
+(* Definition E_modus_ponens (phi1 phi2 : Sigma_partern) (p : forall phi1 phi2 : Sigma_pattern : sp_impl phi1 phi2)
+  := phi2. *)
+
+(* Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
 (*   (* Propositional tautology*)
   | E_prop_tau phi : phi  *)
 
@@ -203,6 +248,7 @@ Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
   | E_singleton c1 c2 x phi *)
 .
 
+<<<<<<< HEAD
 (*
 Inductive context : Sigma_pattern -> Set :=
   | box
@@ -210,6 +256,13 @@ Inductive context : Sigma_pattern -> Set :=
   | sp_app Sigma_pattern context
 .
  *)
+=======
+(* Inductive proof_result : ? :=
+  | success (?)
+  | fail
+. *)
+
+>>>>>>> Proof rules begun
 (* TO DO:
     - free variables: Context -> Set
     - eSubstitution for sets OK
@@ -218,4 +271,5 @@ x occurs bound
 instance of x is bound or not -> identify the location in the tree
 
 box, context : define inductively
+ *)
  *)
