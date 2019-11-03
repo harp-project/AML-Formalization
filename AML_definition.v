@@ -147,15 +147,16 @@ Check negb.
 
 Check e_subst_var.
 
-Inductive application_context : Set :=
+(* Inductive application_context : Set :=
   | pattern (p : Sigma_pattern)
   | box
 .
-
+ *)
 (* Inductive context : Sigma_pattern -> Set :=
   | box
-  | sp_app context Sigma_pattern
-  | sp_app Sigma_pattern context
+  | ctx_app_l box Sigma_pattern
+  | ctx_app_r Sigma_pattern box
+  | ctx_app context context
 .
  *)
 
@@ -168,13 +169,16 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl (e_subst_var phi y x) (sp_exists x phi))
 
   (* Existential generalization *)
-  | E_ex_gen
+  | E_ex_gen phi1 phi2 :
+    got (sp_impl phi1 phi2) -> 
+     ->
+    got (sp_impl (sp_exists x phi1) phi2)
+
   (* Set Variable Substitution *)
   | E_svar_subst phi psi X : got phi -> got (e_subst_set phi psi X)
 
   (* Existence *)
   | E_existence x : got (sp_var x) -> got (sp_exists x (sp_var x))
-
 
 (*   (*propagation*)
   | E_prop_bot : got  *)
