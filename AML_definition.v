@@ -12,7 +12,20 @@ Inductive Sigma_pattern : Set :=
   | sp_bottom
   | sp_impl (phi1 phi2 : Sigma_pattern)
   | sp_exists (x : EVar) (phi : Sigma_pattern)
-  | sp_mu (X : SVar) (phi : Sigma_pattern).
+  | sp_mu (X : SVar) (phi : Sigma_pattern)
+.
+
+Definition is_svar_box (s : SVar) : bool :=
+  match s with
+  | svar_c id => eqb id "box"
+  end
+.
+
+Inductive sp_context_e : Sigma_pattern -> Prop :=
+  | c_box (x : SVar) (p : (is_svar_box x) = true ) : sp_context_e (sp_set x)
+  | c_cons_l (spl spr : Sigma_pattern) (p : sp_context_e spl) : sp_context_e (sp_app spl spr)
+  | s_cons_r (spl spr : Sigma_pattern) (p : sp_context_e spr) : sp_context_e (sp_app spl spr)
+.
 
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof.
@@ -154,11 +167,14 @@ Check e_subst_var.
  *)
 (* Inductive context : Sigma_pattern -> Set :=
   | box
-  | ctx_app_l box Sigma_pattern
-  | ctx_app_r Sigma_pattern box
-  | ctx_app context context
+  | ctx_app_l context Sigma_pattern
+  | ctx_app_r Sigma_pattern context
 .
  *)
+
+Inductive got_tau : Sigma_pattern -> Prop :=
+  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
+.
 
 Inductive got : Sigma_pattern -> Prop :=
   (* Modus ponens *)
@@ -174,14 +190,53 @@ Inductive got : Sigma_pattern -> Prop :=
      ->
     got (sp_impl (sp_exists x phi1) phi2)
 
+
   (* Set Variable Substitution *)
-  | E_svar_subst phi psi X : got phi -> got (e_subst_set phi psi X)
+  | E_svar_subst phi psi X : 
+    got phi -> 
+    got (e_subst_set phi psi X)
+
+  (* Pre-Fixpoint *)
+  | E_pre_fixp phi X :
+    got (sp_impl
+          (e_subst_set phi (sp_mu X phi) X)
+          (sp_mu X phi))
+
+  | E_kt phi psi X :
+    got (sp_impl 
+          (e_subst_set phi psi X)
+          psi) ->
+    got (sp_impl
+          (sp_mu X phi)
+          psi)
 
   (* Existence *)
   | E_existence x : got (sp_var x) -> got (sp_exists x (sp_var x))
+.
 
-(*   (*propagation*)
-  | E_prop_bot : got  *)
+Inductive got_c : sp_context_e -> Prop :=
+   (* Propagation bottom *)
+  | E_prop_bot context : 
+    got_c (sp_impl context sp_bottom)
+
+  (* Propagation disjunction *)
+  | E_prop_dis phi1 phi2 C : 
+    got_c (sp_impl _ (_ /\ _))
+
+  (* Propagation exist *)
+  | E_prop_ex phi x C :
+    _ ->
+    got_c (sp_impl _ (sp_exists x _))
+
+  (* Framing *)
+  | E_framing phi1 phi2 C :
+    got (sp_impl phi1 phi2) ->
+    got_c (sp_impl _ _)
+
+  (* Singleton *)
+  | E_singleton ? : 
+    got_c (sp_not (
+            _ /\ _))
 .
 
 Inductive got' : Sigma_partern -> Prop :=
@@ -189,9 +244,6 @@ Inductive got' : Sigma_partern -> Prop :=
   | E_ex_quan : got' (sp_impl (e_subst_var phi y x) _)
 .
 
-Inductive got_tau : Sigma_pattern -> Prop :=
-  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
-.
 
 (* Definition E_modus_ponens (phi1 phi2 : Sigma_partern) (p : forall phi1 phi2 : Sigma_pattern : sp_impl phi1 phi2)
   := phi2. *)
