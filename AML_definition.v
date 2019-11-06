@@ -146,19 +146,84 @@ Eval compute in (strictly_positive X_i_X_i_nX (svar_c "X") = false).
 Eval compute in (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
 Check negb.
 
-(* Fixpoint is_free (phi : Sigma_pattern) (x : EVar) : bool :=
-  match phi with
-  | sp_var y => negb (x = y)
-  | sp_set X => true
-  | sp_const sigma => true
-  | sp_app phi1 phi2 => andb (is_free phi1 x) (is_free phi2 x)
-  | sp_bottom => true
-  | sp_impl phi1 phi2 => andb (is_free phi1 x) (is_free phi2 x)
-  | sp_exists y phi => andb (negb (x = y)) (is_free phi x)
+Definition evar_eq (x y : EVar) : bool :=
+  match x, y with
+  | evar_c id_x, evar_c id_y => eqb id_x id_y
   end
-. *)
+.
 
-Check e_subst_var.
+Require Import Coq.Lists.ListSet.
+
+Fixpoint free_vars (phi : Sigma_pattern) : (set EVar) :=
+  match phi with
+ | sp_var x => set_add evar_eq_dec x nil
+ | sp_set X => nil
+ | sp_const sigma => nil
+ | sp_app phi1 phi2 =>
+    set_union evar_eq_dec
+      (free_vars phi1)
+      (free_vars phi2)
+ | sp_bottom => nil
+ | sp_impl phi1 phi2 =>
+    set_union evar_eq_dec
+      (free_vars phi1)
+      (free_vars phi2)
+ | sp_exists y phi =>
+    set_diff evar_eq_dec
+      (free_vars phi)
+      (set_add evar_eq_dec y nil)
+ | sp_mu X phi => free_vars phi
+end
+.
+
+(* Definition is_free (x : EVar) (phi : Sigma_pattern) : bool :=
+  set_mem evar_eq_dec x (free_vars phi). *)
+
+Eval compute in (free_vars sp_bottom).
+Eval compute in (free_vars X_imp_X).
+Eval compute in (free_vars (sp_app X_imp_X X_imp_X)).
+
+Eval compute in (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "x")))).
+Eval compute in (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "y")))).
+Eval compute in (free_vars (sp_exists (evar_c "x") sp_bottom)).
+
+(* \x.(\y.(x y)) *)
+Eval compute in (free_vars (sp_app X_imp_X (
+  sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "x")) (sp_var (evar_c "y"))))
+))).
+
+(* (X -> X) (\x.(\y.(z y))) *)
+Eval compute in (free_vars (sp_app X_imp_X (
+  sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "z")) (sp_var (evar_c "y"))))
+))).
+
+(* \x.x x *)
+Eval compute in (free_vars (
+  sp_app
+    (sp_exists (evar_c "x") (sp_var (evar_c "x")))
+    (sp_var (evar_c "x"))
+)).
+
+(* \x.x y *)
+Eval compute in (free_vars (
+  sp_app
+    (sp_exists (evar_c "x") (sp_var (evar_c "x")))
+    (sp_var (evar_c "y"))
+)).
+
+(* \x.y x *)
+Eval compute in (free_vars (
+  sp_app
+    (sp_exists (evar_c "x") (sp_var (evar_c "y")))
+    (sp_var (evar_c "x"))
+)).
+
+(* \x.y y *)
+Eval compute in (free_vars (
+  sp_app
+    (sp_exists (evar_c "x") (sp_var (evar_c "y")))
+    (sp_var (evar_c "y"))
+)).
 
 (* Inductive application_context : Set :=
   | pattern (p : Sigma_pattern)
@@ -187,13 +252,12 @@ Inductive got : Sigma_pattern -> Prop :=
   (* Existential generalization *)
   | E_ex_gen phi1 phi2 :
     got (sp_impl phi1 phi2) -> 
-     ->
+    negb (set_mem evar_eq_dex x (free_vars phi2)) ->
     got (sp_impl (sp_exists x phi1) phi2)
-
 
   (* Set Variable Substitution *)
   | E_svar_subst phi psi X : 
-    got phi -> 
+    got phi ->
     got (e_subst_set phi psi X)
 
   (* Pre-Fixpoint *)
@@ -225,7 +289,7 @@ Inductive got_c : sp_context_e -> Prop :=
 
   (* Propagation exist *)
   | E_prop_ex phi x C :
-    _ ->
+    negb (set_mem evar_eq_dec x (free_vars C)) ->
     got_c (sp_impl _ (sp_exists x _))
 
   (* Framing *)
