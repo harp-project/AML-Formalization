@@ -1,5 +1,7 @@
 Require Import String.
 
+Section AML.
+
 Inductive EVar : Set := evar_c (id : string).
 Inductive SVar : Set := svar_c (id : string).
 Inductive Sigma : Set := sigma_c (id : string).
@@ -93,20 +95,4 @@ Definition var (name : string) : Sigma_pattern :=
 Definition set (name : string) : Sigma_pattern :=
   sp_set (svar_c name).
 
-Definition simple_neg := (sp_not (set "X")).
-Eval compute in (strictly_positive simple_neg (svar_c "X") = false).
-
-Definition X_imp_X := (sp_impl (set "X") (set "X")).
-Eval compute in (strictly_positive X_imp_X (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_imp_X) (svar_c "X") = false).
-
-Definition X_i_X_i_X := (sp_impl (set "X") ((sp_impl (set "X") (set "X")))).
-
-Eval compute in (strictly_positive X_i_X_i_X (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_i_X_i_X)(svar_c "X") = false).
-
-Definition X_i_X_i_nX := (sp_impl (set "X") ((sp_impl (set "X") (sp_not (set "X"))))).
-
-Eval compute in (strictly_positive X_i_X_i_nX (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
-
+End AML.
