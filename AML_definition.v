@@ -230,158 +230,123 @@ Eval compute in (free_vars (
   | box
 .
  *)
-(* Inductive context : Sigma_pattern -> Set :=
-  | box
-  | ctx_app_l context Sigma_pattern
-  | ctx_app_r Sigma_pattern context
-.
- *)
 
-Inductive got_tau : Sigma_pattern -> Prop :=
-  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
+Inductive context : Set :=
+  | box
+  | ctx_app_l (cc : context) (sp : Sigma_pattern)
+  | ctx_app_r (sp : Sigma_pattern) (cc : context)
 .
+
+Fixpoint subst_ctx (cc : context) (sp : Sigma_pattern) : Sigma_pattern :=
+  match cc with
+  | box => sp
+  | ctx_app_l cc' sp' => sp_app (subst_ctx cc' sp) sp'
+  | ctx_app_r sp' cc' => sp_app sp' (subst_ctx cc' sp)
+  end
+.
+
+Definition box_context := subst_ctx box sp_bottom.
+Eval compute in box_context.
+
+Definition tree_context := subst_ctx (
+    ctx_app_l (ctx_app_r sp_bottom box) (sp_app sp_bottom sp_bottom)
+  ) sp_bottom.
+Eval compute in tree_context.
+
+Definition free_vars_ctx (C : context) : (set EVar) :=
+  match C with
+  | box => nil
+  | ctx_app_l cc sp => free_vars sp
+  | ctx_app_r sp cc => free_vars sp
+  end
+.
+(* Inductive got_tau : Sigma_pattern -> Prop :=
+  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
+. *)
 
 Inductive got : Sigma_pattern -> Prop :=
+  (* Propositional tautology *)
+  (* | E_prop_tau phi : phi is prop tau -> got phi *)
+
   (* Modus ponens *)
-  | E_mod_pon phi1 phi2 : got phi1 -> got (sp_impl phi1 phi2) -> got phi2
+  | E_mod_pon (phi1 phi2 : Sigma_pattern) : 
+    got phi1 ->
+    got (sp_impl phi1 phi2) ->
+    got phi2
 
   (* Existential quantifier*)
-  | E_ex_quan phi x y:
+  | E_ex_quan (phi : Sigma_pattern) (x y : EVar) :
     got (sp_impl (e_subst_var phi y x) (sp_exists x phi))
 
   (* Existential generalization *)
-  | E_ex_gen phi1 phi2 :
-    got (sp_impl phi1 phi2) -> 
+  | E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+    got (sp_impl phi1 phi2) ->
     negb (set_mem evar_eq_dex x (free_vars phi2)) ->
     got (sp_impl (sp_exists x phi1) phi2)
 
+  (* Propagation bottom *)
+  | E_prop_bot (C : context) : 
+    got (sp_impl (subst_ctx C sp_bottom) sp_bottom)
+
+  (* Propagation disjunction *)
+  | E_prop_dis (C : context) (phi1 phi2 : Sigma_pattern) :
+      (* phi3 = context cs (sp_or phi1 phi2) ->
+      phi4 = context cs phi1 ->
+      phi5 = context cs phi2 ->
+      got_c (sp_impl phi3 (sp_or phi4 phi5)) *)
+      got (sp_impl
+        (subst_ctx C (sp_or phi1 phi2))
+        (sp_or
+          (subst_ctx C phi1)
+          (subst_ctx C phi2)))
+
+  (* Propagation exist *)
+  | E_prop_ex (C : context) (phi : Sigma_partern) (x : EVar) :
+    negb (set_mem evar_eq_dec x (free_vars_ctx C)) ->
+    got (sp_impl
+      (subst_ctx C (sp_exists x phi))
+      (sp_exists x (subst_ctx C phi)))
+
+  (* Framing *)
+  | E_framing (C : context) (phi1 phi2 : Sigma_pattern) :
+    got (sp_impl phi1 phi2) ->
+    got (sp_impl (subst_ctx C phi1) (subst_ctx C phi2))
+
   (* Set Variable Substitution *)
-  | E_svar_subst phi psi X : 
+  | E_svar_subst (phi psi : Sigma_partern) (X : SVar) :
     got phi ->
     got (e_subst_set phi psi X)
 
   (* Pre-Fixpoint *)
-  | E_pre_fixp phi X :
+  | E_pre_fixp (phi : Sigma_partern) (X : SVar) :
     got (sp_impl
           (e_subst_set phi (sp_mu X phi) X)
           (sp_mu X phi))
 
-  | E_kt phi psi X :
-    got (sp_impl 
-          (e_subst_set phi psi X)
-          psi) ->
+  | E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
     got (sp_impl
-          (sp_mu X phi)
-          psi)
+          (e_subst_set phi psi X) psi) ->
+    got (sp_impl
+          (sp_mu X phi) psi)
 
   (* Existence *)
-  | E_existence x : got (sp_var x) -> got (sp_exists x (sp_var x))
-.
-
-Inductive got_c : sp_context_e -> Prop :=
-   (* Propagation bottom *)
-  | E_prop_bot context : 
-    got_c (sp_impl context sp_bottom)
-
-  (* Propagation disjunction *)
-  | E_prop_dis phi1 phi2 C : 
-    got_c (sp_impl _ (_ /\ _))
-
-  (* Propagation exist *)
-  | E_prop_ex phi x C :
-    negb (set_mem evar_eq_dec x (free_vars C)) ->
-    got_c (sp_impl _ (sp_exists x _))
-
-  (* Framing *)
-  | E_framing phi1 phi2 C :
-    got (sp_impl phi1 phi2) ->
-    got_c (sp_impl _ _)
+  | E_existence (x : EVar) : got (sp_exists x (sp_var x))
 
   (* Singleton *)
-  | E_singleton ? : 
-    got_c (sp_not (
-            _ /\ _))
+  | E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_partern) :
+    got (sp_not (sp_and
+            (subst_ctx C1 (sp_and x phi))
+            (subst_ctx C2 (sp_and x (sp_not phi))
+         )))
 .
 
-Inductive got' : Sigma_partern -> Prop :=
-  (* Existential quatifier*)
-  | E_ex_quan : got' (sp_impl (e_subst_var phi y x) _)
-.
-
-
-(* Definition E_modus_ponens (phi1 phi2 : Sigma_partern) (p : forall phi1 phi2 : Sigma_pattern : sp_impl phi1 phi2)
-  := phi2. *)
-
-(* Inductive proof_step : Sigma_pattern -> Sigma_pattern -> Prop :=
-(*   (* Propositional tautology*)
-  | E_prop_tau phi : phi  *)
-
-  (* Modus ponens *)
-  | E_mod_pon (phi1 phi2 : Sigma_pattern) :
-    proof_step
-      (sp_and phi1 (sp_impl phi1 phi2))
-      phi2
-
- (*  (* Existential quatifier*)
-  | E_ex {phi y : Sigma_pattern} {x : EVar} (p : x : EVar, ) :
-    proof_step (e_subst_var phi y x) (sp_exists x phi)
- *)
-(*    (* Existential generalization *)
-  | E_gen phi1 phi2 x :
-    if not (FV x phi2) then
-      proof_step
-        (sp_impl phi1 phi2)
-        (sp_impl (sp_exists x phi1) phi2)
-    else
-      fail_state
- *)
-  (* Set variable substitution *)
-  | E_subst (phi psi : Sigma_pattern) (X : SVar) :
-    proof_step
-      phi
-      (e_subst_set phi psi X)
-
-(*
-  (* Existence *)
-  | E_existence x :
-    sp_exists x x
-
-  (* Propagation bottom *)
-  | E_prop_bot C :
-
-  (* Propagation disjunction *)
-  | E_prop_dis phi1 phi2 C
-
-  (* Propagation exist *)
-  | E_prop_ex phi x C
-
-  (* Framing *)
-  | E_framing phi1 phi2 C
-
-  (* Pre-fixpoint *)
-  | E_pre_fixp phi X
-
-  (* Knaster-Tarski *)
-  | E_KT phi psi X
-
-  (* Singleton *)
-  | E_singleton c1 c2 x phi *)
-.
-
-(*
-Inductive context : Sigma_pattern -> Set :=
-  | box
-  | sp_app context Sigma_pattern
-  | sp_app Sigma_pattern context
-.
- *)
 (* Inductive proof_result : ? :=
   | success (?)
   | fail
 . *)
 
 (* TO DO:
-    - free variables: Context -> Set
+    - free variables: Context -> Set OK
     - eSubstitution for sets OK
 x occurs free
 x occurs bound
@@ -389,4 +354,19 @@ instance of x is bound or not -> identify the location in the tree
 
 box, context : define inductively
  *)
- *)
+
+(*
+  2019.11.06.:
+  Context 3 fajtaja:
+    - inductive tipuskent
+    - az amit Daviddal most elkezdtunk ()
+    - a context egy fuggveny
+  Folyamatosan jegyzeteljunk!
+*)
+(*
+  2019.11.13.:
+  - the best choice: context as a separate inductive type
+        reason: it is much simple to reason about an inductively defined structure, than to reason about a function of which we know nothing
+  - discuss about Gamma |- Phi
+    - include it between proof rules
+*)
