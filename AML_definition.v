@@ -15,7 +15,7 @@ Inductive Sigma_pattern : Set :=
   | sp_mu (X : SVar) (phi : Sigma_pattern)
 .
 
-Definition is_svar_box (s : SVar) : bool :=
+(* Definition is_svar_box (s : SVar) : bool :=
   match s with
   | svar_c id => eqb id "box"
   end
@@ -25,7 +25,7 @@ Inductive sp_context_e : Sigma_pattern -> Prop :=
   | c_box (x : SVar) (p : (is_svar_box x) = true ) : sp_context_e (sp_set x)
   | c_cons_l (spl spr : Sigma_pattern) (p : sp_context_e spl) : sp_context_e (sp_app spl spr)
   | s_cons_r (spl spr : Sigma_pattern) (p : sp_context_e spr) : sp_context_e (sp_app spl spr)
-.
+. *)
 
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof.
@@ -274,14 +274,14 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl phi1 phi2) ->
     got phi2
 
-  (* Existential quantifier*)
-  | E_ex_quan (phi : Sigma_pattern) (x y : EVar) :
-    got (sp_impl (e_subst_var phi y x) (sp_exists x phi))
+  (* Existential quantifier *)
+  | E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
+    got (sp_impl (e_subst_var phi (sp_var y) x) (sp_exists x phi))
 
   (* Existential generalization *)
   | E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
     got (sp_impl phi1 phi2) ->
-    negb (set_mem evar_eq_dex x (free_vars phi2)) ->
+    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
     got (sp_impl (sp_exists x phi1) phi2)
 
   (* Propagation bottom *)
@@ -295,14 +295,14 @@ Inductive got : Sigma_pattern -> Prop :=
       phi5 = context cs phi2 ->
       got_c (sp_impl phi3 (sp_or phi4 phi5)) *)
       got (sp_impl
-        (subst_ctx C (sp_or phi1 phi2))
-        (sp_or
-          (subst_ctx C phi1)
-          (subst_ctx C phi2)))
+            (subst_ctx C (sp_or phi1 phi2))
+            (sp_or
+              (subst_ctx C phi1)
+              (subst_ctx C phi2)))
 
   (* Propagation exist *)
-  | E_prop_ex (C : context) (phi : Sigma_partern) (x : EVar) :
-    negb (set_mem evar_eq_dec x (free_vars_ctx C)) ->
+  | E_prop_ex (C : context) (phi : Sigma_pattern) (x : EVar) :
+    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
     got (sp_impl
       (subst_ctx C (sp_exists x phi))
       (sp_exists x (subst_ctx C phi)))
@@ -313,31 +313,29 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl (subst_ctx C phi1) (subst_ctx C phi2))
 
   (* Set Variable Substitution *)
-  | E_svar_subst (phi psi : Sigma_partern) (X : SVar) :
+  | E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
     got phi ->
-    got (e_subst_set phi psi X)
+    got (e_subst_set phi (sp_set psi) X)
 
   (* Pre-Fixpoint *)
-  | E_pre_fixp (phi : Sigma_partern) (X : SVar) :
+  | E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
     got (sp_impl
           (e_subst_set phi (sp_mu X phi) X)
           (sp_mu X phi))
 
+  (* Knaster-Tarski *)
   | E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-    got (sp_impl
-          (e_subst_set phi psi X) psi) ->
-    got (sp_impl
-          (sp_mu X phi) psi)
+    got (sp_impl (e_subst_set phi psi X) psi) ->
+    got (sp_impl (sp_mu X phi) psi)
 
   (* Existence *)
   | E_existence (x : EVar) : got (sp_exists x (sp_var x))
 
   (* Singleton *)
-  | E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_partern) :
+  | E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_pattern) :
     got (sp_not (sp_and
-            (subst_ctx C1 (sp_and x phi))
-            (subst_ctx C2 (sp_and x (sp_not phi))
-         )))
+            (subst_ctx C1 (sp_and (sp_var x) phi))
+            (subst_ctx C2 (sp_and (sp_var x) (sp_not phi)))))
 .
 
 (* Inductive proof_result : ? :=
@@ -358,15 +356,15 @@ box, context : define inductively
 (*
   2019.11.06.:
   Context 3 fajtaja:
-    - inductive tipuskent
-    - az amit Daviddal most elkezdtunk ()
-    - a context egy fuggveny
+    - inductive tipuskent OK
+    - az amit Daviddal most elkezdtunk () -
+    - a context egy fuggveny -
   Folyamatosan jegyzeteljunk!
 *)
 (*
   2019.11.13.:
   - the best choice: context as a separate inductive type
         reason: it is much simple to reason about an inductively defined structure, than to reason about a function of which we know nothing
-  - discuss about Gamma |- Phi
+  - discuss about Gamma |- Phi  (soundness theorem)
     - include it between proof rules
 *)
