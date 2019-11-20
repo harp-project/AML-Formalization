@@ -269,7 +269,7 @@ Inductive got : Sigma_pattern -> Prop :=
   (* | E_prop_tau phi : phi is prop tau -> got phi *)
 
   (* Modus ponens *)
-  | E_mod_pon (phi1 phi2 : Sigma_pattern) : 
+  | E_mod_pon (phi1 phi2 : Sigma_pattern) :
     got phi1 ->
     got (sp_impl phi1 phi2) ->
     got phi2
@@ -285,7 +285,7 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl (sp_exists x phi1) phi2)
 
   (* Propagation bottom *)
-  | E_prop_bot (C : context) : 
+  | E_prop_bot (C : context) :
     got (sp_impl (subst_ctx C sp_bottom) sp_bottom)
 
   (* Propagation disjunction *)
