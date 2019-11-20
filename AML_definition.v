@@ -266,10 +266,25 @@ Definition free_vars_ctx (C : context) : (set EVar) :=
 
 Inductive got : Sigma_pattern -> Prop :=
   (* Propositional tautology *)
-  (* | E_prop_tau phi : phi is prop tau -> got phi *)
+  | E_prop_tau1 (phi : Sigma_pattern) :
+      got (sp_impl phi phi)
+
+  | E_prop_tau2 (phi psi : Sigma_pattern) :
+      got (sp_impl phi (sp_impl psi phi))
+
+  | E_prop_tau3 (phi psi xi : Sigma_pattern) :
+      got (
+        sp_impl
+          (sp_impl phi (sp_impl psi xi))
+          (sp_impl (sp_impl phi psi) (sp_impl phi xi)))
+
+  | E_prop_tau4 (phi psi : Sigma_pattern) :
+      got (sp_impl
+        (sp_impl (sp_not phi) (sp_not psi))
+        (sp_impl (psi) (psi)))
 
   (* Modus ponens *)
-  | E_mod_pon (phi1 phi2 : Sigma_pattern) : 
+  | E_mod_pon (phi1 phi2 : Sigma_pattern) :
     got phi1 ->
     got (sp_impl phi1 phi2) ->
     got phi2
@@ -285,7 +300,7 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl (sp_exists x phi1) phi2)
 
   (* Propagation bottom *)
-  | E_prop_bot (C : context) : 
+  | E_prop_bot (C : context) :
     got (sp_impl (subst_ctx C sp_bottom) sp_bottom)
 
   (* Propagation disjunction *)
@@ -295,10 +310,10 @@ Inductive got : Sigma_pattern -> Prop :=
       phi5 = context cs phi2 ->
       got_c (sp_impl phi3 (sp_or phi4 phi5)) *)
       got (sp_impl
-        (subst_ctx C (sp_or phi1 phi2))
-        (sp_or
-          (subst_ctx C phi1)
-          (subst_ctx C phi2)))
+            (subst_ctx C (sp_or phi1 phi2))
+            (sp_or
+              (subst_ctx C phi1)
+              (subst_ctx C phi2)))
 
   (* Propagation exist *)
   | E_prop_ex (C : context) (phi : Sigma_pattern) (x : EVar) :
@@ -313,9 +328,9 @@ Inductive got : Sigma_pattern -> Prop :=
     got (sp_impl (subst_ctx C phi1) (subst_ctx C phi2))
 
   (* Set Variable Substitution *)
-  | E_svar_subst (phi psi : Sigma_pattern) (X : SVar) :
+  | E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
     got phi ->
-    got (e_subst_set phi psi X)
+    got (e_subst_set phi (sp_set psi) X)
 
   (* Pre-Fixpoint *)
   | E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
@@ -323,6 +338,7 @@ Inductive got : Sigma_pattern -> Prop :=
           (e_subst_set phi (sp_mu X phi) X)
           (sp_mu X phi))
 
+  (* Knaster-Tarski *)
   | E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
     got (sp_impl (e_subst_set phi psi X) psi) ->
     got (sp_impl (sp_mu X phi) psi)
@@ -334,37 +350,10 @@ Inductive got : Sigma_pattern -> Prop :=
   | E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_pattern) :
     got (sp_not (sp_and
             (subst_ctx C1 (sp_and (sp_var x) phi))
-            (subst_ctx C2 (sp_and (sp_var x) (sp_not phi))
-         )))
+            (subst_ctx C2 (sp_and (sp_var x) (sp_not phi)))))
 .
 
 (* Inductive proof_result : ? :=
   | success (?)
   | fail
 . *)
-
-(* TO DO:
-    - free variables: Context -> Set OK
-    - eSubstitution for sets OK
-x occurs free
-x occurs bound
-instance of x is bound or not -> identify the location in the tree
-
-box, context : define inductively
- *)
-
-(*
-  2019.11.06.:
-  Context 3 fajtaja:
-    - inductive tipuskent
-    - az amit Daviddal most elkezdtunk ()
-    - a context egy fuggveny
-  Folyamatosan jegyzeteljunk!
-*)
-(*
-  2019.11.13.:
-  - the best choice: context as a separate inductive type
-        reason: it is much simple to reason about an inductively defined structure, than to reason about a function of which we know nothing
-  - discuss about Gamma |- Phi
-    - include it between proof rules
-*)
