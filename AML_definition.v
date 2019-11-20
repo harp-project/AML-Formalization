@@ -310,3 +310,37 @@ box, context : define inductively
 *)
 
 End AML.
+
+Section Model.
+
+Record Sigma_model := {
+  M : Set; (* TODO list *)
+  app : M -> M -> PowerSet M;
+  interpretation : Sigma -> PowerSet M
+}.
+
+Fixpoint pointwise_app {sm : Sigma_model} (A B : PowerSet (M sm)) : PowerSet (M sm) :=
+  fun (c : M sm) => exists (a b : M sm), A a -> B b -> app sm a b c. (* FIXME *)
+
+Fixpoint ext_valuation {sm : Sigma_model}
+  (eqM : M sm -> M sm -> Prop) (pe : EVar -> M sm) (pv : SVar -> PowerSet (M sm)) (sp : Sigma_pattern)
+  : PowerSet (M sm) :=
+match sp with
+  | sp_var x => fun (y : M sm) => eqM (pe x) y
+  | sp_set X => pv X
+  | sp_const sigma => interpretation sm sigma
+  | sp_app phi1 phi2 =>
+    pointwise_app (ext_valuation eqM pe pv phi1)
+                  (ext_valuation eqM pe pv phi2)
+  | sp_bottom => fun (y : M sm) => False
+  | sp_impl phi1 phi2 =>
+    ps_u (ps_comp (ext_valuation eqM pe pv phi1))
+         (ext_valuation eqM pe pv phi2)
+  | sp_exists x phi => fun (y : M sm) => exists (a : M sm), 
+      (ext_valuation eqM
+        (fun (ev : EVar) => if evar_eq_dec ev x then a else pe ev)
+        pv phi) y
+  | sp_mu X phi => fun (y : M sm) => False (* TODO *)
+end.
+
+End Model.
