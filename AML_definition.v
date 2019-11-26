@@ -1,5 +1,7 @@
 Require Import String.
 
+Section AML.
+
 Inductive EVar : Set := evar_c (id : string).
 Inductive SVar : Set := svar_c (id : string).
 Inductive Sigma : Set := sigma_c (id : string).
@@ -128,22 +130,6 @@ Definition var (name : string) : Sigma_pattern :=
 Definition set (name : string) : Sigma_pattern :=
   sp_set (svar_c name).
 
-Definition simple_neg := (sp_not (set "X")).
-Eval compute in (strictly_positive simple_neg (svar_c "X") = false).
-
-Definition X_imp_X := (sp_impl (set "X") (set "X")).
-Eval compute in (strictly_positive X_imp_X (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_imp_X) (svar_c "X") = false).
-
-Definition X_i_X_i_X := (sp_impl (set "X") ((sp_impl (set "X") (set "X")))).
-
-Eval compute in (strictly_positive X_i_X_i_X (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_i_X_i_X)(svar_c "X") = false).
-
-Definition X_i_X_i_nX := (sp_impl (set "X") ((sp_impl (set "X") (sp_not (set "X"))))).
-
-Eval compute in (strictly_positive X_i_X_i_nX (svar_c "X") = false).
-Eval compute in (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
 Check negb.
 
 Definition evar_eq (x y : EVar) : bool :=
@@ -178,52 +164,6 @@ end
 
 (* Definition is_free (x : EVar) (phi : Sigma_pattern) : bool :=
   set_mem evar_eq_dec x (free_vars phi). *)
-
-Eval compute in (free_vars sp_bottom).
-Eval compute in (free_vars X_imp_X).
-Eval compute in (free_vars (sp_app X_imp_X X_imp_X)).
-
-Eval compute in (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "x")))).
-Eval compute in (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "y")))).
-Eval compute in (free_vars (sp_exists (evar_c "x") sp_bottom)).
-
-(* \x.(\y.(x y)) *)
-Eval compute in (free_vars (sp_app X_imp_X (
-  sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "x")) (sp_var (evar_c "y"))))
-))).
-
-(* (X -> X) (\x.(\y.(z y))) *)
-Eval compute in (free_vars (sp_app X_imp_X (
-  sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "z")) (sp_var (evar_c "y"))))
-))).
-
-(* \x.x x *)
-Eval compute in (free_vars (
-  sp_app
-    (sp_exists (evar_c "x") (sp_var (evar_c "x")))
-    (sp_var (evar_c "x"))
-)).
-
-(* \x.x y *)
-Eval compute in (free_vars (
-  sp_app
-    (sp_exists (evar_c "x") (sp_var (evar_c "x")))
-    (sp_var (evar_c "y"))
-)).
-
-(* \x.y x *)
-Eval compute in (free_vars (
-  sp_app
-    (sp_exists (evar_c "x") (sp_var (evar_c "y")))
-    (sp_var (evar_c "x"))
-)).
-
-(* \x.y y *)
-Eval compute in (free_vars (
-  sp_app
-    (sp_exists (evar_c "x") (sp_var (evar_c "y")))
-    (sp_var (evar_c "y"))
-)).
 
 (* Inductive application_context : Set :=
   | pattern (p : Sigma_pattern)
@@ -368,3 +308,5 @@ box, context : define inductively
   - discuss about Gamma |- Phi  (soundness theorem)
     - include it between proof rules
 *)
+
+End AML.
