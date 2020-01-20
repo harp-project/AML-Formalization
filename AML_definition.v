@@ -313,34 +313,103 @@ End AML.
 
 Section Model.
 
-Record Sigma_model := {
-  M : Set; (* TODO list *)
-  app : M -> M -> PowerSet M;
-  interpretation : Sigma -> PowerSet M
+Require Import Lists.ListSet.
+
+Definition set_subset {A : Set} (X Y : set A) := forall a : A, set_In a X -> set_In a Y.
+
+Variable A : Set.
+Hypothesis A_eq_dec : forall (a b : A), {a = b} + {a <> b}.
+
+Record element (a : set A) := mk_element{
+  val_elem : A;
+  th_elem  : set_In val_elem a
 }.
 
-Fixpoint pointwise_app {sm : Sigma_model} (A B : PowerSet (M sm)) : PowerSet (M sm) :=
-  fun (c : M sm) => exists (a b : M sm), A a -> B b -> app sm a b c. (* FIXME *)
+Definition element_eq_dec : forall {S : set A} (x y : element S), {x = y} + {x <> y}. Admitted.
+
+Definition subset (a : set A) : Type := set (element a).
+
+Definition set_A_eq_dec : forall (x y : set A), {x = y} + {x <> y}.
+Proof.
+  decide equality.
+Defined.
+
+Lemma subset_of_self (a : set A) : (set_subset a a).
+Proof. unfold set_subset. trivial. Qed.
+
+Lemma element_of_subset_is_element (a b : set A) (e : A) : set_In e a -> set_subset a b -> set_In e b.
+Proof. intros. exact (H0 e H). Qed.
+
+Definition ss_to_set {a : set A} (b : subset a) : set A := set_map A_eq_dec (val_elem a) b.
+
+(* Fixpoint set_to_ss (a b : set A) (ssp : set_subset b a) {struct b} : (subset a).
+Proof.
+  unfold subset in *.
+  case b.
+  - exact nil. (* exact (set_to_ss a b ssp). *)
+  - intros. eapply (set_add element_eq_dec).
+    * eapply (mk_element a a0).
+    * exact (set_to_ss a b ssp).
+Qed.
+ *)
+(* :=
+match b with
+  | nil => nil
+  | cons x xs => if set_mem A_eq_dec x b
+                 then cons (mk_element a x (set_mem_correct1 A_eq_dec x a (set_mem_correct2 A_eq_dec x a (ssp x _)))) nil
+                 else nil
+end. *)
+
+Theorem nil_is_subset (a : set A) : set_subset nil a.
+Proof.
+  unfold set_subset.
+  intros.
+  inversion H.
+Qed.
+
+Record Sigma_model := {
+  M : set A;
+  app : element M -> element M -> subset M;
+  interpretation : Sigma -> subset M;
+}.
+
+
+Fixpoint pointwise_app_r {sm : Sigma_model} (a : element (M sm)) (B : subset (M sm)) : subset (M sm) := 
+match B with
+  | nil => nil
+  | cons x xs => set_union element_eq_dec ((app sm) a x) (pointwise_app_r a xs)
+end.
+
+Fixpoint pointwise_app {sm : Sigma_model} (A B : subset (M sm)) : subset (M sm) :=
+match A with
+  | nil => nil
+  | cons x xs => set_union element_eq_dec (pointwise_app_r x B) (pointwise_app xs B)
+end.
+
+(* Fixpoint self_subset (a : set A) : subset a :=
+self_ss_helper a
+with self_ss_helper {a : set A} (x : set A) : (subset a) :=
+match x with
+  | nil => nil
+  | cons x xs => set_add element_eq_dec (mk_element a x _) (self_ss_helper xs)
+end. *)
 
 Fixpoint ext_valuation {sm : Sigma_model}
-  (eqM : M sm -> M sm -> Prop) (pe : EVar -> M sm) (pv : SVar -> PowerSet (M sm)) (sp : Sigma_pattern)
-  : PowerSet (M sm) :=
+  (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
+  : subset (M sm) :=
 match sp with
-  | sp_var x => fun (y : M sm) => eqM (pe x) y
+  | sp_var x => cons (pe x) nil
   | sp_set X => pv X
   | sp_const sigma => interpretation sm sigma
   | sp_app phi1 phi2 =>
-    pointwise_app (ext_valuation eqM pe pv phi1)
-                  (ext_valuation eqM pe pv phi2)
-  | sp_bottom => fun (y : M sm) => False
-  | sp_impl phi1 phi2 =>
-    ps_u (ps_comp (ext_valuation eqM pe pv phi1))
-         (ext_valuation eqM pe pv phi2)
-  | sp_exists x phi => fun (y : M sm) => exists (a : M sm), 
-      (ext_valuation eqM
-        (fun (ev : EVar) => if evar_eq_dec ev x then a else pe ev)
-        pv phi) y
-  | sp_mu X phi => fun (y : M sm) => False (* TODO *)
+    pointwise_app (ext_valuation pe pv phi1)
+                  (ext_valuation pe pv phi2)
+  | sp_bottom => nil
+  | sp_impl phi1 phi2 => set_union element_eq_dec
+         ((* complementer *) (ext_valuation pe pv phi1))
+         (ext_valuation pe pv phi2)
+  | sp_exists x phi => nil (* TODO fold .... *)
+  | sp_mu X phi => nil (* TODO *)
 end.
 
 End Model.
