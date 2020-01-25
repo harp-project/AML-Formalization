@@ -324,6 +324,10 @@ Record element (a : set A) := mk_element{
   val_elem : A;
   th_elem  : set_In val_elem a
 }.
+(* 
+Definition th_elem_eq_dec : forall {S : set A} {v : A} (x y : set_In v S), {x = y} + {x <> y}.
+Proof.
+  intros.  *)
 
 Definition element_eq_dec : forall {S : set A} (x y : element S), {x = y} + {x <> y}. Admitted.
 
@@ -342,22 +346,10 @@ Proof. intros. exact (H0 e H). Qed.
 
 Definition ss_to_set {a : set A} (b : subset a) : set A := set_map A_eq_dec (val_elem a) b.
 
-(* Fixpoint set_to_ss (a b : set A) (ssp : set_subset b a) {struct b} : (subset a).
-Proof.
-  unfold subset in *.
-  case b.
-  - exact nil. (* exact (set_to_ss a b ssp). *)
-  - intros. eapply (set_add element_eq_dec).
-    * eapply (mk_element a a0).
-    * exact (set_to_ss a b ssp).
-Qed.
- *)
-(* :=
-match b with
+(* Fixpoint set_to_ss (a b : set A) (ssp : set_subset a b) {struct a} : (subset b) :=
+match a with
   | nil => nil
-  | cons x xs => if set_mem A_eq_dec x b
-                 then cons (mk_element a x (set_mem_correct1 A_eq_dec x a (set_mem_correct2 A_eq_dec x a (ssp x _)))) nil
-                 else nil
+  | cons x xs => set_add element_eq_dec (mk_element b x (ssp _ _)) (set_to_ss xs b _)
 end. *)
 
 Theorem nil_is_subset (a : set A) : set_subset nil a.
@@ -386,13 +378,19 @@ match A with
   | cons x xs => set_union element_eq_dec (pointwise_app_r x B) (pointwise_app xs B)
 end.
 
-(* Fixpoint self_subset (a : set A) : subset a :=
-self_ss_helper a
-with self_ss_helper {a : set A} (x : set A) : (subset a) :=
-match x with
+Fixpoint self_subset (a : set A) : subset a. Admitted.
+(* match a with
   | nil => nil
-  | cons x xs => set_add element_eq_dec (mk_element a x _) (self_ss_helper xs)
+  | cons x xs => set_add element_eq_dec
+                         (mk_element a x (set_add_intro2 A_eq_dec xs (eq_refl x)))
+                         (*set_map extend container with x*)_
 end. *)
+
+Fixpoint complementer {a : set A} (b : subset a) : subset a :=
+match b with
+  | nil => self_subset a
+  | cons x xs => set_remove element_eq_dec x (complementer xs)
+end.
 
 Fixpoint ext_valuation {sm : Sigma_model}
   (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
@@ -406,9 +404,13 @@ match sp with
                   (ext_valuation pe pv phi2)
   | sp_bottom => nil
   | sp_impl phi1 phi2 => set_union element_eq_dec
-         ((* complementer *) (ext_valuation pe pv phi1))
+         (complementer (ext_valuation pe pv phi1))
          (ext_valuation pe pv phi2)
-  | sp_exists x phi => nil (* TODO fold .... *)
+  | sp_exists x phi => set_fold_right
+            (fun m u => set_union element_eq_dec u (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi)
+            )
+            (self_subset (M sm))
+            nil
   | sp_mu X phi => nil (* TODO *)
 end.
 
