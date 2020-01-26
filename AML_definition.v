@@ -366,7 +366,6 @@ Record Sigma_model := {
   interpretation : Sigma -> subset M;
 }.
 
-
 Fixpoint pointwise_app_r {sm : Sigma_model} (a : element (M sm)) (B : subset (M sm)) : subset (M sm) := 
 match B with
   | nil => nil
@@ -396,7 +395,11 @@ match b with
   | cons x xs => set_remove element_eq_dec x (complementer xs)
 end.
 
-Check fold_right.
+Fixpoint iterative_fixpoint {A : Set} (min : A) (f : A -> A) (n : nat) : A :=
+match n with
+  | 0 => min
+  | S n' => f (iterative_fixpoint min f n')
+end.
 
 Fixpoint ext_valuation {sm : Sigma_model}
   (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
@@ -418,12 +421,9 @@ match sp with
               (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi))
             nil
             (self_subset (M sm))
-  | sp_mu X phi => fold_right
-            (fun _ xi => ext_valuation pe (fun (Y : SVar) => if svar_eq_dec Y X then xi else pv Y) phi)
-            nil
-            (repeat tt (length (M sm)))
+  | sp_mu X phi => iterative_fixpoint nil
+            (fun xi => ext_valuation pe (fun (Y : SVar) => if svar_eq_dec Y X then xi else pv Y) phi)
+            (length (M sm))
 end.
 
 End Model.
-
-Check cons.
