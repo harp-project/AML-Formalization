@@ -314,6 +314,7 @@ End AML.
 Section Model.
 
 Require Import Lists.ListSet.
+Require Import List.
 
 Definition set_subset {A : Set} (X Y : set A) := forall a : A, set_In a X -> set_In a Y.
 
@@ -378,8 +379,11 @@ match A with
   | cons x xs => set_union element_eq_dec (pointwise_app_r x B) (pointwise_app xs B)
 end.
 
-Fixpoint self_subset (a : set A) : subset a. Admitted.
-(* match a with
+SearchPattern (_ -> set_In _ _).
+
+Fixpoint self_subset (a : set A) : subset a. Admitted. (* 
+set_map element_eq_dec (fun x : A => mk_element a x _) a. *)
+(* match a with?
   | nil => nil
   | cons x xs => set_add element_eq_dec
                          (mk_element a x (set_add_intro2 A_eq_dec xs (eq_refl x)))
@@ -391,6 +395,8 @@ match b with
   | nil => self_subset a
   | cons x xs => set_remove element_eq_dec x (complementer xs)
 end.
+
+Check fold_right.
 
 Fixpoint ext_valuation {sm : Sigma_model}
   (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
@@ -407,11 +413,17 @@ match sp with
          (complementer (ext_valuation pe pv phi1))
          (ext_valuation pe pv phi2)
   | sp_exists x phi => set_fold_right
-            (fun m u => set_union element_eq_dec u (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi)
-            )
-            (self_subset (M sm))
+            (fun m u => set_union element_eq_dec
+              u
+              (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi))
             nil
-  | sp_mu X phi => nil (* TODO *)
+            (self_subset (M sm))
+  | sp_mu X phi => fold_right
+            (fun _ xi => ext_valuation pe (fun (Y : SVar) => if svar_eq_dec Y X then xi else pv Y) phi)
+            nil
+            (repeat tt (length (M sm)))
 end.
 
 End Model.
+
+Check cons.
