@@ -130,8 +130,6 @@ Definition var (name : string) : Sigma_pattern :=
 Definition set (name : string) : Sigma_pattern :=
   sp_set (svar_c name).
 
-Check negb.
-
 Definition evar_eq (x y : EVar) : bool :=
   match x, y with
   | evar_c id_x, evar_c id_y => eqb id_x id_y
@@ -440,13 +438,10 @@ Record Sigma_model := {
   interpretation : Sigma -> Ensemble M;
 }.
 
-Check Singleton.
-Check exist.
-Check e_subst_var.
+Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) : Ensemble (M sm) :=
+  fun c:M sm => forall a b:M sm, l a -> r b -> (app sm) a b c.
 
-Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) : Ensemble (M sm). Admitted.
-
-Inductive ext_valuation {sm : Sigma_model} : (EVar -> (M sm)) -> (SVar -> Ensemble (M sm)) -> (Sigma_pattern) -> (Ensemble (M sm)) -> Prop :=
+Inductive ext_valuation {sm : Sigma_model} : (EVar -> (M sm)) -> (SVar -> Ensemble (M sm)) -> Sigma_pattern -> Ensemble (M sm) -> Prop :=
   | ExtVal_var (x : EVar) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
     : ext_valuation evar_val pv (sp_var x) (Singleton (M sm) (evar_val x))
   | ExtVal_set (X : SVar) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
@@ -460,7 +455,7 @@ Inductive ext_valuation {sm : Sigma_model} : (EVar -> (M sm)) -> (SVar -> Ensemb
   | ExtVal_bottom (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
     : ext_valuation evar_val pv sp_bottom (Empty_set (M sm))
   | ExtVal_exists (x : EVar) (e : (M sm)) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation (fun y:EVar => if evar_eq_dec x y then e else evar_val y) pv sp val
+    : ext_valuation (fun y:EVar => if evar_eq_dec x y then e else evar_val y) pv sp val (* FIXME *)
    -> ext_valuation evar_val pv (sp_exists x sp) val
   | ExtVal_mu (X : SVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
     : forall S : Ensemble (M sm), ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else pv Y) sp val (* FIXME *)
@@ -494,4 +489,3 @@ match sp with
 end. *)
 
 End Model.
-
