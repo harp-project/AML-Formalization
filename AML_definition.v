@@ -199,7 +199,22 @@ Definition free_vars_ctx (C : context) : (set EVar) :=
 
 Inductive got : Sigma_pattern -> Prop :=
   (* Propositional tautology *)
-  (* | E_prop_tau phi : phi is prop tau -> got phi *)
+  | E_prop_tau1 (phi : Sigma_pattern) :
+      got (sp_impl phi phi)
+
+  | E_prop_tau2 (phi psi : Sigma_pattern) :
+      got (sp_impl phi (sp_impl psi phi))
+
+  | E_prop_tau3 (phi psi xi : Sigma_pattern) :
+      got (
+        sp_impl
+          (sp_impl phi (sp_impl psi xi))
+          (sp_impl (sp_impl phi psi) (sp_impl phi xi)))
+
+  | E_prop_tau4 (phi psi : Sigma_pattern) :
+      got (sp_impl
+        (sp_impl (sp_not phi) (sp_not psi))
+        (sp_impl (psi) (psi)))
 
   (* Modus ponens *)
   | E_mod_pon (phi1 phi2 : Sigma_pattern) :
