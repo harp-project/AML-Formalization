@@ -17,17 +17,7 @@ Inductive Sigma_pattern : Set :=
   | sp_mu (X : SVar) (phi : Sigma_pattern)
 .
 
-(* Definition is_svar_box (s : SVar) : bool :=
-  match s with
-  | svar_c id => eqb id "box"
-  end
-.
-
-Inductive sp_context_e : Sigma_pattern -> Prop :=
-  | c_box (x : SVar) (p : (is_svar_box x) = true ) : sp_context_e (sp_set x)
-  | c_cons_l (spl spr : Sigma_pattern) (p : sp_context_e spl) : sp_context_e (sp_app spl spr)
-  | s_cons_r (spl spr : Sigma_pattern) (p : sp_context_e spr) : sp_context_e (sp_app spl spr)
-. *)
+Notation "a _._ b" := (sp_app a b) (at level 50, left associativity).
 
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof.
@@ -76,13 +66,16 @@ Proof.
 Defined.
 
 Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
-Definition sp_or  (phi1 phi2 : Sigma_pattern) := sp_impl (sp_not phi1) phi2.
-Definition sp_and (phi1 phi2 : Sigma_pattern) :=
-  sp_not (sp_or (sp_not phi1) (sp_not phi2)).
+Definition sp_or  (l r : Sigma_pattern) := sp_impl (sp_not l) r.
+Definition sp_and (l r : Sigma_pattern) :=
+  sp_not (sp_or (sp_not l) (sp_not r)).
 Definition sp_tatu := sp_not sp_bottom.
+Definition sp_equiv (l r : Sigma_pattern) := (sp_and (sp_impl (l) (r)) (sp_impl (l) (r))).
 Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   sp_not (sp_exists x (sp_not phi)).
 (*nuX.phi*)
+
+Notation "phi1 <--> phi2" := (sp_equiv phi1 phi2) (at level 100).
 
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
   match phi with
@@ -278,35 +271,174 @@ Inductive got : Sigma_pattern -> Prop :=
             (subst_ctx C2 (sp_and (sp_var x) (sp_not phi)))))
 .
 
+(* Provability
+    - can be formalised with the M-valuation, "can be deduced" and can be proved operator
+*)
+
 (* Inductive proof_result : ? :=
   | success (?)
   | fail
 . *)
 
-(* TO DO:
-    - free variables: Context -> Set OK
-    - eSubstitution for sets OK
-x occurs free
-x occurs bound
-instance of x is bound or not -> identify the location in the tree
 
-box, context : define inductively
+(* Definition 7., page 5. *)
+(* Definedness: *)
+Definition c_definedness := sp_const(sigma_c("definedness")).
+Definition Definedness (phi : Sigma_pattern) : Sigma_pattern := (c_definedness _._ phi).
+Notation "|^ phi ^|" := (Definedness phi) (at level 100).
+
+(* Totality *)
+Definition c_totality := sp_const(sigma_c("totality")).
+Definition Totality (phi : Sigma_pattern) := (c_totality _._ phi).
+Notation "|_ phi _|" := (Totality phi).
+
+(* Equality *)
+Definition c_equality := sp_const(sigma_c("equality")).
+(* TODO: it is a legal interpretation? *)
+Definition Equality (l r : Sigma_pattern) := ((c_equality _._ l) _._ r).
+Notation "phi1 ~=~ phi2" := (Equality phi1 phi2) (at level 100).
+
+(* Non-equality *)
+Definition c_non_equality := sp_const(sigma_c("non-equality")).
+Definition NonEquality (l r : Sigma_pattern) := ((c_non_equality _._ l) _._ r).
+Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
+
+(* Membership *)
+Definition c_membership := sp_const(sigma_c("membership")).
+Definition Membership (x : EVar) (phi : Sigma_pattern) := 
+  ((c_membership _._ (sp_var x)) _._ phi).
+Notation "x -< phi" := (Membership x phi) (at level 100).
+
+(* Non-membership *)
+Definition c_non_membership := sp_const(sigma_c("non-membership")).
+Definition NonMembership (x : EVar) (phi : Sigma_pattern) := 
+  ((c_non_membership _._ (sp_var x)) _._ phi).
+Notation "x !-< phi" := (NonMembership x phi) (at level 100).
+
+(* Set inclusion *)
+Definition c_set_incl := sp_const(sigma_c("set inclusion")).
+Definition SetInclusion (l r : Sigma_pattern) := 
+  ((c_set_incl _._ l) _._ r).
+Notation "phi1 <: phi2" := (SetInclusion phi1 phi2) (at level 100).
+
+(* Set exclusion *)
+Definition c_set_excl := sp_const(sigma_c("set exclusion")).
+Definition SetExclusion (l r : Sigma_pattern) := 
+  ((c_set_excl _._ l) _._ r).
+Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
+
+Reserved Notation "phi |-> phi'" (at level 80).
+Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
+| OST_totality {phi : Sigma_pattern} :
+    (c_totality _._ phi) |->
+    (sp_not (Definedness (sp_not phi)))
+
+| OST_equality {l r : Sigma_pattern} :
+    ((c_equality _._ l) _._ r) |->
+    (Totality (sp_equiv l r))
+
+| OST_non_equality {l r : Sigma_pattern} :
+    ((c_equality _._ l) _._ r) |->
+    (sp_not (Equality l r))
+
+| OST_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_membership _._ (sp_var x)) _._ phi) |->
+    (Totality (sp_and (sp_var x) phi))
+
+| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_non_membership _._ (sp_var x)) _._ phi) |->
+    (sp_not (Membership x phi))
+
+| OST_set_inclusion {l r} :
+    ((c_set_incl _._ l) _._ r) |->
+    (Totality (sp_impl l r))
+
+| OST_set_exclusion {l r} :
+    ((c_set_excl _._ l) _._ r) |->
+    (sp_not (SetInclusion l r))
+where "a |-> b" := (OneStepTransition a b).
+
+(* TODO: tests!!! *)
+Theorem test01 : (Totality (sp_bottom)) |-> (sp_not (Definedness (sp_not sp_bottom))).
+Proof. eapply OST_totality. Qed.
+
+Reserved Notation "phi |->* phi'" (at level 100).
+Inductive AnyStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
+| AST_refl {phi : Sigma_pattern} :
+    phi |->* phi
+
+| AST_trans {phi phi'' : Sigma_pattern} (phi' : Sigma_pattern) :
+    (phi |-> phi') -> (phi' |->* phi'') ->
+    (phi |->* phi'')
+where "phi |->* phi'" := (AnyStepTransition phi phi').
+
+Theorem test02 : (Totality (sp_bottom)) |->* (sp_not (Definedness (sp_not sp_bottom))).
+Proof.
+  eapply AST_trans.
+  - eapply OST_totality.
+  - eapply AST_refl.
+Qed.
+
+(* sp_app will simulate the function application *)
+
+
+(* Many-sorted algebra *)
+Section MSA.
+
+(* Sorts of many-sorted algebra*)
+Inductive MSASorts : Set :=
+| Nat
+| List
+| Cfg
+.
+
+(* a function which corresponds constants of AML to sorts of MSA *)
+Fixpoint AML_sort_name (s : MSASorts) : Sigma_pattern :=
+match s with
+| Nat => sp_const(sigma_c("Nat"))
+| List => sp_const(sigma_c("List"))
+| Cfg => sp_const(sigma_c("Cfg"))
+end.
+
+(* we can also define them *)
+Definition AML_Nat := AML_sort_name(Nat).
+Definition AML_List := AML_sort_name(List).
+Definition AML_Cfg := AML_sort_name(Cfg).
+
+
+Definition c_inhabitant_set := sp_const(sigma_c("inhabitant set")).
+Definition InhabitantSetOf (s : MSASorts) := (c_inhabitant_set _._ (AML_sort_name s)).
+Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
+
+(* Definition 15, MSA-signature *)
+(* Record MSA_signature := {
+  S : MSASorts;
+  Sigma : Record {
+    Indices : 
+    
+  }
+}.
+ *)
+(* f : s1 x s2 x ... x sn -> s *)
+
+(* Natural numbers *)
+End MSA.
+
+
+(* 
+ - how to formalise equivalence between expressions? -> Definition, Notation
+ - how to express n-length parameter list? ->
+ - how can be interpreted "0: -> Nat" (section 3.1)? -> true
+   - an implication without parameter? then how can we formalise it?
+   - a function which gives back 0 as an element of sort Nat on every input parameter?
+ - how to define the semantics of the other functions?
  *)
 
-(*
-  2019.11.06.:
-  Context 3 fajtaja:
-    - inductive tipuskent OK
-    - az amit Daviddal most elkezdtunk () -
-    - a context egy fuggveny -
-  Folyamatosan jegyzeteljunk!
-*)
-(*
-  2019.11.13.:
-  - the best choice: context as a separate inductive type
-        reason: it is much simple to reason about an inductively defined structure, than to reason about a function of which we know nothing
-  - discuss about Gamma |- Phi  (soundness theorem)
-    - include it between proof rules
-*)
+(* Inductive Nat : Type :=
+  | O    : Nat
+  | succ : Nat -> Nat
+  | plus : Nat x Nat -> Nat
+  | mult : Nat x Nat -> Nat
+. *)
 
 End AML.
