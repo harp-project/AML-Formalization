@@ -308,128 +308,10 @@ box, context : define inductively
 *)
 
 End AML.
-(* 
-Section Model.
-
-Require Import Lists.ListSet.
-Require Import List.
-
-Definition set_subset {A : Set} (X Y : set A) := forall a : A, set_In a X -> set_In a Y.
-
-Variable A : Set.
-Hypothesis A_eq_dec : forall (a b : A), {a = b} + {a <> b}.
-
-Record element (a : set A) := mk_element{
-  val_elem : A;
-  th_elem  : set_In val_elem a
-}.
-(* 
-Definition th_elem_eq_dec : forall {S : set A} {v : A} (x y : set_In v S), {x = y} + {x <> y}.
-Proof.
-  intros.  *)
-
-Definition element_eq_dec : forall {S : set A} (x y : element S), {x = y} + {x <> y}. Admitted.
-
-Definition subset (a : set A) : Type := set (element a).
-
-Definition set_A_eq_dec : forall (x y : set A), {x = y} + {x <> y}.
-Proof.
-  decide equality.
-Defined.
-
-Lemma subset_of_self (a : set A) : (set_subset a a).
-Proof. unfold set_subset. trivial. Qed.
-
-Lemma element_of_subset_is_element (a b : set A) (e : A) : set_In e a -> set_subset a b -> set_In e b.
-Proof. intros. exact (H0 e H). Qed.
-
-Definition ss_to_set {a : set A} (b : subset a) : set A := set_map A_eq_dec (val_elem a) b.
-
-(* Fixpoint set_to_ss (a b : set A) (ssp : set_subset a b) {struct a} : (subset b) :=
-match a with
-  | nil => nil
-  | cons x xs => set_add element_eq_dec (mk_element b x (ssp _ _)) (set_to_ss xs b _)
-end. *)
-
-Theorem nil_is_subset (a : set A) : set_subset nil a.
-Proof.
-  unfold set_subset.
-  intros.
-  inversion H.
-Qed.
-
-Record Sigma_model := {
-  M : set A;
-  app : element M -> element M -> subset M;
-  interpretation : Sigma -> subset M;
-}.
-
-Fixpoint pointwise_app_r {sm : Sigma_model} (a : element (M sm)) (B : subset (M sm)) : subset (M sm) := 
-match B with
-  | nil => nil
-  | cons x xs => set_union element_eq_dec ((app sm) a x) (pointwise_app_r a xs)
-end.
-
-Fixpoint pointwise_app {sm : Sigma_model} (A B : subset (M sm)) : subset (M sm) :=
-match A with
-  | nil => nil
-  | cons x xs => set_union element_eq_dec (pointwise_app_r x B) (pointwise_app xs B)
-end.
-
-SearchPattern (_ -> set_In _ _).
-
-Fixpoint self_subset (a : set A) : subset a. Admitted. (* 
-set_map element_eq_dec (fun x : A => mk_element a x _) a. *)
-(* match a with?
-  | nil => nil
-  | cons x xs => set_add element_eq_dec
-                         (mk_element a x (set_add_intro2 A_eq_dec xs (eq_refl x)))
-                         (*set_map extend container with x*)_
-end. *)
-
-Fixpoint complementer {a : set A} (b : subset a) : subset a :=
-match b with
-  | nil => self_subset a
-  | cons x xs => set_remove element_eq_dec x (complementer xs)
-end.
-
-Fixpoint iterative_fixpoint {A : Set} (min : A) (f : A -> A) (n : nat) : A :=
-match n with
-  | 0 => min
-  | S n' => f (iterative_fixpoint min f n')
-end.
-
-Fixpoint ext_valuation {sm : Sigma_model}
-  (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
-  : subset (M sm) :=
-match sp with
-  | sp_var x => cons (pe x) nil
-  | sp_set X => pv X
-  | sp_const sigma => interpretation sm sigma
-  | sp_app phi1 phi2 =>
-    pointwise_app (ext_valuation pe pv phi1)
-                  (ext_valuation pe pv phi2)
-  | sp_bottom => nil
-  | sp_impl phi1 phi2 => set_union element_eq_dec
-         (complementer (ext_valuation pe pv phi1))
-         (ext_valuation pe pv phi2)
-  | sp_exists x phi => set_fold_right
-            (fun m u => set_union element_eq_dec
-              u
-              (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi))
-            nil
-            (self_subset (M sm))
-  | sp_mu X phi => iterative_fixpoint nil
-            (fun xi => ext_valuation pe (fun (Y : SVar) => if svar_eq_dec Y X then xi else pv Y) phi)
-            (length (M sm))
-end.
-
-End Model. *)
-
-
-Section Model.
 
 Require Import Coq.Sets.Ensembles.
+
+Section Model.
 
 Record Sigma_model := {
   M : Type;
@@ -439,53 +321,41 @@ Record Sigma_model := {
 }.
 
 Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) : Ensemble (M sm) :=
-  fun c:M sm => forall a b:M sm, l a -> r b -> (app sm) a b c.
+  fun e:M sm => exists le re:M sm, l le -> r re -> (app sm) le re e.
 
 Inductive ext_valuation {sm : Sigma_model} : (EVar -> (M sm)) -> (SVar -> Ensemble (M sm)) -> Sigma_pattern -> Ensemble (M sm) -> Prop :=
-  | ExtVal_var (x : EVar) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val pv (sp_var x) (Singleton (M sm) (evar_val x))
-  | ExtVal_set (X : SVar) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val pv (sp_set X) (pv X)
-  | ExtVal_const (s : Sigma) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val pv (sp_const s) ((interpretation sm) s)
-  | ExtVal_app (left right: Sigma_pattern)(lval rval : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val pv left lval
-   -> ext_valuation evar_val pv right rval
-   -> ext_valuation evar_val pv (sp_app left right) (pointwise_app lval rval)
-  | ExtVal_bottom (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val pv sp_bottom (Empty_set (M sm))
-  | ExtVal_exists (x : EVar) (e : (M sm)) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : ext_valuation (fun y:EVar => if evar_eq_dec x y then e else evar_val y) pv sp val (* FIXME *)
-   -> ext_valuation evar_val pv (sp_exists x sp) val
-  | ExtVal_mu (X : SVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (pv : SVar -> Ensemble (M sm))
-    : forall S : Ensemble (M sm), ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else pv Y) sp val (* FIXME *)
-   -> ext_valuation evar_val pv (sp_mu X sp) val
+  (* sp_var *)
+  | ExtVal_var (x : EVar) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : ext_valuation evar_val svar_val (sp_var x) (Singleton (M sm) (evar_val x))
+  (* sp_set *)
+  | ExtVal_set (X : SVar) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : ext_valuation evar_val svar_val (sp_set X) (svar_val X)
+  (* sp_const *)
+  | ExtVal_const (s : Sigma) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : ext_valuation evar_val svar_val (sp_const s) ((interpretation sm) s)
+  (* sp_app *)
+  | ExtVal_app (left right: Sigma_pattern)(lval rval : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : ext_valuation evar_val svar_val left lval
+   -> ext_valuation evar_val svar_val right rval
+   -> ext_valuation evar_val svar_val (sp_app left right) (pointwise_app lval rval)
+  (* sp_bottom *)
+  | ExtVal_bottom (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : ext_valuation evar_val svar_val sp_bottom (Empty_set (M sm)) (* checks /\ *)
+  (* sp_exists *) (* Non strictly positive occurrence of "ext_valuation" *)
+  | ExtVal_exists (x : EVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : Same_set (M sm) val
+    (fun e:M sm =>
+      exists val': Ensemble (M sm),
+      exists e':M sm,
+      (val' e /\ ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp val'))
+   -> ext_valuation evar_val svar_val (sp_exists x sp) val
+  (* sp_mu *) (* Non strictly positive occurrence of "ext_valuation" *)
+  | ExtVal_mu (X : SVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
+    : Same_set (M sm) val
+    (fun e: M sm =>
+      forall val' S : Ensemble (M sm),
+      (val' e /\ ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp val'))
+   -> ext_valuation evar_val svar_val (sp_mu X sp) val
 .
-
-(* 
-Fixpoint ext_valuation {sm : Sigma_model}
-  (pe : EVar -> element (M sm)) (pv : SVar -> subset (M sm)) (sp : Sigma_pattern) {struct sp}
-  : subset (M sm) :=
-match sp with
-  | sp_var x => cons (pe x) nil
-  | sp_set X => pv X
-  | sp_const sigma => interpretation sm sigma
-  | sp_app phi1 phi2 =>
-    pointwise_app (ext_valuation pe pv phi1)
-                  (ext_valuation pe pv phi2)
-  | sp_bottom => nil
-  | sp_impl phi1 phi2 => set_union element_eq_dec
-         (complementer (ext_valuation pe pv phi1))
-         (ext_valuation pe pv phi2)
-  | sp_exists x phi => set_fold_right
-            (fun m u => set_union element_eq_dec
-              u
-              (ext_valuation (fun (y : EVar) => if evar_eq_dec y x then m else pe y) pv phi))
-            nil
-            (self_subset (M sm))
-  | sp_mu X phi => iterative_fixpoint nil
-            (fun xi => ext_valuation pe (fun (Y : SVar) => if svar_eq_dec Y X then xi else pv Y) phi)
-            (length (M sm))
-end. *)
 
 End Model.
