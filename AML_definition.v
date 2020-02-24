@@ -1,4 +1,5 @@
 Require Import String.
+Require Import Coq.Lists.ListSet.
 
 Section AML.
 
@@ -124,19 +125,11 @@ Fixpoint e_subst_set (phi : Sigma_pattern) (psi : Sigma_pattern) (X : SVar) :=
       else sp_mu X' (e_subst_set phi' psi X)
 end.
 
-Definition var (name : string) : Sigma_pattern :=
-  sp_var (evar_c name).
-
-Definition set (name : string) : Sigma_pattern :=
-  sp_set (svar_c name).
-
 Definition evar_eq (x y : EVar) : bool :=
   match x, y with
   | evar_c id_x, evar_c id_y => eqb id_x id_y
   end
 .
-
-Require Import Coq.Lists.ListSet.
 
 Fixpoint free_vars (phi : Sigma_pattern) : (set EVar) :=
   match phi with
@@ -343,11 +336,12 @@ match sp with
     (fun e:M sm =>
       exists e':M sm,
       ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp e)
-  (* sp_mu *)
+  (* sp_mu *) (* Intersection of S where f(S) is subset of S *)
   | sp_mu X sp =>
     (fun e: M sm =>
       forall S : Ensemble (M sm),
-      ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp e)
+      let S' := ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp in
+      Included (M sm) S' S -> S' e)
 end
 .
 
