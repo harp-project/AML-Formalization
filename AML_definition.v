@@ -323,39 +323,32 @@ Record Sigma_model := {
 Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) : Ensemble (M sm) :=
   fun e:M sm => exists le re:M sm, l le -> r re -> (app sm) le re e.
 
-Inductive ext_valuation {sm : Sigma_model} : (EVar -> (M sm)) -> (SVar -> Ensemble (M sm)) -> Sigma_pattern -> Ensemble (M sm) -> Prop :=
+Fixpoint ext_valuation {sm : Sigma_model} (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
+match sp with
   (* sp_var *)
-  | ExtVal_var (x : EVar) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val svar_val (sp_var x) (Singleton (M sm) (evar_val x))
+  | sp_var x => Singleton (M sm) (evar_val x)
   (* sp_set *)
-  | ExtVal_set (X : SVar) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val svar_val (sp_set X) (svar_val X)
+  | sp_set X => svar_val X
   (* sp_const *)
-  | ExtVal_const (s : Sigma) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val svar_val (sp_const s) ((interpretation sm) s)
+  | sp_const s => (interpretation sm) s
   (* sp_app *)
-  | ExtVal_app (left right: Sigma_pattern)(lval rval : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val svar_val left lval
-   -> ext_valuation evar_val svar_val right rval
-   -> ext_valuation evar_val svar_val (sp_app left right) (pointwise_app lval rval)
+  | sp_app ls rs =>
+    pointwise_app (ext_valuation evar_val svar_val ls) (ext_valuation evar_val svar_val rs)
   (* sp_bottom *)
-  | ExtVal_bottom (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : ext_valuation evar_val svar_val sp_bottom (Empty_set (M sm)) (* checks /\ *)
-  (* sp_exists *) (* Non strictly positive occurrence of "ext_valuation" *)
-  | ExtVal_exists (x : EVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : Same_set (M sm) val
+  | sp_bottom => Empty_set (M sm) (* checks /\ *)
+  (* sp_impl *)
+  | sp_impl ls rs => Union (M sm) (Complement (M sm) (ext_valuation evar_val svar_val ls)) (ext_valuation evar_val svar_val rs)
+  (* sp_exists *)
+  | sp_exists x sp =>
     (fun e:M sm =>
-      exists val': Ensemble (M sm),
       exists e':M sm,
-      (val' e /\ ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp val'))
-   -> ext_valuation evar_val svar_val (sp_exists x sp) val
-  (* sp_mu *) (* Non strictly positive occurrence of "ext_valuation" *)
-  | ExtVal_mu (X : SVar) (sp : Sigma_pattern) (val : Ensemble (M sm)) (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm))
-    : Same_set (M sm) val
+      ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp e)
+  (* sp_mu *)
+  | sp_mu X sp =>
     (fun e: M sm =>
-      forall val' S : Ensemble (M sm),
-      (val' e /\ ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp val'))
-   -> ext_valuation evar_val svar_val (sp_mu X sp) val
+      forall S : Ensemble (M sm),
+      ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp e)
+end
 .
 
 End Model.
