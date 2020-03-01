@@ -1,4 +1,5 @@
 Require Import String.
+Require Import Coq.Lists.ListSet.
 
 Section AML.
 
@@ -75,15 +76,6 @@ Proof.
   - exact (svar_eq_dec X X0).
 Defined.
 
-Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
-Definition sp_or  (phi1 phi2 : Sigma_pattern) := sp_impl (sp_not phi1) phi2.
-Definition sp_and (phi1 phi2 : Sigma_pattern) :=
-  sp_not (sp_or (sp_not phi1) (sp_not phi2)).
-Definition sp_tatu := sp_not sp_bottom.
-Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
-  sp_not (sp_exists x (sp_not phi)).
-(*nuX.phi*)
-
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
   match phi with
   | sp_var x' =>
@@ -124,19 +116,21 @@ Fixpoint e_subst_set (phi : Sigma_pattern) (psi : Sigma_pattern) (X : SVar) :=
       else sp_mu X' (e_subst_set phi' psi X)
 end.
 
-Definition var (name : string) : Sigma_pattern :=
-  sp_var (evar_c name).
-
-Definition set (name : string) : Sigma_pattern :=
-  sp_set (svar_c name).
+Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
+Definition sp_or  (phi1 phi2 : Sigma_pattern) := sp_impl (sp_not phi1) phi2.
+Definition sp_and (phi1 phi2 : Sigma_pattern) :=
+  sp_not (sp_or (sp_not phi1) (sp_not phi2)).
+Definition sp_top := sp_not sp_bottom.
+Definition sp_only_if (phi1 phi2 : Sigma_pattern) := sp_and (sp_impl phi1 phi2) (sp_impl phi2 phi1).
+Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
+  sp_not (sp_exists x (sp_not phi)).
+Definition sp_nu (X : SVar) (phi : Sigma_pattern) := sp_not (sp_mu X (sp_not (e_subst_set phi (sp_not (sp_set X)) X))).
 
 Definition evar_eq (x y : EVar) : bool :=
   match x, y with
   | evar_c id_x, evar_c id_y => eqb id_x id_y
   end
 .
-
-Require Import Coq.Lists.ListSet.
 
 Fixpoint free_vars (phi : Sigma_pattern) : (set EVar) :=
   match phi with
@@ -183,6 +177,7 @@ Fixpoint subst_ctx (cc : context) (sp : Sigma_pattern) : Sigma_pattern :=
   end
 .
 
+(* FIXME Create Test File *)
 Definition box_context := subst_ctx box sp_bottom.
 Eval compute in box_context.
 
@@ -199,7 +194,7 @@ Definition free_vars_ctx (C : context) : (set EVar) :=
   end
 .
 (* Inductive got_tau : Sigma_pattern -> Prop :=
-  | cons (phi : Sigma_partern) : got_tau (sp_impl sp_bottom phi)
+  | cons (phi : Sigma_pattern) : got_tau (sp_impl sp_bottom phi)
 . *)
 
 Inductive got : Sigma_pattern -> Prop :=
@@ -311,6 +306,12 @@ End AML.
 
 Require Import Coq.Sets.Ensembles.
 
+Definition mu {T : Set} (f : Ensemble T -> Ensemble T) : Ensemble T :=
+ fun e : T => forall S : Ensemble T, let S' := f S in Included T S' S -> S' e.
+
+Definition nu {T : Set} (f : Ensemble T -> Ensemble T) : Ensemble T :=
+ fun e : T => exists S : Ensemble T, let S' := f S in Included T S S' -> S' e.
+
 Section Model.
 
 Record Sigma_model := {
@@ -345,9 +346,7 @@ match sp with
       ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp e)
   (* sp_mu *)
   | sp_mu X sp =>
-    (fun e: M sm =>
-      forall S : Ensemble (M sm),
-      ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp e)
+    mu (fun S : Ensemble (M sm) => ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp)
 end
 .
 
@@ -367,6 +366,44 @@ unfold Same_set. unfold Included. intros. apply conj;intros.
  * unfold In in *. eapply Union_introl. exact H.
 Qed.
 
+Lemma cc {T : Set} : forall A : Ensemble T, Same_set T (Complement T (Complement T A)) A.
+Proof.
+unfold Same_set. unfold Complement. unfold Included. unfold In. intros.
+apply conj. intros.
+SearchPattern (~ ~ _ -> _). Admitted. (* FIXME Decidable pred *)
+
+Lemma l2 {T : Set} : forall L R : Ensemble T, Same_set T (Complement T (Union T (Complement T L) (Complement T R))) (Intersection T L R).
+Proof.
+intros.
+unfold Same_set. unfold Included. unfold Complement. unfold In. apply conj;intros.
+* eapply Intersection_intro.
+  - Admitted.
+
+Lemma complement_empty_is_full {T : Set} : Same_set T (Complement T (Empty_set T)) (Full_set T).
+Proof.
+unfold Same_set. unfold Complement. unfold Included. unfold In. eapply conj.
+* intros. eapply Full_intro.
+* intros. unfold not. Admitted.
+
+Lemma Ensemble_refl {T : Set} (A : Ensemble T) : Same_set T A A.
+Proof.
+unfold Same_set. unfold Included. apply conj;intros;exact H.
+Qed.
+
+Definition Symmetric_difference {T : Set} (A B : Ensemble T) : Ensemble T :=
+  Union T (Setminus T A B) (Setminus T B A).
+
+Lemma l4 {T : Set} (A B : Ensemble T) : Same_set T (Complement T (Union T (Complement T A) B)) (Setminus T A B). Admitted.
+
+Lemma symdiff_val {T : Set} (A B : Ensemble T) : Same_set T (Intersection T (Union T (Complement T A) B) (Union T (Complement T B) A))
+  (Complement T (Symmetric_difference A B)).
+Proof. unfold Symmetric_difference.
+rewrite <- (Extensionality_Ensembles _ _ _ (l2 (Union T (Complement T A) B) (Union T (Complement T B) A))).
+rewrite (Extensionality_Ensembles _ _ _ (l4 A B)).
+rewrite (Extensionality_Ensembles _ _ _ (l4 B A)).
+eapply Ensemble_refl.
+Qed.
+
 Ltac union_empty_proof :=
 match goal with
 | |- (Same_set ?T (Union ?T ?A (Empty_set ?T)) ?A) => exact (union_empty_l A)
@@ -378,20 +415,76 @@ Proof.
 simpl. intros. union_empty_proof.
 Qed.
 
-Lemma cc {T : Set} : forall A : Ensemble T, forall x : T, In T (Complement T (Complement T A)) x <-> In T A x.
-Proof.
-unfold Complement. unfold In. intros.
-SearchPattern (~ ~ _ -> _). Admitted. (* FIXME Decidable pred *)
-
-Lemma l1 {T : Set} : forall A : Ensemble T, Same_set T (Complement T (Union T (Complement T A) (Empty_set T))) A.
-Proof.
-unfold Same_set. unfold Included. intros. pose (Extensionality_Ensembles _ _ _ (union_empty_l (Complement T A))). apply conj;intros.
-* rewrite e in H. eapply cc. exact H.
-* rewrite e. eapply cc. exact H.
-Qed.
-
 Lemma or_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall spl spr : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_or spl spr)) (Union (M sm) (ext_valuation evar_val svar_val spl) (ext_valuation evar_val svar_val spr)).
 Proof.
 simpl. intros.
-pose (Extensionality_Ensembles _ _ _ (l1 (ext_valuation evar_val svar_val spl))). rewrite e. unfold Same_set. unfold Included. apply conj;intros;exact H.
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement _ (ext_valuation evar_val svar_val spl)))).
+rewrite (Extensionality_Ensembles _ _ _ (cc (ext_valuation evar_val svar_val spl))).
+eapply Ensemble_refl.
 Qed.
+
+Lemma and_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall spl spr : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_and spl spr)) (Intersection (M sm) (ext_valuation evar_val svar_val spl) (ext_valuation evar_val svar_val spr)).
+Proof.
+intros. simpl.
+generalize dependent (ext_valuation evar_val svar_val spl).
+generalize dependent (ext_valuation evar_val svar_val spr).
+intros.
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) e0))).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) e))).
+rewrite (Extensionality_Ensembles _ _ _ (cc e0)).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l e0)).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) (Union (M sm) (Complement (M sm) e0) (Complement (M sm) e))))).
+eapply l2.
+Qed.
+
+Lemma top_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : Same_set (M sm) (ext_valuation evar_val svar_val (sp_top)) (Full_set (M sm)).
+Proof.
+simpl.
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) (Empty_set (M sm))))).
+eapply complement_empty_is_full.
+Qed.
+
+Lemma only_if_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall spl spr : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_only_if spl spr)) (Complement (M sm) (Symmetric_difference (ext_valuation evar_val svar_val spl) (ext_valuation evar_val svar_val spr))).
+Proof.
+simpl. intros.
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) (Union (M sm) (Complement (M sm) (ext_valuation evar_val svar_val spr)) (ext_valuation evar_val svar_val spl))))).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l
+                       (Complement (M sm)
+                          (Union (M sm) (Complement (M sm) (ext_valuation evar_val svar_val spl))
+                             (ext_valuation evar_val svar_val spr))))).
+rewrite (Extensionality_Ensembles _ _ _ (cc
+                         (Union (M sm)
+                          (Complement (M sm) (ext_valuation evar_val svar_val spl))
+                          (ext_valuation evar_val svar_val spr)))).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l
+                       (Union (M sm)
+                          (Complement (M sm) (ext_valuation evar_val svar_val spl))
+                          (ext_valuation evar_val svar_val spr)))).
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm)
+        (Union (M sm)
+           (Complement (M sm)
+              (Union (M sm) (Complement (M sm) (ext_valuation evar_val svar_val spl)) (ext_valuation evar_val svar_val spr)))
+           (Complement (M sm)
+              (Union (M sm) (Complement (M sm) (ext_valuation evar_val svar_val spr)) (ext_valuation evar_val svar_val spl))))))).
+generalize dependent (ext_valuation evar_val svar_val spl).
+generalize dependent (ext_valuation evar_val svar_val spr).
+intros.
+rewrite (Extensionality_Ensembles _ _ _ (l2 (Union (M sm) (Complement (M sm) e0) e) (Union (M sm) (Complement (M sm) e) e0))).
+eapply symdiff_val.
+Qed.
+
+Lemma forall_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall sp : Sigma_pattern, forall x : EVar, Same_set (M sm) (ext_valuation evar_val svar_val (sp_forall x sp)) (fun e: M sm => (forall a:M sm, ext_valuation (fun y:EVar => if evar_eq_dec x y then a else evar_val y) svar_val sp e)).
+Proof.
+simpl.
+intros.
+rewrite (Extensionality_Ensembles _ _ _ (union_empty_l (Complement (M sm) (fun e : M sm =>
+         exists e' : M sm,
+           Union (M sm) (Complement (M sm) (ext_valuation (fun y : EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp))
+             (Empty_set (M sm)) e)))).
+unfold Complement. simpl. unfold In. eapply conj;unfold Included;unfold In;intros.
+* simpl.
+Admitted. (* TODO Complement exists -> forall *)
+
+Lemma nu_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall sp : Sigma_pattern, forall X : SVar, Same_set (M sm) (ext_valuation evar_val svar_val (sp_nu X sp)) (nu (fun S : Ensemble (M sm) => ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp)).
+Proof. Admintted.
+
