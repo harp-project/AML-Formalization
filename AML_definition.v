@@ -1,5 +1,4 @@
 Require Import String.
-Require Import Coq.Lists.ListSet.
 
 Section AML.
 
@@ -125,11 +124,19 @@ Fixpoint e_subst_set (phi : Sigma_pattern) (psi : Sigma_pattern) (X : SVar) :=
       else sp_mu X' (e_subst_set phi' psi X)
 end.
 
+Definition var (name : string) : Sigma_pattern :=
+  sp_var (evar_c name).
+
+Definition set (name : string) : Sigma_pattern :=
+  sp_set (svar_c name).
+
 Definition evar_eq (x y : EVar) : bool :=
   match x, y with
   | evar_c id_x, evar_c id_y => eqb id_x id_y
   end
 .
+
+Require Import Coq.Lists.ListSet.
 
 Fixpoint free_vars (phi : Sigma_pattern) : (set EVar) :=
   match phi with
@@ -336,28 +343,27 @@ match sp with
     (fun e:M sm =>
       exists e':M sm,
       ext_valuation (fun y:EVar => if evar_eq_dec x y then e' else evar_val y) svar_val sp e)
-  (* sp_mu *) (* Intersection of S where f(S) is subset of S *)
+  (* sp_mu *)
   | sp_mu X sp =>
     (fun e: M sm =>
       forall S : Ensemble (M sm),
-      let S' := ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp in
-      Included (M sm) S' S -> S' e)
+      ext_valuation evar_val (fun Y:SVar => if svar_eq_dec X Y then S else svar_val Y) sp e)
 end
 .
 
 End Model.
 
-Lemma union_empty_r {T : Set} : forall A : Ensemble T, Same_set T (Union T (Empty_set T) A) A. unfold Same_set. unfold Included. intros. apply conj;intros.
- * inversion H.
-   - inversion H0.
-   - exact H0.
+Lemma union_empty_r {T : Set} : forall A : Ensemble T, Same_set T (Union T (Empty_set T) A) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+ * inversion H. inversion H0. exact H0.
  * unfold In in *. eapply Union_intror. exact H.
 Qed.
 
-Lemma union_empty_l {T : Set} : forall A : Ensemble T, Same_set T (Union T A (Empty_set T)) A. unfold Same_set. unfold Included. intros. apply conj;intros.
- * inversion H.
-   - exact H0.
-   - inversion H0.
+Lemma union_empty_l {T : Set} : forall A : Ensemble T, Same_set T (Union T A (Empty_set T)) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+ * inversion H. exact H0. inversion H0.
  * unfold In in *. eapply Union_introl. exact H.
 Qed.
 
@@ -368,6 +374,24 @@ match goal with
 end.
 
 Lemma not_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall sp : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_not sp)) (Complement (M sm) (ext_valuation evar_val svar_val sp)).
+Proof.
+simpl. intros. union_empty_proof.
+Qed.
+
+Lemma cc {T : Set} : forall A : Ensemble T, forall x : T, In T (Complement T (Complement T A)) x <-> In T A x.
+Proof.
+unfold Complement. unfold In. intros.
+SearchPattern (~ ~ _ -> _). Admitted. (* FIXME Decidable pred *)
+
+Lemma l1 {T : Set} : forall A : Ensemble T, Same_set T (Complement T (Union T (Complement T A) (Empty_set T))) A.
+Proof.
+unfold Same_set. unfold Included. intros. pose (Extensionality_Ensembles _ _ _ (union_empty_l (Complement T A))). apply conj;intros.
+* rewrite e in H. eapply cc. exact H.
+* rewrite e. eapply cc. exact H.
+Qed.
+
+Lemma or_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall spl spr : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_or spl spr)) (Union (M sm) (ext_valuation evar_val svar_val spl) (ext_valuation evar_val svar_val spr)).
+Proof.
 simpl. intros.
-induction sp;simpl;union_empty_proof.
+pose (Extensionality_Ensembles _ _ _ (l1 (ext_valuation evar_val svar_val spl))). rewrite e. unfold Same_set. unfold Included. apply conj;intros;exact H.
 Qed.
