@@ -307,7 +307,7 @@ Require Import Coq.Sets.Ensembles.
 Section Model.
 
 Record Sigma_model := {
-  M : Type;
+  M : Set;
   A_eq_dec : forall (a b : M), {a = b} + {a <> b};
   app : M -> M -> Ensemble M;
   interpretation : Sigma -> Ensemble M;
@@ -316,7 +316,7 @@ Record Sigma_model := {
 Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) : Ensemble (M sm) :=
   fun e:M sm => exists le re:M sm, l le -> r re -> (app sm) le re e.
 
-Fixpoint ext_valuation {sm : Sigma_model} (evar_val : EVar -> (M sm)) (svar_val : SVar -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
+Fixpoint ext_valuation {sm : Sigma_model} (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
 match sp with
   (* sp_var *)
   | sp_var x => Singleton (M sm) (evar_val x)
@@ -346,3 +346,28 @@ end
 .
 
 End Model.
+
+Lemma union_empty_r {T : Set} : forall A : Ensemble T, Same_set T (Union T (Empty_set T) A) A. unfold Same_set. unfold Included. intros. apply conj;intros.
+ * inversion H.
+   - inversion H0.
+   - exact H0.
+ * unfold In in *. eapply Union_intror. exact H.
+Qed.
+
+Lemma union_empty_l {T : Set} : forall A : Ensemble T, Same_set T (Union T A (Empty_set T)) A. unfold Same_set. unfold Included. intros. apply conj;intros.
+ * inversion H.
+   - exact H0.
+   - inversion H0.
+ * unfold In in *. eapply Union_introl. exact H.
+Qed.
+
+Ltac union_empty_proof :=
+match goal with
+| |- (Same_set ?T (Union ?T ?A (Empty_set ?T)) ?A) => exact (union_empty_l A)
+| |- (Same_set ?T (Union ?T (Empty_set ?T) ?A) ?A) => exact (union_empty_r A)
+end.
+
+Lemma not_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble (M sm)} : forall sp : Sigma_pattern, Same_set (M sm) (ext_valuation evar_val svar_val (sp_not sp)) (Complement (M sm) (ext_valuation evar_val svar_val sp)).
+simpl. intros.
+induction sp;simpl;union_empty_proof.
+Qed.
