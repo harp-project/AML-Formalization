@@ -1,4 +1,5 @@
 Require Import String.
+Require Import Coq.Init.Datatypes.
 
 Section AML.
 
@@ -401,14 +402,14 @@ Qed.
 Section MSA.
 
 (* Sorts of many-sorted algebra*)
-Inductive MSASorts : Set :=
+Inductive MSA_sorts : Set :=
 | Nat
 | List
 | Cfg
 .
 
 (* a function which corresponds constants of AML to sorts of MSA *)
-Fixpoint AML_sort_name (s : MSASorts) : Sigma_pattern :=
+Fixpoint AML_sort_name (s : MSA_sorts) : Sigma_pattern :=
 match s with
 | Nat => sp_const(sigma_c("Nat"))
 | List => sp_const(sigma_c("List"))
@@ -422,25 +423,32 @@ Definition AML_Cfg := AML_sort_name(Cfg).
 
 
 Definition c_inhabitant_set := sp_const(sigma_c("inhabitant set")).
-Definition InhabitantSetOf (s : MSASorts) := (c_inhabitant_set _._ (AML_sort_name s)).
+Definition InhabitantSetOf (s : MSA_sorts) := (c_inhabitant_set _._ (AML_sort_name s)).
 Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 
+(* Notation "< p1 , p2 , .. , pn >" := (sp_and .. (sp_and p1 p2) .. pn) : core_scope. *)
+
+
 (* Definition 15, MSA-signature *)
-(* Record MSA_signature := {
-  S : MSASorts;
-  Sigma : Record {
-    Indices : 
-    
-  }
-}.
+(* Definition S := (set MSA_sorts).
  *)
+(* Definition c := ((set_add Nat nil), (set_add Nat nil), .. , (set_add Nat nil)) : (S, S, .. , S). *)
+(* Notation "( x * y * .. * z )" := (prod .. (prod x y) .. z) (at level 0). *)
+
+(* Definition a := sp_and .. (sp_and sp_bottom sp_bottom) .. . *)
+
+(* Notation "'MSA_signature' x" := (pair x ( prod .. (prod x x) .. x )) (at level 10). *)
+
 (* f : s1 x s2 x ... x sn -> s *)
+
+Definition MSA_pair (M : set MSA_sorts) (Sigma : set (set Sigma_pattern)) := (M, Sigma).
+
 
 (* Natural numbers *)
 End MSA.
 
 
-(* 
+(*
  - how to formalise equivalence between expressions? -> Definition, Notation
  - how to express n-length parameter list? ->
  - how can be interpreted "0: -> Nat" (section 3.1)? -> true
