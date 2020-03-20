@@ -4,6 +4,7 @@ Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Vectors.VectorDef.
 
+
 Section AML.
 
 Inductive EVar : Set := evar_c (id : string).
@@ -459,7 +460,7 @@ Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 
 (* TODO: for all below
     - restrict n > 0
-    - rewrite to vector
+    - rewrite to vector OK
 *)
 Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
 match n with
@@ -565,78 +566,78 @@ end.
 Fixpoint assoc_params (f : Sigma) {n : nat} (vars : VectorDef.t EVar n) : Sigma_pattern :=
   _assoc_params f n (to_list (vars)).
 
-Definition fun_f_c := sigma_c("fun").
-Definition fun_f   := sp_const(fun_f_c).
-Lemma zero_eq_par : (_assoc_params fun_f_c 0 (List.nil)) = fun_f.
+Definition c_fun_f := sigma_c("fun").
+Definition fun_f   := sp_const(c_fun_f).
+Lemma zero_eq_par : (_assoc_params c_fun_f 0 (List.nil)) = fun_f.
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
 Lemma x1_eq_par :
-  (_assoc_params fun_f_c 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1).
+  (_assoc_params c_fun_f 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1).
 Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
 
 Lemma x1_x2_eq_par :
-  (_assoc_params fun_f_c 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
+  (_assoc_params c_fun_f 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
 = (fun_f _._ x1 _._ x2).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
 
 Lemma x1_x2_x3_eq_par :
-  (_assoc_params fun_f_c 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
+  (_assoc_params c_fun_f 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
 = (fun_f _._ x1 _._ x2 _._ x3).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
 
 Lemma x1_x2_x3__x4_eq_par :
-  (_assoc_params fun_f_c 4
+  (_assoc_params c_fun_f 4
     ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil)))))
 = (fun_f _._ x1 _._ x2 _._ x3 _._ x4).
 Proof. simpl. reflexivity. Qed.
 
 
-(* Reserved Notation "sp 'states'" (at level 1). *)
-(* Inductive Statement : Sigma_pattern -> Prop :=
-| S_pat {s : Sigma_pattern} : s states
-where "sp 'states'" := (Statement sp). *)
+Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 
-(* TODO: rewrite (vars, sorts) to map *)
-Inductive states : Sigma_pattern -> Prop :=
-| Nonempty_Sort : forall s : MSA_sorts, states ([[ s ]] !=~ sp_bottom)
 (* if constant function, then sp_bottom will stand on the application's left hand-side, because false implies everything *)
-| Function (f : Sigma) {n : nat} (ss : VectorDef.t MSA_sorts n) (s : MSA_sorts) (xs : VectorDef.t EVar n)  (y : EVar)  :
-    states (sp_impl
-        (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
-        (sp_exists y (sp_and
-            (y -< [[ s ]])
-            ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
+Definition Function (f : Sigma) {n : nat}
+            (ss : t MSA_sorts n) (s : MSA_sorts)
+            (xs : t EVar n) (y : EVar) :=
+  (sp_impl
+    (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
+    (sp_exists y (sp_and
+      (y -< [[ s ]])
+      ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
 
-Inductive sort_states : MSA_sorts -> Prop :=
-| Sort : forall s : MSA_sorts, sort_states s.
-
-(* TODO: introduce functional notation *)
-
-(* This will be possible only when vector will be used, because of length coercion *)
-(* (* f : s1 x s2 x ... x sn -> s *)
-Notation "f : s1 x s2 x ... x sn -> s" := Function ... . *)
+Definition Sort (s : MSA_sorts) := s.
 
 End MSA.
+
+
+Definition vc := VectorDef.cons.
+Definition vn := VectorDef.nil.
+
+(* Functional notation of the function *)
+Notation "f '::' '-->' s" := (Function f (vn _) s) (at level 0).
+
+(* f : s1 x s2 x ... x sn -> s *)
+Notation "f '::' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
+  (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 0).
+
+Check (c_fun_f :: Nat X Nat --> Nat).
+
 
 (* Natural numbers *)
 Section NaturalNumbers.
 
-Definition zero := (Function (sigma_c("zero")) (VectorDef.nil _) Nat).
+Definition c_zero := (sigma_c("zero")).
+Definition zero := c_zero :: --> Nat. (* (Function zero_c (VectorDef.nil _) Nat). *)
 
-Definition succ := 
-  (Function (sigma_c("succ")) 
-    (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts)) 
-    Nat).
+Definition c_succ := (sigma_c("succ")).
+Definition succ := (c_succ :: Nat X Nat --> Nat). (* (Function succ_c (vc _ Nat 0 (vn _)) Nat). *)
 
-Definition plus := 
-  (Function (sigma_c("plus")) 
-    (VectorDef.cons MSA_sorts Nat 1 (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts))) 
-    Nat).
+Definition c_plus := (sigma_c("plus")).
+Definition plus := (c_plus :: Nat X Nat --> Nat).
+(* (Function (sigma_c("plus")) (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
 
-Definition mult := 
-  (Function (sigma_c("mult")) 
-    (VectorDef.cons MSA_sorts Nat 1 (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts)))
-    Nat).
+Definition c_mult := sigma_c("mult").
+Definition mult := (c_mult :: Nat X Nat --> Nat).
+(* (Function c_mult (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
 
 (* TODO: generalize all definitions to Sigma_pattern, and restrict these to EVar and function (e.g. 0) *)
 
@@ -644,31 +645,25 @@ Definition mult :=
 Definition x := (evar_c("x")).
 Definition y := (evar_c("y")).
 Definition const_0 := (evar_c("0")).
-Definition x_plus_0_eq_x := sp_forall x (
-  sp_impl
-    (x -< InhabitantSetOf(Nat) )
-    ((plus x const_0 y) ~=~ (sp_var x))
-).
+
+Definition x_plus_0_eq_x := 
+  (sp_forall x (sp_impl (x -< InhabitantSetOf(Nat))
+                        (plus (vc _ x 1 (vc _ (zero (vn _) y) 0 (vn _))) x) )).
+
+Check x_plus_0_eq_x.
 
 (* TODO: introduce the notation of ':' *)
 
 (* Inductive Domain *)
-Axiom Inductive_Domain := ([[ Nat ]]) ~=~ (
-                  sp_mu 
+(* Axiom Inductive_Domain := 
+  ([[ Nat ]]) ~=~ (sp_mu 
                     (svar_c("D")) 
                     (sp_or
                       (zero (evar_c("anything")))
                       (* potential error! *)
-                      (succ (svar_c("D")) (evar_c("anything")))
-                    )
-                ).
+                      (succ (svar_c("D")) (evar_c("anything"))))).
 
-Axiom Peano_Induction :=
-  (
-    sp_impl
-      ()
-      ()
-  ).
+Axiom Peano_Induction := (sp_impl () ()). *)
 
 End NaturalNumbers.
 
