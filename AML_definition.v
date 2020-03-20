@@ -461,12 +461,22 @@ Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
     - restrict n > 0
     - rewrite to vector
 *)
-Fixpoint and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
+Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
 match n with
 | O => sp_bottom
 | S O => (List.hd sp_bottom vec)
-| S n' => ((List.hd sp_bottom vec) _&_ (and_gen n' (List.tl vec)))
+| S n' => ((List.hd sp_bottom vec) _&_ (_and_gen n' (List.tl vec)))
 end.
+
+(* Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
+match n with
+| O => sp_bottom
+| S O => VectorDef.hd vec
+| S n => sp_bottom
+end. *)
+
+Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
+  _and_gen n (to_list vec).
 
 (* Fixpoint and_gen (n : nat) (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
 match n - 1 with
@@ -474,51 +484,54 @@ match n - 1 with
 | S n' => ((List.hd sp_bottom (VectorDef.to_list vec)) _&_ (and_gen n' (VectorDef.of_list (List.tl (VectorDef.to_list vec)))))
 end. *)
 
-Lemma zero_eq : (and_gen 0 (List.nil)) = sp_bottom.
+Lemma zero_eq : (_and_gen 0 (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
 Definition x1 := sp_var(evar_c("x1")).
-Lemma x1_eq : (and_gen 1 ((List.cons x1) List.nil)) = x1.
+Lemma x1_eq : (_and_gen 1 ((List.cons x1) List.nil)) = x1.
 Proof. simpl. reflexivity. Qed.
 
 Definition x2 := sp_var(evar_c("x2")).
-Lemma x1_x2_eq : (and_gen 2 ((List.cons x1) (List.cons x2 List.nil))) = (x1 _&_ x2).
+Lemma x1_x2_eq : (_and_gen 2 ((List.cons x1) (List.cons x2 List.nil))) = (x1 _&_ x2).
 Proof. simpl. reflexivity. Qed.
 
 Definition x3 := sp_var(evar_c("x3")).
 Lemma x1_x2_x3_eq :
-  (and_gen 3 ((List.cons x1) ((List.cons x2) ((List.cons x3) List.nil))))
+  (_and_gen 3 ((List.cons x1) ((List.cons x2) ((List.cons x3) List.nil))))
 = (x1 _&_ x2 _&_ x3).
 Proof. simpl. reflexivity. Qed.
 
 Definition x4 := sp_var(evar_c("x4")).
 Lemma x1_x2_x3__x4_eq :
-  (and_gen 4 ((List.cons x1) (
+  (_and_gen 4 ((List.cons x1) (
     (List.cons x2) ((List.cons x3) ((List.cons x4) List.nil)))))
 = (x1 _&_ x2 _&_ x3 _&_ x4).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint assoc_elem (n : nat) (vars : list EVar) (sorts : list MSA_sorts) : Sigma_pattern :=
+Fixpoint _assoc_elem (n : nat) (vars : list EVar) (sorts : list MSA_sorts) : Sigma_pattern :=
 match n with
 | O => sp_bottom
 | S O => ((List.hd (evar_c("x")) vars) -< [[ (List.hd Nat sorts) ]])
 | S n' => sp_and
       ( (List.hd (evar_c("x")) vars) -< [[ (List.hd Nat sorts) ]] )
-      (assoc_elem n' (List.tl vars) (List.tl sorts))
+      (_assoc_elem n' (List.tl vars) (List.tl sorts))
 end.
 
-Lemma zero_eq_assoc : (assoc_elem 0 (List.nil) (List.nil)) = sp_bottom.
+Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n) : Sigma_pattern :=
+  _assoc_elem n (to_list (vars)) (to_list (sorts)).
+
+Lemma zero_eq_assoc : (_assoc_elem 0 (List.nil) (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
 Definition x1_e := evar_c("x1").
 Lemma x1_eq_assoc : 
-  (assoc_elem 1 ((List.cons x1_e) List.nil) ((List.cons Nat) List.nil))
+  (_assoc_elem 1 ((List.cons x1_e) List.nil) ((List.cons Nat) List.nil))
 = (x1_e -< [[ Nat ]]).
 Proof. simpl. reflexivity. Qed.
 
 Definition x2_e := evar_c("x2").
 Lemma x1_x2_eq_assoc : 
-  (assoc_elem 2
+  (_assoc_elem 2
     ((List.cons x1_e) (List.cons x2_e List.nil))
     ((List.cons Nat) (List.cons List List.nil)))
 = ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]])).
@@ -526,7 +539,7 @@ Proof. simpl. reflexivity. Qed.
 
 Definition x3_e := evar_c("x3").
 Lemma x1_x2_x3_eq_assoc : 
-  (assoc_elem 3 
+  (_assoc_elem 3 
     ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil)))
     ((List.cons Nat) ((List.cons List) (List.cons Cfg List.nil))))
 = ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]]) _&_ (x3_e -< [[ Cfg ]])).
@@ -534,42 +547,45 @@ Proof. simpl. reflexivity. Qed.
 
 Definition x4_e := evar_c("x4").
 Lemma x1_x2_x3__x4_eq_assoc : 
-  (assoc_elem 4 
+  (_assoc_elem 4 
     ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil))))
     ((List.cons Nat) ((List.cons List) ((List.cons Cfg) (List.cons Nat List.nil)))))
 = ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]]) _&_ (x3_e -< [[ Cfg ]]) _&_ 
     (x4_e -< [[ Nat ]])).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint assoc_params (f : Sigma) (n : nat) (vars : list EVar) : Sigma_pattern :=
+Fixpoint _assoc_params (f : Sigma) (n : nat) (vars : list EVar) : Sigma_pattern :=
 match n with
 | O => sp_const f
 | S O => ((sp_const f) _._ (sp_var (List.nth O vars (evar_c("error singleton fun param list")))))
-| S n' => (assoc_params f n' vars) _._ 
+| S n' => (_assoc_params f n' vars) _._ 
             (sp_var (List.nth n' vars (evar_c("error long fun param list"))))
 end.
 
+Fixpoint assoc_params (f : Sigma) {n : nat} (vars : VectorDef.t EVar n) : Sigma_pattern :=
+  _assoc_params f n (to_list (vars)).
+
 Definition fun_f_c := sigma_c("fun").
 Definition fun_f   := sp_const(fun_f_c).
-Lemma zero_eq_par : (assoc_params fun_f_c 0 (List.nil)) = fun_f.
+Lemma zero_eq_par : (_assoc_params fun_f_c 0 (List.nil)) = fun_f.
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
 Lemma x1_eq_par :
-  (assoc_params fun_f_c 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1).
+  (_assoc_params fun_f_c 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1).
 Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
 
 Lemma x1_x2_eq_par :
-  (assoc_params fun_f_c 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
+  (_assoc_params fun_f_c 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
 = (fun_f _._ x1 _._ x2).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
 
 Lemma x1_x2_x3_eq_par :
-  (assoc_params fun_f_c 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
+  (_assoc_params fun_f_c 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
 = (fun_f _._ x1 _._ x2 _._ x3).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
 
 Lemma x1_x2_x3__x4_eq_par :
-  (assoc_params fun_f_c 4
+  (_assoc_params fun_f_c 4
     ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil)))))
 = (fun_f _._ x1 _._ x2 _._ x3 _._ x4).
 Proof. simpl. reflexivity. Qed.
@@ -580,52 +596,47 @@ Proof. simpl. reflexivity. Qed.
 | S_pat {s : Sigma_pattern} : s states
 where "sp 'states'" := (Statement sp). *)
 
+(* TODO: rewrite (vars, sorts) to map *)
 Inductive states : Sigma_pattern -> Prop :=
 | Nonempty_Sort : forall s : MSA_sorts, states ([[ s ]] !=~ sp_bottom)
-| Function (f : Sigma) (n : nat) (vars : list EVar) (sorts : list MSA_sorts) (y : EVar) (s : MSA_sorts) :
+(* if constant function, then sp_bottom will stand on the application's left hand-side, because false implies everything *)
+| Function (f : Sigma) {n : nat} (ss : VectorDef.t MSA_sorts n) (s : MSA_sorts) (xs : VectorDef.t EVar n)  (y : EVar)  :
     states (sp_impl
-        (assoc_elem n vars sorts) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
+        (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
         (sp_exists y (sp_and
             (y -< [[ s ]])
-            ((assoc_params f n vars) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *))))
-(* | Sort : forall s : MSA_sorts, In s [[ Sort ]] *).
+            ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
 
-(* Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom). *)
+Inductive sort_states : MSA_sorts -> Prop :=
+| Sort : forall s : MSA_sorts, sort_states s.
 
-(*
-  - what if there are no input variables?
-    -> sp_bottom will stand on the application's left hand-side, because false implies everything 
-*)
-(* Definition Function (n : nat) (vars : list EVar) (sorts : list MSA_sorts) (f : Sigma) (y : EVar) (s : MSA_sorts) :=
-(sp_impl
-  (assoc_elem n vars sorts) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
-  (sp_exists y (
-    sp_and
-      (y -< [[ s ]])
-      ((assoc_params f n vars) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-))). *)
-
+(* TODO: introduce functional notation *)
 
 (* This will be possible only when vector will be used, because of length coercion *)
 (* (* f : s1 x s2 x ... x sn -> s *)
 Notation "f : s1 x s2 x ... x sn -> s" := Function ... . *)
-
-(* TODO: Sort membership *)
-Definition c_sort := sp_const(sigma_c("Sort")). (* represents the sort set, containing all sorts *)
-(* Definition Sort (s : MSA_sorts) := s  c_sort. *)
 
 End MSA.
 
 (* Natural numbers *)
 Section NaturalNumbers.
 
-Definition zero (y : EVar) := (Function (sigma_c("zero")) 0 List.nil List.nil y Nat).
+Definition zero := (Function (sigma_c("zero")) (VectorDef.nil _) Nat).
 
-Definition succ (x0 y : EVar) := (Function (sigma_c("succ")) 1 (List.cons x0 List.nil) (List.cons Nat List.nil) y Nat).
+Definition succ := 
+  (Function (sigma_c("succ")) 
+    (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts)) 
+    Nat).
 
-Definition plus (x0 x1 y : EVar) := (Function (sigma_c("plus")) 2 (List.cons x0 (List.cons x1 List.nil)) (List.cons Nat (List.cons Nat List.nil)) y Nat).
+Definition plus := 
+  (Function (sigma_c("plus")) 
+    (VectorDef.cons MSA_sorts Nat 1 (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts))) 
+    Nat).
 
-Definition mult (x0 x1 y : EVar) := (Function (sigma_c("mult")) 2 (List.cons x0 (List.cons x1 List.nil)) (List.cons Nat (List.cons Nat List.nil)) y Nat).
+Definition mult := 
+  (Function (sigma_c("mult")) 
+    (VectorDef.cons MSA_sorts Nat 1 (VectorDef.cons MSA_sorts Nat 0 (VectorDef.nil MSA_sorts)))
+    Nat).
 
 (* TODO: generalize all definitions to Sigma_pattern, and restrict these to EVar and function (e.g. 0) *)
 
