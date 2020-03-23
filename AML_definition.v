@@ -324,25 +324,25 @@ Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
 
 (* Variable membership *)
 Definition c_membership := sp_const(sigma_c("membership")).
-Definition MembershipEVar (x : EVar) (phi : Sigma_pattern) := 
+Definition Membership (x : EVar) (phi : Sigma_pattern) := 
   ((c_membership _._ (sp_var x)) _._ phi).
-Notation "x --< phi" := (MembershipEVar x phi) (at level 100).
+Notation "x -< phi" := (Membership x phi) (at level 100).
 
 (* Pattern membership *)
-Definition Membership (x : Sigma_pattern) (phi : Sigma_pattern) := 
+(* Definition Membership (x : Sigma_pattern) (phi : Sigma_pattern) := 
   ((c_membership _._ x) _._ phi).
-Notation "x -< phi" := (Membership x phi) (at level 100).
+Notation "x --< phi" := (Membership x phi) (at level 100). *)
 
 (* Variable non-membership *)
 Definition c_non_membership := sp_const(sigma_c("non-membership")).
-Definition NonMembershipEVar (x : EVar) (phi : Sigma_pattern) := 
+Definition NonMembership (x : EVar) (phi : Sigma_pattern) := 
   ((c_non_membership _._ (sp_var x)) _._ phi).
-Notation "x !--< phi" := (NonMembershipEVar x phi) (at level 100).
+Notation "x !-< phi" := (NonMembership x phi) (at level 100).
 
 (* Pattern non-membership *)
-Definition NonMembership (x : Sigma_pattern) (phi : Sigma_pattern) := 
+(* Definition NonMembership (x : Sigma_pattern) (phi : Sigma_pattern) := 
   ((c_non_membership _._ x) _._ phi).
-Notation "x !-< phi" := (NonMembership x phi) (at level 100).
+Notation "x !-< phi" := (NonMembership x phi) (at level 100). *)
 
 (* Set inclusion *)
 Definition c_set_incl := sp_const(sigma_c("set inclusion")).
@@ -370,21 +370,21 @@ Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
     ((c_equality _._ l) _._ r) |->
     (sp_not (Equality l r))
 
-| OST_var_membership {x : EVar} {phi : Sigma_pattern} :
+| OST_membership {x : EVar} {phi : Sigma_pattern} :
     ((c_membership _._ (sp_var x)) _._ phi) |->
     (Totality (sp_and (sp_var x) phi))
 
-| OST_var_non_membership {x : EVar} {phi : Sigma_pattern} :
+| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
     ((c_non_membership _._ (sp_var x)) _._ phi) |->
-    (sp_not (MembershipEVar x phi))
+    (sp_not (Membership x phi))
 
-| OST_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
+(* | OST_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
     ((c_membership _._ x) _._ phi) |->
     (Totality (sp_and x phi))
 
 | OST_non_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
     ((c_non_membership _._ x) _._ phi) |->
-    (sp_not (Membership x phi))
+    (sp_not (Membership x phi)) *)
 
 | OST_set_inclusion {l r} :
     ((c_set_incl _._ l) _._ r) |->
@@ -527,80 +527,61 @@ Lemma x1_x2_x3__x4_eq :
 = (x1 _&_ x2 _&_ x3 _&_ x4).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint _assoc_elem (n : nat) (vars : list Sigma_pattern) (sorts : list MSA_sorts) : Sigma_pattern :=
+Fixpoint _assoc_elem (n : nat) (vars : list EVar) (sorts : list MSA_sorts) : Sigma_pattern :=
 match n with
 | O => sp_bottom
-| S O => ((List.hd (sp_const (sigma_c("error at elem assoc S O"))) vars) -< [[ (List.hd Nat sorts) ]])
+| S O => ((List.hd (evar_c("error at elem assoc S O")) vars) -< [[ (List.hd Nat sorts) ]])
 | S n' => sp_and
-      ( (List.hd (sp_const (sigma_c("error at elem assoc S n"))) vars) -< [[ (List.hd Nat sorts) ]] )
+      ( (List.hd (evar_c("error at elem assoc S n")) vars) -< [[ (List.hd Nat sorts) ]] )
       (_assoc_elem n' (List.tl vars) (List.tl sorts))
 end.
 
-Fixpoint assoc_elem {n : nat} (vars : VectorDef.t Sigma_pattern n) (sorts : VectorDef.t MSA_sorts n) : Sigma_pattern :=
+Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n) : Sigma_pattern :=
   _assoc_elem n (to_list (vars)) (to_list (sorts)).
 
 Lemma zero_eq_assoc : (_assoc_elem 0 (List.nil) (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x1_e := evar_c("x1").
+Definition x1_e := evar_c("x1").
 Lemma x1_eq_assoc : 
   (_assoc_elem 1 ((List.cons x1_e) List.nil) ((List.cons Nat) List.nil))
-= (x1_e -< [[ Nat ]]). *)
-Lemma x1_eq_assoc : 
-  (_assoc_elem 1 ((List.cons x1) List.nil) ((List.cons Nat) List.nil))
-= (x1 -< [[ Nat ]]).
+= (x1_e -< [[ Nat ]]).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x2_e := evar_c("x2").
+Definition x2_e := evar_c("x2").
 Lemma x1_x2_eq_assoc : 
   (_assoc_elem 2
     ((List.cons x1_e) (List.cons x2_e List.nil))
     ((List.cons Nat) (List.cons List List.nil)))
-= ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]])). *)
-Lemma x1_x2_eq_assoc : 
-  (_assoc_elem 2
-    ((List.cons x1) (List.cons x2 List.nil))
-    ((List.cons Nat) (List.cons List List.nil)))
-= ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]])).
+= ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]])).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x3_e := evar_c("x3").
+Definition x3_e := evar_c("x3").
 Lemma x1_x2_x3_eq_assoc : 
   (_assoc_elem 3 
     ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil)))
     ((List.cons Nat) ((List.cons List) (List.cons Cfg List.nil))))
-= ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]]) _&_ (x3_e -< [[ Cfg ]])). *)
-Lemma x1_x2_x3_eq_assoc : 
-  (_assoc_elem 3 
-    ((List.cons x1) ((List.cons x2) (List.cons x3 List.nil)))
-    ((List.cons Nat) ((List.cons List) (List.cons Cfg List.nil))))
-= ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]])).
+= ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]]) _&_ (x3_e -< [[ Cfg ]])).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x4_e := evar_c("x4").
+Definition x4_e := evar_c("x4").
 Lemma x1_x2_x3__x4_eq_assoc : 
   (_assoc_elem 4 
     ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil))))
     ((List.cons Nat) ((List.cons List) ((List.cons Cfg) (List.cons Nat List.nil)))))
 = ((x1_e -< [[ Nat ]]) _&_ (x2_e -< [[ List ]]) _&_ (x3_e -< [[ Cfg ]]) _&_ 
-    (x4_e -< [[ Nat ]])). *)
-Lemma x1_x2_x3__x4_eq_assoc : 
-  (_assoc_elem 4 
-    ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil))))
-    ((List.cons Nat) ((List.cons List) ((List.cons Cfg) (List.cons Nat List.nil)))))
-= ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]]) _&_ 
-    (x4 -< [[ Nat ]])).
+    (x4_e -< [[ Nat ]])).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint _assoc_params (f : Sigma_pattern) (n : nat) (vars : list Sigma_pattern) : Sigma_pattern :=
+Fixpoint _assoc_params (f : Sigma_pattern) (n : nat) (vars : list EVar) : Sigma_pattern :=
 match n with
 | O => f
-| S O => (f _._ (List.nth O vars (sp_const(sigma_c("error singleton fun param list")))))
+| S O => (f _._ (sp_var (List.nth O vars (evar_c("error singleton fun param list")))))
 | S n' => (_assoc_params f n' vars) _._ 
-            (List.nth n' vars (sp_const(sigma_c("error long fun param list"))))
+            (sp_var (List.nth n' vars (evar_c("error long fun param list"))))
 end.
 
-Fixpoint assoc_params (f : Sigma_pattern) {n : nat} (vars : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
+Fixpoint assoc_params (f : Sigma_pattern) {n : nat} (vars : VectorDef.t EVar n) : Sigma_pattern :=
   _assoc_params f n (to_list (vars)).
 
 Definition c_fun_f := sigma_c("fun").
@@ -608,35 +589,23 @@ Definition fun_f   := sp_const(c_fun_f).
 Lemma zero_eq_par : (_assoc_params fun_f 0 (List.nil)) = fun_f.
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
-(* Lemma x1_eq_par :
-  (_assoc_params fun_f 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1). *)
 Lemma x1_eq_par :
-  (_assoc_params fun_f 1 ((List.cons x1) List.nil)) = (fun_f _._ x1).
+  (_assoc_params fun_f 1 ((List.cons x1_e) List.nil)) = (fun_f _._ x1).
 Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
 
-(* Lemma x1_x2_eq_par :
-  (_assoc_params c_fun_f 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
-= (fun_f _._ x1 _._ x2). *)
 Lemma x1_x2_eq_par :
-  (_assoc_params fun_f 2 ((List.cons x1) (List.cons x2 List.nil)))
+  (_assoc_params c_fun_f 2 ((List.cons x1_e) (List.cons x2_e List.nil)))
 = (fun_f _._ x1 _._ x2).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
 
-(* Lemma x1_x2_x3_eq_par :
-  (_assoc_params fun_f 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
-= (fun_f _._ x1 _._ x2 _._ x3). *)
 Lemma x1_x2_x3_eq_par :
-  (_assoc_params fun_f 3 ((List.cons x1) ((List.cons x2) (List.cons x3 List.nil))))
+  (_assoc_params fun_f 3 ((List.cons x1_e) ((List.cons x2_e) (List.cons x3_e List.nil))))
 = (fun_f _._ x1 _._ x2 _._ x3).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
 
-(* Lemma x1_x2_x3__x4_eq_par :
-  (_assoc_params fun_f 4
-    ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil)))))
-= (fun_f _._ x1 _._ x2 _._ x3 _._ x4). *)
 Lemma x1_x2_x3__x4_eq_par :
   (_assoc_params fun_f 4
-    ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil)))))
+    ((List.cons x1_e) ((List.cons x2_e) ((List.cons x3_e) (List.cons x4_e List.nil)))))
 = (fun_f _._ x1 _._ x2 _._ x3 _._ x4).
 Proof. simpl. reflexivity. Qed.
 
@@ -647,11 +616,11 @@ Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 (* this is allowed because this is only syntax and not the deduction - we don't need the type restriction at syntax level *)
 Definition Function (f : Sigma_pattern) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
-            (xs : t Sigma_pattern n) (y : EVar) : Sigma_pattern :=
+            (xs : t EVar n) (y : EVar) : Sigma_pattern :=
   (sp_impl
     (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
     (sp_exists y (sp_and
-      ((sp_var y) -< [[ s ]])
+      (y -< [[ s ]])
       ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
 
 
@@ -701,8 +670,11 @@ Check vc _ (sp_var x) 1 (vc _ zero 0 (vn _)).
 
 Definition x_plus_0_eq_x :=
   (sp_forall x (sp_impl 
-         (x --< InhabitantSetOf(Nat))
+         (x -< InhabitantSetOf(Nat))
           plus _._ (sp_var x) _._ zero)).
+
+Definition foo := plus _._ plus _._ zero.
+Check foo.
 
 (* TODO: introduce the notation of ':' *)
 
