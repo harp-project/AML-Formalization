@@ -602,8 +602,8 @@ end.
 Fixpoint assoc_params (f : Sigma_pattern) {n : nat} (vars : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
   _assoc_params f n (to_list (vars)).
 
-Definition c_fun_f := sigma_c("fun").
-Definition fun_f   := sp_const(c_fun_f).
+Definition c'_f := sigma_c("fun").
+Definition fun_f   := sp_const(c'_f).
 Lemma zero_eq_par : (_assoc_params fun_f 0 (List.nil)) = fun_f.
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
@@ -632,15 +632,15 @@ Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 
 (* if constant function, then sp_bottom will stand on the application's left hand-side, because false implies everything *)
 (* this is allowed because this is only syntax and not the deduction - we don't need the type restriction at syntax level *)
+Definition __y := evar_c("__y"). (* we abstract away this variable. in fact it can be anything *)
 Definition Function (f : Sigma_pattern) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
-            (xs : t Sigma_pattern n) (y : EVar) : Sigma_pattern :=
+            (xs : t Sigma_pattern n) : Sigma_pattern :=
   (sp_impl
     (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
-    (sp_exists y (sp_and
-      ((sp_var y) -< [[ s ]])
-      ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
-
+    (sp_exists __y (sp_and
+      ((sp_var __y) -< [[ s ]])
+      ((assoc_params f xs) ~=~ (sp_var __y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -658,41 +658,53 @@ Notation "f '_:_' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
 
 Check (fun_f _:_ Nat X Nat --> Nat).
 
+(* Instead of notation "forall x : Nat . pattern" we introduce: *)
+Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
+  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 0).
+Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
+  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 0).
+
 
 (* Natural numbers *)
 Section NaturalNumbers.
 
 Definition zero : Sigma_pattern := sp_const(sigma_c("zero")).
-Definition zero_fun := zero _:_ --> Nat. (* (Function zero_c (VectorDef.nil _) Nat). *)
+Definition succ : Sigma_pattern := sp_const (sigma_c("succ")).
+Definition plus : Sigma_pattern := sp_const (sigma_c("plus")).
+Definition mult : Sigma_pattern := sp_const (sigma_c("mult")).
 
-Definition succ := sp_const (sigma_c("succ")).
-Definition succ_fun := (succ _:_ Nat --> Nat). (* (Function succ_c (vc _ Nat 0 (vn _)) Nat). *)
+(* Inductive Nat_elements : Type :=
+| zero (res_var : EVar) : ((c_zero _:_ --> Nat) (vn _) res_var)
+. *)
 
-Definition plus := sp_const (sigma_c("plus")).
-Definition plus_fun := (plus _:_ Nat X Nat --> Nat). (* (Function (sigma_c("plus")) (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
+Definition zero_pat := (zero _:_ --> Nat). (* (Function zero_c (VectorDef.nil _) Nat). *)
+Definition succ_pat := (succ _:_ Nat --> Nat). (* (Function succ_c (vc _ Nat 0 (vn _)) Nat). *)
+Definition plus_pat := (plus _:_ Nat X Nat --> Nat). (* (Function (sigma_c("plus")) (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
+Definition mult_pat := (mult _:_ Nat X Nat --> Nat). (* (Function c_mult (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
 
-Definition mult := sp_const (sigma_c("mult")).
-Definition mult_fun := (mult _:_ Nat X Nat --> Nat).
-(* (Function c_mult (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
+Definition zero'                       := zero_pat.
+Definition succ' (x : Sigma_pattern)   := succ_pat (vc _ x 0 (vn _)).
+Definition plus' (x y : Sigma_pattern) := plus_pat (vc _ x 1 (vc _ y 0 (vn _))).
+Definition mult' (x y : Sigma_pattern) := mult_pat (vc _ x 1 (vc _ y 0 (vn _))).
 
-(* TODO: generalize all definitions to Sigma_pattern, and restrict these to EVar and function (e.g. 0) *)
 
 (* Example: x + 0 = x *)
-Definition x := (evar_c("x")).
-Definition y := (evar_c("y")).
-Definition w := (evar_c("w")).
-Definition w' := (evar_c("w'")).
-Definition z := (evar_c("z")).
+Definition c_x := (evar_c("x")).
+Definition c_y := (evar_c("y")).
+Definition c_z := (evar_c("z")).
+Definition x := (sp_var (evar_c("x"))).
+Definition y := (sp_var (evar_c("y"))).
+Definition z := (sp_var (evar_c("z"))).
+
+(* Check (for_some c_x of_sort Nat states sp_bottom). *)
 
 Definition x_plus_0_eq_x :=
-  (sp_forall x (sp_impl 
-         ((sp_var x) -< InhabitantSetOf(Nat))
-          (plus _._ (sp_var x) _._ zero) ~=~ (sp_var x))).
+  (for_all c_x of_sort Nat states ((plus _._ x _._ zero) ~=~ x)).
 
 (* Examples *)
 
 (* we have to specify the type of function parameters, because if not, the
-also can be formalised: *)
+following statement about natural numbers also can be formalised: *)
 Definition foo := plus _._ plus _._ zero.
 
 Definition one := succ _._ zero. Check one.
@@ -706,61 +718,57 @@ Definition plus_1_plus_2_3_eq_6 := ((plus _._ one _._ (plus _._ two _._ three)) 
 Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 := ((plus _._ one _._ (plus _._ two _._ three)) ~=~ (plus _._ one _._ (plus _._ two _._ three))).
 Definition plus_1_plus_2_3_eq_1_plus_5 := ((plus _._ one _._ (plus _._ two _._ three)) ~=~ (plus _._ one _._ five)).
 Definition x_plus_2_plus_3_eq_x_plus_5 := 
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    ((plus _._ (plus _._ (sp_var x) _._ two) _._ three) ~=~
-                        (plus _._ (sp_var x) _._ five)))).
+  (for_all c_x of_sort Nat states 
+    ((plus _._ (plus _._ x _._ two) _._ three) ~=~ (plus _._ x _._ five))).
 Definition x_plus_3_eq_x_plus_3 :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (plus _._ (sp_var x) _._ three) ~=~ (plus _._ (sp_var x) _._ three))).
+  (for_all c_x of_sort Nat states
+    (plus _._ x _._ three) ~=~ (plus _._ x _._ three)).
 Definition x_plus_y_eq_x_plus_y :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (plus _._ (sp_var x) _._ (sp_var y)) ~=~ (plus _._ (sp_var x) _._ (sp_var y)))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      (plus _._ x _._ y) ~=~ (plus _._ x _._ y))).
 
-(* Definition plus_fun := plus _:_ Nat X Nat --> Nat. *)
-Definition plus_1_2 := plus_fun (vc _ one 1 (vc _ two 0 (vn _))) x.
-Definition plus_2_3 := plus_fun (vc _ two 1 (vc _ three 0 (vn _))) x.
-Definition plus_1_plus_2_3 :=  plus_fun (vc _ one 1 (vc _ plus_2_3 0 (vn _))) x.
+(* Definition plus' := plus _:_ Nat X Nat --> Nat. *)
+Definition plus_1_2 := plus' one two.
+Definition plus_2_3 := plus' two three.
+Definition plus_1_plus_2_3 :=  plus' one plus_2_3.
 Definition plus_1_plus_2_3_eq_plus_1_plus_2_3 :=
-  plus_1_plus_2_3 ~=~ plus_fun (vc _ one 1 (vc _ plus_2_3 0 (vn _))) y.
-Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' := plus_1_plus_2_3 ~=~ plus_1_plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_5 := 
-  plus_1_plus_2_3 ~=~ plus_fun (vc _ one 1 (vc _ five 0 (vn _))) y.
+  plus_1_plus_2_3 ~=~ plus' one plus_2_3.
+Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' := 
+  plus_1_plus_2_3 ~=~ plus_1_plus_2_3.
+Definition plus_1_plus_2_3_eq_plus_1_5 :=
+  plus_1_plus_2_3 ~=~ plus' one five.
 
 Definition plus_x_1_eq_5 :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    ((plus_fun (vc _ (sp_var x) 1 (vc _ one 0 (vn _))) y) ~=~ five))).
+  (for_all c_x of_sort Nat states ((plus' x one) ~=~ five)).
+
 Definition plus_x_1_eq_plus_y_1 :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (sp_forall y (sp_impl ((sp_var y) -< InhabitantSetOf(Nat))
-      ((plus_fun (vc _ (sp_var x) 1 (vc _ one 0 (vn _))) z) ~=~
-      ((plus_fun (vc _ (sp_var y) 1 (vc _ one 0 (vn _))) w)
-    )))))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      (plus' x one ~=~ (plus' y one)))).
+
 Definition plus_x_1_eq_y :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (sp_forall y (sp_impl ((sp_var y) -< InhabitantSetOf(Nat))
-      ((plus_fun (vc _ (sp_var x) 1 (vc _ one 0 (vn _))) z) ~=~ (sp_var y)))))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      ((plus' x one) ~=~ y))).
+
 Definition plus_x_1_eq_plus_y_3 :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (sp_forall y (sp_impl ((sp_var y) -< InhabitantSetOf(Nat))
-      ((plus_fun (vc _ (sp_var x) 1 (vc _ one 0 (vn _))) z) ~=~
-      ((plus_fun (vc _ (sp_var y) 1 (vc _ three 0 (vn _))) w)
-    )))))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      ((plus' x one) ~=~ (plus' y three)))).
+
 Definition plus_x_z_eq_y :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (sp_forall y (sp_impl ((sp_var y) -< InhabitantSetOf(Nat))
-      (sp_forall z (sp_impl ((sp_var z) -< InhabitantSetOf(Nat))
-        ((plus_fun (vc _ (sp_var x) 1 (vc _ (sp_var z) 0 (vn _))) w) ~=~ 
-        (sp_var y)))))))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      (for_all c_z of_sort Nat states
+        ((plus' x z) ~=~ y)))).
+
 Definition plus_x_plus_z_3_eq_y :=
-  (sp_forall x (sp_impl ((sp_var x) -< InhabitantSetOf(Nat))
-    (sp_forall y (sp_impl ((sp_var y) -< InhabitantSetOf(Nat))
-      (sp_forall z (sp_impl ((sp_var z) -< InhabitantSetOf(Nat))
-        ((plus_fun (vc _ (sp_var x) 1 (vc _ (
-          (plus_fun (vc _ (sp_var z) 1 (vc _ three 0 (vn _))) w)) 0 (vn _))) w') ~=~
-        (sp_var y)))))))).
+  (for_all c_x of_sort Nat states
+    (for_all c_y of_sort Nat states
+      (for_all c_z of_sort Nat states
+        ((plus' x (plus' z three))) ~=~ y))).
 
-
-(* TODO: introduce the notation of ':' *)
 
 (* Inductive Domain *)
 (* Axiom Inductive_Domain := 
@@ -774,7 +782,5 @@ Definition plus_x_plus_z_3_eq_y :=
 Axiom Peano_Induction := (sp_impl () ()). *)
 
 End NaturalNumbers.
-
-(* Notation "x '_::_' s '_.' phi" := sp_exists x. (sp_and (x -< [[ s ]]) (phi)). *)
 
 End AML.
