@@ -442,41 +442,6 @@ Definition c_inhabitant_set := sp_const(sigma_c("inhabitant set")).
 Definition InhabitantSetOf (s : MSA_sorts) := (c_inhabitant_set _._ (AML_sort_name s)).
 Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 
-(* Notation "< p1 , p2 , .. , pn >" := (sp_and .. (sp_and p1 p2) .. pn) : core_scope. *)
-
-
-(* Definition 15, MSA-signature *)
-(* Definition S := (set MSA_sorts).
- *)
-(* Definition c := ((set_add Nat nil), (set_add Nat nil), .. , (set_add Nat nil)) : (S, S, .. , S). *)
-(* Notation "( x * y * .. * z )" := (prod .. (prod x y) .. z) (at level 0). *)
-
-(* Definition a := sp_and .. (sp_and sp_bottom sp_bottom) .. . *)
-
-(* Notation "'MSA_signature' x" := (pair x ( prod .. (prod x x) .. x )) (at level 10). *)
-
-(* f : s1 x s2 x ... x sn -> s *)
-
-(* Ezt nem lehet ugyanazert mint az Y-kombinatort *)
-(* Inductive D : Type :=
-| Single : set MSA_sorts
-| Multiple : (D, set MSA_sorts)
-.
- *)
-
-(* Definition MSA_signature (S : set MSA_sorts) := (S, (S*, S)). *)
-
-(* TODO:
-  how to emphasize constraints:
-  - M is non-empty
-  - Sigma depends on M
-*)
-(* Definition MSA_pair (M : set MSA_sorts) (Sigma : set (set Sigma_pattern)) := (M, Sigma). *)
-
-(* TODO: for all below
-    - restrict n > 0
-    - rewrite to vector OK
-*)
 Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
 match n with
 | O => sp_bottom
@@ -664,6 +629,20 @@ Notation "'for_some' xc 'of_sort' sort 'states' pattern" :=
 Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
   (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 0).
 
+Definition QE_ex_to_all (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :=
+    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)).
+
+(* Proposition 18. *)
+Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
+| QE_ex_to_all' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
+   QuantificationEquivalence
+    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+| QE_all_to_ex' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
+  QuantificationEquivalence
+    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+(* where "a |--> b" := (QuantificationEquivalence a b) *).
 
 (* Natural numbers *)
 Section NaturalNumbers.
