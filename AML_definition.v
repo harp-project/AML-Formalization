@@ -637,11 +637,11 @@ Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
 | QE_ex_to_all' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
    QuantificationEquivalence
     (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (sp_not (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) (sp_not pattern))))
 | QE_all_to_ex' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
   QuantificationEquivalence
     (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (sp_not (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) (sp_not pattern))))
 (* where "a |--> b" := (QuantificationEquivalence a b) *).
 
 (* Natural numbers *)
@@ -748,17 +748,73 @@ Definition plus_x_plus_z_3_eq_y :=
       (for_all c_z of_sort Nat states
         ((plus' x (plus' z three))) ~=~ y))).
 
+End NaturalNumbers.
 
+Section MatchingMuLogic.
+
+Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts) : Sigma_pattern :=
+match n with
+| O => sp_const (sigma_c("cannot operate on empty parameters"))
+| S O => InhabitantSetOf (List.hd Nat vec)
+| S n' => InhabitantSetOf (List.hd Nat vec) _._ (_app_inhabitant_sets n' (List.tail vec))
+end.
+
+Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n) : Sigma_pattern :=
+  _app_inhabitant_sets n (to_list vec).
+
+Lemma nil_eq_nil : app_inhabitant_sets (vn MSA_sorts) = sp_const (sigma_c("cannot operate on empty parameters")).
+Proof. simpl. reflexivity. Qed.
+
+Lemma app_inhabitant_sets_test_one_element :
+  (app_inhabitant_sets (vc _ Nat 0 (vn _)) = (InhabitantSetOf(Nat))).
+Proof. simpl. reflexivity. Qed.
+
+Lemma app_inhabitant_sets_test_two_elements :
+  (app_inhabitant_sets (vc _ Nat 1 (vc _ List 0 (vn _))) = (InhabitantSetOf(Nat) _._ InhabitantSetOf(List))).
+Proof. simpl. reflexivity. Qed.
+
+Lemma app_inhabitant_sets_test_three_elements :
+  (app_inhabitant_sets (vc _ Nat 2 (vc _ List 1 (vc _ Cfg 0 (vn _)))) = (InhabitantSetOf(Nat)  _._ (InhabitantSetOf(List) _._ InhabitantSetOf(Cfg)))).
+Proof. simpl. reflexivity. Qed.
+
+                  (* sp_const only *)
+Definition Arity (sigma : Sigma_pattern) {n : nat} (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts) :=
+  sigma _._ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
+
+End MatchingMuLogic.
+
+Section ConstructorsAndTermAlgebras.
+
+(* Definition NoConfusion_I := .
+Definition NoConfusion_II := .
 (* Inductive Domain *)
-(* Axiom Inductive_Domain := 
-  ([[ Nat ]]) ~=~ (sp_mu 
-                    (svar_c("D")) 
-                    (sp_or
-                      (zero (evar_c("anything")))
-                      (* potential error! *)
-                      (succ (svar_c("D")) (evar_c("anything"))))).
+Definition Inductive_Domain 
+  (D : SVar)
+:= 
+  (
+    [[ Term ]]) ~=~ 
+    (sp_mu D (sp_or ...))
+  ). *)
 
-Axiom Peano_Induction := (sp_impl () ()). *)
+End ConstructorsAndTermAlgebras.
+
+Section NaturalNumbers.
+
+Check zero' (vn _).
+
+Definition Inductive_Domain (D : SVar) := 
+  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ _._ (sp_set D))).
+
+Definition zero'' := zero' (vn _).
+Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) := 
+  (sp_impl
+    (sp_and
+      (phi  zero'')
+      (sp_forall c_y (
+        sp_impl
+          (phi y)
+          (phi (succ' y)) )))
+    (sp_forall c_x (phi x))).
 
 End NaturalNumbers.
 
