@@ -442,6 +442,10 @@ Definition c_inhabitant_set := sp_const(sigma_c("inhabitant set")).
 Definition InhabitantSetOf (s : MSA_sorts) := (c_inhabitant_set _._ (AML_sort_name s)).
 Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 
+Definition vc := VectorDef.cons.
+Definition vn := VectorDef.nil.
+
+
 Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
 match n with
 | O => sp_bottom
@@ -449,33 +453,8 @@ match n with
 | S n' => ((List.hd sp_bottom vec) _&_ (_and_gen n' (List.tl vec)))
 end.
 
-(* Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
-match n with
-| O => sp_bottom
-| S O => VectorDef.hd vec
-| S n => sp_bottom
-end. *)
-
-Definition vc := VectorDef.cons.
-Definition vn := VectorDef.nil.
-
-(* Definition x1 := sp_var(evar_c("x1")).
-Definition x2 := sp_var(evar_c("x2")).
-Check VectorDef.fold_right sp_and (vc _ x1 1 (vc _ x2 0 (vn _))) sp_bottom. *)
 Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern := 
   _and_gen n (to_list vec).
-  (* VectorDef.fold_right sp_and vec sp_bottom. *)
-(* match vec with
-| VectorDef.nil _ => sp_bottom
-| VectorDef.cons _ pattern O _ => pattern
-| VectorDef.cons _ pattern (S n') _ => VectorDef.fold_right sp_and vec pattern
-end. *)
-
-(* Fixpoint and_gen (n : nat) (vec : VectorDef.t Sigma_pattern n) : Sigma_pattern :=
-match n - 1 with
-| O => List.hd sp_bottom (VectorDef.to_list vec)
-| S n' => ((List.hd sp_bottom (VectorDef.to_list vec)) _&_ (and_gen n' (VectorDef.of_list (List.tl (VectorDef.to_list vec)))))
-end. *)
 
 Lemma zero_eq : (_and_gen 0 (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
@@ -525,13 +504,11 @@ Fixpoint assoc_elem {n : nat} (vars : VectorDef.t Sigma_pattern n) (sorts : Vect
 Lemma zero_eq_assoc : (_assoc_elem 0 (List.nil) (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x1_e := evar_c("x1"). *)
 Lemma x1_eq_assoc : 
   (_assoc_elem 1 ((List.cons x1) List.nil) ((List.cons Nat) List.nil))
 = (x1 -< [[ Nat ]]).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x2_e := evar_c("x2"). *)
 Lemma x1_x2_eq_assoc : 
   (_assoc_elem 2
     ((List.cons x1) (List.cons x2 List.nil))
@@ -539,7 +516,6 @@ Lemma x1_x2_eq_assoc :
 = ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]])).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x3_e := evar_c("x3"). *)
 Lemma x1_x2_x3_eq_assoc : 
   (_assoc_elem 3 
     ((List.cons x1) ((List.cons x2) (List.cons x3 List.nil)))
@@ -547,7 +523,6 @@ Lemma x1_x2_x3_eq_assoc :
 = ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]])).
 Proof. simpl. reflexivity. Qed.
 
-(* Definition x4_e := evar_c("x4"). *)
 Lemma x1_x2_x3__x4_eq_assoc : 
   (_assoc_elem 4 
     ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil))))
