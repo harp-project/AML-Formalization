@@ -4,19 +4,41 @@ Inductive FA_Intersection {T C : Type} (f : C -> Ensemble T) : Ensemble T :=
   FA_Int_intro : forall x : T,
       (forall c : C, f c x) -> In T (FA_Intersection f) x.
 
+Definition FA_Inters_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) : Ensemble T := FA_Intersection (fun c t => g c -> f c t).
+
 Inductive FA_Union {T C : Type} (f : C -> Ensemble T) : Ensemble T :=
   FA_Uni_intro : forall x : T,
       (exists c : C, f c x) -> In T (FA_Union f) x.
 
-Axiom FA_rel : forall T C : Type, forall f fcomp : C -> Ensemble T,
-(forall c : C, Same_set T (Complement T (f c)) (fcomp c))
--> Same_set T (Complement T (FA_Union f)) (FA_Intersection fcomp).
+Definition FA_Union_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) : Ensemble T := FA_Union (fun c t => g c /\ f c t).
+
+Lemma FA_Inters_same : forall T C : Type, forall f f' : C -> Ensemble T,
+(forall c, Same_set _ (f c) (f' c)) -> Same_set _ (FA_Intersection f) (FA_Intersection f').
+Proof.
+intros. unfold Same_set in *. unfold Included in *. unfold In in *.
+eapply conj;intros;eapply FA_Int_intro;inversion H0;intros;destruct (H c);subst;auto.
+Qed.
+
+Lemma FA_Union_same : forall T C : Type, forall f f' : C -> Ensemble T,
+(forall c, Same_set _ (f c) (f' c)) -> Same_set _ (FA_Union f) (FA_Union f').
+Proof.
+intros. unfold Same_set in *. unfold Included in *. unfold In in *.
+eapply conj;intros;eapply FA_Uni_intro;inversion H0;destruct H1;destruct(H x1);subst;eapply ex_intro;auto.
+Qed.
+
+Axiom FA_rel : forall T C : Type, forall f : C -> Ensemble T,
+let fcom := fun c => Complement _ (f c) in
+Same_set T (Complement T (FA_Union f)) (FA_Intersection fcom).
+
+Axiom FA_rel2 : forall T C : Type, forall f : C -> Ensemble T,
+let fcom := fun c => Complement _ (f c) in
+Same_set T (Complement T (FA_Intersection f)) (FA_Union fcom).
 
 Definition mu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
-  FA_Intersection (fun S => let S' := f S in fun x => Included T S' S -> S x).
+  FA_Inters_cond (fun S => Included T (f S) S) (fun S => S).
 
 Definition nu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
-  FA_Union (fun S => let S' := f S in fun x => Included T S S' -> S x).
+  FA_Union_cond  (fun S => Included T S (f S)) (fun S => S).
 
 Lemma Union_Empty_r {T : Type} : forall A : Ensemble T, Same_set T (Union T (Empty_set T) A) A.
 Proof.

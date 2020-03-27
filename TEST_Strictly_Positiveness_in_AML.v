@@ -1,6 +1,8 @@
 Require Import String.
 Require Import AML_definition.
 
+Definition set (s : string) : Sigma_pattern := sp_set (svar_c s).
+
 Definition simple_neg := (sp_not (set "X")).
 Definition X_i_X_i_nX := (sp_impl (set "X") ((sp_impl (set "X") (sp_not (set "X"))))).
 Definition X_imp_X := (sp_impl (set "X") (set "X")).

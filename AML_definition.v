@@ -352,8 +352,8 @@ repeat
    rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
 || rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
 || rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Coml_Intes_Ensembles _ _ _))
+|| rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
   (* Apply *)
-|| (eapply FA_rel ; intros)
 || (eapply Same_set_Compl ; intros)
   (* Final step *)
 || exact Complement_Empty_is_Full
@@ -377,24 +377,18 @@ Proof. proof_ext_val. Qed.
 
 Lemma forall_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} : forall sp : Sigma_pattern, forall x : EVar, Same_set _ (ext_valuation evar_val svar_val (sp_forall x sp))
 (FA_Intersection (fun a:M sm => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
-Proof. proof_ext_val. Qed.
-
-Lemma asd {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} : forall x0 : (M sm), forall c : Ensemble (M sm), forall X : SVar,
-     Complement _ (ext_valuation evar_val (change_val svar_eqb X c svar_val) (sp_not (sp_set X))) x0 <-> c x0.
-Proof.
-proof_ext_val.
-unfold change_val. unfold svar_eqb. rewrite (eqb_refl _). reflexivity.
-Qed.
+Proof. proof_ext_val. eapply FA_Inters_same. intros. proof_ext_val. Qed.
 
 Lemma nu_ext_val_correct {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} : forall sp : Sigma_pattern, forall X : SVar, Same_set _ (ext_valuation evar_val svar_val (sp_nu X sp))
 (nu (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
 Proof.
 proof_ext_val.
-unfold mu. unfold nu.
-rewrite <- (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ (FA_Union _))).
-eapply Same_set_Compl.
-eapply Same_set_symmetric.
+unfold mu. unfold FA_Inters_cond.
+rewrite (Extensionality_Ensembles _ _ _ (FA_rel2 _ _ _)).
+unfold nu. unfold FA_Union_cond.
+eapply FA_Union_same. intros.
 proof_ext_val.
-unfold Same_set. unfold Included. unfold Complement. unfold In. unfold not. eapply conj;intros.
-* eapply H0. intros. eapply H. intros.
+unfold Same_set. unfold Included. unfold Complement. unfold In. eapply conj.
+* intros. eapply conj.
+  - intros. unfold not in H.
 Admitted.
