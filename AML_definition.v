@@ -572,15 +572,15 @@ Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 
 (* if constant function, then sp_bottom will stand on the application's left hand-side, because false implies everything *)
 (* this is allowed because this is only syntax and not the deduction - we don't need the type restriction at syntax level *)
-Definition __y := evar_c("__y"). (* we abstract away this variable. in fact it can be anything *)
+(* Definition __y := evar_c("__y"). (* we abstract away this variable. in fact it can be anything *) *)
 Definition Function (f : Sigma_pattern) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
-            (xs : t Sigma_pattern n) : Sigma_pattern :=
+            (xs : t Sigma_pattern n) (y : EVar) : Sigma_pattern :=
   (sp_impl
     (assoc_elem xs ss) (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
-    (sp_exists __y (sp_and
-      ((sp_var __y) -< [[ s ]])
-      ((assoc_params f xs) ~=~ (sp_var __y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
+    (sp_exists y (sp_and
+      ((sp_var y) -< [[ s ]])
+      ((assoc_params f xs) ~=~ (sp_var y)) (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -788,29 +788,88 @@ Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) :=
           (phi (succ' y)) )))
     (sp_forall c_x (phi x))).
 
-
-(* Fixpoint Aggregation {n : nat} (vec : VectorDef.t Sigma_pattern n) 
-                    (f : Sigma_pattern -> Sigma_pattern -> Sigma_pattern)
-                    (unit : Sigma_pattern) := 
-  VectorDef.fold_right f vec unit. *)
-
-(* Definition Sum {n : nat} (numbers : VectorDef.t Sigma_pattern n) := 
-  Aggregation numbers plus' zero.
-
-Definition Product {n : nat} (numbers : VectorDef.t Sigma_pattern n) := 
-  Aggregation numbers mult one. *)
-
 (* Examples *)
 
+Definition c_n := evar_c("n").
+Definition n := sp_var(c_n).
+
+
+Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
+match n with
+| sp_const _ => zero
+(* succ _ *)
+| sp_app _ b => plus' (succ' b) (SumFromZeroTo b)
+| _ => sp_const(sigma_c("non-exhaustive pattern"))
+end.
+
+Lemma until_zero : (SumFromZeroTo zero) = zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one : (SumFromZeroTo one) = (plus' one zero).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two : (SumFromZeroTo two) = (plus' two (plus' one zero)).
+Proof. simpl. reflexivity. Qed.
+
+
 (* 1 + ... + n = n * (n+1) / 2. *)
-(* Definition Sum_of_first_n := 
-  for_all c_x of_sort Nat states (mult two (Sum x) ~=~ mult x (succ x)).
+Definition Sum_of_first_n := 
+  for_all c_n of_sort Nat states (mult' two (SumFromZeroTo n) ~=~ mult' n (succ' n)).
+
+
+Fixpoint ProdFromOneTo (n : Sigma_pattern) : Sigma_pattern :=
+match n with
+| sp_const _ => zero
+(* succ _ *)
+| sp_app a b => 
+  match b with
+  | sp_const _ => one
+  | sp_app _ _ => mult' (succ' b) (ProdFromOneTo b)
+  | _ => sp_const(sigma_c("non-exhaustive pattern"))
+  end
+| _ => sp_const(sigma_c("non-exhaustive pattern"))
+end.
+
+Lemma until_zero' : (ProdFromOneTo zero) = zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one' : (ProdFromOneTo one) = one.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two' : (ProdFromOneTo two) = (mult' two one).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_three' : (ProdFromOneTo three) = (mult' three (mult' two one)).
+Proof. simpl. reflexivity. Qed.
+
+
+Fixpoint SumOfSquaresFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
+match n with
+| sp_const _ => zero
+(* succ _ *)
+| sp_app _ b => plus' (mult' (succ' b) (succ' b)) (SumOfSquaresFromZeroTo b)
+| _ => sp_const(sigma_c("non-exhaustive pattern"))
+end.
+
+Lemma until_zero'' : (SumOfSquaresFromZeroTo zero) = zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one'' : (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) zero).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two'' : (SumOfSquaresFromZeroTo two) = (plus' (mult' two two) (plus' (mult' one one) zero)).
+Proof. simpl. reflexivity. Qed.
+
 
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
-Deifinition Sum_of_squares :=
-  for_all c_x of_sort Nat state (mult six () ~=~ mult x (mult (succ x) (sum (mult 2 x) six))).
+Definition Sum_of_squares :=
+  for_all c_n of_sort Nat states (
+    mult' six (SumOfSquaresFromZeroTo n) ~=~ 
+    mult' n (mult' (succ' n) (plus' (mult' two n) one))).
 
-_<=_ relacio
+
+
+(* _<=_ relacio
 indukcios axiomaval: ha 0 <= 0 es minden mas szamra igaz, hogy 0 <= n, akkor minden szam >= 0
 
 _<_ relacio
