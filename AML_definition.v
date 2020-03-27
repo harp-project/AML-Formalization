@@ -624,23 +624,26 @@ Section NaturalNumbers.
 
 Definition zero : Sigma_pattern := sp_const(sigma_c("zero")).
 Definition succ : Sigma_pattern := sp_const (sigma_c("succ")).
-Definition plus : Sigma_pattern := sp_const (sigma_c("plus")).
+Definition plus : Sigma_pattern := sp_const (sigma_c("plus'")).
 Definition mult : Sigma_pattern := sp_const (sigma_c("mult")).
 
 (* Inductive Nat_elements : Type :=
 | zero (res_var : EVar) : ((c_zero _:_ --> Nat) (vn _) res_var)
 . *)
 
-Definition zero_pat := (zero _:_ --> Nat). (* (Function zero_c (VectorDef.nil _) Nat). *)
-Definition succ_pat := (succ _:_ Nat --> Nat). (* (Function succ_c (vc _ Nat 0 (vn _)) Nat). *)
-Definition plus_pat := (plus _:_ Nat X Nat --> Nat). (* (Function (sigma_c("plus")) (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
-Definition mult_pat := (mult _:_ Nat X Nat --> Nat). (* (Function c_mult (vc _ Nat 1 (vc _ Nat 0 (vn _))) Nat). *)
+Definition zero_fun := (zero _:_ --> Nat).
+Definition succ_fun := (succ _:_ Nat --> Nat).
+Definition plus_fun := (plus _:_ Nat X Nat --> Nat).
+Definition mult_fun := (mult _:_ Nat X Nat --> Nat).
 
-Definition zero'                       := zero_pat.
-Definition succ' (x : Sigma_pattern)   := succ_pat (vc _ x 0 (vn _)).
-Definition plus' (x y : Sigma_pattern) := plus_pat (vc _ x 1 (vc _ y 0 (vn _))).
-Definition mult' (x y : Sigma_pattern) := mult_pat (vc _ x 1 (vc _ y 0 (vn _))).
+(* Definition zero''                       := zero_pat (vn _).
+Definition succ'' (x : Sigma_pattern)   := succ_pat (vc _ x 0 (vn _)).
+Definition plus'' (x y : Sigma_pattern) := plus'_pat (vc _ x 1 (vc _ y 0 (vn _))).
+Definition mult'' (x y : Sigma_pattern) := mult_pat (vc _ x 1 (vc _ y 0 (vn _))). *)
 
+Definition succ' (x : Sigma_pattern)   := succ _._ x.
+Definition plus' (x y : Sigma_pattern) := plus _._ x _._ y.
+Definition mult' (x y : Sigma_pattern) := mult _._ x _._ y.
 
 (* Example: x + 0 = x *)
 Definition c_x := (evar_c("x")).
@@ -652,46 +655,42 @@ Definition z := (sp_var (evar_c("z"))).
 
 (* Check (for_some c_x of_sort Nat states sp_bottom). *)
 
-Definition x_plus_0_eq_x :=
-  (for_all c_x of_sort Nat states ((plus _._ x _._ zero) ~=~ x)).
+Definition x_plus'_0_eq_x :=
+  (for_all c_x of_sort Nat states ((plus' x zero) ~=~ x)).
 
 (* Examples *)
 
 (* we have to specify the type of function parameters, because if not, the
 following statement about natural numbers also can be formalised: *)
-Definition foo := plus _._ plus _._ zero.
+Definition foo := plus' plus zero.
 
-Definition one := succ _._ zero. Check one.
-Definition two := succ _._ one.
-Definition three := succ _._ two.
-Definition five := succ _._ succ _._ three.
-Definition six := succ _._ five.
+Definition one := succ' zero.
+Definition two := succ' one.
+Definition three := succ' two.
+Definition five := succ' (succ' three).
+Definition six := succ' five.
 
-Definition plus_1_2_eq_3 := ((plus _._ one _._ two) ~=~ three).
-Definition plus_1_plus_2_3_eq_6 := ((plus _._ one _._ (plus _._ two _._ three)) ~=~ six).
-Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 := ((plus _._ one _._ (plus _._ two _._ three)) ~=~ (plus _._ one _._ (plus _._ two _._ three))).
-Definition plus_1_plus_2_3_eq_1_plus_5 := ((plus _._ one _._ (plus _._ two _._ three)) ~=~ (plus _._ one _._ five)).
+Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
+Definition plus_1_plus_2_3_eq_6 := ((plus' one (plus' two three)) ~=~ six).
+Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 := ((plus' one (plus' two three)) ~=~ (plus' one (plus' two three))).
+Definition plus_1_plus_2_3_eq_1_plus_5 :=
+  ((plus' one (plus' two three)) ~=~ (plus' one five)).
 Definition x_plus_2_plus_3_eq_x_plus_5 := 
-  (for_all c_x of_sort Nat states 
-    ((plus _._ (plus _._ x _._ two) _._ three) ~=~ (plus _._ x _._ five))).
+  (for_all c_x of_sort Nat states ((plus' (plus' x two) three) ~=~ (plus' x five))).
 Definition x_plus_3_eq_x_plus_3 :=
-  (for_all c_x of_sort Nat states
-    (plus _._ x _._ three) ~=~ (plus _._ x _._ three)).
+  (for_all c_x of_sort Nat states (plus' x three) ~=~ (plus' x three)).
 Definition x_plus_y_eq_x_plus_y :=
   (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      (plus _._ x _._ y) ~=~ (plus _._ x _._ y))).
+    (for_all c_y of_sort Nat states (plus' x y) ~=~ (plus' x y))).
 
-(* Definition plus' := plus _:_ Nat X Nat --> Nat. *)
 Definition plus_1_2 := plus' one two.
 Definition plus_2_3 := plus' two three.
 Definition plus_1_plus_2_3 :=  plus' one plus_2_3.
 Definition plus_1_plus_2_3_eq_plus_1_plus_2_3 :=
-  plus_1_plus_2_3 ~=~ plus' one plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' := 
+ plus_1_plus_2_3 ~=~ plus' one plus_2_3.
+Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' :=
   plus_1_plus_2_3 ~=~ plus_1_plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_5 :=
-  plus_1_plus_2_3 ~=~ plus' one five.
+Definition plus_1_plus_2_3_eq_plus_1_5 := plus_1_plus_2_3 ~=~ plus' one five.
 
 Definition plus_x_1_eq_5 :=
   (for_all c_x of_sort Nat states ((plus' x one) ~=~ five)).
@@ -775,21 +774,55 @@ End ConstructorsAndTermAlgebras.
 
 Section NaturalNumbers.
 
-Check zero' (vn _).
 
 Definition Inductive_Domain (D : SVar) := 
-  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ _._ (sp_set D))).
+  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ' (sp_set D))).
 
-Definition zero'' := zero' (vn _).
-Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) := 
+Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) :=
   (sp_impl
     (sp_and
-      (phi  zero'')
+      (phi  zero)
       (sp_forall c_y (
         sp_impl
           (phi y)
           (phi (succ' y)) )))
     (sp_forall c_x (phi x))).
+
+
+(* Fixpoint Aggregation {n : nat} (vec : VectorDef.t Sigma_pattern n) 
+                    (f : Sigma_pattern -> Sigma_pattern -> Sigma_pattern)
+                    (unit : Sigma_pattern) := 
+  VectorDef.fold_right f vec unit. *)
+
+(* Definition Sum {n : nat} (numbers : VectorDef.t Sigma_pattern n) := 
+  Aggregation numbers plus' zero.
+
+Definition Product {n : nat} (numbers : VectorDef.t Sigma_pattern n) := 
+  Aggregation numbers mult one. *)
+
+(* Examples *)
+
+(* 1 + ... + n = n * (n+1) / 2. *)
+(* Definition Sum_of_first_n := 
+  for_all c_x of_sort Nat states (mult two (Sum x) ~=~ mult x (succ x)).
+
+(* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
+Deifinition Sum_of_squares :=
+  for_all c_x of_sort Nat state (mult six () ~=~ mult x (mult (succ x) (sum (mult 2 x) six))).
+
+_<=_ relacio
+indukcios axiomaval: ha 0 <= 0 es minden mas szamra igaz, hogy 0 <= n, akkor minden szam >= 0
+
+_<_ relacio
+indukcioval leirhato, hogy ha Ö+1 > 0 és minden n>0-ra n+1 > 0 akkor n+1 > 0
+
+folytonossag definicioja? Lagrange-tétel? Analizis on natural numbers
+Oszthatosag? Mandelbrot set
+
+Sorozatok -> sorozat osszege, szamtani/mertani sorozat elemei/osszege
+ *)
+
+(* Peano axioms *)
 
 End NaturalNumbers.
 
