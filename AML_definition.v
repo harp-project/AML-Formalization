@@ -649,6 +649,8 @@ Definition mult' (x y : Sigma_pattern) := mult _._ x _._ y.
 Definition c_x := (evar_c("x")).
 Definition c_y := (evar_c("y")).
 Definition c_z := (evar_c("z")).
+Definition c_n := evar_c("n").
+Definition n := sp_var(c_n).
 Definition x := (sp_var (evar_c("x"))).
 Definition y := (sp_var (evar_c("y"))).
 Definition z := (sp_var (evar_c("z"))).
@@ -721,78 +723,6 @@ Definition plus_x_plus_z_3_eq_y :=
     (for_all c_y of_sort Nat states
       (for_all c_z of_sort Nat states
         ((plus' x (plus' z three))) ~=~ y))).
-
-End NaturalNumbers.
-
-Section MatchingMuLogic.
-
-Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts) : Sigma_pattern :=
-match n with
-| O => sp_const (sigma_c("cannot operate on empty parameters"))
-| S O => InhabitantSetOf (List.hd Nat vec)
-| S n' => InhabitantSetOf (List.hd Nat vec) _._ (_app_inhabitant_sets n' (List.tail vec))
-end.
-
-Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n) : Sigma_pattern :=
-  _app_inhabitant_sets n (to_list vec).
-
-Lemma nil_eq_nil : app_inhabitant_sets (vn MSA_sorts) = sp_const (sigma_c("cannot operate on empty parameters")).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_one_element :
-  (app_inhabitant_sets (vc _ Nat 0 (vn _)) = (InhabitantSetOf(Nat))).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_two_elements :
-  (app_inhabitant_sets (vc _ Nat 1 (vc _ List 0 (vn _))) = (InhabitantSetOf(Nat) _._ InhabitantSetOf(List))).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_three_elements :
-  (app_inhabitant_sets (vc _ Nat 2 (vc _ List 1 (vc _ Cfg 0 (vn _)))) = (InhabitantSetOf(Nat)  _._ (InhabitantSetOf(List) _._ InhabitantSetOf(Cfg)))).
-Proof. simpl. reflexivity. Qed.
-
-                  (* sp_const only *)
-Definition Arity (sigma : Sigma_pattern) {n : nat} (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts) :=
-  sigma _._ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
-
-End MatchingMuLogic.
-
-Section ConstructorsAndTermAlgebras.
-
-(* Definition NoConfusion_I := .
-Definition NoConfusion_II := .
-(* Inductive Domain *)
-Definition Inductive_Domain 
-  (D : SVar)
-:= 
-  (
-    [[ Term ]]) ~=~ 
-    (sp_mu D (sp_or ...))
-  ). *)
-
-End ConstructorsAndTermAlgebras.
-
-Section NaturalNumbers.
-
-
-Definition Inductive_Domain (D : SVar) := 
-  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ' (sp_set D))).
-
-Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) :=
-  (sp_impl
-    (sp_and
-      (phi  zero)
-      (sp_forall c_y (
-        sp_impl
-          (phi y)
-          (phi (succ' y)) )))
-    (sp_forall c_x (phi x))).
-
-(* Examples *)
-
-Definition c_n := evar_c("n").
-Definition n := sp_var(c_n).
-
 
 Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
@@ -868,20 +798,99 @@ Definition Sum_of_squares :=
     mult' n (mult' (succ' n) (plus' (mult' two n) one))).
 
 
+End NaturalNumbers.
 
-(* _<=_ relacio
-indukcios axiomaval: ha 0 <= 0 es minden mas szamra igaz, hogy 0 <= n, akkor minden szam >= 0
+Section MatchingMuLogic.
 
-_<_ relacio
-indukcioval leirhato, hogy ha Ö+1 > 0 és minden n>0-ra n+1 > 0 akkor n+1 > 0
+Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts) : Sigma_pattern :=
+match n with
+| O => sp_const (sigma_c("cannot operate on empty parameters"))
+| S O => InhabitantSetOf (List.hd Nat vec)
+| S n' => InhabitantSetOf (List.hd Nat vec) _._ (_app_inhabitant_sets n' (List.tail vec))
+end.
 
-folytonossag definicioja? Lagrange-tétel? Analizis on natural numbers
-Oszthatosag? Mandelbrot set
+Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n) : Sigma_pattern :=
+  _app_inhabitant_sets n (to_list vec).
 
-Sorozatok -> sorozat osszege, szamtani/mertani sorozat elemei/osszege
- *)
+Lemma nil_eq_nil : app_inhabitant_sets (vn MSA_sorts) = sp_const (sigma_c("cannot operate on empty parameters")).
+Proof. simpl. reflexivity. Qed.
 
-(* Peano axioms *)
+Lemma app_inhabitant_sets_test_one_element :
+  (app_inhabitant_sets (vc _ Nat 0 (vn _)) = (InhabitantSetOf(Nat))).
+Proof. simpl. reflexivity. Qed.
+
+Lemma app_inhabitant_sets_test_two_elements :
+  (app_inhabitant_sets (vc _ Nat 1 (vc _ List 0 (vn _))) = (InhabitantSetOf(Nat) _._ InhabitantSetOf(List))).
+Proof. simpl. reflexivity. Qed.
+
+Lemma app_inhabitant_sets_test_three_elements :
+  (app_inhabitant_sets (vc _ Nat 2 (vc _ List 1 (vc _ Cfg 0 (vn _)))) = (InhabitantSetOf(Nat)  _._ (InhabitantSetOf(List) _._ InhabitantSetOf(Cfg)))).
+Proof. simpl. reflexivity. Qed.
+
+                  (* sp_const only *)
+Definition Arity (sigma : Sigma_pattern) {n : nat} (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts) :=
+  sigma _._ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
+
+End MatchingMuLogic.
+
+Section ConstructorsAndTermAlgebras.
+
+(* Definition NoConfusion_I := .
+Definition NoConfusion_II := .
+(* Inductive Domain *)
+Definition Inductive_Domain 
+  (D : SVar)
+:= 
+  (
+    [[ Term ]]) ~=~ 
+    (sp_mu D (sp_or ...))
+  ). *)
+
+End ConstructorsAndTermAlgebras.
+
+Section NaturalNumbers.
+
+
+Definition Inductive_Domain (D : SVar) := 
+  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ' (sp_set D))).
+
+Definition Peano_Induction (cn : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
+  (sp_impl
+    (sp_and
+      (phi  zero)
+      (sp_forall cn (
+        sp_impl
+          (phi (sp_var cn))
+          (phi (succ' (sp_var cn))) )))
+    (sp_forall cn (phi (sp_var cn)))).
+
+(* Examples *)
+
+(* <= relation *)
+Definition less (l r : Sigma_pattern) :=
+  for_some c_x of_sort Nat states (plus' l x ~=~ r).
+
+Definition less_or_equal (l r : Sigma_pattern) :=
+  sp_or
+    (l ~=~ r)
+    for_some c_x of_sort Nat states (plus' l x ~=~ r).
+
+(* States that if:
+  - zero <= zero and
+  - for all n of sort Nat : 0 <= (n+1)
+ then for all n of sort Nat states 0 <= n *)
+Definition every_number_is_positive : Sigma_pattern :=
+  Peano_Induction c_n (less_or_equal zero).
+
+Definition less2 (a b : Sigma_pattern) := less a (succ' b).
+(* indukcioval leirhato, hogy ha 0+1 > 0 és minden n>0-ra n+1 > 0 akkor n+1 > 0 *)
+
+(* States that if:
+  - zero < zero + 1 and
+  - for all n of sort Nat : 0 < ((n+1) + 1)
+ then for all n of sort Nat states 0 < (n+1) *)
+Definition every_successor_is_strictly_positive : Sigma_pattern :=
+  Peano_Induction c_n (less2 zero).
 
 End NaturalNumbers.
 
