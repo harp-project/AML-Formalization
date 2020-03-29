@@ -391,6 +391,7 @@ Inductive MSA_sorts : Set :=
 | Nat
 | List
 | Cfg
+| Term
 .
 
 (* a function which corresponds: constants of AML  to  sorts of MSA *)
@@ -399,6 +400,7 @@ match s with
 | Nat => sp_const(sigma_c("Nat"))
 | List => sp_const(sigma_c("List"))
 | Cfg => sp_const(sigma_c("Cfg"))
+| Term => sp_const(sigma_c("Term"))
 end.
 
 (* we can also define them *)
@@ -570,12 +572,13 @@ Definition Function (f : Sigma_pattern) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
             (xs : t Sigma_pattern n) (y : EVar) : Sigma_pattern :=
   (sp_impl
-    (* ((x1 -< [[s1]]) _&_ .. _&_ (xn -< [[sn]])) *)
+    (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
     (assoc_elem xs ss)
-    (sp_exists y (sp_and
-      ((sp_var y) -< [[ s ]])
-      (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-      ((assoc_params f xs) ~=~ (sp_var y)) ))).
+    (sp_exists y
+      (sp_and
+        ((sp_var y) -< [[ s ]])
+        (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
+        ((assoc_params f xs) ~=~ (sp_var y)) ))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -593,14 +596,6 @@ Notation "f '_:_' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
 
 Check (fun_f _:_ Nat X Nat --> Nat).
 
-(* Instead of notation "forall x : Nat . pattern" we introduce: *)
-Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
-  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (at level 0).
-Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
-  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-  (at level 0).
-
 (*
 Notation "'exists' xc : sort , pattern" := 
   (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (
@@ -610,6 +605,14 @@ Notation "'for_all' xc : sort , pattern" :=
     at level 5, xc at next level, sort at next level, pattern at next level).
 *)
 
+(* Instead of notation "forall x : Nat . pattern" we introduce: *)
+Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
+  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (at level 0).
+Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
+  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (at level 0).
+
 (* Proposition 18. *)
 Reserved Notation "a |--> b" (at level 40, left associativity).
 Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
@@ -617,7 +620,7 @@ Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
     ((for_some xc of_sort sort states pattern) |-->
      (sp_not (for_all xc of_sort sort states (sp_not pattern))))
 | QE_all_to_ex (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
-    ((for_all xc of_sort sort states pattern) |-->
+    ((for_all xc of_sort sort states pattern)  |-->
      (sp_not (for_some xc of_sort sort states (sp_not pattern))))
 where "a |--> b" := (QuantificationEquivalence a b).
 
@@ -845,16 +848,46 @@ End MatchingMuLogic.
 
 Section ConstructorsAndTermAlgebras.
 
-(* Definition NoConfusion_I := .
-Definition NoConfusion_II := .
-(* Inductive Domain *)
+(*
+Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
+  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (at level 0).
+Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
+  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
+    (at level 0).
+
+ *)
+
+(*
+Fixpoint _generate_foralls (n : nat) (xl : list Sigma_pattern)
+: Sigma_pattern -> Sigma_pattern :=
+match n with
+| O => fun _ => sp_bottom
+| S n' => for_all ...
+end.
+
+Fixpoint generate_foralls
+  {n m : nat}
+  (xv : VectorDef.t Sigma_pattern n) (yv : VectorDef.t Sigma_pattern m)
+  (pattern : Sigma_pattern)
+: Sigma_pattern :=
+  _generate_foralls n (to_list xv) (_generate_foralls m (to_list yv) pattern)
+
+Definition NoConfusion_I :=
+  (generate_foralls vec_of_x vec_of_y)
+    ((assoc_params c vec_of_x) !=~ (assoc_params d vec_of_y)). 
+*)
+
+(* Definition NoConfusion_II := .
+
 Definition Inductive_Domain 
   (D : SVar)
 := 
   (
     [[ Term ]]) ~=~ 
     (sp_mu D (sp_or ...))
-  ). *)
+  ).
+*)
 
 End ConstructorsAndTermAlgebras.
 
