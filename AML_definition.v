@@ -604,20 +604,21 @@ Notation "'for_some' xc 'of_sort' sort 'states' pattern" :=
 Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
   (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 0).
 
-Definition QE_ex_to_all (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :=
-    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)).
+(* Notation "'exists' xc : sort , pattern" := 
+(sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 5, xc at next level, sort at next level, pattern at next level).
+Notation "'for_all' xc : sort , pattern" := 
+  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (at level 0). *)
 
 (* Proposition 18. *)
+Reserved Notation "a |--> b" (at level 40, left associativity).
 Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
-| QE_ex_to_all' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
-   QuantificationEquivalence
-    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (sp_not (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) (sp_not pattern))))
-| QE_all_to_ex' (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
-  QuantificationEquivalence
-    (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (sp_not (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) (sp_not pattern))))
-(* where "a |--> b" := (QuantificationEquivalence a b) *).
+| QE_ex_to_all (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
+    ((for_some xc of_sort sort states pattern) |-->
+     (sp_not (for_all xc of_sort sort states (sp_not pattern))))
+| QE_all_to_ex (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
+    ((for_all xc of_sort sort states pattern) |-->
+     (sp_not (for_some xc of_sort sort states (sp_not pattern))))
+where "a |--> b" := (QuantificationEquivalence a b).
 
 (* Natural numbers *)
 Section NaturalNumbers.
