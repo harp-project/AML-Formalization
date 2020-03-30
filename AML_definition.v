@@ -3,8 +3,9 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Vectors.VectorDef.
+(* Require Import Coq.Program.Basics. *)
 
-
+Reserved Notation "a _._ b" (at level 50, left associativity).
 Section AML.
 
 Inductive EVar : Set := evar_c (id : string).
@@ -278,7 +279,7 @@ Inductive got : Sigma_pattern -> Prop :=
  *  - "can be deduced" and "can be proved" operator *)
 
 (* Inductive proof_result : Set :=
-  | success (?)
+  | success ( _ )
   | fail
 . *)
 
@@ -308,8 +309,8 @@ Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
 Definition c_membership := sp_const(sigma_c("membership")).
 (* - parameterx can only be sp_var or sp_const
  * - this can be restricted with operational evaluation rules *)
-Definition Membership (x : Sigma_pattern) (phi : Sigma_pattern) :=
-  ((c_membership _._ x) _._ phi).
+Definition Membership (x : EVar) (phi : Sigma_pattern) :=
+  ((c_membership _._ (sp_var x)) _._ phi).
 Notation "x -< phi" := (Membership x phi) (at level 100).
 
 (* Non-membership *)
@@ -344,19 +345,19 @@ Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
     ((c_equality _._ l) _._ r) |->
     (sp_not (Equality l r))
 
-| OST_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
-    ((c_membership _._ x) _._ phi) |->
-    (Totality (sp_and x phi))
+| OST_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_membership _._ (sp_var x)) _._ phi) |->
+    (Totality (sp_and (sp_var x) phi))
 
-| OST_non_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
-    ((c_non_membership _._ x) _._ phi) |->
+| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_non_membership _._ (sp_var x)) _._ phi) |->
     (sp_not (Membership x phi))
 
-| OST_set_inclusion {l r} :
+| OST_set_inclusion {l r : Sigma_pattern} :
     ((c_set_incl _._ l) _._ r) |->
     (Totality (sp_impl l r))
 
-| OST_set_exclusion {l r} :
+| OST_set_exclusion {l r : Sigma_pattern} :
     ((c_set_excl _._ l) _._ r) |->
     (sp_not (SetInclusion l r))
 where "a |-> b" := (OneStepTransition a b).
@@ -435,49 +436,55 @@ Proof. simpl. reflexivity. Qed.
 Lemma zero_eq' : (and_gen (vn _)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
-Definition x1 := sp_var(evar_c("x1")).
-Lemma x1_eq : (_and_gen 1 ((List.cons x1) List.nil)) = x1.
+Definition x1 := evar_c("x1").
+Lemma x1_eq : (_and_gen 1 ((List.cons (sp_var x1)) List.nil)) = (sp_var x1).
 Proof. simpl. reflexivity. Qed.
 
-Lemma x1_eq' : (and_gen (vc _ x1 0 (vn _))) = x1.
+Lemma x1_eq' : (and_gen (vc _ (sp_var x1) 0 (vn _))) = (sp_var x1).
 Proof. simpl. reflexivity. Qed.
 
-Definition x2 := sp_var(evar_c("x2")).
+Definition x2 := evar_c("x2").
 Lemma x1_x2_eq :
-  (_and_gen 2 ((List.cons x1) (List.cons x2 List.nil))) = (x1 _&_ x2).
+  (_and_gen 2 ((List.cons (sp_var x1)) (List.cons (sp_var x2) List.nil))) =
+  ((sp_var x1) _&_ (sp_var x2)).
 Proof. simpl. reflexivity. Qed.
 
-Lemma x1_x2_eq' : (and_gen (vc _ x1 1 (vc _ x2 0 (vn _)))) = (x1 _&_ x2).
+Lemma x1_x2_eq' :
+  (and_gen (vc _ (sp_var x1) 1 (vc _ (sp_var x2) 0 (vn _)))) =
+  ((sp_var x1) _&_ (sp_var x2)).
 Proof. simpl. reflexivity. Qed.
 
-Definition x3 := sp_var(evar_c("x3")).
+Definition x3 := evar_c("x3").
 Lemma x1_x2_x3_eq :
-  (_and_gen 3 ((List.cons x1) ((List.cons x2) ((List.cons x3) List.nil)))) =
-  (x1 _&_ x2 _&_ x3).
+  (_and_gen 3 
+    ((List.cons (sp_var x1))
+      ((List.cons (sp_var x2)) ((List.cons (sp_var x3)) List.nil)))) =
+  ((sp_var x1) _&_ (sp_var x2) _&_ (sp_var x3)).
 Proof. simpl. reflexivity. Qed.
 
-Definition x4 := sp_var(evar_c("x4")).
+Definition x4 := evar_c("x4").
 Lemma x1_x2_x3__x4_eq :
-  (_and_gen 4 ((List.cons x1) 
-    ((List.cons x2) ((List.cons x3) ((List.cons x4) List.nil))))) =
-  (x1 _&_ x2 _&_ x3 _&_ x4).
+  (_and_gen 4 
+    ((List.cons (sp_var x1)) ((List.cons (sp_var x2))
+      ((List.cons (sp_var x3)) ((List.cons (sp_var x4)) List.nil))))) =
+  ((sp_var x1) _&_ (sp_var x2) _&_ (sp_var x3) _&_ (sp_var x4)).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint _assoc_elem (n : nat) (vars : list Sigma_pattern)
+Fixpoint _assoc_elem (n : nat) (vars : list EVar)
                      (sorts : list MSA_sorts)
 : Sigma_pattern :=
 match n with
 | O => sp_bottom
-| S O => ((List.hd (sp_const (sigma_c("error at elem assoc S O"))) vars) -<
+| S O => ((List.hd (evar_c("error at elem assoc S O")) vars) -<
           [[ (List.hd Nat sorts) ]])
 | S n' =>
     sp_and
-      ((List.hd (sp_const (sigma_c("error at elem assoc S n"))) vars) -<
+      ((List.hd (evar_c("error at elem assoc S n")) vars) -<
        [[ (List.hd Nat sorts) ]])
       (_assoc_elem n' (List.tl vars) (List.tl sorts))
 end.
 
-Fixpoint assoc_elem {n : nat} (vars : VectorDef.t Sigma_pattern n)
+Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n)
                     (sorts : VectorDef.t MSA_sorts n)
 : Sigma_pattern :=
   _assoc_elem n (to_list (vars)) (to_list (sorts)).
@@ -490,7 +497,7 @@ Lemma x1_eq_assoc :
   (x1 -< [[ Nat ]]).
 Proof. simpl. reflexivity. Qed.
 
-Lemma x1_x2_eq_assoc : 
+Lemma x1_x2_eq_assoc :
   (_assoc_elem 2
     ((List.cons x1) (List.cons x2 List.nil))
     ((List.cons Nat) (List.cons List List.nil))) =
@@ -514,49 +521,48 @@ Lemma x1_x2_x3__x4_eq_assoc :
     (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]]) _&_ (x4 -< [[ Nat ]])).
 Proof. simpl. reflexivity. Qed.
 
-Fixpoint _assoc_params (f : Sigma_pattern) (n : nat)
-                       (vars : list Sigma_pattern)
+Fixpoint _assoc_params (f : Sigma) (n : nat)
+                       (vars : list EVar)
 : Sigma_pattern :=
 match n with
-| O => f
+| O => sp_const f
 | S O =>
-    (f _._
-        (List.nth O vars
-            (sp_const (sigma_c("error singleton fun param list")))))
-| S n' => 
+    ((sp_const f) _._
+      (sp_var (List.nth O vars (evar_c("error singleton fun param list")))))
+| S n' =>
     (_assoc_params f n' vars) _._
-        (List.nth n' vars (sp_const (sigma_c("error long fun param list"))))
+      (sp_var (List.nth n' vars (evar_c("error long fun param list"))))
 end.
 
-Fixpoint assoc_params (f : Sigma_pattern) {n : nat}
-                      (vars : VectorDef.t Sigma_pattern n)
+Fixpoint assoc_params (f : Sigma) {n : nat}
+                      (vars : VectorDef.t EVar n)
 : Sigma_pattern :=
   _assoc_params f n (to_list (vars)).
 
-Definition c_fun := sigma_c("fun").
-Definition fun_f   := sp_const(c_fun).
-Lemma zero_eq_par : (_assoc_params fun_f 0 (List.nil)) = fun_f.
+Definition fun_f := sigma_c("fun").
+Lemma zero_eq_par : (_assoc_params fun_f 0 (List.nil)) = (sp_const fun_f).
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
 Lemma x1_eq_par :
-  (_assoc_params fun_f 1 ((List.cons x1) List.nil)) = (fun_f _._ x1).
+  (_assoc_params fun_f 1 ((List.cons x1) List.nil)) =
+  ((sp_const fun_f) _._ (sp_var x1)).
 Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
 
 Lemma x1_x2_eq_par :
   (_assoc_params fun_f 2 ((List.cons x1) (List.cons x2 List.nil))) = 
-  (fun_f _._ x1 _._ x2).
+  ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2)).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
 
 Lemma x1_x2_x3_eq_par :
   (_assoc_params fun_f 3
     ((List.cons x1) ((List.cons x2) (List.cons x3 List.nil)))) = 
-  (fun_f _._ x1 _._ x2 _._ x3).
+  ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3)).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
 
 Lemma x1_x2_x3__x4_eq_par :
   (_assoc_params fun_f 4
     ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil)))))
-= (fun_f _._ x1 _._ x2 _._ x3 _._ x4).
+= ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
 Proof. simpl. reflexivity. Qed.
 
 
@@ -568,15 +574,15 @@ Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
  * everything, it imples the result too  *)
 (* this is allowed because this is only syntax and not the deduction - we don't 
  * need the type restriction at syntax level *)
-Definition Function (f : Sigma_pattern) {n : nat}
+Definition Function (f : Sigma) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
-            (xs : t Sigma_pattern n) (y : EVar) : Sigma_pattern :=
+            (xs : t EVar n) (y : EVar) : Sigma_pattern :=
   (sp_impl
     (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
     (assoc_elem xs ss)
     (sp_exists y
       (sp_and
-        ((sp_var y) -< [[ s ]])
+        (y -< [[ s ]])
         (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
         ((assoc_params f xs) ~=~ (sp_var y)) ))).
 
@@ -607,11 +613,11 @@ Notation "'for_all' xc : sort , pattern" :=
 
 (* Instead of notation "forall x : Nat . pattern" we introduce: *)
 Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
-  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (at level 0).
+  (sp_exists xc (sp_and (xc -< InhabitantSetOf(sort)) pattern))
+    (at level 5).
 Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
-  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (at level 0).
+  (sp_forall xc (sp_impl (xc -< InhabitantSetOf(sort)) pattern))
+    (at level 5).
 
 (* Proposition 18. *)
 Reserved Notation "a |--> b" (at level 40, left associativity).
@@ -624,44 +630,43 @@ Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
      (sp_not (for_some xc of_sort sort states (sp_not pattern))))
 where "a |--> b" := (QuantificationEquivalence a b).
 
+Notation "' v" := (sp_var v) (at level 3).
+Notation "^ c" := (sp_const c) (at level 3).
+Notation "` s" := (sp_set s) (at level 3).
 
 Section NaturalNumbers.
 
-Definition zero : Sigma_pattern := sp_const(sigma_c("zero")).
-Definition succ : Sigma_pattern := sp_const (sigma_c("succ")).
-Definition plus : Sigma_pattern := sp_const (sigma_c("plus'")).
-Definition mult : Sigma_pattern := sp_const (sigma_c("mult")).
+Definition zero : Sigma := sigma_c("zero").
+Definition succ : Sigma := sigma_c("succ").
+Definition plus : Sigma := sigma_c("plus'").
+Definition mult : Sigma := sigma_c("mult").
 
 Definition zero_fun := (zero _:_ --> Nat).
 Definition succ_fun := (succ _:_ Nat --> Nat).
 Definition plus_fun := (plus _:_ Nat X Nat --> Nat).
 Definition mult_fun := (mult _:_ Nat X Nat --> Nat).
 
-Definition succ' (x : Sigma_pattern)   := succ _._ x.
-Definition plus' (x y : Sigma_pattern) := plus _._ x _._ y.
-Definition mult' (x y : Sigma_pattern) := mult _._ x _._ y.
+Definition succ' (x : Sigma_pattern) := ^succ _._ x.
+Definition plus' (x y : Sigma_pattern) := ^plus _._ x _._ y.
+Definition mult' (x y : Sigma_pattern) := ^mult _._ x _._ y.
 
 (* helper notations for the following examples *)
-Definition c_x := (evar_c("x")).
-Definition c_y := (evar_c("y")).
-Definition c_z := (evar_c("z")).
-Definition c_n := evar_c("n").
-Definition n := sp_var(c_n).
-Definition x := (sp_var (evar_c("x"))).
-Definition y := (sp_var (evar_c("y"))).
-Definition z := (sp_var (evar_c("z"))).
+Definition x := evar_c("x").
+Definition y := evar_c("y").
+Definition z := evar_c("z").
+Definition n := evar_c("n").
 
 (* Example: x + 0 = x *)
 Definition x_plus'_0_eq_x :=
-  (for_all c_x of_sort Nat states ((plus' x zero) ~=~ x)).
+  (for_all x of_sort Nat states ((plus' 'x ^zero) ~=~ 'x)).
 
 (* Examples *)
 
 (* we have to specify the type of function parameters, because if not, the
  * following statement about natural numbers also can be formalised: *)
-Definition foo := plus' plus zero.
+Definition foo := plus' ^plus ^zero.
 
-Definition one := succ' zero.
+Definition one := succ' ^zero.
 Definition two := succ' one.
 Definition three := succ' two.
 Definition five := succ' (succ' three).
@@ -674,13 +679,13 @@ Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 :=
 Definition plus_1_plus_2_3_eq_1_plus_5 :=
   ((plus' one (plus' two three)) ~=~ (plus' one five)).
 Definition x_plus_2_plus_3_eq_x_plus_5 := 
-  (for_all c_x of_sort Nat states (
-    (plus' (plus' x two) three) ~=~ (plus' x five))).
+  (for_all x of_sort Nat states (
+    (plus' (plus' 'x two) three) ~=~ (plus' 'x five))).
 Definition x_plus_3_eq_x_plus_3 :=
-  (for_all c_x of_sort Nat states (plus' x three) ~=~ (plus' x three)).
+  (for_all x of_sort Nat states (plus' 'x three) ~=~ (plus' 'x three)).
 Definition x_plus_y_eq_x_plus_y :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states (plus' x y) ~=~ (plus' x y))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states (plus' 'x 'y) ~=~ (plus' 'x 'y))).
 
 Definition plus_1_2 := plus' one two.
 Definition plus_2_3 := plus' two three.
@@ -692,73 +697,73 @@ Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' :=
 Definition plus_1_plus_2_3_eq_plus_1_5 := plus_1_plus_2_3 ~=~ plus' one five.
 
 Definition plus_x_1_eq_5 :=
-  (for_all c_x of_sort Nat states ((plus' x one) ~=~ five)).
+  (for_all x of_sort Nat states ((plus' 'x one) ~=~ five)).
 
 Definition plus_x_1_eq_plus_y_1 :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      (plus' x one ~=~ (plus' y one)))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states
+      (plus' 'x one ~=~ (plus' 'y one)))).
 
 Definition plus_x_1_eq_y :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      ((plus' x one) ~=~ y))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states
+      ((plus' 'x one) ~=~ 'y))).
 
 Definition plus_x_1_eq_plus_y_3 :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      ((plus' x one) ~=~ (plus' y three)))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states
+      ((plus' 'x one) ~=~ (plus' 'y three)))).
 
 Definition plus_x_z_eq_y :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      (for_all c_z of_sort Nat states
-        ((plus' x z) ~=~ y)))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states
+      (for_all z of_sort Nat states
+        ((plus' 'x 'z) ~=~ 'y)))).
 
 Definition plus_x_plus_z_3_eq_y :=
-  (for_all c_x of_sort Nat states
-    (for_all c_y of_sort Nat states
-      (for_all c_z of_sort Nat states
-        ((plus' x (plus' z three))) ~=~ y))).
+  (for_all x of_sort Nat states
+    (for_all y of_sort Nat states
+      (for_all z of_sort Nat states
+        ((plus' 'x (plus' 'z three))) ~=~ 'y))).
 
 Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => zero
+| sp_const _ => ^zero
       (* succ b *)
 | sp_app _    b => plus' (succ' b) (SumFromZeroTo b)
-| _ => sp_const(sigma_c("non-exhaustive pattern"))
+| _ => ^(sigma_c("non-exhaustive pattern"))
 end.
 
-Lemma until_zero : (SumFromZeroTo zero) = zero.
+Lemma until_zero : (SumFromZeroTo ^zero) = ^zero.
 Proof. simpl. reflexivity. Qed.
 
-Lemma until_one : (SumFromZeroTo one) = (plus' one zero).
+Lemma until_one : (SumFromZeroTo one) = (plus' one ^zero).
 Proof. simpl. reflexivity. Qed.
 
-Lemma until_two : (SumFromZeroTo two) = (plus' two (plus' one zero)).
+Lemma until_two : (SumFromZeroTo two) = (plus' two (plus' one ^zero)).
 Proof. simpl. reflexivity. Qed.
 
 
 (* 1 + ... + n = n * (n+1) / 2. *)
 Definition Sum_of_first_n : Sigma_pattern :=
-  for_all c_n of_sort Nat states (mult' two (SumFromZeroTo n) ~=~
-  mult' n (succ' n)).
+  for_all n of_sort Nat states (mult' two (SumFromZeroTo 'n) ~=~
+  mult' 'n (succ' 'n)).
 
 
 Fixpoint ProdFromOneTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => zero
+| sp_const _ => ^zero
       (* succ _ *)
 | sp_app _    b => 
   match b with
   | sp_const _ => one
   | sp_app _ _ => mult' (succ' b) (ProdFromOneTo b)
-  | _ => sp_const(sigma_c("non-exhaustive pattern"))
+  | _ => ^(sigma_c("non-exhaustive pattern"))
   end
-| _ => sp_const(sigma_c("non-exhaustive pattern"))
+| _ => ^(sigma_c("non-exhaustive pattern"))
 end.
 
-Lemma until_zero' : (ProdFromOneTo zero) = zero.
+Lemma until_zero' : (ProdFromOneTo ^zero) = ^zero.
 Proof. simpl. reflexivity. Qed.
 
 Lemma until_one' : (ProdFromOneTo one) = one.
@@ -773,30 +778,30 @@ Proof. simpl. reflexivity. Qed.
 
 Fixpoint SumOfSquaresFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => zero
+| sp_const _ => ^zero
       (* succ b *)
 | sp_app _    b => plus' (mult' (succ' b) (succ' b)) (SumOfSquaresFromZeroTo b)
-| _ => sp_const(sigma_c("non-exhaustive pattern"))
+| _ => ^(sigma_c("non-exhaustive pattern"))
 end.
 
-Lemma until_zero'' : (SumOfSquaresFromZeroTo zero) = zero.
+Lemma until_zero'' : (SumOfSquaresFromZeroTo ^zero) = ^zero.
 Proof. simpl. reflexivity. Qed.
 
-Lemma until_one'' : (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) zero).
+Lemma until_one'' : 
+  (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) ^zero).
 Proof. simpl. reflexivity. Qed.
 
 Lemma until_two'' :
   (SumOfSquaresFromZeroTo two) =
-  (plus' (mult' two two) (plus' (mult' one one) zero)).
+  (plus' (mult' two two) (plus' (mult' one one) ^zero)).
 Proof. simpl. reflexivity. Qed.
 
 
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
 Definition Sum_of_squares :=
-  for_all c_n of_sort Nat states (
-    mult' six (SumOfSquaresFromZeroTo n) ~=~ 
-    mult' n (mult' (succ' n) (plus' (mult' two n) one))).
-
+  for_all n of_sort Nat states (
+    mult' six (SumOfSquaresFromZeroTo 'n) ~=~ 
+    mult' 'n (mult' (succ' 'n) (plus' (mult' two 'n) one))).
 
 End NaturalNumbers.
 
@@ -805,7 +810,7 @@ Section MatchingMuLogic.
 Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts)
 : Sigma_pattern :=
 match n with
-| O => sp_const (sigma_c("cannot operate on empty parameters"))
+| O => ^(sigma_c("cannot operate on empty parameters"))
 | S O => InhabitantSetOf (List.hd Nat vec)
 | S n' =>
     InhabitantSetOf (List.hd Nat vec) _._
@@ -818,7 +823,7 @@ Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
 
 Lemma nil_eq_nil : 
   app_inhabitant_sets (vn MSA_sorts) =
-  sp_const (sigma_c("cannot operate on empty parameters")).
+  ^ (sigma_c("cannot operate on empty parameters")).
 Proof. simpl. reflexivity. Qed.
 
 Lemma app_inhabitant_sets_test_one_element :
@@ -848,46 +853,61 @@ End MatchingMuLogic.
 
 Section ConstructorsAndTermAlgebras.
 
-(*
-Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
-  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (at level 0).
-Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
-  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern))
-    (at level 0).
-
- *)
-
-(*
-Fixpoint _generate_foralls (n : nat) (xl : list Sigma_pattern)
+Fixpoint _generate_foralls (n : nat) (xl : list EVar)
 : Sigma_pattern -> Sigma_pattern :=
 match n with
 | O => fun _ => sp_bottom
-| S n' => for_all ...
+| S O => fun pattern => for_all (List.hd x1 xl) of_sort Term states pattern
+| S n' => 
+    fun pattern =>
+      for_all
+        (List.hd x1 xl) 
+        of_sort Term states (_generate_foralls n' (List.tl xl) pattern)
 end.
 
 Fixpoint generate_foralls
-  {n m : nat}
-  (xv : VectorDef.t Sigma_pattern n) (yv : VectorDef.t Sigma_pattern m)
+  {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m)
   (pattern : Sigma_pattern)
 : Sigma_pattern :=
-  _generate_foralls n (to_list xv) (_generate_foralls m (to_list yv) pattern)
+  _generate_foralls n (to_list vx) (_generate_foralls m (to_list vy) pattern).
 
-Definition NoConfusion_I :=
-  (generate_foralls vec_of_x vec_of_y)
-    ((assoc_params c vec_of_x) !=~ (assoc_params d vec_of_y)). 
-*)
+Definition NoConfusion_I
+  {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m) (c d : Sigma)
+: Sigma_pattern :=
+  (generate_foralls vx vy) ((assoc_params c vx) !=~ (assoc_params d vy)).
 
-(* Definition NoConfusion_II := .
+Fixpoint _generate_equalities (n : nat) (xl : list EVar) (xl' : list EVar)
+: Sigma_pattern :=
+match n with
+| O => sp_bottom
+| S O => ('(List.hd x1 xl) ~=~ '(List.hd x1 xl'))
+| S n' =>
+    (sp_and
+      ('(List.hd x1 xl) ~=~ '(List.hd x1 xl'))
+      (_generate_equalities n' (List.tl xl) (List.tl xl')))
+end.
 
-Definition Inductive_Domain 
+Fixpoint generate_equalities
+  {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n)
+: Sigma_pattern :=
+  _generate_equalities n (to_list vx) (to_list vx').
+
+Definition NoConfusion_II 
+  {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n) (c : Sigma)
+: Sigma_pattern :=
+  ((generate_foralls vx vx')
+    (sp_impl
+      ((assoc_params c vx) ~=~ (assoc_params c vx'))
+      (generate_equalities vx vx'))).
+
+(* Definition Inductive_Domain
   (D : SVar)
 := 
   (
     [[ Term ]]) ~=~ 
     (sp_mu D (sp_or ...))
-  ).
-*)
+  ). *)
+
 
 End ConstructorsAndTermAlgebras.
 
@@ -896,35 +916,32 @@ Section NaturalNumbers.
 (* here is applied perhaps pointwise application, which is interpreted in the
  * denotational semantics *)
 Definition Inductive_Domain (D : SVar) :=
-  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or zero (succ' (sp_set D))).
+  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or ^zero (succ' `D)).
 
-Definition Peano_Induction (cn : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
+Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
   (sp_impl
     (sp_and
-      (phi  zero)
-      (sp_forall cn (
-        sp_impl
-          (phi (sp_var cn))
-          (phi (succ' (sp_var cn))) )))
-    (sp_forall cn (phi (sp_var cn)))).
+      (phi ^zero)
+      (sp_forall n (sp_impl (phi 'n) (phi (succ' 'n)) )))
+    (sp_forall n (phi 'n))).
 
 (* Examples *)
 
 (* <= relation *)
 Definition less (l r : Sigma_pattern) :=
-  for_some c_x of_sort Nat states (plus' l x ~=~ r).
+  for_some x of_sort Nat states (plus' l (sp_var x) ~=~ r).
 
 Definition less_or_equal (l r : Sigma_pattern) :=
   sp_or
     (l ~=~ r)
-    for_some c_x of_sort Nat states (plus' l x ~=~ r).
+    for_some x of_sort Nat states (plus' l (sp_var x) ~=~ r).
 
 (* States that if:
   - zero <= zero and
   - for all n of sort Nat : 0 <= (n+1)
  then for all n of sort Nat states 0 <= n *)
 Definition every_number_is_positive : Sigma_pattern :=
-  Peano_Induction c_n (less_or_equal zero).
+  Peano_Induction n (less_or_equal (sp_const zero)).
 
 Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 
@@ -933,7 +950,7 @@ Definition less2 (a b : Sigma_pattern) := less a (succ' b).
   - for all n of sort Nat : 0 < ((n+1) + 1)
  then for all n of sort Nat states 0 < (n+1) *)
 Definition every_successor_is_strictly_positive : Sigma_pattern :=
-  Peano_Induction c_n (less2 zero).
+  Peano_Induction n (less2 ^zero).
 
 End NaturalNumbers.
 
