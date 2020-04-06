@@ -299,6 +299,8 @@ match sp with
 end
 .
 
+End AML.
+
 Ltac proof_ext_val :=
 simpl;intros;
 repeat
@@ -306,7 +308,7 @@ repeat
    rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
 || rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
 || rewrite
-   (Extensionality_Ensembles _ _ _ (Compl_Union_Coml_Intes_Ensembles _ _ _))
+   (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
 || rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
   (* Apply *)
 || (eapply Same_set_Compl ; intros)
@@ -375,5 +377,3 @@ unfold Same_set. unfold Included. unfold Complement. unfold In. eapply conj.
 * intros. eapply conj.
   - intros. unfold not in H. *)
 Admitted.
-
-End AML.
