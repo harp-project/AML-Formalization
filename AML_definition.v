@@ -5,7 +5,6 @@ Require Import Coq.Lists.ListSet.
 Require Import Coq.Vectors.VectorDef.
 (* Require Import Coq.Program.Basics. *)
 
-Reserved Notation "a _._ b" (at level 50, left associativity).
 Section AML.
 
 Inductive EVar : Set := evar_c (id : string).
@@ -186,7 +185,7 @@ match C with
 end.
 
 Inductive got : Sigma_pattern -> Prop :=
-(* Propositional tautology *)
+(* Auxiliary rules for proving propositional tautology *)
 | E_prop_tau1 (phi : Sigma_pattern) :
     got (sp_impl phi phi)
 
@@ -203,7 +202,21 @@ Inductive got : Sigma_pattern -> Prop :=
     got
       (sp_impl
         (sp_impl (sp_not phi) (sp_not psi))
-        (sp_impl (psi) (psi)))
+        (sp_impl (psi) (phi)))
+
+(* Propositional tautology *)
+| E_prop_tau (phi psi xi : Sigma_pattern) :
+    got (sp_impl phi phi) ->
+    got (sp_impl phi (sp_impl psi phi)) ->
+    got
+      (sp_impl
+        (sp_impl phi (sp_impl psi xi))
+        (sp_impl (sp_impl phi psi) (sp_impl phi xi))) ->
+    got
+      (sp_impl
+        (sp_impl (sp_not phi) (sp_not psi))
+        (sp_impl (psi) (phi))) ->
+    got phi
 
 (* Modus ponens *)
 | E_mod_pon (phi1 phi2 : Sigma_pattern) :
@@ -212,6 +225,10 @@ Inductive got : Sigma_pattern -> Prop :=
 (* Existential quantifier *)
 | E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
   got (sp_impl (e_subst_var phi (sp_var y) x) (sp_exists x phi))
+
+(* Existential quantifier other interpretation *)
+| E_ex_quan' {phi : Sigma_pattern} (x y : EVar) :
+  got (e_subst_var phi (sp_var y) x) -> got (sp_exists x phi)
 
 (* Existential generalization *)
 | E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
@@ -311,13 +328,13 @@ Definition c_membership := sp_const(sigma_c("membership")).
  * - this can be restricted with operational evaluation rules *)
 Definition Membership (x : EVar) (phi : Sigma_pattern) :=
   ((c_membership _._ (sp_var x)) _._ phi).
-Notation "x -< phi" := (Membership x phi) (at level 100).
+Notation "x -< phi" := (Membership x phi) (at level 30).
 
 (* Non-membership *)
 Definition c_non_membership := sp_const(sigma_c("non-membership")).
 Definition NonMembership (x : EVar) (phi : Sigma_pattern) := 
   ((c_non_membership _._ (sp_var x)) _._ phi).
-Notation "x !-< phi" := (NonMembership x phi) (at level 100).
+Notation "x !-< phi" := (NonMembership x phi) (at level 30).
 
 (* Set inclusion *)
 Definition c_set_incl := sp_const(sigma_c("set inclusion")).
@@ -565,6 +582,29 @@ Lemma x1_x2_x3__x4_eq_par :
 = ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
 Proof. simpl. reflexivity. Qed.
 
+Section NatToStringConversion.
+
+Local Open Scope string_scope.
+Local Open Scope nat_scope.
+Fixpoint string_of_nat_aux (time n : nat) (acc : string) : string :=
+  let d := match Nat.modulo n 10 with
+           | 0 => "0" | 1 => "1" | 2 => "2" | 3 => "3" | 4 => "4" | 5 => "5"
+           | 6 => "6" | 7 => "7" | 8 => "8" | _ => "9"
+           end in
+  let acc' := d ++ acc in
+  match time with
+    | 0 => acc'
+    | S time' =>
+      match Nat.div n 10 with
+        | 0 => acc'
+        | n' => string_of_nat_aux time' n' acc'
+      end
+  end.
+
+Definition string_of_nat (n : nat) : string :=
+  string_of_nat_aux n n "".
+
+End NatToStringConversion.
 
 Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 
@@ -574,7 +614,7 @@ Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
  * everything, it imples the result too  *)
 (* this is allowed because this is only syntax and not the deduction - we don't 
  * need the type restriction at syntax level *)
-Definition Function (f : Sigma) {n : nat}
+(* Definition Function (f : Sigma) {n : nat}
             (ss : t MSA_sorts n) (s : MSA_sorts)
             (xs : t EVar n) (y : EVar) : Sigma_pattern :=
   (sp_impl
@@ -584,7 +624,41 @@ Definition Function (f : Sigma) {n : nat}
       (sp_and
         (y -< [[ s ]])
         (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-        ((assoc_params f xs) ~=~ (sp_var y)) ))).
+        ((assoc_params f xs) ~=~ (sp_var y)) ))). *)
+
+Check of_list (List.cons (evar_c("x")) (List.nil)).
+Check VectorDef.cons EVar (evar_c("x")) 0 (VectorDef.nil _).
+
+Fixpoint _gen_vec_of_x (n:nat) : list EVar :=
+match n with
+| O => (List.nil)
+| S n' => (List.cons
+            (evar_c(String.append "x" (string_of_nat(n))))
+            (_gen_vec_of_x n'))
+end.
+
+Lemma gen_vec_of_x_ok : forall n : nat, length (_gen_vec_of_x n) = n.
+Proof.
+  intro n.
+  induction n.
+  - reflexivity.
+           (* rewrite IHn. reflexivity. *)
+  - simpl. apply PeanoNat.Nat.succ_inj_wd. exact IHn.
+Qed.
+(* (p : forall n : nat, length (_gen_vec_of_x n) = n) *)
+(* Fixpoint gen_vec_of_x (n:nat) : VectorDef.t EVar n := (of_list(_gen_vec_of_x n)). *)
+
+Definition y := evar_c("y").
+Definition Function
+  (f : Sigma) {n : nat} (ss : t MSA_sorts n) (s : MSA_sorts) : Sigma_pattern :=
+  (sp_impl
+    (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
+    (_assoc_elem n (_gen_vec_of_x n) (to_list(ss)))
+    (sp_exists y
+      (sp_and
+        (y -< [[ s ]])
+        (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
+        ((_assoc_params f n (_gen_vec_of_x n)) ~=~ (sp_var y)) ))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -652,12 +726,12 @@ Definition mult' (x y : Sigma_pattern) := ^mult _._ x _._ y.
 
 (* helper notations for the following examples *)
 Definition x := evar_c("x").
-Definition y := evar_c("y").
+(* Definition y := evar_c("y"). *)
 Definition z := evar_c("z").
 Definition n := evar_c("n").
 
 (* Example: x + 0 = x *)
-Definition x_plus'_0_eq_x :=
+Definition x_plus_0_eq_x :=
   (for_all x of_sort Nat states ((plus' 'x ^zero) ~=~ 'x)).
 
 (* Examples *)
@@ -857,11 +931,11 @@ Fixpoint _generate_foralls (n : nat) (xl : list EVar)
 : Sigma_pattern -> Sigma_pattern :=
 match n with
 | O => fun _ => sp_bottom
-| S O => fun pattern => for_all (List.hd x1 xl) of_sort Term states pattern
+| S O => fun pattern => for_all (List.hd (evar_c("wrong input length")) xl) of_sort Term states pattern
 | S n' => 
     fun pattern =>
       for_all
-        (List.hd x1 xl) 
+        (List.hd (evar_c("wrong input length")) xl) 
         of_sort Term states (_generate_foralls n' (List.tl xl) pattern)
 end.
 
@@ -880,10 +954,10 @@ Fixpoint _generate_equalities (n : nat) (xl : list EVar) (xl' : list EVar)
 : Sigma_pattern :=
 match n with
 | O => sp_bottom
-| S O => ('(List.hd x1 xl) ~=~ '(List.hd x1 xl'))
+| S O => ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
 | S n' =>
     (sp_and
-      ('(List.hd x1 xl) ~=~ '(List.hd x1 xl'))
+      ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
       (_generate_equalities n' (List.tl xl) (List.tl xl')))
 end.
 
@@ -953,5 +1027,55 @@ Definition every_successor_is_strictly_positive : Sigma_pattern :=
   Peano_Induction n (less2 ^zero).
 
 End NaturalNumbers.
+
+
+
+Notation "x -.> y" := (sp_impl (x) (y)) (at level 40).
+
+Section ProofExamples.
+
+Lemma ex1 : got ('x -.> 'x).
+Proof. apply E_prop_tau1. Qed.
+
+Lemma ex2 : got (sp_bottom -.> ((sp_var x) -.> sp_bottom)).
+Proof. apply E_prop_tau2. Qed.
+
+Lemma ex3 : got (('x -.> ('y -.> 'z)) -.> (('x -.> 'y) -.> ('x -.> 'z))).
+Proof. apply E_prop_tau3. Qed.
+
+Lemma ex4 : got (((sp_not 'x) -.> (sp_not 'y)) -.> ('y -.> 'x)).
+Proof. apply E_prop_tau4. Qed.
+
+Lemma ex5 : (got 'x) -> (got (' x -.> ' y)) -> (got ' y).
+Proof. apply (E_mod_pon 'x 'y). Qed.
+
+Lemma ex6 : got (e_subst_var sp_bottom 'y x -.> sp_exists x sp_bottom).
+Proof. apply E_ex_quan. Qed.
+
+Check E_ex_quan' x y.
+
+Lemma ex6' : got (e_subst_var sp_bottom 'y x) -> got (sp_exists x sp_bottom).
+Proof. apply E_ex_quan'. Qed.
+
+Check E_ex_gen.
+Check E_ex_gen 'x 'y z.
+
+Lemma ex7 : got ('x -.> 'y) -> negb (set_mem evar_eq_dec z (free_vars 'y)) = true -> got (sp_exists z 'x -.> 'y).
+Proof. apply E_ex_gen. Qed.
+
+(* TODO Ltac. *)
+
+Lemma how_to_do_this : got ('x -.> 'y).
+
+(* Lemma ex1 : got x_plus_0_eq_x.
+Proof.
+  unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
+  eapply E_ex_gen.
+  - eapply E_mod_pon.
+    + eapply E_
+Qed.
+ *)
+
+End ProofExamples.
 
 End AML.
