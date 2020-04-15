@@ -2,6 +2,7 @@ Require Import String.
 Require Import Coq.Init.Datatypes.
 Require Import Coq.Lists.List.
 Require Import Coq.Lists.ListSet.
+Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 (* Require Import Coq.Program.Basics. *)
 
@@ -137,7 +138,7 @@ Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
 
 Definition evar_eq (x y : EVar) : bool :=
 match x, y with
-| evar_c id_x, evar_c id_y => eqb id_x id_y
+| evar_c id_x, evar_c id_y => String.eqb id_x id_y
 end.
 
 Fixpoint free_vars (phi : Sigma_pattern) : (ListSet.set EVar) :=
@@ -420,6 +421,11 @@ Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 Definition vc := VectorDef.cons.
 Definition vn := VectorDef.nil.
 
+Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) := 
+match n with
+ | O => F1
+ | S x => FS (_of_nat x)
+end.
 
 Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
 match n with
@@ -428,10 +434,25 @@ match n with
 | S n' => ((List.hd sp_bottom vec) _&_ (_and_gen n' (List.tl vec)))
 end.
 
-Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
-: Sigma_pattern := 
-  _and_gen n (to_list vec).
+Check VectorDef.nth.
 
+
+(* TODO: ask if is enough with fold *)
+Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
+: Sigma_pattern :=
+match vec with
+| VectorDef.nil _ => sp_bottom (* TODO: sp_top *)
+| VectorDef.cons _ elem _ (VectorDef.nil _) => elem
+| VectorDef.cons _ elem _ rem => sp_and elem (and_gen rem)
+end.
+
+(*   _and_gen n (to_list vec). *)
+(* match n with
+| O => sp_bottom
+| S O => (* VectorDef.nth vec Fin.F1 *) (VectorDef.hd vec)
+| S n' => ((List.hd sp_bottom vec) _&_ (_and_gen n' (List.tl vec)))
+end.
+ *)
 Lemma zero_eq : (_and_gen 0 (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
@@ -486,16 +507,43 @@ match n with
       (_assoc_elem n' (List.tl vars) (List.tl sorts))
 end.
 
+Check VectorDef.map2 Membership.
+
 Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n)
                     (sorts : VectorDef.t MSA_sorts n)
-: Sigma_pattern :=
-  _assoc_elem n (to_list (vars)) (to_list (sorts)).
+(* : Sigma_pattern *) :=
+let doms := VectorDef.map InhabitantSetOf sorts in
+  and_gen (VectorDef.map2 Membership vars doms).
+
+(* 
+(*   _assoc_elem n (to_list (vars)) (to_list (sorts)). *)
+match vars, sorts with
+| (VectorDef.nil _), (VectorDef.nil _) =>
+    sp_bottom
+
+| (VectorDef.cons _ var _ (VectorDef.nil _)),
+  (VectorDef.cons _ sort _ (VectorDef.nil _)) =>
+    (var -< [[ sort ]])
+
+| (VectorDef.cons _ var _ rem_vars),
+  (VectorDef.cons _ sort _ rem_sorts) =>
+    sp_and (var -< [[ sort ]]) (assoc_elem rem_vars rem_sorts)
+| _, _ => sp_bottom
+end. *)
 
 Lemma zero_eq_assoc : (_assoc_elem 0 (List.nil) (List.nil)) = sp_bottom.
 Proof. simpl. reflexivity. Qed.
 
+Lemma zero_eq_assoc' : (assoc_elem (vn _) (vn _)) = sp_bottom.
+Proof. simpl. reflexivity. Qed.
+
 Lemma x1_eq_assoc : 
   (_assoc_elem 1 ((List.cons x1) List.nil) ((List.cons Nat) List.nil)) = 
+  (x1 -< [[ Nat ]]).
+Proof. simpl. reflexivity. Qed.
+
+Lemma x1_eq_assoc' : 
+  (assoc_elem (vc _ x1 0 (vn _)) (vc _ Nat 0 (vn _))) =
   (x1 -< [[ Nat ]]).
 Proof. simpl. reflexivity. Qed.
 
@@ -506,10 +554,24 @@ Lemma x1_x2_eq_assoc :
   ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]])).
 Proof. simpl. reflexivity. Qed.
 
+Lemma x1_x2_eq_assoc' :
+  (assoc_elem
+    (vc _ x1 1 (vc _ x2 0 (vn _ )))
+    (vc _ Nat 1 (vc _ List 0 (vn _))) ) =
+  ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]])).
+Proof. simpl. reflexivity. Qed.
+
 Lemma x1_x2_x3_eq_assoc :
   (_assoc_elem 3
     ((List.cons x1) ((List.cons x2) (List.cons x3 List.nil)))
     ((List.cons Nat) ((List.cons List) (List.cons Cfg List.nil)))) =
+  ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]])).
+Proof. simpl. reflexivity. Qed.
+
+Lemma x1_x2_x3_eq_assoc' :
+  (assoc_elem
+    (vc _ x1 2 (vc _ x2 1 (vc _ x3 0 (vn _))))
+    (vc _ Nat 2 (vc _ List 1 (vc _ Cfg 0 (vn _))))) =
   ((x1 -< [[ Nat ]]) _&_ (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]])).
 Proof. simpl. reflexivity. Qed.
 
@@ -519,6 +581,14 @@ Lemma x1_x2_x3__x4_eq_assoc :
       ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil))))
     ((List.cons Nat)
       ((List.cons List) ((List.cons Cfg) (List.cons Nat List.nil))))) =
+  ((x1 -< [[ Nat ]]) _&_
+    (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]]) _&_ (x4 -< [[ Nat ]])).
+Proof. simpl. reflexivity. Qed.
+
+Lemma x1_x2_x3__x4_eq_assoc' :
+  (assoc_elem
+    (vc _ x1 3 (vc _ x2 2 (vc _ x3 1 (vc _ x4 0 (vn _)))))
+    (vc _ Nat 3 (vc _ List 2 (vc _ Cfg 1 (vc _ Nat 0 (vn _))))) ) =
   ((x1 -< [[ Nat ]]) _&_
     (x2 -< [[ List ]]) _&_ (x3 -< [[ Cfg ]]) _&_ (x4 -< [[ Nat ]])).
 Proof. simpl. reflexivity. Qed.
@@ -539,7 +609,9 @@ end.
 Fixpoint assoc_params (f : Sigma) {n : nat}
                       (vars : VectorDef.t EVar n)
 : Sigma_pattern :=
-  _assoc_params f n (to_list (vars)).
+(*   _assoc_params f n (to_list (vars)). *)
+let variables := VectorDef.map sp_var vars in
+  VectorDef.fold_left sp_app (sp_const f) variables.
 
 
 (* Fixpoint assoc_params (f : Sigma) {n : nat}
@@ -553,13 +625,26 @@ Definition fun_f := sigma_c("fun").
 Lemma zero_eq_par : (_assoc_params fun_f 0 (List.nil)) = (sp_const fun_f).
 Proof. simpl. unfold fun_f. reflexivity. Qed.
 
+Lemma zero_eq_par' : (assoc_params fun_f (vn _)) = (sp_const fun_f).
+Proof. simpl. unfold fun_f. reflexivity. Qed.
+
 Lemma x1_eq_par :
   (_assoc_params fun_f 1 ((List.cons x1) List.nil)) =
   ((sp_const fun_f) _._ (sp_var x1)).
 Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
 
+Lemma x1_eq_par' :
+  (assoc_params fun_f (vc _ x1 0 (vn _))) =
+  ((sp_const fun_f) _._ (sp_var x1)).
+Proof. simpl. unfold fun_f. unfold x1. reflexivity. Qed.
+
 Lemma x1_x2_eq_par :
   (_assoc_params fun_f 2 ((List.cons x1) (List.cons x2 List.nil))) = 
+  ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2)).
+Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
+
+Lemma x1_x2_eq_par' :
+  (assoc_params fun_f (vc _ x1 1 (vc _ x2 0 (vn _)))) =
   ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2)).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. reflexivity. Qed.
 
@@ -569,10 +654,20 @@ Lemma x1_x2_x3_eq_par :
   ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3)).
 Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
 
+Lemma x1_x2_x3_eq_par' :
+  (assoc_params fun_f (vc _ x1 2 (vc _ x2 1 (vc _ x3 0 (vn _))))) = 
+  ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3)).
+Proof. simpl. unfold fun_f. unfold x1. unfold x2. unfold x3. reflexivity. Qed.
+
 Lemma x1_x2_x3__x4_eq_par :
   (_assoc_params fun_f 4
-    ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil)))))
-= ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
+    ((List.cons x1) ((List.cons x2) ((List.cons x3) (List.cons x4 List.nil))))) =
+    ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
+Proof. simpl. reflexivity. Qed.
+
+Lemma x1_x2_x3__x4_eq_par' :
+  (assoc_params fun_f (vc _ x1 3 (vc _ x2 2 (vc _ x3 1 (vc _ x4 0 (vn _)))))) =
+  ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
 Proof. simpl. reflexivity. Qed.
 
 Section NatToStringConversion.
@@ -641,30 +736,14 @@ match n with
     (_gen_vec_of_x n')
 end.
 
-Require Import Coq.Vectors.Fin.
-
-Definition vec := vc string "Donko"%string 2 (vc string "Istvan"%string 1 (vc string "sajt"%string 0 (vn _))).
-
-Check (FS F1).
-Check Fin.t.
-Check F1.
-Compute Fin.t 0.
-Compute Fin.t 2.
-
-Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) := 
-match n with
- | O => F1
- | S x => FS (_of_nat x)
-end.
+(* Definition vec := vc string "Donko"%string 2 (vc string "Istvan"%string 1 (vc string "sajt"%string 0 (vn _))).
 
 Compute _of_nat 0.
 
-Compute VectorDef.nth vec (_of_nat 1).
+Compute VectorDef.nth vec (_of_nat 1). *)
 
-Compute of_nat_lt _ 3 1.
-
-Fixpoint asd (n : nat) : t n + {exists m : nat, 1 = 2 + m}
-Check VectorDef.nth vec Fin.FS.
+(* Fixpoint asd (n : nat) : t n + {exists m : nat, 1 = 2 + m} *)
+(* Check VectorDef.nth vec Fin.FS. *)
 
 Compute _gen_vec_of_x 5.
 
@@ -683,7 +762,6 @@ of_list(_gen_list_of_x n).
 
 Next Obligation. Proof. apply gen_vec_of_x_ok. Qed.
 
-Eval compute in simpl gen_vec_of_x 5.
 
 (* Theorem gen_vec_of_x (n:nat) : VectorDef.t EVar n.
 Proof.
@@ -698,12 +776,12 @@ Definition Function
   (f : Sigma) {n : nat} (ss : t MSA_sorts n) (s : MSA_sorts) : Sigma_pattern :=
   (sp_impl
     (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
-    (_assoc_elem n (_gen_vec_of_x n) (to_list(ss)))
+    (_assoc_elem n (to_list (_gen_vec_of_x n)) (to_list(ss)))
     (sp_exists y
       (sp_and
         (y -< [[ s ]])
         (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-        ((_assoc_params f n (_gen_vec_of_x n)) ~=~ (sp_var y)) ))).
+        ((_assoc_params f n (to_list (_gen_vec_of_x n))) ~=~ (sp_var y)) ))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -1128,8 +1206,16 @@ Proof.
   exact _5.
 Qed. *)
 
-Lemma ex_A_impl_A (A : Sigma_pattern) : got (A -.> A).
+Lemma A_impl_A (A : Sigma_pattern) : got (A -.> A).
 Proof.
+(*   eapply E_mod_pon.
+    - eapply E_prop_tau2.
+    - eapply E_mod_pon.
+      + eapply E_prop_tau2.
+      + eapply E_prop_tau3 .
+  Unshelve.
+  exact A. *)
+
   pose(_1 := E_prop_tau3 A (A -.> A) A).
   pose(_2 := E_prop_tau2 A (A -.> A)).
   pose(_3 := E_mod_pon _2 _1).
@@ -1138,24 +1224,54 @@ Proof.
   exact _5.
 Qed.
 
-Check E_prop_tau1.
-Check ex_A_impl_A.
-Theorem A_impl_A_equiv : forall A : Sigma_pattern, (ex_A_impl_A A) = (E_prop_tau1 A).
+(* Theorem A_impl_A_equiv : forall A : Sigma_pattern, (A_impl_A A) = (E_prop_tau1 A).
 Proof.
   intros.
   induction A.
-  - reflexivity.
+Admitted. *)
 
-(* Lemma how_to_do_this : got ('x -.> 'y). *)
+Check E_prop_tau1.
+Check E_prop_tau2.
+Check E_prop_tau3.
+Check E_prop_tau4.
+Lemma C3 (A B : Sigma_pattern) :
+(*   got (((sp_not A) -.> B) -.> (((sp_not A) -.> (sp_not B)) -.> A)). *)
+Proof.
+(*   pose(_1 := (E_prop_tau2 ((sp_not A) -.> B) ((sp_not A) -.> (sp_not B)))). *)
 
-(* Lemma ex1 : got x_plus_0_eq_x.
+Check sp_const plus.
+
+
+Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) -.> A).
+Proof.
+  pose(_1 := (E_prop_tau1 (sp_not (sp_not A)))).
+  
+  pose(_2 := E_prop_tau2 (sp_not (sp_not A)) (sp_not (sp_not (sp_not (sp_not A)))) ).
+
+ Check E_mod_pon _ _2.
+  pose()
+
+  pose(_2 := (E_mod_pon  _  _1)).
+
+  pose(_1 := (      A (sp_not A))).
+  pose(_2 := (A_impl_A (sp_not A))).
+  pose(_3 := (E_mod_pon _1 _2)).
+
+
+(* Definition x := evar_c("x"). *)
+Lemma ex : got x_plus_0_eq_x.
 Proof.
   unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
+
+  pose(ex := sp_exists x ((x -< InhabitantSetOf Nat -.> (plus' ' x ^ zero ~=~ ' x)) -.> sp_bottom) -.> sp_bottom).
+  pose(_1 := (E_ex_gen ex sp_bottom x)).
+
   eapply E_ex_gen.
+  pose(ex := )
   - eapply E_mod_pon.
     + eapply E_
 Qed.
- *)
+
 
 End ProofExamples.
 
