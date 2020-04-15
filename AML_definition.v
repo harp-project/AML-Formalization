@@ -311,7 +311,7 @@ repeat
    (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
 || rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
   (* Apply *)
-|| (eapply Same_set_Compl ; intros)
+|| (eapply (proj1 Same_set_Compl) ; intros)
   (* Final step *)
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
