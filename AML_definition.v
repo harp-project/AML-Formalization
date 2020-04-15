@@ -5,6 +5,8 @@ Require Import Ensembles_Ext.
 
 Section AML.
 
+(* Syntax of AML ref. snapshot: Section 2.1 *)
+
 Inductive EVar : Type := evar_c {id_ev : string}.
 Inductive SVar : Type := svar_c {id_sv : string}.
 Inductive Sigma : Type := sigma_c {id_si : string}.
@@ -19,21 +21,6 @@ Inductive Sigma_pattern : Type :=
 | sp_exists (x : EVar) (phi : Sigma_pattern)
 | sp_mu (X : SVar) (phi : Sigma_pattern)
 .
-
-(* Definition is_svar_box (s : SVar) : bool :=
-match s with
-| svar_c id => eqb id "box"
-end
-.
-
-Inductive sp_context_e : Sigma_pattern -> Prop :=
-| c_box (x : SVar) (p : (is_svar_box x) = true ) :
-  sp_context_e (sp_set x)
-| c_cons_l (spl spr : Sigma_pattern) (p : sp_context_e spl) :
-  sp_context_e (sp_app spl spr)
-| s_cons_r (spl spr : Sigma_pattern) (p : sp_context_e spr) :
-  sp_context_e (sp_app spl spr)
-. *)
 
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
@@ -149,15 +136,6 @@ match phi with
 end
 .
 
-(* Definition is_free (x : EVar) (phi : Sigma_pattern) : bool :=
-set_mem evar_eq_dec x (free_vars phi). *)
-
-(* Inductive application_context : Set :=
-| pattern (p : Sigma_pattern)
-| box
-.
- *)
-
 Inductive context : Set :=
 | box
 | ctx_app_l (cc : context) (sp : Sigma_pattern)
@@ -173,6 +151,9 @@ end
 .
 
 (* FIXME Create Test File *)
+
+
+(* Proof system for AML ref. snapshot: Section 3 *)
 Definition box_context := subst_ctx box sp_bottom.
 Eval compute in box_context.
 
@@ -270,6 +251,9 @@ Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
                       (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
 fun x : T1 => if eqb x t1 then t2 else f x.
 
+
+(* Model of AML ref. snapshot: Definition 2 *)
+
 Record Sigma_model := {
   M : Type;
   A_eq_dec : forall (a b : M), {a = b} + {a <> b};
@@ -280,6 +264,8 @@ Record Sigma_model := {
 Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) :
                          Ensemble (M sm) :=
 fun e:M sm => exists le re:M sm, l le -> r re -> (app sm) le re e.
+
+(* Semantics of AML ref. snapshot: Definition 3 *)
 
 Fixpoint ext_valuation {sm : Sigma_model} (evar_val : EVar -> M sm)
 (svar_val : SVar -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
@@ -316,6 +302,9 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
+
+(* Proof of correct semantics for the derived operators
+ref. snapshot: Proposition 4 *)
 
 Lemma not_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -367,13 +356,14 @@ forall sp : Sigma_pattern, forall X : SVar, Same_set _
   (ext_valuation evar_val svar_val (sp_nu X sp))
   (nu (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
 Proof.
-(* proof_ext_val.
-unfold mu. unfold FA_Inters_cond.
-rewrite (Extensionality_Ensembles _ _ _ (FA_rel2 _ _ _)).
-unfold nu. unfold FA_Union_cond.
-eapply FA_Union_same. intros.
 proof_ext_val.
-unfold Same_set. unfold Included. unfold Complement. unfold In. eapply conj.
-* intros. eapply conj.
-  - intros. unfold not in H. *)
+unfold mu. unfold nu. unfold FA_Union_cond. unfold FA_Inters_cond.
+apply Same_set_symmetric. apply Same_set_Compl.
+rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _)).
+rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _)).
+eapply FA_Inters_same. intros.
+proof_ext_val.
+unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In. eapply conj.
+* intros. eapply H0. intros. refine (H _). split.
+  - intros.
 Admitted.

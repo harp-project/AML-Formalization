@@ -1,6 +1,10 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
+(* README ForAll_Intersection/Union
+Generic versions of the usual intersection and union operators.
+These operators accumulate over the whole C carrier set. *)
+
 Inductive FA_Intersection {T C : Type} (f : C -> Ensemble T) : Ensemble T :=
 FA_Int_intro :
   forall x : T, (forall c : C, f c x) -> In T (FA_Intersection f) x.
@@ -8,6 +12,24 @@ FA_Int_intro :
 Inductive FA_Union {T C : Type} (f : C -> Ensemble T) : Ensemble T :=
 FA_Uni_intro :
   forall x : T, (exists c : C, f c x) -> In T (FA_Union f) x.
+
+Definition FA_Inters_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) :
+                          Ensemble T :=
+FA_Intersection (fun c t => g c -> f c t).
+
+Definition FA_Union_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) :
+                         Ensemble T :=
+FA_Union (fun c t => g c /\ f c t).
+
+(* Knaster-Tarski Fixpoint operators *)
+
+Definition mu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
+  FA_Inters_cond (fun S => Included T (f S) S) (fun S => S).
+
+Definition nu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
+  FA_Union_cond  (fun S => Included T S (f S)) (fun S => S).
+
+(* Properties of the generic operators *)
 
 Lemma FA_rel : forall T C : Type, forall f : C -> Ensemble T,
 let fcom := fun c => Complement _ (f c) in
@@ -18,14 +40,6 @@ split;intros.
 * eapply FA_Int_intro. intros. exact (H (FA_Uni_intro f x (ex_intro _ c H0))).
 * inversion H. inversion H0. subst. inversion H3. exact (H1 x0 H2).
 Qed.
-
-Definition FA_Inters_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) :
-                          Ensemble T :=
-FA_Intersection (fun c t => g c -> f c t).
-
-Definition FA_Union_cond {T C : Type} (g : Ensemble C) (f : C -> Ensemble T) :
-                         Ensemble T :=
-FA_Union (fun c t => g c /\ f c t).
 
 Lemma FA_Inters_same : forall T C : Type, forall f f' : C -> Ensemble T,
 (forall c, Same_set _ (f c) (f' c)) ->
@@ -44,11 +58,7 @@ eapply conj;intros;eapply FA_Uni_intro;inversion H0;destruct H1;destruct(H x1);
 eapply ex_intro;auto.
 Qed.
 
-Definition mu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
-  FA_Inters_cond (fun S => Included T (f S) S) (fun S => S).
-
-Definition nu {T : Type} (f : Ensemble T -> Ensemble T) : Ensemble T :=
-  FA_Union_cond  (fun S => Included T S (f S)) (fun S => S).
+(* Propersies of the standard set operators *)
 
 Lemma Union_Empty_r {T : Type} : forall A : Ensemble T,
 Same_set T (Union T (Empty_set T) A) A.
@@ -123,18 +133,18 @@ forall L R : Ensemble T, Same_set T (Complement T (Union T (Complement T L)
                                                            (Complement T R)))
                                     (Intersection T L R).
 Proof.
-  intros.
-  apply Same_set_Compl.
-  rewrite (Extensionality_Ensembles _ _ _(Compl_Compl_Ensembles _ _)).
-  unfold Same_set. unfold Included. unfold In. split;intros.
-  - apply Union_is_or in H.
-    unfold Complement. unfold not. unfold In. intro.
-    inversion H0. case H;intros;unfold In in *.
-    * exact (H4 H1).
-    * exact (H4 H2).
-  - apply Union_is_or.
-    unfold Complement in *. unfold not in *. unfold In in *.
-    apply not_and_or. intro. exact (H (proj2 (Intersection_is_and _ L R x) H0)).
+intros.
+apply Same_set_Compl.
+rewrite (Extensionality_Ensembles _ _ _(Compl_Compl_Ensembles _ _)).
+unfold Same_set. unfold Included. unfold In. split;intros.
+- apply Union_is_or in H.
+  unfold Complement. unfold not. unfold In. intro.
+  inversion H0. case H;intros;unfold In in *.
+  * exact (H4 H1).
+  * exact (H4 H2).
+- apply Union_is_or.
+  unfold Complement in *. unfold not in *. unfold In in *.
+  apply not_and_or. intro. exact (H (proj2 (Intersection_is_and _ L R x) H0)).
 Qed.
 
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
