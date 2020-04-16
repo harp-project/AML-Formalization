@@ -725,27 +725,12 @@ match n with
             (_gen_list_of_x n'))
 end.
 
-Program Fixpoint _gen_vec_of_x (n:nat) : VectorDef.t EVar n :=
+Program Fixpoint gen_x_vec (n:nat) : VectorDef.t EVar n :=
 match n with
 | O => (VectorDef.nil EVar)
-| S n' =>
-  VectorDef.cons
-    EVar
-    (evar_c(String.append "x" (string_of_nat(n))))
-    n'
-    (_gen_vec_of_x n')
+| S n' => VectorDef.cons EVar
+            (evar_c(String.append "x" (string_of_nat(n)))) n' (gen_x_vec n')
 end.
-
-(* Definition vec := vc string "Donko"%string 2 (vc string "Istvan"%string 1 (vc string "sajt"%string 0 (vn _))).
-
-Compute _of_nat 0.
-
-Compute VectorDef.nth vec (_of_nat 1). *)
-
-(* Fixpoint asd (n : nat) : t n + {exists m : nat, 1 = 2 + m} *)
-(* Check VectorDef.nth vec Fin.FS. *)
-
-Compute _gen_vec_of_x 5.
 
 Lemma gen_vec_of_x_ok : forall n : nat, length (_gen_list_of_x n) = n.
 Proof.
@@ -755,33 +740,25 @@ Proof.
            (* rewrite IHn. reflexivity. *)
   - simpl. apply PeanoNat.Nat.succ_inj_wd. exact IHn.
 Qed.
-(* (p : forall n : nat, length (_gen_vec_of_x n) = n) *)
 
-Program Fixpoint gen_vec_of_x (n:nat) : VectorDef.t EVar n :=
+(* Program Fixpoint gen_vec_of_x (n:nat) : VectorDef.t EVar n :=
 of_list(_gen_list_of_x n).
 
-Next Obligation. Proof. apply gen_vec_of_x_ok. Qed.
+Next Obligation. Proof. apply gen_vec_of_x_ok. Qed. *)
 
-
-(* Theorem gen_vec_of_x (n:nat) : VectorDef.t EVar n.
-Proof.
-  rewrite <- (gen_vec_of_x_ok n).
-  exact (of_list(_gen_list_of_x n)).
-Qed. *)
-
-Compute gen_vec_of_x 5.
+Compute gen_x_vec 5.
 
 Definition y := evar_c("y").
 Definition Function
   (f : Sigma) {n : nat} (ss : t MSA_sorts n) (s : MSA_sorts) : Sigma_pattern :=
   (sp_impl
     (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
-    (_assoc_elem n (to_list (_gen_vec_of_x n)) (to_list(ss)))
+    (assoc_elem (gen_x_vec n) ss)
     (sp_exists y
       (sp_and
         (y -< [[ s ]])
         (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-        ((_assoc_params f n (to_list (_gen_vec_of_x n))) ~=~ (sp_var y)) ))).
+        ((assoc_params f (gen_x_vec n)) ~=~ (sp_var y)) ))).
 
 Definition Sort (s : MSA_sorts) := s.
 
@@ -1234,18 +1211,15 @@ Check E_prop_tau1.
 Check E_prop_tau2.
 Check E_prop_tau3.
 Check E_prop_tau4.
-Lemma C3 (A B : Sigma_pattern) :
+(* Lemma C3 (A B : Sigma_pattern) :
 (*   got (((sp_not A) -.> B) -.> (((sp_not A) -.> (sp_not B)) -.> A)). *)
-Proof.
+Proof. *)
 (*   pose(_1 := (E_prop_tau2 ((sp_not A) -.> B) ((sp_not A) -.> (sp_not B)))). *)
 
-Check sp_const plus.
-
-
-Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) -.> A).
+(* Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) -.> A).
 Proof.
   pose(_1 := (E_prop_tau1 (sp_not (sp_not A)))).
-  
+
   pose(_2 := E_prop_tau2 (sp_not (sp_not A)) (sp_not (sp_not (sp_not (sp_not A)))) ).
 
  Check E_mod_pon _ _2.
@@ -1256,10 +1230,10 @@ Proof.
   pose(_1 := (      A (sp_not A))).
   pose(_2 := (A_impl_A (sp_not A))).
   pose(_3 := (E_mod_pon _1 _2)).
-
+ *)
 
 (* Definition x := evar_c("x"). *)
-Lemma ex : got x_plus_0_eq_x.
+(* Lemma ex : got x_plus_0_eq_x.
 Proof.
   unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
 
@@ -1270,8 +1244,7 @@ Proof.
   pose(ex := )
   - eapply E_mod_pon.
     + eapply E_
-Qed.
-
+Qed. *)
 
 End ProofExamples.
 
