@@ -55,7 +55,7 @@ Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
   | sp_app phi1 phi2 =>
       andb (spos_accumulated phi1 X nc) (spos_accumulated phi2 X nc)
   | sp_bottom => true
-  | sp_impl phi1 phi2 => 
+  | sp_impl phi1 phi2 =>
       andb (spos_accumulated phi1 X (S nc)) (spos_accumulated phi2 X nc)
   | sp_exists x phi => spos_accumulated phi X nc
   | sp_mu Y phi =>
@@ -125,8 +125,8 @@ match phi with
 | sp_bottom => sp_bottom
 | sp_impl phi1 phi2 => sp_impl (e_subst_set phi1 psi X) (e_subst_set phi2 psi X)
 | sp_exists x' phi' => sp_exists x' (e_subst_set phi' psi X)
-| sp_mu X' phi' => 
-    if (svar_eq_dec X' X) then 
+| sp_mu X' phi' =>
+    if (svar_eq_dec X' X) then
       sp_mu X' phi'
     else
       sp_mu X' (e_subst_set phi' psi X)
@@ -149,7 +149,7 @@ match phi with
 | sp_app phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
 | sp_bottom => List.nil
 | sp_impl phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
-| sp_exists y phi => 
+| sp_exists y phi =>
     set_diff evar_eq_dec
       (free_vars phi)
       (set_add evar_eq_dec y List.nil)
@@ -305,19 +305,19 @@ Notation "x -< phi" := (Membership x phi) (at level 30).
 
 (* Non-membership *)
 Definition c_non_membership := sp_const(sigma_c("non-membership")).
-Definition NonMembership (x : EVar) (phi : Sigma_pattern) := 
+Definition NonMembership (x : EVar) (phi : Sigma_pattern) :=
   ((c_non_membership _._ (sp_var x)) _._ phi).
 Notation "x !-< phi" := (NonMembership x phi) (at level 30).
 
 (* Set inclusion *)
 Definition c_set_incl := sp_const(sigma_c("set inclusion")).
-Definition SetInclusion (l r : Sigma_pattern) := 
+Definition SetInclusion (l r : Sigma_pattern) :=
   ((c_set_incl _._ l) _._ r).
 Notation "phi1 <: phi2" := (SetInclusion phi1 phi2) (at level 100).
 
 (* Set exclusion *)
 Definition c_set_excl := sp_const(sigma_c("set exclusion")).
-Definition SetExclusion (l r : Sigma_pattern) := 
+Definition SetExclusion (l r : Sigma_pattern) :=
   ((c_set_excl _._ l) _._ r).
 Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
 
@@ -396,20 +396,12 @@ Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 Definition vc := VectorDef.cons.
 Definition vn := VectorDef.nil.
 
-Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) := 
+Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) :=
 match n with
  | O => F1
  | S x => FS (_of_nat x)
 end.
 
-Fixpoint _and_gen (n : nat) (vec : list Sigma_pattern) : Sigma_pattern :=
-match n with
-| O => sp_bottom
-| S O => (List.hd sp_bottom vec)
-| S n' => ((List.hd sp_bottom vec) _&_ (_and_gen n' (List.tl vec)))
-end.
-
-(* TODO: ask if is enough with fold *)
 Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
 : Sigma_pattern :=
 match vec with
@@ -418,37 +410,11 @@ match vec with
 | VectorDef.cons _ elem _ rem => sp_and elem (and_gen rem)
 end.
 
-Fixpoint _assoc_elem (n : nat) (vars : list EVar)
-                     (sorts : list MSA_sorts)
-: Sigma_pattern :=
-match n with
-| O => sp_bottom
-| S O => ((List.hd (evar_c("error at elem assoc S O")) vars) -<
-          [[ (List.hd Nat sorts) ]])
-| S n' =>
-    sp_and
-      ((List.hd (evar_c("error at elem assoc S n")) vars) -<
-       [[ (List.hd Nat sorts) ]])
-      (_assoc_elem n' (List.tl vars) (List.tl sorts))
-end.
-
 Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n)
                     (sorts : VectorDef.t MSA_sorts n)
 : Sigma_pattern :=
   let doms := VectorDef.map InhabitantSetOf sorts in
     and_gen (VectorDef.map2 Membership vars doms).
-
-Fixpoint _assoc_params (f : Sigma) (n : nat) (vars : list EVar)
-: Sigma_pattern :=
-match n with
-| O => sp_const f
-| S O =>
-    ((sp_const f) _._
-      (sp_var (List.nth O vars (evar_c("error singleton fun param list")))))
-| S n' =>
-    (_assoc_params f n' vars) _._
-      (sp_var (List.nth n' vars (evar_c("error long fun param list"))))
-end.
 
 Fixpoint assoc_params (f : Sigma) {n : nat}
                       (vars : VectorDef.t EVar n)
@@ -482,14 +448,6 @@ End NatToStringConversion.
 
 Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
 
-Fixpoint _gen_list_of_x (n:nat) : list EVar :=
-match n with
-| O => (List.nil)
-| S n' => (List.cons
-            (evar_c(String.append "x" (string_of_nat(n))))
-            (_gen_list_of_x n'))
-end.
-
 Program Fixpoint gen_x_vec (n:nat) : VectorDef.t EVar n :=
 match n with
 | O => (VectorDef.nil EVar)
@@ -497,7 +455,7 @@ match n with
             (evar_c(String.append "x" (string_of_nat(n)))) n' (gen_x_vec n')
 end.
 
-Lemma gen_vec_of_x_ok : forall n : nat, length (_gen_list_of_x n) = n.
+(* Lemma gen_vec_of_x_ok : forall n : nat, length (_gen_list_of_x n) = n.
 Proof.
   intro n.
   induction n.
@@ -505,13 +463,11 @@ Proof.
            (* rewrite IHn. reflexivity. *)
   - simpl. apply PeanoNat.Nat.succ_inj_wd. exact IHn.
 Qed.
-
-(* if constant function is defined, then sp_bottom will stand on the 
+ *)
+(* if constant function is defined, then sp_bottom will stand on the
  * application's left hand-side, because in the formalisation with Function
  * axiom, a function traslates to an implication, and because of false implies
- * everything, it imples the result too  *)
-(* this is allowed because this is only syntax and not the deduction - we don't 
- * need the type restriction at syntax level *)
+ * everything, it imples the result too *)
 Definition y := evar_c("y").
 Definition Function
   (f : Sigma) {n : nat} (ss : t MSA_sorts n) (s : MSA_sorts) : Sigma_pattern :=
@@ -539,19 +495,19 @@ Notation "f '_:_' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
   (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 0).
 
 (*
-Notation "'exists' xc : sort , pattern" := 
+Notation "'exists' xc : sort , pattern" :=
   (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (
     at level 5, xc at next level, sort at next level, pattern at next level).
-Notation "'for_all' xc : sort , pattern" := 
+Notation "'for_all' xc : sort , pattern" :=
   (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (
     at level 5, xc at next level, sort at next level, pattern at next level).
 *)
 
 (* Instead of notation "forall x : Nat . pattern" we introduce: *)
-Notation "'for_some' xc 'of_sort' sort 'states' pattern" := 
+Notation "'for_some' xc 'of_sort' sort 'states' pattern" :=
   (sp_exists xc (sp_and (xc -< InhabitantSetOf(sort)) pattern))
     (at level 5).
-Notation "'for_all' xc 'of_sort' sort 'states' pattern" := 
+Notation "'for_all' xc 'of_sort' sort 'states' pattern" :=
   (sp_forall xc (sp_impl (xc -< InhabitantSetOf(sort)) pattern))
     (at level 5).
 
@@ -614,7 +570,7 @@ Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 :=
   ((plus' one (plus' two three)) ~=~ (plus' one (plus' two three))).
 Definition plus_1_plus_2_3_eq_1_plus_5 :=
   ((plus' one (plus' two three)) ~=~ (plus' one five)).
-Definition x_plus_2_plus_3_eq_x_plus_5 := 
+Definition x_plus_2_plus_3_eq_x_plus_5 :=
   (for_all x of_sort Nat states (
     (plus' (plus' 'x two) three) ~=~ (plus' 'x five))).
 Definition x_plus_3_eq_x_plus_3 :=
@@ -690,7 +646,7 @@ Fixpoint ProdFromOneTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
 | sp_const _ => ^zero
       (* succ _ *)
-| sp_app _    b => 
+| sp_app _    b =>
   match b with
   | sp_const _ => one
   | sp_app _ _ => mult' (succ' b) (ProdFromOneTo b)
@@ -723,7 +679,7 @@ end.
 Lemma until_zero'' : (SumOfSquaresFromZeroTo ^zero) = ^zero.
 Proof. simpl. reflexivity. Qed.
 
-Lemma until_one'' : 
+Lemma until_one'' :
   (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) ^zero).
 Proof. simpl. reflexivity. Qed.
 
@@ -736,7 +692,7 @@ Proof. simpl. reflexivity. Qed.
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
 Definition Sum_of_squares :=
   for_all n of_sort Nat states (
-    mult' six (SumOfSquaresFromZeroTo 'n) ~=~ 
+    mult' six (SumOfSquaresFromZeroTo 'n) ~=~
     mult' 'n (mult' (succ' 'n) (plus' (mult' two 'n) one))).
 
 End NaturalNumbers.
@@ -757,7 +713,7 @@ Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
  : Sigma_pattern :=
   _app_inhabitant_sets n (to_list vec).
 
-Lemma nil_eq_nil : 
+Lemma nil_eq_nil :
   app_inhabitant_sets (vn MSA_sorts) =
   ^ (sigma_c("cannot operate on empty parameters")).
 Proof. simpl. reflexivity. Qed.
@@ -794,10 +750,10 @@ Fixpoint _generate_foralls (n : nat) (xl : list EVar)
 match n with
 | O => fun _ => sp_bottom
 | S O => fun pattern => for_all (List.hd (evar_c("wrong input length")) xl) of_sort Term states pattern
-| S n' => 
+| S n' =>
     fun pattern =>
       for_all
-        (List.hd (evar_c("wrong input length")) xl) 
+        (List.hd (evar_c("wrong input length")) xl)
         of_sort Term states (_generate_foralls n' (List.tl xl) pattern)
 end.
 
@@ -828,7 +784,7 @@ Fixpoint generate_equalities
 : Sigma_pattern :=
   _generate_equalities n (to_list vx) (to_list vx').
 
-Definition NoConfusion_II 
+Definition NoConfusion_II
   {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n) (c : Sigma)
 : Sigma_pattern :=
   ((generate_foralls vx vx')
@@ -838,9 +794,9 @@ Definition NoConfusion_II
 
 (* Definition Inductive_Domain
   (D : SVar)
-:= 
+:=
   (
-    [[ Term ]]) ~=~ 
+    [[ Term ]]) ~=~
     (sp_mu D (sp_or ...))
   ). *)
 
