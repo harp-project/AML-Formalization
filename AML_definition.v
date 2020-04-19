@@ -292,7 +292,7 @@ forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
  Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
 
 Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
-: Prop := forall axiom : Sigma_pattern, theory axiom -> satisfies sm axiom.
+: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> satisfies sm axiom.
 
 Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
 : Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
