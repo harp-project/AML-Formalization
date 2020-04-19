@@ -285,6 +285,19 @@ match sp with
 end
 .
 
+(* Theory,axiom ref. snapshot: Definition 5 *)
+
+Definition satisfies (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
+forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
+ Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
+
+Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
+: Prop := forall axiom : Sigma_pattern, theory axiom -> satisfies sm axiom.
+
+Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
+: Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
+                                   satisfies sm sp.
+
 End AML.
 
 Ltac proof_ext_val :=
@@ -367,3 +380,4 @@ unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In. eapp
 * intros. eapply H0. intros. refine (H _). split.
   - intros.
 Admitted.
+
