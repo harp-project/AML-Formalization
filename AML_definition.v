@@ -778,9 +778,9 @@ Definition plus' (x y : Sigma_pattern) := ^plus _._ x _._ y.
 Definition mult' (x y : Sigma_pattern) := ^mult _._ x _._ y.
 
 (* helper notations for the following examples *)
-Definition x := evar_c("x").
+(* Definition x := evar_c("x"). *)
 (* Definition y := evar_c("y"). *)
-Definition z := evar_c("z").
+(* Definition z := evar_c("z"). *)
 Definition n := evar_c("n").
 
 (* Example: x + 0 = x *)
@@ -934,23 +934,18 @@ End NaturalNumbers.
 
 Section MatchingMuLogic.
 
-Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts)
+Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
 : Sigma_pattern :=
-match n with
-| O => ^(sigma_c("cannot operate on empty parameters"))
-| S O => InhabitantSetOf (List.hd Nat vec)
-| S n' =>
-    InhabitantSetOf (List.hd Nat vec) _._
-    (_app_inhabitant_sets n' (List.tail vec))
+match vec with
+| VectorDef.nil _ => const ("cannot operate on empty parameters")
+| VectorDef.cons _ elem _ (VectorDef.nil _) => InhabitantSetOf elem
+| VectorDef.cons _ elem _ vec' =>
+    (InhabitantSetOf elem) _._ (app_inhabitant_sets vec')
 end.
 
-Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
- : Sigma_pattern :=
-  _app_inhabitant_sets n (to_list vec).
-
 Lemma nil_eq_nil :
-  app_inhabitant_sets (vn MSA_sorts) =
-  ^ (sigma_c("cannot operate on empty parameters")).
+  app_inhabitant_sets (vn MSA_sorts) = 
+  const ("cannot operate on empty parameters").
 Proof. simpl. reflexivity. Qed.
 
 Lemma app_inhabitant_sets_test_one_element :
@@ -980,23 +975,22 @@ End MatchingMuLogic.
 
 Section ConstructorsAndTermAlgebras.
 
-Fixpoint _generate_foralls (n : nat) (xl : list EVar)
+Fixpoint _generate_foralls {n : nat} (xl : VectorDef.t EVar n)
 : Sigma_pattern -> Sigma_pattern :=
-match n with
-| O => fun _ => sp_bottom
-| S O => fun pattern => for_all (List.hd (evar_c("wrong input length")) xl) of_sort Term states pattern
-| S n' =>
+match xl with
+| VectorDef.nil _ => fun _ => sp_bottom
+| VectorDef.cons _ elem _ (VectorDef.nil _) =>
+  fun pattern => for_all elem of_sort Term states pattern
+| VectorDef.cons _ elem _ xl' =>
     fun pattern =>
-      for_all
-        (List.hd (evar_c("wrong input length")) xl)
-        of_sort Term states (_generate_foralls n' (List.tl xl) pattern)
+      for_all elem of_sort Term states (_generate_foralls xl' pattern)
 end.
 
 Fixpoint generate_foralls
   {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m)
   (pattern : Sigma_pattern)
 : Sigma_pattern :=
-  _generate_foralls n (to_list vx) (_generate_foralls m (to_list vy) pattern).
+  _generate_foralls vx (_generate_foralls vy pattern).
 
 Definition NoConfusion_I
   {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m) (c d : Sigma)
@@ -1029,12 +1023,7 @@ Definition NoConfusion_II
 
 (* Definition Inductive_Domain
   (D : SVar)
-:=
-  (
-    [[ Term ]]) ~=~
-    (sp_mu D (sp_or ...))
-  ). *)
-
+:= ([[ Term ]]) ~=~ (sp_mu D (sp_or ...)) ). *)
 
 End ConstructorsAndTermAlgebras.
 
@@ -1046,11 +1035,8 @@ Definition Inductive_Domain (D : SVar) :=
   (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or ^zero (succ' `D)).
 
 Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
-  (sp_impl
-    (sp_and
-      (phi ^zero)
-      (sp_forall n (sp_impl (phi 'n) (phi (succ' 'n)) )))
-    (sp_forall n (phi 'n))).
+  (((phi ^zero) _&_ (sp_forall n ((phi 'n) ~> (phi (succ' 'n)) ))) ~>
+  (sp_forall n (phi 'n))).
 
 (* Examples *)
 
@@ -1080,9 +1066,6 @@ Definition every_successor_is_strictly_positive : Sigma_pattern :=
   Peano_Induction n (less2 ^zero).
 
 End NaturalNumbers.
-
-
-Notation "x ~> y" := (sp_impl (x) (y)) (at level 50).
 
 Section ProofExamples.
 
