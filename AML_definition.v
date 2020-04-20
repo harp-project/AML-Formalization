@@ -4,6 +4,8 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 Require Import Coq.Sets.Ensembles.
+
+Add LoadPath "E:\Egyetem\MSc\4. felev\Diplomamunka\AML-Formalization".
 Require Import Ensembles_Ext.
 
 Section AML.
@@ -119,8 +121,7 @@ Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
 Notation "¬ a"     := (sp_not   a  ) (at level 75).
 Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
 Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
-Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,
-                                      b at level 200).
+Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,                                                      b at level 200).
 Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
 
 Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
@@ -189,6 +190,22 @@ end
 (* Proof of correct semantics for the derived operators
 ref. snapshot: Proposition 4 *)
 
+Ltac proof_ext_val :=
+simpl;intros;
+repeat
+  (* Normalize *)
+   rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
+|| rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
+|| rewrite
+   (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
+|| rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
+  (* Apply *)
+|| (eapply (proj1 Same_set_Compl) ; intros)
+  (* Final step *)
+|| exact Complement_Empty_is_Full
+|| exact (Symdiff_val _ _)
+|| exact (Same_set_refl _).
+
 Lemma not_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
 forall sp : Sigma_pattern, Same_set _
@@ -220,10 +237,10 @@ Proof. proof_ext_val. Qed.
 Lemma only_if_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
 forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_only_if spl spr))
+  (ext_valuation evar_val svar_val (sp_iff spl spr))
   (Complement _ (Symmetric_difference (ext_valuation evar_val svar_val spl)
                                       (ext_valuation evar_val svar_val spr))).
-Proof. proof_ext_val. Qed.
+Proof. proof_ext_val. Admitted.
 
 Lemma forall_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -261,8 +278,9 @@ forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
 Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
 : Prop := forall axiom : Sigma_pattern, In _ theory axiom -> satisfies sm axiom.
 
-Notation "M |= phi" := (satisfies M phi).
-Notation "M |= Gamma" := (satisfies_theory M Gamma).
+Notation "M |= phi" := (satisfies M phi) (left associativity, at level 50).
+Notation "M |=' Gamma" := (satisfies_theory M Gamma)
+  (left associativity, at level 50).
 
 Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
 : Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
@@ -362,11 +380,88 @@ where "phi |->* phi'" := (AnyStepTransition phi phi').
 (* End of Definedness derived operators and exuivalences *)
 
 (* TODO: introduce $ element $ _._ a = M *)
+Definition spec_elem : Sigma_pattern := const ("$").
+(* forall a : EVar, $ _._ a = M *)
+Lemma spec_app_a_eq_M
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+    forall a : EVar, Same_set _
+      (ext_valuation evar_val svar_val (sp_app spec_elem (sp_var a)))
+      (Full_set _).
+Admitted.
+
+Check Same_set.
+(* Lemma forall_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall sp : Sigma_pattern, forall x : EVar, Same_set _
+  (ext_valuation evar_val svar_val (sp_forall x sp))
+  (FA_Intersection
+    (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
+ *)
+(* forall A : SVar, $ _._ A = M, iff A is not empty *)
+Lemma spec_app_A_eq_M
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+    forall A : SVar,
+      (* A os not empty *)
+      (exists x, In _ x (ext_valuation evar_val svar_val (sp_set A))) ->
+      Same_set _
+        (ext_valuation evar_val svar_val (sp_app spec_elem (sp_set A)))
+        (Full_set _).
+Admitted.
+
+(* Can be shown, that all notations in Definition 6 are predicates with the
+ * expected semantics. For example: *)
+Lemma definedness_correct01
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (¬Definedness(¬phi)))
+              (Full_set _)).
+Admitted.
+
+Lemma definedness_correct02
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Definedness(¬phi)))
+              (Empty_set _)).
+Admitted.
+
+Lemma definedness_correct03
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Definedness(¬phi)))
+              (Empty_set _)).
+Admitted.
+
+Lemma equality_correct01
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi1 phi2 : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Equality phi1 phi2))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Totality (sp_iff phi1 phi2)))
+              (Full_set _)).
+Admitted.
+
+Lemma equality_correct02
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi1 phi2 : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Equality phi1 phi2))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (phi1))
+              (ext_valuation evar_val svar_val (phi2))).
+Admitted.
+
 (* TODO: semantics of definedness operators *)
 
 Definition z := evar_c("z").
 Definition Functional_Constant (Sigma : Sigma_pattern) : Sigma_pattern :=
   (sp_exists z Sigma) ~=~ (sp_var z).
+Definition Functional_Application (x y : EVar) : Sigma_pattern :=
+  (sp_exists z ((sp_var x) _._ (sp_var y))) ~=~ (sp_var z).
 
 Inductive context : Set :=
 | box
@@ -382,18 +477,6 @@ match C with
 end
 .
 
-(* FIXME Create Test File *)
-
-(* Example of context usage: *)
-Definition box_context := subst_ctx box sp_bottom.
-Eval compute in box_context.
-
-Definition tree_context :=
-  subst_ctx
-    (ctx_app_l (ctx_app_r sp_bottom box) (sp_app sp_bottom sp_bottom))
-    sp_bottom.
-Eval compute in tree_context.
-
 Definition free_vars_ctx (C : context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
@@ -402,6 +485,9 @@ match C with
 end.
 
 (* TODO: Define provability *)
+(* Definition provable (axioms : Ensemble Sigma_pattern) (phi : Sigma_pattern)
+: Prop := *)
+
 (* Notation "Gamma |- phi" := (provable Gamma phi). *)
 
 (* Proof system for AML ref. snapshot: Section 3 *)
@@ -483,16 +569,33 @@ Inductive got : Sigma_pattern -> Prop :=
 . *)
 
 (* Proposition 7: *)
-(* Gamma |- phi ~=~ phi
-Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi3 -> Gamma |- phi1 ~=~ phi3
-Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi1
-Gamma |- phi1 ~=~ phi2 -> 
-  Gamma |- e_subst_var psi phi1 x ~=~ e_subst_var psi phi2 x *)
+(* Inductive rule : ? -> Prop :=
+| PR_id (Ensemble Sigma_pattern : Gamma) (phi : Sigma_pattern) :
+  rule (Gamma |- (phi ~=~ phi))
+
+| PR_trans (Ensemble Sigma_pattern : Gamma) (phi1 phi2 phi3 : Sigma_pattern) :
+  Gamma |- phi1 ~=~ phi2 ->
+  Gamma |- phi2 ~=~ phi3 ->
+  rule (Gamma |- phi1 ~=~ phi3)
+
+| PR_symm (Ensemble Sigma_pattern : Gamma) (phi1 phi2 : Sigma_pattern) :
+  Gamma |- phi1 ~=~ phi2 ->
+  rule (Gamma |- phi2 ~=~ phi1)
+
+| PR_subst (Ensemble Sigma_pattern : Gamma) (phi1 phi2 : Sigma_pattern) :
+  Gamma |- phi1 ~=~ phi2 ->
+  rule (Gamma |- e_subst_var psi phi1 x ~=~ e_subst_var psi phi2 x) *)
 
 (* Theorem 8.: Soundness *)
-(* Theorem Soundness : Gamma |-  phi -> Gamma |= phi. *)
+(* Theorem Soundness :
+  forall phi : Sigma_pattern : (Gamma |- phi) -> (Gamma |= phi). *)
+
+(* Theorem Completeness :
+  forall phi : Sigma_pattern : (Gamma |= phi) -> (Gamma |- phi). *)
+
 
 (* ************************************************************************** *)
+
 
 (* Many-sorted algebra *)
 Section MSA.
@@ -1080,19 +1183,3 @@ Qed. *)
 End ProofExamples.
 
 End AML.
-
-Ltac proof_ext_val :=
-simpl;intros;
-repeat
-  (* Normalize *)
-   rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
-|| rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
-|| rewrite
-   (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
-|| rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
-  (* Apply *)
-|| (eapply (proj1 Same_set_Compl) ; intros)
-  (* Final step *)
-|| exact Complement_Empty_is_Full
-|| exact (Symdiff_val _ _)
-|| exact (Same_set_refl _).
