@@ -6,6 +6,28 @@ Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 (* Require Import Coq.Program.Basics. *)
 
+(*
+  TODO: (old version)
+    - definedness over a model OK
+    - proposition 9 axioms 
+    - definition 10: applicative structure definition
+    - proposition 11 using Balazs's things
+    - introduce provability relation
+    - proposition 13: propositions that hold for definedness
+    - theorem 14. soundness
+    - proposition 18. axioms
+    - NC I/II, IND DOM
+*)
+
+(*
+  TODO: (new version)
+    - operator $
+    - functional constant axiom
+    - proposition 7: theories Gamma with definedness
+    - theorem 8: soundness
+    - theorem 16: equivalence
+    - MSFOL instead of MSA
+ *)
 Section AML.
 
 Inductive EVar : Set := evar_c (id : string).
@@ -22,8 +44,6 @@ Inductive Sigma_pattern : Set :=
 | sp_exists (x : EVar) (phi : Sigma_pattern)
 | sp_mu (X : SVar) (phi : Sigma_pattern)
 .
-
-Notation "a _._ b" := (sp_app a b) (at level 50, left associativity).
 
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof.
@@ -80,17 +100,20 @@ Defined.
 
 Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
 Definition sp_or  (l r : Sigma_pattern) := sp_impl (sp_not l) r.
-(* Notation "a _\/_ b" := (sp_and a b) (right associativity, at level 70). *)
 Definition sp_and (l r : Sigma_pattern) := sp_not (sp_or (sp_not l) (sp_not r)).
-Notation "a _&_ b" := (sp_and a b) (right associativity, at level 71).
-Definition sp_tatu := sp_not sp_bottom.
+Definition sp_top := sp_not sp_bottom.
 Definition sp_equiv (l r : Sigma_pattern) :=
   (sp_and (sp_impl (l) (r)) (sp_impl (l) (r))).
 Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   sp_not (sp_exists x (sp_not phi)).
-(*nuX.phi*)
 
-Notation "phi1 <--> phi2" := (sp_equiv phi1 phi2) (at level 100).
+Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
+Notation "¬ a"     := (sp_not   a  ) (at level 75).
+Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
+Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
+Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,
+                                                      b at level 200).
+Notation "a <~> b" := (sp_equiv a b) (at level 95, no associativity).
 
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
@@ -132,9 +155,12 @@ match phi with
       sp_mu X' (e_subst_set phi' psi X)
 end.
 
-Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
+Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
+  sp_not (sp_mu X (sp_not (e_subst_set phi (sp_not (sp_set X)) X))).
 
+Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
 Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
+Definition const (name : string) : Sigma_pattern := sp_const (sigma_c name).
 
 Definition evar_eq (x y : EVar) : bool :=
 match x, y with
@@ -155,6 +181,10 @@ match phi with
       (set_add evar_eq_dec y List.nil)
 | sp_mu X phi => free_vars phi
 end.
+
+(* Definition 6. TODO - requires rho~ evaluation function *)
+Reserved Notation "a |= b".
+
 
 Inductive context : Set :=
 | box
@@ -376,21 +406,21 @@ Inductive MSA_sorts : Set :=
 (* a function which corresponds: constants of AML  to  sorts of MSA *)
 Fixpoint AML_sort_name (s : MSA_sorts) : Sigma_pattern :=
 match s with
-| Nat => sp_const(sigma_c("Nat"))
+| Nat  => sp_const(sigma_c("Nat"))
 | List => sp_const(sigma_c("List"))
-| Cfg => sp_const(sigma_c("Cfg"))
+| Cfg  => sp_const(sigma_c("Cfg"))
 | Term => sp_const(sigma_c("Term"))
 end.
 
 (* we can also define them *)
-Definition AML_Nat := AML_sort_name(Nat).
+Definition AML_Nat  := AML_sort_name(Nat).
 Definition AML_List := AML_sort_name(List).
 Definition AML_Cfg := AML_sort_name(Cfg).
 
 
-Definition c_inhabitant_set := sp_const(sigma_c("inhabitant set")).
+Definition inhabitant_set := const("inhabitant set").
 Definition InhabitantSetOf (s : MSA_sorts) :=
-  (c_inhabitant_set _._ (AML_sort_name s)).
+  (inhabitant_set _._ (AML_sort_name s)).
 Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
 
 Definition vc := VectorDef.cons.
@@ -398,16 +428,16 @@ Definition vn := VectorDef.nil.
 
 Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) :=
 match n with
- | O => F1
+ | O   => F1
  | S x => FS (_of_nat x)
 end.
 
 Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
 : Sigma_pattern :=
 match vec with
-| VectorDef.nil _ => sp_bottom (* TODO: sp_top *)
+| VectorDef.nil  _                          => sp_top (* TODO: sp_top? *)
 | VectorDef.cons _ elem _ (VectorDef.nil _) => elem
-| VectorDef.cons _ elem _ rem => sp_and elem (and_gen rem)
+| VectorDef.cons _ elem _ rem               => sp_and elem (and_gen rem)
 end.
 
 Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n)
@@ -429,8 +459,8 @@ Local Open Scope string_scope.
 Local Open Scope nat_scope.
 Fixpoint string_of_nat_aux (time n : nat) (acc : string) : string :=
   let d := match Nat.modulo n 10 with
-           | 0 => "0" | 1 => "1" | 2 => "2" | 3 => "3" | 4 => "4" | 5 => "5"
-           | 6 => "6" | 7 => "7" | 8 => "8" | _ => "9"
+             | 0 => "0" | 1 => "1" | 2 => "2" | 3 => "3" | 4 => "4"
+             | 5 => "5" | 6 => "6" | 7 => "7" | 8 => "8" | _ => "9"
            end in
   let acc' := d ++ acc in
   match time with
