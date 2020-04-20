@@ -1,7 +1,7 @@
 Require Import String.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Sets.Ensembles.
-Require Import Ensembles_Ext.
+(* Require Import Ensembles_Ext. *)
 Require Import Coq.Init.Datatypes.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
@@ -34,9 +34,9 @@ Proof. decide equality. exact (string_dec id_sv0 id_sv1). Defined.
 Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
 Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
 
-Definition evar_eqb (x y : EVar) : bool := eqb (id_ev x) (id_ev y).
-Definition svar_eqb (x y : SVar) : bool := eqb (id_sv x) (id_sv y).
-Definition sigma_eqb (x y : Sigma) : bool := eqb (id_si x) (id_si y).
+Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
+Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
+Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
 
 Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
 match phi with
@@ -107,22 +107,20 @@ Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
 Definition sp_or  (l r : Sigma_pattern) := sp_impl (sp_not l) r.
 Definition sp_and (l r : Sigma_pattern) := sp_not (sp_or (sp_not l) (sp_not r)).
 Definition sp_top := sp_not sp_bottom.
-Definition sp_equiv (l r : Sigma_pattern) :=
+Definition sp_iff (l r : Sigma_pattern) :=
   (sp_and (sp_impl (l) (r)) (sp_impl (l) (r))).
 Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   sp_not (sp_exists x (sp_not phi)).
 Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
   sp_not (sp_mu X (sp_not (e_subst_set phi (sp_not (sp_set X)) X))).
-
-  (* End of derived operators *)
+(* End of derived operators *)
 
 Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
 Notation "¬ a"     := (sp_not   a  ) (at level 75).
 Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
 Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
 Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,                                                      b at level 200).
-Notation "a <~> b" := (sp_equiv a b) (at level 95, no associativity).
-
+Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
 
 Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
 Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
@@ -148,209 +146,6 @@ match phi with
 | sp_mu X phi => free_vars phi
 end.
 
-(* Definition 6. TODO - requires rho~ evaluation function *)
-(* Reserved Notation "a |= b". *)
-
-
-(* Definition 7. Definedness and derived operators *)
-(* Definedness: *)
-Definition c_definedness := sp_const(sigma_c("definedness")).
-Definition Definedness (phi : Sigma_pattern) : Sigma_pattern :=
-  (c_definedness _._ phi).
-Notation "|^ phi ^|" := (Definedness phi) (at level 100).
-
-(* Totality *)
-Definition c_totality := sp_const(sigma_c("totality")).
-Definition Totality (phi : Sigma_pattern) := (c_totality _._ phi).
-Notation "|_ phi _|" := (Totality phi).
-
-(* Equality *)
-Definition c_equality := sp_const(sigma_c("equality")).
-Definition Equality (l r : Sigma_pattern) := ((c_equality _._ l) _._ r).
-Notation "phi1 ~=~ phi2" := (Equality phi1 phi2) (at level 100).
-
-(* Non-equality *)
-Definition c_non_equality := sp_const(sigma_c("non-equality")).
-Definition NonEquality (l r : Sigma_pattern) := ((c_non_equality _._ l) _._ r).
-Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
-
-(* Membership *)
-Definition c_membership := sp_const(sigma_c("membership")).
-(* - parameterx can only be sp_var or sp_const
- * - this can be restricted with operational evaluation rules *)
-Definition Membership (x : EVar) (phi : Sigma_pattern) :=
-  ((c_membership _._ (sp_var x)) _._ phi).
-Notation "x -< phi" := (Membership x phi) (at level 30).
-
-(* Non-membership *)
-Definition c_non_membership := sp_const(sigma_c("non-membership")).
-Definition NonMembership (x : EVar) (phi : Sigma_pattern) :=
-  ((c_non_membership _._ (sp_var x)) _._ phi).
-Notation "x !-< phi" := (NonMembership x phi) (at level 30).
-
-(* Set inclusion *)
-Definition c_set_incl := sp_const(sigma_c("set inclusion")).
-Definition SetInclusion (l r : Sigma_pattern) :=
-  ((c_set_incl _._ l) _._ r).
-Notation "phi1 <: phi2" := (SetInclusion phi1 phi2) (at level 100).
-
-(* Set exclusion *)
-Definition c_set_excl := sp_const(sigma_c("set exclusion")).
-Definition SetExclusion (l r : Sigma_pattern) :=
-  ((c_set_excl _._ l) _._ r).
-Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
-
-Reserved Notation "phi |-> phi'" (at level 80).
-Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
-| OST_totality {phi : Sigma_pattern} :
-    (c_totality _._ phi) |->
-    (sp_not (Definedness (sp_not phi)))
-
-| OST_equality {l r : Sigma_pattern} :
-    ((c_equality _._ l) _._ r) |->
-    (Totality (sp_equiv l r))
-
-| OST_non_equality {l r : Sigma_pattern} :
-    ((c_equality _._ l) _._ r) |->
-    (sp_not (Equality l r))
-
-| OST_membership {x : EVar} {phi : Sigma_pattern} :
-    ((c_membership _._ (sp_var x)) _._ phi) |->
-    (Totality (sp_and (sp_var x) phi))
-
-| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
-    ((c_non_membership _._ (sp_var x)) _._ phi) |->
-    (sp_not (Membership x phi))
-
-| OST_set_inclusion {l r : Sigma_pattern} :
-    ((c_set_incl _._ l) _._ r) |->
-    (Totality (sp_impl l r))
-
-| OST_set_exclusion {l r : Sigma_pattern} :
-    ((c_set_excl _._ l) _._ r) |->
-    (sp_not (SetInclusion l r))
-where "a |-> b" := (OneStepTransition a b).
-
-Reserved Notation "phi |->* phi'" (at level 100).
-Inductive AnyStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
-| AST_refl {phi : Sigma_pattern} :
-    phi |->* phi
-
-| AST_trans {phi phi'' : Sigma_pattern} (phi' : Sigma_pattern) :
-    (phi |-> phi') -> (phi' |->* phi'') ->
-    (phi |->* phi'')
-where "phi |->* phi'" := (AnyStepTransition phi phi').
-
-
-Inductive context : Set :=
-| box
-| ctx_app_l (cc : context) (sp : Sigma_pattern)
-| ctx_app_r (sp : Sigma_pattern) (cc : context)
-.
-
-Fixpoint subst_ctx (C : context) (sp : Sigma_pattern) : Sigma_pattern :=
-match C with
-| box => sp
-| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
-| ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
-end
-.
-
-(* FIXME Create Test File *)
-
-(* Example of context usage: *)
-Definition box_context := subst_ctx box sp_bottom.
-Eval compute in box_context.
-
-Definition tree_context :=
-  subst_ctx
-    (ctx_app_l (ctx_app_r sp_bottom box) (sp_app sp_bottom sp_bottom))
-    sp_bottom.
-Eval compute in tree_context.
-
-Definition free_vars_ctx (C : context) : (ListSet.set EVar) :=
-match C with
-| box => List.nil
-| ctx_app_l cc sp => free_vars sp
-| ctx_app_r sp cc => free_vars sp
-end.
-
-(* Proof system for AML ref. snapshot: Section 3 *)
-
-Inductive got : Sigma_pattern -> Prop :=
-(* Propositional tautology *)
-(* Auxiliary rules for proving propositional tautology *)
-| E_prop_tau1 (phi : Sigma_pattern) :
-    got (phi -.> phi)
-
-| E_prop_tau2 (phi psi : Sigma_pattern) :
-    got (phi -.> (psi -.> phi))
-
-| E_prop_tau3 (phi psi xi : Sigma_pattern) :
-    got ((phi -.> (psi -.> xi)) -.>
-        ((phi -.> psi) -.> (phi -.> xi)))
-
-| E_prop_tau4 (phi psi : Sigma_pattern) :
-    got (((sp_not phi) -.> (sp_not psi)) -.> (psi -.> phi))
-
-(* Modus ponens *)
-| E_mod_pon {phi1 phi2 : Sigma_pattern} :
-  got phi1 -> got (phi1 -.> phi2) -> got phi2
-
-(* Existential quantifier *)
-| E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
-  got ((e_subst_var phi (sp_var y) x) -.> (sp_exists x phi))
-
-(* Existential quantifier other interpretation *)
-| E_ex_quan' {phi : Sigma_pattern} (x y : EVar) :
-  got (e_subst_var phi (sp_var y) x) -> got (sp_exists x phi)
-
-(* Existential generalization *)
-| E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
-  got (phi1 -.> phi2) ->
-  negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
-  got ((sp_exists x phi1) -.> phi2)
-
-(* Propagation bottom *)
-| E_prop_bot (C : context) :
-  got ((subst_ctx C sp_bottom) -.> sp_bottom)
-
-(* Propagation disjunction *)
-| E_prop_dis (C : context) (phi1 phi2 : Sigma_pattern) :
-    got ((subst_ctx C (sp_or phi1 phi2)) -.>
-        (sp_or (subst_ctx C phi1) (subst_ctx C phi2)))
-
-(* Propagation exist *)
-| E_prop_ex (C : context) (phi : Sigma_pattern) (x : EVar) :
-  negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
-  got ((subst_ctx C (sp_exists x phi)) -.>
-       (sp_exists x (subst_ctx C phi)))
-
-(* Framing *)
-| E_framing (C : context) (phi1 phi2 : Sigma_pattern) :
-  got (phi1 -.> phi2) -> got ((subst_ctx C phi1) -.> (subst_ctx C phi2))
-
-(* Set Variable Substitution *)
-| E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
-  got phi -> got (e_subst_set phi (sp_set psi) X)
-
-(* Pre-Fixpoint *)
-| E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
-  got ((e_subst_set phi (sp_mu X phi) X) -.> (sp_mu X phi))
-
-(* Knaster-Tarski *)
-| E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-  got ((e_subst_set phi psi X) -.> psi) -> got ((sp_mu X phi) -.> psi)
-
-(* Existence *)
-| E_existence (x : EVar) : got (sp_exists x (sp_var x))
-
-(* Singleton *)
-| E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_pattern) :
-  got (sp_not (sp_and
-          (subst_ctx C1 (sp_and (sp_var x) phi))
-          (subst_ctx C2 (sp_and (sp_var x) (sp_not phi)))))
-.
 
 Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
                       (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
@@ -390,6 +185,72 @@ match sp with
 end
 .
 
+(* Proof of correct semantics for the derived operators
+ref. snapshot: Proposition 4 *)
+
+Lemma not_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall sp : Sigma_pattern, Same_set _
+  (ext_valuation evar_val svar_val (sp_not sp))
+  (Complement _ (ext_valuation evar_val svar_val sp)).
+Proof. proof_ext_val. Qed.
+
+Lemma or_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation evar_val svar_val (sp_or spl spr))
+  (Union _ (ext_valuation evar_val svar_val spl)
+           (ext_valuation evar_val svar_val spr)).
+Proof. proof_ext_val. Qed.
+
+Lemma and_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation evar_val svar_val (sp_and spl spr))
+  (Intersection _ (ext_valuation evar_val svar_val spl)
+                  (ext_valuation evar_val svar_val spr)).
+Proof. proof_ext_val. Qed.
+
+Lemma top_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+Same_set _ (ext_valuation evar_val svar_val (sp_top)) (Full_set _).
+Proof. proof_ext_val. Qed.
+
+Lemma only_if_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation evar_val svar_val (sp_only_if spl spr))
+  (Complement _ (Symmetric_difference (ext_valuation evar_val svar_val spl)
+                                      (ext_valuation evar_val svar_val spr))).
+Proof. proof_ext_val. Qed.
+
+Lemma forall_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall sp : Sigma_pattern, forall x : EVar, Same_set _
+  (ext_valuation evar_val svar_val (sp_forall x sp))
+  (FA_Intersection
+    (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
+Proof. proof_ext_val. eapply FA_Inters_same. intros. proof_ext_val. Qed.
+
+Lemma nu_ext_val_correct
+{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+forall sp : Sigma_pattern, forall X : SVar, Same_set _
+  (ext_valuation evar_val svar_val (sp_nu X sp))
+  (nu (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
+Proof.
+proof_ext_val.
+unfold mu. unfold nu. unfold FA_Union_cond. unfold FA_Inters_cond.
+apply Same_set_symmetric. apply Same_set_Compl.
+rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _)).
+rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _)).
+eapply FA_Inters_same. intros.
+proof_ext_val.
+unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In. eapply conj.
+* intros. eapply H0. intros. refine (H _). split.
+  - intros.
+Admitted.
+
+
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
 Definition satisfies (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
@@ -399,22 +260,238 @@ forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
 Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
 : Prop := forall axiom : Sigma_pattern, In _ theory axiom -> satisfies sm axiom.
 
+Notation "M |= phi" := (satisfies M phi).
+Notation "M |= Gamma" := (satisfies_theory M Gamma).
+
 Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
 : Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
                                    satisfies sm sp.
 
-(* *************************************************************************** *)
 
+(* Definition 6. Definedness and derived operators *)
+(* Definedness: *)
+Definition c_definedness := (const ("definedness")).
+Definition Definedness (phi : Sigma_pattern) : Sigma_pattern :=
+  (c_definedness _._ phi).
+Notation "|^ phi ^|" := (Definedness phi) (at level 100).
 
-(* Provability:
- *  - can be formalised with the M-valuation
- *  - "can be deduced" and "can be proved" operator *)
+Definition x := evar_c("x").
+Definition Definedness_Axiom : Sigma_pattern :=
+  sp_forall x (Definedness (sp_var x)).
+
+(* Totality *)
+Definition c_totality := (const ("totality")).
+Definition Totality (phi : Sigma_pattern) := (c_totality _._ phi).
+Notation "|_ phi _|" := (Totality phi).
+
+(* Equality *)
+Definition c_equality := (const ("equality")).
+Definition Equality (l r : Sigma_pattern) := ((c_equality _._ l) _._ r).
+Notation "phi1 ~=~ phi2" := (Equality phi1 phi2) (at level 100).
+
+(* Non-equality *)
+Definition c_non_equality := (const ("non-equality")).
+Definition NonEquality (l r : Sigma_pattern) := ((c_non_equality _._ l) _._ r).
+Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
+
+(* Membership *)
+Definition c_membership := (const ("membership")).
+Definition Membership (x : EVar) (phi : Sigma_pattern) :=
+  ((c_membership _._ (sp_var x)) _._ phi).
+Notation "x -< phi" := (Membership x phi) (at level 30).
+
+(* Non-membership *)
+Definition c_non_membership := (const ("non-membership")).
+Definition NonMembership (x : EVar) (phi : Sigma_pattern) :=
+  ((c_non_membership _._ (sp_var x)) _._ phi).
+Notation "x !-< phi" := (NonMembership x phi) (at level 30).
+
+(* Set inclusion *)
+Definition c_set_incl := (const ("set inclusion")).
+Definition SetInclusion (l r : Sigma_pattern) :=
+  ((c_set_incl _._ l) _._ r).
+Notation "phi1 <: phi2" := (SetInclusion phi1 phi2) (at level 100).
+
+(* Set exclusion *)
+Definition c_set_excl := (const ("set exclusion")).
+Definition SetExclusion (l r : Sigma_pattern) :=
+  ((c_set_excl _._ l) _._ r).
+Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
+
+Reserved Notation "phi |-> phi'" (at level 80).
+Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
+| OST_totality {phi : Sigma_pattern} :
+    (c_totality _._ phi) |->
+    (¬ (Definedness (¬ phi)))
+
+| OST_equality {l r : Sigma_pattern} :
+    ((c_equality _._ l) _._ r) |->
+    (Totality (sp_iff l r))
+
+| OST_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_membership _._ (sp_var x)) _._ phi) |->
+    (Totality ((sp_var x) _&_ phi))
+
+| OST_set_inclusion {l r : Sigma_pattern} :
+    ((c_set_incl _._ l) _._ r) |->
+    (Totality (sp_impl l r))
+
+| OST_non_equality {l r : Sigma_pattern} :
+    ((c_equality _._ l) _._ r) |->
+    (¬ (Equality l r))
+
+| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_non_membership _._ (sp_var x)) _._ phi) |->
+    (¬ (Membership x phi))
+
+| OST_set_exclusion {l r : Sigma_pattern} :
+    ((c_set_excl _._ l) _._ r) |->
+    (sp_not (SetInclusion l r))
+where "a |-> b" := (OneStepTransition a b).
+
+Reserved Notation "phi |->* phi'" (at level 100).
+Inductive AnyStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
+| AST_refl {phi : Sigma_pattern} :
+    phi |->* phi
+
+| AST_trans {phi phi'' : Sigma_pattern} (phi' : Sigma_pattern) :
+    (phi |-> phi') -> (phi' |->* phi'') ->
+    (phi |->* phi'')
+where "phi |->* phi'" := (AnyStepTransition phi phi').
+(* End of Definedness derived operators and exuivalences *)
+
+(* TODO: introduce $ element $ _._ a = M *)
+(* TODO: semantics of definedness operators *)
+
+Definition z := evar_c("z").
+Definition Functional_Constant (Sigma : Sigma_pattern) : Sigma_pattern :=
+  (sp_exists z Sigma) ~=~ (sp_var z).
+
+Inductive context : Set :=
+| box
+| ctx_app_l (cc : context) (sp : Sigma_pattern)
+| ctx_app_r (sp : Sigma_pattern) (cc : context)
+.
+
+Fixpoint subst_ctx (C : context) (sp : Sigma_pattern) : Sigma_pattern :=
+match C with
+| box => sp
+| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
+| ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
+end
+.
+
+(* FIXME Create Test File *)
+
+(* Example of context usage: *)
+Definition box_context := subst_ctx box sp_bottom.
+Eval compute in box_context.
+
+Definition tree_context :=
+  subst_ctx
+    (ctx_app_l (ctx_app_r sp_bottom box) (sp_app sp_bottom sp_bottom))
+    sp_bottom.
+Eval compute in tree_context.
+
+Definition free_vars_ctx (C : context) : (ListSet.set EVar) :=
+match C with
+| box => List.nil
+| ctx_app_l cc sp => free_vars sp
+| ctx_app_r sp cc => free_vars sp
+end.
+
+(* TODO: Define provability *)
+(* Notation "Gamma |- phi" := (provable Gamma phi). *)
+
+(* Proof system for AML ref. snapshot: Section 3 *)
+Inductive got : Sigma_pattern -> Prop :=
+(* FOL reasoning *)
+(* Propositional tautology *)
+(* Auxiliary rules for proving propositional tautology *)
+| E_prop_tau1 (phi : Sigma_pattern) :
+    got (phi ~> phi)
+
+| E_prop_tau2 (phi psi : Sigma_pattern) :
+    got (phi ~> (psi ~> phi))
+
+| E_prop_tau3 (phi psi xi : Sigma_pattern) :
+    got ((phi ~> (psi ~> xi)) ~>
+        ((phi ~> psi) ~> (phi ~> xi)))
+
+| E_prop_tau4 (phi psi : Sigma_pattern) :
+    got (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi))
+
+(* Modus ponens *)
+| E_mod_pon {phi1 phi2 : Sigma_pattern} :
+  got phi1 -> got (phi1 ~> phi2) -> got phi2
+
+(* Existential quantifier *)
+| E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
+  got ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi))
+
+(* Existential generalization *)
+| E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+  got (phi1 ~> phi2) ->
+  negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+  got ((sp_exists x phi1) ~> phi2)
+
+(* Frame reasoning *)
+(* Propagation bottom *)
+| E_prop_bot (C : context) :
+  got ((subst_ctx C sp_bottom) ~> sp_bottom)
+
+(* Propagation disjunction *)
+| E_prop_dis (C : context) (phi1 phi2 : Sigma_pattern) :
+  got ((subst_ctx C (phi1 _|_ phi2)) ~>
+       ((subst_ctx C phi1) _|_ (subst_ctx C phi2)))
+
+(* Propagation exist *)
+| E_prop_ex (C : context) (phi : Sigma_pattern) (x : EVar) :
+  negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
+  got ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi)))
+
+(* Framing *)
+| E_framing (C : context) (phi1 phi2 : Sigma_pattern) :
+  got (phi1 ~> phi2) -> got ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+
+(* Fixpoint reasoning *)
+(* Set Variable Substitution *)
+| E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
+  got phi -> got (e_subst_set phi (sp_set psi) X)
+
+(* Pre-Fixpoint *)
+| E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
+  got ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi))
+
+(* Knaster-Tarski *)
+| E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
+  got ((e_subst_set phi psi X) ~> psi) -> got ((sp_mu X phi) ~> psi)
+
+(* Existence *)
+| E_existence (x : EVar) : got (sp_exists x (sp_var x))
+
+(* Singleton *)
+| E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_pattern) :
+  got (¬ ((subst_ctx C1 ((sp_var x) _&_    phi))   _&_
+          (subst_ctx C2 ((sp_var x) _&_ (¬ phi)))))
+.
 
 (* Inductive proof_result : Set :=
   | success ( _ )
   | fail
 . *)
 
+(* Proposition 7: *)
+(* Gamma |- phi ~=~ phi
+Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi3 -> Gamma |- phi1 ~=~ phi3
+Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi1
+Gamma |- phi1 ~=~ phi2 -> 
+  Gamma |- e_subst_var psi phi1 x ~=~ e_subst_var psi phi2 x *)
+
+(* Theorem 8.: Soundness *)
+(* Theorem Soundness : Gamma |-  phi -> Gamma |= phi. *)
+
+(* *************************************************************************** *)
 
 (* Many-sorted algebra *)
 Section MSA.
@@ -901,26 +978,26 @@ Definition every_successor_is_strictly_positive : Sigma_pattern :=
 End NaturalNumbers.
 
 
-Notation "x -.> y" := (sp_impl (x) (y)) (at level 50).
+Notation "x ~> y" := (sp_impl (x) (y)) (at level 50).
 
 Section ProofExamples.
 
-Lemma ex1 : got ('x -.> 'x).
+Lemma ex1 : got ('x ~> 'x).
 Proof. apply E_prop_tau1. Qed.
 
-Lemma ex2 : got (sp_bottom -.> ((sp_var x) -.> sp_bottom)).
+Lemma ex2 : got (sp_bottom ~> ((sp_var x) ~> sp_bottom)).
 Proof. apply E_prop_tau2. Qed.
 
-Lemma ex3 : got (('x -.> ('y -.> 'z)) -.> (('x -.> 'y) -.> ('x -.> 'z))).
+Lemma ex3 : got (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))).
 Proof. apply E_prop_tau3. Qed.
 
-Lemma ex4 : got (((sp_not 'x) -.> (sp_not 'y)) -.> ('y -.> 'x)).
+Lemma ex4 : got (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)).
 Proof. apply E_prop_tau4. Qed.
 
-(* Lemma ex5 : (got 'x) -> (got (' x -.> ' y)) -> (got ' y).
+(* Lemma ex5 : (got 'x) -> (got (' x ~> ' y)) -> (got ' y).
 Proof. apply (E_mod_pon 'x 'y). Qed. *)
 
-Lemma ex6 : got (e_subst_var sp_bottom 'y x -.> sp_exists x sp_bottom).
+Lemma ex6 : got (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom).
 Proof. apply E_ex_quan. Qed.
 
 Check E_ex_quan' x y.
@@ -932,14 +1009,14 @@ Check E_ex_gen.
 Check E_ex_gen 'x 'y z.
 
 Lemma ex7 :
-  got ('x -.> 'y) ->
+  got ('x ~> 'y) ->
   negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
-  got (sp_exists z 'x -.> 'y).
+  got (sp_exists z 'x ~> 'y).
 Proof. apply E_ex_gen. Qed.
 
 (* TODO Ltac. *)
 
-Lemma A_impl_A (A : Sigma_pattern) : got (A -.> A).
+Lemma A_impl_A (A : Sigma_pattern) : got (A ~> A).
 Proof.
 (*   eapply E_mod_pon.
     - eapply E_prop_tau2.
@@ -949,8 +1026,8 @@ Proof.
   Unshelve.
   exact A. *)
 
-  pose(_1 := E_prop_tau3 A (A -.> A) A).
-  pose(_2 := E_prop_tau2 A (A -.> A)).
+  pose(_1 := E_prop_tau3 A (A ~> A) A).
+  pose(_2 := E_prop_tau2 A (A ~> A)).
   pose(_3 := E_mod_pon _2 _1).
   pose(_4 := E_prop_tau2 A A).
   pose(_5 := E_mod_pon _4 _3).
@@ -965,11 +1042,11 @@ Admitted. *)
 
 
 (* Lemma C3 (A B : Sigma_pattern) :
-(*   got (((sp_not A) -.> B) -.> (((sp_not A) -.> (sp_not B)) -.> A)). *)
+(*   got (((sp_not A) ~> B) ~> (((sp_not A) ~> (sp_not B)) ~> A)). *)
 Proof. *)
-(*   pose(_1 := (E_prop_tau2 ((sp_not A) -.> B) ((sp_not A) -.> (sp_not B)))). *)
+(*   pose(_1 := (E_prop_tau2 ((sp_not A) ~> B) ((sp_not A) ~> (sp_not B)))). *)
 
-(* Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) -.> A).
+(* Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) ~> A).
 Proof.
   pose(_1 := (E_prop_tau1 (sp_not (sp_not A)))).
 
@@ -990,7 +1067,7 @@ Proof.
 Proof.
   unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
 
-  pose(ex := sp_exists x ((x -< InhabitantSetOf Nat -.> (plus' ' x ^ zero ~=~ ' x)) -.> sp_bottom) -.> sp_bottom).
+  pose(ex := sp_exists x ((x -< InhabitantSetOf Nat ~> (plus' ' x ^ zero ~=~ ' x)) ~> sp_bottom) ~> sp_bottom).
   pose(_1 := (E_ex_gen ex sp_bottom x)).
 
   eapply E_ex_gen.
@@ -1018,68 +1095,3 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
-
-(* Proof of correct semantics for the derived operators
-ref. snapshot: Proposition 4 *)
-
-Lemma not_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall sp : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_not sp))
-  (Complement _ (ext_valuation evar_val svar_val sp)).
-Proof. proof_ext_val. Qed.
-
-Lemma or_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_or spl spr))
-  (Union _ (ext_valuation evar_val svar_val spl)
-           (ext_valuation evar_val svar_val spr)).
-Proof. proof_ext_val. Qed.
-
-Lemma and_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_and spl spr))
-  (Intersection _ (ext_valuation evar_val svar_val spl)
-                  (ext_valuation evar_val svar_val spr)).
-Proof. proof_ext_val. Qed.
-
-Lemma top_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-Same_set _ (ext_valuation evar_val svar_val (sp_top)) (Full_set _).
-Proof. proof_ext_val. Qed.
-
-Lemma only_if_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_only_if spl spr))
-  (Complement _ (Symmetric_difference (ext_valuation evar_val svar_val spl)
-                                      (ext_valuation evar_val svar_val spr))).
-Proof. proof_ext_val. Qed.
-
-Lemma forall_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall sp : Sigma_pattern, forall x : EVar, Same_set _
-  (ext_valuation evar_val svar_val (sp_forall x sp))
-  (FA_Intersection
-    (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
-Proof. proof_ext_val. eapply FA_Inters_same. intros. proof_ext_val. Qed.
-
-Lemma nu_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall sp : Sigma_pattern, forall X : SVar, Same_set _
-  (ext_valuation evar_val svar_val (sp_nu X sp))
-  (nu (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
-Proof.
-proof_ext_val.
-unfold mu. unfold nu. unfold FA_Union_cond. unfold FA_Inters_cond.
-apply Same_set_symmetric. apply Same_set_Compl.
-rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _)).
-rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _)).
-eapply FA_Inters_same. intros.
-proof_ext_val.
-unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In. eapply conj.
-* intros. eapply H0. intros. refine (H _). split.
-  - intros.
-Admitted.
