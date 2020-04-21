@@ -593,8 +593,142 @@ Inductive got : Sigma_pattern -> Prop :=
 (* Theorem Completeness :
   forall phi : Sigma_pattern : (Gamma |= phi) -> (Gamma |- phi). *)
 
+(* ****************************New paper version**************************** *)
 
-(* ************************************************************************** *)
+(* Definition 9. MSFOL definition *)
+
+(* Section 4.2 *)
+
+(* further axioms need to be appended to this axiom set *)
+Definition Gamma_MSFOL := Empty_set Sigma_pattern.
+
+Definition MSAFOL_Sort := const ("Sort").
+
+Definition Axiom_Sort (s : EVar) := s -< MSAFOL_Sort.
+
+(* Sorts of many-sorted algebra*)
+Inductive MSA_sorts : Set :=
+| Nat
+| List
+| Cfg
+| Term
+.
+
+(* a function which corresponds: constants of AML  to  sorts of MSA *)
+Fixpoint AML_sort_name (s : MSA_sorts) : Sigma_pattern :=
+match s with
+| Nat  => const ("Nat")
+| List => const ("List")
+| Cfg  => const ("Cfg")
+| Term => const ("Term")
+end.
+
+Definition Domain_Symbol := const ("Domain symbol").
+
+Definition Domain (sort : MSA_sorts) := Domain_Symbol _._ (AML_sort_name sort).
+
+Definition Nonempty_Domain (sort : MSA_sorts) := (Domain sort) !=~ sp_bottom.
+
+(* Instead of notation "forall x : Nat . pattern" we introduce: *)
+Notation "'for_some' x 'of_sort' sort 'states' phi" :=
+  (sp_exists x ((Membership x (Domain(sort))) _&_ phi)) (at level 5).
+Notation "'for_all' x 'of_sort' sort 'states' phi" :=
+  (sp_forall x ((Membership x (Domain(sort))) ~> phi)) (at level 5).
+
+(* Proposition 10. *)
+(* Lemma forall_ex_equality :
+  forall s : MSA_sorts, forall x : EVar, forall phi : Sigma_pattern,
+  (Empty_set _) |-
+    (for_all x of_sort sort states phi) ~=~
+    ¬(for_all x of_sort sort states ¬phi). *)
+
+Fixpoint Function
+  {n : nat} (fn : Sigma)
+  (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n)
+  (y : EVar) (y_sort : MSA_sorts)
+: Sigma_pattern :=
+let var_pats := VectorDef.map sp_var vars in
+let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_pats in
+let core := for_some y of_sort y_sort states applied_params in
+let foralls := VectorDef.map2
+                (fun var s => (fun phi => for_all var of_sort s states phi))
+                vars sorts in
+  VectorDef.fold_right (fun spl spr => spl spr) foralls core.
+
+Definition vc := VectorDef.cons.
+Definition vn := VectorDef.nil.
+
+Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) :=
+match n with
+ | O   => F1
+ | S x => FS (_of_nat x)
+end.
+
+(* Functional notation of the function *)
+Notation "f '_:_' '-->' s" := (Function f (vn _) s) (at level 0).
+Notation "f '_:_' s1 '-->' s" := (Function f (vc _ s1 0 (vn _)) s) (at level 0).
+(* f : s1 x s2 x ... x sn -> s *)
+Notation "f '_:_' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
+  (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 0).
+
+Definition Predicate
+  {n : nat} (fn : Sigma)
+  (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n)
+: Sigma_pattern :=
+let var_pats := VectorDef.map sp_var vars in
+let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_pats in
+let or_left := applied_params ~=~ sp_top in
+let or_right := applied_params ~=~ sp_bottom in
+let core := or_left _|_ or_right in
+let foralls := VectorDef.map2
+                (fun var s => (fun phi => for_all var of_sort s states phi))
+                vars sorts in
+  VectorDef.fold_right (fun spl spr => spl spr) foralls core.
+
+Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
+: Sigma_pattern :=
+match vec with
+| VectorDef.nil  _                          => sp_top (* TODO: sp_top? *)
+| VectorDef.cons _ elem _ (VectorDef.nil _) => elem
+| VectorDef.cons _ elem _ rem               => elem _&_ (and_gen rem)
+end.
+
+Definition _well_sorted
+  {n : nat} (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n)
+: Sigma_pattern :=
+let domains := VectorDef.map Domain sorts in
+let assoc := VectorDef.map2 Membership vars domains in
+  and_gen assoc.
+
+(* TODO: fix this and ask how to get types
+ *)(* Definition ws
+  (phi : Sigma_pattern) {n : nat} (sorts : VectorDef.t MSA_sorts n) :=
+let vars := of_list (free_vars phi) in
+  _well_sorted vars sorts. *)
+
+(* Proposition 12. *)
+(* Theorem MSFOL_wellformed : forall phi : Sigma_pattern,
+  Gamma_MSFOL |- (ws phi) ~> ((phi ~=~ sp_top) _|_ (phi ~=~ sp_bottom)). *)
+
+(* Theorem 13. *)
+(* Theorem Omega |- MSFOL phi -> Gamma_MSFOL |- phiMSFOL. *)
+
+(* Definition 14. MSFOL restricted *)
+
+(* Theorem 15. *)
+
+(* Theorem 16. *)
+
+(* Natural numbers *)
+(* zero  *)
+
+
+(* TODO:
+    commutativity
+    n + 0 = n *)
+
+
+(* ****************************Old paper version**************************** *)
 
 
 (* Many-sorted algebra *)
@@ -611,10 +745,10 @@ Inductive MSA_sorts : Set :=
 (* a function which corresponds: constants of AML  to  sorts of MSA *)
 Fixpoint AML_sort_name (s : MSA_sorts) : Sigma_pattern :=
 match s with
-| Nat  => sp_const(sigma_c("Nat"))
-| List => sp_const(sigma_c("List"))
-| Cfg  => sp_const(sigma_c("Cfg"))
-| Term => sp_const(sigma_c("Term"))
+| Nat  => const ("Nat")
+| List => const ("List")
+| Cfg  => const ("Cfg")
+| Term => const ("Term")
 end.
 
 (* we can also define them *)
