@@ -997,21 +997,13 @@ Definition NoConfusion_I
 : Sigma_pattern :=
   (generate_foralls vx vy) ((assoc_params c vx) !=~ (assoc_params d vy)).
 
-Fixpoint _generate_equalities (n : nat) (xl : list EVar) (xl' : list EVar)
-: Sigma_pattern :=
-match n with
-| O => sp_bottom
-| S O => ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
-| S n' =>
-    (sp_and
-      ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
-      (_generate_equalities n' (List.tl xl) (List.tl xl')))
-end.
-
 Fixpoint generate_equalities
-  {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n)
+  {n : nat} (v1 : VectorDef.t EVar n) (v2 : VectorDef.t EVar n)
 : Sigma_pattern :=
-  _generate_equalities n (to_list vx) (to_list vx').
+let one := VectorDef.map sp_var v1 in
+let another := VectorDef.map sp_var v2 in
+let equalities := (VectorDef.map2 Equality one another) in
+ and_gen equalities.
 
 Definition NoConfusion_II
   {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n) (c : Sigma)
@@ -1086,14 +1078,6 @@ Proof. apply (E_mod_pon 'x 'y). Qed. *)
 
 Lemma ex6 : got (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom).
 Proof. apply E_ex_quan. Qed.
-
-Check E_ex_quan' x y.
-
-Lemma ex6' : got (e_subst_var sp_bottom 'y x) -> got (sp_exists x sp_bottom).
-Proof. apply E_ex_quan'. Qed.
-
-Check E_ex_gen.
-Check E_ex_gen 'x 'y z.
 
 Lemma ex7 :
   got ('x ~> 'y) ->
