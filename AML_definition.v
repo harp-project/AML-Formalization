@@ -718,12 +718,34 @@ let vars := of_list (free_vars phi) in
 (* Theorem 16. *)
 
 (* Natural numbers *)
-(* zero  *)
+Definition zero : Sigma := sigma_c("zero").
+Definition succ : Sigma := sigma_c("succ").
+Definition plus : Sigma := sigma_c("plus'").
+Definition mult : Sigma := sigma_c("mult").
+
+Definition No_Confusion1 (x : EVar) :=
+  for_all x of_sort Nat states
+    ((const ("succ") _._ (sp_var x)) !=~ (const ("zero"))).
+
+Definition No_Confusion2 (x y : EVar) :=
+  for_all x of_sort Nat states (for_all y of_sort Nat states
+  (((const ("succ") _._ (sp_var x)) ~=~ (const ("succ") _._ (sp_var y))) ~>
+  ((sp_var x) ~=~ (sp_var y)))).
+
+Definition Inductive_Domain (D : SVar) :=
+  (Domain Nat) ~=~
+  (sp_mu D ((const ("zero")) _|_ ((const ("succ")) _._ sp_set D))).
+
+Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
+  (((phi (const ("zero"))) _&_
+  (sp_forall n ((phi (sp_var n)) ~>
+    (phi ((const ("succ")) _._ (sp_var n))))) ) ~>
+  (sp_forall n (phi (sp_var n)))).
 
 
 (* TODO:
     commutativity
-    n + 0 = n *)
+    n + 0 = n    -> by induction *)
 
 
 (* ****************************Old paper version**************************** *)
