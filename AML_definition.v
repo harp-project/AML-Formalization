@@ -105,24 +105,31 @@ match phi with
 end.
 
 (* Derived operators *)
-Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
-Definition sp_or  (l r : Sigma_pattern) := sp_impl (sp_not l) r.
-Definition sp_and (l r : Sigma_pattern) := sp_not (sp_or (sp_not l) (sp_not r)).
-Definition sp_top := sp_not sp_bottom.
-Definition sp_iff (l r : Sigma_pattern) :=
-  (sp_and (sp_impl (l) (r)) (sp_impl (l) (r))).
+Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
+
+Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,
+                                      b at level 200).
+
+Definition sp_not (phi : Sigma_pattern) := phi ~> sp_bottom.
+Notation "¬ a"     := (sp_not   a  ) (at level 75).
+
+Definition sp_or  (l r : Sigma_pattern) := (¬ l) ~> r.
+Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
+
+Definition sp_and (l r : Sigma_pattern) := ¬ ((¬ l) _|_ (¬ r)).
+Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
+
+Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (l ~> r)).
+Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+
+Definition sp_top := (¬ sp_bottom).
 Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
-  sp_not (sp_exists x (sp_not phi)).
+  ¬ (sp_exists x (¬ phi)).
 Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
-  sp_not (sp_mu X (sp_not (e_subst_set phi (sp_not (sp_set X)) X))).
+  ¬ (sp_mu X (¬ (e_subst_set phi (¬ (sp_set X)) X))).
 (* End of derived operators *)
 
-Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
-Notation "¬ a"     := (sp_not   a  ) (at level 75).
-Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
-Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
-Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,                                                      b at level 200).
-Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+
 
 Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
 Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
@@ -283,9 +290,9 @@ Notation "M |=' Gamma" := (satisfies_theory M Gamma)
   (left associativity, at level 50).
 
 Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
-: Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
-                                   satisfies sm sp.
+: Prop := forall sm : Sigma_model, (sm |=' theory) -> (sm |= sp).
 
+Notation "G |~> phi" := (implies G phi) (left associativity, at level 50).
 
 (* Definition 6. Definedness and derived operators *)
 (* Definedness: *)
@@ -379,9 +386,9 @@ Inductive AnyStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
 where "phi |->* phi'" := (AnyStepTransition phi phi').
 (* End of Definedness derived operators and exuivalences *)
 
-(* TODO: introduce $ element $ _._ a = M *)
+(* Introducing $ element, such as $ _._ a = M *)
 Definition spec_elem : Sigma_pattern := const ("$").
-(* forall a : EVar, $ _._ a = M *)
+
 Lemma spec_app_a_eq_M
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
     forall a : EVar, Same_set _
@@ -389,19 +396,10 @@ Lemma spec_app_a_eq_M
       (Full_set _).
 Admitted.
 
-Check Same_set.
-(* Lemma forall_ext_val_correct
-{sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-forall sp : Sigma_pattern, forall x : EVar, Same_set _
-  (ext_valuation evar_val svar_val (sp_forall x sp))
-  (FA_Intersection
-    (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
- *)
-(* forall A : SVar, $ _._ A = M, iff A is not empty *)
 Lemma spec_app_A_eq_M
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
     forall A : SVar,
-      (* A os not empty *)
+      (* A is not empty *)
       (exists x, In _ x (ext_valuation evar_val svar_val (sp_set A))) ->
       Same_set _
         (ext_valuation evar_val svar_val (sp_app spec_elem (sp_set A)))
@@ -1223,14 +1221,6 @@ Proof. apply E_ex_gen. Qed.
 
 Lemma A_impl_A (A : Sigma_pattern) : got (A ~> A).
 Proof.
-(*   eapply E_mod_pon.
-    - eapply E_prop_tau2.
-    - eapply E_mod_pon.
-      + eapply E_prop_tau2.
-      + eapply E_prop_tau3 .
-  Unshelve.
-  exact A. *)
-
   pose(_1 := E_prop_tau3 A (A ~> A) A).
   pose(_2 := E_prop_tau2 A (A ~> A)).
   pose(_3 := E_mod_pon _2 _1).
