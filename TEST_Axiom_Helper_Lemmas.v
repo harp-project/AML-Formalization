@@ -168,3 +168,36 @@ Lemma x1_x2_x3__x4_eq_par' :
   (assoc_params fun_f (vc _ x1 3 (vc _ x2 2 (vc _ x3 1 (vc _ x4 0 (vn _)))))) =
   ((sp_const fun_f) _._ (sp_var x1) _._ (sp_var x2) _._ (sp_var x3) _._ (sp_var x4)).
 Proof. simpl. reflexivity. Qed.
+
+Lemma until_zero : (SumFromZeroTo ^zero) = ^zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one : (SumFromZeroTo one) = (plus' one ^zero).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two : (SumFromZeroTo two) = (plus' two (plus' one ^zero)).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_zero' : (ProdFromOneTo ^zero) = ^zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one' : (ProdFromOneTo one) = one.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two' : (ProdFromOneTo two) = (mult' two one).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_three' : (ProdFromOneTo three) = (mult' three (mult' two one)).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_zero'' : (SumOfSquaresFromZeroTo ^zero) = ^zero.
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_one'' :
+  (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) ^zero).
+Proof. simpl. reflexivity. Qed.
+
+Lemma until_two'' :
+  (SumOfSquaresFromZeroTo two) =
+  (plus' (mult' two two) (plus' (mult' one one) ^zero)).
+Proof. simpl. reflexivity. Qed.
