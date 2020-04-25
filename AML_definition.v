@@ -308,22 +308,22 @@ Admitted.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Definition satisfies (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
+Definition satisfies_model (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
 forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
   Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
 
-Notation "M |= phi" := (satisfies M phi) (left associativity, at level 50).
+Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
 Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
-: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> (sm |= axiom).
+: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> (sm |=M axiom).
 
-Notation "M |=' Gamma" := (satisfies_theory M Gamma)
+Notation "M |=T Gamma" := (satisfies_theory M Gamma)
     (left associativity, at level 50).
 
-Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
-: Prop := forall sm : Sigma_model, (sm |=' theory) -> (sm |= sp).
+Definition satisfies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
+: Prop := forall sm : Sigma_model, (sm |=T theory) -> (sm |=M sp).
 
-Notation "G |=> phi" := (implies G phi) (left associativity, at level 50).
+Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
 (* Definition AML_theories : ListSet.set Sigma_pattern := List.nil. *)
 
@@ -781,14 +781,15 @@ Qed.
 
 
 (* Theorem 8.: Soundness *)
-(* Theorem Soundness :
+Theorem Soundness :
   forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
   (theory |- phi) -> (theory |= phi).
+Admitted.
 
 Theorem Completeness :
   forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
-  (theory |= phi) -> (theory |- phi). *)
-
+  (theory |= phi) -> (theory |- phi).
+Abort.
 
 (* ****************************New paper version**************************** *)
 
