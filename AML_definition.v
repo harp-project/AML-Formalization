@@ -519,34 +519,29 @@ match C with
 | ctx_app_r sp cc => free_vars sp
 end.
 
-(* TODO: Define provability *)
-(* Definition provable (axioms : Ensemble Sigma_pattern) (phi : Sigma_pattern)
-: Prop := *)
-
-(* Notation "Gamma |- phi" := (provable Gamma phi). *)
 
 (* Proof system for AML ref. snapshot: Section 3 *)
 
 (*
 states
 OneStepTransitionJudgement, AnyStepTransitionJudgement
-extract tautology rules
 *)
 
 (* Auxiliary axiom schemes for proving propositional tautology *)
-Inductive Tautology_proof : Sigma_pattern -> Prop :=
+Reserved Notation "pattern 'tautology'" (at level 2).
+Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
 | P1 (phi : Sigma_pattern) :
-    Tautology_proof (phi ~> phi)
+    (phi ~> phi) tautology
 
 | P2 (phi psi : Sigma_pattern) :
-    Tautology_proof (phi ~> (psi ~> phi))
+    (phi ~> (psi ~> phi)) tautology
 
 | P3 (phi psi xi : Sigma_pattern) :
-    Tautology_proof ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi)))
+    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
 
 | P4 (phi psi : Sigma_pattern) :
-    Tautology_proof (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi))
-.
+    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
+where "pattern 'tautology'" := (Tautology_proof_rules pattern).
 
 (* Auxiliary axiom schemes for FOL resoning *)
 Inductive Hilbert_style_proof : Sigma_pattern -> Prop :=
@@ -568,98 +563,173 @@ Inductive Hilbert_style_proof : Sigma_pattern -> Prop :=
 
 (* Rule to embed tautology axiom schemes *)
 | Taut (pattern : Sigma_pattern):
-    Tautology_proof pattern -> Hilbert_style_proof pattern
+    pattern tautology -> Hilbert_style_proof pattern
 .
 
 (* Proof system rules:
  * these can be used duting a proof by instantiating them *)
-Inductive proved : Sigma_pattern -> Prop :=
+Reserved Notation "pattern 'proved'" (at level 2).
+Inductive AML_proof_system : Sigma_pattern -> Prop :=
 (* FOL reasoning *)
   (* Propositional tautology *)
-  | E_prop_tau (phi : Sigma_pattern) :
-      Tautology_proof phi -> proved phi
+  | Prop_tau (phi : Sigma_pattern) :
+      phi tautology -> phi proved
 
   (* Modus ponens *)
-  | E_mod_pon {phi1 phi2 : Sigma_pattern} :
-    proved phi1 -> proved (phi1 ~> phi2) -> proved phi2
+  | Mod_pon {phi1 phi2 : Sigma_pattern} :
+    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
 
   (* Existential quantifier *)
-  | E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
-    proved ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi))
+  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
+    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
 
   (* Existential generalization *)
-  | E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
-    proved (phi1 ~> phi2) ->
+  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+    (phi1 ~> phi2) proved ->
     negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
-    proved ((sp_exists x phi1) ~> phi2)
+    ((ex x, phi1) ~> phi2) proved
 
 (* Frame reasoning *)
   (* Propagation bottom *)
-  | E_prop_bot (C : Application_context) :
-    proved ((subst_ctx C sp_bottom) ~> sp_bottom)
+  | Prop_bot (C : Application_context) :
+    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
 
   (* Propagation disjunction *)
-  | E_prop_dis (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    proved ((subst_ctx C (phi1 _|_ phi2)) ~>
-        ((subst_ctx C phi1) _|_ (subst_ctx C phi2)))
+  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    ((subst_ctx C (phi1 _|_ phi2)) ~>
+        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
 
   (* Propagation exist *)
-  | E_prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
+  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
     negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
-    proved ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi)))
+    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
 
   (* Framing *)
-  | E_framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    proved (phi1 ~> phi2) -> proved ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
-  | E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
-    proved phi -> proved (e_subst_set phi (sp_set psi) X)
+  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
+    phi proved -> (e_subst_set phi (sp_set psi) X) proved
 
   (* Pre-Fixpoint *)
-  | E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
-    proved ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi))
+  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
 
   (* Knaster-Tarski *)
-  | E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-    proved ((e_subst_set phi psi X) ~> psi) -> proved ((sp_mu X phi) ~> psi)
+  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
 
 (* Technical rules *)
   (* Existence *)
-  | E_existence (x : EVar) : proved (ex x , ' x)
+  | Existence (x : EVar) : (ex x , ' x) proved
 
   (* Singleton *)
-  | E_singleton (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
-    proved (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi)))))
-.
+  | Singleton (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
+    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
+
+(* Auxiliary rule *)
+(*   | Use_as_axiom (axiom : Sigma_pattern) :
+      axiom proved *)
+where "pattern 'proved'" := (AML_proof_system pattern).
+
+Definition setl := ListSet.set.
+Definition rem := set_remove sp_eq_dec.
+Notation "'add'" := (set_add sp_eq_dec).
+Definition empty_theory := empty_set Sigma_pattern.
+
+(* TODO: Define provability *)
+Reserved Notation "theory |- pattern" (at level 40).
+Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
+(* Deduction rule: inject axiom from theory *)
+| inject {axiom pattern : Sigma_pattern} (theory : setl Sigma_pattern) :
+    set_In axiom theory -> theory |- pattern ->
+    (rem axiom theory) |- (axiom ~> pattern)
+
+(* Deduction theorem: extract back to theory *)
+| extract (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+    (theory |- (phi1 ~> phi2)) ->
+    (add phi1 theory) |- phi2
+
+| hypothesis (axiom : Sigma_pattern) (theory : setl Sigma_pattern) :
+    set_In axiom theory -> (rem axiom theory) |- axiom
+
+(* AML_proof_system rule embedding *)
+
+(* Introduce axiom rules *)
+| empty (pattern : Sigma_pattern) :
+    (pattern proved) -> empty_theory |- pattern
+
+| ext (pattern : Sigma_pattern) (theory : setl Sigma_pattern) :
+    pattern proved -> theory |- pattern
+
+(* Introduce step rules *)
+| E_mod_pon (phi1 phi2 : Sigma_pattern) (T1 T2 : setl Sigma_pattern) :
+    (* T1 subsests T2 or T2 substes T1 or are equal *)
+    T1 |- phi1 -> T2 |- (phi1 ~> phi2) -> theory? |- phi2
+
+| E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+    theory |- (phi1 ~> phi2) ->
+    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    theory |- ((ex x, phi1) ~> phi2)
+
+| E_framing (C : Application_context) (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+  theory |- (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+
+| E_svar_subst (phi : Sigma_pattern) (psi X : SVar) (theory : setl Sigma_pattern) :
+  theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
+
+| E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) (theory : setl Sigma_pattern) :
+  theory |- ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi) 
+
+where "theory |- pattern" := (Provable theory pattern).
+
+
+Lemma not_not_A_proves_A : forall A : Sigma_pattern,
+  (add (¬(¬A)) (add ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) empty_theory)) |- A.
+Proof.
+  intro A.
+
+  pose(theory :=
+        (add (¬(¬A)) (add ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) empty_theory))).
+
+(*   pose(_1 := hypothesis (¬(¬A)) theory). (* getting axiom from hypothesises *)
+  pose(_2 := ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (¬(¬A)) ~> (¬A ~> (¬(¬A))) (P2 (¬(¬A)) (¬A)).
+  pose(_5 := _) (* getting axiom from hypothesises *)
+  pose(_6 := Mod_pon _5 _4).
+  pose(_7 := Mod_pon _6 _3). *)
+
+(*   eapply E_mod_pon.
+  - eapply E_mod_pon.
+    * Check hypothesis (¬(¬A)) theory. eapply (hypothesis (¬(¬A)) theory). left. reflexivity.
+    * eapply  *)
+  (* eapply (introduce ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) theory).
+  eapply ext1.
+  - eapply Mod_pon. *)
+
+  (* eapply extended_theory2.
+  - eapply Mod_pon.
+    + eapply Mod_pon.
+      * eapply (Prop_tau (¬A ~> ¬A) (P1 (¬A))).
+      * eapply (Use_axiom ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
+
+  - apply conj.
+    + right. *)
+
+  pose(_1 := _). (* getting axiom from hypothesises *)
+  pose(_2 := Prop_tau (¬A ~> ¬A) (P1 ¬A)).
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (¬(¬A)) ~> (¬A ~> (¬(¬A))) (P2 (¬(¬A)) (¬A)).
+  pose(_5 := _) (* getting axiom from hypothesises *)
+  pose(_6 := Mod_pon _5 _4).
+  pose(_7 := Mod_pon _6 _3).
 
 (*
-  Gamma set of patterns
-  TypeJudegement -szeru dolgot kellene a Gamma |- phi -re is csinalni
+  provability
   -> levezetni ures kornyezetben is az A=>A kifejezest
-
-  Istinek a dom fixpontban miert van az 'extended' konstruktorban ugyancsak G
-
-  az en Gamma-mra is kell majd well-formedness
- TypeJudgement
-kell a permutation is
-permutation symmetry is
-permutationLength
-permutationNotIn
-permutationWellFormed
-
-Ambrus gyak anyagat atnezni
-  form szem, nyelvek tipusrendszere OK
-NDJ gyak anyagat atnezni OK
-fajl amit NDJ kuldott atnezni OK
-
-cikket elolvasni a proof system-ig
-
-Istinek kerdeseket feltenni
-
-
-
 *)
 
 Lemma A_impl_A (A : Sigma_pattern) : proved (A ~> A).
@@ -668,16 +738,16 @@ Proof.
   pose(_2' := P2 A (A ~> A)).
   pose(_4' := P2 A A).
 
-  pose(_1 := E_prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
-  pose(_2 := E_prop_tau (A ~> (A ~> A) ~> A) _2').
-  pose(_3 := E_mod_pon _2 _1).
-  pose(_4 := E_prop_tau (A ~> A ~> A) _4').
-  pose(_5 := E_mod_pon _4 _3).
+  pose(_1 := Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
+  pose(_2 := Prop_tau (A ~> (A ~> A) ~> A) _2').
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (A ~> A ~> A) _4').
+  pose(_5 := Mod_pon _4 _3).
   exact _5.
 Qed.
 
 Theorem A_impl_A_equiv : forall A : Sigma_pattern,
-  (A_impl_A A) = (E_prop_tau (A ~> A) (P1 A)).
+  (A_impl_A A) = (Prop_tau (A ~> A) (P1 A)).
 Proof.
   intros.
   induction A.
