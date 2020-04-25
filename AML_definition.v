@@ -634,15 +634,37 @@ Inductive AML_proof_system : Sigma_pattern -> Prop :=
       axiom proved *)
 where "pattern 'proved'" := (AML_proof_system pattern).
 
+Lemma A_impl_A (A : Sigma_pattern) : (A ~> A) proved.
+Proof.
+  pose(_1' := P3 A (A ~> A) A).
+  pose(_2' := P2 A (A ~> A)).
+  pose(_4' := P2 A A).
+
+  pose(_1 := Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
+  pose(_2 := Prop_tau (A ~> (A ~> A) ~> A) _2').
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (A ~> A ~> A) _4').
+  pose(_5 := Mod_pon _4 _3).
+  exact _5.
+Qed.
+
+Theorem A_impl_A_equiv : forall A : Sigma_pattern,
+  (A_impl_A A) = (Prop_tau (A ~> A) (P1 A)).
+Proof.
+  intros.
+  induction A.
+Admitted.
+
+
 Definition setl := ListSet.set.
 Definition rem := set_remove sp_eq_dec.
-Notation "'add'" := (set_add sp_eq_dec).
+Definition add := set_add sp_eq_dec.
 Definition empty_theory := empty_set Sigma_pattern.
 
 (* TODO: Define provability *)
 Reserved Notation "theory |- pattern" (at level 40).
 Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
-(* Deduction rule: inject axiom from theory *)
+(* Deduction theorem: inject axiom from theory *)
 | inject {axiom pattern : Sigma_pattern} (theory : setl Sigma_pattern) :
     set_In axiom theory -> theory |- pattern ->
     (rem axiom theory) |- (axiom ~> pattern)
@@ -652,8 +674,10 @@ Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
     (theory |- (phi1 ~> phi2)) ->
     (add phi1 theory) |- phi2
 
+(* Using hypothesis from theory *)
 | hypothesis (axiom : Sigma_pattern) (theory : setl Sigma_pattern) :
-    set_In axiom theory -> (rem axiom theory) |- axiom
+    (* set_mem sp_eq_dec axiom theory = true *) 
+    (set_In axiom theory) -> theory |- axiom
 
 (* AML_proof_system rule embedding *)
 
@@ -663,25 +687,29 @@ Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
 
 | ext (pattern : Sigma_pattern) (theory : setl Sigma_pattern) :
     pattern proved -> theory |- pattern
-
+ 
 (* Introduce step rules *)
-| E_mod_pon (phi1 phi2 : Sigma_pattern) (T1 T2 : setl Sigma_pattern) :
+| E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
     (* T1 subsests T2 or T2 substes T1 or are equal *)
-    T1 |- phi1 -> T2 |- (phi1 ~> phi2) -> theory? |- phi2
+    theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
 
 | E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
     negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
 
-| E_framing (C : Application_context) (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
-  theory |- (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+| E_framing
+  (C : Application_context) (phi1 phi2 : Sigma_pattern)
+  (theory : setl Sigma_pattern) :
+    theory |- (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
 
-| E_svar_subst (phi : Sigma_pattern) (psi X : SVar) (theory : setl Sigma_pattern) :
-  theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
+| E_svar_subst
+  (phi : Sigma_pattern) (psi X : SVar) (theory : setl Sigma_pattern) :
+    theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
 
-| E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) (theory : setl Sigma_pattern) :
-  theory |- ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi) 
+| E_knaster_tarski
+    (phi psi : Sigma_pattern) (X : SVar) (theory : setl Sigma_pattern) :
+  theory |- ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
 
 where "theory |- pattern" := (Provable theory pattern).
 
@@ -702,56 +730,33 @@ Proof.
   pose(_6 := Mod_pon _5 _4).
   pose(_7 := Mod_pon _6 _3). *)
 
-(*   eapply E_mod_pon.
+  eapply E_mod_pon.
   - eapply E_mod_pon.
-    * Check hypothesis (¬(¬A)) theory. eapply (hypothesis (¬(¬A)) theory). left. reflexivity.
-    * eapply  *)
-  (* eapply (introduce ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) theory).
-  eapply ext1.
-  - eapply Mod_pon. *)
-
-  (* eapply extended_theory2.
-  - eapply Mod_pon.
-    + eapply Mod_pon.
-      * eapply (Prop_tau (¬A ~> ¬A) (P1 (¬A))).
-      * eapply (Use_axiom ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
-
-  - apply conj.
-    + right. *)
-
-  pose(_1 := _). (* getting axiom from hypothesises *)
-  pose(_2 := Prop_tau (¬A ~> ¬A) (P1 ¬A)).
-  pose(_3 := Mod_pon _2 _1).
-  pose(_4 := Prop_tau (¬(¬A)) ~> (¬A ~> (¬(¬A))) (P2 (¬(¬A)) (¬A)).
-  pose(_5 := _) (* getting axiom from hypothesises *)
-  pose(_6 := Mod_pon _5 _4).
-  pose(_7 := Mod_pon _6 _3).
-
-(*
-  provability
-  -> levezetni ures kornyezetben is az A=>A kifejezest
-*)
-
-Lemma A_impl_A (A : Sigma_pattern) : proved (A ~> A).
-Proof.
-  pose(_1' := P3 A (A ~> A) A).
-  pose(_2' := P2 A (A ~> A)).
-  pose(_4' := P2 A A).
-
-  pose(_1 := Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
-  pose(_2 := Prop_tau (A ~> (A ~> A) ~> A) _2').
-  pose(_3 := Mod_pon _2 _1).
-  pose(_4 := Prop_tau (A ~> A ~> A) _4').
-  pose(_5 := Mod_pon _4 _3).
-  exact _5.
+    * eapply (hypothesis (¬(¬A)) theory).
+        (* TODO: how to do this more properly
+                 write a tactic for this      *)
+      + unfold set_In. unfold theory. eapply set_add_iff. left. reflexivity.
+    * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) theory).
+      + eapply (Prop_tau ((¬(¬A)) ~> (¬A ~> ¬(¬A)))).
+        eapply (P2 (¬(¬A)) (¬A)).
+  - eapply E_mod_pon.
+    * eapply (ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
+    * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
+      + unfold set_In. unfold theory. eapply set_add_iff. right. left. reflexivity.
 Qed.
 
-Theorem A_impl_A_equiv : forall A : Sigma_pattern,
-  (A_impl_A A) = (Prop_tau (A ~> A) (P1 A)).
+
+Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
 Proof.
-  intros.
-  induction A.
-Admitted.
+  eapply E_mod_pon.
+  - eapply (empty (A ~> A ~> A) (Prop_tau (A ~> A ~> A) (P2 A A))).
+  - eapply E_mod_pon.
+    + eapply (empty (A ~> (A ~> A) ~> A)
+                    (Prop_tau (A ~> (A ~> A) ~> A) (P2 A (A ~> A)))).
+    + eapply (empty ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
+                    (Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
+                      (P3 A (A ~> A) A))).
+Qed.
 
 (* Proposition 7: *)
 (* Inductive rule : ? -> Prop :=
