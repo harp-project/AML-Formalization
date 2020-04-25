@@ -31,7 +31,7 @@ Notation "' v" := (sp_var v) (at level 3).
 Notation "` s" := (sp_set s) (at level 3).
 Notation "^ c" := (sp_const c) (at level 3).
 Notation "a $ b" := (sp_app a b) (at level 50, left associativity).
-Notation "'B'" := sp_bottom.
+Notation "'Bot'" := sp_bottom.
 Notation "a ~> b"  := (sp_impl a b) (at level 90, right associativity,
                                       b at level 200).
 Notation "'ex' x , phi" := (sp_exists x phi) (at level 55).
@@ -51,7 +51,7 @@ Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (l ~> r)).
 Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
 
 Definition sp_top := (¬ sp_bottom).
-Notation "'T'" := sp_top.
+Notation "'Top'" := sp_top.
 
 Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   ¬ (sp_exists x (¬ phi)).
@@ -120,7 +120,7 @@ Definition simple := var ("x").
 Definition more := set ("A") _|_ ¬ (set "A").
 Definition complex :=
   var("A") ~> (var("B") ~> ¬(set("C"))) $
-  ex (evar_c("x")) , const("D") $ B _&_ T.
+  ex (evar_c("x")) , const("D") $ Bot _&_ Top.
 Definition custom_constructor := const ("ctor") $ var ("a").
 Definition predicate := const ("p") $ var ("x1") $ var ("x2").
 Definition function :=
@@ -310,7 +310,7 @@ Admitted.
 
 Definition satisfies (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
 forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
- Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
+  Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
 
 Notation "M |= phi" := (satisfies M phi) (left associativity, at level 50).
 
@@ -655,29 +655,26 @@ Proof.
   induction A.
 Admitted.
 
-
-Definition setl := ListSet.set.
-Definition rem := set_remove sp_eq_dec.
-Definition add := set_add sp_eq_dec.
-Definition empty_theory := empty_set Sigma_pattern.
+Check Ensembles.Singleton Sigma_pattern.
+Definition empty_theory := Empty_set Sigma_pattern.
 
 (* TODO: Define provability *)
 Reserved Notation "theory |- pattern" (at level 40).
-Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
+Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
 (* Deduction theorem: inject axiom from theory *)
-| inject {axiom pattern : Sigma_pattern} (theory : setl Sigma_pattern) :
-    set_In axiom theory -> theory |- pattern ->
-    (rem axiom theory) |- (axiom ~> pattern)
+| inject {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern ->
+    (Subtract _ theory axiom) |- (axiom ~> pattern)
 
 (* Deduction theorem: extract back to theory *)
-| extract (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+| extract (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (theory |- (phi1 ~> phi2)) ->
-    (add phi1 theory) |- phi2
+    (Add _ theory phi1) |- phi2
 
 (* Using hypothesis from theory *)
-| hypothesis (axiom : Sigma_pattern) (theory : setl Sigma_pattern) :
-    (* set_mem sp_eq_dec axiom theory = true *) 
-    (set_In axiom theory) -> theory |- axiom
+| hypothesis (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (* set_mem sp_eq_dec axiom theory = true *)
+    (In _ theory axiom) -> theory |- axiom
 
 (* AML_proof_system rule embedding *)
 
@@ -685,42 +682,66 @@ Inductive Provable : setl Sigma_pattern -> Sigma_pattern -> Prop :=
 | empty (pattern : Sigma_pattern) :
     (pattern proved) -> empty_theory |- pattern
 
-| ext (pattern : Sigma_pattern) (theory : setl Sigma_pattern) :
+| ext (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     pattern proved -> theory |- pattern
- 
+
 (* Introduce step rules *)
-| E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+| E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (* T1 subsests T2 or T2 substes T1 or are equal *)
     theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
 
-| E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : setl Sigma_pattern) :
+| E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
     negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
 
 | E_framing
   (C : Application_context) (phi1 phi2 : Sigma_pattern)
-  (theory : setl Sigma_pattern) :
-    theory |- (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+  (theory : Ensemble Sigma_pattern) :
+    theory |-
+      (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
 
 | E_svar_subst
-  (phi : Sigma_pattern) (psi X : SVar) (theory : setl Sigma_pattern) :
+  (phi : Sigma_pattern) (psi X : SVar) (theory : Ensemble Sigma_pattern) :
     theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
 
 | E_knaster_tarski
-    (phi psi : Sigma_pattern) (X : SVar) (theory : setl Sigma_pattern) :
-  theory |- ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
+  (phi psi : Sigma_pattern) (X : SVar) (theory : Ensemble Sigma_pattern) :
+    theory |-
+      ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
+
+(* Proposition 7: definedness related properties *)
+| E_id (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi ~=~ phi)
+
+| E_trans (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
+    theory |- (phi1 ~=~ phi3)
+
+| E_symm (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1)
+
+| E_evar_subst
+  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) ->
+    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x))
 
 where "theory |- pattern" := (Provable theory pattern).
 
+(* Examples of use *)
+(* Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..))  *)
+
+(* TODO: Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" := (Add _ a (Add _ b .. (Add _ z) ..))
+  (at level 2). *)
 
 Lemma not_not_A_proves_A : forall A : Sigma_pattern,
-  (add (¬(¬A)) (add ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) empty_theory)) |- A.
+  (Add _ (Add _ empty_theory (¬(¬A)))
+         ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) ) |- A.
 Proof.
   intro A.
 
-  pose(theory :=
-        (add (¬(¬A)) (add ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) empty_theory))).
+  pose(theory := (Add _ (Add _ empty_theory (¬(¬A)))
+                 ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) )).
 
 (*   pose(_1 := hypothesis (¬(¬A)) theory). (* getting axiom from hypothesises *)
   pose(_2 := ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
@@ -733,16 +754,16 @@ Proof.
   eapply E_mod_pon.
   - eapply E_mod_pon.
     * eapply (hypothesis (¬(¬A)) theory).
-        (* TODO: how to do this more properly
-                 write a tactic for this      *)
-      + unfold set_In. unfold theory. eapply set_add_iff. left. reflexivity.
+        (* TODO: write a tactic for this      *)
+      + unfold theory. unfold In in *. unfold Add.
+        eapply Union_introl. eapply Union_intror. reflexivity.
     * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) theory).
       + eapply (Prop_tau ((¬(¬A)) ~> (¬A ~> ¬(¬A)))).
         eapply (P2 (¬(¬A)) (¬A)).
   - eapply E_mod_pon.
     * eapply (ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
     * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
-      + unfold set_In. unfold theory. eapply set_add_iff. right. left. reflexivity.
+      + unfold Add. eapply Union_intror. reflexivity.
 Qed.
 
 
@@ -758,30 +779,16 @@ Proof.
                       (P3 A (A ~> A) A))).
 Qed.
 
-(* Proposition 7: *)
-(* Inductive rule : ? -> Prop :=
-| PR_id (Ensemble Sigma_pattern : Gamma) (phi : Sigma_pattern) :
-  rule (Gamma |- (phi ~=~ phi))
-
-| PR_trans (Ensemble Sigma_pattern : Gamma) (phi1 phi2 phi3 : Sigma_pattern) :
-  Gamma |- phi1 ~=~ phi2 ->
-  Gamma |- phi2 ~=~ phi3 ->
-  rule (Gamma |- phi1 ~=~ phi3)
-
-| PR_symm (Ensemble Sigma_pattern : Gamma) (phi1 phi2 : Sigma_pattern) :
-  Gamma |- phi1 ~=~ phi2 ->
-  rule (Gamma |- phi2 ~=~ phi1)
-
-| PR_subst (Ensemble Sigma_pattern : Gamma) (phi1 phi2 : Sigma_pattern) :
-  Gamma |- phi1 ~=~ phi2 ->
-  rule (Gamma |- e_subst_var psi phi1 x ~=~ e_subst_var psi phi2 x) *)
 
 (* Theorem 8.: Soundness *)
 (* Theorem Soundness :
-  forall phi : Sigma_pattern : (Gamma |- phi) -> (Gamma |= phi). *)
+  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
+  (theory |- phi) -> (theory |= phi).
 
-(* Theorem Completeness :
-  forall phi : Sigma_pattern : (Gamma |= phi) -> (Gamma |- phi). *)
+Theorem Completeness :
+  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
+  (theory |= phi) -> (theory |- phi). *)
+
 
 (* ****************************New paper version**************************** *)
 
@@ -935,8 +942,8 @@ Definition Predicate
 let vars := gen_x_vec n in
 let var_pats := VectorDef.map sp_var vars in
 let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_pats in
-let or_left := applied_params ~=~ T in
-let or_right := applied_params ~=~ B in
+let or_left := applied_params ~=~ Top in
+let or_right := applied_params ~=~ Bot in
 let core := or_left _|_ or_right in
 let foralls := VectorDef.map2
                 (fun var s => (fun phi => (all_M var : s, phi)))
