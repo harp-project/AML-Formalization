@@ -9,6 +9,9 @@ Definition sorts' := (VectorDef.nil MSA_sorts).
 Compute Function (sigma_c("f")) vec sorts y List.
 Compute Function (sigma_c("f")) vec' sorts' y List.
 
+Lemma zero_ok : zero_fun = ex_S (evar_c "y") : Nat, ^zero ~=~ (var "y").
+Proof. reflexivity. Qed.
+
 Compute Predicate (sigma_c("p")) vec sorts.
 Compute Predicate (sigma_c("p")) vec' sorts'.
 

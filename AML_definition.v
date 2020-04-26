@@ -1284,6 +1284,8 @@ Admitted.
 (*                           ~= Natural numbers =~                            *)
 (* ************************************************************************** *)
 
+Definition Nat_is_Sort := (sort_constant Nat) -< MSAFOL_Sort.
+
 Definition zero : Sigma := sigma_c("zero").
 Definition succ : Sigma := sigma_c("succ").
 Definition plus : Sigma := sigma_c("plus'").
@@ -1300,22 +1302,50 @@ Definition plus' (x y : Sigma_pattern) := ^plus $ x $ y.
 Definition mult' (x y : Sigma_pattern) := ^mult $ x $ y.
 (* End helper functions *)
 
-Definition No_Confusion1 (x : EVar) :=
-  all_M x : Nat, ((succ' 'x) !=~ (const ("zero"))).
+(* Example: x + 0 = x *)
+Definition x_plus_0_eq_x := (all_S x : Nat, ((plus' 'x ^zero) ~=~ 'x)).
 
+(* we have to specify the type of function parameters, because if not, the
+ * following statement about natural numbers could also be formalised: *)
+Definition x_plus_0_eq_x_no_type := plus' ^plus ^zero.
+
+
+(* Natural numbers with induction *)
+
+(* states that zero and succ build different terms *)
+Definition No_Confusion1 (x : EVar) :=
+  all_S x : Nat, ((succ' 'x) !=~ (const ("zero"))).
+
+(* states that succ is an injective funxtion *)
 Definition No_Confusion2 (x y : EVar) :=
-  all_M x : Nat, (all_M y : Nat,
+  all_S x : Nat, (all_S y : Nat,
     ((((succ' 'x) ~=~ (succ' 'y))) ~> ((' x) ~=~ (' y)))).
 
+(* forces [[ Nat ]] to be the smallest set closed under zero and succ, yielding
+ * exactly the standard natural numbers |N *)
 Definition Inductive_Domain (D : SVar) :=
-  [[ Nat ]] ~=~ (mu D, ((const ("zero")) _|_ ((const ("succ")) $ `D))).
+  [[ Nat ]] ~=~ (mu D, (^zero _|_ (^succ $ `D))).
 
 (* This is an axiom schema. Before use it needs to be instanctiated, by giving
  * a pattern as parameter to it. *)
 Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
-  (((phi (const ("zero"))) _&_ (all n, ((phi 'n) ~> (phi (succ' 'n))))) ~>
-  (all n, (phi 'n))).
+  ((phi ^zero) _&_ (all n, ((phi 'n) ~> (phi (succ' 'n))))) ~>
+  (all n, (phi 'n)).
 
+(* Proposition 17. *)
+(* It intuitively says that if SX is closed under zero and succ, then it contains
+ * all natural numbers. *)
+Definition y := (evar_c "y").
+Lemma PeanoNat :
+  forall Gamma : (Ensemble Sigma_pattern), forall SX : SVar,
+  Gamma |- ((zero -< `SX) _&_ (all_S y : Nat, (y =< `SX)) ~>
+           (all_S x : Nat, (x =< `SX))).
+Admitted.
+
+(* Proposition 18. *)
+
+(******************************************************************************)
+(*
 Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
 : Sigma_pattern :=
 match vec with
@@ -1325,13 +1355,15 @@ match vec with
     ([[ elem ]]) $ (app_inhabitant_sets vec')
 end.
 
-(* Definition Arity (sigma : Sigma_pattern) {n : nat}
+Definition Arity (sigma : Sigma_pattern) {n : nat}
                  (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts)
 : Sigma_pattern :=
-  sigma $ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s). *)
+  sigma $ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
+*)
+(******************************************************************************)
 
+(* Examples of natural number patterns: *)
 
-(* Examples: *)
 Definition one := succ' ^zero.
 Definition two := succ' one.
 Definition three := succ' two.
@@ -1344,24 +1376,15 @@ Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
 Definition plus_1_plus_2_3_eq_6 := ((plus' one (plus' two three)) ~=~ six).
 
 Definition plus_x_1_eq_5 :=
-  (all_M x : Nat, ((plus' 'x one) ~=~ five)).
+  (all_S x : Nat, ((plus' 'x one) ~=~ five)).
 
 Definition plus_x_z_eq_y :=
-  (all_M x : Nat, (all_M y : Nat, (all_M z : Nat,
+  (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x 'z) ~=~ 'y)))).
 
 Definition plus_x_plus_z_3_eq_y :=
-  (all_M x : Nat, (all_M y : Nat, (all_M z : Nat,
+  (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x (plus' 'z three))) ~=~ 'y))).
-
-
-(* Example: x + 0 = x *)
-Definition x_plus_0_eq_x :=
-(all_M x : Nat, ((plus' 'x ^zero) ~=~ 'x)).
-
-(* we have to specify the type of function parameters, because if not, the
-* following statement about natural numbers also can be formalised: *)
-Definition foo := plus' ^plus ^zero.
 
 
 Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
@@ -1375,7 +1398,7 @@ end.
 (* 1 + ... + n = n * (n+1) / 2. *)
 Definition n := evar_c("n").
 Definition Sum_of_first_n : Sigma_pattern :=
-  all_M n : Nat, (mult' two (SumFromZeroTo 'n) ~=~
+  all_S n : Nat, (mult' two (SumFromZeroTo 'n) ~=~
   mult' 'n (succ' 'n)).
 
 
@@ -1402,25 +1425,24 @@ end.
 
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
 Definition Sum_of_squares :=
-  all_M n : Nat, (
+  all_S n : Nat, (
     mult' six (SumOfSquaresFromZeroTo 'n) ~=~
     mult' 'n (mult' (succ' 'n) (plus' (mult' two 'n) one))).
 
 
 (* <= relation *)
 Definition less (l r : Sigma_pattern) :=
-ex_M x : Nat, (plus' l (sp_var x) ~=~ r).
+ex_S x : Nat, (plus' l (sp_var x) ~=~ r).
 
 Definition less_or_equal (l r : Sigma_pattern) :=
-  (l ~=~ r) _|_
-  (ex_M x : Nat, (plus' l (sp_var x) ~=~ r)).
+  (l ~=~ r) _|_ (ex_S x : Nat, (plus' l ('x) ~=~ r)).
 
 (* States that if:
 - zero <= zero and
 - for all n of sort Nat : 0 <= (n+1)
 then for all n of sort Nat states 0 <= n *)
 Definition every_number_is_positive : Sigma_pattern :=
-Peano_Induction n (less_or_equal (sp_const zero)).
+  Peano_Induction n (less_or_equal (sp_const zero)).
 
 Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 
@@ -1429,42 +1451,42 @@ Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 - for all n of sort Nat : 0 < ((n+1) + 1)
 then for all n of sort Nat states 0 < (n+1) *)
 Definition every_successor_is_strictly_positive : Sigma_pattern :=
-Peano_Induction n (less2 ^zero).
+  Peano_Induction n (less2 ^zero).
+
 
 (* Proof examples *)
+Lemma ex1 : ('x ~> 'x) proved.
+Proof. apply Prop_tau. apply P1. Qed.
 
-Lemma ex1 : proved ('x ~> 'x).
-Proof. apply E_prop_tau1. Qed.
+Lemma ex2 : (sp_bottom ~> ((sp_var x) ~> sp_bottom)) proved.
+Proof. apply Prop_tau. apply P2. Qed.
 
-Lemma ex2 : proved (sp_bottom ~> ((sp_var x) ~> sp_bottom)).
-Proof. apply E_prop_tau2. Qed.
+Lemma ex3 : (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))) proved.
+Proof. apply Prop_tau. apply P3. Qed.
 
-Lemma ex3 : proved (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))).
-Proof. apply E_prop_tau3. Qed.
+Lemma ex4 : (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)) proved.
+Proof. apply Prop_tau. apply P4. Qed.
 
-Lemma ex4 : proved (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)).
-Proof. apply E_prop_tau4. Qed.
+Lemma ex5 : (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom) proved.
+Proof. apply Ex_quan. Qed.
 
-(* Lemma ex5 : (proved 'x) -> (proved (' x ~> ' y)) -> (proved ' y).
-Proof. apply (E_mod_pon 'x 'y). Qed. *)
-
-Lemma ex6 : proved (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom).
-Proof. apply E_ex_quan. Qed.
-
-Lemma ex7 :
-  proved ('x ~> 'y) ->
+Lemma ex6 :
+  ('x ~> 'y) proved ->
   negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
-  proved (ex z, 'x ~> 'y).
-Proof. apply E_ex_gen. Qed.
+  (ex z, 'x ~> 'y) proved.
+Proof. apply Ex_gen. Qed.
 
-(* TODO Ltac. *)
+(* TODO Ltac for proofs *)
 
-Lemma plus_x_0_eq_x : proved ( x_plus_0_eq_x ).
+(* Proof of x + 0 = x, for all natural number x *)
+Lemma plus_x_0_eq_x : x_plus_0_eq_x proved.
 Proof.
-(*   unfold x_plus_0_eq_x.
-  pose(A := ((plus' 'x ^ zero ~=~ 'x) _&_ (plus' (succ' 'x) ^ zero ~=~ (succ' 'x)))).
-  pose(gA := proved A). *)
+  unfold x_plus_0_eq_x.
 
+
+(*   pose(A := ((plus' 'x ^ zero ~=~ 'x) _&_ (plus' (succ' 'x) ^ zero ~=~ (succ' 'x)))).
+  pose(gA := proved A).
+ *)
 (*   pose(BA := proved (Peano_Induction x (fun x => plus' x ^ zero ~=~ x))).
   pose(result := (E_mod_pon A BA)). *)
 Admitted.
@@ -1490,10 +1512,7 @@ Proof.
   pose(_3 := (E_mod_pon _1 _2)).
  *)
 
-(* Definition x := evar_c("x"). *)
-(* Lemma ex : proved x_plus_0_eq_x.
-Proof.
-  unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
+(*   unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
 
   pose(ex := sp_exists x ((x -< InhabitantSetOf Nat ~> (plus' ' x ^ zero ~=~ ' x)) ~> sp_bottom) ~> sp_bottom).
   pose(_1 := (E_ex_gen ex sp_bottom x)).
@@ -1502,10 +1521,11 @@ Proof.
   pose(ex := )
   - eapply E_mod_pon.
     + eapply E_
-Qed. *)
+ *)
 
-(* TODO:
-    commutativity
-    n + 0 = n    -> by induction *)
+Lemma nat__plus_comm :
+  forall x y : EVar, empty_theory |-
+    (all_S x : Nat, (all_S y : Nat, ((plus' 'x 'y) ~=~ (plus' 'y 'x)))).
+Admitted.
 
 End AML.
