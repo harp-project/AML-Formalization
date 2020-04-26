@@ -810,10 +810,10 @@ Abort.
 (* ****************************New paper version**************************** *)
 
 (* Definition 9. MSFOL definition *)
-(* record MSFOL_Signature := {
-  SortSet : Type
-  Functions : SortSet* -> SortSet
-  Predicates : SortSet*
+(* Record MSFOL_Signature := {
+  SortSet : Type;
+  Functions : SortSet* -> SortSet;
+  Predicates : SortSet*;
 }. *)
 
 Inductive MSFOL_sorts : Set :=
@@ -886,12 +886,6 @@ match a, b with
 | Term, Term => true
 | _, _ => false
 end.
-
-(* Definition mvar_eq (x y : MSFOL_var) : bool :=
-match x, y with
-| (M_var_c id_x sort_x), (M_var_c id_y sort_y) =>
-    andb (String.eqb id_x id_y) (MSFOL_sorts_eqb sort_x sort_y)
-end. *)
 
 
 (* Substitue varibale in term *)
@@ -1178,31 +1172,6 @@ match formula with
            (well_sorted_formula phi)
 end.
 
-(* Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
-: Sigma_pattern :=
-match vec with
-| VectorDef.nil  _                          => sp_top (* TODO: sp_top? *)
-| VectorDef.cons _ elem _ (VectorDef.nil _) => elem
-| VectorDef.cons _ elem _ rem               => elem _&_ (and_gen rem)
-end.
-
-Definition _well_sorted
-  {n : nat} (vars : VectorDef.t EVar n) (sorts : VectorDef.t MSA_sorts n)
-: Sigma_pattern :=
-let domains := VectorDef.map Domain sorts in
-let assoc := VectorDef.map2 Membership vars domains in
-  and_gen assoc. *)
-
-(* TODO: fix this and ask how to get types?
-        Answer: from MSFOL format of variables, because they have the form of x:s
- *)(* Definition ws
-  (phi : Sigma_pattern) {n : nat} (sorts : VectorDef.t MSA_sorts n) :=
-let vars := of_list (free_vars phi) in
-  _well_sorted vars sorts. *)
-
-
-(* TODO: MSFOL theory conversion to AML conversion *)
-
 
 (* Proposition 12. *)
 Fixpoint M_var_id (var : MSFOL_var) : string :=
@@ -1253,6 +1222,7 @@ Lemma MSFOL_wellformed_formulas :
     ((formula_to_AML phi) ~=~ sp_top) _|_ (((formula_to_AML phi) ~=~ sp_bottom))).
 Admitted.
 
+
 (* MSFOL theories *)
 
 (* Theorem 13. *)
@@ -1261,11 +1231,14 @@ Admitted.
   forall phi : MSFOL_formula
   Omega |-MSFOL phi -> Gamma_MSFOL |- (formula_to_AML phi). *)
 
+
 (* Definition 14. MSFOL restricted *)
+(*  *)
 
 
 (* Theorem 15. *)
-(* Theorem 
+(* TODO: MSFOL theory conversion to AML conversion *)
+(* Theorem
   forall Omega : Ensemble MSFOL_formula, forall A : MSFOL_model,
   A |=MSFOL Omega -> exists M : Sigma_model, ... *)
 
