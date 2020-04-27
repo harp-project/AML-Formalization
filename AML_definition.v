@@ -1483,11 +1483,12 @@ Proof.
     ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))))).
 
   eapply E_mod_pon.
+  Focus 2.
   - eapply (hypothesis (Peano_Induction x (fun var =>
     ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))) theory).
     + unfold theory. unfold In in *. unfold Add.
         eapply Union_intror. reflexivity.
-  -
+  - 
 Admitted.
 
 (*   pose(A := ((plus' 'x ^ zero ~=~ 'x) _&_ (plus' (succ' 'x) ^ zero ~=~ (succ' 'x)))).
