@@ -359,17 +359,23 @@ Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
 Definition c_membership := (const ("membership")).
 Definition VarMembership (x : EVar) (phi : Sigma_pattern) :=
   ((c_membership $ (sp_var x)) $ phi).
+Notation "x =< phi" := (VarMembership x phi) (at level 30).
 Definition ConstMembership (x : Sigma) (phi : Sigma_pattern) :=
   ((c_membership $ (sp_const x)) $ phi).
+Notation "x -< phi" := (ConstMembership x phi) (at level 30).
+(* only for constants and variables! *)
+Definition SpMembership (x : Sigma_pattern) (phi : Sigma_pattern) :=
+  ((c_membership $ x) $ phi).
+Notation "x -'< phi" := (SpMembership x phi) (at level 30).
 
 (* Non-membership *)
 Definition c_non_membership := (const ("non-membership")).
 Definition VarNonMembership (x : EVar) (phi : Sigma_pattern) :=
   ((c_non_membership $ (sp_var x)) $ phi).
-Notation "x =< phi" := (VarMembership x phi) (at level 30).
 Definition ConstNonMembership (x : Sigma) (phi : Sigma_pattern) :=
   ((c_non_membership $ (sp_const x)) $ phi).
-Notation "x -< phi" := (ConstMembership x phi) (at level 30).
+Definition SpNonMembership (x : Sigma_pattern) (phi : Sigma_pattern) :=
+  ((c_non_membership $ x) $ phi).
 
 (* Set inclusion *)
 Definition c_set_incl := (const ("set inclusion")).
@@ -384,7 +390,8 @@ Definition SetExclusion (l r : Sigma_pattern) :=
 Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
 
 Reserved Notation "phi |-> phi'" (at level 80).
-Inductive DefinednessOneStepEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
+Inductive DefinednessOneStepEquivalence
+: Sigma_pattern -> Sigma_pattern -> Prop :=
 | DOSE_totality {phi : Sigma_pattern} :
     (c_totality $ phi) |->
     (¬ (Definedness (¬ phi)))
@@ -401,6 +408,10 @@ Inductive DefinednessOneStepEquivalence : Sigma_pattern -> Sigma_pattern -> Prop
     ((c_membership $ (sp_const x)) $ phi) |->
     (Totality ((sp_const x) _&_ phi))
 
+| DOSE_sp_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
+    ((c_membership $ x) $ phi) |->
+    (Totality (x _&_ phi))
+
 | DOSE_set_inclusion {l r : Sigma_pattern} :
     ((c_set_incl $ l) $ r) |->
     (Totality (sp_impl l r))
@@ -413,9 +424,13 @@ Inductive DefinednessOneStepEquivalence : Sigma_pattern -> Sigma_pattern -> Prop
     ((c_non_membership $ (sp_var x)) $ phi) |->
     (¬ (VarMembership x phi))
 
-| DOSE_non_membership {x : Sigma} {phi : Sigma_pattern} :
+| DOSE_const_non_membership {x : Sigma} {phi : Sigma_pattern} :
     ((c_non_membership $ (sp_const x)) $ phi) |->
-    (¬ (ConstMembership x phi))
+    (¬ (ConstNonMembership x phi))
+
+| DOSE_sp_non_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
+    ((c_non_membership $ x) $ phi) |->
+    (¬ (SpNonMembership x phi))
 
 | DOSE_set_exclusion {l r : Sigma_pattern} :
     ((c_set_excl $ l) $ r) |->
@@ -1455,14 +1470,32 @@ Proof. apply Ex_gen. Qed.
 Lemma plus_x_0_eq_x : x_plus_0_eq_x proved.
 Proof.
   unfold x_plus_0_eq_x.
+Admitted.
 
+Lemma plus_x_0_eq_x_with_env :
+  (Add _ empty_theory (Peano_Induction x (fun var =>
+    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))))
+  |- x_plus_0_eq_x.
+Proof.
+  unfold x_plus_0_eq_x.
+
+  pose(theory := (Add _ empty_theory (Peano_Induction x (fun var =>
+    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))))).
+
+  eapply E_mod_pon.
+  - eapply (hypothesis (Peano_Induction x (fun var =>
+    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))) theory).
+    + unfold theory. unfold In in *. unfold Add.
+        eapply Union_intror. reflexivity.
+  -
+Admitted.
 
 (*   pose(A := ((plus' 'x ^ zero ~=~ 'x) _&_ (plus' (succ' 'x) ^ zero ~=~ (succ' 'x)))).
   pose(gA := proved A).
  *)
 (*   pose(BA := proved (Peano_Induction x (fun x => plus' x ^ zero ~=~ x))).
   pose(result := (E_mod_pon A BA)). *)
-Admitted.
+
 
 (* Lemma C3 (A B : Sigma_pattern) :
 (*   proved (((sp_not A) ~> B) ~> (((sp_not A) ~> (sp_not B)) ~> A)). *)
