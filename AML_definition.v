@@ -4,8 +4,6 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 Require Import Coq.Sets.Ensembles.
-
-Add LoadPath "E:\Egyetem\MSc\4. felev\Diplomamunka\AML-Formalization".
 Require Import Ensembles_Ext.
 
 Section AML.
@@ -47,7 +45,7 @@ Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
 Definition sp_and (l r : Sigma_pattern) := ¬ ((¬ l) _|_ (¬ r)).
 Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
 
-Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (l ~> r)).
+Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (r ~> l)).
 Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
 
 Definition sp_top := (¬ sp_bottom).
