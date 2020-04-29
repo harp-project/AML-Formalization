@@ -1,4 +1,4 @@
-Require Import AML_definition
+Require Import AML_definition.
 
 (* Examples of context usage: *)
 Definition box_context := subst_ctx box sp_bottom.
