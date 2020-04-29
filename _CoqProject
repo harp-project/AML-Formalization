@@ -3,3 +3,6 @@ Ensembles_Ext.v
 AML_definition.v
 TEST_Strictly_Positiveness_in_AML.v
 TEST_ext_evaluation_in_AML.v
+TEST_Axiom_Helper_Functions.v
+TEST_Function_and_Predicate.v
+TEST_Context.v
