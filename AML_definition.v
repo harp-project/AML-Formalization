@@ -4,8 +4,6 @@ Require Import Coq.Init.Datatypes.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 Require Import Coq.Sets.Ensembles.
-
-Add LoadPath "E:\Egyetem\MSc\4. felev\Diplomamunka\AML-Formalization".
 Require Import Ensembles_Ext.
 
 Section AML.
