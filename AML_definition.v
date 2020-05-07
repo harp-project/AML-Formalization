@@ -1,9 +1,9 @@
 Require Import String.
+Require Import Ensembles_Ext.
+Require Import Coq.Vectors.Fin.
 Require Import Coq.Lists.ListSet.
 Require Import Coq.Sets.Ensembles.
-(* Require Import Ensembles_Ext. *)
 Require Import Coq.Init.Datatypes.
-Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 
 Section AML.
@@ -25,6 +25,37 @@ Inductive Sigma_pattern : Type :=
 | sp_mu (X : SVar) (phi : Sigma_pattern)
 .
 
+Notation "' v" := (sp_var v) (at level 3).
+Notation "` s" := (sp_set s) (at level 3).
+Notation "^ c" := (sp_const c) (at level 3).
+Notation "a $ b" := (sp_app a b) (at level 50, left associativity).
+Notation "'Bot'" := sp_bottom.
+Notation "a ~> b"  := (sp_impl a b) (at level 90, right associativity,
+                                      b at level 200).
+Notation "'ex' x , phi" := (sp_exists x phi) (at level 55).
+Notation "'mu' X , phi" := (sp_mu X phi) (at level 55).
+
+(* Derived operators *)
+Definition sp_not (phi : Sigma_pattern) := phi ~> sp_bottom.
+Notation "¬ a"     := (sp_not   a  ) (at level 75).
+
+Definition sp_or  (l r : Sigma_pattern) := (¬ l) ~> r.
+Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
+
+Definition sp_and (l r : Sigma_pattern) := ¬ ((¬ l) _|_ (¬ r)).
+Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
+
+Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (r ~> l)).
+Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+
+Definition sp_top := (¬ sp_bottom).
+Notation "'Top'" := sp_top.
+
+Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
+  ¬ (sp_exists x (¬ phi)).
+Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
+
+
 Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
 Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
 
@@ -37,37 +68,6 @@ Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
 Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
 Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
 Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
-
-Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
-match phi with
-| sp_var x => true
-| sp_set Y => if (svar_eq_dec Y X)
-              then (Nat.even nc)
-              else true
-| sp_const sigma => true
-| sp_app phi1 phi2 => andb (spos_accumulated phi1 X nc)
-                           (spos_accumulated phi2 X nc)
-| sp_bottom => true
-| sp_impl phi1 phi2 => andb (spos_accumulated phi1 X (S nc))
-                            (spos_accumulated phi2 X nc)
-| sp_exists x phi => spos_accumulated phi X nc
-| sp_mu Y phi => if (svar_eq_dec Y X)
-                 then true
-                 else (spos_accumulated phi X nc)
-end.
-
-Fixpoint strictly_positive (phi : Sigma_pattern) (X : SVar) : bool :=
-spos_accumulated phi X 0.
-
-Definition sp_eq_dec : forall (x y : Sigma_pattern), { x = y } + { x <> y }.
-Proof.
-decide equality.
-- exact (evar_eq_dec x0 x1).
-- exact (svar_eq_dec X X0).
-- exact (sigma_eq_dec sigma sigma0).
-- exact (evar_eq_dec x0 x1).
-- exact (svar_eq_dec X X0).
-Defined.
 
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
@@ -102,47 +102,78 @@ match phi with
                    else sp_mu X' (e_subst_set phi' psi X)
 end.
 
-(* Derived operators *)
-Definition sp_not (phi : Sigma_pattern) := sp_impl phi sp_bottom.
-Definition sp_or  (l r : Sigma_pattern) := sp_impl (sp_not l) r.
-Definition sp_and (l r : Sigma_pattern) := sp_not (sp_or (sp_not l) (sp_not r)).
-Definition sp_top := sp_not sp_bottom.
-Definition sp_iff (l r : Sigma_pattern) :=
-  (sp_and (sp_impl (l) (r)) (sp_impl (l) (r))).
-Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
-  sp_not (sp_exists x (sp_not phi)).
-Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
-  sp_not (sp_mu X (sp_not (e_subst_set phi (sp_not (sp_set X)) X))).
-(* End of derived operators *)
 
-Notation "a _._ b" := (sp_app   a b) (at level 50, left associativity).
-Notation "¬ a"     := (sp_not   a  ) (at level 75).
-Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
-Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
-Notation "a ~> b"  := (sp_impl  a b) (at level 90, right associativity,                                                      b at level 200).
-Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
+  ¬ (sp_mu X (¬ (e_subst_set phi (¬ (sp_set X)) X))).
+Notation "'nu' X , phi" := (sp_nu X phi) (at level 55).
+(* End of derived operators *)
 
 Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
 Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
 Definition const (name : string) : Sigma_pattern := sp_const (sigma_c name).
+
+(* Example patterns: *)
+
+Definition simple := var ("x").
+Definition more := set ("A") _|_ ¬ (set "A").
+Definition complex :=
+  var("A") ~> (var("B") ~> ¬(set("C"))) $
+  ex (evar_c("x")) , set ("D") $ Bot _&_ Top.
+Definition custom_constructor := const ("ctor") $ var ("a").
+Definition predicate := const ("p") $ var ("x1") $ var ("x2").
+Definition function :=
+  const ("f") $ (var ("x")) $ (mu svar_c("X"), (set ("X"))).
+
+(* End of examples. *)
+
+
+Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
+match phi with
+| sp_var x => true
+| sp_set Y => if (svar_eq_dec Y X)
+              then (Nat.even nc)
+              else true
+| sp_const sigma => true
+| sp_app phi1 phi2 => andb (spos_accumulated phi1 X nc)
+                           (spos_accumulated phi2 X nc)
+| sp_bottom => true
+| sp_impl phi1 phi2 => andb (spos_accumulated phi1 X (S nc))
+                            (spos_accumulated phi2 X nc)
+| sp_exists x phi => spos_accumulated phi X nc
+| sp_mu Y phi => if (svar_eq_dec Y X)
+                 then true
+                 else (spos_accumulated phi X nc)
+end.
+
+Fixpoint strictly_positive (phi : Sigma_pattern) (X : SVar) : bool :=
+spos_accumulated phi X 0.
+
+Definition sp_eq_dec : forall (x y : Sigma_pattern), { x = y } + { x <> y }.
+Proof.
+decide equality.
+- exact (evar_eq_dec x0 x1).
+- exact (svar_eq_dec X X0).
+- exact (sigma_eq_dec sigma sigma0).
+- exact (evar_eq_dec x0 x1).
+- exact (svar_eq_dec X X0).
+Defined.
 
 Definition evar_eq (x y : EVar) : bool :=
 match x, y with
 | evar_c id_x, evar_c id_y => String.eqb id_x id_y
 end.
 
+Definition set_singleton := fun x => set_add evar_eq_dec x List.nil.
+
 Fixpoint free_vars (phi : Sigma_pattern) : (ListSet.set EVar) :=
 match phi with
-| sp_var x => set_add evar_eq_dec x List.nil
+| sp_var x => set_singleton x
 | sp_set X => List.nil
 | sp_const sigma => List.nil
 | sp_app phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
 | sp_bottom => List.nil
 | sp_impl phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
-| sp_exists y phi =>
-    set_diff evar_eq_dec
-      (free_vars phi)
-      (set_add evar_eq_dec y List.nil)
+| sp_exists y phi => set_diff evar_eq_dec (free_vars phi) (set_singleton y )
 | sp_mu X phi => free_vars phi
 end.
 
@@ -180,13 +211,29 @@ match sp with
                            (ext_valuation evar_val svar_val rs)
 | sp_exists x sp => FA_Union
   (fun e => ext_valuation (change_val evar_eqb x e evar_val) svar_val sp)
-| sp_mu X sp => mu
+| sp_mu X sp => Ensembles_Ext.mu
   (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)
 end
 .
 
 (* Proof of correct semantics for the derived operators
 ref. snapshot: Proposition 4 *)
+
+Ltac proof_ext_val :=
+simpl;intros;
+repeat
+  (* Normalize *)
+   rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
+|| rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
+|| rewrite
+   (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
+|| rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
+  (* Apply *)
+|| (eapply (proj1 Same_set_Compl) ; intros)
+  (* Final step *)
+|| exact Complement_Empty_is_Full
+|| exact (Symdiff_val _ _)
+|| exact (Same_set_refl _).
 
 Lemma not_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -219,7 +266,7 @@ Proof. proof_ext_val. Qed.
 Lemma only_if_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
 forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation evar_val svar_val (sp_only_if spl spr))
+  (ext_valuation evar_val svar_val (sp_iff spl spr))
   (Complement _ (Symmetric_difference (ext_valuation evar_val svar_val spl)
                                       (ext_valuation evar_val svar_val spr))).
 Proof. proof_ext_val. Qed.
@@ -236,16 +283,21 @@ Lemma nu_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
 forall sp : Sigma_pattern, forall X : SVar, Same_set _
   (ext_valuation evar_val svar_val (sp_nu X sp))
-  (nu (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
+  (Ensembles_Ext.nu
+    (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)).
 Proof.
 proof_ext_val.
-unfold mu. unfold nu. unfold FA_Union_cond. unfold FA_Inters_cond.
+
+unfold Ensembles_Ext.mu. unfold Ensembles_Ext.nu. unfold FA_Union_cond.
+unfold FA_Inters_cond.
+
 apply Same_set_symmetric. apply Same_set_Compl.
 rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _)).
 rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _)).
 eapply FA_Inters_same. intros.
 proof_ext_val.
-unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In. eapply conj.
+unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In.
+eapply conj.
 * intros. eapply H0. intros. refine (H _). split.
   - intros.
 Admitted.
@@ -253,19 +305,26 @@ Admitted.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Definition satisfies (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
+Definition satisfies_model (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
 forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
- Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
+  Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
+
+Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
 Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
-: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> satisfies sm axiom.
+: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> (sm |=M axiom).
 
-Notation "M |= phi" := (satisfies M phi).
-Notation "M |= Gamma" := (satisfies_theory M Gamma).
+Notation "M |=T Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50).
 
-Definition implies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
-: Prop := forall sm : Sigma_model, satisfies_theory sm theory ->
-                                   satisfies sm sp.
+Definition satisfies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
+: Prop := forall sm : Sigma_model, (sm |=T theory) -> (sm |=M sp).
+
+Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
+
+(* Definition AML_theories : ListSet.set Sigma_pattern := List.nil. *)
+
+(* End of definition 5. *)
 
 
 (* Definition 6. Definedness and derived operators *)
@@ -279,101 +338,201 @@ Definition x := evar_c("x").
 Definition Definedness_Axiom : Sigma_pattern :=
   sp_forall x (Definedness (sp_var x)).
 
+Definition x := evar_c("x").
+Definition Definedness_Axiom : Sigma_pattern :=
+  sp_forall x (Definedness (sp_var x)).
+
 (* Totality *)
 Definition c_totality := (const ("totality")).
-Definition Totality (phi : Sigma_pattern) := (c_totality _._ phi).
+Definition Totality (phi : Sigma_pattern) := (c_totality $ phi).
 Notation "|_ phi _|" := (Totality phi).
 
 (* Equality *)
 Definition c_equality := (const ("equality")).
-Definition Equality (l r : Sigma_pattern) := ((c_equality _._ l) _._ r).
+Definition Equality (l r : Sigma_pattern) := ((c_equality $ l) $ r).
 Notation "phi1 ~=~ phi2" := (Equality phi1 phi2) (at level 100).
 
 (* Non-equality *)
 Definition c_non_equality := (const ("non-equality")).
-Definition NonEquality (l r : Sigma_pattern) := ((c_non_equality _._ l) _._ r).
+Definition NonEquality (l r : Sigma_pattern) := ((c_non_equality $ l) $ r).
 Notation "phi1 !=~ phi2" := (NonEquality phi1 phi2) (at level 100).
 
 (* Membership *)
 Definition c_membership := (const ("membership")).
-Definition Membership (x : EVar) (phi : Sigma_pattern) :=
-  ((c_membership _._ (sp_var x)) _._ phi).
-Notation "x -< phi" := (Membership x phi) (at level 30).
+Definition VarMembership (x : EVar) (phi : Sigma_pattern) :=
+  ((c_membership $ (sp_var x)) $ phi).
+Notation "x =< phi" := (VarMembership x phi) (at level 30).
+Definition ConstMembership (x : Sigma) (phi : Sigma_pattern) :=
+  ((c_membership $ (sp_const x)) $ phi).
+Notation "x -< phi" := (ConstMembership x phi) (at level 30).
+(* only for constants and variables! *)
+Definition SpMembership (x : Sigma_pattern) (phi : Sigma_pattern) :=
+  ((c_membership $ x) $ phi).
+Notation "x -'< phi" := (SpMembership x phi) (at level 30).
 
 (* Non-membership *)
 Definition c_non_membership := (const ("non-membership")).
-Definition NonMembership (x : EVar) (phi : Sigma_pattern) :=
-  ((c_non_membership _._ (sp_var x)) _._ phi).
-Notation "x !-< phi" := (NonMembership x phi) (at level 30).
+Definition VarNonMembership (x : EVar) (phi : Sigma_pattern) :=
+  ((c_non_membership $ (sp_var x)) $ phi).
+Definition ConstNonMembership (x : Sigma) (phi : Sigma_pattern) :=
+  ((c_non_membership $ (sp_const x)) $ phi).
+Definition SpNonMembership (x : Sigma_pattern) (phi : Sigma_pattern) :=
+  ((c_non_membership $ x) $ phi).
 
 (* Set inclusion *)
 Definition c_set_incl := (const ("set inclusion")).
 Definition SetInclusion (l r : Sigma_pattern) :=
-  ((c_set_incl _._ l) _._ r).
+  ((c_set_incl $ l) $ r).
 Notation "phi1 <: phi2" := (SetInclusion phi1 phi2) (at level 100).
 
 (* Set exclusion *)
 Definition c_set_excl := (const ("set exclusion")).
 Definition SetExclusion (l r : Sigma_pattern) :=
-  ((c_set_excl _._ l) _._ r).
+  ((c_set_excl $ l) $ r).
 Notation "phi1 !<: phi2" := (SetExclusion phi1 phi2) (at level 100).
 
 Reserved Notation "phi |-> phi'" (at level 80).
-Inductive OneStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
-| OST_totality {phi : Sigma_pattern} :
-    (c_totality _._ phi) |->
+Inductive DefinednessOneStepEquivalence
+: Sigma_pattern -> Sigma_pattern -> Prop :=
+| DOSE_totality {phi : Sigma_pattern} :
+    (c_totality $ phi) |->
     (¬ (Definedness (¬ phi)))
 
-| OST_equality {l r : Sigma_pattern} :
-    ((c_equality _._ l) _._ r) |->
+| DOSE_equality {l r : Sigma_pattern} :
+    ((c_equality $ l) $ r) |->
     (Totality (sp_iff l r))
 
-| OST_membership {x : EVar} {phi : Sigma_pattern} :
-    ((c_membership _._ (sp_var x)) _._ phi) |->
+| DOSE_var_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_membership $ (sp_var x)) $ phi) |->
     (Totality ((sp_var x) _&_ phi))
 
-| OST_set_inclusion {l r : Sigma_pattern} :
-    ((c_set_incl _._ l) _._ r) |->
+| DOSE_const_membership {x : Sigma} {phi : Sigma_pattern} :
+    ((c_membership $ (sp_const x)) $ phi) |->
+    (Totality ((sp_const x) _&_ phi))
+
+| DOSE_sp_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
+    ((c_membership $ x) $ phi) |->
+    (Totality (x _&_ phi))
+
+| DOSE_set_inclusion {l r : Sigma_pattern} :
+    ((c_set_incl $ l) $ r) |->
     (Totality (sp_impl l r))
 
-| OST_non_equality {l r : Sigma_pattern} :
-    ((c_equality _._ l) _._ r) |->
+| DOSE_non_equality {l r : Sigma_pattern} :
+    ((c_equality $ l) $ r) |->
     (¬ (Equality l r))
 
-| OST_non_membership {x : EVar} {phi : Sigma_pattern} :
-    ((c_non_membership _._ (sp_var x)) _._ phi) |->
-    (¬ (Membership x phi))
+| DOSE_var_non_membership {x : EVar} {phi : Sigma_pattern} :
+    ((c_non_membership $ (sp_var x)) $ phi) |->
+    (¬ (VarMembership x phi))
 
-| OST_set_exclusion {l r : Sigma_pattern} :
-    ((c_set_excl _._ l) _._ r) |->
+| DOSE_const_non_membership {x : Sigma} {phi : Sigma_pattern} :
+    ((c_non_membership $ (sp_const x)) $ phi) |->
+    (¬ (ConstNonMembership x phi))
+
+| DOSE_sp_non_membership {x : Sigma_pattern} {phi : Sigma_pattern} :
+    ((c_non_membership $ x) $ phi) |->
+    (¬ (SpNonMembership x phi))
+
+| DOSE_set_exclusion {l r : Sigma_pattern} :
+    ((c_set_excl $ l) $ r) |->
     (sp_not (SetInclusion l r))
-where "a |-> b" := (OneStepTransition a b).
+where "a |-> b" := (DefinednessOneStepEquivalence a b).
 
 Reserved Notation "phi |->* phi'" (at level 100).
-Inductive AnyStepTransition : Sigma_pattern -> Sigma_pattern -> Prop :=
-| AST_refl {phi : Sigma_pattern} :
+Inductive DefinednessAnyStepEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
+| DASE_refl {phi : Sigma_pattern} :
     phi |->* phi
 
-| AST_trans {phi phi'' : Sigma_pattern} (phi' : Sigma_pattern) :
+| DASE_trans {phi phi'' : Sigma_pattern} (phi' : Sigma_pattern) :
     (phi |-> phi') -> (phi' |->* phi'') ->
     (phi |->* phi'')
-where "phi |->* phi'" := (AnyStepTransition phi phi').
+where "phi |->* phi'" := (DefinednessAnyStepEquivalence phi phi').
 (* End of Definedness derived operators and exuivalences *)
 
-(* TODO: introduce $ element $ _._ a = M *)
+(* Introducing $ element, such as $ $ a = M *)
+Definition spec_elem : Sigma_pattern := const ("$").
+
+Lemma spec_app_a_eq_M
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+    forall a : EVar, Same_set _
+      (ext_valuation evar_val svar_val (sp_app spec_elem (sp_var a)))
+      (Full_set _).
+Admitted.
+
+Lemma spec_app_A_eq_M
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+    forall A : SVar,
+      (* A is not empty *)
+      (exists x, In _ x (ext_valuation evar_val svar_val (sp_set A))) ->
+      Same_set _
+        (ext_valuation evar_val svar_val (sp_app spec_elem (sp_set A)))
+        (Full_set _).
+Admitted.
+
+(* Can be shown, that all notations in Definition 6 are predicates with the
+ * expected semantics. For example: *)
+Lemma definedness_correct01
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (¬Definedness(¬phi)))
+              (Full_set _)).
+Admitted.
+
+Lemma definedness_correct02
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Definedness(¬phi)))
+              (Empty_set _)).
+Admitted.
+
+Lemma definedness_correct03
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Totality(phi)))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Definedness(¬phi)))
+              (Empty_set _)).
+Admitted.
+
+Lemma equality_correct01
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi1 phi2 : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Equality phi1 phi2))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (Totality (sp_iff phi1 phi2)))
+              (Full_set _)).
+Admitted.
+
+Lemma equality_correct02
+  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
+  forall phi1 phi2 : Sigma_pattern,
+  (Same_set _ (ext_valuation evar_val svar_val (Equality phi1 phi2))
+              (Full_set _)) <->
+  (Same_set _ (ext_valuation evar_val svar_val (phi1))
+              (ext_valuation evar_val svar_val (phi2))).
+Admitted.
+
 (* TODO: semantics of definedness operators *)
 
 Definition z := evar_c("z").
-Definition Functional_Constant (Sigma : Sigma_pattern) : Sigma_pattern :=
-  (sp_exists z Sigma) ~=~ (sp_var z).
+Definition Functional_Constant (constant : Sigma) : Sigma_pattern :=
+  (ex z , (^constant ~=~ 'z)).
+(* Definition Functional_Application (constant : Sigma) (y : EVar)
+: Sigma_pattern :=
+  (ex z , (^constant $ 'y) ~=~ 'z). *)
 
-Inductive context : Set :=
+Inductive Application_context : Set :=
 | box
-| ctx_app_l (cc : context) (sp : Sigma_pattern)
-| ctx_app_r (sp : Sigma_pattern) (cc : context)
+| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
+| ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
 .
 
-Fixpoint subst_ctx (C : context) (sp : Sigma_pattern) : Sigma_pattern :=
+Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern) : Sigma_pattern :=
 match C with
 | box => sp
 | ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
@@ -381,179 +540,559 @@ match C with
 end
 .
 
-(* FIXME Create Test File *)
-
-(* Example of context usage: *)
-Definition box_context := subst_ctx box sp_bottom.
-Eval compute in box_context.
-
-Definition tree_context :=
-  subst_ctx
-    (ctx_app_l (ctx_app_r sp_bottom box) (sp_app sp_bottom sp_bottom))
-    sp_bottom.
-Eval compute in tree_context.
-
-Definition free_vars_ctx (C : context) : (ListSet.set EVar) :=
+Definition free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
 | ctx_app_l cc sp => free_vars sp
 | ctx_app_r sp cc => free_vars sp
 end.
 
-(* TODO: Define provability *)
-(* Notation "Gamma |- phi" := (provable Gamma phi). *)
 
 (* Proof system for AML ref. snapshot: Section 3 *)
-Inductive got : Sigma_pattern -> Prop :=
+
+(*
+states
+OneStepTransitionJudgement, AnyStepTransitionJudgement
+*)
+
+(* Auxiliary axiom schemes for proving propositional tautology *)
+Reserved Notation "pattern 'tautology'" (at level 2).
+Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
+| P1 (phi : Sigma_pattern) :
+    (phi ~> phi) tautology
+
+| P2 (phi psi : Sigma_pattern) :
+    (phi ~> (psi ~> phi)) tautology
+
+| P3 (phi psi xi : Sigma_pattern) :
+    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
+
+| P4 (phi psi : Sigma_pattern) :
+    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
+where "pattern 'tautology'" := (Tautology_proof_rules pattern).
+
+(*
+(* Auxiliary axiom schemes for FOL resoning *)
+Inductive Hilbert_style_proof : Sigma_pattern -> Prop :=
+| P4m (phi psi : Sigma_pattern) :
+    Hilbert_style_proof ((phi ~> psi) ~> ((phi ~> ¬psi) ~> ¬phi))
+
+| P4i (phi : Sigma_pattern) :
+    Hilbert_style_proof ((phi ~> ¬phi) ~> ¬phi)
+
+| P5i (phi psi : Sigma_pattern) :
+    Hilbert_style_proof (¬phi ~> (phi ~> psi))
+
+| Q5 (phi t : Sigma_pattern) (x : EVar) :
+    Hilbert_style_proof (all x, phi ~> (e_subst_var phi t x))
+
+| Q6 (phi psi : Sigma_pattern) (x : EVar) :
+    Hilbert_style_proof
+      ((all x, (phi ~> psi)) ~> ((all x, phi) ~> (all x, psi)))
+
+(* Rule to embed tautology axiom schemes *)
+| Taut (pattern : Sigma_pattern):
+    pattern tautology -> Hilbert_style_proof pattern
+.
+*)
+
+(* Proof system rules:
+ * these can be used duting a proof by instantiating them *)
+Reserved Notation "pattern 'proved'" (at level 2).
+Inductive AML_proof_system : Sigma_pattern -> Prop :=
 (* FOL reasoning *)
-(* Propositional tautology *)
-(* Auxiliary rules for proving propositional tautology *)
-| E_prop_tau1 (phi : Sigma_pattern) :
-    got (phi ~> phi)
+  (* Propositional tautology *)
+  | Prop_tau (phi : Sigma_pattern) :
+      phi tautology -> phi proved
 
-| E_prop_tau2 (phi psi : Sigma_pattern) :
-    got (phi ~> (psi ~> phi))
+  (* Modus ponens *)
+  | Mod_pon {phi1 phi2 : Sigma_pattern} :
+    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
 
-| E_prop_tau3 (phi psi xi : Sigma_pattern) :
-    got ((phi ~> (psi ~> xi)) ~>
-        ((phi ~> psi) ~> (phi ~> xi)))
+  (* Existential quantifier *)
+  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
+    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
 
-| E_prop_tau4 (phi psi : Sigma_pattern) :
-    got (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi))
-
-(* Modus ponens *)
-| E_mod_pon {phi1 phi2 : Sigma_pattern} :
-  got phi1 -> got (phi1 ~> phi2) -> got phi2
-
-(* Existential quantifier *)
-| E_ex_quan {phi : Sigma_pattern} (x y : EVar) :
-  got ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi))
-
-(* Existential generalization *)
-| E_ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
-  got (phi1 ~> phi2) ->
-  negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
-  got ((sp_exists x phi1) ~> phi2)
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+    (phi1 ~> phi2) proved ->
+    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    ((ex x, phi1) ~> phi2) proved
 
 (* Frame reasoning *)
-(* Propagation bottom *)
-| E_prop_bot (C : context) :
-  got ((subst_ctx C sp_bottom) ~> sp_bottom)
+  (* Propagation bottom *)
+  | Prop_bot (C : Application_context) :
+    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
 
-(* Propagation disjunction *)
-| E_prop_dis (C : context) (phi1 phi2 : Sigma_pattern) :
-  got ((subst_ctx C (phi1 _|_ phi2)) ~>
-       ((subst_ctx C phi1) _|_ (subst_ctx C phi2)))
+  (* Propagation disjunction *)
+  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    ((subst_ctx C (phi1 _|_ phi2)) ~>
+        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
 
-(* Propagation exist *)
-| E_prop_ex (C : context) (phi : Sigma_pattern) (x : EVar) :
-  negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
-  got ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi)))
+  (* Propagation exist *)
+  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
+    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
+    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
 
-(* Framing *)
-| E_framing (C : context) (phi1 phi2 : Sigma_pattern) :
-  got (phi1 ~> phi2) -> got ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+  (* Framing *)
+  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
 
 (* Fixpoint reasoning *)
-(* Set Variable Substitution *)
-| E_svar_subst (phi : Sigma_pattern) (psi X : SVar) :
-  got phi -> got (e_subst_set phi (sp_set psi) X)
+  (* Set Variable Substitution *)
+  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
+    phi proved -> (e_subst_set phi (sp_set psi) X) proved
 
-(* Pre-Fixpoint *)
-| E_pre_fixp (phi : Sigma_pattern) (X : SVar) :
-  got ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi))
+  (* Pre-Fixpoint *)
+  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
 
-(* Knaster-Tarski *)
-| E_knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-  got ((e_subst_set phi psi X) ~> psi) -> got ((sp_mu X phi) ~> psi)
+  (* Knaster-Tarski *)
+  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
 
-(* Existence *)
-| E_existence (x : EVar) : got (sp_exists x (sp_var x))
+(* Technical rules *)
+  (* Existence *)
+  | Existence (x : EVar) : (ex x , ' x) proved
 
-(* Singleton *)
-| E_singleton (C1 C2 : context) (x : EVar) (phi : Sigma_pattern) :
-  got (¬ ((subst_ctx C1 ((sp_var x) _&_    phi))   _&_
-          (subst_ctx C2 ((sp_var x) _&_ (¬ phi)))))
-.
+  (* Singleton *)
+  | Singleton (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
+    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
 
-(* Inductive proof_result : Set :=
-  | success ( _ )
-  | fail
-. *)
+(* Auxiliary rule *)
+(*   | Use_as_axiom (axiom : Sigma_pattern) :
+      axiom proved *)
+where "pattern 'proved'" := (AML_proof_system pattern).
 
-(* Proposition 7: *)
-(* Gamma |- phi ~=~ phi
-Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi3 -> Gamma |- phi1 ~=~ phi3
-Gamma |- phi1 ~=~ phi2 -> Gamma |- phi2 ~=~ phi1
-Gamma |- phi1 ~=~ phi2 -> 
-  Gamma |- e_subst_var psi phi1 x ~=~ e_subst_var psi phi2 x *)
+Lemma A_impl_A (A : Sigma_pattern) : (A ~> A) proved.
+Proof.
+  pose(_1' := P3 A (A ~> A) A).
+  pose(_2' := P2 A (A ~> A)).
+  pose(_4' := P2 A A).
+
+  pose(_1 := Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
+  pose(_2 := Prop_tau (A ~> (A ~> A) ~> A) _2').
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (A ~> A ~> A) _4').
+  pose(_5 := Mod_pon _4 _3).
+  exact _5.
+Qed.
+
+(* This theorem states that axiom P1 and the deduced formula are equivalent,
+ * so the proof is sound *)
+Theorem A_impl_A_equiv : forall A : Sigma_pattern,
+  (A_impl_A A) = (Prop_tau (A ~> A) (P1 A)).
+Proof.
+  intros.
+  induction A.
+  - Check Prop_tau (' x0 ~> ' x0) (P1 ' x0).
+Admitted.
+
+Check Ensembles.Singleton Sigma_pattern.
+Definition empty_theory := Empty_set Sigma_pattern.
+
+(* TODO: Define provability *)
+Reserved Notation "theory |- pattern" (at level 40).
+Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
+(* Deduction theorem: inject axiom from theory *)
+| inject {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern ->
+    (Subtract _ theory axiom) |- (axiom ~> pattern)
+
+(* Deduction theorem: extract back to theory *)
+| extract (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (theory |- (phi1 ~> phi2)) ->
+    (Add _ theory phi1) |- phi2
+
+(* Using hypothesis from theory *)
+| hypothesis (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (* set_mem sp_eq_dec axiom theory = true *)
+    (In _ theory axiom) -> theory |- axiom
+
+(* AML_proof_system rule embedding *)
+
+(* Introduce axiom rules *)
+| empty (pattern : Sigma_pattern) :
+    (pattern proved) -> empty_theory |- pattern
+
+| ext (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    pattern proved -> theory |- pattern
+
+(* Introduce step rules *)
+| E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (* T1 subsests T2 or T2 substes T1 or are equal *)
+    theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
+
+| E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~> phi2) ->
+    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    theory |- ((ex x, phi1) ~> phi2)
+
+| E_framing
+  (C : Application_context) (phi1 phi2 : Sigma_pattern)
+  (theory : Ensemble Sigma_pattern) :
+    theory |-
+      (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+
+| E_svar_subst
+  (phi : Sigma_pattern) (psi X : SVar) (theory : Ensemble Sigma_pattern) :
+    theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
+
+| E_knaster_tarski
+  (phi psi : Sigma_pattern) (X : SVar) (theory : Ensemble Sigma_pattern) :
+    theory |-
+      ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
+
+(* Proposition 7: definedness related properties *)
+| E_refl (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi ~=~ phi)
+
+| E_trans (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
+    theory |- (phi1 ~=~ phi3)
+
+| E_symm (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1)
+
+| E_evar_subst
+  (* TODO: psi can be any pattern, not only Application_context *)
+  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) ->
+    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x))
+
+where "theory |- pattern" := (Provable theory pattern).
+
+(* Examples of use *)
+(* Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..))  *)
+
+(* TODO: Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" := (Add _ a (Add _ b .. (Add _ z) ..))
+  (at level 2). *)
+
+
+Lemma not_not_A_proves_A : forall A : Sigma_pattern,
+  (Add _ (Add _ empty_theory (¬(¬A)))
+         ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) ) |- A.
+Proof.
+  intro A.
+
+  pose(theory := (Add _ (Add _ empty_theory (¬(¬A)))
+                 ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) )).
+
+(*   pose(_1 := hypothesis (¬(¬A)) theory). (* getting axiom from hypothesises *)
+  pose(_2 := ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (¬(¬A)) ~> (¬A ~> (¬(¬A))) (P2 (¬(¬A)) (¬A)).
+  pose(_5 := _) (* getting axiom from hypothesises *)
+  pose(_6 := Mod_pon _5 _4).
+  pose(_7 := Mod_pon _6 _3). *)
+
+  eapply E_mod_pon.
+  - eapply E_mod_pon.
+    * eapply (hypothesis (¬(¬A)) theory).
+        (* TODO: write a tactic for this *)
+      + unfold theory. unfold In in *. unfold Add.
+        eapply Union_introl. eapply Union_intror. reflexivity.
+    * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) theory).
+      + eapply (Prop_tau ((¬(¬A)) ~> (¬A ~> ¬(¬A)))).
+        eapply (P2 (¬(¬A)) (¬A)).
+  - eapply E_mod_pon.
+    * eapply (ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
+    * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
+      + unfold Add. eapply Union_intror. reflexivity.
+Qed.
+
+
+
+Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
+Proof.
+  eapply E_mod_pon.
+  - eapply (empty (A ~> A ~> A) (Prop_tau (A ~> A ~> A) (P2 A A))).
+  - eapply E_mod_pon.
+    + eapply (empty (A ~> (A ~> A) ~> A)
+                    (Prop_tau (A ~> (A ~> A) ~> A) (P2 A (A ~> A)))).
+    + eapply (empty ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
+                    (Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
+                      (P3 A (A ~> A) A))).
+Qed.
+
 
 (* Theorem 8.: Soundness *)
-(* Theorem Soundness : Gamma |-  phi -> Gamma |= phi. *)
+Theorem Soundness :
+  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
+  (theory |- phi) -> (theory |= phi).
+(* Proof.
+  intros.
+              TODO
+  induction (proof_length (theory |= phi)). *)
+Admitted.
 
-(* *************************************************************************** *)
+Theorem Completeness :
+  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
+  (theory |= phi) -> (theory |- phi).
+Abort.
 
-(* Many-sorted algebra *)
-Section MSA.
+(* *******************************~= MSFOL =~******************************* *)
 
-(* Sorts of many-sorted algebra*)
-Inductive MSA_sorts : Set :=
+(* Definition 9. MSFOL definition *)
+Inductive MSFOL_sorts : Set :=
 | Nat
 | List
 | Cfg
 | Term
 .
 
-(* a function which corresponds: constants of AML  to  sorts of MSA *)
-Fixpoint AML_sort_name (s : MSA_sorts) : Sigma_pattern :=
+Inductive MSFOL_var : Type :=
+| M_var_c (id_M_var : string) (sort_M_var : MSFOL_sorts).
+Inductive MSFOL_fun : Type := M_fun_c {id_M_fun : string}.
+Inductive MSFOL_pred : Type := M_pred_c {id_M_pred : string}.
+
+Record MSFOL_Structure := {
+  SortSet : Ensemble MSFOL_sorts;
+  Functions : Ensemble MSFOL_fun;
+  Predicates : Ensemble MSFOL_pred;
+}.
+
+Definition msort_eq_dec : forall (x y : MSFOL_sorts), { x = y } + { x <> y }.
+Proof. decide equality. Defined.
+
+Definition mvar_eq_dec : forall (x y : MSFOL_var), { x = y } + { x <> y }.
+Proof.
+  decide equality.
+  exact (msort_eq_dec sort_M_var sort_M_var0).
+  exact (string_dec id_M_var id_M_var0).
+Defined.
+
+Inductive MSFOL_term : Type :=
+| MT_var (x_s : MSFOL_var)
+| MT_fun (f : MSFOL_fun) {n : nat} (params : VectorDef.t MSFOL_term n)
+         (result_sort : MSFOL_sorts)
+.
+
+Inductive MSFOL_formula : Set :=
+| MF_pred (p : MSFOL_pred) {n : nat} (params : VectorDef.t MSFOL_term n)
+| MF_bottom
+| MF_impl (l r : MSFOL_formula)
+| MF_exists (x : MSFOL_var) (phi : MSFOL_formula)
+.
+
+Notation "'M_Bot'" := (MF_bottom).
+Notation "a 'M~>' b" := (MF_impl a b) (at level 90, right associativity,
+                                       b at level 200).
+Notation "'M_ex' x , phi" := (MF_exists x phi) (at level 55).
+
+(* Derived notations *)
+Definition MF_not (phi : MSFOL_formula) := phi M~> M_Bot.
+Notation "'M¬' phi" := (MF_not phi) (at level 75).
+
+Definition MF_or  (l r : MSFOL_formula) := (M¬ l) M~> r.
+Notation "a M|_ b" := (MF_or a b) (at level 85, right associativity).
+
+Definition MF_and (l r : MSFOL_formula) := M¬ ((M¬ l) M|_ (M¬ r)).
+Notation "a M&_ b" := (MF_and a b) (at level 80, right associativity).
+
+Definition MF_iff (l r : MSFOL_formula) := ((l M~> r) M&_ (l M~> r)).
+Notation "a <M~> b" := (MF_iff a b) (at level 95, no associativity).
+
+Definition MF_top := (M¬ MF_bottom).
+Notation "'M_Top'" := MF_top.
+
+Definition MF_forall (x : MSFOL_var) (phi : MSFOL_formula) :=
+  M¬ (MF_exists x (M¬ phi)).
+Notation "'M_all' x , phi" := (MF_forall x phi) (at level 55).
+
+(* auxiliaty functions for equality checking *)
+Definition MSFOL_sorts_eqb (a b : MSFOL_sorts) : bool :=
+match a, b with
+| Nat, Nat => true
+| List, List => true
+| Cfg, Cfg => true
+| Term, Term => true
+| _, _ => false
+end.
+
+
+(* Substitue varibale in term *)
+Fixpoint t_subst_var (term : MSFOL_term) (t : MSFOL_term) (x : MSFOL_var)
+: MSFOL_term :=
+match term with
+| MT_var x' => if mvar_eq_dec x x' then t else (MT_var x')
+| MT_fun f params result_sort =>
+    MT_fun f (VectorDef.map (fun y => t_subst_var y t x) params) result_sort
+end.
+
+(* Substitue varibale in formula *)
+Fixpoint f_subst_var (phi : MSFOL_formula) (t : MSFOL_term) (x : MSFOL_var)
+: MSFOL_formula :=
+match phi with
+| MF_pred p params =>
+    MF_pred p (VectorDef.map (fun y => t_subst_var y t x) params)
+| MF_bottom => MF_bottom
+| MF_impl lhs rhs => MF_impl (f_subst_var lhs t x) (f_subst_var rhs t x)
+| MF_exists x' formula => if mvar_eq_dec x x'
+                          then M_ex x', formula
+                          else M_ex x', (f_subst_var formula t x)
+end.
+
+(*
+Fixpoint M_ext_term_val () := .
+
+Fixpoint M_ext_form_val () := . *)
+
+
+Definition M_set_singleton := fun x => set_add mvar_eq_dec x List.nil.
+
+Fixpoint var_to_set (term : MSFOL_term)
+: ListSet.set MSFOL_var -> ListSet.set MSFOL_var :=
+match term with
+| MT_var x' => set_add mvar_eq_dec x'
+| MT_fun f _ _ => set_union mvar_eq_dec (empty_set MSFOL_var)
+end.
+
+(* free variables of a formula *)
+Fixpoint f_free_vars (phi : MSFOL_formula) : (ListSet.set MSFOL_var) :=
+match phi with
+| MF_pred p params =>
+    VectorDef.fold_right var_to_set params (empty_set MSFOL_var)
+| MF_bottom => List.nil
+| MF_impl lhs rhs => set_union mvar_eq_dec (f_free_vars lhs) (f_free_vars rhs)
+| MF_exists y phi' => set_diff mvar_eq_dec (f_free_vars phi') (M_set_singleton y)
+end.
+
+
+(* record MSFOL_structure := {
+  Domain : SortType (* subset of SortSet *)
+  Function_interp : MSFOL_fun -> Domain* -> Domain -> value_type?
+  Predicate_interp : MSFOL_pred -> Domain* -> value_type?
+}. *)
+
+(* Fixpoint MSFOL_term_valuation (t : MSFOL_term) : MSFOL_sorts :=
+match t with
+| MT_var x => (* result will have type: match x with M_var_c name sort => sort end *)
+| MT_fun f params r_sort => (* result will have type: r_sort *)
+end.
+
+Fixpoint MSFOL_formula_valuation (formula : MSFOL_formula) : bool :=
+match formula with
+| MF_pred p params => ?
+| MF_bottom => false
+| MF_impl phi1 phi2 =>
+    not (MSFOL_formula_valuation phi1) /\ (MSFOL_formula_valuation phi2)
+| MP_exists x phi => ?
+. *)
+
+(* Deifinition satisfies_model (A : ?) (phi : MSFOL_formula) : Prop :=
+  forall valutaion : ?, valuation phi A = true. *)
+
+(* Definition satisfies_theory (A : ?) (Omega : Ensemle MSFOL_formula) : Prop :=
+  forall axiom : MSFOL_formula, In _ axiom A -> satisfies_model A axiom. *)
+
+(* Definition satisfies
+(Omega : Ensemble MSFOL_formula) (phi : MSFOL_formula) : Prop :=
+  forall A : ?, satisfies_theory A Omega -> stisfies_model A phi. *)
+
+(* Auxiliary axiom schemes for proving propositional tautology *)
+Reserved Notation "pattern 'MSFOL_tautology'" (at level 2).
+Inductive MSFOL_tautology_proof_rules : MSFOL_formula -> Prop :=
+| MSFOL_p1 (phi : MSFOL_formula) :
+    (phi M~> phi) MSFOL_tautology
+
+| MSFOL_p2 (phi psi : MSFOL_formula) :
+    (phi M~> (psi M~> phi)) MSFOL_tautology
+
+| MSFOL_p3 (phi psi xi : MSFOL_formula) :
+    ((phi M~> (psi M~> xi)) M~> ((phi M~> psi) M~> (phi M~> xi))) MSFOL_tautology
+
+| MSFOL_p4 (phi psi : MSFOL_formula) :
+    (((M¬ phi) M~> (M¬ psi)) M~> (psi M~> phi)) MSFOL_tautology
+
+where "pattern 'MSFOL_tautology'" := (MSFOL_tautology_proof_rules pattern).
+
+Reserved Notation "pattern 'MSFOL_proved'" (at level 2).
+Inductive MSFOL_proof_system : MSFOL_formula -> Prop :=
+(* Propositional tautology *)
+| MSFOL_prop_tau (phi : MSFOL_formula) :
+    phi MSFOL_tautology -> phi MSFOL_proved
+
+(* Modus ponens *)
+| MSFOL_mod_pon {phi1 phi2 : MSFOL_formula} :
+    phi1 MSFOL_proved -> (phi1 M~> phi2) MSFOL_proved -> phi2 MSFOL_proved
+
+(* Existential quantifier *)
+| MSFOL_ex_quan {phi : MSFOL_formula} {x : MSFOL_var} {t : MSFOL_term}:
+    ((f_subst_var phi t x) M~> (M_ex x, phi)) MSFOL_proved
+
+(* Existential generalization *)
+| MSFOL_ex_gen (phi1 phi2 : MSFOL_formula) (x : MSFOL_var) :
+    (phi1 M~> phi2) MSFOL_proved ->
+    negb (set_mem mvar_eq_dec x (f_free_vars phi2)) = true ->
+    ((M_ex x, phi1) M~> phi2) MSFOL_proved
+
+where "phi 'MSFOL_proved'" := (MSFOL_proof_system phi).
+
+
+(* Section 4.2 *)
+Definition MSAFOL_Sort := const ("Sort").
+
+(* a function which corresponds: constants of AML  to  sorts of MSFOL *)
+Fixpoint sort_fun_constant (s : MSFOL_sorts) : Sigma_pattern :=
 match s with
-| Nat  => sp_const(sigma_c("Nat"))
-| List => sp_const(sigma_c("List"))
-| Cfg  => sp_const(sigma_c("Cfg"))
-| Term => sp_const(sigma_c("Term"))
+| Nat  => Functional_Constant (sigma_c("Nat"))
+| List => Functional_Constant (sigma_c("List"))
+| Cfg  => Functional_Constant (sigma_c("Cfg"))
+| Term => Functional_Constant (sigma_c("Term"))
 end.
 
-(* we can also define them *)
-Definition AML_Nat  := AML_sort_name(Nat).
-Definition AML_List := AML_sort_name(List).
-Definition AML_Cfg := AML_sort_name(Cfg).
-
-
-Definition inhabitant_set := const("inhabitant set").
-Definition InhabitantSetOf (s : MSA_sorts) :=
-  (inhabitant_set _._ (AML_sort_name s)).
-Notation "'[[' s ']]'" := (InhabitantSetOf s) (at level 100).
-
-Definition vc := VectorDef.cons.
-Definition vn := VectorDef.nil.
-
-Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) :=
-match n with
- | O   => F1
- | S x => FS (_of_nat x)
+Fixpoint sort_constant (s : MSFOL_sorts) : Sigma :=
+match s with
+| Nat  => (sigma_c("Nat"))
+| List => (sigma_c("List"))
+| Cfg  => (sigma_c("Cfg"))
+| Term => (sigma_c("Term"))
 end.
 
-Fixpoint and_gen {n : nat} (vec : VectorDef.t Sigma_pattern n)
-: Sigma_pattern :=
-match vec with
-| VectorDef.nil  _                          => sp_top (* TODO: sp_top? *)
-| VectorDef.cons _ elem _ (VectorDef.nil _) => elem
-| VectorDef.cons _ elem _ rem               => sp_and elem (and_gen rem)
-end.
-
-Fixpoint assoc_elem {n : nat} (vars : VectorDef.t EVar n)
-                    (sorts : VectorDef.t MSA_sorts n)
-: Sigma_pattern :=
-  let doms := VectorDef.map InhabitantSetOf sorts in
-    and_gen (VectorDef.map2 Membership vars doms).
-
-Fixpoint assoc_params (f : Sigma) {n : nat}
-                      (vars : VectorDef.t EVar n)
-: Sigma_pattern :=
-  let variables := VectorDef.map sp_var vars in
-    VectorDef.fold_left sp_app (sp_const f) variables.
+Definition Axiom_Sort (s : MSFOL_sorts) := (sort_constant s) -< MSAFOL_Sort.
 
 
+Definition Domain_Symbol := const ("Domain symbol").
+Definition Domain (sort : MSFOL_sorts) := Domain_Symbol $ ^(sort_constant sort).
+Notation "'[[' s ']]'" := (Domain s) (at level 0).
+
+(* Examples meanings: *)
+(* x =< [[ s ]] states that x has sort s *)
+Definition x_has_sort_s (x : EVar) (s : MSFOL_sorts) :=
+  x =< [[ s ]].
+
+(* phi <: [[ s ]] states that all elements matching phi have sort s*)
+Definition pattern_has_sort (phi : Sigma_pattern) (s : MSFOL_sorts) :=
+  phi <: [[ s ]].
+
+Definition Nonempty_Domain (sort : MSFOL_sorts) :=  [[ sort ]] !=~ sp_bottom.
+
+(* Introducing notations for Sorted quantification *)
+(* For denoting "exists x : Nat . pattern" we introduce: *)
+Notation "'ex_S' x : sort , phi" :=
+  (sp_exists x ((x =< ([[ sort ]])) _&_ phi)) (at level 3, x at next level, sort at next level).
+(* For denoting "forall x : Nat . pattern" we introduce: *)
+Notation "'all_S' x : sort , phi" :=
+  (sp_forall x ((x =< ([[ sort ]])) ~> phi)) (at level 3, x at next level, sort at next level).
+
+
+(* Proposition 10. *)
+Reserved Notation "a |--> b" (at level 40, left associativity).
+Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
+| QE_ex_to_all (x : EVar) (s : MSFOL_sorts) (phi : Sigma_pattern) :
+    ((ex_S x : s, phi) |--> (¬ (all_S x : s, (¬ phi))))
+| QE_all_to_ex (x : EVar) (s : MSFOL_sorts) (phi : Sigma_pattern) :
+    ((all_S x : s, phi)  |--> (¬ (ex_S x : s, (¬ phi))))
+where "a |--> b" := (QuantificationEquivalence a b).
+
+Lemma forall_ex_equiv :
+  forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
+  empty_theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi)))).
+Admitted.
+
+
+(* Many-sorted functions and terms *)
 Section NatToStringConversion.
 
 Local Open Scope string_scope.
@@ -577,117 +1116,254 @@ Definition string_of_nat (n : nat) : string := string_of_nat_aux n n "".
 
 End NatToStringConversion.
 
-Definition Nonempty_Sort (s : MSA_sorts) := ([[ s ]] !=~ sp_bottom).
+Definition vc := VectorDef.cons.
+Definition vn := VectorDef.nil.
 
-Program Fixpoint gen_x_vec (n:nat) : VectorDef.t EVar n :=
+Fixpoint _of_nat (n : nat) {m : nat} : Fin.t (S (n + m)) :=
 match n with
-| O => (VectorDef.nil EVar)
-| S n' => VectorDef.cons EVar
-            (evar_c(String.append "x" (string_of_nat(n)))) n' (gen_x_vec n')
+ | O   => F1
+ | S x => FS (_of_nat x)
 end.
 
-(* Lemma gen_vec_of_x_ok : forall n : nat, length (_gen_list_of_x n) = n.
-Proof.
-  intro n.
-  induction n.
-  - reflexivity.
-           (* rewrite IHn. reflexivity. *)
-  - simpl. apply PeanoNat.Nat.succ_inj_wd. exact IHn.
-Qed. *)
+Program Fixpoint _gen_x_vec (n m : nat) : VectorDef.t EVar n :=
+match n with
+| O => (vn EVar)
+| S n' => vc EVar (evar_c(String.append "x" (string_of_nat(m-n+1))))
+            n' (_gen_x_vec n' m)
+end.
 
-(* if constant function is defined, then sp_bottom will stand on the
- * application's left hand-side, because in the formalisation with Function
- * axiom, a function traslates to an implication, and because of false implies
- * everything, it imples the result too *)
-Definition y := evar_c("y").
-Definition Function
-  (f : Sigma) {n : nat} (ss : t MSA_sorts n) (s : MSA_sorts) : Sigma_pattern :=
-  (sp_impl
-    (* ((x1 -< [[ s1 ]]) _&_ .. _&_ (xn -< [[ sn ]])) *)
-    (assoc_elem (gen_x_vec n) ss)
-    (sp_exists y
-      (sp_and
-        (y -< [[ s ]])
-        (* ((f _._ x1) _._ .. _._ xn) ~=~ y *)
-        ((assoc_params f (gen_x_vec n)) ~=~ (sp_var y)) ))).
+Fixpoint gen_x_vec (n : nat) : VectorDef.t EVar n :=
+  _gen_x_vec n n.
 
-Definition Sort (s : MSA_sorts) := s.
-
-End MSA.
-
+Fixpoint Function
+  {n : nat} (fn : Sigma) (sorts : VectorDef.t MSFOL_sorts n)
+  (y_sort : MSFOL_sorts)
+: Sigma_pattern :=
+let vars := gen_x_vec n in
+let var_patterns := VectorDef.map sp_var vars in
+let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_patterns in
+let core := ex_S (evar_c("y")) : y_sort, (applied_params ~=~ (var ("y")) )in
+let foralls := VectorDef.map2
+                (fun var s => (fun phi => all_S var : s, phi))
+                vars sorts in
+  VectorDef.fold_right (fun spl spr => spl spr) foralls core.
 
 (* Functional notation of the function *)
-Notation "f '_:_' '-->' s" := (Function f (vn _) s) (at level 0).
+Notation "f : '-->' s" := (Function f (vn _) s) (at level 3).
+Notation "f : s1 '-->' s" := (Function f (vc _ s1 0 (vn _)) s) (at level 3).
+Notation "f : s1 'X' s2 'X' .. 'X' sn '-->' s" :=
+  (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 3).
 
-Notation "f '_:_' s1 '-->' s" := (Function f (vc _ s1 0 (vn _)) s) (at level 0).
+(* Example for functional notation *)
+Definition f := (sigma_c "f") : --> List.
+Definition fib := (sigma_c "fib") : Nat --> Nat.
+Definition volume := (sigma_c "volume") : Nat X Nat --> Nat.
 
-(* f : s1 x s2 x ... x sn -> s *)
-Notation "f '_:_' s1 'X' s2 'X' .. 'X' sn '-->' s" :=
-  (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 0).
 
-(*
-Notation "'exists' xc : sort , pattern" :=
-  (sp_exists xc (sp_and ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (
-    at level 5, xc at next level, sort at next level, pattern at next level).
-Notation "'for_all' xc : sort , pattern" :=
-  (sp_forall xc (sp_impl ((sp_var xc) -< InhabitantSetOf(sort)) pattern)) (
-    at level 5, xc at next level, sort at next level, pattern at next level).
-*)
+(* Many-sorted predicates and formulas *)
+Definition Predicate
+  {n : nat} (fn : Sigma) (sorts : VectorDef.t MSFOL_sorts n)
+: Sigma_pattern :=
+let vars := gen_x_vec n in
+let var_patterns := VectorDef.map sp_var vars in
+let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_patterns in
+let or_left := applied_params ~=~ Top in
+let or_right := applied_params ~=~ Bot in
+let core := or_left _|_ or_right in
+let foralls := VectorDef.map2
+                (fun var s => (fun phi => (all_S var : s, phi)))
+                vars sorts in
+  VectorDef.fold_right (fun spl spr => spl spr) foralls core.
 
-(* Instead of notation "forall x : Nat . pattern" we introduce: *)
-Notation "'for_some' xc 'of_sort' sort 'states' pattern" :=
-  (sp_exists xc (sp_and (xc -< InhabitantSetOf(sort)) pattern))
-    (at level 5).
-Notation "'for_all' xc 'of_sort' sort 'states' pattern" :=
-  (sp_forall xc (sp_impl (xc -< InhabitantSetOf(sort)) pattern))
-    (at level 5).
 
-(* Proposition 18. *)
-Reserved Notation "a |--> b" (at level 40, left associativity).
-Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
-| QE_ex_to_all (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
-    ((for_some xc of_sort sort states pattern) |-->
-     (sp_not (for_all xc of_sort sort states (sp_not pattern))))
-| QE_all_to_ex (xc : EVar) (sort : MSA_sorts) (pattern : Sigma_pattern) :
-    ((for_all xc of_sort sort states pattern)  |-->
-     (sp_not (for_some xc of_sort sort states (sp_not pattern))))
-where "a |--> b" := (QuantificationEquivalence a b).
+(* well-sorted axiom scheme *)
+Fixpoint get_vars (term : MSFOL_term) : Sigma_pattern -> Sigma_pattern :=
+match term with
+| MT_var x => match x with
+    M_var_c id sort => sp_and ((evar_c(id)) =< [[ sort ]]) end
+| MT_fun f params r_sort => VectorDef.fold_right get_vars params
+end.
 
-Notation "' v" := (sp_var v) (at level 3).
-Notation "^ c" := (sp_const c) (at level 3).
-Notation "` s" := (sp_set s) (at level 3).
+Fixpoint well_sorted_term (term : MSFOL_term) : Sigma_pattern :=
+match term with
+| MT_var x => match x with M_var_c id sort => ((evar_c(id)) =< [[ sort ]]) end
+| MT_fun f params r_sort => VectorDef.fold_right get_vars params Top
+end.
 
-Section NaturalNumbers.
+Fixpoint well_sorted_formula (formula : MSFOL_formula) : Sigma_pattern :=
+match formula with
+| MF_pred p params => VectorDef.fold_right get_vars params Top
+| MF_bottom => Top
+| MF_impl lhs rhs => sp_and (well_sorted_formula lhs) (well_sorted_formula rhs)
+| MF_exists x phi =>
+    sp_and (match x with M_var_c id sort => ((evar_c(id)) =< [[ sort ]]) end)
+           (well_sorted_formula phi)
+end.
+
+
+(* Proposition 12. *)
+Fixpoint M_var_id (var : MSFOL_var) : string :=
+match var with M_var_c id _ => id end.
+
+Fixpoint M_var_sort (var : MSFOL_var) : MSFOL_sorts :=
+match var with M_var_c _ sort => sort end.
+
+Fixpoint term_sort (term : MSFOL_term) : MSFOL_sorts :=
+match term with
+| MT_var x => match x with M_var_c _ sort => sort end
+| MT_fun _ _ result_sort => result_sort
+end.
+
+Fixpoint term_to_AML (term : MSFOL_term) : Sigma_pattern:=
+match term with
+| MT_var x => match x with M_var_c id _ => var id end
+| MT_fun f_id params result_sort =>
+    match f_id with (M_fun_c id) =>
+      Function (sigma_c id)
+               (VectorDef.map term_sort params)
+               result_sort
+    end
+end.
+
+Fixpoint formula_to_AML (formula : MSFOL_formula) : Sigma_pattern :=
+match formula with
+| MF_pred p params =>
+    match p with M_pred_c id =>
+      Predicate (sigma_c id) (VectorDef.map term_sort params)
+    end
+| MF_bottom => Bot
+| MF_impl lhs rhs => (formula_to_AML lhs) ~> (formula_to_AML rhs)
+| MF_exists x phi =>
+    ex_S (evar_c (M_var_id x)) : (M_var_sort x) , (formula_to_AML phi)
+end.
+
+
+Lemma MSFOL_wellformed_terms :
+  forall Gamma_MSFOL : Ensemble Sigma_pattern, forall t : MSFOL_term,
+  Gamma_MSFOL |- ((well_sorted_term t) ~>
+    ex_S (evar_c("y")) : (term_sort t), (term_to_AML t) ~=~ (var "y")).
+Admitted.
+
+Lemma MSFOL_wellformed_formulas :
+  forall Gamma_MSFOL : Ensemble Sigma_pattern, forall phi : MSFOL_formula,
+  Gamma_MSFOL |- ((well_sorted_formula phi) ~>
+    ((formula_to_AML phi) ~=~ sp_top) _|_ (((formula_to_AML phi) ~=~ sp_bottom))).
+Admitted.
+
+
+(* MSFOL theories *)
+
+(* Theorem 13. *)
+(* Theorem preservation :
+  forall Omega : Ensemble MSFOL_formula, forall Gamma : Ensemble Sigma_pattern,
+  forall phi : MSFOL_formula
+  Omega |-MSFOL phi -> Gamma_MSFOL |- (formula_to_AML phi). *)
+
+
+(* Definition 14. MSFOL restricted *)
+(*  *)
+
+
+(* Theorem 15. *)
+(* TODO: MSFOL theory conversion to AML conversion *)
+(* Theorem
+  forall Omega : Ensemble MSFOL_formula, forall A : MSFOL_model,
+  A |=MSFOL Omega -> exists M : Sigma_model, ... *)
+
+(* Theorem 16. *)
+(* Theorem holds :
+  forall Omega : Ensemble MSFOL_formula, phi : MSFOL_formula,
+  let Gamma := (theory_to_AML Omega) in
+    (Omega |-MSFOL phi -> Gamma |- (formula_to_AML phi)) /\
+    (Gamma |- (formula_to_AML phi) -> Gamma |= (formula_to_AML phi)) /\
+    (Gamma |= (formula_to_AML phi) -> Omega |=MSFOL phi) /\
+    (Omega |=MSFOL phi -> Omega |-MSFOL phi).
+ *)
+
+
+(* ************************************************************************** *)
+(*                           ~= Natural numbers =~                            *)
+(* ************************************************************************** *)
+
+Definition Nat_is_Sort := (sort_constant Nat) -< MSAFOL_Sort.
 
 Definition zero : Sigma := sigma_c("zero").
 Definition succ : Sigma := sigma_c("succ").
 Definition plus : Sigma := sigma_c("plus'").
 Definition mult : Sigma := sigma_c("mult").
 
-Definition zero_fun := (zero _:_ --> Nat).
-Definition succ_fun := (succ _:_ Nat --> Nat).
-Definition plus_fun := (plus _:_ Nat X Nat --> Nat).
-Definition mult_fun := (mult _:_ Nat X Nat --> Nat).
+Definition zero_fun := (zero : --> Nat).
+Definition succ_fun := (succ : Nat --> Nat).
+Definition plus_fun := (plus : Nat X Nat --> Nat).
+Definition mult_fun := (mult : Nat X Nat --> Nat).
 
-Definition succ' (x : Sigma_pattern) := ^succ _._ x.
-Definition plus' (x y : Sigma_pattern) := ^plus _._ x _._ y.
-Definition mult' (x y : Sigma_pattern) := ^mult _._ x _._ y.
-
-(* helper notations for the following examples *)
-Definition x := evar_c("x").
-(* Definition y := evar_c("y"). *)
-Definition z := evar_c("z").
-Definition n := evar_c("n").
+(* Helper functions for notation *)
+Definition succ' (x : Sigma_pattern) := ^succ $ x.
+Definition plus' (x y : Sigma_pattern) := ^plus $ x $ y.
+Definition mult' (x y : Sigma_pattern) := ^mult $ x $ y.
+(* End helper functions *)
 
 (* Example: x + 0 = x *)
-Definition x_plus_0_eq_x :=
-  (for_all x of_sort Nat states ((plus' 'x ^zero) ~=~ 'x)).
-
-(* Examples *)
+Definition x_plus_0_eq_x := (all_S x : Nat, ((plus' 'x ^zero) ~=~ 'x)).
 
 (* we have to specify the type of function parameters, because if not, the
- * following statement about natural numbers also can be formalised: *)
-Definition foo := plus' ^plus ^zero.
+ * following statement about natural numbers could also be formalised: *)
+Definition x_plus_0_eq_x_no_type := plus' ^plus ^zero.
+
+
+(* Natural numbers with induction *)
+
+(* states that zero and succ build different terms *)
+Definition No_Confusion1 (x : EVar) :=
+  all_S x : Nat, ((succ' 'x) !=~ (const ("zero"))).
+
+(* states that succ is an injective funxtion *)
+Definition No_Confusion2 (x y : EVar) :=
+  all_S x : Nat, (all_S y : Nat,
+    ((((succ' 'x) ~=~ (succ' 'y))) ~> ((' x) ~=~ (' y)))).
+
+(* forces [[ Nat ]] to be the smallest set closed under zero and succ, yielding
+ * exactly the standard natural numbers |N *)
+Definition Inductive_Domain (D : SVar) :=
+  [[ Nat ]] ~=~ (mu D, (^zero _|_ (^succ $ `D))).
+
+(* This is an axiom schema. Before use it needs to be instanctiated, by giving
+ * a pattern as parameter to it. *)
+Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
+  ((phi ^zero) _&_ (all n, ((phi 'n) ~> (phi (succ' 'n))))) ~>
+  (all n, (phi 'n)).
+
+(* Proposition 17. *)
+(* It intuitively says that if SX is closed under zero and succ, then it contains
+ * all natural numbers. *)
+Definition y := (evar_c "y").
+Lemma PeanoNat :
+  forall Gamma : (Ensemble Sigma_pattern), forall SX : SVar,
+  Gamma |- ((zero -< `SX) _&_ (all_S y : Nat, (y =< `SX)) ~>
+           (all_S x : Nat, (x =< `SX))).
+Admitted.
+
+(* Proposition 18. *)
+
+(******************************************************************************)
+(*
+Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
+: Sigma_pattern :=
+match vec with
+| VectorDef.nil  _ => const ("cannot operate on empty parameters")
+| VectorDef.cons _ elem _ (VectorDef.nil _) => [[ elem ]]
+| VectorDef.cons _ elem _ vec' =>
+    ([[ elem ]]) $ (app_inhabitant_sets vec')
+end.
+
+Definition Arity (sigma : Sigma_pattern) {n : nat}
+                 (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts)
+: Sigma_pattern :=
+  sigma $ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
+*)
+(******************************************************************************)
+
+(* Examples of natural number patterns: *)
 
 Definition one := succ' ^zero.
 Definition two := succ' one.
@@ -695,81 +1371,35 @@ Definition three := succ' two.
 Definition five := succ' (succ' three).
 Definition six := succ' five.
 
-Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
-Definition plus_1_plus_2_3_eq_6 := ((plus' one (plus' two three)) ~=~ six).
-Definition plus_1_plus_2_3_eq_1_plus_2_plus_3 :=
-  ((plus' one (plus' two three)) ~=~ (plus' one (plus' two three))).
-Definition plus_1_plus_2_3_eq_1_plus_5 :=
-  ((plus' one (plus' two three)) ~=~ (plus' one five)).
-Definition x_plus_2_plus_3_eq_x_plus_5 :=
-  (for_all x of_sort Nat states (
-    (plus' (plus' 'x two) three) ~=~ (plus' 'x five))).
-Definition x_plus_3_eq_x_plus_3 :=
-  (for_all x of_sort Nat states (plus' 'x three) ~=~ (plus' 'x three)).
-Definition x_plus_y_eq_x_plus_y :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states (plus' 'x 'y) ~=~ (plus' 'x 'y))).
 
 Definition plus_1_2 := plus' one two.
-Definition plus_2_3 := plus' two three.
-Definition plus_1_plus_2_3 :=  plus' one plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_plus_2_3 :=
-  plus_1_plus_2_3 ~=~ plus' one plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_plus_2_3' :=
-  plus_1_plus_2_3 ~=~ plus_1_plus_2_3.
-Definition plus_1_plus_2_3_eq_plus_1_5 := plus_1_plus_2_3 ~=~ plus' one five.
+Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
+Definition plus_1_plus_2_3_eq_6 := ((plus' one (plus' two three)) ~=~ six).
 
 Definition plus_x_1_eq_5 :=
-  (for_all x of_sort Nat states ((plus' 'x one) ~=~ five)).
-
-Definition plus_x_1_eq_plus_y_1 :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states
-      (plus' 'x one ~=~ (plus' 'y one)))).
-
-Definition plus_x_1_eq_y :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states
-      ((plus' 'x one) ~=~ 'y))).
-
-Definition plus_x_1_eq_plus_y_3 :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states
-      ((plus' 'x one) ~=~ (plus' 'y three)))).
+  (all_S x : Nat, ((plus' 'x one) ~=~ five)).
 
 Definition plus_x_z_eq_y :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states
-      (for_all z of_sort Nat states
+  (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x 'z) ~=~ 'y)))).
 
 Definition plus_x_plus_z_3_eq_y :=
-  (for_all x of_sort Nat states
-    (for_all y of_sort Nat states
-      (for_all z of_sort Nat states
+  (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x (plus' 'z three))) ~=~ 'y))).
+
 
 Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
 | sp_const _ => ^zero
       (* succ b *)
 | sp_app _    b => plus' (succ' b) (SumFromZeroTo b)
-| _ => ^(sigma_c("non-exhaustive pattern"))
+| _ => const ("non-exhaustive pattern")
 end.
 
-Lemma until_zero : (SumFromZeroTo ^zero) = ^zero.
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_one : (SumFromZeroTo one) = (plus' one ^zero).
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_two : (SumFromZeroTo two) = (plus' two (plus' one ^zero)).
-Proof. simpl. reflexivity. Qed.
-
-
 (* 1 + ... + n = n * (n+1) / 2. *)
+Definition n := evar_c("n").
 Definition Sum_of_first_n : Sigma_pattern :=
-  for_all n of_sort Nat states (mult' two (SumFromZeroTo 'n) ~=~
+  all_S n : Nat, (mult' two (SumFromZeroTo 'n) ~=~
   mult' 'n (succ' 'n)).
 
 
@@ -781,317 +1411,221 @@ match n with
   match b with
   | sp_const _ => one
   | sp_app _ _ => mult' (succ' b) (ProdFromOneTo b)
-  | _ => ^(sigma_c("non-exhaustive pattern"))
+  | _ => const ("non-exhaustive pattern")
   end
-| _ => ^(sigma_c("non-exhaustive pattern"))
+| _ => const ("non-exhaustive pattern")
 end.
-
-Lemma until_zero' : (ProdFromOneTo ^zero) = ^zero.
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_one' : (ProdFromOneTo one) = one.
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_two' : (ProdFromOneTo two) = (mult' two one).
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_three' : (ProdFromOneTo three) = (mult' three (mult' two one)).
-Proof. simpl. reflexivity. Qed.
-
 
 Fixpoint SumOfSquaresFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
 | sp_const _ => ^zero
       (* succ b *)
 | sp_app _    b => plus' (mult' (succ' b) (succ' b)) (SumOfSquaresFromZeroTo b)
-| _ => ^(sigma_c("non-exhaustive pattern"))
+| _ => const ("non-exhaustive pattern")
 end.
-
-Lemma until_zero'' : (SumOfSquaresFromZeroTo ^zero) = ^zero.
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_one'' :
-  (SumOfSquaresFromZeroTo one) = (plus' (mult' one one) ^zero).
-Proof. simpl. reflexivity. Qed.
-
-Lemma until_two'' :
-  (SumOfSquaresFromZeroTo two) =
-  (plus' (mult' two two) (plus' (mult' one one) ^zero)).
-Proof. simpl. reflexivity. Qed.
-
 
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
 Definition Sum_of_squares :=
-  for_all n of_sort Nat states (
+  all_S n : Nat, (
     mult' six (SumOfSquaresFromZeroTo 'n) ~=~
     mult' 'n (mult' (succ' 'n) (plus' (mult' two 'n) one))).
 
-End NaturalNumbers.
-
-Section MatchingMuLogic.
-
-Fixpoint _app_inhabitant_sets (n : nat) (vec : list MSA_sorts)
-: Sigma_pattern :=
-match n with
-| O => ^(sigma_c("cannot operate on empty parameters"))
-| S O => InhabitantSetOf (List.hd Nat vec)
-| S n' =>
-    InhabitantSetOf (List.hd Nat vec) _._
-    (_app_inhabitant_sets n' (List.tail vec))
-end.
-
-Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
- : Sigma_pattern :=
-  _app_inhabitant_sets n (to_list vec).
-
-Lemma nil_eq_nil :
-  app_inhabitant_sets (vn MSA_sorts) =
-  ^ (sigma_c("cannot operate on empty parameters")).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_one_element :
-  (app_inhabitant_sets (vc _ Nat 0 (vn _)) = (InhabitantSetOf(Nat))).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_two_elements :
-  (app_inhabitant_sets (vc _ Nat 1 (vc _ List 0 (vn _))) =
-  (InhabitantSetOf(Nat) _._ InhabitantSetOf(List))).
-Proof. simpl. reflexivity. Qed.
-
-Lemma app_inhabitant_sets_test_three_elements :
-  (app_inhabitant_sets (vc _ Nat 2 (vc _ List 1 (vc _ Cfg 0 (vn _)))) =
-  (InhabitantSetOf(Nat)  _._ (InhabitantSetOf(List) _._ InhabitantSetOf(Cfg)))).
-Proof. simpl. reflexivity. Qed.
-
-                  (* sp_const only *)
-Definition Arity (sigma : Sigma_pattern) {n : nat}
-                 (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts)
-: Sigma_pattern :=
-  sigma _._ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
-
-(* Other equivalences of expressions, respectively equivalence validation are
- * described in Theorem 21. *)
-
-End MatchingMuLogic.
-
-Section ConstructorsAndTermAlgebras.
-
-Fixpoint _generate_foralls (n : nat) (xl : list EVar)
-: Sigma_pattern -> Sigma_pattern :=
-match n with
-| O => fun _ => sp_bottom
-| S O => fun pattern => for_all (List.hd (evar_c("wrong input length")) xl) of_sort Term states pattern
-| S n' =>
-    fun pattern =>
-      for_all
-        (List.hd (evar_c("wrong input length")) xl)
-        of_sort Term states (_generate_foralls n' (List.tl xl) pattern)
-end.
-
-Fixpoint generate_foralls
-  {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m)
-  (pattern : Sigma_pattern)
-: Sigma_pattern :=
-  _generate_foralls n (to_list vx) (_generate_foralls m (to_list vy) pattern).
-
-Definition NoConfusion_I
-  {n m : nat} (vx : VectorDef.t EVar n) (vy : VectorDef.t EVar m) (c d : Sigma)
-: Sigma_pattern :=
-  (generate_foralls vx vy) ((assoc_params c vx) !=~ (assoc_params d vy)).
-
-Fixpoint _generate_equalities (n : nat) (xl : list EVar) (xl' : list EVar)
-: Sigma_pattern :=
-match n with
-| O => sp_bottom
-| S O => ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
-| S n' =>
-    (sp_and
-      ('(List.hd (evar_c("wrong input length")) xl) ~=~ '(List.hd (evar_c("wrong input length")) xl'))
-      (_generate_equalities n' (List.tl xl) (List.tl xl')))
-end.
-
-Fixpoint generate_equalities
-  {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n)
-: Sigma_pattern :=
-  _generate_equalities n (to_list vx) (to_list vx').
-
-Definition NoConfusion_II
-  {n : nat} (vx : VectorDef.t EVar n) (vx' : VectorDef.t EVar n) (c : Sigma)
-: Sigma_pattern :=
-  ((generate_foralls vx vx')
-    (sp_impl
-      ((assoc_params c vx) ~=~ (assoc_params c vx'))
-      (generate_equalities vx vx'))).
-
-(* Definition Inductive_Domain
-  (D : SVar)
-:=
-  (
-    [[ Term ]]) ~=~
-    (sp_mu D (sp_or ...))
-  ). *)
-
-
-End ConstructorsAndTermAlgebras.
-
-Section NaturalNumbers.
-
-(* here is applied perhaps pointwise application, which is interpreted in the
- * denotational semantics *)
-Definition Inductive_Domain (D : SVar) :=
-  (InhabitantSetOf(Nat)) ~=~ sp_mu D (sp_or ^zero (succ' `D)).
-
-Definition Peano_Induction (n : EVar) (phi : Sigma_pattern -> Sigma_pattern) :=
-  (sp_impl
-    (sp_and
-      (phi ^zero)
-      (sp_forall n (sp_impl (phi 'n) (phi (succ' 'n)) )))
-    (sp_forall n (phi 'n))).
-
-(* Examples *)
 
 (* <= relation *)
 Definition less (l r : Sigma_pattern) :=
-  for_some x of_sort Nat states (plus' l (sp_var x) ~=~ r).
+ex_S x : Nat, (plus' l (sp_var x) ~=~ r).
 
 Definition less_or_equal (l r : Sigma_pattern) :=
-  sp_or
-    (l ~=~ r)
-    for_some x of_sort Nat states (plus' l (sp_var x) ~=~ r).
+  (l ~=~ r) _|_ (ex_S x : Nat, (plus' l ('x) ~=~ r)).
 
 (* States that if:
-  - zero <= zero and
-  - for all n of sort Nat : 0 <= (n+1)
- then for all n of sort Nat states 0 <= n *)
+- zero <= zero and
+- for all n of sort Nat : 0 <= (n+1)
+then for all n of sort Nat states 0 <= n *)
 Definition every_number_is_positive : Sigma_pattern :=
   Peano_Induction n (less_or_equal (sp_const zero)).
 
 Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 
 (* States that if:
-  - zero < zero + 1 and
-  - for all n of sort Nat : 0 < ((n+1) + 1)
- then for all n of sort Nat states 0 < (n+1) *)
+- zero < zero + 1 and
+- for all n of sort Nat : 0 < ((n+1) + 1)
+then for all n of sort Nat states 0 < (n+1) *)
 Definition every_successor_is_strictly_positive : Sigma_pattern :=
   Peano_Induction n (less2 ^zero).
 
-End NaturalNumbers.
 
+(* Proof examples *)
+Lemma ex1 : ('x ~> 'x) proved.
+Proof. apply Prop_tau. apply P1. Qed.
 
-Notation "x ~> y" := (sp_impl (x) (y)) (at level 50).
+Lemma ex2 : (sp_bottom ~> ((sp_var x) ~> sp_bottom)) proved.
+Proof. apply Prop_tau. apply P2. Qed.
 
-Section ProofExamples.
+Lemma ex3 : (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))) proved.
+Proof. apply Prop_tau. apply P3. Qed.
 
-Lemma ex1 : got ('x ~> 'x).
-Proof. apply E_prop_tau1. Qed.
+Lemma ex4 : (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)) proved.
+Proof. apply Prop_tau. apply P4. Qed.
 
-Lemma ex2 : got (sp_bottom ~> ((sp_var x) ~> sp_bottom)).
-Proof. apply E_prop_tau2. Qed.
+Lemma ex5 : (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom) proved.
+Proof. apply Ex_quan. Qed.
 
-Lemma ex3 : got (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))).
-Proof. apply E_prop_tau3. Qed.
+Lemma ex6 :
+  ('x ~> 'y) proved ->
+  negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
+  (ex z, 'x ~> 'y) proved.
+Proof. apply Ex_gen. Qed.
 
-Lemma ex4 : got (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)).
-Proof. apply E_prop_tau4. Qed.
+(* TODO Ltac for proofs *)
 
-(* Lemma ex5 : (got 'x) -> (got (' x ~> ' y)) -> (got ' y).
-Proof. apply (E_mod_pon 'x 'y). Qed. *)
+(*
+Fixpoint eval_Nat (nat_exp : Sigma_pattern) :=
+match nat_exp with
+|
+*)
 
-Lemma ex6 : got (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom).
-Proof. apply E_ex_quan. Qed.
+(* Proof of x + 0 = x, for all natural number x *)
+(* Lemma intro_not_and (A B : Sigma_pattern) (theorem : Ensemble Sigma_pattern):
+  ((A _&_ B) ~> (Bot ~> Bot)) proved.
+Proof.
+  intros.
+  unfold sp_and. unfold sp_or.
+  eapply Mod_pon.
+  - exact (A_impl_A Bot). (* exact (Prop_tau (Bot ~> Bot) (P1 Bot)). *)
+  - (* pose(C := (¬(¬(A _&_ B))) ). unfold sp_not in C. *)
+    exact (Prop_tau ((Bot ~> Bot) ~> ((A _&_ B) ~> (Bot ~> Bot)))
+                    (P2 (Bot ~> Bot) (A _&_ B))).
+Qed. *)
 
-Check E_ex_quan' x y.
-
-Lemma ex6' : got (e_subst_var sp_bottom 'y x) -> got (sp_exists x sp_bottom).
-Proof. apply E_ex_quan'. Qed.
-
-Check E_ex_gen.
-Check E_ex_gen 'x 'y z.
+(* Lemma intro_not_and' (A B : Sigma_pattern) (theorem : Ensemble Sigma_pattern):
+(*   (Bot ~> Bot) proved -> ((Bot ~> Bot) ~> ((A _&_ B) ~> (Bot ~> Bot))) proved -> *)
+  ((¬(A _&_ B)) ~> (Bot ~> Bot)) proved.
+Proof.
+  intros.
+  unfold sp_and. unfold sp_or.
+  eapply Mod_pon.
+  - exact (A_impl_A Bot). (* exact (Prop_tau (Bot ~> Bot) (P1 Bot)). *)
+  - (* pose(C := (¬(¬(A _&_ B))) ). unfold sp_not in C. *)
+    exact (Prop_tau ((Bot ~> Bot) ~> ((¬(A _&_ B)) ~> (Bot ~> Bot)))
+                    (P2 (Bot ~> Bot) (¬(A _&_ B)))).
+Qed.
+ *)
 
 Lemma ex7 :
   got ('x ~> 'y) ->
   negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
   got (sp_exists z 'x ~> 'y).
 Proof. apply E_ex_gen. Qed.
-
-(* TODO Ltac. *)
-
-Lemma A_impl_A (A : Sigma_pattern) : got (A ~> A).
+(* Lemma zero_eq_zero : empty_theory |- (^zero ~=~ ^zero).
 Proof.
-(*   eapply E_mod_pon.
-    - eapply E_prop_tau2.
-    - eapply E_mod_pon.
-      + eapply E_prop_tau2.
-      + eapply E_prop_tau3 .
-  Unshelve.
-  exact A. *)
-
-  pose(_1 := E_prop_tau3 A (A ~> A) A).
-  pose(_2 := E_prop_tau2 A (A ~> A)).
-  pose(_3 := E_mod_pon _2 _1).
-  pose(_4 := E_prop_tau2 A A).
-  pose(_5 := E_mod_pon _4 _3).
-  exact _5.
+  Check E_refl. eapply E_refl.
 Qed.
 
-(* Theorem A_impl_A_equiv : forall A : Sigma_pattern, (A_impl_A A) = (E_prop_tau1 A).
+
+(* Lemma or_ctor (A B : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+  (theory |- A) -> (theory |- B) -> (theory |- (A _|_ B)).
+Proof.
+  intros. *)
+
+
+Lemma and_ctor (A B : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+  (theory |- A) -> (theory |- B) -> (theory |- (A _&_ B)).
 Proof.
   intros.
-  induction A.
+  unfold sp_and. unfold sp_or.
+
 Admitted. *)
 
+(* Lemma plus_x_0_red (x : Sigma_pattern) :
+  (^plus $ x $ ^zero) proved -> (^zero) proved.
+Admitted.
 
-(* Lemma C3 (A B : Sigma_pattern) :
-(*   got (((sp_not A) ~> B) ~> (((sp_not A) ~> (sp_not B)) ~> A)). *)
-Proof. *)
-(*   pose(_1 := (E_prop_tau2 ((sp_not A) ~> B) ((sp_not A) ~> (sp_not B)))). *)
+Lemma abstract_succ_away (A B : Sigma_pattern) :
+  (succ' A ~=~ succ' B) proved -> (A ~=~ B) proved.
+Admitted.
 
-(* Lemma nn_A_imp_A (A : Sigma_pattern) (nna : got (sp_not (sp_not A))) : got ((sp_not (sp_not A)) ~> A).
+Lemma zero_is_nat (theory : Ensemble Sigma_pattern) :
+  theory |- (^zero -'< [[ Nat ]]).
+Admitted.
+
+Lemma plus_zero_eq_zero (theory : Ensemble Sigma_pattern) :
+  theory |- (plus' ^zero ^zero ~=~ ^zero).
+Admitted. *)
+
+(*
+(Bot ~> Bot) ~>
+(¬ (¬ A) ~> ¬ B)) ~> (Bot ~> Bot)
+*)
+
+
+(* Definition theory := (Add _ empty_theory (Peano_Induction x (fun var =>
+    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var))))).
+
+Lemma plus_x_0_eq_x_with_env :
+  theory |-  x_plus_0_eq_x.
+Proof.
+  unfold x_plus_0_eq_x.
+  unfold Peano_Induction.
+
+  eapply E_mod_pon.
+  Focus 2.
+  - eapply (hypothesis (Peano_Induction x (fun var =>
+    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))) theory).
+    + unfold theory. unfold In in *. unfold Add.
+        eapply Union_intror. reflexivity.
+  - unfold Peano_Induction. eapply and_ctor.
+    +
+Admitted.
+ *)
+
+(*
+  pose(A := ((plus' 'x ^ zero ~=~ 'x) _&_ (plus' (succ' 'x) ^ zero ~=~ (succ' 'x)))).
+  pose(gA := proved A).
+*)
+(*
+  pose(BA := proved (Peano_Induction x (fun x => plus' x ^ zero ~=~ x))).
+  pose(result := (E_mod_pon A BA)).
+*)
+
+
+(*
+Lemma C3 (A B : Sigma_pattern) :
+  (((¬ A) ~> B) ~> (((¬ A) ~> (¬ B)) ~> A)) proved.
+Proof.
+*)
+
+(*
+Lemma nn_A_imp_A (A : Sigma_pattern)
+      (nna : proved (sp_not (sp_not A))) : proved ((sp_not (sp_not A)) ~> A).
 Proof.
   pose(_1 := (E_prop_tau1 (sp_not (sp_not A)))).
 
   pose(_2 := E_prop_tau2 (sp_not (sp_not A)) (sp_not (sp_not (sp_not (sp_not A)))) ).
-
- Check E_mod_pon _ _2.
-  pose()
 
   pose(_2 := (E_mod_pon  _  _1)).
 
   pose(_1 := (      A (sp_not A))).
   pose(_2 := (A_impl_A (sp_not A))).
   pose(_3 := (E_mod_pon _1 _2)).
- *)
+*)
 
-(* Definition x := evar_c("x"). *)
-(* Lemma ex : got x_plus_0_eq_x.
-Proof.
+(*
   unfold x_plus_0_eq_x. unfold sp_forall. unfold sp_not.
 
-  pose(ex := sp_exists x ((x -< InhabitantSetOf Nat ~> (plus' ' x ^ zero ~=~ ' x)) ~> sp_bottom) ~> sp_bottom).
+  pose(ex := sp_exists x ((x -< InhabitantSetOf Nat ~>
+             (plus' ' x ^ zero ~=~ ' x)) ~> sp_bottom) ~> sp_bottom).
   pose(_1 := (E_ex_gen ex sp_bottom x)).
 
   eapply E_ex_gen.
   pose(ex := )
   - eapply E_mod_pon.
     + eapply E_
-Qed. *)
+*)
 
-End ProofExamples.
+Lemma nat__plus_comm :
+  forall x y : EVar, empty_theory |-
+    (all_S x : Nat, (all_S y : Nat, ((plus' 'x 'y) ~=~ (plus' 'y 'x)))).
+Admitted.
 
 End AML.
-
-Ltac proof_ext_val :=
-simpl;intros;
-repeat
-  (* Normalize *)
-   rewrite (Extensionality_Ensembles _ _ _ (Union_Empty_l _))
-|| rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ _))
-|| rewrite
-   (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _))
-|| rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
-  (* Apply *)
-|| (eapply (proj1 Same_set_Compl) ; intros)
-  (* Final step *)
-|| exact Complement_Empty_is_Full
-|| exact (Symdiff_val _ _)
-|| exact (Same_set_refl _).
