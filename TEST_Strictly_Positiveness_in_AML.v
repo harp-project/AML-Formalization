@@ -9,20 +9,50 @@ Definition X_imp_X := (sp_impl (set "X") (set "X")).
 Definition X_i_X_i_X := (sp_impl (set "X") ((sp_impl (set "X") (set "X")))).
 
 Section StrictlyPositivenessTest.
-Lemma test1: (strictly_positive simple_neg (svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test2: (strictly_positive X_imp_X (svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test3: (strictly_positive (sp_not X_imp_X) (svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test4: (strictly_positive X_i_X_i_X (svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test5: (strictly_positive (sp_not X_i_X_i_X)(svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test6: (strictly_positive X_i_X_i_nX (svar_c "X") = false).
-Proof. reflexivity. Qed.
-Lemma test7: (strictly_positive (sp_not X_i_X_i_nX) (svar_c "X") = true).
-Proof. reflexivity. Qed.
+Lemma test1: (strictly_negative (svar_c "X") simple_neg).
+Proof.
+unfold simple_neg. unfold sp_not.
+eapply sn_sp_impl.
+{
+  eapply sp_sp_set.
+}
+{
+  eapply sn_sp_bottom.
+}
+Qed.
+
+Lemma test2: ~(strictly_positive (svar_c "X") X_imp_X) /\
+             ~(strictly_negative (svar_c "X") X_imp_X).
+Proof.
+unfold X_imp_X.
+split;unfold not;intros.
+{
+  inversion H. inversion H3. case H7. reflexivity.
+}
+{
+  inversion H. inversion H4. case H7. reflexivity.
+}
+Qed.
+
+Lemma test3: (strictly_positive (svar_c "X") (sp_not X_i_X_i_nX)).
+Proof.
+unfold X_i_X_i_nX. unfold sp_not.
+eapply sp_sp_impl.
+{
+  eapply sn_sp_impl.
+  {
+    apply sp_sp_set.
+  }
+  {
+    eapply sn_sp_impl.
+    apply sp_sp_set.
+    eapply sn_sp_impl.
+    apply sp_sp_set.
+    apply sn_sp_bottom.
+  }
+}
+apply sp_sp_bottom.
+Qed.
 End StrictlyPositivenessTest.
 
 Section FreeVarsTest.

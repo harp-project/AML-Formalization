@@ -14,6 +14,19 @@ Inductive EVar : Type := evar_c {id_ev : string}.
 Inductive SVar : Type := svar_c {id_sv : string}.
 Inductive Sigma : Type := sigma_c {id_si : string}.
 
+Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
+
+Definition svar_eq_dec : forall (x y : SVar), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_sv0 id_sv1). Defined.
+
+Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
+
+Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
+Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
+Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
+
 Inductive Sigma_pattern : Type :=
 | sp_var (x : EVar)
 | sp_set (X : SVar)
@@ -55,19 +68,6 @@ Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   ¬ (sp_exists x (¬ phi)).
 Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
 
-
-Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
-
-Definition svar_eq_dec : forall (x y : SVar), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_sv0 id_sv1). Defined.
-
-Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
-
-Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
-Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
-Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
 
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
@@ -126,27 +126,41 @@ Definition function :=
 
 (* End of examples. *)
 
-
-Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
-match phi with
-| sp_var x => true
-| sp_set Y => if (svar_eq_dec Y X)
-              then (Nat.even nc)
-              else true
-| sp_const sigma => true
-| sp_app phi1 phi2 => andb (spos_accumulated phi1 X nc)
-                           (spos_accumulated phi2 X nc)
-| sp_bottom => true
-| sp_impl phi1 phi2 => andb (spos_accumulated phi1 X (S nc))
-                            (spos_accumulated phi2 X nc)
-| sp_exists x phi => spos_accumulated phi X nc
-| sp_mu Y phi => if (svar_eq_dec Y X)
-                 then true
-                 else (spos_accumulated phi X nc)
-end.
-
-Fixpoint strictly_positive (phi : Sigma_pattern) (X : SVar) : bool :=
-spos_accumulated phi X 0.
+Inductive strictly_positive : SVar -> Sigma_pattern -> Prop :=
+| sp_sp_var (x : EVar) (X : SVar) : strictly_positive X (sp_var x)
+| sp_sp_set (Y : SVar) (X : SVar) : strictly_positive X (sp_set Y)
+| sp_sp_const (sigma : Sigma) (X : SVar) : strictly_positive X (sp_const sigma)
+| sp_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi1 -> strictly_positive X phi2 ->
+  strictly_positive X (sp_app phi1 phi2)
+| sp_sp_bottom (X : SVar) : strictly_positive X sp_bottom
+| sp_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi1 -> strictly_positive X phi2 ->
+  strictly_positive X (sp_impl phi1 phi2)
+| sp_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi ->
+  strictly_positive X (sp_exists x phi)
+| sp_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
+  (Y = X) \/ (Y <> X /\ strictly_positive X phi) ->
+  strictly_positive X (sp_mu Y phi)
+with strictly_negative : SVar -> Sigma_pattern -> Prop :=
+| sn_sp_var (x : EVar) (X : SVar) : strictly_negative X (sp_var x)
+| sn_sp_set (Y : SVar) (X : SVar) : Y <> X -> strictly_negative X (sp_set Y)
+| sn_sp_const (sigma : Sigma) (X : SVar) : strictly_negative X (sp_const sigma)
+| sn_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi1 -> strictly_negative X phi2 ->
+  strictly_negative X (sp_app phi1 phi2)
+| sn_sp_bottom (X : SVar) : strictly_negative X sp_bottom
+| sn_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi1 -> strictly_negative X phi2 ->
+  strictly_negative X (sp_impl phi1 phi2)
+| sn_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi ->
+  strictly_negative X (sp_exists x phi)
+| sn_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
+  (Y = X) \/ (Y <> X /\ strictly_negative X phi) ->
+  strictly_negative X (sp_mu Y phi)
+.
 
 Definition sp_eq_dec : forall (x y : Sigma_pattern), { x = y } + { x <> y }.
 Proof.
