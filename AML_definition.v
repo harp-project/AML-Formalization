@@ -5,6 +5,7 @@ Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 Require Import Coq.Sets.Ensembles.
 Require Import Ensembles_Ext.
+Import VectorNotations.
 
 Section AML.
 
@@ -731,7 +732,6 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
 
 (* Introduce step rules *)
 | E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (* T1 subsests T2 or T2 substes T1 or are equal *)
     theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
 
 | E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
@@ -1152,9 +1152,9 @@ end.
 
 Program Fixpoint _gen_x_vec (n m : nat) : VectorDef.t EVar n :=
 match n with
-| O => (vn EVar)
-| S n' => vc EVar (evar_c(String.append "x" (string_of_nat(m-n+1))))
-            n' (_gen_x_vec n' m)
+| O => []
+| S n' => [(evar_c(String.append "x" (string_of_nat(m-n+1))))] ++ 
+          (_gen_x_vec n' m)
 end.
 
 Fixpoint gen_x_vec (n : nat) : VectorDef.t EVar n :=
@@ -1175,8 +1175,8 @@ let foralls := VectorDef.map2
   VectorDef.fold_right (fun spl spr => spl spr) foralls core.
 
 (* Functional notation of the function *)
-Notation "f : '-->' s" := (Function f (vn _) s) (at level 3).
-Notation "f : s1 '-->' s" := (Function f (vc _ s1 0 (vn _)) s) (at level 3).
+Notation "f : '-->' s" := (Function f [] s) (at level 3).
+Notation "f : s1 '-->' s" := (Function f [ s1 ] s) (at level 3).
 Notation "f : s1 'X' s2 'X' .. 'X' sn '-->' s" :=
   (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 3).
 
@@ -1885,6 +1885,25 @@ Proof.
   - exact H.
   - exact (double_elim A B).
 Qed.
+
+
+Lemma a (A B : Sigma_pattern) :
+  (¬( ¬¬A ~> ¬¬B )) proved -> (¬( A ~> B)) proved.
+Proof.
+  intros.
+
+  unfold sp_not.
+
+  eapply Mod_pon.
+  - eapply Prop_tau. eapply (P1 Bot).
+  - eapply Mod_pon.
+    + eapply Mod_pon.
+      * eapply Prop_tau. eapply (P1 Bot).
+      * eapply Prop_tau. eapply (P2 (Bot ~> Bot) (A ~> B)).
+    + eapply Prop_tau. eapply (P3 (A ~> B) Bot Bot).
+
+eapply Prop_tau. eapply (P2 (A ~> B) Bot).
+
 
 Lemma double_elim_ex (A B :Sigma_pattern) :
   ((ex x, (¬¬A ~> ¬¬B)) ~> (ex x, (A ~> B))) proved.
