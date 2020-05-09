@@ -675,6 +675,14 @@ Proof.
                  ((A ~> B ~> Bot) ~> A ~> Bot)).
 Qed.
 
+Lemma P4i (A : Sigma_pattern) :
+  ((A ~> ¬A) ~> ¬A) proved.
+Proof.
+  eapply Mod_pon.
+  - eapply (not_not_intro A).
+  - eapply Prop_tau. eapply (P3 A (¬A) Bot).
+Qed.
+
 
 Lemma A_impl_A (A : Sigma_pattern) : (A ~> A) proved.
 Proof.
