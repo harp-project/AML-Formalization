@@ -177,20 +177,33 @@ match x, y with
 | evar_c id_x, evar_c id_y => String.eqb id_x id_y
 end.
 
-Definition set_singleton := fun x => set_add evar_eq_dec x List.nil.
+Definition set_singleton {T : Type}
+  (eq : forall (x y : T), { x = y } + { x <> y }) 
+  := fun x : T => set_add eq x List.nil.
 
-Fixpoint free_vars (phi : Sigma_pattern) : (ListSet.set EVar) :=
+Fixpoint free_evars (phi : Sigma_pattern) : (ListSet.set EVar) :=
 match phi with
-| sp_var x => set_singleton x
+| sp_var x => set_singleton evar_eq_dec x
 | sp_set X => List.nil
 | sp_const sigma => List.nil
-| sp_app phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
+| sp_app phi1 phi2 => set_union evar_eq_dec (free_evars phi1) (free_evars phi2)
 | sp_bottom => List.nil
-| sp_impl phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
-| sp_exists y phi => set_diff evar_eq_dec (free_vars phi) (set_singleton y )
-| sp_mu X phi => free_vars phi
+| sp_impl phi1 phi2 => set_union evar_eq_dec (free_evars phi1) (free_evars phi2)
+| sp_exists y phi => set_remove evar_eq_dec y (free_evars phi)
+| sp_mu X phi => free_evars phi
 end.
 
+Fixpoint free_svars (phi : Sigma_pattern) : (ListSet.set SVar) :=
+match phi with
+| sp_var x => List.nil
+| sp_set X => set_singleton svar_eq_dec X
+| sp_const sigma => List.nil
+| sp_app phi1 phi2 => set_union svar_eq_dec (free_svars phi1) (free_svars phi2)
+| sp_bottom => List.nil
+| sp_impl phi1 phi2 => set_union svar_eq_dec (free_svars phi1) (free_svars phi2)
+| sp_exists y phi => free_svars phi
+| sp_mu X phi => set_remove svar_eq_dec X (free_svars phi)
+end.
 
 Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
                       (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
@@ -553,8 +566,8 @@ end
 Definition free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc sp => free_vars sp
-| ctx_app_r sp cc => free_vars sp
+| ctx_app_l cc sp => free_evars sp
+| ctx_app_r sp cc => free_evars sp
 end.
 
 
@@ -626,7 +639,7 @@ Inductive AML_proof_system : Sigma_pattern -> Prop :=
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
     (phi1 ~> phi2) proved ->
-    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
     ((ex x, phi1) ~> phi2) proved
 
 (* Frame reasoning *)
@@ -735,7 +748,7 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
 
 | E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
-    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
 
 | E_framing
@@ -1483,7 +1496,7 @@ Proof. apply Ex_quan. Qed.
 
 Lemma ex6 :
   ('x ~> 'y) proved ->
-  negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
+  negb (set_mem evar_eq_dec z (free_evars 'y)) = true ->
   (ex z, 'x ~> 'y) proved.
 Proof. apply Ex_gen. Qed.
 

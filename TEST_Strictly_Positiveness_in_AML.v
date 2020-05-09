@@ -56,35 +56,35 @@ Qed.
 End StrictlyPositivenessTest.
 
 Section FreeVarsTest.
-Lemma fv_case1: (free_vars sp_bottom) = nil.
+Lemma fv_case1: (free_evars sp_bottom) = nil.
 Proof. reflexivity. Qed.
-Lemma fv_case2: (free_vars X_imp_X) = nil.
+Lemma fv_case2: (free_evars X_imp_X) = nil.
 Proof. reflexivity. Qed.
-Lemma fv_case3: (free_vars (sp_app X_imp_X X_imp_X)) = nil.
+Lemma fv_case3: (free_evars (sp_app X_imp_X X_imp_X)) = nil.
 Proof. reflexivity. Qed.
 
 
-Lemma fv_case4: (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "x")))) = nil.
+Lemma fv_case4: (free_evars (sp_exists (evar_c "x") (sp_var (evar_c "x")))) = nil.
 Proof. reflexivity. Qed.
-Lemma fv_case5: (free_vars (sp_exists (evar_c "x") (sp_var (evar_c "y")))) = (evar_c "y" :: nil)%list.
+Lemma fv_case5: (free_evars (sp_exists (evar_c "x") (sp_var (evar_c "y")))) = (evar_c "y" :: nil)%list.
 Proof. reflexivity. Qed.
-Lemma fv_case6: (free_vars (sp_exists (evar_c "x") sp_bottom)) = nil.
+Lemma fv_case6: (free_evars (sp_exists (evar_c "x") sp_bottom)) = nil.
 Proof. reflexivity. Qed.
 
 (* \x.(\y.(x y)) *)
-Lemma fv_case7: (free_vars (sp_app X_imp_X (
+Lemma fv_case7: (free_evars (sp_app X_imp_X (
   sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "x")) (sp_var (evar_c "y"))))
 ))) = nil.
 Proof. reflexivity. Qed.
 
 (* (X -> X) (\x.(\y.(z y))) *)
-Lemma fv_case8: (free_vars (sp_app X_imp_X (
+Lemma fv_case8: (free_evars (sp_app X_imp_X (
   sp_exists (evar_c "x") (sp_exists (evar_c "y") (sp_app (sp_var (evar_c "z")) (sp_var (evar_c "y"))))
 ))) = (evar_c "z" :: nil)%list.
 Proof. reflexivity. Qed.
 
 (* \x.x x *)
-Lemma fv_case9: (free_vars (
+Lemma fv_case9: (free_evars (
   sp_app
     (sp_exists (evar_c "x") (sp_var (evar_c "x")))
     (sp_var (evar_c "x"))
@@ -92,7 +92,7 @@ Lemma fv_case9: (free_vars (
 Proof. reflexivity. Qed.
 
 (* \x.x y *)
-Lemma fv_case10: (free_vars (
+Lemma fv_case10: (free_evars (
   sp_app
     (sp_exists (evar_c "x") (sp_var (evar_c "x")))
     (sp_var (evar_c "y"))
@@ -100,7 +100,7 @@ Lemma fv_case10: (free_vars (
 Proof. reflexivity. Qed.
 
 (* \x.y x *)
-Lemma fv_case11: (free_vars (
+Lemma fv_case11: (free_evars (
   sp_app
     (sp_exists (evar_c "x") (sp_var (evar_c "y")))
     (sp_var (evar_c "x"))
@@ -108,7 +108,7 @@ Lemma fv_case11: (free_vars (
 Proof. reflexivity. Qed.
 
 (* \x.y y *)
-Lemma fv_case12: (free_vars (
+Lemma fv_case12: (free_evars (
   sp_app
     (sp_exists (evar_c "x") (sp_var (evar_c "y")))
     (sp_var (evar_c "y"))
