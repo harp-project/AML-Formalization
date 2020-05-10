@@ -214,6 +214,7 @@ fun x : T1 => if eqb x t1 then t2 else f x.
 
 Record Sigma_model := {
   M : Type;
+  e : M; (* so M can not be empty *)
   A_eq_dec : forall (a b : M), {a = b} + {a <> b};
   app : M -> M -> Ensemble M;
   interpretation : Sigma -> Ensemble M;
@@ -257,6 +258,7 @@ repeat
 || rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
   (* Apply *)
 || (eapply (proj1 Same_set_Compl) ; intros)
+|| (eapply FA_Inters_same ; intros)
   (* Final step *)
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
@@ -304,7 +306,7 @@ forall sp : Sigma_pattern, forall x : EVar, Same_set _
   (ext_valuation evar_val svar_val (sp_forall x sp))
   (FA_Intersection
     (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
-Proof. proof_ext_val. eapply FA_Inters_same. intros. proof_ext_val. Qed.
+Proof. proof_ext_val. Qed.
 
 Lemma nu_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
