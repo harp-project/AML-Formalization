@@ -14,6 +14,19 @@ Inductive EVar : Type := evar_c {id_ev : string}.
 Inductive SVar : Type := svar_c {id_sv : string}.
 Inductive Sigma : Type := sigma_c {id_si : string}.
 
+Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
+
+Definition svar_eq_dec : forall (x y : SVar), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_sv0 id_sv1). Defined.
+
+Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
+Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
+
+Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
+Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
+Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
+
 Inductive Sigma_pattern : Type :=
 | sp_var (x : EVar)
 | sp_set (X : SVar)
@@ -55,19 +68,6 @@ Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
   ¬ (sp_exists x (¬ phi)).
 Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
 
-
-Definition evar_eq_dec : forall (x y : EVar), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_ev0 id_ev1). Defined.
-
-Definition svar_eq_dec : forall (x y : SVar), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_sv0 id_sv1). Defined.
-
-Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
-
-Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
-Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
-Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
 
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
@@ -126,27 +126,41 @@ Definition function :=
 
 (* End of examples. *)
 
-
-Fixpoint spos_accumulated (phi : Sigma_pattern) (X : SVar) (nc : nat) : bool :=
-match phi with
-| sp_var x => true
-| sp_set Y => if (svar_eq_dec Y X)
-              then (Nat.even nc)
-              else true
-| sp_const sigma => true
-| sp_app phi1 phi2 => andb (spos_accumulated phi1 X nc)
-                           (spos_accumulated phi2 X nc)
-| sp_bottom => true
-| sp_impl phi1 phi2 => andb (spos_accumulated phi1 X (S nc))
-                            (spos_accumulated phi2 X nc)
-| sp_exists x phi => spos_accumulated phi X nc
-| sp_mu Y phi => if (svar_eq_dec Y X)
-                 then true
-                 else (spos_accumulated phi X nc)
-end.
-
-Fixpoint strictly_positive (phi : Sigma_pattern) (X : SVar) : bool :=
-spos_accumulated phi X 0.
+Inductive strictly_positive : SVar -> Sigma_pattern -> Prop :=
+| sp_sp_var (x : EVar) (X : SVar) : strictly_positive X (sp_var x)
+| sp_sp_set (Y : SVar) (X : SVar) : strictly_positive X (sp_set Y)
+| sp_sp_const (sigma : Sigma) (X : SVar) : strictly_positive X (sp_const sigma)
+| sp_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi1 -> strictly_positive X phi2 ->
+  strictly_positive X (sp_app phi1 phi2)
+| sp_sp_bottom (X : SVar) : strictly_positive X sp_bottom
+| sp_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi1 -> strictly_positive X phi2 ->
+  strictly_positive X (sp_impl phi1 phi2)
+| sp_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi ->
+  strictly_positive X (sp_exists x phi)
+| sp_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
+  (Y = X) \/ (Y <> X /\ strictly_positive X phi) ->
+  strictly_positive X (sp_mu Y phi)
+with strictly_negative : SVar -> Sigma_pattern -> Prop :=
+| sn_sp_var (x : EVar) (X : SVar) : strictly_negative X (sp_var x)
+| sn_sp_set (Y : SVar) (X : SVar) : Y <> X -> strictly_negative X (sp_set Y)
+| sn_sp_const (sigma : Sigma) (X : SVar) : strictly_negative X (sp_const sigma)
+| sn_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi1 -> strictly_negative X phi2 ->
+  strictly_negative X (sp_app phi1 phi2)
+| sn_sp_bottom (X : SVar) : strictly_negative X sp_bottom
+| sn_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
+  strictly_positive X phi1 -> strictly_negative X phi2 ->
+  strictly_negative X (sp_impl phi1 phi2)
+| sn_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
+  strictly_negative X phi ->
+  strictly_negative X (sp_exists x phi)
+| sn_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
+  (Y = X) \/ (Y <> X /\ strictly_negative X phi) ->
+  strictly_negative X (sp_mu Y phi)
+.
 
 Definition sp_eq_dec : forall (x y : Sigma_pattern), { x = y } + { x <> y }.
 Proof.
@@ -163,20 +177,33 @@ match x, y with
 | evar_c id_x, evar_c id_y => String.eqb id_x id_y
 end.
 
-Definition set_singleton := fun x => set_add evar_eq_dec x List.nil.
+Definition set_singleton {T : Type}
+  (eq : forall (x y : T), { x = y } + { x <> y }) 
+  := fun x : T => set_add eq x List.nil.
 
-Fixpoint free_vars (phi : Sigma_pattern) : (ListSet.set EVar) :=
+Fixpoint free_evars (phi : Sigma_pattern) : (ListSet.set EVar) :=
 match phi with
-| sp_var x => set_singleton x
+| sp_var x => set_singleton evar_eq_dec x
 | sp_set X => List.nil
 | sp_const sigma => List.nil
-| sp_app phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
+| sp_app phi1 phi2 => set_union evar_eq_dec (free_evars phi1) (free_evars phi2)
 | sp_bottom => List.nil
-| sp_impl phi1 phi2 => set_union evar_eq_dec (free_vars phi1) (free_vars phi2)
-| sp_exists y phi => set_diff evar_eq_dec (free_vars phi) (set_singleton y )
-| sp_mu X phi => free_vars phi
+| sp_impl phi1 phi2 => set_union evar_eq_dec (free_evars phi1) (free_evars phi2)
+| sp_exists y phi => set_remove evar_eq_dec y (free_evars phi)
+| sp_mu X phi => free_evars phi
 end.
 
+Fixpoint free_svars (phi : Sigma_pattern) : (ListSet.set SVar) :=
+match phi with
+| sp_var x => List.nil
+| sp_set X => set_singleton svar_eq_dec X
+| sp_const sigma => List.nil
+| sp_app phi1 phi2 => set_union svar_eq_dec (free_svars phi1) (free_svars phi2)
+| sp_bottom => List.nil
+| sp_impl phi1 phi2 => set_union svar_eq_dec (free_svars phi1) (free_svars phi2)
+| sp_exists y phi => free_svars phi
+| sp_mu X phi => set_remove svar_eq_dec X (free_svars phi)
+end.
 
 Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
                       (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
@@ -187,6 +214,7 @@ fun x : T1 => if eqb x t1 then t2 else f x.
 
 Record Sigma_model := {
   M : Type;
+  example : M; (* so M can not be empty *)
   A_eq_dec : forall (a b : M), {a = b} + {a <> b};
   app : M -> M -> Ensemble M;
   interpretation : Sigma -> Ensemble M;
@@ -230,6 +258,7 @@ repeat
 || rewrite (Extensionality_Ensembles _ _ _ (FA_rel _ _ _))
   (* Apply *)
 || (eapply (proj1 Same_set_Compl) ; intros)
+|| (eapply FA_Inters_same ; intros)
   (* Final step *)
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
@@ -277,7 +306,7 @@ forall sp : Sigma_pattern, forall x : EVar, Same_set _
   (ext_valuation evar_val svar_val (sp_forall x sp))
   (FA_Intersection
     (fun a => ext_valuation (change_val evar_eqb x a evar_val) svar_val sp)).
-Proof. proof_ext_val. eapply FA_Inters_same. intros. proof_ext_val. Qed.
+Proof. proof_ext_val. Qed.
 
 Lemma nu_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -539,8 +568,8 @@ end
 Definition free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc sp => free_vars sp
-| ctx_app_r sp cc => free_vars sp
+| ctx_app_l cc sp => free_evars sp
+| ctx_app_r sp cc => free_evars sp
 end.
 
 
@@ -612,7 +641,7 @@ Inductive AML_proof_system : Sigma_pattern -> Prop :=
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
     (phi1 ~> phi2) proved ->
-    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
     ((ex x, phi1) ~> phi2) proved
 
 (* Frame reasoning *)
@@ -721,7 +750,7 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
 
 | E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
-    negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
 
 | E_framing
@@ -1469,7 +1498,7 @@ Proof. apply Ex_quan. Qed.
 
 Lemma ex6 :
   ('x ~> 'y) proved ->
-  negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
+  negb (set_mem evar_eq_dec z (free_evars 'y)) = true ->
   (ex z, 'x ~> 'y) proved.
 Proof. apply Ex_gen. Qed.
 
