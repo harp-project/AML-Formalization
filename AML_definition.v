@@ -214,7 +214,7 @@ fun x : T1 => if eqb x t1 then t2 else f x.
 
 Record Sigma_model := {
   M : Type;
-  e : M; (* so M can not be empty *)
+  example : M; (* so M can not be empty *)
   A_eq_dec : forall (a b : M), {a = b} + {a <> b};
   app : M -> M -> Ensemble M;
   interpretation : Sigma -> Ensemble M;
