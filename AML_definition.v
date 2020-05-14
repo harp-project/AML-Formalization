@@ -1229,12 +1229,11 @@ let foralls := VectorDef.map2
                 vars sorts in
   VectorDef.fold_right (fun spl spr => spl spr) foralls core.
 
-(* Functional notation of the predicate *)
+(* (* Functional notation of the predicate *)
 Notation "p 'pred'" := (Predicate p []) (at level 3).
-Notation "p <:: s1" := (Predicate p [ s1 ]) (at level 3).
-Notation "p <:: s1 'X' s2 'X' .. 'X' sn" :=
-  (Predicate p (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. ))) (at level 3).
-
+Notation "p '=<' s1" := (Predicate p [ s1 ]) (at level 2).
+Notation "p '=<' s1 'X' s2 'X' .. 'X' sn" :=
+  (Predicate p (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. ))) (at level 3). *)
 
 (* well-sorted axiom scheme *)
 Fixpoint get_vars (term : MSFOL_term) : Sigma_pattern -> Sigma_pattern :=
@@ -1377,8 +1376,8 @@ Notation "f : s1 'X' s2 'X' .. 'X' sn '-->' s" :=
   (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 3).
 
 Notation "p 'pred'" := (Predicate p []) (at level 3).
-Notation "p <:: s1" := (Predicate p [ s1 ]) (at level 3).
-Notation "p <:: s1 'X' s2 'X' .. 'X' sn" :=
+Notation "p '<::' s1" := (Predicate p [ s1 ]) (at level 3).
+Notation "p '=<' s1 'X' s2 'X' .. 'X' sn" :=
   (Predicate p (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. ))) (at level 3).
 
 End MSFOL_notations.
