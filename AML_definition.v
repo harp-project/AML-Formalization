@@ -323,7 +323,7 @@ Definition satisfies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
 
 Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
-(* Definition AML_theories : ListSet.set Sigma_pattern := List.nil. *)
+Definition AML_theories : Ensemble Sigma_pattern := Empty_set Sigma_pattern.
 
 (* End of definition 5. *)
 
@@ -381,8 +381,6 @@ Admitted.
 Lemma spec_app_A_eq_M
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
     forall A : SVar,
-(* TODO: *)
-      (* A is not empty *)
       (exists x, In _ x (ext_valuation evar_val svar_val (sp_set A))) ->
       Same_set _
         (ext_valuation evar_val svar_val (sp_app spec_elem (sp_set A)))
@@ -562,30 +560,6 @@ Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
     (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
 where "pattern 'tautology'" := (Tautology_proof_rules pattern).
 
-(*
-(* Auxiliary axiom schemes for FOL resoning *)
-Inductive Hilbert_style_proof : Sigma_pattern -> Prop :=
-| P4m (phi psi : Sigma_pattern) :
-    Hilbert_style_proof ((phi ~> psi) ~> ((phi ~> ¬psi) ~> ¬phi))
-
-| P4i (phi : Sigma_pattern) :
-    Hilbert_style_proof ((phi ~> ¬phi) ~> ¬phi)
-
-| P5i (phi psi : Sigma_pattern) :
-    Hilbert_style_proof (¬phi ~> (phi ~> psi))
-
-| Q5 (phi t : Sigma_pattern) (x : EVar) :
-    Hilbert_style_proof (all x, phi ~> (e_subst_var phi t x))
-
-| Q6 (phi psi : Sigma_pattern) (x : EVar) :
-    Hilbert_style_proof
-      ((all x, (phi ~> psi)) ~> ((all x, phi) ~> (all x, psi)))
-
-(* Rule to embed tautology axiom schemes *)
-| Taut (pattern : Sigma_pattern):
-    pattern tautology -> Hilbert_style_proof pattern
-.
-*)
 
 (* Proof system rules:
  * these can be used duting a proof by instantiating them *)
@@ -664,8 +638,8 @@ Proof.
     + (* t6 *) eapply Mod_pon.
       * (* t5 *) eapply Mod_pon.
         -- (* t4 *) eapply Prop_tau. eapply (P3 A B Bot).
-        -- (* t3 *)
-           eapply Prop_tau. eapply (P3 (A ~> B ~> Bot) (A ~> B) (A ~> Bot)).
+        -- (* t3 *) eapply Prop_tau.
+           eapply (P3 (A ~> B ~> Bot) (A ~> B) (A ~> Bot)).
       * (* t2 *) eapply Prop_tau.
         eapply (P2 (((A ~> B ~> Bot) ~> A ~> B) ~> (A ~> B ~> Bot) ~> A ~> Bot)
                    (A ~> B)).
@@ -678,9 +652,15 @@ Qed.
 Lemma P4i (A : Sigma_pattern) :
   ((A ~> ¬A) ~> ¬A) proved.
 Proof.
+  (*
   eapply Mod_pon.
   - eapply (not_not_intro A).
   - eapply Prop_tau. eapply (P3 A (¬A) Bot).
+  *)
+  (* another alternative *)
+  eapply Mod_pon.
+  - eapply Prop_tau. eapply (P1 A).
+  - eapply (P4m A A).
 Qed.
 
 
@@ -702,17 +682,16 @@ Qed.
  * so the proof is sound *)
 Theorem A_impl_A_equiv : forall A : Sigma_pattern,
   (A_impl_A A) = (Prop_tau (A ~> A) (P1 A)).
-Proof.
+(* Proof.
   intros.
   induction A.
-  - Check (A_impl_A 'x0). Check Prop_tau (' x0 ~> ' x0) (P1 ' x0).
+  - Check (A_impl_A 'x0). Check Prop_tau (' x0 ~> ' x0) (P1 ' x0). *)
 Admitted.
 
 
 Definition empty_theory := Empty_set Sigma_pattern.
 
-(* TODO: Define provability *)
-Reserved Notation "theory |- pattern" (at level 40).
+Reserved Notation "theory |- pattern" (at level 1).
 Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
 (* Deduction theorem: inject axiom from theory *)
 | inject {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
@@ -720,29 +699,34 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
     (Subtract _ theory axiom) |- (axiom ~> pattern)
 
 (* Deduction theorem: extract back to theory *)
-| extract (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| extract
+  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (theory |- (phi1 ~> phi2)) ->
     (Add _ theory phi1) |- phi2
 
 (* Using hypothesis from theory *)
-| hypothesis (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (* set_mem sp_eq_dec axiom theory = true *)
+| hypothesis
+  (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (In _ theory axiom) -> theory |- axiom
 
 (* AML_proof_system rule embedding *)
 
 (* Introduce axiom rules *)
-| empty (pattern : Sigma_pattern) :
+| empty
+  (pattern : Sigma_pattern) :
     (pattern proved) -> empty_theory |- pattern
 
-| ext (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| ext
+  (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     pattern proved -> theory |- pattern
 
 (* Introduce step rules *)
-| E_mod_pon (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| E_mod_pon
+  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
 
-| E_ex_gen (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| E_ex_gen
+  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
     negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
@@ -763,14 +747,17 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
       ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
 
 (* Proposition 7: definedness related properties *)
-|  E_refl (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| E_refl
+  (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi ~=~ phi)
 
-| E_trans (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+| E_trans
+  (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
     theory |- (phi1 ~=~ phi3)
 
-| E_symm (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
+| E_symm
+  (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1)
 
 | E_evar_subst
@@ -783,36 +770,33 @@ where "theory |- pattern" := (Provable theory pattern).
 
 (* Examples of use *)
 
-(* Notation "[ x ; y ; .. ; z ]" :=
-    (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..))  *)
-
-(* TODO: Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" :=
+(* Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" :=
     (Add _ a (Add _ b .. (Add _ z) ..)) (at level 2). *)
 
-Ltac in_hyp := (unfold Add;
-    repeat (
-      try (eapply Union_intror; reflexivity);
-      eapply Union_introl
-    )).
+Ltac in_hyp := (
+  unfold Add;
+  repeat (
+    try (eapply Union_intror; reflexivity);
+    eapply Union_introl
+  )).
 
+Definition theory (A : Sigma_pattern) := (Add _ (Add _ empty_theory
+                (¬(¬A)))
+                ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)).
 Lemma not_not_A_proves_A : forall A : Sigma_pattern,
-  (Add _ (Add _ empty_theory (¬(¬A)))
-         ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) ) |- A.
+let G := (theory A) in
+   G |- A.
 Proof.
-  intro A.
-
-  pose(theory := (Add _ (Add _ empty_theory (¬(¬A)))
-                 ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A) )).
-  unfold theory.
+  intros.
+  unfold G. unfold theory.
 
   eapply E_mod_pon.
   - eapply E_mod_pon.
-    * eapply (hypothesis (¬(¬A)) theory). in_hyp.
-    * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) theory).
-      + eapply (Prop_tau ((¬(¬A)) ~> (¬A ~> ¬(¬A)))).
-        eapply (P2 (¬(¬A)) (¬A)).
+    * eapply (hypothesis (¬(¬A)) G). in_hyp.
+    * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) G).
+      + eapply Prop_tau. eapply (P2 (¬(¬A)) (¬A)).
   - eapply E_mod_pon.
-    * eapply (ext (¬A ~> ¬A) theory (Prop_tau (¬A ~> ¬A) (P1 (¬A)))).
+    * eapply (ext _ G (Prop_tau _ (P1 (¬A)))).
     * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)). in_hyp.
 Qed.
 
@@ -820,13 +804,10 @@ Qed.
 Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
 Proof.
   eapply E_mod_pon.
-  - eapply (empty (A ~> A ~> A) (Prop_tau (A ~> A ~> A) (P2 A A))).
+  - eapply (empty _ (Prop_tau _ (P2 A A))).
   - eapply E_mod_pon.
-    + eapply (empty (A ~> (A ~> A) ~> A)
-                    (Prop_tau (A ~> (A ~> A) ~> A) (P2 A (A ~> A)))).
-    + eapply (empty ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
-                    (Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A)
-                      (P3 A (A ~> A) A))).
+    + eapply (empty _ (Prop_tau _ (P2 A (A ~> A)))).
+    + eapply (empty _ (Prop_tau _ (P3 A (A ~> A) A))).
 Qed.
 
 
@@ -834,10 +815,11 @@ Qed.
 Theorem Soundness :
   forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
   (theory |- phi) -> (theory |= phi).
-(* Proof.
+(*
+Proof.
   intros.
-              TODO
-  induction (proof_length (theory |= phi)). *)
+  induction (proof_length (theory |= phi)).
+*)
 Admitted.
 
 Theorem Completeness :
@@ -845,7 +827,54 @@ Theorem Completeness :
   (theory |= phi) -> (theory |- phi).
 Abort.
 
+End AML.
+
+Module AML_notations.
+Notation "' v" := (sp_var v) (at level 3).
+Notation "` s" := (sp_set s) (at level 3).
+Notation "^ c" := (sp_const c) (at level 3).
+Notation "a $ b" := (sp_app a b) (at level 50, left associativity).
+Notation "'Bot'" := sp_bottom.
+Notation "a ~> b"  := (sp_impl a b) (at level 90, right associativity,
+                                      b at level 200).
+Notation "'ex' x , phi" := (sp_exists x phi) (at level 55).
+Notation "'mu' X , phi" := (sp_mu X phi) (at level 55).
+
+Notation "¬ a"     := (sp_not   a  ) (at level 75).
+Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
+Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
+Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+Notation "'Top'" := sp_top.
+Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
+
+Notation "'nu' X , phi" := (sp_nu X phi) (at level 55).
+
+Notation "M |=M phi" := (satisfies_model M phi)
+                        (left associativity, at level 50).
+Notation "M |=T Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50).
+Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
+
+Notation "|^ phi ^|" := (defined phi) (at level 100).
+Notation "|_ phi _|" := (total phi) (at level 100).
+Notation "a ~=~ b" := (equal a b) (at level 100).
+Notation "a !=~ b" := (not_equal a b) (at level 100).
+Notation "x -< phi" := (member x phi) (at level 100).
+Notation "x !-< phi" := (non_member x phi) (at level 100).
+Notation "a <: b" := (includes a b) (at level 100).
+Notation "a !<: b" := (not_includes a b) (at level 100).
+
+Notation "pattern 'tautology'" := (Tautology_proof_rules pattern) (at level 2).
+Notation "pattern 'proved'" := (AML_proof_system pattern) (at level 2).
+Notation "theory |- pattern"  := (Provable theory pattern) (at level 1).
+
+End AML_notations.
+
 (* *******************************~= MSFOL =~******************************* *)
+
+Section MSFOL.
+
+Import AML_notations.
 
 (* Definition 9. MSFOL definition *)
 Inductive MSFOL_sorts : Set :=
@@ -950,7 +979,8 @@ end.
 (*
 Fixpoint M_ext_term_val () := .
 
-Fixpoint M_ext_form_val () := . *)
+Fixpoint M_ext_form_val () := .
+*)
 
 
 Definition M_set_singleton := fun x => set_add mvar_eq_dec x List.nil.
@@ -974,7 +1004,7 @@ end.
 
 
 (* record MSFOL_structure := {
-  Domain : SortType (* non-empty subset of SortSet *)
+  Domain : Type (* non-empty subset of SortSet *)
   Function_interp : MSFOL_fun -> Domain* -> Domain -> value_type?
   Predicate_interp : MSFOL_pred -> Domain* -> value_type?
 }. *)
@@ -1096,15 +1126,6 @@ Notation "'all_S' x : s , phi" :=
 
 
 (* Proposition 10. *)
-(* Reserved Notation "a |--> b" (at level 40, left associativity).
-Inductive QuantificationEquivalence : Sigma_pattern -> Sigma_pattern -> Prop :=
-| QE_ex_to_all (x : EVar) (s : MSFOL_sorts) (phi : Sigma_pattern) :
-    ((ex_S x : s, phi) |--> (¬ (all_S x : s, (¬ phi))))
-| QE_all_to_ex (x : EVar) (s : MSFOL_sorts) (phi : Sigma_pattern) :
-    ((all_S x : s, phi)  |--> (¬ (ex_S x : s, (¬ phi))))
-where "a |--> b" := (QuantificationEquivalence a b).
- *)
-
 Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
@@ -1116,13 +1137,12 @@ Proof.
     unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or.
 Admitted.
 (*     eapply E_refl.
-Qed.
- *)
-(* Lemma forall_ex_equiv_rev :
+Qed.*)
+
+Lemma forall_ex_equiv_rev :
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   empty_theory |- (¬(all_S x:s, ¬phi) ~=~ (ex_S x:s, phi)).
 Admitted.
- *)
 
 
 (* Many-sorted functions and terms *)
@@ -1161,7 +1181,7 @@ end.
 Program Fixpoint _gen_x_vec (n m : nat) : VectorDef.t EVar n :=
 match n with
 | O => []
-| S n' => [(evar_c(String.append "x" (string_of_nat(m-n+1))))] ++ 
+| S n' => [(evar_c(String.append "x" (string_of_nat(m-n+1))))] ++
           (_gen_x_vec n' m)
 end.
 
@@ -1208,6 +1228,12 @@ let foralls := VectorDef.map2
                 (fun var s => (fun phi => (all_S var : s, phi)))
                 vars sorts in
   VectorDef.fold_right (fun spl spr => spl spr) foralls core.
+
+(* Functional notation of the predicate *)
+Notation "p 'pred'" := (Predicate p []) (at level 3).
+Notation "p <:: s1" := (Predicate p [ s1 ]) (at level 3).
+Notation "p <:: s1 'X' s2 'X' .. 'X' sn" :=
+  (Predicate p (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. ))) (at level 3).
 
 
 (* well-sorted axiom scheme *)
@@ -1318,12 +1344,52 @@ Definition MSFOL_to_AML (phi : MSFOL_formula) :=
     (Gamma |= (formula_to_AML phi) -> Omega |=MSFOL phi) /\
     (Omega |=MSFOL phi -> Omega |-MSFOL phi).
  *)
+End MSFOL.
 
+Module MSFOL_notations.
+Notation "'M_Bot'" := (MF_bottom).
+Notation "a 'M~>' b" := (MF_impl a b) (at level 90, right associativity,
+                                       b at level 200).
+Notation "'M_ex' x , phi" := (MF_exists x phi) (at level 55).
+
+Notation "'M¬' phi" := (MF_not phi) (at level 75).
+Notation "a M|_ b" := (MF_or a b) (at level 85, right associativity).
+Notation "a M&_ b" := (MF_and a b) (at level 80, right associativity).
+Notation "a <M~> b" := (MF_iff a b) (at level 95, no associativity).
+Notation "'M_Top'" := MF_top.
+Notation "'M_all' x , phi" := (MF_forall x phi) (at level 55).
+
+Notation "pattern 'MSFOL_tautology'" :=
+  (MSFOL_tautology_proof_rules pattern) (at level 2).
+Notation "phi 'MSFOL_proved'" := (MSFOL_proof_system phi) (at level 2).
+
+Notation "'[[' s ']]'" := (Domain s) (at level 0).
+
+Notation "'ex_S' x : s , phi" :=
+  (sorted_ex_quan x s phi) (at level 3, x at next level, s at next level).
+
+Notation "'all_S' x : s , phi" :=
+  (sorted_all_quan x s phi) (at level 3, x at next level, s at next level).
+
+Notation "f : '-->' s" := (Function f [] s) (at level 3).
+Notation "f : s1 '-->' s" := (Function f [ s1 ] s) (at level 3).
+Notation "f : s1 'X' s2 'X' .. 'X' sn '-->' s" :=
+  (Function f (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. )) s) (at level 3).
+
+Notation "p 'pred'" := (Predicate p []) (at level 3).
+Notation "p <:: s1" := (Predicate p [ s1 ]) (at level 3).
+Notation "p <:: s1 'X' s2 'X' .. 'X' sn" :=
+  (Predicate p (vc _ s1 _ (vc _ s2 _ .. (vc _ sn _ (vn _)) .. ))) (at level 3).
+
+End MSFOL_notations.
 
 (* ************************************************************************** *)
 (*                           ~= Natural numbers =~                            *)
 (* ************************************************************************** *)
 
+Section Natural_numbers.
+Import AML_notations.
+Import MSFOL_notations.
 
 Definition Nat_is_Sort := (sort_constant Nat) -< MSAFOL_Sort.
 
@@ -1348,7 +1414,7 @@ Definition three := succ' two.
 Definition five := succ' (succ' three).
 Definition six := succ' five.
 
-Notation "00" := (^zero).
+Notation "00" := (^zero) (at level 0).
 Notation "'S' a" := (succ' a) (at level 50).
 Notation "a +' b" := (plus' a b) (at level 40).
 Notation "a *' b" := (mult' a b) (at level 50).
@@ -1416,7 +1482,7 @@ Definition No_Confusion2 (x y : EVar) :=
 (* forces [[ Nat ]] to be the smallest set closed under zero and succ, yielding
  * exactly the standard natural numbers |N *)
 Definition Inductive_Domain (D : SVar) :=
-  [[ Nat ]] ~=~ (mu D, (^zero _|_ (S `D))).
+  [[ Nat ]] ~=~ (mu D, (00 _|_ (S `D))).
 
 (* This is an axiom schema. Before use it needs to be instanctiated, by giving
  * a pattern as parameter to it. *)
@@ -1434,27 +1500,12 @@ Lemma PeanoNat :
            (all_S x : Nat, ('x -< `SX))).
 Admitted.
 
-(* Proposition 18. *)
-
-(******************************************************************************)
-(*
-Fixpoint app_inhabitant_sets {n : nat} (vec : VectorDef.t MSA_sorts n)
-: Sigma_pattern :=
-match vec with
-| VectorDef.nil  _ => const ("cannot operate on empty parameters")
-| VectorDef.cons _ elem _ (VectorDef.nil _) => [[ elem ]]
-| VectorDef.cons _ elem _ vec' =>
-    ([[ elem ]]) $ (app_inhabitant_sets vec')
-end.
-
-Definition Arity (sigma : Sigma_pattern) {n : nat}
-                 (s_vec : VectorDef.t MSA_sorts n) (s : MSA_sorts)
-: Sigma_pattern :=
-  sigma $ (app_inhabitant_sets s_vec) <: InhabitantSetOf(s).
-*)
-(******************************************************************************)
+End Natural_numbers.
 
 (* Examples of natural number patterns: *)
+Section Nat_examples.
+Import AML_notations.
+Import MSFOL_notations.
 
 Definition plus_1_2 := plus' one two.
 Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
@@ -1517,26 +1568,17 @@ Definition Sum_of_squares :=
 
 (* <= relation *)
 Definition less (l r : Sigma_pattern) :=
-ex_S x : Nat, (plus' l (sp_var x) ~=~ r).
+ex_S x : Nat, (plus' l 'x ~=~ r).
 
 Definition less_or_equal (l r : Sigma_pattern) :=
   (l ~=~ r) _|_ (ex_S x : Nat, (plus' l ('x) ~=~ r)).
-
-Definition k := (evar_c("k")).
-Definition strong_induction (f : Sigma_pattern -> Sigma_pattern) :=
-  (((f 00) _&_ all_S x : Nat, (all_S k : Nat,
-    ((less 'k 'n) ~> (f 'k)) ~> (f (S 'n)))) ~>
-  (all_S n : Nat, (f 'n))).
-(* with this can be shown that natural unmbers are ordered, thus every subset
- * has a least element *)
-
 
 (* States that if:
 - zero <= zero and
 - for all n of sort Nat : 0 <= (n+1)
 then for all n of sort Nat states 0 <= n *)
 Definition every_number_is_positive : Sigma_pattern :=
-  Peano_Induction n (less_or_equal (sp_const zero)).
+  Peano_Induction (less_or_equal ^zero).
 
 Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 
@@ -1545,23 +1587,31 @@ Definition less2 (a b : Sigma_pattern) := less a (succ' b).
 - for all n of sort Nat : 0 < ((n+1) + 1)
 then for all n of sort Nat states 0 < (n+1) *)
 Definition every_successor_is_strictly_positive : Sigma_pattern :=
-  Peano_Induction n (less2 ^zero).
+  Peano_Induction (less2 ^zero).
+
+Definition k := (evar_c("k")).
+Definition strong_induction (f : Sigma_pattern -> Sigma_pattern) :=
+  (((f ^zero) _&_ all_S x : Nat, (all_S k : Nat,
+    ((less 'k 'n) ~> (f 'k)) ~> (f (succ' 'n)))) ~>
+  (all_S n : Nat, (f 'n))).
+(* with this can be shown that natural unmbers are ordered, thus every subset
+ * has a least element *)
 
 
 (* Proof examples *)
 Lemma ex1 : ('x ~> 'x) proved.
 Proof. apply Prop_tau. apply P1. Qed.
 
-Lemma ex2 : (sp_bottom ~> ((sp_var x) ~> sp_bottom)) proved.
+Lemma ex2 : (Bot ~> ('x ~> Bot)) proved.
 Proof. apply Prop_tau. apply P2. Qed.
 
 Lemma ex3 : (('x ~> ('y ~> 'z)) ~> (('x ~> 'y) ~> ('x ~> 'z))) proved.
 Proof. apply Prop_tau. apply P3. Qed.
 
-Lemma ex4 : (((sp_not 'x) ~> (sp_not 'y)) ~> ('y ~> 'x)) proved.
+Lemma ex4 : (((¬ 'x) ~> (¬ 'y)) ~> ('y ~> 'x)) proved.
 Proof. apply Prop_tau. apply P4. Qed.
 
-Lemma ex5 : (e_subst_var sp_bottom 'y x ~> sp_exists x sp_bottom) proved.
+Lemma ex5 : (e_subst_var Bot 'y x ~> (ex x, Bot)) proved.
 Proof. apply Ex_quan. Qed.
 
 Lemma ex6 :
@@ -1573,6 +1623,11 @@ Proof. apply Ex_gen. Qed.
 Lemma zero_eq_zero : empty_theory |- (^zero ~=~ ^zero).
 Proof. eapply E_refl. Qed.
 
+End Nat_examples.
+
+Section FOL_helpers.
+Import AML_notations.
+Import MSFOL_notations.
 
 (* Helper lemmas for first order reasoning *)
 Lemma reorder (A B C : Sigma_pattern) :
@@ -1584,21 +1639,16 @@ Proof.
   pose(ABC := (A ~> B ~> C)).
 
   eapply Mod_pon.
-  - (* t7 *)
-    eapply Mod_pon.
+  - (* t7 *) eapply Mod_pon.
     + eapply Prop_tau. eapply (P2 B A).
     + eapply Prop_tau. eapply (P2 (B ~> A ~> B) (A ~> B ~> C)).
   - eapply Mod_pon.
-    + (* t6 *)
-      eapply Mod_pon.
-      * (* t5 *)
-        eapply Mod_pon.
-        -- (* t4 *)
-           eapply Mod_pon.
+    + (* t6 *) eapply Mod_pon.
+      * (* t5 *) eapply Mod_pon.
+        -- (* t4 *) eapply Mod_pon.
            ++ eapply Prop_tau. eapply (P1 ABC).
            ++ eapply Mod_pon.
-              ** (* t2 *)
-                 eapply Mod_pon.
+              ** (* t2 *) eapply Mod_pon.
                  --- eapply Prop_tau. eapply (P3 A B C).
                  --- eapply Prop_tau. eapply (P2 _ (A ~> B ~> C)).
               ** eapply Prop_tau. eapply (P3 ABC ABC ((A ~> B) ~> (A ~> C))).
@@ -1607,8 +1657,7 @@ Proof.
            ++ eapply Prop_tau.
               eapply (P3 ABC ((A ~> B) ~> (A ~> C)) (B ~> (A~>B) ~> (A~>C))).
       * eapply Mod_pon.
-        -- (* t3 *)
-           eapply Mod_pon.
+        -- (* t3 *) eapply Mod_pon.
            ++ eapply Prop_tau. eapply (P3 B (A ~> B) (A ~> C)).
            ++ eapply Prop_tau. eapply (P2 _ ABC).
         -- eapply Prop_tau. eapply (P3 ABC (B ~> (A ~> B) ~> A ~> C)
@@ -1632,7 +1681,7 @@ Proof.
 Qed.
 
 
-Lemma conj (A B : Sigma_pattern) :
+Lemma conj_intro (A B : Sigma_pattern) :
   (A ~> B ~> (A _&_ B)) proved.
 Proof.
   pose(tB := Prop_tau (B ~> B) (P1 B)).
@@ -1723,19 +1772,18 @@ Proof.
 
 Qed.
 
-Lemma conj_intro (A B : Sigma_pattern) :
+Lemma conj_intro_meta (A B : Sigma_pattern) :
   A proved -> B proved -> (A _&_ B) proved.
 Proof.
   intros.
-
   eapply Mod_pon.
   - exact H0.
   - eapply Mod_pon.
     + exact H.
-    + exact (conj A B).
+    + exact (conj_intro A B).
 Qed.
 
-Lemma conj_intro_t (A B : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+Lemma conj_intro_meta_e (A B : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
   (theory |- A) -> (theory |- B) -> (theory |- (A _&_ B)).
 Proof.
   intros.
@@ -1743,7 +1791,7 @@ Proof.
   - eapply H0.
   - eapply E_mod_pon.
     + eapply H.
-    + eapply ext. eapply conj.
+    + eapply ext. eapply conj_intro.
 Qed.
 
 
@@ -1763,7 +1811,6 @@ Lemma disj_intro (A B : Sigma_pattern) :
   A proved -> B proved -> (A _|_ B) proved.
 Proof.
   intros.
-
   eapply Mod_pon.
   - exact H0.
   - eapply Mod_pon.
@@ -1777,19 +1824,14 @@ Lemma syllogism (A B C : Sigma_pattern) :
 Proof.
   eapply reorder_meta.
   eapply Mod_pon.
-  - (* t5 *)
-    eapply Prop_tau. eapply (P2 (B ~> C) A).
-  - (* t4 *)
-    eapply Mod_pon.
-    + (* t3 *)
-       eapply Mod_pon.
-       * eapply Prop_tau. eapply (P3 A B C).
-       * (* t2 *)
-          eapply Prop_tau. eapply (P2 ((A ~> B ~> C) ~> (A ~> B) ~> A ~> C)
-                                      (B ~> C)).
-    + (* t1 *)
-       eapply Prop_tau.
-       eapply (P3 (B ~> C) (A ~> B ~> C) ((A ~> B) ~> A ~> C)).
+  - (* t5 *) eapply Prop_tau. eapply (P2 (B ~> C) A).
+  - (* t4 *)eapply Mod_pon.
+    + (* t3 *) eapply Mod_pon.
+      * eapply Prop_tau. eapply (P3 A B C).
+      * (* t2 *) eapply Prop_tau.
+        eapply (P2 ((A ~> B ~> C) ~> (A ~> B) ~> A ~> C) (B ~> C)).
+    + (* t1 *) eapply Prop_tau.
+      eapply (P3 (B ~> C) (A ~> B ~> C) ((A ~> B) ~> A ~> C)).
 Qed.
 
 Lemma syllogism_intro (A B C : Sigma_pattern) :
@@ -1840,20 +1882,20 @@ Lemma modus_ponens (A B : Sigma_pattern) :
   (A ~> (A ~> B) ~> B) proved.
 Proof.
   eapply Mod_pon.
-  - (* t3 *)
-    eapply Prop_tau. eapply (P2 A (A ~> B)).
-  - (* t6 *)
-    eapply Mod_pon.
+  - (* t3 *) eapply Prop_tau. eapply (P2 A (A ~> B)).
+  - (* t6 *) eapply Mod_pon.
     + (* t4 *)
       eapply Mod_pon.
-      * (* t1 *)
-        eapply Prop_tau. eapply (P1 (A ~> B)).
-      * (* t2 *)
-        eapply Prop_tau. eapply (P3 (A ~> B) A B).
+      * (* t1 *) eapply Prop_tau. eapply (P1 (A ~> B)).
+      * (* t2 *) eapply Prop_tau. eapply (P3 (A ~> B) A B).
     + (* t5 *)
-      eapply reorder_meta. eapply (syllogism A ((A ~> B) ~> A) ((A ~> B) ~> B)).
+      eapply reorder_meta.
+      eapply (syllogism A ((A ~> B) ~> A) ((A ~> B) ~> B)).
 Qed.
 
+Lemma modus_ponens' (A B : Sigma_pattern) :
+  (A ~> (¬B ~> ¬A) ~> B) proved.
+Proof. exact (reorder_meta (Prop_tau _ (P4 B A))). Qed.
 
 Lemma disj_right_intro (A B : Sigma_pattern) :
   (B ~> (A _|_ B)) proved.
@@ -1894,15 +1936,34 @@ Proof.
   - exact (double_elim A B).
 Qed.
 
+Lemma not_not_impl_intro (A B : Sigma_pattern) :
+  (A ~> B ~> (¬¬A ~> ¬¬B)) proved.
+(*
+Proof.
+  pose( base := Mod_pon (not_not_intro (B)) (Prop_tau _ (P2 (B ~> ¬¬B) (A ~> ¬¬A)))).
+  Check (reorder_meta base).
+  pose (a := conj A B).
+  unfold sp_and in a. unfold sp_or in a. *)
+Admitted.
+
+Lemma P5i (A C : Sigma_pattern) :
+  (¬A ~> (A ~> C)) proved.
+(*
+Proof.
+  eapply Mod_pon.
+  - eapply reorder_meta. eapply Prop_tau. eapply (P4 C A).
+  - eapply Prop_tau. eapply (P3 (¬A) (¬C) (A ~> C)). *)
+Admitted.
+
 
 Lemma a (A B : Sigma_pattern) :
   (¬( ¬¬A ~> ¬¬B )) proved -> (¬( A ~> B)) proved.
+(*
 Proof.
   intros.
-
   unfold sp_not.
 
-  eapply Mod_pon.
+   eapply Mod_pon.
   - eapply Prop_tau. eapply (P1 Bot).
   - eapply Mod_pon.
     + eapply Mod_pon.
@@ -1910,27 +1971,43 @@ Proof.
       * eapply Prop_tau. eapply (P2 (Bot ~> Bot) (A ~> B)).
     + eapply Prop_tau. eapply (P3 (A ~> B) Bot Bot).
 
-eapply Prop_tau. eapply (P2 (A ~> B) Bot).
-
+eapply Prop_tau. eapply (P2 (A ~> B) Bot). *)
+Admitted.
 
 Lemma double_elim_ex (A B :Sigma_pattern) :
   ((ex x, (¬¬A ~> ¬¬B)) ~> (ex x, (A ~> B))) proved.
-Proof.
-  Admitted.
+Admitted.
 
 Lemma double_elim_ex_meta (A B :Sigma_pattern) :
   (ex x, (¬¬A ~> ¬¬B)) proved -> (ex x, (A ~> B)) proved.
-Proof.
-  intros.
 Admitted.
 
+End FOL_helpers.
+
+
+Section Nat_proofs.
+Import AML_notations.
+Import MSFOL_notations.
+(* Proof of commutativity of addition over natural numbers *)
+Definition comm_theory := Empty_set Sigma_pattern. (* this can be extended *)
+Lemma nat_plus_comm :
+  forall x y : EVar, comm_theory |-
+    (all_S x : Nat, (all_S y : Nat, ((plus' 'x 'y) ~=~ (plus' 'y 'x)))).
+Admitted.
 
 (* Proof of 0 + x = x, for all natural number x *)
+Definition pli_theory := Empty_set Sigma_pattern. (* this can be extended *)
+Lemma plus_left_id :
+  pli_theory |= (all_S x:Nat, (plus' ^zero 'x ~=~ 'x)).
+Admitted.
 
-(* These proofs aren't correct in this form *)
+(* These proofs aren't correct in this form, because they don't have sorted
+ * quantification, by are kept to state a structure for the quantified version
+ *)
 (*
 Definition axiom_set (a : EVar) :=
-  Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ empty_theory
+  Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _
+    empty_theory
     (succ_inj (plus' 'a two) (succ' (succ' (plus' 'a ^zero)))))
     (succ_inj (plus' 'a (succ' ^zero)) (succ' (plus' 'a ^zero))))
     (succ_inj (succ' (succ' (plus' 'a ^zero))) (succ' (succ' 'a))))
@@ -2079,11 +2156,4 @@ Proof.
 Admitted.
  *)
 
-Lemma nat_plus_comm :
-  forall x y : EVar, empty_theory |-
-    (all_S x : Nat, (all_S y : Nat, ((plus' 'x 'y) ~=~ (plus' 'y 'x)))).
-Admitted.
-
-
-
-End AML.
+End Nat_proofs.
