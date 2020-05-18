@@ -325,11 +325,11 @@ end.
 Fixpoint gen_x_vec (n : nat) : VectorDef.t EVar n :=
   _gen_x_vec n n.
 
-Definition y := (evar_c("y")).
 Fixpoint Function
   {n : nat} (fn : Sigma) (sorts : VectorDef.t MSFOL_sorts n)
   (y_sort : MSFOL_sorts)
 : Sigma_pattern :=
+let y := (evar_c("y")) in
 let vars := gen_x_vec n in
 let var_patterns := VectorDef.map sp_var vars in
 let applied_params := VectorDef.fold_left sp_app (sp_const fn) var_patterns in

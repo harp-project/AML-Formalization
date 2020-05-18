@@ -43,47 +43,58 @@ Notation "a *' b" := (mult' a b) (at level 50).
 
 
 (* Example: x + 0 = x *)
-Definition plus_right_id := (all_S x : Nat, (( 'x +' 00 ) ~=~ 'x)).
+Definition plus_right_id :=
+let x := (evar_c("x")) in
+   (all_S x : Nat, (( 'x +' 00 ) ~=~ 'x)).
 
 (* we have to specify the type of function parameters, because if not, the
  * following statement about natural numbers could also be formalised: *)
-Definition x_plus_0_eq_x_no_type := plus' ^plus ^zero.
+Definition x_plus_0_eq_x_no_type := plus' ^plus ^zero ~=~ ^plus.
 
 (* Natural numbers additional axioms: Peano axioms: *)
 
 Definition zero_is_nat := (00 -< [[ Nat ]]).
 
 Definition nat_eq_closed :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all x, (all y, (('x -< [[ Nat ]]) ~> ('x ~=~ 'y)) ~> ('y -< [[ Nat ]])).
 
 Definition succ_closed := all_S x:Nat, ((S 'x) -< [[ Nat ]]).
 
 Definition succ_inj :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all_S x:Nat, (all_S y:Nat, (('x ~=~ 'y) <~> ((S 'x) ~=~ (S 'x)))).
 
 Definition succ_rec :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all_S x:Nat, (all_S y:Nat, (('x +' (S 'y)) ~=~ (S ('x +' 'y)))).
 
 
 (* Axioms for mult *)
 Definition mult_zero_elem :=
+let x := (evar_c("x")) in
   all_S x:Nat, ('x *' 00 ~=~ 00).
 Definition mult_rec :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all_S x:Nat, (all_S y:Nat,
     (('x *' (S 'y)) ~=~ ('x +' ('x *' 'y)))).
 
 Definition mult_left (x y : EVar) :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all x, (all y, (('x *' (S 'y)) ~=~ (('x *' 'y) +' 'x))).
 
 Definition mult_right_id :=
+let x := (evar_c("x")) in
   all_S x:Nat, (('x *' one) ~=~ ('x +' ('x *' 00))).
 
 (* one is also the lefft identity elem for mult *)
 Definition mult_left_id :=
+let x := (evar_c("x")) in
   all_S x:Nat, ((one *' 'x) ~=~ (('x *' 00) +' 'x)).
 
 (* distributivity *)
 Definition distributivity :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in let z := evar_c("z") in
   all_S x:Nat, (all_S y:Nat, (all_S z:Nat,
     (('x *' ('y +' 'z)) ~=~ (('x *' 'y) +' ('x *' 'z))))).
 
@@ -92,10 +103,12 @@ Definition distributivity :=
 
 (* states that zero and succ build different terms *)
 Definition No_Confusion1 :=
+let x := (evar_c("x")) in
   all_S x : Nat, ((S 'x) !=~ 00).
 
 (* states that succ is an injective funxtion *)
 Definition No_Confusion2 (x y : EVar) :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in
   all_S x : Nat, (all_S y : Nat,
     ((((S 'x) ~=~ (S 'y))) ~> ((' x) ~=~ (' y)))).
 
@@ -108,6 +121,7 @@ Definition Inductive_Domain (D : SVar) :=
 (* This is an axiom schema. Before use it needs to be instanctiated, by giving
  * a pattern as parameter to it. *)
 Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) :=
+let x := (evar_c("x")) in
   ((phi 00) _&_ (all x, ((phi 'x) ~> (phi (S 'x))))) ~>
   (all x, (phi 'x)).
 
@@ -131,40 +145,42 @@ Definition plus_1_2_eq_3 := ((plus' one two) ~=~ three).
 Definition plus_1_plus_2_3_eq_6 := ((plus' one (plus' two three)) ~=~ six).
 
 Definition plus_x_1_eq_5 :=
+let x := (evar_c("x")) in
   (all_S x : Nat, ((plus' 'x one) ~=~ five)).
 
 Definition plus_x_z_eq_y :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in let z := evar_c("z") in
   (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x 'z) ~=~ 'y)))).
 
 Definition plus_x_plus_z_3_eq_y :=
+let x := (evar_c("x")) in let y := (evar_c("y")) in let z := evar_c("z") in
   (all_S x : Nat, (all_S y : Nat, (all_S z : Nat,
         ((plus' 'x (plus' 'z three))) ~=~ 'y))).
 
 
 Fixpoint SumFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => ^zero
-      (* succ b *)
-| sp_app _    b => plus' (succ' b) (SumFromZeroTo b)
+| sp_const zero => ^zero
+| sp_app ^succ    b => plus' (succ' b) (SumFromZeroTo b)
 | _ => const ("non-exhaustive pattern")
 end.
 
 (* 1 + ... + n = n * (n+1) / 2. *)
-Definition n := evar_c("n").
 Definition Sum_of_first_n : Sigma_pattern :=
+let n := evar_c("n") in
   all_S n : Nat, (mult' two (SumFromZeroTo 'n) ~=~
   mult' 'n (succ' 'n)).
 
 
 Fixpoint ProdFromOneTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => ^zero
-      (* succ _ *)
-| sp_app _    b =>
+| sp_const zero => ^zero
+
+| sp_app ^succ    b =>
   match b with
-  | sp_const _ => one
-  | sp_app _ _ => mult' (succ' b) (ProdFromOneTo b)
+  | sp_const zero => one
+  | sp_app ^succ _ => mult' (succ' b) (ProdFromOneTo b)
   | _ => const ("non-exhaustive pattern")
   end
 | _ => const ("non-exhaustive pattern")
@@ -172,14 +188,15 @@ end.
 
 Fixpoint SumOfSquaresFromZeroTo (n : Sigma_pattern) : Sigma_pattern :=
 match n with
-| sp_const _ => ^zero
+| sp_const zero => ^zero
       (* succ b *)
-| sp_app _    b => plus' (mult' (succ' b) (succ' b)) (SumOfSquaresFromZeroTo b)
+| sp_app ^succ b => plus' (mult' (succ' b) (succ' b)) (SumOfSquaresFromZeroTo b)
 | _ => const ("non-exhaustive pattern")
 end.
 
 (* 1^2 + ... + n^2 = n(n+1)(2*n + 1) / 6. *)
 Definition Sum_of_squares :=
+let n := evar_c("n") in
   all_S n : Nat, (
     mult' six (SumOfSquaresFromZeroTo 'n) ~=~
     mult' 'n (mult' (succ' 'n) (plus' (mult' two 'n) one))).
@@ -187,10 +204,12 @@ Definition Sum_of_squares :=
 
 (* <= relation *)
 Definition less (l r : Sigma_pattern) :=
-ex_S x : Nat, (plus' l 'x ~=~ r).
+let n := evar_c("n") in
+  ex_S n : Nat, (plus' l 'n ~=~ r).
 
 Definition less_or_equal (l r : Sigma_pattern) :=
-  (l ~=~ r) _|_ (ex_S x : Nat, (plus' l ('x) ~=~ r)).
+let n := evar_c("n") in
+  (l ~=~ r) _|_ (ex_S n : Nat, (plus' l ('n) ~=~ r)).
 
 (* States that if:
 - zero <= zero and
@@ -208,9 +227,9 @@ then for all n of sort Nat states 0 < (n+1) *)
 Definition every_successor_is_strictly_positive : Sigma_pattern :=
   Peano_Induction (less2 ^zero).
 
-Definition k := (evar_c("k")).
 Definition strong_induction (f : Sigma_pattern -> Sigma_pattern) :=
-  (((f ^zero) _&_ all_S x : Nat, (all_S k : Nat,
+let n := (evar_c("n")) in let k := (evar_c("k")) in
+(((f ^zero) _&_ all_S x : Nat, (all_S k : Nat,
     ((less 'k 'n) ~> (f 'k)) ~> (f (succ' 'n)))) ~>
   (all_S n : Nat, (f 'n))).
 (* with this can be shown that natural unmbers are ordered, thus every subset
@@ -257,7 +276,8 @@ Admitted.
 (* Proof of 0 + x = x, for all natural number x *)
 Definition pli_theory := Empty_set Sigma_pattern. (* this can be extended *)
 Lemma plus_left_id :
-  pli_theory |= (all_S x:Nat, (plus' ^zero 'x ~=~ 'x)).
+let x := (evar_c("x")) in
+  pli_theory |- (all_S x:Nat, (plus' ^zero 'x ~=~ 'x)).
 Admitted.
 
 (* These proofs aren't correct in this form, because they don't have sorted

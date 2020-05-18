@@ -335,9 +335,13 @@ Definition defined (x : Sigma_pattern) := (definedness_symbol $ x).
 Notation "|^ phi ^|" := (defined phi) (at level 100).
 
 (* Definedness axioms, which further will be added to Gamma axiom set *)
-Definition x := evar_c("x").
-Definition Definedness_var : Sigma_pattern := |^ 'x ^|.
-Definition Definedness_forall : Sigma_pattern := all x, |^ 'x ^|.
+Definition Definedness_var : Sigma_pattern :=
+let x := evar_c("x") in
+  |^ 'x ^|.
+
+Definition Definedness_forall : Sigma_pattern :=
+let x := evar_c("x") in
+  all x, |^ 'x ^|.
 
 (* Totality *)
 Definition total (sp : Sigma_pattern) := (¬ (|^ (¬ sp) ^|)).
@@ -371,34 +375,25 @@ Notation "a !<: b" := (not_includes a b) (at level 100).
 (* Introducing '$' element, such as '$' $ a = M *)
 Definition spec_elem : Sigma_pattern := const ("$").
 
-Lemma spec_app_a_eq_M
-  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-    forall a : EVar, Same_set _
-      (ext_valuation evar_val svar_val (sp_app spec_elem (sp_var a)))
-      (Full_set _).
-Admitted.
+Definition spec_app_a_eq_M (a : EVar) :=
+  ((spec_elem $ 'a) ~=~ Top).
 
-Lemma spec_app_A_eq_M
-  {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
-    forall A : SVar,
-      (exists x, In _ x (ext_valuation evar_val svar_val (sp_set A))) ->
-      Same_set _
-        (ext_valuation evar_val svar_val (sp_app spec_elem (sp_set A)))
-        (Full_set _).
-Admitted.
+Definition spec_app_A_eq_M (A : SVar) :=
+  ((spec_elem $ `A) ~=~ Bot) <~> (`A !=~ Bot).
+
 
 (* Can be shown, that all notations in Definition 6 are predicates with the
  * expected semantics. For example: *)
-Lemma definedness_correct01
+Lemma totality_eq_step1
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|))
               (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (¬ (|^ (¬phi) ^|)))
               (Full_set _)).
-Admitted.
+Proof. proof_ext_val. reflexivity. Qed.
 
-Lemma definedness_correct02
+Lemma totality_eq_step2
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|))
@@ -407,7 +402,7 @@ Lemma definedness_correct02
               (Empty_set _)).
 Admitted.
 
-Lemma definedness_correct03
+Lemma totality_eq_step3
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|))
@@ -416,16 +411,16 @@ Lemma definedness_correct03
               (Empty_set _)).
 Admitted.
 
-Lemma equality_correct01
+Lemma equality_eq_step1
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi1 phi2 : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (phi1 ~=~ phi2))
               (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (|_ (phi1 <~> phi2) _|))
               (Full_set _)).
-Admitted.
+Proof. proof_ext_val. reflexivity. Qed.
 
-Lemma equality_correct02
+Lemma equality_eq_step2
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi1 phi2 : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (phi1 ~=~ phi2))
@@ -435,35 +430,35 @@ Lemma equality_correct02
 Admitted.
 
 (* Proposition 20.: Semantics of definedness operators *)
-Lemma defined_sem1
+Lemma defined_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|^ phi ^|)) (Full_set _)) <->
   ~ (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
 Admitted.
 
-Lemma defined_sem2
+Lemma not_defined_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|^ phi ^|)) (Empty_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
 Admitted.
 
-Lemma total_sem1
+Lemma total_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|)) (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (phi)) (Full_set _)).
 Admitted.
 
-Lemma total_sem2
+Lemma not_total_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|)) (Empty_set _)) <->
   ~ (Same_set _ (ext_valuation evar_val svar_val (phi)) (Full_set _)).
 Admitted.
 
-Lemma equal_sem1
+Lemma equal_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall a b : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (a ~=~ b)) (Full_set _)) <->
@@ -471,7 +466,7 @@ Lemma equal_sem1
               (ext_valuation evar_val svar_val b)).
 Admitted.
 
-Lemma equal_sem2
+Lemma not_equal_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall a b : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (a ~=~ b)) (Empty_set _)) <->
@@ -479,21 +474,21 @@ Lemma equal_sem2
               (ext_valuation evar_val svar_val b)).
 Admitted.
 
-Lemma membership_sem1
+Lemma membership_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall x : EVar, forall sp : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val ('x -< sp)) (Full_set _)) <->
   (In _ (ext_valuation evar_val svar_val sp) (evar_val x)).
 Admitted.
 
-Lemma membership_sem2
+Lemma non_membership_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall x : EVar, forall sp : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val ('x -< sp)) (Empty_set _)) <->
   ~ (In _ (ext_valuation evar_val svar_val sp) (evar_val x)).
 Admitted.
 
-Lemma set_inculsion_sem1
+Lemma set_inculsion_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall a b : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (a <: b)) (Full_set _)) <->
@@ -503,7 +498,7 @@ Lemma set_inculsion_sem1
                       (ext_valuation evar_val svar_val b))).
 Admitted.
 
-Lemma set_inclusion_sem2
+Lemma set_exclusion_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall a b : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (a <: b)) (Empty_set _)) <->
@@ -514,8 +509,8 @@ Lemma set_inclusion_sem2
 Admitted.
 
 (* Functional Constant axiom *)
-Definition z := evar_c("z").
 Definition Functional_Constant (constant : Sigma) : Sigma_pattern :=
+let z := evar_c("z") in
   (ex z , (^constant ~=~ 'z)).
 
 
@@ -534,11 +529,11 @@ match C with
 end
 .
 
-Definition free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
+Fixpoint free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc sp => free_vars sp
-| ctx_app_r sp cc => free_vars sp
+| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_vars sp)
+| ctx_app_r sp cc => set_union evar_eq_dec (free_vars sp) (free_vars_ctx cc)
 end.
 
 
@@ -687,36 +682,23 @@ Theorem A_impl_A_equiv : forall A : Sigma_pattern,
   induction A.
   - Check (A_impl_A 'x0). Check Prop_tau (' x0 ~> ' x0) (P1 ' x0). *)
 Admitted.
+(* can't be proved becuase we can't enable such a rule, which states that proved
+ * patterns are tautologies. Only the reverse direction is true, and assured by
+ * rule Prop_tau. *)
 
 
 Definition empty_theory := Empty_set Sigma_pattern.
 
 Reserved Notation "theory |- pattern" (at level 1).
 Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
-(* Deduction theorem: inject axiom from theory *)
-| inject {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
-    In _ theory axiom -> theory |- pattern ->
-    (Subtract _ theory axiom) |- (axiom ~> pattern)
-
-(* Deduction theorem: extract back to theory *)
-| extract
-  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (theory |- (phi1 ~> phi2)) ->
-    (Add _ theory phi1) |- phi2
-
 (* Using hypothesis from theory *)
 | hypothesis
   (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (In _ theory axiom) -> theory |- axiom
 
 (* AML_proof_system rule embedding *)
-
-(* Introduce axiom rules *)
-| empty
-  (pattern : Sigma_pattern) :
-    (pattern proved) -> empty_theory |- pattern
-
-| ext
+(* Introduce proof system rules *)
+| proof_sys_intro
   (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     pattern proved -> theory |- pattern
 
@@ -726,7 +708,7 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
     theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
 
 | E_ex_gen
-  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+  (x : EVar) (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~> phi2) ->
     negb (set_mem evar_eq_dec x (free_vars phi2)) = true ->
     theory |- ((ex x, phi1) ~> phi2)
@@ -746,27 +728,46 @@ Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
     theory |-
       ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
 
-(* Proposition 7: definedness related properties *)
-| E_refl
-  (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- (phi ~=~ phi)
+where "theory |- pattern" := (Provable theory pattern).
 
-| E_trans
+
+(* Deduction theorem *)
+Theorem deduction_intro
+  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern ->
+    (Subtract _ theory axiom) |- (axiom ~> pattern).
+Admitted.
+
+Theorem deduction_elim
+  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (theory |- (phi1 ~> phi2)) ->
+    (Add _ theory phi1) |- phi2.
+Admitted.
+
+(* Proposition 7: definedness related properties *)
+Lemma eq_refl
+  (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi ~=~ phi).
+Admitted.
+
+Lemma eq_trans
   (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
-    theory |- (phi1 ~=~ phi3)
+    theory |- (phi1 ~=~ phi3).
+Admitted.
 
-| E_symm
+Lemma eq_symm
   (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
-    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1)
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1).
+Admitted.
 
-| E_evar_subst
+Lemma eq_evar_subst
   (* TODO: psi can be any pattern, not only Application_context *)
   (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) ->
-    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x))
+    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)).
+Admitted.
 
-where "theory |- pattern" := (Provable theory pattern).
 
 (* Examples of use *)
 
@@ -793,22 +794,16 @@ Proof.
   eapply E_mod_pon.
   - eapply E_mod_pon.
     * eapply (hypothesis (¬(¬A)) G). in_hyp.
-    * eapply (ext ((¬(¬A)) ~> (¬A ~> ¬(¬A))) G).
+    * eapply (proof_sys_intro ((¬(¬A)) ~> (¬A ~> ¬(¬A))) G).
       + eapply Prop_tau. eapply (P2 (¬(¬A)) (¬A)).
   - eapply E_mod_pon.
-    * eapply (ext _ G (Prop_tau _ (P1 (¬A)))).
+    * eapply (proof_sys_intro _ G (Prop_tau _ (P1 (¬A)))).
     * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)). in_hyp.
 Qed.
 
 
 Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
-Proof.
-  eapply E_mod_pon.
-  - eapply (empty _ (Prop_tau _ (P2 A A))).
-  - eapply E_mod_pon.
-    + eapply (empty _ (Prop_tau _ (P2 A (A ~> A)))).
-    + eapply (empty _ (Prop_tau _ (P3 A (A ~> A) A))).
-Qed.
+Proof. eapply proof_sys_intro. exact (A_impl_A A). Qed.
 
 
 (* Theorem 8.: Soundness *)

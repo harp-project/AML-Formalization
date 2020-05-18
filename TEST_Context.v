@@ -25,6 +25,7 @@ Lemma TEST_definedness_context :
 Proof. reflexivity. Qed.
 
 
+Definition y := evar_c("y").
 Definition parameters_context :=
   ctx_app_l box ('x $ const("sigma") $ 'y $ Bot).
 
@@ -38,3 +39,11 @@ Proof. reflexivity. Qed.
 Lemma TEST_parameters_context' :
   subst_ctx parameters_context g = g $ ('x $ const("sigma") $ 'y $ Bot).
 Proof. reflexivity. Qed.
+
+
+Definition function_context :=
+  ctx_app_r (f $ 'x) (ctx_app_l box (const("sigma") $ 'y)).
+
+Lemma TEST_function_context :
+  subst_ctx function_context 'x = f $ 'x $ ('x $ const("sigma") $ 'y).
+Proof. simpl. reflexivity. Qed.
