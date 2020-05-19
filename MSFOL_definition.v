@@ -450,6 +450,12 @@ Definition MSFOL_to_AML (phi : MSFOL_formula) :=
   well_sorted_formula(phi) ~> ((formula_to_AML phi) ~=~ Top).
 
 (* for theories conversion for each element of the theory will be done *)
+(* Fixpoint MSFOL_to_AML' (theory : Ensembles MSFOL_formula)
+: Coq.Sets.Ensembles Sigma_pattern:=
+match theory with
+| Add _ elem => Add _ (MSFOL_to_AML elem)
+| Empty_set _ => Empty_set Sigma_pattern
+end. *)
 
 
 (* Theorem 13. *)
