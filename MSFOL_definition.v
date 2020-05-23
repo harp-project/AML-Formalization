@@ -348,7 +348,7 @@ Notation "f : s1 'X' s2 'X' .. 'X' sn '-->' s" :=
 (* Example for functional notation *)
 Definition f := (sigma_c "f") : --> List.
 Definition fib := (sigma_c "fib") : Nat --> Nat.
-Definition volume := (sigma_c "volume") : Nat X Nat --> Nat.
+Definition volume := (sigma_c "volume") : Nat X Nat X Nat --> Nat.
 
 
 (* Many-sorted predicates and formulas *)
@@ -431,9 +431,9 @@ match formula with
     ex_S (evar_c (M_var_id x)) : (M_var_sort x) , (formula_to_AML phi)
 end.
 
-(* requires MSFOL proved notation to be introduced *)
-(*
+
 Definition MSFOL_wellformed_terms :=
+let y := evar_c("y") in
   forall Gamma_MSFOL : Ensemble Sigma_pattern, forall t : MSFOL_term,
   Gamma_MSFOL |- ((well_sorted_term t) ~>
     ex_S y : (term_sort t), (term_to_AML t) ~=~ 'y).
@@ -442,7 +442,7 @@ Definition MSFOL_wellformed_formulas :=
   forall Gamma_MSFOL : Ensemble Sigma_pattern, forall phi : MSFOL_formula,
   Gamma_MSFOL |- ((well_sorted_formula phi) ~>
     ((formula_to_AML phi) ~=~ Top) _|_ (((formula_to_AML phi) ~=~ Bot))).
-*)
+
 
 
 (* MSFOL theories *)
