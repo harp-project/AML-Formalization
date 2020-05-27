@@ -204,7 +204,8 @@ Inductive MSFOL_proof_system : MSFOL_formula -> Prop :=
 (* Existential generalization *)
 | MSFOL_ex_gen (phi1 phi2 : MSFOL_formula) (x : MSFOL_var) :
     (phi1 M~> phi2) MSFOL_proved ->
-    negb (set_mem mvar_eq_dec x (f_free_vars phi2)) = true ->
+                             (* it is stated phi2 in paper *)
+    negb (set_mem mvar_eq_dec x (f_free_vars phi1)) = true ->
     ((M_ex x, phi1) M~> phi2) MSFOL_proved
 
 where "phi 'MSFOL_proved'" := (MSFOL_proof_system phi).
