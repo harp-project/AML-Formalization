@@ -447,7 +447,7 @@ Definition MSFOL_wellformed_formulas :=
 
 
 (* MSFOL theories *)
-Definition MSFOL_to_AML (phi : MSFOL_formula) :=
+Definition MSFOL_axiom_to_AML (phi : MSFOL_formula) :=
   well_sorted_formula(phi) ~> ((formula_to_AML phi) ~=~ Top).
 
 (* for theories conversion for each element of the theory will be done *)
