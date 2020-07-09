@@ -282,8 +282,15 @@ Lemma disj_left_intro (A B : Sigma_pattern) :
 Proof. eapply (syllogism_4_meta _ _ _ _ (modus_ponens A Bot) (bot_elim B)). Qed.
 
 
+Lemma not_not_intro (A : Sigma_pattern) :
+  (A ~> ¬(¬A)) proved.
+(* Donko Istvan *)
+Proof. unfold sp_not. exact (modus_ponens A Bot). Qed.
+
+
 Lemma not_not_elim (A : Sigma_pattern) :
   (¬(¬A) ~> A) proved.
+(* Istvan Donko *)
 Proof.
   eapply Mod_pon.
   - (* t1 *) eapply (modus_ponens (¬A) Bot).
@@ -291,9 +298,41 @@ Proof.
 Qed.
 
 
-Lemma not_not_intro (A : Sigma_pattern) :
-  (A ~> ¬(¬A)) proved.
-Proof. unfold sp_not. exact (modus_ponens A Bot). Qed.
+Lemma double_neg_elim (A B : Sigma_pattern) :
+  (((¬(¬A)) ~> (¬(¬B))) ~> (A ~> B)) proved.
+Proof.
+  eapply syllogism_intro.
+  - eapply Prop_tau. eapply (P4 (¬A) (¬B)).
+  - eapply Prop_tau. eapply (P4 B A).
+Qed.
+
+Lemma deduction (A B : Sigma_pattern) :
+  A proved -> B proved -> (A ~> B) proved.
+Proof.
+  intros.
+  eapply Mod_pon.
+  - exact H0. 
+  - eapply (Prop_tau _ (P2 B A)).
+Qed.
+
+Lemma P4_rev_meta (A B : Sigma_pattern) :
+  (A ~> B) proved -> ((A ~> B) ~> (¬B ~> ¬A)) proved.
+Proof.
+  intros.
+  eapply deduction.
+  - exact H.
+  - eapply Mod_pon.
+    * eapply syllogism_intro.
+      + eapply syllogism_intro.
+        -- eapply (not_not_elim A).
+        -- exact H.
+      + eapply (not_not_intro B).
+    * eapply (Prop_tau _ (P4 (¬A) (¬B))).
+Qed.
+
+Lemma P4m_neg (A B : Sigma_pattern) :
+  ((¬A ~> ¬B) ~> (A ~> ¬B) ~>  ¬A) proved.
+Admitted.
 
 Lemma double_elim (A B : Sigma_pattern) :
   (((¬(¬A)) ~> (¬(¬B))) ~> (A ~> B)) proved.
@@ -303,7 +342,8 @@ Proof.
   - eapply Prop_tau. eapply (P4 B A).
 Qed.
 
-Lemma double_elim_meta (A B : Sigma_pattern) :
+(* double_elim_meta *)
+Lemma double_neg_elim_meta (A B : Sigma_pattern) :
   ((¬(¬A)) ~> (¬(¬B))) proved -> (A ~> B) proved.
 Proof.
   intros.
@@ -312,16 +352,15 @@ Proof.
   - exact (double_elim A B).
 Qed.
 
-Lemma not_not_impl_intro (A B : Sigma_pattern) :
-  (A ~> B ~> (¬¬A ~> ¬¬B)) proved.
-(*
-Proof.
-  pose( base := Mod_pon (not_not_intro (B)) (Prop_tau _ (P2 (B ~> ¬¬B) (A ~> ¬¬A)))).
-  Check (reorder_meta base).
-  pose (a := conj A B).
-  unfold sp_and in a. unfold sp_or in a. *)
+Lemma not_not_impl_intro_meta (A B : Sigma_pattern) :
+  (A ~> B) proved -> (¬¬A ~> ¬¬B) proved.
 Admitted.
 
+Lemma not_not_impl_intro (A B : Sigma_pattern) :
+  (A ~> B ~> (¬¬A ~> ¬¬B)) proved.
+Admitted.
+
+(*
 Lemma P5i (A C : Sigma_pattern) :
   (¬A ~> (A ~> C)) proved.
 (*
@@ -357,5 +396,47 @@ Admitted.
 Lemma double_elim_ex_meta (A B :Sigma_pattern) :
   (ex x, (¬¬A ~> ¬¬B)) proved -> (ex x, (A ~> B)) proved.
 Admitted.
+
+(* Q5 *)
+(*
+\neg \exists x . \neg phi -> phi[y/x]  // by notation
+\neg phi[y/x] -> \exists x . \neg phi // by propositional reasoning
+(\neg phi)[y/x] -> \exists x . \neg phi // meta-property of substitution
+ *)
+
+Lemma neg_ex_quan : forall A : Sigma_pattern, forall x y : EVar,
+  ((¬ e_subst_var A 'y x) ~> (ex x, ¬A)) proved.
+Proof.
+  intros.
+  unfold sp_not.
+
+
+Qed.
+
+  
+Lemma Q5 : forall x y : EVar, forall A : Sigma_pattern,
+  ((all x, A) ~> (e_subst_var A 'y x)) proved.
+Proof.
+  intros.
+  unfold sp_forall.
+  unfold sp_not.
+
+Qed.
+
+(* exists intro *)
+(*
+x \in \exists z . z /\ phi(z)
+iff \exists z . x \in (z /\ phi(z))
+iff \exists z . (x \in z) /\ phi(z)
+iff \exists z . x=z /\ phi(z)
+iff phi(x)
+*)
+Lemma exists_intro : forall x z : EVar, forall phi : EVar -> Sigma_pattern,
+  (phi(x) ~> ('x -< ex z, 'z _&_ phi(z))) proved.
+Proof.
+  intros.
+
+Qed.
+*)
 
 End FOL_helpers.

@@ -3,7 +3,7 @@
 (* ************************************************************************** *)
 Require Import AML_definition.
 Import AML_notations.
-Require Import MSFOL_definition.
+Require Import MSFOL.
 Import MSFOL_notations.
 Require Import FOL_helpers.
 Require Import String.
@@ -266,6 +266,36 @@ End Nat_examples.
 
 Section Nat_proofs.
 
+Ltac in_hyp := (
+  unfold Add;
+  repeat (
+    try (eapply Union_intror; reflexivity);
+    eapply Union_introl
+  )).
+
+(* Proof of 0 + x = x, for all natural number x *)
+Definition pli_theory :=
+let plus_0_x := fun x => (x -< [[ Nat ]]) ~> plus' ^zero x ~=~ x in
+  Add _ (Empty_set Sigma_pattern)
+  (Peano_Induction plus_0_x).
+
+Lemma plus_left_id :
+let x := (evar_c("x")) in
+  pli_theory |- (all_S x:Nat, (plus' ^zero 'x ~=~ 'x)).
+Proof.
+  simpl.
+  unfold pli_theory.
+  eapply E_mod_pon.
+  2: {
+    eapply hypothesis. unfold Add. eapply Union_intror. unfold Peano_Induction.
+    unfold sorted_all_quan. reflexivity.
+  }
+  1: {
+    eapply conj_intro_meta_e.
+
+Abort.
+
+Check sp_var(evar_c("x")).
 (* Proof of commutativity of addition over natural numbers *)
 Definition comm_theory := Empty_set Sigma_pattern. (* this can be extended *)
 Lemma nat_plus_comm :
@@ -273,166 +303,5 @@ Lemma nat_plus_comm :
     (all_S x : Nat, (all_S y : Nat, ((plus' 'x 'y) ~=~ (plus' 'y 'x)))).
 Admitted.
 
-(* Proof of 0 + x = x, for all natural number x *)
-Definition pli_theory := Empty_set Sigma_pattern. (* this can be extended *)
-Lemma plus_left_id :
-let x := (evar_c("x")) in
-  pli_theory |- (all_S x:Nat, (plus' ^zero 'x ~=~ 'x)).
-Admitted.
-
-(* These proofs aren't correct in this form, because they don't have sorted
- * quantification, by are kept to state a structure for the quantified version
- *)
-(*
-Definition axiom_set (a : EVar) :=
-  Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (Add _
-    empty_theory
-    (succ_inj (plus' 'a two) (succ' (succ' (plus' 'a ^zero)))))
-    (succ_inj (plus' 'a (succ' ^zero)) (succ' (plus' 'a ^zero))))
-    (succ_inj (succ' (succ' (plus' 'a ^zero))) (succ' (succ' 'a))))
-    (succ_inj (succ' (plus' 'a ^zero)) (succ' 'a)))
-    (succ_inj (plus' 'a ^zero) 'a))
-    (id_elem_right 'a))
-    (succ_rec 'a ^zero))
-    (succ_rec 'a one))
-    (succ_rec 'a two))
-    (succ_rec 'a three).
-
-Lemma plus_one (a : EVar) :
-let G := (axiom_set a) in
-  G |- (plus' 'a one ~=~ succ' 'a).
-Proof.
-  intros.
-  unfold G. unfold axiom_set. unfold id_elem_right. unfold succ_rec.
-  unfold succ_inj.
-
-  unfold one. (* by definition *)
-  eapply E_trans.
-  - eapply hypothesis. in_hyp.
-  - eapply E_mod_pon.
-    (* using id_intro_right *)
-    + eapply (hypothesis (id_elem_right 'a)). in_hyp.
-    + eapply (hypothesis (succ_inj (plus' 'a ^zero) 'a)). in_hyp.
-Qed.
-
-
-Lemma plus_two' (a : EVar) :
-let G := (axiom_set a) in
-  G |- (plus' 'a two ~=~ succ' (succ' (plus' 'a ^zero))).
-Proof.
-  intros.
-  unfold G. unfold axiom_set. unfold id_elem_right. unfold succ_rec. unfold succ_inj.
-
-  eapply (E_trans (plus' 'a two) (succ' (plus' 'a one)) (succ' (succ' (plus' 'a ^zero)))).
-  - eapply (hypothesis (succ_rec 'a (succ' ^zero))). in_hyp.
-  - eapply E_mod_pon.
-    + eapply (hypothesis ((succ_rec 'a ^zero))). in_hyp.
-    + unfold id_elem_right. eapply (hypothesis
-        (succ_inj (plus' 'a (succ' ^zero)) (succ' (plus' 'a ^zero)))).
-      in_hyp.
-Qed.
-
-
-Lemma plus_two (a : EVar) :
-let G := (axiom_set a) in
-  G |- (plus' 'a two ~=~ succ' (succ' 'a)).
-Proof.
-  intros.
-  unfold G. unfold axiom_set. unfold id_elem_right. unfold succ_rec.
-  unfold succ_inj.
-
-  eapply (E_trans (plus' 'a two)
-                  (succ' (succ' (plus' 'a ^zero)))
-                  (succ' (succ' 'a))).
-  - eapply plus_two'.
-  - eapply E_mod_pon.
-    + eapply E_mod_pon.
-      * eapply (hypothesis (id_elem_right 'a)). in_hyp.
-      * eapply (hypothesis (succ_inj (plus' 'a ^zero) 'a)). in_hyp.
-    + eapply (hypothesis (succ_inj (succ' (plus' 'a ^zero)) (succ' 'a))).
-      in_hyp.
-Qed.
-
-
-Lemma plus_three' (a : EVar) :
-let G := (axiom_set a) in
-  G |- (plus' 'a three ~=~ succ' (succ' (succ' (plus' 'a ^zero)))).
-Proof.
-  eapply (E_trans (plus' 'a three)
-                  (succ' (plus' 'a (succ' (succ' ^zero))))
-                  (succ' (succ' (succ' (plus' 'a ^zero))))).
-  - eapply (hypothesis (succ_rec 'a two)). in_hyp.
-  - eapply E_mod_pon.
-    + eapply (plus_two' a).
-    + eapply (hypothesis
-                (succ_inj (plus' 'a two) (succ' (succ' (plus' 'a ^zero))))).
-      in_hyp.
-Qed.
-
-Lemma plus_three (a : EVar) :
-let G := (axiom_set a) in
-  G |- (plus' 'a three ~=~ succ' (succ' (succ' 'a))).
-Proof.
-  intros.
-  unfold G. unfold axiom_set. unfold id_elem_right. unfold succ_rec.
-  unfold succ_inj.
-
-  eapply (E_trans
-   (plus' 'a three)
-   (succ' (succ' (succ' (plus' 'a ^zero))))
-   (succ' (succ' (succ' 'a)))).
-  - eapply (plus_three' a).
-  - eapply E_mod_pon.
-    + eapply E_mod_pon.
-      * eapply E_mod_pon.
-         -- eapply (hypothesis (plus' 'a ^zero ~=~ 'a)). in_hyp.
-         -- eapply (hypothesis (succ_inj (plus' 'a ^zero) 'a)). in_hyp.
-      * eapply (hypothesis (succ_inj (succ' (plus' 'a ^zero)) (succ' 'a))).
-        in_hyp.
-    + eapply (hypothesis
-                (succ_inj (succ' (succ' (plus' 'a ^zero))) (succ' (succ' 'a)))).
-      in_hyp.
-Qed.
-
-
-Lemma plus_comm (n m : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-  theory |- (plus' n m ~=~ plus' m n).
-Admitted.
-
-
-Definition theory :=
-  Add _ (Add _ (Add _ (Add _ (Add _ (Add _ (axiom_set x)
-    (Peano_Induction x
-      (fun var => ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))))
-    zero_is_nat)
-    (succ_closed 'x))
-    (succ_inj 'x 'y))
-    (contra 'x))
-    (id_elem_right ^zero).
-
-Lemma plus_x_0_eq_x_with_env :
-  theory |-  x_plus_0_eq_x.
-Proof.
-  unfold x_plus_0_eq_x. unfold theory.
-
-  eapply E_mod_pon.
-  2: {
-  - eapply (hypothesis (Peano_Induction x (fun var =>
-    ((var -'< [[ Nat ]]) ~> ((^plus $ var $ ^zero) ~=~ var)))) theory).
-    unfold Add. eapply Union_introl. eapply Union_introl. eapply Union_introl.
-    eapply Union_introl. eapply Union_introl. unfold Peano_Induction.
-    eapply Union_intror. reflexivity.
-  }
-  - unfold Peano_Induction. eapply conj_intro_t.
-    + eapply E_mod_pon.
-      * (* ^ plus $ ^ zero $ ^ zero ~=~ ^ zero *) (* from hypothesis *)
-        eapply (hypothesis (plus' ^zero ^zero ~=~ ^zero)).
-        eapply Union_intror. reflexivity.
-      * eapply ext. eapply Prop_tau. eapply (P2 (plus' ^zero ^zero ~=~ ^zero)
-                                    (^zero -'< [[Nat]])).
-    + unfold sp_forall.
-
-Admitted.
- *)
 
 End Nat_proofs.

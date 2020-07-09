@@ -270,7 +270,7 @@ Proof.
     intros.
     unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
     unfold sp_and. unfold sp_or.
-    eapply ext.
+    eapply proof_sys_intro.
     unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or.
 Admitted.
 (*     eapply E_refl.
