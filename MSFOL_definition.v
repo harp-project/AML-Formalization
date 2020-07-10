@@ -262,16 +262,26 @@ Notation "'all_S' x : s , phi" :=
   (sorted_all_quan x s phi) (at level 3, x at next level, s at next level).
 
 
+Lemma equal_unwrap (theory : Ensemble Sigma_pattern) (A B : Sigma_pattern) :
+  theory |- (A ~=~ B) -> theory |- (A <~> B).
+Proof.
+  intros.
+  unfold equal in H.
+
 (* Proposition 10. *)
 Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
 Proof.
     intros.
-    unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
-    unfold sp_and. unfold sp_or.
     eapply proof_sys_intro.
-    unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or.
+    unfold equal. unfold sp_iff. unfold sp_and.
+    eapply (Prop_disj (ctx_app_r definedness_symbol box)).
+
+    unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
+     unfold sp_or.
+
+    unfold equal.  unfold sp_and. unfold sp_or.
 Admitted.
 (*     eapply E_refl.
 Qed.*)
