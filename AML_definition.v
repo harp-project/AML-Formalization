@@ -960,10 +960,6 @@ Proof.
   assumption.
 Qed.
 
-Lemma e_eq_e G A:
-  G |- (A ~=~ (¬(¬A))).
-Admitted.
-
 (* Lemma asd A G :
   G |- (A ~> ¬( ¬A )). *)
 

@@ -1,5 +1,6 @@
 (* *******************************~= MSFOL =~******************************* *)
 Require Import AML_definition.
+Require Import FOL_helpers.
 Import AML_notations.
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Lists.ListSet.
@@ -267,14 +268,13 @@ Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
 Proof.
-    (* intros.
+    intros.
     unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
     unfold sp_and. unfold sp_or.
-    eapply proof_sys_intro.
-    unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or. *)
+    pose (eq_evar_subst (evar_c "y")).
     
     
-Qed.
+Admitted.
 (*     eapply E_refl.
 Qed.*)
 
