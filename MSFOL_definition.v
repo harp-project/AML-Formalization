@@ -267,12 +267,14 @@ Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
 Proof.
-    intros.
+    (* intros.
     unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
     unfold sp_and. unfold sp_or.
     eapply proof_sys_intro.
-    unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or.
-Admitted.
+    unfold equal. unfold sp_iff. unfold sp_and. unfold sp_or. *)
+    
+    
+Qed.
 (*     eapply E_refl.
 Qed.*)
 
