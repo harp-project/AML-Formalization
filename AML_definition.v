@@ -545,7 +545,7 @@ let z := evar_c("z") in
 
 Inductive Application_context : Set :=
 | box
-| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
+(* | ctx_app_l (cc : Application_context) (sp : Sigma_pattern) *)
 | ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
 .
 
@@ -553,7 +553,7 @@ Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern)
 : Sigma_pattern :=
 match C with
 | box => sp
-| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
+(* | ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp' *)
 | ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
 end
 .
@@ -561,7 +561,7 @@ end
 Fixpoint free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_evars sp)
+(* | ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_evars sp) *)
 | ctx_app_r sp cc => set_union evar_eq_dec (free_evars sp) (free_vars_ctx cc)
 end.
 
@@ -908,7 +908,7 @@ Proof.
   
 Qed.
 
-Lemma implies_trasitivity G A B C:
+Lemma implies_transitivity G A B C:
   G |- (A ~> B) ->
   G |- (B ~> C)
 ->
@@ -931,6 +931,38 @@ Proof.
   * assumption.
   
 Qed.
+
+Lemma A_implies_not_not_A_ctx G A C:
+  G |- A -> G |- ¬ (subst_ctx C ( ¬A ))
+.
+Proof.
+  intros.
+  pose (ANNA := A_implies_not_not_A _ _ H).
+  replace (¬ (¬ A)) with ((¬ A) ~> Bot) in ANNA. 2: auto.
+  pose (EF := E_framing C (¬ A) Bot G ANNA).
+  
+  pose (PB := proof_sys_intro (subst_ctx C Bot ~> Bot) G (Prop_bot C)).
+  pose (TRANS := implies_transitivity G _ _ _ EF PB).
+  unfold sp_not.
+  assumption.
+Qed.
+
+(* Lemma 47 *)
+Lemma equiv_implies_eq G A B:
+  G |- (A <~> B)
+->
+  G |- (A ~=~ B).
+Proof.
+  intros.
+  pose (CTX := A_implies_not_not_A_ctx G (A <~> B) (ctx_app_r definedness_symbol box) H).
+  simpl in CTX.
+  unfold equal.
+  assumption.
+Qed.
+
+Lemma e_eq_e G A:
+  G |- (A ~=~ (¬(¬A))).
+Admitted.
 
 (* Lemma asd A G :
   G |- (A ~> ¬( ¬A )). *)
