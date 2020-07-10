@@ -262,27 +262,58 @@ Definition sorted_all_quan (x : EVar) (s : MSFOL_sorts) (phi : Sigma_pattern) :=
 Notation "'all_S' x : s , phi" :=
   (sorted_all_quan x s phi) (at level 3, x at next level, s at next level).
 
+Lemma neg_cong G a b:
+  G |- ( a ~=~  b) ->
+  G |- (¬a ~=~ ¬b).
+Admitted.
+
+Lemma ex_cong G a b x:
+  G |- (       a  ~=~        b ) ->
+  G |- ((ex x, a) ~=~ (ex x, b)).
+Admitted.
+
+Lemma impl_congl G a b c:
+  G |- ( a       ~=~  b      ) ->
+  G |- ((a ~> c) ~=~ (b ~> c)).
+Admitted.
+
+Lemma impl_congr G a b c:
+  G |- (      a  ~=~       b ) ->
+  G |- ((c ~> a) ~=~ (c ~> b)).
+Admitted.
 
 (* Proposition 10. *)
-Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
-  forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
-  theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
+Lemma forall_ex_equiv G s x phi:
+  G |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
 Proof.
     intros.
     unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
-    unfold sp_and. unfold sp_or.
-    pose (eq_evar_subst (evar_c "y")).
-    
-    
-Admitted.
-(*     eapply E_refl.
-Qed.*)
+    unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
+    apply neg_cong.
+    apply ex_cong.
+    apply neg_cong.
+    apply (eq_trans _ (¬(¬MSHIP) ~> phi) _ G).
+    apply impl_congl. apply e_eq_nne.
+    apply impl_congr. apply e_eq_nne.
+Qed.
 
-Lemma forall_ex_equiv_rev :
-  forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
-  empty_theory |- (¬(all_S x:s, ¬phi) ~=~ (ex_S x:s, phi)).
-Admitted.
-
+Lemma forall_ex_equiv_rev G s x phi:
+  G |- (¬(all_S x:s, ¬phi) ~=~ (ex_S x:s, phi)).
+Proof.
+    intros.
+    unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
+    unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
+    apply eq_symm.
+    apply (eq_trans _ (¬ (¬ ex x, (¬ (¬ (¬ MSHIP) ~> ¬ phi)))) _ G).
+    apply e_eq_nne.
+    apply neg_cong.
+    apply neg_cong.
+    apply ex_cong.
+    apply neg_cong.
+    apply impl_congl.
+    apply eq_symm.
+    apply e_eq_nne.
+Qed.
 
 (* Many-sorted functions and terms *)
 Section NatToStringConversion.
