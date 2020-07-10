@@ -545,7 +545,7 @@ let z := evar_c("z") in
 
 Inductive Application_context : Set :=
 | box
-| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
+(* | ctx_app_l (cc : Application_context) (sp : Sigma_pattern) *)
 | ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
 .
 
@@ -553,7 +553,7 @@ Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern)
 : Sigma_pattern :=
 match C with
 | box => sp
-| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
+(* | ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp' *)
 | ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
 end
 .
@@ -582,6 +582,7 @@ Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
 
 | P4 (phi psi : Sigma_pattern) :
     (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
+
 where "pattern 'tautology'" := (Tautology_proof_rules pattern).
 
 
@@ -782,7 +783,7 @@ where "theory |- pattern" := (Provable theory pattern).
 
 (* Deduction theorem *)
 Theorem deduction_intro
-  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     In _ theory axiom -> theory |- pattern ->
     (Subtract _ theory axiom) |- (axiom ~> pattern).
 Admitted.
@@ -856,6 +857,137 @@ Proof.
     * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)). in_hyp.
 Qed.
 
+Lemma exclusion G A:
+  G |- A -> G |- (A ~> Bot) -> G |- Bot.
+Proof.
+  intros.
+  unfold sp_not in H0.
+  pose (E_mod_pon A Bot G H H0).
+  assumption.
+Qed.
+
+Axiom exclusion_axiom : forall G A,
+  G |- A -> G |- (¬ A) -> False.
+
+Axiom or_or : forall G A,
+G |- A \/ G |- (¬ A).
+
+Axiom classic : forall P: Prop, P \/ not P.
+
+Axiom extension : forall G A B,
+  G |- A -> (Add Sigma_pattern G B) |- A.
+
+
+Lemma NNPP : forall p : Prop, ~~ p -> p.
+Proof.
+  unfold not in *. intros. elim (classic p).
+  * intro. assumption.
+  * unfold not. intros. pose (H H0). contradiction.
+Qed.
+
+Lemma PNNP : forall p : Prop, p -> ~~p.
+Proof.
+  (* unfold not in *. *)
+  intros. unfold not. intros. pose (H0 H). exact f.
+Qed.
+
+Axiom set_extensionality : forall A B,
+  Same_set Sigma_pattern A B -> A = B.
+
+Lemma same_set_add_sub : forall T S E,
+  Same_set T (Subtract T (Add T S E) E) S.
+Admitted.
+
+Lemma in_add_set T S E:
+In T (Add T S E) E.
+Proof.
+    unfold Add. apply Union_intror.
+    apply In_singleton.
+Qed.
+
+(** Gamma |- A -> Gamma |- ¬¬A *)
+Lemma A_implies_not_not_A G A:
+  G |- A -> G |- ¬( ¬A )
+.
+Proof.
+  intros. unfold sp_not.
+
+  assert (In Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)). {
+    apply in_add_set.
+  }
+  assert ((Add Sigma_pattern G (A ~> Bot)) |- Bot). {
+    pose (hypothesis (A ~> Bot) (Add Sigma_pattern G (A ~> Bot)) H0).
+    pose (extension G A (A ~> Bot) H).
+
+    pose (exclusion _ A p0 p).
+    (* pose (E_mod_pon A Bot (Add Sigma_pattern G (A ~> Bot)) p0 p). *)
+    assumption.
+  }
+  pose (deduction_intro (A ~> Bot) Bot (Add _ G (A ~> Bot)) H0 H1).
+  assert (Subtract Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)= G).
+  {
+    pose (same_set_add_sub Sigma_pattern G (A ~> Bot)).
+    pose (set_extensionality (Subtract Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)) G s).
+    exact e.
+  }
+  rewrite H2 in p. assumption.
+
+Qed.
+
+Lemma implies_transitivity G A B C:
+  G |- (A ~> B) ->
+  G |- (B ~> C)
+->
+  G |- (A ~> C).
+Proof.
+  intros.
+  pose (P1 := deduction_elim A B G H).
+  pose (P2 := extension G (B ~> C) A H0).
+  pose (MP := E_mod_pon B C (Add Sigma_pattern G A) P1 P2).
+  pose (SOL := deduction_intro A C (Add Sigma_pattern G A)).
+  assert (Subtract Sigma_pattern (Add Sigma_pattern G A) A = G).
+  {
+    pose (same_set_add_sub Sigma_pattern G A).
+    pose (set_extensionality (Subtract Sigma_pattern (Add Sigma_pattern G A) A) G s).
+    exact e.
+  }
+  rewrite H1 in SOL.
+  apply SOL.
+  * apply in_add_set.
+  * assumption.
+
+Qed.
+
+Lemma A_implies_not_not_A_ctx G A C:
+  G |- A -> G |- ¬ (subst_ctx C ( ¬A ))
+.
+Proof.
+  intros.
+  pose (ANNA := A_implies_not_not_A _ _ H).
+  replace (¬ (¬ A)) with ((¬ A) ~> Bot) in ANNA. 2: auto.
+  pose (EF := E_framing C (¬ A) Bot G ANNA).
+
+  pose (PB := proof_sys_intro (subst_ctx C Bot ~> Bot) G (Prop_bot C)).
+  pose (TRANS := implies_transitivity G _ _ _ EF PB).
+  unfold sp_not.
+  assumption.
+Qed.
+
+(* Lemma 47 *)
+Lemma equiv_implies_eq G A B:
+  G |- (A <~> B)
+->
+  G |- (A ~=~ B).
+Proof.
+  intros.
+  pose (CTX := A_implies_not_not_A_ctx G (A <~> B) (ctx_app_r definedness_symbol box) H).
+  simpl in CTX.
+  unfold equal.
+  assumption.
+Qed.
+
+(* Lemma asd A G :
+  G |- (A ~> ¬( ¬A )). *)
 
 Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
 Proof. eapply proof_sys_intro. exact (A_impl_A A). Qed.

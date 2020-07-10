@@ -167,7 +167,7 @@ Proof.
   - eapply H0.
   - eapply E_mod_pon.
     + eapply H.
-    + eapply ext. eapply conj_intro.
+    + eapply proof_sys_intro. eapply conj_intro.
 Qed.
 
 
@@ -438,5 +438,17 @@ Proof.
 
 Qed.
 *)
+
+Lemma e_eq_nne G A:
+  G |- (A ~=~ (¬(¬A))).
+Proof.
+  apply equiv_implies_eq.
+  unfold "<~>".
+  apply conj_intro_meta_e.
+  * pose (NN := not_not_intro A).
+    exact (proof_sys_intro _ G NN).
+  * pose (NN := not_not_elim A).
+    exact (proof_sys_intro _ G NN).
+Qed.
 
 End FOL_helpers.
