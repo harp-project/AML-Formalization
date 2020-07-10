@@ -561,8 +561,8 @@ end
 Fixpoint free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_vars sp)
-| ctx_app_r sp cc => set_union evar_eq_dec (free_vars sp) (free_vars_ctx cc)
+| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_evars sp)
+| ctx_app_r sp cc => set_union evar_eq_dec (free_evars sp) (free_vars_ctx cc)
 end.
 
 
@@ -673,6 +673,26 @@ Proof.
                  ((A ~> B ~> Bot) ~> A ~> Bot)).
 Qed.
 
+(* Lemma P4m_neg (A B : Sigma_pattern) :
+  ((¬A ~> ¬B) ~> ((¬A ~> B) ~> A)) proved.
+Proof.
+  eapply Mod_pon.
+  - (* t8 *) eapply Prop_tau. eapply (P2 (A ~> B) (A ~> B ~> Bot)).
+  - (* t7 *) eapply Mod_pon.
+    + (* t6 *) eapply Mod_pon.
+      * (* t5 *) eapply Mod_pon.
+        -- (* t4 *) eapply Prop_tau. eapply (P3 A Bot B).
+        -- (* t3 *) eapply Prop_tau.
+           eapply (P3 (¬A ~> B) (¬A ~> ¬B) (A)).
+      * (* t2 *) eapply Prop_tau.
+        eapply (P2 (((¬A ~> B) ~> ¬A ~> ¬B) ~> (¬A ~> B) ~> A)
+                   (¬A ~> ¬B)).
+    + (* t1 *) eapply Prop_tau.
+      eapply (P3 (¬A ~> ¬B)
+                 ((¬A ~> B) ~> ¬A ~> ¬B)
+                 ((¬A ~> B) ~> A)).
+Qed. *)
+
 Lemma P4i (A : Sigma_pattern) :
   ((A ~> ¬A) ~> ¬A) proved.
 Proof.
@@ -773,6 +793,12 @@ Theorem deduction_elim
     (Add _ theory phi1) |- phi2.
 Admitted.
 
+Theorem deduction
+  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern <->
+    (Subtract _ theory axiom) |- (axiom ~> pattern).
+Admitted.
+
 (* Proposition 7: definedness related properties *)
 Lemma eq_refl
   (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
@@ -846,13 +872,15 @@ Proof.
 *)
 Admitted.
 
-Theorem Completeness :
+(* Theorem Completeness :
   forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
   (theory |= phi) -> (theory |- phi).
-Abort.
+Abort. *)
 
+End AML.
 
 Module AML_notations.
+
 Notation "' v" := (sp_var v) (at level 3).
 Notation "` s" := (sp_set s) (at level 3).
 Notation "^ c" := (sp_const c) (at level 3).
