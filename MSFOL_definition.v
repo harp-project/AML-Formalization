@@ -265,7 +265,11 @@ Notation "'all_S' x : s , phi" :=
 Lemma neg_cong G a b:
   G |- ( a ~=~  b) ->
   G |- (¬a ~=~ ¬b).
-Admitted.
+Proof.
+  intros.
+  pose (EQ := eq_evar_subst (evar_c "y") a b (¬' (evar_c "y")) G H).
+  simpl in EQ. assumption.
+Qed.
 
 Lemma equal_unwrap (theory : Ensemble Sigma_pattern) (A B : Sigma_pattern) :
   theory |- (A ~=~ B) -> theory |- (A <~> B).
@@ -275,7 +279,7 @@ Admitted.
   unfold equal in H.
 *)
 
-(* Proposition 10. *)
+(* (* Proposition 10. *)
 Lemma forall_ex_equiv (theory : Ensemble Sigma_pattern):
   forall s : MSFOL_sorts, forall x : EVar, forall phi : Sigma_pattern,
   theory |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
@@ -290,15 +294,37 @@ Admitted.
      unfold sp_or.
 
     unfold equal.  unfold sp_and. unfold sp_or.
-*)
+*)*)
+
+Example a x :
+if evar_eq_dec x {| id_ev := "y" |} then True else False
+.
+Proof.
+  destruct (evar_eq_dec x {| id_ev := "y" |}).
+Abort.
+
+
 Lemma ex_cong G a b x:
   G |- (       a  ~=~        b ) ->
   G |- ((ex x, a) ~=~ (ex x, b)).
+Proof.
+  intros.
+  pose (EQ := eq_evar_subst (evar_c "y") a b (ex x, ' (evar_c "y")) G H).
+  simpl in EQ. Check id_ev {| id_ev := "y" |}.
+  Check evar_eq_dec x {| id_ev := "y" |}.
+  
+  case_eq (evar_eq_dec x {| id_ev := "y" |});
+  intros.
+  * pose (@left).
 Admitted.
 
 Lemma impl_congl G a b c:
   G |- ( a       ~=~  b      ) ->
   G |- ((a ~> c) ~=~ (b ~> c)).
+Proof.
+  intros.
+  pose (EQ := eq_evar_subst (evar_c "y") a b ('(evar_c "y") ~> c) G H).
+  simpl in EQ.
 Admitted.
 
 Lemma impl_congr G a b c:
@@ -317,8 +343,24 @@ Proof.
     apply ex_cong.
     apply neg_cong.
     apply (eq_trans _ (¬(¬MSHIP) ~> phi) _ G).
-    apply impl_congl. apply e_eq_nne.
-    apply impl_congr. apply e_eq_nne.
+    * apply impl_congl. apply (proof_sys_intro _ G (e_eq_nne _)).
+    * apply impl_congr. apply (proof_sys_intro _ G (e_eq_nne _)).
+Qed.
+
+(* Proposition 10. *)
+Lemma forall_ex_equiv2 G s x phi:
+  G |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
+Proof.
+    intros.
+    unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
+    unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
+    
+    apply neg_cong.
+    apply ex_cong.
+    apply neg_cong.
+    apply (eq_trans _ (¬(¬MSHIP) ~> phi) _ G).
+    * apply impl_congl. apply (proof_sys_intro _ G (e_eq_nne _)).
+    * apply impl_congr. apply (proof_sys_intro _ G (e_eq_nne _)).
 Qed.
 
 Lemma forall_ex_equiv_rev G s x phi:
@@ -329,14 +371,14 @@ Proof.
     unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
     apply eq_symm.
     apply (eq_trans _ (¬ (¬ ex x, (¬ (¬ (¬ MSHIP) ~> ¬ phi)))) _ G).
-    apply e_eq_nne.
-    apply neg_cong.
-    apply neg_cong.
-    apply ex_cong.
-    apply neg_cong.
-    apply impl_congl.
-    apply eq_symm.
-    apply e_eq_nne.
+    * apply (proof_sys_intro _ G (e_eq_nne _)).
+    * apply neg_cong.
+      apply neg_cong.
+      apply ex_cong.
+      apply neg_cong.
+      apply impl_congl.
+      apply eq_symm.
+      apply (proof_sys_intro _ G (e_eq_nne _)).
 Qed.
 
 (* Many-sorted functions and terms *)

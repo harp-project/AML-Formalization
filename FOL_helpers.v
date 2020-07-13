@@ -297,7 +297,6 @@ Proof.
   - (* t2 *) eapply Prop_tau. eapply (P4 A (¬(¬A))).
 Qed.
 
-
 Lemma double_neg_elim (A B : Sigma_pattern) :
   (((¬(¬A)) ~> (¬(¬B))) ~> (A ~> B)) proved.
 Proof.
@@ -439,16 +438,111 @@ Proof.
 Qed.
 *)
 
-Lemma e_eq_nne G A:
-  G |- (A ~=~ (¬(¬A))).
+Lemma A_implies_not_not_A_alt A:
+  A proved -> (¬( ¬A )) proved
+.
+Proof.
+  intros. unfold sp_not.
+  pose (NN := not_not_intro A).
+  pose (MP := Mod_pon H NN). assumption.
+Qed.
+
+(* Lemma 46 *)
+Lemma A_implies_not_not_A_ctx A C:
+  A proved -> (¬ (subst_ctx C ( ¬A ))) proved
+.
+Proof.
+  intros.
+  pose (ANNA := A_implies_not_not_A_alt _ H).
+  replace (¬ (¬ A)) with ((¬ A) ~> Bot) in ANNA. 2: auto.
+  pose (EF := Framing C (¬ A) Bot ANNA).
+
+  pose (PB := Prop_bot C).
+  pose (TRANS := syllogism_intro _ _ _ EF PB).
+  unfold sp_not.
+  assumption.
+Qed.
+
+(* Lemma 47 *)
+Lemma equiv_implies_eq A B:
+  (A <~> B) proved
+->
+  (A ~=~ B) proved.
+Proof.
+  intros.
+  pose (CTX := A_implies_not_not_A_ctx (A <~> B) (ctx_app_r definedness_symbol box) H).
+  simpl in CTX.
+  unfold equal.
+  assumption.
+Qed.
+
+Lemma e_eq_nne A:
+  (A ~=~ (¬(¬A))) proved.
 Proof.
   apply equiv_implies_eq.
   unfold "<~>".
-  apply conj_intro_meta_e.
-  * pose (NN := not_not_intro A).
-    exact (proof_sys_intro _ G NN).
-  * pose (NN := not_not_elim A).
-    exact (proof_sys_intro _ G NN).
+  apply conj_intro_meta.
+  * apply (not_not_intro A).
+  * apply (not_not_elim A).
 Qed.
+
+(* Context Bot propagation *)
+Lemma ctx_bot_prop A C :
+  (A ~> Bot) proved
+->
+  (subst_ctx C A ~> Bot) proved.
+Proof.
+  intros.
+  pose (FR := Framing C A Bot H).
+  pose (BPR := Prop_bot C).
+  pose (TRANS := syllogism_intro _ _ _ FR BPR).
+  assumption.
+Qed.
+
+Lemma P5i A B:
+  (¬ A ~> (A ~> B)) proved
+.
+Proof.
+  pose (Ax1 := (Prop_tau _ (P2 (¬A) (¬B)))).
+  pose (Ax2 := (Prop_tau _ (P4 B A))).
+  pose (TRANS := syllogism_intro _ _ _ Ax1 Ax2).
+  assumption.
+Qed.
+
+Lemma false_implies_everything phi:
+  (Bot ~> phi) proved.
+Proof.
+  pose (B_B := (Prop_tau _ (P1 (Bot)))).
+  pose (P4 := P5i Bot phi).
+  apply Mod_pon in P4; assumption.
+Qed.
+
+(* Lemma 46 rev *)
+Lemma not_not_A_ctx_implies_A A C:
+  (¬ (subst_ctx C ( ¬A ))) proved -> A proved.
+Proof.
+  intro.
+  unfold sp_not in H at 1.
+  pose (BIE := false_implies_everything (subst_ctx C Bot)).
+  (* assert (G |- (subst_ctx C (¬ A) ~> Bot)). { auto. } *)
+  pose (TRANS := syllogism_intro _ _ _ H BIE).
+  induction C.
+  * simpl in TRANS.
+    pose (NN := not_not_elim A).
+    pose (MP := Mod_pon TRANS NN). assumption.
+  * eapply IHC.
+  Unshelve.
+  pose (BPR := ctx_bot_prop).
+Abort.
+
+
+(* Lemma 47 rev *)
+Lemma eq_implies_equiv G A B:
+  G |- (A ~=~ B)
+->
+  G |- (A <~> B).
+Proof.
+  intros.
+Abort.
 
 End FOL_helpers.

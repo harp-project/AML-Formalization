@@ -545,7 +545,7 @@ let z := evar_c("z") in
 
 Inductive Application_context : Set :=
 | box
-(* | ctx_app_l (cc : Application_context) (sp : Sigma_pattern) *)
+| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
 | ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
 .
 
@@ -553,7 +553,7 @@ Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern)
 : Sigma_pattern :=
 match C with
 | box => sp
-(* | ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp' *)
+| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
 | ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
 end
 .
@@ -782,12 +782,14 @@ where "theory |- pattern" := (Provable theory pattern).
 
 
 (* Deduction theorem *)
+(* CAUTION: supposedly wrong, see: mML TR Theorem 14 *)
 Theorem deduction_intro
   (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     In _ theory axiom -> theory |- pattern ->
     (Subtract _ theory axiom) |- (axiom ~> pattern).
 Admitted.
 
+(* CAUTION: supposedly wrong, see: mML TR Theorem 14 *)
 Theorem deduction_elim
   (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (theory |- (phi1 ~> phi2)) ->
@@ -906,6 +908,10 @@ Proof.
 Qed.
 
 (** Gamma |- A -> Gamma |- ¬¬A *)
+(** CAUTION: uses the supposedly wrong deduction thm 
+    CORRECT version: FOL_helpers/A_implies_not_not_A_alt
+    (which does NOT use the deduction theorem)
+*)
 Lemma A_implies_not_not_A G A:
   G |- A -> G |- ¬( ¬A )
 .
@@ -932,8 +938,12 @@ Proof.
   }
   rewrite H2 in p. assumption.
 
-Qed.
+Abort.
 
+(** CAUTION: uses the supposedly wrong deduction thm 
+    CORRECT version: FOL_helpers/syllogism and FOL_helpers/syllogism_intro
+    (which does NOT use the deduction theorem)
+*)
 Lemma implies_transitivity G A B C:
   G |- (A ~> B) ->
   G |- (B ~> C)
@@ -956,35 +966,7 @@ Proof.
   * apply in_add_set.
   * assumption.
 
-Qed.
-
-Lemma A_implies_not_not_A_ctx G A C:
-  G |- A -> G |- ¬ (subst_ctx C ( ¬A ))
-.
-Proof.
-  intros.
-  pose (ANNA := A_implies_not_not_A _ _ H).
-  replace (¬ (¬ A)) with ((¬ A) ~> Bot) in ANNA. 2: auto.
-  pose (EF := E_framing C (¬ A) Bot G ANNA).
-
-  pose (PB := proof_sys_intro (subst_ctx C Bot ~> Bot) G (Prop_bot C)).
-  pose (TRANS := implies_transitivity G _ _ _ EF PB).
-  unfold sp_not.
-  assumption.
-Qed.
-
-(* Lemma 47 *)
-Lemma equiv_implies_eq G A B:
-  G |- (A <~> B)
-->
-  G |- (A ~=~ B).
-Proof.
-  intros.
-  pose (CTX := A_implies_not_not_A_ctx G (A <~> B) (ctx_app_r definedness_symbol box) H).
-  simpl in CTX.
-  unfold equal.
-  assumption.
-Qed.
+Abort.
 
 (* Lemma asd A G :
   G |- (A ~> ¬( ¬A )). *)
