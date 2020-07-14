@@ -60,6 +60,105 @@ Qed.
 
 (* Propersies of the standard set operators *)
 
+Lemma Union_same {T : Type} : forall A : Ensemble T,
+  Same_set T (Union T A A) A.
+Proof.
+  unfold Same_set. unfold Included. split;intros.
+  * inversion H; assumption.
+  * unfold In. eapply Union_introl. assumption.
+Qed.
+
+Lemma Intersection_same {T : Type} : forall A : Ensemble T,
+  Same_set T (Intersection T A A) A.
+Proof.
+  unfold Same_set. unfold Included. split;intros.
+  * inversion H; assumption.
+  * unfold In. eapply Intersection_intro; assumption.
+Qed.
+
+Lemma In_dec {T : Type} : forall A : Ensemble T, forall x : T,
+  In T A x \/ ~ In T A x.
+Proof.
+  intros. unfold In.
+  apply classic.
+Qed.
+
+Lemma Intersection_Setminus {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Intersection T S1 (Complement T S2)) (Setminus T S1 S2).
+Proof.
+  unfold Same_set. unfold Included. split;intros.
+  * inversion H; subst.
+    unfold Setminus. unfold Complement in H1. unfold In in *. auto.
+  * inversion H. unfold In in *. eapply Intersection_intro.
+    - unfold In. assumption.
+    - unfold Complement. unfold In. assumption.
+Qed.
+
+Lemma Minus_Empty_Inclusion {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Setminus T S1 S2) (Empty_set T) <->
+  Included T S1 S2.
+Proof.
+  unfold Same_set. intros. unfold Setminus. unfold Included. unfold In.
+  split; intros.
+  * destruct (In_dec S2 x).
+    - auto.
+    - assert (S1 x /\ ~ S2 x). { auto. }
+      inversion H.
+      pose (H3 x H2). contradiction.
+  * split; intros.
+    - inversion H0. pose (H x H1). contradiction.
+    - contradiction.
+Qed.
+
+Lemma Union_Minus_Empty {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Union T (Setminus T S1 S2) (Setminus T S2 S1)) (Empty_set T) <->
+  Same_set T S1 S2.
+Proof.
+  unfold Same_set. intros. unfold Setminus. unfold Included. unfold In.
+  split; intros; split; intros.
+  * inversion H. destruct (In_dec S2 x).
+    - auto.
+    - assert (S1 x /\ ~ S2 x). { auto. }
+      assert (Union T (fun x : T => S1 x /\ ~ S2 x) (fun x : T => S2 x /\ ~ S1 x) x).
+      {
+        eapply Union_introl.
+        unfold In. assumption.
+      }
+      pose (H1 x H5). contradiction.
+  * inversion H. destruct (In_dec S1 x).
+    - auto.
+    - assert (S2 x /\ ~ S1 x). { auto. }
+      assert (Union T (fun x : T => S1 x /\ ~ S2 x) (fun x : T => S2 x /\ ~ S1 x) x).
+      {
+        eapply Union_intror.
+        unfold In. assumption.
+      }
+      pose (H1 x H5). contradiction.
+  * inversion H. inversion H0.
+    - subst. inversion H3. pose (H1 x H4). contradiction.
+    - subst. inversion H3. pose (H2 x H4). contradiction.
+  * contradiction.
+Qed.
+
+Lemma Union_Compl_Fullset {T : Type} : forall S : Ensemble T,
+  Same_set T (Union T (Complement T S) S) (Full_set T).
+Proof.
+  unfold Same_set. intros. unfold Setminus. unfold Included. unfold In.
+  split; intros.
+  * inversion H; subst.
+    - eapply Full_intro.
+    - eapply Full_intro.
+  * inversion H. destruct (In_dec S x).
+    - eapply Union_intror. assumption.
+    - eapply Union_introl. assumption.
+Qed.
+
+Lemma Same_set_dec {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T S1 S2 \/ ~Same_set T S1 S2.
+Proof.
+  intros. apply classic.
+Qed.
+
 Lemma Union_Empty_r {T : Type} : forall A : Ensemble T,
 Same_set T (Union T (Empty_set T) A) A.
 Proof.
@@ -128,6 +227,58 @@ split.
     + contradiction (H3 H2).
 Qed.
 
+(* Lemma Intersection_singleton_helper {T : Type} : forall S : Ensemble T, forall x : T,
+  Same_set T (Intersection T (Singleton T x) S) (Empty_set T) \/
+  Same_set T (Intersection T (Singleton T x) S) (Singleton T x).
+Proof.
+  intros. unfold Same_set. unfold Included. unfold Complement. unfold In.
+  destruct (In_dec S x). *)
+
+Lemma Intersection_singleton {T : Type} : forall S : Ensemble T, forall x : T,
+  ~ Same_set T (Intersection T (Singleton T x) S) (Empty_set T)
+<->
+  In T S x.
+Proof.
+  unfold Same_set. unfold Included. unfold Complement. unfold In.
+  intros.
+  
+  split;intros.
+  * destruct (In_dec S x).
+    - assumption.
+    - assert (False). {
+        apply H. split.
+        * intros. inversion H1. subst. inversion H2. subst. contradiction. 
+        * intros. contradiction.
+      }
+      contradiction.
+  * unfold not. intros. inversion H0. destruct (In_dec (Intersection T (Singleton T x) S) x).
+    - pose (H1 x H3). contradiction.
+    - unfold not in H3. unfold In in H3.
+      apply H3. apply Intersection_intro.
+      + apply In_singleton.
+      + assumption.
+Qed.
+
+Lemma Intersection_singleton_empty {T : Type} : forall S : Ensemble T, forall x : T,
+  Same_set T (Intersection T (Singleton T x) S) (Empty_set T)
+<->
+  ~ In T S x.
+Proof.
+  unfold Same_set. unfold Included. unfold Complement. unfold In.
+  intros.
+  
+  split;intros.
+  * inversion H. destruct (In_dec S x).
+    - assert (Intersection T (Singleton T x) S x). 
+      { eapply Intersection_intro. apply In_singleton. assumption. }
+      pose (H0 x H3).
+      contradiction.
+    - assumption.
+  * split; intros.
+   - inversion H0. subst. inversion H1. subst. contradiction.
+   - contradiction.
+Qed.
+
 Lemma Compl_Union_Compl_Intes_Ensembles : forall T :Type,
 forall L R : Ensemble T, Same_set T (Complement T (Union T (Complement T L)
                                                            (Complement T R)))
@@ -147,6 +298,19 @@ unfold Same_set. unfold Included. unfold In. split;intros.
   apply not_and_or. intro. exact (H (proj2 (Intersection_is_and _ L R x) H0)).
 Qed.
 
+Lemma Compl_Union_Intes_Compl_Ensembles : forall T :Type,
+forall L R : Ensemble T, Same_set T (Complement T (Union T L R))
+                                    (Intersection T (Complement T L) (Complement T R)).
+Proof.
+  intros.
+  pose (S := Compl_Union_Compl_Intes_Ensembles T (Complement T L) (Complement T R)).
+  pose (S1 := Compl_Compl_Ensembles T R).
+  pose (S2 := Compl_Compl_Ensembles T L).
+  apply Extensionality_Ensembles in S1.
+  apply Extensionality_Ensembles in S2.
+  rewrite S1, S2 in S. assumption.
+Qed.
+
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
 Proof. unfold not. intros. inversion H. Qed.
 
@@ -156,6 +320,16 @@ Proof.
 unfold Same_set. unfold Complement. unfold Included. unfold In. eapply conj.
 * intros. eapply Full_intro.
 * intros. eapply Empty_is_Empty.
+Qed.
+
+Lemma Complement_Full_is_Empty {T : Type} :
+Same_set T (Complement T (Full_set T)) (Empty_set T).
+Proof.
+unfold Same_set. unfold Complement. unfold Included. unfold In. eapply conj.
+* intros. unfold not in H. 
+  assert (Full_set T x). { apply Full_intro. }
+  pose (H H0). contradiction.
+* contradiction.
 Qed.
 
 Lemma Same_set_refl {T : Type} (A : Ensemble T) : Same_set T A A.
@@ -193,3 +367,61 @@ rewrite (Extensionality_Ensembles _ _ _ (Setmin_Val A B)).
 rewrite (Extensionality_Ensembles _ _ _ (Setmin_Val B A)).
 eapply Same_set_refl.
 Qed.
+
+Lemma Included_Strict_Included {T : Type} : forall S1 S2 : Ensemble T,
+  Included T S1 S2 <-> Same_set T S1 S2 \/ Strict_Included T S1 S2.
+Proof.
+  unfold Same_set. unfold Included, Strict_Included. unfold Complement. unfold In.
+  split; intros.
+  * destruct (Same_set_dec S1 S2).
+    - left. assumption.
+    - right. split.
+      + unfold Included. intros. apply H. assumption.
+      + unfold not in *. intros. apply H0. rewrite H1.
+        apply Same_set_refl.
+  * inversion H.
+    - inversion H1. apply H2. assumption.
+    - inversion H1. apply H2. assumption.
+Qed.
+
+Lemma Intersection_Comple_Strinct_Included {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Intersection T S1 (Complement T S2)) (Empty_set T)
+<->
+  Same_set T S1 S2 \/ Strict_Included T S1 S2.
+Proof.
+  intros. rewrite <- Included_Strict_Included.
+  unfold Same_set. unfold Included. unfold In.
+  split; intros.
+  * inversion H. destruct (In_dec S2 x).
+    - assumption.
+    - assert (Intersection T S1 (Complement T S2) x). 
+      { eapply Intersection_intro.
+        * assumption.
+        * unfold In. unfold Complement. assumption.
+      }
+      pose (H1 x H4). contradiction.
+  * split; intros.
+    - inversion H0. subst. pose (H x H1). contradiction.
+    - contradiction.
+Qed.
+
+Lemma Not_Intersection_Comple_Strinct_Included {T : Type} : forall S1 S2 : Ensemble T,
+  ~ Same_set T (Intersection T S1 (Complement T S2)) (Empty_set T)
+<->
+  ~ (Same_set T S1 S2 \/ Strict_Included T S1 S2).
+Proof.
+  intros. rewrite <- Included_Strict_Included.
+  unfold Same_set. unfold Included. unfold In.
+  split; intros.
+  * unfold not. intros. apply H.
+    split; intros.
+    - inversion H1. subst. pose (H0 x H2). contradiction.
+    - contradiction.
+  * unfold not. intros. apply H. inversion H0.
+    intros. destruct (In_dec S2 x).
+    - assumption.
+    - assert (Intersection T S1 (Complement T S2) x).
+      { eapply Intersection_intro; assumption. }
+      pose (H1 x H5). contradiction.
+Qed.
+

@@ -223,7 +223,9 @@ Record Sigma_model := {
 
 Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) :
                          Ensemble (M sm) :=
-fun e:M sm => exists le re:M sm, l le -> r re -> (app sm) le re e.
+fun e:M sm => exists le re:M sm, l le /\ r re /\ (app sm) le re e.
+
+Compute @pointwise_app {| M := Sigma_pattern |} (Singleton _ (var "a")) (Singleton _ (var "b")).
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
@@ -429,7 +431,18 @@ Lemma totality_eq_step2
               (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (|^ (¬phi) ^|))
               (Empty_set _)).
-Admitted.
+Proof.
+  proof_ext_val. remember ((pointwise_app (interpretation sm {| id_si := "definedness" |})
+        (Complement (M sm) (ext_valuation evar_val svar_val phi)))) as S.
+  pose (CMF := @Complement_Empty_is_Full (M sm)).
+  pose (Ext := Extensionality_Ensembles (M sm) _ _ CMF).
+  rewrite <- Ext.
+  pose (COMPL := @Same_set_Compl (M sm) S (Empty_set (M sm))).
+  destruct COMPL.
+  split; intros.
+  * pose (H0 H1). assumption.
+  * pose (H H1). assumption.
+Qed.
 
 Lemma totality_eq_step3
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -438,7 +451,19 @@ Lemma totality_eq_step3
               (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (|^ (¬phi) ^|))
               (Empty_set _)).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember ((pointwise_app (interpretation sm {| id_si := "definedness" |})
+        (Complement (M sm) (ext_valuation evar_val svar_val phi)))) as S.
+  pose (CMF := @Complement_Empty_is_Full (M sm)).
+  pose (Ext := Extensionality_Ensembles (M sm) _ _ CMF).
+  rewrite <- Ext.
+  pose (COMPL := @Same_set_Compl (M sm) S (Empty_set (M sm))).
+  destruct COMPL.
+  split; intros.
+  * pose (H0 H1). assumption.
+  * pose (H H1). assumption.
+Qed.
 
 Lemma equality_eq_step1
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -449,6 +474,51 @@ Lemma equality_eq_step1
               (Full_set _)).
 Proof. proof_ext_val. reflexivity. Qed.
 
+(**
+  $ . S = M iff S is not empty
+  See: paragraph after Definition 6.
+ *)
+Axiom semantics_of_definedness : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  ~ (Same_set (M sm) S (Empty_set (M sm))) <->
+  Same_set (M sm) (pointwise_app (interpretation sm {| id_si := "definedness" |}) S) (Full_set (M sm))
+.
+
+Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
+Proof.
+  intros. unfold pointwise_app. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
+  * contradiction.
+Qed.
+
+(**
+  If a set is not empty, then it contains elements
+  Needed for semantics_of_definedness_2
+*)
+Axiom Not_Empty_Contains_Elements : forall {T : Type}, forall S : Ensemble T,
+  ~ Same_set T S (Empty_set T) ->
+  exists x : T, S x.
+
+(**
+  It should be proven with pointwise_app_bot
+*)
+Lemma semantics_of_definedness_2 : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  (Same_set (M sm) S (Empty_set (M sm))) <->
+  Same_set (M sm) (pointwise_app (interpretation sm {| id_si := "definedness" |}) S) (Empty_set (M sm)).
+Proof.
+  split; intros.
+  * apply Extensionality_Ensembles in H. subst.
+    apply pointwise_app_bot.
+  * unfold Same_set, Included, In in H. inversion H.
+    case_eq (Same_set_dec S (Empty_set (M sm))).
+    - intros. assumption.
+    - intros. pose (Not_Empty_Contains_Elements S n). inversion e.
+      pose (semantics_of_definedness sm S). destruct i. pose (H4 n).
+      apply Extensionality_Ensembles in s. rewrite s in *.
+      assert (Full_set (M sm) x). { apply Full_intro. }
+      pose (H0 x H6). contradiction.
+Qed.
+
 Lemma equality_eq_step2
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi1 phi2 : Sigma_pattern,
@@ -456,7 +526,22 @@ Lemma equality_eq_step2
               (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (phi1))
               (ext_valuation evar_val svar_val (phi2))).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val phi1) as S1.
+  remember (ext_valuation evar_val svar_val phi2) as S2.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Empty_is_Full (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S2) S1)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S1)).
+  rewrite (Extensionality_Ensembles _ _ _ (Intersection_Setminus S1 S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Intersection_Setminus S2 S1)).
+  rewrite <- semantics_of_definedness_2.
+  rewrite Union_Minus_Empty.
+  reflexivity.
+Qed.
 
 (* Proposition 20.: Semantics of definedness operators *)
 Lemma defined_sem
@@ -464,28 +549,52 @@ Lemma defined_sem
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|^ phi ^|)) (Full_set _)) <->
   ~ (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
-Admitted.
+Proof.
+  proof_ext_val. 
+  rewrite <- semantics_of_definedness.
+  reflexivity.
+Qed.
 
 Lemma not_defined_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|^ phi ^|)) (Empty_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
-Admitted.
+Proof.
+  proof_ext_val.
+  rewrite <- semantics_of_definedness_2.
+  reflexivity.
+Qed.
 
 Lemma total_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|)) (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val (phi)) (Full_set _)).
-Admitted.
+Proof.
+  proof_ext_val.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Empty_is_Full (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite <- semantics_of_definedness_2.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Full_is_Empty (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ (Full_set (M sm)))).
+  reflexivity.
+Qed.
 
 Lemma not_total_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall phi : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val (|_ phi _|)) (Empty_set _)) <->
   ~ (Same_set _ (ext_valuation evar_val svar_val (phi)) (Full_set _)).
-Admitted.
+Proof.
+  proof_ext_val.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Full_is_Empty (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite <- semantics_of_definedness.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Full_is_Empty (M sm))).
+  rewrite <- Same_set_Compl. reflexivity.
+Qed.
 
 Lemma equal_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -493,7 +602,9 @@ Lemma equal_sem
   (Same_set _ (ext_valuation evar_val svar_val (a ~=~ b)) (Full_set _)) <->
   (Same_set _ (ext_valuation evar_val svar_val a)
               (ext_valuation evar_val svar_val b)).
-Admitted.
+Proof.
+  exact equality_eq_step2.
+Qed.
 
 Lemma not_equal_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -501,21 +612,49 @@ Lemma not_equal_sem
   (Same_set _ (ext_valuation evar_val svar_val (a ~=~ b)) (Empty_set _)) <->
   ~ (Same_set _ (ext_valuation evar_val svar_val a)
               (ext_valuation evar_val svar_val b)).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val a) as S1.
+  remember (ext_valuation evar_val svar_val b) as S2.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Full_is_Empty (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S2) S1)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S1)).
+  rewrite (Extensionality_Ensembles _ _ _ (Intersection_Setminus S1 S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Intersection_Setminus S2 S1)).
+  rewrite <- semantics_of_definedness.
+  rewrite Union_Minus_Empty.
+  reflexivity.
+Qed.
 
 Lemma membership_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall x : EVar, forall sp : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val ('x -< sp)) (Full_set _)) <->
   (In _ (ext_valuation evar_val svar_val sp) (evar_val x)).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val sp) as S.
+  rewrite <- semantics_of_definedness.
+  rewrite <- Intersection_singleton.
+  reflexivity.
+Qed.
 
 Lemma non_membership_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
   forall x : EVar, forall sp : Sigma_pattern,
   (Same_set _ (ext_valuation evar_val svar_val ('x -< sp)) (Empty_set _)) <->
   ~ (In _ (ext_valuation evar_val svar_val sp) (evar_val x)).
-Admitted.
+Proof.
+  proof_ext_val.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val sp) as S.
+  rewrite <- semantics_of_definedness_2.
+  rewrite <- Intersection_singleton_empty.
+  reflexivity.
+Qed.
 
 Lemma set_inculsion_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -525,7 +664,18 @@ Lemma set_inculsion_sem
                (ext_valuation evar_val svar_val b)) \/
    (Strict_Included _ (ext_valuation evar_val svar_val a)
                       (ext_valuation evar_val svar_val b))).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val a) as S1.
+  remember (ext_valuation evar_val svar_val b) as S2.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Empty_is_Full _)).
+  rewrite <- Same_set_Compl.
+  rewrite <- semantics_of_definedness_2.
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S1)).
+  rewrite <- Intersection_Comple_Strinct_Included.
+  reflexivity.
+Qed.
 
 Lemma set_exclusion_sem
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -535,7 +685,18 @@ Lemma set_exclusion_sem
                (ext_valuation evar_val svar_val b)) \/
    (Strict_Included _ (ext_valuation evar_val svar_val a)
                       (ext_valuation evar_val svar_val b))).
-Admitted.
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val a) as S1.
+  remember (ext_valuation evar_val svar_val b) as S2.
+  rewrite <- (Extensionality_Ensembles _ _ _ (@Complement_Full_is_Empty _)).
+  rewrite <- Same_set_Compl.
+  rewrite <- semantics_of_definedness.
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
+  rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ S1)).
+  rewrite <- Not_Intersection_Comple_Strinct_Included.
+  reflexivity.
+Qed.
 
 (* Functional Constant axiom *)
 Definition Functional_Constant (constant : Sigma) : Sigma_pattern :=
@@ -806,6 +967,10 @@ Admitted.
 Lemma eq_refl
   (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi ~=~ phi).
+Proof.
+  pose (Prop_tau _ (P1 phi)).
+  assert ((phi <~> phi) proved).
+  { unfold "<~>". unfold sp_and. unfold sp_or.
 Admitted.
 
 Lemma eq_trans
@@ -893,9 +1058,11 @@ Proof.
   intros. unfold not. intros. pose (H0 H). exact f.
 Qed.
 
-Axiom set_extensionality : forall A B,
-  Same_set Sigma_pattern A B -> A = B.
 
+(**
+  CAUTION: This Lemma is not true!
+  If E was already in S, then S =/= (S U E) \ E
+*)
 Lemma same_set_add_sub : forall T S E,
   Same_set T (Subtract T (Add T S E) E) S.
 Admitted.
@@ -933,7 +1100,7 @@ Proof.
   assert (Subtract Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)= G).
   {
     pose (same_set_add_sub Sigma_pattern G (A ~> Bot)).
-    pose (set_extensionality (Subtract Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)) G s).
+    pose (Extensionality_Ensembles Sigma_pattern (Subtract Sigma_pattern (Add Sigma_pattern G (A ~> Bot)) (A ~> Bot)) G s).
     exact e.
   }
   rewrite H2 in p. assumption.
@@ -958,7 +1125,7 @@ Proof.
   assert (Subtract Sigma_pattern (Add Sigma_pattern G A) A = G).
   {
     pose (same_set_add_sub Sigma_pattern G A).
-    pose (set_extensionality (Subtract Sigma_pattern (Add Sigma_pattern G A) A) G s).
+    pose (Extensionality_Ensembles Sigma_pattern (Subtract Sigma_pattern (Add Sigma_pattern G A) A) G s).
     exact e.
   }
   rewrite H1 in SOL.

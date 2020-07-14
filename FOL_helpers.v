@@ -545,4 +545,17 @@ Proof.
   intros.
 Abort.
 
+(* Proposition 7: definedness related properties *)
+Lemma eq_refl
+  (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi ~=~ phi).
+Proof.
+  pose (Prop_tau _ (P1 phi)).
+  assert ((phi <~> phi) proved).
+  { unfold "<~>". apply conj_intro_meta; assumption. }
+  pose (A_implies_not_not_A_ctx (phi <~> phi) (ctx_app_r definedness_symbol box) H).
+  simpl in a0. unfold "~=~". unfold total. unfold defined.
+  apply proof_sys_intro. assumption.
+Qed.
+
 End FOL_helpers.
