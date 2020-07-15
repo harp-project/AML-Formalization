@@ -1,14 +1,11 @@
 (* ************************************************************************** *)
 (*                           ~= Natural numbers =~                            *)
 (* ************************************************************************** *)
-Require Import AML_definition.
+Require Export MSFOL_definition.
 Import AML_notations.
-Require Import MSFOL.
 Import MSFOL_notations.
-Require Import FOL_helpers.
-Require Import String.
 Require Import Coq.Sets.Ensembles.
-Require Import Coq.Lists.ListSet.
+
 
 Section Natural_numbers.
 
@@ -34,6 +31,10 @@ Definition two := succ' one.
 Definition three := succ' two.
 Definition five := succ' (succ' three).
 Definition six := succ' five.
+
+Definition x := (evar_c("x")).
+Definition y := (evar_c("y")).
+Definition z := (evar_c("z")).
 
 Notation "00" := (^zero) (at level 0).
 Notation "'S' a" := (succ' a) (at level 50).
@@ -131,7 +132,7 @@ let x := (evar_c("x")) in
  * all natural numbers. *)
 Lemma PeanoNat :
   forall Gamma : (Ensemble Sigma_pattern), forall SX : SVar,
-  Gamma |- ((00 -< `SX) _&_ (all_S y : Nat, ('y -< `SX)) ~>
+  Gamma |- ((00 -< `SX) _&_ (all_S y : Nat, ('y -< `SX) ~> S 'y -< `SX) ~>
            (all_S x : Nat, ('x -< `SX))).
 Admitted.
 
@@ -254,12 +255,12 @@ Proof. apply Ex_quan. Qed.
 
 Lemma ex6 :
   ('x ~> 'y) proved ->
-  negb (set_mem evar_eq_dec z (free_vars 'y)) = true ->
+  negb (set_mem evar_eq_dec z (free_evars 'y)) = true ->
   (ex z, 'x ~> 'y) proved.
 Proof. apply Ex_gen. Qed.
 
 Lemma zero_eq_zero : empty_theory |- (^zero ~=~ ^zero).
-Proof. eapply E_refl. Qed.
+Proof. eapply eq_refl. Qed.
 
 End Nat_examples.
 

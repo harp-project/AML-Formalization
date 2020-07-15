@@ -1,9 +1,50 @@
-Require Import AML_definition.
+Require Export AML_definition.
 Import AML_notations.
-Require Import Coq.Sets.Ensembles.
 
 
 Section FOL_helpers.
+
+Lemma A_impl_A (A : Sigma_pattern) : (A ~> A) proved.
+Proof.
+  pose(_1' := P3 A (A ~> A) A).
+  pose(_2' := P2 A (A ~> A)).
+  pose(_4' := P2 A A).
+
+  pose(_1 := Prop_tau ((A ~> (A ~> A) ~> A) ~> (A ~> A ~> A) ~> A ~> A) _1').
+  pose(_2 := Prop_tau (A ~> (A ~> A) ~> A) _2').
+  pose(_3 := Mod_pon _2 _1).
+  pose(_4 := Prop_tau (A ~> A ~> A) _4').
+  pose(_5 := Mod_pon _4 _3).
+  exact _5.
+Qed.
+
+Lemma P4m (A B : Sigma_pattern) :
+  ((A ~> B) ~> ((A ~> ¬B) ~> ¬A)) proved.
+Proof.
+  eapply Mod_pon.
+  - (* t8 *) eapply Prop_tau. eapply (P2 (A ~> B) (A ~> B ~> Bot)).
+  - (* t7 *) eapply Mod_pon.
+    + (* t6 *) eapply Mod_pon.
+      * (* t5 *) eapply Mod_pon.
+        -- (* t4 *) eapply Prop_tau. eapply (P3 A B Bot).
+        -- (* t3 *) eapply Prop_tau.
+           eapply (P3 (A ~> B ~> Bot) (A ~> B) (A ~> Bot)).
+      * (* t2 *) eapply Prop_tau.
+        eapply (P2 (((A ~> B ~> Bot) ~> A ~> B) ~> (A ~> B ~> Bot) ~> A ~> Bot)
+                   (A ~> B)).
+    + (* t1 *) eapply Prop_tau.
+      eapply (P3 (A ~> B)
+                 ((A ~> B ~> Bot) ~> A ~> B)
+                 ((A ~> B ~> Bot) ~> A ~> Bot)).
+Qed.
+
+Lemma P4i (A : Sigma_pattern) :
+  ((A ~> ¬A) ~> ¬A) proved.
+Proof.
+  eapply Mod_pon.
+  - eapply Prop_tau. eapply (P1 A).
+  - eapply (P4m A A).
+Qed.
 
 (* Helper lemmas for first order reasoning *)
 Lemma reorder (A B C : Sigma_pattern) :
@@ -305,6 +346,15 @@ Proof.
   - eapply Prop_tau. eapply (P4 B A).
 Qed.
 
+Lemma double_neg_elim_meta (A B : Sigma_pattern) :
+  ((¬(¬A)) ~> (¬(¬B))) proved -> (A ~> B) proved.
+Proof.
+  intros.
+  eapply Mod_pon.
+  - exact H.
+  - exact (double_neg_elim A B).
+Qed.
+
 Lemma deduction (A B : Sigma_pattern) :
   A proved -> B proved -> (A ~> B) proved.
 Proof.
@@ -330,46 +380,49 @@ Proof.
 Qed.
 
 Lemma P4m_neg (A B : Sigma_pattern) :
-  ((¬A ~> ¬B) ~> (A ~> ¬B) ~>  ¬A) proved.
-Admitted.
-
-Lemma double_elim (A B : Sigma_pattern) :
-  (((¬(¬A)) ~> (¬(¬B))) ~> (A ~> B)) proved.
+  ((¬B ~> ¬A) ~> (A ~> ¬B) ~>  ¬A) proved.
 Proof.
+  pose (PT := Prop_tau _ (P4 B A)).
   eapply syllogism_intro.
-  - eapply Prop_tau. eapply (P4 (¬A) (¬B)).
-  - eapply Prop_tau. eapply (P4 B A).
-Qed.
-
-(* double_elim_meta *)
-Lemma double_neg_elim_meta (A B : Sigma_pattern) :
-  ((¬(¬A)) ~> (¬(¬B))) proved -> (A ~> B) proved.
-Proof.
-  intros.
-  eapply Mod_pon.
-  - exact H.
-  - exact (double_elim A B).
+  * exact PT.
+  * apply P4m.
 Qed.
 
 Lemma not_not_impl_intro_meta (A B : Sigma_pattern) :
-  (A ~> B) proved -> (¬¬A ~> ¬¬B) proved.
-Admitted.
+  (A ~> B) proved -> ((¬¬A) ~> (¬¬B)) proved.
+Proof.
+  intros.
+  pose (NN1 := not_not_elim A).
+  pose (NN2 := not_not_intro B).
+  pose (S1 := syllogism_intro _ _ _ H NN2).
+  pose (S2 := syllogism_intro _ _ _ NN1 S1).
+  exact S2.
+Qed.
 
 Lemma not_not_impl_intro (A B : Sigma_pattern) :
-  (A ~> B ~> (¬¬A ~> ¬¬B)) proved.
-Admitted.
-
-(*
-Lemma P5i (A C : Sigma_pattern) :
-  (¬A ~> (A ~> C)) proved.
-(*
+  ((A ~> B) ~> ((¬¬A) ~> (¬¬B))) proved.
 Proof.
-  eapply Mod_pon.
-  - eapply reorder_meta. eapply Prop_tau. eapply (P4 C A).
-  - eapply Prop_tau. eapply (P3 (¬A) (¬C) (A ~> C)). *)
-Admitted.
+  intros.
+  pose (S1 := syllogism (¬¬A) A B).
+  pose (MP1 := @Mod_pon (¬ (¬ A) ~> A) ((A ~> B) ~> ¬ (¬ A) ~> B) (not_not_elim A) S1).
+  pose (NNB := not_not_intro B).
+  pose (P2 := Prop_tau _ (P2 (B ~> ¬ (¬ B)) (¬¬A))).
+  pose (MP2 := Mod_pon NNB P2).
+  pose (P3 := Prop_tau _ (P3 (¬¬A) B (¬¬B))).
+  pose (MP3 := Mod_pon MP2 P3).
+  apply syllogism_intro with (B := (¬ (¬ A) ~> B)); assumption.
+Qed.
 
+Lemma contraposition (A B : Sigma_pattern) :
+  ((A ~> B) ~> ((¬ B) ~> (¬ A))) proved.
+Proof.
+  pose (Prop_tau _ (P4 (¬ A) (¬ B))).
+  apply syllogism_intro with (B := (¬ (¬ A) ~> ¬ (¬ B))).
+  * apply not_not_impl_intro.
+  * apply (Prop_tau _ (P4 _ _)).
+Qed.
 
+(*
 Lemma a (A B : Sigma_pattern) :
   (¬( ¬¬A ~> ¬¬B )) proved -> (¬( A ~> B)) proved.
 (*
@@ -557,5 +610,130 @@ Proof.
   simpl in a0. unfold "~=~". unfold total. unfold defined.
   apply proof_sys_intro. assumption.
 Qed.
+
+Lemma eq_trans
+  (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
+    theory |- (phi1 ~=~ phi3).
+Proof.
+  intros.
+Admitted.
+
+Lemma eq_symm
+  (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1).
+Admitted.
+
+Lemma eq_evar_subst
+  (* TODO: psi can be any pattern, not only Application_context *)
+  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~=~ phi2) ->
+    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)).
+Admitted.
+
+
+Lemma A_implies_A_totality A:
+  A proved -> |_ A _| proved.
+Proof.
+  intros.
+  pose (ANNA := A_implies_not_not_A_ctx A (ctx_app_r definedness_symbol box) H).
+  exact ANNA.
+Qed.
+
+Lemma A_totality_implies_A A:
+  |_ A _| proved -> A proved.
+Proof.
+  intros.
+  unfold total in H. unfold defined in H.
+Abort.
+
+
+(**
+  See: email from AML guys
+*)
+Lemma universal_instantiation A x y:
+  ((all x, A) ~> (e_subst_var A ('y) x)) proved.
+Proof.
+  unfold sp_forall.
+  pose (Prop_tau _ (P4 (e_subst_var A 'y x) (¬ ex x, (¬ A)))).
+  eapply Mod_pon. 2: exact a.
+  apply syllogism_intro with (B := ex x, (¬ A)).
+  * assert ((¬ e_subst_var A 'y x) = e_subst_var (¬ A) 'y x).
+    { unfold "¬". simpl. reflexivity. }
+    rewrite H.
+    apply (@Ex_quan (¬A) x y).
+  * apply not_not_intro.
+Qed.
+
+Example universal_inst_test x y G :
+  (Add _ G (Definedness_forall x)) |- |^ 'y ^|.
+Proof.
+  pose (hypothesis (Definedness_forall x) (Add Sigma_pattern G (Definedness_forall x))).
+  pose (Ensembles_Ext.in_add_set Sigma_pattern G (Definedness_forall x)).
+  pose (p i).
+  unfold Definedness_forall in p0.
+  pose (universal_instantiation (|^ ' x ^|) x y).
+  pose (proof_sys_intro _ (Add Sigma_pattern G (Definedness_forall x)) a).
+  pose (E_mod_pon _ _ _ p0 p1).
+  simpl e_subst_var in p2.
+  
+  (* This assert and clear was needed to "refresh" the hypothesis
+     without causing dependent type error
+     potential Coq bug *)
+  assert (Add Sigma_pattern G (all x, (|^ ' x ^|)))
+   |- (^ {| id_si := "definedness" |} $ (if evar_eq_dec x x then ' y else ' x)).
+   {  auto. }
+  clear p2.
+  case_eq (evar_eq_dec x x); intros.
+  * rewrite H0 in H. assumption.
+  * congruence.
+Qed.
+
+Ltac in_hyp := (
+  unfold Add;
+  repeat (
+    try (eapply Union_intror; reflexivity);
+    eapply Union_introl
+  )).
+
+Lemma not_not_A_proves_A : forall A : Sigma_pattern,
+let G := (Add _ (Add _ empty_theory
+                (¬(¬A)))
+                ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A))
+  in
+   G |- A.
+Proof.
+  intros.
+  unfold G.
+  eapply E_mod_pon.
+  - eapply E_mod_pon.
+    * eapply (hypothesis (¬(¬A)) G). in_hyp.
+    * eapply (proof_sys_intro ((¬(¬A)) ~> (¬A ~> ¬(¬A))) G).
+      + eapply Prop_tau. eapply (P2 (¬(¬A)) (¬A)).
+  - eapply E_mod_pon.
+    * eapply (proof_sys_intro _ G (Prop_tau _ (P1 (¬A)))).
+    * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)). in_hyp.
+Qed.
+
+Lemma exclusion G A:
+  G |- A -> G |- (A ~> Bot) -> G |- Bot.
+Proof.
+  intros.
+  unfold sp_not in H0.
+  pose (E_mod_pon A Bot G H H0).
+  assumption.
+Qed.
+
+Axiom exclusion_axiom : forall G A,
+  G |- A -> G |- (¬ A) -> False.
+
+Axiom or_or : forall G A,
+G |- A \/ G |- (¬ A).
+
+Axiom extension : forall G A B,
+  G |- A -> (Add Sigma_pattern G B) |- A.
+
+Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
+Proof. eapply proof_sys_intro. exact (A_impl_A A). Qed.
 
 End FOL_helpers.

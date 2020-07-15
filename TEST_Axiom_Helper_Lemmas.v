@@ -2,6 +2,7 @@ Require Import AML_definition.
 Import AML_notations.
 Require Import String.
 Require Import Coq.Vectors.VectorDef.
+Require Import NAT_definition.
 
 
 Lemma until_zero : (SumFromZeroTo ^zero) = ^zero.

@@ -1,7 +1,12 @@
 Require Import AML_definition.
 Import AML_notations.
+Require Import MSFOL_definition.
 Import MSFOL_notations.
 Import String.
+
+Definition x := (evar_c("x")).
+Definition y := (evar_c("y")).
+Definition z := (evar_c("z")).
 
 Definition vec := (vc _ x _ (vc _ y _ (vn _))).
 Definition sorts := (vc _ Nat _ (vc _ Term _ (vn _))).
@@ -49,5 +54,5 @@ Lemma general_pred :
      ((^p $ var("x1") $ var("x2") ~=~ Bot))).
 Proof. reflexivity. Qed.
 
-Lemma zero_ok : zero_fun = ex_S (evar_c "y") : Nat, ^zero ~=~ (var "y").
-Proof. reflexivity. Qed.
+(* Lemma zero_ok : zero_fun = ex_S (evar_c "y") : Nat, ^zero ~=~ (var "y").
+Proof. reflexivity. Qed. *)

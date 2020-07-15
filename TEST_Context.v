@@ -2,6 +2,9 @@ Require Import AML_definition.
 Import AML_notations.
 Import String.
 
+Definition x := (evar_c("x")).
+Definition z := (evar_c("z")).
+
 
 (* Examples of context usage: *)
 Definition box_context := subst_ctx box sp_bottom.
@@ -46,4 +49,4 @@ Definition function_context :=
 
 Lemma TEST_function_context :
   subst_ctx function_context 'x = f $ 'x $ ('x $ const("sigma") $ 'y).
-Proof. simpl. reflexivity. Qed.
+Proof. simpl. Abort.

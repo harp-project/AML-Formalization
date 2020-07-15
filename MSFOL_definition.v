@@ -1,13 +1,10 @@
 (* *******************************~= MSFOL =~******************************* *)
-Require Import AML_definition.
-Require Import FOL_helpers.
+Require Export FOL_helpers.
 Import AML_notations.
 Require Import Coq.Sets.Ensembles.
-Require Import Coq.Lists.ListSet.
 Require Import Coq.Vectors.Fin.
 Require Import Coq.Vectors.VectorDef.
 Import VectorNotations.
-Require Import String.
 Open Scope string_scope.
 
 
@@ -113,12 +110,6 @@ match phi with
                           else M_ex x', (f_subst_var formula t x)
 end.
 
-(*
-Fixpoint M_ext_term_val () := .
-
-Fixpoint M_ext_form_val () := .
-*)
-
 
 Definition M_set_singleton := fun x => set_add mvar_eq_dec x List.nil.
 
@@ -216,12 +207,12 @@ where "phi 'MSFOL_proved'" := (MSFOL_proof_system phi).
 Definition MSAFOL_Sort := (AML_definition.const ("Sort")).
 
 (* a function which corresponds: constants of AML  to  sorts of MSFOL *)
-Fixpoint sort_fun_constant (s : MSFOL_sorts) : Sigma_pattern :=
+Fixpoint sort_fun_constant (s : MSFOL_sorts) (x : EVar) : Sigma_pattern :=
 match s with
-| Nat  => Functional_Constant (sigma_c("Nat"))
-| List => Functional_Constant (sigma_c("List"))
-| Cfg  => Functional_Constant (sigma_c("Cfg"))
-| Term => Functional_Constant (sigma_c("Term"))
+| Nat  => Functional_Constant (sigma_c("Nat")) x
+| List => Functional_Constant (sigma_c("List")) x
+| Cfg  => Functional_Constant (sigma_c("Cfg")) x
+| Term => Functional_Constant (sigma_c("Term")) x
 end.
 
 Fixpoint sort_constant (s : MSFOL_sorts) : Sigma_pattern :=
@@ -339,22 +330,6 @@ Proof.
     intros.
     unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
     unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
-    apply neg_cong.
-    apply ex_cong.
-    apply neg_cong.
-    apply (eq_trans _ (¬(¬MSHIP) ~> phi) _ G).
-    * apply impl_congl. apply (proof_sys_intro _ G (e_eq_nne _)).
-    * apply impl_congr. apply (proof_sys_intro _ G (e_eq_nne _)).
-Qed.
-
-(* Proposition 10. *)
-Lemma forall_ex_equiv2 G s x phi:
-  G |- ((all_S x:s, phi) ~=~ (¬ (ex_S x:s, (¬ phi))) ).
-Proof.
-    intros.
-    unfold sorted_ex_quan. unfold sorted_all_quan. unfold sp_forall.
-    unfold sp_and. unfold sp_or. remember (' x -< [[s]]) as MSHIP.
-    
     apply neg_cong.
     apply ex_cong.
     apply neg_cong.
@@ -532,11 +507,11 @@ match formula with
 end.
 
 
-Definition MSFOL_wellformed_terms :=
-let y := evar_c("y") in
+Lemma MSFOL_wellformed_terms y :
   forall Gamma_MSFOL : Ensemble Sigma_pattern, forall t : MSFOL_term,
   Gamma_MSFOL |- ((well_sorted_term t) ~>
     ex_S y : (term_sort t), (term_to_AML t) ~=~ 'y).
+Admitted.
 
 Definition MSFOL_wellformed_formulas :=
   forall Gamma_MSFOL : Ensemble Sigma_pattern, forall phi : MSFOL_formula,

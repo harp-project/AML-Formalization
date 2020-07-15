@@ -1,9 +1,10 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Logic.Classical_Prop.
+Require Export Coq.Sets.Ensembles.
+Require Export Coq.Logic.Classical_Prop.
 
 (* README ForAll_Intersection/Union
 Generic versions of the usual intersection and union operators.
-These operators accumulate over the whole C carrier set. *)
+These operators accumulate over the whole C carrier set. 
+*)
 
 Inductive FA_Intersection {T C : Type} (f : C -> Ensemble T) : Ensemble T :=
 FA_Int_intro :
@@ -58,7 +59,15 @@ eapply conj;intros;eapply FA_Uni_intro;inversion H0;destruct H1;destruct(H x1);
 eapply ex_intro;auto.
 Qed.
 
-(* Propersies of the standard set operators *)
+(** Propersies of the standard set operators
+
+   see also:
+   https://coq.github.io/doc/master/stdlib/Coq.Sets.Powerset_facts.html
+
+ *)
+
+Coercion Same_set_to_eq {T : Type} {A B : Ensemble T} :=
+  fun (P : Same_set T A B) => Extensionality_Ensembles T A B P.
 
 Lemma Union_same {T : Type} : forall A : Ensemble T,
   Same_set T (Union T A A) A.
@@ -279,7 +288,7 @@ Proof.
    - contradiction.
 Qed.
 
-Lemma Compl_Union_Compl_Intes_Ensembles : forall T :Type,
+Lemma Compl_Union_Compl_Intes_Ensembles_alt : forall T :Type,
 forall L R : Ensemble T, Same_set T (Complement T (Union T (Complement T L)
                                                            (Complement T R)))
                                     (Intersection T L R).
@@ -303,12 +312,28 @@ forall L R : Ensemble T, Same_set T (Complement T (Union T L R))
                                     (Intersection T (Complement T L) (Complement T R)).
 Proof.
   intros.
-  pose (S := Compl_Union_Compl_Intes_Ensembles T (Complement T L) (Complement T R)).
+  pose (S := Compl_Union_Compl_Intes_Ensembles_alt T (Complement T L) (Complement T R)).
   pose (S1 := Compl_Compl_Ensembles T R).
   pose (S2 := Compl_Compl_Ensembles T L).
   apply Extensionality_Ensembles in S1.
   apply Extensionality_Ensembles in S2.
   rewrite S1, S2 in S. assumption.
+Qed.
+
+Lemma Compl_Intes_Union_Compl_Ensembles : forall T :Type,
+forall L R : Ensemble T, Same_set T (Complement T (Intersection T L R))
+                                    (Union T (Complement T L) (Complement T R)).
+Proof.
+  intros.
+  apply Same_set_Compl.
+  rewrite (Extensionality_Ensembles _ _ _(Compl_Compl_Ensembles _ _)).
+  unfold Same_set. unfold Included. unfold In. split;intros.
+  - inversion H.
+    unfold Complement at 1. unfold not in *. unfold In in *.
+    intros. subst. inversion H3.
+    + unfold Complement in H2. unfold In in *. contradiction.
+    + unfold Complement in H2. unfold In in *. contradiction.
+  - rewrite (Same_set_to_eq (Compl_Union_Compl_Intes_Ensembles_alt T L R)) in H. assumption.
 Qed.
 
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
@@ -345,7 +370,7 @@ Proof.
 unfold Same_set. unfold In.
 rewrite <- (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ B)).
 rewrite
-  (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles _ _ _)).
+  (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles_alt _ _ _)).
 rewrite (Extensionality_Ensembles _ _ _ (Compl_Compl_Ensembles _ B)).
 unfold Included.
 eapply conj;intros;inversion H;
@@ -362,7 +387,7 @@ Same_set T (Intersection T (Union T (Complement T A) B)
            (Complement T (Symmetric_difference A B)).
 Proof. unfold Symmetric_difference.
 rewrite <-
-  (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles T _ _)).
+  (Extensionality_Ensembles _ _ _ (Compl_Union_Compl_Intes_Ensembles_alt T _ _)).
 rewrite (Extensionality_Ensembles _ _ _ (Setmin_Val A B)).
 rewrite (Extensionality_Ensembles _ _ _ (Setmin_Val B A)).
 eapply Same_set_refl.
@@ -424,4 +449,30 @@ Proof.
       { eapply Intersection_intro; assumption. }
       pose (H1 x H5). contradiction.
 Qed.
+
+Lemma same_set_add_sub : forall T S E,
+  Included T (Subtract T (Add T S E) E) S.
+Proof.
+  intros.
+  unfold Subtract, Setminus, Add, Included, In.
+  intros. inversion H.
+  inversion H0.
+  * assumption.
+  * contradiction.
+Qed.
+
+Lemma in_add_set T S E:
+In T (Add T S E) E.
+Proof.
+    unfold Add. apply Union_intror.
+    apply In_singleton.
+Qed.
+
+(**
+  If a set is not empty, then it contains elements
+  Needed for semantics_of_definedness_2
+*)
+Axiom Not_Empty_Contains_Elements : forall {T : Type}, forall S : Ensemble T,
+  ~ Same_set T S (Empty_set T) ->
+  exists x : T, S x.
 
