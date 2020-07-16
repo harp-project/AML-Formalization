@@ -123,11 +123,6 @@ decide equality.
 - exact (svar_eq_dec X X0).
 Defined.
 
-Definition evar_eq (x y : EVar) : bool :=
-match x, y with
-| evar_c id_x, evar_c id_y => String.eqb id_x id_y
-end.
-
 Definition set_singleton {T : Type}
   (eq : forall (x y : T), { x = y } + { x <> y })
   := fun x : T => set_add eq x List.nil.
@@ -156,7 +151,8 @@ match phi with
 | sp_mu X phi => set_remove svar_eq_dec X (free_svars phi)
 end.
 
-(* Derived operators *)
+(* Section Derived_operators. *)
+
 Definition sp_not (phi : Sigma_pattern) := phi ~> sp_bottom.
 Notation "¬ a"     := (sp_not   a  ) (at level 75).
 
@@ -179,7 +175,8 @@ Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
 Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
   ¬ (sp_mu X (¬ (e_subst_set phi (¬ (sp_set X)) X))).
 Notation "'nu' X , phi" := (sp_nu X phi) (at level 55).
-(* End of derived operators *)
+
+(* End Derived_operators. *)
 
 Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
 Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
@@ -240,9 +237,6 @@ match sp with
 end
 .
 
-(* Proof of correct semantics for the derived operators
-ref. snapshot: Proposition 4 *)
-
 Ltac proof_ext_val :=
 simpl;intros;
 repeat
@@ -259,6 +253,13 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
+
+Section Semantics_of_derived_operators.
+
+(**
+   Proof of correct semantics for the derived operators
+   ref. snapshot: Proposition 4
+*)
 
 Lemma not_ext_val_correct
 {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
@@ -327,6 +328,7 @@ eapply conj.
   - intros.
 Admitted.
 
+End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
@@ -435,7 +437,6 @@ Proof.
       assert (Full_set (M sm) x). { apply Full_intro. }
       pose (H0 x H6). contradiction.
 Qed.
-
 
 (* Can be shown, that all notations in Definition 6 are predicates with the
  * expected semantics. For example: *)
