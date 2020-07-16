@@ -1,5 +1,6 @@
 Require Export AML_definition.
 Import AML_notations.
+Require Import Coq.Program.Equality.
 
 
 Section FOL_helpers.
@@ -491,6 +492,35 @@ Proof.
 Qed.
 *)
 
+Lemma or_comm_meta A B:
+  (A _|_ B) proved -> (B _|_ A) proved.
+Proof.
+  intros. unfold sp_or in *.
+  pose (P4 := Prop_tau _ (P4 A (¬B))).
+  pose (NNI := not_not_intro B).
+  pose (SI := syllogism_intro _ _ _ H NNI).
+  eapply Mod_pon.
+  * exact SI.
+  * exact P4.
+Qed.
+(* 
+Lemma and_comm_meta A B:
+  (A _&_ B) proved -> (B _&_ A) proved.
+Proof.
+  unfold sp_and.
+  unfold sp_not at 1.
+  unfold sp_not at 3.
+  intros.
+  pose (or_comm_meta (¬B) (¬A)).
+  pose (syllogism_intro ).
+Qed.
+
+Lemma equiv_comm A B:
+  (A <~> B) proved -> (B <~> A) proved.
+Proof.
+  intros. unfold sp_iff in *.
+Qed. *)
+
 Lemma A_implies_not_not_A_alt A:
   A proved -> (¬( ¬A )) proved
 .
@@ -516,6 +546,15 @@ Proof.
   assumption.
 Qed.
 
+Lemma A_implies_not_not_A_alt_theory G A:
+  G |- A -> G |- (¬( ¬A ))
+.
+Proof.
+  intros. unfold sp_not.
+  pose (NN := not_not_intro A).
+  pose (MP := E_mod_pon _ _ G H (proof_sys_intro _ _ NN)). assumption.
+Qed.
+
 (* Lemma 47 *)
 Lemma equiv_implies_eq A B:
   (A <~> B) proved
@@ -528,6 +567,14 @@ Proof.
   unfold equal.
   assumption.
 Qed.
+
+Lemma equiv_implies_eq_theory G A B:
+  G |- (A <~> B)
+->
+  G |- (A ~=~ B).
+Proof.
+
+Admitted.
 
 Lemma e_eq_nne A:
   (A ~=~ (¬(¬A))) proved.
@@ -598,6 +645,82 @@ Proof.
   intros.
 Abort.
 
+Lemma provable_to_proved A : empty_theory |- A -> A proved.
+Proof.
+  intros. dependent induction H; assert (Empty_set Sigma_pattern = empty_theory); try(reflexivity).
+  * inversion H.
+  * assumption.
+  * pose (IHProvable1 H1).
+    pose (IHProvable2 H1).
+    eapply Mod_pon.
+    - exact a.
+    - exact a0.
+  * pose (IHProvable H1).
+    eapply Ex_gen; assumption.
+  * pose (IHProvable H0).
+    eapply Framing; assumption.
+  * pose (IHProvable H0).
+    eapply Svar_subst; assumption.
+  * pose (IHProvable H0).
+    eapply Knaster_tarski; assumption.
+Qed.
+
+Lemma proved_impl_to_provable A B:
+  (A proved -> B proved)
+->
+  (empty_theory |- A -> empty_theory |- B).
+Proof.
+  intros. apply provable_to_proved in H0.
+  eapply proof_sys_intro. exact (H H0).
+Qed.
+
+Lemma exclusion G A:
+  G |- A -> G |- (A ~> Bot) -> G |- Bot.
+Proof.
+  intros.
+  unfold sp_not in H0.
+  pose (E_mod_pon A Bot G H H0).
+  assumption.
+Qed.
+
+Axiom exclusion_axiom : forall G A,
+  G |- A -> G |- (¬ A) -> False.
+
+Axiom or_or : forall G A,
+G |- A \/ G |- (¬ A).
+
+Axiom extension : forall G A B,
+  G |- A -> (Add Sigma_pattern G B) |- A.
+
+Lemma empty_theory_implies_any A : forall G,
+  empty_theory |- A -> G |- A.
+Proof.
+  intros. dependent induction H; assert (Empty_set Sigma_pattern = empty_theory); try(reflexivity).
+  * inversion H.
+  * apply (proof_sys_intro _ _ H).
+  * pose (IHProvable1 H1).
+    pose (IHProvable2 H1).
+    eapply E_mod_pon.
+    - exact p.
+    - exact p0.
+  * pose (IHProvable H1).
+    eapply E_ex_gen; assumption.
+  * pose (IHProvable H0).
+    eapply E_framing; assumption.
+  * pose (IHProvable H0).
+    eapply E_svar_subst; assumption.
+  * pose (IHProvable H0).
+    eapply E_knaster_tarski; assumption.
+Qed.
+
+Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
+Proof. eapply proof_sys_intro. exact (A_impl_A A). Qed.
+
+(* mML : Proposition 44 *)
+Lemma equiv_cong G phi1 phi2 C x :
+  (G |- (phi1 <~> phi2)) -> G |- ((e_subst_var C phi1 x) <~> (e_subst_var C phi2 x)).
+Admitted.
+
 (* Proposition 7: definedness related properties *)
 Lemma eq_refl
   (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
@@ -617,18 +740,33 @@ Lemma eq_trans
     theory |- (phi1 ~=~ phi3).
 Proof.
   intros.
+  
 Admitted.
 
 Lemma eq_symm
   (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1).
+Proof.
+  intros.
+  eapply E_mod_pon.
+  * exact H.
+  * apply (deduction_intro).
+    pose (A_implies_not_not_A_ctx).
 Admitted.
 
 Lemma eq_evar_subst
-  (* TODO: psi can be any pattern, not only Application_context *)
   (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     theory |- (phi1 ~=~ phi2) ->
     theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)).
+Proof.
+  intros.
+  eapply E_mod_pon.
+  * exact H.
+  * apply (deduction_intro).
+    unfold "~=~".
+    pose (equiv_cong (Add Sigma_pattern theory (phi1 <~> phi2)) phi1 phi2 psi x).
+    apply (equiv_implies_eq_theory (Add Sigma_pattern theory (phi1 <~> phi2)) (e_subst_var psi phi1 x) (e_subst_var psi phi2 x)).
+    apply equiv_cong.
 Admitted.
 
 
@@ -714,26 +852,5 @@ Proof.
     * eapply (proof_sys_intro _ G (Prop_tau _ (P1 (¬A)))).
     * eapply (hypothesis ((¬A ~> ¬A) ~> (¬A ~> ¬(¬A)) ~> A)). in_hyp.
 Qed.
-
-Lemma exclusion G A:
-  G |- A -> G |- (A ~> Bot) -> G |- Bot.
-Proof.
-  intros.
-  unfold sp_not in H0.
-  pose (E_mod_pon A Bot G H H0).
-  assumption.
-Qed.
-
-Axiom exclusion_axiom : forall G A,
-  G |- A -> G |- (¬ A) -> False.
-
-Axiom or_or : forall G A,
-G |- A \/ G |- (¬ A).
-
-Axiom extension : forall G A B,
-  G |- A -> (Add Sigma_pattern G B) |- A.
-
-Lemma empty_proves_A_impl_A (A : Sigma_pattern) : empty_theory |- (A ~> A).
-Proof. eapply proof_sys_intro. exact (A_impl_A A). Qed.
 
 End FOL_helpers.

@@ -1,5 +1,6 @@
 Require Export Coq.Sets.Ensembles.
 Require Export Coq.Logic.Classical_Prop.
+Require Export Coq.Logic.Classical_Pred_Type.
 
 (* README ForAll_Intersection/Union
 Generic versions of the usual intersection and union operators.
@@ -470,9 +471,23 @@ Qed.
 
 (**
   If a set is not empty, then it contains elements
-  Needed for semantics_of_definedness_2
+  Needed for semantics_of_definedness_2 in AML_definition
 *)
-Axiom Not_Empty_Contains_Elements : forall {T : Type}, forall S : Ensemble T,
+Lemma Not_Empty_Contains_Elements : forall {T : Type}, forall S : Ensemble T,
   ~ Same_set T S (Empty_set T) ->
   exists x : T, S x.
+Proof.
+  unfold Same_set, Included, In.
+  intros.
+  apply not_and_or in H.
+  inversion H.
+  * pose (not_all_ex_not T (fun x => S x -> Empty_set T x) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    eexists. exact H2.
+  * pose (not_all_ex_not T (fun x => Empty_set T x -> S x) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    contradiction.
+Qed.
 

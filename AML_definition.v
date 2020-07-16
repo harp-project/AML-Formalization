@@ -813,7 +813,9 @@ Definition empty_theory := Empty_set Sigma_pattern.
 
 Reserved Notation "theory |- pattern" (at level 1).
 Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
-(* Using hypothesis from theory *)
+(* Using hypothesis from theory 
+   CAUTION: According to deduction theorem, the totality can be proved, not the formula itself
+*)
 | hypothesis
   (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
     (In _ theory axiom) -> theory |- axiom
