@@ -217,6 +217,14 @@ fun e:M sm => exists le re:M sm, l le /\ r re /\ (app sm) le re e.
 
 Compute @pointwise_app {| M := Sigma_pattern |} (Singleton _ (var "a")) (Singleton _ (var "b")).
 
+Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
+Proof.
+  intros. unfold pointwise_app. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
+  * contradiction.
+Qed.
+
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
 Fixpoint ext_valuation {sm : Sigma_model} (evar_val : EVar -> M sm)
@@ -355,8 +363,8 @@ Definition AML_theories : Ensemble Sigma_pattern := Empty_set Sigma_pattern.
 
 
 (* Definition 6. Definedness and derived operators *)
-Definition definedness_symbol := (const ("definedness")).
-Definition defined (x : Sigma_pattern) := (definedness_symbol $ x).
+Definition definedness_symbol : Sigma := {| id_si := "definedness"|}.
+Definition defined (x : Sigma_pattern) := (^ definedness_symbol $ x).
 Notation "|^ phi ^|" := (defined phi) (at level 100).
 
 (* Definition Definedness_var (x : EVar) : Sigma_pattern :=
@@ -403,27 +411,81 @@ Definition spec_app_a_eq_M (a : EVar) :=
 Definition spec_app_A_eq_M (A : SVar) :=
   ((spec_elem $ `A) ~=~ Bot) <~> (`A !=~ Bot).
 
+Axiom semantics_of_definedness_symbol : forall sm : Sigma_model,
+  Same_set (M sm) (interpretation sm definedness_symbol) (Singleton (M sm) (example sm)).
+
+Fact semantics_of_definedness_symbol_eq : forall sm : Sigma_model,
+  interpretation sm definedness_symbol = Singleton (M sm) (example sm).
+Proof.
+  intros.
+  apply Same_set_to_eq. apply semantics_of_definedness_symbol.
+Qed.
+
+Axiom semantics_of_definedness_element : forall sm : Sigma_model, forall S : Ensemble (M sm), forall e : M sm,
+  S e ->
+  Same_set (M sm) ((app sm) (example sm) e) (Full_set (M sm)).
+
+Lemma Empty_is_not_Full : forall sm : Sigma_model,
+  ~Same_set (M sm) (Empty_set (M sm)) (Full_set (M sm)).
+Proof.
+  intros.
+  unfold not. intros.
+  apply Same_set_to_eq in H.
+  pose (Full_intro (M sm) (example sm)).
+  rewrite <- H in i.
+  inversion i.
+Qed.
 
 (**
   $ . S = M iff S is not empty
   See: paragraph after Definition 6.
  *)
-Axiom semantics_of_definedness : forall sm : Sigma_model, forall S : Ensemble (M sm),
+Lemma semantics_of_definedness_set : forall sm : Sigma_model, forall S : Ensemble (M sm),
   ~ (Same_set (M sm) S (Empty_set (M sm))) <->
-  Same_set (M sm) (pointwise_app (interpretation sm {| id_si := "definedness" |}) S) (Full_set (M sm))
+  Same_set (M sm) (pointwise_app (Singleton (M sm) (example sm)) S) (Full_set (M sm))
 .
-
-Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
-  Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
 Proof.
-  intros. unfold pointwise_app. unfold Same_set. unfold Included. unfold In. split; intros.
-  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
-  * contradiction.
+  split; intros.
+  * apply Not_Empty_Contains_Elements in H.
+    inversion H.
+    unfold pointwise_app.
+    unfold Same_set, Included, In in *.
+    split; intros.
+    - inversion H1. inversion H2. destruct H3. destruct H4.
+      inversion H3. subst.
+      pose (semantics_of_definedness_element sm S x2 H4).
+      apply Same_set_to_eq in s. rewrite s in H5. assumption.
+    - exists (example sm). exists x.
+      split. 2: split. all: intros.
+      + apply In_singleton.
+      + assumption.
+      + pose (semantics_of_definedness_element sm S x H0).
+        apply Same_set_to_eq in s. rewrite s. assumption.
+  * unfold not. intros.
+    apply Same_set_to_eq in H0. subst.
+    pose (pointwise_app_bot sm (Singleton (M sm) (example sm))).
+    apply Same_set_to_eq in s.
+    rewrite s in H.
+    pose (Empty_is_not_Full sm).
+    unfold not in n.
+    apply n.
+    exact H.
 Qed.
 
-Lemma semantics_of_definedness_2 : forall sm : Sigma_model, forall S : Ensemble (M sm),
+Lemma semantics_of_definedness_set_alt : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  ~ (Same_set (M sm) S (Empty_set (M sm))) <->
+  Same_set (M sm) (pointwise_app (interpretation sm definedness_symbol) S) (Full_set (M sm))
+.
+Proof.
+  intros.
+  pose (semantics_of_definedness_symbol sm).
+  apply Same_set_to_eq in s. rewrite s.
+  apply semantics_of_definedness_set.
+Qed.
+
+Lemma semantics_of_definedness_empty_set : forall sm : Sigma_model, forall S : Ensemble (M sm),
   (Same_set (M sm) S (Empty_set (M sm))) <->
-  Same_set (M sm) (pointwise_app (interpretation sm {| id_si := "definedness" |}) S) (Empty_set (M sm)).
+  Same_set (M sm) (pointwise_app (interpretation sm definedness_symbol) S) (Empty_set (M sm)).
 Proof.
   split; intros.
   * apply Extensionality_Ensembles in H. subst.
@@ -432,10 +494,13 @@ Proof.
     case_eq (Same_set_dec S (Empty_set (M sm))).
     - intros. assumption.
     - intros. pose (Not_Empty_Contains_Elements S n). inversion e.
-      pose (semantics_of_definedness sm S). destruct i. pose (H4 n).
+      pose (semantics_of_definedness_set sm S). destruct i. pose (H4 n).
       apply Extensionality_Ensembles in s. rewrite s in *.
       assert (Full_set (M sm) x). { apply Full_intro. }
-      pose (H0 x H6). contradiction.
+      
+      pose (H0 x). pose (semantics_of_definedness_symbol sm).
+      apply Same_set_to_eq in s0. rewrite s0, s in e0.
+      contradiction.
 Qed.
 
 (* Can be shown, that all notations in Definition 6 are predicates with the
@@ -457,7 +522,7 @@ Lemma totality_eq_step2
   (Same_set _ (ext_valuation evar_val svar_val (|^ (¬phi) ^|))
               (Empty_set _)).
 Proof.
-  proof_ext_val. remember ((pointwise_app (interpretation sm {| id_si := "definedness" |})
+  proof_ext_val. remember ((pointwise_app (interpretation sm definedness_symbol)
         (Complement (M sm) (ext_valuation evar_val svar_val phi)))) as S.
   pose (CMF := @Complement_Empty_is_Full (M sm)).
   pose (Ext := Extensionality_Ensembles (M sm) _ _ CMF).
@@ -481,7 +546,7 @@ Proof.
   remember ((ext_valuation evar_val svar_val phi)) as S.
   rewrite <- (Same_set_to_eq (@Complement_Empty_is_Full (M sm))).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   reflexivity.
 Qed.
 
@@ -494,7 +559,7 @@ Proof.
   proof_ext_val.
   rewrite <- (Same_set_to_eq (@Complement_Empty_is_Full (M sm))).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   rewrite <- (Same_set_to_eq (@Complement_Full_is_Empty (M sm))).
   rewrite <- Same_set_Compl.
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ (Full_set (M sm)))).
@@ -523,7 +588,7 @@ Proof.
   remember (ext_valuation evar_val svar_val phi2) as S2.
   rewrite <- (Same_set_to_eq (@Complement_Empty_is_Full (M sm))).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   rewrite (Same_set_to_eq (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
   rewrite (Same_set_to_eq (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S2) S1)).
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ S2)).
@@ -565,7 +630,7 @@ Proof.
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ S1)).
   rewrite (Same_set_to_eq (Intersection_Setminus S1 S2)).
   rewrite (Same_set_to_eq (Intersection_Setminus S2 S1)).
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   rewrite Union_Minus_Empty.
   reflexivity.
 Qed.
@@ -578,7 +643,7 @@ Lemma defined_sem
   ~ (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
 Proof.
   proof_ext_val. 
-  rewrite <- semantics_of_definedness.
+  rewrite <- semantics_of_definedness_set_alt.
   reflexivity.
 Qed.
 
@@ -589,7 +654,7 @@ Lemma not_defined_sem
   (Same_set _ (ext_valuation evar_val svar_val (phi)) (Empty_set _)).
 Proof.
   proof_ext_val.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   reflexivity.
 Qed.
 
@@ -602,7 +667,7 @@ Proof.
   proof_ext_val.
   rewrite <- (Same_set_to_eq (@Complement_Full_is_Empty (M sm))).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness.
+  rewrite <- semantics_of_definedness_set_alt.
   rewrite <- (Same_set_to_eq (@Complement_Full_is_Empty (M sm))).
   rewrite <- Same_set_Compl. reflexivity.
 Qed.
@@ -625,7 +690,7 @@ Proof.
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ S1)).
   rewrite (Same_set_to_eq (Intersection_Setminus S1 S2)).
   rewrite (Same_set_to_eq (Intersection_Setminus S2 S1)).
-  rewrite <- semantics_of_definedness.
+  rewrite <- semantics_of_definedness_set_alt.
   rewrite Union_Minus_Empty.
   reflexivity.
 Qed.
@@ -638,7 +703,7 @@ Lemma membership_sem
 Proof.
   proof_ext_val.
   remember (ext_valuation evar_val svar_val sp) as S.
-  rewrite <- semantics_of_definedness.
+  rewrite <- semantics_of_definedness_set_alt.
   rewrite <- Intersection_singleton.
   reflexivity.
 Qed.
@@ -652,7 +717,7 @@ Proof.
   proof_ext_val.
   proof_ext_val.
   remember (ext_valuation evar_val svar_val sp) as S.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   rewrite <- Intersection_singleton_empty.
   reflexivity.
 Qed.
@@ -671,7 +736,7 @@ Proof.
   remember (ext_valuation evar_val svar_val b) as S2.
   rewrite <- (Same_set_to_eq (@Complement_Empty_is_Full (M sm))).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness_2.
+  rewrite <- semantics_of_definedness_empty_set.
   rewrite (Same_set_to_eq (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ S1)).
   rewrite <- Intersection_Comple_Strinct_Included.
@@ -692,7 +757,7 @@ Proof.
   remember (ext_valuation evar_val svar_val b) as S2.
   rewrite <- (Same_set_to_eq (@Complement_Full_is_Empty _)).
   rewrite <- Same_set_Compl.
-  rewrite <- semantics_of_definedness.
+  rewrite <- semantics_of_definedness_set_alt.
   rewrite (Same_set_to_eq (Compl_Union_Intes_Compl_Ensembles _ (Complement (M sm) S1) S2)).
   rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ S1)).
   rewrite <- Not_Intersection_Comple_Strinct_Included.

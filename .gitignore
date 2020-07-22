@@ -3,6 +3,8 @@
 *.cma
 *.cmi
 *.cmo
+*.vok
+*.vos
 *.cmx
 *.cmxa
 *.cmxs

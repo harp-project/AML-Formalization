@@ -562,7 +562,7 @@ Lemma equiv_implies_eq A B:
   (A ~=~ B) proved.
 Proof.
   intros.
-  pose (CTX := A_implies_not_not_A_ctx (A <~> B) (ctx_app_r definedness_symbol box) H).
+  pose (CTX := A_implies_not_not_A_ctx (A <~> B) (ctx_app_r (^ definedness_symbol) box) H).
   simpl in CTX.
   unfold equal.
   assumption.
@@ -729,7 +729,7 @@ Proof.
   pose (Prop_tau _ (P1 phi)).
   assert ((phi <~> phi) proved).
   { unfold "<~>". apply conj_intro_meta; assumption. }
-  pose (A_implies_not_not_A_ctx (phi <~> phi) (ctx_app_r definedness_symbol box) H).
+  pose (A_implies_not_not_A_ctx (phi <~> phi) (ctx_app_r ^definedness_symbol box) H).
   simpl in a0. unfold "~=~". unfold total. unfold defined.
   apply proof_sys_intro. assumption.
 Qed.
@@ -774,7 +774,7 @@ Lemma A_implies_A_totality A:
   A proved -> |_ A _| proved.
 Proof.
   intros.
-  pose (ANNA := A_implies_not_not_A_ctx A (ctx_app_r definedness_symbol box) H).
+  pose (ANNA := A_implies_not_not_A_ctx A (ctx_app_r ^definedness_symbol box) H).
   exact ANNA.
 Qed.
 

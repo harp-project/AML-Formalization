@@ -491,3 +491,12 @@ Proof.
     contradiction.
 Qed.
 
+Lemma Contains_Elements_Not_Empty : forall {T : Type}, forall S : Ensemble T,
+    (exists x : T, S x) -> ~ Same_set T S (Empty_set T).
+Proof.
+  unfold Same_set, Included, In.
+  intros. inversion H. unfold not. intros.
+  inversion H1.
+  pose (H2 x H0). inversion e.
+Qed.
+
