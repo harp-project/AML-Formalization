@@ -23,6 +23,12 @@ Definition evar_eqb (x y : EVar) : bool := String.eqb (id_ev x) (id_ev y).
 Definition svar_eqb (x y : SVar) : bool := String.eqb (id_sv x) (id_sv y).
 Definition sigma_eqb (x y : Sigma) : bool := String.eqb (id_si x) (id_si y).
 
+Lemma evar_eqb_refl x :
+  evar_eqb x x = true.
+Proof.
+  unfold evar_eqb. apply eqb_refl.
+Qed.
+
 Inductive Sigma_pattern : Type :=
 | sp_var (x : EVar)
 | sp_set (X : SVar)
@@ -340,9 +346,9 @@ End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Definition satisfies_model (sm : Sigma_model) (axiom : Sigma_pattern) : Prop :=
+Definition satisfies_model (sm : Sigma_model) (phi : Sigma_pattern) : Prop :=
 forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
-  Same_set _ (ext_valuation (sm := sm) evar_val svar_val axiom) (Full_set _).
+  Same_set _ (ext_valuation (sm := sm) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
@@ -367,7 +373,7 @@ Definition definedness_symbol : Sigma := {| id_si := "definedness"|}.
 Definition defined (x : Sigma_pattern) := (^ definedness_symbol $ x).
 Notation "|^ phi ^|" := (defined phi) (at level 100).
 
-(* Definition Definedness_var (x : EVar) : Sigma_pattern :=
+(* Definition Definedness_meta (x : EVar) : Sigma_pattern :=
   |^ 'x ^|. *)
 
 Definition Definedness_forall (x : EVar) : Sigma_pattern :=
@@ -402,14 +408,218 @@ Definition not_includes (a b : Sigma_pattern) := (¬ (includes a b)).
 Notation "a !<: b" := (not_includes a b) (at level 100).
 
 
-(* Introducing '$' element, such as '$' $ a = M *)
-Definition spec_elem : Sigma_pattern := const ("$").
+(* Functional Constant axiom *)
+Definition Functional_Constant (constant : Sigma) (z : EVar) : Sigma_pattern :=
+  (ex z , (^constant ~=~ 'z)).
 
-Definition spec_app_a_eq_M (a : EVar) :=
-  ((spec_elem $ 'a) ~=~ Top).
 
-Definition spec_app_A_eq_M (A : SVar) :=
-  ((spec_elem $ `A) ~=~ Bot) <~> (`A !=~ Bot).
+Inductive Application_context : Set :=
+| box
+| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
+| ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
+.
+
+Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern)
+: Sigma_pattern :=
+match C with
+| box => sp
+| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
+| ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
+end
+.
+
+Fixpoint free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
+match C with
+| box => List.nil
+| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_evars sp)
+| ctx_app_r sp cc => set_union evar_eq_dec (free_evars sp) (free_vars_ctx cc)
+end.
+
+
+(* Proof system for AML ref. snapshot: Section 3 *)
+
+(* Auxiliary axiom schemes for proving propositional tautology *)
+Reserved Notation "pattern 'tautology'" (at level 2).
+Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
+| P1 (phi : Sigma_pattern) :
+    (phi ~> phi) tautology
+
+| P2 (phi psi : Sigma_pattern) :
+    (phi ~> (psi ~> phi)) tautology
+
+| P3 (phi psi xi : Sigma_pattern) :
+    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
+
+| P4 (phi psi : Sigma_pattern) :
+    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
+
+where "pattern 'tautology'" := (Tautology_proof_rules pattern).
+
+
+Reserved Notation "pattern 'proved'" (at level 2).
+Inductive AML_proof_system : Sigma_pattern -> Prop :=
+(* FOL reasoning *)
+  (* Propositional tautology *)
+  | Prop_tau (phi : Sigma_pattern) :
+      phi tautology -> phi proved
+
+  (* Modus ponens *)
+  | Mod_pon {phi1 phi2 : Sigma_pattern} :
+    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
+
+  (* Existential quantifier *)
+  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
+    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
+
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+    (phi1 ~> phi2) proved ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
+    ((ex x, phi1) ~> phi2) proved
+
+(* Frame reasoning *)
+  (* Propagation bottom *)
+  | Prop_bot (C : Application_context) :
+    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
+
+  (* Propagation disjunction *)
+  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    ((subst_ctx C (phi1 _|_ phi2)) ~>
+        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
+
+  (* Propagation exist *)
+  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
+    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
+    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
+
+  (* Framing *)
+  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
+
+(* Fixpoint reasoning *)
+  (* Set Variable Substitution *)
+  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
+    phi proved -> (e_subst_set phi (sp_set psi) X) proved
+
+  (* Pre-Fixpoint *)
+  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
+
+  (* Knaster-Tarski *)
+  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
+
+(* Technical rules *)
+  (* Existence *)
+  | Existence (x : EVar) : (ex x , ' x) proved
+
+  (* Singleton *)
+  | Singleton_ctx (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
+    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
+
+where "pattern 'proved'" := (AML_proof_system pattern).
+
+Definition empty_theory := Empty_set Sigma_pattern.
+
+Reserved Notation "theory |- pattern" (at level 1).
+Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
+(* Using hypothesis from theory 
+   CAUTION: According to deduction theorem, the totality can be proved, not the formula itself
+*)
+| hypothesis
+  (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (In _ theory axiom) -> theory |- axiom
+
+(* AML_proof_system rule embedding *)
+(* Introduce proof system rules *)
+| proof_sys_intro
+  (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    pattern proved -> theory |- pattern
+
+(* Introduce step rules *)
+| E_mod_pon
+  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
+
+| E_ex_gen
+  (x : EVar) (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    theory |- (phi1 ~> phi2) ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
+    theory |- ((ex x, phi1) ~> phi2)
+
+| E_framing
+  (C : Application_context) (phi1 phi2 : Sigma_pattern)
+  (theory : Ensemble Sigma_pattern) :
+    theory |-
+      (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
+
+| E_svar_subst
+  (phi : Sigma_pattern) (psi X : SVar) (theory : Ensemble Sigma_pattern) :
+    theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
+
+| E_knaster_tarski
+  (phi psi : Sigma_pattern) (X : SVar) (theory : Ensemble Sigma_pattern) :
+    theory |-
+      ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
+
+where "theory |- pattern" := (Provable theory pattern).
+
+(* Deduction theorem 
+   see: mML TR Theorem 14
+*)
+Theorem deduction_intro
+  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (Add _ theory axiom) |- pattern ->
+    theory |- (|_ axiom _| ~> pattern).
+Admitted.
+
+Theorem deduction_elim
+  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    (theory |- (|_ axiom _| ~> pattern)) ->
+    (Add _ theory axiom) |- pattern.
+Admitted.
+
+Theorem deduction
+  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    (Add _ theory axiom) |- pattern <->
+    theory |- (|_ axiom _| ~> pattern).
+Admitted.
+
+(* Theorem deduction_intro_with_sub
+  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern ->
+    (Subtract _ theory axiom) |- (|_ axiom _| ~> pattern).
+Admitted.
+
+Theorem deduction_with_sub
+  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
+    In _ theory axiom -> theory |- pattern <->
+    (Subtract _ theory axiom) |- (|_ axiom _| ~> pattern).
+Admitted. *)
+
+(* Examples of use *)
+
+(* Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" :=
+    (Add _ a (Add _ b .. (Add _ z) ..)) (at level 2). *)
+
+
+(* Theorem 8.: Soundness *)
+Theorem Soundness :
+  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
+  (theory |- phi) -> (theory |= phi).
+Proof.
+  intros. unfold "|=". unfold "|=T", "|=M".
+  intros.
+  induction H.
+  * apply H0. assumption.
+(*
+Proof.
+  intros.
+  induction (proof_length (theory |- phi)).
+*)
+Admitted.
+
+(**************************************************************************)
 
 Axiom semantics_of_definedness_symbol : forall sm : Sigma_model,
   Same_set (M sm) (interpretation sm definedness_symbol) (Singleton (M sm) (example sm)).
@@ -421,9 +631,81 @@ Proof.
   apply Same_set_to_eq. apply semantics_of_definedness_symbol.
 Qed.
 
-Axiom semantics_of_definedness_element : forall sm : Sigma_model, forall S : Ensemble (M sm), forall e : M sm,
-  S e ->
+Axiom definedness_axiom : forall (x : EVar), (Definedness_forall x) proved.
+
+Lemma rewrite_intersection : forall sm x evar_val svar_val,
+  Same_set (M sm)
+  (FA_Intersection (fun a : M sm =>
+   ext_valuation (change_val evar_eqb x a evar_val) svar_val (|^ ' x ^|) ))
+  (Full_set (M sm)) <->
+  
+  forall (a : M sm),
+  Same_set (M sm)
+  ( ext_valuation (change_val evar_eqb x a evar_val) svar_val (|^ ' x ^| ))
+  (Full_set (M sm)).
+Proof.
+  split; intros.
+  * unfold Same_set, Included, In in *. destruct H. split; intros.
+    - apply Full_intro.
+    - pose (H0 x0 H1). inversion f. subst. apply H2.
+  * unfold Same_set, Included, In in *. split; intros.
+    - apply Full_intro.
+    - apply FA_Int_intro. intros.
+      assert (Full_set (M sm) c). { apply Full_intro. }
+      destruct (H c). pose (H3 x0 H0). assumption. 
+Qed.
+
+Lemma app_same_set_pointwise_app sm x y:
+  Same_set (M sm) (pointwise_app (Singleton (M sm) x) (Singleton (M sm) y)) ((app sm) x y).
+Proof.
+  unfold Same_set, Included, In. split; intros.
+  * unfold pointwise_app in H. inversion H.
+    inversion H0.
+    destruct H1. destruct H2. inversion H1. inversion H2. subst. assumption.
+  * unfold pointwise_app. exists x. eexists y. split. 2: split.
+    - apply In_singleton.
+    - apply In_singleton.
+    - assumption.
+Qed.
+
+Lemma semantics_of_definedness_element : forall sm : Sigma_model, forall e : M sm,
   Same_set (M sm) ((app sm) (example sm) e) (Full_set (M sm)).
+Proof.
+  intros.
+  pose (app_same_set_pointwise_app sm (example sm) e).
+  apply Same_set_to_eq in s.
+  rewrite <- s.
+  pose (semantics_of_definedness_symbol sm).
+  apply Same_set_to_eq in s0.
+  rewrite <- s0.
+  evar (evar_val : EVar -> M sm).
+  evar (svar_val : SVar -> Ensemble (M sm)).
+  
+  pose (AX := proof_sys_intro _ empty_theory (definedness_axiom (evar_c "x"))).
+  apply Soundness in AX.
+  unfold "|=" in AX. unfold "|=T" in AX. unfold "|=M" in AX.
+  assert (forall axiom : Sigma_pattern,
+    In Sigma_pattern empty_theory axiom ->
+    forall (evar_val : EVar -> M sm) (svar_val : SVar -> Ensemble (M sm)),
+    Same_set (M sm) (ext_valuation evar_val svar_val axiom) (Full_set (M sm))) as HELPER. { intros. inversion H. }
+  pose (GOAL := AX sm HELPER evar_val svar_val).
+  unfold Definedness_forall in *.
+  pose (@forall_ext_val_correct sm evar_val svar_val (|^ ' (evar_c "x") ^|) (evar_c "x")).
+  apply Same_set_to_eq in s1.
+  rewrite s1 in GOAL. clear s1. clear HELPER. clear AX. clear s0. clear s.
+  pose (rewrite_intersection sm (evar_c "x") evar_val svar_val).
+  destruct i.
+  pose (GOAL2 := H GOAL e). clear H0.
+  simpl in GOAL2.
+  unfold change_val in GOAL2.
+  case_eq (evar_eqb {| id_ev := "x" |} {| id_ev := "x" |}); intros.
+  2: { pose (evar_eqb_refl {| id_ev := "x" |}). rewrite e0 in H0. congruence. }
+  rewrite H0 in GOAL2. assumption.
+  
+  Unshelve.
+  * exact (fun x => example sm).
+  * exact (fun x => Empty_set (M sm)).
+Qed.
 
 Lemma Empty_is_not_Full : forall sm : Sigma_model,
   ~Same_set (M sm) (Empty_set (M sm)) (Full_set (M sm)).
@@ -453,13 +735,13 @@ Proof.
     split; intros.
     - inversion H1. inversion H2. destruct H3. destruct H4.
       inversion H3. subst.
-      pose (semantics_of_definedness_element sm S x2 H4).
+      pose (semantics_of_definedness_element sm x2).
       apply Same_set_to_eq in s. rewrite s in H5. assumption.
     - exists (example sm). exists x.
       split. 2: split. all: intros.
       + apply In_singleton.
       + assumption.
-      + pose (semantics_of_definedness_element sm S x H0).
+      + pose (semantics_of_definedness_element sm x).
         apply Same_set_to_eq in s. rewrite s. assumption.
   * unfold not. intros.
     apply Same_set_to_eq in H0. subst.
@@ -764,216 +1046,11 @@ Proof.
   reflexivity.
 Qed.
 
-(* Functional Constant axiom *)
-Definition Functional_Constant (constant : Sigma) (z : EVar) : Sigma_pattern :=
-  (ex z , (^constant ~=~ 'z)).
 
 
-Inductive Application_context : Set :=
-| box
-| ctx_app_l (cc : Application_context) (sp : Sigma_pattern)
-| ctx_app_r (sp : Sigma_pattern) (cc : Application_context)
-.
-
-Fixpoint subst_ctx (C : Application_context) (sp : Sigma_pattern)
-: Sigma_pattern :=
-match C with
-| box => sp
-| ctx_app_l C' sp' => sp_app (subst_ctx C' sp) sp'
-| ctx_app_r sp' C' => sp_app sp' (subst_ctx C' sp)
-end
-.
-
-Fixpoint free_vars_ctx (C : Application_context) : (ListSet.set EVar) :=
-match C with
-| box => List.nil
-| ctx_app_l cc sp => set_union evar_eq_dec (free_vars_ctx cc) (free_evars sp)
-| ctx_app_r sp cc => set_union evar_eq_dec (free_evars sp) (free_vars_ctx cc)
-end.
 
 
-(* Proof system for AML ref. snapshot: Section 3 *)
 
-(* Auxiliary axiom schemes for proving propositional tautology *)
-Reserved Notation "pattern 'tautology'" (at level 2).
-Inductive Tautology_proof_rules : Sigma_pattern -> Prop :=
-| P1 (phi : Sigma_pattern) :
-    (phi ~> phi) tautology
-
-| P2 (phi psi : Sigma_pattern) :
-    (phi ~> (psi ~> phi)) tautology
-
-| P3 (phi psi xi : Sigma_pattern) :
-    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
-
-| P4 (phi psi : Sigma_pattern) :
-    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
-
-where "pattern 'tautology'" := (Tautology_proof_rules pattern).
-
-
-Reserved Notation "pattern 'proved'" (at level 2).
-Inductive AML_proof_system : Sigma_pattern -> Prop :=
-(* FOL reasoning *)
-  (* Propositional tautology *)
-  | Prop_tau (phi : Sigma_pattern) :
-      phi tautology -> phi proved
-
-  (* Modus ponens *)
-  | Mod_pon {phi1 phi2 : Sigma_pattern} :
-    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
-
-  (* Existential quantifier *)
-  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
-    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
-
-  (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
-    (phi1 ~> phi2) proved ->
-    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
-    ((ex x, phi1) ~> phi2) proved
-
-(* Frame reasoning *)
-  (* Propagation bottom *)
-  | Prop_bot (C : Application_context) :
-    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
-
-  (* Propagation disjunction *)
-  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    ((subst_ctx C (phi1 _|_ phi2)) ~>
-        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
-
-  (* Propagation exist *)
-  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
-    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
-    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
-
-  (* Framing *)
-  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
-
-(* Fixpoint reasoning *)
-  (* Set Variable Substitution *)
-  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
-    phi proved -> (e_subst_set phi (sp_set psi) X) proved
-
-  (* Pre-Fixpoint *)
-  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
-    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
-
-  (* Knaster-Tarski *)
-  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
-
-(* Technical rules *)
-  (* Existence *)
-  | Existence (x : EVar) : (ex x , ' x) proved
-
-  (* Singleton *)
-  | Singleton (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
-    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
-
-where "pattern 'proved'" := (AML_proof_system pattern).
-
-Definition empty_theory := Empty_set Sigma_pattern.
-
-Reserved Notation "theory |- pattern" (at level 1).
-Inductive Provable : Ensemble Sigma_pattern -> Sigma_pattern -> Prop :=
-(* Using hypothesis from theory 
-   CAUTION: According to deduction theorem, the totality can be proved, not the formula itself
-*)
-| hypothesis
-  (axiom : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (In _ theory axiom) -> theory |- axiom
-
-(* AML_proof_system rule embedding *)
-(* Introduce proof system rules *)
-| proof_sys_intro
-  (pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    pattern proved -> theory |- pattern
-
-(* Introduce step rules *)
-| E_mod_pon
-  (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- phi1 -> theory |- (phi1 ~> phi2) -> theory |- phi2
-
-| E_ex_gen
-  (x : EVar) (phi1 phi2 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- (phi1 ~> phi2) ->
-    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
-    theory |- ((ex x, phi1) ~> phi2)
-
-| E_framing
-  (C : Application_context) (phi1 phi2 : Sigma_pattern)
-  (theory : Ensemble Sigma_pattern) :
-    theory |-
-      (phi1 ~> phi2) -> theory |- ((subst_ctx C phi1) ~> (subst_ctx C phi2))
-
-| E_svar_subst
-  (phi : Sigma_pattern) (psi X : SVar) (theory : Ensemble Sigma_pattern) :
-    theory |- phi -> theory |- (e_subst_set phi (sp_set psi) X)
-
-| E_knaster_tarski
-  (phi psi : Sigma_pattern) (X : SVar) (theory : Ensemble Sigma_pattern) :
-    theory |-
-      ((e_subst_set phi psi X) ~> psi) -> theory |- ((sp_mu X phi) ~> psi)
-
-where "theory |- pattern" := (Provable theory pattern).
-
-(* Deduction theorem 
-   see: mML TR Theorem 14
-*)
-Theorem deduction_intro
-  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (Add _ theory axiom) |- pattern ->
-    theory |- (|_ axiom _| ~> pattern).
-Admitted.
-
-Theorem deduction_elim
-  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    (theory |- (|_ axiom _| ~> pattern)) ->
-    (Add _ theory axiom) |- pattern.
-Admitted.
-
-Theorem deduction
-  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
-    (Add _ theory axiom) |- pattern <->
-    theory |- (|_ axiom _| ~> pattern).
-Admitted.
-
-(* Theorem deduction_intro_with_sub
-  (axiom pattern : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    In _ theory axiom -> theory |- pattern ->
-    (Subtract _ theory axiom) |- (|_ axiom _| ~> pattern).
-Admitted.
-
-Theorem deduction_with_sub
-  {axiom pattern : Sigma_pattern} (theory : Ensemble Sigma_pattern) :
-    In _ theory axiom -> theory |- pattern <->
-    (Subtract _ theory axiom) |- (|_ axiom _| ~> pattern).
-Admitted. *)
-
-(* Examples of use *)
-
-(* Notation "'{{' a 'add' b 'add' .. 'add' z '}}'" :=
-    (Add _ a (Add _ b .. (Add _ z) ..)) (at level 2). *)
-
-
-(* Theorem 8.: Soundness *)
-Theorem Soundness :
-  forall phi : Sigma_pattern, forall theory : Ensemble Sigma_pattern,
-  (theory |- phi) -> (theory |= phi).
-Proof.
-  intros. unfold "|=". unfold "|=T", "|=M".
-  intros.
-  induction H.
-  * apply H0. assumption.
-(*
-Proof.
-  intros.
-  induction (proof_length (theory |- phi)).
-*)
-Admitted.
 
 End AML.
 
