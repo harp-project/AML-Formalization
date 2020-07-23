@@ -890,8 +890,19 @@ Lemma equality_eq_step3
   (Same_set _ (ext_valuation evar_val svar_val (phi1 ~=~ phi2))
               (Full_set _)) <->
   (Same_set _ (Symmetric_difference (ext_valuation evar_val svar_val phi1) (ext_valuation evar_val svar_val phi2))
-              (Empty_set _)).
-Admitted.
+            (Empty_set _)).
+Proof.
+  proof_ext_val.
+  remember (ext_valuation evar_val svar_val phi1) as S1.
+  remember (ext_valuation evar_val svar_val phi2) as S2.
+  rewrite <- (Same_set_to_eq (@Complement_Empty_is_Full (M sm))).
+  rewrite <- Same_set_Compl.
+  rewrite <- semantics_of_definedness_empty_set.
+  unfold Symmetric_difference.
+  rewrite <- (Same_set_to_eq (Setmin_Val S1 S2)).
+  rewrite <- (Same_set_to_eq (Setmin_Val S2 S1)).
+  reflexivity.
+Qed.
 
 Lemma equality_eq_step4
   {sm : Sigma_model} {evar_val : EVar -> M sm} {svar_val : SVar -> Ensemble _} :
