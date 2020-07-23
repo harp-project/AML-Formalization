@@ -60,7 +60,7 @@ eapply conj;intros;eapply FA_Uni_intro;inversion H0;destruct H1;destruct(H x1);
 eapply ex_intro;auto.
 Qed.
 
-(** Propersies of the standard set operators
+(** Properties of the standard set operators
 
    see also:
    https://coq.github.io/doc/master/stdlib/Coq.Sets.Powerset_facts.html

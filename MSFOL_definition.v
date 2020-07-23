@@ -88,7 +88,7 @@ match a, b with
 end.
 
 
-(* Substitue varibale in term *)
+(* Substitue variable in term *)
 Fixpoint t_subst_var (term : MSFOL_term) (t : MSFOL_term) (x : MSFOL_var)
 : MSFOL_term :=
 match term with
@@ -97,7 +97,7 @@ match term with
     MT_fun f (VectorDef.map (fun y => t_subst_var y t x) params) result_sort
 end.
 
-(* Substitue varibale in formula *)
+(* Substitue variable in formula *)
 Fixpoint f_subst_var (phi : MSFOL_formula) (t : MSFOL_term) (x : MSFOL_var)
 : MSFOL_formula :=
 match phi with
