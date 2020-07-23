@@ -86,6 +86,7 @@ with strictly_negative : SVar -> Sigma_pattern -> Prop :=
   strictly_negative X (sp_mu Y phi)
 .
 
+(* substitute x for psi in phi *)
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
 | sp_var x' => if evar_eq_dec x x'
@@ -223,6 +224,7 @@ fun e:M sm => exists le re:M sm, l le /\ r re /\ (app sm) le re e.
 
 Compute @pointwise_app {| M := Sigma_pattern |} (Singleton _ (var "a")) (Singleton _ (var "b")).
 
+(* S . empty = empty *)
 Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
   Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
 Proof.
