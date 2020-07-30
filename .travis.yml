@@ -1,0 +1,18 @@
+os: linux
+dist: bionic
+language: shell
+
+services:
+  - docker
+
+env:
+  jobs:
+  - COQ_IMAGE="coqorg/coq:latest"
+    #  - COQ_IMAGE="coqorg/coq:8.11"
+    #  - COQ_IMAGE="coqorg/coq:dev"
+
+script:
+- echo -e "${ANSI_YELLOW}Building...${ANSI_RESET}" && echo -en 'travis_fold:start:script\\r'
+- ./build-in-docker.sh
+  #- docker build --build-arg=coq_image="${COQ_IMAGE}" --pull -t demo .
+- echo -en 'travis_fold:end:script\\r'
