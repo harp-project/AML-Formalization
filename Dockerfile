@@ -1,0 +1,1 @@
+FROM coqorg/coq:latest
