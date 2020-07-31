@@ -6,6 +6,11 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 
 CoqIDE 8.11.0 https://coq.inria.fr/download
 
+It is also possible to build the project in Docker:
+```
+./build-in-docker.sh
+```
+
 ## References
 
 Official language definition http://fsl.cs.illinois.edu/index.php/Applicative_Matching_Logic
