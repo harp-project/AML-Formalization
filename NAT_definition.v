@@ -107,7 +107,7 @@ Definition No_Confusion1 :=
 let x := (evar_c("x")) in
   all_S x : Nat, ((S 'x) !=~ 00).
 
-(* states that succ is an injective funxtion *)
+(* states that succ is an injective function *)
 Definition No_Confusion2 (x y : EVar) :=
 let x := (evar_c("x")) in let y := (evar_c("y")) in
   all_S x : Nat, (all_S y : Nat,
@@ -119,7 +119,7 @@ let x := (evar_c("x")) in let y := (evar_c("y")) in
 Definition Inductive_Domain (D : SVar) :=
   [[ Nat ]] ~=~ (mu D, (00 _|_ (S `D))).
 
-(* This is an axiom schema. Before use it needs to be instanctiated, by giving
+(* This is an axiom schema. Before use it needs to be instantiated, by giving
  * a pattern as parameter to it. *)
 Definition Peano_Induction (phi : Sigma_pattern -> Sigma_pattern) :=
 let x := (evar_c("x")) in
