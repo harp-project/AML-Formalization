@@ -29,62 +29,102 @@ Proof.
   unfold evar_eqb. apply eqb_refl.
 Qed.
 
-Inductive Sigma_pattern : Type :=
-| sp_var (x : EVar)
-| sp_set (X : SVar)
-| sp_const (sigma : Sigma)
-| sp_app (phi1 phi2 : Sigma_pattern)
-| sp_bottom
-| sp_impl (phi1 phi2 : Sigma_pattern)
-| sp_exists (x : EVar) (phi : Sigma_pattern)
-| sp_mu (X : SVar) (phi : Sigma_pattern)
+(* List of set variables that are not allowed to be used positively or negatively. *)
+Record SVarBlacklist : Set :=
+  { blacklistNegative : list SVar;
+    blacklistPositive : list SVar;
+  }.
+
+Definition SVB_empty : SVarBlacklist :=
+  {| blacklistNegative := nil;
+     blacklistPositive := nil;
+  |}.
+
+Definition SVB_add (v : SVar) (b : SVarBlacklist) : SVarBlacklist :=
+  {| blacklistNegative := cons v (blacklistNegative b);
+     blacklistPositive := blacklistPositive b;
+  |}.
+
+Definition SVB_swap (b : SVarBlacklist) : SVarBlacklist :=
+  {| blacklistNegative := blacklistPositive b;
+     blacklistPositive := blacklistNegative b;
+  |}.
+
+
+Inductive Sigma_pattern : SVarBlacklist -> Type :=
+| sp_var : forall (b : SVarBlacklist) (x : EVar), Sigma_pattern b
+| sp_set : forall (b : SVarBlacklist) (X : SVar),
+    ~List.In X (blacklistPositive b) -> Sigma_pattern b
+| sp_const : forall (b : SVarBlacklist) (sigma : Sigma), Sigma_pattern b
+| sp_app : forall (b : SVarBlacklist) (phi1 phi2 : Sigma_pattern b), Sigma_pattern b
+| sp_bottom : forall (b : SVarBlacklist), Sigma_pattern b
+| sp_impl : forall (b : SVarBlacklist) (phi1 : Sigma_pattern (SVB_swap b)) (phi2 : Sigma_pattern b),
+    Sigma_pattern b
+| sp_exists : forall (b : SVarBlacklist) (x : EVar) (phi : Sigma_pattern b),
+    Sigma_pattern b
+| sp_mu : forall (b : SVarBlacklist) (X : SVar) (phi : Sigma_pattern (SVB_add X b)),
+    Sigma_pattern b
 .
 
-Notation "' v" := (sp_var v) (at level 3).
-Notation "` s" := (sp_set s) (at level 3).
-Notation "^ c" := (sp_const c) (at level 3).
-Notation "a $ b" := (sp_app a b) (at level 50, left associativity).
-Notation "'Bot'" := sp_bottom.
-Notation "a ~> b"  := (sp_impl a b) (at level 90, right associativity,
-                                      b at level 200).
-Notation "'ex' x , phi" := (sp_exists x phi) (at level 55).
-Notation "'mu' X , phi" := (sp_mu X phi) (at level 55).
+  Example some_term := sp_var SVB_empty (evar_c "X").
+(*Example some_term_2 := sp_var ?X (evar_c "X").*)
 
-Inductive strictly_positive : SVar -> Sigma_pattern -> Prop :=
-| sp_sp_var (x : EVar) (X : SVar) : strictly_positive X (sp_var x)
-| sp_sp_set (Y : SVar) (X : SVar) : strictly_positive X (sp_set Y)
-| sp_sp_const (sigma : Sigma) (X : SVar) : strictly_positive X (sp_const sigma)
-| sp_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi1 -> strictly_positive X phi2 ->
-  strictly_positive X (sp_app phi1 phi2)
-| sp_sp_bottom (X : SVar) : strictly_positive X sp_bottom
-| sp_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi1 -> strictly_positive X phi2 ->
-  strictly_positive X (sp_impl phi1 phi2)
-| sp_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi ->
-  strictly_positive X (sp_exists x phi)
-| sp_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
-  (Y = X) \/ (Y <> X /\ strictly_positive X phi) ->
-  strictly_positive X (sp_mu Y phi)
-with strictly_negative : SVar -> Sigma_pattern -> Prop :=
-| sn_sp_var (x : EVar) (X : SVar) : strictly_negative X (sp_var x)
-| sn_sp_set (Y : SVar) (X : SVar) : Y <> X -> strictly_negative X (sp_set Y)
-| sn_sp_const (sigma : Sigma) (X : SVar) : strictly_negative X (sp_const sigma)
-| sn_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi1 -> strictly_negative X phi2 ->
-  strictly_negative X (sp_app phi1 phi2)
-| sn_sp_bottom (X : SVar) : strictly_negative X sp_bottom
-| sn_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi1 -> strictly_negative X phi2 ->
-  strictly_negative X (sp_impl phi1 phi2)
-| sn_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi ->
-  strictly_negative X (sp_exists x phi)
-| sn_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
-  (Y = X) \/ (Y <> X /\ strictly_negative X phi) ->
-  strictly_negative X (sp_mu Y phi)
-.
+Notation "' v # b" := (sp_var b v) (at level 3).
+Notation "` s # b" := (sp_set b s) (at level 3).
+Notation "^ c # b" := (sp_const b c) (at level 3).
+Notation "phi1 $ phi2 # b" := (sp_app b phi1 phi2) (at level 50, left associativity).
+Notation "'Bot' # b" := (sp_bottom b) (at level 3).
+Notation "phi1 ~> phi2 # b" := (sp_impl b phi1 phi2) (at level 90, right associativity,
+                                      phi2 at level 200).
+Notation "'ex' x , phi # b" := (sp_exists b x phi) (at level 55).
+Notation "'mu' X , phi # b" := (sp_mu b X phi) (at level 55).
+
+(* (mu X. (y [[]]) # [[]])[(a b # [[Y|Z]])/y]  *)
+
+
+Definition sp_not : forall (b : SVarBlacklist) (phi : Sigma_pattern (SVB_swap b)), phi # b.
+  (phi # (SVB_swap b) ~> sp_bottom # b) # b.
+Notation "¬ a"     := (sp_not   a  ) (at level 75).
+
+Definition sp_or  (l r : Sigma_pattern) := (¬ l) ~> r.
+Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
+
+Definition sp_and (l r : Sigma_pattern) := ¬ ((¬ l) _|_ (¬ r)).
+Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
+
+Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (r ~> l)).
+Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
+
+Definition sp_top := (¬ sp_bottom).
+Notation "'Top'" := sp_top.
+
+Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
+  ¬ (sp_exists x (¬ phi)).
+Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
+
+(* Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
+  ¬ (sp_mu X (¬ (e_subst_set phi (¬ (sp_set X)) X))).
+Notation "'nu' X , phi" := (sp_nu X phi) (at level 55). *)
+
+(* End Derived_operators. *)
+
+Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
+Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
+Definition const (name : string) : Sigma_pattern := sp_const (sigma_c name).
+
+(* Example patterns: *)
+
+Definition simple := var ("x").
+Definition more := set ("A") _|_ ¬ (set "A").
+Definition complex :=
+  var("A") ~> (var("B") ~> ¬(set("C"))) $
+  ex (evar_c("x")) , set ("D") $ Bot _&_ Top.
+Definition custom_constructor := const ("ctor") $ var ("a").
+Definition predicate := const ("p") $ var ("x1") $ var ("x2").
+Definition function :=
+  const ("f") $ (var ("x")) $ (mu svar_c("X"), (set ("X"))).
+
+(* End of examples. *)
 
 (* substitute x for psi in phi *)
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
@@ -159,49 +199,6 @@ match phi with
 end.
 
 (* Section Derived_operators. *)
-
-Definition sp_not (phi : Sigma_pattern) := phi ~> sp_bottom.
-Notation "¬ a"     := (sp_not   a  ) (at level 75).
-
-Definition sp_or  (l r : Sigma_pattern) := (¬ l) ~> r.
-Notation "a _|_ b" := (sp_or    a b) (at level 85, right associativity).
-
-Definition sp_and (l r : Sigma_pattern) := ¬ ((¬ l) _|_ (¬ r)).
-Notation "a _&_ b" := (sp_and   a b) (at level 80, right associativity).
-
-Definition sp_iff (l r : Sigma_pattern) := ((l ~> r) _&_ (r ~> l)).
-Notation "a <~> b" := (sp_iff a b) (at level 95, no associativity).
-
-Definition sp_top := (¬ sp_bottom).
-Notation "'Top'" := sp_top.
-
-Definition sp_forall (x : EVar) (phi : Sigma_pattern) :=
-  ¬ (sp_exists x (¬ phi)).
-Notation "'all' x , phi" := (sp_forall x phi) (at level 55).
-
-Definition sp_nu (X : SVar) (phi : Sigma_pattern) :=
-  ¬ (sp_mu X (¬ (e_subst_set phi (¬ (sp_set X)) X))).
-Notation "'nu' X , phi" := (sp_nu X phi) (at level 55).
-
-(* End Derived_operators. *)
-
-Definition var (name : string) : Sigma_pattern := sp_var (evar_c name).
-Definition set (name : string) : Sigma_pattern := sp_set (svar_c name).
-Definition const (name : string) : Sigma_pattern := sp_const (sigma_c name).
-
-(* Example patterns: *)
-
-Definition simple := var ("x").
-Definition more := set ("A") _|_ ¬ (set "A").
-Definition complex :=
-  var("A") ~> (var("B") ~> ¬(set("C"))) $
-  ex (evar_c("x")) , set ("D") $ Bot _&_ Top.
-Definition custom_constructor := const ("ctor") $ var ("a").
-Definition predicate := const ("p") $ var ("x1") $ var ("x2").
-Definition function :=
-  const ("f") $ (var ("x")) $ (mu svar_c("X"), (set ("X"))).
-
-(* End of examples. *)
 
 Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
                       (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
