@@ -265,9 +265,7 @@ match sp with
   (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)
 end
 .
-
-Check ext_valuation.
-Search Included.
+Print Sigma_pattern.
 Lemma is_monotonic :
   forall (sm : Sigma_model)
          (evar_val : EVar -> M sm)
@@ -292,7 +290,9 @@ Proof.
     * apply H1. assumption.
     * assumption.
   - (* const *)
-    intros. simpl.
+    intros. simpl. unfold Included. intros. assumption.
+  - (* app *)
+    intros.
 Admitted.
 
 Ltac proof_ext_val :=
