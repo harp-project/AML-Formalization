@@ -86,6 +86,19 @@ with strictly_negative : SVar -> Sigma_pattern -> Prop :=
   strictly_negative X (sp_mu Y phi)
 .
 
+Fixpoint well_formed (phi : Sigma_pattern) : Prop :=
+  match phi with
+  | sp_var _ => True
+  | sp_set _ => True
+  | sp_const _ => True
+  | sp_app psi1 psi2 => well_formed psi1 /\ well_formed psi2
+  | sp_bottom => True
+  | sp_impl psi1 psi2 => well_formed psi1 /\ well_formed psi2
+  | sp_exists _ psi => well_formed psi
+  | sp_mu X psi => strictly_positive X psi /\ well_formed psi
+  end
+  . 
+  
 (* substitute x for psi in phi *)
 Fixpoint e_subst_var (phi : Sigma_pattern) (psi : Sigma_pattern) (x : EVar) :=
 match phi with
@@ -252,6 +265,35 @@ match sp with
   (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)
 end
 .
+
+Check ext_valuation.
+Search Included.
+Lemma is_monotonic :
+  forall (sm : Sigma_model)
+         (evar_val : EVar -> M sm)
+         (svar_val : SVar -> Ensemble (M sm)) (phi : Sigma_pattern)
+         (X : SVar),
+    strictly_positive X phi ->
+    well_formed phi ->
+    forall (l r : Ensemble (M sm)),
+      Included (M sm) l r ->
+      Included (M sm)
+        (ext_valuation evar_val (change_val svar_eqb X l svar_val) phi)
+        (ext_valuation evar_val (change_val svar_eqb X r svar_val) phi).
+Proof.
+  intros sm evar_val svar_val phi.
+  induction phi.
+  - (* var *)
+    intros. simpl. unfold Included. intros. assumption.
+  - (* svar *)
+    intros. simpl. unfold Included; unfold Included in H1. intros.
+    unfold change_val; unfold change_val in H2.
+    destruct (svar_eqb X X0).
+    * apply H1. assumption.
+    * assumption.
+  - (* const *)
+    intros. simpl.
+Admitted.
 
 Ltac proof_ext_val :=
 simpl;intros;
