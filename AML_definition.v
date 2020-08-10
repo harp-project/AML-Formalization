@@ -265,7 +265,7 @@ match sp with
   (fun S => ext_valuation evar_val (change_val svar_eqb X S svar_val) sp)
 end
 .
-Print Sigma_pattern.
+
 Lemma is_monotonic :
   forall (sm : Sigma_model)
          (evar_val : EVar -> M sm)
@@ -280,19 +280,32 @@ Lemma is_monotonic :
         (ext_valuation evar_val (change_val svar_eqb X r svar_val) phi).
 Proof.
   intros sm evar_val svar_val phi.
-  induction phi.
-  - (* var *)
-    intros. simpl. unfold Included. intros. assumption.
+  induction phi; intros; simpl; unfold Included; intros; try assumption.
   - (* svar *)
-    intros. simpl. unfold Included; unfold Included in H1. intros.
+    unfold Included in H1.
     unfold change_val; unfold change_val in H2.
     destruct (svar_eqb X X0).
     * apply H1. assumption.
     * assumption.
-  - (* const *)
-    intros. simpl. unfold Included. intros. assumption.
   - (* app *)
-    intros.
+    unfold In; unfold pointwise_app.
+    unfold In in H2; unfold pointwise_app in H2.
+    repeat destruct H2; destruct H3.
+    exists x0, x1.
+    unfold Included in IHphi1; unfold In in IHphi1.
+    unfold Included in IHphi2; unfold In in IHphi2.
+    inversion H; inversion H0; subst.
+    repeat split; try assumption.
+    apply IHphi1 with (l:=l); assumption.
+    apply IHphi2 with (l:=l); assumption.
+  - (* implication *)
+    (* not true?? *)
+    admit.
+  - (* exists *)
+    unfold In.
+    admit.
+  - (* mu *)
+    admit.
 Admitted.
 
 Ltac proof_ext_val :=
