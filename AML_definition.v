@@ -280,6 +280,7 @@ Lemma is_monotonic :
         (ext_valuation evar_val (change_val svar_eqb X r svar_val) phi).
 Proof.
   intros sm evar_val svar_val phi.
+  generalize dependent evar_val. generalize dependent svar_val.
   induction phi; intros; simpl; unfold Included; intros; try assumption.
   - (* svar *)
     unfold Included in H1.
@@ -299,13 +300,35 @@ Proof.
     apply IHphi1 with (l:=l); assumption.
     apply IHphi2 with (l:=l); assumption.
   - (* implication *)
-    (* not true?? *)
-    admit.
-  - (* exists *)
+    unfold Included in IHphi1; unfold In in IHphi1.
+    unfold Included in IHphi2; unfold In in IHphi2.
     unfold In.
-    admit.
+    inversion H2; subst.
+    * apply Union_introl. unfold In. admit. (* not true? *)
+    * apply Union_intror. unfold In.
+      inversion H; inversion H0; subst.
+      apply IHphi2 with (l:=l); assumption.
+  - (* exists *)
+    unfold Included in IHphi; unfold In in IHphi.
+    inversion H2; subst. destruct H3.
+    constructor. exists x1.
+    inversion H.
+    apply IHphi with (l:=l); assumption.
   - (* mu *)
-    admit.
+    unfold Included in IHphi; unfold In in IHphi.
+    constructor; intros; apply H3; clear H3.
+    unfold In.
+    assert (forall r, (change_val svar_eqb X c (change_val svar_eqb X0 r svar_val)) =
+                      (change_val svar_eqb X0 r (change_val svar_eqb X c svar_val))) by admit.
+    rewrite H3.
+    apply IHphi with (l:=l); try assumption.
+    * inversion H.
+      inversion H6.
+      admit.
+      destruct H8; assumption.
+    * inversion H0; assumption.
+    * rewrite <- H3. inversion H2; subst.
+      admit.
 Admitted.
 
 Ltac proof_ext_val :=
