@@ -328,6 +328,10 @@ Proof.
       destruct H8; assumption.
     * inversion H0; assumption.
     * rewrite <- H3. inversion H2; subst.
+      apply H4.
+      unfold Included. unfold In. intros.
+      (* now H5 is similar to the goal, except that it differs in the set variable valuation.
+         Maybe we need some lemma about change_val? Or specifically, change_val on set variables. *)
       admit.
 Admitted.
 
