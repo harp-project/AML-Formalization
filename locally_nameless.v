@@ -163,43 +163,58 @@ decide equality.
 - exact (sigma_eq_dec sigma sigma0).
 Defined.
 
-(*
-Inductive strictly_positive : SVar -> Sigma_pattern -> Prop :=
-| sp_sp_var (x : EVar) (X : SVar) : strictly_positive X (sp_var x)
-| sp_sp_set (Y : SVar) (X : SVar) : strictly_positive X (sp_set Y)
-| sp_sp_const (sigma : Sigma) (X : SVar) : strictly_positive X (sp_const sigma)
-| sp_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi1 -> strictly_positive X phi2 ->
-  strictly_positive X (sp_app phi1 phi2)
-| sp_sp_bottom (X : SVar) : strictly_positive X sp_bottom
-| sp_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi1 -> strictly_positive X phi2 ->
-  strictly_positive X (sp_impl phi1 phi2)
-| sp_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi ->
-  strictly_positive X (sp_exists x phi)
-| sp_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
-  (Y = X) \/ (Y <> X /\ strictly_positive X phi) ->
-  strictly_positive X (sp_mu Y phi)
-with strictly_negative : SVar -> Sigma_pattern -> Prop :=
-| sn_sp_var (x : EVar) (X : SVar) : strictly_negative X (sp_var x)
-| sn_sp_set (Y : SVar) (X : SVar) : Y <> X -> strictly_negative X (sp_set Y)
-| sn_sp_const (sigma : Sigma) (X : SVar) : strictly_negative X (sp_const sigma)
-| sn_sp_app (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi1 -> strictly_negative X phi2 ->
-  strictly_negative X (sp_app phi1 phi2)
-| sn_sp_bottom (X : SVar) : strictly_negative X sp_bottom
-| sn_sp_impl (phi1 phi2 : Sigma_pattern) (X : SVar) :
-  strictly_positive X phi1 -> strictly_negative X phi2 ->
-  strictly_negative X (sp_impl phi1 phi2)
-| sn_sp_exists (x : EVar) (phi : Sigma_pattern) (X : SVar) :
-  strictly_negative X phi ->
-  strictly_negative X (sp_exists x phi)
-| sn_sp_mu (Y : SVar) (phi : Sigma_pattern) (X : SVar) :
-  (Y = X) \/ (Y <> X /\ strictly_negative X phi) ->
-  strictly_negative X (sp_mu Y phi)
+
+Inductive strictly_positive : nat -> Sigma_pattern -> Prop :=
+| sp_sp_param (x : name) (n : nat) : strictly_positive n (sp_param x)
+| sp_sp_var (m : nat) (n : nat) : strictly_positive n (sp_var m)
+| sp_sp_set (m : nat) (n : nat) : strictly_positive n (sp_set m)
+| sp_sp_const (sigma : Sigma) (n : nat) : strictly_positive n (sp_const sigma)
+| sp_sp_app (phi1 phi2 : Sigma_pattern) (n : nat) :
+  strictly_positive n phi1 -> strictly_positive n phi2 ->
+  strictly_positive n (sp_app phi1 phi2)
+| sp_sp_bottom (n : nat) : strictly_positive n sp_bottom
+| sp_sp_impl (phi1 phi2 : Sigma_pattern) (n : nat) :
+  strictly_negative n phi1 -> strictly_positive n phi2 ->
+  strictly_positive n (sp_impl phi1 phi2)
+| sp_sp_exists (phi : Sigma_pattern) (n : nat) :
+  strictly_positive n phi ->
+  strictly_positive n (sp_exists phi)
+| sp_sp_mu (phi : Sigma_pattern) (n : nat) :
+  strictly_positive n phi ->
+  strictly_positive n (sp_mu phi)
+with strictly_negative : nat -> Sigma_pattern -> Prop :=
+| sn_sp_param (x : name) (n : nat) : strictly_negative n (sp_param x)
+| sn_sp_var (m : nat) (n : nat) : strictly_negative n (sp_var m)
+| sn_sp_set (m : nat) (n : nat) : strictly_negative n (sp_set m)
+| sn_sp_const (sigma : Sigma) (n : nat) : strictly_negative n (sp_const sigma)
+| sn_sp_app (phi1 phi2 : Sigma_pattern) (n : nat) :
+  strictly_negative n phi1 -> strictly_negative n phi2 ->
+  strictly_negative n (sp_app phi1 phi2)
+| sn_sp_bottom (n : nat) : strictly_negative n sp_bottom
+| sn_sp_impl (phi1 phi2 : Sigma_pattern) (n : nat) :
+  strictly_positive n phi1 -> strictly_negative n phi2 ->
+  strictly_negative n (sp_impl phi1 phi2)
+| sn_sp_exists (phi : Sigma_pattern) (n : nat) :
+  strictly_negative n phi ->
+  strictly_negative (n+1) (sp_exists phi)
+| sn_sp_mu (phi : Sigma_pattern) (n : nat) :
+  strictly_negative n phi ->
+  strictly_negative (n+1) (sp_mu phi)
 .
-*)
+
+Fixpoint well_formed (phi : Sigma_pattern) : Prop :=
+  match phi with
+  | sp_param _ => True
+  | sp_var _ => True
+  | sp_set _ => True
+  | sp_const _ => True
+  | sp_app psi1 psi2 => well_formed psi1 /\ well_formed psi2
+  | sp_bottom => True
+  | sp_impl psi1 psi2 => well_formed psi1 /\ well_formed psi2
+  | sp_exists psi => well_formed psi
+  | sp_mu psi => strictly_positive 0 psi /\ well_formed psi
+  end
+.
 
 (** There are two substitution operations over types, written
   [vsubst] and [psubst] in Pollack's talk.  
