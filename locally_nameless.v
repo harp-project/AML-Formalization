@@ -128,10 +128,12 @@ Qed.
 
 Inductive Sigma : Type := sigma_c {id_si : string}.
 
+Definition db_index := nat.
+
 Inductive Sigma_pattern : Type :=
 | sp_param (x : name)
-| sp_var (n : nat)
-| sp_set (n : nat)
+| sp_var (n : db_index)
+| sp_set (n : db_index)
 | sp_const (sigma : Sigma)
 | sp_app (phi1 phi2 : Sigma_pattern)
 | sp_bottom
@@ -164,42 +166,42 @@ decide equality.
 Defined.
 
 
-Inductive strictly_positive : nat -> Sigma_pattern -> Prop :=
-| sp_sp_param (x : name) (n : nat) : strictly_positive n (sp_param x)
-| sp_sp_var (m : nat) (n : nat) : strictly_positive n (sp_var m)
-| sp_sp_set (m : nat) (n : nat) : strictly_positive n (sp_set m)
-| sp_sp_const (sigma : Sigma) (n : nat) : strictly_positive n (sp_const sigma)
-| sp_sp_app (phi1 phi2 : Sigma_pattern) (n : nat) :
-  strictly_positive n phi1 -> strictly_positive n phi2 ->
-  strictly_positive n (sp_app phi1 phi2)
-| sp_sp_bottom (n : nat) : strictly_positive n sp_bottom
-| sp_sp_impl (phi1 phi2 : Sigma_pattern) (n : nat) :
-  strictly_negative n phi1 -> strictly_positive n phi2 ->
-  strictly_positive n (sp_impl phi1 phi2)
-| sp_sp_exists (phi : Sigma_pattern) (n : nat) :
-  strictly_positive n phi ->
-  strictly_positive n (sp_exists phi)
-| sp_sp_mu (phi : Sigma_pattern) (n : nat) :
-  strictly_positive n phi ->
-  strictly_positive n (sp_mu phi)
-with strictly_negative : nat -> Sigma_pattern -> Prop :=
-| sn_sp_param (x : name) (n : nat) : strictly_negative n (sp_param x)
-| sn_sp_var (m : nat) (n : nat) : strictly_negative n (sp_var m)
-| sn_sp_set (m : nat) (n : nat) : strictly_negative n (sp_set m)
-| sn_sp_const (sigma : Sigma) (n : nat) : strictly_negative n (sp_const sigma)
-| sn_sp_app (phi1 phi2 : Sigma_pattern) (n : nat) :
-  strictly_negative n phi1 -> strictly_negative n phi2 ->
-  strictly_negative n (sp_app phi1 phi2)
-| sn_sp_bottom (n : nat) : strictly_negative n sp_bottom
-| sn_sp_impl (phi1 phi2 : Sigma_pattern) (n : nat) :
-  strictly_positive n phi1 -> strictly_negative n phi2 ->
-  strictly_negative n (sp_impl phi1 phi2)
-| sn_sp_exists (phi : Sigma_pattern) (n : nat) :
-  strictly_negative n phi ->
-  strictly_negative (n+1) (sp_exists phi)
-| sn_sp_mu (phi : Sigma_pattern) (n : nat) :
-  strictly_negative n phi ->
-  strictly_negative (n+1) (sp_mu phi)
+Inductive positive : db_index -> Sigma_pattern -> Prop :=
+| sp_sp_param (x : name) (n : db_index) : positive n (sp_param x)
+| sp_sp_var (m : db_index) (n : db_index) : positive n (sp_var m)
+| sp_sp_set (m : db_index) (n : db_index) : positive n (sp_set m)
+| sp_sp_const (sigma : Sigma) (n : db_index) : positive n (sp_const sigma)
+| sp_sp_app (phi1 phi2 : Sigma_pattern) (n : db_index) :
+  positive n phi1 -> positive n phi2 ->
+  positive n (sp_app phi1 phi2)
+| sp_sp_bottom (n : db_index) : positive n sp_bottom
+| sp_sp_impl (phi1 phi2 : Sigma_pattern) (n : db_index) :
+  negative n phi1 -> positive n phi2 ->
+  positive n (sp_impl phi1 phi2)
+| sp_sp_exists (phi : Sigma_pattern) (n : db_index) :
+  positive n phi ->
+  positive n (sp_exists phi)
+| sp_sp_mu (phi : Sigma_pattern) (n : db_index) :
+  positive n phi ->
+  positive n (sp_mu phi)
+with negative : db_index -> Sigma_pattern -> Prop :=
+| sn_sp_param (x : name) (n : db_index) : negative n (sp_param x)
+| sn_sp_var (m : db_index) (n : db_index) : negative n (sp_var m)
+| sn_sp_set (m : db_index) (n : db_index) : negative n (sp_set m)
+| sn_sp_const (sigma : Sigma) (n : db_index) : negative n (sp_const sigma)
+| sn_sp_app (phi1 phi2 : Sigma_pattern) (n : db_index) :
+  negative n phi1 -> negative n phi2 ->
+  negative n (sp_app phi1 phi2)
+| sn_sp_bottom (n : db_index) : negative n sp_bottom
+| sn_sp_impl (phi1 phi2 : Sigma_pattern) (n : db_index) :
+  positive n phi1 -> negative n phi2 ->
+  negative n (sp_impl phi1 phi2)
+| sn_sp_exists (phi : Sigma_pattern) (n : db_index) :
+  negative n phi ->
+  negative (n+1) (sp_exists phi)
+| sn_sp_mu (phi : Sigma_pattern) (n : db_index) :
+  negative n phi ->
+  negative (n+1) (sp_mu phi)
 .
 
 Fixpoint well_formed (phi : Sigma_pattern) : Prop :=
@@ -212,7 +214,7 @@ Fixpoint well_formed (phi : Sigma_pattern) : Prop :=
   | sp_bottom => True
   | sp_impl psi1 psi2 => well_formed psi1 /\ well_formed psi2
   | sp_exists psi => well_formed psi
-  | sp_mu psi => strictly_positive 0 psi /\ well_formed psi
+  | sp_mu psi => positive 0 psi /\ well_formed psi
   end
 .
 
@@ -234,7 +236,7 @@ Fixpoint well_formed (phi : Sigma_pattern) : Prop :=
  *)
 
 (* substitute bound variable x for psi in phi *)
-Fixpoint vsubst (phi : Sigma_pattern) (psi : Sigma_pattern) (x : nat) :=
+Fixpoint vsubst (phi : Sigma_pattern) (psi : Sigma_pattern) (x : db_index) :=
 match phi with
 | sp_param x' => sp_param x'
 | sp_var n => match compare_nat n x with
