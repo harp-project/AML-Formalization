@@ -358,3 +358,110 @@ Definition function :=
 Definition free_and_bound :=
   all , (sp_set 0) _&_ var("y"). (* forall x, x /\ y *)
 
+(* End of examples. *)
+
+Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
+                      (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
+fun x : T1 => if eqb x t1 then t2 else f x.
+
+(* Model of AML ref. snapshot: Definition 2 *)
+
+Record Sigma_model := {
+  M : Type;
+  example : M; (* so M can not be empty *)
+  A_eq_dec : forall (a b : M), {a = b} + {a <> b};
+  app : M -> M -> Ensemble M;
+  interpretation : Sigma -> Ensemble M;
+}.
+
+Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (M sm)) :
+                         Ensemble (M sm) :=
+fun e:M sm => exists le re:M sm, l le /\ r re /\ (app sm) le re e.
+
+Compute @pointwise_app {| M := Sigma_pattern |} (Singleton _ (var "a")) (Singleton _ (var "b")).
+
+(* S . empty = empty *)
+Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
+  Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
+Proof.
+  intros. unfold pointwise_app. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
+  * contradiction.
+Qed.
+
+(* Semantics of AML ref. snapshot: Definition 3 *)
+
+Fixpoint ext_valuation {sm : Sigma_model} (freevar_val : name -> Ensemble (M sm))
+         (db_val : db_index -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
+match sp with
+| sp_param x => freevar_val x
+| sp_var x => db_val x
+| sp_set X => db_val X
+| sp_const s => (interpretation sm) s
+| sp_app ls rs => pointwise_app (ext_valuation freevar_val db_val ls)
+                                (ext_valuation freevar_val db_val rs)
+| sp_bottom => Empty_set _
+| sp_impl ls rs => Union _ (Complement _ (ext_valuation freevar_val db_val ls))
+                           (ext_valuation freevar_val db_val rs)
+| sp_exists sp => FA_Union
+  (fun e => ext_valuation freevar_val (change_val beq_nat 0 e db_val) sp)
+| sp_mu sp => Ensembles_Ext.mu
+  (fun S => ext_valuation freevar_val (change_val beq_nat 0 S db_val) sp)
+end
+.
+
+Lemma is_monotonic :
+  forall (sm : Sigma_model)
+         (freevar_val : name -> Ensemble (M sm))
+         (db_val : db_index -> Ensemble (M sm)) (phi : Sigma_pattern)
+         (x : db_index),
+    positive x phi ->
+    well_formed phi ->
+    forall (l r : Ensemble (M sm)),
+      Included (M sm) l r ->
+      Included (M sm)
+        (ext_valuation freevar_val (change_val beq_nat 0 l db_val) phi)
+        (ext_valuation freevar_val (change_val beq_nat 0 r db_val) phi).
+Proof.
+  intros sm freevar_val db_val phi.
+  generalize dependent freevar_val. generalize dependent db_val.
+  induction phi; intros; simpl; unfold Included; intros; try assumption.
+  - (* var *)
+    unfold change_val; unfold change_val in H2.
+    destruct (n =? 0).
+    * apply H1. assumption.
+    * assumption.
+  - (* set *)
+    unfold change_val; unfold change_val in H2.
+    destruct (n =? 0).
+    * apply H1. assumption.
+    * assumption.
+  - (* app *)
+    unfold In; unfold pointwise_app.
+    unfold In in H2; unfold pointwise_app in H2.
+    repeat destruct H2; destruct H3.
+    exists x1, x2.
+    unfold Included in IHphi1; unfold In in IHphi1.
+    unfold Included in IHphi2; unfold In in IHphi2.
+    inversion H; inversion H0; subst.
+    repeat split; try assumption.
+    apply IHphi1 with (x:=x) (l:=l); assumption. 
+    apply IHphi2 with (x:=x) (l:=l); assumption.
+  - (* implication *)
+    unfold Included in IHphi1; unfold In in IHphi1.
+    unfold Included in IHphi2; unfold In in IHphi2.
+    unfold In.
+    inversion H2; subst.
+    * apply Union_introl. unfold In. admit. (* not true? *)
+    * apply Union_intror. unfold In.
+      inversion H; inversion H0; subst.
+      apply IHphi2 with (x:=x) (l:=l); assumption.
+  - (* exists *)
+    unfold Included in IHphi; unfold In in IHphi.
+    inversion H2; subst. destruct H3.
+    constructor. exists r.
+    inversion H; subst.
+    apply IHphi with (x:=x) (l:=l); try assumption. admit.
+  - (* mu *)
+    admit.
+Admitted.
