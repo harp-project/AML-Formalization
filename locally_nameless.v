@@ -465,3 +465,164 @@ Proof.
   - (* mu *)
     admit.
 Admitted.
+
+Ltac proof_ext_val :=
+simpl;intros;
+repeat
+  (* Normalize *)
+   rewrite (Same_set_to_eq (Union_Empty_l _))
+|| rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ _))
+|| rewrite
+   (Same_set_to_eq (Compl_Union_Compl_Intes_Ensembles_alt _ _ _))
+|| rewrite (Same_set_to_eq (FA_rel _ _ _))
+  (* Apply *)
+|| (eapply (proj1 Same_set_Compl) ; intros)
+|| (eapply FA_Inters_same ; intros)
+  (* Final step *)
+|| exact Complement_Empty_is_Full
+|| exact (Symdiff_val _ _)
+|| exact (Same_set_refl _).
+
+Section Semantics_of_derived_operators.
+
+(**
+   Proof of correct semantics for the derived operators
+   ref. snapshot: Proposition 4
+*)
+
+Lemma not_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall sp : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_not sp))
+  (Complement _ (ext_valuation freevar_val db_val sp)).
+Proof. proof_ext_val. Qed.
+
+Lemma or_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_or spl spr))
+  (Union _ (ext_valuation freevar_val db_val spl)
+           (ext_valuation freevar_val db_val spr)).
+Proof. proof_ext_val. Qed.
+
+Lemma and_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_and spl spr))
+  (Intersection _ (ext_valuation freevar_val db_val spl)
+                  (ext_valuation freevar_val db_val spr)).
+Proof. proof_ext_val. Qed.
+
+Lemma top_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+Same_set _ (ext_valuation freevar_val db_val (sp_top)) (Full_set _).
+Proof. proof_ext_val. Qed.
+
+Lemma only_if_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall spl spr : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_iff spl spr))
+  (Complement _ (Symmetric_difference (ext_valuation freevar_val db_val spl)
+                                      (ext_valuation freevar_val db_val spr))).
+Proof. proof_ext_val. Qed.
+
+Lemma forall_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall sp : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_forall sp))
+  (FA_Intersection
+    (fun a => ext_valuation freevar_val (change_val beq_nat 0 a db_val) sp)).
+Proof. proof_ext_val. Qed.
+
+Lemma nu_ext_val_correct
+{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
+forall sp : Sigma_pattern, Same_set _
+  (ext_valuation freevar_val db_val (sp_nu sp))
+  (Ensembles_Ext.nu
+    (fun S => ext_valuation freevar_val (change_val beq_nat 0 S db_val) sp)).
+Proof.
+proof_ext_val.
+
+unfold Ensembles_Ext.mu. unfold Ensembles_Ext.nu. unfold FA_Union_cond.
+unfold FA_Inters_cond.
+
+apply Same_set_symmetric. apply Same_set_Compl.
+rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ _)).
+rewrite (Same_set_to_eq (FA_rel _ _ _)).
+eapply FA_Inters_same. intros.
+proof_ext_val.
+unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In.
+eapply conj.
+* intros. eapply H0. intros. refine (H _). split.
+  - intros.
+Admitted.
+
+End Semantics_of_derived_operators.
+
+(* Theory,axiom ref. snapshot: Definition 5 *)
+
+Definition satisfies_model (sm : Sigma_model) (phi : Sigma_pattern) : Prop :=
+forall (freevar_val : name -> Ensemble (M sm)) (db_val : db_index -> Ensemble (M sm)),
+  Same_set _ (ext_valuation (sm := sm) freevar_val db_val phi) (Full_set _).
+
+Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
+
+Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
+: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> (sm |=M axiom).
+
+Notation "M |=T Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50).
+
+Definition satisfies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
+: Prop := forall sm : Sigma_model, (sm |=T theory) -> (sm |=M sp).
+
+Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
+
+Definition AML_theories : Ensemble Sigma_pattern := Empty_set Sigma_pattern.
+
+(* End of definition 5. *)
+
+
+(* Definition 6. Definedness and derived operators *)
+Definition definedness_symbol : Sigma := {| id_si := "definedness"|}.
+Definition defined (x : Sigma_pattern) := (^ definedness_symbol $ x).
+Notation "|^ phi ^|" := (defined phi) (at level 100).
+
+(* Definition Definedness_meta (x : EVar) : Sigma_pattern :=
+  |^ 'x ^|. *)
+
+Definition Definedness_forall : Sigma_pattern :=
+  all , |^ sp_var 0 ^|.
+
+(* Totality *)
+Definition total (sp : Sigma_pattern) := (¬ (|^ (¬ sp) ^|)).
+Notation "|_ phi _|" := (total phi) (at level 100).
+
+(* Equality *)
+Definition equal (a b : Sigma_pattern) := (|_ (a <~> b) _|).
+Notation "a ~=~ b" := (equal a b) (at level 100).
+
+(* Non-equality *)
+Definition not_equal (a b : Sigma_pattern) := (¬ (equal a b)).
+Notation "a !=~ b" := (not_equal a b) (at level 100).
+
+(* Membership *)
+Definition member (x sp : Sigma_pattern) := (|^ (x _&_ sp) ^|).
+Notation "x -< phi" := (member x phi) (at level 100).
+
+(* Non-membership *)
+Definition non_member (x sp : Sigma_pattern) := (¬ (member x sp)).
+Notation "x !-< phi" := (non_member x phi) (at level 100).
+
+(* Set inclusion *)
+Definition includes (a b : Sigma_pattern) := (|_ (a ~> b) _|).
+Notation "a <: b" := (includes a b) (at level 100).
+
+(* Set exclusion *)
+Definition not_includes (a b : Sigma_pattern) := (¬ (includes a b)).
+Notation "a !<: b" := (not_includes a b) (at level 100).
+
+
+(* Functional Constant axiom *)
+Definition Functional_Constant (constant : Sigma) : Sigma_pattern :=
+  (ex , (^constant ~=~ sp_var 0)).
