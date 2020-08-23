@@ -47,6 +47,18 @@ Proof.
   intros. case (eq_name n m); congruence.
 Qed.
 
+Definition name_eqb (x y : name) : bool :=
+  match (fst x) with
+  | @evar_c s1 => match (fst y) with
+                  | @evar_c s2 => if String.eqb s1 s2 then Z.eqb (snd x) (snd y) else false
+                  | svar_c => false
+                  end
+  | @svar_c s1 => match (fst y) with
+                  | evar_c => false
+                  | @svar_c s2 => if String.eqb s1 s2 then Z.eqb (snd x) (snd y) else false
+                  end
+  end.
+
 (** The following lemma shows that there always exists a name
   of the given kind that is fresh w.r.t. the given list of names, that is,
   distinct from all the names in this list. *)
@@ -180,10 +192,10 @@ Inductive positive : db_index -> Sigma_pattern -> Prop :=
   positive n (sp_impl phi1 phi2)
 | sp_sp_exists (phi : Sigma_pattern) (n : db_index) :
   positive n phi ->
-  positive n (sp_exists phi)
+  positive (n+1) (sp_exists phi)
 | sp_sp_mu (phi : Sigma_pattern) (n : db_index) :
   positive n phi ->
-  positive n (sp_mu phi)
+  positive (n+1) (sp_mu phi)
 with negative : db_index -> Sigma_pattern -> Prop :=
 | sn_sp_param (x : name) (n : db_index) : negative n (sp_param x)
 | sn_sp_var (m : db_index) (n : db_index) : negative n (sp_var m)
@@ -337,7 +349,6 @@ Definition sp_nu (phi : Sigma_pattern) :=
 Notation "'nu' , phi" := (sp_nu phi) (at level 55).
 
 (* End Derived_operators. *)
-Check find_fresh_name.
 Definition var (sname : string) : Sigma_pattern :=
   sp_param (find_fresh_name (@evar_c sname) nil). 
 Definition set (sname : string) : Sigma_pattern :=
@@ -391,24 +402,46 @@ Qed.
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
-Fixpoint ext_valuation {sm : Sigma_model} (freevar_val : name -> Ensemble (M sm))
-         (db_val : db_index -> Ensemble (M sm)) (sp : Sigma_pattern) : Ensemble (M sm) :=
+Fixpoint var_open (k : db_index) (n : name) (sp : Sigma_pattern) : Sigma_pattern :=
 match sp with
-| sp_param x => freevar_val x
-| sp_var x => db_val x
-| sp_set X => db_val X
+| sp_param x => sp_param x
+| sp_var x => if beq_nat x k then sp_param n else sp_var x
+| sp_set X => if beq_nat X k then sp_param n else sp_set X
+| sp_const s => sp_const s
+| sp_app ls rs => sp_app (var_open k n ls) (var_open k n rs)
+| sp_bottom => sp_bottom
+| sp_impl ls rs => sp_impl (var_open k n ls) (var_open k n rs)
+| sp_exists sp' => sp_exists (var_open (k + 1) n sp')
+| sp_mu sp' => sp_mu (var_open (k + 1) n sp')
+end.
+
+Fixpoint ext_valuation {sm : Sigma_model}
+         (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
+         (names : list name) (sp : Sigma_pattern) : Ensemble (M sm) :=
+match sp with
+| sp_param x => match (fst x) with
+                | evar_c => Singleton _ (evar_val x)
+                | svar_c => svar_val x
+                end
+| sp_var x => Empty_set _
+| sp_set X => Empty_set _
 | sp_const s => (interpretation sm) s
-| sp_app ls rs => pointwise_app (ext_valuation freevar_val db_val ls)
-                                (ext_valuation freevar_val db_val rs)
+| sp_app ls rs => pointwise_app (ext_valuation evar_val svar_val names ls)
+                                (ext_valuation evar_val svar_val names rs)
 | sp_bottom => Empty_set _
-| sp_impl ls rs => Union _ (Complement _ (ext_valuation freevar_val db_val ls))
-                           (ext_valuation freevar_val db_val rs)
-| sp_exists sp => FA_Union
-  (fun e => ext_valuation freevar_val (change_val beq_nat 0 e db_val) sp)
-| sp_mu sp => Ensembles_Ext.mu
-  (fun S => ext_valuation freevar_val (change_val beq_nat 0 S db_val) sp)
-end
-.
+| sp_impl ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val names ls))
+                           (ext_valuation evar_val svar_val names rs)
+| sp_exists sp' =>
+  let fname := find_fresh_name (@evar_c "efresh") names in
+  FA_Union
+    (fun e => ext_valuation (change_val name_eqb fname e evar_val) svar_val names
+                            (var_open 0 fname sp'))
+| sp_mu sp' =>
+  let fname := find_fresh_name (@svar_c "sfresh") names in
+  Ensembles_Ext.mu
+    (fun S => ext_valuation evar_val (change_val name_eqb fname S svar_val) names
+                            (var_open 0 fname sp'))
+end.
 
 Lemma is_monotonic :
   forall (sm : Sigma_model)
