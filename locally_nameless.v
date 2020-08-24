@@ -7,6 +7,8 @@ Require Export String.
 Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
+Require Export Coq.Program.Wf.
+
 (** * Names and swaps of names *)
 
 Inductive name_kind : Set :=
@@ -402,6 +404,15 @@ Qed.
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
+Fixpoint size (sp : Sigma_pattern) : nat :=
+match sp with
+| sp_app ls rs => 1 + (size ls) + (size rs)
+| sp_impl ls rs => 1 + (size ls) + (size rs)
+| sp_exists sp' => 1 + size sp'
+| sp_mu sp' => 1 + size sp'
+| _ => 0
+end.
+
 Fixpoint var_open (k : db_index) (n : name) (sp : Sigma_pattern) : Sigma_pattern :=
 match sp with
 | sp_param x => sp_param x
@@ -415,9 +426,23 @@ match sp with
 | sp_mu sp' => sp_mu (var_open (k + 1) n sp')
 end.
 
-Fixpoint ext_valuation {sm : Sigma_model}
-         (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
-         (names : list name) (sp : Sigma_pattern) : Ensemble (M sm) :=
+Lemma var_open_size :
+  forall (k : db_index) (n : name) (sp : Sigma_pattern),
+    size sp = size (var_open k n sp).
+Proof.
+  intros. generalize dependent k.
+  induction sp; intros; simpl; try reflexivity.
+  destruct (n0 =? k); reflexivity.
+  destruct (n0 =? k); reflexivity.
+  rewrite (IHsp1 k); rewrite (IHsp2 k); reflexivity.
+  rewrite (IHsp1 k); rewrite (IHsp2 k); reflexivity.
+  rewrite (IHsp (k + 1)); reflexivity.
+  rewrite (IHsp (k + 1)); reflexivity.
+Qed.
+
+Program Fixpoint ext_valuation_aux {sm : Sigma_model}
+        (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
+        (names : list name) (sp : Sigma_pattern) {measure (size sp)} :=
 match sp with
 | sp_param x => match (fst x) with
                 | evar_c => Singleton _ (evar_val x)
@@ -426,34 +451,45 @@ match sp with
 | sp_var x => Empty_set _
 | sp_set X => Empty_set _
 | sp_const s => (interpretation sm) s
-| sp_app ls rs => pointwise_app (ext_valuation evar_val svar_val names ls)
-                                (ext_valuation evar_val svar_val names rs)
+| sp_app ls rs => pointwise_app (ext_valuation_aux evar_val svar_val names ls )
+                                (ext_valuation_aux evar_val svar_val names rs)
 | sp_bottom => Empty_set _
-| sp_impl ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val names ls))
-                           (ext_valuation evar_val svar_val names rs)
+| sp_impl ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
+                           (ext_valuation_aux evar_val svar_val names rs)
 | sp_exists sp' =>
   let fname := find_fresh_name (@evar_c "efresh") names in
   FA_Union
-    (fun e => ext_valuation (change_val name_eqb fname e evar_val) svar_val names
-                            (var_open 0 fname sp'))
+    (fun e => ext_valuation_aux (change_val name_eqb fname e evar_val) svar_val names
+                                (var_open 0 fname sp'))
 | sp_mu sp' =>
   let fname := find_fresh_name (@svar_c "sfresh") names in
   Ensembles_Ext.mu
-    (fun S => ext_valuation evar_val (change_val name_eqb fname S svar_val) names
-                            (var_open 0 fname sp'))
+    (fun S => ext_valuation_aux evar_val (change_val name_eqb fname S svar_val) names
+                                (var_open 0 fname sp'))
 end.
+Next Obligation. simpl; omega. Qed.
+Next Obligation. simpl; omega. Qed.
+Next Obligation. simpl; omega. Qed.
+Next Obligation. simpl; omega. Qed.
+Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
+Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
+
+Definition ext_valuation {sm : Sigma_model}
+        (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
+        (sp : Sigma_pattern) : Ensemble (M sm) :=
+  ext_valuation_aux evar_val svar_val (free_vars sp) sp.
 
 Lemma is_monotonic :
   forall (sm : Sigma_model)
-         (freevar_val : name -> Ensemble (M sm))
-         (db_val : db_index -> Ensemble (M sm)) (phi : Sigma_pattern)
+         (evar_val : name -> M sm)
+         (svar_val : db_index -> Ensemble (M sm)) (phi : Sigma_pattern)
          (x : db_index),
     positive x phi ->
     well_formed phi ->
     forall (l r : Ensemble (M sm)),
       Included (M sm) l r ->
       Included (M sm)
-        (ext_valuation freevar_val (change_val beq_nat 0 l db_val) phi)
+        (ext_valuation evar_val (change_val beq_nat 0 l db_val) phi)
         (ext_valuation freevar_val (change_val beq_nat 0 r db_val) phi).
 Proof.
   intros sm freevar_val db_val phi.
