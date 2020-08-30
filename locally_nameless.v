@@ -144,7 +144,7 @@ Inductive Sigma : Type := sigma_c {id_si : string}.
 
 Definition db_index := nat.
 
-Record Signature := {
+Record Signature := mkSig {
   Symbols : Ensemble Sigma
 }.
 
@@ -371,34 +371,38 @@ Definition const {signature : Signature} (sname : string)
 
 (* Example patterns *)
 
-Definition simple := var ("x").
-Definition more := set ("A") _|_ ¬ (set "A").
+Axiom sig : Signature.
+Axiom ctor_in_sig : In _ (Symbols sig) (@sigma_c "ctor").
+Axiom p_in_sig : In _ (Symbols sig) (@sigma_c "p").
+Axiom f_in_sig : In _ (Symbols sig) (@sigma_c "f").
+
+Definition simple := @var sig ("x").
+Definition more := @set sig ("A") _|_ ¬ (set "A").
 Definition complex :=
-  var("A") ~> (var("B") ~> ¬(set("C"))) $
+  @var sig ("A") ~> (var("B") ~> ¬(set("C"))) $
   ex , set ("D") $ Bot _&_ Top.
-Definition custom_constructor := const ("ctor") $ var ("a").
-Definition predicate := const ("p") $ var ("x1") $ var ("x2").
+Definition custom_constructor := @const sig ("ctor") ctor_in_sig $ var ("a").
+Definition predicate := @const sig ("p") p_in_sig $ var ("x1") $ var ("x2").
 Definition function :=
-  const ("f") $ (var ("x")) $ (mu , (sp_set 0)).
+  @const sig ("f") f_in_sig $ (var ("x")) $ (mu , (patt_svar 0)).
 Definition free_and_bound :=
-  all , (sp_set 0) _&_ var("y"). (* forall x, x /\ y *)
+  all , (patt_svar 0) _&_ @var sig ("y"). (* forall x, x /\ y *)
 
 (* End of examples. *)
 
 (* TODO: change to update_valuation *)
-Definition change_val {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
-                      (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
+Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
+           (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
 fun x : T1 => if eqb x t1 then t2 else f x.
 
 (* Model of AML ref. snapshot: Definition 2 *)
-
-(* TODO: model should have signature *)
 
 (* make example like A_eq_dec : exists (x : M), True *)
 (* change M to Domain *)
 
 Record Sigma_model := {
   Domain : Type;
+  signature : Signature;
   example : Domain; (* so Domain can not be empty *)
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Ensemble Domain;
@@ -410,12 +414,12 @@ Definition pointwise_app {sm : Sigma_model} (l r : Ensemble (Domain sm)) :
                          Ensemble (Domain sm) :=
 fun e:Domain sm => exists le re:Domain sm, l le /\ r re /\ (app_interp sm) le re e.
 
-Compute @pointwise_app {| Domain := Sigma_pattern |}
+Compute @pointwise_app {| Domain := Pattern |}
         (Singleton _ (var "a")) (Singleton _ (var "b")).
 
 (* S . empty = empty *)
-Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (M sm),
-  Same_set (M sm) (pointwise_app S (Empty_set (M sm))) (Empty_set (M sm)).
+Lemma pointwise_app_bot : forall sm : Sigma_model, forall S : Ensemble (Domain sm),
+  Same_set (Domain sm) (pointwise_app S (Empty_set (Domain sm))) (Empty_set (Domain sm)).
 Proof.
   intros. unfold pointwise_app. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
@@ -424,30 +428,31 @@ Qed.
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
-Fixpoint size (sp : Sigma_pattern) : nat :=
+Fixpoint size {signature : Signature} (sp : @Pattern signature) : nat :=
 match sp with
-| sp_app ls rs => 1 + (size ls) + (size rs)
-| sp_impl ls rs => 1 + (size ls) + (size rs)
-| sp_exists sp' => 1 + size sp'
-| sp_mu sp' => 1 + size sp'
+| patt_app ls rs => 1 + (size ls) + (size rs)
+| patt_imp ls rs => 1 + (size ls) + (size rs)
+| patt_exists sp' => 1 + size sp'
+| patt_mu sp' => 1 + size sp'
 | _ => 0
 end.
 
-Fixpoint var_open (k : db_index) (n : name) (sp : Sigma_pattern) : Sigma_pattern :=
+Fixpoint var_open {signature : Signature} (k : db_index) (n : name)
+         (sp : @Pattern signature) : Pattern :=
 match sp with
-| sp_param x => sp_param x
-| sp_var x => if beq_nat x k then sp_param n else sp_var x
-| sp_set X => if beq_nat X k then sp_param n else sp_set X
-| sp_const s => sp_const s
-| sp_app ls rs => sp_app (var_open k n ls) (var_open k n rs)
-| sp_bottom => sp_bottom
-| sp_impl ls rs => sp_impl (var_open k n ls) (var_open k n rs)
-| sp_exists sp' => sp_exists (var_open (k + 1) n sp')
-| sp_mu sp' => sp_mu (var_open (k + 1) n sp')
+| patt_param x => patt_param x
+| patt_evar x => if beq_nat x k then patt_param n else patt_evar x
+| patt_svar X => if beq_nat X k then patt_param n else patt_svar X
+| patt_sym s pf => patt_sym s pf
+| patt_app ls rs => patt_app (var_open k n ls) (var_open k n rs)
+| patt_bott => patt_bott
+| patt_imp ls rs => patt_imp (var_open k n ls) (var_open k n rs)
+| patt_exists sp' => patt_exists (var_open (k + 1) n sp')
+| patt_mu sp' => patt_mu (var_open (k + 1) n sp')
 end.
 
 Lemma var_open_size :
-  forall (k : db_index) (n : name) (sp : Sigma_pattern),
+  forall (signature : Signature) (k : db_index) (n : name) (sp : @Pattern signature),
     size sp = size (var_open k n sp).
 Proof.
   intros. generalize dependent k.
@@ -460,31 +465,31 @@ Proof.
   rewrite (IHsp (k + 1)); reflexivity.
 Qed.
 
-Program Fixpoint ext_valuation_aux {sm : Sigma_model}
-        (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
-        (names : list name) (sp : Sigma_pattern) {measure (size sp)} :=
+Program Fixpoint ext_valuation_aux {sm : Sigma_model} {signature : Signature}
+        (evar_val : name -> Domain sm) (svar_val : name -> Ensemble (Domain sm))
+        (names : list name) (sp : @Pattern signature) {measure (size sp)} :=
 match sp with
-| sp_param x => match (fst x) with
+| patt_param x => match (fst x) with
                 | evar_c => Singleton _ (evar_val x)
                 | svar_c => svar_val x
                 end
-| sp_var x => Empty_set _
-| sp_set X => Empty_set _
-| sp_const s => (interpretation sm) s
-| sp_app ls rs => pointwise_app (ext_valuation_aux evar_val svar_val names ls)
+| patt_evar x => Empty_set _
+| patt_svar X => Empty_set _
+| patt_sym s pf => (sym_interp sm) s
+| patt_app ls rs => pointwise_app (ext_valuation_aux evar_val svar_val names ls)
                                 (ext_valuation_aux evar_val svar_val names rs)
-| sp_bottom => Empty_set _
-| sp_impl ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
+| patt_bott => Empty_set _
+| patt_imp ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
                            (ext_valuation_aux evar_val svar_val names rs)
-| sp_exists sp' =>
+| patt_exists sp' =>
   let fname := find_fresh_name (@evar_c "efresh") names in
   FA_Union
-    (fun e => ext_valuation_aux (change_val name_eqb fname e evar_val) svar_val names
+    (fun e => ext_valuation_aux (update_valuation name_eqb fname e evar_val) svar_val names
                                 (var_open 0 fname sp'))
-| sp_mu sp' =>
+| patt_mu sp' =>
   let fname := find_fresh_name (@svar_c "sfresh") names in
   Ensembles_Ext.mu
-    (fun S => ext_valuation_aux evar_val (change_val name_eqb fname S svar_val) names
+    (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
                                 (var_open 0 fname sp'))
 end.
 Next Obligation. simpl; omega. Qed.
@@ -494,9 +499,9 @@ Next Obligation. simpl; omega. Qed.
 Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
 Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
 
-Definition ext_valuation {sm : Sigma_model}
-        (evar_val : name -> M sm) (svar_val : name -> Ensemble (M sm))
-        (sp : Sigma_pattern) : Ensemble (M sm) :=
+Definition ext_valuation {sm : Sigma_model} {signature : Signature}
+        (evar_val : name -> Domain sm) (svar_val : name -> Ensemble (Domain sm))
+        (sp : @Pattern signature) : Ensemble (Domain sm) :=
   ext_valuation_aux evar_val svar_val (free_vars sp) sp.
 
 (*
