@@ -144,7 +144,7 @@ Inductive Sigma : Type := sigma_c {id_si : string}.
 
 Definition db_index := nat.
 
-Record Signature := mkSig {
+Record Signature := {
   Symbols : Ensemble Sigma
 }.
 
@@ -399,7 +399,7 @@ fun x : T1 => if eqb x t1 then t2 else f x.
 
 Record Model := {
   Domain : Type;
-  signature : Signature;
+  model_sig : Signature;
   nonempty_witness : exists (x : Domain), True;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Ensemble Domain;
@@ -461,9 +461,60 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
+(*
+Definition pattern_lt {signature : Signature} (p1 p2 : @Pattern signature) :=
+  size p1 < size p2.
+Lemma pattern_lt_well_founded {signature : Signature} : well_founded (@pattern_lt signature).
+Proof.
+  apply well_founded_lt_compat with size; auto.
+Qed.
+
+Variable mysig : Signature.
+
+Instance wf_pattern_lt : WellFounded (@pattern_lt mysig).
+apply pattern_lt_well_founded.
+Defined.
+
+Equations ext_valuation_aux {m : Model} {signature : Signature}
+          (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
+          (names : list name) (p : @Pattern signature) : Ensemble (Domain m)
+  by wf (size p) :=
+  ext_valuation_aux evar_val svar_val names (patt_freevar x) :=
+    match (fst x) with
+                | evar_c => Singleton _ (evar_val x)
+                | svar_c => svar_val x
+    end;
+  ext_valuation_aux evar_val svar_val names (patt_bound_evar x) := Empty_set _;
+  ext_valuation_aux evar_val svar_val names (patt_bound_svar x) := Empty_set _;
+  ext_valuation_aux evar_val svar_val names (patt_sym s pf) := (sym_interp m) s;
+  ext_valuation_aux evar_val svar_val names (patt_app ls rs) :=
+    pointwise_ext (ext_valuation_aux evar_val svar_val names ls)
+                  (ext_valuation_aux evar_val svar_val names rs);
+  ext_valuation_aux evar_val svar_val names patt_bott := Empty_set _;
+  ext_valuation_aux evar_val svar_val names (patt_imp ls rs) :=
+    Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
+            (ext_valuation_aux evar_val svar_val names rs);
+  ext_valuation_aux evar_val svar_val names (patt_exists p') :=
+    let fname := find_fresh_name (@evar_c "efresh") names in
+    FA_Union
+      (fun e => ext_valuation_aux (update_valuation name_eqb fname e evar_val) svar_val names
+                                  (var_open 0 fname p'));
+  ext_valuation_aux evar_val svar_val names (patt_mu p') :=
+    let fname := find_fresh_name (@evar_c "sfresh") names in
+    Ensembles_Ext.mu
+      (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
+                                  (var_open 0 fname p')).
+Next Obligation. omega. Defined.
+Next Obligation. omega. Defined.
+Next Obligation. omega. Defined.
+Next Obligation. omega. Defined.
+Next Obligation. rewrite <- var_open_size. omega. Defined.
+Next Obligation. rewrite <- var_open_size. omega. Defined.
+*)
+
 Program Fixpoint ext_valuation_aux {m : Model} {signature : Signature}
         (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
-        (names : list name) (p : @Pattern signature) {measure (size p)} :=
+        (names : list name) (p : @Pattern signature) {measure (@size signature p)} :=
 match p with
 | patt_freevar x => match (fst x) with
                 | evar_c => Singleton _ (evar_val x)
@@ -488,12 +539,12 @@ match p with
     (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
                                 (var_open 0 fname p'))
 end.
-Next Obligation. simpl; omega. Qed.
-Next Obligation. simpl; omega. Qed.
-Next Obligation. simpl; omega. Qed.
-Next Obligation. simpl; omega. Qed.
-Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
-Next Obligation. simpl; rewrite <- var_open_size; omega. Qed.
+Next Obligation. simpl; omega. Defined.
+Next Obligation. simpl; omega. Defined.
+Next Obligation. simpl; omega. Defined.
+Next Obligation. simpl; omega. Defined.
+Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
+Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
 
 Definition ext_valuation {m : Model} {signature : Signature}
         (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
@@ -536,102 +587,41 @@ repeat
 
 Section Semantics_of_derived_operators.
 
+  (* TODO: Need to be able to simplify Program Fixpoint definitions *)
+  
+End Semantics_of_derived_operators.
+
 (**
    Proof of correct semantics for the derived operators
    ref. snapshot: Proposition 4
 *)
 
-Lemma not_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall sp : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_not sp))
-  (Complement _ (ext_valuation freevar_val db_val sp)).
-Proof. proof_ext_val. Qed.
-
-Lemma or_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_or spl spr))
-  (Union _ (ext_valuation freevar_val db_val spl)
-           (ext_valuation freevar_val db_val spr)).
-Proof. proof_ext_val. Qed.
-
-Lemma and_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_and spl spr))
-  (Intersection _ (ext_valuation freevar_val db_val spl)
-                  (ext_valuation freevar_val db_val spr)).
-Proof. proof_ext_val. Qed.
-
-Lemma top_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-Same_set _ (ext_valuation freevar_val db_val (sp_top)) (Full_set _).
-Proof. proof_ext_val. Qed.
-
-Lemma only_if_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall spl spr : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_iff spl spr))
-  (Complement _ (Symmetric_difference (ext_valuation freevar_val db_val spl)
-                                      (ext_valuation freevar_val db_val spr))).
-Proof. proof_ext_val. Qed.
-
-Lemma forall_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall sp : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_forall sp))
-  (FA_Intersection
-    (fun a => ext_valuation freevar_val (change_val beq_nat 0 a db_val) sp)).
-Proof. proof_ext_val. Qed.
-
-Lemma nu_ext_val_correct
-{sm : Sigma_model} {freevar_val : name -> Ensemble (M sm)} {db_val : db_index -> Ensemble _} :
-forall sp : Sigma_pattern, Same_set _
-  (ext_valuation freevar_val db_val (sp_nu sp))
-  (Ensembles_Ext.nu
-    (fun S => ext_valuation freevar_val (change_val beq_nat 0 S db_val) sp)).
-Proof.
-proof_ext_val.
-
-unfold Ensembles_Ext.mu. unfold Ensembles_Ext.nu. unfold FA_Union_cond.
-unfold FA_Inters_cond.
-
-apply Same_set_symmetric. apply Same_set_Compl.
-rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ _)).
-rewrite (Same_set_to_eq (FA_rel _ _ _)).
-eapply FA_Inters_same. intros.
-proof_ext_val.
-unfold Same_set. unfold Included. unfold Complement. unfold not. unfold In.
-eapply conj.
-* intros. eapply H0. intros. refine (H _). split.
-  - intros.
-Admitted.
-
-End Semantics_of_derived_operators.
-
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
 (* TODO: theory will be pair of signature and set of patterns from the signature *)
 
-Definition satisfies_model (sm : Sigma_model) (phi : Sigma_pattern) : Prop :=
-forall (freevar_val : name -> Ensemble (M sm)) (db_val : db_index -> Ensemble (M sm)),
-  Same_set _ (ext_valuation (sm := sm) freevar_val db_val phi) (Full_set _).
+Record Theory := {
+  theory_sig : Signature;
+  patterns : Ensemble (@Pattern theory_sig)
+}.
+
+Definition satisfies_model {signature : Signature}
+           (m : Model) (phi : @Pattern signature) : Prop :=
+forall (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m)),
+  Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
-Definition satisfies_theory (sm : Sigma_model) (theory : Ensemble Sigma_pattern)
-: Prop := forall axiom : Sigma_pattern, In _ theory axiom -> (sm |=M axiom).
+Definition satisfies_theory (m: Model) (theory : Theory)
+: Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
 
 Notation "M |=T Gamma" := (satisfies_theory M Gamma)
     (left associativity, at level 50).
 
-Definition satisfies (theory : Ensemble Sigma_pattern) (sp : Sigma_pattern)
-: Prop := forall sm : Sigma_model, (sm |=T theory) -> (sm |=M sp).
+Definition satisfies {signature : Signature} (theory : Theory) (p: @Pattern signature)
+: Prop := forall m : Model, (m |=T theory) -> (m |=M p).
 
 Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
-
-Definition AML_theories : Ensemble Sigma_pattern := Empty_set Sigma_pattern.
 
 (* End of definition 5. *)
 
