@@ -8,6 +8,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
+(* Require Import Equations.Equations. *)
 
 (** * Names and swaps of names *)
 
@@ -469,11 +470,11 @@ Proof.
   apply well_founded_lt_compat with size; auto.
 Qed.
 
-Variable mysig : Signature.
-
-Instance wf_pattern_lt : WellFounded (@pattern_lt mysig).
+Instance wf_pattern_lt {signature : Signature} : WellFounded (@pattern_lt signature).
 apply pattern_lt_well_founded.
 Defined.
+
+Variable mysig : Signature.
 
 Equations ext_valuation_aux {m : Model} {signature : Signature}
           (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
@@ -598,8 +599,6 @@ End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-(* TODO: theory will be pair of signature and set of patterns from the signature *)
-
 Record Theory := {
   theory_sig : Signature;
   patterns : Ensemble (@Pattern theory_sig)
@@ -625,48 +624,106 @@ Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
 (* End of definition 5. *)
 
+Inductive Application_context {signature : Signature} : Set :=
+| box
+| ctx_app_l (cc : Application_context) (p : @Pattern signature)
+| ctx_app_r (p : @Pattern signature) (cc : Application_context)
+.
 
-(* Definition 6. Definedness and derived operators *)
-Definition definedness_symbol : Sigma := {| id_si := "definedness"|}.
-Definition defined (x : Sigma_pattern) := (^ definedness_symbol $ x).
-Notation "|^ phi ^|" := (defined phi) (at level 100).
+Fixpoint subst_ctx {signature : Signature} (C : Application_context) (p : @Pattern signature)
+  : Pattern :=
+match C with
+| box => p
+| ctx_app_l C' p' => patt_app (subst_ctx C' p) p'
+| ctx_app_r p' C' => patt_app p' (subst_ctx C' p)
+end.
 
-(* Definition Definedness_meta (x : EVar) : Sigma_pattern :=
-  |^ 'x ^|. *)
+Fixpoint free_vars_ctx {signature : Signature} (C : @Application_context signature)
+  : (ListSet.set name) :=
+match C with
+| box => List.nil
+| ctx_app_l cc p => set_union eq_name (free_vars_ctx cc) (free_bound_evars p)
+| ctx_app_r p cc => set_union eq_name (free_bound_evars p) (free_vars_ctx cc)
+end.
 
-Definition Definedness_forall : Sigma_pattern :=
-  all , |^ sp_var 0 ^|.
+(* Proof system for AML ref. snapshot: Section 3 *)
 
-(* Totality *)
-Definition total (sp : Sigma_pattern) := (¬ (|^ (¬ sp) ^|)).
-Notation "|_ phi _|" := (total phi) (at level 100).
+(* Auxiliary axiom schemes for proving propositional tautology *)
+Reserved Notation "pattern 'tautology'" (at level 2).
+Inductive Tautology_proof_rules {signature : Signature} : @Pattern signature -> Prop :=
+| P1 (phi : Pattern) :
+    (phi ~> phi) tautology
 
-(* Equality *)
-Definition equal (a b : Sigma_pattern) := (|_ (a <~> b) _|).
-Notation "a ~=~ b" := (equal a b) (at level 100).
+| P2 (phi psi : Pattern) :
+    (phi ~> (psi ~> phi)) tautology
 
-(* Non-equality *)
-Definition not_equal (a b : Sigma_pattern) := (¬ (equal a b)).
-Notation "a !=~ b" := (not_equal a b) (at level 100).
+| P3 (phi psi xi : Pattern) :
+    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
 
-(* Membership *)
-Definition member (x sp : Sigma_pattern) := (|^ (x _&_ sp) ^|).
-Notation "x -< phi" := (member x phi) (at level 100).
+| P4 (phi psi : Pattern) :
+    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
 
-(* Non-membership *)
-Definition non_member (x sp : Sigma_pattern) := (¬ (member x sp)).
-Notation "x !-< phi" := (non_member x phi) (at level 100).
+where "pattern 'tautology'" := (Tautology_proof_rules pattern).
 
-(* Set inclusion *)
-Definition includes (a b : Sigma_pattern) := (|_ (a ~> b) _|).
-Notation "a <: b" := (includes a b) (at level 100).
+Reserved Notation "pattern 'proved'" (at level 2).
+Inductive AML_proof_system : Sigma_pattern -> Prop :=
+(* FOL reasoning *)
+  (* Propositional tautology *)
+  | Prop_tau (phi : Sigma_pattern) :
+      phi tautology -> phi proved
 
-(* Set exclusion *)
-Definition not_includes (a b : Sigma_pattern) := (¬ (includes a b)).
-Notation "a !<: b" := (not_includes a b) (at level 100).
+  (* Modus ponens *)
+  | Mod_pon {phi1 phi2 : Sigma_pattern} :
+    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
 
+  (* Existential quantifier *)
+  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
+    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
 
-(* Functional Constant axiom *)
-Definition Functional_Constant (constant : Sigma) : Sigma_pattern :=
-  (ex , (^constant ~=~ sp_var 0)).
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
+    (phi1 ~> phi2) proved ->
+    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
+    ((ex x, phi1) ~> phi2) proved
 
+(* Frame reasoning *)
+  (* Propagation bottom *)
+  | Prop_bot (C : Application_context) :
+    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
+
+  (* Propagation disjunction *)
+  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    ((subst_ctx C (phi1 _|_ phi2)) ~>
+        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
+
+  (* Propagation exist *)
+  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
+    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
+    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
+
+  (* Framing *)
+  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
+    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
+
+(* Fixpoint reasoning *)
+  (* Set Variable Substitution *)
+  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
+    phi proved -> (e_subst_set phi (sp_set psi) X) proved
+
+  (* Pre-Fixpoint *)
+  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
+
+  (* Knaster-Tarski *)
+  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
+    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
+
+(* Technical rules *)
+  (* Existence *)
+  | Existence (x : EVar) : (ex x , ' x) proved
+
+  (* Singleton *)
+  | Singleton_ctx (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
+    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
+
+where "pattern 'proved'" := (AML_proof_system pattern).
