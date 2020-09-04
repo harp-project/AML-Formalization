@@ -142,11 +142,12 @@ Qed.
 (** ** Sigma patterns *)
 
 Inductive Sigma : Type := sigma_c {id_si : string}.
+Definition Power (Sigma : Type) := Ensemble Sigma.
 
 Definition db_index := nat.
 
 Record Signature := {
-  Symbols : Ensemble Sigma
+  Symbols : Power Sigma
 }.
 
 Inductive Pattern {signature : Signature} : Type :=
@@ -161,13 +162,10 @@ Inductive Pattern {signature : Signature} : Type :=
 | patt_mu (phi : Pattern)
 .
 
-Notation "'' x" := (patt_freevar x) (at level 3).
-Notation "' n" := (patt_bound_evar n) (at level 3).
-Notation "` n" := (patt_bound_svar n) (at level 3).
-Notation "^ c" := (patt_sym c) (at level 3).
+(* TODO: change Bot and Top to unicode symbols *)
 Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
 Notation "'Bot'" := patt_bott.
-Notation "a ~> b"  := (patt_imp a b) (at level 90, right associativity,
+Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
                                       b at level 200).
 Notation "'ex' , phi" := (patt_exists phi) (at level 55).
 Notation "'mu' , phi" := (patt_mu phi) (at level 55).
@@ -336,19 +334,19 @@ Definition free_bound_svars {signature : Signature} (phi : @Pattern signature) :
 
 (* Section Derived_operators. *)
 
-Definition patt_not {signature : Signature} (phi : @Pattern signature) := phi ~> patt_bott.
+Definition patt_not {signature : Signature} (phi : @Pattern signature) := phi --> patt_bott.
 Notation "¬ a"     := (patt_not   a  ) (at level 75).
 
-Definition patt_or  {signature : Signature} (l r : @Pattern signature) := (¬ l) ~> r.
-Notation "a _|_ b" := (patt_or    a b) (at level 85, right associativity).
+Definition patt_or  {signature : Signature} (l r : @Pattern signature) := (¬ l) --> r.
+Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity).
 
 Definition patt_and {signature : Signature} (l r : @Pattern signature) :=
-  ¬ ((¬ l) _|_ (¬ r)).
-Notation "a _&_ b" := (patt_and   a b) (at level 80, right associativity).
+  ¬ ((¬ l) or (¬ r)).
+Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity).
 
 Definition patt_iff {signature : Signature} (l r : @Pattern signature) :=
-  ((l ~> r) _&_ (r ~> l)).
-Notation "a <~> b" := (patt_iff a b) (at level 95, no associativity).
+  ((l --> r) and (r --> l)).
+Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity).
 
 Definition patt_top {signature : Signature} := (¬ (@patt_bott signature)).
 Notation "'Top'" := patt_top.
@@ -362,60 +360,69 @@ Definition patt_nu {signature : Signature} (phi : @Pattern signature) :=
 Notation "'nu' , phi" := (patt_nu phi) (at level 55).
 
 (* End Derived_operators. *)
-Definition var {signature : Signature} (sname : string) : @Pattern signature :=
+Definition evar {signature : Signature} (sname : string) : @Pattern signature :=
   patt_freevar (find_fresh_name (@evar_c sname) nil). 
-Definition set {signature : Signature} (sname : string) : @Pattern signature :=
+Definition svar {signature : Signature} (sname : string) : @Pattern signature :=
   patt_freevar (find_fresh_name (@svar_c sname) nil). 
-Definition const {signature : Signature} (sname : string)
+Definition sym {signature : Signature} (sname : string)
   (in_sig : In _ (Symbols signature) (@sigma_c sname)) : @Pattern signature :=
   patt_sym (sigma_c sname) in_sig.
 
 (* Example patterns *)
 
 Axiom sig : Signature.
-Axiom ctor_in_sig : In _ (Symbols sig) (@sigma_c "ctor").
+Axiom sym_in_sig : In _ (Symbols sig) (@sigma_c "ctor").
 Axiom p_in_sig : In _ (Symbols sig) (@sigma_c "p").
 Axiom f_in_sig : In _ (Symbols sig) (@sigma_c "f").
 
-Definition simple := @var sig ("x").
-Definition more := @set sig ("A") _|_ ¬ (set "A").
+Definition simple := @evar sig ("x").
+Definition more := @svar sig ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+
+(* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
 Definition complex :=
-  @var sig ("A") ~> (var("B") ~> ¬(set("C"))) $
-  ex , set ("D") $ Bot _&_ Top.
-Definition custom_constructor := @const sig ("ctor") ctor_in_sig $ var ("a").
-Definition predicate := @const sig ("p") p_in_sig $ var ("x1") $ var ("x2").
+  @evar sig ("A") --> (evar("B") --> ¬(svar("C"))) $
+       ex , svar ("D") $ Bot and Top.
+
+Definition custom_constructor := @sym sig ("ctor") sym_in_sig $ evar ("a").
+
+(* p x1 x2 *)
+Definition predicate := @sym sig ("p") p_in_sig $ evar ("x1") $ evar ("x2").
+
+(* f x (mu y . y) *)
 Definition function :=
-  @const sig ("f") f_in_sig $ (var ("x")) $ (mu , (patt_bound_svar 0)).
+  @sym sig ("f") f_in_sig $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
+
+(* forall x, x /\ y *)
 Definition free_and_bound :=
-  all , (patt_bound_svar 0) _&_ @var sig ("y"). (* forall x, x /\ y *)
+  all , (patt_bound_svar 0) and @evar sig ("y").
 
 (* End of examples. *)
 
-(* TODO: change to update_valuation *)
 Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
            (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
 fun x : T1 => if eqb x t1 then t2 else f x.
 
 (* Model of AML ref. snapshot: Definition 2 *)
 
-Record Model := {
+Record Model {signature : Signature} := {
   Domain : Type;
-  model_sig : Signature;
   nonempty_witness : exists (x : Domain), True;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
-  app_interp : Domain -> Domain -> Ensemble Domain;
-  sym_interp : Sigma -> Ensemble Domain;
+  app_interp : Domain -> Domain -> Power Domain;
+  sym_interp (sigma : Sigma) : In _ (Symbols signature) sigma -> Power Domain;
 }.
 
-Definition pointwise_ext {m : Model} (l r : Ensemble (Domain m)) :
-                         Ensemble (Domain m) :=
+Definition pointwise_ext {signature : Signature} {m : @Model signature}
+           (l r : Power (Domain m)) :
+  Power (Domain m) :=
 fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
 
-Compute @pointwise_ext {| Domain := Pattern |}
-        (Singleton _ (var "a")) (Singleton _ (var "b")).
+Compute @pointwise_ext sig {| Domain := Pattern |}
+        (Singleton _ (evar "a")) (Singleton _ (evar "b")).
 
 (* S . empty = empty *)
-Lemma pointwise_app_bot : forall m : Model, forall S : Ensemble (Domain m),
+Lemma pointwise_app_bot {signature : Signature} : forall (m : @Model signature),
+    forall S : Power (Domain m),
   Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
 Proof.
   intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
@@ -477,8 +484,8 @@ Defined.
 Variable mysig : Signature.
 
 Equations ext_valuation_aux {m : Model} {signature : Signature}
-          (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
-          (names : list name) (p : @Pattern signature) : Ensemble (Domain m)
+          (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+          (names : list name) (p : @Pattern signature) : Power (Domain m)
   by wf (size p) :=
   ext_valuation_aux evar_val svar_val names (patt_freevar x) :=
     match (fst x) with
@@ -502,7 +509,7 @@ Equations ext_valuation_aux {m : Model} {signature : Signature}
                                   (var_open 0 fname p'));
   ext_valuation_aux evar_val svar_val names (patt_mu p') :=
     let fname := find_fresh_name (@evar_c "sfresh") names in
-    Ensembles_Ext.mu
+    Powers_Ext.mu
       (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
                                   (var_open 0 fname p')).
 Next Obligation. omega. Defined.
@@ -513,8 +520,8 @@ Next Obligation. rewrite <- var_open_size. omega. Defined.
 Next Obligation. rewrite <- var_open_size. omega. Defined.
 *)
 
-Program Fixpoint ext_valuation_aux {m : Model} {signature : Signature}
-        (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
+Program Fixpoint ext_valuation_aux {signature : Signature} {m : @Model signature}
+        (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
         (names : list name) (p : @Pattern signature) {measure (@size signature p)} :=
 match p with
 | patt_freevar x => match (fst x) with
@@ -523,7 +530,7 @@ match p with
                 end
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
-| patt_sym s pf => (sym_interp m) s
+| patt_sym s pf => (sym_interp m) s pf
 | patt_app ls rs => pointwise_ext (ext_valuation_aux evar_val svar_val names ls)
                                   (ext_valuation_aux evar_val svar_val names rs)
 | patt_bott => Empty_set _
@@ -547,20 +554,20 @@ Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
 Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
 
-Definition ext_valuation {m : Model} {signature : Signature}
-        (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m))
-        (p : @Pattern signature) : Ensemble (Domain m) :=
+Definition ext_valuation {signature : Signature} {m : @Model signature}
+        (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+        (p : @Pattern signature) : Power (Domain m) :=
   ext_valuation_aux evar_val svar_val (free_vars p) p.
 
 (*
 Lemma is_monotonic :
   forall (sm : Sigma_model)
          (evar_val : name -> M sm)
-         (svar_val : db_index -> Ensemble (M sm)) (phi : Sigma_pattern)
+         (svar_val : db_index -> Power (M sm)) (phi : Sigma_pattern)
          (x : db_index),
     positive x phi ->
     well_formed phi ->
-    forall (l r : Ensemble (M sm)),
+    forall (l r : Power (M sm)),
       Included (M sm) l r ->
       Included (M sm)
         (ext_valuation evar_val (change_val beq_nat 0 l db_val) phi)
@@ -569,14 +576,15 @@ Proof.
 Admitted.
 *)
 
+(*
 Ltac proof_ext_val :=
 simpl;intros;
 repeat
   (* Normalize *)
    rewrite (Same_set_to_eq (Union_Empty_l _))
-|| rewrite (Same_set_to_eq (Compl_Compl_Ensembles _ _))
+|| rewrite (Same_set_to_eq (Compl_Compl_Powers _ _))
 || rewrite
-   (Same_set_to_eq (Compl_Union_Compl_Intes_Ensembles_alt _ _ _))
+   (Same_set_to_eq (Compl_Union_Compl_Intes_Powers_alt _ _ _))
 || rewrite (Same_set_to_eq (FA_rel _ _ _))
   (* Apply *)
 || (eapply (proj1 Same_set_Compl) ; intros)
@@ -585,6 +593,7 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
+*)
 
 Section Semantics_of_derived_operators.
 
@@ -599,19 +608,18 @@ End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Record Theory := {
-  theory_sig : Signature;
-  patterns : Ensemble (@Pattern theory_sig)
+Record Theory {signature : Signature} := {
+  patterns : Power (@Pattern signature)
 }.
 
 Definition satisfies_model {signature : Signature}
            (m : Model) (phi : @Pattern signature) : Prop :=
-forall (evar_val : name -> Domain m) (svar_val : name -> Ensemble (Domain m)),
+forall (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m)),
   Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
-Definition satisfies_theory (m: Model) (theory : Theory)
+Definition satisfies_theory {signature : Signature} (m : @Model signature) (theory : Theory)
 : Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
 
 Notation "M |=T Gamma" := (satisfies_theory M Gamma)
@@ -649,81 +657,92 @@ end.
 (* Proof system for AML ref. snapshot: Section 3 *)
 
 (* Auxiliary axiom schemes for proving propositional tautology *)
-Reserved Notation "pattern 'tautology'" (at level 2).
+
+(* TODO: move tautology proof rules to main ML_proof_system def *)
+
+(* Reserved Notation "pattern 'tautology'" (at level 2).
 Inductive Tautology_proof_rules {signature : Signature} : @Pattern signature -> Prop :=
-| P1 (phi : Pattern) :
-    (phi ~> phi) tautology
+| P1 (phi psi : Pattern) :
+    (phi --> (psi --> phi)) tautology
 
-| P2 (phi psi : Pattern) :
-    (phi ~> (psi ~> phi)) tautology
+| P2 (phi psi xi : Pattern) :
+    ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi))) tautology
 
-| P3 (phi psi xi : Pattern) :
-    ((phi ~> (psi ~> xi)) ~> ((phi ~> psi) ~> (phi ~> xi))) tautology
+| P3 (phi : Pattern) :
+    (((phi --> Bot) --> Bot) --> phi) tautology
 
-| P4 (phi psi : Pattern) :
-    (((¬ phi) ~> (¬ psi)) ~> (psi ~> phi)) tautology
+where "pattern 'tautology'" := (Tautology_proof_rules pattern). *)
 
-where "pattern 'tautology'" := (Tautology_proof_rules pattern).
+(* TODO: proof system should take theory and pattern *)
+(* axiom proof rule will be added *)
+(* add |- notation for provability *)
 
 Reserved Notation "pattern 'proved'" (at level 2).
-Inductive AML_proof_system : Sigma_pattern -> Prop :=
+Inductive ML_proof_system {signature : Signature} : @Pattern signature -> Prop :=
 (* FOL reasoning *)
   (* Propositional tautology *)
-  | Prop_tau (phi : Sigma_pattern) :
-      phi tautology -> phi proved
+  | P1 (phi psi : Pattern) :
+      (phi --> (psi --> phi)) proved
+  | P2 (phi psi xi : Pattern) :
+      ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi))) proved
+  | P3 (phi : Pattern) :
+      (((phi --> Bot) --> Bot) --> phi) proved
 
   (* Modus ponens *)
-  | Mod_pon {phi1 phi2 : Sigma_pattern} :
-    phi1 proved -> (phi1 ~> phi2) proved -> phi2 proved
+  | Mod_pon {phi1 phi2 : Pattern} :
+      phi1 proved -> (phi1 --> phi2) proved -> phi2 proved
 
   (* Existential quantifier *)
-  | Ex_quan {phi : Sigma_pattern} (x y : EVar) :
-    ((e_subst_var phi (sp_var y) x) ~> (sp_exists x phi)) proved
+  | Ex_quan {phi : Pattern} (y : string) :
+      ((bvar_subst phi (evar y) 0) --> (patt_exists phi)) proved
 
   (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Sigma_pattern) (x : EVar) :
-    (phi1 ~> phi2) proved ->
-    negb (set_mem evar_eq_dec x (free_evars phi2)) = true ->
-    ((ex x, phi1) ~> phi2) proved
+  (* TODO: do we need to shift? *)
+  | Ex_gen (phi1 phi2 : Pattern) (x : string) :
+      (phi1 --> phi2) proved ->
+      ((ex , phi1) --> phi2) proved
 
 (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bot (C : Application_context) :
-    ((subst_ctx C sp_bottom) ~> sp_bottom) proved
+      ((subst_ctx C patt_bott) --> patt_bott) proved
 
   (* Propagation disjunction *)
-  | Prop_disj (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    ((subst_ctx C (phi1 _|_ phi2)) ~>
-        ((subst_ctx C phi1) _|_ (subst_ctx C phi2))) proved
+  | Prop_disj (C : Application_context) (phi1 phi2 : Pattern) :
+      ((subst_ctx C (phi1 or phi2)) -->
+      ((subst_ctx C phi1) or (subst_ctx C phi2))) proved
 
   (* Propagation exist *)
-  | Prop_ex (C : Application_context) (phi : Sigma_pattern) (x : EVar) :
-    negb (set_mem evar_eq_dec x (free_vars_ctx C)) = true ->
-    ((subst_ctx C (sp_exists x phi)) ~> (sp_exists x (subst_ctx C phi))) proved
+  | Prop_ex (C : Application_context) (phi : Pattern) :
+      ((subst_ctx C (patt_exists phi)) --> (patt_exists (subst_ctx C phi))) proved
 
   (* Framing *)
-  | Framing (C : Application_context) (phi1 phi2 : Sigma_pattern) :
-    (phi1 ~> phi2) proved -> ((subst_ctx C phi1) ~> (subst_ctx C phi2)) proved
+  | Framing (C : Application_context) (phi1 phi2 : Pattern) :
+      (phi1 --> phi2) proved -> ((subst_ctx C phi1) --> (subst_ctx C phi2)) proved
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
-  | Svar_subst (phi : Sigma_pattern) (psi X : SVar) :
-    phi proved -> (e_subst_set phi (sp_set psi) X) proved
+  (* TODO: psi was SVar? string input? *)
+  | Svar_subst (phi psi : Pattern) (X : string) :
+      phi proved -> (fvar_subst phi psi (find_fresh_name (@svar_c X) nil)) proved
 
   (* Pre-Fixpoint *)
-  | Pre_fixp (phi : Sigma_pattern) (X : SVar) :
-    ((e_subst_set phi (sp_mu X phi) X) ~> (sp_mu X phi)) proved
+  (* TODO: is this correct? *)
+  | Pre_fixp (phi : Pattern) :
+      ((bvar_subst phi (patt_mu phi) 0) --> (patt_mu phi)) proved
 
   (* Knaster-Tarski *)
-  | Knaster_tarski (phi psi : Sigma_pattern) (X : SVar) :
-    ((e_subst_set phi psi X) ~> psi) proved -> ((sp_mu X phi) ~> psi) proved
+  | Knaster_tarski (phi psi : Pattern) :
+      ((bvar_subst phi psi 0) --> psi) proved ->
+      ((patt_mu phi) --> psi) proved
 
 (* Technical rules *)
   (* Existence *)
-  | Existence (x : EVar) : (ex x , ' x) proved
+  | Existence : (ex , patt_bound_evar 0) proved
 
   (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (x : EVar) (phi : Sigma_pattern) :
-    (¬ ((subst_ctx C1 ('x _&_ phi)) _&_ (subst_ctx C2 ('x _&_ (¬ phi))))) proved
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) :
+      (¬ ((subst_ctx C1 (patt_bound_evar 0 and phi)) and
+          (subst_ctx C2 (patt_bound_evar 0 and (¬ phi))))) proved
 
-where "pattern 'proved'" := (AML_proof_system pattern).
+where "pattern 'proved'" := (ML_proof_system pattern).
