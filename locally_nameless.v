@@ -522,12 +522,12 @@ Next Obligation. rewrite <- var_open_size. omega. Defined.
 
 Program Fixpoint ext_valuation_aux {signature : Signature} {m : @Model signature}
         (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-        (names : list name) (p : @Pattern signature) {measure (@size signature p)} :=
+        (names : list name) (p : @Pattern signature) {measure (size p)} :=
 match p with
 | patt_freevar x => match (fst x) with
-                | evar_c => Singleton _ (evar_val x)
-                | svar_c => svar_val x
-                end
+                    | evar_c => Singleton _ (evar_val x)
+                    | svar_c => svar_val x
+                    end
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
 | patt_sym s pf => (sym_interp m) s pf
@@ -535,7 +535,7 @@ match p with
                                   (ext_valuation_aux evar_val svar_val names rs)
 | patt_bott => Empty_set _
 | patt_imp ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
-                           (ext_valuation_aux evar_val svar_val names rs)
+                          (ext_valuation_aux evar_val svar_val names rs)
 | patt_exists p' =>
   let fname := find_fresh_name (@evar_c "efresh") names in
   FA_Union
@@ -555,9 +555,73 @@ Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
 Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
 
 Definition ext_valuation {signature : Signature} {m : @Model signature}
-        (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-        (p : @Pattern signature) : Power (Domain m) :=
+           (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+           (p : @Pattern signature) : Power (Domain m) :=
   ext_valuation_aux evar_val svar_val (free_vars p) p.
+
+Lemma ext_valuation_aux_freevar_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (x : name) :
+  ext_valuation_aux evar_val svar_val names (patt_freevar x) =
+  match (fst x) with
+  | evar_c => Singleton _ (evar_val x)
+  | svar_c => svar_val x
+  end.
+Admitted.
+
+Lemma ext_valuation_aux_bound_evar_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (x : db_index) :
+  ext_valuation_aux evar_val svar_val names (patt_bound_evar x) = Empty_set _ .
+Admitted.
+
+Lemma ext_valuation_aux_bound_svar_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (X : db_index) :
+  ext_valuation_aux evar_val svar_val names (patt_bound_svar X) = Empty_set _ .
+Admitted.
+
+Lemma ext_valuation_aux_app_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (ls rs : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val names (patt_app ls rs) =
+  pointwise_ext (ext_valuation_aux evar_val svar_val names ls)
+                (ext_valuation_aux evar_val svar_val names rs).
+Admitted.
+
+Lemma ext_valuation_aux_bott_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) :
+  ext_valuation_aux evar_val svar_val names patt_bott = Empty_set _ .
+Admitted.
+
+Lemma ext_valuation_aux_imp_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (ls rs : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val names (patt_imp ls rs) =
+  Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
+        (ext_valuation_aux evar_val svar_val names rs).
+Admitted.
+
+Lemma ext_valuation_aux_exists_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (p : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val names (patt_exists p) =
+  let fname := find_fresh_name (@evar_c "efresh") names in
+  FA_Union
+    (fun e => ext_valuation_aux (update_valuation name_eqb fname e evar_val) svar_val names
+                                (var_open 0 fname p)).
+Admitted.
+
+Lemma ext_valuation_aux_mu_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+      (names : list name) (p : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val names (patt_mu p) =
+  let fname := find_fresh_name (@svar_c "sfresh") names in
+  Ensembles_Ext.mu
+    (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
+                                (var_open 0 fname p)).
+Admitted.
 
 (*
 Lemma is_monotonic :
