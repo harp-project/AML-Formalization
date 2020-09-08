@@ -677,72 +677,94 @@ where "pattern 'tautology'" := (Tautology_proof_rules pattern). *)
 (* axiom proof rule will be added *)
 (* add |- notation for provability *)
 
-Reserved Notation "pattern 'proved'" (at level 2).
-Inductive ML_proof_system {signature : Signature} : @Pattern signature -> Prop :=
+(* Reserved Notation "pattern 'proved'" (at level 2). *)
+Reserved Notation "theory |- pattern" (at level 1).
+Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
+  @Pattern signature -> Prop :=
+
+(* Hypothesis *)
+  | hypothesis (axiom : Pattern) :
+    (In _ (patterns theory) axiom) -> theory |- axiom
+  
 (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
-      (phi --> (psi --> phi)) proved
+      theory |- (phi --> (psi --> phi))
   | P2 (phi psi xi : Pattern) :
-      ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi))) proved
+      theory |- ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
   | P3 (phi : Pattern) :
-      (((phi --> Bot) --> Bot) --> phi) proved
+      theory |- (((phi --> Bot) --> Bot) --> phi)
 
   (* Modus ponens *)
   | Mod_pon {phi1 phi2 : Pattern} :
-      phi1 proved -> (phi1 --> phi2) proved -> phi2 proved
+      theory |- phi1 ->
+      theory |- (phi1 --> phi2) ->
+      theory |- phi2
 
   (* Existential quantifier *)
   | Ex_quan {phi : Pattern} (y : string) :
-      ((bvar_subst phi (evar y) 0) --> (patt_exists phi)) proved
+      theory |- ((bvar_subst phi (evar y) 0) --> (patt_exists phi))
 
   (* Existential generalization *)
   (* TODO: do we need to shift? *)
   | Ex_gen (phi1 phi2 : Pattern) (x : string) :
-      (phi1 --> phi2) proved ->
-      ((ex , phi1) --> phi2) proved
+      theory |- (phi1 --> phi2) ->
+      theory |- ((ex , phi1) --> phi2)
 
 (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bot (C : Application_context) :
-      ((subst_ctx C patt_bott) --> patt_bott) proved
+      theory |- ((subst_ctx C patt_bott) --> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj (C : Application_context) (phi1 phi2 : Pattern) :
-      ((subst_ctx C (phi1 or phi2)) -->
-      ((subst_ctx C phi1) or (subst_ctx C phi2))) proved
+      theory |- ((subst_ctx C (phi1 or phi2)) -->
+                ((subst_ctx C phi1) or (subst_ctx C phi2)))
 
   (* Propagation exist *)
   | Prop_ex (C : Application_context) (phi : Pattern) :
-      ((subst_ctx C (patt_exists phi)) --> (patt_exists (subst_ctx C phi))) proved
+      theory |- ((subst_ctx C (patt_exists phi)) --> (patt_exists (subst_ctx C phi)))
 
   (* Framing *)
   | Framing (C : Application_context) (phi1 phi2 : Pattern) :
-      (phi1 --> phi2) proved -> ((subst_ctx C phi1) --> (subst_ctx C phi2)) proved
+      theory |- (phi1 --> phi2) ->
+      theory |- ((subst_ctx C phi1) --> (subst_ctx C phi2))
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
   (* TODO: psi was SVar? string input? *)
   | Svar_subst (phi psi : Pattern) (X : string) :
-      phi proved -> (fvar_subst phi psi (find_fresh_name (@svar_c X) nil)) proved
+      theory |- phi -> theory |- (fvar_subst phi psi (find_fresh_name (@svar_c X) nil))
 
   (* Pre-Fixpoint *)
   (* TODO: is this correct? *)
   | Pre_fixp (phi : Pattern) :
-      ((bvar_subst phi (patt_mu phi) 0) --> (patt_mu phi)) proved
+      theory |- ((bvar_subst phi (patt_mu phi) 0) --> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
-      ((bvar_subst phi psi 0) --> psi) proved ->
-      ((patt_mu phi) --> psi) proved
+      theory |- ((bvar_subst phi psi 0) --> psi) ->
+      theory |- ((patt_mu phi) --> psi)
 
 (* Technical rules *)
   (* Existence *)
-  | Existence : (ex , patt_bound_evar 0) proved
+  | Existence : theory |- (ex , patt_bound_evar 0)
 
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) :
-      (¬ ((subst_ctx C1 (patt_bound_evar 0 and phi)) and
-          (subst_ctx C2 (patt_bound_evar 0 and (¬ phi))))) proved
+      theory |- (¬ ((subst_ctx C1 (patt_bound_evar 0 and phi)) and
+                    (subst_ctx C2 (patt_bound_evar 0 and (¬ phi)))))
 
-where "pattern 'proved'" := (ML_proof_system pattern).
+where "theory |- pattern" := (ML_proof_system theory pattern).
+
+(* Soundness theorem *)
+Theorem Soundness {signature : Signature} :
+  forall phi : Pattern, forall theory : @Theory signature,
+  (theory |- phi) -> (theory |= phi).
+Proof.
+  intros. unfold "|=". unfold "|=T", "|=M".
+  intros.
+  induction H.
+  * apply H0. assumption.
+  *
+Admitted.
