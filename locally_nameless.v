@@ -11,7 +11,7 @@ Require Export Ensembles_Ext.
 Require Export Coq.Program.Wf.
 (* Require Import Equations.Equations. *)
 
-(** ** Sigma patterns *)
+(** ** Matching Logic Syntax *)
 
 Inductive Sigma : Type := sigma_c {id_si : string}.
 Definition Power (Sigma : Type) := Ensemble Sigma.
@@ -19,7 +19,7 @@ Definition Power (Sigma : Type) := Ensemble Sigma.
 Definition db_index := nat.
 
 Record Signature := {
-  Symbols : Power Sigma
+  symbols : Power Sigma
 }.
 
 Inductive Pattern {signature : Signature} : Type :=
@@ -27,7 +27,7 @@ Inductive Pattern {signature : Signature} : Type :=
 | patt_free_svar (x : svar_name)
 | patt_bound_evar (n : db_index)
 | patt_bound_svar (n : db_index)
-| patt_sym (sigma : Sigma) : In _ (Symbols signature) sigma -> Pattern
+| patt_sym (sigma : Sigma) : In _ (symbols signature) sigma -> Pattern
 | patt_app (phi1 phi2 : Pattern)
 | patt_bott
 | patt_imp (phi1 phi2 : Pattern)
@@ -63,7 +63,7 @@ Inductive positive_occurrence {signature : Signature} : db_index -> Pattern -> P
 | po_free_svar (x : svar_name) (n : db_index) : positive_occurrence n (patt_free_svar x)
 | po_bound_evar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_evar m)
 | po_bound_svar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_svar m)
-| po_const (sigma : Sigma) (n : db_index) {in_signature : In _ (Symbols signature) sigma} :
+| po_const (sigma : Sigma) (n : db_index) {in_signature : In _ (symbols signature) sigma} :
     positive_occurrence n (patt_sym sigma in_signature)
 | po_app (phi1 phi2 : Pattern) (n : db_index) :
   positive_occurrence n phi1 -> positive_occurrence n phi2 ->
@@ -83,7 +83,7 @@ with negative_occurrence {signature : Signature} : db_index -> Pattern -> Prop :
 | no_free_svar (x : svar_name) (n : db_index) : negative_occurrence n (patt_free_svar x)
 | no_bound_evar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_evar m)
 | no_bound_svar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_svar m)
-| no_const (sigma : Sigma) (n : db_index) (in_signature : In _ (Symbols signature) sigma) :
+| no_const (sigma : Sigma) (n : db_index) (in_signature : In _ (symbols signature) sigma) :
     negative_occurrence n (patt_sym sigma in_signature)
 | no_app (phi1 phi2 : Pattern) (n : db_index) :
    negative_occurrence n phi1 ->  negative_occurrence n phi2 ->
@@ -189,6 +189,14 @@ match phi with
 | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
 end.
 
+(* instantiate exists x. p or mu x. p with psi for p *)
+Definition instantiate {signature : Signature} (phi psi : @Pattern signature) :=
+match phi with
+| patt_exists phi' => bvar_subst phi' psi 0
+| patt_mu phi' => bvar_subst phi' psi 0
+| _ => phi
+end.
+
 (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
@@ -259,17 +267,16 @@ Definition evar {signature : Signature} (sname : string) : @Pattern signature :=
 Definition svar {signature : Signature} (sname : string) : @Pattern signature :=
   patt_free_svar (find_fresh_svar_name (@svar_c sname) nil). 
 Definition sym {signature : Signature} (sname : string)
-  (in_sig : In _ (Symbols signature) (@sigma_c sname)) : @Pattern signature :=
+  (in_sig : In _ (symbols signature) (@sigma_c sname)) : @Pattern signature :=
   patt_sym (sigma_c sname) in_sig.
 
 (* Example patterns *)
 
 Axiom sig : Signature.
-Axiom sym_in_sig : In _ (Symbols sig) (@sigma_c "ctor").
-Axiom p_in_sig : In _ (Symbols sig) (@sigma_c "p").
-Axiom f_in_sig : In _ (Symbols sig) (@sigma_c "f").
+Axiom sym_in_sig : In _ (symbols sig) (@sigma_c "ctor").
+Axiom p_in_sig : In _ (symbols sig) (@sigma_c "p").
+Axiom f_in_sig : In _ (symbols sig) (@sigma_c "f").
 
-Definition simple := @evar sig ("x").
 Definition more := @svar sig ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
 (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
@@ -288,7 +295,7 @@ Definition function :=
 
 (* forall x, x /\ y *)
 Definition free_and_bound :=
-  all , (patt_bound_svar 0) and @evar sig ("y").
+  all , (patt_bound_evar 0) and @evar sig ("y").
 
 (* End of examples. *)
 
@@ -303,7 +310,7 @@ Record Model {signature : Signature} := {
   nonempty_witness : exists (x : Domain), True;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Power Domain;
-  sym_interp (sigma : Sigma) : In _ (Symbols signature) sigma -> Power Domain;
+  sym_interp (sigma : Sigma) : In _ (symbols signature) sigma -> Power Domain;
 }.
 
 Definition pointwise_ext {signature : Signature} {m : @Model signature}
@@ -325,6 +332,25 @@ Proof.
 Qed.
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
+
+Fixpoint evar_quantify {signature : Signature} (x : evar_name) (level : db_index)
+         (p : @Pattern signature) : Pattern :=
+match p with
+| patt_free_evar x' => if eq_evar_name x x' then patt_bound_evar level else patt_free_evar x'
+| patt_free_svar x' => patt_free_svar x'
+| patt_bound_evar x' => patt_bound_evar x'
+| patt_bound_svar X => patt_bound_svar X
+| patt_sym s pf => patt_sym s pf
+| patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
+| patt_bott => patt_bott
+| patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
+| patt_exists p' => patt_exists (evar_quantify x (level + 1) p')
+| patt_mu p' => patt_mu (evar_quantify x (level + 1) p')
+end.
+
+Definition exists_quantify {signature : Signature} (x : evar_name)
+           (p : @Pattern signature) : Pattern :=
+  patt_exists (evar_quantify x 0 p).
 
 Fixpoint size {signature : Signature} (p : @Pattern signature) : nat :=
 match p with
@@ -653,7 +679,7 @@ match C with
 end.
 
 (* Proof system for AML ref. snapshot: Section 3 *)
-
+(* TODO: all propogation rules, framing, use left and right rules (no contexts) like in bott *)
 (* Reserved Notation "pattern 'proved'" (at level 2). *)
 Reserved Notation "theory |- pattern" (at level 1).
 Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
@@ -673,25 +699,28 @@ Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
       theory |- (((phi --> Bot) --> Bot) --> phi)
 
   (* Modus ponens *)
-  | Mod_pon {phi1 phi2 : Pattern} :
+  | Modus_ponens {phi1 phi2 : Pattern} :
       theory |- phi1 ->
       theory |- (phi1 --> phi2) ->
       theory |- phi2
 
   (* Existential quantifier *)
-  | Ex_quan {phi : Pattern} (y : string) :
-      theory |- ((bvar_subst phi (evar y) 0) --> (patt_exists phi))
+  | Ex_quan {phi : Pattern} (y : evar_name) :
+      theory |- (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
 
   (* Existential generalization *)
-  (* TODO: do we need to shift? *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : string) :
+  | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
       theory |- (phi1 --> phi2) ->
-      theory |- ((ex , phi1) --> phi2)
+      set_mem eq_evar_name x (free_evars phi2) = false ->
+      theory |- (exists_quantify x phi1 --> phi2)
 
 (* Frame reasoning *)
   (* Propagation bottom *)
-  | Prop_bot (C : Application_context) :
-      theory |- ((subst_ctx C patt_bott) --> patt_bott)
+  | Prop_bott_left (phi : Pattern) :
+      theory |- (patt_bott $ phi --> patt_bott)
+
+  | Prop_bott_right (phi : Pattern) :
+      theory |- (phi $ patt_bott --> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj (C : Application_context) (phi1 phi2 : Pattern) :
@@ -709,18 +738,17 @@ Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
-  (* TODO: psi was SVar? string input? *)
-  | Svar_subst (phi psi : Pattern) (X : string) :
-      theory |- phi -> theory |- (free_svar_subst phi psi (find_fresh_svar_name (@svar_c X) nil))
+  | Svar_subst (phi psi : Pattern) (X : svar_name) :
+      theory |- phi -> theory |- (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
   (* TODO: is this correct? *)
   | Pre_fixp (phi : Pattern) :
-      theory |- ((bvar_subst phi (patt_mu phi) 0) --> (patt_mu phi))
+      theory |- (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
-      theory |- ((bvar_subst phi psi 0) --> psi) ->
+      theory |- ((instantiate (patt_mu phi) psi) --> psi) ->
       theory |- ((patt_mu phi) --> psi)
 
 (* Technical rules *)
@@ -743,5 +771,5 @@ Proof.
   intros.
   induction H.
   * apply H0. assumption.
-  *
+  * unfold ext_valuation.
 Admitted.
