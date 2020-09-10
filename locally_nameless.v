@@ -2,6 +2,7 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
+Require Import names.
 
 Require Export String.
 Require Export Coq.Lists.ListSet.
@@ -9,135 +10,6 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 (* Require Import Equations.Equations. *)
-
-(** * Names and swaps of names *)
-
-Inductive name_kind : Set :=
-  | evar_c {id_ev : string}: name_kind
-  | svar_c {id_sv : string}: name_kind.
-
-Definition name : Set := (name_kind * Z)%type.
-
-Definition kind (n: name) : name_kind := fst n.
-
-(** Equality between names is decidable. *)
-
-Lemma eq_name: forall (n1 n2: name), {n1 = n2} + {n1 <> n2}.
-Proof.
-  assert (forall k1 k2: name_kind, {k1 = k2} + {k1 <> k2}).
-  decide equality. exact (string_dec id_ev id_ev0).
-  assert (forall p1 p2: positive, {p1 = p2} + {p1 <> p2}).
-  decide equality. exact (string_dec id_sv id_sv0).
-  assert (forall z1 z2: Z, {z1 = z2} + {z1 <> z2}).
-  decide equality.
-  decide equality.
-  decide equality.
-  decide equality.
-Defined.
-
-(** Moreover, we have the following obvious simplification rules on
-  tests over name equality. *)
-
-Lemma eq_name_true:
-  forall (A: Set) (n: name) (a b: A), (if eq_name n n then a else b) = a.
-Proof.
-  intros. case (eq_name n n); congruence.
-Qed.
-
-Lemma eq_name_false:
-  forall (A: Set) (n m: name) (a b: A), n <> m -> (if eq_name n m then a else b) = b.
-Proof.
-  intros. case (eq_name n m); congruence.
-Qed.
-
-Definition name_eqb (x y : name) : bool :=
-  match (fst x) with
-  | @evar_c s1 => match (fst y) with
-                  | @evar_c s2 => if String.eqb s1 s2 then Z.eqb (snd x) (snd y) else false
-                  | svar_c => false
-                  end
-  | @svar_c s1 => match (fst y) with
-                  | evar_c => false
-                  | @svar_c s2 => if String.eqb s1 s2 then Z.eqb (snd x) (snd y) else false
-                  end
-  end.
-
-(** The following lemma shows that there always exists a name
-  of the given kind that is fresh w.r.t. the given list of names, that is,
-  distinct from all the names in this list. *)
-
-Definition find_fresh_name (k: name_kind) (l: list name) : name :=
-  (k, 1 + fold_right (fun (n:name) x => Z.max (snd n) x) 0 l)%Z.
-
-Lemma find_fresh_name_is_fresh:
-  forall k l, let n := find_fresh_name k l in ~List.In n l /\ kind n = k.
-Proof.
-  intros.
-  set (ident := fun (n: name) => snd n). 
-  set (maxid := 
-   fold_right (fun (n:name) x => Z.max (ident n) x) 0%Z).
-  assert (forall x, List.In x l -> (ident x <= maxid l)%Z).
-    generalize l. induction l0; simpl; intros.
-    elim H.
-    elim H; intros. subst x. apply Zmax1. 
-    apply Z.le_trans with (maxid l0). auto. apply Zmax2.
-  replace n with (k, 1 + maxid l)%Z. 
-  split. red; intro. generalize (H _ H0). unfold ident, snd. omega.
-  reflexivity.
-  unfold n; reflexivity.
-Qed.
-
-Lemma fresh_name:
-  forall (k: name_kind) (l: list name), exists n, ~List.In n l /\ kind n = k.
-Proof.
-  intros. exists (find_fresh_name k l). apply find_fresh_name_is_fresh.
-Qed.
-
-(** As argued by Pitts and others, swaps (permutations of two
-  names) are an interesting special case of renamings.
-  We will use swaps later to prove that our definitions
-  are equivariant, that is, insensitive to the choices of fresh identifiers. *)
-
-Definition swap (u v x: name) : name :=
-  if eq_name x u then v else if eq_name x v then u else x.
-
-(** The following lemmas are standard properties of swaps:
-  self-inverse, injective, kind-preserving. *)
-
-Lemma swap_left: forall x y, swap x y x = y.
-Proof. intros. unfold swap. apply eq_name_true. Qed.
-
-Lemma swap_right: forall x y, swap x y y = x.
-Proof.
-  intros. unfold swap. case (eq_name y x); intro. auto.
-  apply eq_name_true. 
-Qed.
-
-Lemma swap_other: forall x y z, z <> x -> z <> y -> swap x y z = z.
-Proof. intros. unfold swap. repeat rewrite eq_name_false; auto. Qed.
-
-Lemma swap_inv: forall u v x, swap u v (swap u v x) = x.
-Proof.
-  intros; unfold swap.
-  case (eq_name x u); intro. 
-    case (eq_name v u); intro. congruence. rewrite eq_name_true. congruence.
-  case (eq_name x v); intro.
-    rewrite eq_name_true. congruence.
-  repeat rewrite eq_name_false; auto.
-Qed.
-
-Lemma swap_inj: forall u v x y, swap u v x = swap u v y -> x = y.
-Proof.
-  intros. rewrite <- (swap_inv u v x). rewrite <- (swap_inv u v y).
-  congruence.
-Qed.
-
-Lemma swap_kind: forall u v x, kind u = kind v -> kind (swap u v x) = kind x.
-Proof.
-  intros. unfold swap. case (eq_name x u); intro.
-  congruence. case (eq_name x v); intro.
-  congruence. auto.
-Qed.
 
 (** ** Sigma patterns *)
 
@@ -151,7 +23,8 @@ Record Signature := {
 }.
 
 Inductive Pattern {signature : Signature} : Type :=
-| patt_freevar (x : name)
+| patt_free_evar (x : evar_name)
+| patt_free_svar (x : svar_name)
 | patt_bound_evar (n : db_index)
 | patt_bound_svar (n : db_index)
 | patt_sym (sigma : Sigma) : In _ (Symbols signature) sigma -> Pattern
@@ -186,9 +59,10 @@ Defined.
 *)
 
 Inductive positive_occurrence {signature : Signature} : db_index -> Pattern -> Prop :=
-| po_freevar (x : name) (n : db_index) : positive_occurrence n (patt_freevar x)
-| po_var (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_evar m)
-| po_set (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_svar m)
+| po_free_evar (x : evar_name) (n : db_index) : positive_occurrence n (patt_free_evar x)
+| po_free_svar (x : svar_name) (n : db_index) : positive_occurrence n (patt_free_svar x)
+| po_bound_evar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_evar m)
+| po_bound_svar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_svar m)
 | po_const (sigma : Sigma) (n : db_index) {in_signature : In _ (Symbols signature) sigma} :
     positive_occurrence n (patt_sym sigma in_signature)
 | po_app (phi1 phi2 : Pattern) (n : db_index) :
@@ -205,9 +79,10 @@ Inductive positive_occurrence {signature : Signature} : db_index -> Pattern -> P
   positive_occurrence n phi ->
   positive_occurrence (n+1) (patt_mu phi)
 with negative_occurrence {signature : Signature} : db_index -> Pattern -> Prop :=
-| no_freevar (x : name) (n : db_index) :  negative_occurrence n (patt_freevar x)
-| no_var (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_evar m)
-| no_set (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_svar m)
+| no_free_evar (x : evar_name) (n : db_index) : negative_occurrence n (patt_free_evar x)
+| no_free_svar (x : svar_name) (n : db_index) : negative_occurrence n (patt_free_svar x)
+| no_bound_evar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_evar m)
+| no_bound_svar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_svar m)
 | no_const (sigma : Sigma) (n : db_index) (in_signature : In _ (Symbols signature) sigma) :
     negative_occurrence n (patt_sym sigma in_signature)
 | no_app (phi1 phi2 : Pattern) (n : db_index) :
@@ -227,7 +102,8 @@ with negative_occurrence {signature : Signature} : db_index -> Pattern -> Prop :
 
 Fixpoint well_formed {signature : Signature} (phi : @Pattern signature) : Prop :=
   match phi with
-  | patt_freevar _ => True
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
   | patt_bound_evar _ => True
   | patt_bound_svar _ => True
   | patt_sym _ _ => True
@@ -259,7 +135,8 @@ Fixpoint well_formed {signature : Signature} (phi : @Pattern signature) : Prop :
 (* substitute bound variable x for psi in phi *)
 Fixpoint bvar_subst {signature : Signature} (phi psi : @Pattern signature) (x : db_index) :=
 match phi with
-| patt_freevar x' => patt_freevar x'
+| patt_free_evar x' => patt_free_evar x'
+| patt_free_svar x' => patt_free_svar x'
 | patt_bound_evar n => match compare_nat n x with
               | Nat_less _ _ _ => patt_bound_evar n
               | Nat_equal _ _ _ => psi
@@ -279,19 +156,37 @@ match phi with
 | patt_mu phi' => patt_mu (bvar_subst phi' psi (S x))
 end.
 
-(* substitute free variable x for psi in phi *)
-Fixpoint fvar_subst {signature : Signature} (phi psi : @Pattern signature) (x : name) :=
+(* substitute free element variable x for psi in phi *)
+Fixpoint free_evar_subst {signature : Signature}
+         (phi psi : @Pattern signature) (x : evar_name) :=
 match phi with
-| patt_freevar x' => if eq_name x x' then psi else patt_freevar x'
+| patt_free_evar x' => if eq_evar_name x x' then psi else patt_free_evar x'
+| patt_free_svar X => patt_free_svar X
 | patt_bound_evar x' => patt_bound_evar x'
 | patt_bound_svar X => patt_bound_svar X
 | patt_sym sigma in_sig => patt_sym sigma in_sig
-| patt_app phi1 phi2 => patt_app (fvar_subst phi1 psi x)
-                                 (fvar_subst phi2 psi x)
+| patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
+                                 (free_evar_subst phi2 psi x)
 | patt_bott => patt_bott
-| patt_imp phi1 phi2 => patt_imp (fvar_subst phi1 psi x) (fvar_subst phi2 psi x)
-| patt_exists phi' => patt_exists (fvar_subst phi' psi x)
-| patt_mu phi' => patt_mu (fvar_subst phi' psi x)
+| patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
+| patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
+| patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
+end.
+
+Fixpoint free_svar_subst {signature : Signature}
+         (phi psi : @Pattern signature) (X : svar_name) :=
+match phi with
+| patt_free_evar x => patt_free_evar x
+| patt_free_svar X' => if eq_svar_name X X' then psi else patt_free_svar X'
+| patt_bound_evar x => patt_bound_evar x
+| patt_bound_svar X' => patt_bound_svar X'
+| patt_sym sigma in_sig => patt_sym sigma in_sig
+| patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
+                                 (free_svar_subst phi2 psi X)
+| patt_bott => patt_bott
+| patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
+| patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
+| patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
 end.
 
 (** The free names of a type are defined as follow.  Notice the
@@ -301,36 +196,35 @@ Definition set_singleton {T : Type}
   (eq : forall (x y : T), { x = y } + { x <> y })
   := fun x : T => set_add eq x List.nil.
 
-Fixpoint free_vars {signature : Signature} (phi : @Pattern signature) : (ListSet.set name) :=
+Fixpoint free_evars {signature : Signature} (phi : @Pattern signature)
+  : (ListSet.set evar_name) :=
 match phi with
-| patt_freevar x => set_singleton eq_name x
+| patt_free_evar x => set_singleton eq_evar_name x
+| patt_free_svar X => List.nil
 | patt_bound_evar x => List.nil
 | patt_bound_svar X => List.nil
 | patt_sym sigma in_sig => List.nil
-| patt_app phi1 phi2 => set_union eq_name (free_vars phi1) (free_vars phi2)
+| patt_app phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
 | patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union eq_name (free_vars phi1) (free_vars phi2)
-| patt_exists phi => free_vars phi
-| patt_mu phi => free_vars phi
+| patt_imp phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
+| patt_exists phi => free_evars phi
+| patt_mu phi => free_evars phi
 end.
 
-Definition name_is_bound_evar (x : name) : bool :=
-match (fst x) with
-| evar_c => true
-| svar_c => false
+Fixpoint free_svars {signature : Signature} (phi : @Pattern signature)
+  : (ListSet.set svar_name) :=
+match phi with
+| patt_free_evar x => List.nil
+| patt_free_svar X => set_singleton eq_svar_name X
+| patt_bound_evar x => List.nil
+| patt_bound_svar X => List.nil
+| patt_sym sigma in_sig => List.nil
+| patt_app phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+| patt_bott => List.nil
+| patt_imp phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+| patt_exists phi => free_svars phi
+| patt_mu phi => free_svars phi
 end.
-
-Definition free_bound_evars {signature : Signature} (phi : @Pattern signature) : (ListSet.set name) :=
-  set_fold_right
-    (fun x acc => if (name_is_bound_evar x) then set_add eq_name x acc else acc)
-    (free_vars phi)
-    (List.nil).
-
-Definition free_bound_svars {signature : Signature} (phi : @Pattern signature) : (ListSet.set name) :=
-  set_fold_right
-    (fun x acc => if (name_is_bound_evar x) then acc else set_add eq_name x acc)
-    (free_vars phi)
-    (List.nil).
 
 (* Section Derived_operators. *)
 
@@ -361,9 +255,9 @@ Notation "'nu' , phi" := (patt_nu phi) (at level 55).
 
 (* End Derived_operators. *)
 Definition evar {signature : Signature} (sname : string) : @Pattern signature :=
-  patt_freevar (find_fresh_name (@evar_c sname) nil). 
+  patt_free_evar (find_fresh_evar_name (@evar_c sname) nil). 
 Definition svar {signature : Signature} (sname : string) : @Pattern signature :=
-  patt_freevar (find_fresh_name (@svar_c sname) nil). 
+  patt_free_svar (find_fresh_svar_name (@svar_c sname) nil). 
 Definition sym {signature : Signature} (sname : string)
   (in_sig : In _ (Symbols signature) (@sigma_c sname)) : @Pattern signature :=
   patt_sym (sigma_c sname) in_sig.
@@ -441,27 +335,55 @@ match p with
 | _ => 0
 end.
 
-Fixpoint var_open {signature : Signature} (k : db_index) (n : name)
+Fixpoint evar_open {signature : Signature} (k : db_index) (n : evar_name)
          (p : @Pattern signature) : Pattern :=
 match p with
-| patt_freevar x => patt_freevar x
-| patt_bound_evar x => if beq_nat x k then patt_freevar n else patt_bound_evar x
-| patt_bound_svar X => if beq_nat X k then patt_freevar n else patt_bound_svar X
+| patt_free_evar x => patt_free_evar x
+| patt_free_svar x => patt_free_svar x
+| patt_bound_evar x => if beq_nat x k then patt_free_evar n else patt_bound_evar x
+| patt_bound_svar X => patt_bound_svar X
 | patt_sym s pf => patt_sym s pf
-| patt_app ls rs => patt_app (var_open k n ls) (var_open k n rs)
+| patt_app ls rs => patt_app (evar_open k n ls) (evar_open k n rs)
 | patt_bott => patt_bott
-| patt_imp ls rs => patt_imp (var_open k n ls) (var_open k n rs)
-| patt_exists p' => patt_exists (var_open (k + 1) n p')
-| patt_mu p' => patt_mu (var_open (k + 1) n p')
+| patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
+| patt_exists p' => patt_exists (evar_open (k + 1) n p')
+| patt_mu p' => patt_mu (evar_open (k + 1) n p')
 end.
 
-Lemma var_open_size :
-  forall (signature : Signature) (k : db_index) (n : name) (p : @Pattern signature),
-    size p = size (var_open k n p).
+Fixpoint svar_open {signature : Signature} (k : db_index) (n : svar_name)
+         (p : @Pattern signature) : Pattern :=
+match p with
+| patt_free_evar x => patt_free_evar x
+| patt_free_svar x => patt_free_svar x
+| patt_bound_evar x => patt_bound_evar x
+| patt_bound_svar X => if beq_nat X k then patt_free_svar n else patt_bound_svar X
+| patt_sym s pf => patt_sym s pf
+| patt_app ls rs => patt_app (svar_open k n ls) (svar_open k n rs)
+| patt_bott => patt_bott
+| patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
+| patt_exists p' => patt_exists (svar_open (k + 1) n p')
+| patt_mu p' => patt_mu (svar_open (k + 1) n p')
+end.
+
+Lemma evar_open_size :
+  forall (signature : Signature) (k : db_index) (n : evar_name) (p : @Pattern signature),
+    size p = size (evar_open k n p).
 Proof.
   intros. generalize dependent k.
   induction p; intros; simpl; try reflexivity.
   destruct (n0 =? k); reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp (k + 1)); reflexivity.
+  rewrite (IHp (k + 1)); reflexivity.
+Qed.
+
+Lemma svar_open_size :
+  forall (signature : Signature) (k : db_index) (n : svar_name) (p : @Pattern signature),
+    size p = size (svar_open k n p).
+Proof.
+  intros. generalize dependent k.
+  induction p; intros; simpl; try reflexivity.
   destruct (n0 =? k); reflexivity.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
@@ -521,106 +443,118 @@ Next Obligation. rewrite <- var_open_size. omega. Defined.
 *)
 
 Program Fixpoint ext_valuation_aux {signature : Signature} {m : @Model signature}
-        (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-        (names : list name) (p : @Pattern signature) {measure (size p)} :=
+        (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+        (evar_names : list evar_name) (svar_names : list svar_name)
+        (p : @Pattern signature) {measure (size p)} :=
 match p with
-| patt_freevar x => match (fst x) with
-                    | evar_c => Singleton _ (evar_val x)
-                    | svar_c => svar_val x
-                    end
+| patt_free_evar x => Singleton _ (evar_val x)
+| patt_free_svar X => svar_val X
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
 | patt_sym s pf => (sym_interp m) s pf
-| patt_app ls rs => pointwise_ext (ext_valuation_aux evar_val svar_val names ls)
-                                  (ext_valuation_aux evar_val svar_val names rs)
+| patt_app ls rs => pointwise_ext (ext_valuation_aux evar_val svar_val evar_names svar_names ls)
+                                  (ext_valuation_aux evar_val svar_val evar_names svar_names rs)
 | patt_bott => Empty_set _
-| patt_imp ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
-                          (ext_valuation_aux evar_val svar_val names rs)
+| patt_imp ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val
+                                                             evar_names svar_names ls))
+                          (ext_valuation_aux evar_val svar_val evar_names svar_names rs)
 | patt_exists p' =>
-  let fname := find_fresh_name (@evar_c "efresh") names in
+  let fname := find_fresh_evar_name (@evar_c "efresh") evar_names in
   FA_Union
-    (fun e => ext_valuation_aux (update_valuation name_eqb fname e evar_val) svar_val names
-                                (var_open 0 fname p'))
+    (fun e => ext_valuation_aux (update_valuation evar_name_eqb fname e evar_val) svar_val
+                                evar_names svar_names
+                                (evar_open 0 fname p'))
 | patt_mu p' =>
-  let fname := find_fresh_name (@svar_c "sfresh") names in
+  let fname := find_fresh_svar_name (@svar_c "sfresh") svar_names in
   Ensembles_Ext.mu
-    (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
-                                (var_open 0 fname p'))
+    (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fname S svar_val)
+                                evar_names svar_names
+                                (svar_open 0 fname p'))
 end.
 Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; omega. Defined.
-Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
-Next Obligation. simpl; rewrite <- var_open_size; omega. Defined.
+Next Obligation. simpl; rewrite <- evar_open_size; omega. Defined.
+Next Obligation. simpl; rewrite <- svar_open_size; omega. Defined.
 
 Definition ext_valuation {signature : Signature} {m : @Model signature}
-           (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
+           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
            (p : @Pattern signature) : Power (Domain m) :=
-  ext_valuation_aux evar_val svar_val (free_vars p) p.
+  ext_valuation_aux evar_val svar_val (free_evars p) (free_svars p) p.
 
-Lemma ext_valuation_aux_freevar_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (x : name) :
-  ext_valuation_aux evar_val svar_val names (patt_freevar x) =
-  match (fst x) with
-  | evar_c => Singleton _ (evar_val x)
-  | svar_c => svar_val x
-  end.
+Lemma ext_valuation_aux_free_evar_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name) (x : evar_name) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_evar x) =
+  Singleton _ (evar_val x).
+Admitted.
+
+Lemma ext_valuation_aux_free_svar_simpl {signature : Signature} {m : @Model signature}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name) (X : svar_name) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_svar X) =
+  svar_val X.
 Admitted.
 
 Lemma ext_valuation_aux_bound_evar_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (x : db_index) :
-  ext_valuation_aux evar_val svar_val names (patt_bound_evar x) = Empty_set _ .
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name) (x : db_index) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_evar x) = Empty_set _ .
 Admitted.
 
 Lemma ext_valuation_aux_bound_svar_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (X : db_index) :
-  ext_valuation_aux evar_val svar_val names (patt_bound_svar X) = Empty_set _ .
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name) (X : db_index) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_svar X) = Empty_set _ .
 Admitted.
 
 Lemma ext_valuation_aux_app_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (ls rs : @Pattern signature) :
-  ext_valuation_aux evar_val svar_val names (patt_app ls rs) =
-  pointwise_ext (ext_valuation_aux evar_val svar_val names ls)
-                (ext_valuation_aux evar_val svar_val names rs).
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name)
+      (ls rs : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_app ls rs) =
+  pointwise_ext (ext_valuation_aux evar_val svar_val evar_names svar_names ls)
+                (ext_valuation_aux evar_val svar_val evar_names svar_names rs).
 Admitted.
 
 Lemma ext_valuation_aux_bott_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) :
-  ext_valuation_aux evar_val svar_val names patt_bott = Empty_set _ .
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names patt_bott = Empty_set _ .
 Admitted.
 
 Lemma ext_valuation_aux_imp_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (ls rs : @Pattern signature) :
-  ext_valuation_aux evar_val svar_val names (patt_imp ls rs) =
-  Union _ (Complement _ (ext_valuation_aux evar_val svar_val names ls))
-        (ext_valuation_aux evar_val svar_val names rs).
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name)
+      (ls rs : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_imp ls rs) =
+  Union _ (Complement _ (ext_valuation_aux evar_val svar_val evar_names svar_names ls))
+        (ext_valuation_aux evar_val svar_val evar_names svar_names rs).
 Admitted.
 
 Lemma ext_valuation_aux_exists_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (p : @Pattern signature) :
-  ext_valuation_aux evar_val svar_val names (patt_exists p) =
-  let fname := find_fresh_name (@evar_c "efresh") names in
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name)
+      (p : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_exists p) =
+  let fname := find_fresh_evar_name (@evar_c "efresh") evar_names in
   FA_Union
-    (fun e => ext_valuation_aux (update_valuation name_eqb fname e evar_val) svar_val names
-                                (var_open 0 fname p)).
+    (fun e => ext_valuation_aux (update_valuation evar_name_eqb fname e evar_val) svar_val
+                                evar_names svar_names
+                                (evar_open 0 fname p)).
 Admitted.
 
 Lemma ext_valuation_aux_mu_simpl {signature : Signature} {m : @Model signature}
-      (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m))
-      (names : list name) (p : @Pattern signature) :
-  ext_valuation_aux evar_val svar_val names (patt_mu p) =
-  let fname := find_fresh_name (@svar_c "sfresh") names in
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_names : list evar_name) (svar_names : list svar_name)
+      (p : @Pattern signature) :
+  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_mu p) =
+  let fname := find_fresh_svar_name (@svar_c "sfresh") svar_names in
   Ensembles_Ext.mu
-    (fun S => ext_valuation_aux evar_val (update_valuation name_eqb fname S svar_val) names
-                                (var_open 0 fname p)).
+    (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fname S svar_val)
+                                evar_names svar_names
+                                (svar_open 0 fname p)).
 Admitted.
 
 (*
@@ -678,7 +612,7 @@ Record Theory {signature : Signature} := {
 
 Definition satisfies_model {signature : Signature}
            (m : Model) (phi : @Pattern signature) : Prop :=
-forall (evar_val : name -> Domain m) (svar_val : name -> Power (Domain m)),
+forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
   Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
@@ -710,36 +644,15 @@ match C with
 | ctx_app_r p' C' => patt_app p' (subst_ctx C' p)
 end.
 
-Fixpoint free_vars_ctx {signature : Signature} (C : @Application_context signature)
-  : (ListSet.set name) :=
+Fixpoint free_evars_ctx {signature : Signature} (C : @Application_context signature)
+  : (ListSet.set evar_name) :=
 match C with
 | box => List.nil
-| ctx_app_l cc p => set_union eq_name (free_vars_ctx cc) (free_bound_evars p)
-| ctx_app_r p cc => set_union eq_name (free_bound_evars p) (free_vars_ctx cc)
+| ctx_app_l cc p => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
+| ctx_app_r p cc => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
 end.
 
 (* Proof system for AML ref. snapshot: Section 3 *)
-
-(* Auxiliary axiom schemes for proving propositional tautology *)
-
-(* TODO: move tautology proof rules to main ML_proof_system def *)
-
-(* Reserved Notation "pattern 'tautology'" (at level 2).
-Inductive Tautology_proof_rules {signature : Signature} : @Pattern signature -> Prop :=
-| P1 (phi psi : Pattern) :
-    (phi --> (psi --> phi)) tautology
-
-| P2 (phi psi xi : Pattern) :
-    ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi))) tautology
-
-| P3 (phi : Pattern) :
-    (((phi --> Bot) --> Bot) --> phi) tautology
-
-where "pattern 'tautology'" := (Tautology_proof_rules pattern). *)
-
-(* TODO: proof system should take theory and pattern *)
-(* axiom proof rule will be added *)
-(* add |- notation for provability *)
 
 (* Reserved Notation "pattern 'proved'" (at level 2). *)
 Reserved Notation "theory |- pattern" (at level 1).
@@ -798,7 +711,7 @@ Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
   (* Set Variable Substitution *)
   (* TODO: psi was SVar? string input? *)
   | Svar_subst (phi psi : Pattern) (X : string) :
-      theory |- phi -> theory |- (fvar_subst phi psi (find_fresh_name (@svar_c X) nil))
+      theory |- phi -> theory |- (free_svar_subst phi psi (find_fresh_svar_name (@svar_c X) nil))
 
   (* Pre-Fixpoint *)
   (* TODO: is this correct? *)
