@@ -756,9 +756,9 @@ Inductive ML_proof_system {signature : Signature} (theory : @Theory signature) :
   | Existence : theory |- (ex , patt_bound_evar 0)
 
   (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) :
-      theory |- (¬ ((subst_ctx C1 (patt_bound_evar 0 and phi)) and
-                    (subst_ctx C2 (patt_bound_evar 0 and (¬ phi)))))
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar_name) : 
+      theory |- (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
+                    (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory |- pattern" := (ML_proof_system theory pattern).
 
@@ -772,4 +772,15 @@ Proof.
   induction H.
   * apply H0. assumption.
   * unfold ext_valuation.
+    repeat rewrite ext_valuation_aux_imp_simpl.
+    remember ((ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
+                                 (free_svars (phi --> psi --> phi)) phi)) as Xphi.
+    remember ((ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
+                                 (free_svars (phi --> psi --> phi)) psi)) as Xpsi.
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = (Full_set (Domain m))).
+    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; intros; apply Union_is_or.
+    inversion H. left. assumption. right. apply Union_intror. assumption.
+  * 
 Admitted.
