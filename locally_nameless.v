@@ -771,16 +771,22 @@ Proof.
   intros.
   induction H.
   * apply H0. assumption.
-  * unfold ext_valuation.
-    repeat rewrite ext_valuation_aux_imp_simpl.
-    remember ((ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
-                                 (free_svars (phi --> psi --> phi)) phi)) as Xphi.
-    remember ((ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
-                                 (free_svars (phi --> psi --> phi)) psi)) as Xpsi.
+  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
+    remember (ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
+                                (free_svars (phi --> psi --> phi)) phi) as Xphi.
+    remember (ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
+                                 (free_svars (phi --> psi --> phi)) psi) as Xpsi.
     constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = (Full_set (Domain m))).
+    assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
     apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
     unfold Included; intros; apply Union_is_or.
     inversion H. left. assumption. right. apply Union_intror. assumption.
-  * 
+  * admit.
+  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
+    rewrite ext_valuation_aux_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    apply Union_Compl_Fullset.
+  *
 Admitted.
