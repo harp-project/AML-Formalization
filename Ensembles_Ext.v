@@ -185,6 +185,22 @@ unfold Same_set. unfold Included. intros. apply conj;intros.
 * unfold In in *. eapply Union_introl. exact H.
 Qed.
 
+Lemma Intersection_Full_r {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T (Full_set T) A) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H1. 
+* unfold In in *. constructor. constructor. exact H.
+Qed.
+
+Lemma Intersection_Full_l {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T A (Full_set T)) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H0.
+* unfold In in *. constructor. exact H. constructor.
+Qed.
+
 Lemma Compl_Compl_Ensembles : forall T :Type, forall A :Ensemble T,
   Same_set T (Complement T (Complement T A)) A.
 Proof.
@@ -335,6 +351,25 @@ Proof.
     + unfold Complement in H2. unfold In in *. contradiction.
     + unfold Complement in H2. unfold In in *. contradiction.
   - rewrite (Same_set_to_eq (Compl_Union_Compl_Intes_Ensembles_alt T L R)) in H. assumption.
+Qed.
+
+(* (L inter R) U ~L = R U ~L *)
+Lemma Intes_Union_Compl_Ensembles:
+  forall (T : Type) (L R : Ensemble T),
+  Same_set T (Union T (Intersection T L R) (Complement T L)) (Union T R (Complement T L)).
+Proof.
+  intros. constructor.
+  * unfold Included. intros. inversion H; subst. apply Intersection_is_and in H0.
+    apply Union_introl; apply H0.
+    apply Union_intror; apply H0.
+  * unfold Included. intros. inversion H; subst.
+    assert (Union T (Complement T L) L = Full_set T).
+    apply Same_set_to_eq; apply Union_Compl_Fullset.
+    assert (In T (Full_set T) x) by constructor. rewrite <- H1 in H2.
+    inversion H2; subst.
+    apply Union_intror. exact H3.
+    apply Union_introl. constructor; assumption.
+    apply Union_intror. exact H0.
 Qed.
 
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
@@ -499,4 +534,3 @@ Proof.
   inversion H1.
   pose (H2 x H0). inversion e.
 Qed.
-
