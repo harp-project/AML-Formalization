@@ -768,7 +768,9 @@ Proof.
   intros. unfold "|=". unfold "|=T", "|=M".
   intros.
   induction H.
+
   * apply H0. assumption.
+
   * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
     remember (ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
                                 (free_svars (phi --> psi --> phi)) phi) as Xphi.
@@ -779,12 +781,60 @@ Proof.
     apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
     unfold Included; intros; apply Union_is_or.
     inversion H. left. assumption. right. apply Union_intror. assumption.
-  * admit.
+
+  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
+    remember (free_evars ((phi --> psi --> xi) --> (phi --> psi) --> phi --> xi)) as FEVs.
+    remember (free_svars ((phi --> psi --> xi) --> (phi --> psi) --> phi --> xi)) as FSVs.
+    remember (ext_valuation_aux evar_val svar_val FEVs FSVs phi) as Xphi.
+    remember (ext_valuation_aux evar_val svar_val FEVs FSVs psi) as Xpsi.
+    remember (ext_valuation_aux evar_val svar_val FEVs FSVs xi) as Xxi.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Transitive (Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
+          (Complement (Domain m) Xphi) Xxi.
+    apply Same_set_to_eq in H; rewrite <- H; clear H.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi).
+    apply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; rewrite <- H; clear H.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; rewrite <- H; clear H.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite H; clear H.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite H; clear H.
+    pose proof Union_Symmetric (Complement (Domain m) Xpsi) Xxi.
+    apply Same_set_to_eq in H; erewrite H; clear H.
+    pose proof Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi).
+    apply Same_set_to_eq in H; rewrite <- H; clear H.
+    pose proof Union_Symmetric (Complement (Domain m) Xphi) Xxi.
+    apply Same_set_to_eq in H; erewrite H; clear H.
+    pose proof Compl_Compl_Ensembles (Domain m) Xxi.
+    apply Same_set_to_eq in H; rewrite <- H at 2; clear H.
+    pose proof Intersection_Symmetric Xpsi (Complement (Domain m) Xxi).
+    apply Same_set_to_eq in H; erewrite H; clear H.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite <- H; clear H.    
+    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite <- H; clear H.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
+    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; intros; unfold In. inversion H.
+    apply Union_intror; assumption.
+    apply Union_introl; apply Union_introl; apply Union_introl; assumption.
+
   * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
     rewrite ext_valuation_aux_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
     apply Union_Compl_Fullset.
-  * 
+
+  * (* prove lemma: if ext_valuation (phi1 --> phi2) = Full_set 
+                    then ext_valuation phi1 subset ext_valuation phi2 
+    *)
 Admitted.
