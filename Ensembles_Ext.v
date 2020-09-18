@@ -150,6 +150,34 @@ Proof.
   * contradiction.
 Qed.
 
+Lemma Union_Symmetric {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Union T S1 S2) (Union T S2 S1).
+Proof.
+  intros.
+  constructor; unfold Included; unfold In; intros; inversion H;
+    try (apply Union_intror; assumption); try (apply Union_introl; assumption).
+Qed.
+
+Lemma Intersection_Symmetric {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Intersection T S1 S2) (Intersection T S2 S1).
+Proof.
+  intros; constructor; constructor; inversion H; assumption.
+Qed.
+
+Lemma Union_Transitive {T : Type} : forall S1 S2 S3 : Ensemble T,
+  Same_set T (Union T (Union T S1 S2) S3) (Union T S1 (Union T S2 S3)).
+Proof.
+  intros. constructor; unfold Included; unfold In; intros; inversion H.
+  inversion H0.
+  apply Union_introl. exact H2.
+  apply Union_intror. apply Union_introl. exact H2.
+  apply Union_intror. apply Union_intror. exact H0.
+  apply Union_introl. apply Union_introl. exact H0.
+  inversion H0.
+  apply Union_introl. apply Union_intror. exact H2.
+  apply Union_intror. exact H2.
+Qed.
+
 Lemma Union_Compl_Fullset {T : Type} : forall S : Ensemble T,
   Same_set T (Union T (Complement T S) S) (Full_set T).
 Proof.
