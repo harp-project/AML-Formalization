@@ -467,9 +467,11 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. app
 Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
 *)
 
-Program Fixpoint ext_valuation_aux {m : Model}
+Parameter fresh_evar_name : evar_name.
+Parameter fresh_svar_name : svar_name.
+
+Program Fixpoint ext_valuation {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-        (evar_names : list evar_name) (svar_names : list svar_name)
         (p : Pattern) {measure (size p)} :=
 match p with
 | patt_free_evar x => Singleton _ (evar_val x)
@@ -477,24 +479,21 @@ match p with
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
 | patt_sym s pf => (sym_interp m) s pf
-| patt_app ls rs => pointwise_ext (ext_valuation_aux evar_val svar_val evar_names svar_names ls)
-                                  (ext_valuation_aux evar_val svar_val evar_names svar_names rs)
+| patt_app ls rs => pointwise_ext (ext_valuation evar_val svar_val ls)
+                                  (ext_valuation evar_val svar_val rs)
 | patt_bott => Empty_set _
-| patt_imp ls rs => Union _ (Complement _ (ext_valuation_aux evar_val svar_val
-                                                             evar_names svar_names ls))
-                          (ext_valuation_aux evar_val svar_val evar_names svar_names rs)
+| patt_imp ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val ls))
+                            (ext_valuation evar_val svar_val rs)
 | patt_exists p' =>
-  let fname := find_fresh_evar_name (@evar_c "efresh") evar_names in
   FA_Union
-    (fun e => ext_valuation_aux (update_valuation evar_name_eqb fname e evar_val) svar_val
-                                evar_names svar_names
-                                (evar_open 0 fname p'))
+    (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
+                            svar_val
+                            (evar_open 0 fresh_evar_name p'))
 | patt_mu p' =>
-  let fname := find_fresh_svar_name (@svar_c "sfresh") svar_names in
   Ensembles_Ext.mu
-    (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fname S svar_val)
-                                evar_names svar_names
-                                (svar_open 0 fname p'))
+    (fun S => ext_valuation evar_val
+                            (update_valuation svar_name_eqb fresh_svar_name S svar_val)
+                            (svar_open 0 fresh_svar_name p'))
 end.
 Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; omega. Defined.
@@ -503,83 +502,69 @@ Next Obligation. simpl; omega. Defined.
 Next Obligation. simpl; rewrite <- evar_open_size. omega. apply signature. Defined.
 Next Obligation. simpl; rewrite <- svar_open_size. omega. apply signature. Defined.
 
-Definition ext_valuation {m : Model}
-           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-           (p : Pattern) : Power (Domain m) :=
-  ext_valuation_aux evar_val svar_val (free_evars p) (free_svars p) p.
-
-Lemma ext_valuation_aux_free_evar_simpl {m : Model}
+Lemma ext_valuation_free_evar_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name) (x : evar_name) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_evar x) =
-  Singleton _ (evar_val x).
+      (x : evar_name) :
+  ext_valuation evar_val svar_val (patt_free_evar x) = Singleton _ (evar_val x).
 Admitted.
 
-Lemma ext_valuation_aux_free_svar_simpl {m : Model}
+Lemma ext_valuation_free_svar_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name) (X : svar_name) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_svar X) =
-  svar_val X.
+      (X : svar_name) :
+  ext_valuation evar_val svar_val (patt_free_svar X) = svar_val X.
 Admitted.
 
-Lemma ext_valuation_aux_bound_evar_simpl {m : Model}
+Lemma ext_valuation_bound_evar_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name) (x : db_index) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_evar x) = Empty_set _ .
+      (x : db_index) :
+  ext_valuation evar_val svar_val (patt_bound_evar x) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_aux_bound_svar_simpl {m : Model}
+Lemma ext_valuation_bound_svar_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name) (X : db_index) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_svar X) = Empty_set _ .
+      (X : db_index) :
+  ext_valuation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_aux_app_simpl {m : Model}
+Lemma ext_valuation_app_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name)
       (ls rs : Pattern) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_app ls rs) =
-  pointwise_ext (ext_valuation_aux evar_val svar_val evar_names svar_names ls)
-                (ext_valuation_aux evar_val svar_val evar_names svar_names rs).
+  ext_valuation evar_val svar_val (patt_app ls rs) =
+  pointwise_ext (ext_valuation evar_val svar_val ls)
+                (ext_valuation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_aux_bott_simpl {m : Model}
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names patt_bott = Empty_set _ .
+Lemma ext_valuation_bott_simpl {m : Model}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)) :
+  ext_valuation evar_val svar_val patt_bott = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_aux_imp_simpl {m : Model}
+Lemma ext_valuation_imp_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name)
       (ls rs : Pattern) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_imp ls rs) =
-  Union _ (Complement _ (ext_valuation_aux evar_val svar_val evar_names svar_names ls))
-        (ext_valuation_aux evar_val svar_val evar_names svar_names rs).
+  ext_valuation evar_val svar_val (patt_imp ls rs) =
+  Union _ (Complement _ (ext_valuation evar_val svar_val ls))
+          (ext_valuation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_aux_exists_simpl {m : Model}
+Lemma ext_valuation_exists_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name)
       (p : Pattern) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_exists p) =
-  let fname := find_fresh_evar_name (@evar_c "efresh") evar_names in
+  ext_valuation evar_val svar_val (patt_exists p) =
   FA_Union
-    (fun e => ext_valuation_aux (update_valuation evar_name_eqb fname e evar_val) svar_val
-                                evar_names svar_names
-                                (evar_open 0 fname p)).
+    (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
+                            svar_val
+                            (evar_open 0 fresh_evar_name p)).
 Admitted.
 
-Lemma ext_valuation_aux_mu_simpl {m : Model}
+Lemma ext_valuation_mu_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (evar_names : list evar_name) (svar_names : list svar_name)
       (p : Pattern) :
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_mu p) =
-  let fname := find_fresh_svar_name (@svar_c "sfresh") svar_names in
+  ext_valuation evar_val svar_val (patt_mu p) =
   Ensembles_Ext.mu
-    (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fname S svar_val)
-                                evar_names svar_names
-                                (svar_open 0 fname p)).
+    (fun S => ext_valuation evar_val
+                            (update_valuation svar_name_eqb fresh_svar_name S svar_val)
+                            (svar_open 0 fresh_svar_name p)).
 Admitted.
 
 (*
@@ -760,6 +745,25 @@ Inductive ML_proof_system (theory : Theory) :
 
 where "theory |- pattern" := (ML_proof_system theory pattern).
 
+(* if ext_valuation (phi1 --> phi2) = Full_set 
+   then ext_valuation phi1 subset ext_valuation phi2
+*)
+Theorem ext_valuation_implies_subset {m : Model}
+        (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+        (phi1 : Pattern) (phi2 : Pattern) :
+  Same_set (Domain m) (ext_valuation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) ->
+  Included (Domain m) (ext_valuation evar_val svar_val phi1)
+           (ext_valuation evar_val svar_val phi2).
+Proof.
+  intros; unfold Included; intros.
+  rewrite ext_valuation_imp_simpl in H.
+  remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+  remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+  assert (In (Domain m) (Union (Domain m) (Complement (Domain m) Xphi1) Xphi2) x).
+  apply Same_set_to_eq in H. rewrite H. constructor.
+  inversion H1. contradiction. assumption.
+Qed.
+
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
@@ -771,23 +775,19 @@ Proof.
 
   * apply H0. assumption.
 
-  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
-    remember (ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
-                                (free_svars (phi --> psi --> phi)) phi) as Xphi.
-    remember (ext_valuation_aux evar_val svar_val (free_evars (phi --> psi --> phi))
-                                 (free_svars (phi --> psi --> phi)) psi) as Xpsi.
+  * repeat rewrite ext_valuation_imp_simpl.
+    remember (ext_valuation evar_val svar_val phi) as Xphi.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
     apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
     unfold Included; intros; apply Union_is_or.
     inversion H. left. assumption. right. apply Union_intror. assumption.
 
-  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
-    remember (free_evars ((phi --> psi --> xi) --> (phi --> psi) --> phi --> xi)) as FEVs.
-    remember (free_svars ((phi --> psi --> xi) --> (phi --> psi) --> phi --> xi)) as FSVs.
-    remember (ext_valuation_aux evar_val svar_val FEVs FSVs phi) as Xphi.
-    remember (ext_valuation_aux evar_val svar_val FEVs FSVs psi) as Xpsi.
-    remember (ext_valuation_aux evar_val svar_val FEVs FSVs xi) as Xxi.
+  * repeat rewrite ext_valuation_imp_simpl.
+    remember (ext_valuation evar_val svar_val phi) as Xphi.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
+    remember (ext_valuation evar_val svar_val xi) as Xxi.
     pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
     pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
@@ -827,14 +827,20 @@ Proof.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
-  * unfold ext_valuation. repeat rewrite ext_valuation_aux_imp_simpl.
-    rewrite ext_valuation_aux_bott_simpl.
+  * repeat rewrite ext_valuation_imp_simpl.
+    rewrite ext_valuation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
     apply Union_Compl_Fullset.
 
-  * (* prove lemma: if ext_valuation (phi1 --> phi2) = Full_set 
-                    then ext_valuation phi1 subset ext_valuation phi2 
-    *)
+  * apply ext_valuation_implies_subset in IHML_proof_system2.
+    apply Same_set_to_eq in IHML_proof_system1; subst.
+    constructor. constructor. rewrite <- IHML_proof_system1. assumption.
+
+  * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_exists_simpl.
+    unfold instantiate.
+    constructor. constructor.
+    unfold Included; intros. admit.
+
 Admitted.
