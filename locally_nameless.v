@@ -321,12 +321,21 @@ Compute @pointwise_ext {| Domain := Pattern |}
         (Singleton _ (evar "a")) (Singleton _ (evar "b")).
 
 (* S . empty = empty *)
-Lemma pointwise_app_bot : forall (m : Model),
+Lemma pointwise_ext_bot_r : forall (m : Model),
     forall S : Power (Domain m),
   Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
 Proof.
   intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
+  * contradiction.
+Qed.
+
+Lemma pointwise_ext_bot_l : forall (m : Model),
+    forall S : Power (Domain m),
+  Same_set (Domain m) (pointwise_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
+Proof.
+  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. contradiction.
   * contradiction.
 Qed.
 
@@ -416,6 +425,9 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
+Parameter fresh_evar_name : evar_name.
+Parameter fresh_svar_name : svar_name.
+
 (*
 Definition pattern_lt (p1 p2 : Pattern) :=
   size p1 < size p2.
@@ -432,33 +444,28 @@ Check sym_interp.
 
 Equations ext_valuation_aux {m : Model}
           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-          (evar_names : list evar_name) (svar_names : list svar_name)
           (p : Pattern) : Power (Domain m)
-  by wf p pattern_lt :=
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_evar x) := Singleton _ (evar_val x);
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_free_svar X) := svar_val X;
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_evar x) := Empty_set _;
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_bound_svar x) := Empty_set _;
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_sym s pf) := (sym_interp m) s pf;
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_app ls rs) :=
-    pointwise_ext (ext_valuation_aux evar_val svar_val evar_names svar_names ls)
-                  (ext_valuation_aux evar_val svar_val evar_names svar_names rs);
-  ext_valuation_aux evar_val svar_val evar_names svar_names patt_bott := Empty_set _;
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_imp ls rs) :=
-    Union _ (Complement _ (ext_valuation_aux evar_val svar_val evar_names svar_names ls))
-            (ext_valuation_aux evar_val svar_val evar_names svar_names rs);
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_exists p') :=
-    let fname := find_fresh_evar_name (@evar_c "efresh") evar_names in
+  by wf (size p) :=
+  ext_valuation_aux evar_val svar_val (patt_free_evar x) := Singleton _ (evar_val x);
+  ext_valuation_aux evar_val svar_val (patt_free_svar X) := svar_val X;
+  ext_valuation_aux evar_val svar_val (patt_bound_evar x) := Empty_set _;
+  ext_valuation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
+  ext_valuation_aux evar_val svar_val (patt_sym s pf) := (sym_interp m) s pf;
+  ext_valuation_aux evar_val svar_val (patt_app ls rs) :=
+    pointwise_ext (ext_valuation_aux evar_val svar_val ls)
+                  (ext_valuation_aux evar_val svar_val rs);
+  ext_valuation_aux evar_val svar_val patt_bott := Empty_set _;
+  ext_valuation_aux evar_val svar_val (patt_imp ls rs) :=
+    Union _ (Complement _ (ext_valuation_aux evar_val svar_val ls))
+            (ext_valuation_aux evar_val svar_val rs);
+  ext_valuation_aux evar_val svar_val (patt_exists p') :=
     FA_Union
-      (fun e => ext_valuation_aux (update_valuation evar_name_eqb fname e evar_val) svar_val
-                                  evar_names svar_names
-                                  (evar_open 0 fname p'));
-  ext_valuation_aux evar_val svar_val evar_names svar_names (patt_mu p') :=
-    let fname := find_fresh_svar_name (@svar_c "sfresh") svar_names in
+      (fun e => ext_valuation_aux (update_valuation evar_name_eqb fresh_evar_name e evar_val) svar_val
+                                  (evar_open 0 fresh_evar_name p'));
+  ext_valuation_aux evar_val svar_val (patt_mu p') :=
     Ensembles_Ext.mu
-      (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fname S svar_val)
-                                  evar_names svar_names
-                                  (svar_open 0 fname p')).
+      (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fresh_svar_name S svar_val)
+                                  (svar_open 0 fresh_svar_name p')).
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
@@ -466,9 +473,6 @@ Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. apply signature. Defined.
 Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
 *)
-
-Parameter fresh_evar_name : evar_name.
-Parameter fresh_svar_name : svar_name.
 
 Program Fixpoint ext_valuation {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
@@ -706,13 +710,18 @@ Inductive ML_proof_system (theory : Theory) :
       theory |- (phi $ patt_bott --> patt_bott)
 
   (* Propagation disjunction *)
-  | Prop_disj (C : Application_context) (phi1 phi2 : Pattern) :
-      theory |- ((subst_ctx C (phi1 or phi2)) -->
-                ((subst_ctx C phi1) or (subst_ctx C phi2)))
+  | Prop_disj_left (phi1 phi2 psi : Pattern) :
+      theory |- ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
+
+  | Prop_disj_right (phi1 phi2 psi : Pattern) :
+      theory |- (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
 
   (* Propagation exist *)
-  | Prop_ex (C : Application_context) (phi : Pattern) :
-      theory |- ((subst_ctx C (patt_exists phi)) --> (patt_exists (subst_ctx C phi)))
+  | Prop_ex_left (phi psi : Pattern) :
+      theory |- ((psi $ (ex , phi)) --> (ex , psi $ phi))
+
+  | Prop_ex_right (phi psi : Pattern) :
+      theory |- (((ex , phi) $ psi) --> (ex , phi $ psi))
 
   (* Framing *)
   | Framing (C : Application_context) (phi1 phi2 : Pattern) :
@@ -765,6 +774,7 @@ Proof.
 Qed.
 
 (* Soundness theorem *)
+(* TODO: add well-formedness *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
   (theory |- phi) -> (theory |= phi).
@@ -842,5 +852,73 @@ Proof.
     unfold instantiate.
     constructor. constructor.
     unfold Included; intros. admit.
+
+  * admit.
+
+  * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
+    SearchAbout Union Empty_set.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    constructor. constructor.
+    unfold Included; intros.
+    pose proof pointwise_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    unfold In; unfold Complement; unfold not; contradiction.
+
+  * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
+    SearchAbout Union Empty_set.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    constructor. constructor.
+    unfold Included; intros.
+    pose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    unfold In; unfold Complement; unfold not; contradiction.
+
+  * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
+    repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
+    rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
+    simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
+    remember (pointwise_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+            Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; unfold In; intros. inversion H.
+    - left; assumption.
+    - right; subst Xext_union; unfold In; unfold pointwise_ext.
+      destruct H1 as [le [re [Hle [Hunion Happ]]]].
+      inversion Hunion.
+      left. unfold In; exists le; exists re; repeat split; assumption.
+      right. unfold In; exists le; exists re; repeat split; assumption.
+
+  * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
+    repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
+    rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
+    simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
+    remember (pointwise_ext (Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+            Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; unfold In; intros. inversion H.
+    - left; assumption.
+    - right; subst Xext_union; unfold In; unfold pointwise_ext.
+      destruct H1 as [le [re [Hunion [Hre Happ]]]].
+      inversion Hunion.
+      left. unfold In; exists le; exists re; repeat split; assumption.
+      right. unfold In; exists le; exists re; repeat split; assumption.
+
+   * admit.
 
 Admitted.
