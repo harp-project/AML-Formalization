@@ -551,7 +551,7 @@ Lemma ext_valuation_imp_simpl {m : Model}
           (ext_valuation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_exists_simpl {m : Model}
+Lemma ext_valuation_ex_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_exists p) =
@@ -666,7 +666,8 @@ match C with
 end.
 
 (* Proof system for AML ref. snapshot: Section 3 *)
-(* TODO: all propogation rules, framing, use left and right rules (no contexts) like in bott *)
+(* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
+(* TODO: add well-formedness *)
 (* Reserved Notation "pattern 'proved'" (at level 2). *)
 Reserved Notation "theory |- pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
@@ -674,29 +675,36 @@ Inductive ML_proof_system (theory : Theory) :
 
 (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
-    (In _ (patterns theory) axiom) -> theory |- axiom
+      well_formed axiom ->
+      (In _ (patterns theory) axiom) -> theory |- axiom
   
 (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
+      well_formed phi -> well_formed psi ->
       theory |- (phi --> (psi --> phi))
   | P2 (phi psi xi : Pattern) :
+      well_formed phi -> well_formed psi -> well_formed xi ->
       theory |- ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
   | P3 (phi : Pattern) :
+      well_formed phi ->
       theory |- (((phi --> Bot) --> Bot) --> phi)
 
   (* Modus ponens *)
-  | Modus_ponens {phi1 phi2 : Pattern} :
+  | Modus_ponens (phi1 phi2 : Pattern) :
+      well_formed phi1 -> well_formed (phi1 --> phi2) ->
       theory |- phi1 ->
       theory |- (phi1 --> phi2) ->
       theory |- phi2
 
   (* Existential quantifier *)
-  | Ex_quan {phi : Pattern} (y : evar_name) :
+  | Ex_quan (phi : Pattern) (y : evar_name) :
+      well_formed phi ->
       theory |- (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
+      well_formed phi1 -> well_formed phi2 ->
       theory |- (phi1 --> phi2) ->
       set_mem eq_evar_name x (free_evars phi2) = false ->
       theory |- (exists_quantify x phi1 --> phi2)
@@ -704,24 +712,30 @@ Inductive ML_proof_system (theory : Theory) :
 (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
+      well_formed phi ->
       theory |- (patt_bott $ phi --> patt_bott)
 
   | Prop_bott_right (phi : Pattern) :
+      well_formed phi ->
       theory |- (phi $ patt_bott --> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
-      theory |- ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+      theory |- (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
-      theory |- (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+      theory |- ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
-      theory |- ((psi $ (ex , phi)) --> (ex , psi $ phi))
+      well_formed phi -> well_formed psi ->
+      theory |- (((ex , phi) $ psi) --> (ex , phi $ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
-      theory |- (((ex , phi) $ psi) --> (ex , phi $ psi))
+      well_formed phi -> well_formed psi ->
+      theory |- ((psi $ (ex , phi)) --> (ex , psi $ phi))
 
   (* Framing *)
   | Framing (C : Application_context) (phi1 phi2 : Pattern) :
@@ -777,78 +791,79 @@ Qed.
 (* TODO: add well-formedness *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
-  (theory |- phi) -> (theory |= phi).
+  well_formed phi -> (theory |- phi) -> (theory |= phi).
 Proof.
-  intros. unfold "|=". unfold "|=T", "|=M".
-  intros.
-  induction H.
+  intros phi theory Hwf Hp. unfold "|=". unfold "|=T", "|=M".
+  intros m Hv evar_val svar_val.
+  induction Hp.
 
-  * apply H0. assumption.
+  * apply Hv. assumption.
 
   * repeat rewrite ext_valuation_imp_simpl.
     remember (ext_valuation evar_val svar_val phi) as Xphi.
     remember (ext_valuation evar_val svar_val psi) as Xpsi.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
+    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros; apply Union_is_or.
-    inversion H. left. assumption. right. apply Union_intror. assumption.
+    inversion H1. left. assumption. right. apply Union_intror. assumption.
 
   * repeat rewrite ext_valuation_imp_simpl.
     remember (ext_valuation evar_val svar_val phi) as Xphi.
     remember (ext_valuation evar_val svar_val psi) as Xpsi.
     remember (ext_valuation evar_val svar_val xi) as Xxi.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     epose proof Union_Transitive (Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
           (Complement (Domain m) Xphi) Xxi.
-    apply Same_set_to_eq in H; rewrite <- H; clear H.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi).
-    apply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; rewrite <- H; clear H.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; rewrite <- H; clear H.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite H; clear H.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite H; clear H.
+    apply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xpsi) Xxi.
-    apply Same_set_to_eq in H; erewrite H; clear H.
+    apply Same_set_to_eq in H2; erewrite H2; clear H2.
     pose proof Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi).
-    apply Same_set_to_eq in H; rewrite <- H; clear H.
+    apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xphi) Xxi.
-    apply Same_set_to_eq in H; erewrite H; clear H.
+    apply Same_set_to_eq in H2; erewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles (Domain m) Xxi.
-    apply Same_set_to_eq in H; rewrite <- H at 2; clear H.
+    apply Same_set_to_eq in H2; rewrite <- H2 at 2; clear H2.
     pose proof Intersection_Symmetric Xpsi (Complement (Domain m) Xxi).
-    apply Same_set_to_eq in H; erewrite H; clear H.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite <- H; clear H.    
-    epose proof Union_Transitive; eapply Same_set_to_eq in H; erewrite <- H; clear H.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    apply Same_set_to_eq in H2; erewrite H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.    
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
 
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; intros; unfold In. inversion H.
+    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    unfold Included; intros; unfold In. inversion H2.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
-  * repeat rewrite ext_valuation_imp_simpl.
-    rewrite ext_valuation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+  * repeat rewrite ext_valuation_imp_simpl; rewrite ext_valuation_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     apply Union_Compl_Fullset.
 
-  * apply ext_valuation_implies_subset in IHML_proof_system2.
-    apply Same_set_to_eq in IHML_proof_system1; subst.
+  * apply ext_valuation_implies_subset in IHHp2.
+    constructor. constructor. unfold Included in IHHp2.
+    unfold Included. intros. apply IHHp2. assumption.
+    apply Same_set_to_eq in IHHp2; subst.
     constructor. constructor. rewrite <- IHML_proof_system1. assumption.
 
-  * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_exists_simpl.
+  * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_ex_simpl.
     unfold instantiate.
     constructor. constructor.
     unfold Included; intros. admit.
@@ -856,7 +871,6 @@ Proof.
   * admit.
 
   * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    SearchAbout Union Empty_set.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     constructor. constructor.
     unfold Included; intros.
@@ -864,36 +878,11 @@ Proof.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    SearchAbout Union Empty_set.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
     constructor. constructor.
     unfold Included; intros.
     pose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
-
-  * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
-    repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
-    rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
-    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
-    remember (ext_valuation evar_val svar_val psi) as Xpsi.
-    remember (pointwise_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
-    constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
-            Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; unfold In; intros. inversion H.
-    - left; assumption.
-    - right; subst Xext_union; unfold In; unfold pointwise_ext.
-      destruct H1 as [le [re [Hle [Hunion Happ]]]].
-      inversion Hunion.
-      left. unfold In; exists le; exists re; repeat split; assumption.
-      right. unfold In; exists le; exists re; repeat split; assumption.
 
   * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
     repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
@@ -919,6 +908,61 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-   * admit.
+  * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
+    repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
+    rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
+    simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
+    remember (pointwise_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+            Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; unfold In; intros. inversion H.
+    - left; assumption.
+    - right; subst Xext_union; unfold In; unfold pointwise_ext.
+      destruct H1 as [le [re [Hle [Hunion Happ]]]].
+      inversion Hunion.
+      left. unfold In; exists le; exists re; repeat split; assumption.
+      right. unfold In; exists le; exists re; repeat split; assumption.
+
+  * rewrite ext_valuation_imp_simpl.
+    constructor. constructor.
+    remember (ext_valuation evar_val svar_val ((ex , phi) $ psi)) as Xex.
+    assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; intros. inversion H; subst.
+    left. assumption.
+    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
+    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H1.
+    destruct H1 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
+    destruct H1 as [c Hext_re].
+    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
+    exists le, re.
+    admit.
+
+  * rewrite ext_valuation_imp_simpl.
+    constructor. constructor.
+    remember (ext_valuation evar_val svar_val (psi $ (ex , phi))) as Xex.
+    assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
+    unfold Included; intros. inversion H; subst.
+    left. assumption.
+    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
+    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H1.
+    destruct H1 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
+    destruct H1 as [c Hext_re].
+    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
+    exists le, re.
+    admit.
+
+  * admit.
+  * admit.
 
 Admitted.
