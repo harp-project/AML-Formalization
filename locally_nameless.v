@@ -4,6 +4,8 @@ Require Import List.
 Require Import extralibrary.
 Require Import names.
 
+Require Import Coq.micromega.Lia.
+
 Require Export String.
 Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
@@ -101,20 +103,49 @@ with negative_occurrence : db_index -> Pattern -> Prop :=
    negative_occurrence (n+1) (patt_mu phi)
 .
 
-Fixpoint well_formed (phi : Pattern) : Prop :=
+Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   match phi with
   | patt_free_evar _ => True
   | patt_free_svar _ => True
   | patt_bound_evar _ => True
   | patt_bound_svar _ => True
   | patt_sym _ _ => True
-  | patt_app psi1 psi2 => well_formed psi1 /\ well_formed psi2
+  | patt_app psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
   | patt_bott => True
-  | patt_imp psi1 psi2 => well_formed psi1 /\ well_formed psi2
-  | patt_exists psi => well_formed psi
-  | patt_mu psi => positive_occurrence 0 psi /\ well_formed psi
-  end
-.
+  | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
+  | patt_exists psi => well_formed_positive psi
+  | patt_mu psi => positive_occurrence 0 psi /\ well_formed_positive psi
+  end.
+
+Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
+  match phi with
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bound_evar n => n < max_ind
+  | patt_bound_svar n => n < max_ind
+  | patt_sym _ _ => True
+  | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
+                          well_formed_closed_aux psi2 max_ind
+  | patt_bott => True
+  | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
+                          well_formed_closed_aux psi2 max_ind
+  | patt_exists psi => well_formed_closed_aux psi (max_ind + 1)
+  | patt_mu psi => well_formed_closed_aux psi (max_ind + 1)
+  end.
+Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0.
+
+Lemma well_formed_closed_aux_ind (phi : Pattern) (ind1 ind2 : db_index) :
+  ind1 < ind2 -> well_formed_closed_aux phi ind1 -> well_formed_closed_aux phi ind2.
+Proof.
+  intros. generalize dependent ind1. generalize dependent ind2.
+  induction phi; intros; simpl in *; try lia.
+  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  apply IHphi with (ind1 + 1). lia. assumption.
+  apply IHphi with (ind1 + 1). lia. assumption.
+Qed.  
+
+Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
 
 (** There are two substitution operations over types, written
   [vsubst] and [psubst] in Pollack's talk.  
@@ -499,12 +530,12 @@ match p with
                             (update_valuation svar_name_eqb fresh_svar_name S svar_val)
                             (svar_open 0 fresh_svar_name p'))
 end.
-Next Obligation. simpl; omega. Defined.
-Next Obligation. simpl; omega. Defined.
-Next Obligation. simpl; omega. Defined.
-Next Obligation. simpl; omega. Defined.
-Next Obligation. simpl; rewrite <- evar_open_size. omega. apply signature. Defined.
-Next Obligation. simpl; rewrite <- svar_open_size. omega. apply signature. Defined.
+Next Obligation. simpl; lia. Defined.
+Next Obligation. simpl; lia. Defined.
+Next Obligation. simpl; lia. Defined.
+Next Obligation. simpl; lia. Defined.
+Next Obligation. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
+Next Obligation. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
 
 Lemma ext_valuation_free_evar_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
@@ -787,6 +818,23 @@ Proof.
   inversion H1. contradiction. assumption.
 Qed.
 
+Theorem evar_open_fresh (phi : Pattern) :
+  forall n, well_formed phi -> evar_open n fresh_evar_name phi = phi.
+Proof.
+  intros. generalize dependent n. induction phi; intros; simpl; try eauto.
+  * inversion H. inversion H1.
+  * rewrite IHphi1. rewrite IHphi2. reflexivity.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+  * rewrite IHphi1. rewrite IHphi2. reflexivity.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+  * rewrite IHphi. reflexivity.
+    split; inversion H. assumption.
+    unfold well_formed_closed in *. simpl in H1. admit.
+Admitted.
+  
+
 (* Soundness theorem *)
 (* TODO: add well-formedness *)
 Theorem Soundness :
@@ -857,11 +905,9 @@ Proof.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     apply Union_Compl_Fullset.
 
-  * apply ext_valuation_implies_subset in IHHp2.
-    constructor. constructor. unfold Included in IHHp2.
-    unfold Included. intros. apply IHHp2. assumption.
-    apply Same_set_to_eq in IHHp2; subst.
-    constructor. constructor. rewrite <- IHML_proof_system1. assumption.
+  * apply ext_valuation_implies_subset in IHHp2; try assumption.
+    apply Same_set_to_eq in IHHp1; try assumption.
+    constructor. constructor. rewrite <- IHHp1. assumption.
 
   * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_ex_simpl.
     unfold instantiate.
@@ -871,14 +917,14 @@ Proof.
   * admit.
 
   * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
     pose proof pointwise_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
     pose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
@@ -887,11 +933,10 @@ Proof.
   * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
     repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
     rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
-    simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     remember (ext_valuation evar_val svar_val phi1) as Xphi1.
     remember (ext_valuation evar_val svar_val phi2) as Xphi2.
     remember (ext_valuation evar_val svar_val psi) as Xpsi.
@@ -899,11 +944,11 @@ Proof.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; unfold In; intros. inversion H.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
     - right; subst Xext_union; unfold In; unfold pointwise_ext.
-      destruct H1 as [le [re [Hunion [Hre Happ]]]].
+      destruct H3 as [le [re [Hunion [Hre Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
@@ -912,10 +957,10 @@ Proof.
     repeat rewrite ext_valuation_app_simpl, ext_valuation_imp_simpl.
     rewrite ext_valuation_app_simpl, ext_valuation_bott_simpl.
     simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H; rewrite H; clear H.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     remember (ext_valuation evar_val svar_val phi1) as Xphi1.
     remember (ext_valuation evar_val svar_val phi2) as Xphi2.
     remember (ext_valuation evar_val svar_val psi) as Xpsi.
@@ -923,11 +968,11 @@ Proof.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; unfold In; intros. inversion H.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
     - right; subst Xext_union; unfold In; unfold pointwise_ext.
-      destruct H1 as [le [re [Hle [Hunion Happ]]]].
+      destruct H3 as [le [re [Hle [Hunion Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
@@ -936,28 +981,29 @@ Proof.
     constructor. constructor.
     remember (ext_valuation evar_val svar_val ((ex , phi) $ psi)) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; intros. inversion H; subst.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
     left. assumption.
     right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H1.
-    destruct H1 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
-    destruct H1 as [c Hext_re].
+    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
+    destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    admit.
+    split. erewrite evar_open_fresh.
+    admit. assumption. admit.
 
   * rewrite ext_valuation_imp_simpl.
     constructor. constructor.
     remember (ext_valuation evar_val svar_val (psi $ (ex , phi))) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H; clear H.
-    unfold Included; intros. inversion H; subst.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
     left. assumption.
     right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H1.
-    destruct H1 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
-    destruct H1 as [c Hext_re].
+    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
+    destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
     admit.
