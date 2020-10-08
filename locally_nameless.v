@@ -38,6 +38,8 @@ Inductive Pattern : Type :=
 | patt_mu (phi : Pattern)
 .
 
+(* TODO: use well-formedness as a parameter *)
+
 (* TODO: change Bot and Top to unicode symbols *)
 Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
 Notation "'Bot'" := patt_bott.
@@ -698,7 +700,8 @@ end.
 
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
-(* TODO: add well-formedness *)
+(* TODO: add well-formedness of theory *)
+(* TODO: use well-formedness as parameter in proof system *)
 (* Reserved Notation "pattern 'proved'" (at level 2). *)
 Reserved Notation "theory |- pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
@@ -818,6 +821,7 @@ Proof.
   inversion H1. contradiction. assumption.
 Qed.
 
+(* evar_open of fresh name does not change *)
 Theorem evar_open_fresh (phi : Pattern) :
   forall n, well_formed phi -> evar_open n fresh_evar_name phi = phi.
 Proof.
@@ -833,7 +837,15 @@ Proof.
     split; inversion H. assumption.
     unfold well_formed_closed in *. simpl in H1. admit.
 Admitted.
-  
+
+(* update_valuation with fresh name does not change *)
+Lemma update_valuation_fresh {m : Model}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (psi : Pattern) (x : Domain m) (c : Domain m) :
+  ext_valuation (update_valuation evar_name_eqb fresh_evar_name c evar_val) svar_val psi x
+  = ext_valuation evar_val svar_val psi x.
+Proof.
+Admitted.  
 
 (* Soundness theorem *)
 (* TODO: add well-formedness *)
@@ -990,8 +1002,10 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    split. erewrite evar_open_fresh.
-    admit. assumption. admit.
+    split. assumption.
+    erewrite evar_open_fresh. rewrite update_valuation_fresh.
+    split; assumption.
+    assumption.
 
   * rewrite ext_valuation_imp_simpl.
     constructor. constructor.
@@ -1006,9 +1020,15 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    admit.
+    split.
+    erewrite evar_open_fresh. rewrite update_valuation_fresh. assumption.
+    assumption.
+    split; assumption.
 
   * admit.
+
+  * unfold free_svar_subst
+
   * admit.
 
 Admitted.
