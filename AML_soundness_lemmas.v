@@ -5,6 +5,7 @@ Require Import extralibrary.
 Require Import names.
 Require Import KnasterTarski.
 Require Export locally_nameless.
+Require Import PowersetLattice.
 
 Require Import Coq.micromega.Lia.
 
@@ -32,7 +33,39 @@ Proof.
   remember (Relation_Definitions.ord_refl A (@leq A OS) (@leq_order A OS)). clear Heqr.
   unfold Relation_Definitions.reflexive in r. apply r.
 Qed.
-  
+
+Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
+  forall (var : svar_name),
+    (Bp var -> negative_occurrence var phi) /\ (Bn var -> positive_occurrence var phi).
+
+Definition ModelPowersetLattice (M : Model) := PowersetLattice (Domain M).
+
+
+Lemma respects_blacklist_implies_monotonic :
+  forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi Bp Bn ->
+    forall (M : Model)
+           (evar_val : evar_name -> Domain M)
+           (svar_val : svar_name -> Power (Domain M))
+           (X : svar_name)
+           (S1 S2 : Ensemble (Domain M)),
+      Included (Domain M) S1 S2 ->
+      (Bp X ->
+       Included (Domain M)
+                (@ext_valuation M evar_val (update_valuation svar_name_eqb X S2 svar_val) phi)
+                (@ext_valuation M evar_val (update_valuation svar_name_eqb X S1 svar_val) phi)
+      ) /\ (Bn X ->
+            Included (Domain M)
+                     (@ext_valuation M evar_val (update_valuation svar_name_eqb X S1 svar_val) phi)
+                     (@ext_valuation M evar_val (update_valuation svar_name_eqb X S2 svar_val) phi)
+         )
+.
+Proof.
+  induction phi.
+  - (*  *)
+Admitted.
+
+
 (*
 Lemma is_monotonic :
   forall (sm : Sigma_model)
