@@ -278,6 +278,14 @@ Proof.
 Qed.
 
 
-      
-      
-  
+Theorem LeastFixpoint_fixpoint:
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A),
+    MonotonicFunction f -> isFixpoint f (@LeastFixpointOf A OS L f).
+Proof.
+  intros.
+  rewrite <- GreatestFixpointOnDualIsLeastFixpoint.
+  apply GreatestFixpoint_fixpoint.
+  Check MonotonicFunction_dual.
+  apply MonotonicFunction_dual.
+  assumption.
+Qed.
