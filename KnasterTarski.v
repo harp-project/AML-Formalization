@@ -140,6 +140,15 @@ Definition MonotonicFunction {A : Type} {OS : OrderedSet A}
            (f : A -> A) :=
   forall (x y : A), leq x y -> leq (f x) (f y).
 
+Lemma MonotonicFunction_dual {A : Type} :
+  forall (OS : OrderedSet A) (f : A -> A),
+    @MonotonicFunction A OS f -> @MonotonicFunction A (OrderedSet_dual OS) f.
+Proof.
+  unfold MonotonicFunction.
+  simpl.
+  auto.
+Qed.
+
 Definition PrefixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : Ensemble A :=
   fun x => leq (f x) x.
 
@@ -154,6 +163,36 @@ Definition GreatestFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattic
            (f : A -> A) : A :=
   join (PostfixpointsOf f).
 
+Lemma PrefixpointsOfDualArePostfixpoints {A : Type} :
+  forall (OS : OrderedSet A) (f : A -> A),
+    @PrefixpointsOf A (@OrderedSet_dual A OS) = @PostfixpointsOf A OS.
+Proof.
+  intros.
+  unfold PrefixpointsOf.
+  unfold PostfixpointsOf.
+  simpl. auto.
+Qed.
+
+Lemma PostfixpointsOfDualArePrefixpoints {A : Type} :
+  forall (OS : OrderedSet A) (f : A -> A),
+    @PostfixpointsOf A (@OrderedSet_dual A OS) = @PrefixpointsOf A OS.
+Proof.
+  intros.
+  unfold PrefixpointsOf.
+  unfold PostfixpointsOf.
+  simpl. auto.
+Qed.
+
+Lemma GreatestFixpointOnDualIsLeastFixpoint {A : Type} :
+  forall (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A),
+    @GreatestFixpointOf A (@OrderedSet_dual A OS) (@CompleteLattice_dual A OS L) f = LeastFixpointOf f.
+Proof.
+  intros. unfold GreatestFixpointOf. unfold LeastFixpointOf.
+  simpl. rewrite -> PostfixpointsOfDualArePrefixpoints. auto. auto.
+Qed.
+
+
+  
 Definition isFixpoint {A : Type} (f : A -> A) (p : A) : Prop :=
   f p = p.
 
