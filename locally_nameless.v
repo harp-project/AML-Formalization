@@ -63,91 +63,6 @@ decide equality.
 Defined.
 *)
 
-Inductive positive_occurrence : db_index -> Pattern -> Prop :=
-| po_free_evar (x : evar_name) (n : db_index) : positive_occurrence n (patt_free_evar x)
-| po_free_svar (x : svar_name) (n : db_index) : positive_occurrence n (patt_free_svar x)
-| po_bound_evar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_evar m)
-| po_bound_svar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_svar m)
-| po_const (sigma : Sigma) (n : db_index) {in_signature : In _ (symbols signature) sigma} :
-    positive_occurrence n (patt_sym sigma in_signature)
-| po_app (phi1 phi2 : Pattern) (n : db_index) :
-  positive_occurrence n phi1 -> positive_occurrence n phi2 ->
-  positive_occurrence n (patt_app phi1 phi2)
-| po_bott (n : db_index) : positive_occurrence n patt_bott
-| po_impl (phi1 phi2 : Pattern) (n : db_index) :
-  negative_occurrence n phi1 -> positive_occurrence n phi2 ->
-  positive_occurrence n (patt_imp phi1 phi2)
-| po_exists (phi : Pattern) (n : db_index) :
-  positive_occurrence n phi ->
-  positive_occurrence (n+1) (patt_exists phi)
-| po_mu (phi : Pattern) (n : db_index) :
-  positive_occurrence n phi ->
-  positive_occurrence (n+1) (patt_mu phi)
-with negative_occurrence : db_index -> Pattern -> Prop :=
-| no_free_evar (x : evar_name) (n : db_index) : negative_occurrence n (patt_free_evar x)
-| no_free_svar (x : svar_name) (n : db_index) : negative_occurrence n (patt_free_svar x)
-| no_bound_evar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_evar m)
-| no_bound_svar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_svar m)
-| no_const (sigma : Sigma) (n : db_index) (in_signature : In _ (symbols signature) sigma) :
-    negative_occurrence n (patt_sym sigma in_signature)
-| no_app (phi1 phi2 : Pattern) (n : db_index) :
-   negative_occurrence n phi1 ->  negative_occurrence n phi2 ->
-   negative_occurrence n (patt_app phi1 phi2)
-| no_bott (n : db_index) :  negative_occurrence n patt_bott
-| no_impl (phi1 phi2 : Pattern) (n : db_index) :
-  positive_occurrence n phi1 ->  negative_occurrence n phi2 ->
-   negative_occurrence n (patt_imp phi1 phi2)
-| no_exists (phi : Pattern) (n : db_index) :
-   negative_occurrence n phi ->
-   negative_occurrence (n+1) (patt_exists phi)
-| no_mu (phi : Pattern) (n : db_index) :
-   negative_occurrence n phi ->
-   negative_occurrence (n+1) (patt_mu phi)
-.
-
-Fixpoint well_formed_positive (phi : Pattern) : Prop :=
-  match phi with
-  | patt_free_evar _ => True
-  | patt_free_svar _ => True
-  | patt_bound_evar _ => True
-  | patt_bound_svar _ => True
-  | patt_sym _ _ => True
-  | patt_app psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
-  | patt_bott => True
-  | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
-  | patt_exists psi => well_formed_positive psi
-  | patt_mu psi => positive_occurrence 0 psi /\ well_formed_positive psi
-  end.
-
-Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
-  match phi with
-  | patt_free_evar _ => True
-  | patt_free_svar _ => True
-  | patt_bound_evar n => n < max_ind
-  | patt_bound_svar n => n < max_ind
-  | patt_sym _ _ => True
-  | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
-                          well_formed_closed_aux psi2 max_ind
-  | patt_bott => True
-  | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
-                          well_formed_closed_aux psi2 max_ind
-  | patt_exists psi => well_formed_closed_aux psi (max_ind + 1)
-  | patt_mu psi => well_formed_closed_aux psi (max_ind + 1)
-  end.
-Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0.
-
-Lemma well_formed_closed_aux_ind (phi : Pattern) (ind1 ind2 : db_index) :
-  ind1 < ind2 -> well_formed_closed_aux phi ind1 -> well_formed_closed_aux phi ind2.
-Proof.
-  intros. generalize dependent ind1. generalize dependent ind2.
-  induction phi; intros; simpl in *; try lia.
-  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-  apply IHphi with (ind1 + 1). lia. assumption.
-  apply IHphi with (ind1 + 1). lia. assumption.
-Qed.  
-
-Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
 
 (** There are two substitution operations over types, written
   [vsubst] and [psubst] in Pollack's talk.  
@@ -461,6 +376,91 @@ Qed.
 Parameter fresh_evar_name : evar_name.
 Parameter fresh_svar_name : svar_name.
 
+Inductive positive_occurrence : db_index -> Pattern -> Prop :=
+| po_free_evar (x : evar_name) (n : db_index) : positive_occurrence n (patt_free_evar x)
+| po_free_svar (x : svar_name) (n : db_index) : positive_occurrence n (patt_free_svar x)
+| po_bound_evar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_evar m)
+| po_bound_svar (m : db_index) (n : db_index) : positive_occurrence n (patt_bound_svar m)
+| po_const (sigma : Sigma) (n : db_index) {in_signature : In _ (symbols signature) sigma} :
+    positive_occurrence n (patt_sym sigma in_signature)
+| po_app (phi1 phi2 : Pattern) (n : db_index) :
+  positive_occurrence n phi1 -> positive_occurrence n phi2 ->
+  positive_occurrence n (patt_app phi1 phi2)
+| po_bott (n : db_index) : positive_occurrence n patt_bott
+| po_impl (phi1 phi2 : Pattern) (n : db_index) :
+  negative_occurrence n phi1 -> positive_occurrence n phi2 ->
+  positive_occurrence n (patt_imp phi1 phi2)
+| po_exists (phi : Pattern) (n : db_index) :
+  positive_occurrence n phi ->
+  positive_occurrence (n+1) (patt_exists phi)
+| po_mu (phi : Pattern) (n : db_index) :
+  positive_occurrence n phi ->
+  positive_occurrence (n+1) (patt_mu phi)
+with negative_occurrence : db_index -> Pattern -> Prop :=
+| no_free_evar (x : evar_name) (n : db_index) : negative_occurrence n (patt_free_evar x)
+| no_free_svar (x : svar_name) (n : db_index) : negative_occurrence n (patt_free_svar x)
+| no_bound_evar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_evar m)
+| no_bound_svar (m : db_index) (n : db_index) :  negative_occurrence n (patt_bound_svar m)
+| no_const (sigma : Sigma) (n : db_index) (in_signature : In _ (symbols signature) sigma) :
+    negative_occurrence n (patt_sym sigma in_signature)
+| no_app (phi1 phi2 : Pattern) (n : db_index) :
+   negative_occurrence n phi1 ->  negative_occurrence n phi2 ->
+   negative_occurrence n (patt_app phi1 phi2)
+| no_bott (n : db_index) :  negative_occurrence n patt_bott
+| no_impl (phi1 phi2 : Pattern) (n : db_index) :
+  positive_occurrence n phi1 ->  negative_occurrence n phi2 ->
+   negative_occurrence n (patt_imp phi1 phi2)
+| no_exists (phi : Pattern) (n : db_index) :
+   negative_occurrence n phi ->
+   negative_occurrence (n+1) (patt_exists phi)
+| no_mu (phi : Pattern) (n : db_index) :
+   negative_occurrence n phi ->
+   negative_occurrence (n+1) (patt_mu phi)
+.
+
+Fixpoint well_formed_positive (phi : Pattern) : Prop :=
+  match phi with
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bound_evar _ => True
+  | patt_bound_svar _ => True
+  | patt_sym _ _ => True
+  | patt_app psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
+  | patt_bott => True
+  | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
+  | patt_exists psi => well_formed_positive psi
+  | patt_mu psi => positive_occurrence 0 psi /\ well_formed_positive psi
+  end.
+
+Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
+  match phi with
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bound_evar n => n < max_ind
+  | patt_bound_svar n => n < max_ind
+  | patt_sym _ _ => True
+  | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
+                          well_formed_closed_aux psi2 max_ind
+  | patt_bott => True
+  | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
+                          well_formed_closed_aux psi2 max_ind
+  | patt_exists psi => well_formed_closed_aux psi (max_ind + 1)
+  | patt_mu psi => well_formed_closed_aux psi (max_ind + 1)
+  end.
+Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0.
+
+Lemma well_formed_closed_aux_ind (phi : Pattern) (ind1 ind2 : db_index) :
+  ind1 < ind2 -> well_formed_closed_aux phi ind1 -> well_formed_closed_aux phi ind2.
+Proof.
+  intros. generalize dependent ind1. generalize dependent ind2.
+  induction phi; intros; simpl in *; try lia.
+  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  apply IHphi with (ind1 + 1). lia. assumption.
+  apply IHphi with (ind1 + 1). lia. assumption.
+Qed.  
+
+Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
 (*
 Definition pattern_lt (p1 p2 : Pattern) :=
   size p1 < size p2.
