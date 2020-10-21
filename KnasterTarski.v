@@ -192,7 +192,32 @@ Proof.
 Qed.
 
 
-  
+Proposition GreatestFixpoint_greaterThanPostfixpoint:
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (x : A),
+    leq x (f x) -> leq x (GreatestFixpointOf f).
+Proof.
+  intros.
+  unfold GreatestFixpointOf.
+  Print isJoin.
+  remember (@join_isJoin A OS L). clear Heqi.
+  unfold isJoin in i.
+  remember (i (PostfixpointsOf f)). clear Heql.
+  unfold leastUpperBound in l. destruct l. clear H1.
+  unfold upperBound in H0. apply H0.
+  unfold PostfixpointsOf. unfold In. apply H.
+Qed.
+
+
+Proposition GreatestFixpoint_GreaterThanFixpoint :
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (x : A),
+    x = (f x) -> leq x (GreatestFixpointOf f).
+Proof.
+  intros.
+  apply GreatestFixpoint_greaterThanPostfixpoint.
+  rewrite <- H.
+  apply (ord_refl A leq leq_order x).
+Qed.
+
 Definition isFixpoint {A : Type} (f : A -> A) (p : A) : Prop :=
   f p = p.
 
