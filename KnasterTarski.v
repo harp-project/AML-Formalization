@@ -9,7 +9,8 @@ Class OrderedSet A : Type :=
 
 Program Definition OrderedSet_dual {A : Type} (OS : OrderedSet A) : OrderedSet A :=
   {| leq := fun x y => @leq A OS y x;
-     leq_order := {| ord_refl := _; ord_trans := _; ord_antisym := _; |}; |}.
+     leq_order := {| ord_refl := _; ord_trans := _; ord_antisym := _; |};
+  |}.
 Next Obligation. unfold reflexive. intros.
                  apply (ord_refl A (@leq A OS) (@leq_order A OS)).
                  Defined.
@@ -113,6 +114,27 @@ Class CompleteLattice A `{OrderedSet A} :=
     meet_isMeet : isMeet meet;
     join_isJoin : isJoin join;
   }.
+
+Program Definition CompleteLattice_dual {A : Type} {OS : OrderedSet A} (CL : CompleteLattice A)
+  : @CompleteLattice A (@OrderedSet_dual A OS) :=
+  {| meet := join;
+     join := meet;
+     meet_isMeet := _;
+     join_isJoin := _
+  |}.
+Next Obligation. unfold isMeet.
+                 unfold greatestLowerBound.
+                 unfold lowerBound.
+                 intros. simpl.
+                 apply join_isJoin.
+Defined.
+Next Obligation. unfold isJoin.
+                 unfold leastUpperBound.
+                 unfold upperBound.
+                 intros. simpl.
+                 apply meet_isMeet.
+Defined.
+
 
 Definition MonotonicFunction {A : Type} {OS : OrderedSet A}
            (f : A -> A) :=
