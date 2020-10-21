@@ -289,3 +289,48 @@ Proof.
   apply MonotonicFunction_dual.
   assumption.
 Qed.
+
+
+Proposition LeastFixpoint_LesserThanPrefixpoint:
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (x : A),
+    leq (f x) x -> leq (LeastFixpointOf f) x.
+Proof.
+  intros.
+  unfold LeastFixpointOf.
+  remember (@meet_isMeet A OS L). clear Heqi.
+  unfold isMeet in i.
+  remember (i (PrefixpointsOf f)). clear Heqg.
+  unfold greatestLowerBound in g. destruct g. clear H1.
+  unfold lowerBound in H0. apply H0.
+  unfold PrefixpointsOf. unfold In. apply H.
+Qed.
+
+
+
+Proposition LeastFixpoint_LesserThanFixpoint :
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (x : A),
+    x = (f x) -> leq (LeastFixpointOf f) x.
+Proof.
+  intros.
+  apply LeastFixpoint_LesserThanPrefixpoint.
+  rewrite <- H.
+  apply (ord_refl A leq leq_order x).
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
