@@ -3,6 +3,7 @@ Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
 Require Import names.
+Require Import KnasterTarski.
 Require Export locally_nameless.
 
 Require Import Coq.micromega.Lia.
@@ -13,6 +14,25 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 
+Lemma lfp_preserves_order {A : Type} (OS : OrderedSet A) (L : CompleteLattice A) (f g : A -> A) :
+  MonotonicFunction f -> MonotonicFunction g ->
+  (forall (x : A), leq (f x) (g x)) ->
+  leq (LeastFixpointOf f) (LeastFixpointOf g).
+Proof.
+  intros.
+  apply (LeastFixpoint_LesserThanPrefixpoint A OS L).
+  assert (leq (f (LeastFixpointOf g)) (g (LeastFixpointOf g))).
+  { apply H1. }
+  assert (g (LeastFixpointOf g) = LeastFixpointOf g).
+  { apply LeastFixpoint_fixpoint. assumption.  }
+  remember (Relation_Definitions.ord_trans A (@leq A OS) (@leq_order A OS)). clear Heqt.
+  unfold Relation_Definitions.transitive in t.
+  apply t with (y := g (LeastFixpointOf g)).
+  assumption. rewrite -> H3.
+  remember (Relation_Definitions.ord_refl A (@leq A OS) (@leq_order A OS)). clear Heqr.
+  unfold Relation_Definitions.reflexive in r. apply r.
+Qed.
+  
 (*
 Lemma is_monotonic :
   forall (sm : Sigma_model)
