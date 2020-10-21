@@ -1,11 +1,31 @@
 Require Import Coq.Sets.Ensembles.
 Require Import Coq.Relations.Relation_Definitions.
+Require Import Coq.Program.Tactics.
 
 Class OrderedSet A : Type :=
   { leq : relation A;
     leq_order : order A leq;
   }.
 
+Program Definition OrderedSet_dual {A : Type} (OS : OrderedSet A) : OrderedSet A :=
+  {| leq := fun x y => @leq A OS y x;
+     leq_order := {| ord_refl := _; ord_trans := _; ord_antisym := _; |}; |}.
+Next Obligation. unfold reflexive. intros.
+                 apply (ord_refl A (@leq A OS) (@leq_order A OS)).
+                 Defined.
+Next Obligation. unfold transitive. intros.
+                 remember (ord_trans A leq leq_order).
+                 unfold transitive in t.
+                 apply t with (y := y).
+                 assumption. assumption.
+Defined.
+Next Obligation. unfold antisymmetric. intros.
+                 remember (ord_antisym A leq leq_order).
+                 unfold antisymmetric in a.
+                 apply a. assumption. assumption.
+Defined.
+
+                 
 Definition upperBound {A : Type} {OS : OrderedSet A} (X: Ensemble A) (ub: A) : Prop :=
   forall (x: A), In A X x -> leq x ub.
 
