@@ -755,9 +755,13 @@ Inductive ML_proof_system (theory : Theory) :
       theory |- ((psi $ (ex , phi)) --> (ex , psi $ phi))
 
   (* Framing *)
-  | Framing (C : Application_context) (phi1 phi2 : Pattern) :
-      theory |- (phi1 --> phi2) ->
-      theory |- ((subst_ctx C phi1) --> (subst_ctx C phi2))
+  | Framing_left (phi1 phi2 psi : Pattern) :
+      theory |- ((phi1 --> phi2) $ psi) ->
+      theory |- ((phi1 $ psi) --> (phi2 $ psi))
+
+  | Framing_right (phi1 phi2 psi : Pattern) :
+      theory |- (psi $ (phi1 --> phi2)) ->
+      theory |- ((psi $ phi1) --> (psi $ phi2))
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)

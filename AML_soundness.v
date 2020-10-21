@@ -190,8 +190,50 @@ Proof.
     assumption.
     split; assumption.
 
+  * rewrite ext_valuation_imp_simpl. repeat rewrite ext_valuation_app_simpl.
+    rewrite ext_valuation_app_simpl in IHHp.
+    rewrite ext_valuation_imp_simpl in IHHp.
+    constructor. constructor.    
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    remember (ext_valuation evar_val svar_val psi) as Xpsi.
+    destruct IHHp. admit.
+    clear H. unfold Included in *.
+    intros. apply H0 in H. clear H0.
+    (* x \in pointwise_ext (~phi1 U phi2) psi ->
+       x \in ~(pointwise_ext phi1 psi) U (pointwise_ext phi2 psi)
+    *)
+    unfold In in *.
+    destruct H as [le [re [Hunion [Hpsi Happ_interp]]]].
+    inversion Hunion. admit.
+    right. exists le, re. repeat split; assumption.
+
   * admit.
-  * admit.
-  * admit.
+
+  * constructor. constructor.
+    destruct IHHp. admit.
+    clear H. unfold Included in *.
+    intros. apply H0 in H. clear H0.
+    admit.
+    
+  * simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
+    constructor. constructor.
+    unfold Included. intros. unfold In.
+    admit.
+
+  * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
+    simpl in IHHp. rewrite ext_valuation_imp_simpl in IHHp.
+    constructor. constructor.
+    unfold Included. intros.
+    destruct IHHp. admit. clear H0.
+    unfold Included in H1.
+    left. unfold In. unfold Complement. unfold not. unfold In. unfold Ensembles_Ext.mu.
+    unfold FA_Inters_cond. intros.
+    inversion H0; subst.
+    edestruct H1 with x. assumption.
+    unfold In, Complement, not in H3. apply H3.
+    apply H2. unfold Included. intros.
+    unfold In. admit.
+    admit.
 
 Admitted.
