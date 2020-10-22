@@ -127,3 +127,12 @@ Lemma update_valuation_fresh {m : Model}
   = ext_valuation evar_val svar_val psi x.
 Proof.
 Admitted.
+
+(* ext_valuation with free_svar_subst does not change *)
+Lemma update_valuation_fresh {m : Model}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (phi : Pattern) (psi : Pattern) (X : Power (Domain m)) :
+  ext_valuation evar_val svar_val phi
+  = ext_valuation evar_val svar_val (free_svar_subst phi psi X) .
+Proof.
+Admitted.
