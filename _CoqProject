@@ -4,14 +4,14 @@ Ensembles_Ext.v
 extralibrary.v
 locally_nameless.v
 names.v
-FOL_helpers.v
-MSFOL_definition.v
-NAT_definition.v
-TEST_Strictly_Positiveness_in_AML.v
-TEST_ext_evaluation_in_AML.v
+#FOL_helpers.v
+#MSFOL_definition.v
+#NAT_definition.v
+#TEST_Strictly_Positiveness_in_AML.v
+#TEST_ext_evaluation_in_AML.v
 # No such file
 #TEST_Axiom_Helper_Functions.v
-TEST_Function_and_Predicate.v
+#TEST_Function_and_Predicate.v
 # Does not compile
 #TEST_Context.v
 KnasterTarski.v
