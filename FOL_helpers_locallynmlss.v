@@ -1,251 +1,185 @@
 Require Export locally_nameless.
-Require Import Coq.Program.Equality.
 
 Section FOL_helpers.
 
-Ltac wf_check := 
-match goal with
-| |- well_formed _ => admit
-| _                => fail
-end.
+Lemma wf_sctx (C : Application_context) (A : Pattern) :
+  well_formed A -> well_formed (subst_ctx C A).
+Proof.
+  intros.
+  induction C; unfold well_formed in *. destruct H; split; unfold well_formed_closed in *; simpl.
+  - exact H.
+  - exact H0.
+  - split.
+    + destruct H. destruct IHC. simpl. split.
+      * exact H1.
+      * destruct Prf. exact H3.
+    + simpl. unfold well_formed_closed in *. simpl.  split.
+      * destruct IHC. exact H1.
+      * destruct Prf. exact H1.
+  - split.
+    + simpl. split.
+      * destruct Prf. exact H0.
+      * destruct IHC. exact H0.
+    + simpl. unfold well_formed_closed in *. simpl. split.
+      * destruct Prf. exact H1.
+      * destruct IHC. exact H1.
+Qed.
 
-(*TODO: Uncomment this and replace wf_checks with wf_proof and admitted with qed after getting rid of conflict*)
-(* Ltac wf_proof := 
+Lemma wp_sctx (C : Application_context) (A : Pattern) :
+  well_formed_positive A -> well_formed_positive (subst_ctx C A).
+Proof.
+  intros.
+  induction C.
+  - auto.
+  - simpl. split.
+    + exact IHC.
+    + unfold well_formed in Prf. destruct Prf. exact H0.
+  - simpl. split.
+    + unfold well_formed in Prf. destruct Prf. exact H0.
+    + exact IHC.
+Qed.
+
+Lemma wc_sctx (C : Application_context) (A : Pattern) :
+  well_formed_closed_aux A 0 -> well_formed_closed_aux (subst_ctx C A) 0.
+Proof.
+  intros.
+  induction C.
+  - auto.
+  - simpl. split.
+    + exact IHC.
+    + unfold well_formed in Prf. destruct Prf. unfold well_formed_closed in H1. exact H1.
+  - simpl. split.
+    + unfold well_formed in Prf. destruct Prf. unfold well_formed_closed in H1. exact H1.
+    + exact IHC.
+Qed.
+
+(*Use this tactic for most of the well-formedness related goals*)
+Ltac wf_proof := 
   unfold well_formed; unfold well_formed_closed; simpl;
   
-  (*All hypothesises wf_closed_aux or wf_positive form*)
   repeat (match goal with
   | H : well_formed _         |- _ => destruct H
   | H0 : well_formed_closed _ |- _ => (unfold well_formed_closed in H0; simpl)
   end);
   
-  (*Split all goals*)
   repeat (match goal with
   | |- _ /\ _ => split
   end);
   
-  (*Solve them*)
   match goal with
   | H  : well_formed_closed _     |- well_formed_closed _       => exact H
-  | H0 : well_formed_positive _   |- well_formed_positive _     => exact H0
+  | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
+  | H  : well_formed_closed_aux _ _   |- well_formed_closed_aux (subst_ctx _ _) _ => eapply (wc_sctx _ _ H)
+  | H0 : well_formed_positive _   |- well_formed_positive _               => exact H0
   | H1 : well_formed_closed_aux _ _ 
-                                  |- well_formed_closed_aux _ _ => exact H1
-  |                               |- True                       => trivial
-  | _                                                           => idtac
-  end . *)
+                                  |- well_formed_closed_aux _ _           => exact H1
+  |                               |- True                                 => trivial
+  | _                                                                     => idtac
+  end .
+
+Ltac wf_check := 
+match goal with
+| |- well_formed _ => admit
+| _                => fail
+end. 
 
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
 (well_formed A) -> theory ⊢ (A --> A).
 Proof. 
   intros.
-  assert(well_formed (A --> A)).
-  shelve.  
-  pose(_1 := P2 theory A (A --> A) A H H0 H).
-  pose(_2 := P1 theory A (A --> A) H H0).
+  epose(_1 := P2 theory A (A --> A) A _ _ _).
+  epose(_2 := P1 theory A (A --> A) _ _).
 
-  assert(well_formed (A --> (A --> A) --> A)).
-  shelve.
-  assert(well_formed ((A --> (A --> A) --> A) --> (A --> A --> A) --> A --> A)).
-  shelve.
-  pose(_3 := Modus_ponens _ _ _ H1 H2 _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
+  epose(_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
   
-  pose(_4 := P1 theory A A H H).
+  epose(_4 := P1 theory A A _ _).
   
-  assert(well_formed ((A --> A --> A))).
-  shelve.
-  assert(well_formed ((A --> A --> A) --> A --> A)).
-  shelve.
-  
-  pose(_5 := Modus_ponens theory _ _ H3 H4 _4 _3).
+  epose(_5 := Modus_ponens theory _ _ _ _ _4 _3).
   exact _5.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
   
-Lemma P4m (A B : Pattern) (theory : Theory) :
+Lemma P4m (theory : Theory) (A B : Pattern) :
  (well_formed A) -> (well_formed B) -> theory ⊢ ((A --> B) --> ((A --> ¬B) --> ¬A)).
 Proof.
-  intros. eapply (Modus_ponens theory _ _ ).
-  - shelve.
-  - shelve.
-  - eapply(P1 _ (A --> B) (A --> B --> Bot)).
-    -- shelve.
-    -- shelve.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
-        -- eapply(P2 _ A B Bot).
-          ** shelve.
-          ** shelve.
-          ** shelve.
-        -- eapply(P2 _ (A --> B --> Bot) (A --> B) (A --> Bot)).
-          ** shelve.
-          ** shelve.
-          ** shelve.
+  intros. eapply (Modus_ponens theory _ _ _ _).
+  - eapply(P1 _ (A --> B) (A --> B --> Bot) _ _).
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
+        -- eapply(P2 _ A B Bot _ _ _).
+        -- eapply(P2 _ (A --> B --> Bot) (A --> B) (A --> Bot) _ _ _).
       * eapply (P1 _ (((A --> B --> Bot) --> A --> B) --> (A --> B --> Bot) --> A --> Bot)
-                   (A --> B)).
-        -- shelve.
-        -- shelve.
+                   (A --> B) _ _).
     + eapply (P2 _ (A --> B)
                  ((A --> B --> Bot) --> A --> B)
-                 ((A --> B --> Bot) --> A --> Bot)).
-      * shelve.
-      * shelve.
-      * shelve.
+                 ((A --> B --> Bot) --> A --> Bot) _ _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all: wf_proof.
+Qed.
 
 
 
 Lemma P4i (theory : Theory) (A : Pattern) :
 well_formed A -> theory ⊢ ((A --> ¬A) --> ¬A).
 Proof.
-  intros. eapply Modus_ponens.
-  (* assert (well_formed (A --> A)). Needed for proving 1' and to apply 2'*)
-  - shelve. (*  exact H0. *)
-  - shelve. (* wf_proof H. *)
-  - eapply (A_impl_A _ A). (*2'*) (*In the outdated: A_impl_A ?= P1*)
-    + exact H.
-  - eapply (P4m A A _).
-    + exact H.
-    + exact H.
+  intros. eapply (Modus_ponens _ _ _ _ _).
+  - eapply (A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
+  - eapply (P4m _ A A _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma reorder (theory : Theory) (A B C : Pattern) :
 well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A --> B --> C) --> ( B --> A --> C)).
 Proof.
   intros.
-  (*Helping hypothesises inside t1*)
-  assert(well_formed ((A --> B) --> A --> C)).
-  shelve.
-  assert(well_formed (((A --> B) --> A --> C) --> B --> (A --> B) --> A --> C)).
-  shelve.
-  assert(well_formed (A --> B --> C)).
-  shelve.
-  
-  (*Helping hypothesises for t1*)
-  assert(well_formed
-   (((A --> B) --> A --> C) -->
-    B --> (A --> B) --> A --> C)).
-  shelve.
-  assert(well_formed
-   ((((A --> B) --> A --> C) --> B --> (A --> B) --> A --> C) -->
-    (A --> B --> C) --> ((A --> B) --> A --> C) --> B --> (A --> B) --> A --> C)).
-  shelve.
-  pose(t1 := (Modus_ponens theory _ _ H5 H6
-              (P1 theory ((A --> B) --> A --> C) B H2 H0)
-              (P1 theory (((A --> B) --> A --> C) --> B --> (A --> B) --> A --> C) (A --> B --> C) H3 H4))).
+  epose(t1 := (Modus_ponens theory _ _ _ _
+              (P1 theory ((A --> B) --> A --> C) B _ _)
+              (P1 theory (((A --> B) --> A --> C) --> B --> (A --> B) --> A --> C) (A --> B --> C) _ _))).
   
   pose(ABC := (A --> B --> C)).
   
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply(P1 _ B A).
-      * shelve.
-      * shelve.
-    + eapply(P1 _ (B --> A --> B) (A --> B --> C)).
-      * shelve.
-      * shelve.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
-        -- eapply Modus_ponens.
-          ++ shelve.
-          ++ shelve.
-          ++ eapply (A_impl_A _ ABC).
-            ** shelve.
-          ++ eapply Modus_ponens.
-            ** shelve.
-            ** shelve.
-            ** eapply Modus_ponens.
-              --- shelve.
-              --- shelve.
-              --- eapply(P2 _ A B C).
-                +++ shelve.
-                +++ shelve.
-                +++ shelve.
-              --- eapply(P1 _ _ (A --> B --> C)).
-                +++ shelve.
-                +++ shelve.
-            ** eapply(P2 _ ABC ABC ((A --> B) --> (A --> C))).
-              --- shelve.
-              --- shelve.
-              --- shelve.
-        -- eapply Modus_ponens.
-          ++ shelve.
-          ++ shelve.
+  eapply (Modus_ponens _ _ _ _ _).
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply(P1 _ B A _ _).
+    + eapply(P1 _ (B --> A --> B) (A --> B --> C) _ _).
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
+        -- eapply (Modus_ponens _ _ _ _ _).
+          ++ eapply (A_impl_A _ ABC _).
+          ++ eapply (Modus_ponens _ _ _ _ _).
+            ** eapply (Modus_ponens _ _ _ _ _).
+              --- eapply(P2 _ A B C _ _ _).
+              --- eapply(P1 _ _ (A --> B --> C) _ _).
+            ** eapply(P2 _ ABC ABC ((A --> B) --> (A --> C)) _ _ _).
+        -- eapply (Modus_ponens _ _ _ _ _).
           ++ eapply t1.
-          ++ eapply(P2 _ ABC ((A --> B) --> (A --> C)) (B --> (A --> B) --> (A --> C))).
-            ** shelve.
-            ** shelve.
-            ** shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
-        -- eapply Modus_ponens.
-          ++ shelve.
-          ++ shelve.
-          ++ eapply(P2 _ B (A --> B) (A --> C)).
-            ** shelve.
-            ** shelve.
-            ** shelve.
-          ++ eapply(P1 _ _ ABC).
-            ** shelve.
-            ** shelve.
-        -- eapply(P2 _ ABC (B --> (A --> B) --> A --> C) ((B --> A --> B) --> B --> A --> C)).
-          ++ shelve.
-          ++ shelve.
-          ++ shelve.
-    + eapply(P2 _ ABC (B --> A --> B) (B --> A --> C)).
-      * shelve.
-      * shelve.
-      * shelve.
+          ++ eapply(P2 _ ABC ((A --> B) --> (A --> C)) (B --> (A --> B) --> (A --> C)) _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
+        -- eapply (Modus_ponens _ _ _ _ _).
+          ++ eapply(P2 _ B (A --> B) (A --> C) _ _ _).
+          ++ eapply(P1 _ _ ABC _ _).
+        -- eapply(P2 _ ABC (B --> (A --> B) --> A --> C) ((B --> A --> B) --> B --> A --> C) _ _ _).
+    + eapply(P2 _ ABC (B --> A --> B) (B --> A --> C) _ _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma reorder_meta (theory : Theory) {A B C : Pattern} :
   well_formed A -> well_formed B -> well_formed C ->  
   theory ⊢ (A --> B --> C) -> theory ⊢ (B --> A --> C).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact (P1 _ B A H0 H).
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
         -- exact H2.
-        -- eapply(P2 _ A B C).
-          ++ shelve.
-          ++ shelve.
-          ++ shelve.
+        -- eapply(P2 _ A B C _ _ _).
       * assert (well_formed ((A --> B) --> A --> C)).
         -- shelve. 
         -- exact (P1 _ ((A --> B) --> A --> C) B H3 H0).
@@ -255,234 +189,167 @@ Proof.
         -- shelve.
         -- exact (P2 _ B (A --> B) (A --> C) H0 H3 H4).
   Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma syllogism (theory : Theory) (A B C : Pattern) :
+  well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A --> B) --> (B --> C) --> (A --> C)).
+Proof.
+  intros.
+  eapply (reorder_meta _ _ _ _).
+  eapply (Modus_ponens _ _ _ _ _).
+  - eapply(P1 _ (B --> C) A _ _).
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (P2 _ A B C _ _ _).
+      * eapply (P1 _ ((A --> B --> C) --> (A --> B) --> A --> C) (B --> C) _ _).
+    + eapply (P2 _ (B --> C) (A --> B --> C) ((A --> B) --> A --> C) _ _ _).
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma syllogism_intro (theory : Theory) (A B C : Pattern) :
+  well_formed A -> well_formed B -> well_formed C -> theory ⊢ (A --> B) -> theory ⊢ (B --> C) -> theory ⊢ (A --> C).
+Proof.
+  intros.
+  eapply (Modus_ponens _ _ _ _ _).
+  - exact H2.
+  - eapply (Modus_ponens _ _ _ _ _).
+    + exact H3.
+    + eapply (reorder_meta _ _ _ _). exact (syllogism _ A B C H H0 H1).
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma modus_ponens (theory : Theory) ( A B : Pattern) :
+  well_formed A -> well_formed B -> theory ⊢ (A --> (A --> B) --> B).
+Proof.
+  intros.
+  eapply (Modus_ponens _ _ _ _ _).
+    - eapply (P1 _ A (A --> B) _ _).
+    - eapply (Modus_ponens _ _ _ _ _).
+      + eapply (Modus_ponens _ _ _ _ _).
+        * eapply (A_impl_A _ (A --> B) _).
+        * eapply (P2 _ (A --> B) A B _ _ _).
+      + eapply (reorder_meta _ _ _ _).
+        * eapply (syllogism _ A ((A --> B) --> A) ((A --> B) --> B) _ _ _).
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma not_not_intro (theory : Theory) (A : Pattern) :
+  well_formed A -> theory ⊢ (A --> ¬(¬A)).
+Proof.
+  intros.
+  assert(well_formed Bot).
+  shelve.
+  exact (modus_ponens _ A Bot H H0).
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma deduction (theory : Theory) (A B : Pattern) :
+  well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A --> B).
+Proof.
+  intros.
+  eapply (Modus_ponens _ _ _ _ _).
+  - exact H2.
+  - eapply (P1 _ B A _ _).
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma P4_intro (theory : Theory) (A B : Pattern)  :
+well_formed A -> well_formed B -> 
+theory ⊢ ((¬ B) --> (¬ A)) -> theory ⊢ (A --> B).
+Proof.
+  intros.
+  epose (Modus_ponens theory _ _ _ _ H1 (P4m theory (¬ B) (¬ A) _ _)).
+  epose (P1 theory (¬ ¬A) (¬ B) _ _).
+  epose (syllogism_intro theory (¬ (¬ A)) (¬ B --> ¬ (¬ A)) (¬ (¬ B)) _ _ _ m0 m).
+  epose (not_not_intro theory A _).
+  epose (not_not_intro theory B _).
+  epose (syllogism_intro theory A (¬ (¬ A)) (¬ (¬ B)) _ _ _ m2 m1).
+  unfold patt_not in m4.
+  epose (P3 theory B _).
+  epose (syllogism_intro theory A ((B --> Bot) --> Bot) B _ _ _ m4 m5).
+  exact m6.
+  
+  Unshelve.
+  (*TODO: Investigate why this wf_proof doesn't finish...*)
+  (* all:wf_proof. *)
   all:wf_check.
 Admitted.
 
-(*TODO: Prove this axiom*)
-Lemma P4 (theory : Theory) (phi psi : Pattern)  :
-well_formed phi -> well_formed psi -> 
-theory ⊢ (((¬ phi) --> (¬ psi)) --> (psi --> phi)).
+Lemma P4 (theory : Theory) (A B : Pattern)  :
+well_formed A -> well_formed B -> 
+theory ⊢ (((¬ A) --> (¬ B)) --> (B --> A)).
+Proof.
+  intros.
+  epose (P3 theory A _).
+  epose (P1 theory (((A --> Bot) --> Bot) --> A) B _ _).
+  epose (P2 theory (B) ((A --> Bot) --> Bot) (A) _ _ _).
+  epose (Modus_ponens theory _ _ _ _ m m0).
+  epose (Modus_ponens theory _ _ _ _ m2 m1).
+  epose (P1 theory ((B --> (A --> Bot) --> Bot) --> B --> A) ((A --> Bot) --> (B --> Bot)) _ _ ).
+  epose (Modus_ponens theory _ _ _ _ m3 m4).
+  epose (P2 theory ((A --> Bot) --> (B --> Bot)) (B --> (A --> Bot) --> Bot) (B --> A) _ _ _).
+  epose (Modus_ponens theory _ _ _ _ m5 m6).
+  epose (reorder theory (A --> Bot) (B) (Bot) _ _ _).
+  eapply (Modus_ponens theory _ _ _ _ m8 m7).
+  Unshelve.
+  (*TODO: This wf_proof doesn't finish too*)
+  (* 1-3: wf_proof. assert (theory ⊢ ((((A --> Bot) --> Bot) --> A) -->
+        B --> ((A --> Bot) --> Bot) --> A)). auto. clear m0. *)
+  (* all:try (timeout 2 wf_proof). *)
+  (* Too slow because of unfolding hypothesises in posed lemmas too *)
+  (* all:wf_proof. *)
+  all:wf_check.
 Admitted.
 
 Lemma conj_intro (theory : Theory) (A B : Pattern) :
 well_formed A -> well_formed B -> theory ⊢ (A --> B --> (A and B)).
 Proof.
   intros.
-  pose(tB := (A_impl_A theory B H0)).
-  
-  (*Helping hypothesises for posing t1*)
-  assert(well_formed (¬ (¬ A) --> ¬ B)).
-  shelve.
-  assert(well_formed Bot).
-  shelve.
-  assert(well_formed (((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-               ((¬ (¬ A) --> ¬ B) --> A) -->
-               (¬ (¬ A) --> ¬ B) --> Bot)).
-  shelve.
-  assert(well_formed
-   ((((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-     ((¬ (¬ A) --> ¬ B) --> A) --> (¬ (¬ A) --> ¬ B) --> Bot) -->
-    B -->
-    ((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-    ((¬ (¬ A) --> ¬ B) --> A) --> (¬ (¬ A) --> ¬ B) --> Bot)).
-  shelve.
-  assert(well_formed
-   (((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-    ((¬ (¬ A) --> ¬ B) --> A) --> (¬ (¬ A) --> ¬ B) --> Bot)).
-  shelve.
-  
-  pose(t1 := Modus_ponens theory _ _ H5 H4 (P2 _ (¬(¬A) --> ¬B) A Bot H1 H H2)
-                                           (P1 _ _ B H3 H0)).
-  
-  (*Helping hypothesises for posing t2*)
-  assert(well_formed (¬A)).
-  shelve.
-  assert(well_formed (B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed (¬ (¬ A) --> ¬ B)).
-  shelve.
-  assert(well_formed
-   ((B --> (¬ (¬ A) --> ¬ B) --> ¬ A) -->
-    B --> B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed (B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  
-  pose(t2 := Modus_ponens theory _ _ H10 H9  (reorder_meta _ H8 H0 H6 (P4 _ (¬A) B H6 H0))
-                                          (P1 _ _ B H7 H0)).
-  (*Helping hypothesises for posing t3''*)
-  assert(well_formed (A --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   ((A --> (¬ (¬ A) --> ¬ B) --> A) -->
-    B --> A --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  
-  pose(t3'' := Modus_ponens theory _ _ H11 H12 (P1 _ A (¬(¬A) --> ¬B) H H8)
-                                           (P1 _ _ B H11 H0)).
-  
-  (*Helping hypothesises for posing t4*)
-  assert(well_formed ((¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed
-   ((B --> B --> (¬ (¬ A) --> ¬ B) --> ¬ A) -->
-    (B --> B) --> B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed (B --> B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed
-   ((B --> B) --> B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  assert(well_formed (B --> B)).
-  shelve.
-  
-  pose(t4 := Modus_ponens theory _ _ H17 H16 tB
-                                          (Modus_ponens theory _ _ H15 H14 t2
-                                                                       (P2 _ B B _ H0 H0 H13))).
-  (*Helping hypothesises for posing t5''*)
-  assert(well_formed
-    (((¬ (¬ A) --> ¬ B) --> A) --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   ((B -->
-     ((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-     ((¬ (¬ A) --> ¬ B) --> A) -->
-     (¬ (¬ A) --> ¬ B) --> Bot) -->
-    (B --> (¬ (¬ A) --> ¬ B) --> ¬ A) -->
-    B -->
-    ((¬ (¬ A) --> ¬ B) --> A) -->
-    ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   (B -->
-    ((¬ (¬ A) --> ¬ B) --> A --> Bot) -->
-    ((¬ (¬ A) --> ¬ B) --> A) -->
-    (¬ (¬ A) --> ¬ B) --> Bot)).
-  shelve.
-  assert(well_formed
-   ((B --> (¬ (¬ A) --> ¬ B) --> ¬ A) -->
-    B -->
-    ((¬ (¬ A) --> ¬ B) --> A) -->
-    ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed (B --> (¬ (¬ A) --> ¬ B) --> ¬ A)).
-  shelve.
-  
-  pose(t5'' := 
-        Modus_ponens theory _ _ H22 H21 t4
-                                    (Modus_ponens theory _ _ H20 H19 t1
+  epose(tB := (A_impl_A theory B _)).
+  epose(t1 := Modus_ponens theory _ _ _ _ (P2 _ (¬(¬A) --> ¬B) A Bot _ _ _)
+                                           (P1 _ _ B _ _)).
+  epose(t2 := Modus_ponens theory _ _ _ _  (reorder_meta _ _ _ _ (P4 _ (¬A) B _ _))
+                                          (P1 _ _ B _ _)).
+  epose(t3'' := Modus_ponens theory _ _ _ _ (P1 _ A (¬(¬A) --> ¬B) _ _)
+                                           (P1 _ _ B _ _)).
+  epose(t4 := Modus_ponens theory _ _ _ _ tB
+                                          (Modus_ponens theory _ _ _ _ t2
+                                                                       (P2 _ B B _ _ _ _))).
+  epose(t5'' := 
+        Modus_ponens theory _ _ _ _ t4
+                                    (Modus_ponens theory _ _ _ _ t1
                                                                  (P2 _ B ((¬(¬A) --> ¬B) --> ¬A)
-                                                                 (((¬(¬A) --> ¬B) --> A) --> ¬(¬(¬A) --> ¬B)) H0 H13 H18))).
+                                                                 (((¬(¬A) --> ¬B) --> A) --> ¬(¬(¬A) --> ¬B)) _ _ _))).
   
-  pose(tA := (P1 theory A B) H H0).
-  (*Helpers for posing tB'*)
-  assert(well_formed (B --> B)).
-  shelve.
-  assert(well_formed ((B --> B) --> A --> B --> B)).
-  shelve.
-  pose(tB' := Modus_ponens theory _ _ H23 H24 tB
-                                          (P1 _ (B --> B) A H23 H)).
-  (*Helpers for posing t3'*)
-  assert(well_formed ((¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   ((B --> A --> (¬ (¬ A) --> ¬ B) --> A) -->
-    (B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed (B --> A --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  pose(t3' := Modus_ponens theory _ _ H27 H26 t3''
-                                          (P2 _ B A ((¬(¬A) --> ¬B) --> A) H0 H H25)).
-  (*Helpers for posing t3*)
-  assert(well_formed ((B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   (((B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    A --> (B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-    shelve.
-  pose(t3 := Modus_ponens theory _ _ H28 H29 t3'
-                                         (P1 _ ((B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A) A H28 H)).
-  (*Helpers for posing t5'*)
-  assert(well_formed (¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   ((B --> ((¬ (¬ A) --> ¬ B) --> A) --> ¬ (¬ (¬ A) --> ¬ B)) -->
-    (B --> (¬ (¬ A) --> ¬ B) --> A) --> B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed (B --> ((¬ (¬ A) --> ¬ B) --> A) --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  
-  pose(t5' := Modus_ponens theory _ _ H32 H31 t5''
-                                          (P2 _ B ((¬(¬A) --> ¬B) --> A) (¬(¬(¬A) --> ¬B)) H0 H25 H30)).
-  (*Helpers for posing t5*)
-  assert(well_formed
-   ((B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   (((B --> (¬ (¬ A) --> ¬ B) --> A) -->
-     B --> ¬ (¬ (¬ A) --> ¬ B)) -->
-    A -->
-    (B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  
-  pose(t5 := Modus_ponens theory _ _ H33 H34 t5' 
+  epose(tA := (P1 theory A B) _ _).
+  epose(tB' := Modus_ponens theory _ _ _ _ tB
+                                          (P1 _ (B --> B) A _ _)).
+  epose(t3' := Modus_ponens theory _ _ _ _ t3''
+                                          (P2 _ B A ((¬(¬A) --> ¬B) --> A) _ _ _)).
+  epose(t3 := Modus_ponens theory _ _ _ _ t3'
+                                         (P1 _ ((B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A) A _ _)).
+  epose(t5' := Modus_ponens theory _ _ _ _ t5''
+                                          (P2 _ B ((¬(¬A) --> ¬B) --> A) (¬(¬(¬A) --> ¬B)) _ _ _)).
+  epose(t5 := Modus_ponens theory _ _ _ _ t5' 
                                          (P1 _ ((B --> (¬ (¬ A) --> ¬ B) --> A) --> B --> ¬ (¬ (¬ A) --> ¬ B))
-                    A H33 H)).
-  (*Helpers for posing t6*)
-  assert(well_formed (B --> A)).
-  shelve.
-  assert(well_formed (B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   ((A -->
-     (B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    (A --> B --> A) -->
-    A --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   (A -->
-    (B --> A) --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed
-   ((A --> B --> A) -->
-    A --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  assert(well_formed (A --> B --> A)).
-  shelve.
-  pose(t6 := Modus_ponens theory _ _ H40 H39 tA
-                                         (Modus_ponens theory _ _ H38 H37 t3
-                                                                      (P2 _ A (B --> A) (B --> (¬(¬A) --> ¬B) --> A) H H35 H36))).
-  (*Helpers for posing t7*)
-  assert(well_formed (B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   ((A -->
-     (B --> (¬ (¬ A) --> ¬ B) --> A) -->
-     B --> ¬ (¬ (¬ A) --> ¬ B)) -->
-    (A --> B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    A --> B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   (A -->
-    (B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed
-   ((A --> B --> (¬ (¬ A) --> ¬ B) --> A) -->
-    A --> B --> ¬ (¬ (¬ A) --> ¬ B))).
-  shelve.
-  assert(well_formed (A --> B --> (¬ (¬ A) --> ¬ B) --> A)).
-  shelve.
-  
-  pose(t7 := Modus_ponens theory _ _ H45 H44 t6 
-                                         (Modus_ponens theory _ _ H43 H42 t5 
-                                                                      (P2 _ A (B --> (¬(¬A) --> ¬B) --> A) (B --> ¬(¬(¬A) --> ¬B)) H H36 H41))).
+                    A _ _)).
+  epose(t6 := Modus_ponens theory _ _ _ _ tA
+                                         (Modus_ponens theory _ _ _ _ t3
+                                                                      (P2 _ A (B --> A) (B --> (¬(¬A) --> ¬B) --> A) _ _ _))).
+  epose(t7 := Modus_ponens theory _ _ _ _ t6 
+                                         (Modus_ponens theory _ _ _ _ t5 
+                                                                      (P2 _ A (B --> (¬(¬A) --> ¬B) --> A) (B --> ¬(¬(¬A) --> ¬B)) _ _ _))).
   unfold patt_and.  unfold patt_or.
   exact t7.
   Unshelve.
-  (*Warr: If replaced with wf_proof will take a while to run*)
+  (*TODO: This doesn't finish too*)
+  (* all:wf_proof. *)
   all:wf_check.
 Admitted.
 
@@ -490,18 +357,15 @@ Lemma conj_intro_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A and B).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact H2.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
+  - eapply (Modus_ponens _ _ _ _ _).
     + exact H1.
     + exact (conj_intro _ A B H H0).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:unfold patt_and.
+  all:wf_proof.
+Qed.
 
 (* Lemma conj_intro_meta_e (theory : Theory) (A B : Pattern) : *) 
 Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
@@ -511,202 +375,66 @@ Lemma disj (theory : Theory) (A B : Pattern) :
 Proof.
   intros. unfold patt_or.
   
-  assert(well_formed (¬ A)).
-  shelve.
-  pose(t1 := (P1 theory B (¬A) H0 H1)).
+  epose(t1 := (P1 theory B (¬A) _ _)).
   
-  assert(well_formed (B --> ¬ A --> B)).
-  shelve.
-  pose(t2 := (P1 theory (B --> (¬A --> B)) A H2 H)).
+  epose(t2 := (P1 theory (B --> (¬A --> B)) A _ _)).
   
-  assert(well_formed
-   ((B --> ¬ A --> B) --> A --> B --> ¬ A --> B)).
-   shelve.
-  pose(t3 := Modus_ponens theory _ _ H2 H3 t1 t2).
+  epose(t3 := Modus_ponens theory _ _ _ _ t1 t2).
   
   exact t3.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma disj_intro (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A or B).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact H2.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
+  - eapply (Modus_ponens _ _ _ _ _).
     + exact H1.
     + exact (disj _ A B H H0).
   Unshelve.
-  all:wf_check.
-Admitted.
-
-Lemma syllogism (theory : Theory) (A B C : Pattern) :
-  well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A --> B) --> (B --> C) --> (A --> C)).
-Proof.
-  intros.
-  eapply reorder_meta.
-  shelve.
-  shelve.
-  shelve.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - eapply(P1 _ (B --> C) A).
-    + shelve.
-    + shelve.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply (P2 _ A B C).
-        -- shelve.
-        -- shelve.
-        -- shelve.
-      * eapply (P1 _ ((A --> B --> C) --> (A --> B) --> A --> C) (B --> C)).
-        -- shelve.
-        -- shelve.
-    + eapply (P2 _ (B --> C) (A --> B --> C) ((A --> B) --> A --> C)).
-      * shelve.
-      * shelve.
-      * shelve.
-  Unshelve.
-  all:wf_check.
-Admitted.
-
-Lemma syllogism_intro (theory : Theory) (A B C : Pattern) :
-  well_formed A -> well_formed B -> well_formed C -> theory ⊢ (A --> B) -> theory ⊢ (B --> C) -> theory ⊢ (A --> C).
-Proof.
-  intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - exact H2.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + exact H3.
-    + eapply reorder_meta. shelve. shelve. shelve. exact (syllogism _ A B C H H0 H1).
-  Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma syllogism_4_meta (theory : Theory) (A B C D : Pattern) :
   well_formed A -> well_formed B -> well_formed C -> well_formed D ->
   theory ⊢ (A --> B --> C) -> theory ⊢ (C --> D) -> theory ⊢ (A --> B --> D).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact H3.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
-        -- eapply Modus_ponens.
-          ++ shelve.
-          ++ shelve.
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
+        -- eapply (Modus_ponens _ _ _ _ _).
           ++ exact H4.
-          ++ eapply (P1 _ (C --> D) B).
-            ** shelve.
-            ** shelve.
-        -- eapply (P2 _ B C D).
-          ++ shelve.
-          ++ shelve.
-          ++ shelve.
-      * eapply (P1 _ ((B --> C) --> B --> D) A).
-        -- shelve.
-        -- shelve.
-    + eapply (P2 _ A (B --> C) (B --> D)).
-      * shelve.
-      * shelve.
-      * shelve.
+          ++ eapply (P1 _ (C --> D) B _ _).
+        -- eapply (P2 _ B C D _ _ _).
+      * eapply (P1 _ ((B --> C) --> B --> D) A _ _).
+    + eapply (P2 _ A (B --> C) (B --> D) _ _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma bot_elim (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ (Bot --> A).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply Modus_ponens.
-      * shelve.
-      * shelve.
-      * eapply Modus_ponens.
-        -- shelve.
-        -- shelve.
-        -- eapply (P1 _ Bot Bot).
-          ++ shelve.
-          ++ shelve.
-        -- eapply (P2 _ Bot Bot Bot).
-          ++ shelve.
-          ++ shelve.
-          ++ shelve.
-      * eapply (P4 _ Bot Bot).
-        -- shelve.
-        -- shelve.
-    + eapply (P1 _ (Bot --> Bot) (A --> Bot)).
-      * shelve.
-      * shelve.
-  - eapply (P4 _ A Bot).
-    + shelve.
-    + shelve.
+  eapply (Modus_ponens _ _ _ _ _).
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (Modus_ponens _ _ _ _ _).
+      * eapply (Modus_ponens _ _ _ _ _).
+        -- eapply (P1 _ Bot Bot _ _).
+        -- eapply (P2 _ Bot Bot Bot _ _ _).
+      * eapply (P4 _ Bot Bot _ _).
+    + eapply (P1 _ (Bot --> Bot) (A --> Bot) _ _).
+  - eapply (P4 _ A Bot _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
-
-Lemma modus_ponens (theory : Theory) ( A B : Pattern) :
-  well_formed A -> well_formed B -> theory ⊢ (A --> (A --> B) --> B).
-Proof.
-  intros.
-  eapply Modus_ponens.
-    - shelve.
-    - shelve.
-    - eapply (P1 _ A (A --> B)).
-      + shelve.
-      + shelve.
-    - eapply Modus_ponens.
-      + shelve.
-      + shelve.
-      + eapply Modus_ponens.
-        * shelve.
-        * shelve.
-        * eapply (A_impl_A _ (A --> B)).
-          -- shelve.
-        * eapply (P2 _ (A --> B) A B).
-          -- shelve.
-          -- shelve.
-          -- shelve.
-      + eapply reorder_meta.
-        * shelve.
-        * shelve.
-        * shelve.
-        * eapply (syllogism _ A ((A --> B) --> A) ((A --> B) --> B)).
-          -- shelve.
-          -- shelve.
-          -- shelve.
-  Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma modus_ponens' (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (A --> (¬B --> ¬A) --> B).
@@ -716,8 +444,8 @@ Proof.
   shelve.
   exact (reorder_meta theory H1 H H0 (P4 _ B A H0 H)).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma disj_right_intro (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (B --> (A or B)).
@@ -727,205 +455,122 @@ Proof.
   shelve.
   exact (P1 _ B (¬A) H0 H1).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma disj_left_intro (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (A --> (A or B)).
 Proof.
   intros.
-  assert(well_formed Bot).
-  shelve.
-  eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot H H1) (bot_elim _ B H0)).
+  eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot _ _) (bot_elim _ B _)).
   Unshelve.
-  all:wf_check. 
-Admitted.
+  all:wf_proof. 
+Qed.
 
-Lemma not_not_intro (theory : Theory) (A : Pattern) :
-  well_formed A -> theory ⊢ (A --> ¬(¬A)).
-Proof.
-  intros.
-  assert(well_formed Bot).
-  shelve.
-  unfold patt_or. exact (modus_ponens _ A Bot H H0).
-  Unshelve.
-  all:wf_check.
-Admitted.
-
+(*TODO: Is this redundant?*)
 Lemma not_not_elim (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ (¬(¬A) --> A).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - eapply (modus_ponens _ (¬A) Bot).
-    + shelve.
-    + shelve.
-  - eapply (P4 _ A (¬(¬A))).
-    + shelve.
-    + shelve.
-  Unshelve.
-  all:wf_check.
-Admitted.
+  unfold patt_not.
+  exact (P3 theory A H).
+Qed.
 
 Lemma double_neg_elim (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (((¬(¬A)) --> (¬(¬B))) --> (A --> B)).
 Proof.
   intros.
-  eapply syllogism_intro.
-  - shelve.
-  - shelve.
-  - shelve.
-  - eapply (P4 _ (¬A) (¬B)).
-    + shelve.
-    + shelve.
-  - eapply (P4 _ B A).
-    + shelve.
-    + shelve.
+  eapply (syllogism_intro _ _ _ _ _ _ _).
+  - eapply (P4 _ (¬A) (¬B) _ _).
+  - eapply (P4 _ B A _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma double_neg_elim_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> 
   theory ⊢ ((¬(¬A)) --> (¬(¬B))) -> theory ⊢ (A --> B).
 Proof.
   intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact H1.
   - exact (double_neg_elim _ A B H H0).
   Unshelve.
-  all:wf_check.
-Admitted.
-
-Lemma deduction (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A --> B).
-Proof.
-  intros.
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
-  - exact H2.
-  - eapply (P1 _ B A).
-    + shelve.
-    + shelve.
-  Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma P4_rev_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (A --> B) -> theory ⊢ ((A --> B) --> (¬B --> ¬A)).
 Proof.
   intros.
-  eapply deduction.
-  - shelve.
-  - shelve.
+  eapply (deduction _ _ _ _ _).
   - exact H1.
-  - eapply Modus_ponens.
-    + shelve.
-    + shelve.
-    + eapply syllogism_intro.
-      * shelve.
-      * shelve.
-      * shelve.
-      * eapply syllogism_intro.
-        -- shelve.
-        -- shelve.
-        -- shelve.
-        -- eapply (not_not_elim _ A).
-          ++ shelve.
+  - eapply (Modus_ponens _ _ _ _ _).
+    + eapply (syllogism_intro _ _ _ _ _ _ _).
+      * eapply (syllogism_intro _ _ _ _ _ _ _).
+        -- eapply (not_not_elim _ A _).
         -- exact H1.
-      * eapply (not_not_intro _ B).
-        -- shelve.
-    + eapply (P4 _ (¬A) (¬B)).
-      * shelve.
-      * shelve.
+      * eapply (not_not_intro _ B _).
+    + eapply (P4 _ (¬A) (¬B) _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma P4m_neg (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ ((¬B --> ¬A) --> (A --> ¬B) -->  ¬A).
 Proof.
   intros.
-  pose (PT := (P4 theory B A H0 H)).
-  eapply syllogism_intro.
-  - shelve.
-  - shelve.
-  - shelve.
+  epose (PT := (P4 theory B A _ _)).
+  eapply (syllogism_intro _ _ _ _ _ _ _).
   - exact PT.
-  - apply P4m.
-    + shelve.
-    + shelve.
+  - eapply (P4m _ _ _ _ _).
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma not_not_impl_intro_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (A --> B) -> theory ⊢ ((¬¬A) --> (¬¬B)).
 Proof.
   intros.
-  pose (NN1 := not_not_elim theory A H).
-  pose (NN2 := not_not_intro theory B H0).
+  epose (NN1 := not_not_elim theory A _).
+  epose (NN2 := not_not_intro theory B _).
   
-  assert(well_formed (¬ (¬ B))).
-  shelve.
-  pose (S1 := syllogism_intro _ _ _ _ H H0 H2 H1 NN2).
+  epose (S1 := syllogism_intro _ _ _ _ _ _ _ H1 NN2).
   
-  assert(well_formed (¬ (¬ A))).
-  shelve.
-  pose (S2 := syllogism_intro _ _ _ _ H3 H H2 NN1 S1).
+  epose (S2 := syllogism_intro _ _ _ _ _ _ _ NN1 S1).
   exact S2.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma not_not_impl_intro (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ ((A --> B) --> ((¬¬A) --> (¬¬B))).
 Proof.
   intros.
   
-  assert(well_formed (¬ (¬ A))).
-  shelve.
-  pose (S1 := syllogism theory (¬¬A) A B H1 H H0).
+  epose (S1 := syllogism theory (¬¬A) A B _ _ _).
   
-  assert(well_formed ((¬ (¬ A) --> A) --> (A --> B) --> ¬ (¬ A) --> B)).
-  shelve.
-  assert(well_formed (¬ (¬ A) --> A)).
-  shelve.
-  pose (MP1 := Modus_ponens _ (¬ (¬ A) --> A) ((A --> B) --> ¬ (¬ A) --> B) H3 H2 (not_not_elim _ A H) S1).
+  epose (MP1 := Modus_ponens _ (¬ (¬ A) --> A) ((A --> B) --> ¬ (¬ A) --> B) _ _ (not_not_elim _ A _) S1).
   
-  pose(NNB := not_not_intro theory B H0).
+  epose(NNB := not_not_intro theory B _).
+
+  epose(P1 := (P1 theory (B --> ¬ (¬ B)) (¬¬A) _ _)).
   
-  assert(well_formed (B --> ¬ (¬ B))).
-  shelve.
-  pose(P1 := (P1 theory (B --> ¬ (¬ B)) (¬¬A) H4 H1)).
+  epose(MP2 := Modus_ponens _ _ _ _ _ NNB P1).
   
-  assert(well_formed ((B --> ¬ (¬ B)) --> ¬ (¬ A) --> B --> ¬ (¬ B))).
-  shelve.
-  pose(MP2 := Modus_ponens _ _ _ H4 H5 NNB P1).
+  epose(P2 := (P2 theory (¬¬A) B (¬¬B) _ _ _)).
   
-  assert(well_formed (¬(¬ B))).
-  shelve.
-  pose(P2 := (P2 theory (¬¬A) B (¬¬B) H1 H0 H6)).
+  epose(MP3 := Modus_ponens _ _ _ _ _ MP2 P2).
   
-  assert(well_formed
-   ((¬ (¬ A) --> B --> ¬ (¬ B)) --> (¬ (¬ A) --> B) --> ¬ (¬ A) --> ¬ (¬ B))).
-  shelve.
-  assert(well_formed (¬ (¬ A) --> B --> ¬ (¬ B))).
-  shelve.
-  pose(MP3 := Modus_ponens _ _ _ H8 H7 MP2 P2).
-  
-  apply syllogism_intro with (B := (¬ (¬ A) --> B)).
+  eapply syllogism_intro with (B := (¬ (¬ A) --> B)).
     - shelve.
     - shelve.
     - shelve.
     - assumption.
     - assumption.
   Unshelve.
+  (* TODO: Doesn't finish
+  all:wf_proof. *)
   all:wf_check.
 Admitted.
 
@@ -934,20 +579,16 @@ Lemma contraposition (theory : Theory) (A B : Pattern) :
   theory ⊢ ((A --> B) --> ((¬ B) --> (¬ A))).
 Proof.
   intros.
-  assert(well_formed (¬ A)).
-  shelve.
-  assert(well_formed (¬ B)).
-  shelve.
-  pose(P4 theory (¬ A) (¬ B) H1 H2).
+  epose(P4 theory (¬ A) (¬ B) _ _).
   apply syllogism_intro with (B := (¬ (¬ A) --> ¬ (¬ B))).
   - shelve.
   - shelve.
   - shelve.
-  - apply not_not_impl_intro. shelve. shelve.
-  - apply (P4 _ _ _). shelve. shelve.
+  - eapply (not_not_impl_intro _ _ _ _ _).
+  - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B ->
@@ -955,155 +596,157 @@ Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
 Proof.
   intros. unfold patt_or in *.
   
-  assert(well_formed (¬B)).
-  shelve.
-  pose (P4 := (P4 theory A (¬B) H H2)).
+  epose (P4 := (P4 theory A (¬B) _ _)).
   
-  pose (NNI := not_not_intro theory B H0).
+  epose (NNI := not_not_intro theory B _).
   
-  assert(well_formed (¬ (¬ B))).
-  shelve.
-  assert(well_formed (¬ A)).
-  shelve.
-  pose (SI := syllogism_intro theory _ _ _ H4 H0 H3 H1 NNI).
+  epose (SI := syllogism_intro theory _ _ _ _ _ _ H1 NNI).
   
-  eapply Modus_ponens.
-  - shelve.
-  - shelve.
+  eapply (Modus_ponens _ _ _ _ _).
   - exact SI.
   - exact P4.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma A_implies_not_not_A_alt (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ A -> theory ⊢ (¬( ¬A )).
 Proof.
   intros. unfold patt_not.
-  pose (NN := not_not_intro theory A H).
+  epose (NN := not_not_intro theory A _).
   
-  assert(well_formed (A --> ¬ (¬ A))).
-  shelve.
-  pose (MP := Modus_ponens _ _ _ H H1 H0 NN).
+  epose (MP := Modus_ponens _ _ _ _ _ H0 NN).
   assumption.
   Unshelve.
-  all:wf_check.
-Admitted.
-
-(*TODO: Prove this axiom*)
-Lemma Prop_bot (theory : Theory) (C : Application_context) :
-  theory ⊢ ((subst_ctx C patt_bott) --> patt_bott).
-Admitted.
-
-Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_context) :
-  well_formed A -> theory ⊢ A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))).
-Proof.
-  intros.
-  pose (ANNA := A_implies_not_not_A_alt theory _ H H0).
-  replace (¬ (¬ A)) with ((¬ A) --> Bot) in ANNA. 2: auto.
-  pose (EF := Framing _ C (¬ A) Bot ANNA).
-  pose (PB := Prop_bot theory C).
-  
-  assert(well_formed Bot).
-  shelve.
-  assert(well_formed (subst_ctx C Bot)).
-  shelve.
-  assert(well_formed (subst_ctx C (¬ A))).
-  shelve.
-  pose (TRANS := syllogism_intro _ _ _ _ H3 H2 H1 EF PB).
-  
-  unfold patt_not.
-  assumption.
-  Unshelve.
-  all:wf_check.
-Admitted.
-
-Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
-  well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
-Proof.
-  intros. unfold patt_not.
-  pose (NN := not_not_intro G A H).
-  
-  assert(well_formed (A --> ¬ (¬ A))).
-  shelve.
-  pose (MP := Modus_ponens G _ _ H H1 H0 NN).
-  
-  assumption.
-  Unshelve.
-  all:wf_check.
-Admitted.
-
-(* Lemma equiv_implies_eq (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory ⊢ (A <--> B) -> theory ⊢ ()
- *)
- 
-(* Lemma equiv_implies_eq_theory *)
-
-(*...TODO: Missed some because totality not defined...*)
-
-Lemma ctx_bot_prop (theory : Theory) (C : Application_context) (A : Pattern) :
-  well_formed A -> theory ⊢ (A --> Bot) -> theory ⊢ (subst_ctx C A --> Bot).
-Proof.
-  intros.
-  pose (FR := Framing theory C A Bot H0).
-  pose (BPR := Prop_bot theory C).
-  
-  assert(well_formed Bot).
-  shelve.
-  assert(well_formed (subst_ctx C Bot)).
-  shelve.
-  assert(well_formed (subst_ctx C A)).
-  shelve.
-  pose (TRANS := syllogism_intro _ _ _ _ H3 H2 H1 FR BPR).
-  
-  assumption.
-  Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma P5i (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (¬ A --> (A --> B)).
 Proof.
   intros.
   
-  assert(well_formed (¬A)).
-  shelve.
-  assert(well_formed (¬B)).
-  shelve.
-  pose (Ax1 := (P1 theory (¬A) (¬B) H1 H2)).
+  epose (Ax1 := (P1 theory (¬A) (¬B) _ _)).
   
-  pose (Ax2 := (P4 theory B A H0 H)).
+  epose (Ax2 := (P4 theory B A _ _)).
   
-  assert(well_formed (A --> B)).
-  shelve.
-  assert(well_formed (¬ B --> ¬ A)).
-  shelve.
-  pose (TRANS := syllogism_intro _ _ _ _ H1 H4 H3 Ax1 Ax2).
+  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
   assumption.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Lemma false_implies_everything (theory : Theory) (phi : Pattern) :
   well_formed phi -> theory ⊢ (Bot --> phi).
 Proof.
   intro.
   
-  assert(well_formed Bot).
-  shelve.
-  pose (B_B := (A_impl_A theory Bot H0)).
-  pose (P4 := P5i theory Bot phi H0 H).
+  epose (B_B := (A_impl_A theory Bot _)).
+  epose (P4 := P5i theory Bot phi _ _).
   
-  apply Modus_ponens in P4.
+  eapply (Modus_ponens _ _ _ _ _) in P4.
   - assumption.
-  - shelve.
-  - shelve.
   - assumption.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
-(*Totality és ezek helyett mit? (--> ezzel lenne equal is)*)
+
+(* Goal  forall (A B : Pattern) (theory : Theory) , well_formed A -> well_formed B ->
+  theory ⊢ (A $ Bot $ B --> Bot).
+Proof.
+  intros.
+  epose (Prop_bott_right theory A H).
+  epose (Framing_left theory (A $ Bot) (Bot) B (m)).
+  epose (Prop_bott_left theory B H0).
+  epose (syllogism_intro theory _ _ _ _ _ _ (m0) (m1)).
+  exact m2.
+  Unshelve.
+  all:wf_proof.
+Qed. *)
+
+(*Was an axiom in AML_definition.v*)
+Lemma Prop_bot (theory : Theory) (C : Application_context) :
+  theory ⊢ ((subst_ctx C patt_bott) --> patt_bott).
+Proof.
+  induction C.
+  - simpl. eapply false_implies_everything. shelve.
+  - simpl. epose (Framing_left theory (subst_ctx C Bot) (Bot) p IHC).
+           epose (syllogism_intro theory _ _ _ _ _ _ (m) (Prop_bott_left theory p Prf)). exact m0.
+  - simpl. epose (Framing_right theory (subst_ctx C Bot) (Bot) p IHC).
+           epose (syllogism_intro theory _ _ _ _ _ _ (m) (Prop_bott_right theory p Prf)). exact m0.
+  Unshelve.
+  all:wf_proof.
+  all: assert(well_formed Bot).
+  all:wf_proof.
+Qed.
+
+(*Was an axiom in AML_definition.v*)
+Lemma Framing (theory : Theory) (C : Application_context) (A B : Pattern):
+  well_formed A -> well_formed B -> theory ⊢ (A --> B) -> theory ⊢ ((subst_ctx C A) --> (subst_ctx C B)).
+Proof.
+  induction C; intros.
+  - simpl. exact H1.
+  - simpl. epose (Framing_left theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
+   - simpl. epose (Framing_right theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_context) :
+  well_formed A -> theory ⊢ A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))).
+Proof.
+  intros.
+  epose (ANNA := A_implies_not_not_A_alt theory _ _ H0).
+  replace (¬ (¬ A)) with ((¬ A) --> Bot) in ANNA. 2: auto.
+  epose (EF := Framing _ C (¬ A) Bot _ _ ANNA).
+  epose (PB := Prop_bot theory C).
+  
+  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ EF PB).
+  
+  unfold patt_not.
+  assumption.
+  Unshelve.
+  2,4:assert (well_formed (¬ A)).
+  6,7:assert (well_formed (Bot)).
+  all:wf_proof.
+Qed.
+
+Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
+  well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
+Proof.
+  intros. unfold patt_not.
+  epose (NN := not_not_intro G A _).
+  
+  epose (MP := Modus_ponens G _ _ _ _ H0 NN).
+  
+  assumption.
+  Unshelve.
+  all:wf_proof.
+Qed.
+
+(* Lemma equiv_implies_eq (theory : Theory) (A B : Pattern) :
+  well_formed A -> well_formed B -> theory ⊢ (A <--> B) -> theory ⊢ ()
+ *) (*Need equal*)
+ 
+(* Lemma equiv_implies_eq_theory *)
+
+(*...Missing some lemmas because of the lack of defidness definition...*)
+
+Lemma ctx_bot_prop (theory : Theory) (C : Application_context) (A : Pattern) :
+  well_formed A -> theory ⊢ (A --> Bot) -> theory ⊢ (subst_ctx C A --> Bot).
+Proof.
+  intros.
+  epose (FR := Framing theory C A Bot _ _ H0).
+  epose (BPR := Prop_bot theory C).
+  
+  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ FR BPR).
+  
+  assumption.
+  Unshelve.
+  4: assert (well_formed (Bot)).
+  all:wf_proof.
+Qed.
 
 Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
   well_formed A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))) -> theory ⊢ A.
@@ -1111,78 +754,28 @@ Proof.
   intros.
   unfold patt_not in H0 at 1.
   
-  assert(well_formed (subst_ctx C Bot)).
-  shelve.
-  pose (BIE := false_implies_everything theory (subst_ctx C Bot) H1).
+  epose (BIE := false_implies_everything theory (subst_ctx C Bot) _).
   
-  assert(well_formed Bot).
-  shelve.
-  assert(well_formed (subst_ctx C (¬ A))).
-  shelve.
-  pose (TRANS := syllogism_intro _ _ _ _ H3 H2 H1 H0 BIE).
+  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ H0 BIE).
   
   induction C.
   - simpl in TRANS.
-    pose (NN := not_not_elim theory A H).
-    assert(well_formed ((¬ A --> Bot) --> A)).
-    shelve.
-    assert(well_formed (¬ A --> Bot)).
-    shelve.
-    pose (MP := Modus_ponens _ _ _ H5 H4 TRANS NN). assumption.
+    epose (NN := not_not_elim theory A _).
+    epose (MP := Modus_ponens _ _ _ _ _ TRANS NN). assumption.
   - eapply IHC.
   Unshelve.
   Abort.
-
+  
 Definition empty_theory := {|patterns := Empty_set Pattern|}.
-
-Lemma provable_to_proved (theory : Theory) (A : Pattern) :
-  well_formed A -> empty_theory ⊢ A -> theory ⊢ A.
-Proof.
-  intros. dependent induction H0.
-  - unfold empty_theory in H1. contradict H1.
-  - exact (P1 theory phi psi H0 H1).
-  - exact (P2 theory phi psi xi H0 H1 H2).
-  - exact (P3 theory phi H0).
-  - exact (Modus_ponens theory phi1 phi2 H0 H1 (IHML_proof_system1 H0) (IHML_proof_system2 H1)).
-  - exact (Ex_quan _ phi y H0).
-  - assert (well_formed (phi1 --> phi2)). shelve.
-    + exact (Ex_gen _ phi1 phi2 x H0 H1 (IHML_proof_system H4) H3).
-  - exact (Prop_bott_left _ phi H0).
-  - exact (Prop_bott_right _ phi H0).
-  - exact (Prop_disj_left _ phi1 phi2 psi H0 H1 H2).
-  - exact (Prop_disj_right _ phi1 phi2 psi H0 H1 H2).
-  - exact (Prop_ex_left _ phi psi H0 H1).
-  - exact (Prop_ex_right _ phi psi H0 H1).
-  - assert (well_formed (phi1 --> phi2)). shelve.
-    + exact (Framing _ C phi1 phi2 (IHML_proof_system H1)).
-  - assert (well_formed phi). shelve.
-    + exact (Svar_subst _ phi psi X (IHML_proof_system H1)).
-  - exact (Pre_fixp _ phi).
-  - assert (well_formed (instantiate (mu , phi) psi --> psi)). shelve.
-    + exact (Knaster_tarski _ phi psi (IHML_proof_system H1)).
-  - exact (Existence _).
-  - exact (Singleton_ctx _ C1 C2 phi x).
-  Unshelve.
-  all:wf_check.
-Admitted.
-
-(* Lemma proved_impl_to_provable (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> (theory ⊢ A -> theory ⊢ B) ->
-  (empty_theory ⊢ A -> empty_theory ⊢ B).
-Proof.
-  intros. *)
-
 Lemma exclusion (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (A --> Bot) -> G ⊢ Bot.
 Proof.
   intros.
-  assert(well_formed (A --> Bot)).
-  shelve.
-  pose(Modus_ponens G A Bot H H2 H0 H1).
+  epose(Modus_ponens G A Bot _ _ H0 H1).
   assumption.
   Unshelve.
-  all:wf_check.
-Admitted.
+  all:wf_proof.
+Qed.
 
 Axiom exclusion_axiom : forall G A,
   G ⊢ A -> G ⊢ (¬ A) -> False.
@@ -1190,7 +783,6 @@ Axiom exclusion_axiom : forall G A,
 Axiom or_or : forall G A,
 G ⊢ A \/ G ⊢ (¬ A).
 
-(*TODO: Prove if totality etc. defined*)
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
 
