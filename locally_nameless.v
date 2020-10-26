@@ -756,11 +756,11 @@ Inductive ML_proof_system (theory : Theory) :
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
-      theory |- ((phi1 --> phi2) $ psi) ->
+      theory |- (phi1 --> phi2) ->
       theory |- ((phi1 $ psi) --> (phi2 $ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
-      theory |- (psi $ (phi1 --> phi2)) ->
+      theory |- (phi1 --> phi2) ->
       theory |- ((psi $ phi1) --> (psi $ phi2))
 
 (* Fixpoint reasoning *)

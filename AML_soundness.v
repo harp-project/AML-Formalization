@@ -191,6 +191,9 @@ Proof.
     split; assumption.
 
   * rewrite ext_valuation_imp_simpl. repeat rewrite ext_valuation_app_simpl.
+ (* 
+    TODO (Framing rule corrected) : Fix this proof
+
     rewrite ext_valuation_app_simpl in IHHp.
     rewrite ext_valuation_imp_simpl in IHHp.
     constructor. constructor.    
@@ -206,7 +209,8 @@ Proof.
     unfold In in *.
     destruct H as [le [re [Hunion [Hpsi Happ_interp]]]].
     inversion Hunion. admit.
-    right. exists le, re. repeat split; assumption.
+    right. exists le, re. repeat split; assumption. *)
+    admit.
 
   * admit.
 
