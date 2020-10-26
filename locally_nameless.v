@@ -661,24 +661,24 @@ Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
 Inductive Application_context : Set :=
 | box
-| ctx_app_l (cc : Application_context) (p : Pattern)
-| ctx_app_r (p : Pattern) (cc : Application_context)
+| ctx_app_l (cc : Application_context) (p : Pattern) (Prf : well_formed p)
+| ctx_app_r (p : Pattern) (cc : Application_context) (Prf : well_formed p)
 .
 
 Fixpoint subst_ctx (C : Application_context) (p : Pattern)
   : Pattern :=
 match C with
 | box => p
-| ctx_app_l C' p' => patt_app (subst_ctx C' p) p'
-| ctx_app_r p' C' => patt_app p' (subst_ctx C' p)
+| ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
+| ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
 end.
 
 Fixpoint free_evars_ctx (C : Application_context)
   : (ListSet.set evar_name) :=
 match C with
 | box => List.nil
-| ctx_app_l cc p => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
-| ctx_app_r p cc => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
+| ctx_app_l cc p prf => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
+| ctx_app_r p cc prf => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
 end.
 
 (* Proof system for AML ref. snapshot: Section 3 *)
