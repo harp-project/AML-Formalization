@@ -686,106 +686,106 @@ end.
 (* TODO: add well-formedness of theory *)
 (* TODO: use well-formedness as parameter in proof system *)
 (* Reserved Notation "pattern 'proved'" (at level 2). *)
-Reserved Notation "theory |- pattern" (at level 1).
+Reserved Notation "theory ⊢ pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
   Pattern -> Prop :=
 
 (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (In _ (patterns theory) axiom) -> theory |- axiom
+      (In _ (patterns theory) axiom) -> theory ⊢ axiom
   
 (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory |- (phi --> (psi --> phi))
+      theory ⊢ (phi --> (psi --> phi))
   | P2 (phi psi xi : Pattern) :
       well_formed phi -> well_formed psi -> well_formed xi ->
-      theory |- ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
+      theory ⊢ ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
   | P3 (phi : Pattern) :
       well_formed phi ->
-      theory |- (((phi --> Bot) --> Bot) --> phi)
+      theory ⊢ (((phi --> Bot) --> Bot) --> phi)
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
       well_formed phi1 -> well_formed (phi1 --> phi2) ->
-      theory |- phi1 ->
-      theory |- (phi1 --> phi2) ->
-      theory |- phi2
+      theory ⊢ phi1 ->
+      theory ⊢ (phi1 --> phi2) ->
+      theory ⊢ phi2
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar_name) :
       well_formed phi ->
-      theory |- (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
+      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
       well_formed phi1 -> well_formed phi2 ->
-      theory |- (phi1 --> phi2) ->
+      theory ⊢ (phi1 --> phi2) ->
       set_mem eq_evar_name x (free_evars phi2) = false ->
-      theory |- (exists_quantify x phi1 --> phi2)
+      theory ⊢ (exists_quantify x phi1 --> phi2)
 
 (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
       well_formed phi ->
-      theory |- (patt_bott $ phi --> patt_bott)
+      theory ⊢ (patt_bott $ phi --> patt_bott)
 
   | Prop_bott_right (phi : Pattern) :
       well_formed phi ->
-      theory |- (phi $ patt_bott --> patt_bott)
+      theory ⊢ (phi $ patt_bott --> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory |- (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
+      theory ⊢ (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory |- ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
+      theory ⊢ ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory |- (((ex , phi) $ psi) --> (ex , phi $ psi))
+      theory ⊢ (((ex , phi) $ psi) --> (ex , phi $ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory |- ((psi $ (ex , phi)) --> (ex , psi $ phi))
+      theory ⊢ ((psi $ (ex , phi)) --> (ex , psi $ phi))
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
-      theory |- (phi1 --> phi2) ->
-      theory |- ((phi1 $ psi) --> (phi2 $ psi))
+      theory ⊢ (phi1 --> phi2) ->
+      theory ⊢ ((phi1 $ psi) --> (phi2 $ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
-      theory |- (phi1 --> phi2) ->
-      theory |- ((psi $ phi1) --> (psi $ phi2))
+      theory ⊢ (phi1 --> phi2) ->
+      theory ⊢ ((psi $ phi1) --> (psi $ phi2))
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
   | Svar_subst (phi psi : Pattern) (X : svar_name) :
-      theory |- phi -> theory |- (free_svar_subst phi psi X)
+      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
   (* TODO: is this correct? *)
   | Pre_fixp (phi : Pattern) :
-      theory |- (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
+      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
-      theory |- ((instantiate (patt_mu phi) psi) --> psi) ->
-      theory |- ((patt_mu phi) --> psi)
+      theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
+      theory ⊢ ((patt_mu phi) --> psi)
 
 (* Technical rules *)
   (* Existence *)
-  | Existence : theory |- (ex , patt_bound_evar 0)
+  | Existence : theory ⊢ (ex , patt_bound_evar 0)
 
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar_name) : 
-      theory |- (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
+      theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
-where "theory |- pattern" := (ML_proof_system theory pattern).
+where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 

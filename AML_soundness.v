@@ -16,7 +16,7 @@ Require Export Coq.Program.Wf.
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
-  well_formed phi -> (theory |- phi) -> (theory |= phi).
+  well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
 Proof.
   intros phi theory Hwf Hp. unfold "|=". unfold "|=T", "|=M".
   intros m Hv evar_val svar_val.

@@ -35,7 +35,7 @@ end.
   end . *)
 
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
-(well_formed A) -> theory |- (A --> A).
+(well_formed A) -> theory ⊢ (A --> A).
 Proof. 
   intros.
   assert(well_formed (A --> A)).
@@ -63,7 +63,7 @@ Proof.
 Admitted.
   
 Lemma P4m (A B : Pattern) (theory : Theory) :
- (well_formed A) -> (well_formed B) -> theory |- ((A --> B) --> ((A --> ¬B) --> ¬A)).
+ (well_formed A) -> (well_formed B) -> theory ⊢ ((A --> B) --> ((A --> ¬B) --> ¬A)).
 Proof.
   intros. eapply (Modus_ponens theory _ _ ).
   - shelve.
@@ -105,7 +105,7 @@ Admitted.
 
 
 Lemma P4i (theory : Theory) (A : Pattern) :
-well_formed A -> theory |- ((A --> ¬A) --> ¬A).
+well_formed A -> theory ⊢ ((A --> ¬A) --> ¬A).
 Proof.
   intros. eapply Modus_ponens.
   (* assert (well_formed (A --> A)). Needed for proving 1' and to apply 2'*)
@@ -121,7 +121,7 @@ Proof.
 Admitted.
 
 Lemma reorder (theory : Theory) (A B C : Pattern) :
-well_formed A -> well_formed B -> well_formed C -> theory |- ((A --> B --> C) --> ( B --> A --> C)).
+well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A --> B --> C) --> ( B --> A --> C)).
 Proof.
   intros.
   (*Helping hypothesises inside t1*)
@@ -225,7 +225,7 @@ Admitted.
 
 Lemma reorder_meta (theory : Theory) {A B C : Pattern} :
   well_formed A -> well_formed B -> well_formed C ->  
-  theory |- (A --> B --> C) -> theory |- (B --> A --> C).
+  theory ⊢ (A --> B --> C) -> theory ⊢ (B --> A --> C).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -261,11 +261,11 @@ Admitted.
 (*TODO: Prove this axiom*)
 Lemma P4 (theory : Theory) (phi psi : Pattern)  :
 well_formed phi -> well_formed psi -> 
-theory |- (((¬ phi) --> (¬ psi)) --> (psi --> phi)).
+theory ⊢ (((¬ phi) --> (¬ psi)) --> (psi --> phi)).
 Admitted.
 
 Lemma conj_intro (theory : Theory) (A B : Pattern) :
-well_formed A -> well_formed B -> theory |- (A --> B --> (A and B)).
+well_formed A -> well_formed B -> theory ⊢ (A --> B --> (A and B)).
 Proof.
   intros.
   pose(tB := (A_impl_A theory B H0)).
@@ -487,7 +487,7 @@ Proof.
 Admitted.
 
 Lemma conj_intro_meta (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- A -> theory |- B -> theory |- (A and B).
+  well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A and B).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -507,7 +507,7 @@ Admitted.
 Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
 
 Lemma disj (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> B --> (A or B)).
+  well_formed A -> well_formed B -> theory ⊢ (A --> B --> (A or B)).
 Proof.
   intros. unfold patt_or.
   
@@ -530,7 +530,7 @@ Proof.
 Admitted.
 
 Lemma disj_intro (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- A -> theory |- B -> theory |- (A or B).
+  well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A or B).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -547,7 +547,7 @@ Proof.
 Admitted.
 
 Lemma syllogism (theory : Theory) (A B C : Pattern) :
-  well_formed A -> well_formed B -> well_formed C -> theory |- ((A --> B) --> (B --> C) --> (A --> C)).
+  well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A --> B) --> (B --> C) --> (A --> C)).
 Proof.
   intros.
   eapply reorder_meta.
@@ -582,7 +582,7 @@ Proof.
 Admitted.
 
 Lemma syllogism_intro (theory : Theory) (A B C : Pattern) :
-  well_formed A -> well_formed B -> well_formed C -> theory |- (A --> B) -> theory |- (B --> C) -> theory |- (A --> C).
+  well_formed A -> well_formed B -> well_formed C -> theory ⊢ (A --> B) -> theory ⊢ (B --> C) -> theory ⊢ (A --> C).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -600,7 +600,7 @@ Admitted.
 
 Lemma syllogism_4_meta (theory : Theory) (A B C D : Pattern) :
   well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-  theory |- (A --> B --> C) -> theory |- (C --> D) -> theory |- (A --> B --> D).
+  theory ⊢ (A --> B --> C) -> theory ⊢ (C --> D) -> theory ⊢ (A --> B --> D).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -639,7 +639,7 @@ Proof.
 Admitted.
 
 Lemma bot_elim (theory : Theory) (A : Pattern) :
-  well_formed A -> theory |- (Bot --> A).
+  well_formed A -> theory ⊢ (Bot --> A).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -675,7 +675,7 @@ Proof.
 Admitted.
 
 Lemma modus_ponens (theory : Theory) ( A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> (A --> B) --> B).
+  well_formed A -> well_formed B -> theory ⊢ (A --> (A --> B) --> B).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -709,7 +709,7 @@ Proof.
 Admitted.
 
 Lemma modus_ponens' (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> (¬B --> ¬A) --> B).
+  well_formed A -> well_formed B -> theory ⊢ (A --> (¬B --> ¬A) --> B).
 Proof.
   intros.
   assert(well_formed (¬ B --> ¬ A)).
@@ -720,7 +720,7 @@ Proof.
 Admitted.
 
 Lemma disj_right_intro (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (B --> (A or B)).
+  well_formed A -> well_formed B -> theory ⊢ (B --> (A or B)).
 Proof.
   intros.
   assert(well_formed (¬A)).
@@ -731,7 +731,7 @@ Proof.
 Admitted.
 
 Lemma disj_left_intro (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> (A or B)).
+  well_formed A -> well_formed B -> theory ⊢ (A --> (A or B)).
 Proof.
   intros.
   assert(well_formed Bot).
@@ -742,7 +742,7 @@ Proof.
 Admitted.
 
 Lemma not_not_intro (theory : Theory) (A : Pattern) :
-  well_formed A -> theory |- (A --> ¬(¬A)).
+  well_formed A -> theory ⊢ (A --> ¬(¬A)).
 Proof.
   intros.
   assert(well_formed Bot).
@@ -753,7 +753,7 @@ Proof.
 Admitted.
 
 Lemma not_not_elim (theory : Theory) (A : Pattern) :
-  well_formed A -> theory |- (¬(¬A) --> A).
+  well_formed A -> theory ⊢ (¬(¬A) --> A).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -770,7 +770,7 @@ Proof.
 Admitted.
 
 Lemma double_neg_elim (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (((¬(¬A)) --> (¬(¬B))) --> (A --> B)).
+  well_formed A -> well_formed B -> theory ⊢ (((¬(¬A)) --> (¬(¬B))) --> (A --> B)).
 Proof.
   intros.
   eapply syllogism_intro.
@@ -789,7 +789,7 @@ Admitted.
 
 Lemma double_neg_elim_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> 
-  theory |- ((¬(¬A)) --> (¬(¬B))) -> theory |- (A --> B).
+  theory ⊢ ((¬(¬A)) --> (¬(¬B))) -> theory ⊢ (A --> B).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -802,7 +802,7 @@ Proof.
 Admitted.
 
 Lemma deduction (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- A -> theory |- B -> theory |- (A --> B).
+  well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A --> B).
 Proof.
   intros.
   eapply Modus_ponens.
@@ -817,7 +817,7 @@ Proof.
 Admitted.
 
 Lemma P4_rev_meta (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> B) -> theory |- ((A --> B) --> (¬B --> ¬A)).
+  well_formed A -> well_formed B -> theory ⊢ (A --> B) -> theory ⊢ ((A --> B) --> (¬B --> ¬A)).
 Proof.
   intros.
   eapply deduction.
@@ -848,7 +848,7 @@ Proof.
 Admitted.
 
 Lemma P4m_neg (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- ((¬B --> ¬A) --> (A --> ¬B) -->  ¬A).
+  well_formed A -> well_formed B -> theory ⊢ ((¬B --> ¬A) --> (A --> ¬B) -->  ¬A).
 Proof.
   intros.
   pose (PT := (P4 theory B A H0 H)).
@@ -865,7 +865,7 @@ Proof.
 Admitted.
 
 Lemma not_not_impl_intro_meta (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A --> B) -> theory |- ((¬¬A) --> (¬¬B)).
+  well_formed A -> well_formed B -> theory ⊢ (A --> B) -> theory ⊢ ((¬¬A) --> (¬¬B)).
 Proof.
   intros.
   pose (NN1 := not_not_elim theory A H).
@@ -884,7 +884,7 @@ Proof.
 Admitted.
 
 Lemma not_not_impl_intro (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- ((A --> B) --> ((¬¬A) --> (¬¬B))).
+  well_formed A -> well_formed B -> theory ⊢ ((A --> B) --> ((¬¬A) --> (¬¬B))).
 Proof.
   intros.
   
@@ -931,7 +931,7 @@ Admitted.
 
 Lemma contraposition (theory : Theory) (A B : Pattern) : 
   well_formed A -> well_formed B -> 
-  theory |- ((A --> B) --> ((¬ B) --> (¬ A))).
+  theory ⊢ ((A --> B) --> ((¬ B) --> (¬ A))).
 Proof.
   intros.
   assert(well_formed (¬ A)).
@@ -951,7 +951,7 @@ Admitted.
 
 Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B ->
-  theory |- (A or B) -> theory |- (B or A).
+  theory ⊢ (A or B) -> theory ⊢ (B or A).
 Proof.
   intros. unfold patt_or in *.
   
@@ -977,7 +977,7 @@ Proof.
 Admitted.
 
 Lemma A_implies_not_not_A_alt (theory : Theory) (A : Pattern) :
-  well_formed A -> theory |- A -> theory |- (¬( ¬A )).
+  well_formed A -> theory ⊢ A -> theory ⊢ (¬( ¬A )).
 Proof.
   intros. unfold patt_not.
   pose (NN := not_not_intro theory A H).
@@ -992,11 +992,11 @@ Admitted.
 
 (*TODO: Prove this axiom*)
 Lemma Prop_bot (theory : Theory) (C : Application_context) :
-  theory |- ((subst_ctx C patt_bott) --> patt_bott).
+  theory ⊢ ((subst_ctx C patt_bott) --> patt_bott).
 Admitted.
 
 Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_context) :
-  well_formed A -> theory |- A -> theory |- (¬ (subst_ctx C ( ¬A ))).
+  well_formed A -> theory ⊢ A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))).
 Proof.
   intros.
   pose (ANNA := A_implies_not_not_A_alt theory _ H H0).
@@ -1019,7 +1019,7 @@ Proof.
 Admitted.
 
 Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
-  well_formed A -> G |- A -> G |- (¬( ¬A )).
+  well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
 Proof.
   intros. unfold patt_not.
   pose (NN := not_not_intro G A H).
@@ -1034,7 +1034,7 @@ Proof.
 Admitted.
 
 (* Lemma equiv_implies_eq (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (A <--> B) -> theory |- ()
+  well_formed A -> well_formed B -> theory ⊢ (A <--> B) -> theory ⊢ ()
  *)
  
 (* Lemma equiv_implies_eq_theory *)
@@ -1042,7 +1042,7 @@ Admitted.
 (*...TODO: Missed some because totality not defined...*)
 
 Lemma ctx_bot_prop (theory : Theory) (C : Application_context) (A : Pattern) :
-  well_formed A -> theory |- (A --> Bot) -> theory |- (subst_ctx C A --> Bot).
+  well_formed A -> theory ⊢ (A --> Bot) -> theory ⊢ (subst_ctx C A --> Bot).
 Proof.
   intros.
   pose (FR := Framing theory C A Bot H0).
@@ -1062,7 +1062,7 @@ Proof.
 Admitted.
 
 Lemma P5i (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory |- (¬ A --> (A --> B)).
+  well_formed A -> well_formed B -> theory ⊢ (¬ A --> (A --> B)).
 Proof.
   intros.
   
@@ -1085,7 +1085,7 @@ Proof.
 Admitted.
 
 Lemma false_implies_everything (theory : Theory) (phi : Pattern) :
-  well_formed phi -> theory |- (Bot --> phi).
+  well_formed phi -> theory ⊢ (Bot --> phi).
 Proof.
   intro.
   
@@ -1106,7 +1106,7 @@ Admitted.
 (*Totality és ezek helyett mit? (--> ezzel lenne equal is)*)
 
 Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
-  well_formed A -> theory |- (¬ (subst_ctx C ( ¬A ))) -> theory |- A.
+  well_formed A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))) -> theory ⊢ A.
 Proof.
   intros.
   unfold patt_not in H0 at 1.
@@ -1136,7 +1136,7 @@ Proof.
 Definition empty_theory := {|patterns := Empty_set Pattern|}.
 
 Lemma provable_to_proved (theory : Theory) (A : Pattern) :
-  well_formed A -> empty_theory |- A -> theory |- A.
+  well_formed A -> empty_theory ⊢ A -> theory ⊢ A.
 Proof.
   intros. dependent induction H0.
   - unfold empty_theory in H1. contradict H1.
@@ -1167,13 +1167,13 @@ Proof.
 Admitted.
 
 (* Lemma proved_impl_to_provable (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> (theory |- A -> theory |- B) ->
-  (empty_theory |- A -> empty_theory |- B).
+  well_formed A -> well_formed B -> (theory ⊢ A -> theory ⊢ B) ->
+  (empty_theory ⊢ A -> empty_theory ⊢ B).
 Proof.
   intros. *)
 
 Lemma exclusion (G : Theory) (A : Pattern) :
-  well_formed A -> G |- A -> G |- (A --> Bot) -> G |- Bot.
+  well_formed A -> G ⊢ A -> G ⊢ (A --> Bot) -> G ⊢ Bot.
 Proof.
   intros.
   assert(well_formed (A --> Bot)).
@@ -1185,38 +1185,38 @@ Proof.
 Admitted.
 
 Axiom exclusion_axiom : forall G A,
-  G |- A -> G |- (¬ A) -> False.
+  G ⊢ A -> G ⊢ (¬ A) -> False.
 
 Axiom or_or : forall G A,
-G |- A \/ G |- (¬ A).
+G ⊢ A \/ G ⊢ (¬ A).
 
 (*TODO: Prove if totality etc. defined*)
 (* Axiom extension : forall G A B,
-  G |- A -> (Add Sigma_pattern G B) |- A. *)
+  G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
 
 (* Lemma empty_theory_implies_any A : forall G,
-  empty_theory |- A -> G |- A. *)
+  empty_theory ⊢ A -> G ⊢ A. *)
 
 (* Lemma equiv_cong G phi1 phi2 C x :
-  (G |- (phi1 <~> phi2)) -> G |- ((e_subst_var C phi1 x) <~> (e_subst_var C phi2 x)). *)
+  (G ⊢ (phi1 <~> phi2)) -> G ⊢ ((e_subst_var C phi1 x) <~> (e_subst_var C phi2 x)). *)
 
 (* Lemma eq_refl
   (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- (phi ~=~ phi). *)
+    theory ⊢ (phi ~=~ phi). *)
 
 (* Lemma eq_trans
   (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi3) ->
-    theory |- (phi1 ~=~ phi3). *)
+    theory ⊢ (phi1 ~=~ phi2) -> theory ⊢ (phi2 ~=~ phi3) ->
+    theory ⊢ (phi1 ~=~ phi3). *)
 
 (* Lemma eq_symm
   (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
-    theory |- (phi1 ~=~ phi2) -> theory |- (phi2 ~=~ phi1). *)
+    theory ⊢ (phi1 ~=~ phi2) -> theory ⊢ (phi2 ~=~ phi1). *)
 
 (* Lemma eq_evar_subst
   (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory |- (phi1 ~=~ phi2) ->
-    theory |- ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)). *)
+    theory ⊢ (phi1 ~=~ phi2) ->
+    theory ⊢ ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)). *)
 
 (* Lemma A_implies_A_totality A:
   A proved -> |_ A _| proved. *)
@@ -1225,29 +1225,4 @@ G |- A \/ G |- (¬ A).
   |_ A _| proved -> A proved. *)
 
 (* Lemma universal_instantiation (theory : Theory) (A : Pattern) (x y : evar):
-  theory |- ((all' x, A) --> (e_subst_var A y x)). *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  theory ⊢ ((all' x, A) --> (e_subst_var A y x)). *)
