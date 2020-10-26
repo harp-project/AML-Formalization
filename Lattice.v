@@ -318,10 +318,65 @@ Proof.
 Qed.
 
 
+Lemma lfp_preserves_order {A : Type} (OS : OrderedSet A) (L : CompleteLattice A) (f g : A -> A) :
+  MonotonicFunction f -> MonotonicFunction g ->
+  (forall (x : A), leq (f x) (g x)) ->
+  leq (LeastFixpointOf f) (LeastFixpointOf g).
+Proof.
+  intros.
+  apply (LeastFixpoint_LesserThanPrefixpoint A OS L).
+  assert (leq (f (LeastFixpointOf g)) (g (LeastFixpointOf g))).
+  { apply H1. }
+  assert (g (LeastFixpointOf g) = LeastFixpointOf g).
+  { apply LeastFixpoint_fixpoint. assumption.  }
+  remember (Relation_Definitions.ord_trans A (@leq A OS) (@leq_order A OS)). clear Heqt.
+  unfold Relation_Definitions.transitive in t.
+  apply t with (y := g (LeastFixpointOf g)).
+  assumption. rewrite -> H3.
+  remember (Relation_Definitions.ord_refl A (@leq A OS) (@leq_order A OS)). clear Heqr.
+  unfold Relation_Definitions.reflexive in r. apply r.
+Qed.
+
+Section powerset_lattice.
+  Variable U : Type.
+
+  Program Definition EnsembleOrderedSet : OrderedSet (Ensemble U) :=
+  {| leq := Ensembles.Included U;
+  |}.
+
+  Next Obligation.
+    constructor.
+    * unfold reflexive. unfold Included. auto.
+    * unfold transitive. unfold Included. auto.
+    * unfold antisymmetric. intros.
+      apply Extensionality_Ensembles. split; auto.
+  Qed.
 
 
+  Definition Meet (ee : Ensemble (Ensemble U)) : Ensemble U :=
+    fun m => forall e : Ensemble U,
+        Ensembles.In (Ensemble U) ee e -> Ensembles.In U e m.
 
 
+  Lemma Meet_is_meet : @isMeet (Ensemble U) EnsembleOrderedSet Meet.
+  Proof.
+    unfold isMeet. unfold greatestLowerBound. unfold lowerBound.
+    intro X. split.
+    - intros. simpl. unfold Included. intros. unfold In in H0. unfold Meet in H0.
+      auto.
+    - intros. simpl. unfold Included. intros. unfold leq in H. simpl in H.
+      unfold In. unfold Meet. intros. unfold Included in H.
+      unfold In in *.
+      apply H. assumption. assumption.
+  Qed.
+
+  Definition PowersetLattice : CompleteLattice (Ensemble U) :=
+    {| meet := Meet;
+       join := joinFromMeet Meet;
+       meet_isMeet := Meet_is_meet;
+       join_isJoin := joinFromMeet_lub (Ensemble U) EnsembleOrderedSet Meet Meet_is_meet;
+    |}.
+End powerset_lattice.
 
 
 

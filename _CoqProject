@@ -14,5 +14,4 @@ names.v
 #TEST_Function_and_Predicate.v
 # Does not compile
 #TEST_Context.v
-KnasterTarski.v
-PowersetLattice.v
+Lattice.v

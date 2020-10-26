@@ -12,6 +12,7 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 
+Section locally_nameless.
 (** ** Matching Logic Syntax *)
 
 Inductive Sigma : Type := sigma_c {id_si : string}.
@@ -23,7 +24,7 @@ Record Signature := {
   symbols : Power Sigma
 }.
 
-Parameter signature : Signature.
+Variable signature : Signature.
 
 Inductive Pattern : Type :=
 | patt_free_evar (x : evar_name)
@@ -789,3 +790,4 @@ Inductive ML_proof_system (theory : Theory) :
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
+End locally_nameless.

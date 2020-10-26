@@ -3,9 +3,8 @@ Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
 Require Import names.
-Require Import KnasterTarski.
 Require Export locally_nameless.
-Require Import PowersetLattice.
+Require Import Lattice.
 
 Require Import Coq.micromega.Lia.
 
@@ -15,24 +14,9 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 
-Lemma lfp_preserves_order {A : Type} (OS : OrderedSet A) (L : CompleteLattice A) (f g : A -> A) :
-  MonotonicFunction f -> MonotonicFunction g ->
-  (forall (x : A), leq (f x) (g x)) ->
-  leq (LeastFixpointOf f) (LeastFixpointOf g).
-Proof.
-  intros.
-  apply (LeastFixpoint_LesserThanPrefixpoint A OS L).
-  assert (leq (f (LeastFixpointOf g)) (g (LeastFixpointOf g))).
-  { apply H1. }
-  assert (g (LeastFixpointOf g) = LeastFixpointOf g).
-  { apply LeastFixpoint_fixpoint. assumption.  }
-  remember (Relation_Definitions.ord_trans A (@leq A OS) (@leq_order A OS)). clear Heqt.
-  unfold Relation_Definitions.transitive in t.
-  apply t with (y := g (LeastFixpointOf g)).
-  assumption. rewrite -> H3.
-  remember (Relation_Definitions.ord_refl A (@leq A OS) (@leq_order A OS)). clear Heqr.
-  unfold Relation_Definitions.reflexive in r. apply r.
-Qed.
+Check In.
+Check @ext_valuation.
+
 
 Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
   forall (var : svar_name),
@@ -62,7 +46,12 @@ Lemma respects_blacklist_implies_monotonic :
 .
 Proof.
   induction phi.
-  - (*  *)
+  - (* EVar *)
+    intros.
+    assert (HEq : ext_valuation evar_val (update_valuation svar_name_eqb X S2 svar_val) (patt_free_evar x)
+                  = ext_valuation evar_val (update_valuation svar_name_eqb X S1 svar_val) (patt_free_evar x)).
+    { rewrite -> ext_valuation_free_evar_simpl. rewrite -> ext_valuation_free_evar_simpl. reflexivity. }
+    
 Admitted.
 
 
