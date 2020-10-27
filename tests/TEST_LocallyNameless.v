@@ -1,5 +1,4 @@
 Require Import locally_nameless.
-Require Import names.
 Require Import ML.Signature.
 Require Import ML.DefaultVariables.
 Import MLNotations.
