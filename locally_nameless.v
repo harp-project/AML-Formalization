@@ -13,12 +13,11 @@ Require Export Ensembles_Ext.
 Require Export Coq.Program.Wf.
 Require Import ML.Signature.
 
-Section locally_nameless.
 (** ** Matching Logic Syntax *)
 
 Definition db_index := nat.
 
-Variable signature : Signature.
+Context {signature : Signature}.
 
 Inductive Pattern : Type :=
 | patt_free_evar (x : evar_name)
@@ -746,5 +745,3 @@ Inductive ML_proof_system (theory : Theory) :
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
-
-End locally_nameless.
