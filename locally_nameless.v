@@ -311,10 +311,6 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
-(* TODO move to signature *)
-Parameter fresh_evar_name : evar_name.
-Parameter fresh_svar_name : svar_name.
-
 Inductive positive_occurrence : svar_name -> Pattern -> Prop :=
 | po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence sv (patt_free_evar x)
 | po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence sv (patt_free_svar x)
@@ -368,7 +364,9 @@ Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   | patt_bott => True
   | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
   | patt_exists psi => well_formed_positive psi
-  | patt_mu psi => positive_occurrence fresh_svar_name (svar_open 0 fresh_svar_name psi) /\ well_formed_positive psi
+  | patt_mu psi => let X := svar_fresh (variables signature) (free_svars psi) in
+    positive_occurrence X (svar_open 0 X psi)
+                   /\ well_formed_positive psi
   end.
 
 Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
@@ -461,15 +459,17 @@ match p with
 | patt_imp ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val ls))
                             (ext_valuation evar_val svar_val rs)
 | patt_exists p' =>
+  let x := evar_fresh (variables signature) (free_evars p') in
   FA_Union
-    (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
+    (fun e => ext_valuation (update_valuation evar_name_eqb x e evar_val)
                             svar_val
-                            (evar_open 0 fresh_evar_name p'))
+                            (evar_open 0 x p'))
 | patt_mu p' =>
+  let X := svar_fresh (variables signature) (free_svars p') in
   Ensembles_Ext.mu
     (fun S => ext_valuation evar_val
-                            (update_valuation svar_name_eqb fresh_svar_name S svar_val)
-                            (svar_open 0 fresh_svar_name p'))
+                            (update_valuation svar_name_eqb X S svar_val)
+                            (svar_open 0 X p'))
 end.
 Next Obligation. simpl; lia. Defined.
 Next Obligation. simpl; lia. Defined.
@@ -527,20 +527,22 @@ Lemma ext_valuation_ex_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_exists p) =
-  FA_Union
-    (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
+  let x := evar_fresh (variables signature) (free_evars p) in
+  FA_Union 
+    (fun e => ext_valuation (update_valuation evar_name_eqb x e evar_val)
                             svar_val
-                            (evar_open 0 fresh_evar_name p)).
+                            (evar_open 0 x p)).
 Admitted.
 
 Lemma ext_valuation_mu_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_mu p) =
+  let X := svar_fresh (variables signature) (free_svars p) in
   Ensembles_Ext.mu
     (fun S => ext_valuation evar_val
-                            (update_valuation svar_name_eqb fresh_svar_name S svar_val)
-                            (svar_open 0 fresh_svar_name p)).
+                            (update_valuation svar_name_eqb X S svar_val)
+                            (svar_open 0 X p)).
 Admitted.
 
 (*
