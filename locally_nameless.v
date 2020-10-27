@@ -14,9 +14,10 @@ Require Export Coq.Program.Wf.
 Require Import ML.Signature.
 
 (** ** Matching Logic Syntax *)
-
+Section ml_syntax_semantics.
 Definition db_index := nat.
 
+(* Variable signature : Signature. *)
 Context {signature : Signature}.
 
 Inductive Pattern : Type :=
@@ -31,16 +32,6 @@ Inductive Pattern : Type :=
 | patt_exists (phi : Pattern)
 | patt_mu (phi : Pattern)
 .
-
-(* TODO: use well-formedness as a parameter *)
-
-(* TODO: change Bot and Top to unicode symbols *)
-Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
-Notation "'Bot'" := patt_bott.
-Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
-                                      b at level 200).
-Notation "'ex' , phi" := (patt_exists phi) (at level 55).
-Notation "'mu' , phi" := (patt_mu phi) (at level 55).
 
 (*
 Definition sp_eq_dec : forall (signature : Signature)
@@ -173,31 +164,6 @@ match phi with
 end.
 
 (* Section Derived_operators. *)
-
-Definition patt_not (phi : Pattern) := phi --> patt_bott.
-Notation "¬ a"     := (patt_not   a  ) (at level 75).
-
-Definition patt_or  (l r : Pattern) := (¬ l) --> r.
-Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity).
-
-Definition patt_and (l r : Pattern) :=
-  ¬ ((¬ l) or (¬ r)).
-Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity).
-
-Definition patt_iff (l r : Pattern) :=
-  ((l --> r) and (r --> l)).
-Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity).
-
-Definition patt_top := (¬ patt_bott).
-Notation "'Top'" := patt_top.
-
-Definition patt_forall (phi : Pattern) :=
-  ¬ (patt_exists (¬ phi)).
-Notation "'all' , phi" := (patt_forall phi) (at level 55).
-
-Definition patt_nu (phi : Pattern) :=
-  ¬ (patt_mu (¬ (bvar_subst phi (¬ (patt_bound_svar 0)) 0))).
-Notation "'nu' , phi" := (patt_nu phi) (at level 55).
 
 Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
            (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
@@ -638,6 +604,48 @@ match C with
 | ctx_app_r p cc prf => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
 end.
 
+Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
+
+Definition patt_or  (l r : Pattern) := patt_imp (patt_not l) r.
+
+Definition patt_and (l r : Pattern) :=
+  patt_not (patt_or (patt_not l) (patt_not r)).
+
+Definition patt_top := (patt_not patt_bott).
+
+Definition patt_iff (l r : Pattern) :=
+  patt_and (patt_imp l r) (patt_imp r l).
+
+Definition patt_forall (phi : Pattern) :=
+  patt_not (patt_exists (patt_not phi)).
+
+Definition patt_nu (phi : Pattern) :=
+  patt_not (patt_mu (patt_not (bvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
+
+End ml_syntax_semantics.
+
+Module MLNotations.
+  (* TODO: change Bot and Top to unicode symbols *)
+  Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
+  Notation "'Bot'" := patt_bott.
+  Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
+                                         b at level 200).
+  Notation "'ex' , phi" := (patt_exists phi) (at level 55).
+  Notation "'mu' , phi" := (patt_mu phi) (at level 55).
+
+  Notation "¬ a"     := (patt_not   a  ) (at level 75).
+  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity).
+  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity).
+  Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity).
+  Notation "'Top'" := patt_top.
+  Notation "'all' , phi" := (patt_forall phi) (at level 55).
+  Notation "'nu' , phi" := (patt_nu phi) (at level 55).
+End MLNotations.
+
+Section ml_proof_system.
+  Import MLNotations.
+  
+  Context {signature : Signature}.
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
 (* TODO: add well-formedness of theory *)
@@ -733,7 +741,7 @@ Inductive ML_proof_system (theory : Theory) :
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
       theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
-      theory ⊢ ((patt_mu phi) --> psi)
+      theory ⊢ ((@patt_mu signature phi) --> psi)
 
 (* Technical rules *)
   (* Existence *)
@@ -745,3 +753,4 @@ Inductive ML_proof_system (theory : Theory) :
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+End ml_proof_system.
