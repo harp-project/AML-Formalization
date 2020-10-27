@@ -39,21 +39,34 @@ Lemma respects_blacklist_implies_monotonic :
       Included (Domain M) S1 S2 ->
       (Bp X ->
        Included (Domain M)
-                (@ext_valuation sig M evar_val (update_valuation svar_name_eqb X S2 svar_val) phi)
-                (@ext_valuation sig M evar_val (update_valuation svar_name_eqb X S1 svar_val) phi)
+                (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
+                (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
       ) /\ (Bn X ->
             Included (Domain M)
-                     (@ext_valuation sig M evar_val (update_valuation svar_name_eqb X S1 svar_val) phi)
-                     (@ext_valuation sig M evar_val (update_valuation svar_name_eqb X S2 svar_val) phi)
+                     (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
+                     (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
          )
 .
 Proof.
   induction phi.
   - (* EVar *)
     intros.
-    assert (HEq : ext_valuation evar_val (update_valuation svar_name_eqb X S2 svar_val) (patt_free_evar x)
-                  = ext_valuation evar_val (update_valuation svar_name_eqb X S1 svar_val) (patt_free_evar x)).
+    assert (HEq : ext_valuation evar_val (update_svar_val X S2 svar_val) (patt_free_evar x)
+                  = ext_valuation evar_val (update_svar_val X S1 svar_val) (patt_free_evar x)).
     { rewrite -> ext_valuation_free_evar_simpl. rewrite -> ext_valuation_free_evar_simpl. reflexivity. }
+    rewrite -> HEq.
+    split; intros; unfold Included; intros; assumption.
+  - (* SVar *)
+    intros. split; intros.
+    * repeat rewrite -> ext_valuation_free_svar_simpl.
+      assert (X <> x).
+      { unfold respects_blacklist in H.
+        specialize H with (var := X). destruct H.
+        apply H in H1. inversion H1.
+      }
+      unfold update_svar_val.
+      destruct (eq_svar_name X x). contradiction.
+      unfold Included. auto.
     
 Admitted.
 

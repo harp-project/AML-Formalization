@@ -181,10 +181,6 @@ end.
 
 (* Section Derived_operators. *)
 
-Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
-           (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
-fun x : T1 => if eqb x t1 then t2 else f x.
-
 (* Model of AML ref. snapshot: Definition 2 *)
 
 Record Model := {
@@ -194,6 +190,17 @@ Record Model := {
   app_interp : Domain -> Domain -> Power Domain;
   sym_interp (sigma : symbols signature) : Power Domain;
 }.
+
+Definition EVarVal {m : Model} : Type := evar_name -> Domain m.
+Definition SVarVal {m : Model} : Type := svar_name -> Power (Domain m).
+
+Definition update_evar_val {m : Model} 
+           (v : evar_name) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
+  fun v' : evar_name => if eq_evar_name v v' then x else evar_val v'.
+
+Definition update_svar_val {m : Model}
+           (v : svar_name) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
+  fun v' : svar_name => if eq_svar_name v v' then X else svar_val v'.
 
 Definition pointwise_ext {m : Model}
            (l r : Power (Domain m)) :
@@ -461,14 +468,14 @@ match p with
 | patt_exists p' =>
   let x := evar_fresh (variables signature) (free_evars p') in
   FA_Union
-    (fun e => ext_valuation (update_valuation evar_name_eqb x e evar_val)
+    (fun e => ext_valuation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p'))
 | patt_mu p' =>
   let X := svar_fresh (variables signature) (free_svars p') in
   Ensembles_Ext.mu
     (fun S => ext_valuation evar_val
-                            (update_valuation svar_name_eqb X S svar_val)
+                            (update_svar_val X S svar_val)
                             (svar_open 0 X p'))
 end.
 Next Obligation. simpl; lia. Defined.
@@ -529,7 +536,7 @@ Lemma ext_valuation_ex_simpl {m : Model}
   ext_valuation evar_val svar_val (patt_exists p) =
   let x := evar_fresh (variables signature) (free_evars p) in
   FA_Union 
-    (fun e => ext_valuation (update_valuation evar_name_eqb x e evar_val)
+    (fun e => ext_valuation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p)).
 Admitted.
@@ -541,7 +548,7 @@ Lemma ext_valuation_mu_simpl {m : Model}
   let X := svar_fresh (variables signature) (free_svars p) in
   Ensembles_Ext.mu
     (fun S => ext_valuation evar_val
-                            (update_valuation svar_name_eqb X S svar_val)
+                            (update_svar_val X S svar_val)
                             (svar_open 0 X p)).
 Admitted.
 
