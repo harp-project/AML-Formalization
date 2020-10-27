@@ -67,6 +67,7 @@ Proof.
       unfold update_svar_val.
       destruct (eq_svar_name X x). contradiction.
       unfold Included. auto.
+    * 
     
 Admitted.
 
@@ -130,7 +131,7 @@ Admitted.*)
 Lemma update_valuation_fresh {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (psi : Pattern) (x : Domain m) (c : Domain m) :
-  ext_valuation (update_valuation evar_name_eqb (evar_fresh (variables sig) (free_evars psi)) c evar_val) svar_val psi x
+  ext_valuation (update_evar_val (evar_fresh (variables sig) (free_evars psi)) c evar_val) svar_val psi x
   = ext_valuation evar_val svar_val psi x.
 Proof.
 Admitted.
