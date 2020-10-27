@@ -15,3 +15,6 @@ names.v
 # Does not compile
 #TEST_Context.v
 Lattice.v
+ML/Signature.v
+ML/ConcreteSignature.v
+tests/TEST_LocallyNameless.v

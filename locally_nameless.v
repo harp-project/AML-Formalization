@@ -11,18 +11,12 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
+Require Import ML.Signature.
 
 Section locally_nameless.
 (** ** Matching Logic Syntax *)
 
-Inductive Sigma : Type := sigma_c {id_si : string}.
-Definition Power (Sigma : Type) := Ensemble Sigma.
-
 Definition db_index := nat.
-
-Record Signature := {
-  symbols : Power Sigma
-}.
 
 Variable signature : Signature.
 
@@ -31,7 +25,7 @@ Inductive Pattern : Type :=
 | patt_free_svar (x : svar_name)
 | patt_bound_evar (n : db_index)
 | patt_bound_svar (n : db_index)
-| patt_sym (sigma : Sigma) : In _ (symbols signature) sigma -> Pattern
+| patt_sym (sigma : symbols signature) :  Pattern
 | patt_app (phi1 phi2 : Pattern)
 | patt_bott
 | patt_imp (phi1 phi2 : Pattern)
@@ -48,9 +42,6 @@ Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
                                       b at level 200).
 Notation "'ex' , phi" := (patt_exists phi) (at level 55).
 Notation "'mu' , phi" := (patt_mu phi) (at level 55).
-
-Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
-Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
 
 (*
 Definition sp_eq_dec : forall (signature : Signature)
@@ -97,7 +88,7 @@ match phi with
               | Nat_equal _ _ _ => psi
               | Nat_greater _ _ _ => patt_bound_svar (pred n)
               end
-| patt_sym sigma pf => patt_sym sigma pf 
+| patt_sym sigma => patt_sym sigma
 | patt_app phi1 phi2 => patt_app (bvar_subst phi1 psi x)
                                  (bvar_subst phi2 psi x)
 | patt_bott => patt_bott
@@ -113,7 +104,7 @@ match phi with
 | patt_free_svar X => patt_free_svar X
 | patt_bound_evar x' => patt_bound_evar x'
 | patt_bound_svar X => patt_bound_svar X
-| patt_sym sigma in_sig => patt_sym sigma in_sig
+| patt_sym sigma => patt_sym sigma
 | patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
                                  (free_evar_subst phi2 psi x)
 | patt_bott => patt_bott
@@ -128,7 +119,7 @@ match phi with
 | patt_free_svar X' => if eq_svar_name X X' then psi else patt_free_svar X'
 | patt_bound_evar x => patt_bound_evar x
 | patt_bound_svar X' => patt_bound_svar X'
-| patt_sym sigma in_sig => patt_sym sigma in_sig
+| patt_sym sigma => patt_sym sigma
 | patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
                                  (free_svar_subst phi2 psi X)
 | patt_bott => patt_bott
@@ -159,7 +150,7 @@ match phi with
 | patt_free_svar X => List.nil
 | patt_bound_evar x => List.nil
 | patt_bound_svar X => List.nil
-| patt_sym sigma in_sig => List.nil
+| patt_sym sigma => List.nil
 | patt_app phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
 | patt_bott => List.nil
 | patt_imp phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
@@ -174,7 +165,7 @@ match phi with
 | patt_free_svar X => set_singleton eq_svar_name X
 | patt_bound_evar x => List.nil
 | patt_bound_svar X => List.nil
-| patt_sym sigma in_sig => List.nil
+| patt_sym sigma => List.nil
 | patt_app phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
 | patt_bott => List.nil
 | patt_imp phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
@@ -209,44 +200,6 @@ Definition patt_nu (phi : Pattern) :=
   ¬ (patt_mu (¬ (bvar_subst phi (¬ (patt_bound_svar 0)) 0))).
 Notation "'nu' , phi" := (patt_nu phi) (at level 55).
 
-(* End Derived_operators. *)
-Definition evar (sname : string) : Pattern :=
-  patt_free_evar (find_fresh_evar_name (@evar_c sname) nil). 
-Definition svar (sname : string) : Pattern :=
-  patt_free_svar (find_fresh_svar_name (@svar_c sname) nil). 
-Definition sym (sname : string)
-  (in_sig : In _ (symbols signature) (@sigma_c sname)) : Pattern :=
-  patt_sym (sigma_c sname) in_sig.
-
-(* Example patterns *)
-
-Axiom sig : Signature.
-Axiom sym_in_sig : In _ (symbols signature) (@sigma_c "ctor").
-Axiom p_in_sig : In _ (symbols signature) (@sigma_c "p").
-Axiom f_in_sig : In _ (symbols signature) (@sigma_c "f").
-
-Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
-
-(* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
-Definition complex :=
-  evar ("A") --> (evar("B") --> ¬(svar("C"))) $
-       ex , svar ("D") $ Bot and Top.
-
-Definition custom_constructor := sym ("ctor") sym_in_sig $ evar ("a").
-
-(* p x1 x2 *)
-Definition predicate := sym ("p") p_in_sig $ evar ("x1") $ evar ("x2").
-
-(* f x (mu y . y) *)
-Definition function :=
-  sym ("f") f_in_sig $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
-
-(* forall x, x /\ y *)
-Definition free_and_bound :=
-  all , (patt_bound_evar 0) and evar ("y").
-
-(* End of examples. *)
-
 Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
            (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
 fun x : T1 => if eqb x t1 then t2 else f x.
@@ -258,7 +211,7 @@ Record Model := {
   nonempty_witness : exists (x : Domain), True;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Power Domain;
-  sym_interp (sigma : Sigma) : In _ (symbols signature) sigma -> Power Domain;
+  sym_interp (sigma : symbols signature) : Power Domain;
 }.
 
 Definition pointwise_ext {m : Model}
@@ -266,10 +219,13 @@ Definition pointwise_ext {m : Model}
   Power (Domain m) :=
 fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
 
+(* TODO move to examples in a different module *)
+(*
 Compute @pointwise_ext {| Domain := Pattern |}
         (Singleton _ (evar "a")) (Singleton _ (evar "b")).
-
+*)
 (* S . empty = empty *)
+
 Lemma pointwise_ext_bot_r : forall (m : Model),
     forall S : Power (Domain m),
   Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
@@ -297,7 +253,7 @@ match p with
 | patt_free_svar x' => patt_free_svar x'
 | patt_bound_evar x' => patt_bound_evar x'
 | patt_bound_svar X => patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
+| patt_sym s => patt_sym s
 | patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
 | patt_bott => patt_bott
 | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
@@ -325,7 +281,7 @@ match p with
 | patt_free_svar x => patt_free_svar x
 | patt_bound_evar x => if beq_nat x k then patt_free_evar n else patt_bound_evar x
 | patt_bound_svar X => patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
+| patt_sym s => patt_sym s
 | patt_app ls rs => patt_app (evar_open k n ls) (evar_open k n rs)
 | patt_bott => patt_bott
 | patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
@@ -340,7 +296,7 @@ match p with
 | patt_free_svar x => patt_free_svar x
 | patt_bound_evar x => patt_bound_evar x
 | patt_bound_svar X => if beq_nat X k then patt_free_svar n else patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
+| patt_sym s => patt_sym s
 | patt_app ls rs => patt_app (svar_open k n ls) (svar_open k n rs)
 | patt_bott => patt_bott
 | patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
@@ -374,6 +330,7 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
+(* TODO move to signature *)
 Parameter fresh_evar_name : evar_name.
 Parameter fresh_svar_name : svar_name.
 
@@ -382,8 +339,8 @@ Inductive positive_occurrence : svar_name -> Pattern -> Prop :=
 | po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence sv (patt_free_svar x)
 | po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_evar m)
 | po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_svar m)
-| po_const (sigma : Sigma) (sv : svar_name) {in_signature : In _ (symbols signature) sigma} :
-    positive_occurrence sv (patt_sym sigma in_signature)
+| po_const (sigma : symbols signature) (sv : svar_name) :
+    positive_occurrence sv (patt_sym sigma)
 | po_app (phi1 phi2 : Pattern) (sv : svar_name) :
   positive_occurrence sv phi1 -> positive_occurrence sv phi2 ->
   positive_occurrence sv (patt_app phi1 phi2)
@@ -402,8 +359,8 @@ with negative_occurrence : svar_name -> Pattern -> Prop :=
 (* | no_free_svar (x : svar_name) (sv : svar_name) : negative_occurrence sv (patt_free_svar x) *)
 | no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_evar m)
 | no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_svar m)
-| no_const (sigma : Sigma) (sv : svar_name) (in_signature : In _ (symbols signature) sigma) :
-    negative_occurrence sv (patt_sym sigma in_signature)
+| no_const (sigma : symbols signature) (sv : svar_name) :
+    negative_occurrence sv (patt_sym sigma)
 | no_app (phi1 phi2 : Pattern) (sv : svar_name) :
    negative_occurrence sv phi1 -> negative_occurrence sv phi2 ->
    negative_occurrence sv (patt_app phi1 phi2)
@@ -425,7 +382,7 @@ Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   | patt_free_svar _ => True
   | patt_bound_evar _ => True
   | patt_bound_svar _ => True
-  | patt_sym _ _ => True
+  | patt_sym _ => True
   | patt_app psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
   | patt_bott => True
   | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
@@ -439,7 +396,7 @@ Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
   | patt_free_svar _ => True
   | patt_bound_evar n => n < max_ind
   | patt_bound_svar n => n < max_ind
-  | patt_sym _ _ => True
+  | patt_sym _ => True
   | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
                           well_formed_closed_aux psi2 max_ind
   | patt_bott => True
@@ -516,7 +473,7 @@ match p with
 | patt_free_svar X => svar_val X
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
-| patt_sym s pf => (sym_interp m) s pf
+| patt_sym s => (sym_interp m) s
 | patt_app ls rs => pointwise_ext (ext_valuation evar_val svar_val ls)
                                   (ext_valuation evar_val svar_val rs)
 | patt_bott => Empty_set _
@@ -660,7 +617,7 @@ Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
 (* End of definition 5. *)
 
-Inductive Application_context : Set :=
+Inductive Application_context : Type :=
 | box
 | ctx_app_l (cc : Application_context) (p : Pattern) (Prf : well_formed p)
 | ctx_app_r (p : Pattern) (cc : Application_context) (Prf : well_formed p)
