@@ -12,7 +12,6 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 
-Section locally_nameless.
 (** ** Matching Logic Syntax *)
 
 Inductive Sigma : Type := sigma_c {id_si : string}.
@@ -25,6 +24,14 @@ Record Signature := {
 }.
 
 Variable signature : Signature.
+
+Declare Scope ml_scope.
+Delimit Scope ml_scope with ML.
+Open Scope ml_scope.
+
+(***********************************)
+(*            Syntax               *)
+(***********************************)
 
 Inductive Pattern : Type :=
 | patt_free_evar (x : evar_name)
@@ -39,15 +46,14 @@ Inductive Pattern : Type :=
 | patt_mu (phi : Pattern)
 .
 
-(* TODO: use well-formedness as a parameter *)
-
+Bind Scope ml_scope with Pattern.
 (* TODO: change Bot and Top to unicode symbols *)
-Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
-Notation "'Bot'" := patt_bott.
+Notation "a $ b" := (patt_app a b) (at level 50, left associativity) : ml_scope.
+Notation "'Bot'" := patt_bott : ml_scope.
 Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
-                                      b at level 200).
-Notation "'ex' , phi" := (patt_exists phi) (at level 55).
-Notation "'mu' , phi" := (patt_mu phi) (at level 55).
+                                       b at level 200) : ml_scope.
+Notation "'ex' , phi" := (patt_exists phi) (at level 55) : ml_scope.
+Notation "'mu' , phi" := (patt_mu phi) (at level 55) : ml_scope.
 
 Definition sigma_eq_dec : forall (x y : Sigma), { x = y } + { x <> y }.
 Proof. decide equality. exact (string_dec id_si0 id_si1). Defined.
@@ -62,7 +68,7 @@ decide equality.
 - decide equality.
 - exact (sigma_eq_dec sigma sigma0).
 Defined.
-*)
+ *)
 
 
 (** There are two substitution operations over types, written
@@ -84,130 +90,130 @@ Defined.
 
 (* substitute bound variable x for psi in phi *)
 Fixpoint bvar_subst (phi psi : Pattern) (x : db_index) :=
-match phi with
-| patt_free_evar x' => patt_free_evar x'
-| patt_free_svar x' => patt_free_svar x'
-| patt_bound_evar n => match compare_nat n x with
-              | Nat_less _ _ _ => patt_bound_evar n
-              | Nat_equal _ _ _ => psi
-              | Nat_greater _ _ _ => patt_bound_evar (pred n)
-              end
-| patt_bound_svar n => match compare_nat n x with
-              | Nat_less _ _ _ => patt_bound_svar n
-              | Nat_equal _ _ _ => psi
-              | Nat_greater _ _ _ => patt_bound_svar (pred n)
-              end
-| patt_sym sigma pf => patt_sym sigma pf 
-| patt_app phi1 phi2 => patt_app (bvar_subst phi1 psi x)
-                                 (bvar_subst phi2 psi x)
-| patt_bott => patt_bott
-| patt_imp phi1 phi2 => patt_imp (bvar_subst phi1 psi x) (bvar_subst phi2 psi x)
-| patt_exists phi' => patt_exists (bvar_subst phi' psi (S x))
-| patt_mu phi' => patt_mu (bvar_subst phi' psi (S x))
-end.
+  match phi with
+  | patt_free_evar x' => patt_free_evar x'
+  | patt_free_svar x' => patt_free_svar x'
+  | patt_bound_evar n => match compare_nat n x with
+                         | Nat_less _ _ _ => patt_bound_evar n
+                         | Nat_equal _ _ _ => psi
+                         | Nat_greater _ _ _ => patt_bound_evar (pred n)
+                         end
+  | patt_bound_svar n => match compare_nat n x with
+                         | Nat_less _ _ _ => patt_bound_svar n
+                         | Nat_equal _ _ _ => psi
+                         | Nat_greater _ _ _ => patt_bound_svar (pred n)
+                         end
+  | patt_sym sigma pf => patt_sym sigma pf 
+  | patt_app phi1 phi2 => patt_app (bvar_subst phi1 psi x)
+                                   (bvar_subst phi2 psi x)
+  | patt_bott => patt_bott
+  | patt_imp phi1 phi2 => patt_imp (bvar_subst phi1 psi x) (bvar_subst phi2 psi x)
+  | patt_exists phi' => patt_exists (bvar_subst phi' psi (S x))
+  | patt_mu phi' => patt_mu (bvar_subst phi' psi (S x))
+  end.
 
 (* substitute free element variable x for psi in phi *)
 Fixpoint free_evar_subst (phi psi : Pattern) (x : evar_name) :=
-match phi with
-| patt_free_evar x' => if eq_evar_name x x' then psi else patt_free_evar x'
-| patt_free_svar X => patt_free_svar X
-| patt_bound_evar x' => patt_bound_evar x'
-| patt_bound_svar X => patt_bound_svar X
-| patt_sym sigma in_sig => patt_sym sigma in_sig
-| patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
-                                 (free_evar_subst phi2 psi x)
-| patt_bott => patt_bott
-| patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
-| patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
-| patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
-end.
+  match phi with
+  | patt_free_evar x' => if eq_evar_name x x' then psi else patt_free_evar x'
+  | patt_free_svar X => patt_free_svar X
+  | patt_bound_evar x' => patt_bound_evar x'
+  | patt_bound_svar X => patt_bound_svar X
+  | patt_sym sigma in_sig => patt_sym sigma in_sig
+  | patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
+                                   (free_evar_subst phi2 psi x)
+  | patt_bott => patt_bott
+  | patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
+  | patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
+  | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
+  end.
 
 Fixpoint free_svar_subst (phi psi : Pattern) (X : svar_name) :=
-match phi with
-| patt_free_evar x => patt_free_evar x
-| patt_free_svar X' => if eq_svar_name X X' then psi else patt_free_svar X'
-| patt_bound_evar x => patt_bound_evar x
-| patt_bound_svar X' => patt_bound_svar X'
-| patt_sym sigma in_sig => patt_sym sigma in_sig
-| patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
-                                 (free_svar_subst phi2 psi X)
-| patt_bott => patt_bott
-| patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
-| patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
-| patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
-end.
+  match phi with
+  | patt_free_evar x => patt_free_evar x
+  | patt_free_svar X' => if eq_svar_name X X' then psi else patt_free_svar X'
+  | patt_bound_evar x => patt_bound_evar x
+  | patt_bound_svar X' => patt_bound_svar X'
+  | patt_sym sigma in_sig => patt_sym sigma in_sig
+  | patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
+                                   (free_svar_subst phi2 psi X)
+  | patt_bott => patt_bott
+  | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
+  | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
+  | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
+  end.
 
 (* instantiate exists x. p or mu x. p with psi for p *)
 Definition instantiate (phi psi : Pattern) :=
-match phi with
-| patt_exists phi' => bvar_subst phi' psi 0
-| patt_mu phi' => bvar_subst phi' psi 0
-| _ => phi
-end.
+  match phi with
+  | patt_exists phi' => bvar_subst phi' psi 0
+  | patt_mu phi' => bvar_subst phi' psi 0
+  | _ => phi
+  end.
 
 (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
 Definition set_singleton {T : Type}
-  (eq : forall (x y : T), { x = y } + { x <> y })
+           (eq : forall (x y : T), { x = y } + { x <> y })
   := fun x : T => set_add eq x List.nil.
 
 Fixpoint free_evars (phi : Pattern)
   : (ListSet.set evar_name) :=
-match phi with
-| patt_free_evar x => set_singleton eq_evar_name x
-| patt_free_svar X => List.nil
-| patt_bound_evar x => List.nil
-| patt_bound_svar X => List.nil
-| patt_sym sigma in_sig => List.nil
-| patt_app phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
-| patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
-| patt_exists phi => free_evars phi
-| patt_mu phi => free_evars phi
-end.
+  match phi with
+  | patt_free_evar x => set_singleton eq_evar_name x
+  | patt_free_svar X => List.nil
+  | patt_bound_evar x => List.nil
+  | patt_bound_svar X => List.nil
+  | patt_sym sigma in_sig => List.nil
+  | patt_app phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
+  | patt_bott => List.nil
+  | patt_imp phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
+  | patt_exists phi => free_evars phi
+  | patt_mu phi => free_evars phi
+  end.
 
 Fixpoint free_svars (phi : Pattern)
   : (ListSet.set svar_name) :=
-match phi with
-| patt_free_evar x => List.nil
-| patt_free_svar X => set_singleton eq_svar_name X
-| patt_bound_evar x => List.nil
-| patt_bound_svar X => List.nil
-| patt_sym sigma in_sig => List.nil
-| patt_app phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
-| patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
-| patt_exists phi => free_svars phi
-| patt_mu phi => free_svars phi
-end.
+  match phi with
+  | patt_free_evar x => List.nil
+  | patt_free_svar X => set_singleton eq_svar_name X
+  | patt_bound_evar x => List.nil
+  | patt_bound_svar X => List.nil
+  | patt_sym sigma in_sig => List.nil
+  | patt_app phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+  | patt_bott => List.nil
+  | patt_imp phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+  | patt_exists phi => free_svars phi
+  | patt_mu phi => free_svars phi
+  end.
 
-(* Section Derived_operators. *)
-
+Open Scope ml_scope.
 Definition patt_not (phi : Pattern) := phi --> patt_bott.
-Notation "¬ a"     := (patt_not   a  ) (at level 75).
+Notation "¬ a"     := (patt_not   a  ) (at level 75) : ml_scope.
 
 Definition patt_or  (l r : Pattern) := (¬ l) --> r.
-Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity).
+Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
 
 Definition patt_and (l r : Pattern) :=
   ¬ ((¬ l) or (¬ r)).
-Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity).
+Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
 
 Definition patt_iff (l r : Pattern) :=
   ((l --> r) and (r --> l)).
-Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity).
+Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
 
 Definition patt_top := (¬ patt_bott).
-Notation "'Top'" := patt_top.
+Notation "'Top'" := patt_top : ml_scope.
 
 Definition patt_forall (phi : Pattern) :=
   ¬ (patt_exists (¬ phi)).
-Notation "'all' , phi" := (patt_forall phi) (at level 55).
+Notation "'all' , phi" := (patt_forall phi) (at level 55) : ml_scope.
 
 Definition patt_nu (phi : Pattern) :=
   ¬ (patt_mu (¬ (bvar_subst phi (¬ (patt_bound_svar 0)) 0))).
-Notation "'nu' , phi" := (patt_nu phi) (at level 55).
+Notation "'nu' , phi" := (patt_nu phi) (at level 55) : ml_scope.
+
 
 (* End Derived_operators. *)
 Definition evar (sname : string) : Pattern :=
@@ -215,138 +221,140 @@ Definition evar (sname : string) : Pattern :=
 Definition svar (sname : string) : Pattern :=
   patt_free_svar (find_fresh_svar_name (@svar_c sname) nil). 
 Definition sym (sname : string)
-  (in_sig : In _ (symbols signature) (@sigma_c sname)) : Pattern :=
+           (in_sig : In _ (symbols signature) (@sigma_c sname)) : Pattern :=
   patt_sym (sigma_c sname) in_sig.
 
-(* Example patterns *)
+Section examples.
+  (* Example patterns *)
 
-Axiom sig : Signature.
-Axiom sym_in_sig : In _ (symbols signature) (@sigma_c "ctor").
-Axiom p_in_sig : In _ (symbols signature) (@sigma_c "p").
-Axiom f_in_sig : In _ (symbols signature) (@sigma_c "f").
+  Hypothesis sig : Signature.
+  Hypothesis sym_in_sig : In _ (symbols signature) (@sigma_c "ctor").
+  Hypothesis p_in_sig : In _ (symbols signature) (@sigma_c "p").
+  Hypothesis f_in_sig : In _ (symbols signature) (@sigma_c "f").
 
-Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+  Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
-(* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
-Definition complex :=
-  evar ("A") --> (evar("B") --> ¬(svar("C"))) $
-       ex , svar ("D") $ Bot and Top.
+  (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
+  Definition complex :=
+    evar ("A") --> (evar("B") --> ¬(svar("C"))) $
+         ex , svar ("D") $ Bot and Top.
 
-Definition custom_constructor := sym ("ctor") sym_in_sig $ evar ("a").
+  Definition custom_constructor := sym ("ctor") sym_in_sig $ evar ("a").
 
-(* p x1 x2 *)
-Definition predicate := sym ("p") p_in_sig $ evar ("x1") $ evar ("x2").
+  (* p x1 x2 *)
+  Definition predicate := sym ("p") p_in_sig $ evar ("x1") $ evar ("x2").
 
-(* f x (mu y . y) *)
-Definition function :=
-  sym ("f") f_in_sig $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
+  (* f x (mu y . y) *)
+  Definition function :=
+    sym ("f") f_in_sig $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
 
-(* forall x, x /\ y *)
-Definition free_and_bound :=
-  all , (patt_bound_evar 0) and evar ("y").
+  (* forall x, x /\ y *)
+  Definition free_and_bound :=
+    all , (patt_bound_evar 0) and evar ("y").
 
-(* End of examples. *)
+  (* End of examples. *)
+End examples.
 
-Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
-           (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
-fun x : T1 => if eqb x t1 then t2 else f x.
+Inductive positive_occurrence : svar_name -> Pattern -> Prop :=
+| po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence sv (patt_free_evar x)
+| po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence sv (patt_free_svar x)
+| po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_evar m)
+| po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_svar m)
+| po_const (sigma : Sigma) (sv : svar_name) {in_signature : In _ (symbols signature) sigma} :
+    positive_occurrence sv (patt_sym sigma in_signature)
+| po_app (phi1 phi2 : Pattern) (sv : svar_name) :
+    positive_occurrence sv phi1 -> positive_occurrence sv phi2 ->
+    positive_occurrence sv (patt_app phi1 phi2)
+| po_bott (sv : svar_name) : positive_occurrence sv patt_bott
+| po_impl (phi1 phi2 : Pattern) (sv : svar_name) :
+    negative_occurrence sv phi1 -> positive_occurrence sv phi2 ->
+    positive_occurrence sv (patt_imp phi1 phi2)
+| po_exists (phi : Pattern) (sv : svar_name) :
+    positive_occurrence sv phi ->
+    positive_occurrence sv (patt_exists phi)
+| po_mu (phi : Pattern) (sv : svar_name) :
+    positive_occurrence sv phi ->
+    positive_occurrence sv (patt_mu phi)
+with negative_occurrence : svar_name -> Pattern -> Prop :=
+| no_free_evar (x : evar_name) (sv : svar_name) : negative_occurrence sv (patt_free_evar x)
+(* | no_free_svar (x : svar_name) (sv : svar_name) : negative_occurrence sv (patt_free_svar x) *)
+| no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_evar m)
+| no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_svar m)
+| no_const (sigma : Sigma) (sv : svar_name) (in_signature : In _ (symbols signature) sigma) :
+    negative_occurrence sv (patt_sym sigma in_signature)
+| no_app (phi1 phi2 : Pattern) (sv : svar_name) :
+    negative_occurrence sv phi1 -> negative_occurrence sv phi2 ->
+    negative_occurrence sv (patt_app phi1 phi2)
+| no_bott (sv : svar_name) :  negative_occurrence sv patt_bott
+| no_impl (phi1 phi2 : Pattern) (sv : svar_name) :
+    positive_occurrence sv phi1 ->  negative_occurrence sv phi2 ->
+    negative_occurrence sv (patt_imp phi1 phi2)
+| no_exists (phi : Pattern) (sv : svar_name) :
+    negative_occurrence sv phi ->
+    negative_occurrence sv (patt_exists phi)
+| no_mu (phi : Pattern) (sv : svar_name) :
+    negative_occurrence sv phi ->
+    negative_occurrence sv (patt_mu phi)
+.
 
-(* Model of AML ref. snapshot: Definition 2 *)
-
-Record Model := {
-  Domain : Type;
-  nonempty_witness : exists (x : Domain), True;
-  Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
-  app_interp : Domain -> Domain -> Power Domain;
-  sym_interp (sigma : Sigma) : In _ (symbols signature) sigma -> Power Domain;
-}.
-
-Definition pointwise_ext {m : Model}
-           (l r : Power (Domain m)) :
-  Power (Domain m) :=
-fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
-
-Compute @pointwise_ext {| Domain := Pattern |}
-        (Singleton _ (evar "a")) (Singleton _ (evar "b")).
-
-(* S . empty = empty *)
-Lemma pointwise_ext_bot_r : forall (m : Model),
-    forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
-Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
-  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
-  * contradiction.
-Qed.
-
-Lemma pointwise_ext_bot_l : forall (m : Model),
-    forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
-Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
-  * inversion H. inversion H0. inversion H1. contradiction.
-  * contradiction.
-Qed.
-
-(* Semantics of AML ref. snapshot: Definition 3 *)
 
 Fixpoint evar_quantify (x : evar_name) (level : db_index)
          (p : Pattern) : Pattern :=
-match p with
-| patt_free_evar x' => if eq_evar_name x x' then patt_bound_evar level else patt_free_evar x'
-| patt_free_svar x' => patt_free_svar x'
-| patt_bound_evar x' => patt_bound_evar x'
-| patt_bound_svar X => patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
-| patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
-| patt_bott => patt_bott
-| patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
-| patt_exists p' => patt_exists (evar_quantify x (level + 1) p')
-| patt_mu p' => patt_mu (evar_quantify x (level + 1) p')
-end.
+  match p with
+  | patt_free_evar x' => if eq_evar_name x x' then patt_bound_evar level else patt_free_evar x'
+  | patt_free_svar x' => patt_free_svar x'
+  | patt_bound_evar x' => patt_bound_evar x'
+  | patt_bound_svar X => patt_bound_svar X
+  | patt_sym s pf => patt_sym s pf
+  | patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
+  | patt_bott => patt_bott
+  | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
+  | patt_exists p' => patt_exists (evar_quantify x (level + 1) p')
+  | patt_mu p' => patt_mu (evar_quantify x (level + 1) p')
+  end.
 
 Definition exists_quantify (x : evar_name)
            (p : Pattern) : Pattern :=
   patt_exists (evar_quantify x 0 p).
 
 Fixpoint size (p : Pattern) : nat :=
-match p with
-| patt_app ls rs => 1 + (size ls) + (size rs)
-| patt_imp ls rs => 1 + (size ls) + (size rs)
-| patt_exists p' => 1 + size p'
-| patt_mu p' => 1 + size p'
-| _ => 0
-end.
+  match p with
+  | patt_app ls rs => 1 + (size ls) + (size rs)
+  | patt_imp ls rs => 1 + (size ls) + (size rs)
+  | patt_exists p' => 1 + size p'
+  | patt_mu p' => 1 + size p'
+  | _ => 0
+  end.
 
 Fixpoint evar_open (k : db_index) (n : evar_name)
          (p : Pattern) : Pattern :=
-match p with
-| patt_free_evar x => patt_free_evar x
-| patt_free_svar x => patt_free_svar x
-| patt_bound_evar x => if beq_nat x k then patt_free_evar n else patt_bound_evar x
-| patt_bound_svar X => patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
-| patt_app ls rs => patt_app (evar_open k n ls) (evar_open k n rs)
-| patt_bott => patt_bott
-| patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
-| patt_exists p' => patt_exists (evar_open (k + 1) n p')
-| patt_mu p' => patt_mu (evar_open (k + 1) n p')
-end.
+  match p with
+  | patt_free_evar x => patt_free_evar x
+  | patt_free_svar x => patt_free_svar x
+  | patt_bound_evar x => if beq_nat x k then patt_free_evar n else patt_bound_evar x
+  | patt_bound_svar X => patt_bound_svar X
+  | patt_sym s pf => patt_sym s pf
+  | patt_app ls rs => patt_app (evar_open k n ls) (evar_open k n rs)
+  | patt_bott => patt_bott
+  | patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
+  | patt_exists p' => patt_exists (evar_open (k + 1) n p')
+  | patt_mu p' => patt_mu (evar_open (k + 1) n p')
+  end.
 
 Fixpoint svar_open (k : db_index) (n : svar_name)
          (p : Pattern) : Pattern :=
-match p with
-| patt_free_evar x => patt_free_evar x
-| patt_free_svar x => patt_free_svar x
-| patt_bound_evar x => patt_bound_evar x
-| patt_bound_svar X => if beq_nat X k then patt_free_svar n else patt_bound_svar X
-| patt_sym s pf => patt_sym s pf
-| patt_app ls rs => patt_app (svar_open k n ls) (svar_open k n rs)
-| patt_bott => patt_bott
-| patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
-| patt_exists p' => patt_exists (svar_open (k + 1) n p')
-| patt_mu p' => patt_mu (svar_open (k + 1) n p')
-end.
+  match p with
+  | patt_free_evar x => patt_free_evar x
+  | patt_free_svar x => patt_free_svar x
+  | patt_bound_evar x => patt_bound_evar x
+  | patt_bound_svar X => if beq_nat X k then patt_free_svar n else patt_bound_svar X
+  | patt_sym s pf => patt_sym s pf
+  | patt_app ls rs => patt_app (svar_open k n ls) (svar_open k n rs)
+  | patt_bott => patt_bott
+  | patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
+  | patt_exists p' => patt_exists (svar_open (k + 1) n p')
+  | patt_mu p' => patt_mu (svar_open (k + 1) n p')
+  end.
 
 Lemma evar_open_size :
   forall (signature : Signature) (k : db_index) (n : evar_name) (p : Pattern),
@@ -374,50 +382,10 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
+(* TODO replace *)
 Parameter fresh_evar_name : evar_name.
 Parameter fresh_svar_name : svar_name.
 
-Inductive positive_occurrence : svar_name -> Pattern -> Prop :=
-| po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence sv (patt_free_evar x)
-| po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence sv (patt_free_svar x)
-| po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_evar m)
-| po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_svar m)
-| po_const (sigma : Sigma) (sv : svar_name) {in_signature : In _ (symbols signature) sigma} :
-    positive_occurrence sv (patt_sym sigma in_signature)
-| po_app (phi1 phi2 : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi1 -> positive_occurrence sv phi2 ->
-  positive_occurrence sv (patt_app phi1 phi2)
-| po_bott (sv : svar_name) : positive_occurrence sv patt_bott
-| po_impl (phi1 phi2 : Pattern) (sv : svar_name) :
-  negative_occurrence sv phi1 -> positive_occurrence sv phi2 ->
-  positive_occurrence sv (patt_imp phi1 phi2)
-| po_exists (phi : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi ->
-  positive_occurrence sv (patt_exists phi)
-| po_mu (phi : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi ->
-  positive_occurrence sv (patt_mu phi)
-with negative_occurrence : svar_name -> Pattern -> Prop :=
-| no_free_evar (x : evar_name) (sv : svar_name) : negative_occurrence sv (patt_free_evar x)
-(* | no_free_svar (x : svar_name) (sv : svar_name) : negative_occurrence sv (patt_free_svar x) *)
-| no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_evar m)
-| no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_svar m)
-| no_const (sigma : Sigma) (sv : svar_name) (in_signature : In _ (symbols signature) sigma) :
-    negative_occurrence sv (patt_sym sigma in_signature)
-| no_app (phi1 phi2 : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi1 -> negative_occurrence sv phi2 ->
-   negative_occurrence sv (patt_app phi1 phi2)
-| no_bott (sv : svar_name) :  negative_occurrence sv patt_bott
-| no_impl (phi1 phi2 : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi1 ->  negative_occurrence sv phi2 ->
-   negative_occurrence sv (patt_imp phi1 phi2)
-| no_exists (phi : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi ->
-   negative_occurrence sv (patt_exists phi)
-| no_mu (phi : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi ->
-   negative_occurrence sv (patt_mu phi)
-.
 
 Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   match phi with
@@ -462,6 +430,55 @@ Proof.
 Qed.  
 
 Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
+
+
+(***********************************)
+(*            Semantics            *)
+(***********************************)
+
+Definition update_valuation {T1 T2 : Type} (eqb : T1 -> T1 -> bool)
+           (t1 : T1) (t2 : T2) (f : T1 -> T2) : T1 -> T2 :=
+  fun x : T1 => if eqb x t1 then t2 else f x.
+
+(* Model of AML ref. snapshot: Definition 2 *)
+
+Record Model := {
+  Domain : Type;
+  nonempty_witness : exists (x : Domain), True;
+  Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
+  app_interp : Domain -> Domain -> Power Domain;
+  sym_interp (sigma : Sigma) : In _ (symbols signature) sigma -> Power Domain;
+               }.
+
+Definition pointwise_ext {m : Model}
+           (l r : Power (Domain m)) :
+  Power (Domain m) :=
+  fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
+
+Compute @pointwise_ext {| Domain := Pattern |}
+        (Singleton _ (evar "a")) (Singleton _ (evar "b")).
+
+(* S . empty = empty *)
+Lemma pointwise_ext_bot_r : forall (m : Model),
+    forall S : Power (Domain m),
+      Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
+Proof.
+  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
+  * contradiction.
+Qed.
+
+Lemma pointwise_ext_bot_l : forall (m : Model),
+    forall S : Power (Domain m),
+      Same_set (Domain m) (pointwise_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
+Proof.
+  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  * inversion H. inversion H0. inversion H1. contradiction.
+  * contradiction.
+Qed.
+
+(* Semantics of AML ref. snapshot: Definition 3 *)
+
 (*
 Definition pattern_lt (p1 p2 : Pattern) :=
   size p1 < size p2.
@@ -506,33 +523,33 @@ Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. apply signature. Defined.
 Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
-*)
+ *)
 
 Program Fixpoint ext_valuation {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (p : Pattern) {measure (size p)} :=
-match p with
-| patt_free_evar x => Singleton _ (evar_val x)
-| patt_free_svar X => svar_val X
-| patt_bound_evar x => Empty_set _
-| patt_bound_svar X => Empty_set _
-| patt_sym s pf => (sym_interp m) s pf
-| patt_app ls rs => pointwise_ext (ext_valuation evar_val svar_val ls)
-                                  (ext_valuation evar_val svar_val rs)
-| patt_bott => Empty_set _
-| patt_imp ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val ls))
+  match p with
+  | patt_free_evar x => Singleton _ (evar_val x)
+  | patt_free_svar X => svar_val X
+  | patt_bound_evar x => Empty_set _
+  | patt_bound_svar X => Empty_set _
+  | patt_sym s pf => (sym_interp m) s pf
+  | patt_app ls rs => pointwise_ext (ext_valuation evar_val svar_val ls)
+                                    (ext_valuation evar_val svar_val rs)
+  | patt_bott => Empty_set _
+  | patt_imp ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val ls))
                             (ext_valuation evar_val svar_val rs)
-| patt_exists p' =>
-  FA_Union
-    (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
-                            svar_val
-                            (evar_open 0 fresh_evar_name p'))
-| patt_mu p' =>
-  Ensembles_Ext.mu
-    (fun S => ext_valuation evar_val
-                            (update_valuation svar_name_eqb fresh_svar_name S svar_val)
-                            (svar_open 0 fresh_svar_name p'))
-end.
+  | patt_exists p' =>
+    FA_Union
+      (fun e => ext_valuation (update_valuation evar_name_eqb fresh_evar_name e evar_val)
+                              svar_val
+                              (evar_open 0 fresh_evar_name p'))
+  | patt_mu p' =>
+    Ensembles_Ext.mu
+      (fun S => ext_valuation evar_val
+                              (update_valuation svar_name_eqb fresh_svar_name S svar_val)
+                              (svar_open 0 fresh_svar_name p'))
+  end.
 Next Obligation. simpl; lia. Defined.
 Next Obligation. simpl; lia. Defined.
 Next Obligation. simpl; lia. Defined.
@@ -582,7 +599,7 @@ Lemma ext_valuation_imp_simpl {m : Model}
       (ls rs : Pattern) :
   ext_valuation evar_val svar_val (patt_imp ls rs) =
   Union _ (Complement _ (ext_valuation evar_val svar_val ls))
-          (ext_valuation evar_val svar_val rs).
+        (ext_valuation evar_val svar_val rs).
 Admitted.
 
 Lemma ext_valuation_ex_simpl {m : Model}
@@ -622,7 +639,8 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
-*)
+ *)
+
 
 Section Semantics_of_derived_operators.
 
@@ -633,28 +651,28 @@ End Semantics_of_derived_operators.
 (**
    Proof of correct semantics for the derived operators
    ref. snapshot: Proposition 4
-*)
+ *)
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
 Record Theory := {
   patterns : Power (Pattern)
-}.
+                }.
 
 Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
-forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
-  Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
+  forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
+    Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
 Definition satisfies_theory (m : Model) (theory : Theory)
-: Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
+  : Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
 
 Notation "M |=T Gamma" := (satisfies_theory M Gamma)
-    (left associativity, at level 50).
+                            (left associativity, at level 50).
 
 Definition satisfies (theory : Theory) (p: Pattern)
-: Prop := forall m : Model, (m |=T theory) -> (m |=M p).
+  : Prop := forall m : Model, (m |=T theory) -> (m |=M p).
 
 Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
 
@@ -668,20 +686,26 @@ Inductive Application_context : Set :=
 
 Fixpoint subst_ctx (C : Application_context) (p : Pattern)
   : Pattern :=
-match C with
-| box => p
-| ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
-| ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
-end.
+  match C with
+  | box => p
+  | ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
+  | ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
+  end.
 
 Fixpoint free_evars_ctx (C : Application_context)
   : (ListSet.set evar_name) :=
-match C with
-| box => List.nil
-| ctx_app_l cc p prf => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
-| ctx_app_r p cc prf => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
-end.
+  match C with
+  | box => List.nil
+  | ctx_app_l cc p prf => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
+  | ctx_app_r p cc prf => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
+  end.
 
+
+(***********************************)
+(*          Proof System           *)
+(***********************************)
+
+(*Open Scope syntaxml_syntax.*)
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
 (* TODO: add well-formedness of theory *)
@@ -692,102 +716,101 @@ Inductive ML_proof_system (theory : Theory) :
   Pattern -> Prop :=
 
 (* Hypothesis *)
-  | hypothesis (axiom : Pattern) :
-      well_formed axiom ->
-      (In _ (patterns theory) axiom) -> theory ⊢ axiom
-  
+| hypothesis (axiom : Pattern) :
+    well_formed axiom ->
+    (In _ (patterns theory) axiom) -> theory ⊢ axiom
+                                             
 (* FOL reasoning *)
-  (* Propositional tautology *)
-  | P1 (phi psi : Pattern) :
-      well_formed phi -> well_formed psi ->
-      theory ⊢ (phi --> (psi --> phi))
-  | P2 (phi psi xi : Pattern) :
-      well_formed phi -> well_formed psi -> well_formed xi ->
-      theory ⊢ ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
-  | P3 (phi : Pattern) :
-      well_formed phi ->
-      theory ⊢ (((phi --> Bot) --> Bot) --> phi)
+(* Propositional tautology *)
+| P1 (phi psi : Pattern) :
+    well_formed phi -> well_formed psi ->
+    theory ⊢ (phi --> (psi --> phi))
+| P2 (phi psi xi : Pattern) :
+    well_formed phi -> well_formed psi -> well_formed xi ->
+    theory ⊢ ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
+| P3 (phi : Pattern) :
+    well_formed phi ->
+    theory ⊢ (((phi --> Bot) --> Bot) --> phi)
 
-  (* Modus ponens *)
-  | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 --> phi2) ->
-      theory ⊢ phi1 ->
-      theory ⊢ (phi1 --> phi2) ->
-      theory ⊢ phi2
+(* Modus ponens *)
+| Modus_ponens (phi1 phi2 : Pattern) :
+    well_formed phi1 -> well_formed (phi1 --> phi2) ->
+    theory ⊢ phi1 ->
+    theory ⊢ (phi1 --> phi2) ->
+    theory ⊢ phi2
 
-  (* Existential quantifier *)
-  | Ex_quan (phi : Pattern) (y : evar_name) :
-      well_formed phi ->
-      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
+(* Existential quantifier *)
+| Ex_quan (phi : Pattern) (y : evar_name) :
+    well_formed phi ->
+    theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
 
-  (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
-      well_formed phi1 -> well_formed phi2 ->
-      theory ⊢ (phi1 --> phi2) ->
-      set_mem eq_evar_name x (free_evars phi2) = false ->
-      theory ⊢ (exists_quantify x phi1 --> phi2)
+(* Existential generalization *)
+| Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
+    well_formed phi1 -> well_formed phi2 ->
+    theory ⊢ (phi1 --> phi2) ->
+    set_mem eq_evar_name x (free_evars phi2) = false ->
+    theory ⊢ (exists_quantify x phi1 --> phi2)
 
 (* Frame reasoning *)
-  (* Propagation bottom *)
-  | Prop_bott_left (phi : Pattern) :
-      well_formed phi ->
-      theory ⊢ (patt_bott $ phi --> patt_bott)
+(* Propagation bottom *)
+| Prop_bott_left (phi : Pattern) :
+    well_formed phi ->
+    theory ⊢ (patt_bott $ phi --> patt_bott)
 
-  | Prop_bott_right (phi : Pattern) :
-      well_formed phi ->
-      theory ⊢ (phi $ patt_bott --> patt_bott)
+| Prop_bott_right (phi : Pattern) :
+    well_formed phi ->
+    theory ⊢ (phi $ patt_bott --> patt_bott)
 
-  (* Propagation disjunction *)
-  | Prop_disj_left (phi1 phi2 psi : Pattern) :
-      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
+(* Propagation disjunction *)
+| Prop_disj_left (phi1 phi2 psi : Pattern) :
+    well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+    theory ⊢ (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
 
-  | Prop_disj_right (phi1 phi2 psi : Pattern) :
-      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
+| Prop_disj_right (phi1 phi2 psi : Pattern) :
+    well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+    theory ⊢ ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
 
-  (* Propagation exist *)
-  | Prop_ex_left (phi psi : Pattern) :
-      well_formed phi -> well_formed psi ->
-      theory ⊢ (((ex , phi) $ psi) --> (ex , phi $ psi))
+(* Propagation exist *)
+| Prop_ex_left (phi psi : Pattern) :
+    well_formed phi -> well_formed psi ->
+    theory ⊢ (((ex , phi) $ psi) --> (ex , phi $ psi))
 
-  | Prop_ex_right (phi psi : Pattern) :
-      well_formed phi -> well_formed psi ->
-      theory ⊢ ((psi $ (ex , phi)) --> (ex , psi $ phi))
+| Prop_ex_right (phi psi : Pattern) :
+    well_formed phi -> well_formed psi ->
+    theory ⊢ ((psi $ (ex , phi)) --> (ex , psi $ phi))
 
-  (* Framing *)
-  | Framing_left (phi1 phi2 psi : Pattern) :
-      theory ⊢ (phi1 --> phi2) ->
-      theory ⊢ ((phi1 $ psi) --> (phi2 $ psi))
+(* Framing *)
+| Framing_left (phi1 phi2 psi : Pattern) :
+    theory ⊢ (phi1 --> phi2) ->
+    theory ⊢ ((phi1 $ psi) --> (phi2 $ psi))
 
-  | Framing_right (phi1 phi2 psi : Pattern) :
-      theory ⊢ (phi1 --> phi2) ->
-      theory ⊢ ((psi $ phi1) --> (psi $ phi2))
+| Framing_right (phi1 phi2 psi : Pattern) :
+    theory ⊢ (phi1 --> phi2) ->
+    theory ⊢ ((psi $ phi1) --> (psi $ phi2))
 
 (* Fixpoint reasoning *)
-  (* Set Variable Substitution *)
-  | Svar_subst (phi psi : Pattern) (X : svar_name) :
-      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
+(* Set Variable Substitution *)
+| Svar_subst (phi psi : Pattern) (X : svar_name) :
+    theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
 
-  (* Pre-Fixpoint *)
-  (* TODO: is this correct? *)
-  | Pre_fixp (phi : Pattern) :
-      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
+(* Pre-Fixpoint *)
+(* TODO: is this correct? *)
+| Pre_fixp (phi : Pattern) :
+    theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
 
-  (* Knaster-Tarski *)
-  | Knaster_tarski (phi psi : Pattern) :
-      theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
-      theory ⊢ ((patt_mu phi) --> psi)
+(* Knaster-Tarski *)
+| Knaster_tarski (phi psi : Pattern) :
+    theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
+    theory ⊢ ((patt_mu phi) --> psi)
 
 (* Technical rules *)
-  (* Existence *)
-  | Existence : theory ⊢ (ex , patt_bound_evar 0)
+(* Existence *)
+| Existence : theory ⊢ (ex , patt_bound_evar 0)
 
-  (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar_name) : 
-      theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
-                    (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
+(* Singleton *)
+| Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar_name) : 
+    theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
+                                                           (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
-End locally_nameless.
