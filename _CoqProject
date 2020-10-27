@@ -17,4 +17,5 @@ Lattice.v
 ML/Signature.v
 #ML/ConcreteSignature.v
 ML/DefaultVariables.v
+AML_soundness_lemmas.v
 tests/TEST_LocallyNameless.v
