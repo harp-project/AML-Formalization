@@ -2,7 +2,7 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
-Require Import names.
+(*Require Import names.*)
 
 Require Import Coq.micromega.Lia.
 
@@ -19,6 +19,22 @@ Definition db_index := nat.
 
 (* Variable signature : Signature. *)
 Context {signature : Signature}.
+
+Definition evar_name := evar (variables signature).
+Definition svar_name := svar (variables signature).
+Definition eq_evar_name := evar_eq (variables signature).
+Definition eq_svar_name := svar_eq (variables signature).
+
+Definition evar_name_eqb (v1 v2 : evar_name) : bool :=
+  match eq_evar_name v1 v2 with
+  | left _ => true
+  | right _ => false
+  end.
+Definition svar_name_eqb (v1 v2 : svar_name) : bool :=
+  match eq_svar_name v1 v2 with
+  | left _ => true
+  | right _ => false
+  end.  
 
 Inductive Pattern : Type :=
 | patt_free_evar (x : evar_name)

@@ -3,7 +3,6 @@ Ensembles_Ext.v
 #AML_definition.v
 extralibrary.v
 locally_nameless.v
-names.v
 #FOL_helpers.v
 #MSFOL_definition.v
 #NAT_definition.v
@@ -16,5 +15,6 @@ names.v
 #TEST_Context.v
 Lattice.v
 ML/Signature.v
-ML/ConcreteSignature.v
+#ML/ConcreteSignature.v
+ML/DefaultVariables.v
 tests/TEST_LocallyNameless.v

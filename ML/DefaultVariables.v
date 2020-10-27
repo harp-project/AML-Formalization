@@ -1,8 +1,9 @@
 Require Import Arith.
 Require Import ZArith.
 Require Import List.
-Require Export String.
+Require Import String.
 
+Require Import Signature.
 Require Import extralibrary.
 
 Inductive evar_name_kind : Type := evar_c {id_ev : string}.
@@ -223,3 +224,11 @@ Proof.
   congruence. case (eq_svar_name x v); intro.
   congruence. auto.
 Qed.
+
+
+Definition DefaultMLVariables : MLVariables :=
+  {| evar := evar_name;
+     svar := svar_name;
+     evar_eq := eq_evar_name;
+     svar_eq := eq_svar_name;
+  |}.
