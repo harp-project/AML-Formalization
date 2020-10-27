@@ -103,6 +103,20 @@ Proof.
   unfold n; reflexivity.
 Qed.
 
+Definition find_fresh_evar_name' (l : list evar_name) : evar_name :=
+  find_fresh_evar_name (evar_c "auto") l.
+
+Lemma find_fresh_evar_name'_is_fresh:
+  forall l, ~List.In (find_fresh_evar_name' l) l.
+Proof.
+  intros.
+  remember (find_fresh_evar_name_is_fresh (evar_c "auto") l) as H.
+  unfold find_fresh_evar_name'.
+  clear HeqH.
+  destruct H.
+  assumption.
+Qed.
+
 Lemma fresh_evar_name:
   forall (k: evar_name_kind) (l: list evar_name), exists n, ~List.In n l /\ evar_kind n = k.
 Proof.
@@ -128,6 +142,21 @@ Proof.
   split. red; intro. generalize (H _ H0). unfold ident, snd. omega.
   reflexivity.
   unfold n; reflexivity.
+Qed.
+
+
+Definition find_fresh_svar_name' (l : list svar_name) : svar_name :=
+  find_fresh_svar_name (svar_c "Auto") l.
+
+Lemma find_fresh_svar_name'_is_fresh:
+  forall l, ~List.In (find_fresh_svar_name' l) l.
+Proof.
+  intros.
+  remember (find_fresh_svar_name_is_fresh (svar_c "Auto") l) as H.
+  unfold find_fresh_svar_name'.
+  clear HeqH.
+  destruct H.
+  assumption.
 Qed.
 
 Lemma fresh_svar_name:
