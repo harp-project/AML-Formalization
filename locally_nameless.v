@@ -6,6 +6,7 @@ Require Import extralibrary.
 
 Require Import Coq.micromega.Lia.
 
+(*From Equations Require Import Equations.*)
 Require Export String.
 Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
@@ -427,7 +428,7 @@ Equations ext_valuation_aux {m : Model}
   ext_valuation_aux evar_val svar_val (patt_free_svar X) := svar_val X;
   ext_valuation_aux evar_val svar_val (patt_bound_evar x) := Empty_set _;
   ext_valuation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
-  ext_valuation_aux evar_val svar_val (patt_sym s pf) := (sym_interp m) s pf;
+  ext_valuation_aux evar_val svar_val (patt_sym s) := (sym_interp m) s;
   ext_valuation_aux evar_val svar_val (patt_app ls rs) :=
     pointwise_ext (ext_valuation_aux evar_val svar_val ls)
                   (ext_valuation_aux evar_val svar_val rs);
@@ -436,13 +437,15 @@ Equations ext_valuation_aux {m : Model}
     Union _ (Complement _ (ext_valuation_aux evar_val svar_val ls))
             (ext_valuation_aux evar_val svar_val rs);
   ext_valuation_aux evar_val svar_val (patt_exists p') :=
+    let x := evar_fresh (variables signature) (free_evars p') in
     FA_Union
-      (fun e => ext_valuation_aux (update_valuation evar_name_eqb fresh_evar_name e evar_val) svar_val
-                                  (evar_open 0 fresh_evar_name p'));
+      (fun e => ext_valuation_aux (update_evar_val x e evar_val) svar_val
+                                  (evar_open 0 x p'));
   ext_valuation_aux evar_val svar_val (patt_mu p') :=
+    let X := svar_fresh (variables signature) (free_svars p') in
     Ensembles_Ext.mu
-      (fun S => ext_valuation_aux evar_val (update_valuation svar_name_eqb fresh_svar_name S svar_val)
-                                  (svar_open 0 fresh_svar_name p')).
+      (fun S => ext_valuation_aux evar_val (update_svar_val X S svar_val)
+                                  (svar_open 0 X p')).
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
 Next Obligation. unfold pattern_lt. simpl. omega. Defined.
