@@ -1,9 +1,12 @@
+Require Import ML.Signature.
 Require Export locally_nameless.
 
 Section FOL_helpers.
 
+  Context {Σ : Signature}.
+  
 Lemma wf_sctx (C : Application_context) (A : Pattern) :
-  well_formed A -> well_formed (subst_ctx C A).
+  well_formed A -> @well_formed Σ (subst_ctx C A).
 Proof.
   intros.
   induction C; unfold well_formed in *. destruct H; split; unfold well_formed_closed in *; simpl.
@@ -25,8 +28,9 @@ Proof.
       * destruct IHC. exact H1.
 Qed.
 
+Check subst_ctx.
 Lemma wp_sctx (C : Application_context) (A : Pattern) :
-  well_formed_positive A -> well_formed_positive (subst_ctx C A).
+  well_formed_positive A -> @well_formed_positive Σ (subst_ctx C A).
 Proof.
   intros.
   induction C.
@@ -38,9 +42,10 @@ Proof.
     + unfold well_formed in Prf. destruct Prf. exact H0.
     + exact IHC.
 Qed.
+Check subst_ctx.
 
 Lemma wc_sctx (C : Application_context) (A : Pattern) :
-  well_formed_closed_aux A 0 -> well_formed_closed_aux (subst_ctx C A) 0.
+  well_formed_closed_aux A 0 -> @well_formed_closed_aux Σ (subst_ctx C A) 0.
 Proof.
   intros.
   induction C.
@@ -83,6 +88,9 @@ match goal with
 | _                => fail
 end. 
 
+Check ML_proof_system.
+Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
+Import MLNotations.
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
 (well_formed A) -> theory ⊢ (A --> A).
 Proof. 
@@ -241,7 +249,7 @@ Lemma not_not_intro (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ (A --> ¬(¬A)).
 Proof.
   intros.
-  assert(well_formed Bot).
+  assert(@well_formed Σ Bot).
   shelve.
   exact (modus_ponens _ A Bot H H0).
   Unshelve.
@@ -677,7 +685,7 @@ Proof.
            epose (syllogism_intro theory _ _ _ _ _ _ (m) (Prop_bott_right theory p Prf)). exact m0.
   Unshelve.
   all:wf_proof.
-  all: assert(well_formed Bot).
+  all: assert(@well_formed Σ Bot).
   all:wf_proof.
 Qed.
 
@@ -707,8 +715,8 @@ Proof.
   unfold patt_not.
   assumption.
   Unshelve.
-  2,4:assert (well_formed (¬ A)).
-  6,7:assert (well_formed (Bot)).
+  2,4:assert (@well_formed Σ (¬ A)).
+  6,7:assert (@well_formed Σ (Bot)).
   all:wf_proof.
 Qed.
 
@@ -744,7 +752,7 @@ Proof.
   
   assumption.
   Unshelve.
-  4: assert (well_formed (Bot)).
+  4: assert (@well_formed Σ (Bot)).
   all:wf_proof.
 Qed.
 
@@ -764,9 +772,13 @@ Proof.
     epose (MP := Modus_ponens _ _ _ _ _ TRANS NN). assumption.
   - eapply IHC.
   Unshelve.
-  Abort.
-  
-Definition empty_theory := {|patterns := Empty_set Pattern|}.
+Abort.
+
+(* Does not work without `Program`.
+   But we could always use:
+  Definition empty_theory := @Build_Theory Σ (Empty_set Pattern).
+*)
+Program Definition empty_theory := {|patterns := Empty_set Pattern|}.
 Lemma exclusion (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (A --> Bot) -> G ⊢ Bot.
 Proof.
@@ -781,7 +793,7 @@ Axiom exclusion_axiom : forall G A,
   G ⊢ A -> G ⊢ (¬ A) -> False.
 
 Axiom or_or : forall G A,
-G ⊢ A \/ G ⊢ (¬ A).
+(G ⊢ A) \/ (G ⊢ (¬ A)).
 
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
@@ -818,3 +830,4 @@ G ⊢ A \/ G ⊢ (¬ A).
 
 (* Lemma universal_instantiation (theory : Theory) (A : Pattern) (x y : evar):
   theory ⊢ ((all' x, A) --> (e_subst_var A y x)). *)
+End FOL_helpers.
