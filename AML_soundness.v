@@ -2,7 +2,8 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
-Require Import names.
+Require Import ML.DefaultVariables.
+Require Import ML.Signature.
 Require Export AML_soundness_lemmas.
 
 Require Import Coq.micromega.Lia.
@@ -13,12 +14,18 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 
+Section soundness.
+
+Context {signature : Signature}.
+Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
+Notation "theory ⊢ pattern" := (@ML_proof_system signature theory pattern) (at level 1, no associativity).
+
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
   well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
 Proof.
-  intros phi theory Hwf Hp. unfold "|=". unfold "|=T", "|=M".
+  intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
   intros m Hv evar_val svar_val.
   induction Hp.
 
@@ -97,14 +104,14 @@ Proof.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    pose proof pointwise_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof pointwise_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * rewrite ext_valuation_imp_simpl, ext_valuation_app_simpl, ext_valuation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    pose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * unfold patt_or, patt_not. repeat rewrite ext_valuation_imp_simpl.
@@ -156,7 +163,7 @@ Proof.
 
   * rewrite ext_valuation_imp_simpl.
     constructor. constructor.
-    remember (ext_valuation evar_val svar_val ((ex , phi) $ psi)) as Xex.
+    remember (ext_valuation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
@@ -167,14 +174,15 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    split. assumption.
+    split. admit. admit.
+    (* assumption.
     erewrite evar_open_fresh. rewrite update_valuation_fresh.
     split; assumption.
-    assumption.
+    assumption. *)
 
   * rewrite ext_valuation_imp_simpl.
     constructor. constructor.
-    remember (ext_valuation evar_val svar_val (psi $ (ex , phi))) as Xex.
+    remember (ext_valuation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
@@ -185,10 +193,10 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    split.
-    erewrite evar_open_fresh. rewrite update_valuation_fresh. assumption.
+    split. admit. admit.
+    (* erewrite evar_open_fresh. rewrite update_valuation_fresh. assumption.
     assumption.
-    split; assumption.
+    split; assumption. *)
 
   * rewrite ext_valuation_imp_simpl. repeat rewrite ext_valuation_app_simpl.
  (* 
@@ -241,3 +249,5 @@ Proof.
     admit.
 
 Admitted.
+
+End soundness.

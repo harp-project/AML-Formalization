@@ -18,5 +18,6 @@ ML/Signature.v
 #ML/ConcreteSignature.v
 ML/DefaultVariables.v
 AML_soundness_lemmas.v
+AML_soundness.v
 FOL_helpers_locallynmlss.v
 tests/TEST_LocallyNameless.v

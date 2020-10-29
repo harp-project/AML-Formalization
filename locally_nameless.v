@@ -687,7 +687,6 @@ Section ml_proof_system.
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
 (* TODO: add well-formedness of theory *)
 (* TODO: use well-formedness as parameter in proof system *)
-(* Reserved Notation "pattern 'proved'" (at level 2). *)
 Reserved Notation "theory ⊢ pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
   Pattern -> Prop :=
