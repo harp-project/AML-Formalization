@@ -512,6 +512,15 @@ Lemma ext_valuation_bound_svar_simpl {m : Model}
   ext_valuation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
 Admitted.
 
+Lemma ext_valuation_sym_simpl {m : Model}
+      (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+      (s : symbols signature) :
+  ext_valuation evar_val svar_val (patt_sym s) = sym_interp m s.
+Proof.
+
+Admitted.
+
+
 Lemma ext_valuation_app_simpl {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :

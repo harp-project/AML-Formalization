@@ -25,6 +25,9 @@ Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Pro
   forall (var : svar_name),
     (Bp var -> negative_occurrence var phi) /\ (Bn var -> @positive_occurrence sig var phi).
 
+(* TODO *)
+(* respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi1 Bp Bn *)
+
 Definition ModelPowersetLattice (M : Model) := PowersetLattice (@Domain sig M).
 
 
@@ -57,8 +60,8 @@ Proof.
     rewrite -> HEq.
     split; intros; unfold Included; intros; assumption.
   - (* SVar *)
-    intros. split; intros.
-    * repeat rewrite -> ext_valuation_free_svar_simpl.
+    intros. split; intros; repeat rewrite -> ext_valuation_free_svar_simpl.
+    *
       assert (X <> x).
       { unfold respects_blacklist in H.
         specialize H with (var := X). destruct H.
@@ -67,8 +70,44 @@ Proof.
       unfold update_svar_val.
       destruct (eq_svar_name X x). contradiction.
       unfold Included. auto.
-    * 
-    
+    * unfold update_svar_val.
+      destruct (eq_svar_name X x).
+      assumption.
+      unfold Included. intros. assumption.
+  - (* bound EVar *)
+    intros. repeat rewrite -> ext_valuation_bound_evar_simpl.
+    unfold Included. unfold In. split; intros; assumption.
+  - (* bound SVar *)
+    intros. repeat rewrite -> ext_valuation_bound_svar_simpl.
+    unfold Included. unfold In. split; intros; assumption.
+  - (* Sym *)
+    intros. repeat rewrite -> ext_valuation_sym_simpl.
+    unfold Included. unfold In. split; intros; assumption.
+  - (* App *)
+    intros. repeat rewrite -> ext_valuation_app_simpl.
+    (*unfold respects_blacklist in H.*)
+    assert (respects_blacklist phi1 Bp Bn). admit.
+    assert (respects_blacklist phi2 Bp Bn). admit.
+    specialize (IHphi1 Bp Bn H1 M evar_val svar_val X S1 S2 H0).
+    specialize (IHphi2 Bp Bn H2 M evar_val svar_val X S1 S2 H0).
+    clear H1 H2.
+    destruct IHphi1 as [IHphi1_1 IHphi1_2].
+    destruct IHphi2 as [IHphi2_1 IHphi2_2].
+    unfold Included in *.
+    unfold In in *.
+    unfold pointwise_ext.
+    split; intros HBX x.
+    * specialize (IHphi1_1 HBX). specialize (IHphi2_1 HBX).
+      clear IHphi1_2. clear IHphi2_2.
+      intros. destruct H1 as [Xl [Xr [Hxl [Hxr Happ]]]].
+      exists Xl. exists Xr.
+      split. apply IHphi1_1. assumption.
+      split. apply IHphi2_1. assumption.
+      assumption.
+    * specialize (IHphi1_2 HBX). (*admit.*)
+    (*apply IHphi1 with (M := M) (evar_val := evar_val) (svar_val := svar_val) in H1.*)
+    unfold pointwise_ext. unfold Included. unfold In.
+    (*split; intros.*)
 Admitted.
 
 
