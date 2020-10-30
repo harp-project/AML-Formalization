@@ -104,10 +104,68 @@ Proof.
       split. apply IHphi1_1. assumption.
       split. apply IHphi2_1. assumption.
       assumption.
-    * specialize (IHphi1_2 HBX). (*admit.*)
-    (*apply IHphi1 with (M := M) (evar_val := evar_val) (svar_val := svar_val) in H1.*)
-    unfold pointwise_ext. unfold Included. unfold In.
-    (*split; intros.*)
+    * (*specialize (IHphi1_2 HBX). specialize (IHphi2_2 HBX).
+      clear IHphi1_1. clear IHphi2_1.*)
+      intros [Xl [Xr [Hxl [Hxr Happ]]]].
+      exists Xl. exists Xr.
+      split. apply IHphi1_2. assumption. assumption.
+      split. apply IHphi2_2. assumption. assumption.
+      assumption.
+  - (* Bot *)
+    intros.
+    rewrite -> ext_valuation_bott_simpl.
+    split; intros; unfold Included; unfold In in *; intros; inversion H2.
+  - (* Impl *)
+    intros.
+    assert (Hrb1 : respects_blacklist phi1 Bn Bp).
+    { unfold respects_blacklist in H. unfold respects_blacklist. intros.
+      specialize (H var).
+      destruct H as [H1 H2].
+      split; intros.
+      * specialize (H2 H).
+        inversion H2. assumption.
+      * specialize (H1 H).
+        inversion H1. assumption.
+    }
+    assert (Hrb2 : respects_blacklist phi2 Bp Bn).
+    { unfold respects_blacklist in *.
+      intros.
+      specialize (H var).
+      destruct H as [H1 H2].
+      split; intros.
+      * specialize (H1 H).
+        inversion H1. assumption.
+      * specialize (H2 H).
+        inversion H2. assumption.
+    }
+    clear H.
+    specialize (IHphi1 Bn Bp Hrb1 M evar_val svar_val X S1 S2 H0).
+    specialize (IHphi2 Bp Bn Hrb2 M evar_val svar_val X S1 S2 H0).
+    clear Hrb1 Hrb2.
+    repeat rewrite -> ext_valuation_imp_simpl.
+    destruct IHphi1 as [IHphi1_1 IHphi1_2].
+    destruct IHphi2 as [IHphi2_1 IHphi2_2].
+    unfold Included in *. unfold In in *.
+    split; intros.
+    * specialize (IHphi1_2 H).
+      specialize (IHphi2_1 H).
+      clear IHphi1_1 IHphi2_2.
+      destruct H1.
+      { left. unfold In in *. unfold Complement in *. unfold not in *. intros.
+        apply H1. apply IHphi1_2. assumption.
+      }
+      { right. apply IHphi2_1. unfold In in H1. assumption. }
+    * specialize (IHphi1_1 H).
+      specialize (IHphi2_2 H).
+      clear IHphi1_2 IHphi2_1.
+      destruct H1.
+      { left. unfold In in *. unfold Complement in *. unfold not in *. intros.
+        apply H1. apply IHphi1_1. assumption.
+      }
+      { right. apply IHphi2_2. assumption. }
+  - (* Ex *)
+    
+    
 Admitted.
 
 
