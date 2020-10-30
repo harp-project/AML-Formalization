@@ -164,7 +164,31 @@ Proof.
       }
       { right. apply IHphi2_2. assumption. }
   - (* Ex *)
-    
+    intros.
+    repeat rewrite -> ext_valuation_ex_simpl.
+    assert (Hrb: respects_blacklist phi Bp Bn).
+    {unfold respects_blacklist in *.
+     intros. specialize (H var). destruct H as [H1 H2].
+     split; intros.
+     * specialize (H1 H). inversion H1. assumption.
+     * specialize (H2 H). inversion H2. assumption.
+    }
+    specialize (IHphi Bp Bn Hrb M).
+    split; intros.
+    *
+      unfold Included in *. unfold In in *.
+      intros. destruct H2. destruct H2.
+      constructor.
+      exists x0.
+      specialize (IHphi (update_evar_val (evar_fresh (variables sig) (free_evars phi)) x0 evar_val)).
+      specialize (IHphi svar_val X S1 S2 H0).
+      destruct IHphi as [IHphi1 IHphi2].
+      specialize (IHphi1 H1 x).
+      (* Now I would need some lemma stating that ext_valuation evaluates phi the same
+         as its `evar_open`-ed equivalent *)
+    (*apply IHphi1.*)
+      admit.
+   *  admit.
     
 Admitted.
 
