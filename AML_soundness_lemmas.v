@@ -212,20 +212,30 @@ Admitted.
 (* if ext_valuation (phi1 --> phi2) = Full_set 
    then ext_valuation phi1 subset ext_valuation phi2
 *)
-Theorem ext_valuation_implies_subset {m : Model}
+Theorem ext_valuation_iff_subset {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (phi1 : Pattern) (phi2 : Pattern) :
-  Same_set (Domain m) (ext_valuation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) ->
+  Same_set (Domain m) (ext_valuation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) <->
   Included (Domain m) (ext_valuation evar_val svar_val phi1)
            (@ext_valuation sig m evar_val svar_val phi2).
 Proof.
-  intros; unfold Included; intros.
-  rewrite ext_valuation_imp_simpl in H.
-  remember (ext_valuation evar_val svar_val phi1) as Xphi1.
-  remember (ext_valuation evar_val svar_val phi2) as Xphi2.
-  assert (In (Domain m) (Union (Domain m) (Complement (Domain m) Xphi1) Xphi2) x).
-  apply Same_set_to_eq in H. rewrite H. constructor.
-  inversion H1. contradiction. assumption.
+  intros; split; unfold Included; intros.
+  * rewrite ext_valuation_imp_simpl in H.
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    assert (In (Domain m) (Union (Domain m) (Complement (Domain m) Xphi1) Xphi2) x).
+    apply Same_set_to_eq in H. rewrite H. constructor.
+    inversion H1. contradiction. assumption.
+  * rewrite ext_valuation_imp_simpl.
+    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
+    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+    constructor. constructor.
+    assert (Union (Domain m) (Complement (Domain m) Xphi1) Xphi1 = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H0; clear H0.
+    unfold Included; intros.
+    inversion H0.
+    left; assumption.
+    right; apply H in H1; assumption.
 Qed.
 
 (* evar_open of fresh name does not change *)

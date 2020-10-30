@@ -89,9 +89,9 @@ Proof.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     apply Union_Compl_Fullset.
 
-  * apply ext_valuation_implies_subset in IHHp2; try assumption.
+  * rewrite ext_valuation_iff_subset in IHHp2.
     apply Same_set_to_eq in IHHp1; try assumption.
-    constructor. constructor. rewrite <- IHHp1. assumption.
+    constructor. constructor. rewrite <- IHHp1. apply IHHp2; assumption.
 
   * rewrite ext_valuation_imp_simpl. rewrite ext_valuation_ex_simpl.
     unfold instantiate.
@@ -198,29 +198,26 @@ Proof.
     assumption.
     split; assumption. *)
 
-  * rewrite ext_valuation_imp_simpl. repeat rewrite ext_valuation_app_simpl.
- (* 
-    TODO (Framing rule corrected) : Fix this proof
+  * rewrite ext_valuation_iff_subset.
+    rewrite ext_valuation_iff_subset in IHHp.
+    repeat rewrite ext_valuation_app_simpl.
+    unfold Included in *; intros; unfold In in *.
+    destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
+    unfold pointwise_ext.
+    exists le, re.
+    split. apply IHHp. admit. assumption.
+    split; assumption.
 
-    rewrite ext_valuation_app_simpl in IHHp.
-    rewrite ext_valuation_imp_simpl in IHHp.
-    constructor. constructor.    
-    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
-    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
-    remember (ext_valuation evar_val svar_val psi) as Xpsi.
-    destruct IHHp. admit.
-    clear H. unfold Included in *.
-    intros. apply H0 in H. clear H0.
-    (* x \in pointwise_ext (~phi1 U phi2) psi ->
-       x \in ~(pointwise_ext phi1 psi) U (pointwise_ext phi2 psi)
-    *)
-    unfold In in *.
-    destruct H as [le [re [Hunion [Hpsi Happ_interp]]]].
-    inversion Hunion. admit.
-    right. exists le, re. repeat split; assumption. *)
-    admit.
-
-  * admit.
+  * rewrite ext_valuation_iff_subset.
+    rewrite ext_valuation_iff_subset in IHHp.
+    repeat rewrite ext_valuation_app_simpl.
+    unfold Included in *; intros; unfold In in *.
+    destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
+    unfold pointwise_ext.
+    exists le, re.
+    split. assumption.
+    split. apply IHHp. admit. assumption.
+    assumption.
 
   * constructor. constructor.
     destruct IHHp. admit.
