@@ -25,7 +25,14 @@ Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Pro
   forall (var : svar_name),
     (Bp var -> negative_occurrence var phi) /\ (Bn var -> @positive_occurrence sig var phi).
 
-(* TODO *)
+Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
+    respects_blacklist (phi1 $ phi2) Bp Bn.
+Proof.
+  intros. unfold respects_blacklist in *.
+  intros. split; intros; constructor; firstorder; firstorder.
+Qed.
+
 Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi1 Bp Bn.
 Proof.
@@ -53,6 +60,19 @@ Proof.
     inversion Hneg. subst. assumption.
   * specialize (Hpos H).
     inversion Hpos. subst. assumption.
+Qed.
+
+Lemma respects_blacklist_impl : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi1 Bn Bp -> respects_blacklist phi2 Bp Bn ->
+    respects_blacklist (phi1 --> phi2) Bp Bn.
+Proof.
+  unfold respects_blacklist.
+  intros.
+  specialize (H var).
+  specialize (H0 var).
+  destruct H as [H1neg H1pos].
+  destruct H0 as [H2neg H2pos].
+  split; intros; constructor; firstorder.
 Qed.
 
 Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
@@ -83,10 +103,55 @@ Proof.
     inversion Hpos. subst. assumption.
 Qed.
 
+Lemma respects_blacklist_ex : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (patt_exists phi) Bp Bn -> respects_blacklist phi Bp Bn.
+Proof.
+  intros. unfold respects_blacklist in *.
+  intros. specialize (H var). destruct H as [Hneg Hpos].
+  split; intros.
+  * specialize (Hneg H). inversion Hneg. assumption.
+  * specialize (Hpos H). inversion Hpos. assumption.
+Qed.
 
-Definition ModelPowersetLattice (M : Model) := PowersetLattice (@Domain sig M).
+(*
+Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist ()
+respects_blacklist (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi) Bp B
+*)
 
-
+Lemma evar_open_respects_blacklist :
+  forall (phi : Pattern) (Bp Bn : Ensemble svar_name) (x : evar_name) (n : nat),
+    respects_blacklist phi Bp Bn ->
+    respects_blacklist (evar_open n x phi) Bp Bn.
+Proof.
+  induction phi; try auto.
+  - (* EVar bound *)
+    intros. simpl.
+    destruct (n =? n0).
+    * unfold respects_blacklist. intros.
+      split; intros; constructor.
+    * assumption.  
+  -  (* App *) 
+    intros.
+    simpl.
+    remember (respects_blacklist_app_1 phi1 phi2 Bp Bn H) as Hrb1. clear HeqHrb1.
+    remember (respects_blacklist_app_2 phi1 phi2 Bp Bn H) as Hrb2. clear HeqHrb2.
+    specialize (IHphi1 Bp Bn x n Hrb1).
+    specialize (IHphi2 Bp Bn x n Hrb2).
+    clear H Hrb1 Hrb2.
+    apply respects_blacklist_app. assumption. assumption.
+  - (* Impl *)
+    intros.
+    simpl.
+    remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H) as Hrb1. clear HeqHrb1.
+    remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H) as Hrb2. clear HeqHrb2.
+    specialize (IHphi1 Bn Bp x n Hrb1).
+    specialize (IHphi2 Bp Bn x n Hrb2).
+    apply respects_blacklist_impl; assumption.
+  - 
+    
+Qed.
+(*
 Lemma respects_blacklist_implies_monotonic :
   forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist phi Bp Bn ->
@@ -249,8 +314,8 @@ Proof.
    *  admit.
     
 Admitted.
-Search size.
-Check le.
+*)
+
 Lemma respects_blacklist_implies_monotonic' :
   forall (n : nat) (phi : Pattern),
     le (size phi) n ->
@@ -289,8 +354,35 @@ Proof.
     * (* Bot *)
       admit.
   - (* S n *)
-    intros. destruct phi; simpl in H; try inversion H; subst.
-    * 
+    intros. destruct phi; simpl in H.
+    * apply IHn. simpl. lia. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption.
+    * (* App *)
+      remember (respects_blacklist_app_1 phi1 phi2 Bp Bn H0) as Hrb1. clear HeqHrb1.
+      remember (respects_blacklist_app_2 phi1 phi2 Bp Bn H0) as Hrb2. clear HeqHrb2.
+      admit.
+    * (* Bot *)
+      apply IHn. simpl. lia. assumption. assumption.
+    * (* Impl *)
+      remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H0) as Hrb1. clear HeqHrb1.
+      remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H0) as Hrb2. clear HeqHrb2.
+      admit.
+    * (* Ex *)
+      simpl. remember (respects_blacklist_ex phi Bp Bn H0) as Hrb. clear HeqHrb.
+      repeat rewrite -> ext_valuation_ex_simpl in *.
+      unfold Included in *. unfold In in *.
+      split; intros; destruct H3 as [x [c Hc]]; constructor; exists c.
+    + specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
+      rewrite <- evar_open_size in IHn.
+      assert (Hsz: size phi <= n). lia.
+      specialize (IHn Hsz Bp Bn).
+      
+      
+Admitted.
+
 
 
 (*
@@ -375,5 +467,10 @@ Lemma update_valuation_free_svar_subst {m : Model}
   = ext_valuation evar_val svar_val (@free_svar_subst sig phi psi X) .
 Proof.
 Admitted.
+
+
+
+Definition ModelPowersetLattice (M : Model) := PowersetLattice (@Domain sig M).
+
 
 End soundness_lemmas.
