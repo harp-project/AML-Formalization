@@ -421,8 +421,35 @@ Proof.
       rewrite <- evar_open_size in IHn.
       assert (Hsz: size phi <= n). lia.
       specialize (IHn Hsz Bp Bn).
-      
-      
+      Check evar_open_respects_blacklist.
+      apply evar_open_respects_blacklist with (n:=0) (x:= evar_fresh (variables sig) (free_evars phi)) in Hrb.
+      specialize (IHn Hrb M
+                      (update_evar_val (evar_fresh (variables sig) (free_evars phi)) c evar_val)
+                      (*update_svar_val X S1 svar_val*) svar_val
+                      X S1 S2 H1).
+      destruct IHn as [IHmon IHanti].
+      specialize (IHmon H2 x Hc).
+      apply IHmon.
+      (* A goal remans: Signature. Why? *)
+      auto.
+    + (* This is almost the same *)
+      specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
+      rewrite <- evar_open_size in IHn.
+      assert (Hsz: size phi <= n). lia.
+      specialize (IHn Hsz Bp Bn).
+      Check evar_open_respects_blacklist.
+      apply evar_open_respects_blacklist with (n:=0) (x:= evar_fresh (variables sig) (free_evars phi)) in Hrb.
+      specialize (IHn Hrb M
+                      (update_evar_val (evar_fresh (variables sig) (free_evars phi)) c evar_val)
+                      (*update_svar_val X S1 svar_val*) svar_val
+                      X S1 S2 H1).
+      destruct IHn as [IHmon IHanti].
+      specialize (IHanti H2 x Hc).
+      apply IHanti.
+      (* A goal remans: Signature. Why? *)
+      auto.
+      * (* Mu *)
+        admit.
 Admitted.
 
 
