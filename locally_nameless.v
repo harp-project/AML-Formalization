@@ -565,7 +565,7 @@ Lemma ext_valuation_mu_simpl
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_mu p) =
   let X := svar_fresh (variables signature) (free_svars p) in
-  Ensembles_Ext.mu
+  @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => ext_valuation evar_val
                             (update_svar_val X S svar_val)
                             (svar_open 0 X p)).
