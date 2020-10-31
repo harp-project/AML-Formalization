@@ -26,7 +26,63 @@ Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Pro
     (Bp var -> negative_occurrence var phi) /\ (Bn var -> @positive_occurrence sig var phi).
 
 (* TODO *)
-(* respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi1 Bp Bn *)
+Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi1 Bp Bn.
+Proof.
+  unfold respects_blacklist.
+  intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros.
+  * specialize (Hneg H).
+    inversion Hneg. subst. assumption.
+  * specialize (Hpos H).
+    inversion Hpos. subst. assumption.
+Qed.
+
+(* This proof is the same as for app_1 *)
+Lemma respects_blacklist_app_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
+Proof.
+  unfold respects_blacklist.
+  intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros.
+  * specialize (Hneg H).
+    inversion Hneg. subst. assumption.
+  * specialize (Hpos H).
+    inversion Hpos. subst. assumption.
+Qed.
+
+Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi1 Bn Bp.
+Proof.
+  unfold respects_blacklist.
+  intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros.
+  * specialize (Hpos H).
+    inversion Hpos. subst. assumption.
+  * specialize (Hneg H).
+    inversion Hneg. subst. assumption.
+Qed.
+
+Lemma respects_blacklist_impl_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
+Proof.
+  unfold respects_blacklist.
+  intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros.
+  * specialize (Hneg H).
+    inversion Hneg. subst. assumption.
+  * specialize (Hpos H).
+    inversion Hpos. subst. assumption.
+Qed.
+
 
 Definition ModelPowersetLattice (M : Model) := PowersetLattice (@Domain sig M).
 
@@ -184,6 +240,8 @@ Proof.
       specialize (IHphi svar_val X S1 S2 H0).
       destruct IHphi as [IHphi1 IHphi2].
       specialize (IHphi1 H1 x).
+      Search Pattern.
+      Print evar_open.
       (* Now I would need some lemma stating that ext_valuation evaluates phi the same
          as its `evar_open`-ed equivalent *)
     (*apply IHphi1.*)
@@ -191,6 +249,48 @@ Proof.
    *  admit.
     
 Admitted.
+Search size.
+Check le.
+Lemma respects_blacklist_implies_monotonic' :
+  forall (n : nat) (phi : Pattern),
+    le (size phi) n ->
+    forall (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi Bp Bn ->
+    forall (M : Model)
+           (evar_val : evar_name -> Domain M)
+           (svar_val : svar_name -> Power (Domain M))
+           (X : svar_name)
+           (S1 S2 : Ensemble (Domain M)),
+      Included (Domain M) S1 S2 ->
+      (Bp X ->
+       Included (Domain M)
+                (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
+                (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
+      ) /\ (Bn X ->
+            Included (Domain M)
+                     (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
+                     (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
+         )
+.
+Proof.
+  induction n.
+  - (* n = 0 *)
+    intros. destruct phi; simpl in H; try inversion H.
+    * (* EVar free *)
+      admit.
+    * (* SVar free *)
+      admit.
+    * (* EVar bound *)
+      admit.
+    * (* SVar bound *)
+      admit.
+    * (* Patt *)
+      admit.
+    * (* Bot *)
+      admit.
+  - (* S n *)
+    intros. destruct phi; simpl in H; try inversion H; subst.
+    * 
 
 
 (*
