@@ -12,6 +12,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
+Require Import Lattice.
 Require Import ML.Signature.
 
 (** ** Matching Logic Syntax *)
@@ -454,7 +455,13 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. app
 Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
 *)
 
-Program Fixpoint ext_valuation {m : Model}
+Section semantics.
+
+  Context {m : Model}.
+  Let OS := EnsembleOrderedSet (@Domain m).
+  Let  L := PowersetLattice (@Domain m).
+
+Program Fixpoint ext_valuation
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (p : Pattern) {measure (size p)} :=
 match p with
@@ -476,7 +483,7 @@ match p with
                             (evar_open 0 x p'))
 | patt_mu p' =>
   let X := svar_fresh (variables signature) (free_svars p') in
-  Ensembles_Ext.mu
+  @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => ext_valuation evar_val
                             (update_svar_val X S svar_val)
                             (svar_open 0 X p'))
@@ -488,31 +495,31 @@ Next Obligation. simpl; lia. Defined.
 Next Obligation. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
 Next Obligation. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
 
-Lemma ext_valuation_free_evar_simpl {m : Model}
+Lemma ext_valuation_free_evar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (x : evar_name) :
   ext_valuation evar_val svar_val (patt_free_evar x) = Singleton _ (evar_val x).
 Admitted.
 
-Lemma ext_valuation_free_svar_simpl {m : Model}
+Lemma ext_valuation_free_svar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (X : svar_name) :
   ext_valuation evar_val svar_val (patt_free_svar X) = svar_val X.
 Admitted.
 
-Lemma ext_valuation_bound_evar_simpl {m : Model}
+Lemma ext_valuation_bound_evar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (x : db_index) :
   ext_valuation evar_val svar_val (patt_bound_evar x) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_bound_svar_simpl {m : Model}
+Lemma ext_valuation_bound_svar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (X : db_index) :
   ext_valuation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_sym_simpl {m : Model}
+Lemma ext_valuation_sym_simpl
       (evar_val : @EVarVal m) (svar_val : @SVarVal m)
       (s : symbols signature) :
   ext_valuation evar_val svar_val (patt_sym s) = sym_interp m s.
@@ -521,7 +528,7 @@ Proof.
 Admitted.
 
 
-Lemma ext_valuation_app_simpl {m : Model}
+Lemma ext_valuation_app_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
   ext_valuation evar_val svar_val (patt_app ls rs) =
@@ -529,12 +536,12 @@ Lemma ext_valuation_app_simpl {m : Model}
                 (ext_valuation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_bott_simpl {m : Model}
+Lemma ext_valuation_bott_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)) :
   ext_valuation evar_val svar_val patt_bott = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_imp_simpl {m : Model}
+Lemma ext_valuation_imp_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
   ext_valuation evar_val svar_val (patt_imp ls rs) =
@@ -542,7 +549,7 @@ Lemma ext_valuation_imp_simpl {m : Model}
           (ext_valuation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_ex_simpl {m : Model}
+Lemma ext_valuation_ex_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_exists p) =
@@ -553,7 +560,7 @@ Lemma ext_valuation_ex_simpl {m : Model}
                             (evar_open 0 x p)).
 Admitted.
 
-Lemma ext_valuation_mu_simpl {m : Model}
+Lemma ext_valuation_mu_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
   ext_valuation evar_val svar_val (patt_mu p) =
@@ -581,7 +588,9 @@ repeat
 || exact Complement_Empty_is_Full
 || exact (Symdiff_val _ _)
 || exact (Same_set_refl _).
-*)
+ *)
+
+End semantics.
 
 Section Semantics_of_derived_operators.
 
