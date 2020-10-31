@@ -113,6 +113,37 @@ Proof.
   * specialize (Hpos H). inversion Hpos. assumption.
 Qed.
 
+Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi Bp Bn -> respects_blacklist (patt_exists phi) Bp Bn.
+Proof.
+  unfold respects_blacklist. intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros; constructor; firstorder.
+Qed.
+
+Lemma respects_blacklist_mu : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist (patt_mu phi) Bp Bn -> respects_blacklist phi Bp Bn.
+Proof.
+  unfold respects_blacklist. intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros.
+  - specialize (Hneg H).
+    inversion Hneg. assumption.
+  - specialize (Hpos H).
+    inversion Hpos. assumption.
+Qed.
+
+Lemma respects_blacklist_mu' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+    respects_blacklist phi Bp Bn -> respects_blacklist (patt_mu phi) Bp Bn.
+Proof.
+  unfold respects_blacklist. intros.
+  specialize (H var).
+  destruct H as [Hneg Hpos].
+  split; intros; constructor; firstorder.
+Qed.
+
 (*
 Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist ()
@@ -148,9 +179,20 @@ Proof.
     specialize (IHphi1 Bn Bp x n Hrb1).
     specialize (IHphi2 Bp Bn x n Hrb2).
     apply respects_blacklist_impl; assumption.
-  - 
-    
+  - (* Ex *)
+    intros.
+    simpl.
+    apply respects_blacklist_ex'.
+    apply respects_blacklist_ex in H.
+    auto.
+  - (* Mu *)
+    intros.
+    simpl.
+    apply respects_blacklist_mu in H.
+    specialize (IHphi Bp Bn x (n+1) H).
+    auto using respects_blacklist_mu'.
 Qed.
+
 (*
 Lemma respects_blacklist_implies_monotonic :
   forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
