@@ -238,11 +238,12 @@ Proof.
     unfold Included in H1.
     left. unfold In. unfold Complement. unfold not. unfold In. unfold Ensembles_Ext.mu.
     unfold FA_Inters_cond. intros.
+    (*
     inversion H0; subst.
     edestruct H1 with x. assumption.
     unfold In, Complement, not in H3. apply H3.
     apply H2. unfold Included. intros.
-    unfold In. admit.
+    unfold In. admit.*)
     admit.
 
 Admitted.
