@@ -371,10 +371,46 @@ Proof.
     
 Admitted.
 *)
+Print well_formed.
+
+Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
+    well_formed (phi1 $ phi2) -> @well_formed sig phi1.
+Proof.
+  unfold well_formed. intros.
+  destruct H as [Hpos Hclos].
+  inversion Hpos. inversion Hclos.
+  split. assumption. unfold well_formed_closed. assumption.
+Qed.
+
+Lemma well_formed_app_2 : forall (phi1 phi2 : Pattern),
+    well_formed (phi1 $ phi2) -> @well_formed sig phi2.
+Proof.
+  unfold well_formed. intros.
+  destruct H as [Hpos Hclos].
+  inversion Hpos. inversion Hclos.
+  split. assumption. unfold well_formed_closed. assumption.
+Qed.
+
+(* Maybe this does not hold, and we need the pattern to be well-formed completely. *)
+Lemma evar_open_wfp : forall (phi : Pattern) (n : db_index) (x : evar_name),
+    well_formed_positive phi -> @well_formed_positive sig (evar_open n x phi).
+Proof.
+  induction phi; intros; simpl; auto.
+  * destruct (n =? n0). constructor. assumption.
+  * inversion H. specialize (IHphi1 n x H0).
+    specialize (IHphi2 n x H1).
+    split; assumption.
+  * inversion H.
+    specialize (IHphi1 n x H0).
+    specialize (IHphi2 n x H1).
+    split; assumption.
+  * inversion H.
+    split.
+Admitted.
 
 Lemma respects_blacklist_implies_monotonic' :
   forall (n : nat) (phi : Pattern),
-    le (size phi) n ->
+    le (size phi) n -> well_formed_positive phi ->
     forall (Bp Bn : Ensemble svar_name),
     respects_blacklist phi Bp Bn ->
     forall (M : Model)
@@ -410,31 +446,32 @@ Proof.
     * (* Bot *)
       admit.
   - (* S n *)
-    intros. destruct phi; simpl in H.
-    * apply IHn. simpl. lia. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption.
+    intros phi Hsz Hwfp Bp Bn Hrb M evar_val svar_val X S1 S2 Hincl.
+    destruct phi; simpl in *.
+    * apply IHn. simpl. lia. assumption. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption. assumption.
+    * apply IHn. simpl. lia. assumption. assumption. assumption.
     * (* App *)
-      remember (respects_blacklist_app_1 phi1 phi2 Bp Bn H0) as Hrb1. clear HeqHrb1.
-      remember (respects_blacklist_app_2 phi1 phi2 Bp Bn H0) as Hrb2. clear HeqHrb2.
+      remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
+      remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
       admit.
     * (* Bot *)
-      apply IHn. simpl. lia. assumption. assumption.
+      apply IHn. simpl. lia. assumption. assumption. assumption.
     * (* Impl *)
-      remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H0) as Hrb1. clear HeqHrb1.
-      remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H0) as Hrb2. clear HeqHrb2.
+      remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
+      remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
       admit.
     * (* Ex *)
-      simpl. remember (respects_blacklist_ex phi Bp Bn H0) as Hrb. clear HeqHrb.
+      simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
       repeat rewrite -> ext_valuation_ex_simpl in *.
       unfold Included in *. unfold In in *.
-      split; intros; destruct H3 as [x [c Hc]]; constructor; exists c.
+      split; intros HBp m [x [c Hc]]; constructor; exists c.
     + specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
       rewrite <- evar_open_size in IHn.
-      assert (Hsz: size phi <= n). lia.
-      specialize (IHn Hsz Bp Bn).
+      assert (Hsz': size phi <= n). lia.
+      specialize (IHn Hsz' Bp Bn).
       Check evar_open_respects_blacklist.
       apply evar_open_respects_blacklist with (n:=0) (x:= evar_fresh (variables sig) (free_evars phi)) in Hrb.
       specialize (IHn Hrb M
