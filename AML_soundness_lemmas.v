@@ -371,7 +371,6 @@ Proof.
     
 Admitted.
 *)
-Print well_formed.
 
 Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
     well_formed (phi1 $ phi2) -> @well_formed sig phi1.
@@ -391,13 +390,63 @@ Proof.
   split. assumption. unfold well_formed_closed. assumption.
 Qed.
 
+Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar_name),
+    free_svars (evar_open dbi x ϕ) = @free_svars sig ϕ.
+Proof.
+  induction ϕ; intros; simpl; try reflexivity.
+  * destruct (n =? dbi); reflexivity.
+  * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
+  * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
+  * rewrite -> IHϕ. reflexivity.
+  * rewrite -> IHϕ. reflexivity.
+Qed.
+
+Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
+    (positive_occurrence X (evar_open dbi x ϕ) <-> @positive_occurrence sig X ϕ)
+    /\ (negative_occurrence X (evar_open dbi x ϕ) <-> @negative_occurrence sig X ϕ).
+Proof.
+  induction ϕ; intros; simpl; split; try reflexivity.
+  + destruct (n =? dbi).
+    split; intros H; inversion H; constructor. reflexivity.
+  + destruct (n =? dbi).
+    split; intros H; inversion H; constructor. reflexivity.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+  + split; intros H; inversion H; subst; constructor; firstorder.
+Qed.
+
 (* Maybe this does not hold, and we need the pattern to be well-formed completely. *)
-Lemma evar_open_wfp : forall (phi : Pattern) (n : db_index) (x : evar_name),
+Lemma evar_open_wfp : forall (sz : nat) (phi : Pattern),
+    le (size phi) sz ->
+    forall(n : db_index) (x : evar_name),
     well_formed_positive phi -> @well_formed_positive sig (evar_open n x phi).
 Proof.
-  induction phi; intros; simpl; auto.
-  * destruct (n =? n0). constructor. assumption.
-  * inversion H. specialize (IHphi1 n x H0).
+  induction sz; destruct phi; intros Hsz dbi e Hwfp; simpl in *; auto; try inversion Hsz; subst.
+  * destruct (n =? dbi). constructor. assumption.
+  * destruct (n =? dbi). constructor. assumption.
+  * destruct Hwfp as [Hwfp1 Hwfp2].
+    split; apply IHsz. lia. assumption. lia. assumption.
+  * destruct Hwfp as [Hwfp1 Hwfp2].
+    split; apply IHsz. lia. assumption. lia. assumption.
+  * destruct Hwfp as [Hwfp1 Hwfp2].
+    split; apply IHsz. lia. assumption. lia. assumption.
+  * destruct Hwfp as [Hwfp1 Hwfp2].
+    split; apply IHsz. lia. assumption. lia. assumption.
+  * apply IHsz. lia. assumption.
+  * apply IHsz. lia. assumption.
+  * destruct Hwfp as [Hwfp1 Hwfp2].
+    split. rewrite free_svars_evar_open.
+    (*
+    apply IHsz. lia. assumption.
+
+    apply Hwfp2. apply IHsz.
+    specialize (IHsz phi
+    specialize (IHphi1 n x H0).
     specialize (IHphi2 n x H1).
     split; assumption.
   * inversion H.
@@ -405,7 +454,12 @@ Proof.
     specialize (IHphi2 n x H1).
     split; assumption.
   * inversion H.
+    eapply IHphi in H1.
+    split. 
+    apply H1.
+    specialize (IHphi 0 (svar_fresh variables sig) free_svars phi)
     split.
+    {   }*)
 Admitted.
 
 Lemma respects_blacklist_implies_monotonic' :
@@ -471,6 +525,8 @@ Proof.
     + specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
       rewrite <- evar_open_size in IHn.
       assert (Hsz': size phi <= n). lia.
+      admit.
+      (*
       specialize (IHn Hsz' Bp Bn).
       Check evar_open_respects_blacklist.
       apply evar_open_respects_blacklist with (n:=0) (x:= evar_fresh (variables sig) (free_evars phi)) in Hrb.
@@ -504,7 +560,7 @@ Proof.
         remember (svar_fresh (variables sig) (free_svars phi)) as X0.
         simpl.
         Search svar_fresh.
-       admit.
+       admit.*)
 Admitted.
 
 
