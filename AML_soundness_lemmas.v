@@ -144,6 +144,20 @@ Proof.
   split; intros; constructor; firstorder.
 Qed.
 
+Lemma respects_blacklist_union : forall (phi : Pattern) (Bp1 Bn1 Bp2 Bn2 : Ensemble svar_name),
+    respects_blacklist phi Bp1 Bn1 ->
+    respects_blacklist phi Bp2 Bn2 ->
+    respects_blacklist phi (Union svar_name Bp1 Bp2) (Union svar_name Bn1 Bn2).
+Proof.
+  unfold respects_blacklist.
+  induction phi; intros; split; intros;
+    destruct H1; unfold In in *;
+      try specialize (H x0); try specialize (H x);
+      try specialize (H0 x0); try specialize (H0 x); firstorder; try constructor.
+Qed.
+
+    
+
 (*
 Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist ()
@@ -449,7 +463,11 @@ Proof.
       (* A goal remans: Signature. Why? *)
       auto.
       * (* Mu *)
-        admit.
+        rewrite -> ext_valuation_mu_simpl in *.
+        remember (svar_fresh (variables sig) (free_svars phi)) as X0.
+        simpl.
+        Search svar_fresh.
+       admit.
 Admitted.
 
 
