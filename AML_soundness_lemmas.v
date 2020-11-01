@@ -561,7 +561,7 @@ Proof.
         simpl.
         Search svar_fresh.
         
-       admit.*)
+       admit.
 Admitted.
 
 
