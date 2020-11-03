@@ -320,47 +320,91 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
-Inductive positive_occurrence : svar_name -> Pattern -> Prop :=
-| po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence sv (patt_free_evar x)
-| po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence sv (patt_free_svar x)
-| po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_evar m)
-| po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence sv (patt_bound_svar m)
+Inductive positive_occurrence_named : svar_name -> Pattern -> Prop :=
+| po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence_named sv (patt_free_evar x)
+| po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence_named sv (patt_free_svar x)
+| po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence_named sv (patt_bound_evar m)
+| po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence_named sv (patt_bound_svar m)
 | po_const (sigma : symbols signature) (sv : svar_name) :
-    positive_occurrence sv (patt_sym sigma)
+    positive_occurrence_named sv (patt_sym sigma)
 | po_app (phi1 phi2 : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi1 -> positive_occurrence sv phi2 ->
-  positive_occurrence sv (patt_app phi1 phi2)
-| po_bott (sv : svar_name) : positive_occurrence sv patt_bott
+  positive_occurrence_named sv phi1 -> positive_occurrence_named sv phi2 ->
+  positive_occurrence_named sv (patt_app phi1 phi2)
+| po_bott (sv : svar_name) : positive_occurrence_named sv patt_bott
 | po_impl (phi1 phi2 : Pattern) (sv : svar_name) :
-  negative_occurrence sv phi1 -> positive_occurrence sv phi2 ->
-  positive_occurrence sv (patt_imp phi1 phi2)
+  negative_occurrence_named sv phi1 -> positive_occurrence_named sv phi2 ->
+  positive_occurrence_named sv (patt_imp phi1 phi2)
 | po_exists (phi : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi ->
-  positive_occurrence sv (patt_exists phi)
+  positive_occurrence_named sv phi ->
+  positive_occurrence_named sv (patt_exists phi)
 | po_mu (phi : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi ->
-  positive_occurrence sv (patt_mu phi)
-with negative_occurrence : svar_name -> Pattern -> Prop :=
-| no_free_evar (x : evar_name) (sv : svar_name) : negative_occurrence sv (patt_free_evar x)
-(* | no_free_svar (x : svar_name) (sv : svar_name) : negative_occurrence sv (patt_free_svar x) *)
-| no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_evar m)
-| no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence sv (patt_bound_svar m)
+  positive_occurrence_named sv phi ->
+  positive_occurrence_named sv (patt_mu phi)
+with negative_occurrence_named : svar_name -> Pattern -> Prop :=
+| no_free_evar (x : evar_name) (sv : svar_name) : negative_occurrence_named sv (patt_free_evar x)
+| no_free_svar (x : svar_name) (sv : svar_name) : x <> sv -> negative_occurrence_named sv (patt_free_svar x)
+| no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence_named sv (patt_bound_evar m)
+| no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence_named sv (patt_bound_svar m)
 | no_const (sigma : symbols signature) (sv : svar_name) :
-    negative_occurrence sv (patt_sym sigma)
+    negative_occurrence_named sv (patt_sym sigma)
 | no_app (phi1 phi2 : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi1 -> negative_occurrence sv phi2 ->
-   negative_occurrence sv (patt_app phi1 phi2)
-| no_bott (sv : svar_name) :  negative_occurrence sv patt_bott
+   negative_occurrence_named sv phi1 -> negative_occurrence_named sv phi2 ->
+   negative_occurrence_named sv (patt_app phi1 phi2)
+| no_bott (sv : svar_name) :  negative_occurrence_named sv patt_bott
 | no_impl (phi1 phi2 : Pattern) (sv : svar_name) :
-  positive_occurrence sv phi1 ->  negative_occurrence sv phi2 ->
-   negative_occurrence sv (patt_imp phi1 phi2)
+  positive_occurrence_named sv phi1 ->  negative_occurrence_named sv phi2 ->
+   negative_occurrence_named sv (patt_imp phi1 phi2)
 | no_exists (phi : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi ->
-   negative_occurrence sv (patt_exists phi)
+   negative_occurrence_named sv phi ->
+   negative_occurrence_named sv (patt_exists phi)
 | no_mu (phi : Pattern) (sv : svar_name) :
-   negative_occurrence sv phi ->
-   negative_occurrence sv (patt_mu phi)
+   negative_occurrence_named sv phi ->
+   negative_occurrence_named sv (patt_mu phi)
 .
+
+Inductive positive_occurrence_db : db_index -> Pattern -> Prop :=
+| podb_free_evar (x : evar_name) (n : db_index) : positive_occurrence_db n (patt_free_evar x)
+| podb_free_svar (x : svar_name) (n : db_index) : positive_occurrence_db n (patt_free_svar x)
+| podb_bound_evar (m : db_index) (n : db_index) : positive_occurrence_db n (patt_bound_evar m)
+| podb_bound_svar (m : db_index) (n : db_index) : positive_occurrence_db n (patt_bound_svar m)
+| podb_const (sigma : symbols signature) (n : db_index) :
+    positive_occurrence_db n (patt_sym sigma)
+| podb_app (phi1 phi2 : Pattern) (n : db_index) :
+  positive_occurrence_db n phi1 -> positive_occurrence_db n phi2 ->
+  positive_occurrence_db n (patt_app phi1 phi2)
+| podb_bott (n : db_index) : positive_occurrence_db n patt_bott
+| podb_impl (phi1 phi2 : Pattern) (n : db_index) :
+  negative_occurrence_db n phi1 -> positive_occurrence_db n phi2 ->
+  positive_occurrence_db n (patt_imp phi1 phi2)
+| podb_exists (phi : Pattern) (n : db_index) :
+  positive_occurrence_db (n+1) phi ->
+  positive_occurrence_db n (patt_exists phi)
+| podb_mu (phi : Pattern) (n : db_index) :
+  positive_occurrence_db (n+1) phi ->
+  positive_occurrence_db n (patt_mu phi)
+with negative_occurrence_db : db_index -> Pattern -> Prop :=
+| nodb_free_evar (x : evar_name) (n : db_index) : negative_occurrence_db n (patt_free_evar x)
+| nodb_free_svar (x : svar_name) (n : db_index) : negative_occurrence_db n (patt_free_svar x)
+| nodb_bound_evar (m : db_index) (n : db_index) : negative_occurrence_db n (patt_bound_evar m)
+| nodb_bound_svar (m : db_index) (n : db_index) : n <> m -> negative_occurrence_db n (patt_bound_svar m)
+| nodb_const (sigma : symbols signature) (n : db_index) :
+    negative_occurrence_db n (patt_sym sigma)
+| nodb_app (phi1 phi2 : Pattern) (n : db_index) :
+   negative_occurrence_db n phi1 -> negative_occurrence_db n phi2 ->
+   negative_occurrence_db n (patt_app phi1 phi2)
+| nodb_bott (n : db_index) :  negative_occurrence_db n patt_bott
+| nodb_impl (phi1 phi2 : Pattern) (n : db_index) :
+  positive_occurrence_db n phi1 ->  negative_occurrence_db n phi2 ->
+   negative_occurrence_db n (patt_imp phi1 phi2)
+| nodb_exists (phi : Pattern) (n : db_index) :
+   negative_occurrence_db (n+1) phi ->
+   negative_occurrence_db n (patt_exists phi)
+| nodb_mu (phi : Pattern) (n : db_index) :
+   negative_occurrence_db (n+1) phi ->
+   negative_occurrence_db n (patt_mu phi)
+.
+
+
 
 Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   match phi with
@@ -373,9 +417,7 @@ Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   | patt_bott => True
   | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
   | patt_exists psi => well_formed_positive psi
-  | patt_mu psi => let X := svar_fresh (variables signature) (free_svars psi) in
-    positive_occurrence X (svar_open 0 X psi)
-                   /\ well_formed_positive psi
+  | patt_mu psi => positive_occurrence_db 0 psi /\ well_formed_positive psi
   end.
 
 Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
@@ -799,3 +841,5 @@ Inductive ML_proof_system (theory : Theory) :
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 End ml_proof_system.
+
+

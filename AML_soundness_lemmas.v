@@ -5,6 +5,7 @@ Require Import Coq.micromega.Lia.
 Require Export String.
 Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
+From Coq Require Import Bool.Bool.
 
 Require Import extralibrary.
 (*Require Import names.*)
@@ -21,9 +22,11 @@ Section soundness_lemmas.
 
   Context {sig : Signature}.
 
+  (* Bp - Blacklist of Positive Occurrence - these variables can occur only negatively.
+     Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
 Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
   forall (var : svar_name),
-    (Bp var -> negative_occurrence var phi) /\ (Bn var -> @positive_occurrence sig var phi).
+    (Bp var -> negative_occurrence_named var phi) /\ (Bn var -> @positive_occurrence_named sig var phi).
 
 Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
@@ -156,7 +159,101 @@ Proof.
       try specialize (H0 x0); try specialize (H0 x); firstorder; try constructor.
 Qed.
 
-    
+Lemma well_formed_positive_mu_app_1 : forall (phi1 : Pattern) (phi2 : Pattern),
+    well_formed_positive (mu, (phi1 $ phi2)) -> @well_formed_positive sig (mu, phi1)
+.
+Proof.
+  auto.
+Admitted.
+
+Lemma not_free_implies_positive_negative_occurrence :
+  forall (phi : Pattern) (X : svar_name),
+    ~ set_In X (free_svars phi) ->
+    @positive_occurrence_named sig X phi /\ negative_occurrence_named X phi.
+Proof.
+  unfold not.
+  induction phi; simpl; intros; split; try constructor; try firstorder.
+  * apply IHphi1. intros.
+    assert (H': set_In X (set_union eq_svar_name (free_svars phi1) (free_svars phi2))).
+    { apply set_union_intro1. assumption. }
+    auto.
+  * apply IHphi2. intros.
+    assert (H': set_In X (set_union eq_svar_name (free_svars phi1) (free_svars phi2))).
+    { apply set_union_intro2. assumption. }
+    auto.
+  * apply IHphi1.
+    intros. auto using set_union_intro1.
+  * apply IHphi2. intros. auto using set_union_intro2.
+  * apply IHphi1. intros. auto using set_union_intro1.
+  * apply IHphi2. intros. auto using set_union_intro2.
+  * apply IHphi1. intros. auto using set_union_intro1.
+  * apply IHphi2. intros. auto using set_union_intro2.
+Qed.
+
+(* taken from https://softwarefoundations.cis.upenn.edu/vfa-current/Perm.html *)
+Lemma eqb_reflect : forall x y, reflect (x = y) (x =? y).
+Proof.
+  intros x y. apply iff_reflect. symmetry.
+  apply Nat.eqb_eq.
+Qed.
+
+Lemma positive_negative_occurrence_db_named :
+  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    (positive_occurrence_db dbi phi ->
+    positive_occurrence_named X phi ->
+    positive_occurrence_named X (@svar_open sig dbi X phi))
+    /\ (negative_occurrence_db dbi phi ->
+        negative_occurrence_named X phi ->
+       negative_occurrence_named X (@svar_open sig dbi X phi)).
+Proof.
+  induction phi; intros; split; simpl; try firstorder.
+  + destruct ( n =? dbi). constructor. constructor.
+  + destruct (eqb_reflect n dbi).
+    { inversion H. subst. lia. }
+    { constructor. }
+  + inversion H; subst. inversion H0; subst.
+    constructor. firstorder. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder.
+  + inversion H. inversion H0. subst.
+    constructor. firstorder.
+Qed.
+
+Lemma positive_occurrence_respects_blacklist_svar_open :
+  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    positive_occurrence_db dbi phi ->
+    ~ set_In X (free_svars phi) ->
+    respects_blacklist (svar_open dbi X phi) (Empty_set svar_name) (Singleton svar_name X).
+Proof.
+  intros phi dbi X Hpodb Hni.
+  pose proof (Hpno := not_free_implies_positive_negative_occurrence phi X Hni).
+  unfold respects_blacklist. intros.
+  split; intros.
+  * firstorder using positive_negative_occurrence_db_named.
+  * inversion H. subst.
+    firstorder using positive_negative_occurrence_db_named.
+Qed.
+  
+Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern),
+    well_formed_positive (patt_mu phi) ->
+    let X := svar_fresh (variables sig) (free_svars phi) in
+    respects_blacklist (svar_open 0 X phi) (Empty_set svar_name) (Singleton svar_name X).
+Proof.
+  intros. destruct H as [Hpo Hwfp].
+  pose proof (Hfr := svar_fresh_is_fresh (variables sig) (free_svars phi)).
+  auto using positive_occurrence_respects_blacklist_svar_open.
+Qed.
+
 
 (*
 Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
@@ -415,8 +512,8 @@ Proof.
 Qed.
 
 Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
-    (positive_occurrence X (evar_open dbi x ϕ) <-> @positive_occurrence sig X ϕ)
-    /\ (negative_occurrence X (evar_open dbi x ϕ) <-> @negative_occurrence sig X ϕ).
+    (positive_occurrence_named X (evar_open dbi x ϕ) <-> @positive_occurrence_named sig X ϕ)
+    /\ (negative_occurrence_named X (evar_open dbi x ϕ) <-> @negative_occurrence_named sig X ϕ).
 Proof.
   induction ϕ; intros; simpl; split; try reflexivity.
   + destruct (n =? dbi).
@@ -434,7 +531,7 @@ Proof.
 Qed.
 
 Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
-    positive_occurrence X (evar_open dbi x ϕ) <-> @positive_occurrence sig X ϕ.
+    positive_occurrence_named X (evar_open dbi x ϕ) <-> @positive_occurrence_named sig X ϕ.
 Proof.
   intros.
   pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
@@ -442,7 +539,7 @@ Proof.
 Qed.
 
 Lemma negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
-    negative_occurrence X (evar_open dbi x ϕ) <-> @negative_occurrence sig X ϕ.
+    negative_occurrence_named X (evar_open dbi x ϕ) <-> @negative_occurrence_named sig X ϕ.
 Proof.
   intros.
   pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
@@ -467,7 +564,8 @@ Proof.
     split; apply IHsz. lia. assumption. lia. assumption.
   * apply IHsz. lia. assumption.
   * apply IHsz. lia. assumption.
-  * rewrite -> free_svars_evar_open.
+  * (*Check free_svars_evar_open.
+    rewrite -> free_svars_evar_open.
     rewrite <- svar_open_evar_open_comm.
     rewrite -> positive_occurrence_evar_open.
     firstorder.
@@ -476,7 +574,7 @@ Proof.
     rewrite -> positive_occurrence_evar_open.
     firstorder.
     apply IHsz. lia. assumption.
-Qed.
+Qed.*) Admitted.
 
 Lemma respects_blacklist_implies_monotonic' :
   forall (n : nat) (phi : Pattern),
@@ -555,12 +653,10 @@ Proof.
       { apply IHn2. apply HBp. apply Hc. }
       auto.
     * (* Mu *)
+      rewrite -> ext_valuation_mu_simpl in *.
+      remember (svar_fresh (variables sig) (free_svars phi)) as X0.
+      simpl.
       
-        rewrite -> ext_valuation_mu_simpl in *.
-        remember (svar_fresh (variables sig) (free_svars phi)) as X0.
-        simpl.
-        Search svar_fresh.
-        
        admit.
 Admitted.
 
