@@ -546,35 +546,63 @@ Proof.
   destruct P as [_ P]. exact P.
 Qed.
 
+Lemma positive_negative_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
+    le db1 db2 ->
+    (positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi))
+    /\ (negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi)).
+Proof.
+  induction phi; intros; simpl; split; intros; try constructor; try inversion H0; subst; try firstorder.
+  * destruct (n =? db2); intros. constructor. assumption.
+  * destruct (n =? db2); intros. constructor. assumption.
+  * apply IHphi. lia. assumption.
+  * apply IHphi. lia. assumption.
+  * apply IHphi. lia. assumption.
+  * apply IHphi. lia. assumption.
+Qed.
+
+Lemma positive_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
+    le db1 db2 ->
+    positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi).
+Proof.
+  intros.
+  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x H).
+  firstorder.
+Qed.
+
+Lemma negative_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
+    le db1 db2 ->
+    negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi).
+Proof.
+  intros.
+  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x H).
+  firstorder.
+Qed.
+
 Lemma evar_open_wfp : forall (sz : nat) (phi : Pattern),
     le (size phi) sz ->
     forall(n : db_index) (x : evar_name),
     well_formed_positive phi -> @well_formed_positive sig (evar_open n x phi).
 Proof.
   induction sz; destruct phi; intros Hsz dbi e Hwfp; simpl in *; auto; try inversion Hsz; subst.
-  * destruct (n =? dbi). constructor. assumption.
-  * destruct (n =? dbi). constructor. assumption.
-  * destruct Hwfp as [Hwfp1 Hwfp2].
+  + destruct (n =? dbi). constructor. assumption.
+  + destruct (n =? dbi). constructor. assumption.
+  + destruct Hwfp as [Hwfp1 Hwfp2].
     split; apply IHsz. lia. assumption. lia. assumption.
-  * destruct Hwfp as [Hwfp1 Hwfp2].
+  + destruct Hwfp as [Hwfp1 Hwfp2].
     split; apply IHsz. lia. assumption. lia. assumption.
-  * destruct Hwfp as [Hwfp1 Hwfp2].
+  + destruct Hwfp as [Hwfp1 Hwfp2].
     split; apply IHsz. lia. assumption. lia. assumption.
-  * destruct Hwfp as [Hwfp1 Hwfp2].
+  + destruct Hwfp as [Hwfp1 Hwfp2].
     split; apply IHsz. lia. assumption. lia. assumption.
-  * apply IHsz. lia. assumption.
-  * apply IHsz. lia. assumption.
-  * (*Check free_svars_evar_open.
-    rewrite -> free_svars_evar_open.
-    rewrite <- svar_open_evar_open_comm.
-    rewrite -> positive_occurrence_evar_open.
-    firstorder.
-  * rewrite -> free_svars_evar_open.
-    rewrite <- svar_open_evar_open_comm.
-    rewrite -> positive_occurrence_evar_open.
-    firstorder.
-    apply IHsz. lia. assumption.
-Qed.*) Admitted.
+  + apply IHsz. lia. assumption.
+  + apply IHsz. lia. assumption.
+  + split.
+    * apply positive_occurrence_db_evar_open. lia. firstorder.
+    * apply IHsz. lia. firstorder.
+  + split.
+    * apply positive_occurrence_db_evar_open. lia. firstorder.
+    * apply IHsz. lia. firstorder.
+Qed.
 
 Lemma respects_blacklist_implies_monotonic' :
   forall (n : nat) (phi : Pattern),
