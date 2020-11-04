@@ -851,7 +851,8 @@ Section with_model.
       * (* Mu *)
         remember Hwfp as Hwfpmu. clear HeqHwfpmu.
         simpl in Hsz.
-        assert (Hsz': size phi <= n). { lia. }
+        assert (Hsz': size phi <= n).
+        { lia. }
         split.
         {
           unfold AntiMonotonicFunction. intros.
@@ -924,7 +925,76 @@ Section with_model.
               apply IHam. constructor. assumption.
         }
         (* This is the same as the previous, with minor changes *)
-        admit.
+        {
+          unfold MonotonicFunction. intros.
+          repeat rewrite -> ext_valuation_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
+
+          remember (svar_fresh (variables sig) (free_svars phi)) as X'.
+          remember (svar_open 0 X' phi) as phi'.
+          pose proof (Hszeq := svar_open_size sig 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
+          
+          assert (Hrb': respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name X')).
+          { subst. apply mu_wellformed_respects_blacklist. assumption. }
+
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. assumption. }
+
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
+          specialize (Hx (update_svar_val V x svar_val) X').
+          specialize (Hy (update_svar_val V y svar_val) X').
+
+          apply lfp_preserves_order.
+          - apply Hx. constructor.
+          - apply Hy. constructor.
+          - clear Hy. clear Hx.
+            intros.
+            destruct (svar_eq (variables sig) X' V).
+            + (* X' = V *)
+              rewrite <- e.
+              repeat rewrite -> update_svar_shadow.
+              unfold leq. simpl. unfold Included. unfold In. auto.
+            + (* X' <> V*)
+              pose proof (Uhsvcx := update_svar_val_comm X' V x0 x svar_val n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
+              rewrite -> Uhsvcy.
+
+              assert (HrbV: respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name V)).
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H1.
+                - intros. inversion H1. rewrite <- H2.
+                  unfold respects_blacklist in Hrb.
+                  specialize (Hrb V).
+                  destruct Hrb as [Hrbn Hrbp].
+                  specialize (Hrbp H).
+                  rewrite <- H2 in *. clear H2.                  
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (svar_fresh (variables sig) (free_svars phi) = V).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H3).
+                  * inversion Hrbp. assumption.
+              }
+
+              specialize (IHn Hwfp' (Empty_set svar_name) (Singleton svar_name V) HrbV).
+              specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
+              destruct IHn as [IHam IHmo].
+              apply IHmo. constructor. assumption.
+        }
   Admitted.
 
 
