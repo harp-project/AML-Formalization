@@ -810,9 +810,60 @@ Section with_model.
       * (* Bot *)
         apply IHn. simpl. lia. assumption. assumption.
       * (* Impl *)
+        (* phi1 and phi2 are well-formed-positive *)
+        inversion Hwfp. rename H into Hwfp1. rename H0 into Hwfp2.
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        simpl in Hsz.
+        assert (Hsz1: size phi1 <= n).
+        { lia. }
+        assert (Hsz2: size phi2 <= n).
+        { lia. }
+        
+        
         remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
         remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-        admit.
+        remember IHn as IHn1. clear HeqIHn1.
+        rename IHn into IHn2.
+        specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 evar_val svar_val V).
+        specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+        unfold AntiMonotonicFunction in *.
+        unfold MonotonicFunction in *.
+        
+        split.
+        {
+          intros HBp.
+          intros.
+          repeat rewrite -> ext_valuation_imp_simpl.
+          unfold leq in *. simpl in *. unfold Included in *. intros.
+          destruct H0.
+          + left. unfold Complement in *.
+            unfold not in *. unfold In in *. intros.
+            apply H0.
+            
+            destruct IHn1 as [IHn11 IHn12].
+            apply (IHn12 HBp x y H x0).
+            apply H1.
+          + right. unfold In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            apply (IHn21 HBp x y H x0 H0).
+        }
+        {
+          intros HBn.
+          intros. repeat rewrite -> ext_valuation_imp_simpl.
+          unfold leq in *. simpl in *. unfold Included in *. intros.
+          destruct H0.
+          + left. unfold Complement in *.
+            unfold not in *. unfold In in *. intros.
+            apply H0.
+
+            destruct IHn1 as [IHn11 IHn12].
+            apply (IHn11 HBn x y H x0).
+            apply H1.
+          + right. unfold In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            apply (IHn22 HBn x y H x0 H0).
+        }
       * (* Ex *)
         simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
         specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
