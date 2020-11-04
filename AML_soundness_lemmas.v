@@ -706,6 +706,26 @@ Proof.
     * firstorder.
 Qed.
 
+
+Lemma positive_negative_occurrence_named_svar_open :
+  forall (phi : Pattern) (X Y : svar_name) (dbi : db_index),
+    X <> Y ->
+    (
+    negative_occurrence_named X phi ->
+    negative_occurrence_named X (@svar_open sig dbi Y phi)
+    ) /\ (
+    positive_occurrence_named X phi ->
+    positive_occurrence_named X (@svar_open sig dbi Y phi)
+    ).
+Proof.
+  induction phi; intros X Y dbi XneY; split; intros Hneg; inversion Hneg; subst;
+    simpl in *; try constructor; try firstorder.
+  - destruct (n =? dbi); constructor. 
+    unfold not. intros. assert (X = Y). symmetry. assumption.
+    unfold not in XneY. destruct (XneY H0).
+  - destruct (n =? dbi); constructor.
+Qed.
+
 Section with_model.
 
   Context {M : @Model sig}.
@@ -730,7 +750,7 @@ Section with_model.
     * reflexivity.
     * reflexivity.
   Qed.
-  
+
   Lemma respects_blacklist_implies_monotonic' :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
@@ -866,7 +886,25 @@ Section with_model.
               rewrite -> Uhsvcy.
 
               assert (HrbV: respects_blacklist phi' (Singleton svar_name V) (Empty_set svar_name)).
-              { admit. }
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H1. rewrite <- H2.
+                  unfold respects_blacklist in Hrb.
+                  specialize (Hrb V).
+                  destruct Hrb as [Hrbn Hrbp].
+                  specialize (Hrbn H).
+                  rewrite <- H2 in *. clear H2.                  
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (svar_fresh (variables sig) (free_svars phi) = V).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H3).
+                  * inversion Hrbn. assumption.
+                - intros. destruct H1.
+              }
 
               specialize (IHn Hwfp' (Singleton svar_name V) (Empty_set svar_name) HrbV).
               specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
