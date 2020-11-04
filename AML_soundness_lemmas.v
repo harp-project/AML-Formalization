@@ -751,6 +751,16 @@ Section with_model.
     * reflexivity.
   Qed.
 
+  Lemma update_svar_shadow : forall (X : @svar_name sig)
+                                    (S1 S2 : Power (Domain M))
+                                    (svar_val : @SVarVal sig M),
+      update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
+  Proof.
+    intros. unfold update_svar_val. apply functional_extensionality.
+    intros. destruct (eq_svar_name X x); reflexivity.
+  Qed.
+  
+
   Lemma respects_blacklist_implies_monotonic' :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
@@ -878,7 +888,9 @@ Section with_model.
             intros.
             destruct (svar_eq (variables sig) X' V).
             + (* X' = V *)
-              admit.
+              rewrite <- e.
+              repeat rewrite -> update_svar_shadow.
+              unfold leq. simpl. unfold Included. unfold In. auto.
             + (* X' <> V*)
               pose proof (Uhsvcx := update_svar_val_comm X' V x0 x svar_val n0).
               rewrite -> Uhsvcx.
@@ -911,43 +923,7 @@ Section with_model.
               destruct IHn as [IHam IHmo].
               apply IHam. constructor. assumption.
         }
-        (*
-        simpl.
-        destruct Hwfp as [Hwfp1 Hwfp2].
-        assert (Hmuwfp: well_formed_positive (mu, phi)).
-        { unfold well_formed_positive.
-          split.
-          * apply Hwfp1.
-          * unfold well_formed_positive in Hwfp2. apply Hwfp2.
-        }
-        pose proof (Hrb1 := mu_wellformed_respects_blacklist phi Hmuwfp).
-        
-        pose proof (Hrb2 := respects_blacklist_mu phi Bp Bn Hrb).
-        (*
-      pose proof (Hrb'' := respects_blacklist_union phi Bp Bn (Empty_set svar_name) (Singleton svar_name X)
-                 Hrb2 ).*)
-        simpl in Hrb1.
-        rename X into V.
-        remember (svar_fresh (variables sig) (free_svars phi)) as X.
-        assert (Hsz': size phi <= n).
-        { simpl in *. lia. }
-        specialize (IHn phi Hsz' Hwfp2 Bp Bn Hrb2 evar_val).
-        rewrite -> ext_valuation_mu_simpl. simpl.
-        split.
-        {
-          intros.
-          Check leq. fold leq.
-          Check @leq (Ensemble (@Domain sig M)) (ModelPowersetOS M).
-          fold (@leq (Ensemble (@Domain sig M)) (ModelPowersetOS M)).
-          Check @LeastFixpointOf.
-          remember (ModelPowersetLattice M) as L.
-          fold LeastFixpointOf. (ModelPowersetLattice M)
-                                  Check lfp_preserves_order.
-          apply lfp_preserves_order.
-        }
-        (*pose proof (Hrb' := positive_occurrence_respects_blacklist)*)
-        Search positive_occurrence_db.
-        *)
+        (* This is the same as the previous, with minor changes *)
         admit.
   Admitted.
 
