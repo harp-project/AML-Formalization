@@ -806,7 +806,56 @@ Section with_model.
       * (* App *)
         remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
         remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-        admit.
+        inversion Hwfp.
+        rename H into Hwfp1. rename H0 into Hwfp2.
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        simpl in Hsz.
+        assert (Hsz1: size phi1 <= n).
+        { lia. }
+        assert (Hsz2: size phi2 <= n).
+        { lia. }
+
+        split.
+        {
+          intros HBp. unfold AntiMonotonicFunction in *.
+          intros.
+          repeat rewrite -> ext_valuation_app_simpl.
+          unfold pointwise_ext. unfold leq in *. simpl in *.
+          unfold Included in *. intros. unfold In in *.
+          destruct H0. destruct H0. destruct H0. destruct H1.
+          
+          exists x1. exists x2.
+          split.
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 evar_val svar_val V).
+            destruct IHn as [IHam IHmo].
+            apply (IHam HBp x y H x1). assumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+              destruct IHn as [IHam IHmo].
+              apply (IHam HBp x y H x2). assumption.
+            + assumption.
+        }
+        {
+          intros HBp. unfold MonotonicFunction in *.
+          intros.
+          repeat rewrite -> ext_valuation_app_simpl.
+          unfold pointwise_ext. unfold leq in *. simpl in *.
+          unfold Included in *. intros. unfold In in *.
+          destruct H0. destruct H0. destruct H0. destruct H1.
+          
+          exists x1. exists x2.
+          split.
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 evar_val svar_val V).
+            destruct IHn as [IHam IHmo].
+            apply (IHmo HBp x y H x1). assumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+              destruct IHn as [IHam IHmo].
+              apply (IHmo HBp x y H x2). assumption.
+            + assumption.
+        }
+        
       * (* Bot *)
         apply IHn. simpl. lia. assumption. assumption.
       * (* Impl *)
