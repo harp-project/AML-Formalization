@@ -22,6 +22,25 @@ Section soundness_lemmas.
 
   Context {sig : Signature}.
 
+
+(* evar_open of fresh name does not change *)
+Lemma evar_open_fresh (phi : Pattern) :
+  forall n, well_formed phi -> evar_open n (evar_fresh (variables sig) (free_evars phi)) phi = phi.
+Proof. Admitted. (*
+  intros. generalize dependent n. induction phi; intros; simpl; try eauto.
+  * inversion H. inversion H1.
+  *  rewrite IHphi1. rewrite IHphi2. reflexivity.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+  * rewrite IHphi1. rewrite IHphi2. reflexivity.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+    split; inversion H. inversion H0; assumption. inversion H1; assumption.
+  * rewrite IHphi. reflexivity.
+    split; inversion H. assumption.
+    unfold well_formed_closed in *. simpl in H1. admit.
+Admitted.*)
+
+  
   (* Bp - Blacklist of Positive Occurrence - these variables can occur only negatively.
      Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
 Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
@@ -604,89 +623,245 @@ Proof.
     * apply IHsz. lia. firstorder.
 Qed.
 
-Lemma respects_blacklist_implies_monotonic' :
-  forall (n : nat) (phi : Pattern),
-    le (size phi) n -> well_formed_positive phi ->
-    forall (Bp Bn : Ensemble svar_name),
-    respects_blacklist phi Bp Bn ->
-    forall (M : Model)
-           (evar_val : evar_name -> Domain M)
-           (svar_val : svar_name -> Power (Domain M))
-           (X : svar_name)
-           (S1 S2 : Ensemble (Domain M)),
-      Included (Domain M) S1 S2 ->
-      (Bp X ->
-       Included (Domain M)
-                (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
-                (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
-      ) /\ (Bn X ->
-            Included (Domain M)
-                     (@ext_valuation sig M evar_val (update_svar_val X S1 svar_val) phi)
-                     (@ext_valuation sig M evar_val (update_svar_val X S2 svar_val) phi)
-         )
-.
+Lemma positive_occurrence_db_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    (positive_occurrence_db dbi phi ->
+    @positive_occurrence_db sig dbi (svar_open dbi X phi))
+   /\ (negative_occurrence_db dbi phi -> @negative_occurrence_db sig dbi (svar_open dbi X phi)).
 Proof.
-  induction n.
-  - (* n = 0 *)
-    intros. destruct phi; simpl in H; try inversion H.
-    * (* EVar free *)
-      admit.
-    * (* SVar free *)
-      admit.
-    * (* EVar bound *)
-      admit.
-    * (* SVar bound *)
-      admit.
-    * (* Patt *)
-      admit.
-    * (* Bot *)
-      admit.
-  - (* S n *)
-    intros phi Hsz Hwfp Bp Bn Hrb M evar_val svar_val X S1 S2 Hincl.
-    destruct phi; simpl in *.
-    * apply IHn. simpl. lia. assumption. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption. assumption.
-    * apply IHn. simpl. lia. assumption. assumption. assumption.
-    * (* App *)
-      remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
-      remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-      admit.
-    * (* Bot *)
-      apply IHn. simpl. lia. assumption. assumption. assumption.
-    * (* Impl *)
-      remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
-      remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-      admit.
-    * (* Ex *)
-      simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-      repeat rewrite -> ext_valuation_ex_simpl in *.
-      unfold Included in *. unfold In in *.
-      specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
-      rewrite <- evar_open_size in IHn.
-      assert (Hsz': size phi <= n). lia.
-      remember (evar_fresh (variables sig) (free_evars phi)) as fresh.
-      pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
-      specialize (IHn Hsz' Hwfp' Bp Bn).
-      pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
-      split; intros HBp m [x [c Hc]]; constructor; exists c;
-        remember (update_evar_val fresh c evar_val) as evar_val';
-        specialize (IHn Hrb'' M evar_val' svar_val X S1 S2 Hincl);
-        remember (evar_open 0 fresh phi) as phi';
-        remember (update_svar_val X S1 svar_val) as svar_val1;
-        remember (update_svar_val X S2 svar_val) as svar_val2;
-        destruct IHn as [IHn1 IHn2].
-      { apply IHn1. apply HBp. apply Hc. }
-      { apply IHn2. apply HBp. apply Hc. }
-      auto.
-    * (* Mu *)
-      rewrite -> ext_valuation_mu_simpl in *.
-      remember (svar_fresh (variables sig) (free_svars phi)) as X0.
-      simpl.
-      
-       admit.
-Admitted.
+  induction phi; intros; simpl; split; intros; try constructor; try inversion H; try firstorder.
+  + destruct (n =? dbi); constructor.
+  + destruct (n =? dbi).
+    * constructor.
+    * subst. constructor. assumption.
+Qed.
+
+(*
+Lemma wfca_impl_pod0 :
+  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    well_formed_closed_aux phi dbi ->
+    ( @positive_occurrence_db sig 0 (svar_open dbi X phi)
+      /\ @negative_occurrence_db sig 0 (svar_open dbi X phi)).
+Proof.
+  induction phi; intros; simpl; split;  try constructor; try inversion H; try firstorder.
+  * destruct (n =? S n); constructor.
+  * destruct (n =? S m); constructor.
+  * destruct (n =? S n); constructor. subst. simpl in H. lia.
+  * destruct (n =? S n); constructor.
+  * 
+  * destruct (n =? dbi); constructor.
+  *)
+
+Lemma well_formed_closed_aux_svar_open :
+  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    well_formed_closed_aux phi dbi ->
+    @well_formed_closed_aux sig (svar_open dbi X phi) dbi.
+Proof.
+  induction phi; intros; simpl in *; auto.
+  * destruct (eqb_reflect n dbi). lia. auto.
+  * firstorder.
+  * firstorder.
+Qed.
+
+
+Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar_name),
+    dbi1 < dbi2 ->
+    (
+    positive_occurrence_db dbi1 phi ->
+    @positive_occurrence_db sig dbi1 (svar_open dbi2 X phi)
+    )
+    /\ (negative_occurrence_db dbi1 phi -> @negative_occurrence_db sig dbi1 (svar_open dbi2 X phi)).
+Proof.
+  induction phi; intros dbi1 dbi2 X Hneq; split; intros H; inversion H; subst; intros; simpl in *; auto.
+  + destruct (n =? dbi2); constructor.
+  + destruct (n =? dbi2); constructor. auto.
+  + constructor; firstorder.
+  + constructor; firstorder.
+  + constructor; firstorder.
+  + constructor; firstorder.
+  + constructor. apply IHphi. lia. assumption.
+  + constructor. apply IHphi. lia. assumption.
+  + constructor. apply IHphi. lia. assumption.
+  + constructor. apply IHphi. lia. assumption.
+Qed.
+
+Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    well_formed_positive phi ->
+    @well_formed_positive sig (svar_open dbi X phi).
+Proof.
+  induction phi; intros.
+  + constructor.
+  + constructor.
+  + constructor.
+  + simpl. destruct (n =? dbi); constructor.
+  + constructor.
+  + inversion H. firstorder.
+  + constructor.
+  + inversion H. firstorder.
+  + simpl in H. simpl. auto.
+  + simpl in H. simpl. Search well_formed_closed_aux.
+    split.
+    * apply positive_negative_occurrence_db_svar_open_le.
+      lia. firstorder.
+    * firstorder.
+Qed.
+
+Section with_model.
+
+  Context {M : @Model sig}.
+  Let A := Ensemble (@Domain sig M).
+  Let OS := EnsembleOrderedSet (@Domain sig M).
+  Let L := PowersetLattice (@Domain sig M).
+
+  Lemma respects_blacklist_implies_monotonic' :
+    forall (n : nat) (phi : Pattern),
+      le (size phi) n -> well_formed_positive phi ->
+      forall (Bp Bn : Ensemble svar_name),
+        respects_blacklist phi Bp Bn ->
+        forall (evar_val : evar_name -> Domain M)
+               (svar_val : svar_name -> Power (Domain M))
+               (X : svar_name),
+          (Bp X ->
+           @AntiMonotonicFunction A OS (fun S : Ensemble (Domain M) =>
+                                  (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi)
+                              )
+          ) /\
+          (Bn X ->
+                @MonotonicFunction A OS (fun S : Ensemble (Domain M) =>
+                                           (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi))
+               )
+  .
+  Proof.
+    induction n.
+    - (* n = 0 *)
+      intros. destruct phi; simpl in H; try inversion H.
+      * (* EVar free *)
+        admit.
+      * (* SVar free *)
+        admit.
+      * (* EVar bound *)
+        admit.
+      * (* SVar bound *)
+        admit.
+      * (* Patt *)
+        admit.
+      * (* Bot *)
+        admit.
+    - (* S n *)
+      intros phi Hsz Hwfp Bp Bn Hrb evar_val svar_val V.
+      destruct phi.
+      * apply IHn. simpl. lia. assumption. assumption.
+      * apply IHn. simpl. lia. assumption. assumption.
+      * apply IHn. simpl. lia. assumption. assumption.
+      * apply IHn. simpl. lia. assumption. assumption.
+      * apply IHn. simpl. lia. assumption. assumption.
+      * (* App *)
+        remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
+        admit.
+      * (* Bot *)
+        apply IHn. simpl. lia. assumption. assumption.
+      * (* Impl *)
+        remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
+        admit.
+      * (* Ex *)
+        simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
+        specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
+        rewrite <- evar_open_size in IHn.
+        assert (Hsz': size phi <= n). simpl in *. lia.
+        remember (evar_fresh (variables sig) (free_evars phi)) as fresh.
+        pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
+        specialize (IHn Hsz' Hwfp' Bp Bn).
+        pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
+        unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
+        unfold leq. simpl.
+        unfold Included in *. unfold In in *.
+        (*rewrite -> ext_valuation_ex_simpl in *.*)
+        split; intros HBp S1 S2 Hincl; rewrite -> ext_valuation_ex_simpl; simpl;
+          intros m [x [c Hc]]; rewrite -> ext_valuation_ex_simpl; simpl; constructor; exists c;
+            remember (update_evar_val fresh c evar_val) as evar_val';
+            specialize (IHn Hrb'' evar_val' svar_val V);
+            destruct IHn as [IHn1 IHn2].        
+        {
+          specialize (IHn1 HBp S1 S2 Hincl).
+          remember (evar_open 0 fresh phi) as phi'.
+          remember (update_svar_val V S1 svar_val) as svar_val1.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn1. apply Hc.
+        }
+        {
+          specialize (IHn2 HBp S1 S2 Hincl).
+          remember (evar_open 0 fresh phi) as phi'.
+          remember (update_svar_val V S1 svar_val) as svar_val1.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn2. apply Hc.
+        }
+        auto.
+      * (* Mu *)
+        simpl in Hsz.
+        assert (Hsz': size phi <= n). { lia. }
+        split.
+        {
+          unfold AntiMonotonicFunction. intros.
+          repeat rewrite -> ext_valuation_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
+          apply lfp_preserves_order.
+          + remember (svar_fresh (variables sig) (free_svars phi)) as X'.
+            remember (svar_open 0 X' phi) as phi'.
+            Search svar_open size.
+            pose proof (Hszeq := svar_open_size sig 0 X' phi).
+            assert (Hsz'': size phi' <= n).
+            { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+            specialize (IHn phi' Hsz'').
+            Search well_formed_positive.
+            (* TODO somehow use wfp_svar_open *)
+            simpl. admit.
+          + admit.
+          + admit.
+        }
+        (*
+        simpl.
+        destruct Hwfp as [Hwfp1 Hwfp2].
+        assert (Hmuwfp: well_formed_positive (mu, phi)).
+        { unfold well_formed_positive.
+          split.
+          * apply Hwfp1.
+          * unfold well_formed_positive in Hwfp2. apply Hwfp2.
+        }
+        pose proof (Hrb1 := mu_wellformed_respects_blacklist phi Hmuwfp).
+        
+        pose proof (Hrb2 := respects_blacklist_mu phi Bp Bn Hrb).
+        (*
+      pose proof (Hrb'' := respects_blacklist_union phi Bp Bn (Empty_set svar_name) (Singleton svar_name X)
+                 Hrb2 ).*)
+        simpl in Hrb1.
+        rename X into V.
+        remember (svar_fresh (variables sig) (free_svars phi)) as X.
+        assert (Hsz': size phi <= n).
+        { simpl in *. lia. }
+        specialize (IHn phi Hsz' Hwfp2 Bp Bn Hrb2 evar_val).
+        rewrite -> ext_valuation_mu_simpl. simpl.
+        split.
+        {
+          intros.
+          Check leq. fold leq.
+          Check @leq (Ensemble (@Domain sig M)) (ModelPowersetOS M).
+          fold (@leq (Ensemble (@Domain sig M)) (ModelPowersetOS M)).
+          Check @LeastFixpointOf.
+          remember (ModelPowersetLattice M) as L.
+          fold LeastFixpointOf. (ModelPowersetLattice M)
+                                  Check lfp_preserves_order.
+          apply lfp_preserves_order.
+        }
+        (*pose proof (Hrb' := positive_occurrence_respects_blacklist)*)
+        Search positive_occurrence_db.
+        *)
+        admit.
+  Admitted.
 
 
 
@@ -735,23 +910,6 @@ Proof.
     right; apply H in H1; assumption.
 Qed.
 
-(* evar_open of fresh name does not change *)
-Lemma evar_open_fresh (phi : Pattern) :
-  forall n, well_formed phi -> evar_open n (evar_fresh (variables sig) (free_evars phi)) phi = phi.
-Proof. Admitted. (*
-  intros. generalize dependent n. induction phi; intros; simpl; try eauto.
-  * inversion H. inversion H1.
-  *  rewrite IHphi1. rewrite IHphi2. reflexivity.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-  * rewrite IHphi1. rewrite IHphi2. reflexivity.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-  * rewrite IHphi. reflexivity.
-    split; inversion H. assumption.
-    unfold well_formed_closed in *. simpl in H1. admit.
-Admitted.*)
-
 (* update_valuation with fresh name does not change *)
 (* TODO(jan.tusil): I think that we need to generalize this
    to work with any variable that is not free in psi.
@@ -774,8 +932,6 @@ Proof.
 Admitted.
 
 
-
-Definition ModelPowersetLattice (M : Model) := PowersetLattice (@Domain sig M).
-
+End with_model.
 
 End soundness_lemmas.

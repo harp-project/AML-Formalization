@@ -140,6 +140,11 @@ Definition MonotonicFunction {A : Type} {OS : OrderedSet A}
            (f : A -> A) :=
   forall (x y : A), leq x y -> leq (f x) (f y).
 
+Definition AntiMonotonicFunction {A : Type} {OS : OrderedSet A}
+           (f : A -> A) :=
+  forall (x y : A), leq x y -> leq (f y) (f x).
+
+
 Lemma MonotonicFunction_dual {A : Type} :
   forall (OS : OrderedSet A) (f : A -> A),
     @MonotonicFunction A OS f -> @MonotonicFunction A (OrderedSet_dual OS) f.
