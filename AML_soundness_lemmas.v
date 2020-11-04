@@ -761,7 +761,7 @@ Section with_model.
   Qed.
   
 
-  Lemma respects_blacklist_implies_monotonic' :
+  Lemma respects_blacklist_implies_monotonic :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
       forall (Bp Bn : Ensemble svar_name),
@@ -783,18 +783,38 @@ Section with_model.
     induction n.
     - (* n = 0 *)
       intros. destruct phi; simpl in H; try inversion H.
-      * (* EVar free *)
-        admit.
-      * (* SVar free *)
-        admit.
-      * (* EVar bound *)
-        admit.
-      * (* SVar bound *)
-        admit.
-      * (* Patt *)
-        admit.
-      * (* Bot *)
-        admit.
+      + (* EVar free *)
+        unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
+        unfold In. split; intros; rewrite -> ext_valuation_free_evar_simpl in *; assumption.
+      + (* SVar free *)
+        unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
+        unfold In.
+        split; intros; rewrite -> ext_valuation_free_svar_simpl in *;
+          unfold update_svar_val in *; destruct (eq_svar_name X x); subst.
+        * unfold respects_blacklist in H1.
+          specialize (H1 x).
+          destruct H1 as [Hneg Hpos].
+          specialize (Hneg H2).
+          inversion Hneg. subst. contradiction.
+        * assumption.
+        * auto.
+        * assumption.
+        
+      + (* EVar bound *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> ext_valuation_bound_evar_simpl; unfold Included;
+          unfold In; intros; assumption.
+      + (* SVar bound *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> ext_valuation_bound_svar_simpl; unfold Included;
+          unfold In; intros; assumption.
+      + (* Sym *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> ext_valuation_sym_simpl; unfold Included;
+          unfold In; intros; assumption.
+      + (* Bot *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; rewrite -> ext_valuation_bott_simpl; unfold Included; intros; inversion H4.
     - (* S n *)
       intros phi Hsz Hwfp Bp Bn Hrb evar_val svar_val V.
       destruct phi.
@@ -1095,7 +1115,7 @@ Section with_model.
               destruct IHn as [IHam IHmo].
               apply IHmo. constructor. assumption.
         }
-  Admitted.
+  Qed.
 
 
 
