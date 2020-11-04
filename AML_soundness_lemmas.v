@@ -6,6 +6,7 @@ Require Export String.
 Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
+From Coq Require Import Logic.FunctionalExtensionality.
 
 Require Import extralibrary.
 (*Require Import names.*)
@@ -712,6 +713,24 @@ Section with_model.
   Let OS := EnsembleOrderedSet (@Domain sig M).
   Let L := PowersetLattice (@Domain sig M).
 
+
+  Lemma update_svar_val_comm :
+    forall (X1 X2 : @svar_name sig) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal sig M),
+      X1 <> X2 ->
+      update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
+      = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
+  Proof.
+    intros.
+    unfold update_svar_val.
+    apply functional_extensionality.
+    intros.
+    destruct (eq_svar_name X1 x),(eq_svar_name X2 x); subst.
+    * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
+    * reflexivity.
+    * reflexivity.
+    * reflexivity.
+  Qed.
+  
   Lemma respects_blacklist_implies_monotonic' :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
@@ -825,16 +844,34 @@ Section with_model.
           assert (Hwfp' : well_formed_positive phi').
           { subst. apply wfp_svar_open. assumption. }
 
-          specialize (IHn Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
-          remember IHn as Hy. clear HeqHy.
-          rename IHn into Hx.
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
           specialize (Hx (update_svar_val V x svar_val) X').
           specialize (Hy (update_svar_val V y svar_val) X').
-                
+
           apply lfp_preserves_order.
-          + apply Hy. constructor.
-          + apply Hx. constructor.
-          + admit.
+          - apply Hy. constructor.
+          - apply Hx. constructor.
+          - clear Hx. clear Hy.
+            intros.
+            destruct (svar_eq (variables sig) X' V).
+            + (* X' = V *)
+              admit.
+            + (* X' <> V*)
+              pose proof (Uhsvcx := update_svar_val_comm X' V x0 x svar_val n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
+              rewrite -> Uhsvcy.
+
+              assert (HrbV: respects_blacklist phi' (Singleton svar_name V) (Empty_set svar_name)).
+              { admit. }
+
+              specialize (IHn Hwfp' (Singleton svar_name V) (Empty_set svar_name) HrbV).
+              specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
+              destruct IHn as [IHam IHmo].
+              apply IHam. constructor. assumption.
         }
         (*
         simpl.
