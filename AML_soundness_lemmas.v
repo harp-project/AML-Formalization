@@ -1117,6 +1117,31 @@ Section with_model.
         }
   Qed.
 
+  Lemma is_monotonic : forall (phi : @Pattern sig)
+                              (evar_val : @EVarVal sig M)
+                              (svar_val : @SVarVal sig M),
+      well_formed (mu, phi) ->
+      let X := svar_fresh (variables sig) (free_svars phi) in
+      @MonotonicFunction A OS
+                         (fun S : Ensemble (Domain M) =>
+                            (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi)).
+  Proof.
+    simpl. intros. unfold well_formed in H. destruct H as [Hwfp Hwfc].
+    pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
+    simpl in Hrb.
+    inversion Hwfp.
+    remember (svar_open 0 (svar_fresh (variables sig) (free_svars phi)) phi) as phi'.
+    assert (Hsz : size phi' <= size phi').
+    { lia. }
+    pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
+    Search well_formed_positive svar_open.
+    assert (Hwfp' : well_formed_positive phi').
+    { subst. apply wfp_svar_open. assumption. }
+    specialize (Hmono Hsz Hwfp').
+    specialize (Hmono (Empty_set svar_name) (Singleton svar_name (svar_fresh (variables sig) (free_svars phi)))).
+    specialize (Hmono Hrb evar_val svar_val (svar_fresh (variables sig) (free_svars phi))).
+Admitted.
+
 
 
 (*
