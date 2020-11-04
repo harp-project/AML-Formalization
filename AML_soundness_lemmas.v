@@ -699,7 +699,7 @@ Proof.
   + constructor.
   + inversion H. firstorder.
   + simpl in H. simpl. auto.
-  + simpl in H. simpl. Search well_formed_closed_aux.
+  + simpl in H. simpl.
     split.
     * apply positive_negative_occurrence_db_svar_open_le.
       lia. firstorder.
@@ -1124,7 +1124,8 @@ Section with_model.
       let X := svar_fresh (variables sig) (free_svars phi) in
       @MonotonicFunction A OS
                          (fun S : Ensemble (Domain M) =>
-                            (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi)).
+                            (@ext_valuation sig M evar_val (update_svar_val X S svar_val)
+                                            (svar_open 0 X phi))).
   Proof.
     simpl. intros. unfold well_formed in H. destruct H as [Hwfp Hwfc].
     pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
@@ -1134,13 +1135,15 @@ Section with_model.
     assert (Hsz : size phi' <= size phi').
     { lia. }
     pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
-    Search well_formed_positive svar_open.
     assert (Hwfp' : well_formed_positive phi').
     { subst. apply wfp_svar_open. assumption. }
     specialize (Hmono Hsz Hwfp').
     specialize (Hmono (Empty_set svar_name) (Singleton svar_name (svar_fresh (variables sig) (free_svars phi)))).
     specialize (Hmono Hrb evar_val svar_val (svar_fresh (variables sig) (free_svars phi))).
-Admitted.
+    destruct Hmono.
+    apply H2.
+    constructor.
+Qed.
 
 
 
