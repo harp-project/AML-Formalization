@@ -800,6 +800,7 @@ Section with_model.
         }
         auto.
       * (* Mu *)
+        remember Hwfp as Hwfpmu. clear HeqHwfpmu.
         simpl in Hsz.
         assert (Hsz': size phi <= n). { lia. }
         split.
@@ -809,18 +810,30 @@ Section with_model.
           Arguments LeastFixpointOf : simpl never.
           Arguments leq : simpl never.
           simpl.
+
+          remember (svar_fresh (variables sig) (free_svars phi)) as X'.
+          remember (svar_open 0 X' phi) as phi'.
+          pose proof (Hszeq := svar_open_size sig 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
+          
+          assert (Hrb': respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name X')).
+          { subst. apply mu_wellformed_respects_blacklist. assumption. }
+
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. assumption. }
+
+          specialize (IHn Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
+          remember IHn as Hy. clear HeqHy.
+          rename IHn into Hx.
+          specialize (Hx (update_svar_val V x svar_val) X').
+          specialize (Hy (update_svar_val V y svar_val) X').
+                
           apply lfp_preserves_order.
-          + remember (svar_fresh (variables sig) (free_svars phi)) as X'.
-            remember (svar_open 0 X' phi) as phi'.
-            Search svar_open size.
-            pose proof (Hszeq := svar_open_size sig 0 X' phi).
-            assert (Hsz'': size phi' <= n).
-            { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
-            specialize (IHn phi' Hsz'').
-            Search well_formed_positive.
-            (* TODO somehow use wfp_svar_open *)
-            simpl. admit.
-          + admit.
+          + apply Hy. constructor.
+          + apply Hx. constructor.
           + admit.
         }
         (*
