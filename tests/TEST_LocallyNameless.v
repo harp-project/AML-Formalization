@@ -63,12 +63,11 @@ Module test_2.
 
     Inductive DefinednessSymbols : Set := s_def.
     
-    Inductive MySymbols : Set :=
-    | s_zero | s_succ (* constructors for Nats *)
-    | c (* some constant that we make functional *)
+    Inductive Symbols :=
+    | sym_import_definedness (d : DefinednessSymbols)
+    | sym_zero | sym_succ (* constructors for Nats *)
+    | sym_c (* some constant that we make functional *)
     .
-
-    Let Symbols : Type := DefinednessSymbols + MySymbols.
 
     (* If symbols are created as a sum type of various sets, we may want to have a tactic that does
        'decide equality' recursively.
@@ -76,7 +75,6 @@ Module test_2.
     Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
     Proof.
       decide equality.
-      * decide equality.
       * decide equality.
     Qed.
 
@@ -98,13 +96,14 @@ Module test_2.
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
-    | m_c (* interprets the 'c' symbol *)
+    | m_succ (* the successor function on nats *)
     | m_some_element (* just some element so that things do not get boring *)
     .
 
-    Let domain : Type := nat + CustomElements.
-    (* TODO syntactic sugar for nats in the model. Maybe: <n> ? *)
-    Let inj_nat(n : nat) : domain := inl 0.
+    Inductive domain : Type :=
+    | dom_nat (n:nat)
+    | dom_custom (c:CustomElements)
+    .    
     
     Lemma domain_dec : forall (m1 m2 : domain), {m1 = m2} + {m1 <> m2}.
     Proof.
@@ -115,28 +114,28 @@ Module test_2.
 
     Definition my_sym_interp(s: Symbols) : Power domain :=
       match s with
-      (* But we cannot use this helper function to match. We must match on the constructor of the sum type. *)
-      (* So maybe it would be better not to use the generic sum type, but use our own? *)
-      (*| inj_nat n => Empty_set domain *)
+      | sym_import_definedness s_def => Singleton domain (dom_custom m_def)
+      | sym_zero => Singleton domain (dom_nat 0)
+      | sym_succ => Singleton domain (dom_custom m_succ)
       | _ => Empty_set domain
       end.
 
     Definition my_app_interp(m1 m2 : domain) : Power domain :=
       match m1, m1 with
+      | dom_custom m_def, _ => Full_set domain (* definedness *)
+      | dom_custom m_succ, dom_nat n => Singleton domain (dom_nat (n+1))
       | _, _ => Empty_set domain
       end.
     
     Let M1 : @Model signature :=
       {| Domain := domain;
-         nonempty_witness := inj_nat 0;
+         nonempty_witness := dom_nat 0;
          Domain_eq_dec := domain_dec;
          (* for some reason, just using 'my_sym_interp' here results in a type error *)
          sym_interp := fun s : @symbols signature => my_sym_interp s;
          (* But this works. interesting. *)
          app_interp := my_app_interp;
       |}.
-    
-    
     
   End test_2.
 End test_2.
