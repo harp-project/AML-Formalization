@@ -9,7 +9,6 @@ From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
 
 Require Import extralibrary.
-(*Require Import names.*)
 Require Import ML.Signature.
 Require Export locally_nameless.
 Require Import Lattice.
@@ -25,9 +24,11 @@ Section soundness_lemmas.
 
 
 (* evar_open of fresh name does not change *)
-Lemma evar_open_fresh (phi : Pattern) :
-  forall n, well_formed phi -> evar_open n (evar_fresh (variables sig) (free_evars phi)) phi = phi.
-Proof. Admitted. (*
+Lemma evar_open_fresh (phi : Pattern) (v : @evar_name sig) :
+  forall n, well_formed phi -> ~List.In v (free_evars phi) ->
+            evar_open n v phi = phi.
+Proof. Admitted.
+(*
   intros. generalize dependent n. induction phi; intros; simpl; try eauto.
   * inversion H. inversion H1.
   *  rewrite IHphi1. rewrite IHphi2. reflexivity.
@@ -41,7 +42,19 @@ Proof. Admitted. (*
     unfold well_formed_closed in *. simpl in H1. admit.
 Admitted.*)
 
-  
+(* update_valuation with fresh name does not change *)
+(* TODO(jan.tusil): I think that we need to generalize this
+   to work with any variable that is not free in psi.
+*)
+Lemma update_valuation_fresh {m : Model}
+      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (psi : Pattern) (x : Domain m) (c : Domain m) (v : @evar_name sig):
+  ~List.In v (free_evars psi) ->
+  ext_valuation (update_evar_val v c evar_val) svar_val psi x
+  = ext_valuation evar_val svar_val psi x.
+Proof.
+Admitted.
+
   (* Bp - Blacklist of Positive Occurrence - these variables can occur only negatively.
      Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
 Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
@@ -1003,18 +1016,6 @@ Proof.
     left; assumption.
     right; apply H in H1; assumption.
 Qed.
-
-(* update_valuation with fresh name does not change *)
-(* TODO(jan.tusil): I think that we need to generalize this
-   to work with any variable that is not free in psi.
-*)
-Lemma update_valuation_fresh {m : Model}
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (psi : Pattern) (x : Domain m) (c : Domain m) :
-  ext_valuation (update_evar_val (evar_fresh (variables sig) (free_evars psi)) c evar_val) svar_val psi x
-  = ext_valuation evar_val svar_val psi x.
-Proof.
-Admitted.
 
 (* ext_valuation with free_svar_subst does not change *)
 Lemma update_valuation_free_svar_subst {m : Model}

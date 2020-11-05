@@ -174,11 +174,20 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    split. admit. admit.
-    (* assumption.
-    erewrite evar_open_fresh. rewrite update_valuation_fresh.
-    split; assumption.
-    assumption. *)
+    assert (~List.In (evar_fresh (variables signature)
+                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
+             (free_evars psi)).
+    admit.
+    assert (~List.In (evar_fresh (variables signature)
+                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
+             (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
 
   * rewrite ext_valuation_imp_simpl.
     constructor. constructor.
@@ -193,10 +202,20 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
     exists le, re.
-    split. admit. admit.
-    (* erewrite evar_open_fresh. rewrite update_valuation_fresh. assumption.
-    assumption.
-    split; assumption. *)
+    assert (~List.In (evar_fresh (variables signature)
+                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
+             (free_evars psi)).
+    admit.
+    assert (~List.In (evar_fresh (variables signature)
+                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
+             (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
 
   * rewrite ext_valuation_iff_subset.
     rewrite ext_valuation_iff_subset in IHHp.
