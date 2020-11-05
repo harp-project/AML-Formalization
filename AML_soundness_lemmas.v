@@ -464,22 +464,6 @@ Proof.
     * subst. constructor. assumption.
 Qed.
 
-(*
-Lemma wfca_impl_pod0 :
-  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
-    well_formed_closed_aux phi dbi ->
-    ( @positive_occurrence_db sig 0 (svar_open dbi X phi)
-      /\ @negative_occurrence_db sig 0 (svar_open dbi X phi)).
-Proof.
-  induction phi; intros; simpl; split;  try constructor; try inversion H; try firstorder.
-  * destruct (n =? S n); constructor.
-  * destruct (n =? S m); constructor.
-  * destruct (n =? S n); constructor. subst. simpl in H. lia.
-  * destruct (n =? S n); constructor.
-  * 
-  * destruct (n =? dbi); constructor.
-  *)
-
 Lemma well_formed_closed_aux_svar_open :
   forall (phi : Pattern) (dbi : db_index) (X : svar_name),
     well_formed_closed_aux phi dbi ->
