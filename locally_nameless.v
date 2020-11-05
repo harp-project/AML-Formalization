@@ -187,7 +187,7 @@ end.
 
 Record Model := {
   Domain : Type;
-  nonempty_witness : exists (x : Domain), True;
+  nonempty_witness : Domain;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Power Domain;
   sym_interp (sigma : symbols signature) : Power Domain;
