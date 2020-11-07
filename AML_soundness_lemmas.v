@@ -7,6 +7,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
+(* From Coq Require Import Logic.PropExtensionality. *)
 
 Require Import extralibrary.
 Require Import ML.Signature.
@@ -53,6 +54,51 @@ Lemma update_valuation_fresh {m : Model}
   ext_valuation (update_evar_val v c evar_val) svar_val psi x
   = ext_valuation evar_val svar_val psi x.
 Proof.
+(* generalize dependent v. generalize dependent c.
+  generalize dependent x. generalize dependent evar_val.
+  induction psi; try reflexivity.
+  - intros. repeat rewrite ext_valuation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. 
+    destruct (eq_evar_name v x) eqn:P.
+      + rewrite e in H. destruct H. left. reflexivity.
+      + reflexivity.
+  - intros. repeat rewrite ext_valuation_app_simpl. simpl in H. 
+    pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
+    apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
+    pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold pointwise_ext. 
+    apply propositional_extensionality.
+    split; intros.
+      + destruct H. destruct H. pose (IHpsi1 evar_val x0 c v H1). 
+        pose (IHpsi2 evar_val x1 c v H2). rewrite e, e0 in H. exists x0, x1. assumption.
+      + destruct H. destruct H. pose (IHpsi1 evar_val x0 c v H1). 
+        pose (IHpsi2 evar_val x1 c v H2). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
+  - intros. repeat rewrite ext_valuation_imp_simpl. simpl in H. 
+    pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
+    apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
+    pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 evar_val x c v H1). 
+    pose (IHpsi2 evar_val x c v H2). clear H0. clear H. unfold In. apply propositional_extensionality. split.
+      + intro. pose (Union_is_or (Domain m) ((Complement (Domain m)
+        (ext_valuation (update_evar_val v c evar_val) svar_val psi1))) ((ext_valuation (update_evar_val v c evar_val) svar_val psi2)) x).
+        destruct i. clear H3. pose (H0 H).
+        pose (Union_is_or (Domain m) ((Complement (Domain m)
+        (ext_valuation evar_val svar_val psi1))) ((ext_valuation evar_val svar_val psi2)) x).
+        destruct i. clear H3. apply H4. clear H4. destruct o.
+          * unfold Complement, not, In in *. left. rewrite e in H3. assumption.
+          * right. rewrite e0 in H3. assumption.
+      + intro. pose (Union_is_or (Domain m) ((Complement (Domain m) 
+               (ext_valuation evar_val svar_val psi1))) 
+               ((ext_valuation evar_val svar_val psi2)) x).
+        destruct i. clear H3. pose (H0 H). 
+        pose (Union_is_or (Domain m) 
+        ((Complement (Domain m)
+        (ext_valuation (update_evar_val v c evar_val) svar_val psi1))) 
+        (ext_valuation (update_evar_val v c evar_val) svar_val psi2) x).
+        destruct i. clear H3. apply H4. clear H4. destruct o.
+          * unfold Complement, not, In in *. left. rewrite e. assumption.
+          * right. rewrite e0. assumption.
+  - intros. repeat rewrite ext_valuation_ex_simpl. simpl. simpl in H. 
+    apply propositional_extensionality. split.
+      + intros. inversion H0. pose (@FA_Uni_intro (Domain m)). apply i.
+        destruct H1. exists x1. *)
 Admitted.
 
   (* Bp - Blacklist of Positive Occurrence - these variables can occur only negatively.
