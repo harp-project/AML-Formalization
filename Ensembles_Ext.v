@@ -562,3 +562,11 @@ Proof.
   inversion H1.
   pose (H2 x H0). inversion e.
 Qed.
+
+Lemma Same_set_Full_set : forall {T : Type} (S : Ensemble T),
+    Included T (Full_set T) S -> Same_set T (Full_set T) S.
+Proof.
+  intros. unfold Same_set.
+  split. assumption.
+  unfold Included. intros. constructor.
+Qed.

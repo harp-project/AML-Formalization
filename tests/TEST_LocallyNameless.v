@@ -136,6 +136,46 @@ Module test_2.
          (* But this works. interesting. *)
          app_interp := my_app_interp;
       |}.
+
+
+    Definition definedness_axiom_1 := (sym (sym_import_definedness s_def)) $ (evar "x").
+
+    Lemma M1_satisfies_definedness1 : satisfies_model M1 definedness_axiom_1.
+    Proof.
+      unfold satisfies_model. intros.
+      unfold definedness_axiom_1.
+      unfold sym.
+      rewrite -> ext_valuation_app_simpl.
+      rewrite -> ext_valuation_sym_simpl.
+      simpl.
+      apply Same_set_symmetric. apply Same_set_Full_set.
+      unfold Included. intros.
+      clear H. (* useless *)
+      intros.
+      unfold In.
+      unfold pointwise_ext.
+      exists (dom_custom m_def).
+      unfold evar.
+      rewrite -> ext_valuation_free_evar_simpl.
+      exists (evar_val (find_fresh_evar_name {| id_ev := "x" |} nil)).
+      firstorder. (* some magic to get rid of the first two conjuncts *)
+      simpl. constructor.
+    Qed.
+
+    (* Maybe we can have a section parametrized with a signature,
+       and with a symbol, and with a model and a proof that the model satisfies
+       a definedness-like axiom (or theorem) with the given symbol,
+       and inside the section would be a bunch of lemmas regarding the definedness.
+       Or we can put all the assumptions to a record (or typeclass?).
+       Or we can make the assumptions 'model-free' and talk about a consequence of a theory?
+     *)
+
+    Lemma definedness_correct : forall (M : @Model signature),
+        satisfies_model M definedness_axiom_1 ->
+        forall (phi : @Pattern signature) (evar_val : @EVarVal signature M) (svar_val : @SVarVal signature M),
+          True.
+      Proof. Admitted.
+          
     
   End test_2.
 End test_2.
