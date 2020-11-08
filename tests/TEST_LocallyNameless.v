@@ -3,68 +3,111 @@ Require Import ML.Signature.
 Require Import ML.DefaultVariables.
 Import MLNotations.
 
+(* In this module we show how to define a signature and build patterns *)
+Module test_1.
+  (* We have three symbols *)
+  Inductive Symbols := ctor| p | f .
 
-Section test_1.
-Inductive Symbols : Type :=
-| ctor
-| p
-| f
-.
+  Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
+  Proof.
+    decide equality.
+  Qed.
 
-Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
-Proof.
-  decide equality.
-Qed.
+  #[canonical]
+  Let signature :=
+    {| symbols := Symbols;
+       sym_eq := Symbols_dec;
+       variables := DefaultMLVariables;
+    |}.
 
-Let signature :=
-  {| symbols := Symbols;
-     sym_eq := Symbols_dec;
-     variables := DefaultMLVariables;
-  |}.
+  (* Helpers. *)
+  Definition sym (s : Symbols) : @Pattern signature :=
+    @patt_sym signature s.
+  Definition evar (sname : string) : @Pattern signature :=
+    @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
+  Definition svar (sname : string) : @Pattern signature :=
+    @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil).
 
-(* Helpers. *)
-Definition sym (s : Symbols) : @Pattern signature :=
-  @patt_sym signature s.
-Definition evar (sname : string) : @Pattern signature :=
-  @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
-Definition svar (sname : string) : @Pattern signature :=
-  @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil).
+  (* Example patterns *)
 
-(* Example patterns *)
+  Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
-Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+  (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
 
-(* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
+  Definition complex :=
+    evar ("A") --> (evar("B") --> ¬(svar("C"))) $
+         ex , svar ("D") $ Bot and Top.
 
-Definition complex :=
-  evar ("A") --> (evar("B") --> ¬(svar("C"))) $
-       ex , svar ("D") $ Bot and Top.
+  Definition custom_constructor := sym ctor.
 
-Definition custom_constructor := sym ctor.
+  (* p x1 x2 *)
+  Definition predicate := sym (ctor) $ evar ("x1") $ evar ("x2").
+  (* f x (mu y . y) *)
 
-(* p x1 x2 *)
-Definition predicate := sym (ctor) $ evar ("x1") $ evar ("x2").
-(* f x (mu y . y) *)
-
-Definition function :=
-  sym (f) $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
+  Definition function :=
+    sym (f) $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
 
 
-Print patt_forall.
-(* forall x, x /\ y *)
-Definition free_and_bound :=
-  all , (patt_bound_evar 0) and evar ("y").
-(* End of examples. *)
+  Print patt_forall.
+  (* forall x, x /\ y *)
+  Definition free_and_bound :=
+    all , (patt_bound_evar 0) and evar ("y").
+  (* End of examples. *)
 
 End test_1.
 
+(* In this module we define the definedness symbol and use it to build derived notions
+   like totality and equality. The definitions are reusable from other modules,
+   as is demonstrated in the module `test_Definedness` (TODO).
+   TODO: include the axiom for definedness and prove some theorems about it.
+ *)
+Module Definedness.
+  Import ML.Signature.
+
+  (* We have only one symbol *)
+  Inductive Symbols := definedness.
+
+  Record Syntax :=
+    { sig: Signature;
+      (* 'Symbols' are a 'subset' of all the symbols from the signature *)
+     inj: Symbols -> symbols sig;
+    }.  
+  
+  Section syntax.
+    Context {self : Syntax}.
+
+    Let Pattern : Type := @locally_nameless.Pattern (sig self).
+
+    Definition patt_defined (phi : Pattern) : Pattern :=
+      patt_sym (inj self definedness) $ phi.
+    
+    Definition patt_total (phi: Pattern) : Pattern :=
+      patt_not (patt_defined (patt_not phi)).
+
+    Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
+      patt_total (phi1 <--> phi2).
+    
+  End syntax.
+
+  Section semantics.
+    (* TODO lemmas *)
+
+  End semantics.
+  
+End Definedness.
+
+
+(* Here we show how to use the Definedness module. *)
 Module test_2.
   Section test_2.
+    Import Definedness.
 
-    Inductive DefinednessSymbols : Set := s_def.
-    
+    (* We must include all the symbols from the Definedness module into our signature.
+       We do this by defining a constructor `sym_import_definedness : Definedness.Symbols -> Symbols`.
+       And we also define a bunch of other symbols.
+     *)
     Inductive Symbols :=
-    | sym_import_definedness (d : DefinednessSymbols)
+    | sym_import_definedness (d : Definedness.Symbols)
     | sym_zero | sym_succ (* constructors for Nats *)
     | sym_c (* some constant that we make functional *)
     .
@@ -78,10 +121,15 @@ Module test_2.
       * decide equality.
     Qed.
 
-    Let signature :=
+    Let signature : Signature :=
       {| symbols := Symbols;
          sym_eq := Symbols_dec;
          variables := DefaultMLVariables;
+      |}.
+
+    Let definedness_syntax : Definedness.Syntax :=
+      {| sig := signature;
+         inj := sym_import_definedness;
       |}.
 
     (* The same helpers as in the previous case. Maybe we can abstract it somehow?*)
@@ -93,6 +141,25 @@ Module test_2.
     Let svar (sname : string) : @Pattern signature :=
       @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
     .
+
+
+    (* This works *)
+    Definition test_pattern_1 := @patt_defined definedness_syntax (sym sym_c).
+
+    (* This fails *)
+    Fail Definition test_pattern_2 := patt_defined (sym sym_c).
+    (* But with this magic it works *)
+    Local Canonical Structure definedness_syntax.
+    Definition test_pattern_2 := patt_defined (sym sym_c).
+    Definition test_pattern_3 : Pattern := patt_equal (sym sym_c) (sym sym_c).
+
+    (* But this still fails *)
+    Fail Definition test_pattern_4 := patt_defined (patt_sym sym_c).
+    (* We need another canonical structure *)
+    #[local]
+     Canonical Structure signature.
+    Definition test_pattern_4 := patt_defined (patt_sym sym_c).
+    
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
@@ -137,14 +204,15 @@ Module test_2.
          app_interp := my_app_interp;
       |}.
 
-
-    Definition definedness_axiom_1 := (sym (sym_import_definedness s_def)) $ (evar "x").
+    
+    Definition definedness_axiom_1 := patt_defined (evar "x").
 
     Lemma M1_satisfies_definedness1 : satisfies_model M1 definedness_axiom_1.
     Proof.
       unfold satisfies_model. intros.
       unfold definedness_axiom_1.
       unfold sym.
+      unfold patt_defined.
       rewrite -> ext_valuation_app_simpl.
       rewrite -> ext_valuation_sym_simpl.
       simpl.
@@ -170,10 +238,21 @@ Module test_2.
        Or we can make the assumptions 'model-free' and talk about a consequence of a theory?
      *)
 
+    Check ext_valuation.
+    Check pointwise_ext.
+    Print Model.
+    Lemma definedness_model_application : forall (M : @Model signature),
+        satisfies_model M definedness_axiom_1 ->
+        forall (m: Domain M), True.
+    Proof. (*TODO*) Admitted.
+    
+
+    (* TODO use same_set *)   
     Lemma definedness_correct : forall (M : @Model signature),
         satisfies_model M definedness_axiom_1 ->
         forall (phi : @Pattern signature) (evar_val : @EVarVal signature M) (svar_val : @SVarVal signature M),
-          True.
+          @ext_valuation signature M evar_val svar_val phi <> Empty_set (Domain M) ->
+          @ext_valuation signature M evar_val svar_val (patt_defined phi)  = Full_set (Domain M).
       Proof. Admitted.
           
     
