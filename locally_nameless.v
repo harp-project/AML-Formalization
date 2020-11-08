@@ -710,6 +710,83 @@ Definition patt_forall (phi : Pattern) :=
 Definition patt_nu (phi : Pattern) :=
   patt_not (patt_mu (patt_not (bvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
+
+Lemma ext_valuation_not_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)(phi : Pattern),
+    ext_valuation evar_val svar_val (patt_not phi) = Complement (Domain m) (ext_valuation evar_val svar_val phi).
+Proof.
+  intros. unfold patt_not.
+  rewrite -> ext_valuation_imp_simpl.
+  rewrite -> ext_valuation_bott_simpl.
+  apply Extensionality_Ensembles.
+  apply Union_Empty_l.
+Qed.
+
+Lemma ext_valuation_or_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                      (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_or phi1 phi2)
+    = Union (Domain m) (ext_valuation evar_val svar_val phi1) (ext_valuation evar_val svar_val phi2).
+Proof.
+  intros. unfold patt_or.
+  rewrite -> ext_valuation_imp_simpl.
+  rewrite -> ext_valuation_not_simpl.
+  assert (H: Complement (Domain m) (Complement (Domain m) (ext_valuation evar_val svar_val phi1)) = ext_valuation evar_val svar_val phi1).
+  { apply Extensionality_Ensembles. apply Compl_Compl_Ensembles. }
+  rewrite -> H. reflexivity.
+Qed.
+
+
+Lemma ext_valuation_and_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                       (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_and phi1 phi2)
+    = Intersection (Domain m) (ext_valuation evar_val svar_val phi1) (ext_valuation evar_val svar_val phi2).
+Proof.
+  intros. unfold patt_and.
+  rewrite -> ext_valuation_not_simpl.
+  rewrite -> ext_valuation_or_simpl.
+  repeat rewrite -> ext_valuation_not_simpl.
+  apply Extensionality_Ensembles.
+  apply Compl_Union_Compl_Intes_Ensembles_alt.
+Qed.
+
+Lemma ext_valuation_top_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m),
+    ext_valuation evar_val svar_val patt_top = Full_set (Domain m).
+Proof.
+  intros. unfold patt_top.
+  rewrite -> ext_valuation_not_simpl.
+  rewrite -> ext_valuation_bott_simpl.
+  apply Extensionality_Ensembles.
+  apply Complement_Empty_is_Full.
+Qed.
+
+(* TODO prove. Maybe some de-morgan laws could be helpful in proving this? *)
+Lemma ext_valuation_iff_or : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                     (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_iff phi1 phi2)
+    = ext_valuation evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
+Proof.
+
+Admitted.
+
+(* TODO: forall, nu *)
+Check ext_valuation_ex_simpl.
+
+(* TODO prove *)
+Lemma ext_valuation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
+    ext_valuation evar_val svar_val (patt_forall phi) =
+    let x := evar_fresh (variables signature) (free_evars phi) in
+    FA_Intersection (fun e : @Domain m => ext_valuation (update_evar_val x e evar_val) svar_val (evar_open 0 x phi) ).
+Proof.
+  intros.
+  unfold patt_forall.
+  rewrite -> ext_valuation_not_simpl.
+  rewrite -> ext_valuation_ex_simpl.
+  simpl.
+  apply Extensionality_Ensembles.
+  unfold Same_set. unfold Complement. unfold Included. unfold In.
+  split; intros.
+Admitted.
+
+
 End ml_syntax_semantics.
 
 Module MLNotations.
