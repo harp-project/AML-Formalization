@@ -7,7 +7,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
-(* From Coq Require Import Logic.PropExtensionality. *)
+(* From Coq Require Import Logic.PropExtensionality. Needed in update_valuation_fresh*)
 
 Require Import extralibrary.
 Require Import ML.Signature.
@@ -43,6 +43,12 @@ Proof. Admitted.
     unfold well_formed_closed in *. simpl in H1. admit.
 Admitted.*)
 
+(* Needed in update_valuation_fresh. Should be provable, right? *)
+(* Lemma svar_open_fresh (phi : Pattern) (v : @svar_name sig) :
+  forall n, well_formed phi -> ~List.In v (free_svars phi) ->
+            svar_open n v phi = phi.
+Proof. Admitted. *)
+
 (* update_valuation with fresh name does not change *)
 (* TODO(jan.tusil): I think that we need to generalize this
    to work with any variable that is not free in psi.
@@ -50,13 +56,15 @@ Admitted.*)
 Lemma update_valuation_fresh {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (psi : Pattern) (x : Domain m) (c : Domain m) (v : @evar_name sig):
+   (* Should be here, right? *)
+   (* well_formed psi -> *)
   ~List.In v (free_evars psi) ->
   ext_valuation (update_evar_val v c evar_val) svar_val psi x
   = ext_valuation evar_val svar_val psi x.
 Proof.
-(* generalize dependent v. generalize dependent c. 
-  generalize dependent x. generalize dependent evar_val.
-  generalize dependent svar_val.
+(* intro. generalize dependent x. generalize dependent c. 
+  generalize dependent evar_val.
+  generalize dependent svar_val. generalize dependent v.
   induction psi; try reflexivity.
   - intros. repeat rewrite ext_valuation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar_name v x) eqn:P.
     + rewrite e in H. destruct H. left. reflexivity.
@@ -67,15 +75,15 @@ Proof.
     pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold pointwise_ext. 
     apply propositional_extensionality.
     split; intros.
-    + destruct H. destruct H. pose (IHpsi1 svar_val evar_val x0 c v H1). 
-        pose (IHpsi2 svar_val evar_val x1 c v H2). rewrite e, e0 in H. exists x0, x1. assumption.
-    + destruct H. destruct H. pose (IHpsi1 svar_val evar_val x0 c v H1). 
-        pose (IHpsi2 svar_val evar_val x1 c v H2). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
+    + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0). 
+        pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite e, e0 in H. exists x0, x1. assumption.
+    + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0 ). 
+        pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
   - intros. repeat rewrite ext_valuation_imp_simpl. simpl in H. 
     pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
-    pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 svar_val evar_val x c v H1). 
-    pose (IHpsi2 svar_val evar_val x c v H2). clear H0. clear H. unfold In. apply propositional_extensionality. split.
+    pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 v H1 svar_val evar_val c x). 
+    pose (IHpsi2 v H2 svar_val evar_val c x). clear H0. clear H. unfold In. apply propositional_extensionality. split.
     + intro. pose (Union_is_or (Domain m) ((Complement (Domain m)
                   (ext_valuation (update_evar_val v c evar_val) svar_val psi1))) 
                   ((ext_valuation (update_evar_val v c evar_val) svar_val psi2)) x).
@@ -104,31 +112,55 @@ Proof.
         assert (well_formed psi). admit. 
         pose (evar_open_fresh psi (evar_fresh (variables sig) (free_evars psi)) 0 H1 n).
         rewrite e in *. 
-        pose (IHpsi svar_val evar_val x x1 (evar_fresh (variables sig) (free_evars psi)) n).
+        pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val evar_val x1 x).
         rewrite e0. 
-        pose (IHpsi svar_val (update_evar_val v c evar_val) x x1 
-                             (evar_fresh (variables sig) (free_evars psi)) n).
+        pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val 
+                    (update_evar_val v c evar_val) x1 x).
         rewrite e1 in H0.
-        rewrite (IHpsi svar_val evar_val x c v) in H0. assumption. assumption.
+        rewrite (IHpsi v H svar_val evar_val c x) in H0. assumption.
     + intros. inversion H0. pose (@FA_Uni_intro (Domain m)). apply i.
       clear i. destruct H1. exists x1. 
       pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
       assert (well_formed psi). admit. 
       pose (evar_open_fresh psi (evar_fresh (variables sig) (free_evars psi)) 0 H3 n).
       rewrite e in *.
-      pose (IHpsi svar_val (update_evar_val v c evar_val) x x1 (evar_fresh (variables sig) (free_evars psi)) n).
+      pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val 
+                  (update_evar_val v c evar_val) x1 x).
       rewrite e0.
-      pose (IHpsi svar_val evar_val x x1 (evar_fresh (variables sig) (free_evars psi)) n).
+      pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val evar_val x1 x).
       rewrite e1 in H1.
-      pose (IHpsi svar_val evar_val x c v H).
+      pose (IHpsi v H svar_val evar_val c x).
       rewrite e2. assumption.
   - intros. simpl in H. repeat rewrite ext_valuation_mu_simpl. simpl.
     unfold Meet, PrefixpointsOf, In. simpl. apply propositional_extensionality. split.
     + intros. pose (H0 e). unfold Included, In in e0.
       unfold Included, In in H1.
       pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
-      assert (well_formed psi). admit. admit.
-    + admit. *)
+      assert (well_formed psi). admit.
+      rewrite (svar_open_fresh psi 
+                               (svar_fresh (variables sig) (free_svars psi))
+                               0 H2
+                               (svar_fresh_is_fresh (variables sig) (free_svars psi))) 
+                               in *.
+      pose (IHpsi v H 
+            (update_svar_val (svar_fresh (variables sig) (free_svars psi)) e svar_val)
+            (evar_val)
+             c).
+      apply e0. intros. pose (H1 x0). rewrite e1 in H3. pose (e2 H3). assumption.
+    + intros. pose (H0 e). unfold Included, In in *. apply e0. intros.
+      pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
+      assert (well_formed psi). admit.
+      rewrite (svar_open_fresh psi 
+                               (svar_fresh (variables sig) (free_svars psi))
+                               0 H3
+                               (svar_fresh_is_fresh (variables sig) (free_svars psi))) 
+                               in *.
+      pose (H1 x0).
+      pose (IHpsi v H 
+            (update_svar_val (svar_fresh (variables sig) (free_svars psi)) e svar_val)
+            (evar_val)
+             c).
+      rewrite e2 in e1. pose (e1 H2). assumption. *)
 Admitted.
 
 
