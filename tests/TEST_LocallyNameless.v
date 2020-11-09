@@ -120,8 +120,23 @@ Module Definedness.
       specialize (H H'). clear H'.
       unfold patt_defined in H.
       rewrite -> ext_valuation_app_simpl in H.
-
-    (*TODO*) Admitted.
+      rewrite -> ext_valuation_sym_simpl in H.
+      unfold sym.
+      unfold evar in H.
+      rewrite -> ext_valuation_free_evar_simpl in H.
+      rewrite -> Heqevar_val' in H.
+      unfold update_evar_val in H. simpl in H.
+      unfold locally_nameless.eq_evar_name in H.
+      destruct (evar_eq (variables (sig self)) (nevar (variables (sig self)) "x") (nevar (variables (sig self)) "x") ).
+      2: { contradiction. }
+      unfold pointwise_ext in H. unfold In in H.
+      destruct H as [m1 [m2 Hm1m2]].
+      destruct Hm1m2. destruct H0.
+      inversion H0. clear H0. subst.
+      exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
+      rewrite -> ext_valuation_sym_simpl. apply H.
+    Qed.
+    
 
   End syntax.
 
