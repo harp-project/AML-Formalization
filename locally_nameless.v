@@ -234,6 +234,26 @@ Proof.
   * contradiction.
 Qed.
 
+Lemma pointwise_ext_monotonic_l : forall (m : Model),
+    forall (S1 S2 S : Power (Domain m)),
+      Included (Domain m) S1 S2 ->
+      Included (Domain m) (pointwise_ext S1 S) (pointwise_ext S2 S).
+Proof.
+  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
+  apply H in H1. exists le. exists re. firstorder.
+Qed.
+
+Lemma pointwise_ext_monotonic_r : forall (m : Model),
+    forall (S S1 S2 : Power (Domain m)),
+      Included (Domain m) S1 S2 ->
+      Included (Domain m) (pointwise_ext S S1) (pointwise_ext S S2).
+Proof.
+  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
+  apply H in H2. exists le. exists re. firstorder.
+Qed.
+
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
 Fixpoint evar_quantify (x : evar_name) (level : db_index)
