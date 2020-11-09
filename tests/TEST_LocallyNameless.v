@@ -100,13 +100,10 @@ Module Definedness.
       forall (M : @Model (sig self)) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
         satisfies_model M definedness_axiom ->
         forall (m: Domain M),
-          pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)
-          = Full_set (Domain M).
+          Same_set (Domain M) (Full_set (Domain M)) (pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
     Proof.
       intros.
       unfold pointwise_ext.
-      symmetry.
-      apply Extensionality_Ensembles.
       apply Same_set_Full_set.
       unfold Included. unfold In. intros. clear H0.
 
@@ -138,6 +135,39 @@ Module Definedness.
     Qed.
     
 
+
+    Lemma definedness_spec : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          ~ Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val phi) (Empty_set (Domain M)) ->
+          Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi)) (Full_set (Domain M)).
+    Proof.
+      intros.
+      pose (H' := Not_Empty_Contains_Elements (ext_valuation evar_val svar_val phi) H0).
+      destruct H'.
+      unfold patt_defined.
+      rewrite -> ext_valuation_app_simpl.
+      
+      pose proof (H'' := definedness_model_application M evar_val svar_val H x).
+      unfold sym in H''.
+      apply Same_set_symmetric.
+      apply Same_set_Full_set.
+      unfold Same_set in H''.
+      destruct H'' as [H'' _].
+      assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (ext_valuation evar_val svar_val phi) ).
+      { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
+      
+      pose proof (Hincl' := pointwise_ext_monotonic_r
+                              M
+                              (ext_valuation evar_val svar_val (patt_sym (inj self definedness)))
+                              (Singleton (Domain M) x)
+                              (ext_valuation evar_val svar_val phi)
+                              Hincl
+                 ).
+      apply Included_transitive with (S2 := pointwise_ext (ext_valuation evar_val svar_val (patt_sym (inj self definedness))) (Singleton (Domain M) x)). assumption. assumption.
+
+    Qed.
+    
   End syntax.
 
   
@@ -281,23 +311,6 @@ Module test_2.
       firstorder. (* some magic to get rid of the first two conjuncts *)
       simpl. constructor.
     Qed.
-
-    (* Maybe we can have a section parametrized with a signature,
-       and with a symbol, and with a model and a proof that the model satisfies
-       a definedness-like axiom (or theorem) with the given symbol,
-       and inside the section would be a bunch of lemmas regarding the definedness.
-       Or we can put all the assumptions to a record (or typeclass?).
-       Or we can make the assumptions 'model-free' and talk about a consequence of a theory?
-     *)
-    
-
-    (* TODO use same_set *)   
-    Lemma definedness_correct : forall (M : @Model signature),
-        satisfies_model M definedness_axiom_1 ->
-        forall (phi : @Pattern signature) (evar_val : @EVarVal signature M) (svar_val : @SVarVal signature M),
-          @ext_valuation signature M evar_val svar_val phi <> Empty_set (Domain M) ->
-          @ext_valuation signature M evar_val svar_val (patt_defined phi)  = Full_set (Domain M).
-      Proof. Admitted.
     
   End test_2.
 End test_2.

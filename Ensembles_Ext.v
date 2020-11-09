@@ -570,3 +570,17 @@ Proof.
   split. assumption.
   unfold Included. intros. constructor.
 Qed.
+
+Lemma Included_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
+    Included T S1 S2 -> Included T S2 S3 -> Included T S1 S3.
+Proof.
+  intros. unfold Included in *. auto.
+Qed.
+
+Lemma Same_set_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
+    Same_set T S1 S2 -> Same_set T S2 S3 -> Same_set T S1 S3.
+Proof.
+  intros. unfold Same_set in *. firstorder using Included_transitive.
+Qed.
+  
+  
