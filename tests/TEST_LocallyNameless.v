@@ -47,8 +47,6 @@ Module test_1.
   Definition function :=
     sym (f) $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
 
-
-  Print patt_forall.
   (* forall x, x /\ y *)
   Definition free_and_bound :=
     all , (patt_bound_evar 0) and evar ("y").
@@ -70,7 +68,8 @@ Module Definedness.
   Record Syntax :=
     { sig: Signature;
       (* 'Symbols' are a 'subset' of all the symbols from the signature *)
-     inj: Symbols -> symbols sig;
+      inj: Symbols -> symbols sig;
+      (* for convenience *)
     }.  
   
   Section syntax.
@@ -86,9 +85,47 @@ Module Definedness.
 
     Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
       patt_total (phi1 <--> phi2).
+
+    Let sym (s : Symbols) : Pattern :=
+      @patt_sym (sig self) (inj self s).
     
+    Let evar (name : string) : Pattern :=
+      @patt_free_evar (sig self) (nevar (variables (sig self)) name).
+
+    Definition definedness_axiom := patt_defined (evar "x").
+
+    (* I know this section is about syntax, but maybe we can merge the two sections *)
+
+    Lemma definedness_model_application :
+      forall (M : @Model (sig self)) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+        satisfies_model M definedness_axiom ->
+        forall (m: Domain M),
+          pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)
+          = Full_set (Domain M).
+    Proof.
+      intros.
+      unfold pointwise_ext.
+      symmetry.
+      apply Extensionality_Ensembles.
+      apply Same_set_Full_set.
+      unfold Included. unfold In. intros. clear H0.
+
+      unfold satisfies_model in H. unfold definedness_axiom in H.
+      remember (update_evar_val (nevar (variables (sig self)) "x") m evar_val) as evar_val'.
+      specialize (H evar_val' svar_val).
+      unfold Same_set in H. destruct H as [_ H].
+      unfold Included in H.
+      specialize (H x).
+      pose proof (H' := Full_intro (Domain M) x).
+      specialize (H H'). clear H'.
+      unfold patt_defined in H.
+      rewrite -> ext_valuation_app_simpl in H.
+
+    (*TODO*) Admitted.
+
   End syntax.
 
+  
   Section semantics.
     (* TODO lemmas *)
 
@@ -237,14 +274,6 @@ Module test_2.
        Or we can put all the assumptions to a record (or typeclass?).
        Or we can make the assumptions 'model-free' and talk about a consequence of a theory?
      *)
-
-    Check ext_valuation.
-    Check pointwise_ext.
-    Print Model.
-    Lemma definedness_model_application : forall (M : @Model signature),
-        satisfies_model M definedness_axiom_1 ->
-        forall (m: Domain M), True.
-    Proof. (*TODO*) Admitted.
     
 
     (* TODO use same_set *)   
@@ -254,7 +283,6 @@ Module test_2.
           @ext_valuation signature M evar_val svar_val phi <> Empty_set (Domain M) ->
           @ext_valuation signature M evar_val svar_val (patt_defined phi)  = Full_set (Domain M).
       Proof. Admitted.
-          
     
   End test_2.
 End test_2.

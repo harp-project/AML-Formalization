@@ -254,7 +254,7 @@ Proof.
   congruence. auto.
 Qed.
 
-Definition DefaultMLVariables : MLVariables :=
+Program Definition DefaultMLVariables : MLVariables :=
   {| evar := evar_name;
      svar := svar_name;
      evar_eq := eq_evar_name;
@@ -263,4 +263,6 @@ Definition DefaultMLVariables : MLVariables :=
      svar_fresh := find_fresh_svar_name';
      evar_fresh_is_fresh := find_fresh_evar_name'_is_fresh;
      svar_fresh_is_fresh := find_fresh_svar_name'_is_fresh;
+     nevar := fun (s : string) => find_fresh_evar_name (@evar_c s) nil;
+     nsvar := fun (s : string) => find_fresh_svar_name (@svar_c s) nil;
   |}.
