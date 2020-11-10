@@ -271,6 +271,37 @@ Module Definedness.
       apply Complement_Empty_is_Full.
     Qed.
 
+    Lemma totality_result_empty : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                   (Empty_set (Domain M)) ->
+          ~ Same_set (Domain M)
+            (@ext_valuation (sig self) M evar_val svar_val phi)
+            (Full_set (Domain M)).
+    Proof.
+      intros.
+      pose proof (H1 := empty_impl_not_full _ H0).
+      pose proof (H2 := modus_tollens _ _ (totality_full M H phi evar_val svar_val) H1).
+      apply H2.
+    Qed.
+
+    Lemma totality_result_nonempty : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          ~Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                   (Empty_set (Domain M)) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi)
+                   (Full_set (Domain M)).
+    Proof.
+      intros.
+      pose proof (H2 := modus_tollens _ _ (totality_not_full M H phi evar_val svar_val) H0).
+      apply NNPP in H2. apply H2.
+    Qed.
+    
     Lemma both_subseteq_imp_eq : forall (M : @Model (sig self)),
         satisfies_model M definedness_axiom ->
         forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
