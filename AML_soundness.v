@@ -161,61 +161,11 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-  * rewrite ext_valuation_imp_simpl.
-    constructor. constructor.
-    remember (ext_valuation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
-    assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
-    unfold Included; intros. inversion H1; subst.
-    left. assumption.
-    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
-    destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
-    destruct H2 as [c Hext_re].
-    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
-    exists le, re.
-    assert (~List.In (evar_fresh (variables signature)
-                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
-             (free_evars psi)).
-    admit.
-    assert (~List.In (evar_fresh (variables signature)
-                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
-             (free_evars phi)).
-    admit.
-    rewrite evar_open_fresh in Hext_re; try assumption.
-    rewrite update_valuation_fresh in Hext_re; try assumption.
-    repeat rewrite evar_open_fresh; try assumption.
-    repeat rewrite update_valuation_fresh; try assumption.
-    repeat split; assumption.
-    admit. admit.
+  * apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
+          (svar_val) Hwf H H0 Hv ).
 
-  * rewrite ext_valuation_imp_simpl.
-    constructor. constructor.
-    remember (ext_valuation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
-    assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
-    unfold Included; intros. inversion H1; subst.
-    left. assumption.
-    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
-    destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
-    destruct H2 as [c Hext_re].
-    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
-    exists le, re.
-    assert (~List.In (evar_fresh (variables signature)
-                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
-             (free_evars psi)).
-    admit.
-    assert (~List.In (evar_fresh (variables signature)
-                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
-             (free_evars phi)).
-    admit.
-    rewrite evar_open_fresh in Hext_re; try assumption.
-    rewrite update_valuation_fresh in Hext_re; try assumption.
-    repeat rewrite evar_open_fresh; try assumption.
-    repeat rewrite update_valuation_fresh; try assumption.
-    repeat split; assumption.
-    admit. admit.
+  * apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
+          (svar_val) Hwf H H0 Hv).
 
   * rewrite ext_valuation_iff_subset.
     rewrite ext_valuation_iff_subset in IHHp.
