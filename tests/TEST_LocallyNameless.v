@@ -174,6 +174,17 @@ Module Definedness.
 
     Qed.
 
+    Lemma definedness_empty : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom -> (* we do not need this *)
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val phi) (Empty_set (Domain M)) ->
+          Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
+    Proof.
+      intros. unfold patt_defined.
+      rewrite -> ext_valuation_app_simpl.
+      rewrite -> (Same_set_to_eq H0).
+      apply pointwise_ext_bot_r.
+    Qed.
 
     Lemma totality_not_full : forall (M : @Model (sig self)),
         satisfies_model M definedness_axiom ->
@@ -201,6 +212,33 @@ Module Definedness.
       rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M))).
       apply definedness_not_empty. apply H. apply Hnonempty.
     Qed.
+
+    Lemma totality_full : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi)
+                   (Full_set (Domain M)) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                   (Full_set (Domain M)).
+    Proof.
+      intros.
+      unfold patt_total.
+      rewrite -> ext_valuation_not_simpl.
+      assert(H1: Same_set (Domain M) (ext_valuation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+      { rewrite -> ext_valuation_not_simpl.
+        rewrite -> (Same_set_to_eq H0).
+        apply Complement_Full_is_Empty.
+      }
+
+      Search patt_defined.
+      pose proof (H2 := definedness_empty M H (patt_not phi) evar_val svar_val H1).
+      rewrite -> (Same_set_to_eq H2).
+      apply Complement_Empty_is_Full.
+    Qed.
+    
+    
   End syntax.
 
   
