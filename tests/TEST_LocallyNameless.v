@@ -100,7 +100,9 @@ Module Definedness.
       forall (M : @Model (sig self)) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
         satisfies_model M definedness_axiom ->
         forall (m: Domain M),
-          Same_set (Domain M) (Full_set (Domain M)) (pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
+          Same_set (Domain M)
+                   (Full_set (Domain M))
+                   (pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
     Proof.
       intros.
       unfold pointwise_ext.
@@ -136,11 +138,15 @@ Module Definedness.
     
 
 
-    Lemma definedness_spec : forall (M : @Model (sig self)),
+    Lemma definedness_not_empty : forall (M : @Model (sig self)),
         satisfies_model M definedness_axiom ->
         forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
-          ~ Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val phi) (Empty_set (Domain M)) ->
-          Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi)) (Full_set (Domain M)).
+          ~ Same_set (Domain M)
+            (@ext_valuation (sig self) M evar_val svar_val phi)
+            (Empty_set (Domain M)) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi))
+                   (Full_set (Domain M)).
     Proof.
       intros.
       pose (H' := Not_Empty_Contains_Elements (ext_valuation evar_val svar_val phi) H0).
@@ -167,7 +173,34 @@ Module Definedness.
       apply Included_transitive with (S2 := pointwise_ext (ext_valuation evar_val svar_val (patt_sym (inj self definedness))) (Singleton (Domain M) x)). assumption. assumption.
 
     Qed.
-    
+
+
+    Lemma totality_not_full : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          ~ Same_set (Domain M)
+            (@ext_valuation (sig self) M evar_val svar_val phi)
+            (Full_set (Domain M)) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                   (Empty_set (Domain M)).
+    Proof.
+      intros.
+      assert (Hnonempty : ~ Same_set (Domain M) (ext_valuation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+      { unfold not. unfold not in H0. intros. rewrite -> ext_valuation_not_simpl in H1.
+        (* TODO extract these three (or two?) steps into a separate lemmma: swap_compl *)
+        apply Same_set_Compl in H1.
+        rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (ext_valuation evar_val svar_val phi))) in H1.
+        rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M) )) in H1.
+        apply H0. apply H1.
+      }
+      unfold patt_total. rewrite -> ext_valuation_not_simpl.
+      apply Same_set_Compl.
+      rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (ext_valuation evar_val svar_val
+                                                                                  (patt_defined (patt_not phi))))).
+      rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M))).
+      apply definedness_not_empty. apply H. apply Hnonempty.
+    Qed.
   End syntax.
 
   
