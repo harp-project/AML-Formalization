@@ -193,6 +193,26 @@ Record Model := {
   sym_interp (sigma : symbols signature) : Power Domain;
 }.
 
+Lemma empty_impl_not_full : forall {M : Model} (S : Power (Domain M)),
+    Same_set (Domain M) S (Empty_set (Domain M)) ->
+    ~ Same_set (Domain M) S (Full_set (Domain M)).
+Proof.
+  unfold Same_set. unfold Included. unfold not. intros.
+  assert (Hexin : In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
+  { unfold In. constructor. }
+  firstorder.
+Qed.
+
+Lemma full_impl_not_empty : forall {M : Model} (S : Power (Domain M)),
+    Same_set (Domain M) S (Full_set (Domain M)) ->
+    ~ Same_set (Domain M) S (Empty_set (Domain M)).
+Proof.
+  unfold Same_set. unfold Included. unfold not. intros.
+  assert (Hexin : In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
+  { unfold In. constructor. }
+  firstorder.
+Qed.
+
 Definition EVarVal {m : Model} : Type := evar_name -> Domain m.
 Definition SVarVal {m : Model} : Type := svar_name -> Power (Domain m).
 
