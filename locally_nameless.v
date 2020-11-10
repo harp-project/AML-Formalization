@@ -754,6 +754,16 @@ Proof.
   rewrite -> H. reflexivity.
 Qed.
 
+Lemma ext_valuation_or_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                     (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_or phi1 phi2)
+    = ext_valuation evar_val svar_val (patt_or phi2 phi1).
+Proof.
+  intros.
+  repeat rewrite -> ext_valuation_or_simpl.
+  apply Extensionality_Ensembles.
+  apply Union_Symmetric.
+Qed.
 
 Lemma ext_valuation_and_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                        (phi1 phi2 : Pattern),
@@ -766,6 +776,17 @@ Proof.
   repeat rewrite -> ext_valuation_not_simpl.
   apply Extensionality_Ensembles.
   apply Compl_Union_Compl_Intes_Ensembles_alt.
+Qed.
+
+Lemma ext_valuation_and_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                     (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_and phi1 phi2)
+    = ext_valuation evar_val svar_val (patt_and phi2 phi1).
+Proof.
+  intros.
+  repeat rewrite -> ext_valuation_and_simpl.
+  apply Extensionality_Ensembles.
+  apply Intersection_Symmetric.
 Qed.
 
 Lemma ext_valuation_top_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m),
@@ -786,6 +807,17 @@ Lemma ext_valuation_iff_or : forall {m : Model} (evar_val : @EVarVal m) (svar_va
 Proof.
 
 Admitted.
+
+Lemma ext_valuation_iff_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+                                      (phi1 phi2 : Pattern),
+    ext_valuation evar_val svar_val (patt_iff phi1 phi2)
+    = ext_valuation evar_val svar_val (patt_iff phi2 phi1).
+Proof.
+  intros.
+  unfold patt_iff.
+  rewrite -> ext_valuation_and_comm.
+  reflexivity.
+Qed.
 
 (* TODO: forall, nu *)
 Check ext_valuation_ex_simpl.
