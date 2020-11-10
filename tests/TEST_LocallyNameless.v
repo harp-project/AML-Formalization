@@ -316,11 +316,47 @@ Module Definedness.
                    (Full_set (Domain M)).
     Proof.
       unfold patt_subseteq. intros.
-      (*Search patt_total.*)
-    Admitted.
-    
-      
-    
+      apply (full_impl_not_empty _) in H0.
+      apply (full_impl_not_empty _) in H1.
+      apply (totality_result_nonempty _ H) in H0.
+      apply (totality_result_nonempty _ H) in H1.
+      unfold patt_equal.
+      apply (totality_full _ H).
+      unfold "<-->".
+      rewrite -> ext_valuation_and_simpl.
+      rewrite -> (Same_set_to_eq H0).
+      rewrite -> (Same_set_to_eq H1).
+      rewrite -> (Same_set_to_eq (Intersection_Full_l _)).
+      apply Same_set_refl.
+    Qed.
+
+    Lemma equal_impl_both_subseteq : forall (M : @Model (sig self)),        
+        satisfies_model M definedness_axiom ->
+        forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                   (Full_set (Domain M)) ->
+          (
+            Same_set (Domain M)
+                     (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                     (Full_set (Domain M)) /\
+            Same_set (Domain M)
+                     (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi2 phi1))
+                     (Full_set (Domain M))).
+    Proof.
+      intros.
+      unfold patt_equal in H0.
+      apply full_impl_not_empty in H0.
+      apply (totality_result_nonempty _ H) in H0.
+      unfold "<-->" in H0.
+      rewrite ->ext_valuation_and_simpl in H0.
+      apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
+      unfold patt_subseteq. Search patt_total.
+      apply (totality_full _ H) in H1.
+      apply (totality_full _ H) in H2.
+      split; assumption.
+    Qed.
+        
   End syntax.
 
   

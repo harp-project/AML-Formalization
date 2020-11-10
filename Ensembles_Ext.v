@@ -582,5 +582,17 @@ Lemma Same_set_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
 Proof.
   intros. unfold Same_set in *. firstorder using Included_transitive.
 Qed.
-  
-  
+
+Lemma Intersection_eq_Full :
+  forall {T : Type} (S1 S2 : Ensemble T),
+    Same_set T (Intersection T S1 S2) (Full_set T) -> (Same_set T S1 (Full_set T) /\ Same_set T S2 (Full_set T)).
+Proof.
+  intros.
+  unfold Same_set in *.
+  destruct H as [_ H]. unfold Included in *.
+  split; split; intros; specialize (H x).
+  + constructor.
+  + apply H in H0. inversion H0. subst. assumption.
+  + constructor.
+  + apply H in H0. inversion H0. subst. assumption.
+Qed.
