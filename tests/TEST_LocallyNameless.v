@@ -352,7 +352,7 @@ Module Definedness.
       unfold "<-->" in H0.
       rewrite ->ext_valuation_and_simpl in H0.
       apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
-      unfold patt_subseteq. Search patt_total.
+      unfold patt_subseteq.
       apply (totality_full _ H) in H1.
       apply (totality_full _ H) in H2.
       split; assumption.
@@ -383,6 +383,29 @@ Module Definedness.
       + apply H0.
     Qed.
 
+    Lemma interpr_subseteq_impl_subseteq : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Included (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi1)
+                   (@ext_valuation (sig self) M evar_val svar_val phi2) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                   (Full_set (Domain M)).
+    Proof.
+      intros.
+      unfold patt_subseteq.
+      apply (totality_full _ H).
+      rewrite -> ext_valuation_imp_simpl.
+      apply Same_set_symmetric.
+      apply Same_set_Full_set.
+      unfold Included in *.
+      intros. specialize (H0 x). clear H1.
+      destruct (classic (In (Domain M) (ext_valuation evar_val svar_val phi1) x)).
+      + right. auto.
+      + left. unfold In. unfold Complement. assumption.
+    Qed.
+    
     Lemma equal_impl_interpr_same : forall (M : @Model (sig self)),
         satisfies_model M definedness_axiom ->
         forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
@@ -393,7 +416,7 @@ Module Definedness.
                    (@ext_valuation (sig self) M evar_val svar_val phi1)
                    (@ext_valuation (sig self) M evar_val svar_val phi2).
     Proof.
-      intros. Search patt_equal.
+      intros.
       apply (equal_impl_both_subseteq _ H) in H0.
       destruct H0 as [Hsub1 Hsub2].
       apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
@@ -401,6 +424,23 @@ Module Definedness.
       unfold Same_set.
       split; assumption.
     Qed.
+
+    Lemma interpr_same_impl_equal : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi1)
+                   (@ext_valuation (sig self) M evar_val svar_val phi2) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                   (Full_set (Domain M)).
+    Proof.
+      intros. unfold Same_set in H0.
+      destruct H0 as [Hincl1 Hincl2].
+      apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
+      apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
+      auto using both_subseteq_imp_eq.
+    Qed.      
     
   End syntax.
 
