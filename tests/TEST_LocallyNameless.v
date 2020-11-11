@@ -12,7 +12,7 @@ Module test_1.
   Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
   Proof.
     decide equality.
-  Qed.
+  Qed. (* We may need Defined here *)
 
   #[canonical]
   Let signature :=
@@ -70,6 +70,7 @@ Module Definedness.
     { sig: Signature;
       (* 'Symbols' are a 'subset' of all the symbols from the signature *)
       inj: Symbols -> symbols sig;
+      (* TODO make it injective? *)
       (* for convenience *)
     }.  
   
@@ -356,7 +357,51 @@ Module Definedness.
       apply (totality_full _ H) in H2.
       split; assumption.
     Qed.
-        
+
+    Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                   (Full_set (Domain M)) ->
+          Included (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi1)
+                   (@ext_valuation (sig self) M evar_val svar_val phi2).
+    Proof.
+      intros.
+      unfold patt_subseteq in H0.
+      apply full_impl_not_empty in H0.
+      apply (totality_result_nonempty _ H) in H0.
+      rewrite -> ext_valuation_imp_simpl in H0.
+      unfold Same_set in H0. destruct H0 as [_ H0].
+      unfold Included in *. intros. specialize (H0 x).
+      assert (H' : In (Domain M) (Full_set (Domain M)) x).
+      { unfold In. constructor. }
+      specialize (H0 H'). clear H'.
+      unfold In in *. destruct H0; unfold In in H0.
+      + unfold Complement in H0. contradiction.
+      + apply H0.
+    Qed.
+
+    Lemma equal_impl_interpr_same : forall (M : @Model (sig self)),
+        satisfies_model M definedness_axiom ->
+        forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                   (Full_set (Domain M)) ->
+          Same_set (Domain M)
+                   (@ext_valuation (sig self) M evar_val svar_val phi1)
+                   (@ext_valuation (sig self) M evar_val svar_val phi2).
+    Proof.
+      intros. Search patt_equal.
+      apply (equal_impl_both_subseteq _ H) in H0.
+      destruct H0 as [Hsub1 Hsub2].
+      apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
+      apply (subseteq_impl_interpr_subseteq _ H) in Hsub2.
+      unfold Same_set.
+      split; assumption.
+    Qed.
+    
   End syntax.
 
   
@@ -475,13 +520,10 @@ Module test_2.
          app_interp := my_app_interp;
       |}.
 
-    
-    Definition definedness_axiom_1 := patt_defined (evar "x").
-
-    Lemma M1_satisfies_definedness1 : satisfies_model M1 definedness_axiom_1.
+    Lemma M1_satisfies_definedness1 : satisfies_model M1 definedness_axiom.
     Proof.
       unfold satisfies_model. intros.
-      unfold definedness_axiom_1.
+      unfold definedness_axiom.
       unfold sym.
       unfold patt_defined.
       rewrite -> ext_valuation_app_simpl.
