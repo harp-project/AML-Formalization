@@ -7,7 +7,6 @@ Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
-(* From Coq Require Import Logic.PropExtensionality. Needed in update_valuation_fresh*)
 
 Require Import extralibrary.
 Require Import ML.Signature.
@@ -376,16 +375,17 @@ Proof.
     * subst. constructor. assumption.
 Qed.
 
-Lemma well_formed_closed_aux_svar_open :
-  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
-    well_formed_closed_aux phi dbi ->
-    @well_formed_closed_aux sig (svar_open dbi X phi) dbi.
+(* Lemma well_formed_closed_aux_svar_open :
+  forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar_name),
+    well_formed_closed_aux phi dbi1 dbi2 ->
+    @well_formed_closed_aux sig (svar_open dbi2 X phi) dbi1 dbi2.
 Proof.
   induction phi; intros; simpl in *; auto.
-  * destruct (eqb_reflect n dbi). lia. auto.
+  * destruct (eqb_reflect n dbi2). lia. auto.
   * firstorder.
   * firstorder.
-Qed.
+  * 
+Qed. *)
 
 
 Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar_name),

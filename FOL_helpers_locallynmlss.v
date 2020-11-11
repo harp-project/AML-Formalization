@@ -45,7 +45,7 @@ Qed.
 Check subst_ctx.
 
 Lemma wc_sctx (C : Application_context) (A : Pattern) :
-  well_formed_closed_aux A 0 -> @well_formed_closed_aux Σ (subst_ctx C A) 0.
+  well_formed_closed_aux A 0 0 -> @well_formed_closed_aux Σ (subst_ctx C A) 0 0.
 Proof.
   intros.
   induction C.
@@ -76,8 +76,8 @@ Ltac wf_proof :=
   | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
   | H  : well_formed_closed_aux _ _   |- well_formed_closed_aux (subst_ctx _ _) _ => eapply (wc_sctx _ _ H)
   | H0 : well_formed_positive _   |- well_formed_positive _               => exact H0
-  | H1 : well_formed_closed_aux _ _ 
-                                  |- well_formed_closed_aux _ _           => exact H1
+  | H1 : well_formed_closed_aux _ _ _
+                                  |- well_formed_closed_aux _ _ _         => exact H1
   |                               |- True                                 => trivial
   | _                                                                     => idtac
   end .
@@ -687,7 +687,7 @@ Proof.
   all:wf_proof.
   all: assert(@well_formed Σ Bot).
   all:wf_proof.
-Qed.
+Admitted.
 
 (*Was an axiom in AML_definition.v*)
 Lemma Framing (theory : Theory) (C : Application_context) (A B : Pattern):
@@ -718,7 +718,7 @@ Proof.
   2,4:assert (@well_formed Σ (¬ A)).
   6,7:assert (@well_formed Σ (Bot)).
   all:wf_proof.
-Qed.
+Admitted.
 
 Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
@@ -754,7 +754,7 @@ Proof.
   Unshelve.
   4: assert (@well_formed Σ (Bot)).
   all:wf_proof.
-Qed.
+Admitted.
 
 Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
   well_formed A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))) -> theory ⊢ A.

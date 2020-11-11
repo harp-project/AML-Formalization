@@ -460,32 +460,42 @@ Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   | patt_mu psi => positive_occurrence_db 0 psi /\ well_formed_positive psi
   end.
 
-Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind : db_index) : Prop :=
+Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : Prop :=
   match phi with
   | patt_free_evar _ => True
   | patt_free_svar _ => True
-  | patt_bound_evar n => n < max_ind
-  | patt_bound_svar n => n < max_ind
+  | patt_bound_evar n => n < max_ind_evar
+  | patt_bound_svar n => n < max_ind_svar
   | patt_sym _ => True
-  | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
-                          well_formed_closed_aux psi2 max_ind
+  | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar /\
+                          well_formed_closed_aux psi2 max_ind_evar max_ind_svar
   | patt_bott => True
-  | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind /\
-                          well_formed_closed_aux psi2 max_ind
-  | patt_exists psi => well_formed_closed_aux psi (max_ind + 1)
-  | patt_mu psi => well_formed_closed_aux psi (max_ind + 1)
+  | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar /\
+                          well_formed_closed_aux psi2 max_ind_evar max_ind_svar
+  | patt_exists psi => well_formed_closed_aux psi (max_ind_evar + 1) max_ind_svar
+  | patt_mu psi => well_formed_closed_aux psi max_ind_evar (max_ind_svar + 1)
   end.
-Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0.
+Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0 0.
 
-Lemma well_formed_closed_aux_ind (phi : Pattern) (ind1 ind2 : db_index) :
-  ind1 < ind2 -> well_formed_closed_aux phi ind1 -> well_formed_closed_aux phi ind2.
+Lemma well_formed_closed_aux_ind (phi : Pattern) (ind_evar1 ind_evar2 ind_svar1 ind_svar2: db_index) :
+  ind_evar1 < ind_evar2 -> ind_svar1 < ind_svar2  
+  -> well_formed_closed_aux phi ind_evar1 ind_svar1 
+  -> well_formed_closed_aux phi ind_evar2 ind_svar2.
 Proof.
-  intros. generalize dependent ind1. generalize dependent ind2.
+  intros. 
+  generalize dependent ind_evar1. generalize dependent ind_evar2.
+  generalize dependent ind_svar1. generalize dependent ind_svar2.
   induction phi; intros; simpl in *; try lia.
-  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-  inversion H0. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-  apply IHphi with (ind1 + 1). lia. assumption.
-  apply IHphi with (ind1 + 1). lia. assumption.
+  inversion H1. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  inversion H1. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
+  - eapply (IHphi ind_svar2 ind_svar1 H0  (ind_evar2 + 1) (ind_evar1 + 1)).
+    + lia.
+    + assumption.
+  - eapply (IHphi (ind_svar2 + 1) (ind_svar1 + 1) _  ind_evar2 ind_evar1).
+    + lia.
+    + assumption.
+    Unshelve.
+    lia.
 Qed.  
 
 Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
