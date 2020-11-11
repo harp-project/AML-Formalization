@@ -5,7 +5,6 @@
  *)
 Require Import locally_nameless.
 Require Import ML.Signature.
-(*Require Import ML.DefaultVariables.*)
 Require Import Coq.Logic.Classical_Prop.
 Import MLNotations.
 
@@ -46,8 +45,6 @@ Section definedness.
     @patt_free_evar (sig self) (nevar (variables (sig self)) name).
 
   Definition definedness_axiom := patt_defined (evar "x").
-
-  (* I know this section is about syntax, but maybe we can merge the two sections *)
 
   Lemma definedness_model_application :
     forall (M : @Model (sig self)) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
@@ -388,6 +385,55 @@ Section definedness.
     apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
     apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
     auto using both_subseteq_imp_eq.
-  Qed.      
+  Qed.
+
+  Lemma equal_refl : forall (M : @Model (sig self)),
+      satisfies_model M definedness_axiom ->
+      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi phi))
+                 (Full_set (Domain M)).
+  Proof.
+    intros.
+    apply (interpr_same_impl_equal _ H).
+    apply Same_set_refl.
+  Qed.
+
+  Lemma equal_sym : forall (M : @Model (sig self)),
+      satisfies_model M definedness_axiom ->
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (Full_set (Domain M)) ->
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi2 phi1))
+                 (Full_set (Domain M)).
+  Proof.
+    intros.
+    apply (interpr_same_impl_equal _ H).
+    apply (equal_impl_interpr_same _ H) in H0.
+    apply Same_set_symmetric.
+    assumption.
+  Qed.
+
+  Lemma equal_trans : forall (M : @Model (sig self)),
+      satisfies_model M definedness_axiom ->
+      forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (Full_set (Domain M)) ->
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi2 phi3))
+                 (Full_set (Domain M)) ->
+        Same_set (Domain M)
+                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi3))
+                 (Full_set (Domain M)).
+  Proof.
+    intros.
+    apply (interpr_same_impl_equal _ H).
+    apply (equal_impl_interpr_same _ H) in H0.
+    apply (equal_impl_interpr_same _ H) in H1.
+    eauto using Same_set_transitive.
+  Qed.  
   
 End definedness.
