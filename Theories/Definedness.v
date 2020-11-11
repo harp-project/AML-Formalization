@@ -13,21 +13,23 @@ Import ML.Signature.
 (* We have only one symbol *)
 Inductive Symbols := definedness.
 
-Record Syntax :=
-  { sig: Signature;
+Section definedness.
+  Context {sig : Signature}.
+
+  Class Syntax(*(sig : Signature)*) :=
+    { (*sig: Signature;*)
     (* 'Symbols' are a 'subset' of all the symbols from the signature *)
     inj: Symbols -> symbols sig;
     (* TODO make it injective? *)
     (* for convenience *)
-  }.  
+    }.  
 
-Section definedness.
   Context {self : Syntax}.
 
-  Let Pattern : Type := @locally_nameless.Pattern (sig self).
+  Let Pattern : Type := @locally_nameless.Pattern sig.
 
   Definition patt_defined (phi : Pattern) : Pattern :=
-    patt_sym (inj self definedness) $ phi.
+    patt_sym (inj definedness) $ phi.
   
   Definition patt_total (phi: Pattern) : Pattern :=
     patt_not (patt_defined (patt_not phi)).
@@ -39,15 +41,15 @@ Section definedness.
     patt_total (phi1 <--> phi2).
 
   Let sym (s : Symbols) : Pattern :=
-    @patt_sym (sig self) (inj self s).
+    @patt_sym sig (inj s).
   
   Let evar (name : string) : Pattern :=
-    @patt_free_evar (sig self) (nevar (variables (sig self)) name).
+    @patt_free_evar sig (nevar (variables sig) name).
 
   Definition definedness_axiom := patt_defined (evar "x").
 
   Lemma definedness_model_application :
-    forall (M : @Model (sig self)) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+    forall (M : @Model sig) (evar_val : @EVarVal sig M) (svar_val : @SVarVal (sig) M),
       satisfies_model M definedness_axiom ->
       forall (m: Domain M),
         Same_set (Domain M)
@@ -60,7 +62,7 @@ Section definedness.
     unfold Included. unfold In. intros. clear H0.
 
     unfold satisfies_model in H. unfold definedness_axiom in H.
-    remember (update_evar_val (nevar (variables (sig self)) "x") m evar_val) as evar_val'.
+    remember (update_evar_val (nevar (variables (sig)) "x") m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
     unfold Same_set in H. destruct H as [_ H].
     unfold Included in H.
@@ -76,7 +78,7 @@ Section definedness.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
     unfold locally_nameless.eq_evar_name in H.
-    destruct (evar_eq (variables (sig self)) (nevar (variables (sig self)) "x") (nevar (variables (sig self)) "x") ).
+    destruct (evar_eq (variables (sig)) (nevar (variables (sig)) "x") (nevar (variables (sig)) "x") ).
     2: { contradiction. }
     unfold pointwise_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
@@ -88,14 +90,14 @@ Section definedness.
   
 
 
-  Lemma definedness_not_empty_1 : forall (M : @Model (sig self)),
+  Lemma definedness_not_empty_1 : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
-          (@ext_valuation (sig self) M evar_val svar_val phi)
+          (@ext_valuation (sig) M evar_val svar_val phi)
           (Empty_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_defined phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -115,20 +117,20 @@ Section definedness.
     
     pose proof (Hincl' := pointwise_ext_monotonic_r
                             M
-                            (ext_valuation evar_val svar_val (patt_sym (inj self definedness)))
+                            (ext_valuation evar_val svar_val (patt_sym (inj definedness)))
                             (Singleton (Domain M) x)
                             (ext_valuation evar_val svar_val phi)
                             Hincl
                ).
-    apply Included_transitive with (S2 := pointwise_ext (ext_valuation evar_val svar_val (patt_sym (inj self definedness))) (Singleton (Domain M) x)). assumption. assumption.
+    apply Included_transitive with (S2 := pointwise_ext (ext_valuation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
 
   Qed.
 
-  Lemma definedness_empty_1 : forall (M : @Model (sig self)),
+  Lemma definedness_empty_1 : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom -> (* we do not need this *)
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
-        Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val phi) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
+        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)) ->
+        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
   Proof.
     intros. unfold patt_defined.
     rewrite -> ext_valuation_app_simpl.
@@ -139,11 +141,11 @@ Section definedness.
   Theorem modus_tollens: forall (P Q : Prop), (P -> Q) -> ~Q -> ~P.
   Proof. auto. Qed.
 
-  Lemma definedness_empty_2 : forall (M : @Model (sig self)),
+  Lemma definedness_empty_2 : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
-        Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@ext_valuation (sig self) M evar_val svar_val phi) (Empty_set (Domain M)).
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
+        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
+        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
   Proof.
     intros.
     pose proof (H1 := empty_impl_not_full _ H0).
@@ -151,14 +153,14 @@ Section definedness.
     apply NNPP in H2. apply H2.
   Qed.
 
-  Lemma definedness_not_empty_2 : forall (M : @Model (sig self)),
+  Lemma definedness_not_empty_2 : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_defined phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_defined phi))
                  (Full_set (Domain M)) ->
         ~ Same_set (Domain M)
-          (@ext_valuation (sig self) M evar_val svar_val phi)
+          (@ext_valuation (sig) M evar_val svar_val phi)
           (Empty_set (Domain M)).
   Proof.
     intros.
@@ -166,14 +168,14 @@ Section definedness.
     exact (modus_tollens _ _ (definedness_empty_1 M H phi evar_val svar_val) H1).
   Qed.
 
-  Lemma totality_not_full : forall (M : @Model (sig self)),
+  Lemma totality_not_full : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
-          (@ext_valuation (sig self) M evar_val svar_val phi)
+          (@ext_valuation (sig) M evar_val svar_val phi)
           (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
                  (Empty_set (Domain M)).
   Proof.
     intros.
@@ -193,14 +195,14 @@ Section definedness.
     apply definedness_not_empty_1. apply H. apply Hnonempty.
   Qed.
 
-  Lemma totality_full : forall (M : @Model (sig self)),
+  Lemma totality_full : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi)
+                 (@ext_valuation (sig) M evar_val svar_val phi)
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -217,14 +219,14 @@ Section definedness.
     apply Complement_Empty_is_Full.
   Qed.
 
-  Lemma totality_result_empty : forall (M : @Model (sig self)),
+  Lemma totality_result_empty : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
                  (Empty_set (Domain M)) ->
         ~ Same_set (Domain M)
-          (@ext_valuation (sig self) M evar_val svar_val phi)
+          (@ext_valuation (sig) M evar_val svar_val phi)
           (Full_set (Domain M)).
   Proof.
     intros.
@@ -233,14 +235,14 @@ Section definedness.
     apply H2.
   Qed.
 
-  Lemma totality_result_nonempty : forall (M : @Model (sig self)),
+  Lemma totality_result_nonempty : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~Same_set (Domain M)
-         (@ext_valuation (sig self) M evar_val svar_val (patt_total phi))
+         (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
          (Empty_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi)
+                 (@ext_valuation (sig) M evar_val svar_val phi)
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -248,17 +250,17 @@ Section definedness.
     apply NNPP in H2. apply H2.
   Qed.
   
-  Lemma both_subseteq_imp_eq : forall (M : @Model (sig self)),
+  Lemma both_subseteq_imp_eq : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi2 phi1))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     unfold patt_subseteq. intros.
@@ -276,18 +278,18 @@ Section definedness.
     apply Same_set_refl.
   Qed.
 
-  Lemma equal_impl_both_subseteq : forall (M : @Model (sig self)),        
+  Lemma equal_impl_both_subseteq : forall (M : @Model (sig)),        
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         (
           Same_set (Domain M)
-                   (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                   (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                    (Full_set (Domain M)) /\
           Same_set (Domain M)
-                   (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi2 phi1))
+                   (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
                    (Full_set (Domain M))).
   Proof.
     intros.
@@ -303,15 +305,15 @@ Section definedness.
     split; assumption.
   Qed.
 
-  Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig self)),
+  Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)) ->
         Included (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi1)
-                 (@ext_valuation (sig self) M evar_val svar_val phi2).
+                 (@ext_valuation (sig) M evar_val svar_val phi1)
+                 (@ext_valuation (sig) M evar_val svar_val phi2).
   Proof.
     intros.
     unfold patt_subseteq in H0.
@@ -328,14 +330,14 @@ Section definedness.
     + apply H0.
   Qed.
 
-  Lemma interpr_subseteq_impl_subseteq : forall (M : @Model (sig self)),
+  Lemma interpr_subseteq_impl_subseteq : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Included (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi1)
-                 (@ext_valuation (sig self) M evar_val svar_val phi2) ->
+                 (@ext_valuation (sig) M evar_val svar_val phi1)
+                 (@ext_valuation (sig) M evar_val svar_val phi2) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -351,15 +353,15 @@ Section definedness.
     + left. unfold In. unfold Complement. assumption.
   Qed.
   
-  Lemma equal_impl_interpr_same : forall (M : @Model (sig self)),
+  Lemma equal_impl_interpr_same : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi1)
-                 (@ext_valuation (sig self) M evar_val svar_val phi2).
+                 (@ext_valuation (sig) M evar_val svar_val phi1)
+                 (@ext_valuation (sig) M evar_val svar_val phi2).
   Proof.
     intros.
     apply (equal_impl_both_subseteq _ H) in H0.
@@ -370,14 +372,14 @@ Section definedness.
     split; assumption.
   Qed.
 
-  Lemma interpr_same_impl_equal : forall (M : @Model (sig self)),
+  Lemma interpr_same_impl_equal : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val phi1)
-                 (@ext_valuation (sig self) M evar_val svar_val phi2) ->
+                 (@ext_valuation (sig) M evar_val svar_val phi1)
+                 (@ext_valuation (sig) M evar_val svar_val phi2) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     intros. unfold Same_set in H0.
@@ -387,11 +389,11 @@ Section definedness.
     auto using both_subseteq_imp_eq.
   Qed.
 
-  Lemma equal_refl : forall (M : @Model (sig self)),
+  Lemma equal_refl : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi phi))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -399,14 +401,14 @@ Section definedness.
     apply Same_set_refl.
   Qed.
 
-  Lemma equal_sym : forall (M : @Model (sig self)),
+  Lemma equal_sym : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi2 phi1))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi2 phi1))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -416,17 +418,17 @@ Section definedness.
     assumption.
   Qed.
 
-  Lemma equal_trans : forall (M : @Model (sig self)),
+  Lemma equal_trans : forall (M : @Model (sig)),
       satisfies_model M definedness_axiom ->
-      forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig self) M) (svar_val : @SVarVal (sig self) M),
+      forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi2 phi3))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi2 phi3))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig self) M evar_val svar_val (patt_equal phi1 phi3))
+                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi3))
                  (Full_set (Domain M)).
   Proof.
     intros.

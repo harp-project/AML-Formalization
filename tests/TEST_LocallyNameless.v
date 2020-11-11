@@ -87,9 +87,12 @@ Module test_2.
          variables := DefaultMLVariables;
       |}.
 
-    Let definedness_syntax : Definedness.Syntax :=
-      {| sig := signature;
-         inj := sym_import_definedness;
+    #[local]
+    Canonical Structure signature.
+
+    Instance definedness_syntax : @Definedness.Syntax signature :=
+      {|
+         inj := fun s => sym_import_definedness s : (symbols signature);
       |}.
 
     (* The same helpers as in the previous case. Maybe we can abstract it somehow?*)
@@ -102,23 +105,11 @@ Module test_2.
       @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
     .
 
-
-    (* This works *)
-    Definition test_pattern_1 := @patt_defined definedness_syntax (sym sym_c).
-
-    (* This fails *)
-    Fail Definition test_pattern_2 := patt_defined (sym sym_c).
-    (* But with this magic it works *)
-    Local Canonical Structure definedness_syntax.
-    Definition test_pattern_2 := patt_defined (sym sym_c).
-    Definition test_pattern_3 : Pattern := patt_equal (sym sym_c) (sym sym_c).
-
-    (* But this still fails *)
-    Fail Definition test_pattern_4 := patt_defined (patt_sym sym_c).
-    (* We need another canonical structure *)
-    #[local]
-     Canonical Structure signature.
-    Definition test_pattern_4 := patt_defined (patt_sym sym_c).
+    Example test_pattern_0 : Pattern := sym sym_c.
+    Example test_pattern_1 := @patt_defined signature definedness_syntax (sym sym_c).
+    Example test_pattern_2 := patt_defined (sym sym_c).
+    Example test_pattern_3 : Pattern := patt_equal (sym sym_c) (sym sym_c).
+    Example test_pattern_4 := patt_defined (patt_sym sym_c).
     
 
     Inductive CustomElements :=
