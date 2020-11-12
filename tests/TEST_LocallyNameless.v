@@ -262,6 +262,7 @@ Module LTL.
     Notation "A == B" := (patt_equal A B) (at level 100) : ml_scope.
     Notation "A ∈ B" := (patt_in A B) (at level 70) : ml_scope.
     Notation "A ⊆ B" := (patt_subseteq A B) (at level 70) : ml_scope.
+    Notation "⊥" := (patt_bott) : ml_scope.
 
     Notation "[[ A ]]" := (inhabitant_set A) : ml_scope.
 
@@ -277,6 +278,12 @@ Module LTL.
     (* Set variables - bound *)
     Notation B0 := (patt_bound_svar 0).
 
+
+    Definition patt_partial_function(phi from to : Pattern) : Pattern :=
+      patt_forall_of_sort from (patt_exists_of_sort to ((phi $ b1) ⊆ b0)).
+
+    Notation "A : B ⇀ C" := (patt_partial_function A B C) (at level 80) : ml_scope.
+    
     Notation InitialState := (sym sym_SortInitialState).
     Notation State := (sym sym_SortState).
 
@@ -322,12 +329,13 @@ Module LTL.
         => ((∘(¬([[ State ]]))) ⊆ (¬ [[ State ]]))%ml
 
       | AxNextPFun
-        => patt_bott (* TODO *)
+        => (sym sym_next) : State ⇀ State
 
       | AxNextInj
-        => patt_bott (* TODO *)
-             
-      | _ => patt_bott
+        => patt_forall_of_sort State (patt_forall_of_sort State ( ( (∘b0 == ∘b1) and (¬ (∘b1 == ⊥))  ) --> (b0 == b1)  ))
+
+      | AxAtomicProp a
+        => (sym (sym_a a)) ⊆ [[ State ]]
       end.
 
 
