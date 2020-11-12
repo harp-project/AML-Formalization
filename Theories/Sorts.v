@@ -10,7 +10,7 @@ Section sorts.
   Inductive Symbols := inhabitant.
 
   Context {sig : Signature}.
-  
+
   Class Syntax :=
     { inj: Symbols -> (symbols sig);
       imported_definedness: @Definedness.Syntax sig;
@@ -24,5 +24,6 @@ Section sorts.
     @patt_sym sig (inj s).
   
   Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
+  Definition inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
 End sorts.

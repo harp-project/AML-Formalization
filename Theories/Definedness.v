@@ -460,6 +460,7 @@ Section definedness.
     + assumption.
   Qed.
   
-    
+
+  Search patt_defined.
   
 End definedness.

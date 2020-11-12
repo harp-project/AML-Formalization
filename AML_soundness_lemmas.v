@@ -1217,6 +1217,20 @@ Proof.
     admit. admit.
 Admitted.
 
+Lemma l1 : forall (phi : @Pattern sig) (x : evar_name),
+    well_formed_closed (ex, phi) -> well_formed_closed  (evar_open 0 x phi).
+Proof.
+  induction phi; try constructor; try firstorder.
+  + admit.
+  + admit.
+  + admit.
+Admitted.
 
+
+(*
+(ex, (ex, patt_bound_evar 0 /\ patt_bound_evar 1))
+=>
+(ex, patt_bound_evar 0 /\ patt_free_evar !X)
+*)
 
 End soundness_lemmas.

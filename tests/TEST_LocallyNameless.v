@@ -3,6 +3,7 @@ Require Import ML.Signature.
 Require Import ML.DefaultVariables.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Theories.Definedness.
+Require Import Theories.Sorts.
 Import MLNotations.
 
 (* In this module we show how to define a signature and build patterns *)
@@ -68,6 +69,8 @@ Module test_2.
      *)
     Inductive Symbols :=
     | sym_import_definedness (d : Definedness.Symbols)
+    | sym_import_sorts (s : Sorts.Symbols)
+    | sym_SortNat
     | sym_zero | sym_succ (* constructors for Nats *)
     | sym_c (* some constant that we make functional *)
     .
@@ -78,6 +81,7 @@ Module test_2.
     Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
     Proof.
       decide equality.
+      * decide equality.
       * decide equality.
     Qed.
 
@@ -90,11 +94,17 @@ Module test_2.
     #[local]
     Canonical Structure signature.
 
-    Instance definedness_syntax : @Definedness.Syntax signature :=
+    Instance definedness_syntax : Definedness.Syntax :=
       {|
-         inj := fun s => sym_import_definedness s : (symbols signature);
+         Definedness.inj := sym_import_definedness;
       |}.
 
+    Instance sorts_syntax : Sorts.Syntax :=
+      {|
+      Sorts.inj := sym_import_sorts;
+      Sorts.imported_definedness := definedness_syntax;
+      |}.
+    
     (* The same helpers as in the previous case. Maybe we can abstract it somehow?*)
     (* But it does not make sense to have them visible globally - use 'Let' instead of 'Definition' *)
     Let sym (s : Symbols) : @Pattern signature :=
@@ -110,6 +120,7 @@ Module test_2.
     Example test_pattern_2 := patt_defined (sym sym_c).
     Example test_pattern_3 : Pattern := patt_equal (sym sym_c) (sym sym_c).
     Example test_pattern_4 := patt_defined (patt_sym sym_c).
+    Example test_pattern_5 := patt_equal (inhabitant_set (sym sym_SortNat)) (sym sym_zero).
     
 
     Inductive CustomElements :=
