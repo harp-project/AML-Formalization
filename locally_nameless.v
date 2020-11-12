@@ -316,7 +316,7 @@ match p with
 | patt_bott => patt_bott
 | patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
 | patt_exists p' => patt_exists (evar_open (k + 1) n p')
-| patt_mu p' => patt_mu (evar_open (k + 1) n p')
+| patt_mu p' => patt_mu (evar_open k n p')
 end.
 
 Fixpoint svar_open (k : db_index) (n : svar_name)
@@ -330,7 +330,7 @@ match p with
 | patt_app ls rs => patt_app (svar_open k n ls) (svar_open k n rs)
 | patt_bott => patt_bott
 | patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
-| patt_exists p' => patt_exists (svar_open (k + 1) n p')
+| patt_exists p' => patt_exists (svar_open k n p')
 | patt_mu p' => patt_mu (svar_open (k + 1) n p')
 end.
 
@@ -344,7 +344,7 @@ Proof.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
   rewrite (IHp (k + 1)); reflexivity.
-  rewrite (IHp (k + 1)); reflexivity.
+  rewrite (IHp k); reflexivity.
 Qed.
 
 Lemma svar_open_size :
@@ -356,7 +356,7 @@ Proof.
   destruct (n0 =? k); reflexivity.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
   rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-  rewrite (IHp (k + 1)); reflexivity.
+  rewrite (IHp k); reflexivity.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
@@ -401,7 +401,7 @@ with negative_occurrence_named : svar_name -> Pattern -> Prop :=
    negative_occurrence_named sv phi ->
    negative_occurrence_named sv (patt_mu phi)
 .
-
+(* Cares only about set variables *)
 Inductive positive_occurrence_db : db_index -> Pattern -> Prop :=
 | podb_free_evar (x : evar_name) (n : db_index) : positive_occurrence_db n (patt_free_evar x)
 | podb_free_svar (x : svar_name) (n : db_index) : positive_occurrence_db n (patt_free_svar x)
@@ -417,7 +417,7 @@ Inductive positive_occurrence_db : db_index -> Pattern -> Prop :=
   negative_occurrence_db n phi1 -> positive_occurrence_db n phi2 ->
   positive_occurrence_db n (patt_imp phi1 phi2)
 | podb_exists (phi : Pattern) (n : db_index) :
-  positive_occurrence_db (n+1) phi ->
+  positive_occurrence_db n phi ->
   positive_occurrence_db n (patt_exists phi)
 | podb_mu (phi : Pattern) (n : db_index) :
   positive_occurrence_db (n+1) phi ->
@@ -437,7 +437,7 @@ with negative_occurrence_db : db_index -> Pattern -> Prop :=
   positive_occurrence_db n phi1 ->  negative_occurrence_db n phi2 ->
    negative_occurrence_db n (patt_imp phi1 phi2)
 | nodb_exists (phi : Pattern) (n : db_index) :
-   negative_occurrence_db (n+1) phi ->
+   negative_occurrence_db n phi ->
    negative_occurrence_db n (patt_exists phi)
 | nodb_mu (phi : Pattern) (n : db_index) :
    negative_occurrence_db (n+1) phi ->
