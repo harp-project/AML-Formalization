@@ -232,9 +232,33 @@ Module LTL.
       |}.
     #[local]
      Canonical Structure signature.
+
+    Instance definedness_syntax : Definedness.Syntax :=
+      {|
+         Definedness.inj := sym_import_definedness;
+      |}.
+
+    Instance sorts_syntax : Sorts.Syntax :=
+      {|
+      Sorts.inj := sym_import_sorts;
+      Sorts.imported_definedness := definedness_syntax;
+      |}.
+
+
+    Let sym (s : Symbols) : @Pattern signature :=
+      @patt_sym signature s.
+    Let evar (sname : string) : @Pattern signature :=
+      @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
+    Let svar (sname : string) : @Pattern signature :=
+      @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
+    .
+
+    Definition next (phi : Pattern) : Pattern :=
+      patt_app (sym sym_next) phi.
+
     
     Inductive AxiomName :=
-    | AxImportedDefinedness (* should import axioms from the Definedness module *)
+    | AxImportedDefinedness (name : Definedness.AxiomName) (* imports axioms from the Definedness module *)
     | AxPrev
     | AxInitialState (* Trace *)
     | AxState (* TraceSuffix *)
@@ -247,6 +271,8 @@ Module LTL.
 
     Definition axiom(name : AxiomName) : @Pattern signature :=
       match name with
+      | AxImportedDefinedness name' => Definedness.axiom name'
+      | AxPrev => patt_equal (evar "x") (patt_and (ex, patt_bound_evar 0) (patt_in (evar "x") (next (patt_bound_evar 0))))
       | _ => patt_bott
       end.
 
