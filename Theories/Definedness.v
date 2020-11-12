@@ -40,6 +40,9 @@ Section definedness.
   Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
     patt_total (phi1 <--> phi2).
 
+  Definition patt_in (phi1 phi2 : Pattern) : Pattern :=
+    patt_defined (patt_and phi1 phi2).
+
   Let sym (s : Symbols) : Pattern :=
     @patt_sym sig (inj s).
   
@@ -436,6 +439,27 @@ Section definedness.
     apply (equal_impl_interpr_same _ H) in H0.
     apply (equal_impl_interpr_same _ H) in H1.
     eauto using Same_set_transitive.
-  Qed.  
+  Qed.
+
+  Lemma free_evar_in_patt : forall (M : @Model sig),
+      satisfies_model M definedness_axiom ->
+      forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
+        In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x) ->
+        Same_set (Domain M)
+                 (@ext_valuation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
+                 (Full_set (Domain M)).
+  Proof.
+    intros.
+    unfold patt_in.
+    apply (definedness_not_empty_1 _ H).
+    apply Contains_Elements_Not_Empty.
+    exists (evar_val x).
+    rewrite -> ext_valuation_and_simpl.
+    split.
+    + rewrite -> ext_valuation_free_evar_simpl. constructor.
+    + assumption.
+  Qed.
+  
+    
   
 End definedness.
