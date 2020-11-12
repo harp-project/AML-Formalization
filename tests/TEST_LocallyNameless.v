@@ -166,10 +166,10 @@ Module test_2.
          app_interp := my_app_interp;
       |}.
 
-    Lemma M1_satisfies_definedness1 : satisfies_model M1 definedness_axiom.
+    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
     Proof.
       unfold satisfies_model. intros.
-      unfold definedness_axiom.
+      unfold axiom.
       unfold sym.
       unfold patt_defined.
       rewrite -> ext_valuation_app_simpl.
@@ -191,3 +191,72 @@ Module test_2.
     
   End test_2.
 End test_2.
+
+Module LTL.
+  Import Theories.Definedness.
+  Import Theories.Sorts.
+
+  Record LTLSignature :=
+    { AP : Set;
+      AP_dec : forall (a1 a2 : AP), {a1 = a2} + {a1 <> a2};
+    }.
+  
+  
+  Section LTL.
+    (* We are parametrized with a set of atomic proposition. *)
+    Context {ltlsig : LTLSignature}.
+
+    Inductive Symbols :=
+    | sym_import_definedness (d : Definedness.Symbols)
+    | sym_import_sorts (s : Sorts.Symbols)
+    | sym_SortInitialState
+    | sym_SortState
+    | sym_next
+    | sym_prev
+    | sym_a (ap : AP ltlsig)
+    .
+
+    Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
+    Proof.
+      decide equality.
+      * decide equality.
+      * decide equality.
+      * apply (AP_dec ltlsig).
+    Qed.
+
+    
+    Let signature : Signature :=
+      {| symbols := Symbols;
+         sym_eq := Symbols_dec;
+         variables := DefaultMLVariables;
+      |}.
+    #[local]
+     Canonical Structure signature.
+    
+    Inductive AxiomName :=
+    | AxImportedDefinedness (* should import axioms from the Definedness module *)
+    | AxPrev
+    | AxInitialState (* Trace *)
+    | AxState (* TraceSuffix *)
+    | AxInf
+    | AxNextOut
+    | AxNextPFun
+    | AxNextInj
+    | AxAtomicProp (ap : AP ltlsig) (* defines a potentially infinite class of axioms *)
+    .
+
+    Definition axiom(name : AxiomName) : @Pattern signature :=
+      match name with
+      | _ => patt_bott
+      end.
+
+
+    Definition satisfies_axioms (M : Model) := forall (ax_name : AxiomName),    
+        satisfies_model M (axiom ax_name).
+    
+    
+  End LTL.
+
+End LTL.
+
+  

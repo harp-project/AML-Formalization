@@ -47,11 +47,22 @@ Section definedness.
   Let evar (name : string) : Pattern :=
     @patt_free_evar sig (nevar (variables sig) name).
 
-  Definition definedness_axiom := patt_defined (evar "x").
+
+  Inductive AxiomName := AxDefinedness.
+
+  Definition axiom(name : AxiomName) : Pattern :=
+    match name with
+    | AxDefinedness => patt_defined (evar "x")
+    end.
+
+  Definition satisfies_axioms (M : Model) := forall (ax_name : AxiomName),
+      satisfies_model M (axiom ax_name).
+  
+  (*Definition definedness_axiom := patt_defined (evar "x").*)
 
   Lemma definedness_model_application :
     forall (M : @Model sig) (evar_val : @EVarVal sig M) (svar_val : @SVarVal (sig) M),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (m: Domain M),
         Same_set (Domain M)
                  (Full_set (Domain M))
@@ -61,8 +72,8 @@ Section definedness.
     unfold pointwise_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
-
-    unfold satisfies_model in H. unfold definedness_axiom in H.
+    unfold satisfies_axioms in H. specialize (H AxDefinedness). simpl in H.
+    unfold satisfies_model in H.
     remember (update_evar_val (nevar (variables (sig)) "x") m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
     unfold Same_set in H. destruct H as [_ H].
@@ -92,7 +103,7 @@ Section definedness.
 
 
   Lemma definedness_not_empty_1 : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
           (@ext_valuation (sig) M evar_val svar_val phi)
@@ -128,7 +139,7 @@ Section definedness.
   Qed.
 
   Lemma definedness_empty_1 : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom -> (* we do not need this *)
+      satisfies_axioms M -> (* we do not need this *)
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)) ->
         Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
@@ -143,7 +154,7 @@ Section definedness.
   Proof. auto. Qed.
 
   Lemma definedness_empty_2 : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
         Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
@@ -155,7 +166,7 @@ Section definedness.
   Qed.
 
   Lemma definedness_not_empty_2 : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_defined phi))
@@ -170,7 +181,7 @@ Section definedness.
   Qed.
 
   Lemma totality_not_full : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
           (@ext_valuation (sig) M evar_val svar_val phi)
@@ -197,7 +208,7 @@ Section definedness.
   Qed.
 
   Lemma totality_full : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val phi)
@@ -221,7 +232,7 @@ Section definedness.
   Qed.
 
   Lemma totality_result_empty : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
@@ -237,7 +248,7 @@ Section definedness.
   Qed.
 
   Lemma totality_result_nonempty : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~Same_set (Domain M)
          (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
@@ -252,7 +263,7 @@ Section definedness.
   Qed.
   
   Lemma both_subseteq_imp_eq : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
@@ -280,7 +291,7 @@ Section definedness.
   Qed.
 
   Lemma equal_impl_both_subseteq : forall (M : @Model (sig)),        
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
@@ -307,7 +318,7 @@ Section definedness.
   Qed.
 
   Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
@@ -332,7 +343,7 @@ Section definedness.
   Qed.
 
   Lemma interpr_subseteq_impl_subseteq : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Included (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val phi1)
@@ -355,7 +366,7 @@ Section definedness.
   Qed.
   
   Lemma equal_impl_interpr_same : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
@@ -374,7 +385,7 @@ Section definedness.
   Qed.
 
   Lemma interpr_same_impl_equal : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val phi1)
@@ -391,7 +402,7 @@ Section definedness.
   Qed.
 
   Lemma equal_refl : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_equal phi phi))
@@ -403,7 +414,7 @@ Section definedness.
   Qed.
 
   Lemma equal_sym : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
@@ -420,7 +431,7 @@ Section definedness.
   Qed.
 
   Lemma equal_trans : forall (M : @Model (sig)),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
                  (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
@@ -440,7 +451,7 @@ Section definedness.
   Qed.
 
   Lemma free_evar_in_patt_1 : forall (M : @Model sig),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x) ->
         Same_set (Domain M)
@@ -460,7 +471,7 @@ Section definedness.
   
 
   Lemma free_evar_in_patt_2 : forall (M : @Model sig),
-      satisfies_model M definedness_axiom ->
+      satisfies_axioms M ->
       forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         Same_set (Domain M)
                  (@ext_valuation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
