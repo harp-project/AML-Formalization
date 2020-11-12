@@ -1,7 +1,5 @@
 (* In this module we define the definedness symbol and use it to build derived notions
-   like totality and equality. The definitions are reusable from other modules,
-   as is demonstrated in the module `test_Definedness` (TODO).
-   TODO: include the axiom for definedness and prove some theorems about it.
+   like totality and equality.
  *)
 Require Import locally_nameless.
 Require Import ML.Signature.
@@ -441,7 +439,7 @@ Section definedness.
     eauto using Same_set_transitive.
   Qed.
 
-  Lemma free_evar_in_patt : forall (M : @Model sig),
+  Lemma free_evar_in_patt_1 : forall (M : @Model sig),
       satisfies_model M definedness_axiom ->
       forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x) ->
@@ -461,6 +459,24 @@ Section definedness.
   Qed.
   
 
-  Search patt_defined.
+  Lemma free_evar_in_patt_2 : forall (M : @Model sig),
+      satisfies_model M definedness_axiom ->
+      forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
+        Same_set (Domain M)
+                 (@ext_valuation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
+                 (Full_set (Domain M)) ->
+        In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x).
+  Proof.
+    intros.
+    unfold patt_in in H0.
+    apply (definedness_not_empty_2 _ H) in H0.
+    apply Not_Empty_Contains_Elements in H0.
+    destruct H0.
+    rewrite -> ext_valuation_and_simpl in H0.
+    destruct H0.
+    rewrite -> ext_valuation_free_evar_simpl in H0.
+    unfold In in H0. inversion H0. subst. assumption.
+  Qed.
+  
   
 End definedness.
