@@ -254,16 +254,41 @@ Module LTL.
       @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
     .
 
-    Locate "/\". Locate "-->".
-    (* TODO add scopes!!! *)
-    Notation "A → B" := (patt_imp A B) (at level 90, right associativity, B at level 200).
-    Notation "$S" := (evar S) (at level 50).
-    Notation "#S" := (svar S) (at level 50).
-    
+    Notation "A → B" := (patt_imp A B) (at level 90, right associativity, B at level 200) : ml_scope.
+    Notation "A /\ B" := (patt_and A B) (at level 80, right associativity) : ml_scope.
+    Notation "A ‌\/ B" := (patt_or A B) (at level 85, right associativity) : ml_scope.
+    Notation "∃, A" := (ex, A) (at level 55) : ml_scope.
+    Notation "μ, A" := (mu, A) (at level 55) : ml_scope.
+    Notation "A == B" := (patt_equal A B) (at level 100) : ml_scope.
+    Notation "A ∈ B" := (patt_in A B) (at level 70) : ml_scope.
+    Notation "A ⊆ B" := (patt_subseteq A B) (at level 70) : ml_scope.
+
+    Notation "[[ A ]]" := (inhabitant_set A) : ml_scope.
+
+    (* Element variables - free *)
+    Notation x := (evar "x").
+    Notation y := (evar "y").
+    Notation z := (evar "z").
+
+    (* Element variables - bound *)
+    Notation b0 := (patt_bound_evar 0).
+    Notation b1 := (patt_bound_evar 1).
+
+    (* Set variables - bound *)
+    Notation B0 := (patt_bound_svar 0).
+
+    Notation InitialState := (sym sym_SortInitialState).
+    Notation State := (sym sym_SortState).
 
     Definition next (phi : Pattern) : Pattern :=
       patt_app (sym sym_next) phi.
+    
+    Definition prev (phi : Pattern) : Pattern :=
+      patt_app (sym sym_prev) phi.
+    
+    Notation "∘ X" := (next X) (at level 50) : ml_scope.
 
+    Check patt_subseteq.
     
     Inductive AxiomName :=
     | AxImportedDefinedness (name : Definedness.AxiomName) (* imports axioms from the Definedness module *)
@@ -280,7 +305,28 @@ Module LTL.
     Definition axiom(name : AxiomName) : @Pattern signature :=
       match name with
       | AxImportedDefinedness name' => Definedness.axiom name'
-      | AxPrev => patt_equal (evar "x") (patt_and (ex, patt_bound_evar 0) (patt_in (evar "x") (next (patt_bound_evar 0))))
+                                                         
+      | AxPrev
+        => (prev x == (∃, b0 /\ (x ∈ ∘b0 )))%ml
+                                            
+      | AxInitialState
+        => (∃,([[ InitialState ]] == b0))%ml
+                                         
+      | AxState
+        => ([[ State ]] == (μ, ([[ InitialState ]] or (prev B0))))%ml
+
+      | AxInf
+        => ([[ State ]] ⊆ ∘ ([[ State ]]))%ml
+
+      | AxNextOut
+        => ((∘(¬([[ State ]]))) ⊆ (¬ [[ State ]]))%ml
+
+      | AxNextPFun
+        => patt_bott (* TODO *)
+
+      | AxNextInj
+        => patt_bott (* TODO *)
+             
       | _ => patt_bott
       end.
 
