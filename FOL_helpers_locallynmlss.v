@@ -1,6 +1,7 @@
 Require Import ML.Signature.
 Require Export locally_nameless.
 
+Open Scope ml_scope.
 Section FOL_helpers.
 
   Context {Σ : Signature}.

@@ -872,25 +872,28 @@ Admitted.
 End ml_syntax_semantics.
 
 Module MLNotations.
+  Declare Scope ml_scope.
+  Delimit Scope ml_scope with ml.
   (* TODO: change Bot and Top to unicode symbols *)
-  Notation "a $ b" := (patt_app a b) (at level 50, left associativity).
-  Notation "'Bot'" := patt_bott.
+  Notation "a $ b" := (patt_app a b) (at level 50, left associativity) : ml_scope.
+  Notation "'Bot'" := patt_bott : ml_scope.
   Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
-                                         b at level 200).
-  Notation "'ex' , phi" := (patt_exists phi) (at level 55).
-  Notation "'mu' , phi" := (patt_mu phi) (at level 55).
+                                         b at level 200) : ml_scope.
+  Notation "'ex' , phi" := (patt_exists phi) (at level 55) : ml_scope.
+  Notation "'mu' , phi" := (patt_mu phi) (at level 55) : ml_scope.
 
-  Notation "¬ a"     := (patt_not   a  ) (at level 75).
-  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity).
-  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity).
-  Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity).
-  Notation "'Top'" := patt_top.
-  Notation "'all' , phi" := (patt_forall phi) (at level 55).
-  Notation "'nu' , phi" := (patt_nu phi) (at level 55).
+  Notation "¬ a"     := (patt_not   a  ) (at level 75) : ml_scope.
+  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
+  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
+  Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
+  Notation "'Top'" := patt_top : ml_scope.
+  Notation "'all' , phi" := (patt_forall phi) (at level 55) : ml_scope.
+  Notation "'nu' , phi" := (patt_nu phi) (at level 55) : ml_scope.
 End MLNotations.
 
 Section ml_proof_system.
   Import MLNotations.
+  Open Scope ml_scope.
   
   Context {signature : Signature}.
 (* Proof system for AML ref. snapshot: Section 3 *)

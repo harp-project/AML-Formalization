@@ -193,6 +193,7 @@ Module test_2.
 End test_2.
 
 Module LTL.
+  Import MLNotations.
   Import Theories.Definedness.
   Import Theories.Sorts.
 
@@ -252,6 +253,13 @@ Module LTL.
     Let svar (sname : string) : @Pattern signature :=
       @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
     .
+
+    Locate "/\". Locate "-->".
+    (* TODO add scopes!!! *)
+    Notation "A → B" := (patt_imp A B) (at level 90, right associativity, B at level 200).
+    Notation "$S" := (evar S) (at level 50).
+    Notation "#S" := (svar S) (at level 50).
+    
 
     Definition next (phi : Pattern) : Pattern :=
       patt_app (sym sym_next) phi.

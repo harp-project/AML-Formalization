@@ -17,6 +17,7 @@ Require Export Ensembles_Ext.
 
 
 Import MLNotations.
+Open Scope ml_scope.
 
 Section soundness_lemmas.
 

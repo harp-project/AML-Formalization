@@ -5,8 +5,9 @@ Require Import locally_nameless.
 Require Import ML.Signature.
 Require Import Coq.Logic.Classical_Prop.
 Import MLNotations.
-
 Import ML.Signature.
+
+Open Scope ml_scope.
 
 (* We have only one symbol *)
 Inductive Symbols := definedness.
