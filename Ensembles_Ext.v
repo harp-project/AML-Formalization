@@ -150,6 +150,34 @@ Proof.
   * contradiction.
 Qed.
 
+Lemma Union_Symmetric {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Union T S1 S2) (Union T S2 S1).
+Proof.
+  intros.
+  constructor; unfold Included; unfold In; intros; inversion H;
+    try (apply Union_intror; assumption); try (apply Union_introl; assumption).
+Qed.
+
+Lemma Intersection_Symmetric {T : Type} : forall S1 S2 : Ensemble T,
+  Same_set T (Intersection T S1 S2) (Intersection T S2 S1).
+Proof.
+  intros; constructor; constructor; inversion H; assumption.
+Qed.
+
+Lemma Union_Transitive {T : Type} : forall S1 S2 S3 : Ensemble T,
+  Same_set T (Union T (Union T S1 S2) S3) (Union T S1 (Union T S2 S3)).
+Proof.
+  intros. constructor; unfold Included; unfold In; intros; inversion H.
+  inversion H0.
+  apply Union_introl. exact H2.
+  apply Union_intror. apply Union_introl. exact H2.
+  apply Union_intror. apply Union_intror. exact H0.
+  apply Union_introl. apply Union_introl. exact H0.
+  inversion H0.
+  apply Union_introl. apply Union_intror. exact H2.
+  apply Union_intror. exact H2.
+Qed.
+
 Lemma Union_Compl_Fullset {T : Type} : forall S : Ensemble T,
   Same_set T (Union T (Complement T S) S) (Full_set T).
 Proof.
@@ -183,6 +211,22 @@ Proof.
 unfold Same_set. unfold Included. intros. apply conj;intros.
 * inversion H. exact H0. inversion H0.
 * unfold In in *. eapply Union_introl. exact H.
+Qed.
+
+Lemma Intersection_Full_r {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T (Full_set T) A) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H1. 
+* unfold In in *. constructor. constructor. exact H.
+Qed.
+
+Lemma Intersection_Full_l {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T A (Full_set T)) A.
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H0.
+* unfold In in *. constructor. exact H. constructor.
 Qed.
 
 Lemma Compl_Compl_Ensembles : forall T :Type, forall A :Ensemble T,
@@ -335,6 +379,25 @@ Proof.
     + unfold Complement in H2. unfold In in *. contradiction.
     + unfold Complement in H2. unfold In in *. contradiction.
   - rewrite (Same_set_to_eq (Compl_Union_Compl_Intes_Ensembles_alt T L R)) in H. assumption.
+Qed.
+
+(* (L inter R) U ~L = R U ~L *)
+Lemma Intes_Union_Compl_Ensembles:
+  forall (T : Type) (L R : Ensemble T),
+  Same_set T (Union T (Intersection T L R) (Complement T L)) (Union T R (Complement T L)).
+Proof.
+  intros. constructor.
+  * unfold Included. intros. inversion H; subst. apply Intersection_is_and in H0.
+    apply Union_introl; apply H0.
+    apply Union_intror; apply H0.
+  * unfold Included. intros. inversion H; subst.
+    assert (Union T (Complement T L) L = Full_set T).
+    apply Same_set_to_eq; apply Union_Compl_Fullset.
+    assert (In T (Full_set T) x) by constructor. rewrite <- H1 in H2.
+    inversion H2; subst.
+    apply Union_intror. exact H3.
+    apply Union_introl. constructor; assumption.
+    apply Union_intror. exact H0.
 Qed.
 
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
@@ -500,3 +563,36 @@ Proof.
   pose (H2 x H0). inversion e.
 Qed.
 
+Lemma Same_set_Full_set : forall {T : Type} (S : Ensemble T),
+    Included T (Full_set T) S -> Same_set T (Full_set T) S.
+Proof.
+  intros. unfold Same_set.
+  split. assumption.
+  unfold Included. intros. constructor.
+Qed.
+
+Lemma Included_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
+    Included T S1 S2 -> Included T S2 S3 -> Included T S1 S3.
+Proof.
+  intros. unfold Included in *. auto.
+Qed.
+
+Lemma Same_set_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
+    Same_set T S1 S2 -> Same_set T S2 S3 -> Same_set T S1 S3.
+Proof.
+  intros. unfold Same_set in *. firstorder using Included_transitive.
+Qed.
+
+Lemma Intersection_eq_Full :
+  forall {T : Type} (S1 S2 : Ensemble T),
+    Same_set T (Intersection T S1 S2) (Full_set T) -> (Same_set T S1 (Full_set T) /\ Same_set T S2 (Full_set T)).
+Proof.
+  intros.
+  unfold Same_set in *.
+  destruct H as [_ H]. unfold Included in *.
+  split; split; intros; specialize (H x).
+  + constructor.
+  + apply H in H0. inversion H0. subst. assumption.
+  + constructor.
+  + apply H in H0. inversion H0. subst. assumption.
+Qed.
