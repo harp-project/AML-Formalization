@@ -2,3 +2,5 @@
  (name MatchingLogic)
  (package coq-matching-logic)
  (synopsis "Matching Logic in Coq"))
+
+(include_subdirs qualified)

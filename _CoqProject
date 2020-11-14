@@ -10,4 +10,4 @@ src/AML_soundness.v
 src/FOL_helpers_locallynmlss.v
 src/Theories/Definedness.v
 src/Theories/Sorts.v
-src/tests/TEST_LocallyNameless.v
+src/Tests/TEST_LocallyNameless.v
