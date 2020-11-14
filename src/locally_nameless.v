@@ -539,12 +539,12 @@ Equations ext_valuation_aux {m : Model}
     Ensembles_Ext.mu
       (fun S => ext_valuation_aux evar_val (update_svar_val X S svar_val)
                                   (svar_open 0 X p')).
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. apply signature. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. lia. apply signature. Defined.
+Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply signature. Defined.
 *)
 
 Section semantics.
