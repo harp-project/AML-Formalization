@@ -1,8 +1,8 @@
--R . HARP.AML
-Ensembles_Ext.v
+-R src MatchingLogic
+src/Ensembles_Ext.v
 #AML_definition.v
-extralibrary.v
-locally_nameless.v
+src/extralibrary.v
+src/locally_nameless.v
 #FOL_helpers.v
 #MSFOL_definition.v
 #NAT_definition.v
@@ -13,13 +13,13 @@ locally_nameless.v
 #TEST_Function_and_Predicate.v
 # Does not compile
 #TEST_Context.v
-Lattice.v
-ML/Signature.v
+src/Lattice.v
+src/ML/Signature.v
 #ML/ConcreteSignature.v
-ML/DefaultVariables.v
-AML_soundness_lemmas.v
-AML_soundness.v
-FOL_helpers_locallynmlss.v
-Theories/Definedness.v
-Theories/Sorts.v
-tests/TEST_LocallyNameless.v
+src/ML/DefaultVariables.v
+src/AML_soundness_lemmas.v
+src/AML_soundness.v
+src/FOL_helpers_locallynmlss.v
+src/Theories/Definedness.v
+src/Theories/Sorts.v
+src/tests/TEST_LocallyNameless.v
