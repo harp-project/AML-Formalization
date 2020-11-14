@@ -1,8 +1,9 @@
-Require Import locally_nameless.
-Require Import Signature.
 Require Import Coq.Logic.Classical_Prop.
+
+Require Import MatchingLogic.locally_nameless.
+Require Import MatchingLogic.Signature.
+Require Import MatchingLogic.Theories.Definedness.
 Import MLNotations.
-Require Import Theories.Definedness.
 
 Section sorts.
 
