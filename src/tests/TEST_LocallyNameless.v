@@ -295,8 +295,6 @@ Module LTL.
     
     Notation "∘ X" := (next X) (at level 50) : ml_scope.
 
-    Check patt_subseteq.
-    
     Inductive AxiomName :=
     | AxImportedDefinedness (name : Definedness.AxiomName) (* imports axioms from the Definedness module *)
     | AxPrev

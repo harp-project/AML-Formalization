@@ -511,8 +511,6 @@ Instance wf_pattern_lt : WellFounded (@pattern_lt).
 apply pattern_lt_well_founded.
 Defined.
 
-Check sym_interp.
-
 Equations ext_valuation_aux {m : Model}
           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
           (p : Pattern) : Power (Domain m)
@@ -850,7 +848,6 @@ Proof.
 Qed.
 
 (* TODO: forall, nu *)
-Check ext_valuation_ex_simpl.
 
 (* TODO prove *)
 Lemma ext_valuation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
