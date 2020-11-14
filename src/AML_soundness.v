@@ -2,8 +2,8 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
-Require Import ML.DefaultVariables.
-Require Import ML.Signature.
+Require Import DefaultVariables.
+Require Import Signature.
 Require Export AML_soundness_lemmas.
 
 Require Import Coq.micromega.Lia.

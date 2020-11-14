@@ -2,6 +2,7 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import String.
+Require Import Coq.micromega.Lia.
 
 Require Import Signature.
 Require Import extralibrary.
@@ -98,7 +99,7 @@ Proof.
     elim H; intros. subst x. apply Zmax1. 
     apply Z.le_trans with (maxid l0). auto. apply Zmax2.
   replace n with (k, 1 + maxid l)%Z. 
-  split. red; intro. generalize (H _ H0). unfold ident, snd. omega.
+  split. red; intro. generalize (H _ H0). unfold ident, snd. lia.
   reflexivity.
   unfold n; reflexivity.
 Qed.
@@ -139,7 +140,7 @@ Proof.
     elim H; intros. subst x. apply Zmax1. 
     apply Z.le_trans with (maxid l0). auto. apply Zmax2.
   replace n with (k, 1 + maxid l)%Z. 
-  split. red; intro. generalize (H _ H0). unfold ident, snd. omega.
+  split. red; intro. generalize (H _ H0). unfold ident, snd. lia.
   reflexivity.
   unfold n; reflexivity.
 Qed.

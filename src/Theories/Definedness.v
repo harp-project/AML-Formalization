@@ -1,11 +1,10 @@
 (* In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
-Require Import locally_nameless.
-Require Import ML.Signature.
 Require Import Coq.Logic.Classical_Prop.
+Require Import MatchingLogic.locally_nameless.
+Require Import MatchingLogic.Signature.
 Import MLNotations.
-Import ML.Signature.
 
 Open Scope ml_scope.
 

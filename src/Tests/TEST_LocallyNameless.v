@@ -1,9 +1,11 @@
-Require Import locally_nameless.
-Require Import ML.Signature.
-Require Import ML.DefaultVariables.
 Require Import Coq.Logic.Classical_Prop.
-Require Import Theories.Definedness.
-Require Import Theories.Sorts.
+
+Require Import MatchingLogic.locally_nameless.
+Require Import MatchingLogic.Signature.
+Require Import MatchingLogic.DefaultVariables.
+Require Import MatchingLogic.Theories.Definedness.
+Require Import MatchingLogic.Theories.Sorts.
+
 Import MLNotations.
 
 (* In this module we show how to define a signature and build patterns *)
@@ -295,8 +297,6 @@ Module LTL.
     
     Notation "∘ X" := (next X) (at level 50) : ml_scope.
 
-    Check patt_subseteq.
-    
     Inductive AxiomName :=
     | AxImportedDefinedness (name : Definedness.AxiomName) (* imports axioms from the Definedness module *)
     | AxPrev

@@ -3,6 +3,7 @@
 Require Import Arith.
 Require Import ZArith.
 Require Import List.
+Require Import Coq.micromega.Lia.
 
 (** ** Tactics *)
 
@@ -28,8 +29,8 @@ Ltac decEq :=
       cut (A <> B); [intro; congruence | try discriminate]
   end.
 
-Ltac omegaContradiction :=
-  cut False; [contradiction|omega].
+Ltac liaContradiction :=
+  cut False; [contradiction|lia].
 
 Ltac caseEq name :=
   generalize (refl_equal name); pattern name at -1 in |- *; case name.
@@ -139,8 +140,8 @@ Proof.
   intros P H.
   assert (forall x, forall y, y < x -> P y).
   induction x; intros.
-  omegaContradiction.
-  apply H. intros. apply IHx. omega.
-  intro. apply H0 with (S x). omega.
+  liaContradiction.
+  apply H. intros. apply IHx. lia.
+  intro. apply H0 with (S x). lia.
 Qed.
 

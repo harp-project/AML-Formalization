@@ -1,4 +1,4 @@
-Require Import ML.Signature.
+Require Import Signature.
 Require Export locally_nameless.
 
 Open Scope ml_scope.
@@ -29,7 +29,6 @@ Proof.
       * destruct IHC. exact H1.
 Qed.
 
-Check subst_ctx.
 Lemma wp_sctx (C : Application_context) (A : Pattern) :
   well_formed_positive A -> @well_formed_positive Σ (subst_ctx C A).
 Proof.
@@ -43,7 +42,6 @@ Proof.
     + unfold well_formed in Prf. destruct Prf. exact H0.
     + exact IHC.
 Qed.
-Check subst_ctx.
 
 Lemma wc_sctx (C : Application_context) (A : Pattern) :
   well_formed_closed_aux A 0 0 -> @well_formed_closed_aux Σ (subst_ctx C A) 0 0.
@@ -89,7 +87,6 @@ match goal with
 | _                => fail
 end. 
 
-Check ML_proof_system.
 Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 Import MLNotations.
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :

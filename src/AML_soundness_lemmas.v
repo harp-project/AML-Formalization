@@ -9,7 +9,7 @@ From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
 
 Require Import extralibrary.
-Require Import ML.Signature.
+Require Import Signature.
 Require Export locally_nameless.
 Require Import Lattice.
 

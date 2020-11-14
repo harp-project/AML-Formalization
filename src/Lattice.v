@@ -203,7 +203,6 @@ Proposition GreatestFixpoint_greaterThanPostfixpoint:
 Proof.
   intros.
   unfold GreatestFixpointOf.
-  Print isJoin.
   remember (@join_isJoin A OS L). clear Heqi.
   unfold isJoin in i.
   remember (i (PostfixpointsOf f)). clear Heql.
@@ -290,7 +289,6 @@ Proof.
   intros.
   rewrite <- GreatestFixpointOnDualIsLeastFixpoint.
   apply GreatestFixpoint_fixpoint.
-  Check MonotonicFunction_dual.
   apply MonotonicFunction_dual.
   assumption.
 Qed.

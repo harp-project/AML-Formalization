@@ -13,7 +13,7 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 Require Import Lattice.
-Require Import ML.Signature.
+Require Import Signature.
 
 (** ** Matching Logic Syntax *)
 Section ml_syntax_semantics.
@@ -511,8 +511,6 @@ Instance wf_pattern_lt : WellFounded (@pattern_lt).
 apply pattern_lt_well_founded.
 Defined.
 
-Check sym_interp.
-
 Equations ext_valuation_aux {m : Model}
           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
           (p : Pattern) : Power (Domain m)
@@ -539,12 +537,12 @@ Equations ext_valuation_aux {m : Model}
     Ensembles_Ext.mu
       (fun S => ext_valuation_aux evar_val (update_svar_val X S svar_val)
                                   (svar_open 0 X p')).
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. omega. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. omega. apply signature. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. omega. apply signature. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. lia. Defined.
+Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. lia. apply signature. Defined.
+Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply signature. Defined.
 *)
 
 Section semantics.
@@ -850,7 +848,6 @@ Proof.
 Qed.
 
 (* TODO: forall, nu *)
-Check ext_valuation_ex_simpl.
 
 (* TODO prove *)
 Lemma ext_valuation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
