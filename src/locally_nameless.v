@@ -13,7 +13,7 @@ Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
 Require Import Lattice.
-Require Import ML.Signature.
+Require Import Signature.
 
 (** ** Matching Logic Syntax *)
 Section ml_syntax_semantics.

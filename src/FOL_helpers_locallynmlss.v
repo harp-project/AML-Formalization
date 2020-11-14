@@ -1,4 +1,4 @@
-Require Import ML.Signature.
+Require Import Signature.
 Require Export locally_nameless.
 
 Open Scope ml_scope.

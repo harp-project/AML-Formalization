@@ -1,6 +1,6 @@
 Require Import locally_nameless.
-Require Import ML.Signature.
-Require Import ML.DefaultVariables.
+Require Import Signature.
+Require Import DefaultVariables.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Theories.Definedness.
 Require Import Theories.Sorts.

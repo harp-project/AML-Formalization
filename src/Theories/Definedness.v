@@ -2,10 +2,9 @@
    like totality and equality.
  *)
 Require Import locally_nameless.
-Require Import ML.Signature.
+Require Import Signature.
 Require Import Coq.Logic.Classical_Prop.
 Import MLNotations.
-Import ML.Signature.
 
 Open Scope ml_scope.
 
