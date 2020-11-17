@@ -499,6 +499,146 @@ Proof.
 Qed.  
 
 Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
+
+(* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
+Definition wfc_body_ex phi  := forall x, well_formed_closed (evar_open 0 x phi).
+
+(*Helper lemma for wf_ex_to_wf_body *)
+Lemma wfc_aux_body_ex_imp1:
+forall phi n n' x,
+well_formed_closed_aux phi (S n) n'
+->
+well_formed_closed_aux (evar_open n x phi) n n'.
+Proof.
+  - induction phi; intros; try lia; auto.
+  * simpl. inversion H.
+    -- simpl. rewrite Nat.eqb_refl. simpl. trivial.
+    -- subst. rewrite Nat.le_succ_l in H1. destruct (n =? n0) eqn:D1.
+      + apply Nat.eqb_eq in D1. rewrite D1 in H1. lia.
+      + simpl. auto.
+  * simpl in H. destruct H. firstorder.
+  * firstorder.
+  * firstorder.
+  * firstorder.
+Qed.
+
+(*Helper lemma for wf_body_to_wf_ex*)
+Lemma wfc_aux_body_ex_imp2:
+forall phi n n' x,
+well_formed_closed_aux (evar_open n x phi) n n'
+->
+well_formed_closed_aux phi (S n) n'.
+Proof.
+  induction phi; firstorder.
+  - simpl. simpl in H. destruct (n =? n0) eqn:P.
+    + apply beq_nat_true in P. rewrite P. lia.
+    + simpl in H. lia.
+Qed.
+
+Lemma wfc_aux_body_iff: 
+forall phi n n' x,
+well_formed_closed_aux phi (S n) n'
+<->
+well_formed_closed_aux (evar_open n x phi) n n'.
+Proof.
+  split.
+  apply wfc_aux_body_ex_imp1.
+  apply wfc_aux_body_ex_imp2.
+Qed.
+
+(*If (ex, phi) is closed, then its body is closed too*)
+Lemma wfc_ex_to_wfc_body:
+forall phi, well_formed_closed (patt_exists phi) -> wfc_body_ex phi.
+Proof.
+  intros.
+  unfold wfc_body_ex. intros.
+  unfold well_formed_closed in *. simpl in H.
+  apply wfc_aux_body_ex_imp1. auto.
+Qed.
+
+(*If phi is a closed body, then (ex, phi) is closed too*)
+Lemma wfc_body_to_wfc_ex:
+forall phi (x : evar_name), wfc_body_ex phi -> well_formed_closed (patt_exists phi).
+Proof.
+  intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
+  unfold well_formed_closed in H. apply (wfc_aux_body_ex_imp2 phi 0 0 x) in H. exact H.
+Qed.
+
+(* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
+(*Conclusion*)
+Lemma wfc_body_wfc_ex_iff: 
+  forall phi (x : evar_name),
+  well_formed_closed (patt_exists phi) <-> wfc_body_ex phi.
+Proof.
+  split.
+  - apply wfc_ex_to_wfc_body.
+  - apply (wfc_body_to_wfc_ex phi x).
+Qed.
+
+(*Similarly to the section above but with mu*)
+Definition wfc_body_mu phi := forall X, well_formed_closed (svar_open 0 X phi).
+
+(*Helper for wfc_mu_to_wfc_body*)
+Lemma wfc_aux_body_mu_imp1:
+forall phi n n' X,
+well_formed_closed_aux phi n (S n')
+->
+well_formed_closed_aux (svar_open n' X phi) n n'.
+Proof.
+  - induction phi; intros; try lia; auto.
+    * simpl. inversion H.
+    -- simpl. rewrite Nat.eqb_refl. simpl. trivial.
+    -- subst. rewrite Nat.le_succ_l in H1. destruct (n =? n') eqn:D1.
+      + apply Nat.eqb_eq in D1. rewrite D1 in H1. lia.
+      + simpl. auto. 
+    * simpl in H. destruct H. firstorder.
+    * firstorder.
+    * firstorder.
+    * firstorder.
+Qed.
+
+(*Helper for *)
+Lemma wfc_aux_body_mu_imp2:
+forall phi n n' X,
+well_formed_closed_aux (svar_open n' X phi) n n'
+->
+well_formed_closed_aux phi n (S n').
+Proof.
+  induction phi; firstorder.
+  - simpl. simpl in H. destruct (n =? n') eqn:P.
+    + apply beq_nat_true in P. rewrite P. lia.
+    + simpl in H. lia.
+Qed.
+
+(*If (mu, phi) is closed, then its body is closed too*)
+Lemma wfc_mu_to_wfc_body:
+forall phi, well_formed_closed (patt_mu phi) -> wfc_body_mu phi.
+Proof.
+  intros. 
+  unfold wfc_body_mu. intros.
+  unfold well_formed_closed in *. simpl in H.
+  apply wfc_aux_body_mu_imp1. auto.
+Qed.
+
+(*If phi is a closed body, then (mu, phi) is closed too*)
+Lemma wfc_body_to_wfc_mu:
+forall phi (X : svar_name), wfc_body_mu phi -> well_formed_closed (patt_mu phi).
+Proof.
+  intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
+  unfold well_formed_closed in H. apply (wfc_aux_body_mu_imp2 phi 0 0 X) in H. exact H.
+Qed.
+
+(* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
+(*Conclusion*)
+Lemma wfc_body_wfc_mu_iff: 
+  forall phi (X : svar_name),
+  well_formed_closed (patt_mu phi) <-> wfc_body_mu phi.
+Proof.
+  split.
+  - apply wfc_mu_to_wfc_body.
+  - apply (wfc_body_to_wfc_mu phi X).
+Qed.
+
 (*
 Definition pattern_lt (p1 p2 : Pattern) :=
   size p1 < size p2.
