@@ -501,7 +501,8 @@ Qed.
 Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
-Definition wfc_body_ex phi  := forall x, well_formed_closed (evar_open 0 x phi).
+Definition wfc_body_ex phi  := forall x, 
+  ~List.In x (free_evars phi) -> well_formed_closed (evar_open 0 x phi).
 
 (*Helper lemma for wf_ex_to_wf_body *)
 Lemma wfc_aux_body_ex_imp1:
@@ -525,9 +526,9 @@ Qed.
 (*Helper lemma for wf_body_to_wf_ex*)
 Lemma wfc_aux_body_ex_imp2:
 forall phi n n' x,
-well_formed_closed_aux (evar_open n x phi) n n'
-->
-well_formed_closed_aux phi (S n) n'.
+  well_formed_closed_aux (evar_open n x phi) n n'
+  ->
+  well_formed_closed_aux phi (S n) n'.
 Proof.
   induction phi; firstorder.
   - simpl. simpl in H. destruct (n =? n0) eqn:P.
@@ -561,7 +562,9 @@ Lemma wfc_body_to_wfc_ex:
 forall phi (x : evar_name), wfc_body_ex phi -> well_formed_closed (patt_exists phi).
 Proof.
   intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
-  unfold well_formed_closed in H. apply (wfc_aux_body_ex_imp2 phi 0 0 x) in H. exact H.
+  unfold well_formed_closed in H.
+  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (variables signature) (free_evars phi))) in H. exact H.
+  apply (evar_fresh_is_fresh (variables signature)).
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
@@ -576,7 +579,8 @@ Proof.
 Qed.
 
 (*Similarly to the section above but with mu*)
-Definition wfc_body_mu phi := forall X, well_formed_closed (svar_open 0 X phi).
+Definition wfc_body_mu phi := forall X, 
+  ~List.In X (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
 
 (*Helper for wfc_mu_to_wfc_body*)
 Lemma wfc_aux_body_mu_imp1:
@@ -625,7 +629,9 @@ Lemma wfc_body_to_wfc_mu:
 forall phi (X : svar_name), wfc_body_mu phi -> well_formed_closed (patt_mu phi).
 Proof.
   intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
-  unfold well_formed_closed in H. apply (wfc_aux_body_mu_imp2 phi 0 0 X) in H. exact H.
+  unfold well_formed_closed in H.
+  apply (wfc_aux_body_mu_imp2 phi 0 0 (svar_fresh (variables signature) (free_svars phi))) in H. exact H.
+  apply (svar_fresh_is_fresh (variables signature)).
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
