@@ -444,7 +444,32 @@ with negative_occurrence_db : db_index -> Pattern -> Prop :=
    negative_occurrence_db n (patt_mu phi)
 .
 
+(* Lemmas about opening and positive occurrence *)
+Lemma positive_negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+    (*le db1 db2 ->*)
+    (positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi))
+    /\ (negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi)).
+Proof.
+  induction phi; intros; simpl; split; intros; try constructor; try inversion H; subst; try firstorder.
+  * destruct (n =? db2); intros. constructor. assumption.
+  * destruct (n =? db2); intros. constructor. assumption.
+Qed.
 
+Lemma positive_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+    positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi).
+Proof.
+  intros.
+  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
+  firstorder.
+Qed.
+
+Lemma negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+    negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi).
+Proof.
+  intros.
+  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
+  firstorder.
+Qed.
 
 Fixpoint well_formed_positive (phi : Pattern) : Prop :=
   match phi with
@@ -643,6 +668,42 @@ Proof.
   split.
   - apply wfc_mu_to_wfc_body.
   - apply (wfc_body_to_wfc_mu phi X).
+Qed.
+
+(* Similarly with positiveness *)
+Definition wfp_body_ex phi := forall x,
+  ~List.In x (free_evars phi) -> well_formed_positive (evar_open 0 x phi).
+
+Lemma wfp_evar_open : forall phi x n,
+  well_formed_positive phi ->
+  well_formed_positive (evar_open n x phi).
+Proof.
+  induction phi; firstorder.
+  - intros. simpl. destruct (n =? n0) eqn:P.
+    + simpl. trivial.
+    + simpl. trivial.
+  - simpl in *. firstorder. apply positive_occurrence_db_evar_open. assumption.
+Qed.
+
+Lemma wfp_ex_to_wfp_body: forall phi,
+  well_formed_positive (patt_exists phi) ->
+  wfp_body_ex phi.
+Proof.
+  unfold wfp_body_ex. intros. apply wfp_evar_open. simpl in H. assumption.
+Qed.
+
+(* Connection between bodies and well-formedness *)
+Definition wf_body_ex phi := forall x, 
+  ~List.In x (free_evars phi) -> well_formed (evar_open 0 x phi).
+
+(* This might be useful in soundness cases prop_ex_left/right *)
+Lemma wf_ex_to_wf_body: forall phi,
+  well_formed (patt_exists phi) ->
+  wf_body_ex phi.
+Proof.
+  unfold wf_body_ex. intros. unfold well_formed in *. destruct H. split.
+  - apply (wfp_ex_to_wfp_body phi H). assumption.
+  - apply (wfc_ex_to_wfc_body phi H1). assumption.
 Qed.
 
 (*

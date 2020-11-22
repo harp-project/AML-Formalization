@@ -306,32 +306,6 @@ Proof.
   destruct P as [_ P]. exact P.
 Qed.
 
-Lemma positive_negative_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
-    (*le db1 db2 ->*)
-    (positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi))
-    /\ (negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi)).
-Proof.
-  induction phi; intros; simpl; split; intros; try constructor; try inversion H; subst; try firstorder.
-  * destruct (n =? db2); intros. constructor. assumption.
-  * destruct (n =? db2); intros. constructor. assumption.
-Qed.
-
-Lemma positive_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
-    positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi).
-Proof.
-  intros.
-  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
-  firstorder.
-Qed.
-
-Lemma negative_occurrence_db_evar_open : forall (phi : @Pattern sig) (db1 db2 : db_index) (x : evar_name),
-    negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi).
-Proof.
-  intros.
-  pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
-  firstorder.
-Qed.
-
 Lemma evar_open_wfp : forall (sz : nat) (phi : Pattern),
     le (size phi) sz ->
     forall(n : db_index) (x : evar_name),
