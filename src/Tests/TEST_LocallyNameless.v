@@ -174,8 +174,8 @@ Module test_2.
       unfold axiom.
       unfold sym.
       unfold patt_defined.
-      rewrite -> ext_valuation_app_simpl.
-      rewrite -> ext_valuation_sym_simpl.
+      rewrite -> pattern_interpretation_app_simpl.
+      rewrite -> pattern_interpretation_sym_simpl.
       simpl.
       apply Same_set_symmetric. apply Same_set_Full_set.
       unfold Included. intros.
@@ -185,7 +185,7 @@ Module test_2.
       unfold pointwise_ext.
       exists (dom_custom m_def).
       unfold evar.
-      rewrite -> ext_valuation_free_evar_simpl.
+      rewrite -> pattern_interpretation_free_evar_simpl.
       exists (evar_val (find_fresh_evar_name {| id_ev := "x" |} nil)).
       firstorder. (* some magic to get rid of the first two conjuncts *)
       simpl. constructor.

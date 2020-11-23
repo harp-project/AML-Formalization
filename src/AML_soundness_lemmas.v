@@ -59,17 +59,17 @@ Lemma update_valuation_fresh {m : Model}
    (* Should be here, right? *)
    (* well_formed psi -> *)
   ~List.In v (free_evars psi) ->
-  ext_valuation (update_evar_val v c evar_val) svar_val psi x
-  = ext_valuation evar_val svar_val psi x.
+  pattern_interpretation (update_evar_val v c evar_val) svar_val psi x
+  = pattern_interpretation evar_val svar_val psi x.
 Proof.
 (* intro. generalize dependent x. generalize dependent c. 
   generalize dependent evar_val.
   generalize dependent svar_val. generalize dependent v.
   induction psi; try reflexivity.
-  - intros. repeat rewrite ext_valuation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar_name v x) eqn:P.
+  - intros. repeat rewrite pattern_interpretation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar_name v x) eqn:P.
     + rewrite e in H. destruct H. left. reflexivity.
     + reflexivity.
-  - intros. repeat rewrite ext_valuation_app_simpl. simpl in H. 
+  - intros. repeat rewrite pattern_interpretation_app_simpl. simpl in H. 
     pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
     pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold pointwise_ext. 
@@ -79,32 +79,32 @@ Proof.
         pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite e, e0 in H. exists x0, x1. assumption.
     + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0 ). 
         pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
-  - intros. repeat rewrite ext_valuation_imp_simpl. simpl in H. 
+  - intros. repeat rewrite pattern_interpretation_imp_simpl. simpl in H. 
     pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
     pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 v H1 svar_val evar_val c x). 
     pose (IHpsi2 v H2 svar_val evar_val c x). clear H0. clear H. unfold In. apply propositional_extensionality. split.
     + intro. pose (Union_is_or (Domain m) ((Complement (Domain m)
-                  (ext_valuation (update_evar_val v c evar_val) svar_val psi1))) 
-                  ((ext_valuation (update_evar_val v c evar_val) svar_val psi2)) x).
+                  (pattern_interpretation (update_evar_val v c evar_val) svar_val psi1))) 
+                  ((pattern_interpretation (update_evar_val v c evar_val) svar_val psi2)) x).
         destruct i. clear H3. pose (H0 H).
         pose (Union_is_or (Domain m) ((Complement (Domain m)
-        (ext_valuation evar_val svar_val psi1))) ((ext_valuation evar_val svar_val psi2)) x).
+        (pattern_interpretation evar_val svar_val psi1))) ((pattern_interpretation evar_val svar_val psi2)) x).
         destruct i. clear H3. apply H4. clear H4. destruct o.
       * unfold Complement, not, In in *. left. rewrite e in H3. assumption.
       * right. rewrite e0 in H3. assumption.
     + intro. pose (Union_is_or (Domain m) ((Complement (Domain m) 
-               (ext_valuation evar_val svar_val psi1))) 
-               ((ext_valuation evar_val svar_val psi2)) x).
+               (pattern_interpretation evar_val svar_val psi1))) 
+               ((pattern_interpretation evar_val svar_val psi2)) x).
         destruct i. clear H3. pose (H0 H). 
         pose (Union_is_or (Domain m) 
         ((Complement (Domain m)
-        (ext_valuation (update_evar_val v c evar_val) svar_val psi1))) 
-        (ext_valuation (update_evar_val v c evar_val) svar_val psi2) x).
+        (pattern_interpretation (update_evar_val v c evar_val) svar_val psi1))) 
+        (pattern_interpretation (update_evar_val v c evar_val) svar_val psi2) x).
         destruct i. clear H3. apply H4. clear H4. destruct o.
           * unfold Complement, not, In in *. left. rewrite e. assumption.
           * right. rewrite e0. assumption.
-  - intros. repeat rewrite ext_valuation_ex_simpl. simpl. simpl in H. 
+  - intros. repeat rewrite pattern_interpretation_ex_simpl. simpl. simpl in H. 
     apply propositional_extensionality. split.
     + intros. inversion H0. clear H0. pose (@FA_Uni_intro (Domain m)). apply i.
         clear i. destruct H1. exists x1. 
@@ -131,7 +131,7 @@ Proof.
       rewrite e1 in H1.
       pose (IHpsi v H svar_val evar_val c x).
       rewrite e2. assumption.
-  - intros. simpl in H. repeat rewrite ext_valuation_mu_simpl. simpl.
+  - intros. simpl in H. repeat rewrite pattern_interpretation_mu_simpl. simpl.
     unfold Meet, PrefixpointsOf, In. simpl. apply propositional_extensionality. split.
     + intros. pose (H0 e). unfold Included, In in e0.
       unfold Included, In in H1.
@@ -685,12 +685,12 @@ Section with_model.
                (X : svar_name),
           (Bp X ->
            @AntiMonotonicFunction A OS (fun S : Ensemble (Domain M) =>
-                                          (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi)
+                                          (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi)
                                        )
           ) /\
           (Bn X ->
            @MonotonicFunction A OS (fun S : Ensemble (Domain M) =>
-                                      (@ext_valuation sig M evar_val (update_svar_val X S svar_val) phi))
+                                      (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi))
           )
   .
   Proof.
@@ -699,11 +699,11 @@ Section with_model.
       intros. destruct phi; simpl in H; try inversion H.
       + (* EVar free *)
         unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
-        unfold In. split; intros; rewrite -> ext_valuation_free_evar_simpl in *; assumption.
+        unfold In. split; intros; rewrite -> pattern_interpretation_free_evar_simpl in *; assumption.
       + (* SVar free *)
         unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
         unfold In.
-        split; intros; rewrite -> ext_valuation_free_svar_simpl in *;
+        split; intros; rewrite -> pattern_interpretation_free_svar_simpl in *;
           unfold update_svar_val in *; destruct (eq_svar_name X x); subst.
         * unfold respects_blacklist in H1.
           specialize (H1 x).
@@ -716,19 +716,19 @@ Section with_model.
           
       + (* EVar bound *)
         unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-        split; intros; repeat rewrite -> ext_valuation_bound_evar_simpl; unfold Included;
+        split; intros; repeat rewrite -> pattern_interpretation_bound_evar_simpl; unfold Included;
           unfold In; intros; assumption.
       + (* SVar bound *)
         unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-        split; intros; repeat rewrite -> ext_valuation_bound_svar_simpl; unfold Included;
+        split; intros; repeat rewrite -> pattern_interpretation_bound_svar_simpl; unfold Included;
           unfold In; intros; assumption.
       + (* Sym *)
         unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-        split; intros; repeat rewrite -> ext_valuation_sym_simpl; unfold Included;
+        split; intros; repeat rewrite -> pattern_interpretation_sym_simpl; unfold Included;
           unfold In; intros; assumption.
       + (* Bot *)
         unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-        split; intros; rewrite -> ext_valuation_bott_simpl; unfold Included; intros; inversion H4.
+        split; intros; rewrite -> pattern_interpretation_bott_simpl; unfold Included; intros; inversion H4.
     - (* S n *)
       intros phi Hsz Hwfp Bp Bn Hrb evar_val svar_val V.
       destruct phi.
@@ -754,7 +754,7 @@ Section with_model.
         {
           intros HBp. unfold AntiMonotonicFunction in *.
           intros.
-          repeat rewrite -> ext_valuation_app_simpl.
+          repeat rewrite -> pattern_interpretation_app_simpl.
           unfold pointwise_ext. unfold leq in *. simpl in *.
           unfold Included in *. intros. unfold In in *.
           destruct H0. destruct H0. destruct H0. destruct H1.
@@ -773,7 +773,7 @@ Section with_model.
         {
           intros HBp. unfold MonotonicFunction in *.
           intros.
-          repeat rewrite -> ext_valuation_app_simpl.
+          repeat rewrite -> pattern_interpretation_app_simpl.
           unfold pointwise_ext. unfold leq in *. simpl in *.
           unfold Included in *. intros. unfold In in *.
           destruct H0. destruct H0. destruct H0. destruct H1.
@@ -817,7 +817,7 @@ Section with_model.
         {
           intros HBp.
           intros.
-          repeat rewrite -> ext_valuation_imp_simpl.
+          repeat rewrite -> pattern_interpretation_imp_simpl.
           unfold leq in *. simpl in *. unfold Included in *. intros.
           destruct H0.
           + left. unfold Complement in *.
@@ -833,7 +833,7 @@ Section with_model.
         }
         {
           intros HBn.
-          intros. repeat rewrite -> ext_valuation_imp_simpl.
+          intros. repeat rewrite -> pattern_interpretation_imp_simpl.
           unfold leq in *. simpl in *. unfold Included in *. intros.
           destruct H0.
           + left. unfold Complement in *.
@@ -859,9 +859,9 @@ Section with_model.
         unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
         unfold leq. simpl.
         unfold Included in *. unfold In in *.
-        (*rewrite -> ext_valuation_ex_simpl in *.*)
-        split; intros HBp S1 S2 Hincl; rewrite -> ext_valuation_ex_simpl; simpl;
-          intros m [x [c Hc]]; rewrite -> ext_valuation_ex_simpl; simpl; constructor; exists c;
+        (*rewrite -> pattern_interpretation_ex_simpl in *.*)
+        split; intros HBp S1 S2 Hincl; rewrite -> pattern_interpretation_ex_simpl; simpl;
+          intros m [x [c Hc]]; rewrite -> pattern_interpretation_ex_simpl; simpl; constructor; exists c;
             remember (update_evar_val fresh c evar_val) as evar_val';
             specialize (IHn Hrb'' evar_val' svar_val V);
             destruct IHn as [IHn1 IHn2].        
@@ -890,7 +890,7 @@ Section with_model.
         split.
         {
           unfold AntiMonotonicFunction. intros.
-          repeat rewrite -> ext_valuation_mu_simpl.
+          repeat rewrite -> pattern_interpretation_mu_simpl.
           Arguments LeastFixpointOf : simpl never.
           Arguments leq : simpl never.
           simpl.
@@ -961,7 +961,7 @@ Section with_model.
         (* This is the same as the previous, with minor changes *)
         {
           unfold MonotonicFunction. intros.
-          repeat rewrite -> ext_valuation_mu_simpl.
+          repeat rewrite -> pattern_interpretation_mu_simpl.
           Arguments LeastFixpointOf : simpl never.
           Arguments leq : simpl never.
           simpl.
@@ -1038,7 +1038,7 @@ Section with_model.
       let X := svar_fresh (variables sig) (free_svars phi) in
       @MonotonicFunction A OS
                          (fun S : Ensemble (Domain M) =>
-                            (@ext_valuation sig M evar_val (update_svar_val X S svar_val)
+                            (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
                                             (svar_open 0 X phi))).
   Proof.
     simpl. intros. unfold well_formed in H. destruct H as [Hwfp Hwfc].
@@ -1061,26 +1061,26 @@ Section with_model.
 End with_model.
 
 
-(* if ext_valuation (phi1 --> phi2) = Full_set 
-   then ext_valuation phi1 subset ext_valuation phi2
+(* if pattern_interpretation (phi1 --> phi2) = Full_set 
+   then pattern_interpretation phi1 subset pattern_interpretation phi2
 *)
-Theorem ext_valuation_iff_subset {m : Model}
+Theorem pattern_interpretation_iff_subset {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (phi1 : Pattern) (phi2 : Pattern) :
-  Same_set (Domain m) (ext_valuation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) <->
-  Included (Domain m) (ext_valuation evar_val svar_val phi1)
-           (@ext_valuation sig m evar_val svar_val phi2).
+  Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) <->
+  Included (Domain m) (pattern_interpretation evar_val svar_val phi1)
+           (@pattern_interpretation sig m evar_val svar_val phi2).
 Proof.
   intros; split; unfold Included; intros.
-  * rewrite ext_valuation_imp_simpl in H.
-    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
-    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+  * rewrite pattern_interpretation_imp_simpl in H.
+    remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
+    remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     assert (In (Domain m) (Union (Domain m) (Complement (Domain m) Xphi1) Xphi2) x).
     apply Same_set_to_eq in H. rewrite H. constructor.
     inversion H1. contradiction. assumption.
-  * rewrite ext_valuation_imp_simpl.
-    remember (ext_valuation evar_val svar_val phi1) as Xphi1.
-    remember (ext_valuation evar_val svar_val phi2) as Xphi2.
+  * rewrite pattern_interpretation_imp_simpl.
+    remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
+    remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xphi1) Xphi1 = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H0; clear H0.
@@ -1090,12 +1090,12 @@ Proof.
     right; apply H in H1; assumption.
 Qed.
 
-(* ext_valuation with free_svar_subst does not change *)
+(* pattern_interpretation with free_svar_subst does not change *)
 Lemma update_valuation_free_svar_subst {m : Model}
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (phi : Pattern) (psi : Pattern) (X : svar_name) :
-  ext_valuation evar_val svar_val phi
-  = ext_valuation evar_val svar_val (@free_svar_subst sig phi psi X) .
+  pattern_interpretation evar_val svar_val phi
+  = pattern_interpretation evar_val svar_val (@free_svar_subst sig phi psi X) .
 Proof.
 Admitted.
 
@@ -1107,26 +1107,26 @@ Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pa
      In Pattern (patterns theory) axiom ->
      forall (evar_val : evar_name -> Domain m)
        (svar_val : svar_name -> Power (Domain m)),
-     Same_set (Domain m) (ext_valuation evar_val svar_val axiom)
+     Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
        (Full_set (@Domain sig m))) ->
   Same_set (Domain m)
-  (ext_valuation evar_val svar_val
+  (pattern_interpretation evar_val svar_val
      (patt_imp (patt_app (patt_exists phi) psi)
         (patt_exists (patt_app phi psi)))) (Full_set (Domain m)).
 Proof.
   intros Hwf H H0 Hv.
-  rewrite ext_valuation_imp_simpl.
+  rewrite pattern_interpretation_imp_simpl.
     constructor. constructor.
-    remember (ext_valuation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
+    remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
-    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
+    exists c. rewrite pattern_interpretation_app_simpl. unfold pointwise_ext.
     exists le, re.
     assert (~List.In (evar_fresh (variables sig)
                                  (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
@@ -1154,27 +1154,27 @@ Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pat
        (svar_val : svar_name ->
                    Power (Domain m)),
      Same_set (Domain m)
-       (ext_valuation evar_val svar_val axiom)
+       (pattern_interpretation evar_val svar_val axiom)
        (Full_set (Domain m))) ->
   (Same_set (Domain m)
-  (ext_valuation evar_val svar_val
+  (pattern_interpretation evar_val svar_val
      (patt_imp (patt_app psi (patt_exists phi))
         (patt_exists (patt_app psi phi))))
   (Full_set (Domain m))).
 Proof.
   intros Hwf H H0 Hv.
-  rewrite ext_valuation_imp_simpl.
+  rewrite pattern_interpretation_imp_simpl.
     constructor. constructor.
-    remember (ext_valuation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
+    remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
     assert (Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
-    right. rewrite ext_valuation_ex_simpl. simpl. constructor.
-    rewrite ext_valuation_app_simpl, ext_valuation_ex_simpl in H2.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite ext_valuation_app_simpl. unfold pointwise_ext.
+    exists c. rewrite pattern_interpretation_app_simpl. unfold pointwise_ext.
     exists le, re.
     assert (~List.In (evar_fresh (variables sig)
                                  (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
