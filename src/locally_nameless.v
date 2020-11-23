@@ -902,9 +902,7 @@ End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Record Theory := {
-  patterns : Power (Pattern)
-}.
+Definition Theory := Power Pattern.
 
 Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
 forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
@@ -913,7 +911,7 @@ forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
 Definition satisfies_theory (m : Model) (theory : Theory)
-: Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
+: Prop := forall axiom : Pattern, In _ theory axiom -> (m |=M axiom).
 
 Notation "M |=T Gamma" := (satisfies_theory M Gamma)
     (left associativity, at level 50).
@@ -1102,12 +1100,14 @@ End MLNotations.
 Section ml_proof_system.
   Import MLNotations.
   Open Scope ml_scope.
-  
+
+  Print Theory.
   Context {signature : Signature}.
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
 (* TODO: add well-formedness of theory *)
 (* TODO: use well-formedness as parameter in proof system *)
+
 Reserved Notation "theory ⊢ pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
   Pattern -> Prop :=
@@ -1115,7 +1115,7 @@ Inductive ML_proof_system (theory : Theory) :
 (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (In _ (patterns theory) axiom) -> theory ⊢ axiom
+      (In _ theory axiom) -> theory ⊢ axiom
   
 (* FOL reasoning *)
   (* Propositional tautology *)

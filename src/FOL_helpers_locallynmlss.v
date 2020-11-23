@@ -776,7 +776,7 @@ Abort.
    But we could always use:
   Definition empty_theory := @Build_Theory Σ (Empty_set Pattern).
 *)
-Program Definition empty_theory := {|patterns := Empty_set Pattern|}.
+Definition empty_theory := Empty_set (@Pattern Σ).
 Lemma exclusion (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (A --> Bot) -> G ⊢ Bot.
 Proof.
