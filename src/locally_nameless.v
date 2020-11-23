@@ -908,18 +908,11 @@ Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
 forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
   Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
 
-Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
-
 Definition satisfies_theory (m : Model) (theory : Theory)
-: Prop := forall axiom : Pattern, In _ theory axiom -> (m |=M axiom).
-
-Notation "M |=T Gamma" := (satisfies_theory M Gamma)
-    (left associativity, at level 50).
+: Prop := forall axiom : Pattern, In _ theory axiom -> (satisfies_model m axiom).
 
 Definition satisfies (theory : Theory) (p: Pattern)
-: Prop := forall m : Model, (m |=T theory) -> (m |=M p).
-
-Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
+: Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
 (* End of definition 5. *)
 
@@ -1070,10 +1063,10 @@ Proof.
   split; intros.
 Admitted.
 
-Definition M_predicate(ϕ : Pattern)(M : Model) : Prop := forall ρₑ ρₛ,
+Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρₛ,
     Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set (Domain M))
     \/ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)).
-                
+
 
 End ml_syntax_semantics.
 
@@ -1095,6 +1088,12 @@ Module MLNotations.
   Notation "'Top'" := patt_top : ml_scope.
   Notation "'all' , phi" := (patt_forall phi) (at level 55) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 55) : ml_scope.
+
+  Notation "M ⊨ᴹ phi" := (satisfies_model M phi) (left associativity, at level 50) : ml_scope.
+  (* FIXME this should not be called `satisfies` *)
+Notation "G ⊨ phi" := (satisfies G phi) (left associativity, at level 50) : ml_scope.
+Notation "M ⊨ᵀ Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50) : ml_scope.
 End MLNotations.
 
 Section ml_proof_system.
@@ -1210,6 +1209,8 @@ Inductive ML_proof_system (theory : Theory) :
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+
+Definition T_predicate Γ ϕ := forall M, (M ⊨ᵀ Γ) -> @M_predicate signature M ϕ.
 
 End ml_proof_system.
 
