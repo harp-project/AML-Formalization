@@ -66,10 +66,10 @@ Section definedness.
       forall (m: Domain M),
         Same_set (Domain M)
                  (Full_set (Domain M))
-                 (pointwise_ext (ext_valuation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
+                 (app_ext (pattern_interpretation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
   Proof.
     intros.
-    unfold pointwise_ext.
+    unfold app_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
     unfold satisfies_axioms in H. specialize (H AxDefinedness). simpl in H.
@@ -82,22 +82,22 @@ Section definedness.
     pose proof (H' := Full_intro (Domain M) x).
     specialize (H H'). clear H'.
     unfold patt_defined in H.
-    rewrite -> ext_valuation_app_simpl in H.
-    rewrite -> ext_valuation_sym_simpl in H.
+    rewrite -> pattern_interpretation_app_simpl in H.
+    rewrite -> pattern_interpretation_sym_simpl in H.
     unfold sym.
     unfold evar in H.
-    rewrite -> ext_valuation_free_evar_simpl in H.
+    rewrite -> pattern_interpretation_free_evar_simpl in H.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
     unfold locally_nameless.eq_evar_name in H.
     destruct (evar_eq (variables (sig)) (nevar (variables (sig)) "x") (nevar (variables (sig)) "x") ).
     2: { contradiction. }
-    unfold pointwise_ext in H. unfold In in H.
+    unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
     destruct Hm1m2. destruct H0.
     inversion H0. clear H0. subst.
     exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
-    rewrite -> ext_valuation_sym_simpl. apply H.
+    rewrite -> pattern_interpretation_sym_simpl. apply H.
   Qed.
   
 
@@ -106,17 +106,17 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
-          (@ext_valuation (sig) M evar_val svar_val phi)
+          (@pattern_interpretation (sig) M evar_val svar_val phi)
           (Empty_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_defined phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
-    pose (H' := Not_Empty_Contains_Elements (ext_valuation evar_val svar_val phi) H0).
+    pose (H' := Not_Empty_Contains_Elements (pattern_interpretation evar_val svar_val phi) H0).
     destruct H'.
     unfold patt_defined.
-    rewrite -> ext_valuation_app_simpl.
+    rewrite -> pattern_interpretation_app_simpl.
     
     pose proof (H'' := definedness_model_application M evar_val svar_val H x).
     unfold sym in H''.
@@ -124,30 +124,30 @@ Section definedness.
     apply Same_set_Full_set.
     unfold Same_set in H''.
     destruct H'' as [H'' _].
-    assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (ext_valuation evar_val svar_val phi) ).
+    assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (pattern_interpretation evar_val svar_val phi) ).
     { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
     
-    pose proof (Hincl' := pointwise_ext_monotonic_r
+    pose proof (Hincl' := app_ext_monotonic_r
                             M
-                            (ext_valuation evar_val svar_val (patt_sym (inj definedness)))
+                            (pattern_interpretation evar_val svar_val (patt_sym (inj definedness)))
                             (Singleton (Domain M) x)
-                            (ext_valuation evar_val svar_val phi)
+                            (pattern_interpretation evar_val svar_val phi)
                             Hincl
                ).
-    apply Included_transitive with (S2 := pointwise_ext (ext_valuation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
+    apply Included_transitive with (S2 := app_ext (pattern_interpretation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
 
   Qed.
 
   Lemma definedness_empty_1 : forall (M : @Model (sig)),
       satisfies_axioms M -> (* we do not need this *)
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
+        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val phi) (Empty_set (Domain M)) ->
+        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
   Proof.
     intros. unfold patt_defined.
-    rewrite -> ext_valuation_app_simpl.
+    rewrite -> pattern_interpretation_app_simpl.
     rewrite -> (Same_set_to_eq H0).
-    apply pointwise_ext_bot_r.
+    apply app_ext_bot_r.
   Qed.
 
   Theorem modus_tollens: forall (P Q : Prop), (P -> Q) -> ~Q -> ~P.
@@ -156,8 +156,8 @@ Section definedness.
   Lemma definedness_empty_2 : forall (M : @Model (sig)),
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@ext_valuation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
+        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
+        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
   Proof.
     intros.
     pose proof (H1 := empty_impl_not_full _ H0).
@@ -169,10 +169,10 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_defined phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi))
                  (Full_set (Domain M)) ->
         ~ Same_set (Domain M)
-          (@ext_valuation (sig) M evar_val svar_val phi)
+          (@pattern_interpretation (sig) M evar_val svar_val phi)
           (Empty_set (Domain M)).
   Proof.
     intros.
@@ -184,24 +184,24 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~ Same_set (Domain M)
-          (@ext_valuation (sig) M evar_val svar_val phi)
+          (@pattern_interpretation (sig) M evar_val svar_val phi)
           (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
                  (Empty_set (Domain M)).
   Proof.
     intros.
-    assert (Hnonempty : ~ Same_set (Domain M) (ext_valuation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
-    { unfold not. unfold not in H0. intros. rewrite -> ext_valuation_not_simpl in H1.
+    assert (Hnonempty : ~ Same_set (Domain M) (pattern_interpretation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+    { unfold not. unfold not in H0. intros. rewrite -> pattern_interpretation_not_simpl in H1.
       (* TODO extract these three (or two?) steps into a separate lemmma: swap_compl *)
       apply Same_set_Compl in H1.
-      rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (ext_valuation evar_val svar_val phi))) in H1.
+      rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (pattern_interpretation evar_val svar_val phi))) in H1.
       rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M) )) in H1.
       apply H0. apply H1.
     }
-    unfold patt_total. rewrite -> ext_valuation_not_simpl.
+    unfold patt_total. rewrite -> pattern_interpretation_not_simpl.
     apply Same_set_Compl.
-    rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (ext_valuation evar_val svar_val
+    rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (pattern_interpretation evar_val svar_val
                                                                                 (patt_defined (patt_not phi))))).
     rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M))).
     apply definedness_not_empty_1. apply H. apply Hnonempty.
@@ -211,17 +211,17 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi)
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
     unfold patt_total.
-    rewrite -> ext_valuation_not_simpl.
-    assert(H1: Same_set (Domain M) (ext_valuation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
-    { rewrite -> ext_valuation_not_simpl.
+    rewrite -> pattern_interpretation_not_simpl.
+    assert(H1: Same_set (Domain M) (pattern_interpretation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+    { rewrite -> pattern_interpretation_not_simpl.
       rewrite -> (Same_set_to_eq H0).
       apply Complement_Full_is_Empty.
     }
@@ -235,10 +235,10 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
                  (Empty_set (Domain M)) ->
         ~ Same_set (Domain M)
-          (@ext_valuation (sig) M evar_val svar_val phi)
+          (@pattern_interpretation (sig) M evar_val svar_val phi)
           (Full_set (Domain M)).
   Proof.
     intros.
@@ -251,10 +251,10 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         ~Same_set (Domain M)
-         (@ext_valuation (sig) M evar_val svar_val (patt_total phi))
+         (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
          (Empty_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi)
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -266,13 +266,13 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     unfold patt_subseteq. intros.
@@ -283,7 +283,7 @@ Section definedness.
     unfold patt_equal.
     apply (totality_full _ H).
     unfold "<-->".
-    rewrite -> ext_valuation_and_simpl.
+    rewrite -> pattern_interpretation_and_simpl.
     rewrite -> (Same_set_to_eq H0).
     rewrite -> (Same_set_to_eq H1).
     rewrite -> (Same_set_to_eq (Intersection_Full_l _)).
@@ -294,14 +294,14 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         (
           Same_set (Domain M)
-                   (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
+                   (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                    (Full_set (Domain M)) /\
           Same_set (Domain M)
-                   (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
+                   (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
                    (Full_set (Domain M))).
   Proof.
     intros.
@@ -309,7 +309,7 @@ Section definedness.
     apply full_impl_not_empty in H0.
     apply (totality_result_nonempty _ H) in H0.
     unfold "<-->" in H0.
-    rewrite ->ext_valuation_and_simpl in H0.
+    rewrite ->pattern_interpretation_and_simpl in H0.
     apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
     unfold patt_subseteq.
     apply (totality_full _ H) in H1.
@@ -321,17 +321,17 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)) ->
         Included (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi1)
-                 (@ext_valuation (sig) M evar_val svar_val phi2).
+                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi2).
   Proof.
     intros.
     unfold patt_subseteq in H0.
     apply full_impl_not_empty in H0.
     apply (totality_result_nonempty _ H) in H0.
-    rewrite -> ext_valuation_imp_simpl in H0.
+    rewrite -> pattern_interpretation_imp_simpl in H0.
     unfold Same_set in H0. destruct H0 as [_ H0].
     unfold Included in *. intros. specialize (H0 x).
     assert (H' : In (Domain M) (Full_set (Domain M)) x).
@@ -346,21 +346,21 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Included (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi1)
-                 (@ext_valuation (sig) M evar_val svar_val phi2) ->
+                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi2) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     intros.
     unfold patt_subseteq.
     apply (totality_full _ H).
-    rewrite -> ext_valuation_imp_simpl.
+    rewrite -> pattern_interpretation_imp_simpl.
     apply Same_set_symmetric.
     apply Same_set_Full_set.
     unfold Included in *.
     intros. specialize (H0 x). clear H1.
-    destruct (classic (In (Domain M) (ext_valuation evar_val svar_val phi1) x)).
+    destruct (classic (In (Domain M) (pattern_interpretation evar_val svar_val phi1) x)).
     + right. auto.
     + left. unfold In. unfold Complement. assumption.
   Qed.
@@ -369,11 +369,11 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi1)
-                 (@ext_valuation (sig) M evar_val svar_val phi2).
+                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi2).
   Proof.
     intros.
     apply (equal_impl_both_subseteq _ H) in H0.
@@ -388,10 +388,10 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val phi1)
-                 (@ext_valuation (sig) M evar_val svar_val phi2) ->
+                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
+                 (@pattern_interpretation (sig) M evar_val svar_val phi2) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)).
   Proof.
     intros. unfold Same_set in H0.
@@ -405,7 +405,7 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi phi))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -417,10 +417,10 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi2 phi1))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi1))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -434,13 +434,13 @@ Section definedness.
       satisfies_axioms M ->
       forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi2))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi2 phi3))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi3))
                  (Full_set (Domain M)) ->
         Same_set (Domain M)
-                 (@ext_valuation (sig) M evar_val svar_val (patt_equal phi1 phi3))
+                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi3))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -453,9 +453,9 @@ Section definedness.
   Lemma free_evar_in_patt_1 : forall (M : @Model sig),
       satisfies_axioms M ->
       forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
-        In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x) ->
+        In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x) ->
         Same_set (Domain M)
-                 (@ext_valuation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
+                 (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
                  (Full_set (Domain M)).
   Proof.
     intros.
@@ -463,9 +463,9 @@ Section definedness.
     apply (definedness_not_empty_1 _ H).
     apply Contains_Elements_Not_Empty.
     exists (evar_val x).
-    rewrite -> ext_valuation_and_simpl.
+    rewrite -> pattern_interpretation_and_simpl.
     split.
-    + rewrite -> ext_valuation_free_evar_simpl. constructor.
+    + rewrite -> pattern_interpretation_free_evar_simpl. constructor.
     + assumption.
   Qed.
   
@@ -474,18 +474,18 @@ Section definedness.
       satisfies_axioms M ->
       forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         Same_set (Domain M)
-                 (@ext_valuation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
+                 (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
                  (Full_set (Domain M)) ->
-        In (Domain M) (@ext_valuation sig M evar_val svar_val phi) (evar_val x).
+        In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x).
   Proof.
     intros.
     unfold patt_in in H0.
     apply (definedness_not_empty_2 _ H) in H0.
     apply Not_Empty_Contains_Elements in H0.
     destruct H0.
-    rewrite -> ext_valuation_and_simpl in H0.
+    rewrite -> pattern_interpretation_and_simpl in H0.
     destruct H0.
-    rewrite -> ext_valuation_free_evar_simpl in H0.
+    rewrite -> pattern_interpretation_free_evar_simpl in H0.
     unfold In in H0. inversion H0. subst. assumption.
   Qed.
   

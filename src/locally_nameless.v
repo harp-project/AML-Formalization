@@ -224,52 +224,52 @@ Definition update_svar_val {m : Model}
            (v : svar_name) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
   fun v' : svar_name => if eq_svar_name v v' then X else svar_val v'.
 
-Definition pointwise_ext {m : Model}
+Definition app_ext {m : Model}
            (l r : Power (Domain m)) :
   Power (Domain m) :=
 fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
 
 (* TODO move to examples in a different module *)
 (*
-Compute @pointwise_ext {| Domain := Pattern |}
+Compute @app_ext {| Domain := Pattern |}
         (Singleton _ (evar "a")) (Singleton _ (evar "b")).
 *)
 (* S . empty = empty *)
 
-Lemma pointwise_ext_bot_r : forall (m : Model),
+Lemma app_ext_bot_r : forall (m : Model),
     forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
+  Same_set (Domain m) (app_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
 Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  intros. unfold app_ext. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
   * contradiction.
 Qed.
 
-Lemma pointwise_ext_bot_l : forall (m : Model),
+Lemma app_ext_bot_l : forall (m : Model),
     forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
+  Same_set (Domain m) (app_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
 Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  intros. unfold app_ext. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. contradiction.
   * contradiction.
 Qed.
 
-Lemma pointwise_ext_monotonic_l : forall (m : Model),
+Lemma app_ext_monotonic_l : forall (m : Model),
     forall (S1 S2 S : Power (Domain m)),
       Included (Domain m) S1 S2 ->
-      Included (Domain m) (pointwise_ext S1 S) (pointwise_ext S2 S).
+      Included (Domain m) (app_ext S1 S) (app_ext S2 S).
 Proof.
-  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold app_ext. unfold Included. unfold Included in H.
   intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
   apply H in H1. exists le. exists re. firstorder.
 Qed.
 
-Lemma pointwise_ext_monotonic_r : forall (m : Model),
+Lemma app_ext_monotonic_r : forall (m : Model),
     forall (S S1 S2 : Power (Domain m)),
       Included (Domain m) S1 S2 ->
-      Included (Domain m) (pointwise_ext S S1) (pointwise_ext S S2).
+      Included (Domain m) (app_ext S S1) (app_ext S S2).
 Proof.
-  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold app_ext. unfold Included. unfold Included in H.
   intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
   apply H in H2. exists le. exists re. firstorder.
 Qed.
@@ -718,31 +718,31 @@ Instance wf_pattern_lt : WellFounded (@pattern_lt).
 apply pattern_lt_well_founded.
 Defined.
 
-Equations ext_valuation_aux {m : Model}
+Equations pattern_interpretation_aux {m : Model}
           (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
           (p : Pattern) : Power (Domain m)
   by wf (size p) :=
-  ext_valuation_aux evar_val svar_val (patt_free_evar x) := Singleton _ (evar_val x);
-  ext_valuation_aux evar_val svar_val (patt_free_svar X) := svar_val X;
-  ext_valuation_aux evar_val svar_val (patt_bound_evar x) := Empty_set _;
-  ext_valuation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
-  ext_valuation_aux evar_val svar_val (patt_sym s) := (sym_interp m) s;
-  ext_valuation_aux evar_val svar_val (patt_app ls rs) :=
-    pointwise_ext (ext_valuation_aux evar_val svar_val ls)
-                  (ext_valuation_aux evar_val svar_val rs);
-  ext_valuation_aux evar_val svar_val patt_bott := Empty_set _;
-  ext_valuation_aux evar_val svar_val (patt_imp ls rs) :=
-    Union _ (Complement _ (ext_valuation_aux evar_val svar_val ls))
-            (ext_valuation_aux evar_val svar_val rs);
-  ext_valuation_aux evar_val svar_val (patt_exists p') :=
+  pattern_interpretation_aux evar_val svar_val (patt_free_evar x) := Singleton _ (evar_val x);
+  pattern_interpretation_aux evar_val svar_val (patt_free_svar X) := svar_val X;
+  pattern_interpretation_aux evar_val svar_val (patt_bound_evar x) := Empty_set _;
+  pattern_interpretation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
+  pattern_interpretation_aux evar_val svar_val (patt_sym s) := (sym_interp m) s;
+  pattern_interpretation_aux evar_val svar_val (patt_app ls rs) :=
+    app_ext (pattern_interpretation_aux evar_val svar_val ls)
+                  (pattern_interpretation_aux evar_val svar_val rs);
+  pattern_interpretation_aux evar_val svar_val patt_bott := Empty_set _;
+  pattern_interpretation_aux evar_val svar_val (patt_imp ls rs) :=
+    Union _ (Complement _ (pattern_interpretation_aux evar_val svar_val ls))
+            (pattern_interpretation_aux evar_val svar_val rs);
+  pattern_interpretation_aux evar_val svar_val (patt_exists p') :=
     let x := evar_fresh (variables signature) (free_evars p') in
     FA_Union
-      (fun e => ext_valuation_aux (update_evar_val x e evar_val) svar_val
+      (fun e => pattern_interpretation_aux (update_evar_val x e evar_val) svar_val
                                   (evar_open 0 x p'));
-  ext_valuation_aux evar_val svar_val (patt_mu p') :=
+  pattern_interpretation_aux evar_val svar_val (patt_mu p') :=
     let X := svar_fresh (variables signature) (free_svars p') in
     Ensembles_Ext.mu
-      (fun S => ext_valuation_aux evar_val (update_svar_val X S svar_val)
+      (fun S => pattern_interpretation_aux evar_val (update_svar_val X S svar_val)
                                   (svar_open 0 X p')).
 Next Obligation. unfold pattern_lt. simpl. lia. Defined.
 Next Obligation. unfold pattern_lt. simpl. lia. Defined.
@@ -758,7 +758,7 @@ Section semantics.
   Let OS := EnsembleOrderedSet (@Domain m).
   Let  L := PowersetLattice (@Domain m).
 
-Program Fixpoint ext_valuation
+Program Fixpoint pattern_interpretation
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (p : Pattern) {measure (size p)} :=
 match p with
@@ -767,21 +767,21 @@ match p with
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
 | patt_sym s => (sym_interp m) s
-| patt_app ls rs => pointwise_ext (ext_valuation evar_val svar_val ls)
-                                  (ext_valuation evar_val svar_val rs)
+| patt_app ls rs => app_ext (pattern_interpretation evar_val svar_val ls)
+                                  (pattern_interpretation evar_val svar_val rs)
 | patt_bott => Empty_set _
-| patt_imp ls rs => Union _ (Complement _ (ext_valuation evar_val svar_val ls))
-                            (ext_valuation evar_val svar_val rs)
+| patt_imp ls rs => Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+                            (pattern_interpretation evar_val svar_val rs)
 | patt_exists p' =>
   let x := evar_fresh (variables signature) (free_evars p') in
   FA_Union
-    (fun e => ext_valuation (update_evar_val x e evar_val)
+    (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p'))
 | patt_mu p' =>
   let X := svar_fresh (variables signature) (free_svars p') in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
-    (fun S => ext_valuation evar_val
+    (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
                             (svar_open 0 X p'))
 end.
@@ -792,78 +792,78 @@ Next Obligation. simpl; lia. Defined.
 Next Obligation. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
 Next Obligation. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
 
-Lemma ext_valuation_free_evar_simpl
+Lemma pattern_interpretation_free_evar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (x : evar_name) :
-  ext_valuation evar_val svar_val (patt_free_evar x) = Singleton _ (evar_val x).
+  pattern_interpretation evar_val svar_val (patt_free_evar x) = Singleton _ (evar_val x).
 Admitted.
 
-Lemma ext_valuation_free_svar_simpl
+Lemma pattern_interpretation_free_svar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (X : svar_name) :
-  ext_valuation evar_val svar_val (patt_free_svar X) = svar_val X.
+  pattern_interpretation evar_val svar_val (patt_free_svar X) = svar_val X.
 Admitted.
 
-Lemma ext_valuation_bound_evar_simpl
+Lemma pattern_interpretation_bound_evar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (x : db_index) :
-  ext_valuation evar_val svar_val (patt_bound_evar x) = Empty_set _ .
+  pattern_interpretation evar_val svar_val (patt_bound_evar x) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_bound_svar_simpl
+Lemma pattern_interpretation_bound_svar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (X : db_index) :
-  ext_valuation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
+  pattern_interpretation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_sym_simpl
+Lemma pattern_interpretation_sym_simpl
       (evar_val : @EVarVal m) (svar_val : @SVarVal m)
       (s : symbols signature) :
-  ext_valuation evar_val svar_val (patt_sym s) = sym_interp m s.
+  pattern_interpretation evar_val svar_val (patt_sym s) = sym_interp m s.
 Proof.
 
 Admitted.
 
 
-Lemma ext_valuation_app_simpl
+Lemma pattern_interpretation_app_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
-  ext_valuation evar_val svar_val (patt_app ls rs) =
-  pointwise_ext (ext_valuation evar_val svar_val ls)
-                (ext_valuation evar_val svar_val rs).
+  pattern_interpretation evar_val svar_val (patt_app ls rs) =
+  app_ext (pattern_interpretation evar_val svar_val ls)
+                (pattern_interpretation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_bott_simpl
+Lemma pattern_interpretation_bott_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)) :
-  ext_valuation evar_val svar_val patt_bott = Empty_set _ .
+  pattern_interpretation evar_val svar_val patt_bott = Empty_set _ .
 Admitted.
 
-Lemma ext_valuation_imp_simpl
+Lemma pattern_interpretation_imp_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
-  ext_valuation evar_val svar_val (patt_imp ls rs) =
-  Union _ (Complement _ (ext_valuation evar_val svar_val ls))
-          (ext_valuation evar_val svar_val rs).
+  pattern_interpretation evar_val svar_val (patt_imp ls rs) =
+  Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+          (pattern_interpretation evar_val svar_val rs).
 Admitted.
 
-Lemma ext_valuation_ex_simpl
+Lemma pattern_interpretation_ex_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
-  ext_valuation evar_val svar_val (patt_exists p) =
+  pattern_interpretation evar_val svar_val (patt_exists p) =
   let x := evar_fresh (variables signature) (free_evars p) in
   FA_Union 
-    (fun e => ext_valuation (update_evar_val x e evar_val)
+    (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p)).
 Admitted.
 
-Lemma ext_valuation_mu_simpl
+Lemma pattern_interpretation_mu_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (p : Pattern) :
-  ext_valuation evar_val svar_val (patt_mu p) =
+  pattern_interpretation evar_val svar_val (patt_mu p) =
   let X := svar_fresh (variables signature) (free_svars p) in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
-    (fun S => ext_valuation evar_val
+    (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
                             (svar_open 0 X p)).
 Admitted.
@@ -908,7 +908,7 @@ Record Theory := {
 
 Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
 forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
-  Same_set _ (ext_valuation (m := m) evar_val svar_val phi) (Full_set _).
+  Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
 
 Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
 
@@ -966,106 +966,106 @@ Definition patt_nu (phi : Pattern) :=
   patt_not (patt_mu (patt_not (bvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
 
-Lemma ext_valuation_not_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)(phi : Pattern),
-    ext_valuation evar_val svar_val (patt_not phi) = Complement (Domain m) (ext_valuation evar_val svar_val phi).
+Lemma pattern_interpretation_not_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)(phi : Pattern),
+    pattern_interpretation evar_val svar_val (patt_not phi) = Complement (Domain m) (pattern_interpretation evar_val svar_val phi).
 Proof.
   intros. unfold patt_not.
-  rewrite -> ext_valuation_imp_simpl.
-  rewrite -> ext_valuation_bott_simpl.
+  rewrite -> pattern_interpretation_imp_simpl.
+  rewrite -> pattern_interpretation_bott_simpl.
   apply Extensionality_Ensembles.
   apply Union_Empty_l.
 Qed.
 
-Lemma ext_valuation_or_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_or_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                       (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_or phi1 phi2)
-    = Union (Domain m) (ext_valuation evar_val svar_val phi1) (ext_valuation evar_val svar_val phi2).
+    pattern_interpretation evar_val svar_val (patt_or phi1 phi2)
+    = Union (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
 Proof.
   intros. unfold patt_or.
-  rewrite -> ext_valuation_imp_simpl.
-  rewrite -> ext_valuation_not_simpl.
-  assert (H: Complement (Domain m) (Complement (Domain m) (ext_valuation evar_val svar_val phi1)) = ext_valuation evar_val svar_val phi1).
+  rewrite -> pattern_interpretation_imp_simpl.
+  rewrite -> pattern_interpretation_not_simpl.
+  assert (H: Complement (Domain m) (Complement (Domain m) (pattern_interpretation evar_val svar_val phi1)) = pattern_interpretation evar_val svar_val phi1).
   { apply Extensionality_Ensembles. apply Compl_Compl_Ensembles. }
   rewrite -> H. reflexivity.
 Qed.
 
-Lemma ext_valuation_or_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_or_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                      (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_or phi1 phi2)
-    = ext_valuation evar_val svar_val (patt_or phi2 phi1).
+    pattern_interpretation evar_val svar_val (patt_or phi1 phi2)
+    = pattern_interpretation evar_val svar_val (patt_or phi2 phi1).
 Proof.
   intros.
-  repeat rewrite -> ext_valuation_or_simpl.
+  repeat rewrite -> pattern_interpretation_or_simpl.
   apply Extensionality_Ensembles.
   apply Union_Symmetric.
 Qed.
 
-Lemma ext_valuation_and_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_and_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                        (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_and phi1 phi2)
-    = Intersection (Domain m) (ext_valuation evar_val svar_val phi1) (ext_valuation evar_val svar_val phi2).
+    pattern_interpretation evar_val svar_val (patt_and phi1 phi2)
+    = Intersection (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
 Proof.
   intros. unfold patt_and.
-  rewrite -> ext_valuation_not_simpl.
-  rewrite -> ext_valuation_or_simpl.
-  repeat rewrite -> ext_valuation_not_simpl.
+  rewrite -> pattern_interpretation_not_simpl.
+  rewrite -> pattern_interpretation_or_simpl.
+  repeat rewrite -> pattern_interpretation_not_simpl.
   apply Extensionality_Ensembles.
   apply Compl_Union_Compl_Intes_Ensembles_alt.
 Qed.
 
-Lemma ext_valuation_and_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_and_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                      (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_and phi1 phi2)
-    = ext_valuation evar_val svar_val (patt_and phi2 phi1).
+    pattern_interpretation evar_val svar_val (patt_and phi1 phi2)
+    = pattern_interpretation evar_val svar_val (patt_and phi2 phi1).
 Proof.
   intros.
-  repeat rewrite -> ext_valuation_and_simpl.
+  repeat rewrite -> pattern_interpretation_and_simpl.
   apply Extensionality_Ensembles.
   apply Intersection_Symmetric.
 Qed.
 
-Lemma ext_valuation_top_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m),
-    ext_valuation evar_val svar_val patt_top = Full_set (Domain m).
+Lemma pattern_interpretation_top_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m),
+    pattern_interpretation evar_val svar_val patt_top = Full_set (Domain m).
 Proof.
   intros. unfold patt_top.
-  rewrite -> ext_valuation_not_simpl.
-  rewrite -> ext_valuation_bott_simpl.
+  rewrite -> pattern_interpretation_not_simpl.
+  rewrite -> pattern_interpretation_bott_simpl.
   apply Extensionality_Ensembles.
   apply Complement_Empty_is_Full.
 Qed.
 
 (* TODO prove. Maybe some de-morgan laws could be helpful in proving this? *)
-Lemma ext_valuation_iff_or : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_iff_or : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                      (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_iff phi1 phi2)
-    = ext_valuation evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
+    pattern_interpretation evar_val svar_val (patt_iff phi1 phi2)
+    = pattern_interpretation evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
 Proof.
 
 Admitted.
 
-Lemma ext_valuation_iff_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+Lemma pattern_interpretation_iff_comm : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                       (phi1 phi2 : Pattern),
-    ext_valuation evar_val svar_val (patt_iff phi1 phi2)
-    = ext_valuation evar_val svar_val (patt_iff phi2 phi1).
+    pattern_interpretation evar_val svar_val (patt_iff phi1 phi2)
+    = pattern_interpretation evar_val svar_val (patt_iff phi2 phi1).
 Proof.
   intros.
   unfold patt_iff.
-  rewrite -> ext_valuation_and_comm.
+  rewrite -> pattern_interpretation_and_comm.
   reflexivity.
 Qed.
 
 (* TODO: forall, nu *)
 
 (* TODO prove *)
-Lemma ext_valuation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
-    ext_valuation evar_val svar_val (patt_forall phi) =
+Lemma pattern_interpretation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
+    pattern_interpretation evar_val svar_val (patt_forall phi) =
     let x := evar_fresh (variables signature) (free_evars phi) in
-    FA_Intersection (fun e : @Domain m => ext_valuation (update_evar_val x e evar_val) svar_val (evar_open 0 x phi) ).
+    FA_Intersection (fun e : @Domain m => pattern_interpretation (update_evar_val x e evar_val) svar_val (evar_open 0 x phi) ).
 Proof.
   intros.
   unfold patt_forall.
-  rewrite -> ext_valuation_not_simpl.
-  rewrite -> ext_valuation_ex_simpl.
+  rewrite -> pattern_interpretation_not_simpl.
+  rewrite -> pattern_interpretation_ex_simpl.
   simpl.
   apply Extensionality_Ensembles.
   unfold Same_set. unfold Complement. unfold Included. unfold In.
