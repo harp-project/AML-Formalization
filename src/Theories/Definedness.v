@@ -497,6 +497,16 @@ Section definedness.
     unfold In in H0. inversion H0. subst. assumption.
   Qed.
 
-  (*Lemma patt_equals_predicate :*)
+  Lemma patt_defined_predicate : forall ϕ, T_predicate theory (patt_defined ϕ).
+  Proof.
+    intros. unfold T_predicate. intros. unfold M_predicate. intros.
+    pose proof (Hlr := classic (Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)))).
+    destruct Hlr.
+    + apply definedness_empty_1 in H0. right. apply H0. apply H.
+    + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
+  Qed.
+  (* TODO *)
+  Lemma patt_equals_predicate : forall ϕ₁ ϕ₂, T_predicate theory (patt_equal ϕ₁ ϕ₂).
+  Proof. Admitted.
   
 End definedness.
