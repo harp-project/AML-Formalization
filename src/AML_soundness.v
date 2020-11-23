@@ -194,9 +194,18 @@ Proof.
     intros. apply H0 in H. clear H0.
     admit.
     
-  * simpl. rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
+  * apply pattern_interpretation_iff_subset. simpl.
+    rewrite -> pattern_interpretation_mu_simpl.
+    Arguments Lattice.LeastFixpointOf : simpl never.
+    simpl.
+    Search Lattice.LeastFixpointOf.
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint.
+    Search Lattice.Meet.
+    Search bvar_subst.
+    (*
+    simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
     constructor. constructor.
-    unfold Included. intros. unfold In.
+    unfold Included. intros. unfold In.*)
     admit.
 
   * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
