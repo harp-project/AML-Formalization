@@ -1304,7 +1304,7 @@ Inductive ML_proof_system (theory : Theory) :
       theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
       theory ⊢ ((@patt_mu signature phi) --> psi)
 
-(* Technical rules *)
+  (* Technical rules *)
   (* Existence *)
   | Existence : theory ⊢ (ex , patt_bound_evar 0)
 

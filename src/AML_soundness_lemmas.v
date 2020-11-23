@@ -1208,4 +1208,20 @@ Admitted.
 (ex, patt_bound_evar 0 /\ patt_free_evar !X)
 *)
 
+Check bvar_subst.
+Print well_formed.
+Check @ext_valuation.
+(* There are two ways how to plug a pattern phi2 into a pattern phi1:
+   either substitute it for some variable,
+   or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
+Lemma plugging_patterns : forall (M : @Model sig) (phi1 phi2 : @Pattern sig) (evar_val : @EVarVal sig M)
+  (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar_name), (* TODO X not free in ?? *)
+    well_formed_closed phi2 ->
+    @ext_valuation sig M evar_val svar_val (bvar_subst phi1 phi2 dbi)
+    = @ext_valuation sig M evar_val (update_svar_val X (@ext_valuation sig M evar_val svar_val phi2) svar_val) (svar_open dbi X phi1).
+Proof.
+  
+Admitted.
+
+
 End soundness_lemmas.
