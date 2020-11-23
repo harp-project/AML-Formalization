@@ -1388,4 +1388,73 @@ Proof.
     admit. admit.
 Admitted.
 
+(*
+(ex, (ex, patt_bound_evar 0 /\ patt_bound_evar 1))
+=>
+(ex, patt_bound_evar 0 /\ patt_free_evar !X)
+*)
+
+Lemma evar_open_bvar_subst phi1 phi2 dbi X
+  : evar_open 0 X (bvar_subst phi1 phi2 (S dbi))
+    = bvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
+Proof.
+
+Admitted.
+ 
+
+(* There are two ways how to plug a pattern phi2 into a pattern phi1:
+   either substitute it for some variable,
+   or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
+Lemma plugging_patterns : forall (M : @Model sig) (phi1 phi2 : @Pattern sig) (evar_val : @EVarVal sig M)
+                                 (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar_name), (* TODO X not free in ?? *)
+    well_formed_closed (patt_mu phi1) ->
+    well_formed_closed phi2 ->
+    ~ List.In X (free_svars phi1) ->
+    @pattern_interpretation sig M evar_val svar_val (bvar_subst phi1 phi2 dbi)
+    = @pattern_interpretation sig M evar_val
+                     (update_svar_val X (@pattern_interpretation sig M evar_val svar_val phi2) svar_val)
+                     (svar_open dbi X phi1).
+Proof.
+  intros M phi1 phi2 evar_val svar_val dbi X Hwfc1 Hwfc2 H.
+  generalize dependent evar_val. generalize dependent svar_val.
+  generalize dependent dbi.
+  induction phi1; intros dbi svar_val evar_val.
+  - repeat rewrite pattern_interpretation_free_evar_simpl. reflexivity.
+  - simpl. repeat rewrite pattern_interpretation_free_svar_simpl.
+    unfold update_svar_val. destruct (eq_svar_name X x).
+    * simpl in H. unfold not in H. exfalso. apply H. left.
+      auto.
+    * auto.
+  - apply wfc_body_wfc_mu_iff in Hwfc1. unfold wfc_body_mu in Hwfc1.
+    specialize (Hwfc1 X H). unfold well_formed_closed in Hwfc1; simpl in Hwfc1.
+    lia. assumption.
+  - simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
+    * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+    * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
+      destruct (eq_svar_name X X). auto. contradiction.
+    * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+    * repeat rewrite pattern_interpretation_bound_svar_simpl; auto.
+    * apply beq_nat_false in Heq. lia.
+    * repeat rewrite pattern_interpretation_bound_svar_simpl; auto.
+  - simpl. repeat rewrite pattern_interpretation_sym_simpl; auto.
+  - simpl. repeat rewrite pattern_interpretation_app_simpl.
+    rewrite IHphi1_1. rewrite IHphi1_2. auto.
+    (* TODO *)
+    admit. admit. admit. admit.
+  - simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
+  - simpl. repeat rewrite pattern_interpretation_imp_simpl.
+    rewrite IHphi1_1. rewrite IHphi1_2. auto.
+    admit. admit. admit. admit.
+  - simpl. repeat rewrite pattern_interpretation_ex_simpl.
+    simpl. apply Same_set_to_eq.  Search FA_Union. apply FA_Union_same. intros.
+    rewrite -> evar_open_bvar_subst.
+    rewrite IHphi1. Print FA_Union. unfold FA_Union.
+    
+        
+                                                                 
+  Print update_svar_val.
+  
+Admitted.
+
+
 End soundness_lemmas.
