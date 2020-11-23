@@ -1072,6 +1072,10 @@ Proof.
   split; intros.
 Admitted.
 
+Definition M_predicate(ϕ : Pattern)(M : Model) : Prop := forall ρₑ ρₛ,
+    Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set (Domain M))
+    \/ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)).
+                
 
 End ml_syntax_semantics.
 
@@ -1206,6 +1210,7 @@ Inductive ML_proof_system (theory : Theory) :
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+
 End ml_proof_system.
 
 
