@@ -1084,27 +1084,31 @@ Proof.
   + left. apply Union_Compl_Fullset.
 Qed.
 
-Lemma M_predicate_bot M : M_predicate M patt_bott.
+Lemma M_predicate_bott M : M_predicate M patt_bott.
 Proof.
   unfold M_predicate. intros. right.
   rewrite -> pattern_interpretation_bott_simpl.
   apply Same_set_refl.
 Qed.
 
-Lemma M_predicate_neg M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
+Lemma M_predicate_not M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
 Proof.
-  intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bot.
+  intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bott.
 Qed.
 
 Lemma M_predicate_or M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_or ϕ₁ ϕ₂).
 Proof.
-  intros. unfold patt_or. auto using M_predicate_neg, M_predicate_impl.
+  intros. unfold patt_or. auto using M_predicate_not, M_predicate_impl.
 Qed.
 
 Lemma M_predicate_and M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_and ϕ₁ ϕ₂).
 Proof.
-  intros. unfold patt_and. auto using M_predicate_or, M_predicate_neg.
+  intros. unfold patt_and. auto using M_predicate_or, M_predicate_not.
 Qed.
+
+(* TODO something like this, but with binding a free variable *)
+(* Lemma M_predicate_exists M ϕ : M_predicate M ϕ -> M_predicate M (patt_exists ϕ) *)
+(* TODO top forall iff *)
     
 
 End ml_syntax_semantics.
@@ -1139,7 +1143,6 @@ Section ml_proof_system.
   Import MLNotations.
   Open Scope ml_scope.
 
-  Print Theory.
   Context {signature : Signature}.
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
@@ -1250,6 +1253,44 @@ Inductive ML_proof_system (theory : Theory) :
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
 Definition T_predicate Γ ϕ := forall M, (M ⊨ᵀ Γ) -> @M_predicate signature M ϕ.
+
+Lemma T_predicate_impl Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_imp ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_impl.
+Qed.
+
+Lemma T_predicate_bot Γ : T_predicate Γ patt_bott.
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_bott.
+Qed.
+
+Lemma T_predicate_not Γ ϕ : T_predicate Γ ϕ -> T_predicate Γ (patt_not ϕ).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_not.
+Qed.
+
+Lemma T_predicate_or Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_or ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_or.
+Qed.
+
+Lemma T_predicate_and Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_and ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_and.
+Qed.
+
+(* TODO: top iff exists forall *)
+
 
 End ml_proof_system.
 
