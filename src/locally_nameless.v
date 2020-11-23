@@ -1068,6 +1068,45 @@ Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρₛ,
     \/ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)).
 
 
+Lemma M_predicate_impl M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_imp ϕ₁ ϕ₂).
+Proof.
+  unfold M_predicate. intros Hp1 Hp2 ρₑ ρₛ.
+  specialize (Hp1 ρₑ ρₛ). specialize (Hp2 ρₑ ρₛ).
+  rewrite -> pattern_interpretation_imp_simpl.
+  destruct Hp1, Hp2; apply Same_set_to_eq in H; apply Same_set_to_eq in H0; rewrite -> H; rewrite -> H0.
+  + left. apply Union_Compl_Fullset.
+  + right.
+    rewrite -> (Same_set_to_eq (Complement_Full_is_Empty)).
+    apply Union_Empty_r.
+  + left.
+    rewrite -> (Same_set_to_eq (Complement_Empty_is_Full)).
+    unfold Same_set. unfold Included. unfold In. split; intros; constructor; constructor.
+  + left. apply Union_Compl_Fullset.
+Qed.
+
+Lemma M_predicate_bot M : M_predicate M patt_bott.
+Proof.
+  unfold M_predicate. intros. right.
+  rewrite -> pattern_interpretation_bott_simpl.
+  apply Same_set_refl.
+Qed.
+
+Lemma M_predicate_neg M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
+Proof.
+  intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bot.
+Qed.
+
+Lemma M_predicate_or M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_or ϕ₁ ϕ₂).
+Proof.
+  intros. unfold patt_or. auto using M_predicate_neg, M_predicate_impl.
+Qed.
+
+Lemma M_predicate_and M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_and ϕ₁ ϕ₂).
+Proof.
+  intros. unfold patt_and. auto using M_predicate_or, M_predicate_neg.
+Qed.
+    
+
 End ml_syntax_semantics.
 
 Module MLNotations.
