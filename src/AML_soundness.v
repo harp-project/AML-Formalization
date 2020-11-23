@@ -104,14 +104,14 @@ Proof.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    epose proof pointwise_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    epose proof pointwise_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
     unfold In; unfold Complement; unfold not; contradiction.
 
   * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
@@ -124,14 +124,14 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (pointwise_ext (Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
+    remember (app_ext (Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
-    - right; subst Xext_union; unfold In; unfold pointwise_ext.
+    - right; subst Xext_union; unfold In; unfold app_ext.
       destruct H3 as [le [re [Hunion [Hre Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
@@ -148,14 +148,14 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (pointwise_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
+    remember (app_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
     constructor. constructor.
     assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
-    - right; subst Xext_union; unfold In; unfold pointwise_ext.
+    - right; subst Xext_union; unfold In; unfold app_ext.
       destruct H3 as [le [re [Hle [Hunion Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
@@ -172,7 +172,7 @@ Proof.
     repeat rewrite pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
-    unfold pointwise_ext.
+    unfold app_ext.
     exists le, re.
     split. apply IHHp. admit. assumption.
     split; assumption.
@@ -182,7 +182,7 @@ Proof.
     repeat rewrite pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
-    unfold pointwise_ext.
+    unfold app_ext.
     exists le, re.
     split. assumption.
     split. apply IHHp. admit. assumption.

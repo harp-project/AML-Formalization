@@ -72,7 +72,7 @@ Proof.
   - intros. repeat rewrite pattern_interpretation_app_simpl. simpl in H. 
     pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
-    pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold pointwise_ext. 
+    pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold app_ext. 
     apply propositional_extensionality.
     split; intros.
     + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0). 
@@ -755,7 +755,7 @@ Section with_model.
           intros HBp. unfold AntiMonotonicFunction in *.
           intros.
           repeat rewrite -> pattern_interpretation_app_simpl.
-          unfold pointwise_ext. unfold leq in *. simpl in *.
+          unfold app_ext. unfold leq in *. simpl in *.
           unfold Included in *. intros. unfold In in *.
           destruct H0. destruct H0. destruct H0. destruct H1.
           
@@ -774,7 +774,7 @@ Section with_model.
           intros HBp. unfold MonotonicFunction in *.
           intros.
           repeat rewrite -> pattern_interpretation_app_simpl.
-          unfold pointwise_ext. unfold leq in *. simpl in *.
+          unfold app_ext. unfold leq in *. simpl in *.
           unfold Included in *. intros. unfold In in *.
           destruct H0. destruct H0. destruct H0. destruct H1.
           
@@ -1126,7 +1126,7 @@ Proof.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite pattern_interpretation_app_simpl. unfold pointwise_ext.
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
     assert (~List.In (evar_fresh (variables sig)
                                  (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
@@ -1174,7 +1174,7 @@ Proof.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite pattern_interpretation_app_simpl. unfold pointwise_ext.
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
     assert (~List.In (evar_fresh (variables sig)
                                  (set_union eq_evar_name (free_evars psi) (free_evars phi))) 

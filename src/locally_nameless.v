@@ -224,52 +224,52 @@ Definition update_svar_val {m : Model}
            (v : svar_name) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
   fun v' : svar_name => if eq_svar_name v v' then X else svar_val v'.
 
-Definition pointwise_ext {m : Model}
+Definition app_ext {m : Model}
            (l r : Power (Domain m)) :
   Power (Domain m) :=
 fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (app_interp m) le re e.
 
 (* TODO move to examples in a different module *)
 (*
-Compute @pointwise_ext {| Domain := Pattern |}
+Compute @app_ext {| Domain := Pattern |}
         (Singleton _ (evar "a")) (Singleton _ (evar "b")).
 *)
 (* S . empty = empty *)
 
-Lemma pointwise_ext_bot_r : forall (m : Model),
+Lemma app_ext_bot_r : forall (m : Model),
     forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
+  Same_set (Domain m) (app_ext S (Empty_set (Domain m))) (Empty_set (Domain m)).
 Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  intros. unfold app_ext. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
   * contradiction.
 Qed.
 
-Lemma pointwise_ext_bot_l : forall (m : Model),
+Lemma app_ext_bot_l : forall (m : Model),
     forall S : Power (Domain m),
-  Same_set (Domain m) (pointwise_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
+  Same_set (Domain m) (app_ext (Empty_set (Domain m)) S) (Empty_set (Domain m)).
 Proof.
-  intros. unfold pointwise_ext. unfold Same_set. unfold Included. unfold In. split; intros.
+  intros. unfold app_ext. unfold Same_set. unfold Included. unfold In. split; intros.
   * inversion H. inversion H0. inversion H1. contradiction.
   * contradiction.
 Qed.
 
-Lemma pointwise_ext_monotonic_l : forall (m : Model),
+Lemma app_ext_monotonic_l : forall (m : Model),
     forall (S1 S2 S : Power (Domain m)),
       Included (Domain m) S1 S2 ->
-      Included (Domain m) (pointwise_ext S1 S) (pointwise_ext S2 S).
+      Included (Domain m) (app_ext S1 S) (app_ext S2 S).
 Proof.
-  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold app_ext. unfold Included. unfold Included in H.
   intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
   apply H in H1. exists le. exists re. firstorder.
 Qed.
 
-Lemma pointwise_ext_monotonic_r : forall (m : Model),
+Lemma app_ext_monotonic_r : forall (m : Model),
     forall (S S1 S2 : Power (Domain m)),
       Included (Domain m) S1 S2 ->
-      Included (Domain m) (pointwise_ext S S1) (pointwise_ext S S2).
+      Included (Domain m) (app_ext S S1) (app_ext S S2).
 Proof.
-  intros. unfold pointwise_ext. unfold Included. unfold Included in H.
+  intros. unfold app_ext. unfold Included. unfold Included in H.
   intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
   apply H in H2. exists le. exists re. firstorder.
 Qed.
@@ -728,7 +728,7 @@ Equations pattern_interpretation_aux {m : Model}
   pattern_interpretation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
   pattern_interpretation_aux evar_val svar_val (patt_sym s) := (sym_interp m) s;
   pattern_interpretation_aux evar_val svar_val (patt_app ls rs) :=
-    pointwise_ext (pattern_interpretation_aux evar_val svar_val ls)
+    app_ext (pattern_interpretation_aux evar_val svar_val ls)
                   (pattern_interpretation_aux evar_val svar_val rs);
   pattern_interpretation_aux evar_val svar_val patt_bott := Empty_set _;
   pattern_interpretation_aux evar_val svar_val (patt_imp ls rs) :=
@@ -767,7 +767,7 @@ match p with
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
 | patt_sym s => (sym_interp m) s
-| patt_app ls rs => pointwise_ext (pattern_interpretation evar_val svar_val ls)
+| patt_app ls rs => app_ext (pattern_interpretation evar_val svar_val ls)
                                   (pattern_interpretation evar_val svar_val rs)
 | patt_bott => Empty_set _
 | patt_imp ls rs => Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
@@ -829,7 +829,7 @@ Lemma pattern_interpretation_app_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
   pattern_interpretation evar_val svar_val (patt_app ls rs) =
-  pointwise_ext (pattern_interpretation evar_val svar_val ls)
+  app_ext (pattern_interpretation evar_val svar_val ls)
                 (pattern_interpretation evar_val svar_val rs).
 Admitted.
 

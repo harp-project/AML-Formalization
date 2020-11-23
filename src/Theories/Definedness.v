@@ -66,10 +66,10 @@ Section definedness.
       forall (m: Domain M),
         Same_set (Domain M)
                  (Full_set (Domain M))
-                 (pointwise_ext (pattern_interpretation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
+                 (app_ext (pattern_interpretation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
   Proof.
     intros.
-    unfold pointwise_ext.
+    unfold app_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
     unfold satisfies_axioms in H. specialize (H AxDefinedness). simpl in H.
@@ -92,7 +92,7 @@ Section definedness.
     unfold locally_nameless.eq_evar_name in H.
     destruct (evar_eq (variables (sig)) (nevar (variables (sig)) "x") (nevar (variables (sig)) "x") ).
     2: { contradiction. }
-    unfold pointwise_ext in H. unfold In in H.
+    unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
     destruct Hm1m2. destruct H0.
     inversion H0. clear H0. subst.
@@ -127,14 +127,14 @@ Section definedness.
     assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (pattern_interpretation evar_val svar_val phi) ).
     { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
     
-    pose proof (Hincl' := pointwise_ext_monotonic_r
+    pose proof (Hincl' := app_ext_monotonic_r
                             M
                             (pattern_interpretation evar_val svar_val (patt_sym (inj definedness)))
                             (Singleton (Domain M) x)
                             (pattern_interpretation evar_val svar_val phi)
                             Hincl
                ).
-    apply Included_transitive with (S2 := pointwise_ext (pattern_interpretation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
+    apply Included_transitive with (S2 := app_ext (pattern_interpretation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
 
   Qed.
 
@@ -147,7 +147,7 @@ Section definedness.
     intros. unfold patt_defined.
     rewrite -> pattern_interpretation_app_simpl.
     rewrite -> (Same_set_to_eq H0).
-    apply pointwise_ext_bot_r.
+    apply app_ext_bot_r.
   Qed.
 
   Theorem modus_tollens: forall (P Q : Prop), (P -> Q) -> ~Q -> ~P.

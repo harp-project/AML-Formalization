@@ -182,7 +182,7 @@ Module test_2.
       clear H. (* useless *)
       intros.
       unfold In.
-      unfold pointwise_ext.
+      unfold app_ext.
       exists (dom_custom m_def).
       unfold evar.
       rewrite -> pattern_interpretation_free_evar_simpl.
