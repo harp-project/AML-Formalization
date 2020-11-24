@@ -584,7 +584,7 @@ Qed.
 
 (*If phi is a closed body, then (ex, phi) is closed too*)
 Lemma wfc_body_to_wfc_ex:
-forall phi (x : evar_name), wfc_body_ex phi -> well_formed_closed (patt_exists phi).
+forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
 Proof.
   intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
@@ -595,12 +595,12 @@ Qed.
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
 (*Conclusion*)
 Lemma wfc_body_wfc_ex_iff: 
-  forall phi (x : evar_name),
+  forall phi,
   well_formed_closed (patt_exists phi) <-> wfc_body_ex phi.
 Proof.
   split.
   - apply wfc_ex_to_wfc_body.
-  - apply (wfc_body_to_wfc_ex phi x).
+  - apply (wfc_body_to_wfc_ex phi).
 Qed.
 
 (*Similarly to the section above but with mu*)
