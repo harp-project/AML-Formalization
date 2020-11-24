@@ -1063,6 +1063,21 @@ Proof.
   split; intros.
 Admitted.
 
+Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
+Proof.
+  simpl. unfold patt_not. reflexivity.
+Qed.
+
+Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+Proof.
+  simpl. unfold patt_or. unfold patt_not. reflexivity.
+Qed.
+
+Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+Proof.
+  simpl. unfold patt_and. unfold patt_not. reflexivity.
+Qed.
+
 Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρₛ,
     Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set (Domain M))
     \/ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)).
@@ -1139,6 +1154,25 @@ Qed.
 
 (* TODO top forall iff *)
     
+(* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
+(* ϕ is expected to have dangling evar indices *)
+Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
+  let x := evar_fresh (variables signature) (free_evars ϕ) in
+  M_predicate M (evar_open 0 x ϕ) ->
+  Same_set (Domain M)
+           (pattern_interpretation ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
+           (fun m : (Domain M) => Same_set (Domain M)
+                                           (pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ))
+                                           (Full_set _)).
+Proof.
+  simpl. intros Hmp.
+  rewrite -> pattern_interpretation_ex_simpl.
+  red. simpl free_evars.
+  rewrite -> evar_open_and.
+  remember (evar_fresh (variables signature) (set_union eq_evar_name (@nil evar_name) (free_evars ϕ))) as x'.
+Admitted.
+
+  
 
 End ml_syntax_semantics.
 
