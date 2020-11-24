@@ -1107,7 +1107,36 @@ Proof.
 Qed.
 
 (* TODO something like this, but with binding a free variable *)
-(* Lemma M_predicate_exists M ϕ : M_predicate M ϕ -> M_predicate M (patt_exists ϕ) *)
+Lemma M_predicate_exists M ϕ :
+  let x := evar_fresh (variables signature) (free_evars ϕ) in
+  M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
+Proof.
+  simpl. unfold M_predicate. intros.
+  rewrite -> pattern_interpretation_ex_simpl.
+  simpl.
+  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (variables signature) (free_evars ϕ)) e ρₑ) ρₛ (evar_open 0 (evar_fresh (variables signature) (free_evars ϕ)) ϕ)) (Full_set (Domain M)))).
+  destruct H'.
+  - (* For some member, the subformula evaluates to full set. *)
+    left. apply Same_set_symmetric. apply Same_set_Full_set.
+    unfold Included. intros. constructor.
+    destruct H0. unfold Same_set in H0. destruct H0. clear H0.
+    unfold Included in H2. specialize (H2 x H1).
+    exists x0. unfold In in H2. apply H2.
+  - (* The subformula does not evaluate to full set for any member. *)
+    right.
+    unfold Same_set.
+    split.
+    + unfold Included. intros.
+      unfold In in H1. inversion H1. subst. clear H1. destruct H2.
+      specialize (H (update_evar_val (evar_fresh (variables signature) (free_evars ϕ)) x0 ρₑ) ρₛ).
+      destruct H.
+      * exfalso. apply H0. exists x0. apply H.
+      * unfold Same_set in H. destruct H. clear H2.
+        unfold Included in H. specialize (H x).
+        auto.
+    + unfold Included. intros. inversion H1.
+Qed.
+
 (* TODO top forall iff *)
     
 
