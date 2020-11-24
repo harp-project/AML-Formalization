@@ -1104,7 +1104,7 @@ Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pa
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
   (well_formed phi) -> (@well_formed sig psi) ->
   (forall axiom : Pattern,
-     In Pattern (patterns theory) axiom ->
+     In Pattern theory axiom ->
      forall (evar_val : evar_name -> Domain m)
        (svar_val : svar_name -> Power (Domain m)),
      Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
@@ -1149,7 +1149,7 @@ Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pat
   (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
   (well_formed phi) -> (well_formed psi) ->
   (forall axiom : Pattern,
-     In Pattern (patterns theory) axiom ->
+     In Pattern theory axiom ->
      forall (evar_val : evar_name -> Domain m)
        (svar_val : svar_name ->
                    Power (Domain m)),

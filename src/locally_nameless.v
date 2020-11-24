@@ -902,26 +902,17 @@ End Semantics_of_derived_operators.
 
 (* Theory,axiom ref. snapshot: Definition 5 *)
 
-Record Theory := {
-  patterns : Power (Pattern)
-}.
+Definition Theory := Power Pattern.
 
 Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
 forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
   Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
 
-Notation "M |=M phi" := (satisfies_model M phi) (left associativity, at level 50).
-
 Definition satisfies_theory (m : Model) (theory : Theory)
-: Prop := forall axiom : Pattern, In _ (patterns theory) axiom -> (m |=M axiom).
-
-Notation "M |=T Gamma" := (satisfies_theory M Gamma)
-    (left associativity, at level 50).
+: Prop := forall axiom : Pattern, In _ theory axiom -> (satisfies_model m axiom).
 
 Definition satisfies (theory : Theory) (p: Pattern)
-: Prop := forall m : Model, (m |=T theory) -> (m |=M p).
-
-Notation "G |= phi" := (satisfies G phi) (left associativity, at level 50).
+: Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
 (* End of definition 5. *)
 
@@ -1072,6 +1063,116 @@ Proof.
   split; intros.
 Admitted.
 
+Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
+Proof.
+  simpl. unfold patt_not. reflexivity.
+Qed.
+
+Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+Proof.
+  simpl. unfold patt_or. unfold patt_not. reflexivity.
+Qed.
+
+Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+Proof.
+  simpl. unfold patt_and. unfold patt_not. reflexivity.
+Qed.
+
+Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρₛ,
+    Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set (Domain M))
+    \/ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)).
+
+
+Lemma M_predicate_impl M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_imp ϕ₁ ϕ₂).
+Proof.
+  unfold M_predicate. intros Hp1 Hp2 ρₑ ρₛ.
+  specialize (Hp1 ρₑ ρₛ). specialize (Hp2 ρₑ ρₛ).
+  rewrite -> pattern_interpretation_imp_simpl.
+  destruct Hp1, Hp2; apply Same_set_to_eq in H; apply Same_set_to_eq in H0; rewrite -> H; rewrite -> H0.
+  + left. apply Union_Compl_Fullset.
+  + right.
+    rewrite -> (Same_set_to_eq (Complement_Full_is_Empty)).
+    apply Union_Empty_r.
+  + left.
+    rewrite -> (Same_set_to_eq (Complement_Empty_is_Full)).
+    unfold Same_set. unfold Included. unfold In. split; intros; constructor; constructor.
+  + left. apply Union_Compl_Fullset.
+Qed.
+
+Lemma M_predicate_bott M : M_predicate M patt_bott.
+Proof.
+  unfold M_predicate. intros. right.
+  rewrite -> pattern_interpretation_bott_simpl.
+  apply Same_set_refl.
+Qed.
+
+Lemma M_predicate_not M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
+Proof.
+  intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bott.
+Qed.
+
+Lemma M_predicate_or M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_or ϕ₁ ϕ₂).
+Proof.
+  intros. unfold patt_or. auto using M_predicate_not, M_predicate_impl.
+Qed.
+
+Lemma M_predicate_and M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_and ϕ₁ ϕ₂).
+Proof.
+  intros. unfold patt_and. auto using M_predicate_or, M_predicate_not.
+Qed.
+
+(* TODO something like this, but with binding a free variable *)
+Lemma M_predicate_exists M ϕ :
+  let x := evar_fresh (variables signature) (free_evars ϕ) in
+  M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
+Proof.
+  simpl. unfold M_predicate. intros.
+  rewrite -> pattern_interpretation_ex_simpl.
+  simpl.
+  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (variables signature) (free_evars ϕ)) e ρₑ) ρₛ (evar_open 0 (evar_fresh (variables signature) (free_evars ϕ)) ϕ)) (Full_set (Domain M)))).
+  destruct H'.
+  - (* For some member, the subformula evaluates to full set. *)
+    left. apply Same_set_symmetric. apply Same_set_Full_set.
+    unfold Included. intros. constructor.
+    destruct H0. unfold Same_set in H0. destruct H0. clear H0.
+    unfold Included in H2. specialize (H2 x H1).
+    exists x0. unfold In in H2. apply H2.
+  - (* The subformula does not evaluate to full set for any member. *)
+    right.
+    unfold Same_set.
+    split.
+    + unfold Included. intros.
+      unfold In in H1. inversion H1. subst. clear H1. destruct H2.
+      specialize (H (update_evar_val (evar_fresh (variables signature) (free_evars ϕ)) x0 ρₑ) ρₛ).
+      destruct H.
+      * exfalso. apply H0. exists x0. apply H.
+      * unfold Same_set in H. destruct H. clear H2.
+        unfold Included in H. specialize (H x).
+        auto.
+    + unfold Included. intros. inversion H1.
+Qed.
+
+(* TODO top forall iff *)
+    
+(* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
+(* ϕ is expected to have dangling evar indices *)
+Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
+  let x := evar_fresh (variables signature) (free_evars ϕ) in
+  M_predicate M (evar_open 0 x ϕ) ->
+  Same_set (Domain M)
+           (pattern_interpretation ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
+           (fun m : (Domain M) => Same_set (Domain M)
+                                           (pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ))
+                                           (Full_set _)).
+Proof.
+  simpl. intros Hmp.
+  rewrite -> pattern_interpretation_ex_simpl.
+  red. simpl free_evars.
+  rewrite -> evar_open_and.
+  remember (evar_fresh (variables signature) (set_union eq_evar_name (@nil evar_name) (free_evars ϕ))) as x'.
+Admitted.
+
+  
 
 End ml_syntax_semantics.
 
@@ -1093,17 +1194,24 @@ Module MLNotations.
   Notation "'Top'" := patt_top : ml_scope.
   Notation "'all' , phi" := (patt_forall phi) (at level 55) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 55) : ml_scope.
+
+  Notation "M ⊨ᴹ phi" := (satisfies_model M phi) (left associativity, at level 50) : ml_scope.
+  (* FIXME this should not be called `satisfies` *)
+Notation "G ⊨ phi" := (satisfies G phi) (left associativity, at level 50) : ml_scope.
+Notation "M ⊨ᵀ Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50) : ml_scope.
 End MLNotations.
 
 Section ml_proof_system.
   Import MLNotations.
   Open Scope ml_scope.
-  
+
   Context {signature : Signature}.
 (* Proof system for AML ref. snapshot: Section 3 *)
 (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
 (* TODO: add well-formedness of theory *)
 (* TODO: use well-formedness as parameter in proof system *)
+
 Reserved Notation "theory ⊢ pattern" (at level 1).
 Inductive ML_proof_system (theory : Theory) :
   Pattern -> Prop :=
@@ -1111,7 +1219,7 @@ Inductive ML_proof_system (theory : Theory) :
 (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (In _ (patterns theory) axiom) -> theory ⊢ axiom
+      (In _ theory axiom) -> theory ⊢ axiom
   
 (* FOL reasoning *)
   (* Propositional tautology *)
@@ -1206,6 +1314,47 @@ Inductive ML_proof_system (theory : Theory) :
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
 where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+
+Definition T_predicate Γ ϕ := forall M, (M ⊨ᵀ Γ) -> @M_predicate signature M ϕ.
+
+Lemma T_predicate_impl Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_imp ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_impl.
+Qed.
+
+Lemma T_predicate_bot Γ : T_predicate Γ patt_bott.
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_bott.
+Qed.
+
+Lemma T_predicate_not Γ ϕ : T_predicate Γ ϕ -> T_predicate Γ (patt_not ϕ).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_not.
+Qed.
+
+Lemma T_predicate_or Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_or ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_or.
+Qed.
+
+Lemma T_predicate_and Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_and ϕ₁ ϕ₂).
+Proof.
+  unfold T_predicate.
+  intros.
+  auto using M_predicate_and.
+Qed.
+
+(* TODO: top iff exists forall *)
+
+
 End ml_proof_system.
 
 
