@@ -194,11 +194,12 @@ Proof.
     intros. apply H0 in H. clear H0.
     admit.
     
-  * Search ext_valuation patt_imp Full_set.
-    apply ext_valuation_iff_subset. simpl.
-    rewrite -> ext_valuation_mu_simpl.
+  * apply pattern_interpretation_iff_subset. simpl.
+    rewrite -> pattern_interpretation_mu_simpl.
     Arguments Lattice.LeastFixpointOf : simpl never.
-    simpl. Search Lattice.LeastFixpointOf.
+    simpl.
+    Search Lattice.LeastFixpointOf.
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint.
     Search Lattice.Meet.
     Search bvar_subst.
     (*
