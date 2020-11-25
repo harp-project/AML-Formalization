@@ -8,6 +8,7 @@ src/DefaultVariables.v
 src/AML_soundness_lemmas.v
 src/AML_soundness.v
 src/FOL_helpers_locallynmlss.v
+src/Logic.v
 src/Theories/Definedness.v
 src/Theories/Sorts.v
 src/Tests/TEST_LocallyNameless.v
