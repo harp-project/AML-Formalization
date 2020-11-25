@@ -29,7 +29,7 @@ Record MLVariables := {
   nsvar_inj : forall (s1 s2 : string), nsvar s1 = nsvar s2 -> s1 = s2;
 }.
 
-Record Signature := {
+Class Signature := {
   variables : MLVariables;
   symbols : Type;
   sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};

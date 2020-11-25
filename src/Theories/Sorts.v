@@ -12,7 +12,7 @@ Section sorts.
   Context {sig : Signature}.
 
   Class Syntax :=
-    { inj: Symbols -> (symbols sig);
+    { inj: Symbols -> symbols;
       imported_definedness: @Definedness.Syntax sig;
     }.
 

@@ -576,11 +576,11 @@ Section respects_blacklist.
   
   Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern),
       well_formed_positive (patt_mu phi) ->
-      let X := svar_fresh (variables sig) (free_svars phi) in
+      let X := svar_fresh variables (free_svars phi) in
       respects_blacklist (svar_open 0 X phi) (Empty_set svar_name) (Singleton svar_name X).
   Proof.
     intros. destruct H as [Hpo Hwfp].
-    pose proof (Hfr := svar_fresh_is_fresh (variables sig) (free_svars phi)).
+    pose proof (Hfr := svar_fresh_is_fresh variables (free_svars phi)).
     auto using positive_occurrence_respects_blacklist_svar_open.
   Qed.
 
@@ -588,7 +588,7 @@ Section respects_blacklist.
   (*
 Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
     respects_blacklist ()
-respects_blacklist (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi) Bp B
+respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp B
    *)
 
   Lemma evar_open_respects_blacklist :
@@ -849,10 +849,10 @@ Section with_model.
         }
       * (* Ex *)
         simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-        specialize (IHn (evar_open 0 (evar_fresh (variables sig) (free_evars phi)) phi)).
+        specialize (IHn (evar_open 0 (evar_fresh variables (free_evars phi)) phi)).
         rewrite <- evar_open_size in IHn.
         assert (Hsz': size phi <= n). simpl in *. lia.
-        remember (evar_fresh (variables sig) (free_evars phi)) as fresh.
+        remember (evar_fresh variables (free_evars phi)) as fresh.
         pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
         specialize (IHn Hsz' Hwfp' Bp Bn).
         pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
@@ -895,7 +895,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh (variables sig) (free_svars phi)) as X'.
+          remember (svar_fresh variables (free_svars phi)) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -921,7 +921,7 @@ Section with_model.
           - apply Hx. constructor.
           - clear Hx. clear Hy.
             intros.
-            destruct (svar_eq (variables sig) X' V).
+            destruct (svar_eq variables X' V).
             + (* X' = V *)
               rewrite <- e.
               repeat rewrite -> update_svar_shadow.
@@ -944,7 +944,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh (variables sig) (free_svars phi) = V).
+                    unfold not. intros. assert (svar_fresh variables (free_svars phi) = V).
                     {
                       symmetry. assumption.
                     }
@@ -966,7 +966,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh (variables sig) (free_svars phi)) as X'.
+          remember (svar_fresh variables (free_svars phi)) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -992,7 +992,7 @@ Section with_model.
           - apply Hy. constructor.
           - clear Hy. clear Hx.
             intros.
-            destruct (svar_eq (variables sig) X' V).
+            destruct (svar_eq variables X' V).
             + (* X' = V *)
               rewrite <- e.
               repeat rewrite -> update_svar_shadow.
@@ -1016,7 +1016,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh (variables sig) (free_svars phi) = V).
+                    unfold not. intros. assert (svar_fresh variables (free_svars phi) = V).
                     {
                       symmetry. assumption.
                     }
@@ -1035,7 +1035,7 @@ Section with_model.
                               (evar_val : @EVarVal sig M)
                               (svar_val : @SVarVal sig M),
       well_formed (mu, phi) ->
-      let X := svar_fresh (variables sig) (free_svars phi) in
+      let X := svar_fresh variables (free_svars phi) in
       @MonotonicFunction A OS
                          (fun S : Ensemble (Domain M) =>
                             (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
@@ -1045,15 +1045,15 @@ Section with_model.
     pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
     simpl in Hrb.
     inversion Hwfp.
-    remember (svar_open 0 (svar_fresh (variables sig) (free_svars phi)) phi) as phi'.
+    remember (svar_open 0 (svar_fresh variables (free_svars phi)) phi) as phi'.
     assert (Hsz : size phi' <= size phi').
     { lia. }
     pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
     assert (Hwfp' : well_formed_positive phi').
     { subst. apply wfp_svar_open. assumption. }
     specialize (Hmono Hsz Hwfp').
-    specialize (Hmono (Empty_set svar_name) (Singleton svar_name (svar_fresh (variables sig) (free_svars phi)))).
-    specialize (Hmono Hrb evar_val svar_val (svar_fresh (variables sig) (free_svars phi))).
+    specialize (Hmono (Empty_set svar_name) (Singleton svar_name (svar_fresh variables (free_svars phi)))).
+    specialize (Hmono Hrb evar_val svar_val (svar_fresh variables (free_svars phi))).
     destruct Hmono.
     apply H2.
     constructor.
@@ -1128,11 +1128,11 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (variables sig)
+    assert (~List.In (evar_fresh variables
                                  (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
              (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh (variables sig)
+    assert (~List.In (evar_fresh variables
                                  (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
              (free_evars phi)).
     admit.
@@ -1176,11 +1176,11 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (variables sig)
+    assert (~List.In (evar_fresh variables
                                  (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
              (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh (variables sig)
+    assert (~List.In (evar_fresh variables
                                  (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
              (free_evars phi)).
     admit.

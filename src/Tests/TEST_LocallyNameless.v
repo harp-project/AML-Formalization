@@ -18,8 +18,7 @@ Module test_1.
     decide equality.
   Qed. (* We may need Defined here *)
 
-  #[canonical]
-  Let signature :=
+  Instance signature : Signature :=
     {| symbols := Symbols;
        sym_eq := Symbols_dec;
        variables := DefaultMLVariables;
@@ -87,14 +86,11 @@ Module test_2.
       * decide equality.
     Qed.
 
-    Let signature : Signature :=
+    Instance signature : Signature :=
       {| symbols := Symbols;
          sym_eq := Symbols_dec;
          variables := DefaultMLVariables;
       |}.
-
-    #[local]
-    Canonical Structure signature.
 
     Instance definedness_syntax : Definedness.Syntax :=
       {|

@@ -17,7 +17,7 @@ Section definedness.
   Class Syntax(*(sig : Signature)*) :=
     { (*sig: Signature;*)
     (* 'Symbols' are a 'subset' of all the symbols from the signature *)
-    inj: Symbols -> symbols sig;
+    inj: Symbols -> symbols;
     (* TODO make it injective? *)
     (* for convenience *)
     }.  
@@ -45,7 +45,7 @@ Section definedness.
     @patt_sym sig (inj s).
   
   Let evar (name : string) : Pattern :=
-    @patt_free_evar sig (nevar (variables sig) name).
+    @patt_free_evar sig (nevar variables name).
 
 
   Inductive AxiomName := AxDefinedness.
@@ -84,7 +84,7 @@ Section definedness.
     pose proof (H' := theoryAxiom M H AxDefinedness). simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
-    remember (update_evar_val (nevar (variables (sig)) "x") m evar_val) as evar_val'.
+    remember (update_evar_val (nevar variables "x") m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
     unfold Same_set in H. destruct H as [_ H].
     unfold Included in H.
@@ -100,7 +100,7 @@ Section definedness.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
     unfold locally_nameless.eq_evar_name in H.
-    destruct (evar_eq (variables (sig)) (nevar (variables (sig)) "x") (nevar (variables (sig)) "x") ).
+    destruct (evar_eq variables (nevar variables "x") (nevar variables "x") ).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
