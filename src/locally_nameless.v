@@ -12,6 +12,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
+(*From stdpp Require Import mapset.*)
 Require Import Lattice.
 Require Import Signature.
 

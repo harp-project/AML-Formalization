@@ -7,6 +7,8 @@ Require Import Coq.micromega.Lia.
 Require Import Signature.
 Require Import extralibrary.
 
+From stdpp Require Import countable strings.
+
 Inductive evar_name_kind : Type := evar_c {id_ev : string}.
 Inductive svar_name_kind : Type := svar_c {id_sv : string}.
 
@@ -28,6 +30,44 @@ Proof.
   decide equality.
 Defined.
 
+Program Instance evar_name_kind_eq_decidable : EqDecision evar_name_kind.
+Next Obligation. solve_decision. Defined.
+
+Program Instance svar_name_kind_eq_decidable : EqDecision svar_name_kind.
+Next Obligation. solve_decision. Defined.
+
+(* There must be a simpler way! Maybe the fact that `id_ev` is injective could help us. *)
+Program Instance evar_name_kind_countable : Countable evar_name_kind :=
+  {|
+  encode x := encode (id_ev x) ;
+  decode n := evar_c <$> (decode n);
+  |}.
+Next Obligation.
+  intros. simpl. apply f_equal. destruct x. simpl. apply f_equal.
+  enough ((Some (string_of_pos (encode id_ev0)) = Some id_ev0)).
+  { apply (@inj _ _ (=) (=) Some _) in H. assumption. }
+  pose proof (H := @decode_encode string _ _ id_ev0). unfold decode in H. simpl in H. assumption.
+Qed.
+
+Program Instance svar_name_kind_countable : Countable svar_name_kind :=
+  {|
+  encode x := encode (id_sv x) ;
+  decode n := svar_c <$> (decode n);
+  |}.
+Next Obligation.
+  intros. simpl. apply f_equal. destruct x. simpl. apply f_equal.
+  enough ((Some (string_of_pos (encode id_sv0)) = Some id_sv0)).
+  { apply (@inj _ _ (=) (=) Some _) in H. assumption. }
+  pose proof (H := @decode_encode string _ _ id_sv0). unfold decode in H. simpl in H. assumption.
+Qed.
+
+
+Program Instance evar_name_eq_decidable : EqDecision evar_name.
+Program Instance svar_name_eq_decidable : EqDecision svar_name.
+Program Instance evar_name_countable : Countable evar_name := @prod_countable evar_name_kind _ _ Z _ _.
+Program Instance svar_name_countable : Countable svar_name := @prod_countable svar_name_kind _ _ Z _ _.
+
+(* TODO replace with the instance of EqDecision *)
 Lemma eq_svar_name: forall (n1 n2: svar_name), {n1 = n2} + {n1 <> n2}.
 Proof.
   assert (forall k1 k2: svar_name_kind, {k1 = k2} + {k1 <> k2}).
@@ -267,3 +307,13 @@ Program Definition DefaultMLVariables : MLVariables :=
      nevar := fun (s : string) => find_fresh_evar_name (@evar_c s) nil;
      nsvar := fun (s : string) => find_fresh_svar_name (@svar_c s) nil;
   |}.
+Next Obligation.
+  intros. simpl in H. inversion H. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl in H. inversion H. reflexivity.
+Qed.
+
+    
+    
+                 
