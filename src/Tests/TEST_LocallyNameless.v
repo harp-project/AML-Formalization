@@ -39,7 +39,7 @@ Module test_1.
   (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
 
   Definition complex :=
-    evar ("A") --> (evar("B") --> ¬(svar("C"))) $
+    evar ("A") ---> (evar("B") ---> ¬(svar("C"))) $
          ex , svar ("D") $ Bot and Top.
 
   Definition custom_constructor := sym ctor.

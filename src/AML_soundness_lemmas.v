@@ -467,7 +467,7 @@ Section respects_blacklist.
 
   Lemma respects_blacklist_impl : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
       respects_blacklist phi1 Bn Bp -> respects_blacklist phi2 Bp Bn ->
-      respects_blacklist (phi1 --> phi2) Bp Bn.
+      respects_blacklist (phi1 ---> phi2) Bp Bn.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -479,7 +479,7 @@ Section respects_blacklist.
   Qed.
 
   Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
-      respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi1 Bn Bp.
+      respects_blacklist (phi1 ---> phi2) Bp Bn -> respects_blacklist phi1 Bn Bp.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -493,7 +493,7 @@ Section respects_blacklist.
   Qed.
 
   Lemma respects_blacklist_impl_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
-      respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
+      respects_blacklist (phi1 ---> phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -1061,13 +1061,13 @@ Section with_model.
 End with_model.
 
 
-(* if pattern_interpretation (phi1 --> phi2) = Full_set 
+(* if pattern_interpretation (phi1 ---> phi2) = Full_set 
    then pattern_interpretation phi1 subset pattern_interpretation phi2
 *)
 Theorem pattern_interpretation_iff_subset {m : Model}
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (phi1 : Pattern) (phi2 : Pattern) :
-  Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) <->
+  Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 ---> phi2)) (Full_set (Domain m)) <->
   Included (Domain m) (pattern_interpretation evar_val svar_val phi1)
            (@pattern_interpretation sig m evar_val svar_val phi2).
 Proof.

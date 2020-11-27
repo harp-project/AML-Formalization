@@ -1180,20 +1180,20 @@ Module MLNotations.
   Declare Scope ml_scope.
   Delimit Scope ml_scope with ml.
   (* TODO: change Bot and Top to unicode symbols *)
-  Notation "a $ b" := (patt_app a b) (at level 50, left associativity) : ml_scope.
+  Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
   Notation "'Bot'" := patt_bott : ml_scope.
-  Notation "a --> b"  := (patt_imp a b) (at level 90, right associativity,
+  Notation "a ---> b"  := (patt_imp a b) (at level 90, right associativity,
                                          b at level 200) : ml_scope.
-  Notation "'ex' , phi" := (patt_exists phi) (at level 55) : ml_scope.
-  Notation "'mu' , phi" := (patt_mu phi) (at level 55) : ml_scope.
+  Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
+  Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
 
-  Notation "¬ a"     := (patt_not   a  ) (at level 75) : ml_scope.
+  Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
   Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
   Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
-  Notation "a <--> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
+  Notation "a <---> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
   Notation "'Top'" := patt_top : ml_scope.
-  Notation "'all' , phi" := (patt_forall phi) (at level 55) : ml_scope.
-  Notation "'nu' , phi" := (patt_nu phi) (at level 55) : ml_scope.
+  Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
+  Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
 
   Notation "M ⊨ᴹ phi" := (satisfies_model M phi) (left associativity, at level 50) : ml_scope.
   (* FIXME this should not be called `satisfies` *)
@@ -1219,75 +1219,75 @@ Inductive ML_proof_system (theory : Theory) :
 (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (In _ theory axiom) -> theory ⊢ axiom
+      (Ensembles.In _ theory axiom) -> theory ⊢ axiom
   
 (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory ⊢ (phi --> (psi --> phi))
+      theory ⊢ (phi ---> (psi ---> phi))
   | P2 (phi psi xi : Pattern) :
       well_formed phi -> well_formed psi -> well_formed xi ->
-      theory ⊢ ((phi --> (psi --> xi)) --> ((phi --> psi) --> (phi --> xi)))
+      theory ⊢ ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
   | P3 (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (((phi --> Bot) --> Bot) --> phi)
+      theory ⊢ (((phi ---> Bot) ---> Bot) ---> phi)
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 --> phi2) ->
+      well_formed phi1 -> well_formed (phi1 ---> phi2) ->
       theory ⊢ phi1 ->
-      theory ⊢ (phi1 --> phi2) ->
+      theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ phi2
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar_name) :
       well_formed phi ->
-      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) --> (patt_exists phi))
+      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
       well_formed phi1 -> well_formed phi2 ->
-      theory ⊢ (phi1 --> phi2) ->
+      theory ⊢ (phi1 ---> phi2) ->
       set_mem eq_evar_name x (free_evars phi2) = false ->
-      theory ⊢ (exists_quantify x phi1 --> phi2)
+      theory ⊢ (exists_quantify x phi1 ---> phi2)
 
 (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (patt_bott $ phi --> patt_bott)
+      theory ⊢ (patt_bott $ phi ---> patt_bott)
 
   | Prop_bott_right (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (phi $ patt_bott --> patt_bott)
+      theory ⊢ (phi $ patt_bott ---> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ (((phi1 or phi2) $ psi) --> ((phi1 $ psi) or (phi2 $ psi)))
+      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ ((psi $ (phi1 or phi2)) --> ((psi $ phi1) or (psi $ phi2)))
+      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory ⊢ (((ex , phi) $ psi) --> (ex , phi $ psi))
+      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory ⊢ ((psi $ (ex , phi)) --> (ex , psi $ phi))
+      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
-      theory ⊢ (phi1 --> phi2) ->
-      theory ⊢ ((phi1 $ psi) --> (phi2 $ psi))
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
-      theory ⊢ (phi1 --> phi2) ->
-      theory ⊢ ((psi $ phi1) --> (psi $ phi2))
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
@@ -1297,12 +1297,12 @@ Inductive ML_proof_system (theory : Theory) :
   (* Pre-Fixpoint *)
   (* TODO: is this correct? *)
   | Pre_fixp (phi : Pattern) :
-      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) --> (patt_mu phi))
+      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
-      theory ⊢ ((instantiate (patt_mu phi) psi) --> psi) ->
-      theory ⊢ ((@patt_mu signature phi) --> psi)
+      theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
+      theory ⊢ ((@patt_mu signature phi) ---> psi)
 
 (* Technical rules *)
   (* Existence *)

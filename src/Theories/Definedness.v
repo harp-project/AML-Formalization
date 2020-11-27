@@ -33,10 +33,10 @@ Section definedness.
     patt_not (patt_defined (patt_not phi)).
 
   Definition patt_subseteq (phi1 phi2 : Pattern) : Pattern :=
-    patt_total (phi1 --> phi2).
+    patt_total (phi1 ---> phi2).
   
   Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
-    patt_total (phi1 <--> phi2).
+    patt_total (phi1 <---> phi2).
 
   Definition patt_in (phi1 phi2 : Pattern) : Pattern :=
     patt_defined (patt_and phi1 phi2).
@@ -290,7 +290,7 @@ Section definedness.
     apply (totality_result_nonempty _ H) in H1.
     unfold patt_equal.
     apply (totality_full _ H).
-    unfold "<-->".
+    unfold "<--->".
     rewrite -> pattern_interpretation_and_simpl.
     rewrite -> (Same_set_to_eq H0).
     rewrite -> (Same_set_to_eq H1).
@@ -316,7 +316,7 @@ Section definedness.
     unfold patt_equal in H0.
     apply full_impl_not_empty in H0.
     apply (totality_result_nonempty _ H) in H0.
-    unfold "<-->" in H0.
+    unfold "<--->" in H0.
     rewrite ->pattern_interpretation_and_simpl in H0.
     apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
     unfold patt_subseteq.
