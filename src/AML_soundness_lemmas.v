@@ -22,10 +22,11 @@ Open Scope ml_scope.
 Section soundness_lemmas.
 
   Context {sig : Signature}.
+  Existing Instance variables.
 
 
 (* evar_open of fresh name does not change *)
-Lemma evar_open_fresh (phi : Pattern) (v : @evar_name sig) :
+Lemma evar_open_fresh (phi : Pattern) (v : evar) :
   forall n, well_formed phi -> ~List.In v (free_evars phi) ->
             evar_open n v phi = phi.
 Proof. Admitted.
@@ -54,8 +55,8 @@ Proof. Admitted. *)
    to work with any variable that is not free in psi.
 *)
 Lemma update_valuation_fresh {m : Model}
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (psi : Pattern) (x : Domain m) (c : Domain m) (v : @evar_name sig):
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+      (psi : Pattern) (x : Domain m) (c : Domain m) (v : evar):
    (* Should be here, right? *)
    (* well_formed psi -> *)
   ~List.In v (free_evars psi) ->
@@ -66,11 +67,11 @@ Proof.
   generalize dependent evar_val.
   generalize dependent svar_val. generalize dependent v.
   induction psi; try reflexivity.
-  - intros. repeat rewrite pattern_interpretation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar_name v x) eqn:P.
+  - intros. repeat rewrite pattern_interpretation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar v x) eqn:P.
     + rewrite e in H. destruct H. left. reflexivity.
     + reflexivity.
   - intros. repeat rewrite pattern_interpretation_app_simpl. simpl in H. 
-    pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
+    pose (set_union_iff (@eq_evar sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
     pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold app_ext. 
     apply propositional_extensionality.
@@ -80,7 +81,7 @@ Proof.
     + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0 ). 
         pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
   - intros. repeat rewrite pattern_interpretation_imp_simpl. simpl in H. 
-    pose (set_union_iff (@eq_evar_name sig) v (free_evars psi1) (free_evars psi2)).
+    pose (set_union_iff (@eq_evar sig) v (free_evars psi1) (free_evars psi2)).
     apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
     pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 v H1 svar_val evar_val c x). 
     pose (IHpsi2 v H2 svar_val evar_val c x). clear H0. clear H. unfold In. apply propositional_extensionality. split.
@@ -166,18 +167,18 @@ Admitted.
 
 
 Lemma not_free_implies_positive_negative_occurrence :
-  forall (phi : Pattern) (X : svar_name),
+  forall (phi : Pattern) (X : svar),
     ~ set_In X (free_svars phi) ->
     @positive_occurrence_named sig X phi /\ negative_occurrence_named X phi.
 Proof.
   unfold not.
   induction phi; simpl; intros; split; try constructor; try firstorder.
   * apply IHphi1. intros.
-    assert (H': set_In X (set_union eq_svar_name (free_svars phi1) (free_svars phi2))).
+    assert (H': set_In X (set_union svar_eq (free_svars phi1) (free_svars phi2))).
     { apply set_union_intro1. assumption. }
     auto.
   * apply IHphi2. intros.
-    assert (H': set_In X (set_union eq_svar_name (free_svars phi1) (free_svars phi2))).
+    assert (H': set_In X (set_union svar_eq (free_svars phi1) (free_svars phi2))).
     { apply set_union_intro2. assumption. }
     auto.
   * apply IHphi1.
@@ -197,7 +198,7 @@ Proof.
 Qed.
 
 Lemma positive_negative_occurrence_db_named :
-  forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+  forall (phi : Pattern) (dbi : db_index) (X : svar),
     (positive_occurrence_db dbi phi ->
     positive_occurrence_named X phi ->
     positive_occurrence_named X (@svar_open sig dbi X phi))
@@ -247,7 +248,7 @@ Proof.
   split. assumption. unfold well_formed_closed. assumption.
 Qed.
 
-Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar_name),
+Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
     free_svars (evar_open dbi x ϕ) = @free_svars sig ϕ.
 Proof.
   induction ϕ; intros; simpl; try reflexivity.
@@ -259,7 +260,7 @@ Proof.
 Qed.
 
 Lemma svar_open_evar_open_comm
-  : forall (phi : Pattern) (dbi1 : db_index)(x : evar_name)(dbi2 : db_index)(X : svar_name),
+  : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
     evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (@evar_open sig dbi1 x phi).
 Proof.
   induction phi; intros; simpl; try reflexivity.
@@ -271,7 +272,7 @@ Proof.
   * rewrite -> IHphi. reflexivity.
 Qed.
 
-Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
+Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
     (positive_occurrence_named X (evar_open dbi x ϕ) <-> @positive_occurrence_named sig X ϕ)
     /\ (negative_occurrence_named X (evar_open dbi x ϕ) <-> @negative_occurrence_named sig X ϕ).
 Proof.
@@ -290,7 +291,7 @@ Proof.
   + split; intros H; inversion H; subst; constructor; firstorder.
 Qed.
 
-Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
+Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
     positive_occurrence_named X (evar_open dbi x ϕ) <-> @positive_occurrence_named sig X ϕ.
 Proof.
   intros.
@@ -298,7 +299,7 @@ Proof.
   destruct P as [P _]. exact P.
 Qed.
 
-Lemma negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar_name) (dbi : db_index) (x : evar_name),
+Lemma negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
     negative_occurrence_named X (evar_open dbi x ϕ) <-> @negative_occurrence_named sig X ϕ.
 Proof.
   intros.
@@ -308,7 +309,7 @@ Qed.
 
 Lemma evar_open_wfp : forall (sz : nat) (phi : Pattern),
     le (size phi) sz ->
-    forall(n : db_index) (x : evar_name),
+    forall(n : db_index) (x : evar),
     well_formed_positive phi -> @well_formed_positive sig (evar_open n x phi).
 Proof.
   induction sz; destruct phi; intros Hsz dbi e Hwfp; simpl in *; auto; try inversion Hsz; subst.
@@ -332,7 +333,7 @@ Proof.
     * apply IHsz. lia. firstorder.
 Qed.
 
-Lemma positive_occurrence_db_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+Lemma positive_occurrence_db_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar),
     (positive_occurrence_db dbi phi ->
     @positive_occurrence_db sig dbi (svar_open dbi X phi))
    /\ (negative_occurrence_db dbi phi -> @negative_occurrence_db sig dbi (svar_open dbi X phi)).
@@ -345,7 +346,7 @@ Proof.
 Qed.
 
 (* Lemma well_formed_closed_aux_svar_open :
-  forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar_name),
+  forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar),
     well_formed_closed_aux phi dbi1 dbi2 ->
     @well_formed_closed_aux sig (svar_open dbi2 X phi) dbi1 dbi2.
 Proof.
@@ -357,7 +358,7 @@ Proof.
 Qed. *)
 
 
-Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar_name),
+Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar),
     dbi1 < dbi2 ->
     (
     positive_occurrence_db dbi1 phi ->
@@ -378,7 +379,7 @@ Proof.
   + constructor. apply IHphi. lia. assumption.
 Qed.
 
-Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar),
     well_formed_positive phi ->
     @well_formed_positive sig (svar_open dbi X phi).
 Proof.
@@ -401,7 +402,7 @@ Qed.
 
 
 Lemma positive_negative_occurrence_named_svar_open :
-  forall (phi : Pattern) (X Y : svar_name) (dbi : db_index),
+  forall (phi : Pattern) (X Y : svar) (dbi : db_index),
     X <> Y ->
     (
     negative_occurrence_named X phi ->
@@ -424,11 +425,11 @@ Qed.
 Section respects_blacklist.
   (* Bp - Blacklist of Positive Occurrence - these variables can occur only negatively.
      Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
-  Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar_name) : Prop :=
-    forall (var : svar_name),
+  Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar) : Prop :=
+    forall (var : svar),
       (Bp var -> negative_occurrence_named var phi) /\ (Bn var -> @positive_occurrence_named sig var phi).
 
-  Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
       respects_blacklist (phi1 $ phi2) Bp Bn.
   Proof.
@@ -436,7 +437,7 @@ Section respects_blacklist.
     intros. split; intros; constructor; firstorder; firstorder.
   Qed.
 
-  Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi1 Bp Bn.
   Proof.
     unfold respects_blacklist.
@@ -451,7 +452,7 @@ Section respects_blacklist.
   Qed.
 
   (* This proof is the same as for app_1 *)
-  Lemma respects_blacklist_app_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_app_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
   Proof.
     unfold respects_blacklist.
@@ -465,9 +466,9 @@ Section respects_blacklist.
       inversion Hpos. subst. assumption.
   Qed.
 
-  Lemma respects_blacklist_impl : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_impl : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist phi1 Bn Bp -> respects_blacklist phi2 Bp Bn ->
-      respects_blacklist (phi1 --> phi2) Bp Bn.
+      respects_blacklist (phi1 ---> phi2) Bp Bn.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -478,8 +479,8 @@ Section respects_blacklist.
     split; intros; constructor; firstorder.
   Qed.
 
-  Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
-      respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi1 Bn Bp.
+  Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
+      respects_blacklist (phi1 ---> phi2) Bp Bn -> respects_blacklist phi1 Bn Bp.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -492,8 +493,8 @@ Section respects_blacklist.
       inversion Hneg. subst. assumption.
   Qed.
 
-  Lemma respects_blacklist_impl_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar_name),
-      respects_blacklist (phi1 --> phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
+  Lemma respects_blacklist_impl_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
+      respects_blacklist (phi1 ---> phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
   Proof.
     unfold respects_blacklist.
     intros.
@@ -506,7 +507,7 @@ Section respects_blacklist.
       inversion Hpos. subst. assumption.
   Qed.
 
-  Lemma respects_blacklist_ex : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_ex : forall (phi : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist (patt_exists phi) Bp Bn -> respects_blacklist phi Bp Bn.
   Proof.
     intros. unfold respects_blacklist in *.
@@ -516,7 +517,7 @@ Section respects_blacklist.
     * specialize (Hpos H). inversion Hpos. assumption.
   Qed.
 
-  Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist phi Bp Bn -> respects_blacklist (patt_exists phi) Bp Bn.
   Proof.
     unfold respects_blacklist. intros.
@@ -525,7 +526,7 @@ Section respects_blacklist.
     split; intros; constructor; firstorder.
   Qed.
 
-  Lemma respects_blacklist_mu : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_mu : forall (phi : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist (patt_mu phi) Bp Bn -> respects_blacklist phi Bp Bn.
   Proof.
     unfold respects_blacklist. intros.
@@ -538,7 +539,7 @@ Section respects_blacklist.
       inversion Hpos. assumption.
   Qed.
 
-  Lemma respects_blacklist_mu' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+  Lemma respects_blacklist_mu' : forall (phi : Pattern) (Bp Bn : Ensemble svar),
       respects_blacklist phi Bp Bn -> respects_blacklist (patt_mu phi) Bp Bn.
   Proof.
     unfold respects_blacklist. intros.
@@ -547,10 +548,10 @@ Section respects_blacklist.
     split; intros; constructor; firstorder.
   Qed.
 
-  Lemma respects_blacklist_union : forall (phi : Pattern) (Bp1 Bn1 Bp2 Bn2 : Ensemble svar_name),
+  Lemma respects_blacklist_union : forall (phi : Pattern) (Bp1 Bn1 Bp2 Bn2 : Ensemble svar),
       respects_blacklist phi Bp1 Bn1 ->
       respects_blacklist phi Bp2 Bn2 ->
-      respects_blacklist phi (Union svar_name Bp1 Bp2) (Union svar_name Bn1 Bn2).
+      respects_blacklist phi (Union svar Bp1 Bp2) (Union svar Bn1 Bn2).
   Proof.
     unfold respects_blacklist.
     induction phi; intros; split; intros;
@@ -560,10 +561,10 @@ Section respects_blacklist.
   Qed.
 
   Lemma positive_occurrence_respects_blacklist_svar_open :
-    forall (phi : Pattern) (dbi : db_index) (X : svar_name),
+    forall (phi : Pattern) (dbi : db_index) (X : svar),
       positive_occurrence_db dbi phi ->
       ~ set_In X (free_svars phi) ->
-      respects_blacklist (svar_open dbi X phi) (Empty_set svar_name) (Singleton svar_name X).
+      respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Singleton svar X).
   Proof.
     intros phi dbi X Hpodb Hni.
     pose proof (Hpno := not_free_implies_positive_negative_occurrence phi X Hni).
@@ -576,23 +577,23 @@ Section respects_blacklist.
   
   Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern),
       well_formed_positive (patt_mu phi) ->
-      let X := svar_fresh variables (free_svars phi) in
-      respects_blacklist (svar_open 0 X phi) (Empty_set svar_name) (Singleton svar_name X).
+      let X := svar_fresh (free_svars phi) in
+      respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Singleton svar X).
   Proof.
     intros. destruct H as [Hpo Hwfp].
-    pose proof (Hfr := svar_fresh_is_fresh variables (free_svars phi)).
+    pose proof (Hfr := svar_fresh_is_fresh (free_svars phi)).
     auto using positive_occurrence_respects_blacklist_svar_open.
   Qed.
 
 
   (*
-Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar_name),
+Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar),
     respects_blacklist ()
 respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp B
    *)
 
   Lemma evar_open_respects_blacklist :
-    forall (phi : Pattern) (Bp Bn : Ensemble svar_name) (x : evar_name) (n : nat),
+    forall (phi : Pattern) (Bp Bn : Ensemble svar) (x : evar) (n : nat),
       respects_blacklist phi Bp Bn ->
       respects_blacklist (evar_open n x phi) Bp Bn.
   Proof.
@@ -649,7 +650,7 @@ Section with_model.
 
 
   Lemma update_svar_val_comm :
-    forall (X1 X2 : @svar_name sig) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal sig M),
+    forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal sig M),
       X1 <> X2 ->
       update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
       = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
@@ -658,31 +659,31 @@ Section with_model.
     unfold update_svar_val.
     apply functional_extensionality.
     intros.
-    destruct (eq_svar_name X1 x),(eq_svar_name X2 x); subst.
+    destruct (svar_eq X1 x),(svar_eq X2 x); subst.
     * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
     * reflexivity.
     * reflexivity.
     * reflexivity.
   Qed.
 
-  Lemma update_svar_shadow : forall (X : @svar_name sig)
+  Lemma update_svar_shadow : forall (X : svar)
                                     (S1 S2 : Power (Domain M))
                                     (svar_val : @SVarVal sig M),
       update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
   Proof.
     intros. unfold update_svar_val. apply functional_extensionality.
-    intros. destruct (eq_svar_name X x); reflexivity.
+    intros. destruct (svar_eq X x); reflexivity.
   Qed.
   
 
   Lemma respects_blacklist_implies_monotonic :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
-      forall (Bp Bn : Ensemble svar_name),
+      forall (Bp Bn : Ensemble svar),
         respects_blacklist phi Bp Bn ->
-        forall (evar_val : evar_name -> Domain M)
-               (svar_val : svar_name -> Power (Domain M))
-               (X : svar_name),
+        forall (evar_val : evar -> Domain M)
+               (svar_val : svar -> Power (Domain M))
+               (X : svar),
           (Bp X ->
            @AntiMonotonicFunction A OS (fun S : Ensemble (Domain M) =>
                                           (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi)
@@ -704,7 +705,7 @@ Section with_model.
         unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
         unfold In.
         split; intros; rewrite -> pattern_interpretation_free_svar_simpl in *;
-          unfold update_svar_val in *; destruct (eq_svar_name X x); subst.
+          unfold update_svar_val in *; destruct (svar_eq X x); subst.
         * unfold respects_blacklist in H1.
           specialize (H1 x).
           destruct H1 as [Hneg Hpos].
@@ -849,10 +850,10 @@ Section with_model.
         }
       * (* Ex *)
         simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-        specialize (IHn (evar_open 0 (evar_fresh variables (free_evars phi)) phi)).
+        specialize (IHn (evar_open 0 (evar_fresh (free_evars phi)) phi)).
         rewrite <- evar_open_size in IHn.
         assert (Hsz': size phi <= n). simpl in *. lia.
-        remember (evar_fresh variables (free_evars phi)) as fresh.
+        remember (evar_fresh (free_evars phi)) as fresh.
         pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
         specialize (IHn Hsz' Hwfp' Bp Bn).
         pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
@@ -895,7 +896,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh variables (free_svars phi)) as X'.
+          remember (svar_fresh (free_svars phi)) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -903,14 +904,14 @@ Section with_model.
           specialize (IHn phi' Hsz'').
           simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
           
-          assert (Hrb': respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name X')).
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Singleton svar X')).
           { subst. apply mu_wellformed_respects_blacklist. assumption. }
 
           assert (Hwfp' : well_formed_positive phi').
           { subst. apply wfp_svar_open. assumption. }
 
           remember IHn as IHn'. clear HeqIHn'.
-          specialize (IHn' Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
+          specialize (IHn' Hwfp' (Empty_set svar) (Singleton svar X') Hrb' evar_val).
           remember IHn' as Hy. clear HeqHy.
           rename IHn' into Hx.
           specialize (Hx (update_svar_val V x svar_val) X').
@@ -921,7 +922,7 @@ Section with_model.
           - apply Hx. constructor.
           - clear Hx. clear Hy.
             intros.
-            destruct (svar_eq variables X' V).
+            destruct (svar_eq X' V).
             + (* X' = V *)
               rewrite <- e.
               repeat rewrite -> update_svar_shadow.
@@ -932,7 +933,7 @@ Section with_model.
               pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
               rewrite -> Uhsvcy.
 
-              assert (HrbV: respects_blacklist phi' (Singleton svar_name V) (Empty_set svar_name)).
+              assert (HrbV: respects_blacklist phi' (Singleton svar V) (Empty_set svar)).
               {
                 unfold respects_blacklist. intros. split.
                 - intros. inversion H1. rewrite <- H2.
@@ -944,7 +945,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh variables (free_svars phi) = V).
+                    unfold not. intros. assert (svar_fresh (free_svars phi) = V).
                     {
                       symmetry. assumption.
                     }
@@ -953,7 +954,7 @@ Section with_model.
                 - intros. destruct H1.
               }
 
-              specialize (IHn Hwfp' (Singleton svar_name V) (Empty_set svar_name) HrbV).
+              specialize (IHn Hwfp' (Singleton svar V) (Empty_set svar) HrbV).
               specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
               destruct IHn as [IHam IHmo].
               apply IHam. constructor. assumption.
@@ -966,7 +967,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh variables (free_svars phi)) as X'.
+          remember (svar_fresh (free_svars phi)) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -974,14 +975,14 @@ Section with_model.
           specialize (IHn phi' Hsz'').
           simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
           
-          assert (Hrb': respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name X')).
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Singleton svar X')).
           { subst. apply mu_wellformed_respects_blacklist. assumption. }
 
           assert (Hwfp' : well_formed_positive phi').
           { subst. apply wfp_svar_open. assumption. }
 
           remember IHn as IHn'. clear HeqIHn'.
-          specialize (IHn' Hwfp' (Empty_set svar_name) (Singleton svar_name X') Hrb' evar_val).
+          specialize (IHn' Hwfp' (Empty_set svar) (Singleton svar X') Hrb' evar_val).
           remember IHn' as Hy. clear HeqHy.
           rename IHn' into Hx.
           specialize (Hx (update_svar_val V x svar_val) X').
@@ -992,7 +993,7 @@ Section with_model.
           - apply Hy. constructor.
           - clear Hy. clear Hx.
             intros.
-            destruct (svar_eq variables X' V).
+            destruct (svar_eq X' V).
             + (* X' = V *)
               rewrite <- e.
               repeat rewrite -> update_svar_shadow.
@@ -1003,7 +1004,7 @@ Section with_model.
               pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
               rewrite -> Uhsvcy.
 
-              assert (HrbV: respects_blacklist phi' (Empty_set svar_name) (Singleton svar_name V)).
+              assert (HrbV: respects_blacklist phi' (Empty_set svar) (Singleton svar V)).
               {
                 unfold respects_blacklist. intros. split.
                 - intros. inversion H1.
@@ -1016,7 +1017,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh variables (free_svars phi) = V).
+                    unfold not. intros. assert (svar_fresh (free_svars phi) = V).
                     {
                       symmetry. assumption.
                     }
@@ -1024,7 +1025,7 @@ Section with_model.
                   * inversion Hrbp. assumption.
               }
 
-              specialize (IHn Hwfp' (Empty_set svar_name) (Singleton svar_name V) HrbV).
+              specialize (IHn Hwfp' (Empty_set svar) (Singleton svar V) HrbV).
               specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
               destruct IHn as [IHam IHmo].
               apply IHmo. constructor. assumption.
@@ -1035,7 +1036,7 @@ Section with_model.
                               (evar_val : @EVarVal sig M)
                               (svar_val : @SVarVal sig M),
       well_formed (mu, phi) ->
-      let X := svar_fresh variables (free_svars phi) in
+      let X := svar_fresh (free_svars phi) in
       @MonotonicFunction A OS
                          (fun S : Ensemble (Domain M) =>
                             (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
@@ -1045,15 +1046,15 @@ Section with_model.
     pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
     simpl in Hrb.
     inversion Hwfp.
-    remember (svar_open 0 (svar_fresh variables (free_svars phi)) phi) as phi'.
+    remember (svar_open 0 (svar_fresh (free_svars phi)) phi) as phi'.
     assert (Hsz : size phi' <= size phi').
     { lia. }
     pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
     assert (Hwfp' : well_formed_positive phi').
     { subst. apply wfp_svar_open. assumption. }
     specialize (Hmono Hsz Hwfp').
-    specialize (Hmono (Empty_set svar_name) (Singleton svar_name (svar_fresh variables (free_svars phi)))).
-    specialize (Hmono Hrb evar_val svar_val (svar_fresh variables (free_svars phi))).
+    specialize (Hmono (Empty_set svar) (Singleton svar (svar_fresh (free_svars phi)))).
+    specialize (Hmono Hrb evar_val svar_val (svar_fresh (free_svars phi))).
     destruct Hmono.
     apply H2.
     constructor.
@@ -1061,13 +1062,13 @@ Section with_model.
 End with_model.
 
 
-(* if pattern_interpretation (phi1 --> phi2) = Full_set 
+(* if pattern_interpretation (phi1 ---> phi2) = Full_set 
    then pattern_interpretation phi1 subset pattern_interpretation phi2
 *)
 Theorem pattern_interpretation_iff_subset {m : Model}
-        (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+        (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
         (phi1 : Pattern) (phi2 : Pattern) :
-  Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 --> phi2)) (Full_set (Domain m)) <->
+  Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 ---> phi2)) (Full_set (Domain m)) <->
   Included (Domain m) (pattern_interpretation evar_val svar_val phi1)
            (@pattern_interpretation sig m evar_val svar_val phi2).
 Proof.
@@ -1092,21 +1093,21 @@ Qed.
 
 (* pattern_interpretation with free_svar_subst does not change *)
 Lemma update_valuation_free_svar_subst {m : Model}
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (phi : Pattern) (psi : Pattern) (X : svar_name) :
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+      (phi : Pattern) (psi : Pattern) (X : svar) :
   pattern_interpretation evar_val svar_val phi
   = pattern_interpretation evar_val svar_val (@free_svar_subst sig phi psi X) .
 Proof.
 Admitted.
 
 Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
-      (evar_val : @evar_name sig -> Domain m) (svar_val : @svar_name sig -> Power (Domain m)):
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
   (well_formed phi) -> (@well_formed sig psi) ->
   (forall axiom : Pattern,
      In Pattern theory axiom ->
-     forall (evar_val : evar_name -> Domain m)
-       (svar_val : svar_name -> Power (Domain m)),
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar -> Power (Domain m)),
      Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
        (Full_set (@Domain sig m))) ->
   Same_set (Domain m)
@@ -1128,12 +1129,10 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh variables
-                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
+    assert (~List.In (evar_fresh (set_union evar_eq (free_evars phi) (free_evars psi))) 
              (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh variables
-                                 (set_union eq_evar_name (free_evars phi) (free_evars psi))) 
+    assert (~List.In (evar_fresh (set_union evar_eq (free_evars phi) (free_evars psi))) 
              (free_evars phi)).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
@@ -1145,13 +1144,13 @@ Proof.
 Admitted.
 
 Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
-      (evar_val : @evar_name sig -> Domain m) (svar_val : @svar_name sig -> Power (Domain m)):
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
   (well_formed phi) -> (well_formed psi) ->
   (forall axiom : Pattern,
      In Pattern theory axiom ->
-     forall (evar_val : evar_name -> Domain m)
-       (svar_val : svar_name ->
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar ->
                    Power (Domain m)),
      Same_set (Domain m)
        (pattern_interpretation evar_val svar_val axiom)
@@ -1176,12 +1175,10 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh variables
-                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
+    assert (~List.In (evar_fresh (set_union evar_eq (free_evars psi) (free_evars phi))) 
              (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh variables
-                                 (set_union eq_evar_name (free_evars psi) (free_evars phi))) 
+    assert (~List.In (evar_fresh (set_union evar_eq (free_evars psi) (free_evars phi))) 
              (free_evars phi)).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
@@ -1192,7 +1189,7 @@ Proof.
     admit. admit.
 Admitted.
 
-Lemma l1 : forall (phi : @Pattern sig) (x : evar_name),
+Lemma l1 : forall (phi : @Pattern sig) (x : evar),
     well_formed_closed (ex, phi) -> well_formed_closed  (evar_open 0 x phi).
 Proof.
   induction phi; try constructor; try firstorder.

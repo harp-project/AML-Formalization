@@ -1,6 +1,7 @@
 Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
+From stdpp Require Import countable.
 
 (*Definition or2bool*)
 Definition or2bool {A}{B}(x : {A} + {B}) :=
@@ -10,11 +11,16 @@ Definition or2bool {A}{B}(x : {A} + {B}) :=
   end.
 
   
-Record MLVariables := {
+Class MLVariables := {
   evar : Type;
   svar : Type;
+  (* TODO remove _eq, use _eqdec instead *)
   evar_eq : forall (v1 v2 : evar), {v1 = v2} + {v1 <> v2};
   svar_eq : forall (v1 v2 : svar), {v1 = v2} + {v1 <> v2};
+  evar_eqdec : EqDecision evar;
+  evar_countable : Countable evar;
+  svar_eqdec : EqDecision svar;
+  svar_countable : Countable svar;
   (* TODO fresh generator *)
   evar_fresh : list evar -> evar;
   svar_fresh : list svar -> svar;
