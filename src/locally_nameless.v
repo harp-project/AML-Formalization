@@ -11,7 +11,7 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
-From stdpp Require Import mapset.
+From stdpp Require Import mapset gmap.
 
 Require Import Lattice.
 Require Import Signature.
@@ -23,25 +23,22 @@ Definition db_index := nat.
 (* Variable signature : Signature. *)
 Context {signature : Signature}.
 
-Definition evar_name := evar variables.
-Definition svar_name := svar variables.
-Definition eq_evar_name := evar_eq variables.
-Definition eq_svar_name := svar_eq variables.
+Existing Instance variables.
 
-Definition evar_name_eqb (v1 v2 : evar_name) : bool :=
-  match eq_evar_name v1 v2 with
+Definition evar_eqb (v1 v2 : evar) : bool :=
+  match evar_eq v1 v2 with
   | left _ => true
   | right _ => false
   end.
-Definition svar_name_eqb (v1 v2 : svar_name) : bool :=
-  match eq_svar_name v1 v2 with
+Definition svar_eqb (v1 v2 : svar) : bool :=
+  match svar_eq v1 v2 with
   | left _ => true
   | right _ => false
   end.  
 
 Inductive Pattern : Type :=
-| patt_free_evar (x : evar_name)
-| patt_free_svar (x : svar_name)
+| patt_free_evar (x : evar)
+| patt_free_svar (x : svar)
 | patt_bound_evar (n : db_index)
 | patt_bound_svar (n : db_index)
 | patt_sym (sigma : symbols) :  Pattern
@@ -107,9 +104,9 @@ match phi with
 end.
 
 (* substitute free element variable x for psi in phi *)
-Fixpoint free_evar_subst (phi psi : Pattern) (x : evar_name) :=
+Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
 match phi with
-| patt_free_evar x' => if eq_evar_name x x' then psi else patt_free_evar x'
+| patt_free_evar x' => if evar_eq x x' then psi else patt_free_evar x'
 | patt_free_svar X => patt_free_svar X
 | patt_bound_evar x' => patt_bound_evar x'
 | patt_bound_svar X => patt_bound_svar X
@@ -122,10 +119,10 @@ match phi with
 | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
 end.
 
-Fixpoint free_svar_subst (phi psi : Pattern) (X : svar_name) :=
+Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
 match phi with
 | patt_free_evar x => patt_free_evar x
-| patt_free_svar X' => if eq_svar_name X X' then psi else patt_free_svar X'
+| patt_free_svar X' => if svar_eq X X' then psi else patt_free_svar X'
 | patt_bound_evar x => patt_bound_evar x
 | patt_bound_svar X' => patt_bound_svar X'
 | patt_sym sigma => patt_sym sigma
@@ -148,36 +145,42 @@ end.
 (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
+(*
+Check mapset.
+Check gmap.
+Check @gmap (evar variables) (evar_eqdec variables) (evar_countable variables).
+Definition SetEVar := mapset ().
+*)
 Definition set_singleton {T : Type}
   (eq : forall (x y : T), { x = y } + { x <> y })
   := fun x : T => set_add eq x List.nil.
 
 Fixpoint free_evars (phi : Pattern)
-  : (ListSet.set evar_name) :=
+  : (ListSet.set evar) :=
 match phi with
-| patt_free_evar x => set_singleton eq_evar_name x
+| patt_free_evar x => set_singleton evar_eq x
 | patt_free_svar X => List.nil
 | patt_bound_evar x => List.nil
 | patt_bound_svar X => List.nil
 | patt_sym sigma => List.nil
-| patt_app phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
+| patt_app phi1 phi2 => set_union evar_eq (free_evars phi1) (free_evars phi2)
 | patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union eq_evar_name (free_evars phi1) (free_evars phi2)
+| patt_imp phi1 phi2 => set_union evar_eq (free_evars phi1) (free_evars phi2)
 | patt_exists phi => free_evars phi
 | patt_mu phi => free_evars phi
 end.
 
 Fixpoint free_svars (phi : Pattern)
-  : (ListSet.set svar_name) :=
+  : (ListSet.set svar) :=
 match phi with
 | patt_free_evar x => List.nil
-| patt_free_svar X => set_singleton eq_svar_name X
+| patt_free_svar X => set_singleton svar_eq X
 | patt_bound_evar x => List.nil
 | patt_bound_svar X => List.nil
 | patt_sym sigma => List.nil
-| patt_app phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+| patt_app phi1 phi2 => set_union svar_eq (free_svars phi1) (free_svars phi2)
 | patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union eq_svar_name (free_svars phi1) (free_svars phi2)
+| patt_imp phi1 phi2 => set_union svar_eq (free_svars phi1) (free_svars phi2)
 | patt_exists phi => free_svars phi
 | patt_mu phi => free_svars phi
 end.
@@ -214,16 +217,16 @@ Proof.
   firstorder.
 Qed.
 
-Definition EVarVal {m : Model} : Type := evar_name -> Domain m.
-Definition SVarVal {m : Model} : Type := svar_name -> Power (Domain m).
+Definition EVarVal {m : Model} : Type := evar -> Domain m.
+Definition SVarVal {m : Model} : Type := svar -> Power (Domain m).
 
 Definition update_evar_val {m : Model} 
-           (v : evar_name) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
-  fun v' : evar_name => if eq_evar_name v v' then x else evar_val v'.
+           (v : evar) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
+  fun v' : evar => if evar_eq v v' then x else evar_val v'.
 
 Definition update_svar_val {m : Model}
-           (v : svar_name) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
-  fun v' : svar_name => if eq_svar_name v v' then X else svar_val v'.
+           (v : svar) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
+  fun v' : svar => if svar_eq v v' then X else svar_val v'.
 
 Definition app_ext {m : Model}
            (l r : Power (Domain m)) :
@@ -277,10 +280,10 @@ Qed.
 
 (* Semantics of AML ref. snapshot: Definition 3 *)
 
-Fixpoint evar_quantify (x : evar_name) (level : db_index)
+Fixpoint evar_quantify (x : evar) (level : db_index)
          (p : Pattern) : Pattern :=
 match p with
-| patt_free_evar x' => if eq_evar_name x x' then patt_bound_evar level else patt_free_evar x'
+| patt_free_evar x' => if evar_eq x x' then patt_bound_evar level else patt_free_evar x'
 | patt_free_svar x' => patt_free_svar x'
 | patt_bound_evar x' => patt_bound_evar x'
 | patt_bound_svar X => patt_bound_svar X
@@ -292,7 +295,7 @@ match p with
 | patt_mu p' => patt_mu (evar_quantify x (level + 1) p')
 end.
 
-Definition exists_quantify (x : evar_name)
+Definition exists_quantify (x : evar)
            (p : Pattern) : Pattern :=
   patt_exists (evar_quantify x 0 p).
 
@@ -305,7 +308,7 @@ match p with
 | _ => 0
 end.
 
-Fixpoint evar_open (k : db_index) (n : evar_name)
+Fixpoint evar_open (k : db_index) (n : evar)
          (p : Pattern) : Pattern :=
 match p with
 | patt_free_evar x => patt_free_evar x
@@ -320,7 +323,7 @@ match p with
 | patt_mu p' => patt_mu (evar_open k n p')
 end.
 
-Fixpoint svar_open (k : db_index) (n : svar_name)
+Fixpoint svar_open (k : db_index) (n : svar)
          (p : Pattern) : Pattern :=
 match p with
 | patt_free_evar x => patt_free_evar x
@@ -336,7 +339,7 @@ match p with
 end.
 
 Lemma evar_open_size :
-  forall (signature : Signature) (k : db_index) (n : evar_name) (p : Pattern),
+  forall (signature : Signature) (k : db_index) (n : evar) (p : Pattern),
     size p = size (evar_open k n p).
 Proof.
   intros. generalize dependent k.
@@ -349,7 +352,7 @@ Proof.
 Qed.
 
 Lemma svar_open_size :
-  forall (signature : Signature) (k : db_index) (n : svar_name) (p : Pattern),
+  forall (signature : Signature) (k : db_index) (n : svar) (p : Pattern),
     size p = size (svar_open k n p).
 Proof.
   intros. generalize dependent k.
@@ -361,51 +364,51 @@ Proof.
   rewrite (IHp (k + 1)); reflexivity.
 Qed.
 
-Inductive positive_occurrence_named : svar_name -> Pattern -> Prop :=
-| po_free_evar (x : evar_name) (sv : svar_name) : positive_occurrence_named sv (patt_free_evar x)
-| po_free_svar (x : svar_name) (sv : svar_name) : positive_occurrence_named sv (patt_free_svar x)
-| po_bound_evar (m : db_index) (sv : svar_name) : positive_occurrence_named sv (patt_bound_evar m)
-| po_bound_svar (m : db_index) (sv : svar_name) : positive_occurrence_named sv (patt_bound_svar m)
-| po_const (sigma : symbols) (sv : svar_name) :
+Inductive positive_occurrence_named : svar -> Pattern -> Prop :=
+| po_free_evar (x : evar) (sv : svar) : positive_occurrence_named sv (patt_free_evar x)
+| po_free_svar (x : svar) (sv : svar) : positive_occurrence_named sv (patt_free_svar x)
+| po_bound_evar (m : db_index) (sv : svar) : positive_occurrence_named sv (patt_bound_evar m)
+| po_bound_svar (m : db_index) (sv : svar) : positive_occurrence_named sv (patt_bound_svar m)
+| po_const (sigma : symbols) (sv : svar) :
     positive_occurrence_named sv (patt_sym sigma)
-| po_app (phi1 phi2 : Pattern) (sv : svar_name) :
+| po_app (phi1 phi2 : Pattern) (sv : svar) :
   positive_occurrence_named sv phi1 -> positive_occurrence_named sv phi2 ->
   positive_occurrence_named sv (patt_app phi1 phi2)
-| po_bott (sv : svar_name) : positive_occurrence_named sv patt_bott
-| po_impl (phi1 phi2 : Pattern) (sv : svar_name) :
+| po_bott (sv : svar) : positive_occurrence_named sv patt_bott
+| po_impl (phi1 phi2 : Pattern) (sv : svar) :
   negative_occurrence_named sv phi1 -> positive_occurrence_named sv phi2 ->
   positive_occurrence_named sv (patt_imp phi1 phi2)
-| po_exists (phi : Pattern) (sv : svar_name) :
+| po_exists (phi : Pattern) (sv : svar) :
   positive_occurrence_named sv phi ->
   positive_occurrence_named sv (patt_exists phi)
-| po_mu (phi : Pattern) (sv : svar_name) :
+| po_mu (phi : Pattern) (sv : svar) :
   positive_occurrence_named sv phi ->
   positive_occurrence_named sv (patt_mu phi)
-with negative_occurrence_named : svar_name -> Pattern -> Prop :=
-| no_free_evar (x : evar_name) (sv : svar_name) : negative_occurrence_named sv (patt_free_evar x)
-| no_free_svar (x : svar_name) (sv : svar_name) : x <> sv -> negative_occurrence_named sv (patt_free_svar x)
-| no_bound_evar (m : db_index) (sv : svar_name) :  negative_occurrence_named sv (patt_bound_evar m)
-| no_bound_svar (m : db_index) (sv : svar_name) :  negative_occurrence_named sv (patt_bound_svar m)
-| no_const (sigma : symbols) (sv : svar_name) :
+with negative_occurrence_named : svar -> Pattern -> Prop :=
+| no_free_evar (x : evar) (sv : svar) : negative_occurrence_named sv (patt_free_evar x)
+| no_free_svar (x : svar) (sv : svar) : x <> sv -> negative_occurrence_named sv (patt_free_svar x)
+| no_bound_evar (m : db_index) (sv : svar) :  negative_occurrence_named sv (patt_bound_evar m)
+| no_bound_svar (m : db_index) (sv : svar) :  negative_occurrence_named sv (patt_bound_svar m)
+| no_const (sigma : symbols) (sv : svar) :
     negative_occurrence_named sv (patt_sym sigma)
-| no_app (phi1 phi2 : Pattern) (sv : svar_name) :
+| no_app (phi1 phi2 : Pattern) (sv : svar) :
    negative_occurrence_named sv phi1 -> negative_occurrence_named sv phi2 ->
    negative_occurrence_named sv (patt_app phi1 phi2)
-| no_bott (sv : svar_name) :  negative_occurrence_named sv patt_bott
-| no_impl (phi1 phi2 : Pattern) (sv : svar_name) :
+| no_bott (sv : svar) :  negative_occurrence_named sv patt_bott
+| no_impl (phi1 phi2 : Pattern) (sv : svar) :
   positive_occurrence_named sv phi1 ->  negative_occurrence_named sv phi2 ->
    negative_occurrence_named sv (patt_imp phi1 phi2)
-| no_exists (phi : Pattern) (sv : svar_name) :
+| no_exists (phi : Pattern) (sv : svar) :
    negative_occurrence_named sv phi ->
    negative_occurrence_named sv (patt_exists phi)
-| no_mu (phi : Pattern) (sv : svar_name) :
+| no_mu (phi : Pattern) (sv : svar) :
    negative_occurrence_named sv phi ->
    negative_occurrence_named sv (patt_mu phi)
 .
 (* Cares only about set variables *)
 Inductive positive_occurrence_db : db_index -> Pattern -> Prop :=
-| podb_free_evar (x : evar_name) (n : db_index) : positive_occurrence_db n (patt_free_evar x)
-| podb_free_svar (x : svar_name) (n : db_index) : positive_occurrence_db n (patt_free_svar x)
+| podb_free_evar (x : evar) (n : db_index) : positive_occurrence_db n (patt_free_evar x)
+| podb_free_svar (x : svar) (n : db_index) : positive_occurrence_db n (patt_free_svar x)
 | podb_bound_evar (m : db_index) (n : db_index) : positive_occurrence_db n (patt_bound_evar m)
 | podb_bound_svar (m : db_index) (n : db_index) : positive_occurrence_db n (patt_bound_svar m)
 | podb_const (sigma : symbols) (n : db_index) :
@@ -424,8 +427,8 @@ Inductive positive_occurrence_db : db_index -> Pattern -> Prop :=
   positive_occurrence_db (n+1) phi ->
   positive_occurrence_db n (patt_mu phi)
 with negative_occurrence_db : db_index -> Pattern -> Prop :=
-| nodb_free_evar (x : evar_name) (n : db_index) : negative_occurrence_db n (patt_free_evar x)
-| nodb_free_svar (x : svar_name) (n : db_index) : negative_occurrence_db n (patt_free_svar x)
+| nodb_free_evar (x : evar) (n : db_index) : negative_occurrence_db n (patt_free_evar x)
+| nodb_free_svar (x : svar) (n : db_index) : negative_occurrence_db n (patt_free_svar x)
 | nodb_bound_evar (m : db_index) (n : db_index) : negative_occurrence_db n (patt_bound_evar m)
 | nodb_bound_svar (m : db_index) (n : db_index) : n <> m -> negative_occurrence_db n (patt_bound_svar m)
 | nodb_const (sigma : symbols) (n : db_index) :
@@ -446,7 +449,7 @@ with negative_occurrence_db : db_index -> Pattern -> Prop :=
 .
 
 (* Lemmas about opening and positive occurrence *)
-Lemma positive_negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+Lemma positive_negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
     (*le db1 db2 ->*)
     (positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi))
     /\ (negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi)).
@@ -456,7 +459,7 @@ Proof.
   * destruct (n =? db2); intros. constructor. assumption.
 Qed.
 
-Lemma positive_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+Lemma positive_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
     positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi).
 Proof.
   intros.
@@ -464,7 +467,7 @@ Proof.
   firstorder.
 Qed.
 
-Lemma negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar_name),
+Lemma negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
     negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi).
 Proof.
   intros.
@@ -589,8 +592,8 @@ forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
 Proof.
   intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
-  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh variables (free_evars phi))) in H. exact H.
-  apply (evar_fresh_is_fresh variables).
+  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (free_evars phi))) in H. exact H.
+  apply evar_fresh_is_fresh.
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
@@ -652,18 +655,18 @@ Qed.
 
 (*If phi is a closed body, then (mu, phi) is closed too*)
 Lemma wfc_body_to_wfc_mu:
-forall phi (X : svar_name), wfc_body_mu phi -> well_formed_closed (patt_mu phi).
+forall phi (X : svar), wfc_body_mu phi -> well_formed_closed (patt_mu phi).
 Proof.
   intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
-  apply (wfc_aux_body_mu_imp2 phi 0 0 (svar_fresh variables (free_svars phi))) in H. exact H.
-  apply (svar_fresh_is_fresh variables).
+  apply (wfc_aux_body_mu_imp2 phi 0 0 (svar_fresh (free_svars phi))) in H. exact H.
+  apply svar_fresh_is_fresh.
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
 (*Conclusion*)
 Lemma wfc_body_wfc_mu_iff: 
-  forall phi (X : svar_name),
+  forall phi (X : svar),
   well_formed_closed (patt_mu phi) <-> wfc_body_mu phi.
 Proof.
   split.
@@ -720,7 +723,7 @@ apply pattern_lt_well_founded.
 Defined.
 
 Equations pattern_interpretation_aux {m : Model}
-          (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
           (p : Pattern) : Power (Domain m)
   by wf (size p) :=
   pattern_interpretation_aux evar_val svar_val (patt_free_evar x) := Singleton _ (evar_val x);
@@ -760,7 +763,7 @@ Section semantics.
   Let  L := PowersetLattice (@Domain m).
 
 Program Fixpoint pattern_interpretation
-        (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+        (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
         (p : Pattern) {measure (size p)} :=
 match p with
 | patt_free_evar x => Ensembles.Singleton _ (evar_val x)
@@ -774,13 +777,13 @@ match p with
 | patt_imp ls rs => Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
                             (pattern_interpretation evar_val svar_val rs)
 | patt_exists p' =>
-  let x := evar_fresh variables (free_evars p') in
+  let x := evar_fresh (free_evars p') in
   FA_Union
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p'))
 | patt_mu p' =>
-  let X := svar_fresh variables (free_svars p') in
+  let X := svar_fresh (free_svars p') in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
@@ -795,25 +798,25 @@ Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. apply sig
 Next Obligation. Tactics.program_simpl. Defined.
 
 Lemma pattern_interpretation_free_evar_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (x : evar_name) :
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+      (x : evar) :
   pattern_interpretation evar_val svar_val (patt_free_evar x) = Ensembles.Singleton _ (evar_val x).
 Admitted.
 
 Lemma pattern_interpretation_free_svar_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
-      (X : svar_name) :
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+      (X : svar) :
   pattern_interpretation evar_val svar_val (patt_free_svar X) = svar_val X.
 Admitted.
 
 Lemma pattern_interpretation_bound_evar_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (x : db_index) :
   pattern_interpretation evar_val svar_val (patt_bound_evar x) = Empty_set _ .
 Admitted.
 
 Lemma pattern_interpretation_bound_svar_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (X : db_index) :
   pattern_interpretation evar_val svar_val (patt_bound_svar X) = Empty_set _ .
 Admitted.
@@ -828,7 +831,7 @@ Admitted.
 
 
 Lemma pattern_interpretation_app_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (ls rs : Pattern) :
   pattern_interpretation evar_val svar_val (patt_app ls rs) =
   app_ext (pattern_interpretation evar_val svar_val ls)
@@ -836,12 +839,12 @@ Lemma pattern_interpretation_app_simpl
 Admitted.
 
 Lemma pattern_interpretation_bott_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)) :
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)) :
   pattern_interpretation evar_val svar_val patt_bott = Empty_set _ .
 Admitted.
 
 Lemma pattern_interpretation_imp_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (ls rs : Pattern) :
   pattern_interpretation evar_val svar_val (patt_imp ls rs) =
   Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
@@ -849,10 +852,10 @@ Lemma pattern_interpretation_imp_simpl
 Admitted.
 
 Lemma pattern_interpretation_ex_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (p : Pattern) :
   pattern_interpretation evar_val svar_val (patt_exists p) =
-  let x := evar_fresh variables (free_evars p) in
+  let x := evar_fresh (free_evars p) in
   FA_Union 
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
@@ -860,10 +863,10 @@ Lemma pattern_interpretation_ex_simpl
 Admitted.
 
 Lemma pattern_interpretation_mu_simpl
-      (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (p : Pattern) :
   pattern_interpretation evar_val svar_val (patt_mu p) =
-  let X := svar_fresh variables (free_svars p) in
+  let X := svar_fresh (free_svars p) in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
@@ -907,7 +910,7 @@ End Semantics_of_derived_operators.
 Definition Theory := Power Pattern.
 
 Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
-forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m)),
+forall (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)),
   Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
 
 Definition satisfies_theory (m : Model) (theory : Theory)
@@ -933,11 +936,11 @@ match C with
 end.
 
 Fixpoint free_evars_ctx (C : Application_context)
-  : (ListSet.set evar_name) :=
+  : (ListSet.set evar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc p prf => set_union eq_evar_name (free_evars_ctx cc) (free_evars p)
-| ctx_app_r p cc prf => set_union eq_evar_name (free_evars p) (free_evars_ctx cc)
+| ctx_app_l cc p prf => set_union evar_eq (free_evars_ctx cc) (free_evars p)
+| ctx_app_r p cc prf => set_union evar_eq (free_evars p) (free_evars_ctx cc)
 end.
 
 Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
@@ -1052,7 +1055,7 @@ Qed.
 (* TODO prove *)
 Lemma pattern_interpretation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
     pattern_interpretation evar_val svar_val (patt_forall phi) =
-    let x := evar_fresh variables (free_evars phi) in
+    let x := evar_fresh (free_evars phi) in
     FA_Intersection (fun e : @Domain m => pattern_interpretation (update_evar_val x e evar_val) svar_val (evar_open 0 x phi) ).
 Proof.
   intros.
@@ -1125,13 +1128,13 @@ Qed.
 
 (* TODO something like this, but with binding a free variable *)
 Lemma M_predicate_exists M ϕ :
-  let x := evar_fresh variables (free_evars ϕ) in
+  let x := evar_fresh (free_evars ϕ) in
   M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
 Proof.
   simpl. unfold M_predicate. intros.
   rewrite -> pattern_interpretation_ex_simpl.
   simpl.
-  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh variables (free_evars ϕ)) e ρₑ) ρₛ (evar_open 0 (evar_fresh variables (free_evars ϕ)) ϕ)) (Full_set (Domain M)))).
+  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (free_evars ϕ)) e ρₑ) ρₛ (evar_open 0 (evar_fresh (free_evars ϕ)) ϕ)) (Full_set (Domain M)))).
   destruct H'.
   - (* For some member, the subformula evaluates to full set. *)
     left. apply Same_set_symmetric. apply Same_set_Full_set.
@@ -1145,7 +1148,7 @@ Proof.
     split.
     + unfold Included. intros.
       unfold In in H1. inversion H1. subst. clear H1. destruct H2.
-      specialize (H (update_evar_val (evar_fresh variables (free_evars ϕ)) x0 ρₑ) ρₛ).
+      specialize (H (update_evar_val (evar_fresh (free_evars ϕ)) x0 ρₑ) ρₛ).
       destruct H.
       * exfalso. apply H0. exists x0. apply H.
       * unfold Same_set in H. destruct H. clear H2.
@@ -1159,7 +1162,7 @@ Qed.
 (* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
 (* ϕ is expected to have dangling evar indices *)
 Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
-  let x := evar_fresh variables (free_evars ϕ) in
+  let x := evar_fresh (free_evars ϕ) in
   M_predicate M (evar_open 0 x ϕ) ->
   Same_set (Domain M)
            (pattern_interpretation ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
@@ -1171,7 +1174,7 @@ Proof.
   rewrite -> pattern_interpretation_ex_simpl.
   red. simpl free_evars.
   rewrite -> evar_open_and.
-  remember (evar_fresh variables (set_union eq_evar_name (@nil evar_name) (free_evars ϕ))) as x'.
+  remember (evar_fresh (set_union evar_eq (@nil evar) (free_evars ϕ))) as x'.
 Admitted.
 
 End ml_syntax_semantics.
@@ -1241,15 +1244,15 @@ Inductive ML_proof_system (theory : Theory) :
       theory ⊢ phi2
 
   (* Existential quantifier *)
-  | Ex_quan (phi : Pattern) (y : evar_name) :
+  | Ex_quan (phi : Pattern) (y : evar) :
       well_formed phi ->
       theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : evar_name) :
+  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
       well_formed phi1 -> well_formed phi2 ->
       theory ⊢ (phi1 ---> phi2) ->
-      set_mem eq_evar_name x (free_evars phi2) = false ->
+      set_mem evar_eq x (free_evars phi2) = false ->
       theory ⊢ (exists_quantify x phi1 ---> phi2)
 
 (* Frame reasoning *)
@@ -1291,7 +1294,7 @@ Inductive ML_proof_system (theory : Theory) :
 
 (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
-  | Svar_subst (phi psi : Pattern) (X : svar_name) :
+  | Svar_subst (phi psi : Pattern) (X : svar) :
       theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
@@ -1309,7 +1312,7 @@ Inductive ML_proof_system (theory : Theory) :
   | Existence : theory ⊢ (ex , patt_bound_evar 0)
 
   (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar_name) : 
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
       theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
                     (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 

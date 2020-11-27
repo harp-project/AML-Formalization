@@ -44,15 +44,15 @@ Section definedness.
   Let sym (s : Symbols) : Pattern :=
     @patt_sym sig (inj s).
   
-  Let evar (name : string) : Pattern :=
-    @patt_free_evar sig (nevar variables name).
+  Let evarn (name : string) : Pattern :=
+    @patt_free_evar sig (nevar name).
 
 
   Inductive AxiomName := AxDefinedness.
 
   Definition axiom(name : AxiomName) : Pattern :=
     match name with
-    | AxDefinedness => patt_defined (evar "x")
+    | AxDefinedness => patt_defined (evarn "x")
     end.
 
   Definition theory : Ensemble Pattern := fun p => exists a, p = axiom a.
@@ -84,7 +84,7 @@ Section definedness.
     pose proof (H' := theoryAxiom M H AxDefinedness). simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
-    remember (update_evar_val (nevar variables "x") m evar_val) as evar_val'.
+    remember (update_evar_val (nevar "x") m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
     unfold Same_set in H. destruct H as [_ H].
     unfold Included in H.
@@ -95,12 +95,11 @@ Section definedness.
     rewrite -> pattern_interpretation_app_simpl in H.
     rewrite -> pattern_interpretation_sym_simpl in H.
     unfold sym.
-    unfold evar in H.
+    unfold evarn in H.
     rewrite -> pattern_interpretation_free_evar_simpl in H.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
-    unfold locally_nameless.eq_evar_name in H.
-    destruct (evar_eq variables (nevar variables "x") (nevar variables "x") ).
+    destruct (evar_eq (nevar "x") (nevar "x") ).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
@@ -460,7 +459,7 @@ Section definedness.
 
   Lemma free_evar_in_patt_1 : forall (M : @Model sig),
       M ⊨ᵀ theory ->
-      forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
+      forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x) ->
         Same_set (Domain M)
                  (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
@@ -480,7 +479,7 @@ Section definedness.
 
   Lemma free_evar_in_patt_2 : forall (M : @Model sig),
       M ⊨ᵀ theory ->
-      forall (x : @evar_name sig)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
+      forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         Same_set (Domain M)
                  (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
                  (Full_set (Domain M)) ->
