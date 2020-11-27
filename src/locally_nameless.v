@@ -2,7 +2,6 @@ Require Import Arith.
 Require Import ZArith.
 Require Import List.
 Require Import extralibrary.
-(*Require Import names.*)
 
 Require Import Coq.micromega.Lia.
 
@@ -12,7 +11,8 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
-(*From stdpp Require Import mapset.*)
+From stdpp Require Import mapset.
+
 Require Import Lattice.
 Require Import Signature.
 
@@ -199,7 +199,7 @@ Lemma empty_impl_not_full : forall {M : Model} (S : Power (Domain M)),
     ~ Same_set (Domain M) S (Full_set (Domain M)).
 Proof.
   unfold Same_set. unfold Included. unfold not. intros.
-  assert (Hexin : In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
+  assert (Hexin : Ensembles.In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
   { unfold In. constructor. }
   firstorder.
 Qed.
@@ -209,7 +209,7 @@ Lemma full_impl_not_empty : forall {M : Model} (S : Power (Domain M)),
     ~ Same_set (Domain M) S (Empty_set (Domain M)).
 Proof.
   unfold Same_set. unfold Included. unfold not. intros.
-  assert (Hexin : In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
+  assert (Hexin : Ensembles.In (Domain M) (Full_set (Domain M)) (nonempty_witness M)).
   { unfold In. constructor. }
   firstorder.
 Qed.
@@ -763,7 +763,7 @@ Program Fixpoint pattern_interpretation
         (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
         (p : Pattern) {measure (size p)} :=
 match p with
-| patt_free_evar x => Singleton _ (evar_val x)
+| patt_free_evar x => Ensembles.Singleton _ (evar_val x)
 | patt_free_svar X => svar_val X
 | patt_bound_evar x => Empty_set _
 | patt_bound_svar X => Empty_set _
@@ -771,7 +771,7 @@ match p with
 | patt_app ls rs => app_ext (pattern_interpretation evar_val svar_val ls)
                                   (pattern_interpretation evar_val svar_val rs)
 | patt_bott => Empty_set _
-| patt_imp ls rs => Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+| patt_imp ls rs => Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
                             (pattern_interpretation evar_val svar_val rs)
 | patt_exists p' =>
   let x := evar_fresh variables (free_evars p') in
@@ -786,17 +786,18 @@ match p with
                             (update_svar_val X S svar_val)
                             (svar_open 0 X p'))
 end.
-Next Obligation. simpl; lia. Defined.
-Next Obligation. simpl; lia. Defined.
-Next Obligation. simpl; lia. Defined.
-Next Obligation. simpl; lia. Defined.
-Next Obligation. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
-Next Obligation. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
+Next Obligation. intros. subst. simpl; lia. Defined.
+Next Obligation. intros. subst. simpl; lia. Defined.
+Next Obligation. intros. subst. simpl; lia. Defined.
+Next Obligation. intros. subst. simpl; lia. Defined.
+Next Obligation. intros. subst. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
+Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
+Next Obligation. Tactics.program_simpl. Defined.
 
 Lemma pattern_interpretation_free_evar_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (x : evar_name) :
-  pattern_interpretation evar_val svar_val (patt_free_evar x) = Singleton _ (evar_val x).
+  pattern_interpretation evar_val svar_val (patt_free_evar x) = Ensembles.Singleton _ (evar_val x).
 Admitted.
 
 Lemma pattern_interpretation_free_svar_simpl
@@ -843,7 +844,7 @@ Lemma pattern_interpretation_imp_simpl
       (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain m))
       (ls rs : Pattern) :
   pattern_interpretation evar_val svar_val (patt_imp ls rs) =
-  Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+  Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
           (pattern_interpretation evar_val svar_val rs).
 Admitted.
 
@@ -910,7 +911,7 @@ forall (evar_val : evar_name -> Domain m) (svar_val : svar_name -> Power (Domain
   Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
 
 Definition satisfies_theory (m : Model) (theory : Theory)
-: Prop := forall axiom : Pattern, In _ theory axiom -> (satisfies_model m axiom).
+: Prop := forall axiom : Pattern, Ensembles.In _ theory axiom -> (satisfies_model m axiom).
 
 Definition satisfies (theory : Theory) (p: Pattern)
 : Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
@@ -971,7 +972,7 @@ Qed.
 Lemma pattern_interpretation_or_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                       (phi1 phi2 : Pattern),
     pattern_interpretation evar_val svar_val (patt_or phi1 phi2)
-    = Union (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
+    = Ensembles.Union (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
 Proof.
   intros. unfold patt_or.
   rewrite -> pattern_interpretation_imp_simpl.
@@ -995,7 +996,7 @@ Qed.
 Lemma pattern_interpretation_and_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)
                                        (phi1 phi2 : Pattern),
     pattern_interpretation evar_val svar_val (patt_and phi1 phi2)
-    = Intersection (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
+    = Ensembles.Intersection (Domain m) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
 Proof.
   intros. unfold patt_and.
   rewrite -> pattern_interpretation_not_simpl.
@@ -1172,8 +1173,6 @@ Proof.
   rewrite -> evar_open_and.
   remember (evar_fresh variables (set_union eq_evar_name (@nil evar_name) (free_evars ϕ))) as x'.
 Admitted.
-
-  
 
 End ml_syntax_semantics.
 
