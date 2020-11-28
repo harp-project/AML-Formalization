@@ -36,7 +36,7 @@ Class MLVariables := {
 }.
 
 Class Signature := {
-  variables : MLVariables;
+  mlvariables : MLVariables;
   symbols : Type;
   sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};
 }.

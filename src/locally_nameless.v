@@ -11,7 +11,8 @@ Require Export Coq.Lists.ListSet.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
-From stdpp Require Import mapset gmap.
+From Coq Require Import ssreflect ssrfun ssrbool.
+From stdpp Require Import pmap gmap mapset fin_sets.
 
 Require Import Lattice.
 Require Import Signature.
@@ -22,8 +23,8 @@ Definition db_index := nat.
 
 (* Variable signature : Signature. *)
 Context {signature : Signature}.
+Existing Instance mlvariables.
 
-Existing Instance variables.
 
 Definition evar_eqb (v1 v2 : evar) : bool :=
   match evar_eq v1 v2 with
@@ -145,27 +146,26 @@ end.
 (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
-(*
-Check mapset.
-Check gmap.
-Check @gmap (evar variables) (evar_eqdec variables) (evar_countable variables).
-Definition SetEVar := mapset ().
-*)
+
+(*Notation EVarSet := (mapset (@gmap evar evar_eqdec evar_countable)).*)
+
+Notation EVarSet := (@gset evar evar_eqdec evar_countable).
+
 Definition set_singleton {T : Type}
   (eq : forall (x y : T), { x = y } + { x <> y })
   := fun x : T => set_add eq x List.nil.
 
 Fixpoint free_evars (phi : Pattern)
-  : (ListSet.set evar) :=
+  : EVarSet :=
 match phi with
-| patt_free_evar x => set_singleton evar_eq x
-| patt_free_svar X => List.nil
-| patt_bound_evar x => List.nil
-| patt_bound_svar X => List.nil
-| patt_sym sigma => List.nil
-| patt_app phi1 phi2 => set_union evar_eq (free_evars phi1) (free_evars phi2)
-| patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union evar_eq (free_evars phi1) (free_evars phi2)
+| patt_free_evar x => singleton x
+| patt_free_svar X => empty
+| patt_bound_evar x => empty
+| patt_bound_svar X => empty
+| patt_sym sigma => empty
+| patt_app phi1 phi2 => union (free_evars phi1) (free_evars phi2)
+| patt_bott => empty
+| patt_imp phi1 phi2 => union (free_evars phi1) (free_evars phi2)
 | patt_exists phi => free_evars phi
 | patt_mu phi => free_evars phi
 end.
@@ -531,7 +531,7 @@ Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_forme
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
 Definition wfc_body_ex phi  := forall x, 
-  ~List.In x (free_evars phi) -> well_formed_closed (evar_open 0 x phi).
+  ~ elem_of x (free_evars phi) -> well_formed_closed (evar_open 0 x phi).
 
 (*Helper lemma for wf_ex_to_wf_body *)
 Lemma wfc_aux_body_ex_imp1:
@@ -542,8 +542,8 @@ well_formed_closed_aux (evar_open n x phi) n n'.
 Proof.
   - induction phi; intros; try lia; auto.
   * simpl. inversion H.
-    -- simpl. rewrite Nat.eqb_refl. simpl. trivial.
-    -- subst. rewrite Nat.le_succ_l in H1. destruct (n =? n0) eqn:D1.
+    -- simpl. rewrite -> Nat.eqb_refl. simpl. trivial.
+    -- subst. rewrite -> Nat.le_succ_l in H1. destruct (n =? n0) eqn:D1.
       + apply Nat.eqb_eq in D1. rewrite D1 in H1. lia.
       + simpl. auto.
   * simpl in H. destruct H. firstorder.
@@ -586,14 +586,127 @@ Proof.
   apply wfc_aux_body_ex_imp1. auto.
 Qed.
 
+Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
+  : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
+Proof.
+  intros. unfold map_to_list. unfold Pto_list. unfold lookup. unfold Plookup.
+  destruct M eqn:HM. simpl.
+  split; intros.
+  + apply Pelem_of_to_list in H. simpl in H.
+    destruct H.
+    * destruct H as [i' [Hi' Hsome]]. subst. apply Hsome.
+    * inversion H.
+  + apply Pelem_of_to_list.
+    left. simpl. exists i. firstorder.
+Qed.
+    
+
+  
+Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): (elem_of_list (k,a) (gmap_to_list M)) <-> (gmap_lookup k M = Some a).
+Proof.
+  split; intros.
+Admitted.
+
+
+(*
+Existing Instance evar_eqdec.
+Existing Instance evar_countable.
+Existing Instance svar_eqdec.
+Existing Instance svar_countable.*)
+  Existing Instance gmap_finmap.
+Lemma mapset_elements_to_set (X : EVarSet) : list_to_set (mapset_elements X) = X.
+Proof.
+
+  Set Printing Implicit.
+  (*apply (iff_sym (@mapset_eq evar (gmap evar) gmap_fmap _ _ _ _ _ _ _ _ _ _)).*)
+  apply (iff_sym (@mapset_eq evar (gmap evar) gmap_fmap (@gmap_lookup evar _ _) _ _ _ _ _ _ gmap_finmap _ _)).
+  unfold gset in X.
+  intros.
+  pose proof (H' := @elem_of_list_to_set evar EVarSet _ _ _ _ _ x (mapset_elements X)).
+  destruct H' as [H1 H2].
+  split; intros.
+  + specialize (H1 H). clear H2 H.
+    unfold mapset_elements in H1.
+    Search map_to_list elem_of.
+    (*Set Printing Implicit.*)
+    destruct X.
+    unfold elem_of in H1.
+    unfold elem_of.
+    rename mapset_car into M.
+    unfold map_to_list in H1.
+    unfold mapset_elem_of.
+    Print mapset_elem_of.
+    simpl.
+    Search elem_of_list.
+    (*unfold elem_of_list in H1.*)
+    Unset Printing Notations.
+    unfold lookup.
+    Print FinMapToList.
+    gmap_to_list.
+    Set Printing Implicit.
+    unfold gmap_to_list in H1.
+    
+    Locate map_to_list.
+    Check map_to_list.
+    Search fmap fst.
+    unfold mapset_elem_of.
+    specialize (H0 H).
+      in H.  apply elem_of_list_to_set in H. admit.
+  +  unfold elem_of.
+  Search mapset_elem_of.
+  
+  apply gmap_eq.
+  Check @list_to_set.
+  Search list_to_set.
+  Check elem_of_list_to_set.
+  Search elem_of.
+  Check symmetry_iff.
+  (*pose proof (H := mapset_eq (list_to_set (mapset_elements X)) X).*)
+  Check mapset_eq. (*apply mapset_eq.*)
+  (*apply (@mapset_eq evar _ _ _ _ _ _ _ _ _ _).*)
+  Check ( mapset_eq (list_to_set (mapset_elements X)) X).
+  Unset Printing Notations.
+  Check mapset_eq.
+  Check (mapset_elements X).
+  
+  apply @mapset_eq with (K := evar).
+  pose proof ( H := ( mapset_eq (list_to_set (mapset_elements X)) X)).
+  rewrite -> mapset_eq.
+
+Lemma set_evar_fresh_is_fresh ϕ : evar_fresh (elements (free_evars ϕ)) ∉ free_evars ϕ.
+Proof.
+  pose proof (Hf := evar_fresh_is_fresh (elements (free_evars ϕ))).
+  Check @list_to_set evar EVarSet _ _ _.
+  Search list_to_set.
+  assert (Hf': evar_fresh (elements (free_evars ϕ)) ∉ @list_to_set evar EVarSet _ _ _ (elements (free_evars ϕ))).
+  { Search list_to_set. unfold not.  intros. apply elem_of_list_to_set in H. unfold elem_of in H.
+    Print elem_of_list. Search elem_of_list List.In. apply elem_of_list_In in H. contradiction.}
+    clear Hf. Search list_to_set elements. unfold elements in Hf'.
+    Search mapset_elements.
+Admitted.
+
 (*If phi is a closed body, then (ex, phi) is closed too*)
 Lemma wfc_body_to_wfc_ex:
 forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
 Proof.
   intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
-  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (free_evars phi))) in H. exact H.
-  apply evar_fresh_is_fresh.
+  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (elements (free_evars phi)))) in H. exact H.
+  clear H.
+  pose proof (Hf := evar_fresh_is_fresh (elements (free_evars phi))).
+  Check elements.
+  Search elements.
+  Search elements elem_of.
+  Unset Printing Notations. unfold elem_of
+  unfold not. intros.
+  Search elements.
+  Check elem_of_elements.
+  Check evar_fresh_is_fresh.
+  pose proof (Hf := evar_fresh_is_fresh (elements (free_evars phi))).
+  unfold not in Hf. apply Hf. clear Hf.
+  Search elements.
+  Check (elem_of_elements (free_evars phi)).
+  apply elem_of_elements.
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
