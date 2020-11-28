@@ -655,7 +655,7 @@ Qed.
 
 (*If phi is a closed body, then (mu, phi) is closed too*)
 Lemma wfc_body_to_wfc_mu:
-forall phi (X : svar), wfc_body_mu phi -> well_formed_closed (patt_mu phi).
+forall phi, wfc_body_mu phi -> well_formed_closed (patt_mu phi).
 Proof.
   intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
@@ -671,7 +671,7 @@ Lemma wfc_body_wfc_mu_iff:
 Proof.
   split.
   - apply wfc_mu_to_wfc_body.
-  - apply (wfc_body_to_wfc_mu phi X).
+  - apply (wfc_body_to_wfc_mu phi).
 Qed.
 
 (* Similarly with positiveness *)
