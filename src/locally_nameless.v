@@ -602,8 +602,10 @@ Qed.
     
 
   
-Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): (elem_of_list (k,a) (gmap_to_list M)) <-> (gmap_lookup k M = Some a).
+Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): ((k,a) ∈ (gmap_to_list M)) <-> (M !! k = Some a).
 Proof.
+  unfold elem_of.
+  unfold lookup.
   destruct M as [PM PMwf] eqn: HM. simpl.
   unfold gmap_wf in PMwf.
   split; intros H'.
@@ -627,19 +629,36 @@ Proof.
     rewrite -> decode_encode. simpl. reflexivity.
 Qed.
 
+Program Instance inj_unit_r : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
+Next Obligation.
+  intros. destruct x,y. simpl in H. subst. destruct u. destruct u0. reflexivity.
+Qed.
 
-(*
-Existing Instance evar_eqdec.
-Existing Instance evar_countable.
-Existing Instance svar_eqdec.
-Existing Instance svar_countable.*)
-  Existing Instance gmap_finmap.
+Lemma gset_to_list_elem_of `{Countable K} (S : gset K) (k : K) : k ∈ (mapset_elements S) <-> k ∈ S.
+Proof.
+  unfold mapset_elements.
+  destruct S as [M].
+  unfold elem_of at 2.
+  unfold gset_elem_of. unfold mapset_elem_of. simpl.
+  rewrite <- gmap_to_list_lookup.
+  unfold map_to_list.
+  assert (Hk : k = fst (k, ())).
+  { reflexivity. }
+  rewrite -> Hk at 1.
+  split; intros H'.
+  + apply elem_of_list_fmap_2_inj in H'. apply H'.
+    apply inj_unit_r.
+  + apply elem_of_list_fmap_1. assumption.
+Qed.
+    
 Lemma mapset_elements_to_set (X : EVarSet) : list_to_set (mapset_elements X) = X.
 Proof.
-
-  Set Printing Implicit.
-  (*apply (iff_sym (@mapset_eq evar (gmap evar) gmap_fmap _ _ _ _ _ _ _ _ _ _)).*)
-  apply (iff_sym (@mapset_eq evar (gmap evar) gmap_fmap (@gmap_lookup evar _ _) _ _ _ _ _ _ gmap_finmap _ _)).
+  apply (iffRL (@mapset_eq evar (gmap evar) _ _ _ _ _ _ _ _ gmap_finmap _ _)).
+  intros x.
+  Unset Printing Notations.
+  unfold mapset_elements.
+  split; intros H.
+  + 
   unfold gset in X.
   intros.
   pose proof (H' := @elem_of_list_to_set evar EVarSet _ _ _ _ _ x (mapset_elements X)).
