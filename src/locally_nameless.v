@@ -599,9 +599,7 @@ Proof.
   + apply Pelem_of_to_list.
     left. simpl. exists i. firstorder.
 Qed.
-    
 
-  
 Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): ((k,a) ∈ (gmap_to_list M)) <-> (M !! k = Some a).
 Proof.
   unfold elem_of.
@@ -632,7 +630,7 @@ Qed.
 Program Instance inj_unit_r : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
 Next Obligation.
   intros. destruct x,y. simpl in H. subst. destruct u. destruct u0. reflexivity.
-Qed.
+Defined.
 
 Lemma gset_to_list_elem_of `{Countable K} (S : gset K) (k : K) : k ∈ (mapset_elements S) <-> k ∈ S.
 Proof.
@@ -650,67 +648,15 @@ Proof.
     apply inj_unit_r.
   + apply elem_of_list_fmap_1. assumption.
 Qed.
-    
+
+(* TODO be more general then just EVarSet *)
 Lemma mapset_elements_to_set (X : EVarSet) : list_to_set (mapset_elements X) = X.
 Proof.
   apply (iffRL (@mapset_eq evar (gmap evar) _ _ _ _ _ _ _ _ gmap_finmap _ _)).
-  intros x.
-  Unset Printing Notations.
-  unfold mapset_elements.
-  split; intros H.
-  + 
-  unfold gset in X.
-  intros.
+  intros x. 
   pose proof (H' := @elem_of_list_to_set evar EVarSet _ _ _ _ _ x (mapset_elements X)).
-  destruct H' as [H1 H2].
-  split; intros.
-  + specialize (H1 H). clear H2 H.
-    unfold mapset_elements in H1.
-    Search map_to_list elem_of.
-    (*Set Printing Implicit.*)
-    destruct X.
-    unfold elem_of in H1.
-    unfold elem_of.
-    rename mapset_car into M.
-    unfold map_to_list in H1.
-    unfold mapset_elem_of.
-    Print mapset_elem_of.
-    simpl.
-    Search elem_of_list.
-    (*unfold elem_of_list in H1.*)
-    Unset Printing Notations.
-    unfold lookup.
-    Print FinMapToList.
-    gmap_to_list.
-    Set Printing Implicit.
-    unfold gmap_to_list in H1.
-    
-    Locate map_to_list.
-    Check map_to_list.
-    Search fmap fst.
-    unfold mapset_elem_of.
-    specialize (H0 H).
-      in H.  apply elem_of_list_to_set in H. admit.
-  +  unfold elem_of.
-  Search mapset_elem_of.
-  
-  apply gmap_eq.
-  Check @list_to_set.
-  Search list_to_set.
-  Check elem_of_list_to_set.
-  Search elem_of.
-  Check symmetry_iff.
-  (*pose proof (H := mapset_eq (list_to_set (mapset_elements X)) X).*)
-  Check mapset_eq. (*apply mapset_eq.*)
-  (*apply (@mapset_eq evar _ _ _ _ _ _ _ _ _ _).*)
-  Check ( mapset_eq (list_to_set (mapset_elements X)) X).
-  Unset Printing Notations.
-  Check mapset_eq.
-  Check (mapset_elements X).
-  
-  apply @mapset_eq with (K := evar).
-  pose proof ( H := ( mapset_eq (list_to_set (mapset_elements X)) X)).
-  rewrite -> mapset_eq.
+  rewrite -> H'. apply gset_to_list_elem_of.
+Qed.
 
 Lemma set_evar_fresh_is_fresh ϕ : evar_fresh (elements (free_evars ϕ)) ∉ free_evars ϕ.
 Proof.
