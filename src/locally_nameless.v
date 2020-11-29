@@ -604,8 +604,28 @@ Qed.
   
 Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): (elem_of_list (k,a) (gmap_to_list M)) <-> (gmap_lookup k M = Some a).
 Proof.
-  split; intros.
-Admitted.
+  destruct M as [PM PMwf] eqn: HM. simpl.
+  unfold gmap_wf in PMwf.
+  split; intros H'.
+  + apply pmap_to_list_lookup.
+    apply elem_of_list_omap in H'.
+    destruct H' as [[k' a'] [HxinPM H']].
+    apply fmap_Some_1 in H'.
+    destruct H' as [k'' [H1 H2]]. inversion H2. subst. clear H2.
+    assert (Hk': k' = encode k'').
+    { apply bool_decide_unpack in PMwf.
+      unfold map_Forall in PMwf.
+      apply pmap_to_list_lookup in HxinPM.
+      specialize (PMwf k' a' HxinPM).
+      apply (inj Some). rewrite <- PMwf.
+      apply fmap_Some_2. apply H1. }
+    subst. apply HxinPM.
+    
+  + apply pmap_to_list_lookup in H'.
+    apply elem_of_list_omap.
+    exists (encode k, a). firstorder.
+    rewrite -> decode_encode. simpl. reflexivity.
+Qed.
 
 
 (*
