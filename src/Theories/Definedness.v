@@ -104,7 +104,7 @@ Section definedness.
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
     destruct Hm1m2. destruct H0.
-    inversion H0. clear H0. subst.
+    inversion H0. clear H0. simpl in H2. subst.
     exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
     rewrite -> pattern_interpretation_sym_simpl. apply H.
   Qed.

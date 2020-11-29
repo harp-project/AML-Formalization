@@ -8,6 +8,7 @@ Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
 
+From stdpp Require Import fin_sets.
 Require Import extralibrary.
 Require Import Signature.
 Require Export locally_nameless.
@@ -27,7 +28,7 @@ Section soundness_lemmas.
 
 (* evar_open of fresh name does not change *)
 Lemma evar_open_fresh (phi : Pattern) (v : evar) :
-  forall n, well_formed phi -> ~List.In v (free_evars phi) ->
+  forall n, well_formed phi -> v ∉ (free_evars phi) ->
             evar_open n v phi = phi.
 Proof. Admitted.
 (*
@@ -59,7 +60,7 @@ Lemma update_valuation_fresh {m : Model}
       (psi : Pattern) (x : Domain m) (c : Domain m) (v : evar):
    (* Should be here, right? *)
    (* well_formed psi -> *)
-  ~List.In v (free_evars psi) ->
+  v ∉ (free_evars psi) ->
   pattern_interpretation (update_evar_val v c evar_val) svar_val psi x
   = pattern_interpretation evar_val svar_val psi x.
 Proof.
@@ -712,7 +713,7 @@ Section with_model.
           specialize (Hneg H2).
           inversion Hneg. subst. contradiction.
         * assumption.
-        * auto.
+        * simpl. simpl in H4. auto.
         * assumption.
           
       + (* EVar bound *)
@@ -850,10 +851,10 @@ Section with_model.
         }
       * (* Ex *)
         simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-        specialize (IHn (evar_open 0 (evar_fresh (free_evars phi)) phi)).
+        specialize (IHn (evar_open 0 (evar_fresh (elements (free_evars phi))) phi)).
         rewrite <- evar_open_size in IHn.
         assert (Hsz': size phi <= n). simpl in *. lia.
-        remember (evar_fresh (free_evars phi)) as fresh.
+        remember (evar_fresh (elements (free_evars phi))) as fresh.
         pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
         specialize (IHn Hsz' Hwfp' Bp Bn).
         pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
@@ -1129,11 +1130,11 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (set_union evar_eq (free_evars phi) (free_evars psi))) 
-             (free_evars psi)).
+    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars phi)) (elements (free_evars psi)))) 
+             (elements (free_evars psi))).
     admit.
-    assert (~List.In (evar_fresh (set_union evar_eq (free_evars phi) (free_evars psi))) 
-             (free_evars phi)).
+    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars phi)) (elements (free_evars psi))))
+             (elements (free_evars phi))).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
     rewrite update_valuation_fresh in Hext_re; try assumption.
@@ -1175,11 +1176,11 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (set_union evar_eq (free_evars psi) (free_evars phi))) 
-             (free_evars psi)).
+    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars psi)) (elements (free_evars phi))))
+             (elements (free_evars psi))).
     admit.
-    assert (~List.In (evar_fresh (set_union evar_eq (free_evars psi) (free_evars phi))) 
-             (free_evars phi)).
+    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars psi)) (elements (free_evars phi))))
+             (elements (free_evars phi))).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
     rewrite update_valuation_fresh in Hext_re; try assumption.

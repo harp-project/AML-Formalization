@@ -23,7 +23,7 @@ Definition db_index := nat.
 
 (* Variable signature : Signature. *)
 Context {signature : Signature}.
-Existing Instance mlvariables.
+Existing Instance variables.
 
 
 Definition evar_eqb (v1 v2 : evar) : bool :=
@@ -660,15 +660,13 @@ Qed.
 
 Lemma set_evar_fresh_is_fresh ϕ : evar_fresh (elements (free_evars ϕ)) ∉ free_evars ϕ.
 Proof.
+  intros H.
   pose proof (Hf := evar_fresh_is_fresh (elements (free_evars ϕ))).
-  Check @list_to_set evar EVarSet _ _ _.
-  Search list_to_set.
-  assert (Hf': evar_fresh (elements (free_evars ϕ)) ∉ @list_to_set evar EVarSet _ _ _ (elements (free_evars ϕ))).
-  { Search list_to_set. unfold not.  intros. apply elem_of_list_to_set in H. unfold elem_of in H.
-    Print elem_of_list. Search elem_of_list List.In. apply elem_of_list_In in H. contradiction.}
-    clear Hf. Search list_to_set elements. unfold elements in Hf'.
-    Search mapset_elements.
-Admitted.
+  unfold elements in H. unfold gset_elements in H.
+  apply gset_to_list_elem_of in H.
+  unfold elements in Hf. unfold gset_elements in Hf.
+  apply elem_of_list_In in H. contradiction.
+Qed.
 
 (*If phi is a closed body, then (ex, phi) is closed too*)
 Lemma wfc_body_to_wfc_ex:
@@ -678,20 +676,7 @@ Proof.
   unfold well_formed_closed in H.
   apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (elements (free_evars phi)))) in H. exact H.
   clear H.
-  pose proof (Hf := evar_fresh_is_fresh (elements (free_evars phi))).
-  Check elements.
-  Search elements.
-  Search elements elem_of.
-  Unset Printing Notations. unfold elem_of
-  unfold not. intros.
-  Search elements.
-  Check elem_of_elements.
-  Check evar_fresh_is_fresh.
-  pose proof (Hf := evar_fresh_is_fresh (elements (free_evars phi))).
-  unfold not in Hf. apply Hf. clear Hf.
-  Search elements.
-  Check (elem_of_elements (free_evars phi)).
-  apply elem_of_elements.
+  apply set_evar_fresh_is_fresh.
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
@@ -719,8 +704,8 @@ Proof.
   - induction phi; intros; try lia; auto.
     * simpl. inversion H.
     -- simpl. rewrite Nat.eqb_refl. simpl. trivial.
-    -- subst. rewrite Nat.le_succ_l in H1. destruct (n =? n') eqn:D1.
-      + apply Nat.eqb_eq in D1. rewrite D1 in H1. lia.
+    -- subst. rewrite -> Nat.le_succ_l in H1. destruct (n =? n') eqn:D1.
+      + apply Nat.eqb_eq in D1. rewrite -> D1 in H1. lia.
       + simpl. auto. 
     * simpl in H. destruct H. firstorder.
     * firstorder.
@@ -774,7 +759,7 @@ Qed.
 
 (* Similarly with positiveness *)
 Definition wfp_body_ex phi := forall x,
-  ~List.In x (free_evars phi) -> well_formed_positive (evar_open 0 x phi).
+  x ∉ (free_evars phi) -> well_formed_positive (evar_open 0 x phi).
 
 Lemma wfp_evar_open : forall phi x n,
   well_formed_positive phi ->
@@ -796,7 +781,7 @@ Qed.
 
 (* Connection between bodies and well-formedness *)
 Definition wf_body_ex phi := forall x, 
-  ~List.In x (free_evars phi) -> well_formed (evar_open 0 x phi).
+  x ∉ (free_evars phi) -> well_formed (evar_open 0 x phi).
 
 (* This might be useful in soundness cases prop_ex_left/right *)
 Lemma wf_ex_to_wf_body: forall phi,
@@ -875,7 +860,7 @@ match p with
 | patt_imp ls rs => Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
                             (pattern_interpretation evar_val svar_val rs)
 | patt_exists p' =>
-  let x := evar_fresh (free_evars p') in
+  let x := evar_fresh (elements (free_evars p')) in
   FA_Union
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
@@ -953,7 +938,7 @@ Lemma pattern_interpretation_ex_simpl
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (p : Pattern) :
   pattern_interpretation evar_val svar_val (patt_exists p) =
-  let x := evar_fresh (free_evars p) in
+  let x := evar_fresh (elements (free_evars p)) in
   FA_Union 
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
@@ -1037,8 +1022,8 @@ Fixpoint free_evars_ctx (C : Application_context)
   : (ListSet.set evar) :=
 match C with
 | box => List.nil
-| ctx_app_l cc p prf => set_union evar_eq (free_evars_ctx cc) (free_evars p)
-| ctx_app_r p cc prf => set_union evar_eq (free_evars p) (free_evars_ctx cc)
+| ctx_app_l cc p prf => set_union evar_eq (free_evars_ctx cc) (elements (free_evars p))
+| ctx_app_r p cc prf => set_union evar_eq (elements (free_evars p)) (free_evars_ctx cc)
 end.
 
 Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
@@ -1151,6 +1136,7 @@ Qed.
 (* TODO: forall, nu *)
 
 (* TODO prove *)
+(*
 Lemma pattern_interpretation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
     pattern_interpretation evar_val svar_val (patt_forall phi) =
     let x := evar_fresh (free_evars phi) in
@@ -1165,6 +1151,7 @@ Proof.
   unfold Same_set. unfold Complement. unfold Included. unfold In.
   split; intros.
 Admitted.
+ *)
 
 Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
 Proof.
@@ -1226,13 +1213,13 @@ Qed.
 
 (* TODO something like this, but with binding a free variable *)
 Lemma M_predicate_exists M ϕ :
-  let x := evar_fresh (free_evars ϕ) in
+  let x := evar_fresh (elements (free_evars ϕ)) in
   M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
 Proof.
   simpl. unfold M_predicate. intros.
   rewrite -> pattern_interpretation_ex_simpl.
   simpl.
-  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (free_evars ϕ)) e ρₑ) ρₛ (evar_open 0 (evar_fresh (free_evars ϕ)) ϕ)) (Full_set (Domain M)))).
+  pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρₑ) ρₛ (evar_open 0 (evar_fresh (elements (free_evars ϕ))) ϕ)) (Full_set (Domain M)))).
   destruct H'.
   - (* For some member, the subformula evaluates to full set. *)
     left. apply Same_set_symmetric. apply Same_set_Full_set.
@@ -1246,7 +1233,7 @@ Proof.
     split.
     + unfold Included. intros.
       unfold In in H1. inversion H1. subst. clear H1. destruct H2.
-      specialize (H (update_evar_val (evar_fresh (free_evars ϕ)) x0 ρₑ) ρₛ).
+      specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) x0 ρₑ) ρₛ).
       destruct H.
       * exfalso. apply H0. exists x0. apply H.
       * unfold Same_set in H. destruct H. clear H2.
@@ -1259,6 +1246,7 @@ Qed.
     
 (* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
 (* ϕ is expected to have dangling evar indices *)
+(*
 Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
   let x := evar_fresh (free_evars ϕ) in
   M_predicate M (evar_open 0 x ϕ) ->
@@ -1274,7 +1262,7 @@ Proof.
   rewrite -> evar_open_and.
   remember (evar_fresh (set_union evar_eq (@nil evar) (free_evars ϕ))) as x'.
 Admitted.
-
+*)
 End ml_syntax_semantics.
 
 Module MLNotations.
@@ -1350,7 +1338,7 @@ Inductive ML_proof_system (theory : Theory) :
   | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
       well_formed phi1 -> well_formed phi2 ->
       theory ⊢ (phi1 ---> phi2) ->
-      set_mem evar_eq x (free_evars phi2) = false ->
+      set_mem evar_eq x (elements (free_evars phi2)) = false ->
       theory ⊢ (exists_quantify x phi1 ---> phi2)
 
 (* Frame reasoning *)
