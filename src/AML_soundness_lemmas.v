@@ -3,7 +3,6 @@ Require Import ZArith.
 Require Import List.
 Require Import Coq.micromega.Lia.
 Require Export String.
-Require Export Coq.Lists.ListSet.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
@@ -169,26 +168,29 @@ Admitted.
 
 Lemma not_free_implies_positive_negative_occurrence :
   forall (phi : Pattern) (X : svar),
-    ~ set_In X (free_svars phi) ->
+    X ∉ (free_svars phi) ->
     @positive_occurrence_named sig X phi /\ negative_occurrence_named X phi.
 Proof.
-  unfold not.
-  induction phi; simpl; intros; split; try constructor; try firstorder.
-  * apply IHphi1. intros.
-    assert (H': set_In X (set_union svar_eq (free_svars phi1) (free_svars phi2))).
-    { apply set_union_intro1. assumption. }
+  induction phi; simpl; intros Y H; split; try constructor. (* try firstorder.*)
+  * unfold not. intros. apply H. apply elem_of_singleton_2. symmetry. assumption.
+  * apply IHphi1. unfold not. intros H0.
+    assert (H': Y ∈ (union (free_svars phi1) (free_svars phi2))).
+    { apply elem_of_union_l. assumption. }
     auto.
-  * apply IHphi2. intros.
-    assert (H': set_In X (set_union svar_eq (free_svars phi1) (free_svars phi2))).
-    { apply set_union_intro2. assumption. }
+  * apply IHphi2. unfold not. intros H0.
+    assert (H': Y ∈ (union (free_svars phi1) (free_svars phi2))).
+    { apply elem_of_union_r. assumption. }
     auto.
-  * apply IHphi1.
-    intros. auto using set_union_intro1.
-  * apply IHphi2. intros. auto using set_union_intro2.
-  * apply IHphi1. intros. auto using set_union_intro1.
-  * apply IHphi2. intros. auto using set_union_intro2.
-  * apply IHphi1. intros. auto using set_union_intro1.
-  * apply IHphi2. intros. auto using set_union_intro2.
+  * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
+  * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
+  * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
+  * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
+  * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
+  * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
+  * apply IHphi. auto.
+  * apply IHphi. auto.
+  * apply IHphi. auto.
+  * apply IHphi. auto.
 Qed.
 
 (* taken from https://softwarefoundations.cis.upenn.edu/vfa-current/Perm.html *)
@@ -564,7 +566,7 @@ Section respects_blacklist.
   Lemma positive_occurrence_respects_blacklist_svar_open :
     forall (phi : Pattern) (dbi : db_index) (X : svar),
       positive_occurrence_db dbi phi ->
-      ~ set_In X (free_svars phi) ->
+      X ∉ (free_svars phi) ->
       respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Singleton svar X).
   Proof.
     intros phi dbi X Hpodb Hni.
@@ -578,11 +580,11 @@ Section respects_blacklist.
   
   Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern),
       well_formed_positive (patt_mu phi) ->
-      let X := svar_fresh (free_svars phi) in
+      let X := fresh_svar phi in
       respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Singleton svar X).
   Proof.
     intros. destruct H as [Hpo Hwfp].
-    pose proof (Hfr := svar_fresh_is_fresh (free_svars phi)).
+    pose proof (Hfr := set_svar_fresh_is_fresh phi).
     auto using positive_occurrence_respects_blacklist_svar_open.
   Qed.
 
@@ -897,7 +899,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh (free_svars phi)) as X'.
+          remember (fresh_svar phi) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -946,7 +948,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh (free_svars phi) = V).
+                    unfold not. intros. assert (fresh_svar phi = V).
                     {
                       symmetry. assumption.
                     }
@@ -968,7 +970,7 @@ Section with_model.
           Arguments leq : simpl never.
           simpl.
 
-          remember (svar_fresh (free_svars phi)) as X'.
+          remember (fresh_svar phi) as X'.
           remember (svar_open 0 X' phi) as phi'.
           pose proof (Hszeq := svar_open_size sig 0 X' phi).
           assert (Hsz'': size phi' <= n).
@@ -1018,7 +1020,7 @@ Section with_model.
                   subst.
                   apply positive_negative_occurrence_named_svar_open.
                   *
-                    unfold not. intros. assert (svar_fresh (free_svars phi) = V).
+                    unfold not. intros. assert (fresh_svar phi = V).
                     {
                       symmetry. assumption.
                     }
@@ -1037,7 +1039,7 @@ Section with_model.
                               (evar_val : @EVarVal sig M)
                               (svar_val : @SVarVal sig M),
       well_formed (mu, phi) ->
-      let X := svar_fresh (free_svars phi) in
+      let X := fresh_svar phi in
       @MonotonicFunction A OS
                          (fun S : Ensemble (Domain M) =>
                             (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
@@ -1047,15 +1049,15 @@ Section with_model.
     pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
     simpl in Hrb.
     inversion Hwfp.
-    remember (svar_open 0 (svar_fresh (free_svars phi)) phi) as phi'.
+    remember (svar_open 0 (fresh_svar phi) phi) as phi'.
     assert (Hsz : size phi' <= size phi').
     { lia. }
     pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
     assert (Hwfp' : well_formed_positive phi').
     { subst. apply wfp_svar_open. assumption. }
     specialize (Hmono Hsz Hwfp').
-    specialize (Hmono (Empty_set svar) (Singleton svar (svar_fresh (free_svars phi)))).
-    specialize (Hmono Hrb evar_val svar_val (svar_fresh (free_svars phi))).
+    specialize (Hmono (Empty_set svar) (Singleton svar (fresh_svar phi))).
+    specialize (Hmono Hrb evar_val svar_val (fresh_svar phi)).
     destruct Hmono.
     apply H2.
     constructor.
@@ -1130,11 +1132,9 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars phi)) (elements (free_evars psi)))) 
-             (elements (free_evars psi))).
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars phi)) (elements (free_evars psi))))
-             (elements (free_evars phi))).
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars phi)).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
     rewrite update_valuation_fresh in Hext_re; try assumption.
@@ -1176,11 +1176,9 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars psi)) (elements (free_evars phi))))
-             (elements (free_evars psi))).
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars psi)).
     admit.
-    assert (~List.In (evar_fresh (set_union evar_eq (elements (free_evars psi)) (elements (free_evars phi))))
-             (elements (free_evars phi))).
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars phi)).
     admit.
     rewrite evar_open_fresh in Hext_re; try assumption.
     rewrite update_valuation_fresh in Hext_re; try assumption.
@@ -1189,21 +1187,5 @@ Proof.
     repeat split; assumption.
     admit. admit.
 Admitted.
-
-Lemma l1 : forall (phi : @Pattern sig) (x : evar),
-    well_formed_closed (ex, phi) -> well_formed_closed  (evar_open 0 x phi).
-Proof.
-  induction phi; try constructor; try firstorder.
-  + admit.
-  + admit.
-  + admit.
-Admitted.
-
-
-(*
-(ex, (ex, patt_bound_evar 0 /\ patt_bound_evar 1))
-=>
-(ex, patt_bound_evar 0 /\ patt_free_evar !X)
-*)
 
 End soundness_lemmas.

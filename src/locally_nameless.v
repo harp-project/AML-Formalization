@@ -7,7 +7,7 @@ Require Import Coq.micromega.Lia.
 
 (*From Equations Require Import Equations.*)
 Require Export String.
-Require Export Coq.Lists.ListSet.
+(*Require Export Coq.Lists.ListSet.*)
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
@@ -222,14 +222,8 @@ end.
 (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
-
-(*Notation EVarSet := (mapset (@gmap evar evar_eqdec evar_countable)).*)
-
 Notation EVarSet := (@gset evar evar_eqdec evar_countable).
-
-Definition set_singleton {T : Type}
-  (eq : forall (x y : T), { x = y } + { x <> y })
-  := fun x : T => set_add eq x List.nil.
+Notation SVarSet := (@gset svar svar_eqdec svar_countable).
 
 Fixpoint free_evars (phi : Pattern)
   : EVarSet :=
@@ -247,16 +241,16 @@ match phi with
 end.
 
 Fixpoint free_svars (phi : Pattern)
-  : (ListSet.set svar) :=
+  : SVarSet :=
 match phi with
-| patt_free_evar x => List.nil
-| patt_free_svar X => set_singleton svar_eq X
-| patt_bound_evar x => List.nil
-| patt_bound_svar X => List.nil
-| patt_sym sigma => List.nil
-| patt_app phi1 phi2 => set_union svar_eq (free_svars phi1) (free_svars phi2)
-| patt_bott => List.nil
-| patt_imp phi1 phi2 => set_union svar_eq (free_svars phi1) (free_svars phi2)
+| patt_free_evar x => empty
+| patt_free_svar X => singleton X
+| patt_bound_evar x => empty
+| patt_bound_svar X => empty
+| patt_sym sigma => empty
+| patt_app phi1 phi2 => union (free_svars phi1) (free_svars phi2)
+| patt_bott => empty
+| patt_imp phi1 phi2 => union (free_svars phi1) (free_svars phi2)
 | patt_exists phi => free_svars phi
 | patt_mu phi => free_svars phi
 end.
@@ -267,6 +261,8 @@ end.
 
 Record Model := {
   Domain : Type;
+  (* TODO think about whether or not to make it an existential formula. Because that would affect the equality,
+     due to proof irrelevance. *)
   nonempty_witness : Domain;
   Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
   app_interp : Domain -> Domain -> Power Domain;
@@ -662,10 +658,25 @@ Proof.
   apply wfc_aux_body_ex_imp1. auto.
 Qed.
 
-Lemma set_evar_fresh_is_fresh ϕ : evar_fresh (elements (free_evars ϕ)) ∉ free_evars ϕ.
+Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
+Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
+
+Lemma set_evar_fresh_is_fresh ϕ : fresh_evar ϕ ∉ free_evars ϕ.
 Proof.
+  unfold fresh_evar.
   intros H.
   pose proof (Hf := evar_fresh_is_fresh (elements (free_evars ϕ))).
+  unfold elements in H. unfold gset_elements in H.
+  apply gset_to_list_elem_of in H.
+  unfold elements in Hf. unfold gset_elements in Hf.
+  apply elem_of_list_In in H. contradiction.
+Qed.
+
+Lemma set_svar_fresh_is_fresh ϕ : fresh_svar ϕ ∉ free_svars ϕ.
+Proof.
+  unfold fresh_svar.
+  intros H.
+  pose proof (Hf := svar_fresh_is_fresh (elements (free_svars ϕ))).
   unfold elements in H. unfold gset_elements in H.
   apply gset_to_list_elem_of in H.
   unfold elements in Hf. unfold gset_elements in Hf.
@@ -678,7 +689,7 @@ forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
 Proof.
   intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
-  apply (wfc_aux_body_ex_imp2 phi 0 0 (evar_fresh (elements (free_evars phi)))) in H. exact H.
+  apply (wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
   clear H.
   apply set_evar_fresh_is_fresh.
 Qed.
@@ -696,7 +707,7 @@ Qed.
 
 (*Similarly to the section above but with mu*)
 Definition wfc_body_mu phi := forall X, 
-  ~List.In X (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
+  X ∉ (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
 
 (*Helper for wfc_mu_to_wfc_body*)
 Lemma wfc_aux_body_mu_imp1:
@@ -746,8 +757,8 @@ forall phi, wfc_body_mu phi -> well_formed_closed (patt_mu phi).
 Proof.
   intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
   unfold well_formed_closed in H.
-  apply (wfc_aux_body_mu_imp2 phi 0 0 (svar_fresh (free_svars phi))) in H. exact H.
-  apply svar_fresh_is_fresh.
+  apply (wfc_aux_body_mu_imp2 phi 0 0 (fresh_svar phi)) in H. exact H.
+  apply set_svar_fresh_is_fresh.
 Qed.
 
 (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
@@ -864,13 +875,13 @@ match p with
 | patt_imp ls rs => Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
                             (pattern_interpretation evar_val svar_val rs)
 | patt_exists p' =>
-  let x := evar_fresh (elements (free_evars p')) in
+  let x := fresh_evar p' in
   FA_Union
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
                             (evar_open 0 x p'))
 | patt_mu p' =>
-  let X := svar_fresh (free_svars p') in
+  let X := fresh_svar p' in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
@@ -942,7 +953,7 @@ Lemma pattern_interpretation_ex_simpl
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (p : Pattern) :
   pattern_interpretation evar_val svar_val (patt_exists p) =
-  let x := evar_fresh (elements (free_evars p)) in
+  let x := fresh_evar p in
   FA_Union 
     (fun e => pattern_interpretation (update_evar_val x e evar_val)
                             svar_val
@@ -953,7 +964,7 @@ Lemma pattern_interpretation_mu_simpl
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
       (p : Pattern) :
   pattern_interpretation evar_val svar_val (patt_mu p) =
-  let X := svar_fresh (free_svars p) in
+  let X := fresh_svar p in
   @LeastFixpointOf (Ensemble (@Domain m)) OS L
     (fun S => pattern_interpretation evar_val
                             (update_svar_val X S svar_val)
@@ -1023,11 +1034,11 @@ match C with
 end.
 
 Fixpoint free_evars_ctx (C : Application_context)
-  : (ListSet.set evar) :=
+  : (EVarSet) :=
 match C with
-| box => List.nil
-| ctx_app_l cc p prf => set_union evar_eq (free_evars_ctx cc) (elements (free_evars p))
-| ctx_app_r p cc prf => set_union evar_eq (elements (free_evars p)) (free_evars_ctx cc)
+| box => empty
+| ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
+| ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
 end.
 
 Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
@@ -1342,7 +1353,7 @@ Inductive ML_proof_system (theory : Theory) :
   | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
       well_formed phi1 -> well_formed phi2 ->
       theory ⊢ (phi1 ---> phi2) ->
-      set_mem evar_eq x (elements (free_evars phi2)) = false ->
+      x ∉ (free_evars phi2) ->
       theory ⊢ (exists_quantify x phi1 ---> phi2)
 
 (* Frame reasoning *)
