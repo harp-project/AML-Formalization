@@ -651,34 +651,6 @@ Section with_model.
   Let OS := EnsembleOrderedSet (@Domain sig M).
   Let L := PowersetLattice (@Domain sig M).
 
-
-  Lemma update_svar_val_comm :
-    forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal sig M),
-      X1 <> X2 ->
-      update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
-      = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
-  Proof.
-    intros.
-    unfold update_svar_val.
-    apply functional_extensionality.
-    intros.
-    destruct (svar_eq X1 x),(svar_eq X2 x); subst.
-    * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
-    * reflexivity.
-    * reflexivity.
-    * reflexivity.
-  Qed.
-
-  Lemma update_svar_shadow : forall (X : svar)
-                                    (S1 S2 : Power (Domain M))
-                                    (svar_val : @SVarVal sig M),
-      update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
-  Proof.
-    intros. unfold update_svar_val. apply functional_extensionality.
-    intros. destruct (svar_eq X x); reflexivity.
-  Qed.
-  
-
   Lemma respects_blacklist_implies_monotonic :
     forall (n : nat) (phi : Pattern),
       le (size phi) n -> well_formed_positive phi ->
@@ -928,12 +900,12 @@ Section with_model.
             destruct (svar_eq X' V).
             + (* X' = V *)
               rewrite <- e.
-              repeat rewrite -> update_svar_shadow.
+              repeat rewrite -> update_svar_val_shadow.
               unfold leq. simpl. unfold Included. unfold In. auto.
             + (* X' <> V*)
-              pose proof (Uhsvcx := update_svar_val_comm X' V x0 x svar_val n0).
+              pose proof (Uhsvcx := update_svar_val_comm M X' V x0 x svar_val n0).
               rewrite -> Uhsvcx.
-              pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
+              pose proof (Uhsvcy := update_svar_val_comm M X' V x0 y svar_val n0).
               rewrite -> Uhsvcy.
 
               assert (HrbV: respects_blacklist phi' (Singleton svar V) (Empty_set svar)).
@@ -999,12 +971,12 @@ Section with_model.
             destruct (svar_eq X' V).
             + (* X' = V *)
               rewrite <- e.
-              repeat rewrite -> update_svar_shadow.
+              repeat rewrite -> update_svar_val_shadow.
               unfold leq. simpl. unfold Included. unfold In. auto.
             + (* X' <> V*)
-              pose proof (Uhsvcx := update_svar_val_comm X' V x0 x svar_val n0).
+              pose proof (Uhsvcx := update_svar_val_comm M X' V x0 x svar_val n0).
               rewrite -> Uhsvcx.
-              pose proof (Uhsvcy := update_svar_val_comm X' V x0 y svar_val n0).
+              pose proof (Uhsvcy := update_svar_val_comm M X' V x0 y svar_val n0).
               rewrite -> Uhsvcy.
 
               assert (HrbV: respects_blacklist phi' (Empty_set svar) (Singleton svar V)).

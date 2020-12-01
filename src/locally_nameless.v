@@ -11,6 +11,7 @@ Require Export String.
 Require Export Ensembles_Ext.
 
 Require Export Coq.Program.Wf.
+Require Import Coq.Logic.FunctionalExtensionality.
 From Coq Require Import ssreflect ssrfun ssrbool.
 From stdpp Require Import pmap gmap mapset fin_sets.
 
@@ -299,6 +300,67 @@ Definition update_evar_val {m : Model}
 Definition update_svar_val {m : Model}
            (v : svar) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
   fun v' : svar => if svar_eq v v' then X else svar_val v'.
+
+Lemma update_svar_val_comm M :
+  forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal M),
+    X1 <> X2 ->
+    update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
+    = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
+Proof.
+  intros.
+  unfold update_svar_val.
+  apply functional_extensionality.
+  intros.
+  destruct (svar_eq X1 x),(svar_eq X2 x); subst.
+  * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
+  * reflexivity.
+  * reflexivity.
+  * reflexivity.
+Qed.
+
+Lemma update_svar_val_shadow M : forall (X : svar)
+                                  (S1 S2 : Power (Domain M))
+                                  (svar_val : @SVarVal M),
+    update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
+Proof.
+  intros. unfold update_svar_val. apply functional_extensionality.
+  intros. destruct (svar_eq X x); reflexivity.
+Qed.
+
+
+Lemma update_evar_val_comm M :
+  forall (x1 x2 : evar) (m1 m2 : Domain M) (evar_val : @EVarVal M),
+    x1 <> x2 ->
+    update_evar_val x1 m1 (update_evar_val x2 m2 evar_val)
+    = update_evar_val x2 m2 (update_evar_val x1 m1 evar_val).
+Proof.
+  intros.
+  unfold update_evar_val.
+  apply functional_extensionality.
+  intros.
+  destruct (evar_eq x1 x),(evar_eq x2 x); subst.
+  * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
+  * reflexivity.
+  * reflexivity.
+  * reflexivity.
+Qed.
+
+Lemma update_evar_val_shadow M : forall (x : evar)
+                                  (m1 m2 : Domain M)
+                                  (evar_val : @EVarVal M),
+    update_evar_val x m1 (update_evar_val x m2 evar_val) = update_evar_val x m1 evar_val.
+Proof.
+  intros. unfold update_evar_val. apply functional_extensionality.
+  intros. destruct (evar_eq x x0); reflexivity.
+Qed.
+
+Lemma update_evar_val_same M x m ρₑ : @update_evar_val M x m ρₑ x = m.
+Proof.
+  unfold update_evar_val. destruct (evar_eq x x); simpl.
+  + reflexivity.
+  + contradiction.
+Qed.
+
 
 Definition app_ext {m : Model}
            (l r : Power (Domain m)) :
@@ -1258,12 +1320,36 @@ Proof.
 Qed.
 
 (* TODO top forall iff *)
-    
+
+
+Lemma predicate_not_empty_impl_full M ϕ ρₑ ρₛ :
+  M_predicate M ϕ ->
+  ~ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set _) ->
+  Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set _).
+Proof.
+  intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
+  destruct Hmp.
+  + assumption.
+  + contradiction.
+Qed.
+
+Lemma predicate_not_full_impl_empty M ϕ ρₑ ρₛ :
+  M_predicate M ϕ ->
+  ~ Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Full_set _) ->
+  Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set _).
+Proof.
+  intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
+  destruct Hmp.
+  + contradiction.
+  + assumption.
+Qed.
+
+
 (* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
 (* ϕ is expected to have dangling evar indices *)
-(*
+
 Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
-  let x := evar_fresh (free_evars ϕ) in
+  let x := fresh_evar ϕ in
   M_predicate M (evar_open 0 x ϕ) ->
   Same_set (Domain M)
            (pattern_interpretation ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
@@ -1273,11 +1359,38 @@ Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
 Proof.
   simpl. intros Hmp.
   rewrite -> pattern_interpretation_ex_simpl.
-  red. simpl free_evars.
+  red. unfold fresh_evar. simpl free_evars.
+  repeat rewrite -> union_empty_r_L.
+  rewrite -> union_empty_l_L.
   rewrite -> evar_open_and.
-  remember (evar_fresh (set_union evar_eq (@nil evar) (free_evars ϕ))) as x'.
-Admitted.
-*)
+  remember (evar_fresh (elements (free_evars ϕ))) as x.
+  unfold Included. unfold Ensembles.In. split; intros m H.
+  - destruct H as [m [m' H]].
+    rewrite -> pattern_interpretation_and_simpl in H.
+    unfold Ensembles.In in H.
+    destruct H as [m Hbound Hϕ].
+    assert (Heqmm' : m = m').
+    { unfold Ensembles.In in Hbound.
+      simpl in Hbound.
+      rewrite -> pattern_interpretation_free_evar_simpl in Hbound. destruct Hbound. 
+      unfold update_evar_val.
+      destruct (evar_eq x x).
+      + simpl. reflexivity.
+      + contradiction.
+    }
+    rewrite <- Heqmm' in Hϕ.
+    apply predicate_not_empty_impl_full.
+    + rewrite -> Heqx. unfold fresh_evar in Hmp. assumption.
+    + apply Contains_Elements_Not_Empty.
+      exists m. assumption.
+  - constructor. exists m.
+    rewrite -> pattern_interpretation_and_simpl. constructor.
+    + simpl. rewrite -> pattern_interpretation_free_evar_simpl.
+      unfold Ensembles.In. rewrite -> update_evar_val_same. constructor.
+    + destruct H as [H1 H2]. unfold Included in H2.
+      specialize (H2 m). apply H2. unfold Ensembles.In. constructor.
+Qed.
+
 End ml_syntax_semantics.
 
 Module MLNotations.
