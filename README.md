@@ -13,6 +13,13 @@ opam install coq-matching-logic
 
 ## For developers
 
+### Dependencies:
+- Coq 8.12
+- stdpp
+```sh
+opam install coq-stdpp
+```
+
 The project can be built using `make`:
 ```sh
 make

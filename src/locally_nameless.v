@@ -1226,7 +1226,7 @@ Proof.
   intros. unfold patt_and. auto using M_predicate_or, M_predicate_not.
 Qed.
 
-(* TODO something like this, but with binding a free variable *)
+
 Lemma M_predicate_exists M ϕ :
   let x := evar_fresh (elements (free_evars ϕ)) in
   M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
