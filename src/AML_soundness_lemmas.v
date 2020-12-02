@@ -1186,16 +1186,26 @@ Proof.
   - admit.
   - rewrite IHphi1. auto.
 Admitted.
- 
+
+(*
+Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (patt_mu phi) 0))
+    (pattern_interpretation evar_val
+       (update_svar_val (fresh_svar phi)
+          (Lattice.LeastFixpointOf
+             (fun S : Ensemble (Domain m) =>
+              pattern_interpretation evar_val (update_svar_val (fresh_svar phi) S svar_val)
+                (svar_open 0 (fresh_svar phi) phi))) svar_val) (svar_open 0 (fresh_svar phi) phi))
+
+*)
 
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
 Lemma plugging_patterns : forall (M : @Model sig) (phi1 phi2 : @Pattern sig) (evar_val : @EVarVal sig M)
-                                 (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar_name), (* TODO X not free in ?? *)
+                                 (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
-    ~ List.In X (free_svars phi1) ->
+    elem_of X (free_svars phi1) ->
     @pattern_interpretation sig M evar_val svar_val (bvar_subst phi1 phi2 dbi)
     = @pattern_interpretation sig M evar_val
                      (update_svar_val X (@pattern_interpretation sig M evar_val svar_val phi2) svar_val)
