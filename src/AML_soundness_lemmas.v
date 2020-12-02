@@ -1193,7 +1193,7 @@ Proof.
 Admitted.
 
 Lemma l1 : forall (phi : @Pattern sig) (x : evar_name),
-    well_formed_closed (ex, phi) -> well_formed_closed  (evar_open 0 x phi).
+    well_formed_closed (ex, phi) -> well_formed_closed (evar_open 0 x phi).
 Proof.
   induction phi; try constructor; try firstorder.
   + admit.
@@ -1212,7 +1212,21 @@ Lemma evar_open_bvar_subst phi1 phi2 dbi X
   : evar_open 0 X (bvar_subst phi1 phi2 (S dbi))
     = bvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
 Proof.
-
+  generalize dependent dbi. induction phi1; intro; simpl; auto.
+  - destruct (n =? 0) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
+    * rewrite Heq; auto. 
+    * symmetry in Heq. apply beq_nat_eq in Heq. lia.
+    * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+    * rewrite Heq. rewrite Hdbi. auto.
+    * rewrite Hdbi. auto. 
+    * rewrite Hdbi. destruct (Init.Nat.pred n =? 0) eqn:Hpred.
+      + symmetry in Hpred. apply beq_nat_eq in Hpred. lia.
+      + auto.
+  - destruct (compare_nat n (S dbi)); simpl; auto.
+  - rewrite IHphi1_1. rewrite IHphi1_2. auto.
+  - rewrite IHphi1_1. rewrite IHphi1_2. auto.
+  - admit.
+  - rewrite IHphi1. auto.
 Admitted.
  
 
