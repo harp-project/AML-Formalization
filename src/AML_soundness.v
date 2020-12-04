@@ -222,17 +222,6 @@ Proof.
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
     Check plugging_patterns.
-    subst. unfold Included; unfold In; intros.
-    unfold update_svar_val. 
-    rewrite F- HeqF at 1. 
-    
-    Print Same_set_to_eq.
-    Search Same_set Included.
-    Search eq Included.
-    assert (Fsub : Included (Domain m) F (Lattice.LeastFixpointOf F)).
-    Print Lattice.isFixpoint.
-    Search Lattice.Meet.
-    Search bvar_subst.
     (*
     simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
     constructor. constructor.

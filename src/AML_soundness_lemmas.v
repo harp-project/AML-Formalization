@@ -1559,8 +1559,6 @@ Proof.
         
                                                                  
   Print update_svar_val.
-  
 Admitted.
-
 
 End soundness_lemmas.
