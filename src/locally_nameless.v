@@ -1345,7 +1345,9 @@ Proof.
 Qed.
 
 
-(* TODO this pattern evar_open of zero to fresh variable occurs quite often; we should have a name for it *)
+(* ML's 'set comprehension'/'set building' scheme.
+   Pattern `∃ x. x ∧ P(x)` gets interpreted as {m ∈ M | P(m) holds}
+ *)
 (* ϕ is expected to have dangling evar indices *)
 
 Lemma pattern_interpretation_set_builder M ϕ ρₑ ρₛ :
