@@ -1433,23 +1433,24 @@ Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 :
                                  (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
-    (forall x : evar, x ∈ free_evars phi2 -> evar_val1 x = evar_val2 x) ->
+    (forall x : evar, x ∈ free_evars phi1 -> evar_val1 x = evar_val2 x) ->
     ~ elem_of X (free_svars phi1) ->
     @pattern_interpretation sig M evar_val1 svar_val (bvar_subst phi1 phi2 dbi)
-    = @pattern_interpretation sig M evar_val1
-                     (update_svar_val X (@pattern_interpretation sig M evar_val2 svar_val phi2) svar_val)
+    = @pattern_interpretation sig M evar_val2
+                     (update_svar_val X (@pattern_interpretation sig M evar_val1 svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
 Proof.
   induction sz; intros M phi1 phi2 Hsz evar_val1 evar_val2 svar_val dbi X Hwfc1 Hwfc2 He1e2eq H.
   - (* sz == 0 *)
     destruct phi1; simpl in Hsz; simpl.
     + (* free_evar *)
-      repeat rewrite pattern_interpretation_free_evar_simpl. reflexivity.
+      repeat rewrite pattern_interpretation_free_evar_simpl. rewrite He1e2eq. reflexivity.
+      apply elem_of_singleton_2. auto.
     + (* free_svar *)
       repeat rewrite pattern_interpretation_free_svar_simpl.
       unfold update_svar_val. destruct (svar_eq X x).
       * simpl in H. simpl. unfold not in H. exfalso. apply H.
-        Search elem_of singleton. apply elem_of_singleton_2. auto.
+        apply elem_of_singleton_2. auto.
       * auto.
     + (* bound_evar *)
       apply wfc_body_wfc_mu_iff in Hwfc1. unfold wfc_body_mu in Hwfc1.
@@ -1480,12 +1481,13 @@ Proof.
     destruct phi1; simpl.
     (* HERE we duplicate some of the effort. I do not like it. *)
     + (* free_evar *)
-      repeat rewrite pattern_interpretation_free_evar_simpl. reflexivity.
+      repeat rewrite pattern_interpretation_free_evar_simpl. rewrite He1e2eq. reflexivity.
+      apply elem_of_singleton_2. auto.
     + (* free_svar *)
       repeat rewrite pattern_interpretation_free_svar_simpl.
       unfold update_svar_val. destruct (svar_eq X x).
       * simpl in H. simpl. unfold not in H. exfalso. apply H.
-        Search elem_of singleton. apply elem_of_singleton_2. auto.
+        apply elem_of_singleton_2. auto.
       * auto.
     + (* bound_evar *)
       apply wfc_body_wfc_mu_iff in Hwfc1. unfold wfc_body_mu in Hwfc1.
@@ -1495,7 +1497,7 @@ Proof.
       simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-        destruct (svar_eq X X). auto. contradiction.
+        destruct (svar_eq X X). simpl. auto. contradiction.
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * repeat rewrite pattern_interpretation_bound_svar_simpl; auto.
       * apply beq_nat_false in Heq. lia.
@@ -1513,10 +1515,12 @@ Proof.
        * lia.
        * admit.
        * assumption.
+       * intros. apply He1e2eq. simpl. apply elem_of_union_r. assumption.
        * assumption.
        * lia.
        * admit.
        * assumption.
+       * intros. apply He1e2eq. simpl. apply elem_of_union_l. assumption.
        * assumption.
     + (* Bot. Again, a duplication of the sz=0 case *)
       simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
@@ -1529,36 +1533,28 @@ Proof.
       * lia.
       * admit.
       * assumption.
+      * intros. apply He1e2eq. simpl. apply elem_of_union_r. assumption.
       * assumption.
       * lia.
       * admit.
       * assumption.
+      * intros. apply He1e2eq. simpl. apply elem_of_union_l. assumption.
       * assumption.
     (* TODO *)
     + simpl in Hsz. simpl in H.
       repeat rewrite pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
-      assert (evar_val_eq: update_evar_val (fresh_evar (bvar_subst phi1 phi2 (S dbi))) c evar_val
-                           = (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val)).
-      assert (Hfe: fresh_evar (svar_open dbi X phi1) = fresh_evar phi1).
-      { admit. }
-      rewrite -> Hfe.
-      remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val) as evar_val'.
-      assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val svar_val phi2).
+      (* *)
+      remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val1) as evar_val'.
+      assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val1 svar_val phi2).
       { admit. (* since phi2 is closed *) }
-      Print well_formed_closed_aux.
-
       rewrite -> evar_open_bvar_subst. 
       rewrite -> svar_open_evar_open_comm.
       subst.
       rewrite <- Hintphi2eq.
       rewrite <- IHsz. 
       *
-    rewrite -> IHphi1. Print FA_Union. unfold FA_Union.
-    
-        
-                                                                 
-  Print update_svar_val.
+
 Admitted.
 
 End soundness_lemmas.
