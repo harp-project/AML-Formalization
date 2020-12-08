@@ -1393,7 +1393,6 @@ Admitted.
 =>
 (ex, patt_bound_evar 0 /\ patt_free_evar !X)
 *)
-
 Lemma evar_open_bvar_subst phi1 phi2 dbi X
   : evar_open 0 X (bvar_subst phi1 phi2 (S dbi))
     = bvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
@@ -1429,18 +1428,19 @@ Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (p
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
-Lemma plugging_patterns : forall (sz : nat) (M : @Model sig) (phi1 phi2 : @Pattern sig),
-    size phi1 <= sz -> forall    (evar_val : @EVarVal sig M)
+Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 : @Pattern sig),
+    size phi1 <= sz -> forall    (evar_val1 evar_val2 : @EVarVal sig M)
                                  (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
+    (forall x : evar, x ∈ free_evars phi2 -> evar_val1 x = evar_val2 x) ->
     ~ elem_of X (free_svars phi1) ->
-    @pattern_interpretation sig M evar_val svar_val (bvar_subst phi1 phi2 dbi)
-    = @pattern_interpretation sig M evar_val
-                     (update_svar_val X (@pattern_interpretation sig M evar_val svar_val phi2) svar_val)
+    @pattern_interpretation sig M evar_val1 svar_val (bvar_subst phi1 phi2 dbi)
+    = @pattern_interpretation sig M evar_val1
+                     (update_svar_val X (@pattern_interpretation sig M evar_val2 svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
 Proof.
-  induction sz; intros M phi1 phi2 Hsz evar_val svar_val dbi X Hwfc1 Hwfc2 H.
+  induction sz; intros M phi1 phi2 Hsz evar_val1 evar_val2 svar_val dbi X Hwfc1 Hwfc2 He1e2eq H.
   - (* sz == 0 *)
     destruct phi1; simpl in Hsz; simpl.
     + (* free_evar *)
@@ -1538,14 +1538,21 @@ Proof.
     + simpl in Hsz. simpl in H.
       repeat rewrite pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
-      rewrite -> evar_open_bvar_subst. Search evar_open svar_open.
-      rewrite -> svar_open_evar_open_comm.
+      assert (evar_val_eq: update_evar_val (fresh_evar (bvar_subst phi1 phi2 (S dbi))) c evar_val
+                           = (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val)).
+      assert (Hfe: fresh_evar (svar_open dbi X phi1) = fresh_evar phi1).
+      { admit. }
+      rewrite -> Hfe.
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val) as evar_val'.
       assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val svar_val phi2).
       { admit. (* since phi2 is closed *) }
+      Print well_formed_closed_aux.
+
+      rewrite -> evar_open_bvar_subst. 
+      rewrite -> svar_open_evar_open_comm.
       subst.
       rewrite <- Hintphi2eq.
-      rewrite <- IHsz.
+      rewrite <- IHsz. 
       *
     rewrite -> IHphi1. Print FA_Union. unfold FA_Union.
     
