@@ -1492,11 +1492,11 @@ Inductive ML_proof_system (theory : Theory) :
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
-      well_formed phi -> well_formed psi ->
+      well_formed (ex , phi) -> well_formed psi ->
       theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
-      well_formed phi -> well_formed psi ->
+      well_formed (ex , phi) -> well_formed psi ->
       theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
 
   (* Framing *)

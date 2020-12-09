@@ -22,149 +22,376 @@ Open Scope ml_scope.
 Section soundness_lemmas.
 
   Context {sig : Signature}.
-  Existing Instance variables.
+  Existing Instance variables. 
 
+Inductive well_formed_closed_induc : Pattern -> Prop :=
+  | wfc_free_evar : forall (x : evar), well_formed_closed_induc (patt_free_evar x)
+  | wfc_free_svar : forall (X : svar), well_formed_closed_induc (patt_free_svar X)
+  | wfc_sym       : forall (sym : symbols), well_formed_closed_induc (patt_sym sym)
+  | wfc_app       : forall (phi psi : Pattern), well_formed_closed_induc phi 
+                    -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_app phi psi)
+  | wfc_bott      : well_formed_closed_induc patt_bott
+  | wfc_imp       : forall (phi psi : Pattern), well_formed_closed_induc phi 
+                    -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_imp phi psi)
+  | wfc_ex        : forall phi : Pattern, 
+                    (forall (x : evar), 
+                    x ∉ (free_evars phi) ->
+                    well_formed_closed_induc (evar_open 0 x phi))
+                    -> 
+                    well_formed_closed_induc (patt_exists phi)
+  | wfc_mu        : forall phi : Pattern, 
+                    (forall (X : svar),
+                    X ∉ (free_svars phi) ->
+                    well_formed_closed_induc (svar_open 0 X phi)) 
+                    -> well_formed_closed_induc (patt_mu phi).
 
-(* evar_open of fresh name does not change *)
-Lemma evar_open_fresh (phi : Pattern) (v : evar) :
-  forall n, well_formed phi -> v ∉ (free_evars phi) ->
-            evar_open n v phi = phi.
-Proof. Admitted.
-(*
-  intros. generalize dependent n. induction phi; intros; simpl; try eauto.
-  * inversion H. inversion H1.
-  *  rewrite IHphi1. rewrite IHphi2. reflexivity.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-  * rewrite IHphi1. rewrite IHphi2. reflexivity.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-    split; inversion H. inversion H0; assumption. inversion H1; assumption.
-  * rewrite IHphi. reflexivity.
-    split; inversion H. assumption.
-    unfold well_formed_closed in *. simpl in H1. admit.
-Admitted.*)
-
-(* Needed in update_valuation_fresh. Should be provable, right? *)
-(* Lemma svar_open_fresh (phi : Pattern) (v : @svar_name sig) :
-  forall n, well_formed phi -> ~List.In v (free_svars phi) ->
-            svar_open n v phi = phi.
-Proof. Admitted. *)
-
-(* update_valuation with fresh name does not change *)
-(* TODO(jan.tusil): I think that we need to generalize this
-   to work with any variable that is not free in psi.
-*)
-Lemma update_valuation_fresh {m : Model}
-      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
-      (psi : Pattern) (x : Domain m) (c : Domain m) (v : evar):
-   (* Should be here, right? *)
-   (* well_formed psi -> *)
-  v ∉ (free_evars psi) ->
-  pattern_interpretation (update_evar_val v c evar_val) svar_val psi x
-  = pattern_interpretation evar_val svar_val psi x.
+Lemma wfc_wfc_ind : forall sz phi, 
+  well_formed_closed phi ->
+  le (size phi) sz
+  ->
+   well_formed_closed_induc phi.
 Proof.
-(* intro. generalize dependent x. generalize dependent c. 
-  generalize dependent evar_val.
-  generalize dependent svar_val. generalize dependent v.
-  induction psi; try reflexivity.
-  - intros. repeat rewrite pattern_interpretation_free_evar_simpl. simpl in H. unfold not in H. unfold update_evar_val. destruct (eq_evar v x) eqn:P.
-    + rewrite e in H. destruct H. left. reflexivity.
-    + reflexivity.
-  - intros. repeat rewrite pattern_interpretation_app_simpl. simpl in H. 
-    pose (set_union_iff (@eq_evar sig) v (free_evars psi1) (free_evars psi2)).
-    apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
-    pose (H0 H). apply not_or_and in n. destruct n. clear H0. clear H. unfold app_ext. 
-    apply propositional_extensionality.
-    split; intros.
-    + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0). 
-        pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite e, e0 in H. exists x0, x1. assumption.
-    + destruct H. destruct H. pose (IHpsi1 v H1 svar_val evar_val c x0 ). 
-        pose (IHpsi2 v H2 svar_val evar_val c x1). rewrite <- e, <- e0 in H. exists x0, x1. assumption.
-  - intros. repeat rewrite pattern_interpretation_imp_simpl. simpl in H. 
-    pose (set_union_iff (@eq_evar sig) v (free_evars psi1) (free_evars psi2)).
-    apply not_iff_compat in i. pose (iff_and i). destruct a. clear i. clear H1. 
-    pose (H0 H). apply not_or_and in n. destruct n. pose (IHpsi1 v H1 svar_val evar_val c x). 
-    pose (IHpsi2 v H2 svar_val evar_val c x). clear H0. clear H. unfold In. apply propositional_extensionality. split.
-    + intro. pose (Union_is_or (Domain m) ((Complement (Domain m)
-                  (pattern_interpretation (update_evar_val v c evar_val) svar_val psi1))) 
-                  ((pattern_interpretation (update_evar_val v c evar_val) svar_val psi2)) x).
-        destruct i. clear H3. pose (H0 H).
-        pose (Union_is_or (Domain m) ((Complement (Domain m)
-        (pattern_interpretation evar_val svar_val psi1))) ((pattern_interpretation evar_val svar_val psi2)) x).
-        destruct i. clear H3. apply H4. clear H4. destruct o.
-      * unfold Complement, not, In in *. left. rewrite e in H3. assumption.
-      * right. rewrite e0 in H3. assumption.
-    + intro. pose (Union_is_or (Domain m) ((Complement (Domain m) 
-               (pattern_interpretation evar_val svar_val psi1))) 
-               ((pattern_interpretation evar_val svar_val psi2)) x).
-        destruct i. clear H3. pose (H0 H). 
-        pose (Union_is_or (Domain m) 
-        ((Complement (Domain m)
-        (pattern_interpretation (update_evar_val v c evar_val) svar_val psi1))) 
-        (pattern_interpretation (update_evar_val v c evar_val) svar_val psi2) x).
-        destruct i. clear H3. apply H4. clear H4. destruct o.
-          * unfold Complement, not, In in *. left. rewrite e. assumption.
-          * right. rewrite e0. assumption.
-  - intros. repeat rewrite pattern_interpretation_ex_simpl. simpl. simpl in H. 
-    apply propositional_extensionality. split.
-    + intros. inversion H0. clear H0. pose (@FA_Uni_intro (Domain m)). apply i.
-        clear i. destruct H1. exists x1. 
-        pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
-        assert (well_formed psi). admit. 
-        pose (evar_open_fresh psi (evar_fresh (variables sig) (free_evars psi)) 0 H1 n).
-        rewrite e in *. 
-        pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val evar_val x1 x).
-        rewrite e0. 
-        pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val 
-                    (update_evar_val v c evar_val) x1 x).
-        rewrite e1 in H0.
-        rewrite (IHpsi v H svar_val evar_val c x) in H0. assumption.
-    + intros. inversion H0. pose (@FA_Uni_intro (Domain m)). apply i.
-      clear i. destruct H1. exists x1. 
-      pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
-      assert (well_formed psi). admit. 
-      pose (evar_open_fresh psi (evar_fresh (variables sig) (free_evars psi)) 0 H3 n).
-      rewrite e in *.
-      pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val 
-                  (update_evar_val v c evar_val) x1 x).
-      rewrite e0.
-      pose (IHpsi (evar_fresh (variables sig) (free_evars psi)) n svar_val evar_val x1 x).
-      rewrite e1 in H1.
-      pose (IHpsi v H svar_val evar_val c x).
-      rewrite e2. assumption.
-  - intros. simpl in H. repeat rewrite pattern_interpretation_mu_simpl. simpl.
-    unfold Meet, PrefixpointsOf, In. simpl. apply propositional_extensionality. split.
-    + intros. pose (H0 e). unfold Included, In in e0.
-      unfold Included, In in H1.
-      pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
-      assert (well_formed psi). admit.
-      rewrite (svar_open_fresh psi 
-                               (svar_fresh (variables sig) (free_svars psi))
-                               0 H2
-                               (svar_fresh_is_fresh (variables sig) (free_svars psi))) 
-                               in *.
-      pose (IHpsi v H 
-            (update_svar_val (svar_fresh (variables sig) (free_svars psi)) e svar_val)
-            (evar_val)
-             c).
-      apply e0. intros. pose (H1 x0). rewrite e1 in H3. pose (e2 H3). assumption.
-    + intros. pose (H0 e). unfold Included, In in *. apply e0. intros.
-      pose (evar_fresh_is_fresh (variables sig) (free_evars psi)).
-      assert (well_formed psi). admit.
-      rewrite (svar_open_fresh psi 
-                               (svar_fresh (variables sig) (free_svars psi))
-                               0 H3
-                               (svar_fresh_is_fresh (variables sig) (free_svars psi))) 
-                               in *.
-      pose (H1 x0).
-      pose (IHpsi v H 
-            (update_svar_val (svar_fresh (variables sig) (free_svars psi)) e svar_val)
-            (evar_val)
-             c).
-      rewrite e2 in e1. pose (e1 H2). assumption. *)
+  induction sz; destruct phi; intros Hwf Hsz ; simpl in *; try inversion Hsz; auto. 1, 2, 5, 6 : constructor.
+  - inversion Hwf.
+  - inversion Hwf.
+  - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
+  - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
+  - constructor. apply wfc_ex_to_wfc_body in Hwf. unfold wfc_body_ex in Hwf. intros. 
+  apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz. exact sig.
+  - constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
+  apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz. exact sig.
+Qed.
+
+Lemma wfc_ind_wfc: forall phi, 
+  well_formed_closed_induc phi 
+  ->
+   well_formed_closed phi.
+Proof.
+  intros. induction H; firstorder.
+  - apply wfc_body_to_wfc_ex. unfold wfc_body_ex. assumption.
+  - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
+Qed.
+
+Lemma evar_open_last: forall phi i u j v,
+  (i <> j) -> evar_open i u (evar_open j v phi) = evar_open j v phi
+  ->
+  (@evar_open sig i u phi) = phi.
+Proof.
+  induction phi; firstorder.
+  - simpl in H. destruct (n=?j) eqn:D.
+    + simpl. destruct (n =? i) eqn:D1.
+      * apply Nat.eqb_eq in D1. subst. apply Nat.eqb_eq in D. lia.
+      * auto.
+    + simpl. destruct (n =? i) eqn:D1.
+      * apply Nat.eqb_eq in D1. subst. simpl in H0. rewrite D in H0. simpl in H0. rewrite Nat.eqb_refl in H0. congruence.
+      * auto.
+  - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+  - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+  - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+  - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+Qed.
+
+Lemma svar_open_last: forall phi i u j v,
+  evar_open i u (svar_open j v phi) = svar_open j v phi
+  ->
+  (@evar_open sig i u phi) = phi.
+Proof.
+  induction phi; firstorder.
+  - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+  - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+  - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity. exact H1.
+  - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity.  exact H1.
+Qed.
+
+(* evar_open of fresh name does not change in a well-formed pattern*)
+Lemma evar_open_fresh :
+  forall phi,
+  well_formed_closed phi ->
+  forall n v,
+  @evar_open sig n v phi = phi.
+Proof.
+  intros phi IHwf. apply (wfc_wfc_ind (size phi)) in IHwf. 2: lia.
+  induction IHwf; firstorder.
+  - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+  - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+  - simpl. eapply (evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
+    apply set_evar_fresh_is_fresh.
+  - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
+    instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
+Qed.
+
+Lemma evar_open_comm:
+  forall n m,
+  n <> m 
+  ->
+  forall x y phi,
+  evar_open n x (evar_open m y phi) = evar_open m y (@evar_open sig n x phi).
+Proof.
 Admitted.
 
+Lemma update_val_fresh12 {m : Model}:
+  forall sz  phi n,
+  le (size phi) sz ->
+  forall fresh1 fresh2,
+   fresh1 ∉ (free_evars phi) -> fresh2 ∉ (free_evars phi) ->
+  well_formed_closed (evar_open n fresh1 phi) -> well_formed_closed (evar_open n fresh2 phi)
+  ->
+  forall evar_val svar_val c,
+  pattern_interpretation (update_evar_val fresh1 c evar_val) svar_val (evar_open n fresh1 phi) =
+  @pattern_interpretation sig m (update_evar_val fresh2 c evar_val) svar_val (evar_open n fresh2 phi).
+Proof. 
 
+  (* Induction on size *)
+  induction sz; destruct phi; intros n0 Hsz fresh1 fresh2 HLs1 HLs2 Hwfb1 Hwfb2 eval sval c; auto; try inversion Hsz; subst.
+  - repeat rewrite evar_open_fresh. 
+    2, 3: unfold well_formed_closed; simpl; trivial.
+    repeat rewrite pattern_interpretation_free_evar_simpl.
+    unfold update_evar_val.
+    destruct (evar_eq fresh1 x) eqn:P; destruct (evar_eq fresh2 x) eqn:P1.
+    + rewrite e in HLs1. simpl in HLs1.
+      eapply not_elem_of_singleton_1 in HLs1. contradiction.
+    + rewrite e in HLs1. simpl in HLs1.
+      eapply not_elem_of_singleton_1 in HLs1. contradiction.
+    + rewrite e in HLs2. simpl in HLs2. 
+      eapply not_elem_of_singleton_1 in HLs2. contradiction.
+    + auto.
+  - unfold well_formed_closed in Hwfb1. simpl in Hwfb1.
+    assert (n = n0).
+    destruct (n =? n0) eqn:P.
+      + apply beq_nat_true in P. assumption.
+      + inversion Hwfb1.
+      + simpl. apply Nat.eqb_eq in H. rewrite H. repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
+        destruct (evar_eq fresh1 fresh1) eqn:P. destruct (evar_eq fresh2 fresh2) eqn:P1.
+        auto. contradiction. contradiction.
+  - erewrite IHsz. reflexivity. assumption. assumption. assumption. assumption. assumption.
+  - erewrite IHsz. reflexivity. assumption. assumption. assumption. assumption. assumption.
+  - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_app_simpl.
+    simpl in HLs1, HLs2.
+    rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
+    destruct HLs1, HLs2. 
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + lia.
+    + assumption.
+    + assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 $ phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). lia.
+  - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_app_simpl.
+    simpl in HLs1, HLs2.
+    rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
+    destruct HLs1, HLs2. 
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + lia.
+    + assumption.
+    + assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
+    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
+  - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
+    simpl in HLs1, HLs2. rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
+    destruct HLs1, HLs2. 
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + lia.
+    + assumption.
+    + assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + erewrite <- evar_open_size. erewrite <- evar_open_size. simpl. lia. exact sig. exact sig.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
+  - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
+    simpl in HLs1, HLs2. rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
+    destruct HLs1, HLs2. 
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
+    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + lia.
+    + assumption.
+    + assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + apply (wfc_ind_wfc). assumption.
+    + rewrite <- (evar_open_size sig n0 fresh2 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
+  - simpl. repeat rewrite pattern_interpretation_ex_simpl. simpl.
+    remember (fresh_evar (evar_open (n0 + 1) fresh2 phi)) as fresh22.
+    remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
+    apply Extensionality_Ensembles. apply FA_Union_same. intros. unfold Same_set, Included, In. split.
+    + intros. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+      destruct (evar_eq fresh1 fresh2). 
+        * subst. auto.
+        * epose (IHsz (evar_open (n0 + 1) fresh1 phi) 0 _ fresh11 fresh22 _ _ _ _   
+          (update_evar_val fresh1 c eval) sval c0).
+          rewrite e in H. clear e.
+          rewrite update_evar_val_comm.
+          rewrite evar_open_comm. 2: lia.
+          
+          epose (IHsz (evar_open 0 fresh22 phi) (n0+1) _ fresh1 fresh2 _ _ _ _ 
+          (update_evar_val fresh22 c0 eval) sval c).
+          rewrite <- e. rewrite evar_open_comm. 2: lia.
+          rewrite update_evar_val_comm. assumption.
+          destruct (evar_eq fresh1 fresh22).
+          -- admit. (*TODO: Counterexample. *)
+          -- assumption.
+          -- admit. (* From Heqfresh22 *)
+
+Admitted. (* update_evar_val_shadow *)
+
+Lemma fresh_notin: 
+  forall sz phi v w,
+  le (size phi) sz ->
+  v ∉ (free_evars phi) ->
+  w ∉ (free_evars phi) ->
+  (v <> w) ->
+  forall n,
+  v ∉ (@free_evars sig (evar_open n w phi)).
+Proof.
+  induction sz; destruct phi; intros v w Hsz Hlsv Hlsw Hneq n0; simpl in *; try inversion Hsz; auto.
+  - destruct (n =? n0) eqn:P.
+    + simpl. apply not_elem_of_singleton_2. assumption.
+    + simpl. trivial.
+  - destruct (n =? n0) eqn:P.
+    + simpl. apply not_elem_of_singleton_2. assumption.
+    + simpl. trivial.
+  - rewrite elem_of_union.
+    apply and_not_or. 
+    rewrite elem_of_union in Hlsv.
+    rewrite elem_of_union in Hlsw.
+    apply not_or_and in Hlsv.
+    apply not_or_and in Hlsw.
+    destruct Hlsv, Hlsw.
+    split.
+    + apply IHsz. lia. assumption. assumption. assumption.
+    + apply IHsz. lia. assumption. assumption. assumption.
+  - rewrite elem_of_union.
+    apply and_not_or. 
+    rewrite elem_of_union in Hlsv.
+    rewrite elem_of_union in Hlsw.
+    apply not_or_and in Hlsv.
+    apply not_or_and in Hlsw.
+    destruct Hlsv, Hlsw.
+    split.
+    + apply IHsz. lia. assumption. assumption. assumption.
+    + apply IHsz. lia. assumption. assumption. assumption.
+  - rewrite elem_of_union.
+    apply and_not_or. 
+    rewrite elem_of_union in Hlsv.
+    rewrite elem_of_union in Hlsw.
+    apply not_or_and in Hlsv.
+    apply not_or_and in Hlsw.
+    destruct Hlsv, Hlsw.
+    split.
+    + apply IHsz. lia. assumption. assumption. assumption.
+    + apply IHsz. lia. assumption. assumption. assumption.
+  - rewrite elem_of_union.
+    apply and_not_or. 
+    rewrite elem_of_union in Hlsv.
+    rewrite elem_of_union in Hlsw.
+    apply not_or_and in Hlsv.
+    apply not_or_and in Hlsw.
+    destruct Hlsv, Hlsw.
+    split.
+    + apply IHsz. lia. assumption. assumption. assumption.
+    + apply IHsz. lia. assumption. assumption. assumption.
+  - apply IHsz. lia. assumption. assumption. assumption.
+  - apply IHsz. lia. assumption. assumption. assumption.
+  - apply IHsz. lia. assumption. assumption. assumption.
+  - apply IHsz. lia. assumption. assumption. assumption.
+Qed.
+
+Lemma free_evars_svar_open : forall (psi : Pattern) (dbi :db_index) (X : svar),
+    free_evars (svar_open dbi X psi) = @free_evars sig psi.
+Proof.
+  induction psi; intros; simpl; try reflexivity.
+  * destruct (n =? dbi); reflexivity.
+  * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
+  * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
+  * rewrite -> IHpsi. reflexivity.
+  * rewrite -> IHpsi. reflexivity.
+Qed.
+
+Lemma update_valuation_fresh {m : Model}  :
+  forall phi,
+  well_formed_closed phi ->
+  forall v,
+  v ∉ (free_evars phi) ->
+  forall evar_val svar_val c,
+  pattern_interpretation (update_evar_val v c evar_val) svar_val phi =
+  @pattern_interpretation sig m evar_val svar_val phi.
+Proof.
+  
+  intros phi Hwfc. apply (wfc_wfc_ind (size phi)) in Hwfc. 2: lia.
+  induction Hwfc.
+  - intros. simpl in H. apply not_elem_of_singleton_1 in H.
+    repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
+    destruct (evar_eq v x) eqn:P.
+      + contradiction.
+      + auto.
+  - auto.
+  - auto.
+  - intros. repeat rewrite pattern_interpretation_app_simpl. 
+    simpl in H. rewrite elem_of_union in H. apply not_or_and in H. destruct H.
+    rewrite IHHwfc1. rewrite IHHwfc2. reflexivity. assumption. assumption.
+  - intros. repeat rewrite pattern_interpretation_bott_simpl. reflexivity.
+  - intros. repeat rewrite pattern_interpretation_imp_simpl.
+    simpl in H. rewrite elem_of_union in H. apply not_or_and in H. destruct H.
+    rewrite IHHwfc1. rewrite IHHwfc2. reflexivity. assumption. assumption.
+  - intros. repeat rewrite pattern_interpretation_ex_simpl. simpl. apply Extensionality_Ensembles.
+    apply FA_Union_same. intros.
+    unfold Same_set, Included, In. split.
+    + intros. remember (fresh_evar phi) as fresh1.
+      destruct (evar_eq fresh1 v).
+        * rewrite <- e in H2. rewrite update_evar_val_shadow in H2. assumption.
+        * simpl in H1. rewrite update_evar_val_comm in H2. rewrite H0 in H2.
+          -- assumption.
+          -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
+          -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+             ++ rewrite (evar_open_size sig 0 fresh1). lia.
+             ++ assumption.
+             ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
+             ++ unfold not. intro. rewrite H3 in n. contradiction.
+          -- assumption.
+    + intros. remember (fresh_evar phi) as fresh1.
+      destruct (evar_eq fresh1 v).
+        * rewrite e. rewrite update_evar_val_shadow. rewrite e in H2. assumption.
+        * simpl in H1. rewrite update_evar_val_comm. rewrite H0.
+          -- assumption.
+          -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
+          -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+             ++ rewrite (evar_open_size sig 0 fresh1). lia.
+             ++ assumption.
+             ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
+             ++ unfold not. intro. rewrite H3 in n. contradiction.
+          -- assumption.
+  - intros. repeat rewrite pattern_interpretation_mu_simpl. simpl.
+    remember (fresh_svar phi) as fresh1.
+    assert ((fun S : Ensemble (Domain m) =>
+      pattern_interpretation 
+      (update_evar_val v c evar_val) (
+      update_svar_val fresh1 S svar_val)
+      (svar_open 0 fresh1 phi)) =
+      (fun S : Ensemble (Domain m) =>
+      pattern_interpretation evar_val (update_svar_val fresh1 S svar_val)
+        (svar_open 0 fresh1 phi))).
+    + apply functional_extensionality. intros. apply H0.
+      * rewrite Heqfresh1. apply set_svar_fresh_is_fresh.
+      * rewrite free_evars_svar_open. assumption.
+    + rewrite H2. reflexivity.
+Qed.
 
 Lemma not_free_implies_positive_negative_occurrence :
   forall (phi : Pattern) (X : svar),
