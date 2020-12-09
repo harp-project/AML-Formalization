@@ -1392,25 +1392,23 @@ Admitted.
 (ex, (ex, patt_bound_evar 0 /\ patt_bound_evar 1))
 =>
 (ex, patt_bound_evar 0 /\ patt_free_evar !X)
-*)
-Lemma evar_open_bvar_subst phi1 phi2 dbi X
-  : evar_open 0 X (bvar_subst phi1 phi2 (S dbi))
-    = bvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
+ *)
+Lemma evar_open_bsvar_subst phi1 phi2 dbi X
+  : evar_open 0 X (bsvar_subst phi1 phi2 (S dbi))
+    = bsvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
 Proof.
   generalize dependent dbi. induction phi1; intro; simpl; auto.
   - destruct (n =? 0) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
-    * rewrite Heq; auto. 
+    * auto. 
     * symmetry in Heq. apply beq_nat_eq in Heq. lia.
     * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-    * rewrite Heq. rewrite Hdbi. auto.
-    * rewrite Hdbi. auto. 
-    * rewrite Hdbi. destruct (Init.Nat.pred n =? 0) eqn:Hpred.
-      + symmetry in Hpred. apply beq_nat_eq in Hpred. lia.
-      + auto.
+    * auto.
+    * auto. 
+    * auto.
   - destruct (compare_nat n (S dbi)); simpl; auto.
   - rewrite IHphi1_1. rewrite IHphi1_2. auto.
   - rewrite IHphi1_1. rewrite IHphi1_2. auto.
-  - admit.
+  - simpl. apply f_equal.  admit.
   - rewrite IHphi1. auto.
 Admitted.
 
@@ -1435,7 +1433,7 @@ Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 :
     well_formed_closed phi2 ->
     (forall x : evar, x ∈ free_evars phi1 -> evar_val1 x = evar_val2 x) ->
     ~ elem_of X (free_svars phi1) ->
-    @pattern_interpretation sig M evar_val1 svar_val (bvar_subst phi1 phi2 dbi)
+    @pattern_interpretation sig M evar_val1 svar_val (bsvar_subst phi1 phi2 dbi)
     = @pattern_interpretation sig M evar_val2
                      (update_svar_val X (@pattern_interpretation sig M evar_val1 svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
@@ -1544,6 +1542,11 @@ Proof.
     + simpl in Hsz. simpl in H.
       repeat rewrite pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
+      remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) c evar_val1) as evar_val1'.
+      remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val2) as evar_val2'.
+      rewrite -> svar_open_evar_open_comm.
+      Print bvar_subst.
+      specialize (IHsz M).
       (* *)
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val1) as evar_val'.
       assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val1 svar_val phi2).
