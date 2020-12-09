@@ -12,6 +12,7 @@ Require Import extralibrary.
 Require Import Signature.
 Require Export locally_nameless.
 Require Import Lattice.
+Require Import stdpp_ext.
 
 Require Export Ensembles_Ext.
 
