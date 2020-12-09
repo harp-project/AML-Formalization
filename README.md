@@ -15,8 +15,9 @@ opam install coq-matching-logic
 
 ### Dependencies:
 - Coq 8.12
-- stdpp
+- stdpp (development version)
 ```sh
+opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 opam install coq-stdpp
 ```
 
