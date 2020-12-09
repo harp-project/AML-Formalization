@@ -161,10 +161,10 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-  * admit.(* apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
+  * admit. (* apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv ). *)
 
-  * admit.(* apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
+  * admit. (* apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv). *)
 
   * rewrite pattern_interpretation_iff_subset.
