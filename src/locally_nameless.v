@@ -82,7 +82,7 @@ Defined.
  *)
 
 (* substitute bound variable x for psi in phi *)
-Fixpoint bvar_subst (phi psi : Pattern) (x : db_index) :=
+Fixpoint bevar_subst (phi psi : Pattern) (x : db_index) :=
 match phi with
 | patt_free_evar x' => patt_free_evar x'
 | patt_free_svar x' => patt_free_svar x'
@@ -91,18 +91,33 @@ match phi with
               | Nat_equal _ _ _ => psi
               | Nat_greater _ _ _ => patt_bound_evar (pred n)
               end
+| patt_bound_svar n => patt_bound_svar n
+| patt_sym sigma => patt_sym sigma
+| patt_app phi1 phi2 => patt_app (bevar_subst phi1 psi x)
+                                 (bevar_subst phi2 psi x)
+| patt_bott => patt_bott
+| patt_imp phi1 phi2 => patt_imp (bevar_subst phi1 psi x) (bevar_subst phi2 psi x)
+| patt_exists phi' => patt_exists (bevar_subst phi' psi (S x))
+| patt_mu phi' => patt_mu (bevar_subst phi' psi (S x))
+end.
+
+Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
+match phi with
+| patt_free_evar x' => patt_free_evar x'
+| patt_free_svar x' => patt_free_svar x'
+| patt_bound_evar n => patt_bound_evar n
 | patt_bound_svar n => match compare_nat n x with
               | Nat_less _ _ _ => patt_bound_svar n
               | Nat_equal _ _ _ => psi
               | Nat_greater _ _ _ => patt_bound_svar (pred n)
               end
 | patt_sym sigma => patt_sym sigma
-| patt_app phi1 phi2 => patt_app (bvar_subst phi1 psi x)
-                                 (bvar_subst phi2 psi x)
+| patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
+                                 (bsvar_subst phi2 psi x)
 | patt_bott => patt_bott
-| patt_imp phi1 phi2 => patt_imp (bvar_subst phi1 psi x) (bvar_subst phi2 psi x)
-| patt_exists phi' => patt_exists (bvar_subst phi' psi (S x))
-| patt_mu phi' => patt_mu (bvar_subst phi' psi (S x))
+| patt_imp phi1 phi2 => patt_imp (bsvar_subst phi1 psi x) (bsvar_subst phi2 psi x)
+| patt_exists phi' => patt_exists (bsvar_subst phi' psi (S x))
+| patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
 end.
 
 (* substitute free element variable x for psi in phi *)
@@ -139,8 +154,8 @@ end.
 (* instantiate exists x. p or mu x. p with psi for p *)
 Definition instantiate (phi psi : Pattern) :=
 match phi with
-| patt_exists phi' => bvar_subst phi' psi 0
-| patt_mu phi' => bvar_subst phi' psi 0
+| patt_exists phi' => bevar_subst phi' psi 0
+| patt_mu phi' => bsvar_subst phi' psi 0
 | _ => phi
 end.
 
@@ -1043,7 +1058,7 @@ Definition patt_forall (phi : Pattern) :=
   patt_not (patt_exists (patt_not phi)).
 
 Definition patt_nu (phi : Pattern) :=
-  patt_not (patt_mu (patt_not (bvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
+  patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
 
 Lemma pattern_interpretation_not_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m)(phi : Pattern),
