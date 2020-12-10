@@ -221,7 +221,8 @@ Proof.
     specialize (Hsimpl evar_val svar_val phi).
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
-    Check plugging_patterns.
+    
+    (*Check plugging_patterns.*)
     (*
     simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
     constructor. constructor.

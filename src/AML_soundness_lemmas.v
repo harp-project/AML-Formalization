@@ -1388,28 +1388,34 @@ Proof.
     admit. admit.
 Admitted.
 
+
 (*
 (ex, (ex, patt_bound_evar 0 /\ patt_bound_evar 1))
 =>
 (ex, patt_bound_evar 0 /\ patt_free_evar !X)
  *)
-Lemma evar_open_bsvar_subst phi1 phi2 dbi X
-  : evar_open 0 X (bsvar_subst phi1 phi2 (S dbi))
-    = bsvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
+Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
+  : well_formed_closed phi2 ->
+    m < dbi ->
+    evar_open m X (bsvar_subst phi1 phi2 dbi)
+    = bsvar_subst (evar_open m X phi1) (@evar_open sig m X phi2) dbi.
 Proof.
-  generalize dependent dbi. induction phi1; intro; auto.
-  - simpl. destruct (n =? 0) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
-    * auto. 
+  generalize dependent dbi. induction phi1; intros dbi Hwfc Hlt; auto.
+  - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
+    * auto.
     * symmetry in Heq. apply beq_nat_eq in Heq. lia.
     * symmetry in Heq; apply beq_nat_eq in Heq. lia.
     * auto.
     * auto. 
     * auto.
-  - simpl. destruct (compare_nat n (S dbi)); simpl; auto.
-  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto.
-  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto.
-  - simpl. apply f_equal. Print bsvar_subst. admit.
-  - simpl. rewrite IHphi1. auto.
+  - simpl. destruct (compare_nat n dbi); simpl; auto.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
+  - simpl. apply f_equal. (* now evar_open m X phi2 = phi2 = evar_open (m+1) X phi2*)
+    (* But maybe we can simplify the statement. But we need a lemma for evar_open of wfc *)
+    Search evar_open well_formed_closed.
+    Print bsvar_subst. admit.
+  - simpl. rewrite IHphi1. auto. auto. lia.
 Admitted.
 
 (*
@@ -1422,7 +1428,9 @@ Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (p
                 (svar_open 0 (fresh_svar phi) phi))) svar_val) (svar_open 0 (fresh_svar phi) phi))
 
 *)
-
+(*Print bsvar_subst.
+Print wfc_mu_to_wfc_body.
+*)
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
@@ -1433,7 +1441,7 @@ Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 :
     well_formed_closed phi2 ->
     (forall x : evar, x ∈ free_evars phi1 -> evar_val1 x = evar_val2 x) ->
     ~ elem_of X (free_svars phi1) ->
-    @pattern_interpretation sig M evar_val1 svar_val (bsvar_subst phi1 phi2 dbi)
+    @pattern_interpretation sig M evar_val1 svar_val (bsvar_subst phi1 phi2 dbi (*0?*)) (*~ open_svar dbi phi2 ph1*)
     = @pattern_interpretation sig M evar_val2
                      (update_svar_val X (@pattern_interpretation sig M evar_val1 svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
@@ -1545,9 +1553,9 @@ Proof.
       remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) c evar_val1) as evar_val1'.
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val2) as evar_val2'.
       rewrite -> svar_open_evar_open_comm.
-      Print bvar_subst.
       specialize (IHsz M).
       (* *)
+      (*
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val1) as evar_val'.
       assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val1 svar_val phi2).
       { admit. (* since phi2 is closed *) }
@@ -1556,7 +1564,7 @@ Proof.
       subst.
       rewrite <- Hintphi2eq.
       rewrite <- IHsz. 
-      *
+      *)
 
 Admitted.
 
