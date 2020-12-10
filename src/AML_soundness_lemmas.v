@@ -1397,19 +1397,19 @@ Lemma evar_open_bsvar_subst phi1 phi2 dbi X
   : evar_open 0 X (bsvar_subst phi1 phi2 (S dbi))
     = bsvar_subst (evar_open 0 X phi1) (@evar_open sig 0 X phi2) (S dbi).
 Proof.
-  generalize dependent dbi. induction phi1; intro; simpl; auto.
-  - destruct (n =? 0) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
+  generalize dependent dbi. induction phi1; intro; auto.
+  - simpl. destruct (n =? 0) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
     * auto. 
     * symmetry in Heq. apply beq_nat_eq in Heq. lia.
     * symmetry in Heq; apply beq_nat_eq in Heq. lia.
     * auto.
     * auto. 
     * auto.
-  - destruct (compare_nat n (S dbi)); simpl; auto.
-  - rewrite IHphi1_1. rewrite IHphi1_2. auto.
-  - rewrite IHphi1_1. rewrite IHphi1_2. auto.
-  - simpl. apply f_equal.  admit.
-  - rewrite IHphi1. auto.
+  - simpl. destruct (compare_nat n (S dbi)); simpl; auto.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto.
+  - simpl. apply f_equal. Print bsvar_subst. admit.
+  - simpl. rewrite IHphi1. auto.
 Admitted.
 
 (*
