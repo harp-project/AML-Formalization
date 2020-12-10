@@ -1434,23 +1434,16 @@ Qed.
  *)
 Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
   : well_formed_closed phi2 ->
-    m < dbi ->
     evar_open m X (bsvar_subst phi1 phi2 dbi)
     = bsvar_subst (evar_open m X phi1) phi2 dbi.
 Proof.
-  generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hlt; auto.
-  - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
-    * auto.
-    * symmetry in Heq. apply beq_nat_eq in Heq. lia.
-    * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-    * auto.
-    * auto. 
-    * auto.
+  generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
+  - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
   - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
-  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
-  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
-  - simpl. apply f_equal. rewrite -> IHphi1. auto. auto. lia.
-  - simpl. rewrite IHphi1. auto. auto. lia.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+  - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+  - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
+  - simpl. rewrite IHphi1. auto. auto.
 Qed.
 
 (*
@@ -1464,12 +1457,23 @@ Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (p
 
 *)
 
+Lemma fresh_evar_svar_open dbi X phi :
+  fresh_evar (svar_open dbi X phi) = fresh_evar phi.
+Proof.
+  unfold fresh_evar.
+  apply f_equal.
+  apply f_equal.
+  apply free_evars_svar_open.
+Qed.
+
+
+
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
-Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 : @Pattern sig),
+Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : @Model sig) (phi1 phi2 : @Pattern sig),
     size phi1 <= sz -> forall    (evar_val1 evar_val2 : @EVarVal sig M)
-                                 (svar_val : @SVarVal sig M) (dbi : db_index) (X : svar), (* TODO X not free in ?? *)
+                                 (svar_val : @SVarVal sig M) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
     (forall x : evar, x ∈ free_evars phi1 -> evar_val1 x = evar_val2 x) ->
@@ -1479,7 +1483,7 @@ Lemma plugging_patterns_helper : forall (sz : nat) (M : @Model sig) (phi1 phi2 :
                      (update_svar_val X (@pattern_interpretation sig M evar_val1 svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
 Proof.
-  induction sz; intros M phi1 phi2 Hsz evar_val1 evar_val2 svar_val dbi X Hwfc1 Hwfc2 He1e2eq H.
+  induction sz; intros dbi M phi1 phi2 Hsz evar_val1 evar_val2 svar_val X Hwfc1 Hwfc2 He1e2eq H.
   - (* sz == 0 *)
     destruct phi1; simpl in Hsz; simpl.
     + (* free_evar *)
@@ -1583,13 +1587,15 @@ Proof.
     + simpl in Hsz. simpl in H.
       repeat rewrite pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
-      remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) c evar_val1) as evar_val1'.
+      remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c evar_val1) as evar_val1'.
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val2) as evar_val2'.
       rewrite -> svar_open_evar_open_comm.
       Search evar_open bsvar_subst.
-      rewrite -> evar_open_bsvar_subst. 3: lia. 2: auto.
+      rewrite -> evar_open_bsvar_subst. 2: auto.
+      rewrite -> fresh_evar_svar_open in *.
+      remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
+      remember (fresh_evar phi1) as Xfr2.
       rewrite <- IHsz.
-      specialize (IHsz M).
       (* *)
       (*
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val1) as evar_val'.
