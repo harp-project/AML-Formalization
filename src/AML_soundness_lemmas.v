@@ -1438,7 +1438,7 @@ Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
     evar_open m X (bsvar_subst phi1 phi2 dbi)
     = bsvar_subst (evar_open m X phi1) phi2 dbi.
 Proof.
-  generalize dependent dbi. induction phi1; intros dbi Hwfc Hlt; auto.
+  generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hlt; auto.
   - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl.
     * auto.
     * symmetry in Heq. apply beq_nat_eq in Heq. lia.
@@ -1446,15 +1446,12 @@ Proof.
     * auto.
     * auto. 
     * auto.
-  - simpl. destruct (compare_nat n dbi); simpl; auto.
+  - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
   - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
   - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto. auto. auto.
-  - simpl. apply f_equal. (* now evar_open m X phi2 = phi2 = evar_open (m+1) X phi2*)
-    (* But maybe we can simplify the statement. But we need a lemma for evar_open of wfc *)
-    Search evar_open well_formed_closed.
-    Print bsvar_subst. admit.
+  - simpl. apply f_equal. rewrite -> IHphi1. auto. auto. lia.
   - simpl. rewrite IHphi1. auto. auto. lia.
-Admitted.
+Qed.
 
 (*
 Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (patt_mu phi) 0))
