@@ -98,7 +98,7 @@ match phi with
 | patt_bott => patt_bott
 | patt_imp phi1 phi2 => patt_imp (bevar_subst phi1 psi x) (bevar_subst phi2 psi x)
 | patt_exists phi' => patt_exists (bevar_subst phi' psi (S x))
-| patt_mu phi' => patt_mu (bevar_subst phi' psi (S x))
+| patt_mu phi' => patt_mu (bevar_subst phi' psi x)
 end.
 
 Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
@@ -116,7 +116,7 @@ match phi with
                                  (bsvar_subst phi2 psi x)
 | patt_bott => patt_bott
 | patt_imp phi1 phi2 => patt_imp (bsvar_subst phi1 psi x) (bsvar_subst phi2 psi x)
-| patt_exists phi' => patt_exists (bsvar_subst phi' psi (S x))
+| patt_exists phi' => patt_exists (bsvar_subst phi' psi x)
 | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
 end.
 
