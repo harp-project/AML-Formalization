@@ -194,9 +194,39 @@ Proof.
     intros. apply H0 in H. clear H0.
     admit.
     
-  * simpl. rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
+  * apply pattern_interpretation_iff_subset. simpl.
+    rewrite -> pattern_interpretation_mu_simpl.
+    Arguments Lattice.LeastFixpointOf : simpl never.
+    simpl.
+    remember (fun S : Ensemble (Domain m) =>
+                pattern_interpretation evar_val
+                                       (update_svar_val (fresh_svar phi) S svar_val)
+                                       (svar_open 0 (fresh_svar phi) phi)) as F.
+    pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
+    pose (L := Lattice.PowersetLattice (@Domain signature m)).
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+      inversion Hwf. unfold well_formed. split.
+      inversion H. assumption.
+      inversion H0. assumption.
+    }
+    unfold Lattice.isFixpoint in Ffix.
+    assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
+    { rewrite Ffix. apply Same_set_refl. }
+    destruct Ffix_set. clear H0.
+    eapply Included_transitive.
+    2: { apply H. }
+    rewrite -> HeqF.
+    epose proof (Hsimpl := pattern_interpretation_mu_simpl).
+    specialize (Hsimpl evar_val svar_val phi).
+    simpl in Hsimpl. subst OS. subst L.
+    rewrite <- Hsimpl.
+    
+    (*Check plugging_patterns.*)
+    (*
+    simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
     constructor. constructor.
-    unfold Included. intros. unfold In.
+    unfold Included. intros. unfold In.*)
     admit.
 
   * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
