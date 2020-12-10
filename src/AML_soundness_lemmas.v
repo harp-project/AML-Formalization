@@ -1463,9 +1463,7 @@ Included (Domain m) (pattern_interpretation evar_val svar_val (bvar_subst phi (p
                 (svar_open 0 (fresh_svar phi) phi))) svar_val) (svar_open 0 (fresh_svar phi) phi))
 
 *)
-(*Print bsvar_subst.
-Print wfc_mu_to_wfc_body.
-*)
+
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
@@ -1588,6 +1586,9 @@ Proof.
       remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) c evar_val1) as evar_val1'.
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val2) as evar_val2'.
       rewrite -> svar_open_evar_open_comm.
+      Search evar_open bsvar_subst.
+      rewrite -> evar_open_bsvar_subst. 3: lia. 2: auto.
+      rewrite <- IHsz.
       specialize (IHsz M).
       (* *)
       (*
