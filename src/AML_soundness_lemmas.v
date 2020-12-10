@@ -46,7 +46,7 @@ Inductive well_formed_closed_induc : Pattern -> Prop :=
                     well_formed_closed_induc (svar_open 0 X phi)) 
                     -> well_formed_closed_induc (patt_mu phi).
 
-Lemma wfc_wfc_ind : forall sz phi, 
+Lemma wfc_wfc_ind_helper : forall sz phi, 
   well_formed_closed phi ->
   le (size phi) sz
   ->
@@ -61,6 +61,13 @@ Proof.
   apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz. exact sig.
   - constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
   apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz. exact sig.
+Qed.
+
+Lemma wfc_wfc_ind phi: well_formed_closed phi -> well_formed_closed_induc phi.
+Proof.
+  intros H.
+  apply wfc_wfc_ind_helper with (sz := size phi).
+  auto. lia.
 Qed.
 
 Lemma wfc_ind_wfc: forall phi, 
@@ -111,7 +118,7 @@ Lemma evar_open_fresh :
   forall n v,
   @evar_open sig n v phi = phi.
 Proof.
-  intros phi IHwf. apply (wfc_wfc_ind (size phi)) in IHwf. 2: lia.
+  intros phi IHwf. apply (wfc_wfc_ind) in IHwf.
   induction IHwf; firstorder.
   - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
   - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
@@ -170,8 +177,8 @@ Proof.
     simpl in HLs1, HLs2.
     rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    apply wfc_wfc_ind in Hwfb1. inversion Hwfb1.
+    apply wfc_wfc_ind in Hwfb2. inversion Hwfb2.
     erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
@@ -180,14 +187,15 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
+      (*
     + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 $ phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). lia.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 $ phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). lia.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_app_simpl.
     simpl in HLs1, HLs2.
     rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    apply wfc_wfc_ind in Hwfb1. inversion Hwfb1.
+    apply wfc_wfc_ind in Hwfb2. inversion Hwfb2.
     erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
@@ -196,13 +204,14 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
+      (*
     + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
-    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
+    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
     simpl in HLs1, HLs2. rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    apply wfc_wfc_ind in Hwfb1. inversion Hwfb1.
+    apply wfc_wfc_ind in Hwfb2. inversion Hwfb2.
     erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
@@ -211,13 +220,14 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
+      (*
     + erewrite <- evar_open_size. erewrite <- evar_open_size. simpl. lia. exact sig. exact sig.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
     simpl in HLs1, HLs2. rewrite elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb1. inversion Hwfb1.
-    apply (wfc_wfc_ind (size (evar_open 0 fresh2 (phi1 $ phi2)))) in Hwfb2. inversion Hwfb2.
+    apply wfc_wfc_ind in Hwfb1. inversion Hwfb1.
+    apply wfc_wfc_ind in Hwfb2. inversion Hwfb2.
     erewrite IHsz. erewrite (IHsz phi2). reflexivity. lia. assumption. assumption. 
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
@@ -226,8 +236,9 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
+      (*
     + rewrite <- (evar_open_size sig n0 fresh2 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
+    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.*)
   - simpl. repeat rewrite pattern_interpretation_ex_simpl. simpl.
     remember (fresh_evar (evar_open (n0 + 1) fresh2 phi)) as fresh22.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
@@ -335,7 +346,7 @@ Lemma update_valuation_fresh {m : Model}  :
   @pattern_interpretation sig m evar_val svar_val phi.
 Proof.
   
-  intros phi Hwfc. apply (wfc_wfc_ind (size phi)) in Hwfc. 2: lia.
+  intros phi Hwfc. apply wfc_wfc_ind in Hwfc.
   induction Hwfc.
   - intros. simpl in H. apply not_elem_of_singleton_1 in H.
     repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
