@@ -1,4 +1,5 @@
-Require Import MatchingLogic.Syntax.
+From Coq Require Import Ensembles.
+From MatchingLogic Require Import Syntax Semantics.
 Require Export locally_nameless.
 
 Open Scope ml_scope.

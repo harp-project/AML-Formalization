@@ -6,6 +6,7 @@ src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
 
 src/Syntax.v
+src/Semantics.v
 src/locally_nameless.v
 src/DefaultVariables.v
 src/AML_soundness_lemmas.v

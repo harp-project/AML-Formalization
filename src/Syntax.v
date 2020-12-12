@@ -1160,6 +1160,43 @@ Section syntax.
     apply free_evars_svar_open.
   Qed.
 
+    Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
+  Proof.
+    simpl. unfold patt_not. reflexivity.
+  Qed.
+
+  Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+  Proof.
+    simpl. unfold patt_or. unfold patt_not. reflexivity.
+  Qed.
+
+  Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+  Proof.
+    simpl. unfold patt_and. unfold patt_not. reflexivity.
+  Qed.
+
+  
+  Inductive Application_context : Type :=
+  | box
+  | ctx_app_l (cc : Application_context) (p : Pattern) (Prf : well_formed p)
+  | ctx_app_r (p : Pattern) (cc : Application_context) (Prf : well_formed p)
+  .
+
+  Fixpoint subst_ctx (C : Application_context) (p : Pattern)
+    : Pattern :=
+    match C with
+    | box => p
+    | ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
+    | ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
+    end.
+
+  Fixpoint free_evars_ctx (C : Application_context)
+    : (EVarSet) :=
+    match C with
+    | box => empty
+    | ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
+    | ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
+    end.
 
 
 End syntax.
