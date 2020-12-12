@@ -1,5 +1,6 @@
 (** * Module [extralibrary]: library functions, theorems, and tactics *)
 
+From Coq Require Import Bool.Bool.
 Require Import Arith.
 Require Import ZArith.
 Require Import List.
@@ -145,3 +146,9 @@ Proof.
   intro. apply H0 with (S x). lia.
 Qed.
 
+(* taken from https://softwarefoundations.cis.upenn.edu/vfa-current/Perm.html *)
+Lemma eqb_reflect : forall x y, reflect (x = y) (x =? y).
+Proof.
+  intros x y. apply iff_reflect. symmetry.
+  apply Nat.eqb_eq.
+Qed.

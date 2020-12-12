@@ -248,13 +248,6 @@ Proof.
   * apply IHphi. auto.
 Qed.
 
-(* taken from https://softwarefoundations.cis.upenn.edu/vfa-current/Perm.html *)
-Lemma eqb_reflect : forall x y, reflect (x = y) (x =? y).
-Proof.
-  intros x y. apply iff_reflect. symmetry.
-  apply Nat.eqb_eq.
-Qed.
-
 Lemma positive_negative_occurrence_db_named :
   forall (phi : Pattern) (dbi : db_index) (X : svar),
     (positive_occurrence_db dbi phi ->
