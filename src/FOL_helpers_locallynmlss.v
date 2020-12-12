@@ -1,4 +1,4 @@
-Require Import Signature.
+Require Import MatchingLogic.Syntax.
 Require Export locally_nameless.
 
 Open Scope ml_scope.

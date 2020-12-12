@@ -1,7 +1,7 @@
 Require Import Coq.Logic.Classical_Prop.
 
 Require Import MatchingLogic.locally_nameless.
-Require Import MatchingLogic.Signature.
+Require Import MatchingLogic.Syntax.
 Require Import MatchingLogic.DefaultVariables.
 Require Import MatchingLogic.Theories.Definedness.
 Require Import MatchingLogic.Theories.Sorts.

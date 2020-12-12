@@ -9,7 +9,7 @@ From Coq Require Import Logic.FunctionalExtensionality.
 
 From stdpp Require Import fin_sets.
 Require Import extralibrary.
-Require Import Signature.
+Require Import MatchingLogic.Syntax.
 Require Export locally_nameless.
 Require Import Lattice.
 Require Import stdpp_ext.

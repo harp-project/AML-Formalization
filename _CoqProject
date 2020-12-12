@@ -1,9 +1,10 @@
 -R src MatchingLogic
+
+src/Syntax.v
 src/Ensembles_Ext.v
 src/extralibrary.v
 src/locally_nameless.v
 src/Lattice.v
-src/Signature.v
 src/DefaultVariables.v
 src/AML_soundness_lemmas.v
 src/AML_soundness.v
