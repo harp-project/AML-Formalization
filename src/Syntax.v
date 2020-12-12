@@ -2,6 +2,7 @@ Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
+From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
@@ -681,6 +682,194 @@ Section syntax.
 
   Definition patt_nu (phi : Pattern) :=
     patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
+
+
+  Inductive well_formed_closed_induc : Pattern -> Prop :=
+  | wfc_free_evar : forall (x : evar), well_formed_closed_induc (patt_free_evar x)
+  | wfc_free_svar : forall (X : svar), well_formed_closed_induc (patt_free_svar X)
+  | wfc_sym       : forall (sym : symbols), well_formed_closed_induc (patt_sym sym)
+  | wfc_app       : forall (phi psi : Pattern), well_formed_closed_induc phi 
+                                                -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_app phi psi)
+  | wfc_bott      : well_formed_closed_induc patt_bott
+  | wfc_imp       : forall (phi psi : Pattern), well_formed_closed_induc phi 
+                                                -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_imp phi psi)
+  | wfc_ex        : forall phi : Pattern, 
+      (forall (x : evar), 
+          x ∉ (free_evars phi) ->
+          well_formed_closed_induc (evar_open 0 x phi))
+      -> 
+      well_formed_closed_induc (patt_exists phi)
+  | wfc_mu        : forall phi : Pattern, 
+      (forall (X : svar),
+          X ∉ (free_svars phi) ->
+          well_formed_closed_induc (svar_open 0 X phi)) 
+      -> well_formed_closed_induc (patt_mu phi).
+
+  Lemma wfc_wfc_ind_helper : forall sz phi, 
+      well_formed_closed phi ->
+      le (size phi) sz
+      ->
+      well_formed_closed_induc phi.
+  Proof.
+    induction sz; destruct phi; intros Hwf Hsz ; simpl in *; try inversion Hsz; auto. 1, 2, 5, 6 : constructor.
+    - inversion Hwf.
+    - inversion Hwf.
+    - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
+    - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
+    - constructor. apply wfc_ex_to_wfc_body in Hwf. unfold wfc_body_ex in Hwf. intros. 
+      apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz. exact signature.
+    - constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
+      apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz. exact signature.
+  Qed.
+
+  Lemma wfc_wfc_ind phi: well_formed_closed phi -> well_formed_closed_induc phi.
+  Proof.
+    intros H.
+    apply wfc_wfc_ind_helper with (sz := size phi).
+    auto. lia.
+  Qed.
+
+  Lemma wfc_ind_wfc: forall phi, 
+      well_formed_closed_induc phi 
+      ->
+      well_formed_closed phi.
+  Proof.
+    intros. induction H; firstorder.
+    - apply wfc_body_to_wfc_ex. unfold wfc_body_ex. assumption.
+    - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
+  Qed.
+
+  Lemma evar_open_last: forall phi i u j v,
+      (i <> j) -> evar_open i u (evar_open j v phi) = evar_open j v phi
+      ->
+      (evar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl in H. destruct (n=?j) eqn:D.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. apply Nat.eqb_eq in D. lia.
+        * auto.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. simpl in H0. rewrite D in H0. simpl in H0. rewrite Nat.eqb_refl in H0. congruence.
+        * auto.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+  Qed.
+
+  Lemma svar_open_last: forall phi i u j v,
+      evar_open i u (svar_open j v phi) = svar_open j v phi
+      ->
+      (evar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity.  exact H1.
+  Qed.
+
+  (* evar_open of fresh name does not change in a well-formed pattern*)
+  Lemma evar_open_fresh :
+    forall phi,
+      well_formed_closed phi ->
+      forall n v,
+        evar_open n v phi = phi.
+  Proof.
+    intros phi IHwf. apply (wfc_wfc_ind) in IHwf.
+    induction IHwf; firstorder.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. eapply (evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
+      apply set_evar_fresh_is_fresh.
+    - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
+      instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
+  Qed.
+
+  Lemma evar_open_comm:
+    forall n m,
+      n <> m 
+      ->
+      forall x y phi,
+        evar_open n x (evar_open m y phi) = evar_open m y (evar_open n x phi).
+  Proof.
+  Admitted.
+
+  
+  (* TODO make a wrapper that does not have the 'sz' variable *)
+  Lemma fresh_notin: 
+    forall sz phi v w,
+      le (size phi) sz ->
+      v ∉ (free_evars phi) ->
+      w ∉ (free_evars phi) ->
+      (v <> w) ->
+      forall n,
+        v ∉ (free_evars (evar_open n w phi)).
+  Proof.
+    induction sz; destruct phi; intros v w Hsz Hlsv Hlsw Hneq n0; simpl in *; try inversion Hsz; auto.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite elem_of_union in Hlsv.
+      rewrite elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite elem_of_union in Hlsv.
+      rewrite elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite elem_of_union in Hlsv.
+      rewrite elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite elem_of_union in Hlsv.
+      rewrite elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+  Qed.
+
+  Lemma free_evars_svar_open : forall (psi : Pattern) (dbi :db_index) (X : svar),
+      free_evars (svar_open dbi X psi) = free_evars psi.
+  Proof.
+    induction psi; intros; simpl; try reflexivity.
+    * destruct (n =? dbi); reflexivity.
+    * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
+    * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
+    * rewrite -> IHpsi. reflexivity.
+    * rewrite -> IHpsi. reflexivity.
+  Qed.
 
 
 End syntax.
