@@ -1,16 +1,18 @@
 -R src MatchingLogic
 
+src/Utils/Ensembles_Ext.v
+src/Utils/extralibrary.v
+src/Utils/Lattice.v
+src/Utils/stdpp_ext.v
+
 src/Syntax.v
-src/Ensembles_Ext.v
-src/extralibrary.v
+src/Semantics.v
 src/locally_nameless.v
-src/Lattice.v
 src/DefaultVariables.v
 src/AML_soundness_lemmas.v
 src/AML_soundness.v
 src/FOL_helpers_locallynmlss.v
 src/Logic.v
-src/stdpp_ext.v
 src/Theories/Definedness.v
 src/Theories/Sorts.v
 src/Tests/TEST_LocallyNameless.v

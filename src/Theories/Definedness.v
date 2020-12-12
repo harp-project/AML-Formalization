@@ -1,9 +1,11 @@
 (* In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
+From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 Require Import MatchingLogic.locally_nameless.
-Require Import MatchingLogic.Syntax.
+From MatchingLogic Require Import Syntax Semantics.
+From MatchingLogic.Utils Require Import Ensembles_Ext. 
 Import MLNotations.
 
 Open Scope ml_scope.

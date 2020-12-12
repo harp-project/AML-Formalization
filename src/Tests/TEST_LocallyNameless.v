@@ -1,10 +1,9 @@
+From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-Require Import MatchingLogic.locally_nameless.
-Require Import MatchingLogic.Syntax.
-Require Import MatchingLogic.DefaultVariables.
-Require Import MatchingLogic.Theories.Definedness.
-Require Import MatchingLogic.Theories.Sorts.
+From MatchingLogic Require Import locally_nameless Syntax Semantics DefaultVariables.
+From MatchingLogic.Theories Require Import Definedness Sorts.
+From MatchingLogic.Utils Require Import Ensembles_Ext.
 
 Import MLNotations.
 
