@@ -1586,28 +1586,21 @@ Proof.
       remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) c evar_val1) as evar_val1'.
       remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val2) as evar_val2'.
       rewrite -> svar_open_evar_open_comm.
+      Search evar_open bsvar_subst.
       rewrite -> evar_open_bsvar_subst. 3: lia. 2: auto.
-      assert (He1e1':
-         (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
-         (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)
-        ). admit.
-      (* TODO: I'm not sure if this is true, but if it is then we can apply the IH
-         in a way where we have the same evar_val on both sides *)
-      rewrite He1e1'.
       rewrite <- IHsz.
-        
-      2: { rewrite <- evar_open_size. lia. auto. }
-      2: { admit. }
-      2: { auto. }
-      2: { intros. subst. unfold update_evar_val. unfold ssrbool.is_left.
-           assert (Hfree: fresh_evar (bsvar_subst phi1 phi2 (S dbi)) =
-                          fresh_evar (svar_open dbi X phi1)). admit.
-           destruct (evar_eq (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
-           (evar_eq (fresh_evar (svar_open dbi X phi1)) x). auto.
-           rewrite Hfree in e. contradiction.
-           rewrite Hfree in n. contradiction.
-           apply He1e2eq. simpl. auto. admit. }
-      2: { admit. }
+      specialize (IHsz M).
+      (* *)
+      (*
+      remember (update_evar_val (fresh_evar (svar_open dbi X phi1)) c evar_val1) as evar_val'.
+      assert (Hintphi2eq : pattern_interpretation evar_val' svar_val phi2 = pattern_interpretation evar_val1 svar_val phi2).
+      { admit. (* since phi2 is closed *) }
+      rewrite -> evar_open_bvar_subst. 
+      rewrite -> svar_open_evar_open_comm.
+      subst.
+      rewrite <- Hintphi2eq.
+      rewrite <- IHsz. 
+      *)
 
 Admitted.
 
