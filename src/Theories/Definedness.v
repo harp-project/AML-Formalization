@@ -3,7 +3,7 @@
  *)
 Require Import Coq.Logic.Classical_Prop.
 Require Import MatchingLogic.locally_nameless.
-Require Import MatchingLogic.Signature.
+Require Import MatchingLogic.Syntax.
 Import MLNotations.
 
 Open Scope ml_scope.
@@ -24,7 +24,7 @@ Section definedness.
 
   Context {self : Syntax}.
 
-  Let Pattern : Type := @locally_nameless.Pattern sig.
+  Let Pattern : Type := @MatchingLogic.Syntax.Pattern sig.
 
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.

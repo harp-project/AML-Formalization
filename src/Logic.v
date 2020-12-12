@@ -1,1 +1,1 @@
-Require Export Signature locally_nameless DefaultVariables.
+From MatchingLogic Require Export Syntax locally_nameless DefaultVariables.

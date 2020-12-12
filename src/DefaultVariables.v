@@ -4,7 +4,7 @@ Require Import List.
 Require Import String.
 Require Import Coq.micromega.Lia.
 
-Require Import Signature.
+Require Import MatchingLogic.Syntax.
 Require Import extralibrary.
 
 From stdpp Require Import countable strings.
