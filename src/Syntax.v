@@ -1109,5 +1109,57 @@ Section syntax.
     - destruct (n =? dbi); constructor.
   Qed.
 
+  Lemma evar_open_wfc_aux db1 db2 dbs X phi :
+    db1 <= db2 ->
+    well_formed_closed_aux phi db1 dbs ->
+    evar_open db2 X phi = phi.
+  Proof.
+    generalize dependent dbs. generalize dependent db2. generalize dependent db1.
+    induction phi; intros db1 db2 dbs Hle Hwfca; simpl; simpl in Hwfca; auto.
+    * destruct (eqb_reflect n db2). lia. auto.
+    * rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto. 
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
+      auto.
+    * rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
+      auto.
+    * apply f_equal.
+      rewrite -> IHphi with (dbs := dbs)(db1 := db1 + 1). 3: auto. 2: lia. auto.
+    * apply f_equal. rewrite -> IHphi with (dbs := dbs + 1)(db1 := db1). auto. auto. auto.
+  Qed.
+
+  Lemma evar_open_wfc m X phi : well_formed_closed phi -> evar_open m X phi = phi.
+  Proof.
+    intros.
+    unfold well_formed_closed in H.
+    apply evar_open_wfc_aux with (X := X)(db2 := m) in H.
+    2: lia.
+    auto.
+  Qed.
+
+  Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
+    : well_formed_closed phi2 ->
+      evar_open m X (bsvar_subst phi1 phi2 dbi)
+      = bsvar_subst (evar_open m X phi1) phi2 dbi.
+  Proof.
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
+    - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
+    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+    - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
+    - simpl. rewrite IHphi1. auto. auto.
+  Qed.
+
+  Lemma fresh_evar_svar_open dbi X phi :
+    fresh_evar (svar_open dbi X phi) = fresh_evar phi.
+  Proof.
+    unfold fresh_evar.
+    apply f_equal.
+    apply f_equal.
+    apply free_evars_svar_open.
+  Qed.
+
+
 
 End syntax.
