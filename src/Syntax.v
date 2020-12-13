@@ -128,6 +128,36 @@ Section syntax.
     | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
     end.
 
+  Fixpoint bevar_occur (phi : Pattern) (x : db_index) : bool :=
+    match phi with
+    | patt_free_evar x' => false
+    | patt_free_svar x' => false
+    | patt_bound_evar n => (bool_decide (n = x))
+    | patt_bound_svar n => false
+    | patt_sym sigma => false
+    | patt_app phi1 phi2 => orb (bevar_occur phi1 x)
+                                (bevar_occur phi2 x)
+    | patt_bott => false
+    | patt_imp phi1 phi2 => orb (bevar_occur phi1 x) (bevar_occur phi2 x)
+    | patt_exists phi' => bevar_occur phi' (S x)
+    | patt_mu phi' => bevar_occur phi' x
+    end.
+
+    Fixpoint bsvar_occur (phi : Pattern) (x : db_index) : bool :=
+    match phi with
+    | patt_free_evar x' => false
+    | patt_free_svar x' => false
+    | patt_bound_evar n => false
+    | patt_bound_svar n => (bool_decide (n = x))
+    | patt_sym sigma => false
+    | patt_app phi1 phi2 => orb (bsvar_occur phi1 x)
+                                (bsvar_occur phi2 x)
+    | patt_bott => false
+    | patt_imp phi1 phi2 => orb (bsvar_occur phi1 x) (bsvar_occur phi2 x)
+    | patt_exists phi' => bsvar_occur phi' x
+    | patt_mu phi' => bsvar_occur phi' (S x)
+    end.
+  
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
