@@ -8,6 +8,7 @@ From stdpp Require Import fin_sets.
 From MatchingLogic.Utils Require Import Lattice Ensembles_Ext.
 From MatchingLogic Require Import Syntax.
 
+Import MatchingLogic.Syntax.Notations.
 (** ** Matching Logic Semantics *)
 Section semantics.
   
@@ -427,6 +428,45 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
       (* TODO: forall, nu *)
 
+
+
+          (* if pattern_interpretation (phi1 ---> phi2) = Full_set,
+             then pattern_interpretation phi1 subset pattern_interpretation phi2
+          *)
+      Lemma pattern_interpretation_iff_subset (evar_val : EVarVal) (svar_val : SVarVal)
+            (phi1 : Pattern) (phi2 : Pattern) :
+        Same_set (Domain m) (pattern_interpretation evar_val svar_val (phi1 ---> phi2)%ml) (Full_set (Domain m)) <->
+        Included (Domain m) (pattern_interpretation evar_val svar_val phi1)
+                 (pattern_interpretation evar_val svar_val phi2).
+      Proof.
+        intros; split; unfold Included; intros.
+        * rewrite pattern_interpretation_imp_simpl in H.
+          remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
+          remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
+          assert (In (Domain m) (Union (Domain m) (Complement (Domain m) Xphi1) Xphi2) x).
+          apply Same_set_to_eq in H. rewrite H. constructor.
+          inversion H1. contradiction. assumption.
+        * rewrite pattern_interpretation_imp_simpl.
+          remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
+          remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
+          constructor. constructor.
+          assert (Union (Domain m) (Complement (Domain m) Xphi1) Xphi1 = Full_set (Domain m)).
+          apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H0; clear H0.
+          unfold Included; intros.
+          inversion H0.
+          left; assumption.
+          right; apply H in H1; assumption.
+      Qed.
+
+      (* pattern_interpretation with free_svar_subst does not change *)
+      Lemma update_valuation_free_svar_subst
+            (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+            (phi : Pattern) (psi : Pattern) (X : svar) :
+        pattern_interpretation evar_val svar_val phi
+        = pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) .
+      Proof.
+      Admitted.
+      
       (* TODO prove *)
     (*
 Lemma pattern_interpretation_fa_simpl : forall {m : Model} (evar_val : @EVarVal m) (svar_val : @SVarVal m) (phi : Pattern),
@@ -624,8 +664,6 @@ repeat
     
     (* Theory,axiom ref. snapshot: Definition 5 *)
 
-    Definition Theory := Power Pattern.
-
     Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
       forall (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)),
         Same_set _ (pattern_interpretation (m := m) evar_val svar_val phi) (Full_set _).
@@ -637,4 +675,55 @@ repeat
     Definition satisfies (theory : Theory) (p: Pattern)
       : Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
+    Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
+
+    Lemma T_predicate_impl Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_imp ϕ₁ ϕ₂).
+    Proof.
+      unfold T_predicate.
+      intros.
+      auto using M_predicate_impl.
+    Qed.
+
+    Lemma T_predicate_bot Γ : T_predicate Γ patt_bott.
+    Proof.
+      unfold T_predicate.
+      intros.
+      auto using M_predicate_bott.
+    Qed.
+
+    Lemma T_predicate_not Γ ϕ : T_predicate Γ ϕ -> T_predicate Γ (patt_not ϕ).
+    Proof.
+      unfold T_predicate.
+      intros.
+      auto using M_predicate_not.
+    Qed.
+
+    Lemma T_predicate_or Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_or ϕ₁ ϕ₂).
+    Proof.
+      unfold T_predicate.
+      intros.
+      auto using M_predicate_or.
+    Qed.
+
+    Lemma T_predicate_and Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_and ϕ₁ ϕ₂).
+    Proof.
+      unfold T_predicate.
+      intros.
+      auto using M_predicate_and.
+    Qed.
+
+    (* TODO: top iff exists forall *)
+
+
 End semantics.
+
+Module Notations.
+  Declare Scope ml_scope.
+  Delimit Scope ml_scope with ml.
+  
+  Notation "M ⊨ᴹ phi" := (satisfies_model M phi) (left associativity, at level 50) : ml_scope.
+  (* FIXME this should not be called `satisfies` *)
+Notation "G ⊨ phi" := (satisfies G phi) (left associativity, at level 50) : ml_scope.
+Notation "M ⊨ᵀ Gamma" := (satisfies_theory M Gamma)
+    (left associativity, at level 50) : ml_scope.
+End Notations.

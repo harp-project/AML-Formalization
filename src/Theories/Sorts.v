@@ -1,9 +1,10 @@
 Require Import Coq.Logic.Classical_Prop.
 
-Require Import MatchingLogic.locally_nameless.
-Require Import MatchingLogic.Syntax.
+From MatchingLogic Require Import Syntax.
 Require Import MatchingLogic.Theories.Definedness.
-Import MLNotations.
+
+Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
 
 Section sorts.
 
@@ -32,4 +33,6 @@ Section sorts.
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (inhabitant_set sort)) and phi).
 
+  (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
+  
 End sorts.

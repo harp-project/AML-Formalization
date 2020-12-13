@@ -74,6 +74,7 @@ Section syntax.
   | patt_mu (phi : Pattern)
   .
 
+  Definition Theory := Ensemble Pattern.
   
   (** There are two substitution operations over types, written
   [vsubst] and [psubst] in Pollack's talk.  
@@ -1200,3 +1201,23 @@ Section syntax.
 
 
 End syntax.
+
+Module Notations.
+  Declare Scope ml_scope.
+  Delimit Scope ml_scope with ml.
+  (* TODO: change Bot and Top to unicode symbols *)
+  Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
+  Notation "'Bot'" := patt_bott : ml_scope.
+  Notation "a ---> b"  := (patt_imp a b) (at level 90, right associativity,
+                                         b at level 200) : ml_scope.
+  Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
+  Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
+
+  Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
+  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
+  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
+  Notation "a <---> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
+  Notation "'Top'" := patt_top : ml_scope.
+  Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
+  Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
+End Notations.

@@ -7,7 +7,10 @@ src/Utils/stdpp_ext.v
 
 src/Syntax.v
 src/Semantics.v
-src/locally_nameless.v
+src/ProofSystem.v
+
+src/Helpers/monotonic.v
+
 src/DefaultVariables.v
 src/AML_soundness_lemmas.v
 src/AML_soundness.v

@@ -6,7 +6,9 @@ Require Import Coq.Logic.Classical_Prop.
 Require Import MatchingLogic.locally_nameless.
 From MatchingLogic Require Import Syntax Semantics.
 From MatchingLogic.Utils Require Import Ensembles_Ext. 
-Import MLNotations.
+
+Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
 
 Open Scope ml_scope.
 

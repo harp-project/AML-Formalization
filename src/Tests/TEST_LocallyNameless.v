@@ -1,11 +1,11 @@
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-From MatchingLogic Require Import locally_nameless Syntax Semantics DefaultVariables.
+From MatchingLogic Require Import Syntax Semantics DefaultVariables.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
 
-Import MLNotations.
+Import MatchingLogic.Syntax.Notations.
 
 (* In this module we show how to define a signature and build patterns *)
 Module test_1.
