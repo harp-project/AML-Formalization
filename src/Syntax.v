@@ -59,6 +59,17 @@ Section syntax.
   | patt_mu (phi : Pattern)
   .
 
+  Instance Pattern_eqdec : EqDecision Pattern.
+  Proof.
+    unfold EqDecision. intros. unfold Decision. decide equality.
+    - apply evar_eqdec.
+    - apply svar_eqdec.
+    - apply nat_eq_dec.
+    - apply nat_eq_dec.
+    - apply sym_eq.
+  Qed.
+      
+
   Definition Theory := Ensemble Pattern.
   
   (** There are two substitution operations over types, written
@@ -501,6 +512,9 @@ Section syntax.
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
+
+  Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
+  Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
 
   Lemma set_evar_fresh_is_fresh ϕ : fresh_evar ϕ ∉ free_evars ϕ.
   Proof.
@@ -1184,16 +1198,94 @@ Section syntax.
     | ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
-  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : Prop :=
-    phi1 = phi2 \/ match phi2 with
-                   | patt_app p q => is_subformula_of phi1 p \/ is_subformula_of phi1 q
-                   | patt_imp p q => is_subformula_of phi1 p \/ is_subformula_of phi1 q
-                   | patt_exists p => is_subformula_of phi1 p
-                   | patt_mu p => is_subformula_of phi1 p
-                   | _ => False
-                   end.
-                   
 
+  Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
+  | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
+  | sub_app_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
+  | sub_app_r ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₃ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
+  | sub_imp_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_imp ϕ₂ ϕ₃)
+  | sub_imp_r ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₃ -> is_subformula_of_ind ϕ₁ (patt_imp ϕ₂ ϕ₃)
+  | sub_exists ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_exists ϕ₂)
+  | sub_mu ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_mu ϕ₂)
+  .
+  
+  (*
+  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : bool :=
+    orb (if (Pattern_eqdec phi1 phi2) then true else false)
+        match phi2 with
+        | patt_app p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
+        | patt_imp p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
+        | patt_exists p => is_subformula_of phi1 p
+        | patt_mu p => is_subformula_of phi1 p
+        | _ => false
+        end.
+  *)
+
+  Lemma free_evars_subformula ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ -> free_evars ϕ₁ ⊆ free_evars ϕ₂.
+  Proof.
+    intros H. induction H.
+    * subst. apply PreOrder_Reflexive.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. auto.
+    * simpl. auto.
+  Qed.
+  
+
+  Lemma evar_fresh_in_subformula x ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ ->
+    evar_is_fresh_in x ϕ₂ ->
+    evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in.
+    intros Hsub Hfresh.
+    apply free_evars_subformula in Hsub.
+    auto.
+  Qed.
+
+  Lemma free_svars_subformula ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ -> free_svars ϕ₁ ⊆ free_svars ϕ₂.
+  Proof.
+    intros H. induction H.
+    * subst. apply PreOrder_Reflexive.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. auto.
+    * simpl. auto.
+  Qed.
+  
+  Lemma svar_fresh_in_subformula x ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ ->
+    svar_is_fresh_in x ϕ₂ ->
+    svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in.
+    intros Hsub Hfresh.
+    apply free_svars_subformula in Hsub.
+    auto.
+  Qed.
+  
 End syntax.
 
 Module Notations.
