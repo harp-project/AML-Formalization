@@ -1,27 +1,215 @@
-Require Import Arith.
-Require Import ZArith.
-Require Import List.
-Require Import extralibrary.
-Require Import DefaultVariables. (* TODO remove *)
+From Coq Require Import Ensembles.
 
-From MatchingLogic Require Import Syntax Semantics.
-Require Export AML_soundness_lemmas.
+From MatchingLogic.Utils Require Import Ensembles_Ext.
+From MatchingLogic Require Import Syntax Semantics Helpers.monotonic.
+From stdpp Require Import fin_sets.
 
-Require Import Coq.micromega.Lia.
+Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
 
-Require Export String.
-Require Export Coq.Lists.ListSet.
-Require Export Ensembles_Ext.
+Section ml_proof_system.
+  Open Scope ml_scope.
 
-Require Export Coq.Program.Wf.
+  Context {signature : Signature}.
 
-Section soundness.
 
-Context {signature : Signature}.
-Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
-Notation "theory ⊢ pattern" := (@ML_proof_system signature theory pattern) (at level 1, no associativity).
+Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+  (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
+  (well_formed phi) -> (@well_formed signature psi) ->
+  (forall axiom : Pattern,
+     Ensembles.In Pattern theory axiom ->
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar -> Power (Domain m)),
+     Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
+       (Full_set (@Domain signature m))) ->
+  Same_set (Domain m)
+  (pattern_interpretation evar_val svar_val
+     (patt_imp (patt_app (patt_exists phi) psi)
+        (patt_exists (patt_app phi psi)))) (Full_set (Domain m)).
+Proof.
+  intros Hwf H H0 Hv.
+  rewrite pattern_interpretation_imp_simpl.
+    constructor. constructor.
+    remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
+    left. assumption.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists le, re.
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars psi)).
+    admit.
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
+Admitted.
 
-(* Soundness theorem *)
+Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+  (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
+  (well_formed phi) -> (well_formed psi) ->
+  (forall axiom : Pattern,
+     Ensembles.In Pattern theory axiom ->
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar ->
+                   Power (Domain m)),
+     Same_set (Domain m)
+       (pattern_interpretation evar_val svar_val axiom)
+       (Full_set (Domain m))) ->
+  (Same_set (Domain m)
+  (pattern_interpretation evar_val svar_val
+     (patt_imp (patt_app psi (patt_exists phi))
+        (patt_exists (patt_app psi phi))))
+  (Full_set (Domain m))).
+Proof.
+  intros Hwf H H0 Hv.
+  rewrite pattern_interpretation_imp_simpl.
+    constructor. constructor.
+    remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
+    left. assumption.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists le, re.
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars psi)).
+    admit.
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
+Admitted.
+
+
+  
+  (* Proof system for AML ref. snapshot: Section 3 *)
+  (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
+  (* TODO: add well-formedness of theory *)
+  (* TODO: use well-formedness as parameter in proof system *)
+
+  Reserved Notation "theory ⊢ pattern" (at level 1).
+  Inductive ML_proof_system (theory : Theory) :
+    Pattern -> Prop :=
+
+  (* Hypothesis *)
+  | hypothesis (axiom : Pattern) :
+      well_formed axiom ->
+      (Ensembles.In _ theory axiom) -> theory ⊢ axiom
+                                              
+  (* FOL reasoning *)
+  (* Propositional tautology *)
+  | P1 (phi psi : Pattern) :
+      well_formed phi -> well_formed psi ->
+      theory ⊢ (phi ---> (psi ---> phi))
+  | P2 (phi psi xi : Pattern) :
+      well_formed phi -> well_formed psi -> well_formed xi ->
+      theory ⊢ ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
+  | P3 (phi : Pattern) :
+      well_formed phi ->
+      theory ⊢ (((phi ---> Bot) ---> Bot) ---> phi)
+
+  (* Modus ponens *)
+  | Modus_ponens (phi1 phi2 : Pattern) :
+      well_formed phi1 -> well_formed (phi1 ---> phi2) ->
+      theory ⊢ phi1 ->
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ phi2
+
+  (* Existential quantifier *)
+  | Ex_quan (phi : Pattern) (y : evar) :
+      well_formed phi ->
+      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
+      well_formed phi1 -> well_formed phi2 ->
+      theory ⊢ (phi1 ---> phi2) ->
+      x ∉ (free_evars phi2) ->
+      theory ⊢ (exists_quantify x phi1 ---> phi2)
+
+  (* Frame reasoning *)
+  (* Propagation bottom *)
+  | Prop_bott_left (phi : Pattern) :
+      well_formed phi ->
+      theory ⊢ (patt_bott $ phi ---> patt_bott)
+
+  | Prop_bott_right (phi : Pattern) :
+      well_formed phi ->
+      theory ⊢ (phi $ patt_bott ---> patt_bott)
+
+  (* Propagation disjunction *)
+  | Prop_disj_left (phi1 phi2 psi : Pattern) :
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+
+  | Prop_disj_right (phi1 phi2 psi : Pattern) :
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
+      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+
+  (* Propagation exist *)
+  | Prop_ex_left (phi psi : Pattern) :
+      well_formed (ex , phi) -> well_formed psi ->
+      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
+
+  | Prop_ex_right (phi psi : Pattern) :
+      well_formed (ex , phi) -> well_formed psi ->
+      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+
+  (* Framing *)
+  | Framing_left (phi1 phi2 psi : Pattern) :
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
+
+  | Framing_right (phi1 phi2 psi : Pattern) :
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
+
+  (* Fixpoint reasoning *)
+  (* Set Variable Substitution *)
+  | Svar_subst (phi psi : Pattern) (X : svar) :
+      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
+
+  (* Pre-Fixpoint *)
+  (* TODO: is this correct? *)
+  | Pre_fixp (phi : Pattern) :
+      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
+
+  (* Knaster-Tarski *)
+  | Knaster_tarski (phi psi : Pattern) :
+      theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
+      theory ⊢ ((@patt_mu signature phi) ---> psi)
+
+  (* Technical rules *)
+  (* Existence *)
+  | Existence : theory ⊢ (ex , patt_bound_evar 0)
+
+  (* Singleton *)
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
+      theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
+                                                             (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
+
+  where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+
+  Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
+  (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
   well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
@@ -36,7 +224,7 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
     apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H1; clear H1.
     unfold Included; intros; apply Union_is_or.
     inversion H1. left. assumption. right. apply Union_intror. assumption.
@@ -51,7 +239,7 @@ Proof.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    epose proof Union_Transitive (Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
+    epose proof Union_Transitive (Ensembles.Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
           (Complement (Domain m) Xphi) Xxi.
     apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
     pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
@@ -78,7 +266,7 @@ Proof.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
 
     constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
     apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H2; clear H2.
     unfold Included; intros; unfold In. inversion H2.
     apply Union_intror; assumption.
@@ -106,14 +294,14 @@ Proof.
     constructor. constructor.
     unfold Included; intros.
     epose proof app_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
-    unfold In; unfold Complement; unfold not; contradiction.
+    unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
     epose proof app_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
-    unfold In; unfold Complement; unfold not; contradiction.
+    unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
     repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
@@ -125,9 +313,9 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (app_ext (Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
+    remember (app_ext (Ensembles.Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
     constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
@@ -149,9 +337,9 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (app_ext Xpsi (Union (Domain m) Xphi1 Xphi2)) as Xext_union.
+    remember (app_ext Xpsi (Ensembles.Union (Domain m) Xphi1 Xphi2)) as Xext_union.
     constructor. constructor.
-    assert (Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
@@ -248,4 +436,4 @@ Proof.
 
 Admitted.
 
-End soundness.
+End ml_proof_system.

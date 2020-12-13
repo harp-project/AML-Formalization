@@ -1,6 +1,7 @@
 From Coq Require Import Ensembles.
-From MatchingLogic Require Import Syntax Semantics.
-Require Export locally_nameless.
+From MatchingLogic Require Import Syntax Semantics ProofSystem.
+(*Require Export locally_nameless.*)
+Import MatchingLogic.Syntax.Notations.
 
 Open Scope ml_scope.
 Section FOL_helpers.
@@ -89,7 +90,7 @@ match goal with
 end. 
 
 Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
-Import MLNotations.
+
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
 (well_formed A) -> theory ⊢ (A ---> A).
 Proof. 

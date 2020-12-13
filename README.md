@@ -35,6 +35,17 @@ Alternatively, it is possible to build the project in Docker:
 ./build-in-docker.sh
 ```
 
+### Structure
+
+- `MatchingLogic.Utils` - A collection of generally usefull definitions and lemmas, independent of Matching Logic.
+- `MatchingLogic.Syntax`, `MatchingLogic.Semantics`, `MatchingLogic.ProofSystem` -
+  define syntax, semantics, proof system, respectively, and its properties.
+  The user of the library is supposed to import these three.
+- `MatchingLogic.Helpers`
+
+
+
+
 ## References
 
 Official language definition http://fsl.cs.illinois.edu/index.php/Applicative_Matching_Logic
