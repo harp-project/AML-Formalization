@@ -159,7 +159,7 @@ Section monotonic.
         respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros phi dbi X Hpodb Hni.
-      pose proof (Hpno := not_free_implies_positive_negative_occurrence phi X Hni).
+      pose proof (Hpno := @not_free_implies_positive_negative_occurrence sig phi X Hni).
       unfold respects_blacklist. intros.
       split; intros.
       * firstorder using positive_negative_occurrence_db_named.
@@ -176,7 +176,7 @@ Section monotonic.
         respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros. destruct H as [Hpo Hwfp].
-      pose proof (Hfr := set_svar_fresh_is_fresh phi).
+      pose proof (Hfr := @set_svar_fresh_is_fresh sig phi).
       auto using positive_occurrence_respects_blacklist_svar_open.
     Qed.
 
@@ -272,7 +272,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
           unfold In.
           split; intros; rewrite -> pattern_interpretation_free_svar_simpl in *;
-            unfold update_svar_val in *; destruct (svar_eq X x); subst.
+            unfold update_svar_val in *; destruct (svar_eqdec X x); subst.
           * unfold respects_blacklist in H1.
             specialize (H1 x).
             destruct H1 as [Hneg Hpos].
@@ -421,7 +421,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
+          pose proof (Hwfp' := @evar_open_wfp sig n phi Hsz' 0 fresh Hwfp).
           specialize (IHn Hsz' Hwfp' Bp Bn).
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
@@ -489,7 +489,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             - apply Hx. constructor.
             - clear Hx. clear Hy.
               intros.
-              destruct (svar_eq X' V).
+              destruct (svar_eqdec X' V).
               + (* X' = V *)
                 rewrite <- e.
                 repeat rewrite -> update_svar_val_shadow.
@@ -560,7 +560,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             - apply Hy. constructor.
             - clear Hy. clear Hx.
               intros.
-              destruct (svar_eq X' V).
+              destruct (svar_eqdec X' V).
               + (* X' = V *)
                 rewrite <- e.
                 repeat rewrite -> update_svar_val_shadow.

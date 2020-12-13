@@ -1,18 +1,21 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
+
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
-  
+
 Class MLVariables := {
   evar : Type;
   svar : Type;
-  (* TODO remove _eq, use _eqdec instead *)
-  evar_eq : forall (v1 v2 : evar), {v1 = v2} + {v1 <> v2};
-  svar_eq : forall (v1 v2 : svar), {v1 = v2} + {v1 <> v2};
   evar_eqdec : EqDecision evar;
   evar_countable : Countable evar;
   svar_eqdec : EqDecision svar;
@@ -49,18 +52,6 @@ Section syntax.
   Context {signature : Signature}.
   Existing Instance variables.
 
-  (* TODO remove *)
-  Definition evar_eqb (v1 v2 : evar) : bool :=
-    match evar_eq v1 v2 with
-    | left _ => true
-    | right _ => false
-    end.
-  Definition svar_eqb (v1 v2 : svar) : bool :=
-    match svar_eq v1 v2 with
-    | left _ => true
-    | right _ => false
-    end.  
-
   Inductive Pattern : Type :=
   | patt_free_evar (x : evar)
   | patt_free_svar (x : svar)
@@ -73,6 +64,17 @@ Section syntax.
   | patt_exists (phi : Pattern)
   | patt_mu (phi : Pattern)
   .
+
+  Instance Pattern_eqdec : EqDecision Pattern.
+  Proof.
+    unfold EqDecision. intros. unfold Decision. decide equality.
+    - apply evar_eqdec.
+    - apply svar_eqdec.
+    - apply nat_eq_dec.
+    - apply nat_eq_dec.
+    - apply sym_eq.
+  Qed.
+      
 
   Definition Theory := Ensemble Pattern.
   
@@ -132,10 +134,40 @@ Section syntax.
     | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
     end.
 
+  Fixpoint bevar_occur (phi : Pattern) (x : db_index) : bool :=
+    match phi with
+    | patt_free_evar x' => false
+    | patt_free_svar x' => false
+    | patt_bound_evar n => (bool_decide (n = x))
+    | patt_bound_svar n => false
+    | patt_sym sigma => false
+    | patt_app phi1 phi2 => orb (bevar_occur phi1 x)
+                                (bevar_occur phi2 x)
+    | patt_bott => false
+    | patt_imp phi1 phi2 => orb (bevar_occur phi1 x) (bevar_occur phi2 x)
+    | patt_exists phi' => bevar_occur phi' (S x)
+    | patt_mu phi' => bevar_occur phi' x
+    end.
+
+    Fixpoint bsvar_occur (phi : Pattern) (x : db_index) : bool :=
+    match phi with
+    | patt_free_evar x' => false
+    | patt_free_svar x' => false
+    | patt_bound_evar n => false
+    | patt_bound_svar n => (bool_decide (n = x))
+    | patt_sym sigma => false
+    | patt_app phi1 phi2 => orb (bsvar_occur phi1 x)
+                                (bsvar_occur phi2 x)
+    | patt_bott => false
+    | patt_imp phi1 phi2 => orb (bsvar_occur phi1 x) (bsvar_occur phi2 x)
+    | patt_exists phi' => bsvar_occur phi' x
+    | patt_mu phi' => bsvar_occur phi' (S x)
+    end.
+    
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
-    | patt_free_evar x' => if evar_eq x x' then psi else patt_free_evar x'
+    | patt_free_evar x' => if evar_eqdec x x' then psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -151,7 +183,7 @@ Section syntax.
   Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if svar_eq X X' then psi else patt_free_svar X'
+    | patt_free_svar X' => if svar_eqdec X X' then psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
@@ -211,7 +243,7 @@ Section syntax.
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
-    | patt_free_evar x' => if evar_eq x x' then patt_bound_evar level else patt_free_evar x'
+    | patt_free_evar x' => if evar_eqdec x x' then patt_bound_evar level else patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -517,11 +549,14 @@ Section syntax.
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
 
+  Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
+  Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
+
   Lemma set_evar_fresh_is_fresh ϕ : fresh_evar ϕ ∉ free_evars ϕ.
   Proof.
     unfold fresh_evar.
     intros H.
-    pose proof (Hf := evar_fresh_is_fresh (elements (free_evars ϕ))).
+    pose proof (Hf := @evar_fresh_is_fresh _ (elements (free_evars ϕ))).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
@@ -532,7 +567,7 @@ Section syntax.
   Proof.
     unfold fresh_svar.
     intros H.
-    pose proof (Hf := svar_fresh_is_fresh (elements (free_svars ϕ))).
+    pose proof (Hf := @svar_fresh_is_fresh _ (elements (free_svars ϕ))).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
@@ -545,7 +580,7 @@ Section syntax.
   Proof.
     intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
-    apply (wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
+    apply (@wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
     clear H.
     apply set_evar_fresh_is_fresh.
   Qed.
@@ -558,7 +593,7 @@ Section syntax.
   Proof.
     split.
     - apply wfc_ex_to_wfc_body.
-    - apply (wfc_body_to_wfc_ex phi).
+    - apply wfc_body_to_wfc_ex.
   Qed.
 
   (*Similarly to the section above but with mu*)
@@ -613,7 +648,7 @@ Section syntax.
   Proof.
     intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
-    apply (wfc_aux_body_mu_imp2 phi 0 0 (fresh_svar phi)) in H. exact H.
+    apply wfc_aux_body_mu_imp2 with (X := fresh_svar phi) in H. exact H.
     apply set_svar_fresh_is_fresh.
   Qed.
 
@@ -625,7 +660,7 @@ Section syntax.
   Proof.
     split.
     - apply wfc_mu_to_wfc_body.
-    - apply (wfc_body_to_wfc_mu phi).
+    - apply wfc_body_to_wfc_mu.
   Qed.
 
   (* Similarly with positiveness *)
@@ -660,8 +695,8 @@ Section syntax.
       wf_body_ex phi.
   Proof.
     unfold wf_body_ex. intros. unfold well_formed in *. destruct H. split.
-    - apply (wfp_ex_to_wfp_body phi H). assumption.
-    - apply (wfc_ex_to_wfc_body phi H1). assumption.
+    - apply (@wfp_ex_to_wfp_body phi H). assumption.
+    - apply (@wfc_ex_to_wfc_body phi H1). assumption.
   Qed.
 
 
@@ -782,7 +817,7 @@ Section syntax.
     induction IHwf; firstorder.
     - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
     - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
-    - simpl. eapply (evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
+    - simpl. eapply (@evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
       apply set_evar_fresh_is_fresh.
     - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
       instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
@@ -817,8 +852,8 @@ Section syntax.
       + simpl. trivial.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -827,8 +862,18 @@ Section syntax.
       + apply IHsz. lia. assumption. assumption. assumption.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite -> elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -837,18 +882,8 @@ Section syntax.
       + apply IHsz. lia. assumption. assumption. assumption.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
-      apply not_or_and in Hlsv.
-      apply not_or_and in Hlsw.
-      destruct Hlsv, Hlsw.
-      split.
-      + apply IHsz. lia. assumption. assumption. assumption.
-      + apply IHsz. lia. assumption. assumption. assumption.
-    - rewrite elem_of_union.
-      apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -1146,10 +1181,10 @@ Section syntax.
     generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
     - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
     - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
-    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
-    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
     - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
-    - simpl. rewrite IHphi1. auto. auto.
+    - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
   Lemma fresh_evar_svar_open dbi X phi :
@@ -1187,19 +1222,124 @@ Section syntax.
     : Pattern :=
     match C with
     | box => p
-    | ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
-    | ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
+    | @ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
+    | @ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
     end.
 
   Fixpoint free_evars_ctx (C : Application_context)
     : (EVarSet) :=
     match C with
     | box => empty
-    | ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
-    | ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
+    | @ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
+    | @ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
 
+  Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
+  | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
+  | sub_app_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
+  | sub_app_r ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₃ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
+  | sub_imp_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_imp ϕ₂ ϕ₃)
+  | sub_imp_r ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₃ -> is_subformula_of_ind ϕ₁ (patt_imp ϕ₂ ϕ₃)
+  | sub_exists ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_exists ϕ₂)
+  | sub_mu ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_mu ϕ₂)
+  .
+
+  (*
+  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : bool :=
+    orb (if (Pattern_eqdec phi1 phi2) then true else false)
+        match phi2 with
+        | patt_app p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
+        | patt_imp p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
+        | patt_exists p => is_subformula_of phi1 p
+        | patt_mu p => is_subformula_of phi1 p
+        | _ => false
+        end.
+  *)
+
+  Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
+    bsvar_occur ϕ₁ dbi ->
+    is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    intros H. induction ϕ₁; simpl; simpl in H; try inversion H.
+    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
+      + lia.
+      + constructor. reflexivity.
+      + lia.
+    - move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_app_l. auto.
+      + apply sub_app_l. auto.
+      + apply sub_app_r. auto.
+      + done.
+    - Abort. (* TO BE FINISHED *)
+    
+  
+  Lemma free_evars_subformula ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ -> free_evars ϕ₁ ⊆ free_evars ϕ₂.
+  Proof.
+    intros H. induction H.
+    * subst. apply PreOrder_Reflexive.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. auto.
+    * simpl. auto.
+  Qed.
+  
+
+  Lemma evar_fresh_in_subformula x ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ ->
+    evar_is_fresh_in x ϕ₂ ->
+    evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in.
+    intros Hsub Hfresh.
+    apply free_evars_subformula in Hsub.
+    auto.
+  Qed.
+
+  Lemma free_svars_subformula ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ -> free_svars ϕ₁ ⊆ free_svars ϕ₂.
+  Proof.
+    intros H. induction H.
+    * subst. apply PreOrder_Reflexive.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_l.
+    * simpl. eapply PreOrder_Transitive.
+      apply IHis_subformula_of_ind.
+      apply union_subseteq_r.
+    * simpl. auto.
+    * simpl. auto.
+  Qed.
+  
+  Lemma svar_fresh_in_subformula x ϕ₁ ϕ₂ :
+    is_subformula_of_ind ϕ₁ ϕ₂ ->
+    svar_is_fresh_in x ϕ₂ ->
+    svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in.
+    intros Hsub Hfresh.
+    apply free_svars_subformula in Hsub.
+    auto.
+  Qed.
+  
 End syntax.
 
 Module Notations.

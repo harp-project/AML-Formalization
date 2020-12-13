@@ -54,11 +54,11 @@ Section semantics.
 
     Definition update_evar_val {m : Model} 
                (v : evar) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
-      fun v' : evar => if evar_eq v v' then x else evar_val v'.
+      fun v' : evar => if evar_eqdec v v' then x else evar_val v'.
 
     Definition update_svar_val {m : Model}
                (v : svar) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
-      fun v' : svar => if svar_eq v v' then X else svar_val v'.
+      fun v' : svar => if svar_eqdec v v' then X else svar_val v'.
 
     Lemma update_svar_val_comm M :
       forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal M),
@@ -70,7 +70,7 @@ Section semantics.
       unfold update_svar_val.
       apply functional_extensionality.
       intros.
-      destruct (svar_eq X1 x),(svar_eq X2 x); subst.
+      destruct (svar_eqdec X1 x),(svar_eqdec X2 x); subst.
       * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
       * reflexivity.
       * reflexivity.
@@ -83,7 +83,7 @@ Section semantics.
         update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
     Proof.
       intros. unfold update_svar_val. apply functional_extensionality.
-      intros. destruct (svar_eq X x); reflexivity.
+      intros. destruct (svar_eqdec X x); reflexivity.
     Qed.
 
 
@@ -97,7 +97,7 @@ Section semantics.
       unfold update_evar_val.
       apply functional_extensionality.
       intros.
-      destruct (evar_eq x1 x),(evar_eq x2 x); subst.
+      destruct (evar_eqdec x1 x),(evar_eqdec x2 x); subst.
       * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
       * reflexivity.
       * reflexivity.
@@ -110,12 +110,12 @@ Section semantics.
         update_evar_val x m1 (update_evar_val x m2 evar_val) = update_evar_val x m1 evar_val.
     Proof.
       intros. unfold update_evar_val. apply functional_extensionality.
-      intros. destruct (evar_eq x x0); reflexivity.
+      intros. destruct (evar_eqdec x x0); reflexivity.
     Qed.
 
     Lemma update_evar_val_same M x m ρₑ : @update_evar_val M x m ρₑ x = m.
     Proof.
-      unfold update_evar_val. destruct (evar_eq x x); simpl.
+      unfold update_evar_val. destruct (evar_eqdec x x); simpl.
       + reflexivity.
       + contradiction.
     Qed.
@@ -643,7 +643,7 @@ repeat
           simpl in Hbound.
           rewrite -> pattern_interpretation_free_evar_simpl in Hbound. destruct Hbound. 
           unfold update_evar_val.
-          destruct (evar_eq x x).
+          destruct (evar_eqdec x x).
           + simpl. reflexivity.
           + contradiction.
         }
@@ -729,7 +729,7 @@ repeat
       induction Hwfc.
       - intros. simpl in H. apply not_elem_of_singleton_1 in H.
         repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-        destruct (evar_eq v x) eqn:P.
+        destruct (evar_eqdec v x) eqn:P.
         + contradiction.
         + auto.
       - auto.
@@ -745,24 +745,24 @@ repeat
         apply FA_Union_same. intros.
         unfold Same_set, Included, In. split.
         + intros. remember (fresh_evar phi) as fresh1.
-          destruct (evar_eq fresh1 v).
+          destruct (evar_eqdec fresh1 v).
           * rewrite <- e in H2. rewrite update_evar_val_shadow in H2. assumption.
           * simpl in H1. rewrite update_evar_val_comm in H2. rewrite H0 in H2.
             -- assumption.
             -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
-            -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+            -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
                ++ rewrite (evar_open_size signature 0 fresh1). lia.
                ++ assumption.
                ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
                ++ unfold not. intro. rewrite H3 in n. contradiction.
             -- assumption.
         + intros. remember (fresh_evar phi) as fresh1.
-          destruct (evar_eq fresh1 v).
+          destruct (evar_eqdec fresh1 v).
           * rewrite e. rewrite update_evar_val_shadow. rewrite e in H2. assumption.
           * simpl in H1. rewrite update_evar_val_comm. rewrite H0.
             -- assumption.
             -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
-            -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+            -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
                ++ rewrite (evar_open_size signature 0 fresh1). lia.
                ++ assumption.
                ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
@@ -809,7 +809,7 @@ Proof.
       apply elem_of_singleton_2. auto.
     + (* free_svar *)
       repeat rewrite pattern_interpretation_free_svar_simpl.
-      unfold update_svar_val. destruct (svar_eq X x).
+      unfold update_svar_val. destruct (svar_eqdec X x).
       * simpl in H. simpl. unfold not in H. exfalso. apply H.
         apply elem_of_singleton_2. auto.
       * auto.
@@ -821,7 +821,7 @@ Proof.
       simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-        destruct (svar_eq X X). auto. contradiction.
+        destruct (svar_eqdec X X). auto. contradiction.
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * repeat rewrite pattern_interpretation_bound_svar_simpl; auto.
       * apply beq_nat_false in Heq. lia.
@@ -846,7 +846,7 @@ Proof.
       apply elem_of_singleton_2. auto.
     + (* free_svar *)
       repeat rewrite pattern_interpretation_free_svar_simpl.
-      unfold update_svar_val. destruct (svar_eq X x).
+      unfold update_svar_val. destruct (svar_eqdec X x).
       * simpl in H. simpl. unfold not in H. exfalso. apply H.
         apply elem_of_singleton_2. auto.
       * auto.
@@ -858,7 +858,7 @@ Proof.
       simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-        destruct (svar_eq X X). simpl. auto. contradiction.
+        destruct (svar_eqdec X X). simpl. auto. contradiction.
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * repeat rewrite pattern_interpretation_bound_svar_simpl; auto.
       * apply beq_nat_false in Heq. lia.
@@ -913,6 +913,7 @@ Proof.
       remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
       remember (fresh_evar phi1) as Xfr2.
       
+      Check (positive_occurrence_db).
       assert (He1e1':
          (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
          (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)
@@ -927,8 +928,8 @@ Proof.
       2: { intros. subst. unfold update_evar_val. unfold ssrbool.is_left.
            assert (Hfree: fresh_evar (bsvar_subst phi1 phi2 (S dbi)) =
                           fresh_evar (svar_open dbi X phi1)). admit.
-           destruct (evar_eq (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
-           (evar_eq (fresh_evar (svar_open dbi X phi1)) x). auto.
+           destruct (evar_eqdec (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
+           (evar_eqdec (fresh_evar (svar_open dbi X phi1)) x). auto.
            rewrite Hfree in e. admit.
            (*rewrite Hfree in n.*) admit.
            (*apply He1e2eq. simpl. auto. admit.*)admit. admit. }
@@ -956,7 +957,7 @@ Proof.
     2, 3: unfold well_formed_closed; simpl; trivial.
     repeat rewrite pattern_interpretation_free_evar_simpl.
     unfold update_evar_val.
-    destruct (evar_eq fresh1 x) eqn:P; destruct (evar_eq fresh2 x) eqn:P1.
+    destruct (evar_eqdec fresh1 x) eqn:P; destruct (evar_eqdec fresh2 x) eqn:P1.
     + rewrite e in HLs1. simpl in HLs1.
       eapply not_elem_of_singleton_1 in HLs1. contradiction.
     + rewrite e in HLs1. simpl in HLs1.
@@ -970,7 +971,7 @@ Proof.
     + apply beq_nat_true in P. assumption.
     + inversion Hwfb1.
     + simpl. apply Nat.eqb_eq in H. rewrite H. repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-      destruct (evar_eq fresh1 fresh1) eqn:P. destruct (evar_eq fresh2 fresh2) eqn:P1.
+      destruct (evar_eqdec fresh1 fresh1) eqn:P. destruct (evar_eqdec fresh2 fresh2) eqn:P1.
       auto. contradiction. contradiction.
   - erewrite IHsz. reflexivity. assumption. assumption. assumption. assumption. assumption.
   - erewrite IHsz. reflexivity. assumption. assumption. assumption. assumption. assumption.
@@ -1045,7 +1046,7 @@ Proof.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
     apply Extensionality_Ensembles. apply FA_Union_same. intros. unfold Same_set, Included, In. split.
     + intros. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
-      destruct (evar_eq fresh1 fresh2). 
+      destruct (evar_eqdec fresh1 fresh2). 
       * subst. auto.
       * epose (IHsz (evar_open (n0 + 1) fresh1 phi) 0 _ fresh11 fresh22 _ _ _ _   
                     (update_evar_val fresh1 c eval) sval c0).
@@ -1057,7 +1058,7 @@ Proof.
                     (update_evar_val fresh22 c0 eval) sval c).
         rewrite <- e. rewrite evar_open_comm. 2: lia.
         rewrite update_evar_val_comm. assumption.
-        destruct (evar_eq fresh1 fresh22).
+        destruct (evar_eqdec fresh1 fresh22).
         -- admit. (*TODO: Counterexample. *)
         -- assumption.
         -- admit. (* From Heqfresh22 *)
