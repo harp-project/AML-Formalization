@@ -11,6 +11,95 @@ Section ml_proof_system.
   Open Scope ml_scope.
 
   Context {signature : Signature}.
+
+
+Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+  (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
+  (well_formed phi) -> (@well_formed signature psi) ->
+  (forall axiom : Pattern,
+     Ensembles.In Pattern theory axiom ->
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar -> Power (Domain m)),
+     Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
+       (Full_set (@Domain signature m))) ->
+  Same_set (Domain m)
+  (pattern_interpretation evar_val svar_val
+     (patt_imp (patt_app (patt_exists phi) psi)
+        (patt_exists (patt_app phi psi)))) (Full_set (Domain m)).
+Proof.
+  intros Hwf H H0 Hv.
+  rewrite pattern_interpretation_imp_simpl.
+    constructor. constructor.
+    remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
+    left. assumption.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists le, re.
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars psi)).
+    admit.
+    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
+Admitted.
+
+Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
+      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+  (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
+  (well_formed phi) -> (well_formed psi) ->
+  (forall axiom : Pattern,
+     Ensembles.In Pattern theory axiom ->
+     forall (evar_val : evar -> Domain m)
+       (svar_val : svar ->
+                   Power (Domain m)),
+     Same_set (Domain m)
+       (pattern_interpretation evar_val svar_val axiom)
+       (Full_set (Domain m))) ->
+  (Same_set (Domain m)
+  (pattern_interpretation evar_val svar_val
+     (patt_imp (patt_app psi (patt_exists phi))
+        (patt_exists (patt_app psi phi))))
+  (Full_set (Domain m))).
+Proof.
+  intros Hwf H H0 Hv.
+  rewrite pattern_interpretation_imp_simpl.
+    constructor. constructor.
+    remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
+    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
+    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    unfold Included; intros. inversion H1; subst.
+    left. assumption.
+    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
+    destruct H2 as [c Hext_re].
+    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists le, re.
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars psi)).
+    admit.
+    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars phi)).
+    admit.
+    rewrite evar_open_fresh in Hext_re; try assumption.
+    rewrite update_valuation_fresh in Hext_re; try assumption.
+    repeat rewrite evar_open_fresh; try assumption.
+    repeat rewrite update_valuation_fresh; try assumption.
+    repeat split; assumption.
+    admit. admit.
+Admitted.
+
+
+  
   (* Proof system for AML ref. snapshot: Section 3 *)
   (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
   (* TODO: add well-formedness of theory *)
