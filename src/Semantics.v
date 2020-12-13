@@ -912,7 +912,7 @@ Proof.
       rewrite -> fresh_evar_svar_open in *.
       remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
       remember (fresh_evar phi1) as Xfr2.
-      
+      Check (positive_occurrence_db).
       assert (He1e1':
          (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
          (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)

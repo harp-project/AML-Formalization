@@ -2,6 +2,7 @@ Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
+From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
@@ -157,7 +158,7 @@ Section syntax.
     | patt_exists phi' => bsvar_occur phi' x
     | patt_mu phi' => bsvar_occur phi' (S x)
     end.
-  
+    
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
@@ -846,8 +847,8 @@ Section syntax.
       + simpl. trivial.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -856,8 +857,18 @@ Section syntax.
       + apply IHsz. lia. assumption. assumption. assumption.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite -> elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -866,18 +877,8 @@ Section syntax.
       + apply IHsz. lia. assumption. assumption. assumption.
     - rewrite elem_of_union.
       apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
-      apply not_or_and in Hlsv.
-      apply not_or_and in Hlsw.
-      destruct Hlsv, Hlsw.
-      split.
-      + apply IHsz. lia. assumption. assumption. assumption.
-      + apply IHsz. lia. assumption. assumption. assumption.
-    - rewrite elem_of_union.
-      apply and_not_or. 
-      rewrite elem_of_union in Hlsv.
-      rewrite elem_of_union in Hlsw.
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
       apply not_or_and in Hlsv.
       apply not_or_and in Hlsw.
       destruct Hlsv, Hlsw.
@@ -1175,10 +1176,10 @@ Section syntax.
     generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
     - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
     - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
-    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
-    - simpl. rewrite IHphi1_1. rewrite IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
     - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
-    - simpl. rewrite IHphi1. auto. auto.
+    - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
   Lemma fresh_evar_svar_open dbi X phi :
@@ -1238,7 +1239,7 @@ Section syntax.
   | sub_exists ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_exists ϕ₂)
   | sub_mu ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_mu ϕ₂)
   .
-  
+
   (*
   Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : bool :=
     orb (if (Pattern_eqdec phi1 phi2) then true else false)
@@ -1251,6 +1252,24 @@ Section syntax.
         end.
   *)
 
+  Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
+    bsvar_occur ϕ₁ dbi ->
+    is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    intros H. induction ϕ₁; simpl; simpl in H; try inversion H.
+    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
+      + lia.
+      + constructor. reflexivity.
+      + lia.
+    - move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_app_l. auto.
+      + apply sub_app_l. auto.
+      + apply sub_app_r. auto.
+      + done.
+    - Abort. (* TO BE FINISHED *)
+    
+  
   Lemma free_evars_subformula ϕ₁ ϕ₂ :
     is_subformula_of_ind ϕ₁ ϕ₂ -> free_evars ϕ₁ ⊆ free_evars ϕ₂.
   Proof.
