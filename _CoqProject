@@ -8,12 +8,13 @@ src/Utils/stdpp_ext.v
 src/Syntax.v
 src/Semantics.v
 src/ProofSystem.v
+src/DefaultVariables.v
+src/Logic.v
 
 src/Helpers/monotonic.v
+src/Helpers/FOL_helpers.v
 
-src/DefaultVariables.v
-src/FOL_helpers_locallynmlss.v
-src/Logic.v
 src/Theories/Definedness.v
 src/Theories/Sorts.v
+
 src/Tests/TEST_LocallyNameless.v
