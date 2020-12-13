@@ -159,7 +159,7 @@ Section monotonic.
         respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros phi dbi X Hpodb Hni.
-      pose proof (Hpno := not_free_implies_positive_negative_occurrence phi X Hni).
+      pose proof (Hpno := @not_free_implies_positive_negative_occurrence sig phi X Hni).
       unfold respects_blacklist. intros.
       split; intros.
       * firstorder using positive_negative_occurrence_db_named.
@@ -176,7 +176,7 @@ Section monotonic.
         respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros. destruct H as [Hpo Hwfp].
-      pose proof (Hfr := set_svar_fresh_is_fresh phi).
+      pose proof (Hfr := @set_svar_fresh_is_fresh sig phi).
       auto using positive_occurrence_respects_blacklist_svar_open.
     Qed.
 
@@ -421,7 +421,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := evar_open_wfp n phi Hsz' 0 fresh Hwfp).
+          pose proof (Hwfp' := @evar_open_wfp sig n phi Hsz' 0 fresh Hwfp).
           specialize (IHn Hsz' Hwfp' Bp Bn).
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.

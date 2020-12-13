@@ -750,7 +750,7 @@ repeat
           * simpl in H1. rewrite update_evar_val_comm in H2. rewrite H0 in H2.
             -- assumption.
             -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
-            -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+            -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
                ++ rewrite (evar_open_size signature 0 fresh1). lia.
                ++ assumption.
                ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
@@ -762,7 +762,7 @@ repeat
           * simpl in H1. rewrite update_evar_val_comm. rewrite H0.
             -- assumption.
             -- rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
-            -- apply (fresh_notin (size (evar_open 0 fresh1 phi))).
+            -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
                ++ rewrite (evar_open_size signature 0 fresh1). lia.
                ++ assumption.
                ++ rewrite Heqfresh1. apply set_evar_fresh_is_fresh.
@@ -912,6 +912,7 @@ Proof.
       rewrite -> fresh_evar_svar_open in *.
       remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
       remember (fresh_evar phi1) as Xfr2.
+      
       Check (positive_occurrence_db).
       assert (He1e1':
          (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =

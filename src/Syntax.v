@@ -1,8 +1,13 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
-From Coq Require Import ssreflect ssrfun ssrbool.
+
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
@@ -551,7 +556,7 @@ Section syntax.
   Proof.
     unfold fresh_evar.
     intros H.
-    pose proof (Hf := evar_fresh_is_fresh (elements (free_evars ϕ))).
+    pose proof (Hf := @evar_fresh_is_fresh _ (elements (free_evars ϕ))).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
@@ -562,7 +567,7 @@ Section syntax.
   Proof.
     unfold fresh_svar.
     intros H.
-    pose proof (Hf := svar_fresh_is_fresh (elements (free_svars ϕ))).
+    pose proof (Hf := @svar_fresh_is_fresh _ (elements (free_svars ϕ))).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
@@ -575,7 +580,7 @@ Section syntax.
   Proof.
     intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
-    apply (wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
+    apply (@wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
     clear H.
     apply set_evar_fresh_is_fresh.
   Qed.
@@ -588,7 +593,7 @@ Section syntax.
   Proof.
     split.
     - apply wfc_ex_to_wfc_body.
-    - apply (wfc_body_to_wfc_ex phi).
+    - apply wfc_body_to_wfc_ex.
   Qed.
 
   (*Similarly to the section above but with mu*)
@@ -643,7 +648,7 @@ Section syntax.
   Proof.
     intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
-    apply (wfc_aux_body_mu_imp2 phi 0 0 (fresh_svar phi)) in H. exact H.
+    apply wfc_aux_body_mu_imp2 with (X := fresh_svar phi) in H. exact H.
     apply set_svar_fresh_is_fresh.
   Qed.
 
@@ -655,7 +660,7 @@ Section syntax.
   Proof.
     split.
     - apply wfc_mu_to_wfc_body.
-    - apply (wfc_body_to_wfc_mu phi).
+    - apply wfc_body_to_wfc_mu.
   Qed.
 
   (* Similarly with positiveness *)
@@ -690,8 +695,8 @@ Section syntax.
       wf_body_ex phi.
   Proof.
     unfold wf_body_ex. intros. unfold well_formed in *. destruct H. split.
-    - apply (wfp_ex_to_wfp_body phi H). assumption.
-    - apply (wfc_ex_to_wfc_body phi H1). assumption.
+    - apply (@wfp_ex_to_wfp_body phi H). assumption.
+    - apply (@wfc_ex_to_wfc_body phi H1). assumption.
   Qed.
 
 
@@ -812,7 +817,7 @@ Section syntax.
     induction IHwf; firstorder.
     - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
     - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
-    - simpl. eapply (evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
+    - simpl. eapply (@evar_open_last _ _ _ _ (fresh_evar phi))in H0. erewrite H0. reflexivity. lia.
       apply set_evar_fresh_is_fresh.
     - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
       instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
@@ -1217,16 +1222,16 @@ Section syntax.
     : Pattern :=
     match C with
     | box => p
-    | ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
-    | ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
+    | @ctx_app_l C' p' prf => patt_app (subst_ctx C' p) p'
+    | @ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
     end.
 
   Fixpoint free_evars_ctx (C : Application_context)
     : (EVarSet) :=
     match C with
     | box => empty
-    | ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
-    | ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
+    | @ctx_app_l cc p prf => union (free_evars_ctx cc) (free_evars p)
+    | @ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
 
