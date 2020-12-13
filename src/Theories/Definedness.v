@@ -3,7 +3,6 @@
  *)
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
-Require Import MatchingLogic.locally_nameless.
 From MatchingLogic Require Import Syntax Semantics.
 From MatchingLogic.Utils Require Import Ensembles_Ext. 
 

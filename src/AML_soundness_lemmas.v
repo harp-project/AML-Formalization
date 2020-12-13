@@ -6,12 +6,12 @@ Require Export String.
 Require Export Coq.Program.Wf.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Logic.FunctionalExtensionality.
+From Coq Require Import ssrbool.
 
 From stdpp Require Import fin_sets.
 Require Import extralibrary.
 
 From MatchingLogic Require Import Syntax Semantics.
-Require Export locally_nameless.
 Require Import Lattice.
 Require Import stdpp_ext.
 
