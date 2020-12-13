@@ -272,7 +272,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
           unfold In.
           split; intros; rewrite -> pattern_interpretation_free_svar_simpl in *;
-            unfold update_svar_val in *; destruct (svar_eq X x); subst.
+            unfold update_svar_val in *; destruct (svar_eqdec X x); subst.
           * unfold respects_blacklist in H1.
             specialize (H1 x).
             destruct H1 as [Hneg Hpos].
@@ -489,7 +489,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             - apply Hx. constructor.
             - clear Hx. clear Hy.
               intros.
-              destruct (svar_eq X' V).
+              destruct (svar_eqdec X' V).
               + (* X' = V *)
                 rewrite <- e.
                 repeat rewrite -> update_svar_val_shadow.
@@ -560,7 +560,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             - apply Hy. constructor.
             - clear Hy. clear Hx.
               intros.
-              destruct (svar_eq X' V).
+              destruct (svar_eqdec X' V).
               + (* X' = V *)
                 rewrite <- e.
                 repeat rewrite -> update_svar_val_shadow.

@@ -102,7 +102,7 @@ Section definedness.
     rewrite -> pattern_interpretation_free_evar_simpl in H.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
-    destruct (evar_eq (nevar "x") (nevar "x") ).
+    destruct (evar_eqdec (nevar "x") (nevar "x") ).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].

@@ -6,13 +6,10 @@ From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
-  
+
 Class MLVariables := {
   evar : Type;
   svar : Type;
-  (* TODO remove _eq, use _eqdec instead *)
-  evar_eq : forall (v1 v2 : evar), {v1 = v2} + {v1 <> v2};
-  svar_eq : forall (v1 v2 : svar), {v1 = v2} + {v1 <> v2};
   evar_eqdec : EqDecision evar;
   evar_countable : Countable evar;
   svar_eqdec : EqDecision svar;
@@ -48,18 +45,6 @@ Section syntax.
 
   Context {signature : Signature}.
   Existing Instance variables.
-
-  (* TODO remove *)
-  Definition evar_eqb (v1 v2 : evar) : bool :=
-    match evar_eq v1 v2 with
-    | left _ => true
-    | right _ => false
-    end.
-  Definition svar_eqb (v1 v2 : svar) : bool :=
-    match svar_eq v1 v2 with
-    | left _ => true
-    | right _ => false
-    end.  
 
   Inductive Pattern : Type :=
   | patt_free_evar (x : evar)
@@ -135,7 +120,7 @@ Section syntax.
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
-    | patt_free_evar x' => if evar_eq x x' then psi else patt_free_evar x'
+    | patt_free_evar x' => if evar_eqdec x x' then psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -151,7 +136,7 @@ Section syntax.
   Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if svar_eq X X' then psi else patt_free_svar X'
+    | patt_free_svar X' => if svar_eqdec X X' then psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
@@ -211,7 +196,7 @@ Section syntax.
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
-    | patt_free_evar x' => if evar_eq x x' then patt_bound_evar level else patt_free_evar x'
+    | patt_free_evar x' => if evar_eqdec x x' then patt_bound_evar level else patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -1199,6 +1184,15 @@ Section syntax.
     | ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
+  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : Prop :=
+    phi1 = phi2 \/ match phi2 with
+                   | patt_app p q => is_subformula_of phi1 p \/ is_subformula_of phi1 q
+                   | patt_imp p q => is_subformula_of phi1 p \/ is_subformula_of phi1 q
+                   | patt_exists p => is_subformula_of phi1 p
+                   | patt_mu p => is_subformula_of phi1 p
+                   | _ => False
+                   end.
+                   
 
 End syntax.
 
