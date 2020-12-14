@@ -916,33 +916,44 @@ Proof.
       rewrite -> fresh_evar_svar_open in *.
       remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
       remember (fresh_evar phi1) as Xfr2.
-      Check bsvar_occur.
+
+      (* dbi may or may not occur in phi1 *)
       remember (bsvar_occur phi1 dbi) as Hoc.
-      (*
       move: HeqHoc.
-      case: Hoc.*)
-      
-      Check (positive_occurrence_db).
-      assert (He1e1':
-         (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
-         (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)
-        ). admit.
-      (* TODO: I'm not sure if this is true, but if it is then we can apply the IH
+      case: Hoc => HeqHoc.
+      -- (* dbi ocurs in phi1 *)
+        Search fresh_evar.
+        pose proof (HXfr1Fresh := @set_evar_fresh_is_fresh signature (bsvar_subst phi1 phi2 dbi)).
+        rewrite <- HeqXfr1 in HXfr1Fresh.
+        symmetry in HeqHoc.
+        pose proof (Hsub := @bsvar_subst_contains_subformula signature phi1 phi2 dbi HeqHoc).
+        Search evar_is_fresh_in.
+        pose proof (HXfr1Fresh2 := evar_fresh_in_subformula Hsub HXfr1Fresh).
+        (* Now we need a lemma saying that when X is fresh in Phi, we may update the valuation on X to whatever
+           and it will not change the interpretation. *)
+        assert (He1e1':
+                  (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
+                  (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)
+               ). admit.
+        (* TODO: I'm not sure if this is true, but if it is then we can apply the IH
          in a way where we have the same evar_val on both sides *)
-      rewrite He1e1'.
-      rewrite <- IHsz.
-      2: { rewrite <- evar_open_size. lia. auto. }
-      2: { admit. }
-      2: { auto. }
-      2: { intros. subst. unfold update_evar_val. unfold ssrbool.is_left.
-           assert (Hfree: fresh_evar (bsvar_subst phi1 phi2 (S dbi)) =
-                          fresh_evar (svar_open dbi X phi1)). admit.
-           destruct (evar_eqdec (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
-           (evar_eqdec (fresh_evar (svar_open dbi X phi1)) x). auto.
-           rewrite Hfree in e. admit.
-           (*rewrite Hfree in n.*) admit.
-           (*apply He1e2eq. simpl. auto. admit.*)admit. admit. }
-      2: { admit. }
+        rewrite He1e1'.
+        rewrite <- IHsz.
+        2: { rewrite <- evar_open_size. lia. auto. }
+        2: { admit. }
+        2: { auto. }
+        2: { intros. subst. unfold update_evar_val. unfold ssrbool.is_left.
+             assert (Hfree: fresh_evar (bsvar_subst phi1 phi2 (S dbi)) =
+                            fresh_evar (svar_open dbi X phi1)). admit.
+             destruct (evar_eqdec (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
+             (evar_eqdec (fresh_evar (svar_open dbi X phi1)) x). auto.
+             rewrite Hfree in e. admit.
+             (*rewrite Hfree in n.*) admit.
+             (*apply He1e2eq. simpl. auto. admit.*)admit. admit. }
+        2: { admit. }
+        admit.
+      -- (* dbi does not occur in phi1 *)
+        (* TODO a lemma: substitution is no-op *)
 
 Admitted.
 

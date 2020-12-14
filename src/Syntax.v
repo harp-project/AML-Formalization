@@ -552,8 +552,9 @@ Section syntax.
   Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
   Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
 
-  Lemma set_evar_fresh_is_fresh ϕ : fresh_evar ϕ ∉ free_evars ϕ.
+  Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
   Proof.
+    unfold evar_is_fresh_in.
     unfold fresh_evar.
     intros H.
     pose proof (Hf := @evar_fresh_is_fresh _ (elements (free_evars ϕ))).
@@ -563,8 +564,9 @@ Section syntax.
     apply elem_of_list_In in H. contradiction.
   Qed.
 
-  Lemma set_svar_fresh_is_fresh ϕ : fresh_svar ϕ ∉ free_svars ϕ.
+  Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
   Proof.
+    unfold svar_is_fresh_in.
     unfold fresh_svar.
     intros H.
     pose proof (Hf := @svar_fresh_is_fresh _ (elements (free_svars ϕ))).
@@ -1258,7 +1260,7 @@ Section syntax.
   *)
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
-    bsvar_occur ϕ₁ dbi ->
+    bsvar_occur ϕ₁ dbi = true ->
     is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
   Proof.
     generalize dependent dbi.
