@@ -506,48 +506,94 @@ Proof.
 Admitted.
      *)
 
-
       
-      (* Now we need a lemma saying that when X is fresh in Phi, we may update the valuation on X to whatever
-           and it will not change the interpretation. *)
-      (*
-      Check svar_is_fresh_in. Check pattern_interpretation. Check update_svar_val.
-      Lemma l X ϕ ρₑ ρₛ S:
+      Lemma Private_interpretation_fresh_svar sz X ϕ ρₑ ρₛ S:
+        size ϕ <= sz ->
         svar_is_fresh_in X ϕ ->
-        pattern_interpretation ρₑ ρₛ ϕ
-        = pattern_interpretation ρₑ (update_svar_val X S ρₛ) ϕ.
+        pattern_interpretation ρₑ (update_svar_val X S ρₛ) ϕ
+        = pattern_interpretation ρₑ ρₛ ϕ.
       Proof.
-        induction ϕ; simpl; intros H.
-        - repeat rewrite -> pattern_interpretation_free_evar_simpl.
+        generalize dependent S.
+        generalize dependent X.
+        generalize dependent ρₛ.
+        generalize dependent ρₑ.
+        generalize dependent ϕ.
+        induction sz.
+        - (* sz = 0 *)
+          destruct ϕ; simpl; intros ρₑ ρₛ X S Hsz H; try inversion Hsz.
+          + repeat rewrite -> pattern_interpretation_free_evar_simpl.    
           reflexivity.
-        - repeat rewrite -> pattern_interpretation_free_svar_simpl.
+        + repeat rewrite -> pattern_interpretation_free_svar_simpl.
           rewrite -> update_svar_val_neq.
           * auto.
           * unfold svar_is_fresh_in in H. simpl in H.
             apply not_elem_of_singleton_1 in H. auto.
-        - repeat rewrite -> pattern_interpretation_bound_evar_simpl.
+        + repeat rewrite -> pattern_interpretation_bound_evar_simpl.
           auto.
-        - repeat rewrite -> pattern_interpretation_bound_svar_simpl.
+        + repeat rewrite -> pattern_interpretation_bound_svar_simpl.
           auto.
-        - repeat rewrite -> pattern_interpretation_sym_simpl.
+        + repeat rewrite -> pattern_interpretation_sym_simpl.
           auto.
-        - repeat rewrite -> pattern_interpretation_app_simpl.
-          unfold svar_is_fresh_in in *. simpl in H.
-          apply not_elem_of_union in H. destruct H. 
-          rewrite -> IHϕ1. 2: auto.
-          rewrite -> IHϕ2. 2: auto.
+        + repeat rewrite -> pattern_interpretation_bott_simpl.
           auto.
-        - repeat rewrite -> pattern_interpretation_bott_simpl.
-          auto.
-        - repeat rewrite -> pattern_interpretation_imp_simpl.
-          unfold svar_is_fresh_in in *. simpl in H.
-          apply not_elem_of_union in H. destruct H. 
-          rewrite -> IHϕ1. 2: auto.
-          rewrite -> IHϕ2. 2: auto.
-          auto.
-        - simpl.
-          *)
+        - (* sz > 0 *)
+          destruct ϕ; simpl; intros ρₑ ρₛ X S Hsz H.
+          + (* free_evar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* free_svar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* bound_evar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* bound_svar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* sym *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* app *)
+            repeat rewrite -> pattern_interpretation_app_simpl.
+            unfold svar_is_fresh_in in *. simpl in H.
+            apply not_elem_of_union in H. destruct H.
+            repeat rewrite -> IHsz. auto. lia. auto. lia. auto.
+          + (* bot *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* imp *)
+            repeat rewrite -> pattern_interpretation_imp_simpl.
+            unfold svar_is_fresh_in in *. simpl in H.
+            apply not_elem_of_union in H. destruct H.
+            repeat rewrite -> IHsz. auto. lia. auto. lia. auto.
+         + (* exists *)
+           repeat rewrite -> pattern_interpretation_ex_simpl.
+           simpl. apply f_equal.
+           apply functional_extensionality.
+           intros. unfold svar_is_fresh_in in *. simpl in H.
+           rewrite -> IHsz. auto. rewrite <- evar_open_size. lia. auto.
+           rewrite -> free_svars_evar_open. auto.
+         + (* mu *)
+           repeat rewrite -> pattern_interpretation_mu_simpl.
+           simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+           intros S'. unfold svar_is_fresh_in in *. simpl in H.
+           destruct (svar_eqdec X (fresh_svar ϕ)).
+           * subst. rewrite -> update_svar_val_shadow. auto.
+           * rewrite -> update_svar_val_comm. 2: auto.
+             rewrite -> IHsz. auto.
+             rewrite <- svar_open_size. lia. auto.
+             pose proof (Fsso := @free_svars_svar_open _ ϕ (fresh_svar ϕ) 0).
+             rewrite -> elem_of_subseteq in Fsso.
+             unfold not. intros H'.
+             specialize (Fsso X H').
+             rewrite -> elem_of_union in Fsso.
+             destruct Fsso.
+             -- apply elem_of_singleton_1 in H0. contradiction.
+             -- contradiction.
+      Qed.
 
+      Lemma interpretation_fresh_svar X ϕ ρₑ ρₛ S:
+        svar_is_fresh_in X ϕ ->
+        pattern_interpretation ρₑ (update_svar_val X S ρₛ) ϕ
+        = pattern_interpretation ρₑ ρₛ ϕ.
+      Proof.
+        apply Private_interpretation_fresh_svar with (sz := size ϕ).
+        lia.
+      Qed.
       
     (*
 Ltac proof_ext_val :=
@@ -1143,6 +1189,8 @@ Proof.
 
 Admitted. (* update_val_fresh_12 *)
 
+
+Search not free_evars.
 
 Module Notations.
   Declare Scope ml_scope.
