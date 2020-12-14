@@ -1213,6 +1213,28 @@ Section syntax.
     simpl. unfold patt_and. unfold patt_not. reflexivity.
   Qed.
 
+  Lemma free_svars_svar_open ϕ X dbi :
+    free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ; intros dbi; simpl; try apply empty_subseteq.
+    - apply union_subseteq_r.
+    - destruct (n =? dbi).
+      + simpl. apply union_subseteq_l.
+      + simpl. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - auto.
+    - auto.
+  Qed.
   
   Inductive Application_context : Type :=
   | box
