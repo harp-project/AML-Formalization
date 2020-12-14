@@ -90,7 +90,15 @@ Section semantics.
       intros. destruct (svar_eqdec X x); reflexivity.
     Qed.
 
-
+    Lemma update_svar_val_neq M (ρₛ : @SVarVal M) X1 S X2 :
+      X1 <> X2 -> update_svar_val X1 S ρₛ X2 = ρₛ X2.
+    Proof.
+      unfold update_svar_val. intros.
+      destruct (svar_eqdec X1 X2); simpl.
+      - contradiction.
+      - auto.
+    Qed.
+    
     Lemma update_evar_val_comm M :
       forall (x1 x2 : evar) (m1 m2 : Domain M) (evar_val : @EVarVal M),
         x1 <> x2 ->
@@ -124,6 +132,14 @@ Section semantics.
       + contradiction.
     Qed.
 
+    Lemma update_evar_val_neq M (ρₑ : @EVarVal M) x1 e x2 :
+      x1 <> x2 -> update_evar_val x1 e ρₑ x2 = ρₑ x2.
+    Proof.
+      unfold update_evar_val. intros.
+      destruct (evar_eqdec x1 x2); simpl.
+      - contradiction.
+      - auto.
+    Qed.
 
     Definition app_ext {m : Model}
                (l r : Power (Domain m)) :
