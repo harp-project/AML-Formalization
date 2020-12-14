@@ -1261,18 +1261,29 @@ Section syntax.
     bsvar_occur ϕ₁ dbi ->
     is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
   Proof.
-    intros H. induction ϕ₁; simpl; simpl in H; try inversion H.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
     - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
       + lia.
       + constructor. reflexivity.
       + lia.
-    - move: H H1 IHϕ₁1 IHϕ₁2.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
       case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
       + apply sub_app_l. auto.
       + apply sub_app_l. auto.
       + apply sub_app_r. auto.
       + done.
-    - Abort. (* TO BE FINISHED *)
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_r. auto.
+      + done.
+    - apply sub_exists. auto.
+    - apply sub_mu. apply IHϕ₁. auto.
+  Qed.
     
   
   Lemma free_evars_subformula ϕ₁ ϕ₂ :
