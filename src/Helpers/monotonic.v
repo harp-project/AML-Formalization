@@ -495,9 +495,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := update_svar_val_comm M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm sig M X' V x0 x svar_val n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := update_svar_val_comm M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm sig M X' V x0 y svar_val n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar V) (Empty_set svar)).
@@ -566,9 +566,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := update_svar_val_comm M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm sig M X' V x0 x svar_val n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := update_svar_val_comm M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm sig M X' V x0 y svar_val n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar V)).
