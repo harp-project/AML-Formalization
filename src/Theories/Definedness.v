@@ -137,7 +137,8 @@ Section definedness.
     assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (pattern_interpretation evar_val svar_val phi) ).
     { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
     
-    pose proof (Hincl' := app_ext_monotonic_r
+    pose proof (Hincl' := @app_ext_monotonic_r
+                            sig
                             M
                             (pattern_interpretation evar_val svar_val (patt_sym (inj definedness)))
                             (Singleton (Domain M) x)
@@ -170,7 +171,7 @@ Section definedness.
         Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
   Proof.
     intros.
-    pose proof (H1 := empty_impl_not_full _ H0).
+    pose proof (H1 := @empty_impl_not_full sig M _ H0).
     pose proof (H2 := modus_tollens _ _ (definedness_not_empty_1 M H phi evar_val svar_val) H1).
     apply NNPP in H2. apply H2.
   Qed.
@@ -186,7 +187,7 @@ Section definedness.
           (Empty_set (Domain M)).
   Proof.
     intros.
-    pose proof (H1 := full_impl_not_empty _ H0).
+    pose proof (H1 := full_impl_not_empty H0).
     exact (modus_tollens _ _ (definedness_empty_1 M H phi evar_val svar_val) H1).
   Qed.
 
@@ -252,7 +253,7 @@ Section definedness.
           (Full_set (Domain M)).
   Proof.
     intros.
-    pose proof (H1 := empty_impl_not_full _ H0).
+    pose proof (H1 := empty_impl_not_full H0).
     pose proof (H2 := modus_tollens _ _ (totality_full M H phi evar_val svar_val) H1).
     apply H2.
   Qed.
@@ -286,8 +287,8 @@ Section definedness.
                  (Full_set (Domain M)).
   Proof.
     unfold patt_subseteq. intros.
-    apply (full_impl_not_empty _) in H0.
-    apply (full_impl_not_empty _) in H1.
+    apply full_impl_not_empty in H0.
+    apply full_impl_not_empty in H1.
     apply (totality_result_nonempty _ H) in H0.
     apply (totality_result_nonempty _ H) in H1.
     unfold patt_equal.

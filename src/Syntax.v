@@ -552,8 +552,9 @@ Section syntax.
   Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
   Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
 
-  Lemma set_evar_fresh_is_fresh ϕ : fresh_evar ϕ ∉ free_evars ϕ.
+  Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
   Proof.
+    unfold evar_is_fresh_in.
     unfold fresh_evar.
     intros H.
     pose proof (Hf := @evar_fresh_is_fresh _ (elements (free_evars ϕ))).
@@ -563,8 +564,9 @@ Section syntax.
     apply elem_of_list_In in H. contradiction.
   Qed.
 
-  Lemma set_svar_fresh_is_fresh ϕ : fresh_svar ϕ ∉ free_svars ϕ.
+  Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
   Proof.
+    unfold svar_is_fresh_in.
     unfold fresh_svar.
     intros H.
     pose proof (Hf := @svar_fresh_is_fresh _ (elements (free_svars ϕ))).
@@ -1211,6 +1213,28 @@ Section syntax.
     simpl. unfold patt_and. unfold patt_not. reflexivity.
   Qed.
 
+  Lemma free_svars_svar_open ϕ X dbi :
+    free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ; intros dbi; simpl; try apply empty_subseteq.
+    - apply union_subseteq_r.
+    - destruct (n =? dbi).
+      + simpl. apply union_subseteq_l.
+      + simpl. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - auto.
+    - auto.
+  Qed.
   
   Inductive Application_context : Type :=
   | box
@@ -1258,21 +1282,32 @@ Section syntax.
   *)
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
-    bsvar_occur ϕ₁ dbi ->
+    bsvar_occur ϕ₁ dbi = true ->
     is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
   Proof.
-    intros H. induction ϕ₁; simpl; simpl in H; try inversion H.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
     - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
       + lia.
       + constructor. reflexivity.
       + lia.
-    - move: H H1 IHϕ₁1 IHϕ₁2.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
       case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
       + apply sub_app_l. auto.
       + apply sub_app_l. auto.
       + apply sub_app_r. auto.
       + done.
-    - Abort. (* TO BE FINISHED *)
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_r. auto.
+      + done.
+    - apply sub_exists. auto.
+    - apply sub_mu. apply IHϕ₁. auto.
+  Qed.
     
   
   Lemma free_evars_subformula ϕ₁ ϕ₂ :
