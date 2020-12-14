@@ -506,6 +506,49 @@ Proof.
 Admitted.
      *)
 
+
+      
+      (* Now we need a lemma saying that when X is fresh in Phi, we may update the valuation on X to whatever
+           and it will not change the interpretation. *)
+      (*
+      Check svar_is_fresh_in. Check pattern_interpretation. Check update_svar_val.
+      Lemma l X ϕ ρₑ ρₛ S:
+        svar_is_fresh_in X ϕ ->
+        pattern_interpretation ρₑ ρₛ ϕ
+        = pattern_interpretation ρₑ (update_svar_val X S ρₛ) ϕ.
+      Proof.
+        induction ϕ; simpl; intros H.
+        - repeat rewrite -> pattern_interpretation_free_evar_simpl.
+          reflexivity.
+        - repeat rewrite -> pattern_interpretation_free_svar_simpl.
+          rewrite -> update_svar_val_neq.
+          * auto.
+          * unfold svar_is_fresh_in in H. simpl in H.
+            apply not_elem_of_singleton_1 in H. auto.
+        - repeat rewrite -> pattern_interpretation_bound_evar_simpl.
+          auto.
+        - repeat rewrite -> pattern_interpretation_bound_svar_simpl.
+          auto.
+        - repeat rewrite -> pattern_interpretation_sym_simpl.
+          auto.
+        - repeat rewrite -> pattern_interpretation_app_simpl.
+          unfold svar_is_fresh_in in *. simpl in H.
+          apply not_elem_of_union in H. destruct H. 
+          rewrite -> IHϕ1. 2: auto.
+          rewrite -> IHϕ2. 2: auto.
+          auto.
+        - repeat rewrite -> pattern_interpretation_bott_simpl.
+          auto.
+        - repeat rewrite -> pattern_interpretation_imp_simpl.
+          unfold svar_is_fresh_in in *. simpl in H.
+          apply not_elem_of_union in H. destruct H. 
+          rewrite -> IHϕ1. 2: auto.
+          rewrite -> IHϕ2. 2: auto.
+          auto.
+        - simpl.
+          *)
+
+      
     (*
 Ltac proof_ext_val :=
 simpl;intros;
@@ -803,7 +846,6 @@ repeat
           * rewrite -> free_evars_svar_open. assumption.
         + rewrite -> H2. reflexivity.
     Qed.
-
 
     
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
