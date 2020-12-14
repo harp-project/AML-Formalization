@@ -782,12 +782,12 @@ repeat
       forall phi,
         well_formed_closed phi ->
         forall v,
-          v ∉ (free_evars phi) ->
+          evar_is_fresh_in v phi ->
           forall evar_val svar_val c,
             @pattern_interpretation m (update_evar_val v c evar_val) svar_val phi =
             @pattern_interpretation m evar_val svar_val phi.
     Proof.
-      
+      unfold evar_is_fresh_in.
       intros phi Hwfc. apply wfc_wfc_ind in Hwfc.
       induction Hwfc.
       - intros. simpl in H. apply not_elem_of_singleton_1 in H.
