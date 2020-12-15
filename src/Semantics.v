@@ -896,7 +896,9 @@ repeat
     
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
-   or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2 *)
+   or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
+ TODO prefix with Private_ and creaate a wrapper.
+*)
 Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
     size phi1 <= sz -> forall    (evar_val1 evar_val2 : EVarVal)
                                  (svar_val : SVarVal) (X : svar), (* TODO X not free in ?? *)
@@ -1035,10 +1037,18 @@ Proof.
         pose proof (HXfr1Fresh2 := evar_fresh_in_subformula Hsub HXfr1Fresh).
         (* Now we need a lemma saying that when X is fresh in Phi, we may update the valuation on X to whatever
            and it will not change the interpretation. *)
+
+        assert (Hinterp:
+                  (pattern_interpretation evar_val1 svar_val phi2) =
+                  (pattern_interpretation evar_val1' svar_val phi2)
+               ).
+        { subst. (*Search pattern_interpretation update_evar_val.*) admit. (*   Check interpretation_fresh_evar. *) }
+        
         assert (He1e1':
                   (update_svar_val X (pattern_interpretation evar_val1 svar_val phi2) svar_val) =
                   (update_svar_val X (pattern_interpretation evar_val1' svar_val phi2) svar_val)
-               ). admit.
+               ).
+        { admit.  }
         (* TODO: I'm not sure if this is true, but if it is then we can apply the IH
          in a way where we have the same evar_val on both sides *)
         rewrite He1e1'.
