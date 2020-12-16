@@ -1446,6 +1446,22 @@ Section syntax.
       + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
         apply free_evars_subformula. auto.
   Qed.
+
+  Lemma bsvar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:
+    ~ bsvar_occur ϕ₁ dbi ->
+    bsvar_subst ϕ₁ ϕ₂ dbi = ϕ₁.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
+    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
+      + unfold not in H. exfalso. apply H. auto.
+      + unfold not in H. exfalso. apply H. auto.
+      + unfold not in H. exfalso. apply H. auto.
+      + auto.
+      + contradiction.
+      + (* So it is not a no-op, since bvar_subst replaces all the indices greater than dbi.
+           Why? *)
+  Abort.
   
   
 End syntax.

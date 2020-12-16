@@ -1081,7 +1081,8 @@ Proof.
         apply Same_set_refl.
       -- (* dbi does not occur in phi1 *)
         (* TODO a lemma: substitution is no-op *)
-        simpl.
+        
+        simpl. Search bsvar_subst bsvar_occur.
 
 Admitted.
 
