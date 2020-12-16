@@ -1421,6 +1421,31 @@ Section syntax.
     - auto.
     - auto.
   Qed.
+
+  Lemma free_evars_bsvar_subst_1 ϕ₁ ϕ₂ dbi:
+    free_evars ϕ₁ ⊆ free_evars (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi; simpl; try apply reflexivity.
+    - apply empty_subseteq.
+    - apply union_mono; auto.
+    - apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_evars_bsvar_subst_eq ϕ₁ ϕ₂ dbi:
+    bsvar_occur ϕ₁ dbi ->
+    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) = free_evars ϕ₁ ∪ free_evars ϕ₂.
+  Proof.
+    intros H.
+    apply (anti_symm subseteq).
+    - apply free_evars_bsvar_subst.
+    - apply union_least.
+      + apply free_evars_bsvar_subst_1.
+      + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+        apply free_evars_subformula. auto.
+  Qed.
   
   
 End syntax.

@@ -1093,17 +1093,14 @@ Proof.
         2: { auto. }
         2: {
           intros. subst. unfold fresh_evar.
-          (*
-  update_evar_val (evar_fresh (elements (free_evars (bsvar_subst phi1 phi2 dbi)))) c evar_val1 x =
-  update_evar_val (evar_fresh (elements (free_evars phi1) \cup (free_evars phi2))) c evar_val2 x
- *)
-             Search free_evars bsvar_subst.
-             Search free_evars evar_open.
-             unfold update_evar_val. unfold ssrbool.is_left.
-             destruct (evar_eqdec (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),
-             (evar_eqdec (fresh_evar (svar_open dbi X phi1)) x). auto.
-             admit.
-             (*apply He1e2eq. simpl. auto. admit.*)admit. admit. admit. }
+          rewrite -> free_evars_bsvar_subst_eq.
+          rewrite -> free_evars_svar_open.
+          unfold update_evar_val. unfold ssrbool.is_left.
+          destruct (evar_eqdec (evar_fresh (elements (free_evars phi1 ∪ free_evars phi2))) x).
+          auto. apply He1e2eq. 2: auto.
+          (* x ∈ free_evars (patt_exists phi1) *)
+          admit.
+          
         2: { admit. }
         admit.
       -- (* dbi does not occur in phi1 *)
