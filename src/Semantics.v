@@ -1097,7 +1097,7 @@ Proof.
   update_evar_val (evar_fresh (elements (free_evars (bsvar_subst phi1 phi2 dbi)))) c evar_val1 x =
   update_evar_val (evar_fresh (elements (free_evars phi1) \cup (free_evars phi2))) c evar_val2 x
  *)
-             
+             Search free_evars bsvar_subst.
              Search free_evars evar_open.
              unfold update_evar_val. unfold ssrbool.is_left.
              destruct (evar_eqdec (fresh_evar (bsvar_subst phi1 phi2 (S dbi))) x),

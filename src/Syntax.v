@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Setoid.
 Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
@@ -1374,6 +1375,40 @@ Section syntax.
     apply free_svars_subformula in Hsub.
     auto.
   Qed.
+
+  Lemma free_evars_bsvar_subst ϕ₁ ϕ₂ dbi:
+    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) ⊆ free_evars ϕ₁ ∪ free_evars ϕ₂.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros db; simpl.
+    - apply union_subseteq_l.
+    - apply empty_subseteq.
+    - apply empty_subseteq.
+    - destruct (compare_nat n db); simpl.
+      + apply empty_subseteq.
+      + apply union_subseteq_r.
+      +  apply empty_subseteq.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_evars (bsvar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_evars (bsvar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_evars ϕ₁1) as B1.
+      remember (free_evars ϕ₁2) as B2.
+      remember (free_evars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - admit.
+    - admit.
+    - admit.
+    - admit.
+  Admitted.
+  
   
 End syntax.
 
