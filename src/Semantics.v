@@ -1080,9 +1080,30 @@ Proof.
         }
         apply Same_set_refl.
       -- (* dbi does not occur in phi1 *)
-        (* TODO a lemma: substitution is no-op *)
+        rewrite -> bsvar_subst_not_occur_is_noop.
+        (* X is not free in phi1, so the fact that in svar_val2' it is updated to some value is irrelevant. *)
+        assert (Hpi: pattern_interpretation evar_val2' svar_val2' (evar_open 0 Xu phi1')
+                     = pattern_interpretation evar_val2' svar_val (evar_open 0 Xu phi1')).
+        { admit.  }
+        rewrite -> Hpi.
+
+        subst phi1'.
+        (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc).
+           We need a lemma for that. *)
+        assert (Hsv: svar_open dbi X phi1 = phi1).
+        { admit. }
+        rewrite -> Hsv.
         
-        simpl. Search bsvar_subst bsvar_occur.
+        subst evar_val1'. subst evar_val2'.
+        Check interpretation_fresh_evar.
+
+        rewrite -> interpretation_fresh_evar with (y := Xu).
+        apply Same_set_refl.
+        admit. admit. admit.
+
+    + (* Mu case *)
+      admit.
+        
 
 Admitted.
 
