@@ -116,6 +116,18 @@ Section syntax.
     | patt_mu phi' => patt_mu (bevar_subst phi' psi x)
     end.
 
+  (* In the Leroy's PoplMark paper (https://xavierleroy.org/publi/POPLmark-locally-nameless.pdf),
+     the substitution for bounded variables (called `vsubst` decrements the index of bound variables)
+     that are greater than `x`. I have no idea why. Here we want  bsvar_subst to have the property
+     that if `x` is not present in the formula, then the substitution is no-op (see the lemma
+     `bsvar_subst_not_occur_is_noop`).
+     Therefore,
+     our version keeps the greater indices intact. If someone needs the original behavior,
+     she may write a standalone operation that only decrements high indices.
+
+     The function `bevar_subst` is kept in the original form, since I do not have a use-case
+     for the simplified version yet. But feel free to simplify it too.
+   *)
   Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
     match phi with
     | patt_free_evar x' => patt_free_evar x'
@@ -124,7 +136,7 @@ Section syntax.
     | patt_bound_svar n => match compare_nat n x with
                            | Nat_less _ _ _ => patt_bound_svar n
                            | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_svar (pred n)
+                           | Nat_greater _ _ _ => patt_bound_svar n (* (pred n) in Leroy's paper *)
                            end
     | patt_sym sigma => patt_sym sigma
     | patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
@@ -1448,21 +1460,29 @@ Section syntax.
   Qed.
 
   Lemma bsvar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:
-    ~ bsvar_occur ϕ₁ dbi ->
+    bsvar_occur ϕ₁ dbi = false ->
     bsvar_subst ϕ₁ ϕ₂ dbi = ϕ₁.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
     - case_bool_decide; case: (compare_nat n dbi); move=> H'.
-      + unfold not in H. exfalso. apply H. auto.
-      + unfold not in H. exfalso. apply H. auto.
-      + unfold not in H. exfalso. apply H. auto.
+      + inversion H.
+      + inversion H.
+      + inversion H.
       + auto.
       + contradiction.
-      + (* So it is not a no-op, since bvar_subst replaces all the indices greater than dbi.
-           Why? *)
-  Abort.
-  
+      + auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+  Qed.
   
 End syntax.
 
