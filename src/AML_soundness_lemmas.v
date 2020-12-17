@@ -1184,7 +1184,7 @@ Admitted.
 Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
-  (well_formed phi) -> (@well_formed sig psi) ->
+  (well_formed (ex, phi)) -> (@well_formed sig psi) ->
   (forall axiom : Pattern,
      In Pattern theory axiom ->
      forall (evar_val : evar -> Domain m)
@@ -1210,16 +1210,23 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars psi)).
-    admit.
-    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars phi)).
-    admit.
-    rewrite evar_open_fresh in Hext_re; try assumption.
-    rewrite update_valuation_fresh in Hext_re; try assumption.
-    repeat rewrite evar_open_fresh; try assumption.
-    repeat rewrite update_valuation_fresh; try assumption.
-    repeat split; assumption.
-    admit. admit.
+    - split. 2: split.
+      + admit.
+      + rewrite evar_open_fresh. 
+        rewrite update_valuation_fresh.
+        assumption.
+        destruct H0. assumption.
+        assert (fresh_evar (phi $ psi) ∉ free_evars (phi $ psi)).
+        {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl in H2. rewrite -> elem_of_union in H2.
+          apply not_or_and in H2. destruct H2.
+          assumption.
+        }
+        destruct H0. assumption.
+    + assumption.
 Admitted.
 
 Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
@@ -1387,11 +1394,11 @@ Proof.
           destruct (evar_eq fresh1 fresh22).
           -- rewrite e0 in e. rewrite -> update_evar_val_shadow in e.
              
-             (* instantiate IHsz with some signature and model to derive a contradiction *)
              
+             (* instantiate IHsz with some signature and model to derive a contradiction *)
 
              (*evar_open 0 fresh22 (patt_b_evar 0) = free_evar fresh22*)
-             Search update_evar_val.
+             
              admit. (*TODO: Counterexample. *)
           -- assumption.
           -- admit. (* From Heqfresh22 *)
