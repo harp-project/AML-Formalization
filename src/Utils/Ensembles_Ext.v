@@ -596,3 +596,9 @@ Proof.
   + constructor.
   + apply H in H0. inversion H0. subst. assumption.
 Qed.
+
+Lemma eq_to_Same_set {T : Type} {A B : Ensemble T} :
+  A = B -> Same_set T A B.
+Proof.
+  intros H. rewrite -> H. apply Same_set_refl.
+Qed.
