@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Setoid.
 Require Import List.
 Require Import Ensembles.
 Require Import Coq.Strings.String.
@@ -115,6 +116,18 @@ Section syntax.
     | patt_mu phi' => patt_mu (bevar_subst phi' psi x)
     end.
 
+  (* In the Leroy's PoplMark paper (https://xavierleroy.org/publi/POPLmark-locally-nameless.pdf),
+     the substitution for bounded variables (called `vsubst` decrements the index of bound variables)
+     that are greater than `x`. I have no idea why. Here we want  bsvar_subst to have the property
+     that if `x` is not present in the formula, then the substitution is no-op (see the lemma
+     `bsvar_subst_not_occur_is_noop`).
+     Therefore,
+     our version keeps the greater indices intact. If someone needs the original behavior,
+     she may write a standalone operation that only decrements high indices.
+
+     The function `bevar_subst` is kept in the original form, since I do not have a use-case
+     for the simplified version yet. But feel free to simplify it too.
+   *)
   Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
     match phi with
     | patt_free_evar x' => patt_free_evar x'
@@ -123,7 +136,7 @@ Section syntax.
     | patt_bound_svar n => match compare_nat n x with
                            | Nat_less _ _ _ => patt_bound_svar n
                            | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_svar (pred n)
+                           | Nat_greater _ _ _ => patt_bound_svar n (* (pred n) in Leroy's paper *)
                            end
     | patt_sym sigma => patt_sym sigma
     | patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
@@ -1373,6 +1386,127 @@ Section syntax.
     intros Hsub Hfresh.
     apply free_svars_subformula in Hsub.
     auto.
+  Qed.
+
+  Lemma free_evars_bsvar_subst ϕ₁ ϕ₂ dbi:
+    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) ⊆ free_evars ϕ₁ ∪ free_evars ϕ₂.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros db; simpl.
+    - apply union_subseteq_l.
+    - apply empty_subseteq.
+    - apply empty_subseteq.
+    - destruct (compare_nat n db); simpl.
+      + apply empty_subseteq.
+      + apply union_subseteq_r.
+      +  apply empty_subseteq.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_evars (bsvar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_evars (bsvar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_evars ϕ₁1) as B1.
+      remember (free_evars ϕ₁2) as B2.
+      remember (free_evars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_evars (bsvar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_evars (bsvar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_evars ϕ₁1) as B1.
+      remember (free_evars ϕ₁2) as B2.
+      remember (free_evars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_evars_bsvar_subst_1 ϕ₁ ϕ₂ dbi:
+    free_evars ϕ₁ ⊆ free_evars (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi; simpl; try apply reflexivity.
+    - apply empty_subseteq.
+    - apply union_mono; auto.
+    - apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_evars_bsvar_subst_eq ϕ₁ ϕ₂ dbi:
+    bsvar_occur ϕ₁ dbi ->
+    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) = free_evars ϕ₁ ∪ free_evars ϕ₂.
+  Proof.
+    intros H.
+    apply (anti_symm subseteq).
+    - apply free_evars_bsvar_subst.
+    - apply union_least.
+      + apply free_evars_bsvar_subst_1.
+      + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+        apply free_evars_subformula. auto.
+  Qed.
+
+  Lemma bsvar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:
+    bsvar_occur ϕ₁ dbi = false ->
+    bsvar_subst ϕ₁ ϕ₂ dbi = ϕ₁.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
+    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
+      + inversion H.
+      + inversion H.
+      + inversion H.
+      + auto.
+      + contradiction.
+      + auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+  Qed.
+
+  Lemma svar_open_not_occur_is_noop ϕ₁ X dbi:
+    bsvar_occur ϕ₁ dbi = false ->
+    svar_open dbi X ϕ₁ = ϕ₁.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
+    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
+      + inversion H.
+      + inversion H.
+      + inversion H.
+      + rewrite <- Nat.eqb_neq in H0. rewrite -> H0. auto.
+      + contradiction.
+      + rewrite <- Nat.eqb_neq in H0. rewrite -> H0. auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
   Qed.
   
 End syntax.
