@@ -1483,6 +1483,31 @@ Section syntax.
     - rewrite -> IHϕ₁. 2: auto. auto.
     - rewrite -> IHϕ₁. 2: auto. auto.
   Qed.
+
+  Lemma svar_open_not_occur_is_noop ϕ₁ X dbi:
+    bsvar_occur ϕ₁ dbi = false ->
+    svar_open dbi X ϕ₁ = ϕ₁.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
+    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
+      + inversion H.
+      + inversion H.
+      + inversion H.
+      + rewrite <- Nat.eqb_neq in H0. rewrite -> H0. auto.
+      + contradiction.
+      + rewrite <- Nat.eqb_neq in H0. rewrite -> H0. auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
+  Qed.
   
 End syntax.
 

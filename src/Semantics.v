@@ -907,8 +907,8 @@ repeat
  TODO prefix with Private_ and creaate a wrapper.
 *)
 Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
-    size phi1 <= sz -> forall    (evar_val : EVarVal)
-                                 (svar_val : SVarVal) (X : svar), (* TODO X not free in ?? *)
+    size phi1 <= sz -> forall (evar_val : EVarVal)
+                              (svar_val : SVarVal) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
     ~ elem_of X (free_svars phi1) ->
@@ -1072,31 +1072,25 @@ Proof.
         { subst. auto.  }
         rewrite <- He1e2.
         rewrite <- IHsz.
-        2: { rewrite <- evar_open_size. lia. auto. }
-        2: { admit. }
-        2: { auto. }
-        2: {
-          rewrite -> free_svars_evar_open. auto.
-        }
-        apply Same_set_refl.
+        * apply Same_set_refl.
+        * rewrite <- evar_open_size. lia. auto.
+        * admit.
+        * auto.
+        * rewrite -> free_svars_evar_open. auto.
       -- (* dbi does not occur in phi1 *)
         rewrite -> bsvar_subst_not_occur_is_noop.
-        (* X is not free in phi1, so the fact that in svar_val2' it is updated to some value is irrelevant. *)
-        assert (Hpi: pattern_interpretation evar_val2' svar_val2' (evar_open 0 Xu phi1')
-                     = pattern_interpretation evar_val2' svar_val (evar_open 0 Xu phi1')).
-        { admit.  }
-        rewrite -> Hpi.
-
-        subst phi1'.
         (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc).
            We need a lemma for that. *)
-        assert (Hsv: svar_open dbi X phi1 = phi1).
-        { admit. }
-        rewrite -> Hsv.
-        
+        symmetry in HeqHoc. apply svar_open_not_occur_is_noop with (X0:=X) in HeqHoc.
+        (* X is not free in phi1, so the fact that in svar_val2' it is updated to some 
+           value is irrelevant. *)
+        assert (Hpi: pattern_interpretation evar_val2' svar_val2' (evar_open 0 Xu phi1')
+                   = pattern_interpretation evar_val2' svar_val (evar_open 0 Xu phi1')).
+        { subst svar_val2'. apply interpretation_fresh_svar. unfold svar_is_fresh_in.
+          rewrite -> free_svars_evar_open. subst phi1'. rewrite -> HeqHoc. auto.
+        }
+        rewrite -> Hpi. subst phi1'. rewrite -> HeqHoc.
         subst evar_val1'. subst evar_val2'.
-        Check interpretation_fresh_evar.
-
         rewrite -> interpretation_fresh_evar with (y := Xu).
         apply Same_set_refl.
         admit. admit. admit.
