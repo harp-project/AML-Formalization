@@ -27,13 +27,38 @@ Module test_1.
   Definition sym (s : Symbols) : @Pattern signature :=
     @patt_sym signature s.
   Definition evar (sname : string) : @Pattern signature :=
-    @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
+    @patt_free_evar signature (find_fresh_evar_name (evar_c sname) nil).
   Definition svar (sname : string) : @Pattern signature :=
-    @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil).
+    @patt_free_svar signature (find_fresh_svar_name (svar_c sname) nil).
 
+  Lemma evar_open_sym db x s : evar_open db x (sym s) = sym s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_sym db X s : svar_open db X (sym s) = sym s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma evar_open_evar db x s : evar_open db x (evar s) = evar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_evar db X s : svar_open db X (evar s) = evar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma evar_open_svar db x s : evar_open db x (svar s) = svar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_svar db X s : svar_open db X (svar s) = svar s.
+  Proof. cbn. unfold sym. auto. Qed.
+
+  Hint Rewrite ->
+  evar_open_sym
+    svar_open_sym
+    evar_open_evar
+    svar_open_evar
+    evar_open_svar
+    svar_open_svar
+    : ml_db.
+    
   (* Example patterns *)
 
   Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+
+  Example e1 X: evar_open 0 X more = more.
+  Proof. unfold more. autorewrite with ml_db. reflexivity. Qed.
 
   (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
 

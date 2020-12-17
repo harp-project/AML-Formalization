@@ -296,6 +296,29 @@ Section syntax.
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
 
+  (* The following lemmas are trivial but useful for autorewrite. *)
+  Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = if beq_nat x k then patt_free_evar n else patt_bound_evar x.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_sym k n s: evar_open k n (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_app k n ls rs: evar_open k n (patt_app ls rs) = patt_app (evar_open k n ls) (evar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma evar_open_bott k n: evar_open k n patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (k + 1) n p').
+  Proof. reflexivity. Qed.
+  Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
+  Proof. reflexivity. Qed.  
+  
+
   Fixpoint svar_open (k : db_index) (n : svar)
            (p : Pattern) : Pattern :=
     match p with
@@ -311,6 +334,7 @@ Section syntax.
     | patt_mu p' => patt_mu (svar_open (k + 1) n p')
     end.
 
+  (* TODO the signature is already in the context! *)
   Lemma evar_open_size :
     forall (signature : Signature) (k : db_index) (n : evar) (p : Pattern),
       size p = size (evar_open k n p).
@@ -1510,6 +1534,22 @@ Section syntax.
   Qed.
   
 End syntax.
+
+Hint Rewrite ->
+     @evar_open_free_evar
+     @evar_open_free_svar
+     @evar_open_bound_evar
+     @evar_open_bound_svar
+     @evar_open_sym
+     @evar_open_bott
+     @evar_open_app
+     @evar_open_imp
+     @evar_open_exists
+     @evar_open_mu
+     @evar_open_not
+     @evar_open_or
+     @evar_open_and
+  : ml_db.
 
 Module Notations.
   Declare Scope ml_scope.
