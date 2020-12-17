@@ -133,7 +133,7 @@ Section syntax.
     | patt_free_evar x' => patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar n => patt_bound_evar n
-    | patt_bound_svar n => match compare_nat n x with
+    | patt_bound_svar n => match compare_nat n x with (* TODO simplify - use nat_eqdec or however it is called. We need only two cases *)
                            | Nat_less _ _ _ => patt_bound_svar n
                            | Nat_equal _ _ _ => psi
                            | Nat_greater _ _ _ => patt_bound_svar n (* (pred n) in Leroy's paper *)
@@ -334,6 +334,28 @@ Section syntax.
     | patt_mu p' => patt_mu (svar_open (k + 1) n p')
     end.
 
+
+  Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = if beq_nat X k then patt_free_svar n else patt_bound_svar X.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_app k n ls rs: svar_open k n (patt_app ls rs) = patt_app (svar_open k n ls) (svar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bott k n: svar_open k n patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_imp k n ls rs: svar_open k n (patt_imp ls rs) = patt_imp (svar_open k n ls) (svar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
+  Proof. reflexivity. Qed.
+  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (k + 1) n p').
+  Proof. reflexivity. Qed.
+  
   Lemma evar_open_size :
     forall (k : db_index) (n : evar) (p : Pattern),
       size p = size (evar_open k n p).
@@ -1234,20 +1256,23 @@ Section syntax.
     apply free_evars_svar_open.
   Qed.
 
-    Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
-  Proof.
-    simpl. unfold patt_not. reflexivity.
-  Qed.
+  Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
+  Proof. simpl. unfold patt_not. reflexivity. Qed.
 
   Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-  Proof.
-    simpl. unfold patt_or. unfold patt_not. reflexivity.
-  Qed.
+  Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
 
   Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-  Proof.
-    simpl. unfold patt_and. unfold patt_not. reflexivity.
-  Qed.
+  Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
+  Proof. simpl. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+  Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+  Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
   Lemma free_svars_svar_open ϕ X dbi :
     free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
@@ -1548,6 +1573,20 @@ Hint Rewrite ->
      @evar_open_not
      @evar_open_or
      @evar_open_and
+
+     @svar_open_free_evar
+     @svar_open_free_svar
+     @svar_open_bound_evar
+     @svar_open_bound_svar
+     @svar_open_sym
+     @svar_open_bott
+     @svar_open_app
+     @svar_open_imp
+     @svar_open_exists
+     @svar_open_mu
+     @svar_open_not
+     @svar_open_or
+     @svar_open_and
   : ml_db.
 
 Module Notations.
