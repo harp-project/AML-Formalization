@@ -77,11 +77,9 @@ Module test_2.
       * decide equality.
     Qed.
 
-    Instance signature : Signature :=
-      {| symbols := Symbols;
-         sym_eq := Symbols_dec;
-         variables := DefaultMLVariables;
-      |}.
+    Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
+    Instance signature : Signature := @SignatureFromSymbols symbols_H.
+    
 
     Instance definedness_syntax : Definedness.Syntax :=
       {|
@@ -94,16 +92,6 @@ Module test_2.
       Sorts.imported_definedness := definedness_syntax;
       |}.
     
-    (* The same helpers as in the previous case. Maybe we can abstract it somehow?*)
-    (* But it does not make sense to have them visible globally - use 'Let' instead of 'Definition' *)
-    Let sym (s : Symbols) : @Pattern signature :=
-      @patt_sym signature s.
-    Let evar (sname : string) : @Pattern signature :=
-      @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
-    Let svar (sname : string) : @Pattern signature :=
-      @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
-    .
-
     Example test_pattern_0 : Pattern := sym sym_c.
     Example test_pattern_1 := @patt_defined signature definedness_syntax (sym sym_c).
     Example test_pattern_2 := patt_defined (sym sym_c).
