@@ -66,11 +66,11 @@ Section definedness.
     forall (M : @Model sig) (evar_val : @EVarVal sig M) (svar_val : @SVarVal (sig) M),
       M ⊨ᵀ theory ->
       forall (m: Domain M),
-        Same_set (Domain M)
-                 (Full_set (Domain M))
-                 (app_ext (pattern_interpretation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)).
+                 (app_ext (pattern_interpretation evar_val svar_val (sym definedness)) (Singleton (Domain M) m)) = Full.
   Proof.
     intros.
+    symmetry.
+    apply Extensionality_Ensembles.
     unfold app_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
@@ -80,6 +80,7 @@ Section definedness.
     unfold satisfies_model in H.
     remember (update_evar_val (nevar "x") m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
+    apply eq_to_Same_set in H.
     unfold Same_set in H. destruct H as [_ H].
     unfold Included in H.
     specialize (H x).
@@ -106,12 +107,8 @@ Section definedness.
   Lemma definedness_not_empty_1 : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        ~ Same_set (Domain M)
-          (@pattern_interpretation (sig) M evar_val svar_val phi)
-          (Empty_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi))
-                 (Full_set (Domain M)).
+        (@pattern_interpretation (sig) M evar_val svar_val phi) <> Empty ->
+        (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi)) = Full.
   Proof.
     intros.
     pose (H' := Not_Empty_Contains_Elements (pattern_interpretation evar_val svar_val phi) H0).
@@ -121,13 +118,16 @@ Section definedness.
     
     pose proof (H'' := definedness_model_application M evar_val svar_val H x).
     unfold sym in H''.
+    apply Extensionality_Ensembles.
     apply Same_set_symmetric.
     apply Same_set_Full_set.
+    apply eq_to_Same_set in H''.
     unfold Same_set in H''.
-    destruct H'' as [H'' _].
+    destruct H'' as [_ H''].
     assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (pattern_interpretation evar_val svar_val phi) ).
     { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
-    
+
+    Check app_ext_monotonic_r.
     pose proof (Hincl' := @app_ext_monotonic_r
                             sig
                             M
@@ -136,19 +136,19 @@ Section definedness.
                             (pattern_interpretation evar_val svar_val phi)
                             Hincl
                ).
-    apply Included_transitive with (S2 := app_ext (pattern_interpretation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). assumption. assumption.
+    apply Included_transitive with (S2 := app_ext (pattern_interpretation evar_val svar_val (patt_sym (inj definedness))) (Singleton (Domain M) x)). 2: assumption. assumption.
 
   Qed.
 
   Lemma definedness_empty_1 : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val phi) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)).
+        @pattern_interpretation sig M evar_val svar_val phi = Empty ->
+        @pattern_interpretation sig M evar_val svar_val (patt_defined phi) = Empty.
   Proof.
     intros. unfold patt_defined.
     rewrite -> pattern_interpretation_app_simpl.
-    rewrite -> (Same_set_to_eq H0).
+    rewrite -> H0.
     apply app_ext_bot_r.
   Qed.
 
@@ -158,8 +158,8 @@ Section definedness.
   Lemma definedness_empty_2 : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi)) (Empty_set (Domain M)) ->
-        Same_set (Domain M) (@pattern_interpretation (sig) M evar_val svar_val phi) (Empty_set (Domain M)).
+        @pattern_interpretation sig M evar_val svar_val (patt_defined phi) = Empty ->
+        @pattern_interpretation sig M evar_val svar_val phi = Empty.
   Proof.
     intros.
     pose proof (H1 := @empty_impl_not_full sig M _ H0).
@@ -170,12 +170,8 @@ Section definedness.
   Lemma definedness_not_empty_2 : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_defined phi))
-                 (Full_set (Domain M)) ->
-        ~ Same_set (Domain M)
-          (@pattern_interpretation (sig) M evar_val svar_val phi)
-          (Empty_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_defined phi) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val phi <> Empty.
   Proof.
     intros.
     pose proof (H1 := full_impl_not_empty H0).
@@ -185,63 +181,59 @@ Section definedness.
   Lemma totality_not_full : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        ~ Same_set (Domain M)
-          (@pattern_interpretation (sig) M evar_val svar_val phi)
-          (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
-                 (Empty_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val phi <> Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_total phi) = Empty.
   Proof.
     intros.
-    assert (Hnonempty : ~ Same_set (Domain M) (pattern_interpretation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+    assert (Hnonempty : pattern_interpretation evar_val svar_val (patt_not phi) <> Empty).
     { unfold not. unfold not in H0. intros. rewrite -> pattern_interpretation_not_simpl in H1.
       (* TODO extract these three (or two?) steps into a separate lemmma: swap_compl *)
+      apply eq_to_Same_set in H1.
       apply Same_set_Compl in H1.
+      apply Extensionality_Ensembles in H1.
       rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (pattern_interpretation evar_val svar_val phi))) in H1.
+      unfold Empty in H1.
       rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M) )) in H1.
       apply H0. apply H1.
     }
     unfold patt_total. rewrite -> pattern_interpretation_not_simpl.
+    apply Extensionality_Ensembles.
     apply Same_set_Compl.
     rewrite -> (Same_set_to_eq (Compl_Compl_Ensembles (Domain M) (pattern_interpretation evar_val svar_val
-                                                                                (patt_defined (patt_not phi))))).
+                                                                                         (patt_defined (patt_not phi))))).
+    unfold Empty.
     rewrite -> (Same_set_to_eq (@Complement_Empty_is_Full (Domain M))).
+    apply eq_to_Same_set.
     apply definedness_not_empty_1. apply H. apply Hnonempty.
   Qed.
 
   Lemma totality_full : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi)
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val phi = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_total phi) = Full.
   Proof.
     intros.
     unfold patt_total.
     rewrite -> pattern_interpretation_not_simpl.
-    assert(H1: Same_set (Domain M) (pattern_interpretation evar_val svar_val (patt_not phi)) (Empty_set (Domain M))).
+    assert(H1: pattern_interpretation evar_val svar_val (patt_not phi) = Empty).
     { rewrite -> pattern_interpretation_not_simpl.
-      rewrite -> (Same_set_to_eq H0).
+      rewrite -> H0.
+      apply Extensionality_Ensembles.
       apply Complement_Full_is_Empty.
     }
 
     pose proof (H2 := definedness_empty_1 M H (patt_not phi) evar_val svar_val H1).
-    rewrite -> (Same_set_to_eq H2).
+    rewrite -> H2.
+    apply Extensionality_Ensembles.
     apply Complement_Empty_is_Full.
   Qed.
 
   Lemma totality_result_empty : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
-                 (Empty_set (Domain M)) ->
-        ~ Same_set (Domain M)
-          (@pattern_interpretation (sig) M evar_val svar_val phi)
-          (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_total phi) = Empty ->
+        @pattern_interpretation (sig) M evar_val svar_val phi <> Full.
   Proof.
     intros.
     pose proof (H1 := empty_impl_not_full H0).
@@ -252,12 +244,8 @@ Section definedness.
   Lemma totality_result_nonempty : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        ~Same_set (Domain M)
-         (@pattern_interpretation (sig) M evar_val svar_val (patt_total phi))
-         (Empty_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi)
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_total phi) <> Empty ->
+        @pattern_interpretation (sig) M evar_val svar_val phi = Full.
   Proof.
     intros.
     pose proof (H2 := modus_tollens _ _ (totality_not_full M H phi evar_val svar_val) H0).
@@ -267,15 +255,9 @@ Section definedness.
   Lemma both_subseteq_imp_eq : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full.
   Proof.
     unfold patt_subseteq. intros.
     apply full_impl_not_empty in H0.
@@ -286,8 +268,10 @@ Section definedness.
     apply (totality_full _ H).
     unfold "<--->".
     rewrite -> pattern_interpretation_and_simpl.
-    rewrite -> (Same_set_to_eq H0).
-    rewrite -> (Same_set_to_eq H1).
+    rewrite -> H0.
+    rewrite -> H1.
+    apply Extensionality_Ensembles.
+    unfold Full.
     rewrite -> (Same_set_to_eq (Intersection_Full_l _)).
     apply Same_set_refl.
   Qed.
@@ -295,16 +279,10 @@ Section definedness.
   Lemma equal_impl_both_subseteq : forall (M : @Model (sig)),        
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)) ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
         (
-          Same_set (Domain M)
-                   (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
-                   (Full_set (Domain M)) /\
-          Same_set (Domain M)
-                   (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1))
-                   (Full_set (Domain M))).
+          @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full /\
+          @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1) = Full).
   Proof.
     intros.
     unfold patt_equal in H0.
@@ -312,7 +290,9 @@ Section definedness.
     apply (totality_result_nonempty _ H) in H0.
     unfold "<--->" in H0.
     rewrite ->pattern_interpretation_and_simpl in H0.
+    apply eq_to_Same_set in H0.
     apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
+    apply Extensionality_Ensembles in H1. apply Extensionality_Ensembles in H2.
     unfold patt_subseteq.
     apply (totality_full _ H) in H1.
     apply (totality_full _ H) in H2.
@@ -322,9 +302,7 @@ Section definedness.
   Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
-                 (Full_set (Domain M)) ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full ->
         Included (Domain M)
                  (@pattern_interpretation (sig) M evar_val svar_val phi1)
                  (@pattern_interpretation (sig) M evar_val svar_val phi2).
@@ -334,6 +312,7 @@ Section definedness.
     apply full_impl_not_empty in H0.
     apply (totality_result_nonempty _ H) in H0.
     rewrite -> pattern_interpretation_imp_simpl in H0.
+    apply eq_to_Same_set in H0.
     unfold Same_set in H0. destruct H0 as [_ H0].
     unfold Included in *. intros. specialize (H0 x).
     assert (H' : In (Domain M) (Full_set (Domain M)) x).
@@ -350,14 +329,13 @@ Section definedness.
         Included (Domain M)
                  (@pattern_interpretation (sig) M evar_val svar_val phi1)
                  (@pattern_interpretation (sig) M evar_val svar_val phi2) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full.
   Proof.
     intros.
     unfold patt_subseteq.
     apply (totality_full _ H).
     rewrite -> pattern_interpretation_imp_simpl.
+    apply Extensionality_Ensembles.
     apply Same_set_symmetric.
     apply Same_set_Full_set.
     unfold Included in *.
@@ -370,12 +348,9 @@ Section definedness.
   Lemma equal_impl_interpr_same : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi2).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val phi1
+        = @pattern_interpretation (sig) M evar_val svar_val phi2.
   Proof.
     intros.
     apply (equal_impl_both_subseteq _ H) in H0.
@@ -383,20 +358,19 @@ Section definedness.
     apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
     apply (subseteq_impl_interpr_subseteq _ H) in Hsub2.
     unfold Same_set.
+    apply Extensionality_Ensembles.
     split; assumption.
   Qed.
 
   Lemma interpr_same_impl_equal : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi2) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val phi1
+        = @pattern_interpretation (sig) M evar_val svar_val phi2 ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full.
   Proof.
-    intros. unfold Same_set in H0.
+    intros.
+    apply eq_to_Same_set in H0.
     destruct H0 as [Hincl1 Hincl2].
     apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
     apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
@@ -406,64 +380,52 @@ Section definedness.
   Lemma equal_refl : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi phi))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi phi) = Full.
   Proof.
     intros.
     apply (interpr_same_impl_equal _ H).
-    apply Same_set_refl.
+    auto.
   Qed.
 
   Lemma equal_sym : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi1))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi1) = Full.
   Proof.
     intros.
     apply (interpr_same_impl_equal _ H).
     apply (equal_impl_interpr_same _ H) in H0.
-    apply Same_set_symmetric.
-    assumption.
+    symmetry. auto.
   Qed.
 
   Lemma equal_trans : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 phi3 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi3))
-                 (Full_set (Domain M)) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi3))
-                 (Full_set (Domain M)).
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi3) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi3) = Full.
   Proof.
     intros.
     apply (interpr_same_impl_equal _ H).
     apply (equal_impl_interpr_same _ H) in H0.
     apply (equal_impl_interpr_same _ H) in H1.
-    eauto using Same_set_transitive.
+    rewrite -> H0. auto.
   Qed.
 
   Lemma free_evar_in_patt_1 : forall (M : @Model sig),
       M ⊨ᵀ theory ->
       forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
         In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x) ->
-        Same_set (Domain M)
-                 (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
-                 (Full_set (Domain M)).
+        @pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi) = Full.
   Proof.
     intros.
     unfold patt_in.
     apply (definedness_not_empty_1 _ H).
-    apply Contains_Elements_Not_Empty.
+    Check Contains_Elements_Not_Empty.
+    intros Contra.
+    apply eq_to_Same_set in Contra.
+    apply Contains_Elements_Not_Empty in Contra. auto.
     exists (evar_val x).
     rewrite -> pattern_interpretation_and_simpl.
     split.
@@ -475,26 +437,27 @@ Section definedness.
   Lemma free_evar_in_patt_2 : forall (M : @Model sig),
       M ⊨ᵀ theory ->
       forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
-        Same_set (Domain M)
-                 (@pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi))
-                 (Full_set (Domain M)) ->
+        @pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi) = Full ->
         In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x).
   Proof.
     intros.
     unfold patt_in in H0.
     apply (definedness_not_empty_2 _ H) in H0.
-    apply Not_Empty_Contains_Elements in H0.
-    destruct H0.
-    rewrite -> pattern_interpretation_and_simpl in H0.
-    destruct H0.
-    rewrite -> pattern_interpretation_free_evar_simpl in H0.
-    unfold In in H0. inversion H0. subst. assumption.
+    unfold not in H0.
+    assert (H0': Same_set _ (pattern_interpretation evar_val svar_val (patt_free_evar x and phi)) Empty -> False).
+    { intros Contra. apply H0. apply Extensionality_Ensembles. auto.  }
+    apply Not_Empty_Contains_Elements in H0'.
+    destruct H0' as [x0 H0'].
+    rewrite -> pattern_interpretation_and_simpl in H0'.
+    destruct H0'.
+    rewrite -> pattern_interpretation_free_evar_simpl in H1.
+    unfold In in H1. inversion H1. subst. assumption.
   Qed.
 
   Lemma T_predicate_defined : forall ϕ, T_predicate theory (patt_defined ϕ).
   Proof.
     intros. unfold T_predicate. intros. unfold M_predicate. intros.
-    pose proof (Hlr := classic (Same_set (Domain M) (pattern_interpretation ρₑ ρₛ ϕ) (Empty_set (Domain M)))).
+    pose proof (Hlr := classic ( pattern_interpretation ρₑ ρₛ ϕ = Empty )).
     destruct Hlr.
     + apply definedness_empty_1 in H0. right. apply H0. apply H.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.

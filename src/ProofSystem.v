@@ -223,9 +223,10 @@ Proof.
   * repeat rewrite pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
     unfold Included; intros; apply Union_is_or.
     inversion H1. left. assumption. right. apply Union_intror. assumption.
 
@@ -265,9 +266,10 @@ Proof.
     pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
 
+    apply Extensionality_Ensembles.
     constructor. constructor.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
     unfold Included; intros; unfold In. inversion H2.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
@@ -276,14 +278,15 @@ Proof.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    apply Extensionality_Ensembles.
     apply Union_Compl_Fullset.
 
   * rewrite pattern_interpretation_iff_subset in IHHp2.
-    apply Same_set_to_eq in IHHp1; try assumption.
-    constructor. constructor. rewrite <- IHHp1. apply IHHp2; assumption.
+    apply Extensionality_Ensembles.
+    constructor. constructor. rewrite <- IHHp1. apply IHHp2; assumption. assumption.
 
   * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_ex_simpl.
-    unfold instantiate.
+    unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros. admit.
 
@@ -291,16 +294,18 @@ Proof.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_l; eapply Same_set_to_eq in H1; unfold Semantics.Empty in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_r; eapply Same_set_to_eq in H1; unfold Semantics.Empty in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
@@ -314,10 +319,11 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (app_ext (Ensembles.Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
     - right; subst Xext_union; unfold In; unfold app_ext.
@@ -338,10 +344,11 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (app_ext Xpsi (Ensembles.Union (Domain m) Xphi1 Xphi2)) as Xext_union.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H2; clear H2.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
     unfold Included; unfold In; intros. inversion H2.
     - left; assumption.
     - right; subst Xext_union; unfold In; unfold app_ext.
@@ -377,10 +384,11 @@ Proof.
     split. apply IHHp. admit. assumption.
     assumption.
 
-  * constructor. constructor.
+  * apply Extensionality_Ensembles.
+    constructor. constructor.
+    apply eq_to_Same_set in IHHp.
     destruct IHHp. admit.
-    clear H. unfold Included in *.
-    intros. apply H0 in H. clear H0.
+    unfold Included in *.
     admit.
     
   * apply pattern_interpretation_iff_subset. simpl.
@@ -420,10 +428,10 @@ Proof.
 
   * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
     simpl in IHHp. rewrite pattern_interpretation_imp_simpl in IHHp.
+    apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included. intros.
-    destruct IHHp. admit. clear H0.
-    unfold Included in H1.
+    destruct IHHp. admit.
     left. unfold In. unfold Complement. unfold not. unfold In. unfold Ensembles_Ext.mu.
     unfold FA_Inters_cond. intros.
     (*

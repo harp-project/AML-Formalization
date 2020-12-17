@@ -163,6 +163,7 @@ Module test_2.
          app_interp := my_app_interp;
       |}.
 
+    (* TODO a tactic that solves this, or a parameterized lemma. *)
     Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
     Proof.
       unfold satisfies_model. intros.
@@ -171,7 +172,7 @@ Module test_2.
       unfold patt_defined.
       rewrite -> pattern_interpretation_app_simpl.
       rewrite -> pattern_interpretation_sym_simpl.
-      simpl.
+      simpl. apply Extensionality_Ensembles.
       apply Same_set_symmetric. apply Same_set_Full_set.
       unfold Included. intros.
       clear H. (* useless *)
