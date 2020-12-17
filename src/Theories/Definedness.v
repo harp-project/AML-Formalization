@@ -58,13 +58,16 @@ Section definedness.
     | AxDefinedness => patt_defined (evarn "x")
     end.
 
-  Definition theory : Ensemble Pattern := fun p => exists a, p = axiom a.
+  Definition named_axioms : NamedAxioms := {| NAName := AxiomName; NAAxiom := axiom; |}.
+
+  Definition theory := theory_of_NamedAxioms named_axioms.
   
 (*
   Definition satisfies_axioms (M : Model) := forall (ax_name : AxiomName),
       satisfies_model M (axiom ax_name).
  *)
 
+  (* TODO generalize and move to Semantics.v *)
   Lemma theoryAxiom: forall (M : @Model sig), M ⊨ᵀ theory -> forall a, M ⊨ᴹ (axiom a).
   Proof.
     intros. unfold satisfies_theory in H.
