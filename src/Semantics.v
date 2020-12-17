@@ -803,6 +803,16 @@ repeat
     Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
       fun p => exists (n : NAName NAs), p = NAAxiom n.
 
+    Lemma satisfies_theory_impl_satisfies_named_axiom NAs M:
+      satisfies_theory M (theory_of_NamedAxioms NAs) ->
+      forall (n : NAName NAs), satisfies_model M (NAAxiom n).
+    Proof.
+      intros. unfold satisfies_theory in H.
+      specialize (H (NAAxiom n)). apply H.
+      unfold In. unfold theory_of_NamedAxioms.
+      exists n. auto.
+    Qed.
+    
     (* TODO do we want to make this a type class? *)
     Record NamedAxiomsIncluded (NA₁ NA₂ : NamedAxioms) :=
       { NAIinj : NAName NA₁ -> NAName NA₂;

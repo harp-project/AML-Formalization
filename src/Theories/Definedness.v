@@ -62,19 +62,6 @@ Section definedness.
 
   Definition theory := theory_of_NamedAxioms named_axioms.
   
-(*
-  Definition satisfies_axioms (M : Model) := forall (ax_name : AxiomName),
-      satisfies_model M (axiom ax_name).
- *)
-
-  (* TODO generalize and move to Semantics.v *)
-  Lemma theoryAxiom: forall (M : @Model sig), M ⊨ᵀ theory -> forall a, M ⊨ᴹ (axiom a).
-  Proof.
-    intros. unfold satisfies_theory in H.
-    specialize (H (axiom a)). apply H.
-    unfold In. unfold theory. exists a. reflexivity.
- Qed.
-  
   Lemma definedness_model_application :
     forall (M : @Model sig) (evar_val : @EVarVal sig M) (svar_val : @SVarVal (sig) M),
       M ⊨ᵀ theory ->
@@ -87,7 +74,8 @@ Section definedness.
     unfold app_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
-    pose proof (H' := theoryAxiom M H AxDefinedness). simpl in H'.
+    pose proof (H' := satisfies_theory_impl_satisfies_named_axiom H AxDefinedness).
+    simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
     remember (update_evar_val (nevar "x") m evar_val) as evar_val'.
