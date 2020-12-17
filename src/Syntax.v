@@ -334,9 +334,8 @@ Section syntax.
     | patt_mu p' => patt_mu (svar_open (k + 1) n p')
     end.
 
-  (* TODO the signature is already in the context! *)
   Lemma evar_open_size :
-    forall (signature : Signature) (k : db_index) (n : evar) (p : Pattern),
+    forall (k : db_index) (n : evar) (p : Pattern),
       size p = size (evar_open k n p).
   Proof.
     intros. generalize dependent k.
@@ -349,7 +348,7 @@ Section syntax.
   Qed.
 
   Lemma svar_open_size :
-    forall (signature : Signature) (k : db_index) (n : svar) (p : Pattern),
+    forall (k : db_index) (n : svar) (p : Pattern),
       size p = size (svar_open k n p).
   Proof.
     intros. generalize dependent k.
@@ -792,9 +791,9 @@ Section syntax.
     - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
     - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
     - constructor. apply wfc_ex_to_wfc_body in Hwf. unfold wfc_body_ex in Hwf. intros. 
-      apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz. exact signature.
+      apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz.
     - constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
-      apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz. exact signature.
+      apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz.
   Qed.
 
   Lemma wfc_wfc_ind phi: well_formed_closed phi -> well_formed_closed_induc phi.

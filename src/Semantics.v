@@ -293,8 +293,8 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       Next Obligation. intros. subst. simpl; lia. Defined.
       Next Obligation. intros. subst. simpl; lia. Defined.
       Next Obligation. intros. subst. simpl; lia. Defined.
-      Next Obligation. intros. subst. simpl; rewrite <- evar_open_size. lia. apply signature. Defined.
-      Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. apply signature. Defined.
+      Next Obligation. intros. subst. simpl; rewrite <- evar_open_size. lia. Defined.
+      Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. Defined.
       Next Obligation. Tactics.program_simpl. Defined.
 
       (* TODO: Need to be able to simplify Program Fixpoint definitions *)
@@ -773,8 +773,7 @@ repeat
         rewrite <- Heqmm' in Hϕ.
         apply predicate_not_empty_impl_full.
         + rewrite -> Heqx. unfold fresh_evar in Hmp. assumption.
-        + Check Contains_Elements_Not_Empty.
-          intros Contra. apply eq_to_Same_set in Contra.
+        + intros Contra. apply eq_to_Same_set in Contra.
           apply Contains_Elements_Not_Empty in Contra.
           apply Contra. exists m. unfold In in Hϕ. apply Hϕ.
       - constructor. exists m.
@@ -941,7 +940,7 @@ repeat
             -- assumption.
             -- rewrite -> Heqfresh1. apply set_evar_fresh_is_fresh.
             -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
-               ++ rewrite -> (evar_open_size signature 0 fresh1). lia.
+               ++ rewrite -> (evar_open_size 0 fresh1). lia.
                ++ assumption.
                ++ rewrite -> Heqfresh1. apply set_evar_fresh_is_fresh.
                ++ unfold not. intro. rewrite -> H3 in n. contradiction.
@@ -953,7 +952,7 @@ repeat
             -- assumption.
             -- rewrite -> Heqfresh1. apply set_evar_fresh_is_fresh.
             -- apply (@fresh_notin signature (size (evar_open 0 fresh1 phi))).
-               ++ rewrite -> (evar_open_size signature 0 fresh1). lia.
+               ++ rewrite -> (evar_open_size 0 fresh1). lia.
                ++ assumption.
                ++ rewrite -> Heqfresh1. apply set_evar_fresh_is_fresh.
                ++ unfold not. intro. rewrite -> H3 in n. contradiction.
@@ -1154,7 +1153,7 @@ Proof.
         rewrite <- He1e2.
         rewrite <- IHsz.
         * apply Same_set_refl.
-        * rewrite <- evar_open_size. lia. auto.
+        * rewrite <- evar_open_size. lia. 
         * admit.
         * auto.
         * rewrite -> free_svars_evar_open. auto.
@@ -1234,9 +1233,6 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
-  (*
-    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 $ phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). lia.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_app_simpl.
     simpl in HLs1, HLs2.
     rewrite -> elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
@@ -1251,9 +1247,6 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
-  (*
-    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.
-    + erewrite <- evar_open_size. erewrite <- evar_open_size. lia. exact sig. exact sig.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
     simpl in HLs1, HLs2. rewrite -> elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
@@ -1267,9 +1260,6 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
-  (*
-    + erewrite <- evar_open_size. erewrite <- evar_open_size. simpl. lia. exact sig. exact sig.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.*)
   - simpl. simpl in Hsz. repeat rewrite pattern_interpretation_imp_simpl.
     simpl in HLs1, HLs2. rewrite -> elem_of_union in HLs1, HLs2. apply not_or_and in HLs1. apply not_or_and in HLs2.
     destruct HLs1, HLs2. 
@@ -1283,9 +1273,6 @@ Proof.
     + assumption.
     + apply (wfc_ind_wfc). assumption.
     + apply (wfc_ind_wfc). assumption.
-  (*
-    + rewrite <- (evar_open_size sig n0 fresh2 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.
-    + rewrite <- (evar_open_size sig n0 fresh1 (phi1 ---> phi2)). rewrite <- (evar_open_size sig 0 fresh2 (phi1 $ phi2)). simpl. lia.*)
   - simpl. repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     remember (fresh_evar (evar_open (n0 + 1) fresh2 phi)) as fresh22.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
