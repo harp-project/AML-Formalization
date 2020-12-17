@@ -803,6 +803,7 @@ repeat
     Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
       fun p => exists (n : NAName NAs), p = NAAxiom n.
 
+    (* TODO do we want to make this a type class? *)
     Record NamedAxiomsIncluded (NA₁ NA₂ : NamedAxioms) :=
       { NAIinj : NAName NA₁ -> NAName NA₂;
         NAIax : forall (n : NAName NA₁), NAAxiom n = NAAxiom (NAIinj n);
@@ -823,6 +824,24 @@ repeat
       specialize (ax n). subst. auto.
     Qed.
 
+    Program Definition NamedAxiomsIncluded_refl NA : NamedAxiomsIncluded NA NA :=
+      {| NAIinj := λ n, n; |}.
+    Next Obligation. auto. Qed.
+    (* TODO make it a stdpp preorder  *)
+
+    Program Definition NamedAxiomsIncluded_compose NA₁ NA₂ NA₃ :
+      NamedAxiomsIncluded NA₁ NA₂ ->
+      NamedAxiomsIncluded NA₂ NA₃ ->
+      NamedAxiomsIncluded NA₁ NA₃ :=
+      λ HI₁ HI₂, {| NAIinj := λ n, NAIinj HI₂ (NAIinj HI₁ n);  |}.
+    Next Obligation.
+      intros NA₁ NA₂ NA₃ [inj₁ ax₁] [inj₂ ax₂] n.
+      simpl.
+      rewrite -ax₂.
+      rewrite -ax₁.
+      auto.
+    Qed.
+       
     
     Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
 
