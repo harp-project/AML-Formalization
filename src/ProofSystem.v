@@ -273,7 +273,7 @@ Proof.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
   * repeat rewrite pattern_interpretation_imp_simpl; rewrite pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     apply Union_Compl_Fullset.
@@ -290,23 +290,23 @@ Proof.
   * admit.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_l; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_l; eapply Same_set_to_eq in H1; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_r; eapply Same_set_to_eq in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_r; eapply Same_set_to_eq in H1; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
     repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite H2; clear H2.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
@@ -330,7 +330,7 @@ Proof.
     repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite H2; clear H2.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
