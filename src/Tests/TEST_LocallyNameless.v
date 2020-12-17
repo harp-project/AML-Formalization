@@ -1,7 +1,7 @@
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-From MatchingLogic Require Import Syntax Semantics DefaultVariables.
+From MatchingLogic Require Import Syntax Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
 
@@ -17,23 +17,15 @@ Module test_1.
     decide equality.
   Qed. (* We may need Defined here *)
 
-  Instance signature : Signature :=
-    {| symbols := Symbols;
-       sym_eq := Symbols_dec;
-       variables := DefaultMLVariables;
-    |}.
-
-  (* Helpers. *)
-  Definition sym (s : Symbols) : @Pattern signature :=
-    @patt_sym signature s.
-  Definition evar (sname : string) : @Pattern signature :=
-    @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
-  Definition svar (sname : string) : @Pattern signature :=
-    @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil).
-
+  Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
+  Instance signature : Signature := @SignatureFromSymbols symbols_H.
+    
   (* Example patterns *)
 
   Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+
+  Example e1 X: evar_open 0 X more = more.
+  Proof. unfold more. autorewrite with ml_db. reflexivity. Qed.
 
   (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
 
@@ -85,11 +77,9 @@ Module test_2.
       * decide equality.
     Qed.
 
-    Instance signature : Signature :=
-      {| symbols := Symbols;
-         sym_eq := Symbols_dec;
-         variables := DefaultMLVariables;
-      |}.
+    Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
+    Instance signature : Signature := @SignatureFromSymbols symbols_H.
+    
 
     Instance definedness_syntax : Definedness.Syntax :=
       {|
@@ -102,16 +92,6 @@ Module test_2.
       Sorts.imported_definedness := definedness_syntax;
       |}.
     
-    (* The same helpers as in the previous case. Maybe we can abstract it somehow?*)
-    (* But it does not make sense to have them visible globally - use 'Let' instead of 'Definition' *)
-    Let sym (s : Symbols) : @Pattern signature :=
-      @patt_sym signature s.
-    Let evar (sname : string) : @Pattern signature :=
-      @patt_free_evar signature (find_fresh_evar_name (@evar_c sname) nil).
-    Let svar (sname : string) : @Pattern signature :=
-      @patt_free_svar signature (find_fresh_svar_name (@svar_c sname) nil)
-    .
-
     Example test_pattern_0 : Pattern := sym sym_c.
     Example test_pattern_1 := @patt_defined signature definedness_syntax (sym sym_c).
     Example test_pattern_2 := patt_defined (sym sym_c).

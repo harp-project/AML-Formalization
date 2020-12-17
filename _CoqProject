@@ -8,7 +8,7 @@ src/Utils/stdpp_ext.v
 src/Syntax.v
 src/Semantics.v
 src/ProofSystem.v
-src/DefaultVariables.v
+src/SignatureHelper.v
 src/Logic.v
 
 src/Helpers/monotonic.v

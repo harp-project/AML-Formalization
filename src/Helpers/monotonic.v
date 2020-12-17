@@ -449,7 +449,6 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             subst.
             apply IHn2. apply Hc.
           }
-          auto.
         * (* Mu *)
           remember Hwfp as Hwfpmu. clear HeqHwfpmu.
           simpl in Hsz.
@@ -465,7 +464,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
 
             remember (fresh_svar phi) as X'.
             remember (svar_open 0 X' phi) as phi'.
-            pose proof (Hszeq := svar_open_size sig 0 X' phi).
+            pose proof (Hszeq := svar_open_size 0 X' phi).
             assert (Hsz'': size phi' <= n).
             { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
             specialize (IHn phi' Hsz'').
@@ -536,7 +535,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
 
             remember (fresh_svar phi) as X'.
             remember (svar_open 0 X' phi) as phi'.
-            pose proof (Hszeq := svar_open_size sig 0 X' phi).
+            pose proof (Hszeq := svar_open_size 0 X' phi).
             assert (Hsz'': size phi' <= n).
             { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
             specialize (IHn phi' Hsz'').

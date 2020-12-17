@@ -1,1 +1,1 @@
-From MatchingLogic Require Export Syntax Semantics ProofSystem DefaultVariables.
+From MatchingLogic Require Export Syntax Semantics ProofSystem SignatureHelper.
