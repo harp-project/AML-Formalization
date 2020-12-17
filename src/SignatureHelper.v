@@ -312,6 +312,46 @@ Next Obligation.
   intros. simpl in H. inversion H. reflexivity.
 Qed.
 
-    
-    
-                 
+Class SymbolsH := { SHSymbols : Type; SHSymbols_dec : forall (s1 s2 : SHSymbols), {s1 = s2} + {s1 <> s2}; }.
+
+Section helper.
+  Context {SH : SymbolsH}.
+
+  Instance SignatureFromSymbols : Signature :=
+    {| symbols := SHSymbols;
+       sym_eq := SHSymbols_dec;
+       variables := DefaultMLVariables;
+    |}.
+
+    (* Helpers. *)
+  Definition sym (s : SHSymbols) : @Pattern SignatureFromSymbols :=
+    @patt_sym SignatureFromSymbols s.
+  Definition evar (sname : string) : @Pattern SignatureFromSymbols :=
+    @patt_free_evar SignatureFromSymbols (find_fresh_evar_name (evar_c sname) nil).
+  Definition svar (sname : string) : @Pattern SignatureFromSymbols :=
+    @patt_free_svar SignatureFromSymbols (find_fresh_svar_name (svar_c sname) nil).
+
+  
+  Lemma evar_open_sym db x s : evar_open db x (sym s) = sym s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_sym db X s : svar_open db X (sym s) = sym s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma evar_open_evar db x s : evar_open db x (evar s) = evar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_evar db X s : svar_open db X (evar s) = evar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma evar_open_svar db x s : evar_open db x (svar s) = svar s.
+  Proof. cbn. unfold sym. auto. Qed.
+  Lemma svar_open_svar db X s : svar_open db X (svar s) = svar s.
+  Proof. cbn. unfold sym. auto. Qed.
+
+  Hint Rewrite ->
+  evar_open_sym
+    svar_open_sym
+    evar_open_evar
+    svar_open_evar
+    evar_open_svar
+    svar_open_svar
+    : ml_db.
+  
+End helper.

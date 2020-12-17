@@ -1,7 +1,7 @@
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-From MatchingLogic Require Import Syntax Semantics DefaultVariables.
+From MatchingLogic Require Import Syntax Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
 
@@ -17,41 +17,8 @@ Module test_1.
     decide equality.
   Qed. (* We may need Defined here *)
 
-  Instance signature : Signature :=
-    {| symbols := Symbols;
-       sym_eq := Symbols_dec;
-       variables := DefaultMLVariables;
-    |}.
-
-  (* Helpers. *)
-  Definition sym (s : Symbols) : @Pattern signature :=
-    @patt_sym signature s.
-  Definition evar (sname : string) : @Pattern signature :=
-    @patt_free_evar signature (find_fresh_evar_name (evar_c sname) nil).
-  Definition svar (sname : string) : @Pattern signature :=
-    @patt_free_svar signature (find_fresh_svar_name (svar_c sname) nil).
-
-  Lemma evar_open_sym db x s : evar_open db x (sym s) = sym s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_sym db X s : svar_open db X (sym s) = sym s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma evar_open_evar db x s : evar_open db x (evar s) = evar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_evar db X s : svar_open db X (evar s) = evar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma evar_open_svar db x s : evar_open db x (svar s) = svar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_svar db X s : svar_open db X (svar s) = svar s.
-  Proof. cbn. unfold sym. auto. Qed.
-
-  Hint Rewrite ->
-  evar_open_sym
-    svar_open_sym
-    evar_open_evar
-    svar_open_evar
-    evar_open_svar
-    svar_open_svar
-    : ml_db.
+  Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
+  Instance signature : Signature := @SignatureFromSymbols symbols_H.
     
   (* Example patterns *)
 
