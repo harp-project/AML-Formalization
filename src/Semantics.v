@@ -785,6 +785,45 @@ repeat
     Definition satisfies (theory : Theory) (p: Pattern)
       : Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
+    Definition TheoryIncluded (Γ₁ Γ₂ : Theory) := Ensembles.Included _ Γ₁ Γ₂.
+
+    Lemma satisfies_theory_subseteq M Γ₁ Γ₂:
+      TheoryIncluded Γ₁ Γ₂ ->
+      satisfies_theory M Γ₂ ->
+      satisfies_theory M Γ₁.
+    Proof.
+      unfold TheoryIncluded.
+      unfold Included.
+      unfold satisfies_theory.
+      auto.
+    Qed.
+
+    Record NamedAxioms := { NAName : Type; NAAxiom : NAName -> Pattern }.
+
+    Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
+      fun p => exists (n : NAName NAs), p = NAAxiom n.
+
+    Record NamedAxiomsIncluded (NA₁ NA₂ : NamedAxioms) :=
+      { NAIinj : NAName NA₁ -> NAName NA₂;
+        NAIax : forall (n : NAName NA₁), NAAxiom n = NAAxiom (NAIinj n);
+      }.
+
+    Lemma NamedAxiomsIncluded_impl_TheoryIncluded NA₁ NA₂:
+      NamedAxiomsIncluded NA₁ NA₂ ->
+      TheoryIncluded (theory_of_NamedAxioms NA₁) (theory_of_NamedAxioms NA₂).
+    Proof.
+      intros [inj ax].
+      unfold TheoryIncluded.
+      unfold Included.
+      intros ϕ.
+      unfold In.
+      unfold theory_of_NamedAxioms.
+      intros [n Hn].
+      exists (inj n).
+      specialize (ax n). subst. auto.
+    Qed.
+
+    
     Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
 
     Lemma T_predicate_impl Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_imp ϕ₁ ϕ₂).
