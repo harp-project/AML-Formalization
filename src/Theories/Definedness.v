@@ -345,36 +345,29 @@ Section definedness.
     + left. unfold In. unfold Complement. assumption.
   Qed.
   
-  Lemma equal_impl_interpr_same : forall (M : @Model (sig)),
+  Lemma equal_iff_interpr_same : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full <->
         @pattern_interpretation (sig) M evar_val svar_val phi1
         = @pattern_interpretation (sig) M evar_val svar_val phi2.
   Proof.
-    intros.
-    apply (equal_impl_both_subseteq _ H) in H0.
-    destruct H0 as [Hsub1 Hsub2].
-    apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
-    apply (subseteq_impl_interpr_subseteq _ H) in Hsub2.
-    unfold Same_set.
-    apply Extensionality_Ensembles.
-    split; assumption.
-  Qed.
-
-  Lemma interpr_same_impl_equal : forall (M : @Model (sig)),
-      M ⊨ᵀ theory ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        @pattern_interpretation (sig) M evar_val svar_val phi1
-        = @pattern_interpretation (sig) M evar_val svar_val phi2 ->
-        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full.
-  Proof.
-    intros.
-    apply eq_to_Same_set in H0.
-    destruct H0 as [Hincl1 Hincl2].
-    apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
-    apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
-    auto using both_subseteq_imp_eq.
+    intros M H phi1 phi2 evar_val svar_val.
+    split.
+    - intros H0.
+      apply (equal_impl_both_subseteq _ H) in H0.
+      destruct H0 as [Hsub1 Hsub2].
+      apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
+      apply (subseteq_impl_interpr_subseteq _ H) in Hsub2.
+      unfold Same_set.
+      apply Extensionality_Ensembles.
+      split; assumption.
+    - intros H0.
+      apply eq_to_Same_set in H0.
+      destruct H0 as [Hincl1 Hincl2].
+      apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
+      apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
+      auto using both_subseteq_imp_eq.      
   Qed.
 
   Lemma equal_refl : forall (M : @Model (sig)),
@@ -383,7 +376,7 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi phi) = Full.
   Proof.
     intros.
-    apply (interpr_same_impl_equal _ H).
+    apply (equal_iff_interpr_same _ H).
     auto.
   Qed.
 
@@ -394,8 +387,8 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi1) = Full.
   Proof.
     intros.
-    apply (interpr_same_impl_equal _ H).
-    apply (equal_impl_interpr_same _ H) in H0.
+    apply (equal_iff_interpr_same _ H).
+    apply (equal_iff_interpr_same _ H) in H0.
     symmetry. auto.
   Qed.
 
@@ -407,9 +400,9 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi3) = Full.
   Proof.
     intros.
-    apply (interpr_same_impl_equal _ H).
-    apply (equal_impl_interpr_same _ H) in H0.
-    apply (equal_impl_interpr_same _ H) in H1.
+    apply (equal_iff_interpr_same _ H).
+    apply (equal_iff_interpr_same _ H) in H0.
+    apply (equal_iff_interpr_same _ H) in H1.
     rewrite -> H0. auto.
   Qed.
 
