@@ -252,51 +252,45 @@ Section definedness.
     apply NNPP in H2. apply H2.
   Qed.
   
-  Lemma both_subseteq_imp_eq : forall (M : @Model (sig)),
+  Lemma equal_iff_both_subseteq : forall (M : @Model (sig)),        
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full ->
-        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1) = Full ->
-        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full.
-  Proof.
-    unfold patt_subseteq. intros.
-    apply full_impl_not_empty in H0.
-    apply full_impl_not_empty in H1.
-    apply (totality_result_nonempty _ H) in H0.
-    apply (totality_result_nonempty _ H) in H1.
-    unfold patt_equal.
-    apply (totality_full _ H).
-    unfold "<--->".
-    rewrite -> pattern_interpretation_and_simpl.
-    rewrite -> H0.
-    rewrite -> H1.
-    apply Extensionality_Ensembles.
-    unfold Full.
-    rewrite -> (Same_set_to_eq (Intersection_Full_l _)).
-    apply Same_set_refl.
-  Qed.
-
-  Lemma equal_impl_both_subseteq : forall (M : @Model (sig)),        
-      M ⊨ᵀ theory ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi2) = Full <->
         (
           @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full /\
           @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi2 phi1) = Full).
   Proof.
-    intros.
-    unfold patt_equal in H0.
-    apply full_impl_not_empty in H0.
-    apply (totality_result_nonempty _ H) in H0.
-    unfold "<--->" in H0.
-    rewrite ->pattern_interpretation_and_simpl in H0.
-    apply eq_to_Same_set in H0.
-    apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
-    apply Extensionality_Ensembles in H1. apply Extensionality_Ensembles in H2.
-    unfold patt_subseteq.
-    apply (totality_full _ H) in H1.
-    apply (totality_full _ H) in H2.
-    split; assumption.
+    intros M H phi1 phi2 evar_val svar_val.
+    split.
+    - intros H0.
+      unfold patt_equal in H0.
+      apply full_impl_not_empty in H0.
+      apply (totality_result_nonempty _ H) in H0.
+      unfold "<--->" in H0.
+      rewrite ->pattern_interpretation_and_simpl in H0.
+      apply eq_to_Same_set in H0.
+      apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
+      apply Extensionality_Ensembles in H1. apply Extensionality_Ensembles in H2.
+      unfold patt_subseteq.
+      apply (totality_full _ H) in H1.
+      apply (totality_full _ H) in H2.
+      split; assumption.
+    - intros [H0 H1].
+      unfold patt_subseteq.
+      apply full_impl_not_empty in H0.
+      apply full_impl_not_empty in H1.
+      apply (totality_result_nonempty _ H) in H0.
+      apply (totality_result_nonempty _ H) in H1.
+      unfold patt_equal.
+      apply (totality_full _ H).
+      unfold "<--->".
+      rewrite -> pattern_interpretation_and_simpl.
+      rewrite -> H0.
+      rewrite -> H1.
+      apply Extensionality_Ensembles.
+      unfold Full.
+      rewrite -> (Same_set_to_eq (Intersection_Full_l _)).
+      apply Same_set_refl.      
   Qed.
 
   Lemma subseteq_iff_interpr_subseteq : forall (M : @Model (sig)),
@@ -347,7 +341,7 @@ Section definedness.
     intros M H phi1 phi2 evar_val svar_val.
     split.
     - intros H0.
-      apply (equal_impl_both_subseteq _ H) in H0.
+      apply (equal_iff_both_subseteq _ H) in H0.
       destruct H0 as [Hsub1 Hsub2].
       apply (subseteq_iff_interpr_subseteq _ H) in Hsub1.
       apply (subseteq_iff_interpr_subseteq _ H) in Hsub2.
@@ -359,7 +353,7 @@ Section definedness.
       destruct H0 as [Hincl1 Hincl2].
       apply (subseteq_iff_interpr_subseteq _ H) in Hincl1.
       apply (subseteq_iff_interpr_subseteq _ H) in Hincl2.
-      auto using both_subseteq_imp_eq.      
+      apply equal_iff_both_subseteq. auto. split; auto.
   Qed.
 
   Lemma equal_refl : forall (M : @Model (sig)),
