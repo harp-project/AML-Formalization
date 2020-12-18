@@ -344,14 +344,14 @@ Section helper.
   Proof. cbn. unfold sym. auto. Qed.
   Lemma svar_open_svar db X s : svar_open db X (svar s) = svar s.
   Proof. cbn. unfold sym. auto. Qed.
-
-  Hint Rewrite ->
-  evar_open_sym
-    svar_open_sym
-    evar_open_evar
-    svar_open_evar
-    evar_open_svar
-    svar_open_svar
-    : ml_db.
   
 End helper.
+
+Hint Rewrite ->
+@evar_open_sym
+  @svar_open_sym
+  @evar_open_evar
+  @svar_open_evar
+  @evar_open_svar
+  @svar_open_svar
+  : ml_db.
