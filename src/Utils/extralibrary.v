@@ -53,27 +53,27 @@ Defined.
 (** ** Lists *)
 
 Lemma notin_cons_l:
-  forall (A: Set) (u: A) (x: A) (l: list A),
+  forall (A: Type) (u: A) (x: A) (l: list A),
   ~In u (x :: l) -> u <> x.
 Proof.
   simpl; intros. apply sym_not_equal. tauto.
 Qed.
 
 Lemma notin_cons_r:
-  forall (A: Set) (u: A) (x: A) (l: list A),
+  forall (A: Type) (u: A) (x: A) (l: list A),
   ~In u (x :: l) -> ~In u l.
 Proof.
   simpl; intros. tauto.
 Qed.
 
 Lemma notin_app_l:
-  forall (A: Set) (u: A) (l1 l2: list A),
+  forall (A: Type) (u: A) (l1 l2: list A),
   ~In u (l1 ++ l2) -> ~In u l1.
 Proof.
   intros. generalize (in_or_app l1 l2 u). tauto.
 Qed.
 Lemma notin_app_r:
-  forall (A: Set) (u: A) (l1 l2: list A),
+  forall (A: Type) (u: A) (l1 l2: list A),
   ~In u (l1 ++ l2) -> ~In u l2.
 Proof.
   intros. generalize (in_or_app l1 l2 u). tauto.
@@ -82,7 +82,7 @@ Qed.
 Hint Resolve sym_not_equal notin_cons_l notin_cons_r notin_app_l notin_app_r.
 
 Lemma in_app_equiv:
-  forall (A: Set) (x y: A) (l1 l2 l3 l4: list A),
+  forall (A: Type) (x y: A) (l1 l2 l3 l4: list A),
   (In x l1 <-> In y l3) -> (In x l2 <-> In y l4) -> (In x (l1 ++ l2) <-> In y (l3 ++ l4)).
 Proof.
   intros. generalize (in_or_app l1 l2 x). generalize (in_or_app l3 l4 y).
@@ -91,19 +91,19 @@ Qed.
 Hint Resolve in_app_equiv.
 
 Lemma in_app_l:
-  forall (A: Set) (x: A) (l1 l2: list A), In x l1 -> In x (l1 ++ l2).
+  forall (A: Type) (x: A) (l1 l2: list A), In x l1 -> In x (l1 ++ l2).
 Proof.
   intros. apply in_or_app. tauto.
 Qed.
 Lemma in_app_r:
-  forall (A: Set) (x: A) (l1 l2: list A), In x l2 -> In x (l1 ++ l2).
+  forall (A: Type) (x: A) (l1 l2: list A), In x l2 -> In x (l1 ++ l2).
 Proof.
   intros. apply in_or_app. tauto.
 Qed.
 Hint Resolve in_app_l in_app_r.
 
 Lemma in_cons_other:
-  forall (A: Set) (x y: A) (l: list A),
+  forall (A: Type) (x y: A) (l: list A),
   In x (y :: l) -> x <> y -> In x l.
 Proof.
   intros. elim H; intros. congruence. auto.
@@ -112,14 +112,14 @@ Hint Resolve in_cons_other.
 
 
 Lemma map_append:
-  forall (A B: Set) (f: A -> B) (l1 l2: list A),
+  forall (A B: Type) (f: A -> B) (l1 l2: list A),
   map f (l1 ++ l2) = (map f l1) ++ (map f l2).
 Proof.
   induction l1; simpl; intros. auto. decEq; auto. 
 Qed.
 
 Lemma incl_cons2:
-  forall (A: Set) (x: A) (l1 l2: list A),
+  forall (A: Type) (x: A) (l1 l2: list A),
   incl l1 l2 -> incl (x::l1) (x::l2).
 Proof.
   intros; red; simpl; intros. generalize (H a). tauto.
