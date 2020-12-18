@@ -413,45 +413,38 @@ Section definedness.
     rewrite -> H0. auto.
   Qed.
 
-  Lemma free_evar_in_patt_1 : forall (M : @Model sig),
+  Lemma free_evar_in_patt : forall (M : @Model sig),
       M ⊨ᵀ theory ->
       forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
-        In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x) ->
+        In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x) <->
         @pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi) = Full.
   Proof.
-    intros.
-    unfold patt_in.
-    apply (definedness_not_empty_1 _ H).
-    Check Contains_Elements_Not_Empty.
-    intros Contra.
-    apply eq_to_Same_set in Contra.
-    apply Contains_Elements_Not_Empty in Contra. auto.
-    exists (evar_val x).
-    rewrite -> pattern_interpretation_and_simpl.
+    intros M H x phi evar_val svar_val.
     split.
-    + rewrite -> pattern_interpretation_free_evar_simpl. constructor.
-    + assumption.
-  Qed.
-  
-
-  Lemma free_evar_in_patt_2 : forall (M : @Model sig),
-      M ⊨ᵀ theory ->
-      forall (x : evar)(phi : Pattern) (evar_val : @EVarVal sig M) (svar_val : @SVarVal sig M),
-        @pattern_interpretation sig M evar_val svar_val (patt_in (patt_free_evar x) phi) = Full ->
-        In (Domain M) (@pattern_interpretation sig M evar_val svar_val phi) (evar_val x).
-  Proof.
-    intros.
-    unfold patt_in in H0.
-    apply (definedness_not_empty_2 _ H) in H0.
-    unfold not in H0.
-    assert (H0': Same_set _ (pattern_interpretation evar_val svar_val (patt_free_evar x and phi)) Empty -> False).
-    { intros Contra. apply H0. apply Extensionality_Ensembles. auto.  }
-    apply Not_Empty_Contains_Elements in H0'.
-    destruct H0' as [x0 H0'].
-    rewrite -> pattern_interpretation_and_simpl in H0'.
-    destruct H0'.
-    rewrite -> pattern_interpretation_free_evar_simpl in H1.
-    unfold In in H1. inversion H1. subst. assumption.
+    - intros H0.
+      unfold patt_in.
+      apply (definedness_not_empty_1 _ H).
+      Check Contains_Elements_Not_Empty.
+      intros Contra.
+      apply eq_to_Same_set in Contra.
+      apply Contains_Elements_Not_Empty in Contra. auto.
+      exists (evar_val x).
+      rewrite -> pattern_interpretation_and_simpl.
+      split.
+      + rewrite -> pattern_interpretation_free_evar_simpl. constructor.
+      + assumption.
+    - intros H0.
+      unfold patt_in in H0.
+      apply (definedness_not_empty_2 _ H) in H0.
+      unfold not in H0.
+      assert (H0': Same_set _ (pattern_interpretation evar_val svar_val (patt_free_evar x and phi)) Empty -> False).
+      { intros Contra. apply H0. apply Extensionality_Ensembles. auto.  }
+      apply Not_Empty_Contains_Elements in H0'.
+      destruct H0' as [x0 H0'].
+      rewrite -> pattern_interpretation_and_simpl in H0'.
+      destruct H0'.
+      rewrite -> pattern_interpretation_free_evar_simpl in H1.
+      unfold In in H1. inversion H1. subst. assumption.
   Qed.
 
   Lemma T_predicate_defined : forall ϕ, T_predicate theory (patt_defined ϕ).
