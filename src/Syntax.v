@@ -1265,6 +1265,18 @@ Section syntax.
   Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
   Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
+  Lemma evar_open_iff k x ϕ₁ ϕ₂ : evar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+  Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+  Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
+  Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+  Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (k+1) x ϕ).
+  Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+
+  Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
+  Proof. simpl. unfold patt_nu. unfold patt_not. rewrite -> evar_open_bsvar_subst. Abort.
+
   Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
   Proof. simpl. unfold patt_not. reflexivity. Qed.
 
@@ -1273,6 +1285,15 @@ Section syntax.
 
   Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
   Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+  Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
+  Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+  Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
+  Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
   Lemma free_svars_svar_open ϕ X dbi :
     free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
@@ -1573,6 +1594,9 @@ Hint Rewrite ->
      @evar_open_not
      @evar_open_or
      @evar_open_and
+     @evar_open_iff
+     @evar_open_forall
+     @evar_open_top
 
      @svar_open_free_evar
      @svar_open_free_svar
@@ -1587,6 +1611,9 @@ Hint Rewrite ->
      @svar_open_not
      @svar_open_or
      @svar_open_and
+     @svar_open_iff
+     @svar_open_forall
+     @evar_open_top
   : ml_db.
 
 Module Notations.

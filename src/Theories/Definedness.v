@@ -483,6 +483,45 @@ Section definedness.
   Lemma T_predicate_in : forall ϕ₁ ϕ₂, T_predicate theory (patt_in ϕ₁ ϕ₂).
   Proof.
     intros. unfold patt_equal. apply T_predicate_defined.
-  Qed.  
+  Qed.
+
+  (* defined, total, subseteq, equal, in *)
+  Lemma evar_open_defined db x ϕ : evar_open db x (patt_defined ϕ) = patt_defined (evar_open db x ϕ).
+  Proof. unfold patt_defined. cbn. auto. Qed.
+  Lemma svar_open_defined db x ϕ : svar_open db x (patt_defined ϕ) = patt_defined (svar_open db x ϕ).
+  Proof. unfold patt_defined. cbn. auto. Qed.
+  
+  Lemma evar_open_total db x ϕ : evar_open db x (patt_total ϕ) = patt_total (evar_open db x ϕ).
+  Proof. unfold patt_total. autorewrite with ml_db. rewrite -> evar_open_defined. auto. Qed.
+  Lemma svar_open_total db x ϕ : svar_open db x (patt_total ϕ) = patt_total (svar_open db x ϕ).
+  Proof. unfold patt_total. autorewrite with ml_db. rewrite -> svar_open_defined. auto. Qed.
+  
+  Lemma evar_open_equal db x ϕ₁ ϕ₂ : evar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (evar_open db x ϕ₁) (evar_open db x ϕ₂).
+  Proof. unfold patt_equal. rewrite -> evar_open_total. autorewrite with ml_db. auto. Qed.
+  Lemma svar_open_equal db x ϕ₁ ϕ₂ : svar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (svar_open db x ϕ₁) (svar_open db x ϕ₂).
+  Proof. unfold patt_equal. rewrite -> svar_open_total. autorewrite with ml_db. auto. Qed.
+
+  Lemma evar_open_subseteq db x ϕ₁ ϕ₂ : evar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (evar_open db x ϕ₁) (evar_open db x ϕ₂).
+  Proof. unfold patt_subseteq. rewrite -> evar_open_total. autorewrite with ml_db. auto. Qed.
+  Lemma svar_open_subseteq db x ϕ₁ ϕ₂ : svar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (svar_open db x ϕ₁) (svar_open db x ϕ₂).
+  Proof. unfold patt_subseteq. rewrite -> svar_open_total. autorewrite with ml_db. auto. Qed.
+
+  Lemma evar_open_in db x ϕ₁ ϕ₂ : evar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (evar_open db x ϕ₁) (evar_open db x ϕ₂).
+  Proof. unfold patt_in. rewrite -> evar_open_defined. autorewrite with ml_db. auto. Qed.
+  Lemma svar_open_in db x ϕ₁ ϕ₂ : svar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (svar_open db x ϕ₁) (svar_open db x ϕ₂).
+  Proof. unfold patt_in. rewrite -> svar_open_defined. autorewrite with ml_db. auto. Qed.
   
 End definedness.
+
+Hint Rewrite ->
+@evar_open_defined
+  @svar_open_defined
+  @evar_open_total
+  @svar_open_total
+  @evar_open_equal
+  @svar_open_equal
+  @evar_open_subseteq
+  @svar_open_subseteq
+  @evar_open_in
+  @svar_open_in
+  : ml_db.

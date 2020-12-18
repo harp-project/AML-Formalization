@@ -79,6 +79,8 @@ Module test_2.
 
     Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
     Instance signature : Signature := @SignatureFromSymbols symbols_H.
+    (* https://stackoverflow.com/a/44769124/6209703 *)
+    (*Hint Extern 4 => unfold signature : core.*)
     
 
     Instance definedness_syntax : Definedness.Syntax :=
@@ -95,10 +97,12 @@ Module test_2.
     Example test_pattern_0 : Pattern := sym sym_c.
     Example test_pattern_1 := @patt_defined signature definedness_syntax (sym sym_c).
     Example test_pattern_2 := patt_defined (sym sym_c).
-    Example test_pattern_3 : Pattern := patt_equal (sym sym_c) (sym sym_c).
+    Example test_pattern_3 s : Pattern := patt_equal (sym s) (sym s).
     Example test_pattern_4 := patt_defined (patt_sym sym_c).
     Example test_pattern_5 := patt_equal (inhabitant_set (sym sym_SortNat)) (sym sym_zero).
-    
+
+    Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
+    Proof. unfold test_pattern_3. autorewrite with ml_db. reflexivity. Qed.
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
