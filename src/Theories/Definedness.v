@@ -299,50 +299,42 @@ Section definedness.
     split; assumption.
   Qed.
 
-  Lemma subseteq_impl_interpr_subseteq : forall (M : @Model (sig)),
+  Lemma subseteq_iff_interpr_subseteq : forall (M : @Model (sig)),
       M ⊨ᵀ theory ->
       forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full ->
+        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full <->
         Included (Domain M)
                  (@pattern_interpretation (sig) M evar_val svar_val phi1)
                  (@pattern_interpretation (sig) M evar_val svar_val phi2).
   Proof.
-    intros.
-    unfold patt_subseteq in H0.
-    apply full_impl_not_empty in H0.
-    apply (totality_result_nonempty _ H) in H0.
-    rewrite -> pattern_interpretation_imp_simpl in H0.
-    apply eq_to_Same_set in H0.
-    unfold Same_set in H0. destruct H0 as [_ H0].
-    unfold Included in *. intros. specialize (H0 x).
-    assert (H' : In (Domain M) (Full_set (Domain M)) x).
-    { unfold In. constructor. }
-    specialize (H0 H'). clear H'.
-    unfold In in *. destruct H0; unfold In in H0.
-    + unfold Complement in H0. contradiction.
-    + apply H0.
-  Qed.
-
-  Lemma interpr_subseteq_impl_subseteq : forall (M : @Model (sig)),
-      M ⊨ᵀ theory ->
-      forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (sig) M) (svar_val : @SVarVal (sig) M),
-        Included (Domain M)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi1)
-                 (@pattern_interpretation (sig) M evar_val svar_val phi2) ->
-        @pattern_interpretation (sig) M evar_val svar_val (patt_subseteq phi1 phi2) = Full.
-  Proof.
-    intros.
-    unfold patt_subseteq.
-    apply (totality_full _ H).
-    rewrite -> pattern_interpretation_imp_simpl.
-    apply Extensionality_Ensembles.
-    apply Same_set_symmetric.
-    apply Same_set_Full_set.
-    unfold Included in *.
-    intros. specialize (H0 x). clear H1.
-    destruct (classic (In (Domain M) (pattern_interpretation evar_val svar_val phi1) x)).
-    + right. auto.
-    + left. unfold In. unfold Complement. assumption.
+    intros M H phi1 phi2 evar_val svar_val.
+    split.
+    - intros H0.
+      unfold patt_subseteq in H0.
+      apply full_impl_not_empty in H0.
+      apply (totality_result_nonempty _ H) in H0.
+      rewrite -> pattern_interpretation_imp_simpl in H0.
+      apply eq_to_Same_set in H0.
+      unfold Same_set in H0. destruct H0 as [_ H0].
+      unfold Included in *. intros. specialize (H0 x).
+      assert (H' : In (Domain M) (Full_set (Domain M)) x).
+      { unfold In. constructor. }
+      specialize (H0 H'). clear H'.
+      unfold In in *. destruct H0; unfold In in H0.
+      + unfold Complement in H0. contradiction.
+      + apply H0.
+    - intros H0.
+      unfold patt_subseteq.
+      apply (totality_full _ H).
+      rewrite -> pattern_interpretation_imp_simpl.
+      apply Extensionality_Ensembles.
+      apply Same_set_symmetric.
+      apply Same_set_Full_set.
+      unfold Included in *.
+      intros. specialize (H0 x). clear H1.
+      destruct (classic (In (Domain M) (pattern_interpretation evar_val svar_val phi1) x)).
+      + right. auto.
+      + left. unfold In. unfold Complement. assumption.      
   Qed.
   
   Lemma equal_iff_interpr_same : forall (M : @Model (sig)),
@@ -357,16 +349,16 @@ Section definedness.
     - intros H0.
       apply (equal_impl_both_subseteq _ H) in H0.
       destruct H0 as [Hsub1 Hsub2].
-      apply (subseteq_impl_interpr_subseteq _ H) in Hsub1.
-      apply (subseteq_impl_interpr_subseteq _ H) in Hsub2.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hsub1.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hsub2.
       unfold Same_set.
       apply Extensionality_Ensembles.
       split; assumption.
     - intros H0.
       apply eq_to_Same_set in H0.
       destruct H0 as [Hincl1 Hincl2].
-      apply (interpr_subseteq_impl_subseteq _ H) in Hincl1.
-      apply (interpr_subseteq_impl_subseteq _ H) in Hincl2.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hincl1.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hincl2.
       auto using both_subseteq_imp_eq.      
   Qed.
 
