@@ -710,7 +710,22 @@ repeat
         + unfold Included. intros. inversion H1.
     Qed.
 
-    (* TODO top forall iff *)
+    Lemma M_predicate_top M : M_predicate M patt_top.
+    Proof.
+      unfold patt_top. apply M_predicate_not. apply M_predicate_bott.
+    Qed.
+
+    Lemma M_predicate_iff M ϕ₁ ϕ₂ :
+      M_predicate M ϕ₁ ->
+      M_predicate M ϕ₂ ->
+      M_predicate M (patt_iff ϕ₁ ϕ₂).
+    Proof.
+      intros H1 H2.
+      unfold patt_iff.
+      apply M_predicate_and; apply M_predicate_impl; auto.
+    Qed.
+
+    (* TODO forall *)
 
     Lemma predicate_not_empty_iff_full M ϕ ρₑ ρₛ :
       M_predicate M ϕ ->
@@ -791,6 +806,49 @@ repeat
           unfold Ensembles.In. rewrite -> update_evar_val_same. constructor.
         + apply eq_to_Same_set in H. destruct H as [H1 H2]. unfold Included in H2.
           specialize (H2 m). apply H2. unfold Ensembles.In. constructor.
+    Qed.
+
+    (* ϕ is a well-formed body of ex *)
+    Lemma pattern_interpretation_exists_predicate M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) ->
+      pattern_interpretation ρₑ ρₛ (patt_exists ϕ) = Full <->
+      ∃ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full.
+    Proof.
+      intros x Hpred.
+      pose proof (Hpredex := M_predicate_exists Hpred).
+      rewrite -[pattern_interpretation _ _ _ = Full]predicate_not_empty_iff_full. 2: auto.
+      
+      (*
+        (* I would like to simplify the RHS, but cannot find a way. *)
+        under [fun m => _]functional_extensionality => m.
+        (* This fails *)
+        Fail rewrite <- predicate_not_empty_iff_full.
+        Fail rewrite -[_ = Full]predicate_not_empty_iff_full.
+        over.
+       *)
+
+      rewrite eq_iff_Same_set.
+      rewrite -> Not_Empty_iff_Contains_Elements.
+      split.
+      - intros [x0 Hx0].
+        rewrite -> pattern_interpretation_ex_simpl in Hx0.
+        simpl in Hx0. inversion Hx0. subst x1.
+        destruct H as [c Hc].
+        exists c.
+        rewrite -predicate_not_empty_iff_full. 2: assumption.
+        rewrite eq_iff_Same_set.
+        rewrite Not_Empty_iff_Contains_Elements.
+        exists x0. apply Hc.
+      - intros [m Hm].
+        apply full_impl_not_empty in Hm.
+        rewrite -> eq_iff_Same_set in Hm.
+        unfold Empty in Hm.
+        apply Not_Empty_iff_Contains_Elements in Hm.
+        destruct Hm as [x0 Hx0].
+        exists x0.
+        rewrite pattern_interpretation_ex_simpl. simpl.
+        constructor. exists m. assumption.
     Qed.
 
     (* Theory,axiom ref. snapshot: Definition 5 *)
