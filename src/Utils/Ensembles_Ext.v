@@ -580,6 +580,14 @@ Proof.
   unfold Included. intros. constructor.
 Qed.
 
+Lemma Same_set_Empty_set : forall {T : Type} (S : Ensemble T),
+    Included T S (Empty_set T) -> Same_set T S (Empty_set T).
+Proof.
+  intros H. unfold Same_set.
+  split. assumption.
+  unfold Included. intros. unfold In in H1. inversion H1.
+Qed.
+
 Lemma Included_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
     Included T S1 S2 -> Included T S2 S3 -> Included T S1 S3.
 Proof.

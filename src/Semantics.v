@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Coq Require Import Ensembles.
-From Coq.Logic Require Import FunctionalExtensionality.
+From Coq.Logic Require Import FunctionalExtensionality Classical_Pred_Type.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
@@ -809,7 +809,7 @@ repeat
     Qed.
 
     (* ϕ is a well-formed body of ex *)
-    Lemma pattern_interpretation_exists_predicate M ϕ ρₑ ρₛ :
+    Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρₛ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
       pattern_interpretation ρₑ ρₛ (patt_exists ϕ) = Full <->
@@ -851,6 +851,80 @@ repeat
         constructor. exists m. assumption.
     Qed.
 
+    Lemma pattern_interpretation_exists_empty M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      pattern_interpretation ρₑ ρₛ (patt_exists ϕ) = Empty <->
+      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Empty.
+    Proof.
+      intros x.
+      rewrite -> pattern_interpretation_ex_simpl. simpl.
+      rewrite eq_iff_Same_set.
+      split.
+      - intros [H1 _]. unfold Included in H1. unfold In in H1 at 1.
+        intros m.
+        rewrite eq_iff_Same_set. unfold Empty.
+        apply Same_set_Empty_set. unfold Included.
+        intros x0. unfold In in *.
+        intros Contra.
+        specialize (H1 x0). unfold Empty in H1. apply H1.
+        constructor. exists m. subst x. assumption.
+      - intros H.
+        apply Same_set_Empty_set. unfold Included.
+        intros x0. intros [m [m' Contra]]. unfold Empty in H.
+        specialize (H m'). subst x.
+        rewrite -> H in Contra. inversion Contra.
+    Qed.
+    
+    Lemma pattern_interpretation_forall_predicate M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) ->
+      pattern_interpretation ρₑ ρₛ (patt_forall ϕ) = Full <->
+      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full.
+    Proof.
+      intros x H.
+      unfold patt_forall.
+      rewrite -> pattern_interpretation_not_simpl.
+      
+      rewrite eq_iff_Same_set.
+      unfold Full.
+      pose proof (Hcompl := @Compl_Compl_Ensembles (Domain M) (Full_set _)).
+      rewrite <- eq_iff_Same_set in Hcompl.
+      rewrite <- Hcompl at 1.
+      rewrite <- Same_set_Compl.
+      pose proof (Hscfie := @Complement_Full_is_Empty (Domain M)).
+      apply eq_iff_Same_set in Hscfie.
+      rewrite -> Hscfie at 1.
+      rewrite <- eq_iff_Same_set.
+      rewrite -> pattern_interpretation_exists_empty.
+
+      assert (Hfr: fresh_evar (¬ϕ)%ml = fresh_evar ϕ).
+      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
+        rewrite -> union_empty_r_L. reflexivity.
+      }
+
+      rewrite -> Hfr. subst x.
+      autorewrite with ml_db.
+      pose proof (Hcfe := @Complement_Full_is_Empty (Domain M)).
+      apply eq_iff_Same_set in Hcfe.
+      split; intros H'.
+      - intros m.
+        specialize (H' m).
+        rewrite -> pattern_interpretation_not_simpl in H'.
+        unfold Empty in H'. rewrite <- Hcfe in H'.
+        apply eq_iff_Same_set in H'.
+        apply Same_set_Compl in H'.
+        apply eq_iff_Same_set. assumption.
+      - intros m.
+        specialize (H' m).
+        rewrite -> pattern_interpretation_not_simpl.
+        unfold Empty.
+        rewrite <- Hcfe.
+        apply eq_iff_Same_set.
+        apply eq_iff_Same_set in H'.
+        rewrite <- Same_set_Compl.
+        assumption.
+    Qed.
+    
     (* Theory,axiom ref. snapshot: Definition 5 *)
 
     Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
