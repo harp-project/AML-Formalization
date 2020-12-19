@@ -712,27 +712,36 @@ repeat
 
     (* TODO top forall iff *)
 
-
-    Lemma predicate_not_empty_impl_full M ϕ ρₑ ρₛ :
+    Lemma predicate_not_empty_iff_full M ϕ ρₑ ρₛ :
       M_predicate M ϕ ->
-      @pattern_interpretation M ρₑ ρₛ ϕ <> Empty ->
+      @pattern_interpretation M ρₑ ρₛ ϕ <> Empty <->
       @pattern_interpretation M ρₑ ρₛ ϕ = Full.
     Proof.
-      intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
-      destruct Hmp.
-      + assumption.
-      + contradiction.
+      intros Hmp.
+      split.
+      - intros Hne. specialize (Hmp ρₑ ρₛ).
+        destruct Hmp.
+        + assumption.
+        + contradiction.
+      - intros Hf.
+        apply full_impl_not_empty.
+        assumption.
     Qed.
 
-    Lemma predicate_not_full_impl_empty M ϕ ρₑ ρₛ :
+    Lemma predicate_not_full_iff_empty M ϕ ρₑ ρₛ :
       M_predicate M ϕ ->
-      @pattern_interpretation M ρₑ ρₛ ϕ <> Full ->
+      @pattern_interpretation M ρₑ ρₛ ϕ <> Full <->
       @pattern_interpretation M ρₑ ρₛ ϕ = Empty.
     Proof.
-      intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
-      destruct Hmp.
-      + contradiction.
-      + assumption.
+      intros Hmp.
+      split.
+      - intros Hne. specialize (Hmp ρₑ ρₛ).
+        destruct Hmp.
+        + contradiction.
+        + assumption.
+      - intros Hf.
+        apply empty_impl_not_full.
+        assumption.
     Qed.
 
 
@@ -771,7 +780,7 @@ repeat
           + contradiction.
         }
         rewrite <- Heqmm' in Hϕ.
-        apply predicate_not_empty_impl_full.
+        apply predicate_not_empty_iff_full.
         + rewrite -> Heqx. unfold fresh_evar in Hmp. assumption.
         + intros Contra. apply eq_to_Same_set in Contra.
           apply Contains_Elements_Not_Empty in Contra.
