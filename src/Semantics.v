@@ -8,7 +8,8 @@ From Coq.Logic Require Import FunctionalExtensionality.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
-From stdpp Require Import fin_sets.
+From stdpp Require Import base fin_sets.
+From stdpp Require Import pmap gmap mapset fin_sets.
 
 From MatchingLogic.Utils Require Import Lattice Ensembles_Ext stdpp_ext extralibrary.
 From MatchingLogic Require Import Syntax.
@@ -1276,8 +1277,25 @@ Proof.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
     apply Extensionality_Ensembles. apply FA_Union_same. intros. unfold Same_set, Included, In. split.
     + intros. destruct (evar_eqdec fresh1 fresh2). 
-      * subst. auto. Print singleton.
-      * remember (@evar_fresh (@variables signature) ([fresh1; fresh2; fresh11; fresh22] 
+      * subst. auto. Check @evar_fresh. Locate "∪". Check @singleton. (*Print EVarSet.*)
+      * Check ((@singleton evar (@EVarSet signature) _ fresh1) ∪ {[fresh2; fresh11; fresh22]}).
+        pose (B := (@singleton evar (@EVarSet signature) _ fresh1) ∪ {[fresh2; fresh11; fresh22]}
+                                                                   ∪ (free_evars (evar_open (n0+1) fresh1 phi)) ∪ (free_evars (evar_open (n0+1) fresh2 phi))).
+        remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
+        assert (fresh3 ≠ fresh1).
+        {
+          Search evar_fresh elements.
+          Search "∈" eq.
+          Check elem_of_list_singleton.
+        }
+        
+        remember (@evar_fresh (@variables signature) (
+                                @elements evar EVarSet ({[fresh1]} ∪ {[fresh2]} ∪ {[fresh11]} ∪ {[fresh22]})))
+          as fresh3.
+                   ++ (elements (free_evars (evar_open (n0 + 1) fresh1 phi)))
+                   ++ (elements (free_evars (evar_open (n0 + 1) fresh2 phi)))))) as fresh3.
+
+        remember (@evar_fresh (@variables signature) ([fresh1; fresh2; fresh11; fresh22] 
                    ++ (elements (free_evars (evar_open (n0 + 1) fresh1 phi)))
                    ++ (elements (free_evars (evar_open (n0 + 1) fresh2 phi))))) as fresh3.
          admit.
