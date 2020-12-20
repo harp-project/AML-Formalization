@@ -1181,9 +1181,7 @@ Proof.
 
 Admitted.
 
-End semantics.
-
-Lemma update_val_fresh12 {sig : Signature} {m : @Model sig}:
+Lemma update_val_fresh12{m : Model}:
   forall sz  phi n,
     le (size phi) sz ->
     forall fresh1 fresh2,
@@ -1192,7 +1190,7 @@ Lemma update_val_fresh12 {sig : Signature} {m : @Model sig}:
       ->
       forall evar_val svar_val c,
         pattern_interpretation (update_evar_val fresh1 c evar_val) svar_val (evar_open n fresh1 phi) =
-        @pattern_interpretation sig m (update_evar_val fresh2 c evar_val) svar_val (evar_open n fresh2 phi).
+        @pattern_interpretation m (update_evar_val fresh2 c evar_val) svar_val (evar_open n fresh2 phi).
 Proof. 
 
   (* Induction on size *)
@@ -1277,10 +1275,43 @@ Proof.
     remember (fresh_evar (evar_open (n0 + 1) fresh2 phi)) as fresh22.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
     apply Extensionality_Ensembles. apply FA_Union_same. intros. unfold Same_set, Included, In. split.
-    + intros. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
-      destruct (evar_eqdec fresh1 fresh2). 
+    + intros. destruct (evar_eqdec fresh1 fresh2). 
+      * subst. auto. Print singleton.
+      * remember (@evar_fresh (@variables signature) ([fresh1; fresh2; fresh11; fresh22] 
+                   ++ (elements (free_evars (evar_open (n0 + 1) fresh1 phi)))
+                   ++ (elements (free_evars (evar_open (n0 + 1) fresh2 phi))))) as fresh3.
+         admit.
+      
+(*    We need a fresh3 evar such that fresh3 ≠ fresh1,fresh2,fresh11,fresh22 and 
+      fresh3 is fresh in (evar_open (n0 + 1) fresh2 phi) 
+      and (evar_open (n0 + 1) fresh1 phi).
+      Let fresh3 := fresh_evar ({fresh1} U {fresh2} U {fresh11} U {fresh22}
+                                 U free_evars (evar_open (n0 + 1) fresh1 phi)
+                                 U free_evars (evar_open (n0 + 1) fresh2 phi)).
+      We can now rewrite fresh22 to fresh3 in goal (IHsz)
+      rewrite fresh11 to fresh3 in H (IHsz)
+      do swaps in H and goal (update_evar_val_comm and evar_open_comm)
+      rewrite fresh1 to fresh2 in H (IHsz).
+      Goal should be exactly the H. *)
+
+    + intros. destruct (evar_eqdec fresh1 fresh2).
       * subst. auto.
-      * epose (IHsz (evar_open (n0 + 1) fresh1 phi) 0 _ fresh11 fresh22 _ _ _ _   
+      * admit.
+  - erewrite -> IHsz. reflexivity. lia. assumption. assumption. assumption. assumption.
+  - simpl. repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
+    assert ((λ S : Ensemble (Domain m),
+        pattern_interpretation (update_evar_val fresh1 c eval)
+          (update_svar_val (fresh_svar (evar_open n0 fresh1 phi)) S sval)
+          (svar_open 0 (fresh_svar (evar_open n0 fresh1 phi)) (evar_open n0 fresh1 phi))) = (λ S : Ensemble (Domain m),
+        pattern_interpretation (update_evar_val fresh2 c eval)
+          (update_svar_val (fresh_svar (evar_open n0 fresh2 phi)) S sval)
+          (svar_open 0 (fresh_svar (evar_open n0 fresh2 phi)) (evar_open n0 fresh2 phi)))).
+    + apply functional_extensionality. intros. repeat rewrite <- svar_open_evar_open_comm.
+      
+      erewrite -> IHsz. 
+      Print svar_is_fresh_in.
+    
+     (* epose (IHsz (evar_open (n0 + 1) fresh1 phi) 0 _ fresh11 fresh22 _ _ _ _   
                     (update_evar_val fresh1 c eval) sval c0).
         rewrite -> e in H. clear e.
         rewrite -> update_evar_val_comm.
@@ -1293,9 +1324,12 @@ Proof.
         destruct (evar_eqdec fresh1 fresh22).
         -- admit. (*TODO: Counterexample. *)
         -- assumption.
-        -- admit. (* From Heqfresh22 *)
+        -- admit. (* From Heqfresh22 *) *)
 
 Admitted. (* update_val_fresh_12 *)
+
+End semantics.
+
 
 Module Notations.
   Declare Scope ml_scope.
