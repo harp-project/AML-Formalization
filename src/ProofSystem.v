@@ -16,7 +16,7 @@ Section ml_proof_system.
 Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
-  (well_formed phi) -> (@well_formed signature psi) ->
+  (well_formed (ex, phi)) -> (@well_formed signature psi) ->
   (forall axiom : Pattern,
      Ensembles.In Pattern theory axiom ->
      forall (evar_val : evar -> Domain m)
@@ -40,19 +40,40 @@ Proof.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars psi)).
-    admit.
-    assert ((evar_fresh (elements (union (free_evars phi) (free_evars psi)))) ∉ (free_evars phi)).
-    admit.
-    rewrite evar_open_fresh in Hext_re; try assumption.
-    rewrite update_valuation_fresh in Hext_re; try assumption.
-    repeat rewrite evar_open_fresh; try assumption.
-    repeat rewrite update_valuation_fresh; try assumption.
-    repeat split; assumption.
-    admit. admit.
-Admitted.
+    split. erewrite -> (@update_val_fresh12 signature m (Syntax.size phi)) in Hext_re. exact Hext_re.
+    lia. 
+    apply set_evar_fresh_is_fresh.
+    {
+      unfold fresh_evar. simpl. 
+      pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    {
+      unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
+      unfold wfc_body_ex in H2. eapply H2. apply set_evar_fresh_is_fresh'.
+    }
+    {
+      unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
+      unfold wfc_body_ex in H2. eapply H2.
+      unfold fresh_evar. simpl. 
+      pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    split.
+      * erewrite -> (update_valuation_fresh). erewrite -> (evar_open_fresh). exact Hext_le.
+        unfold well_formed in H0. destruct H0. assumption.
+        rewrite -> (evar_open_fresh). unfold well_formed in H0. destruct H0. assumption.
+        unfold well_formed in H0. destruct H0. assumption.
+        {
+          rewrite evar_open_fresh. unfold fresh_evar. simpl. 
+          pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+          unfold well_formed in H0. destruct H0. assumption.
+        }
+      * assumption.
+Qed.
 
 Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):

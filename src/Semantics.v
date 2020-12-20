@@ -1277,29 +1277,228 @@ Proof.
     remember (fresh_evar (evar_open (n0 + 1) fresh1 phi)) as fresh11.
     apply Extensionality_Ensembles. apply FA_Union_same. intros. unfold Same_set, Included, In. split.
     + intros. destruct (evar_eqdec fresh1 fresh2). 
-      * subst. auto. Check @evar_fresh. Locate "∪". Check @singleton. (*Print EVarSet.*)
-      * Check ((@singleton evar (@EVarSet signature) _ fresh1) ∪ {[fresh2; fresh11; fresh22]}).
-        pose (B := (@singleton evar (@EVarSet signature) _ fresh1) ∪ {[fresh2; fresh11; fresh22]}
-                                                                   ∪ (free_evars (evar_open (n0+1) fresh1 phi)) ∪ (free_evars (evar_open (n0+1) fresh2 phi))).
+      * subst. auto.
+      * remember ((@singleton evar (@EVarSet signature) _ fresh1) ∪ ((singleton fresh2) ∪ ((singleton fresh11)
+                 ∪ ((singleton fresh22)
+              ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                ∪ (free_evars phi))))))) as B.
         remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
-        assert (fresh3 ≠ fresh1).
+        assert(fresh3 ∉ B).
         {
-          Search evar_fresh elements.
-          Search "∈" eq.
-          Check elem_of_list_singleton.
+          subst. apply set_evar_fresh_is_fresh'.
         }
-        
-        remember (@evar_fresh (@variables signature) (
-                                @elements evar EVarSet ({[fresh1]} ∪ {[fresh2]} ∪ {[fresh11]} ∪ {[fresh22]})))
-          as fresh3.
-                   ++ (elements (free_evars (evar_open (n0 + 1) fresh1 phi)))
-                   ++ (elements (free_evars (evar_open (n0 + 1) fresh2 phi)))))) as fresh3.
-
-        remember (@evar_fresh (@variables signature) ([fresh1; fresh2; fresh11; fresh22] 
-                   ++ (elements (free_evars (evar_open (n0 + 1) fresh1 phi)))
-                   ++ (elements (free_evars (evar_open (n0 + 1) fresh2 phi))))) as fresh3.
-         admit.
-      
+        assert(fresh3 ≠ fresh1).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0. apply not_elem_of_singleton_1 in H0. assumption.
+        }
+        assert(fresh3 ≠ fresh2).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H2. destruct H2.
+                  apply not_elem_of_singleton_1 in H2. assumption. 
+        }
+        assert(fresh3 ≠ fresh11).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H3. destruct H3.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H4. destruct H4.
+                  apply not_elem_of_singleton_1 in H4. assumption.
+        }
+        assert(fresh3 ≠ fresh22).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H4. destruct H4.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H5. destruct H5.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H6. destruct H6.
+                  apply not_elem_of_singleton_1 in H6. assumption.
+        }
+        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh1 phi))).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H5. destruct H5.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H6. destruct H6.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H7. destruct H7.
+                  epose (not_elem_of_union fresh3 
+                  (free_evars (evar_open (n0+1) fresh1 phi)) 
+                  (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))).
+                  apply i3 in H8. destruct H8. assumption.
+        }
+        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh2 phi)) ∧ fresh3 ∉ free_evars phi).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H6. destruct H6.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H7. destruct H7.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H8. destruct H8.
+                  epose (not_elem_of_union fresh3 
+                  (free_evars (evar_open (n0+1) fresh1 phi)) 
+                  (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))).
+                  apply i3 in H9. destruct H9. 
+                  apply not_elem_of_union in H10. assumption.
+        }
+        destruct H6.
+        erewrite -> (IHsz _ _ _ _ fresh3).
+        erewrite -> (IHsz _ _ _ _ fresh3) in H.
+        rewrite -> update_evar_val_comm. rewrite -> evar_open_comm.
+        rewrite -> update_evar_val_comm in H. rewrite -> evar_open_comm in H.
+        erewrite -> (IHsz _ _ _ _ fresh1). assumption. Check fresh_notin.
+        apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
+        erewrite <- (evar_open_size). lia.
+        simpl in HLs1, HLs2. assumption.
+        assumption.
+        admit.
+        apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
+        erewrite <- (evar_open_size). lia.
+        simpl in HLs1. assumption.
+        assumption.
+        admit.
+        {
+          rewrite -> evar_open_comm. simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. exact (Hwfb2 fresh3 H6). lia.
+        }
+        {
+          rewrite -> evar_open_comm. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. exact (Hwfb1 fresh3 H5). lia.
+        }
+        lia. assumption. lia. assumption. subst fresh11. apply set_evar_fresh_is_fresh.
+        assumption.
+        {
+          simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. eapply (Hwfb1 fresh11).
+          rewrite -> Heqfresh11. apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. apply (Hwfb1 fresh3 H5).
+        }
+        rewrite -> Heqfresh22. apply set_evar_fresh_is_fresh.
+        assumption.
+        {
+          simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. eapply (Hwfb2 fresh22).
+          rewrite -> Heqfresh22. apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. apply (Hwfb2 fresh3 H6).
+        }
 (*    We need a fresh3 evar such that fresh3 ≠ fresh1,fresh2,fresh11,fresh22 and 
       fresh3 is fresh in (evar_open (n0 + 1) fresh2 phi) 
       and (evar_open (n0 + 1) fresh1 phi).
@@ -1314,7 +1513,227 @@ Proof.
 
     + intros. destruct (evar_eqdec fresh1 fresh2).
       * subst. auto.
-      * admit.
+      * remember ((@singleton evar (@EVarSet signature) _ fresh1) ∪ ((singleton fresh2) ∪ ((singleton fresh11)
+                 ∪ ((singleton fresh22)
+              ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                ∪ (free_evars phi))))))) as B.
+        remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
+        assert(fresh3 ∉ B).
+        {
+          subst. apply set_evar_fresh_is_fresh'.
+        }
+        assert(fresh3 ≠ fresh1).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0. apply not_elem_of_singleton_1 in H0. assumption.
+        }
+        assert(fresh3 ≠ fresh2).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H2. destruct H2.
+                  apply not_elem_of_singleton_1 in H2. assumption. 
+        }
+        assert(fresh3 ≠ fresh11).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H3. destruct H3.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H4. destruct H4.
+                  apply not_elem_of_singleton_1 in H4. assumption.
+        }
+        assert(fresh3 ≠ fresh22).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H4. destruct H4.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H5. destruct H5.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H6. destruct H6.
+                  apply not_elem_of_singleton_1 in H6. assumption.
+        }
+        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh1 phi))).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H5. destruct H5.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H6. destruct H6.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H7. destruct H7.
+                  epose (not_elem_of_union fresh3 
+                  (free_evars (evar_open (n0+1) fresh1 phi)) 
+                  (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))).
+                  apply i3 in H8. destruct H8. assumption.
+        }
+        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh2 phi)) ∧ fresh3 ∉ free_evars phi).
+        {
+          subst B. epose (not_elem_of_union fresh3 {[fresh1]} 
+                  ((singleton fresh2) 
+                  ∪ ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))))).
+                  apply i in H0. destruct H0.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh2) 
+                  ((singleton fresh11)
+                  ∪ ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))))).
+                  apply i0 in H6. destruct H6.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh11)
+                  ((singleton fresh22)
+                  ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))))).
+                  apply i1 in H7. destruct H7.
+                  epose (not_elem_of_union fresh3 
+                  (singleton fresh22)
+                  ((free_evars (evar_open (n0+1) fresh1 phi)) 
+                  ∪ (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi)))).
+                  apply i2 in H8. destruct H8.
+                  epose (not_elem_of_union fresh3 
+                  (free_evars (evar_open (n0+1) fresh1 phi)) 
+                  (free_evars (evar_open (n0+1) fresh2 phi)
+                  ∪ (free_evars phi))).
+                  apply i3 in H9. destruct H9. 
+                  apply not_elem_of_union in H10. assumption.
+        }
+        destruct H6.
+        erewrite -> (IHsz _ _ _ _ fresh3) in H.
+        erewrite -> (IHsz _ _ _ _ fresh3).
+        rewrite -> update_evar_val_comm in H. rewrite -> evar_open_comm in H.
+        rewrite -> update_evar_val_comm. rewrite -> evar_open_comm.
+        erewrite -> (IHsz _ _ _ _ fresh1) in H. assumption.
+        apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
+        erewrite <- (evar_open_size). lia.
+        simpl in HLs1, HLs2. assumption.
+        assumption.
+        admit.
+        apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
+        erewrite <- (evar_open_size). lia.
+        simpl in HLs1. assumption.
+        assumption.
+        admit.
+        {
+          rewrite -> evar_open_comm. simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. exact (Hwfb2 fresh3 H6). lia.
+        }
+        {
+          rewrite -> evar_open_comm. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. exact (Hwfb1 fresh3 H5). lia.
+        }
+        lia. assumption. lia. assumption. subst fresh11. apply set_evar_fresh_is_fresh.
+        assumption.
+        {
+          simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. eapply (Hwfb1 fresh11).
+          rewrite -> Heqfresh11. apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
+          unfold wfc_body_ex in Hwfb1. apply (Hwfb1 fresh3 H5).
+        }
+        rewrite -> Heqfresh22. apply set_evar_fresh_is_fresh.
+        assumption.
+        {
+          simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. eapply (Hwfb2 fresh22).
+          rewrite -> Heqfresh22. apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
+          unfold wfc_body_ex in Hwfb2. apply (Hwfb2 fresh3 H6).
+        }
   - erewrite -> IHsz. reflexivity. lia. assumption. assumption. assumption. assumption.
   - simpl. repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
     assert ((λ S : Ensemble (Domain m),
@@ -1325,25 +1744,32 @@ Proof.
           (update_svar_val (fresh_svar (evar_open n0 fresh2 phi)) S sval)
           (svar_open 0 (fresh_svar (evar_open n0 fresh2 phi)) (evar_open n0 fresh2 phi)))).
     + apply functional_extensionality. intros. repeat rewrite <- svar_open_evar_open_comm.
-      
-      erewrite -> IHsz. 
-      Print svar_is_fresh_in.
-    
-     (* epose (IHsz (evar_open (n0 + 1) fresh1 phi) 0 _ fresh11 fresh22 _ _ _ _   
-                    (update_evar_val fresh1 c eval) sval c0).
-        rewrite -> e in H. clear e.
-        rewrite -> update_evar_val_comm.
-        rewrite -> evar_open_comm. 2: lia.
-        
-        epose (IHsz (evar_open 0 fresh22 phi) (n0+1) _ fresh1 fresh2 _ _ _ _ 
-                    (update_evar_val fresh22 c0 eval) sval c).
-        rewrite <- e. rewrite -> evar_open_comm. 2: lia.
-        rewrite -> update_evar_val_comm. assumption.
-        destruct (evar_eqdec fresh1 fresh22).
-        -- admit. (*TODO: Counterexample. *)
-        -- assumption.
-        -- admit. (* From Heqfresh22 *) *)
-
+      unfold fresh_svar.
+      erewrite -> (free_svars_evar_open phi n0 fresh1).
+      erewrite -> (free_svars_evar_open phi n0 fresh2).
+      erewrite -> IHsz. reflexivity.
+      rewrite <- svar_open_size. lia.
+      rewrite -> free_evars_svar_open. simpl in HLs1. assumption.
+      rewrite -> free_evars_svar_open. simpl in HLs2. assumption.
+      {
+        simpl in Hwfb1. apply wfc_mu_to_wfc_body in Hwfb1. unfold wfc_body_mu in Hwfb1.
+        erewrite -> (svar_open_evar_open_comm). eapply (Hwfb1 (svar_fresh (elements (free_svars phi)))).
+        rewrite free_svars_evar_open. apply set_svar_fresh_is_fresh'.
+      }
+      {
+        simpl in Hwfb2. apply wfc_mu_to_wfc_body in Hwfb2. unfold wfc_body_mu in Hwfb2.
+        erewrite -> (svar_open_evar_open_comm). eapply (Hwfb2 (svar_fresh (elements (free_svars phi)))).
+        rewrite free_svars_evar_open. apply set_svar_fresh_is_fresh'.
+      }
+    + rewrite -> H. reflexivity.
+  - erewrite -> IHsz. reflexivity. lia. assumption. assumption. assumption. assumption.
+  Unshelve.
+  rewrite <- evar_open_size. lia.
+  rewrite <- evar_open_size. lia.
+  rewrite <- evar_open_size. lia.
+  rewrite <- evar_open_size. lia.
+  rewrite <- evar_open_size. lia.
+  rewrite <- evar_open_size. lia.
 Admitted. (* update_val_fresh_12 *)
 
 End semantics.
