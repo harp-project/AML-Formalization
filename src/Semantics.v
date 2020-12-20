@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Coq Require Import Ensembles.
-From Coq.Logic Require Import FunctionalExtensionality.
+From Coq.Logic Require Import FunctionalExtensionality Classical_Pred_Type.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
@@ -710,29 +710,53 @@ repeat
         + unfold Included. intros. inversion H1.
     Qed.
 
-    (* TODO top forall iff *)
-
-
-    Lemma predicate_not_empty_impl_full M ϕ ρₑ ρₛ :
-      M_predicate M ϕ ->
-      @pattern_interpretation M ρₑ ρₛ ϕ <> Empty ->
-      @pattern_interpretation M ρₑ ρₛ ϕ = Full.
+    Lemma M_predicate_top M : M_predicate M patt_top.
     Proof.
-      intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
-      destruct Hmp.
-      + assumption.
-      + contradiction.
+      unfold patt_top. apply M_predicate_not. apply M_predicate_bott.
     Qed.
 
-    Lemma predicate_not_full_impl_empty M ϕ ρₑ ρₛ :
+    Lemma M_predicate_iff M ϕ₁ ϕ₂ :
+      M_predicate M ϕ₁ ->
+      M_predicate M ϕ₂ ->
+      M_predicate M (patt_iff ϕ₁ ϕ₂).
+    Proof.
+      intros H1 H2.
+      unfold patt_iff.
+      apply M_predicate_and; apply M_predicate_impl; auto.
+    Qed.
+
+    (* TODO forall *)
+
+    Lemma predicate_not_empty_iff_full M ϕ ρₑ ρₛ :
       M_predicate M ϕ ->
-      @pattern_interpretation M ρₑ ρₛ ϕ <> Full ->
+      @pattern_interpretation M ρₑ ρₛ ϕ <> Empty <->
+      @pattern_interpretation M ρₑ ρₛ ϕ = Full.
+    Proof.
+      intros Hmp.
+      split.
+      - intros Hne. specialize (Hmp ρₑ ρₛ).
+        destruct Hmp.
+        + assumption.
+        + contradiction.
+      - intros Hf.
+        apply full_impl_not_empty.
+        assumption.
+    Qed.
+
+    Lemma predicate_not_full_iff_empty M ϕ ρₑ ρₛ :
+      M_predicate M ϕ ->
+      @pattern_interpretation M ρₑ ρₛ ϕ <> Full <->
       @pattern_interpretation M ρₑ ρₛ ϕ = Empty.
     Proof.
-      intros Hmp Hne. specialize (Hmp ρₑ ρₛ).
-      destruct Hmp.
-      + contradiction.
-      + assumption.
+      intros Hmp.
+      split.
+      - intros Hne. specialize (Hmp ρₑ ρₛ).
+        destruct Hmp.
+        + contradiction.
+        + assumption.
+      - intros Hf.
+        apply empty_impl_not_full.
+        assumption.
     Qed.
 
 
@@ -771,7 +795,7 @@ repeat
           + contradiction.
         }
         rewrite <- Heqmm' in Hϕ.
-        apply predicate_not_empty_impl_full.
+        apply predicate_not_empty_iff_full.
         + rewrite -> Heqx. unfold fresh_evar in Hmp. assumption.
         + intros Contra. apply eq_to_Same_set in Contra.
           apply Contains_Elements_Not_Empty in Contra.
@@ -784,6 +808,123 @@ repeat
           specialize (H2 m). apply H2. unfold Ensembles.In. constructor.
     Qed.
 
+    (* ϕ is a well-formed body of ex *)
+    Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) ->
+      pattern_interpretation ρₑ ρₛ (patt_exists ϕ) = Full <->
+      ∃ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full.
+    Proof.
+      intros x Hpred.
+      pose proof (Hpredex := M_predicate_exists Hpred).
+      rewrite -[pattern_interpretation _ _ _ = Full]predicate_not_empty_iff_full. 2: auto.
+      
+      (*
+        (* I would like to simplify the RHS, but cannot find a way. *)
+        under [fun m => _]functional_extensionality => m.
+        (* This fails *)
+        Fail rewrite <- predicate_not_empty_iff_full.
+        Fail rewrite -[_ = Full]predicate_not_empty_iff_full.
+        over.
+       *)
+
+      rewrite eq_iff_Same_set.
+      rewrite -> Not_Empty_iff_Contains_Elements.
+      split.
+      - intros [x0 Hx0].
+        rewrite -> pattern_interpretation_ex_simpl in Hx0.
+        simpl in Hx0. inversion Hx0. subst x1.
+        destruct H as [c Hc].
+        exists c.
+        rewrite -predicate_not_empty_iff_full. 2: assumption.
+        rewrite eq_iff_Same_set.
+        rewrite Not_Empty_iff_Contains_Elements.
+        exists x0. apply Hc.
+      - intros [m Hm].
+        apply full_impl_not_empty in Hm.
+        rewrite -> eq_iff_Same_set in Hm.
+        unfold Empty in Hm.
+        apply Not_Empty_iff_Contains_Elements in Hm.
+        destruct Hm as [x0 Hx0].
+        exists x0.
+        rewrite pattern_interpretation_ex_simpl. simpl.
+        constructor. exists m. assumption.
+    Qed.
+
+    Lemma pattern_interpretation_exists_empty M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      pattern_interpretation ρₑ ρₛ (patt_exists ϕ) = Empty <->
+      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Empty.
+    Proof.
+      intros x.
+      rewrite -> pattern_interpretation_ex_simpl. simpl.
+      rewrite eq_iff_Same_set.
+      split.
+      - intros [H1 _]. unfold Included in H1. unfold In in H1 at 1.
+        intros m.
+        rewrite eq_iff_Same_set. unfold Empty.
+        apply Same_set_Empty_set. unfold Included.
+        intros x0. unfold In in *.
+        intros Contra.
+        specialize (H1 x0). unfold Empty in H1. apply H1.
+        constructor. exists m. subst x. assumption.
+      - intros H.
+        apply Same_set_Empty_set. unfold Included.
+        intros x0. intros [m [m' Contra]]. unfold Empty in H.
+        specialize (H m'). subst x.
+        rewrite -> H in Contra. inversion Contra.
+    Qed.
+    
+    Lemma pattern_interpretation_forall_predicate M ϕ ρₑ ρₛ :
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) ->
+      pattern_interpretation ρₑ ρₛ (patt_forall ϕ) = Full <->
+      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full.
+    Proof.
+      intros x H.
+      unfold patt_forall.
+      rewrite -> pattern_interpretation_not_simpl.
+      
+      rewrite eq_iff_Same_set.
+      unfold Full.
+      pose proof (Hcompl := @Compl_Compl_Ensembles (Domain M) (Full_set _)).
+      rewrite <- eq_iff_Same_set in Hcompl.
+      rewrite <- Hcompl at 1.
+      rewrite <- Same_set_Compl.
+      pose proof (Hscfie := @Complement_Full_is_Empty (Domain M)).
+      apply eq_iff_Same_set in Hscfie.
+      rewrite -> Hscfie at 1.
+      rewrite <- eq_iff_Same_set.
+      rewrite -> pattern_interpretation_exists_empty.
+
+      assert (Hfr: fresh_evar (¬ϕ)%ml = fresh_evar ϕ).
+      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
+        rewrite -> union_empty_r_L. reflexivity.
+      }
+
+      rewrite -> Hfr. subst x.
+      autorewrite with ml_db.
+      pose proof (Hcfe := @Complement_Full_is_Empty (Domain M)).
+      apply eq_iff_Same_set in Hcfe.
+      split; intros H'.
+      - intros m.
+        specialize (H' m).
+        rewrite -> pattern_interpretation_not_simpl in H'.
+        unfold Empty in H'. rewrite <- Hcfe in H'.
+        apply eq_iff_Same_set in H'.
+        apply Same_set_Compl in H'.
+        apply eq_iff_Same_set. assumption.
+      - intros m.
+        specialize (H' m).
+        rewrite -> pattern_interpretation_not_simpl.
+        unfold Empty.
+        rewrite <- Hcfe.
+        apply eq_iff_Same_set.
+        apply eq_iff_Same_set in H'.
+        rewrite <- Same_set_Compl.
+        assumption.
+    Qed.
+    
     (* Theory,axiom ref. snapshot: Definition 5 *)
 
     Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=

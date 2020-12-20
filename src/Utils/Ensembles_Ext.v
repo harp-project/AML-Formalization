@@ -563,12 +563,29 @@ Proof.
   pose (H2 x H0). inversion e.
 Qed.
 
+Lemma Not_Empty_iff_Contains_Elements : forall {T : Type}, forall S : Ensemble T,
+  ~ Same_set T S (Empty_set T) <->
+  exists x : T, S x.
+Proof.
+  intros. split.
+  - apply Not_Empty_Contains_Elements.
+  - apply Contains_Elements_Not_Empty.
+Qed.
+
 Lemma Same_set_Full_set : forall {T : Type} (S : Ensemble T),
     Included T (Full_set T) S -> Same_set T (Full_set T) S.
 Proof.
   intros. unfold Same_set.
   split. assumption.
   unfold Included. intros. constructor.
+Qed.
+
+Lemma Same_set_Empty_set : forall {T : Type} (S : Ensemble T),
+    Included T S (Empty_set T) -> Same_set T S (Empty_set T).
+Proof.
+  intros H. unfold Same_set.
+  split. assumption.
+  unfold Included. intros. unfold In in H1. inversion H1.
 Qed.
 
 Lemma Included_transitive : forall {T : Type} (S1 S2 S3 : Ensemble T),
@@ -601,4 +618,12 @@ Lemma eq_to_Same_set {T : Type} {A B : Ensemble T} :
   A = B -> Same_set T A B.
 Proof.
   intros H. rewrite -> H. apply Same_set_refl.
+Qed.
+
+Lemma eq_iff_Same_set {T : Type} {A B : Ensemble T} :
+  A = B <-> Same_set T A B.
+Proof.
+  split.
+  - apply eq_to_Same_set.
+  - apply Same_set_to_eq.
 Qed.
