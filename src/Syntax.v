@@ -1635,3 +1635,18 @@ Module Notations.
   Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
 End Notations.
+
+Module BoundVarSugar.
+  (* Element variables - bound *)
+  Notation b0 := (patt_bound_evar 0).
+  Notation b1 := (patt_bound_evar 1).
+  Notation b2 := (patt_bound_evar 2).
+  Notation b3 := (patt_bound_evar 3).
+  Notation b4 := (patt_bound_evar 4).
+  Notation b5 := (patt_bound_evar 5).
+  Notation b6 := (patt_bound_evar 6).
+  Notation b7 := (patt_bound_evar 7).
+  Notation b8 := (patt_bound_evar 8).
+  Notation b9 := (patt_bound_evar 9).
+  
+End BoundVarSugar.
