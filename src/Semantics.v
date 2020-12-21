@@ -1463,12 +1463,12 @@ Proof.
         erewrite <- (evar_open_size). lia.
         simpl in HLs1, HLs2. assumption.
         assumption.
-        admit.
+        apply not_eq_sym. assumption.
         apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
         erewrite <- (evar_open_size). lia.
         simpl in HLs1. assumption.
         assumption.
-        admit.
+        apply not_eq_sym. assumption.
         {
           rewrite -> evar_open_comm. simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
           unfold wfc_body_ex in Hwfb2. exact (Hwfb2 fresh3 H6). lia.
@@ -1698,12 +1698,12 @@ Proof.
         erewrite <- (evar_open_size). lia.
         simpl in HLs1, HLs2. assumption.
         assumption.
-        admit.
+        apply not_eq_sym. assumption.
         apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
         erewrite <- (evar_open_size). lia.
         simpl in HLs1. assumption.
         assumption.
-        admit.
+        apply not_eq_sym. assumption.
         {
           rewrite -> evar_open_comm. simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
           unfold wfc_body_ex in Hwfb2. exact (Hwfb2 fresh3 H6). lia.
@@ -1770,7 +1770,7 @@ Proof.
   rewrite <- evar_open_size. lia.
   rewrite <- evar_open_size. lia.
   rewrite <- evar_open_size. lia.
-Admitted. (* update_val_fresh_12 *)
+Qed. (* update_val_fresh_12 *)
 
 End semantics.
 
