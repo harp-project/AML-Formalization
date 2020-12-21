@@ -12,28 +12,22 @@ Section ml_proof_system.
 
   Context {signature : Signature}.
 
-
 Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
   (well_formed (ex, phi)) -> (@well_formed signature psi) ->
-  (forall axiom : Pattern,
-     Ensembles.In Pattern theory axiom ->
-     forall (evar_val : evar -> Domain m)
-       (svar_val : svar -> Power (Domain m)),
-     Same_set (Domain m) (pattern_interpretation evar_val svar_val axiom)
-       (Full_set (@Domain signature m))) ->
-  Same_set (Domain m)
-  (pattern_interpretation evar_val svar_val
-     (patt_imp (patt_app (patt_exists phi) psi)
-        (patt_exists (patt_app phi psi)))) (Full_set (Domain m)).
+  (∀ axiom : Pattern,
+       Ensembles.In Pattern theory axiom
+       → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+           pattern_interpretation evar_val svar_val axiom = Full) ->
+  pattern_interpretation evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi) = Full.
 Proof.
   intros Hwf H H0 Hv.
-  rewrite pattern_interpretation_imp_simpl.
+  rewrite pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
     constructor. constructor.
     remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
     right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
@@ -78,27 +72,19 @@ Qed.
 Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
-  (well_formed phi) -> (well_formed psi) ->
-  (forall axiom : Pattern,
-     Ensembles.In Pattern theory axiom ->
-     forall (evar_val : evar -> Domain m)
-       (svar_val : svar ->
-                   Power (Domain m)),
-     Same_set (Domain m)
-       (pattern_interpretation evar_val svar_val axiom)
-       (Full_set (Domain m))) ->
-  (Same_set (Domain m)
-  (pattern_interpretation evar_val svar_val
-     (patt_imp (patt_app psi (patt_exists phi))
-        (patt_exists (patt_app psi phi))))
-  (Full_set (Domain m))).
+  (well_formed (ex, phi)) -> (well_formed psi) ->
+  (∀ axiom : Pattern,
+       Ensembles.In Pattern theory axiom
+       → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+           pattern_interpretation evar_val svar_val axiom = Full) ->
+  pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi) = Full.
 Proof.
   intros Hwf H H0 Hv.
-  rewrite pattern_interpretation_imp_simpl.
+  rewrite pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
     constructor. constructor.
     remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. rewrite <- H1; clear H1.
+    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
     right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
@@ -107,17 +93,35 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars psi)).
-    admit.
-    assert ((evar_fresh (elements (union (free_evars psi) (free_evars phi)))) ∉ (free_evars phi)).
-    admit.
-    rewrite evar_open_fresh in Hext_re; try assumption.
-    rewrite update_valuation_fresh in Hext_re; try assumption.
-    repeat rewrite evar_open_fresh; try assumption.
-    repeat rewrite update_valuation_fresh; try assumption.
-    repeat split; assumption.
-    admit. admit.
-Admitted.
+    split.
+    - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
+      unfold well_formed in H0. destruct H0. assumption.
+      {
+        unfold fresh_evar. simpl. unfold evar_is_fresh_in.
+        pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+      }
+      unfold well_formed in H0. destruct H0. assumption.
+    - split.
+      + erewrite -> (@update_val_fresh12 signature m (Syntax.size phi)) in Hext_re. exact Hext_re.
+        lia.
+        apply set_evar_fresh_is_fresh.
+        {
+          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+        }
+        {
+          unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
+          unfold wfc_body_ex in H2. eapply H2. apply set_evar_fresh_is_fresh.
+        }
+        {
+          unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
+          unfold wfc_body_ex in H2. eapply H2.
+          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+        }
+      + assumption.
+Qed.
 
 
   
@@ -378,11 +382,11 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-  * admit. (* apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
-          (svar_val) Hwf H H0 Hv ). *)
+  * apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
+          (svar_val) Hwf H H0 Hv ).
 
-  * admit. (* apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
-          (svar_val) Hwf H H0 Hv). *)
+  * apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
+          (svar_val) Hwf H H0 Hv).
 
   * rewrite pattern_interpretation_iff_subset.
     rewrite pattern_interpretation_iff_subset in IHHp.
