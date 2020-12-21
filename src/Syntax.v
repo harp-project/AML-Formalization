@@ -610,28 +610,38 @@ Section syntax.
   Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
   Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
 
-  Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
+  Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
   Proof.
-    unfold evar_is_fresh_in.
-    unfold fresh_evar.
     intros H.
-    pose proof (Hf := @evar_fresh_is_fresh _ (elements (free_evars ϕ))).
+    pose proof (Hf := @evar_fresh_is_fresh _ (elements S)).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
     apply elem_of_list_In in H. contradiction.
   Qed.
-
-  Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
+  
+  Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
   Proof.
-    unfold svar_is_fresh_in.
-    unfold fresh_svar.
+    unfold evar_is_fresh_in.
+    unfold fresh_evar.
+    apply set_evar_fresh_is_fresh'.
+  Qed.
+
+  Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
+  Proof.
     intros H.
-    pose proof (Hf := @svar_fresh_is_fresh _ (elements (free_svars ϕ))).
+    pose proof (Hf := @svar_fresh_is_fresh _ (elements S)).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
     apply elem_of_list_In in H. contradiction.
+  Qed.
+  
+  Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
+  Proof.
+    unfold svar_is_fresh_in.
+    unfold fresh_svar.
+    apply set_svar_fresh_is_fresh'.
   Qed.
 
   (*If phi is a closed body, then (ex, phi) is closed too*)
