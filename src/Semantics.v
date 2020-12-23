@@ -809,16 +809,19 @@ repeat
           specialize (H2 m). apply H2. unfold Ensembles.In. constructor.
     Qed.
 
-    Lemma pattern_interpretation_impl_full_lhs M ϕ₁ ϕ₂ ρₑ ρₛ :
+    Lemma pattern_interpretation_impl_MP M ϕ₁ ϕ₂ ρₑ ρₛ :
       @pattern_interpretation M ρₑ ρₛ (patt_imp ϕ₁ ϕ₂) = Full ->
       @pattern_interpretation M ρₑ ρₛ ϕ₁ = Full ->
       @pattern_interpretation M ρₑ ρₛ ϕ₂ = Full.
     Proof.
-      Search pattern_interpretation patt_imp.
+      unfold Full.
       rewrite pattern_interpretation_imp_simpl.
       intros H1 H2.
       rewrite -> H2 in H1.
-    Abort.
+      rewrite -> Complement_Full_is_Empty_eq in H1.
+      rewrite -> Union_Empty_r_eq in H1.
+      apply H1.
+    Qed.
     
     (* ϕ is a well-formed body of ex *)
     Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρₛ :
