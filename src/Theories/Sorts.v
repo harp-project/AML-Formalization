@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Coq Require Import Unicode.Utf8.
-Require Import Coq.Logic.Classical_Prop.
+From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
 
 From MatchingLogic Require Import Syntax Semantics.
 Require Import MatchingLogic.Theories.Definedness.
@@ -59,7 +59,48 @@ Section sorts.
     (* ϕ is expected to be a sort pattern *)
     Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
 
-    (*Search pattern_interpretation patt_forall.*)
+    Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
+      let x := fresh_evar ϕ in
+      (* s is closed *)
+      free_evars s = base.empty ->
+      M_predicate M (evar_open 0 x ϕ) ->
+      pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
+      <-> (∀ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m ->
+                           pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
+    Proof.
+      intros x Hs Hpred.
+      unfold patt_forall_of_sort.
+      assert (Hfr: fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ) = fresh_evar ϕ).
+      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
+        rewrite -> Hs.
+        repeat rewrite -> sets.union_empty_l_L.
+        auto.
+      }
+      rewrite pattern_interpretation_forall_predicate.
+      2: {
+        autorewrite with ml_db.
+        simpl.
+        apply M_predicate_impl.
+        - apply T_predicate_in.
+          apply M_satisfies_theory.
+        - subst x.
+          rewrite -> Hfr.
+          apply Hpred.
+      }
+      split.
+      - intros H m H'.
+        specialize (H m).
+        autorewrite with ml_db in H. simpl in H.
+        rewrite -> Hfr in H.
+        (*remember (fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ)) as y.*)
+        (*rewrite <- Heqy in H.*)
+        subst x.
+        Search pattern_interpretation patt_imp.
+        (* TODO predicate implication *)
+        admit.
+      - intros H m.
+        admit.
+    Abort.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
