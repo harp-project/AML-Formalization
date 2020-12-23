@@ -1211,11 +1211,15 @@ Proof.
       repeat rewrite <- IHsz.
        * reflexivity.
        * lia.
-       * admit.
+       * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+         apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
+         inversion Hwfc1; auto.
        * assumption.
        * auto.
        * lia.
-       * admit.
+       * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+         apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
+         inversion Hwfc1; auto.
        * assumption.
        * auto.
     + (* Bot. Again, a duplication of the sz=0 case *)
@@ -1227,11 +1231,15 @@ Proof.
       repeat rewrite <- IHsz.
       * reflexivity.
       * lia.
-      * admit.
+      * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+        apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
+        inversion Hwfc1; auto.
       * assumption.
       * auto.
       * lia.
-      * admit.
+      * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+        apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
+        inversion Hwfc1; auto.
       * assumption.
       * auto.
     (* TODO *)
@@ -1241,7 +1249,6 @@ Proof.
 
       (* x = fresh_evar phi1' *)
       (* y = evar_fresh (elements (free_evars phi1') U (free_evars phi2)) *)
-
             
       remember (svar_open dbi X phi1) as phi1'.
       remember (fresh_evar phi1') as Xfr2'.
@@ -1291,12 +1298,14 @@ Proof.
         }
         rewrite -> HXu in *.
         assert (He1e2 : evar_val1' = evar_val2').
-        { subst. auto.  }
+        { subst. auto. }
         rewrite <- He1e2.
         rewrite <- IHsz.
         * apply Same_set_refl.
         * rewrite <- evar_open_size. lia. 
-        * admit.
+        * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+          apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
+          simpl in Hwfc1. apply wfc_aux_body_ex_imp1. auto.
         * auto.
         * rewrite -> free_svars_evar_open. auto.
       -- (* dbi does not occur in phi1 *)
