@@ -96,6 +96,17 @@ Section sorts.
         (*rewrite <- Heqy in H.*)
         subst x.
         Search pattern_interpretation patt_imp.
+        eapply pattern_interpretation_impl_MP. apply H.
+        unfold Minterp_inhabitant in H'.
+        Search patt_in pattern_interpretation.
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
+        rewrite update_evar_val_same.
+        rewrite pattern_interpretation_app_simpl.
+        rewrite pattern_interpretation_sym_simpl.
+        unfold Ensembles.In.
+        apply Hfeip
+        apply free_evar_in_patt.
         (* TODO predicate implication *)
         admit.
       - intros H m.
