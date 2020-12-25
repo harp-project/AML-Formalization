@@ -60,15 +60,16 @@ Section sorts.
     Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
 
     Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
-      let x := fresh_evar ϕ in
       (* s is closed *)
       free_evars s = base.empty ->
+      well_formed_closed s ->
+      let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
       pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
       <-> (∀ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m ->
                            pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
     Proof.
-      intros x Hs Hpred.
+      intros Hs Hwfc x Hpred.
       unfold patt_forall_of_sort.
       assert (Hfr: fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ) = fresh_evar ϕ).
       { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
@@ -102,6 +103,13 @@ Section sorts.
         pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
+        clear H. unfold sym in H'.
+        unfold Ensembles.In.
+        rewrite -> evar_open_wfc. 2: apply Hwfc.
+        Search update_evar_val.
+        Search pattern_interpretation update_evar_val.
+        (* update_evar_val has no influence on interpretation
+         *)
         rewrite pattern_interpretation_app_simpl.
         rewrite pattern_interpretation_sym_simpl.
         unfold Ensembles.In.

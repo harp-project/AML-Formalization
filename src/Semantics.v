@@ -158,6 +158,14 @@ Section semantics.
       - auto.
     Qed.
 
+    Lemma update_evar_val_same_2 M x ρₑ : @update_evar_val M x (ρₑ x) ρₑ = ρₑ.
+    Proof.
+      apply functional_extensionality. intros x0.
+      unfold update_evar_val. destruct (evar_eqdec x x0); simpl.
+      - subst. reflexivity.
+      - reflexivity.
+    Qed.
+
     Definition app_ext {m : Model}
                (l r : Power (Domain m)) :
       Power (Domain m) :=
@@ -1935,6 +1943,23 @@ Proof.
   rewrite <- evar_open_size. lia.
   rewrite <- evar_open_size. lia.
 Qed. (* update_val_fresh_12 *)
+
+Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
+  well_formed_closed ϕ ->
+  free_evars ϕ = ∅ ->
+  @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  intros Hwfc Hfree.
+  Check update_evar_val_same_2.
+  rewrite -{2}[ρₑ](update_evar_val_same_2 x _).
+  Check @evar_open_wfc.
+  rewrite -(@evar_open_wfc _ 0 x ϕ _). apply Hwfc.
+  Check update_val_fresh12.
+  Fail apply update_val_fresh12.
+Abort.
+
+
 
 End semantics.
 
