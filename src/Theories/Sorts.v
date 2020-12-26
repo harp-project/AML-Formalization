@@ -120,13 +120,29 @@ Section sorts.
         autorewrite with ml_db. simpl.
         pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
-        Search pattern_interpretation patt_imp Full.
-        (*
-        remember (fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ)) as x'.
-        Search pattern_interpretation patt_in Full.
-        apply free_evar_in_patt.*)
-        admit.
-    Abort.
+        apply pattern_interpretation_predicate_impl.
+        apply T_predicate_in. apply M_satisfies_theory.
+        intros H1. rewrite -> Hfr in *.
+        specialize (Hfeip2 H1). clear H1.
+        apply H. unfold Minterp_inhabitant.
+        unfold Ensembles.In in Hfeip2. unfold sym.
+        rewrite -> evar_open_wfc in Hfeip2. 2: apply Hwfc.
+        rewrite -> update_evar_val_same in Hfeip2.
+        rewrite -> pattern_interpretation_free_evar_independent in Hfeip2.
+        3: { intros Contra. simpl in Contra.
+             rewrite -> sets.union_empty_l_L in Contra.
+             rewrite -> Hs in Contra.
+             apply base.not_elem_of_empty in Contra.
+             apply Contra.
+        }
+        2: { apply wfc_ind_wfc.
+             constructor.
+             constructor.
+             apply wfc_wfc_ind.
+             apply Hwfc.
+        }
+        apply Hfeip2.
+    Qed.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
