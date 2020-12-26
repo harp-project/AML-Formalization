@@ -402,7 +402,6 @@ Section definedness.
     - intros H0.
       unfold patt_in.
       apply (definedness_not_empty_1 _ H).
-      Check Contains_Elements_Not_Empty.
       intros Contra.
       apply eq_to_Same_set in Contra.
       apply Contains_Elements_Not_Empty in Contra. auto.
