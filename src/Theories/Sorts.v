@@ -113,9 +113,6 @@ Section sorts.
         rewrite pattern_interpretation_app_simpl.
         rewrite pattern_interpretation_sym_simpl.
         unfold Ensembles.In.
-        apply Hfeip
-        apply free_evar_in_patt.
-        (* TODO predicate implication *)
         admit.
       - intros H m.
         admit.

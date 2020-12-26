@@ -1944,22 +1944,86 @@ Proof.
   rewrite <- evar_open_size. lia.
 Qed. (* update_val_fresh_12 *)
 
-Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
+Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
+  size ϕ <= sz ->
   well_formed_closed ϕ ->
-  free_evars ϕ = ∅ ->
+  x ∉ free_evars ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
-  intros Hwfc Hfree.
-  Check update_evar_val_same_2.
-  rewrite -{2}[ρₑ](update_evar_val_same_2 x _).
-  Check @evar_open_wfc.
-  rewrite -(@evar_open_wfc _ 0 x ϕ _). apply Hwfc.
-  Check update_val_fresh12.
-  Fail apply update_val_fresh12.
+  generalize dependent v. generalize dependent x. generalize dependent ρₑ. generalize dependent ϕ.
+  induction sz; intros ϕ ρₑ x v; destruct ϕ; simpl; intros Hsz Hwfc Hnotin.
+  - repeat rewrite -> pattern_interpretation_free_evar_simpl.
+    apply f_equal. unfold update_evar_val.
+    destruct (evar_eqdec x x0); simpl.
+    + subst. Search not elem_of singleton.
+      apply not_elem_of_singleton_1 in Hnotin.
+      contradiction.
+    + reflexivity.
+  - repeat rewrite -> pattern_interpretation_free_svar_simpl.
+    reflexivity.
+  - repeat rewrite -> pattern_interpretation_bound_evar_simpl.
+    reflexivity.
+  - repeat rewrite -> pattern_interpretation_bound_svar_simpl.
+    reflexivity.
+  - repeat rewrite -> pattern_interpretation_sym_simpl.
+    reflexivity.
+  - lia.
+  - repeat rewrite -> pattern_interpretation_bott_simpl.
+    reflexivity.
+  - lia.
+  - lia.
+  - lia.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - repeat rewrite -> pattern_interpretation_app_simpl.
+    apply wfc_wfc_ind in Hwfc.
+    inversion Hwfc. subst.
+    apply wfc_ind_wfc in H1.
+    apply wfc_ind_wfc in H2.
+    simpl in Hnotin.
+    apply not_elem_of_union in Hnotin. destruct Hnotin as [Hnotin1 Hnotin2].
+    rewrite -> IHsz. 4: apply Hnotin1. 3: apply H1. 2: lia.
+    rewrite -> IHsz. 4: apply Hnotin2. 3: apply H2. 2: lia.
+    reflexivity.
+  - apply IHsz. 3: { simpl. apply Hnotin. } 2: apply Hwfc. simpl. lia.
+  - repeat rewrite -> pattern_interpretation_imp_simpl.
+    apply wfc_wfc_ind in Hwfc.
+    inversion Hwfc. subst.
+    apply wfc_ind_wfc in H1.
+    apply wfc_ind_wfc in H2.
+    simpl in Hnotin.
+    apply not_elem_of_union in Hnotin. destruct Hnotin as [Hnotin1 Hnotin2].
+    rewrite -> IHsz. 4: apply Hnotin1. 3: apply H1. 2: lia.
+    rewrite -> IHsz. 4: apply Hnotin2. 3: apply H2. 2: lia.
+    reflexivity.
+  - repeat rewrite -> pattern_interpretation_ex_simpl.
+    simpl.
+    apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+    epose proof (Hϕ := H0 (fresh_evar ϕ) _).
+    Unshelve. 2: { fold (evar_is_fresh_in (fresh_evar ϕ) ϕ). apply set_evar_fresh_is_fresh. }
+    apply wfc_ind_wfc in Hϕ.
+   
+    apply f_equal. apply functional_extensionality. intros e.
+    destruct (evar_eqdec (fresh_evar ϕ) x).
+    + rewrite -> e0. rewrite -> update_evar_val_shadow. reflexivity.
+    + rewrite -> update_evar_val_comm. 2: apply n.
+      rewrite -> IHsz.
+      4: { Search free_evars evar_open. admit. }
+      3: { apply Hϕ. }
+      2: { rewrite <- evar_open_size. lia. }
+      reflexivity.
 Abort.
 
-
+Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
+  well_formed_closed ϕ ->
+  x ∉ free_evars ϕ ->
+  @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof. (* TODO this is just a wrapper *) Abort.
 
 End semantics.
 
