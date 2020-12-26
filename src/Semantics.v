@@ -1630,7 +1630,7 @@ Proof.
         erewrite -> (IHsz _ _ _ _ fresh3) in H.
         rewrite -> update_evar_val_comm. rewrite -> evar_open_comm.
         rewrite -> update_evar_val_comm in H. rewrite -> evar_open_comm in H.
-        erewrite -> (IHsz _ _ _ _ fresh1). assumption. Check fresh_notin.
+        erewrite -> (IHsz _ _ _ _ fresh1). assumption.
         apply (@fresh_notin signature (size (evar_open 0 fresh3 phi))).
         erewrite <- (evar_open_size). lia.
         simpl in HLs1, HLs2. assumption.
@@ -1957,7 +1957,7 @@ Proof.
   - repeat rewrite -> pattern_interpretation_free_evar_simpl.
     apply f_equal. unfold update_evar_val.
     destruct (evar_eqdec x x0); simpl.
-    + subst. Search not elem_of singleton.
+    + subst.
       apply not_elem_of_singleton_1 in Hnotin.
       contradiction.
     + reflexivity.
