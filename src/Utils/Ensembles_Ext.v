@@ -635,6 +635,13 @@ Proof.
   apply Complement_Full_is_Empty.
 Qed.
 
+Lemma Complement_Empty_is_Full_eq {T : Type} :
+  (Complement T (Empty_set T)) = (Full_set T).
+Proof.
+  apply eq_iff_Same_set.
+  apply Complement_Empty_is_Full.
+Qed.
+
 Lemma Union_Empty_r_eq {T : Type} : forall A : Ensemble T,
 (Union T (Empty_set T) A) = A.
 Proof.
@@ -649,4 +656,28 @@ Proof.
   intros A.
   apply eq_iff_Same_set.
   apply Union_Empty_l.
+Qed.
+
+Lemma Union_Full_l_eq {T : Type} : forall A : Ensemble T,
+    Union T (Full_set T) A = Full_set T.
+Proof.
+  intros A.
+  apply eq_iff_Same_set.
+  apply Same_set_symmetric.
+  apply Same_set_Full_set.
+  unfold Included. unfold In.
+  intros x H.
+  left. unfold In. apply H.
+Qed.
+
+Lemma Union_Full_r_eq {T : Type} : forall A : Ensemble T,
+    Union T A (Full_set T) = Full_set T.
+Proof.
+  intros A.
+  apply eq_iff_Same_set.
+  apply Same_set_symmetric.
+  apply Same_set_Full_set.
+  unfold Included. unfold In.
+  intros x H.
+  right. unfold In. apply H.
 Qed.

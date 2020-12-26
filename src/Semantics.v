@@ -830,6 +830,33 @@ repeat
       rewrite -> Union_Empty_r_eq in H1.
       apply H1.
     Qed.
+
+    Lemma pattern_interpretation_predicate_impl M ϕ₁ ϕ₂ ρₑ ρₛ :
+      M_predicate M ϕ₁ ->
+      pattern_interpretation ρₑ ρₛ (patt_imp ϕ₁ ϕ₂) = Full
+      <-> (pattern_interpretation ρₑ ρₛ ϕ₁ = Full
+           -> @pattern_interpretation M ρₑ ρₛ ϕ₂ = Full).
+    Proof.
+      intros Hpred.
+      split.
+      - intros H H1.
+        apply (pattern_interpretation_impl_MP H H1).
+      - intros H.
+        rewrite -> pattern_interpretation_imp_simpl.
+        destruct (classic (pattern_interpretation ρₑ ρₛ ϕ₁ = Full)).
+        + specialize (H H0).
+          rewrite -> H. rewrite -> H0.
+          unfold Full.
+          apply Same_set_to_eq.
+          apply Union_Compl_Fullset.
+        + apply predicate_not_full_iff_empty in H0. 2: apply Hpred.
+          rewrite -> H0.
+          unfold Empty.
+          rewrite -> Complement_Empty_is_Full_eq.
+          rewrite -> Union_Full_l_eq. unfold Full.
+          reflexivity.
+    Qed.
+    
     
     (* ϕ is a well-formed body of ex *)
     Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρₛ :
