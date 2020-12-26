@@ -88,33 +88,43 @@ Section sorts.
           rewrite -> Hfr.
           apply Hpred.
       }
+      subst x.
       split.
       - intros H m H'.
         specialize (H m).
         autorewrite with ml_db in H. simpl in H.
         rewrite -> Hfr in H.
-        (*remember (fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ)) as y.*)
-        (*rewrite <- Heqy in H.*)
-        subst x.
-        Search pattern_interpretation patt_imp.
         eapply pattern_interpretation_impl_MP. apply H.
         unfold Minterp_inhabitant in H'.
-        Search patt_in pattern_interpretation.
         pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
         unfold Ensembles.In.
         rewrite -> evar_open_wfc. 2: apply Hwfc.
-        Search update_evar_val.
-        Search pattern_interpretation update_evar_val.
-        (* update_evar_val has no influence on interpretation
-         *)
-        rewrite pattern_interpretation_app_simpl.
-        rewrite pattern_interpretation_sym_simpl.
-        unfold Ensembles.In.
-        admit.
+        rewrite -> pattern_interpretation_free_evar_independent.
+        3: { intros Contra. simpl in Contra.
+             rewrite -> sets.union_empty_l_L in Contra.
+             rewrite -> Hs in Contra.
+             apply base.not_elem_of_empty in Contra.
+             apply Contra.
+        }
+        2: { apply wfc_ind_wfc.
+             constructor.
+             constructor.
+             apply wfc_wfc_ind.
+             apply Hwfc.
+        }
+        apply H'.
       - intros H m.
+        autorewrite with ml_db. simpl.
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        destruct Hfeip as [_ Hfeip2].
+        Search pattern_interpretation patt_imp Full.
+        (*
+        remember (fresh_evar (patt_in b0 (inhabitant_set s) ---> ϕ)) as x'.
+        Search pattern_interpretation patt_in Full.
+        apply free_evar_in_patt.*)
         admit.
     Abort.
     
