@@ -127,7 +127,6 @@ Section definedness.
     assert (Hincl: Included (Domain M) (Singleton (Domain M) x) (pattern_interpretation evar_val svar_val phi) ).
     { unfold Included. intros. unfold In in *. inversion H2. subst. assumption.  }
 
-    Check app_ext_monotonic_r.
     pose proof (Hincl' := @app_ext_monotonic_r
                             sig
                             M
@@ -403,7 +402,6 @@ Section definedness.
     - intros H0.
       unfold patt_in.
       apply (definedness_not_empty_1 _ H).
-      Check Contains_Elements_Not_Empty.
       intros Contra.
       apply eq_to_Same_set in Contra.
       apply Contains_Elements_Not_Empty in Contra. auto.
