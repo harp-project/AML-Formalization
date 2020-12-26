@@ -1951,8 +1951,9 @@ Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz 
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
-  generalize dependent v. generalize dependent x. generalize dependent ρₑ. generalize dependent ϕ.
-  induction sz; intros ϕ ρₑ x v; destruct ϕ; simpl; intros Hsz Hwfc Hnotin.
+  generalize dependent v. generalize dependent x.
+  generalize dependent ρₛ. generalize dependent ρₑ. generalize dependent ϕ.
+  induction sz; intros ϕ ρₑ ρₛ x v; destruct ϕ; simpl; intros Hsz Hwfc Hnotin.
   - repeat rewrite -> pattern_interpretation_free_evar_simpl.
     apply f_equal. unfold update_evar_val.
     destruct (evar_eqdec x x0); simpl.
@@ -2012,18 +2013,52 @@ Proof.
     + rewrite -> e0. rewrite -> update_evar_val_shadow. reflexivity.
     + rewrite -> update_evar_val_comm. 2: apply n.
       rewrite -> IHsz.
-      4: { Search free_evars evar_open. admit. }
+      4: { intros Contra.
+           pose proof (Hfeeo := @free_evars_evar_open signature ϕ (fresh_evar ϕ) 0).
+           rewrite -> elem_of_subseteq in Hfeeo.
+           specialize (Hfeeo x Contra).
+           apply elem_of_union in Hfeeo.
+           destruct Hfeeo as [H|H].
+           * apply elem_of_singleton_1 in H. symmetry in H. contradiction.
+           * contradiction.
+      }
       3: { apply Hϕ. }
       2: { rewrite <- evar_open_size. lia. }
       reflexivity.
-Abort.
+  - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
+    apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+    
+    apply f_equal. apply f_equal. apply functional_extensionality.
+    intros e.
+    rewrite -> IHsz.
+    4: { intros Contra.
+         rewrite -> free_evars_svar_open in Contra.
+         contradiction.
+    }
+    3: {
+      apply wfc_ind_wfc.
+      apply H0.
+      fold (svar_is_fresh_in (fresh_svar ϕ) ϕ).
+      apply set_svar_fresh_is_fresh.
+    }
+    2: {
+      rewrite <- svar_open_size. lia.
+    }
+    reflexivity.
+Qed.
 
 Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
   well_formed_closed ϕ ->
   x ∉ free_evars ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
-Proof. (* TODO this is just a wrapper *) Abort.
+Proof.
+  intros.
+  apply Private_pattern_interpretation_free_evar_independent with (sz := size ϕ).
+  * lia.
+  * assumption.
+  * assumption.
+Qed.
 
 End semantics.
 

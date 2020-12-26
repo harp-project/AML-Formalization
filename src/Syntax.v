@@ -1327,6 +1327,30 @@ Section syntax.
     - auto.
     - auto.
   Qed.
+
+  Lemma free_evars_evar_open ϕ x dbi :
+    free_evars (evar_open dbi x ϕ) ⊆ union (singleton x) (free_evars ϕ).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ; intros dbi; simpl; try apply empty_subseteq.
+    - apply union_subseteq_r.
+    - destruct (n =? dbi).
+      + simpl. apply union_subseteq_l.
+      + simpl. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_mono_l. apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_mono_l. apply union_subseteq_r.
+    - auto.
+    - auto.
+  Qed.
+
   
   Inductive Application_context : Type :=
   | box
