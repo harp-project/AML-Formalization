@@ -291,7 +291,9 @@ Section sorts.
     Proof.
       intros Hfun m₁ H1.
       unfold patt_total_function in Hfun.
-      (*Search patt_forall_of_sort.*)
+      Search patt_forall_of_sort.
+      rewrite -> pattern_interpretation_forall_of_sort_predicate in Hfun.
+      specialize (Hfun m₁ H1).
     Abort.
 
   End with_model.
