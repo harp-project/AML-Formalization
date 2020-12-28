@@ -724,6 +724,22 @@ repeat
       unfold patt_top. apply M_predicate_not. apply M_predicate_bott.
     Qed.
 
+    Lemma M_predicate_forall M ϕ :
+      let x := evar_fresh (elements (free_evars ϕ)) in
+      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall ϕ).
+    Proof.
+      intros x Hpred.
+      unfold patt_forall.
+      apply M_predicate_not.
+      apply M_predicate_exists.
+      autorewrite with ml_db.
+      apply M_predicate_not.
+      subst x.
+      simpl.
+      rewrite -> union_empty_r_L.
+      apply Hpred.
+    Qed.
+
     Lemma M_predicate_iff M ϕ₁ ϕ₂ :
       M_predicate M ϕ₁ ->
       M_predicate M ϕ₂ ->

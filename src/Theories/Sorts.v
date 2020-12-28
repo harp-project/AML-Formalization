@@ -231,6 +231,54 @@ Section sorts.
           apply H1.
         + apply H2.
     Qed.
+
+
+    Lemma M_predicate_exists_of_sort s ϕ :
+      (* s is closed *)
+      free_evars s = base.empty ->
+      well_formed_closed s ->
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
+    Proof.
+      intros Hclosed Hwfc x Hpred.
+      unfold patt_exists_of_sort.
+      apply M_predicate_exists.
+      autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
+      apply M_predicate_and.
+      - apply T_predicate_in.
+        apply M_satisfies_theory.
+      - simpl.
+        rewrite -> Hclosed.
+        repeat rewrite sets.union_empty_r_L.
+        repeat rewrite sets.union_empty_l_L.
+        subst x.
+        unfold fresh_evar in Hpred.
+        apply Hpred.
+    Qed.
+
+    Lemma M_predicate_forall_of_sort s ϕ :
+      (* s is closed *)
+      free_evars s = base.empty ->
+      well_formed_closed s ->
+      let x := fresh_evar ϕ in
+      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
+    Proof.
+      intros Hclosed Hwfc x Hpred.
+      unfold patt_forall_of_sort.
+      apply M_predicate_forall.
+      autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
+      apply M_predicate_impl.
+      - apply T_predicate_in.
+        apply M_satisfies_theory.
+      - simpl.
+        rewrite -> Hclosed.
+        repeat rewrite sets.union_empty_r_L.
+        repeat rewrite sets.union_empty_l_L.
+        subst x.
+        unfold fresh_evar in Hpred.
+        apply Hpred.
+    Qed.
+      
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
@@ -243,6 +291,7 @@ Section sorts.
     Proof.
       intros Hfun m₁ H1.
       unfold patt_total_function in Hfun.
+      (*Search patt_forall_of_sort.*)
     Abort.
 
   End with_model.
