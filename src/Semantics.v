@@ -732,7 +732,7 @@ repeat
       unfold patt_forall.
       apply M_predicate_not.
       apply M_predicate_exists.
-      autorewrite with ml_db.
+      rewrite !simpl_evar_open.
       apply M_predicate_not.
       subst x.
       simpl.
@@ -969,7 +969,7 @@ repeat
       }
 
       rewrite -> Hfr. subst x.
-      autorewrite with ml_db.
+      rewrite !simpl_evar_open.
       pose proof (Hcfe := @Complement_Full_is_Empty (Domain M)).
       apply eq_iff_Same_set in Hcfe.
       split; intros H'.

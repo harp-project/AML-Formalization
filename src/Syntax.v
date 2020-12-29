@@ -357,16 +357,16 @@ Section syntax.
 
 
   (* TODO free_evars, free_svars *)
-  Class EBinder :=
-    { ebinder : Pattern -> Pattern ;
+  Class EBinder (ebinder : Pattern -> Pattern) :=
+    {
       ebinder_evar_open :
         forall k n ϕ, evar_open k n (ebinder ϕ) = ebinder (evar_open (k + 1) n ϕ) ;
       ebinder_svar_open :
         forall k n ϕ, svar_open k n (ebinder ϕ) = ebinder (svar_open k n ϕ) ;
     }.
 
-  Class SBinder :=
-    { sbinder : Pattern -> Pattern ;
+  Class SBinder (sbinder : Pattern -> Pattern) :=
+    {
       sbinder_evar_open :
         forall k n ϕ, evar_open k n (sbinder ϕ) = sbinder (evar_open k n ϕ) ;
       sbinder_svar_open :
@@ -374,24 +374,24 @@ Section syntax.
     }.
 
   (* Non-variable nullary operation *)
-  Class NVNullary :=
-    { nvnullary : Pattern ;
+  Class NVNullary (nvnullary : Pattern) :=
+    {
       nvnullary_evar_open :
         forall k n, evar_open k n nvnullary = nvnullary ;
       nvnullary_svar_open :
         forall k n, svar_open k n nvnullary = nvnullary ;
     }.
 
-  Class Unary :=
-    { unary : Pattern -> Pattern ;
+  Class Unary (patt : Pattern -> Pattern) :=
+    {
       unary_evar_open :
-        forall k n ϕ, evar_open k n (unary ϕ) = unary (evar_open k n ϕ) ;
+        forall k n ϕ, evar_open k n (patt ϕ) = patt (evar_open k n ϕ) ;
       unary_svar_open :
-        forall k n ϕ, svar_open k n (unary ϕ) = unary (svar_open k n ϕ) ;
+        forall k n ϕ, svar_open k n (patt ϕ) = patt (svar_open k n ϕ) ;
     }.
 
-  Class Binary :=
-    { binary : Pattern -> Pattern -> Pattern ;
+  Class Binary (binary : Pattern -> Pattern -> Pattern) :=
+    {
       binary_evar_open :
         forall k n ϕ₁ ϕ₂, evar_open k n (binary ϕ₁ ϕ₂) = binary (evar_open k n ϕ₁) (evar_open k n ϕ₂) ;
       binary_svar_open :
@@ -407,44 +407,48 @@ Section syntax.
      @binary_evar_open
     ).
 
-  
-  Instance EBinder_exists : EBinder :=
-    {| ebinder := patt_exists ;
+  #[global]
+  Instance EBinder_exists : EBinder patt_exists :=
+    {|
        ebinder_evar_open := evar_open_exists ;
        ebinder_svar_open := svar_open_exists ;
     |}.
 
-  Instance SBinder_mu : SBinder :=
-    {| sbinder := patt_mu ;
+  #[global]
+  Instance SBinder_mu : SBinder patt_mu :=
+    {|
        sbinder_evar_open := evar_open_mu ;
        sbinder_svar_open := svar_open_mu ;
     |}.
 
 
-  Instance NVNullary_bott : NVNullary :=
-    {| nvnullary := patt_bott ;
+  #[global]
+  Instance NVNullary_bott : NVNullary patt_bott :=
+    {|
        nvnullary_evar_open := evar_open_bott ;
        nvnullary_svar_open := svar_open_bott ;
     |}.
 
-  Instance NVNullary_sym s : NVNullary :=
-    {| nvnullary := patt_sym s ;
+  #[global]
+  Instance NVNullary_sym s : NVNullary (patt_sym s) :=
+    {|
        nvnullary_evar_open := λ k n, @evar_open_sym k n s ;
        nvnullary_svar_open := λ k n, @svar_open_sym k n s ;
     |}.
 
-  Instance Binary_app : Binary :=
-    {| binary := patt_app ;
+  #[global]
+  Instance Binary_app : Binary patt_app :=
+    {|
        binary_evar_open := evar_open_app ;
        binary_svar_open := svar_open_app ;
     |}.
 
-  Instance Binary_imp : Binary :=
-    {| binary := patt_imp ;
+  #[global]
+  Instance Binary_imp : Binary patt_imp :=
+    {|
        binary_evar_open := evar_open_imp ;
        binary_svar_open := svar_open_imp ;
     |}.
-  
   
   Lemma evar_open_size :
     forall (k : db_index) (n : evar) (p : Pattern),
@@ -1395,43 +1399,48 @@ Section syntax.
   Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
   Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
-  Instance Unary_not : Unary :=
-    {| unary := patt_not ;
+  #[global]
+  Instance Unary_not : Unary patt_not :=
+    {|
        unary_evar_open := evar_open_not ;
        unary_svar_open := svar_open_not ;
     |}.
 
-  Instance NVNullary_top : NVNullary :=
-    {| nvnullary := patt_top ;
+  #[global]
+  Instance NVNullary_top : NVNullary patt_top :=
+    {|
        nvnullary_evar_open := evar_open_top ;
        nvnullary_svar_open := svar_open_top ;
     |}.
 
-  Instance Binary_or : Binary :=
-    {| binary := patt_or ;
+  #[global]
+  Instance Binary_or : Binary patt_or :=
+    {|
        binary_evar_open := evar_open_or ;
        binary_svar_open := svar_open_or ;
     |}.
 
-  Instance Binary_and : Binary :=
-    {| binary := patt_and ;
+  #[global]
+  Instance Binary_and : Binary patt_and :=
+    {|
        binary_evar_open := evar_open_and ;
        binary_svar_open := svar_open_and ;
     |}.
 
-  Instance Binary_iff : Binary :=
-    {| binary := patt_iff ;
+  #[global]
+  Instance Binary_iff : Binary patt_iff :=
+    {|
        binary_evar_open := evar_open_iff ;
        binary_svar_open := svar_open_iff ;
     |}.
 
-  Instance EBinder_forall : EBinder :=
-    {| ebinder := patt_forall ;
+  #[global]
+  Instance EBinder_forall : EBinder patt_forall :=
+    {|
        ebinder_evar_open := evar_open_forall ;
        ebinder_svar_open := svar_open_forall ;
     |}.
-  
-  
+
   
   Lemma free_svars_svar_open ϕ X dbi :
     free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
