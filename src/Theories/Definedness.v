@@ -473,7 +473,8 @@ Section definedness.
        unary_svar_open := svar_open_defined ;
     |}.
   
-  
+
+  Print simpl_evar_open.
   Lemma evar_open_total db x ϕ : evar_open db x (patt_total ϕ) = patt_total (evar_open db x ϕ).
   Proof. unfold patt_total. rewrite !simpl_evar_open. reflexivity. Qed.
   Lemma svar_open_total db x ϕ : svar_open db x (patt_total ϕ) = patt_total (svar_open db x ϕ).
