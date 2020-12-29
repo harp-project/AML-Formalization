@@ -724,6 +724,22 @@ repeat
       unfold patt_top. apply M_predicate_not. apply M_predicate_bott.
     Qed.
 
+    Lemma M_predicate_forall M ϕ :
+      let x := evar_fresh (elements (free_evars ϕ)) in
+      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall ϕ).
+    Proof.
+      intros x Hpred.
+      unfold patt_forall.
+      apply M_predicate_not.
+      apply M_predicate_exists.
+      rewrite !simpl_evar_open.
+      apply M_predicate_not.
+      subst x.
+      simpl.
+      rewrite -> union_empty_r_L.
+      apply Hpred.
+    Qed.
+
     Lemma M_predicate_iff M ϕ₁ ϕ₂ :
       M_predicate M ϕ₁ ->
       M_predicate M ϕ₂ ->
@@ -953,7 +969,7 @@ repeat
       }
 
       rewrite -> Hfr. subst x.
-      autorewrite with ml_db.
+      rewrite !simpl_evar_open.
       pose proof (Hcfe := @Complement_Full_is_Empty (Domain M)).
       apply eq_iff_Same_set in Hcfe.
       split; intros H'.
@@ -974,6 +990,24 @@ repeat
         rewrite <- Same_set_Compl.
         assumption.
     Qed.
+
+    Lemma pattern_interpretation_and_full M ρₑ ρₛ ϕ₁ ϕ₂:
+      @pattern_interpretation M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = Full
+      <-> (@pattern_interpretation M ρₑ ρₛ ϕ₁ = Full
+           /\ @pattern_interpretation M ρₑ ρₛ ϕ₂ = Full).
+    Proof.
+      unfold Full.
+      rewrite -> pattern_interpretation_and_simpl.
+      split.
+      - intros H.
+        apply Intersection_eq_Full_eq in H.
+        auto.
+      - intros [H1 H2].
+        rewrite -> H1. rewrite -> H2.
+        apply Same_set_to_eq.
+        apply Intersection_same.
+    Qed.
+      
     
     (* Theory,axiom ref. snapshot: Definition 5 *)
 

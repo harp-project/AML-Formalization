@@ -681,3 +681,14 @@ Proof.
   intros x H.
   right. unfold In. apply H.
 Qed.
+
+Lemma Intersection_eq_Full_eq :
+  forall {T : Type} (S1 S2 : Ensemble T),
+    (Intersection T S1 S2) = (Full_set T) -> (S1 = (Full_set T) /\ S2 = (Full_set T)).
+Proof.
+  intros T S1 S2 H.
+  apply eq_to_Same_set in H.
+  apply Intersection_eq_Full in H.
+  destruct H as [H1 H2].
+  split; apply Same_set_to_eq; auto.
+Qed.
