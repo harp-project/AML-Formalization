@@ -103,7 +103,7 @@ Section sorts.
         rewrite -> Hfr in H.
         eapply pattern_interpretation_impl_MP. apply H.
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
@@ -125,7 +125,7 @@ Section sorts.
         apply H'.
       - intros H m.
         autorewrite with ml_db. simpl.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
         apply pattern_interpretation_predicate_impl.
         apply T_predicate_in. apply M_satisfies_theory.
@@ -187,7 +187,7 @@ Section sorts.
         destruct H as [H1 H2].
         exists m. split. 2: apply H2. clear H2.
         unfold Minterp_inhabitant.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2]. apply Hfeip2 in H1. clear Hfeip2.
         rewrite update_evar_val_same in H1.
         unfold sym.
@@ -209,7 +209,7 @@ Section sorts.
         apply H1.
       - intros [m [H1 H2]]. exists m.
         autorewrite with ml_db. simpl.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) patt_sort) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _].
         apply pattern_interpretation_and_full.
         rewrite -> Hfr.

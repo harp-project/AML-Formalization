@@ -407,6 +407,15 @@ Section syntax.
      @binary_evar_open
     ).
 
+  Definition simpl_svar_open :=
+    (@ebinder_svar_open,
+     @sbinder_svar_open,
+     @nvnullary_svar_open,
+     @unary_svar_open,
+     @binary_svar_open
+    ).
+  
+
   #[global]
   Instance EBinder_exists : EBinder patt_exists :=
     {|

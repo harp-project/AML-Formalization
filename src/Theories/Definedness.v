@@ -1,6 +1,12 @@
 (* In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 From MatchingLogic Require Import Syntax Semantics.
@@ -116,7 +122,7 @@ Section definedness.
     unfold patt_defined.
     rewrite -> pattern_interpretation_app_simpl.
     
-    pose proof (H'' := definedness_model_application M evar_val svar_val H x).
+    pose proof (H'' := @definedness_model_application M evar_val svar_val H x).
     unfold sym in H''.
     apply Extensionality_Ensembles.
     apply Same_set_symmetric.
@@ -162,7 +168,7 @@ Section definedness.
   Proof.
     intros.
     pose proof (H1 := @empty_impl_not_full sig M _ H0).
-    pose proof (H2 := modus_tollens _ _ (definedness_not_empty_1 M H phi evar_val svar_val) H1).
+    pose proof (H2 := @modus_tollens _ _ (@definedness_not_empty_1 M H phi evar_val svar_val) H1).
     apply NNPP in H2. apply H2.
   Qed.
 
@@ -174,7 +180,7 @@ Section definedness.
   Proof.
     intros.
     pose proof (H1 := full_impl_not_empty H0).
-    exact (modus_tollens _ _ (definedness_empty_1 M H phi evar_val svar_val) H1).
+    exact (@modus_tollens _ _ (@definedness_empty_1 M H phi evar_val svar_val) H1).
   Qed.
 
   Lemma totality_not_full : forall (M : @Model (sig)),
@@ -222,7 +228,7 @@ Section definedness.
       apply Complement_Full_is_Empty.
     }
 
-    pose proof (H2 := definedness_empty_1 M H (patt_not phi) evar_val svar_val H1).
+    pose proof (H2 := @definedness_empty_1 M H (patt_not phi) evar_val svar_val H1).
     rewrite -> H2.
     apply Extensionality_Ensembles.
     apply Complement_Empty_is_Full.
@@ -236,7 +242,7 @@ Section definedness.
   Proof.
     intros.
     pose proof (H1 := empty_impl_not_full H0).
-    pose proof (H2 := modus_tollens _ _ (totality_full M H phi evar_val svar_val) H1).
+    pose proof (H2 := @modus_tollens _ _ (@totality_full M H phi evar_val svar_val) H1).
     apply H2.
   Qed.
 
@@ -247,7 +253,7 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val phi = Full.
   Proof.
     intros.
-    pose proof (H2 := modus_tollens _ _ (totality_not_full M H phi evar_val svar_val) H0).
+    pose proof (H2 := @modus_tollens _ _ (@totality_not_full M H phi evar_val svar_val) H0).
     apply NNPP in H2. apply H2.
   Qed.
   
@@ -264,24 +270,24 @@ Section definedness.
     - intros H0.
       unfold patt_equal in H0.
       apply full_impl_not_empty in H0.
-      apply (totality_result_nonempty _ H) in H0.
+      apply (@totality_result_nonempty _ H) in H0.
       unfold "<--->" in H0.
       rewrite ->pattern_interpretation_and_simpl in H0.
       apply eq_to_Same_set in H0.
       apply Intersection_eq_Full in H0. destruct H0 as [H1 H2].
       apply Extensionality_Ensembles in H1. apply Extensionality_Ensembles in H2.
       unfold patt_subseteq.
-      apply (totality_full _ H) in H1.
-      apply (totality_full _ H) in H2.
+      apply (@totality_full _ H) in H1.
+      apply (@totality_full _ H) in H2.
       split; assumption.
     - intros [H0 H1].
       unfold patt_subseteq.
       apply full_impl_not_empty in H0.
       apply full_impl_not_empty in H1.
-      apply (totality_result_nonempty _ H) in H0.
-      apply (totality_result_nonempty _ H) in H1.
+      apply (@totality_result_nonempty _ H) in H0.
+      apply (@totality_result_nonempty _ H) in H1.
       unfold patt_equal.
-      apply (totality_full _ H).
+      apply (@totality_full _ H).
       unfold "<--->".
       rewrite -> pattern_interpretation_and_simpl.
       rewrite -> H0.
@@ -305,7 +311,7 @@ Section definedness.
     - intros H0.
       unfold patt_subseteq in H0.
       apply full_impl_not_empty in H0.
-      apply (totality_result_nonempty _ H) in H0.
+      apply (@totality_result_nonempty _ H) in H0.
       rewrite -> pattern_interpretation_imp_simpl in H0.
       apply eq_to_Same_set in H0.
       unfold Same_set in H0. destruct H0 as [_ H0].
@@ -318,7 +324,7 @@ Section definedness.
       + apply H0.
     - intros H0.
       unfold patt_subseteq.
-      apply (totality_full _ H).
+      apply (@totality_full _ H).
       rewrite -> pattern_interpretation_imp_simpl.
       apply Extensionality_Ensembles.
       apply Same_set_symmetric.
@@ -340,18 +346,18 @@ Section definedness.
     intros M H phi1 phi2 evar_val svar_val.
     split.
     - intros H0.
-      apply (equal_iff_both_subseteq _ H) in H0.
+      apply (@equal_iff_both_subseteq _ H) in H0.
       destruct H0 as [Hsub1 Hsub2].
-      apply (subseteq_iff_interpr_subseteq _ H) in Hsub1.
-      apply (subseteq_iff_interpr_subseteq _ H) in Hsub2.
+      apply (@subseteq_iff_interpr_subseteq _ H) in Hsub1.
+      apply (@subseteq_iff_interpr_subseteq _ H) in Hsub2.
       unfold Same_set.
       apply Extensionality_Ensembles.
       split; assumption.
     - intros H0.
       apply eq_to_Same_set in H0.
       destruct H0 as [Hincl1 Hincl2].
-      apply (subseteq_iff_interpr_subseteq _ H) in Hincl1.
-      apply (subseteq_iff_interpr_subseteq _ H) in Hincl2.
+      apply (@subseteq_iff_interpr_subseteq _ H) in Hincl1.
+      apply (@subseteq_iff_interpr_subseteq _ H) in Hincl2.
       apply equal_iff_both_subseteq. auto. split; auto.
   Qed.
 
@@ -361,7 +367,7 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi phi) = Full.
   Proof.
     intros.
-    apply (equal_iff_interpr_same _ H).
+    apply (@equal_iff_interpr_same _ H).
     auto.
   Qed.
 
@@ -372,8 +378,8 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi2 phi1) = Full.
   Proof.
     intros.
-    apply (equal_iff_interpr_same _ H).
-    apply (equal_iff_interpr_same _ H) in H0.
+    apply (@equal_iff_interpr_same _ H).
+    apply (@equal_iff_interpr_same _ H) in H0.
     symmetry. auto.
   Qed.
 
@@ -385,9 +391,9 @@ Section definedness.
         @pattern_interpretation (sig) M evar_val svar_val (patt_equal phi1 phi3) = Full.
   Proof.
     intros.
-    apply (equal_iff_interpr_same _ H).
-    apply (equal_iff_interpr_same _ H) in H0.
-    apply (equal_iff_interpr_same _ H) in H1.
+    apply (@equal_iff_interpr_same _ H).
+    apply (@equal_iff_interpr_same _ H) in H0.
+    apply (@equal_iff_interpr_same _ H) in H1.
     rewrite -> H0. auto.
   Qed.
 
@@ -401,7 +407,7 @@ Section definedness.
     split.
     - intros H0.
       unfold patt_in.
-      apply (definedness_not_empty_1 _ H).
+      apply (@definedness_not_empty_1 _ H).
       intros Contra.
       apply eq_to_Same_set in Contra.
       apply Contains_Elements_Not_Empty in Contra. auto.
@@ -412,7 +418,7 @@ Section definedness.
       + assumption.
     - intros H0.
       unfold patt_in in H0.
-      apply (definedness_not_empty_2 _ H) in H0.
+      apply (@definedness_not_empty_2 _ H) in H0.
       unfold not in H0.
       assert (H0': Same_set _ (pattern_interpretation evar_val svar_val (patt_free_evar x and phi)) Empty -> False).
       { intros Contra. apply H0. apply Extensionality_Ensembles. auto.  }
@@ -460,26 +466,59 @@ Section definedness.
   Proof. unfold patt_defined. cbn. auto. Qed.
   Lemma svar_open_defined db x ϕ : svar_open db x (patt_defined ϕ) = patt_defined (svar_open db x ϕ).
   Proof. unfold patt_defined. cbn. auto. Qed.
+
+  #[global]
+   Instance Unary_defined : Unary patt_defined :=
+    {| unary_evar_open := evar_open_defined ;
+       unary_svar_open := svar_open_defined ;
+    |}.
+  
   
   Lemma evar_open_total db x ϕ : evar_open db x (patt_total ϕ) = patt_total (evar_open db x ϕ).
-  Proof. unfold patt_total. autorewrite with ml_db. rewrite -> evar_open_defined. auto. Qed.
+  Proof. unfold patt_total. rewrite !simpl_evar_open. reflexivity. Qed.
   Lemma svar_open_total db x ϕ : svar_open db x (patt_total ϕ) = patt_total (svar_open db x ϕ).
-  Proof. unfold patt_total. autorewrite with ml_db. rewrite -> svar_open_defined. auto. Qed.
+  Proof. unfold patt_total. rewrite !simpl_svar_open. reflexivity. Qed.
+
+  #[global]
+   Instance Unary_total : Unary patt_total :=
+    {| unary_evar_open := evar_open_total ;
+       unary_svar_open := svar_open_total ;
+    |}.
+  
   
   Lemma evar_open_equal db x ϕ₁ ϕ₂ : evar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_equal. rewrite -> evar_open_total. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_equal. rewrite !simpl_evar_open. reflexivity. Qed.
   Lemma svar_open_equal db x ϕ₁ ϕ₂ : svar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_equal. rewrite -> svar_open_total. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_equal. rewrite !simpl_svar_open. reflexivity. Qed.
 
+  #[global]
+   Instance Binary_equal : Binary patt_equal :=
+    {| binary_evar_open := evar_open_equal ;
+       binary_svar_open := svar_open_equal ;
+    |}.
+  
   Lemma evar_open_subseteq db x ϕ₁ ϕ₂ : evar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_subseteq. rewrite -> evar_open_total. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_subseteq. rewrite !simpl_evar_open. reflexivity. Qed.
   Lemma svar_open_subseteq db x ϕ₁ ϕ₂ : svar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_subseteq. rewrite -> svar_open_total. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_subseteq. rewrite !simpl_svar_open. reflexivity. Qed.
+
+  #[global]
+   Instance Binary_subseteq : Binary patt_subseteq :=
+    {| binary_evar_open := evar_open_subseteq ;
+       binary_svar_open := svar_open_subseteq ;
+    |}.
+  
 
   Lemma evar_open_in db x ϕ₁ ϕ₂ : evar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_in. rewrite -> evar_open_defined. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_in. rewrite !simpl_evar_open. reflexivity. Qed.
   Lemma svar_open_in db x ϕ₁ ϕ₂ : svar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_in. rewrite -> svar_open_defined. autorewrite with ml_db. auto. Qed.
+  Proof. unfold patt_in. rewrite !simpl_svar_open. reflexivity. Qed.
+
+  #[global]
+   Instance Binary_in : Binary patt_in :=
+    {| binary_evar_open := evar_open_in ;
+       binary_svar_open := svar_open_in ;
+    |}.
   
 End definedness.
 
