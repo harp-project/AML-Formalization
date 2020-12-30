@@ -294,6 +294,29 @@ Section syntax.
     | patt_exists p' => patt_exists (evar_open (k + 1) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
+
+  Lemma evar_open_not_occur n x ϕ :
+    bevar_occur ϕ n = false ->
+    evar_open n x ϕ = ϕ.
+  Proof.
+    generalize dependent n.
+    induction ϕ; simpl; intros dbi H; auto.
+    - case_bool_decide; case: (eqb_reflect n dbi); move => H'.
+      + inversion H.
+      + contradiction.
+      + contradiction.
+      + reflexivity.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ1 by auto.
+      rewrite -> IHϕ2 by auto.
+      reflexivity.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ1 by auto.
+      rewrite -> IHϕ2 by auto.
+      reflexivity.
+    - rewrite -> IHϕ. 2: {rewrite Nat.add_comm. simpl. assumption.  } reflexivity.
+    - rewrite -> IHϕ by auto. auto.
+  Qed.
   
   (* The following lemmas are trivial but useful for autorewrite. *)
   Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
@@ -1761,7 +1784,7 @@ Section syntax.
     - rewrite -> IHϕ₁. 2: auto. auto.
     - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
   Qed.
-  
+
 End syntax.
 
 Hint Rewrite ->
