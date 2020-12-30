@@ -51,10 +51,10 @@ Section sorts.
        unary_svar_open := svar_open_inhabitant_set ;
     |}.
 
+  (* TODO some instances for automation *)
   Class PSort (patt_sort : Pattern) :=
-    { (*patt_sort : Pattern ;*)
-      psort_closed : free_evars patt_sort = ∅ ;
-      psort_wfc : well_formed_closed patt_sort ;
+    { psort_closed : free_evars patt_sort = ∅ ;
+      psort_not_occur_0 : bevar_occur patt_sort 0 = false;
     }.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -122,19 +122,13 @@ Section sorts.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
         unfold Ensembles.In.
-        rewrite -> evar_open_wfc. 2: apply psort_wfc.
+        rewrite -> evar_open_not_occur. 2: apply psort_not_occur_0.
         rewrite -> pattern_interpretation_free_evar_independent.
-        3: { intros Contra. simpl in Contra.
+        2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
              rewrite -> psort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
-        }
-        2: { apply wfc_ind_wfc.
-             constructor.
-             constructor.
-             apply wfc_wfc_ind.
-             apply psort_wfc.
         }
         apply H'.
       - intros H m.
@@ -147,20 +141,14 @@ Section sorts.
         specialize (Hfeip2 H1). clear H1.
         apply H. unfold Minterp_inhabitant.
         unfold Ensembles.In in Hfeip2. unfold sym.
-        rewrite -> evar_open_wfc in Hfeip2. 2: apply psort_wfc.
+        rewrite -> evar_open_not_occur in Hfeip2. 2: apply psort_not_occur_0.
         rewrite -> update_evar_val_same in Hfeip2.
         rewrite -> pattern_interpretation_free_evar_independent in Hfeip2.
-        3: { intros Contra. simpl in Contra.
+        2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
              rewrite -> psort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
-        }
-        2: { apply wfc_ind_wfc.
-             constructor.
-             constructor.
-             apply wfc_wfc_ind.
-             apply psort_wfc.
         }
         apply Hfeip2.
     Qed.
@@ -206,19 +194,13 @@ Section sorts.
         rewrite update_evar_val_same in H1.
         unfold sym.
         unfold Ensembles.In in H1.
-        rewrite -> evar_open_wfc in H1. 2: apply psort_wfc.
+        rewrite -> evar_open_not_occur in H1. 2: apply psort_not_occur_0.
         rewrite -> pattern_interpretation_free_evar_independent in H1.
-        3: { intros Contra. simpl in Contra.
+        2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
              rewrite -> psort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
-        }
-        2: { apply wfc_ind_wfc.
-             constructor.
-             constructor.
-             apply wfc_wfc_ind.
-             apply psort_wfc.
         }
         apply H1.
       - intros [m [H1 H2]]. exists m.
@@ -232,19 +214,13 @@ Section sorts.
           unfold Ensembles.In.
           rewrite -> update_evar_val_same.
           unfold Minterp_inhabitant in H1. unfold sym in H1.
-          rewrite -> evar_open_wfc. 2: apply psort_wfc.
+          rewrite -> evar_open_not_occur. 2: apply psort_not_occur_0.
           rewrite -> pattern_interpretation_free_evar_independent.
-          3: { intros Contra. simpl in Contra.
+          2: { intros Contra. simpl in Contra.
                rewrite -> sets.union_empty_l_L in Contra.
                rewrite -> psort_closed in Contra.
                apply base.not_elem_of_empty in Contra.
                apply Contra.
-          }
-          2: { apply wfc_ind_wfc.
-               constructor.
-               constructor.
-               apply wfc_wfc_ind.
-               apply psort_wfc.
           }
           apply H1.
         + apply H2.
