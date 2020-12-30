@@ -1169,6 +1169,10 @@ Section syntax.
     * rewrite -> IHϕ. reflexivity.
   Qed.
 
+  Lemma free_svars_exists : forall (ϕ : Pattern),
+      free_svars (patt_exists ϕ) = free_svars ϕ.
+  Proof. done. Qed.
+  
   Lemma svar_open_evar_open_comm
     : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
       evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
