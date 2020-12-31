@@ -150,11 +150,18 @@ Section sorts.
         unfold Ensembles.In.
         rewrite -> evar_open_not_occur. 2: apply qsort_not_occur_0.
         rewrite -> pattern_interpretation_free_evar_independent.
-        2: { intros Contra. simpl in Contra.
-             rewrite -> sets.union_empty_l_L in Contra.
-             rewrite -> qsort_closed in Contra.
-             apply base.not_elem_of_empty in Contra.
-             apply Contra.
+        2: { rewrite HeqBigϕ.
+             unfold patt_inhabitant_set.
+             fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant $ s) ---> ϕ)) (patt_sym (inj inhabitant) $ s)).
+             unfold sym.
+             eapply evar_fresh_in_subformula.
+             2: apply set_evar_fresh_is_fresh.
+             (* TODO automation *)
+             apply sub_imp_l. unfold patt_in. unfold patt_defined.
+             apply sub_app_r. unfold patt_and.
+             unfold patt_not. unfold patt_or.
+             apply sub_imp_l. apply sub_imp_r.
+             apply sub_imp_l. apply sub_eq. reflexivity.
         }
         apply H'.
       - intros H m.
