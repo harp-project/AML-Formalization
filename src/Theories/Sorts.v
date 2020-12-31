@@ -51,10 +51,11 @@ Section sorts.
        unary_svar_open := svar_open_inhabitant_set ;
     |}.
 
+  (* A pattern representing sort that can be quantified over *)
   (* TODO some instances for automation *)
-  Class PSort (patt_sort : Pattern) :=
-    { psort_closed : free_evars patt_sort = ∅ ;
-      psort_not_occur_0 : bevar_occur patt_sort 0 = false;
+  Class QSort (patt_sort : Pattern) :=
+    { qsort_closed : free_evars patt_sort = ∅ ;
+      qsort_not_occur_0 : bevar_occur patt_sort 0 = false;
     }.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -63,6 +64,24 @@ Section sorts.
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set sort)) and phi).
 
+  Lemma evar_open_forall_of_sort db x s ϕ :
+    bevar_occur s 0 = false ->
+    evar_open db x (patt_forall_of_sort s ϕ) = patt_forall_of_sort s (evar_open (db+1) x ϕ).
+  Proof.
+    unfold patt_forall_of_sort.
+    rewrite !simpl_evar_open.
+    Check unit. Check id. Check (id 0).
+    simpl.
+  Abort.
+  
+
+    (*
+  #[global]
+   Instance EBinder_forall_of_sort s (QS : QSort s) : EBinder (patt_forall_of_sort s) :=
+    {|
+    |}.*)
+
+  
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
 
   (* TODO a lemma about patt_forall_of_sort *)
@@ -82,21 +101,18 @@ Section sorts.
     (* ϕ is expected to be a sort pattern *)
     Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).    
     
-    Lemma pattern_interpretation_forall_of_sort_predicate s (Hpss : PSort s) ϕ ρₑ ρₛ:
+    Lemma pattern_interpretation_forall_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
+      wfc_body_ex ϕ ->
       pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
       <-> (∀ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m ->
                            pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
     Proof.
-      intros x Hpred.
+      intros x Hpred Hwfc.
       unfold patt_forall_of_sort.
-      assert (Hfr: fresh_evar (patt_in b0 (patt_inhabitant_set s) ---> ϕ) = fresh_evar ϕ).
-      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
-        rewrite -> psort_closed.
-        repeat rewrite -> sets.union_empty_l_L.
-        auto.
-      }
+      assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set s) ---> ϕ)).
+      { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite pattern_interpretation_forall_predicate.
       2: {
         (*rewrite !simpl_evar_open.*)
@@ -106,54 +122,72 @@ Section sorts.
         - apply T_predicate_in.
           apply M_satisfies_theory.
         - subst x.
-          rewrite -> Hfr.
-          apply Hpred.
+          apply M_predicate_evar_open_fresh_evar_2.
+          3: apply Hpred. 2: apply Hwfc.
+          eapply evar_fresh_in_subformula. eauto. apply set_evar_fresh_is_fresh.
       }
       subst x.
+      remember (patt_in b0 (patt_inhabitant_set s) ---> ϕ) as Bigϕ.
       split.
       - intros H m H'.
         specialize (H m).
-        autorewrite with ml_db in H. simpl in H.
-        rewrite -> Hfr in H.
-        eapply pattern_interpretation_impl_MP. apply H.
+        rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ).
+        assumption. assumption.
+        rewrite HeqBigϕ in H.
+        rewrite evar_open_imp in H.
+        rewrite -HeqBigϕ in H.
+        
+        eapply pattern_interpretation_impl_MP.
+        apply H.
+        autorewrite with ml_db. simpl.
+
+        
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) s) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
         unfold Ensembles.In.
-        rewrite -> evar_open_not_occur. 2: apply psort_not_occur_0.
+        rewrite -> evar_open_not_occur. 2: apply qsort_not_occur_0.
         rewrite -> pattern_interpretation_free_evar_independent.
         2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
-             rewrite -> psort_closed in Contra.
+             rewrite -> qsort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
         }
         apply H'.
       - intros H m.
-        autorewrite with ml_db. simpl.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar ϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar ϕ) s) (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ).
+        
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) s) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
+        Check pattern_interpretation_predicate_impl.
+        rewrite {3}HeqBigϕ.
         apply pattern_interpretation_predicate_impl.
-        apply T_predicate_in. apply M_satisfies_theory.
-        intros H1. rewrite -> Hfr in *.
+        2: fold evar_open.
+        fold evar_open.
+        rewrite evar_open_in. apply T_predicate_in. apply M_satisfies_theory.
+        intros H1.
         specialize (Hfeip2 H1). clear H1.
-        apply H. unfold Minterp_inhabitant.
+        specialize (H m).
+        rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ) in H.
+        apply Hwfc. apply Hsub. apply H. clear H.
+        
+        unfold Minterp_inhabitant.
         unfold Ensembles.In in Hfeip2. unfold sym.
-        rewrite -> evar_open_not_occur in Hfeip2. 2: apply psort_not_occur_0.
+        rewrite -> evar_open_not_occur in Hfeip2. 2: apply qsort_not_occur_0.
         rewrite -> update_evar_val_same in Hfeip2.
         rewrite -> pattern_interpretation_free_evar_independent in Hfeip2.
         2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
-             rewrite -> psort_closed in Contra.
+             rewrite -> qsort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
         }
         apply Hfeip2.
     Qed.
 
-    Lemma pattern_interpretation_exists_of_sort_predicate s (Hpss : PSort s) ϕ ρₑ ρₛ:
+    Lemma pattern_interpretation_exists_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
       pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ) = Full
@@ -164,7 +198,7 @@ Section sorts.
       unfold patt_exists_of_sort.
       assert (Hfr: fresh_evar (patt_in b0 (patt_inhabitant_set s) and ϕ) = fresh_evar ϕ).
       { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
-        rewrite -> psort_closed.
+        rewrite -> qsort_closed.
         repeat rewrite -> sets.union_empty_r_L.
         rewrite -> sets.union_empty_l_L.
         auto.
@@ -194,11 +228,11 @@ Section sorts.
         rewrite update_evar_val_same in H1.
         unfold sym.
         unfold Ensembles.In in H1.
-        rewrite -> evar_open_not_occur in H1. 2: apply psort_not_occur_0.
+        rewrite -> evar_open_not_occur in H1. 2: apply qsort_not_occur_0.
         rewrite -> pattern_interpretation_free_evar_independent in H1.
         2: { intros Contra. simpl in Contra.
              rewrite -> sets.union_empty_l_L in Contra.
-             rewrite -> psort_closed in Contra.
+             rewrite -> qsort_closed in Contra.
              apply base.not_elem_of_empty in Contra.
              apply Contra.
         }
@@ -214,11 +248,11 @@ Section sorts.
           unfold Ensembles.In.
           rewrite -> update_evar_val_same.
           unfold Minterp_inhabitant in H1. unfold sym in H1.
-          rewrite -> evar_open_not_occur. 2: apply psort_not_occur_0.
+          rewrite -> evar_open_not_occur. 2: apply qsort_not_occur_0.
           rewrite -> pattern_interpretation_free_evar_independent.
           2: { intros Contra. simpl in Contra.
                rewrite -> sets.union_empty_l_L in Contra.
-               rewrite -> psort_closed in Contra.
+               rewrite -> qsort_closed in Contra.
                apply base.not_elem_of_empty in Contra.
                apply Contra.
           }
@@ -227,7 +261,7 @@ Section sorts.
     Qed.
 
 
-    Lemma M_predicate_exists_of_sort s (Hpss : PSort s) ϕ :
+    Lemma M_predicate_exists_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
     Proof.
@@ -239,7 +273,7 @@ Section sorts.
       - apply T_predicate_in.
         apply M_satisfies_theory.
       - simpl.
-        rewrite -> psort_closed.
+        rewrite -> qsort_closed.
         repeat rewrite sets.union_empty_r_L.
         repeat rewrite sets.union_empty_l_L.
         subst x.
@@ -247,7 +281,7 @@ Section sorts.
         apply Hpred.
     Qed.
 
-    Lemma M_predicate_forall_of_sort s (Hpss : PSort s) ϕ :
+    Lemma M_predicate_forall_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
     Proof.
@@ -259,7 +293,7 @@ Section sorts.
       - apply T_predicate_in.
         apply M_satisfies_theory.
       - simpl.
-        rewrite -> psort_closed.
+        rewrite -> qsort_closed.
         rewrite !(@right_id _ (=) ∅ (∪) ).
         rewrite (@left_id _ (=) ∅).
         subst x.
@@ -268,7 +302,7 @@ Section sorts.
     Qed.
 
     
-    Lemma interp_total_function f s₁ s₂ (Hpss₁ : PSort s₁) (Hpss₂ : PSort s₂) ρₑ ρₛ :
+    Lemma interp_total_function f s₁ s₂ (Hpss₁ : QSort s₁) (Hpss₂ : QSort s₂) ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
       ∀ (m₁ : Domain M),
         Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
