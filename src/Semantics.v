@@ -2129,6 +2129,37 @@ Proof.
   * assumption.
 Qed.
 
+Lemma M_predicate_evar_open_fresh_evar_1 M x₁ x₂ ϕ :
+  evar_is_fresh_in x₁ ϕ ->
+  evar_is_fresh_in x₂ ϕ ->
+  wfc_body_ex ϕ ->
+  (*well_formed_closed (evar_open 0 x₁ ϕ) ->*)
+  (*well_formed_closed (evar_open 0 x₂ ϕ) ->*)
+  M_predicate M (evar_open 0 x₁ ϕ) ->
+  M_predicate M (evar_open 0 x₂ ϕ).
+Proof.
+  intros Hfr1 Hfr2 Hbody.
+  unfold wfc_body_ex in Hbody.
+  unfold evar_is_fresh_in in *.
+  pose proof (Hwfc1 := Hbody x₁ Hfr1).
+  pose proof (Hwfc2 := Hbody x₂ Hfr2).
+  unfold M_predicate.
+  intros H ρₑ ρₛ.
+  rewrite -(@update_evar_val_same_2 M x₂ ρₑ).
+  rewrite (@interpretation_fresh_evar M _ x₂ x₁ _ _ _ _); auto.
+Qed.
+
+Lemma M_predicate_evar_open_fresh_evar_2 M x ϕ :
+  evar_is_fresh_in x ϕ ->
+  wfc_body_ex ϕ ->
+  M_predicate M (evar_open 0 (fresh_evar ϕ) ϕ) ->
+  M_predicate M (evar_open 0 x ϕ).
+Proof.
+  intros Hfr Hwfc H.
+  apply M_predicate_evar_open_fresh_evar_1 with (x₁ := fresh_evar ϕ); auto.
+  apply set_evar_fresh_is_fresh.
+Qed.
+
 End semantics.
 
 
