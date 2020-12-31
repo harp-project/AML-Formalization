@@ -2129,6 +2129,42 @@ Proof.
   * assumption.
 Qed.
 
+Lemma interpretation_fresh_evar_subterm_1 M ϕ₁ ϕ₂ c dbi ρₑ ρₛ :
+  well_formed_closed (evar_open dbi (fresh_evar ϕ₁) ϕ₁) ->
+  well_formed_closed (evar_open dbi (fresh_evar ϕ₂) ϕ₁) ->
+  is_subformula_of_ind ϕ₁ ϕ₂ ->
+  @pattern_interpretation M (update_evar_val (fresh_evar ϕ₂) c ρₑ) ρₛ (evar_open dbi (fresh_evar ϕ₂) ϕ₁)
+  = @pattern_interpretation M (update_evar_val (fresh_evar ϕ₁) c ρₑ) ρₛ (evar_open dbi (fresh_evar ϕ₁) ϕ₁).
+Proof.
+  intros Hwfc1 Hwfc2 Hsub.
+  apply interpretation_fresh_evar; auto.
+  2: apply set_evar_fresh_is_fresh.
+  eapply evar_fresh_in_subformula. apply Hsub.
+  apply set_evar_fresh_is_fresh.
+Qed.
+
+
+Lemma interpretation_fresh_evar_subterm_2 M ϕ₁ ϕ₂ c ρₑ ρₛ :
+  wfc_body_ex ϕ₁ ->
+  is_subformula_of_ind ϕ₁ ϕ₂ ->
+  @pattern_interpretation M (update_evar_val (fresh_evar ϕ₂) c ρₑ) ρₛ (evar_open 0 (fresh_evar ϕ₂) ϕ₁)
+  = @pattern_interpretation M (update_evar_val (fresh_evar ϕ₁) c ρₑ) ρₛ (evar_open 0 (fresh_evar ϕ₁) ϕ₁).
+Proof.
+  intros Hwfc Hsub.
+  unfold wfc_body_ex in Hwfc.
+  apply interpretation_fresh_evar_subterm_1.
+  3: apply Hsub.
+  apply Hwfc.
+  fold (evar_is_fresh_in (fresh_evar ϕ₁) ϕ₁).
+  apply set_evar_fresh_is_fresh.
+  apply Hwfc.
+  fold (evar_is_fresh_in (fresh_evar ϕ₂) ϕ₁).
+  eapply evar_fresh_in_subformula.
+  apply Hsub.
+  apply set_evar_fresh_is_fresh.
+Qed.
+
+
 Lemma M_predicate_evar_open_fresh_evar_1 M x₁ x₂ ϕ :
   evar_is_fresh_in x₁ ϕ ->
   evar_is_fresh_in x₂ ϕ ->
