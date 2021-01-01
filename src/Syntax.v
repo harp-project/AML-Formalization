@@ -1843,7 +1843,6 @@ Section syntax.
     evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1854,7 +1853,6 @@ Section syntax.
     evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1865,7 +1863,6 @@ Section syntax.
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1876,7 +1873,6 @@ Section syntax.
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1898,7 +1894,52 @@ Section syntax.
   Qed.
 
   Hint Resolve evar_is_fresh_in_mu : core.
-  
+
+  (**)
+  Lemma svar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_exists x ϕ :
+    svar_is_fresh_in x (patt_exists ϕ) -> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
+  Lemma svar_is_fresh_in_mu x ϕ :
+    svar_is_fresh_in x (patt_mu ϕ) -> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
 
 End syntax.
 
