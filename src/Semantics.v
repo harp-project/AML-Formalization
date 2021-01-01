@@ -166,6 +166,22 @@ Section semantics.
       - reflexivity.
     Qed.
 
+
+    Lemma update_svar_val_same M x m ρₑ : @update_svar_val M x m ρₑ x = m.
+    Proof.
+      unfold update_svar_val. destruct (svar_eqdec x x); simpl.
+      + reflexivity.
+      + contradiction.
+    Qed.
+
+    Lemma update_svar_val_same_2 M x ρₑ : @update_svar_val M x (ρₑ x) ρₑ = ρₑ.
+    Proof.
+      apply functional_extensionality. intros x0.
+      unfold update_svar_val. destruct (svar_eqdec x x0); simpl.
+      - subst. reflexivity.
+      - reflexivity.
+    Qed.
+    
     Definition app_ext {m : Model}
                (l r : Power (Domain m)) :
       Power (Domain m) :=
@@ -1800,7 +1816,65 @@ Proof.
   intros Hwfcx Hwfcy Hfrx Hfry.
   apply update_val_fresh12 with (sz := size phi); auto.
 Qed.
-  
+
+Check svar_is_fresh_in.
+Lemma Private_interpretation_fresh_evar M sz ϕ X Y S dbi ρₑ ρₛ:
+  size ϕ <= sz ->
+  svar_is_fresh_in X ϕ ->
+  svar_is_fresh_in Y ϕ ->
+  @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X ϕ)
+  = @pattern_interpretation M ρₑ (update_svar_val Y S ρₛ) (svar_open dbi Y ϕ).
+Proof.
+  move: ϕ.
+  induction sz.
+  - move=> ϕ Hsz  HfrX HfrY.
+    destruct ϕ; simpl in Hsz; try lia.
+    + rewrite 2!pattern_interpretation_free_evar_simpl. reflexivity.
+    + rewrite 2!pattern_interpretation_free_svar_simpl.
+      unfold svar_is_fresh_in in HfrX, HfrY. simpl in HfrX, HfrY.
+      apply not_elem_of_singleton_1 in HfrX.
+      apply not_elem_of_singleton_1 in HfrY.
+      unfold update_svar_val.
+      destruct (svar_eqdec X x),(svar_eqdec Y x); simpl; try contradiction.
+      reflexivity.
+    + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
+    + simpl. case (n =? dbi).
+      * rewrite 2!pattern_interpretation_free_svar_simpl.
+        rewrite 2!update_svar_val_same. reflexivity.
+      * rewrite 2!pattern_interpretation_bound_svar_simpl.
+        reflexivity.
+    + rewrite 2!pattern_interpretation_sym_simpl.
+      reflexivity.
+    + rewrite 2!pattern_interpretation_bott_simpl.
+      reflexivity.
+  - move=> ϕ Hsz HfrX HfrY.
+    destruct ϕ; simpl in Hsz.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite 2!pattern_interpretation_app_simpl. fold svar_open.
+      rewrite IHsz. 4: rewrite IHsz. lia.
+      eapply svar_is_fresh_in_app_l. apply HfrX.
+      eapply svar_is_fresh_in_app_l. apply HfrY.
+      lia.
+      eapply svar_is_fresh_in_app_r. apply HfrX.
+      eapply svar_is_fresh_in_app_r. apply HfrY.
+      reflexivity.
+    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite 2!pattern_interpretation_imp_simpl. fold svar_open.
+      rewrite IHsz. 4: rewrite IHsz. lia.
+      eapply svar_is_fresh_in_app_l. apply HfrX.
+      eapply svar_is_fresh_in_app_l. apply HfrY.
+      lia.
+      eapply svar_is_fresh_in_app_r. apply HfrX.
+      eapply svar_is_fresh_in_app_r. apply HfrY.
+      reflexivity.
+    + admit.
+    + admit.
+
+Abort.
 
     
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
@@ -2163,6 +2237,7 @@ Proof.
   apply Hsub.
   apply set_evar_fresh_is_fresh.
 Qed.
+
 
 
 Lemma M_predicate_evar_open_fresh_evar_1 M x₁ x₂ ϕ :
