@@ -619,6 +619,7 @@ Section syntax.
     firstorder.
   Qed.
 
+  (* TODO replace with a boolean version - that enables us to prove by computation. *)
   Fixpoint well_formed_positive (phi : Pattern) : Prop :=
     match phi with
     | patt_free_evar _ => True
@@ -1784,6 +1785,41 @@ Section syntax.
     - rewrite -> IHϕ₁. 2: auto. auto.
     - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
   Qed.
+
+  (* TODO nest_mu *)
+  Fixpoint nest_ex_aux level ϕ : Pattern :=
+    match ϕ with
+    | patt_free_evar _ => ϕ
+    | patt_free_svar _ => ϕ
+    | patt_bound_evar n => patt_bound_evar (if (level <=? n) then (S n) else n)
+    | patt_bound_svar _ => ϕ
+    | patt_sym _ => ϕ
+    | patt_bott => ϕ
+    | patt_app ϕ₁ ϕ₂ => patt_app (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
+    | patt_exists ϕ' => patt_exists (nest_ex_aux (S level) ϕ')
+    | patt_mu ϕ' => patt_mu (nest_ex_aux level ϕ')
+    end.
+
+  Lemma not_bevar_occur_level_nest_ex_aux level ϕ :
+    bevar_occur (nest_ex_aux level ϕ) level = false.
+  Proof.
+    move: ϕ level.
+    induction ϕ; move=> level; simpl; auto.
+    - case_bool_decide. 2: reflexivity.
+      destruct (PeanoNat.Nat.leb_spec0 level n); lia.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+  Qed.
+
+  Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
+
+  Lemma not_bevar_occur_0_nest_ex ϕ :
+    bevar_occur (nest_ex ϕ) 0 = false.
+  Proof.
+    exact (not_bevar_occur_level_nest_ex_aux 0 ϕ).
+  Qed.
+  
 
 End syntax.
 
