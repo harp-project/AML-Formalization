@@ -1812,6 +1812,19 @@ Section syntax.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
 
+  Lemma svar_open_nest_ex_aux_comm level ϕ dbi X:
+    svar_open dbi X (nest_ex_aux level ϕ) = nest_ex_aux level (svar_open dbi X ϕ).
+  Proof.
+    move: level dbi.
+    induction ϕ; move=> level dbi; simpl; auto.
+    - case (n =? dbi); reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
+  
+
   Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
 
   Lemma not_bevar_occur_0_nest_ex ϕ :
@@ -1819,6 +1832,72 @@ Section syntax.
   Proof.
     exact (not_bevar_occur_level_nest_ex_aux 0 ϕ).
   Qed.
+
+  Lemma svar_open_nest_ex_comm ϕ dbi X:
+    svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
+  Proof.
+    exact (svar_open_nest_ex_aux_comm 0 ϕ dbi X).
+  Qed.
+
+  Lemma evar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_app_l : core.
+
+  Lemma evar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_app_r : core.
+
+  Lemma evar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_imp_l : core.
+
+  Lemma evar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_imp_r : core.
+
+  Lemma evar_is_fresh_in_exists x ϕ :
+    evar_is_fresh_in x (patt_exists ϕ) -> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_exists : core.
+
+  Lemma evar_is_fresh_in_mu x ϕ :
+    evar_is_fresh_in x (patt_mu ϕ) -> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_mu : core.
   
 
 End syntax.
