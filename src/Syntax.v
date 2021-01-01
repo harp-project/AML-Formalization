@@ -294,6 +294,29 @@ Section syntax.
     | patt_exists p' => patt_exists (evar_open (k + 1) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
+
+  Lemma evar_open_not_occur n x ϕ :
+    bevar_occur ϕ n = false ->
+    evar_open n x ϕ = ϕ.
+  Proof.
+    generalize dependent n.
+    induction ϕ; simpl; intros dbi H; auto.
+    - case_bool_decide; case: (eqb_reflect n dbi); move => H'.
+      + inversion H.
+      + contradiction.
+      + contradiction.
+      + reflexivity.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ1 by auto.
+      rewrite -> IHϕ2 by auto.
+      reflexivity.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ1 by auto.
+      rewrite -> IHϕ2 by auto.
+      reflexivity.
+    - rewrite -> IHϕ. 2: {rewrite Nat.add_comm. simpl. assumption.  } reflexivity.
+    - rewrite -> IHϕ by auto. auto.
+  Qed.
   
   (* The following lemmas are trivial but useful for autorewrite. *)
   Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
@@ -596,6 +619,7 @@ Section syntax.
     firstorder.
   Qed.
 
+  (* TODO replace with a boolean version - that enables us to prove by computation. *)
   Fixpoint well_formed_positive (phi : Pattern) : Prop :=
     match phi with
     | patt_free_evar _ => True
@@ -1761,7 +1785,121 @@ Section syntax.
     - rewrite -> IHϕ₁. 2: auto. auto.
     - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
   Qed.
+
+  (* TODO nest_mu *)
+  Fixpoint nest_ex_aux level ϕ : Pattern :=
+    match ϕ with
+    | patt_free_evar _ => ϕ
+    | patt_free_svar _ => ϕ
+    | patt_bound_evar n => patt_bound_evar (if (level <=? n) then (S n) else n)
+    | patt_bound_svar _ => ϕ
+    | patt_sym _ => ϕ
+    | patt_bott => ϕ
+    | patt_app ϕ₁ ϕ₂ => patt_app (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
+    | patt_exists ϕ' => patt_exists (nest_ex_aux (S level) ϕ')
+    | patt_mu ϕ' => patt_mu (nest_ex_aux level ϕ')
+    end.
+
+  Lemma not_bevar_occur_level_nest_ex_aux level ϕ :
+    bevar_occur (nest_ex_aux level ϕ) level = false.
+  Proof.
+    move: ϕ level.
+    induction ϕ; move=> level; simpl; auto.
+    - case_bool_decide. 2: reflexivity.
+      destruct (PeanoNat.Nat.leb_spec0 level n); lia.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+  Qed.
+
+  Lemma svar_open_nest_ex_aux_comm level ϕ dbi X:
+    svar_open dbi X (nest_ex_aux level ϕ) = nest_ex_aux level (svar_open dbi X ϕ).
+  Proof.
+    move: level dbi.
+    induction ϕ; move=> level dbi; simpl; auto.
+    - case (n =? dbi); reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
   
+
+  Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
+
+  Lemma not_bevar_occur_0_nest_ex ϕ :
+    bevar_occur (nest_ex ϕ) 0 = false.
+  Proof.
+    exact (not_bevar_occur_level_nest_ex_aux 0 ϕ).
+  Qed.
+
+  Lemma svar_open_nest_ex_comm ϕ dbi X:
+    svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
+  Proof.
+    exact (svar_open_nest_ex_aux_comm 0 ϕ dbi X).
+  Qed.
+
+  Lemma evar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_app_l : core.
+
+  Lemma evar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_app_r : core.
+
+  Lemma evar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_imp_l : core.
+
+  Lemma evar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    Search not elem_of union.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_imp_r : core.
+
+  Lemma evar_is_fresh_in_exists x ϕ :
+    evar_is_fresh_in x (patt_exists ϕ) -> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_exists : core.
+
+  Lemma evar_is_fresh_in_mu x ϕ :
+    evar_is_fresh_in x (patt_mu ϕ) -> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  Hint Resolve evar_is_fresh_in_mu : core.
+  
+
 End syntax.
 
 Hint Rewrite ->
