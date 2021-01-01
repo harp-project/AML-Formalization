@@ -2196,6 +2196,60 @@ Proof.
   apply set_evar_fresh_is_fresh.
 Qed.
 
+Lemma Private_pattern_interpretation_nest_ex M sz ϕ x e ρₑ ρₛ :
+  size ϕ <= sz ->
+  evar_is_fresh_in x ϕ ->
+  @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x (nest_ex ϕ))
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  move: ϕ x e ρₑ ρₛ.
+  induction sz; move=> ϕ x e ρₑ ρₛ.
+  - destruct ϕ; simpl; move=> Hsz; try reflexivity; try lia.
+    intros Hfr.
+    apply pattern_interpretation_free_evar_independent.
+    unfold evar_is_fresh_in in Hfr. apply Hfr.
+  - pose proof (Hnot0 := not_bevar_occur_0_nest_ex ϕ).
+    destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
+    + (* duplicate *)
+      apply pattern_interpretation_free_evar_independent.
+      unfold evar_is_fresh_in in Hfr. apply Hfr.
+    + simpl in Hnot0.
+      apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite IHsz. lia. eapply evar_is_fresh_in_app_l. apply Hfr.
+      rewrite IHsz. lia. eapply evar_is_fresh_in_app_r. apply Hfr.
+      reflexivity.
+    + simpl in Hnot0.
+      apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
+      rewrite 2!pattern_interpretation_imp_simpl.
+      rewrite IHsz. lia. eapply evar_is_fresh_in_app_l. apply Hfr.
+      rewrite IHsz. lia. eapply evar_is_fresh_in_app_r. apply Hfr.
+      reflexivity.
+    + simpl in Hnot0.
+      admit.
+    + simpl in Hnot0.
+      fold (nest_ex ϕ) in Hnot0.
+
+      rewrite 2!pattern_interpretation_mu_simpl. simpl.
+      apply f_equal. apply f_equal. apply functional_extensionality.
+      (*fold (nest_ex ϕ).*)
+      intros S.
+      rewrite -svar_open_evar_open_comm.
+      rewrite svar_open_nest_ex_aux_comm.
+      rewrite IHsz. rewrite -svar_open_size. lia. admit.
+      (*   
+    specialize (IHϕ Hnot0).
+    unfold evar_is_fresh_in in Hfr. simpl in Hfr.
+*)
+  
+Abort.
+
+Lemma pattern_interpretation_nest_ex M ϕ x e ρₑ ρₛ :
+  evar_is_fresh_in x ϕ ->
+  @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x (nest_ex ϕ))
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Abort.
+
 End semantics.
 
 
