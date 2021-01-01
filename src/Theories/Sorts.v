@@ -54,7 +54,7 @@ Section sorts.
   (* A pattern representing sort that can be quantified over *)
   (* TODO some instances for automation *)
   Class QSort (patt_sort : Pattern) :=
-    { qsort_closed : free_evars patt_sort = ∅ ;
+    {
       qsort_not_occur_0 : bevar_occur patt_sort 0 = false;
     }.
 
@@ -70,7 +70,7 @@ Section sorts.
   Proof.
     unfold patt_forall_of_sort.
     rewrite !simpl_evar_open.
-    Check unit. Check id. Check (id 0).
+    (*Check unit. Check id. Check (id 0).*)
     simpl.
   Abort.
   
@@ -278,42 +278,43 @@ Section sorts.
 
     Lemma M_predicate_exists_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
+      wfc_body_ex ϕ ->
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
     Proof.
-      intros x Hpred.
+      intros x Hwfc Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
       autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
       apply M_predicate_and.
       - apply T_predicate_in.
         apply M_satisfies_theory.
-      - simpl.
-        rewrite -> qsort_closed.
-        repeat rewrite sets.union_empty_r_L.
-        repeat rewrite sets.union_empty_l_L.
-        subst x.
-        unfold fresh_evar in Hpred.
-        apply Hpred.
+      - subst x.
+        apply M_predicate_evar_open_fresh_evar_2.
+        3: apply Hpred. 2: apply Hwfc.
+        eapply evar_fresh_in_subformula.
+        2: apply set_evar_fresh_is_fresh.
+        unfold patt_and. unfold patt_not. unfold patt_or.
+        apply sub_imp_l.
+        apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity.
     Qed.
 
     Lemma M_predicate_forall_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
+      wfc_body_ex ϕ ->
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
     Proof.
-      intros x Hpred.
+      intros x Hwfc Hpred.
       unfold patt_forall_of_sort.
       apply M_predicate_forall.
       autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
       apply M_predicate_impl.
       - apply T_predicate_in.
         apply M_satisfies_theory.
-      - simpl.
-        rewrite -> qsort_closed.
-        rewrite !(@right_id _ (=) ∅ (∪) ).
-        rewrite (@left_id _ (=) ∅).
-        subst x.
-        unfold fresh_evar in Hpred.
-        apply Hpred.
+      - subst x.
+        apply M_predicate_evar_open_fresh_evar_2.
+        3: apply Hpred. 2: apply Hwfc.
+        eapply evar_fresh_in_subformula. 2: apply set_evar_fresh_is_fresh.
+        apply sub_imp_r. apply sub_eq. reflexivity.
     Qed.
 
     
