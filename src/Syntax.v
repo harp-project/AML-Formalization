@@ -1559,17 +1559,42 @@ Section syntax.
   | sub_mu ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_mu ϕ₂)
   .
 
-  (*
-  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : bool :=
-    orb (if (Pattern_eqdec phi1 phi2) then true else false)
-        match phi2 with
-        | patt_app p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
-        | patt_imp p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
-        | patt_exists p => is_subformula_of phi1 p
-        | patt_mu p => is_subformula_of phi1 p
-        | _ => false
-        end.
-  *)
+  Fixpoint is_subformula_of ϕ₁ ϕ₂ : bool :=
+    (decide_rel (=) ϕ₁ ϕ₂)
+    || match ϕ₂ with
+       | patt_app l r | patt_imp l r => is_subformula_of ϕ₁ l || is_subformula_of ϕ₁ r
+       | patt_exists phi | patt_mu phi => is_subformula_of ϕ₁ phi
+       | _ => false
+       end.
+
+  Lemma is_subformula_of_P ϕ₁ ϕ₂ : reflect (is_subformula_of_ind ϕ₁ ϕ₂) (is_subformula_of ϕ₁ ϕ₂).
+  Proof.
+    unfold is_subformula_of.
+    remember ϕ₂. revert p Heqp.
+
+    (* TODO *)
+    induction ϕ₂; move=> p Heqp; destruct (decide_rel (=) ϕ₁ p) eqn:Heq2;
+                           rewrite Heqp; rewrite -Heqp; rewrite Heq2; simpl; rewrite Heqp;
+                             try (apply ReflectT; subst; apply sub_eq; reflexivity);
+                             try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction).
+    all: fold is_subformula_of in *.
+    - destruct (IHϕ₂1 ϕ₂1),(IHϕ₂2 ϕ₂2); simpl; try reflexivity.
+      + apply ReflectT. apply sub_app_l. assumption.
+      + apply ReflectT. apply sub_app_l. assumption.
+      + apply ReflectT. apply sub_app_r. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂1 ϕ₂1),(IHϕ₂2 ϕ₂2); simpl; try reflexivity.
+      + apply ReflectT. apply sub_imp_l. assumption.
+      + apply ReflectT. apply sub_imp_l. assumption.
+      + apply ReflectT. apply sub_imp_r. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂ ϕ₂). reflexivity.
+      + apply ReflectT. apply sub_exists. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂ ϕ₂). reflexivity.
+      + apply ReflectT. apply sub_mu. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+  Qed.
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
