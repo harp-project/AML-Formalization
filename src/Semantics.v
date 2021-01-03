@@ -1567,51 +1567,26 @@ Proof.
         pose proof (i3 := not_elem_of_union fresh3 
                                             (free_evars (evar_open (n0+1) fresh1 phi)) 
                                             B0).
-        subst B0. subst B1. subst B2. subst B3. subst B4.
-       
-        assert(fresh3 ≠ fresh1).
-        {
-          subst B. apply i in H0. destruct H0. apply not_elem_of_singleton_1 in H0. assumption.
-        }
-        assert(fresh3 ≠ fresh2).
-        {
-          subst B. apply i in H0. destruct H0.
-                  apply i0 in H2. destruct H2.
-                  apply not_elem_of_singleton_1 in H2. assumption. 
-        }
-        assert(fresh3 ≠ fresh11).
-        {
-          subst B. apply i in H0. destruct H0.
-                  apply i0 in H3. destruct H3.
-                  apply i1 in H4. destruct H4.
-                  apply not_elem_of_singleton_1 in H4. assumption.
-        }
-        assert(fresh3 ≠ fresh22).
-        {
-          subst B. apply i in H0. destruct H0.
-                  apply i0 in H4. destruct H4.
-                  apply i1 in H5. destruct H5.
-                  apply i2 in H6. destruct H6.
-                  apply not_elem_of_singleton_1 in H6. assumption.
-        }
-        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh1 phi))).
-        {
-          subst B. apply i in H0. destruct H0.
-                  apply i0 in H5. destruct H5.
-                  apply i1 in H6. destruct H6.
-                  apply i2 in H7. destruct H7.
-                  apply i3 in H8. destruct H8. assumption.
-        }
-        assert(fresh3 ∉ (free_evars (evar_open (n0 + 1) fresh2 phi)) ∧ fresh3 ∉ free_evars phi).
-        {
-          subst B. apply i in H0. destruct H0.
-                  apply i0 in H6. destruct H6.
-                  apply i1 in H7. destruct H7.
-                  apply i2 in H8. destruct H8.
-                  apply i3 in H9. destruct H9. 
-                  apply not_elem_of_union in H10. assumption.
-        }
-        destruct H6.
+        subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
+
+        rename H0 into HB.
+        
+        apply i in HB. clear i. destruct HB as [Hneqfr1 HB].        
+        apply not_elem_of_singleton_1 in Hneqfr1.
+
+        apply i0 in HB. clear i0. destruct HB as [Hneqfr2 HB].
+        apply not_elem_of_singleton_1 in Hneqfr2.
+
+        apply i1 in HB. clear i1. destruct HB as [Hneqfr11 HB].
+        apply not_elem_of_singleton_1 in Hneqfr11.
+
+        apply i2 in HB. clear i2. destruct HB as [Hneqfr22 HB].
+        apply not_elem_of_singleton_1 in Hneqfr22.
+
+        apply i3 in HB. clear i3. destruct HB as [HnotinFree1 HB].
+        apply not_elem_of_union in HB.
+        destruct HB as [HnotinFree2 HnotinFree].
+        
         erewrite -> (IHsz _ _ _ _ fresh3) in H.
         erewrite -> (IHsz _ _ _ _ fresh3).
         rewrite -> update_evar_val_comm in H. rewrite -> evar_open_comm in H.
@@ -1629,11 +1604,11 @@ Proof.
         apply not_eq_sym. assumption.
         {
           rewrite -> evar_open_comm. simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
-          unfold wfc_body_ex in Hwfb2. exact (Hwfb2 fresh3 H6). lia.
+          unfold wfc_body_ex in Hwfb2. apply (Hwfb2 fresh3). assumption. lia.
         }
         {
           rewrite -> evar_open_comm. simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
-          unfold wfc_body_ex in Hwfb1. exact (Hwfb1 fresh3 H5). lia.
+          unfold wfc_body_ex in Hwfb1. apply (Hwfb1 fresh3). assumption. lia.
         }
         lia. assumption. lia. assumption. subst fresh11. apply set_evar_fresh_is_fresh.
         assumption.
@@ -1644,7 +1619,7 @@ Proof.
         }
         {
           simpl in Hwfb1. apply wfc_ex_to_wfc_body in Hwfb1.
-          unfold wfc_body_ex in Hwfb1. apply (Hwfb1 fresh3 H5).
+          unfold wfc_body_ex in Hwfb1. apply (Hwfb1 fresh3). assumption.
         }
         rewrite -> Heqfresh22. apply set_evar_fresh_is_fresh.
         assumption.
@@ -1655,7 +1630,7 @@ Proof.
         }
         {
           simpl in Hwfb2. apply wfc_ex_to_wfc_body in Hwfb2.
-          unfold wfc_body_ex in Hwfb2. apply (Hwfb2 fresh3 H6).
+          unfold wfc_body_ex in Hwfb2. apply (Hwfb2 fresh3). assumption.
         }
   - erewrite -> IHsz. reflexivity. lia. assumption. assumption. assumption. assumption.
   - simpl. repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
