@@ -1645,7 +1645,22 @@ Section syntax.
     * simpl. auto.
     * simpl. auto.
   Qed.
-  
+
+  Lemma evar_fresh_svar_open x X dbi ϕ:
+    evar_is_fresh_in x ϕ ->
+    evar_is_fresh_in x (svar_open dbi X ϕ).
+  Proof.
+    unfold evar_is_fresh_in.
+      by rewrite free_evars_svar_open.
+  Qed.
+
+  Lemma svar_fresh_evar_open x X dbi ϕ:
+    svar_is_fresh_in X ϕ ->
+    svar_is_fresh_in X (evar_open dbi x ϕ).
+  Proof.
+    unfold svar_is_fresh_in.
+      by rewrite free_svars_evar_open.
+  Qed.
 
   Lemma evar_fresh_in_subformula x ϕ₁ ϕ₂ :
     is_subformula_of_ind ϕ₁ ϕ₂ ->
