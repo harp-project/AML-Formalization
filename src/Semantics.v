@@ -1918,12 +1918,12 @@ Proof.
         apply f_equal. apply functional_extensionality. intros e.
         rewrite 2!svar_open_evar_open_comm.
         rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -evar_open_size. lia.
-        admit. admit.
+        apply svar_is_fresh_in_exists in HfrX.
+        apply svar_is_fresh_in_exists in HfrY.
+        apply svar_fresh_evar_open. apply HfrX.
+        apply svar_fresh_evar_open. apply HfrY.
         rewrite -2!svar_open_evar_open_comm.
-        (* we will use the part of the IH that talks about evars *)
         rewrite (proj2 (IHsz _ _ _ _ _) _ (fresh_evar (svar_open dbi Y ϕ))). rewrite -svar_open_size. lia.
-        (* fresh_evar (svar_open ... ) = fresh_evar ...
-           since free_evars (svar_open ...) = (free_evars ...)  *)
         rewrite fresh_evar_svar_open.
         apply evar_fresh_svar_open. apply set_evar_fresh_is_fresh.
         apply set_evar_fresh_is_fresh.
