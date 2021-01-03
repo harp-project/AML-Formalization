@@ -1901,9 +1901,13 @@ Proof.
         admit. admit.
         rewrite -2!svar_open_evar_open_comm.
         (* we will use the part of the IH that talks about evars *)
-        admit.
-      (* Lemma : fresh_in_evar_open_phi_implies_fresh_in_phi
-      Check svar_fresh_in_subformula.*)
+        rewrite (proj2 (IHsz _ _ _ _ _) _ (fresh_evar (svar_open dbi Y ϕ))). rewrite -svar_open_size. lia.
+        (* fresh_evar (svar_open ... ) = fresh_evar ...
+           since free_evars (svar_open ...) = (free_evars ...)  *)
+        rewrite fresh_evar_svar_open.
+        apply evar_fresh_svar_open. apply set_evar_fresh_is_fresh.
+        apply set_evar_fresh_is_fresh.
+        reflexivity.
       + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
         apply f_equal. apply f_equal. apply functional_extensionality.
         intros S'.
