@@ -1397,6 +1397,15 @@ Section syntax.
     apply free_evars_svar_open.
   Qed.
 
+  Lemma fresh_svar_evar_open dbi x phi :
+    fresh_svar (evar_open dbi x phi) = fresh_svar phi.
+  Proof.
+    unfold fresh_svar.
+    apply f_equal.
+    apply f_equal.
+    apply free_svars_evar_open.
+  Qed.
+
   Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
   Proof. simpl. unfold patt_not. reflexivity. Qed.
 

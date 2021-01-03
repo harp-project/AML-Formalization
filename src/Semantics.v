@@ -1940,7 +1940,48 @@ Proof.
     }
     {
       (* inductive case - evar *)
-      admit.
+      move=> x y c Hfrx Hfry.
+      destruct ϕ; simpl in Hsz.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite 2!pattern_interpretation_app_simpl. fold evar_open.
+        rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _ _) x y). lia.
+        eapply evar_is_fresh_in_app_l. apply Hfrx.
+        eapply evar_is_fresh_in_app_l. apply Hfry.
+        lia.
+        eapply evar_is_fresh_in_app_r. apply Hfrx.
+        eapply evar_is_fresh_in_app_r. apply Hfry.
+        reflexivity.
+      + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite 2!pattern_interpretation_imp_simpl. fold evar_open.
+        rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _ _) x y). lia.
+        eapply evar_is_fresh_in_app_l. apply Hfrx.
+        eapply evar_is_fresh_in_app_l. apply Hfry.
+        lia.
+        eapply evar_is_fresh_in_app_r. apply Hfrx.
+        eapply evar_is_fresh_in_app_r. apply Hfry.
+        reflexivity.
+      + rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
+        apply f_equal. apply functional_extensionality. intros e.
+        admit.
+      + rewrite 2!pattern_interpretation_mu_simpl. fold evar_open. simpl.
+        apply f_equal. apply f_equal. apply functional_extensionality.
+        intros S'.
+        rewrite -2!svar_open_evar_open_comm.
+        rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -svar_open_size. lia.
+        apply evar_is_fresh_in_mu in Hfrx.
+        apply evar_is_fresh_in_mu in Hfry.
+        apply evar_fresh_svar_open. apply Hfrx.
+        apply evar_fresh_svar_open. apply Hfry.
+        rewrite 2!svar_open_evar_open_comm.
+        rewrite (proj1 (IHsz _ _ _ _ _) _ (fresh_svar (evar_open dbi y ϕ))). rewrite -evar_open_size. lia.
+        apply svar_fresh_evar_open.
+        rewrite fresh_svar_evar_open. apply set_svar_fresh_is_fresh.
+        apply set_svar_fresh_is_fresh.
+        reflexivity.
     }
     
 Abort.
