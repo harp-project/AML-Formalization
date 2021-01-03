@@ -1555,7 +1555,7 @@ Proof.
           subst. apply set_evar_fresh_is_fresh'.
         }
 
-        pose (i := not_elem_of_union fresh3 {[fresh1]} 
+        pose proof (i := not_elem_of_union fresh3 {[fresh1]} 
                   ((singleton fresh2) 
                   ∪ ((singleton fresh11)
                   ∪ ((singleton fresh22)
@@ -1563,7 +1563,7 @@ Proof.
                   ∪ (free_evars (evar_open (n0+1) fresh2 phi)
                   ∪ (free_evars phi))))))).
 
-        pose (i0 := not_elem_of_union fresh3
+        pose proof (i0 := not_elem_of_union fresh3
                   (singleton fresh2) 
                   ((singleton fresh11)
                   ∪ ((singleton fresh22)
@@ -1571,20 +1571,20 @@ Proof.
                   ∪ (free_evars (evar_open (n0+1) fresh2 phi)
                                 ∪ (free_evars phi)))))).
 
-       pose (i1 := not_elem_of_union fresh3 
+       pose proof (i1 := not_elem_of_union fresh3 
                   (singleton fresh11)
                   ((singleton fresh22)
                   ∪ ((free_evars (evar_open (n0+1) fresh1 phi)) 
                   ∪ (free_evars (evar_open (n0+1) fresh2 phi)
                   ∪ (free_evars phi))))).
 
-       pose (i2 := not_elem_of_union fresh3
+       pose proof (i2 := not_elem_of_union fresh3
                   (singleton fresh22)
                   ((free_evars (evar_open (n0+1) fresh1 phi)) 
                   ∪ (free_evars (evar_open (n0+1) fresh2 phi)
                   ∪ (free_evars phi)))).
 
-       pose (i3 := not_elem_of_union fresh3 
+       pose proof (i3 := not_elem_of_union fresh3 
                   (free_evars (evar_open (n0+1) fresh1 phi)) 
                   (free_evars (evar_open (n0+1) fresh2 phi)
                   ∪ (free_evars phi))).
