@@ -1817,17 +1817,16 @@ Proof.
   apply update_val_fresh12 with (sz := size phi); auto.
 Qed.
 
-Check svar_is_fresh_in.
-Lemma Private_interpretation_fresh_evar M sz ϕ X Y S dbi ρₑ ρₛ:
+Lemma Private_interpretation_fresh_var M sz ϕ X Y S dbi ρₑ ρₛ:
   size ϕ <= sz ->
   svar_is_fresh_in X ϕ ->
   svar_is_fresh_in Y ϕ ->
   @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X ϕ)
   = @pattern_interpretation M ρₑ (update_svar_val Y S ρₛ) (svar_open dbi Y ϕ).
 Proof.
-  move: ϕ.
+  move: ϕ X Y S dbi ρₑ ρₛ.
   induction sz.
-  - move=> ϕ Hsz  HfrX HfrY.
+  - move=> ϕ X Y S dbi ρₑ ρₛ Hsz HfrX HfrY.
     destruct ϕ; simpl in Hsz; try lia.
     + rewrite 2!pattern_interpretation_free_evar_simpl. reflexivity.
     + rewrite 2!pattern_interpretation_free_svar_simpl.
@@ -1847,32 +1846,49 @@ Proof.
       reflexivity.
     + rewrite 2!pattern_interpretation_bott_simpl.
       reflexivity.
-  - move=> ϕ Hsz HfrX HfrY.
+  - move=> ϕ X Y S dbi ρₑ ρₛ Hsz HfrX HfrY.
     destruct ϕ; simpl in Hsz.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
     + rewrite 2!pattern_interpretation_app_simpl. fold svar_open.
-      rewrite IHsz. 4: rewrite IHsz. lia.
+      rewrite (IHsz _ X Y). 4: rewrite (IHsz _ X Y). lia.
       eapply svar_is_fresh_in_app_l. apply HfrX.
       eapply svar_is_fresh_in_app_l. apply HfrY.
       lia.
       eapply svar_is_fresh_in_app_r. apply HfrX.
       eapply svar_is_fresh_in_app_r. apply HfrY.
       reflexivity.
-    + rewrite IHsz. 4: reflexivity. 3,2: auto. simpl. lia.
+    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
     + rewrite 2!pattern_interpretation_imp_simpl. fold svar_open.
-      rewrite IHsz. 4: rewrite IHsz. lia.
+      rewrite (IHsz _ X Y). 4: rewrite (IHsz _ X Y). lia.
       eapply svar_is_fresh_in_app_l. apply HfrX.
       eapply svar_is_fresh_in_app_l. apply HfrY.
       lia.
       eapply svar_is_fresh_in_app_r. apply HfrX.
       eapply svar_is_fresh_in_app_r. apply HfrY.
       reflexivity.
-    + admit.
-    + admit.
+    + rewrite 2!pattern_interpretation_ex_simpl. fold svar_open. simpl.
+      apply f_equal. apply functional_extensionality. intros e.
+      rewrite 2!svar_open_evar_open_comm.
+      rewrite (IHsz _ X Y). rewrite -evar_open_size. lia.
+      admit. admit.
+      rewrite -2!svar_open_evar_open_comm.
+      (* we will use the part of the IH that talks about evars *)
+      admit.
+      (* Lemma : fresh_in_evar_open_phi_implies_fresh_in_phi
+      Check svar_fresh_in_subformula.*)
+    + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
+      apply f_equal. apply f_equal. apply functional_extensionality.
+      intros S'.
+      (*Check evar_open_comm.*)
+      (* TODO: create svar_open_comm *)
+      (*Search svar_open.*)
+      remember (svar_open (dbi+1) X ϕ) as ϕX.
+      remember (svar_open (dbi+1) Y ϕ) as ϕY.
+      admit.
 
 Abort.
 
