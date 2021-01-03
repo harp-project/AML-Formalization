@@ -1808,18 +1808,18 @@ Qed.
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
  TODO prefix with Private_ and creaate a wrapper.
 *)
-Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
+Lemma plugging_patterns_helper : forall (sz : nat) (M : Model) (phi1 phi2 : Pattern),
     size phi1 <= sz -> forall (evar_val : EVarVal)
                               (svar_val : SVarVal) (X : svar), (* TODO X not free in ?? *)
     well_formed_closed (patt_mu phi1) ->
     well_formed_closed phi2 ->
     ~ elem_of X (free_svars phi1) ->
-    @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi (*0?*)) (*~ open_svar dbi phi2 ph1*)
+    @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 0) (*~ open_svar dbi phi2 ph1*)
     = @pattern_interpretation M evar_val
                      (update_svar_val X (@pattern_interpretation M evar_val svar_val phi2) svar_val)
-                     (svar_open dbi X phi1).
+                     (svar_open 0 X phi1).
 Proof.
-  induction sz; intros dbi M phi1 phi2 Hsz evar_val svar_val X Hwfc1 Hwfc2 H.
+  induction sz; intros M phi1 phi2 Hsz evar_val svar_val X Hwfc1 Hwfc2 H.
   - (* sz == 0 *)
     destruct phi1; simpl in Hsz; simpl.
     + (* free_evar *)
@@ -1836,7 +1836,7 @@ Proof.
       specialize (Hwfc1 X H). unfold well_formed_closed in Hwfc1; simpl in Hwfc1.
       lia. assumption.
     + (* bound_svar *)
-      simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
+      simpl. destruct (n =? 0) eqn:Heq, (compare_nat n 0).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
         destruct (svar_eqdec X X). auto. contradiction.
@@ -1872,7 +1872,7 @@ Proof.
       specialize (Hwfc1 X H). unfold well_formed_closed in Hwfc1; simpl in Hwfc1.
       lia. assumption.
     + (* bound_svar *)
-      simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
+      simpl. destruct (n =? 0) eqn:Heq, (compare_nat n 0).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
       * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
         destruct (svar_eqdec X X). simpl. auto. contradiction.
@@ -1930,7 +1930,7 @@ Proof.
       (* x = fresh_evar phi1' *)
       (* y = evar_fresh (elements (free_evars phi1') U (free_evars phi2)) *)
             
-      remember (svar_open dbi X phi1) as phi1'.
+      remember (svar_open 0 X phi1) as phi1'.
       remember (fresh_evar phi1') as Xfr2'.
       remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
       remember (update_svar_val X (pattern_interpretation evar_val svar_val phi2) svar_val) as svar_val2'.
@@ -1946,35 +1946,43 @@ Proof.
       Search wfc_body_ex.
       apply wfc_ex_to_wfc_body in Hwbm.
       unfold wfc_body_ex in Hwbm.
-      rewrite -> Hfresh_subst.
-      
+      rewrite -> Hfresh_subst.      
       2: { specialize (Hwbm Xfr2'). rewrite -> free_evars_svar_open in Hwbm.
-           Check evar_is_fresh_in.
            assert (HXfr2': evar_is_fresh_in Xfr2' phi1).
-           subst Xfr2' phi1'.
-           unfold fresh_evar. rewrite -> free_evars_svar_open.
-           apply set_evar_fresh_is_fresh.
+           { subst Xfr2' phi1'.
+             unfold fresh_evar. rewrite -> free_evars_svar_open.
+             apply set_evar_fresh_is_fresh.
+           }
            specialize (Hwbm HXfr2'). subst phi1'. auto.
+         }
+      2: { specialize (Hwbm Xu). rewrite -> free_evars_svar_open in Hwbm.
+           assert (Hu: evar_is_fresh_in Xu phi1).
+           { subst Xu phi1'.
+             rewrite -> free_evars_svar_open.
+             admit.
+           }
+           specialize (Hwbm Hu). subst phi1'. auto. 
+         }
+      2: { subst phi1' Xfr2'. apply set_evar_fresh_is_fresh. }
+      2: { subst Xu phi1'.
+           rewrite -> free_evars_svar_open.
            admit.
          }
-      2: { specialize (Hwbm Xu). admit. }
-      2: { subst phi1' Xfr2'. apply set_evar_fresh_is_fresh. }
-      2: { admit. }
 
-      remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c evar_val) as evar_val1'.
+      remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 0)) c evar_val) as evar_val1'.
       remember (update_evar_val Xu c evar_val) as evar_val2'.
       rewrite -> evar_open_bsvar_subst. 2: auto.
-      remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
+      remember (fresh_evar (bsvar_subst phi1 phi2 0)) as Xfr1.
       
-      (* dbi may or may not occur in phi1 *)
-      remember (bsvar_occur phi1 dbi) as Hoc.
+      (* 0 may or may not occur in phi1 *)
+      remember (bsvar_occur phi1 0) as Hoc.
       move: HeqHoc.
       case: Hoc => HeqHoc.
-      -- (* dbi ocurs in phi1 *)
-        pose proof (HXfr1Fresh := @set_evar_fresh_is_fresh signature (bsvar_subst phi1 phi2 dbi)).
+      -- (* 0 occurs in phi1 *)
+        pose proof (HXfr1Fresh := @set_evar_fresh_is_fresh signature (bsvar_subst phi1 phi2 0)).
         rewrite <- HeqXfr1 in HXfr1Fresh.
         symmetry in HeqHoc.
-        pose proof (Hsub := @bsvar_subst_contains_subformula signature phi1 phi2 dbi HeqHoc).
+        pose proof (Hsub := @bsvar_subst_contains_subformula signature phi1 phi2 0 HeqHoc).
         pose proof (HXfr1Fresh2 := evar_fresh_in_subformula Hsub HXfr1Fresh).
 
         assert (Hinterp:
@@ -2010,7 +2018,7 @@ Proof.
           simpl in Hwfc1. apply wfc_aux_body_ex_imp1. auto.
         * auto.
         * rewrite -> free_svars_evar_open. auto.
-      -- (* dbi does not occur in phi1 *)
+      -- (* 0 does not occur in phi1 *)
         rewrite -> bsvar_subst_not_occur_is_noop.
         (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc).
            We need a lemma for that. *)

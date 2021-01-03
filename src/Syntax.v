@@ -872,7 +872,6 @@ Section syntax.
     - apply (@wfc_ex_to_wfc_body phi H1). assumption.
   Qed.
 
-
   
   Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
 
