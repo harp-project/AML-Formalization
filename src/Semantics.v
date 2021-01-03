@@ -1864,8 +1864,28 @@ Proof.
     }
     {
       (* base case - evar *)
-      admit.
-    } 
+      move=> x y c Hfrx Hfry.
+      destruct ϕ; simpl in Hsz; try lia.
+      + rewrite 2!pattern_interpretation_free_evar_simpl.
+        unfold evar_is_fresh_in in Hfrx, Hfry. simpl in Hfrx, Hfry.
+        apply not_elem_of_singleton_1 in Hfrx.
+        apply not_elem_of_singleton_1 in Hfry.
+        apply f_equal. unfold update_evar_val.
+        destruct (evar_eqdec x x0),(evar_eqdec y x0); simpl; try contradiction.
+        reflexivity.
+      + rewrite 2!pattern_interpretation_free_svar_simpl.
+        reflexivity.
+      + simpl. case (n =? dbi).
+        * rewrite 2!pattern_interpretation_free_evar_simpl.
+          rewrite 2!update_evar_val_same. reflexivity.
+        * rewrite 2!pattern_interpretation_bound_evar_simpl.
+          reflexivity.
+      + rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
+      + rewrite 2!pattern_interpretation_sym_simpl.
+        reflexivity.
+      + rewrite 2!pattern_interpretation_bott_simpl.
+        reflexivity.
+    }
   - move=> ϕ dbi ρₑ ρₛ Hsz.
     split.
     {
