@@ -1817,79 +1817,108 @@ Proof.
   apply update_val_fresh12 with (sz := size phi); auto.
 Qed.
 
-Lemma Private_interpretation_fresh_var M sz ϕ X Y S dbi ρₑ ρₛ:
+Lemma Private_interpretation_fresh_var M sz ϕ dbi ρₑ ρₛ:
   size ϕ <= sz ->
-  svar_is_fresh_in X ϕ ->
-  svar_is_fresh_in Y ϕ ->
-  @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X ϕ)
-  = @pattern_interpretation M ρₑ (update_svar_val Y S ρₛ) (svar_open dbi Y ϕ).
+  (
+    forall X Y S,
+      svar_is_fresh_in X ϕ ->
+      svar_is_fresh_in Y ϕ ->
+      @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X ϕ)
+      = @pattern_interpretation M ρₑ (update_svar_val Y S ρₛ) (svar_open dbi Y ϕ)
+  ) /\
+  (
+    forall x y c,
+      evar_is_fresh_in x ϕ ->
+      evar_is_fresh_in y ϕ ->
+      @pattern_interpretation M (update_evar_val x c ρₑ) ρₛ (evar_open dbi x ϕ)
+      = @pattern_interpretation M (update_evar_val y c ρₑ) ρₛ (evar_open dbi y ϕ)
+  )
+.
 Proof.
-  move: ϕ X Y S dbi ρₑ ρₛ.
+  move: ϕ dbi ρₑ ρₛ.
   induction sz.
-  - move=> ϕ X Y S dbi ρₑ ρₛ Hsz HfrX HfrY.
-    destruct ϕ; simpl in Hsz; try lia.
-    + rewrite 2!pattern_interpretation_free_evar_simpl. reflexivity.
-    + rewrite 2!pattern_interpretation_free_svar_simpl.
-      unfold svar_is_fresh_in in HfrX, HfrY. simpl in HfrX, HfrY.
-      apply not_elem_of_singleton_1 in HfrX.
-      apply not_elem_of_singleton_1 in HfrY.
-      unfold update_svar_val.
-      destruct (svar_eqdec X x),(svar_eqdec Y x); simpl; try contradiction.
-      reflexivity.
-    + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-    + simpl. case (n =? dbi).
-      * rewrite 2!pattern_interpretation_free_svar_simpl.
-        rewrite 2!update_svar_val_same. reflexivity.
-      * rewrite 2!pattern_interpretation_bound_svar_simpl.
+  - move=> ϕ dbi ρₑ ρₛ Hsz.
+    split.
+    {
+      (* base case - svar *)
+      move=> X Y S HfrX HfrY.
+      destruct ϕ; simpl in Hsz; try lia.
+      + rewrite 2!pattern_interpretation_free_evar_simpl. reflexivity.
+      + rewrite 2!pattern_interpretation_free_svar_simpl.
+        unfold svar_is_fresh_in in HfrX, HfrY. simpl in HfrX, HfrY.
+        apply not_elem_of_singleton_1 in HfrX.
+        apply not_elem_of_singleton_1 in HfrY.
+        unfold update_svar_val.
+        destruct (svar_eqdec X x),(svar_eqdec Y x); simpl; try contradiction.
         reflexivity.
-    + rewrite 2!pattern_interpretation_sym_simpl.
-      reflexivity.
-    + rewrite 2!pattern_interpretation_bott_simpl.
-      reflexivity.
-  - move=> ϕ X Y S dbi ρₑ ρₛ Hsz HfrX HfrY.
-    destruct ϕ; simpl in Hsz.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite 2!pattern_interpretation_app_simpl. fold svar_open.
-      rewrite (IHsz _ X Y). 4: rewrite (IHsz _ X Y). lia.
-      eapply svar_is_fresh_in_app_l. apply HfrX.
-      eapply svar_is_fresh_in_app_l. apply HfrY.
-      lia.
-      eapply svar_is_fresh_in_app_r. apply HfrX.
-      eapply svar_is_fresh_in_app_r. apply HfrY.
-      reflexivity.
-    + rewrite (IHsz _ X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-    + rewrite 2!pattern_interpretation_imp_simpl. fold svar_open.
-      rewrite (IHsz _ X Y). 4: rewrite (IHsz _ X Y). lia.
-      eapply svar_is_fresh_in_app_l. apply HfrX.
-      eapply svar_is_fresh_in_app_l. apply HfrY.
-      lia.
-      eapply svar_is_fresh_in_app_r. apply HfrX.
-      eapply svar_is_fresh_in_app_r. apply HfrY.
-      reflexivity.
-    + rewrite 2!pattern_interpretation_ex_simpl. fold svar_open. simpl.
-      apply f_equal. apply functional_extensionality. intros e.
-      rewrite 2!svar_open_evar_open_comm.
-      rewrite (IHsz _ X Y). rewrite -evar_open_size. lia.
-      admit. admit.
-      rewrite -2!svar_open_evar_open_comm.
-      (* we will use the part of the IH that talks about evars *)
+      + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
+      + simpl. case (n =? dbi).
+        * rewrite 2!pattern_interpretation_free_svar_simpl.
+          rewrite 2!update_svar_val_same. reflexivity.
+        * rewrite 2!pattern_interpretation_bound_svar_simpl.
+          reflexivity.
+      + rewrite 2!pattern_interpretation_sym_simpl.
+        reflexivity.
+      + rewrite 2!pattern_interpretation_bott_simpl.
+        reflexivity.
+    }
+    {
+      (* base case - evar *)
       admit.
+    } 
+  - move=> ϕ dbi ρₑ ρₛ Hsz.
+    split.
+    {
+      (* inductive case - svar *)
+      move=> X Y S HfrX HfrY.
+      destruct ϕ; simpl in Hsz.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite 2!pattern_interpretation_app_simpl. fold svar_open.
+        rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _ _) X Y). lia.
+        eapply svar_is_fresh_in_app_l. apply HfrX.
+        eapply svar_is_fresh_in_app_l. apply HfrY.
+        lia.
+        eapply svar_is_fresh_in_app_r. apply HfrX.
+        eapply svar_is_fresh_in_app_r. apply HfrY.
+        reflexivity.
+      + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+      + rewrite 2!pattern_interpretation_imp_simpl. fold svar_open.
+        rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _ _) X Y). lia.
+        eapply svar_is_fresh_in_app_l. apply HfrX.
+        eapply svar_is_fresh_in_app_l. apply HfrY.
+        lia.
+        eapply svar_is_fresh_in_app_r. apply HfrX.
+        eapply svar_is_fresh_in_app_r. apply HfrY.
+        reflexivity.
+      + rewrite 2!pattern_interpretation_ex_simpl. fold svar_open. simpl.
+        apply f_equal. apply functional_extensionality. intros e.
+        rewrite 2!svar_open_evar_open_comm.
+        rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -evar_open_size. lia.
+        admit. admit.
+        rewrite -2!svar_open_evar_open_comm.
+        (* we will use the part of the IH that talks about evars *)
+        admit.
       (* Lemma : fresh_in_evar_open_phi_implies_fresh_in_phi
       Check svar_fresh_in_subformula.*)
-    + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
-      apply f_equal. apply f_equal. apply functional_extensionality.
-      intros S'.
-      (*Check evar_open_comm.*)
-      (* TODO: create svar_open_comm *)
-      (*Search svar_open.*)
-      remember (svar_open (dbi+1) X ϕ) as ϕX.
-      remember (svar_open (dbi+1) Y ϕ) as ϕY.
+      + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
+        apply f_equal. apply f_equal. apply functional_extensionality.
+        intros S'.
+        (*Check evar_open_comm.*)
+        (* TODO: create svar_open_comm *)
+        (*Search svar_open.*)
+        remember (svar_open (dbi+1) X ϕ) as ϕX.
+        remember (svar_open (dbi+1) Y ϕ) as ϕY.
+        admit.
+    }
+    {
+      (* inductive case - evar *)
       admit.
-
+    }
+    
 Abort.
 
     
