@@ -1980,6 +1980,84 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
     - rewrite IHϕ. reflexivity.
   Qed.
+
+
+  Lemma evar_open_nest_ex_aux_comm level ϕ dbi X:
+    evar_open dbi X (nest_ex_aux level ϕ)
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_ex_aux level (evar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_ex_aux level ϕ
+      | Nat_greater _ _ _ => nest_ex_aux level (evar_open (dbi-1) X ϕ)
+      end.
+  Proof.
+    move: level dbi.
+    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
+    1: {destruct (Nat.leb_spec0 level n); simpl;
+      destruct dbi; simpl;
+        destruct (Nat.leb_spec0 level n); simpl;
+          try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
+            try reflexivity; try lia;
+              destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
+      1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
+      1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
+      }
+    1: {destruct (Nat.leb_spec level n); simpl.
+      + destruct dbi.
+        * reflexivity.
+        * destruct (eqb_reflect n dbi); try lia. reflexivity.
+      + destruct (eqb_reflect n dbi); try lia. reflexivity.
+    }
+    
+    1: {destruct (Nat.leb_spec0 level n); simpl;
+        destruct (eqb_reflect n (dbi - 1)).
+      1,2: destruct dbi; try lia.
+      1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
+      1,2: destruct (eqb_reflect level n); simpl;
+        destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
+    }
+    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
+                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    
+    4,5,6: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (dbi + 1) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi + 1 - 1 = dbi). lia.
+    assert (Hdbi2: dbi - 1 + 1 = dbi). lia.
+    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+  Qed.
+  
+  Lemma free_svars_nest_ex_aux dbi ϕ:
+    free_svars (nest_ex_aux dbi ϕ) = free_svars ϕ.
+  Proof.
+    move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
+  
+  Lemma free_evars_nest_ex_aux dbi ϕ:
+    free_evars (nest_ex_aux dbi ϕ) = free_evars ϕ.
+  Proof.
+    move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
+
+  Lemma fresh_svar_nest_ex_aux dbi ϕ:
+    fresh_svar (nest_ex_aux dbi ϕ) = fresh_svar ϕ.
+  Proof.
+    unfold fresh_svar.
+      by rewrite free_svars_nest_ex_aux.
+  Qed.
+
+  Lemma fresh_evar_nest_ex_aux dbi ϕ:
+    fresh_evar (nest_ex_aux dbi ϕ) = fresh_evar ϕ.
+  Proof.
+    unfold fresh_evar.
+      by rewrite free_evars_nest_ex_aux.
+  Qed.  
   
 
   Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
