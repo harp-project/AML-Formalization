@@ -1832,7 +1832,65 @@ Proof.
         reflexivity.
       + rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
         apply f_equal. apply functional_extensionality. intros e.
-        admit.
+
+        remember (fresh_evar (evar_open (dbi + 1) x ϕ)) as x'.
+        remember (fresh_evar (evar_open (dbi + 1) y ϕ)) as y'.
+        remember ((@singleton evar (@EVarSet signature) _ x) ∪ ((singleton y) ∪ ((singleton x')
+                 ∪ ((singleton y')
+              ∪ ((free_evars (evar_open (dbi+1) x ϕ)) ∪ (free_evars (evar_open (dbi+1) y ϕ)
+                ∪ (free_evars ϕ))))))) as B.
+        remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
+        assert(HB: fresh3 ∉ B).
+        {
+          subst. apply set_evar_fresh_is_fresh'.
+        }
+
+        remember (free_evars (evar_open (dbi+1) y ϕ) ∪ (free_evars ϕ)) as B0.
+        remember ((free_evars (evar_open (dbi+1) x ϕ)) ∪ B0) as B1.
+        remember ({[y']} ∪ B1) as B2.
+        remember ({[x']} ∪ B2) as B3.
+        remember ({[y]} ∪ B3) as B4.
+        pose proof (i := not_elem_of_union fresh3 {[x]} B4).
+        pose proof (i0 := not_elem_of_union fresh3 {[y]} B3).
+        pose proof (i1 := not_elem_of_union fresh3 {[x']} B2).
+        pose proof (i2 := not_elem_of_union fresh3 {[y']} B1).
+        pose proof (i3 := not_elem_of_union fresh3 
+                                            (free_evars (evar_open (dbi+1) x ϕ)) 
+                                            B0).
+        subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
+        
+        apply i in HB. clear i. destruct HB as [Hneqfr1 HB].        
+        apply not_elem_of_singleton_1 in Hneqfr1.
+
+        apply i0 in HB. clear i0. destruct HB as [Hneqfr2 HB].
+        apply not_elem_of_singleton_1 in Hneqfr2.
+
+        apply i1 in HB. clear i1. destruct HB as [Hneqfr11 HB].
+        apply not_elem_of_singleton_1 in Hneqfr11.
+
+        apply i2 in HB. clear i2. destruct HB as [Hneqfr22 HB].
+        apply not_elem_of_singleton_1 in Hneqfr22.
+
+        apply i3 in HB. clear i3. destruct HB as [HnotinFree1 HB].
+        apply not_elem_of_union in HB.
+        destruct HB as [HnotinFree2 HnotinFree].
+        rewrite (proj2 (IHsz _ _ _ _ _) x' fresh3). rewrite -evar_open_size. lia.
+        rewrite Heqx'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree1.
+        rewrite (proj2 (IHsz _ _ _ _ _) y' fresh3). rewrite -evar_open_size. lia.
+        rewrite Heqy'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree2.
+        rewrite (@evar_open_comm signature 0 (dbi+1) _ fresh3 x ϕ). lia.
+        rewrite (@evar_open_comm signature 0 (dbi+1) _ fresh3 y ϕ). lia.
+        rewrite (@update_evar_val_comm _ fresh3 x). apply Hneqfr1.
+        rewrite (@update_evar_val_comm _ fresh3 y). apply Hneqfr2.
+        apply evar_is_fresh_in_exists in Hfrx.
+        apply evar_is_fresh_in_exists in Hfry.
+        rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -evar_open_size. lia.
+        unfold evar_is_fresh_in.
+        apply (@fresh_notin _ (size (evar_open 0 fresh3 ϕ))). rewrite -evar_open_size. lia.
+        apply Hfrx. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
+        apply (@fresh_notin _ (size (evar_open 0 fresh3 ϕ))). rewrite -evar_open_size. lia.
+        apply Hfry. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
+        reflexivity.
       + rewrite 2!pattern_interpretation_mu_simpl. fold evar_open. simpl.
         apply f_equal. apply f_equal. apply functional_extensionality.
         intros S'.
