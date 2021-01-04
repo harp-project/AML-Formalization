@@ -1027,7 +1027,25 @@ Section syntax.
       forall x y phi,
         evar_open n x (evar_open m y phi) = evar_open m y (evar_open n x phi).
   Proof.
-  Admitted.
+    intros n m Hneqnm x y phi.
+    move: n m Hneqnm.
+    induction phi; intros n' m' Hneqnm; simpl; try reflexivity.
+    - destruct (eqb_reflect n m'), (eqb_reflect n n'); subst; simpl.
+      + contradiction.
+      + destruct (eqb_reflect m' m').
+        * reflexivity.
+        * contradiction.
+      + rewrite Nat.eqb_refl. reflexivity.
+      + destruct (eqb_reflect n n'),(eqb_reflect n m'); subst.
+        * contradiction.
+        * contradiction.
+        * contradiction.
+        * reflexivity.
+    - rewrite IHphi1. assumption.  rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+  Qed.
 
   Lemma svar_open_comm:
     forall n m,
@@ -1036,7 +1054,25 @@ Section syntax.
       forall X Y phi,
         svar_open n X (svar_open m Y phi) = svar_open m Y (svar_open n X phi).
   Proof.
-  Admitted.
+    intros n m Hneqnm x y phi.
+    move: n m Hneqnm.
+    induction phi; intros n' m' Hneqnm; simpl; try reflexivity.
+    - destruct (eqb_reflect n m'), (eqb_reflect n n'); subst; simpl.
+      + contradiction.
+      + destruct (eqb_reflect m' m').
+        * reflexivity.
+        * contradiction.
+      + rewrite Nat.eqb_refl. reflexivity.
+      + destruct (eqb_reflect n n'),(eqb_reflect n m'); subst.
+        * contradiction.
+        * contradiction.
+        * contradiction.
+        * reflexivity.
+    - rewrite IHphi1. assumption.  rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+  Qed.
   
   (* TODO make a wrapper that does not have the 'sz' variable *)
   Lemma fresh_notin: 
