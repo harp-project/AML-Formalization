@@ -1,3 +1,5 @@
+CI test
+
 # AML-Formalization
 
 In this project we attempt to fully implement the "Applicative Matching Logic" framework in Coq, with example intances.
