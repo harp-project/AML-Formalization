@@ -1671,19 +1671,7 @@ Proof.
 Qed. (* update_val_fresh12 *)
 
 
-Lemma interpretation_fresh_evar M phi x y c dbi evar_val svar_val:
-  well_formed_closed (evar_open dbi x phi) ->
-  well_formed_closed (evar_open dbi y phi) ->
-  evar_is_fresh_in x phi -> evar_is_fresh_in y phi ->
-  @pattern_interpretation M (update_evar_val x c evar_val) svar_val (evar_open dbi x phi)
-  = @pattern_interpretation M (update_evar_val y c evar_val) svar_val (evar_open dbi y phi).
-Proof.
-  Check update_val_fresh12.
-  intros Hwfcx Hwfcy Hfrx Hfry.
-  apply update_val_fresh12 with (sz := size phi); auto.
-Qed.
-
-Lemma Private_interpretation_fresh_var M sz ϕ dbi ρₑ ρₛ:
+Lemma Private_interpretation_fresh_var_open M sz ϕ dbi ρₑ ρₛ:
   size ϕ <= sz ->
   (
     forall X Y S,
@@ -1964,7 +1952,29 @@ Proof.
     
 Qed.
 
-    
+
+Lemma interpretation_fresh_evar_open M ϕ x y c dbi ρₑ ρₛ:
+  evar_is_fresh_in x ϕ ->
+  evar_is_fresh_in y ϕ ->
+  @pattern_interpretation M (update_evar_val x c ρₑ) ρₛ (evar_open dbi x ϕ)
+  = @pattern_interpretation M (update_evar_val y c ρₑ) ρₛ (evar_open dbi y ϕ).
+Proof.
+  move=> Hfrx Hfry.
+  eapply (proj2 (@Private_interpretation_fresh_var_open M (size ϕ) ϕ dbi ρₑ ρₛ _) x y c); assumption.
+  Unshelve. lia.
+Qed.
+
+Lemma interpretation_fresh_svar_open M ϕ X Y S dbi ρₑ ρₛ:
+  svar_is_fresh_in X ϕ ->
+  svar_is_fresh_in Y ϕ ->
+  @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X ϕ)
+  = @pattern_interpretation M ρₑ (update_svar_val Y S ρₛ) (svar_open dbi Y ϕ).
+Proof.
+  move=> HfrX HfrY.
+  eapply (proj1 (@Private_interpretation_fresh_var_open M (size ϕ) ϕ dbi ρₑ ρₛ _) X Y S); assumption.
+  Unshelve. lia.
+Qed.
+
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
