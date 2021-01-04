@@ -1932,6 +1932,14 @@ Proof.
       rewrite IHsz. lia. eapply evar_is_fresh_in_app_r. apply Hfr.
       reflexivity.
     + simpl in Hnot0.
+      rewrite 2!pattern_interpretation_ex_simpl. simpl.
+      apply f_equal. apply functional_extensionality.
+      intros c.
+      Search svar_open nest_ex_aux.
+      remember (evar_open 1 x (nest_ex_aux 1 ϕ)) as ϕ'.
+      rewrite evar_open_nest_ex_aux_comm in Heqϕ'.
+      destruct (compare_nat 1 1); try lia.
+      subst ϕ'.
       admit.
     + simpl in Hnot0.
       fold (nest_ex ϕ) in Hnot0.
@@ -1942,12 +1950,13 @@ Proof.
       intros S.
       rewrite -svar_open_evar_open_comm.
       rewrite svar_open_nest_ex_aux_comm.
-      rewrite IHsz. rewrite -svar_open_size. lia. admit.
-      (*   
-    specialize (IHϕ Hnot0).
-    unfold evar_is_fresh_in in Hfr. simpl in Hfr.
-*)
-  
+      rewrite IHsz. rewrite -svar_open_size. lia.
+      apply evar_fresh_svar_open.
+      apply evar_is_fresh_in_mu in Hfr. apply Hfr.
+      rewrite (@interpretation_fresh_svar_open _ _ _ (fresh_svar ϕ)).
+      rewrite fresh_svar_evar_open. rewrite fresh_svar_nest_ex_aux.
+      1,2: apply set_svar_fresh_is_fresh.
+      reflexivity.
 Abort.
 
 Lemma pattern_interpretation_nest_ex M ϕ x e ρₑ ρₛ :
