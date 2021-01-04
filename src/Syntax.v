@@ -1029,6 +1029,14 @@ Section syntax.
   Proof.
   Admitted.
 
+  Lemma svar_open_comm:
+    forall n m,
+      n <> m 
+      ->
+      forall X Y phi,
+        svar_open n X (svar_open m Y phi) = svar_open m Y (svar_open n X phi).
+  Proof.
+  Admitted.
   
   (* TODO make a wrapper that does not have the 'sz' variable *)
   Lemma fresh_notin: 
@@ -1093,6 +1101,70 @@ Section syntax.
     - apply IHsz. lia. assumption. assumption. assumption.
   Qed.
 
+  (* TODO make a wrapper that does not have the 'sz' variable *)
+  Lemma svar_fresh_notin: 
+    forall sz phi v w,
+      le (size phi) sz ->
+      v ∉ (free_svars phi) ->
+      w ∉ (free_svars phi) ->
+      (v <> w) ->
+      forall n,
+        v ∉ (free_svars (svar_open n w phi)).
+  Proof.
+    induction sz; destruct phi; intros v w Hsz Hlsv Hlsw Hneq n0; simpl in *; try inversion Hsz; auto.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite -> elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+  Qed.
+
+  
   Lemma free_evars_svar_open : forall (psi : Pattern) (dbi :db_index) (X : svar),
       free_evars (svar_open dbi X psi) = free_evars psi.
   Proof.

@@ -1797,12 +1797,66 @@ Proof.
       + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
         apply f_equal. apply f_equal. apply functional_extensionality.
         intros S'.
-        (*Check evar_open_comm.*)
-        (* TODO: create svar_open_comm *)
-        (*Search svar_open.*)
-        remember (svar_open (dbi+1) X ϕ) as ϕX.
-        remember (svar_open (dbi+1) Y ϕ) as ϕY.
-        admit.
+
+        remember (fresh_svar (svar_open (dbi + 1) X ϕ)) as X'.
+        remember (fresh_svar (svar_open (dbi + 1) Y ϕ)) as Y'.
+        remember ((@singleton svar (@SVarSet signature) _ X) ∪ ((singleton Y) ∪ ((singleton X')
+                 ∪ ((singleton Y')
+              ∪ ((free_svars (svar_open (dbi+1) X ϕ)) ∪ (free_svars (svar_open (dbi+1) Y ϕ)
+                ∪ (free_svars ϕ))))))) as B.
+        remember (@svar_fresh (@variables signature) (elements B)) as fresh3.
+        assert(HB: fresh3 ∉ B).
+        {
+          subst. apply set_svar_fresh_is_fresh'.
+        }
+
+        remember (free_svars (svar_open (dbi+1) Y ϕ) ∪ (free_svars ϕ)) as B0.
+        remember ((free_svars (svar_open (dbi+1) X ϕ)) ∪ B0) as B1.
+        remember ({[Y']} ∪ B1) as B2.
+        remember ({[X']} ∪ B2) as B3.
+        remember ({[Y]} ∪ B3) as B4.
+        pose proof (i := not_elem_of_union fresh3 {[X]} B4).
+        pose proof (i0 := not_elem_of_union fresh3 {[Y]} B3).
+        pose proof (i1 := not_elem_of_union fresh3 {[X']} B2).
+        pose proof (i2 := not_elem_of_union fresh3 {[Y']} B1).
+        pose proof (i3 := not_elem_of_union fresh3 
+                                            (free_svars (svar_open (dbi+1) X ϕ)) 
+                                            B0).
+        subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
+        
+        apply i in HB. clear i. destruct HB as [Hneqfr1 HB].        
+        apply not_elem_of_singleton_1 in Hneqfr1.
+
+        apply i0 in HB. clear i0. destruct HB as [Hneqfr2 HB].
+        apply not_elem_of_singleton_1 in Hneqfr2.
+
+        apply i1 in HB. clear i1. destruct HB as [Hneqfr11 HB].
+        apply not_elem_of_singleton_1 in Hneqfr11.
+
+        apply i2 in HB. clear i2. destruct HB as [Hneqfr22 HB].
+        apply not_elem_of_singleton_1 in Hneqfr22.
+
+        apply i3 in HB. clear i3. destruct HB as [HnotinFree1 HB].
+        apply not_elem_of_union in HB.
+        destruct HB as [HnotinFree2 HnotinFree].
+        
+        rewrite (proj1 (IHsz _ _ _ _ _) X' fresh3). rewrite -svar_open_size. lia.
+        rewrite HeqX'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree1.
+        rewrite (proj1 (IHsz _ _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
+        rewrite HeqY'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree2.
+        rewrite (@svar_open_comm signature 0 (dbi+1) _ fresh3 X ϕ). lia.
+        rewrite (@svar_open_comm signature 0 (dbi+1) _ fresh3 Y ϕ). lia.
+        rewrite (@update_svar_val_comm _ fresh3 X). apply Hneqfr1.
+        rewrite (@update_svar_val_comm _ fresh3 Y). apply Hneqfr2.
+        apply svar_is_fresh_in_exists in HfrX.
+        apply svar_is_fresh_in_exists in HfrY.
+        rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -svar_open_size. lia.
+        unfold svar_is_fresh_in.
+        apply (@svar_fresh_notin _ (size (svar_open 0 fresh3 ϕ))). rewrite -svar_open_size. lia.
+        apply HfrX. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
+        apply (@svar_fresh_notin _ (size (svar_open 0 fresh3 ϕ))). rewrite -svar_open_size. lia.
+        apply HfrY. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
+        reflexivity.
     }
     {
       (* inductive case - evar *)
@@ -1908,7 +1962,7 @@ Proof.
         reflexivity.
     }
     
-Abort.
+Qed.
 
     
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
