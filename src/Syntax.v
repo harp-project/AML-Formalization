@@ -1027,8 +1027,52 @@ Section syntax.
       forall x y phi,
         evar_open n x (evar_open m y phi) = evar_open m y (evar_open n x phi).
   Proof.
-  Admitted.
+    intros n m Hneqnm x y phi.
+    move: n m Hneqnm.
+    induction phi; intros n' m' Hneqnm; simpl; try reflexivity.
+    - destruct (eqb_reflect n m'), (eqb_reflect n n'); subst; simpl.
+      + contradiction.
+      + destruct (eqb_reflect m' m').
+        * reflexivity.
+        * contradiction.
+      + rewrite Nat.eqb_refl. reflexivity.
+      + destruct (eqb_reflect n n'),(eqb_reflect n m'); subst.
+        * contradiction.
+        * contradiction.
+        * contradiction.
+        * reflexivity.
+    - rewrite IHphi1. assumption.  rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+  Qed.
 
+  Lemma svar_open_comm:
+    forall n m,
+      n <> m 
+      ->
+      forall X Y phi,
+        svar_open n X (svar_open m Y phi) = svar_open m Y (svar_open n X phi).
+  Proof.
+    intros n m Hneqnm x y phi.
+    move: n m Hneqnm.
+    induction phi; intros n' m' Hneqnm; simpl; try reflexivity.
+    - destruct (eqb_reflect n m'), (eqb_reflect n n'); subst; simpl.
+      + contradiction.
+      + destruct (eqb_reflect m' m').
+        * reflexivity.
+        * contradiction.
+      + rewrite Nat.eqb_refl. reflexivity.
+      + destruct (eqb_reflect n n'),(eqb_reflect n m'); subst.
+        * contradiction.
+        * contradiction.
+        * contradiction.
+        * reflexivity.
+    - rewrite IHphi1. assumption.  rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+    - rewrite IHphi. lia. reflexivity.
+  Qed.
   
   (* TODO make a wrapper that does not have the 'sz' variable *)
   Lemma fresh_notin: 
@@ -1093,6 +1137,70 @@ Section syntax.
     - apply IHsz. lia. assumption. assumption. assumption.
   Qed.
 
+  (* TODO make a wrapper that does not have the 'sz' variable *)
+  Lemma svar_fresh_notin: 
+    forall sz phi v w,
+      le (size phi) sz ->
+      v ∉ (free_svars phi) ->
+      w ∉ (free_svars phi) ->
+      (v <> w) ->
+      forall n,
+        v ∉ (free_svars (svar_open n w phi)).
+  Proof.
+    induction sz; destruct phi; intros v w Hsz Hlsv Hlsw Hneq n0; simpl in *; try inversion Hsz; auto.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - destruct (n =? n0) eqn:P.
+      + simpl. apply not_elem_of_singleton_2. assumption.
+      + simpl. trivial.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite -> elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - rewrite elem_of_union.
+      apply and_not_or. 
+      rewrite -> elem_of_union in Hlsv.
+      rewrite -> elem_of_union in Hlsw.
+      apply not_or_and in Hlsv.
+      apply not_or_and in Hlsw.
+      destruct Hlsv, Hlsw.
+      split.
+      + apply IHsz. lia. assumption. assumption. assumption.
+      + apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+    - apply IHsz. lia. assumption. assumption. assumption.
+  Qed.
+
+  
   Lemma free_evars_svar_open : forall (psi : Pattern) (dbi :db_index) (X : svar),
       free_evars (svar_open dbi X psi) = free_evars psi.
   Proof.
@@ -1397,6 +1505,15 @@ Section syntax.
     apply free_evars_svar_open.
   Qed.
 
+  Lemma fresh_svar_evar_open dbi x phi :
+    fresh_svar (evar_open dbi x phi) = fresh_svar phi.
+  Proof.
+    unfold fresh_svar.
+    apply f_equal.
+    apply f_equal.
+    apply free_svars_evar_open.
+  Qed.
+
   Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
   Proof. simpl. unfold patt_not. reflexivity. Qed.
 
@@ -1559,17 +1676,42 @@ Section syntax.
   | sub_mu ϕ₁ ϕ₂ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_mu ϕ₂)
   .
 
-  (*
-  Fixpoint is_subformula_of (phi1 : Pattern) (phi2 : Pattern) : bool :=
-    orb (if (Pattern_eqdec phi1 phi2) then true else false)
-        match phi2 with
-        | patt_app p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
-        | patt_imp p q => orb (is_subformula_of phi1 p) (is_subformula_of phi1 q)
-        | patt_exists p => is_subformula_of phi1 p
-        | patt_mu p => is_subformula_of phi1 p
-        | _ => false
-        end.
-  *)
+  Fixpoint is_subformula_of ϕ₁ ϕ₂ : bool :=
+    (decide_rel (=) ϕ₁ ϕ₂)
+    || match ϕ₂ with
+       | patt_app l r | patt_imp l r => is_subformula_of ϕ₁ l || is_subformula_of ϕ₁ r
+       | patt_exists phi | patt_mu phi => is_subformula_of ϕ₁ phi
+       | _ => false
+       end.
+
+  Lemma is_subformula_of_P ϕ₁ ϕ₂ : reflect (is_subformula_of_ind ϕ₁ ϕ₂) (is_subformula_of ϕ₁ ϕ₂).
+  Proof.
+    unfold is_subformula_of.
+    remember ϕ₂. revert p Heqp.
+
+    (* TODO *)
+    induction ϕ₂; move=> p Heqp; destruct (decide_rel (=) ϕ₁ p) eqn:Heq2;
+                           rewrite Heqp; rewrite -Heqp; rewrite Heq2; simpl; rewrite Heqp;
+                             try (apply ReflectT; subst; apply sub_eq; reflexivity);
+                             try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction).
+    all: fold is_subformula_of in *.
+    - destruct (IHϕ₂1 ϕ₂1),(IHϕ₂2 ϕ₂2); simpl; try reflexivity.
+      + apply ReflectT. apply sub_app_l. assumption.
+      + apply ReflectT. apply sub_app_l. assumption.
+      + apply ReflectT. apply sub_app_r. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂1 ϕ₂1),(IHϕ₂2 ϕ₂2); simpl; try reflexivity.
+      + apply ReflectT. apply sub_imp_l. assumption.
+      + apply ReflectT. apply sub_imp_l. assumption.
+      + apply ReflectT. apply sub_imp_r. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂ ϕ₂). reflexivity.
+      + apply ReflectT. apply sub_exists. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+    - destruct (IHϕ₂ ϕ₂). reflexivity.
+      + apply ReflectT. apply sub_mu. assumption.
+      + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
+  Qed.
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
@@ -1620,7 +1762,22 @@ Section syntax.
     * simpl. auto.
     * simpl. auto.
   Qed.
-  
+
+  Lemma evar_fresh_svar_open x X dbi ϕ:
+    evar_is_fresh_in x ϕ ->
+    evar_is_fresh_in x (svar_open dbi X ϕ).
+  Proof.
+    unfold evar_is_fresh_in.
+      by rewrite free_evars_svar_open.
+  Qed.
+
+  Lemma svar_fresh_evar_open x X dbi ϕ:
+    svar_is_fresh_in X ϕ ->
+    svar_is_fresh_in X (evar_open dbi x ϕ).
+  Proof.
+    unfold svar_is_fresh_in.
+      by rewrite free_svars_evar_open.
+  Qed.
 
   Lemma evar_fresh_in_subformula x ϕ₁ ϕ₂ :
     is_subformula_of_ind ϕ₁ ϕ₂ ->
@@ -1843,7 +2000,6 @@ Section syntax.
     evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1854,7 +2010,6 @@ Section syntax.
     evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1865,7 +2020,6 @@ Section syntax.
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1876,7 +2030,6 @@ Section syntax.
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
   Proof.
     unfold evar_is_fresh_in. simpl.
-    Search not elem_of union.
     move/not_elem_of_union => [H1 H2].
     done.
   Qed.
@@ -1898,7 +2051,52 @@ Section syntax.
   Qed.
 
   Hint Resolve evar_is_fresh_in_mu : core.
-  
+
+  (**)
+  Lemma svar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
+    svar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma svar_is_fresh_in_exists x ϕ :
+    svar_is_fresh_in x (patt_exists ϕ) -> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
+  Lemma svar_is_fresh_in_mu x ϕ :
+    svar_is_fresh_in x (patt_mu ϕ) -> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
 
 End syntax.
 
