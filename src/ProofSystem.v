@@ -36,21 +36,9 @@ Proof.
     destruct H2 as [c Hext_re].
     exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
-    split. erewrite -> (@update_val_fresh12 signature m (Syntax.size phi)) in Hext_re. exact Hext_re.
-    lia. 
+    split. erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re. 
     apply set_evar_fresh_is_fresh.
     {
-      unfold fresh_evar. simpl. 
-      pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
-      apply not_elem_of_union in n. destruct n. assumption.
-    }
-    {
-      unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
-      unfold wfc_body_ex in H2. eapply H2. apply set_evar_fresh_is_fresh'.
-    }
-    {
-      unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
-      unfold wfc_body_ex in H2. eapply H2.
       unfold fresh_evar. simpl. 
       pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
       apply not_elem_of_union in n. destruct n. assumption.
@@ -103,20 +91,9 @@ Proof.
       }
       unfold well_formed in H0. destruct H0. assumption.
     - split.
-      + erewrite -> (@update_val_fresh12 signature m (Syntax.size phi)) in Hext_re. exact Hext_re.
-        lia.
+      + erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
         {
-          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-        }
-        {
-          unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
-          unfold wfc_body_ex in H2. eapply H2. apply set_evar_fresh_is_fresh.
-        }
-        {
-          unfold well_formed in H. destruct H. apply wfc_ex_to_wfc_body in H2. 
-          unfold wfc_body_ex in H2. eapply H2.
           pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }

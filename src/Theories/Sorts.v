@@ -104,12 +104,11 @@ Section sorts.
     Lemma pattern_interpretation_forall_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      wfc_body_ex ϕ ->
       pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
       <-> (∀ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m ->
                            pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
     Proof.
-      intros x Hpred Hwfc.
+      intros x Hpred.
       unfold patt_forall_of_sort.
       assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set s) ---> ϕ)).
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
@@ -123,7 +122,7 @@ Section sorts.
           apply M_satisfies_theory.
         - subst x.
           apply M_predicate_evar_open_fresh_evar_2.
-          3: apply Hpred. 2: apply Hwfc.
+          2: apply Hpred.
           eapply evar_fresh_in_subformula. eauto. apply set_evar_fresh_is_fresh.
       }
       subst x.
@@ -146,15 +145,16 @@ Section sorts.
       split.
       - intros H m H'.
         specialize (H m).
-        rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ).
-        assumption. assumption.
+        (*rewrite -interpretation_fresh_evar_subterm.*)
+        rewrite -(@interpretation_fresh_evar_subterm _ _ _ Bigϕ).
         rewrite HeqBigϕ in H.
         rewrite evar_open_imp in H.
         rewrite -HeqBigϕ in H.
-        
+        assumption.
+        rewrite {3}HeqBigϕ in H.
         eapply pattern_interpretation_impl_MP.
         apply H.
-        autorewrite with ml_db. simpl.
+        autorewrite with ml_db. simpl. fold evar_open.
   
         unfold Minterp_inhabitant in H'.
         pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) s) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
@@ -179,8 +179,8 @@ Section sorts.
         intros H1.
         specialize (Hfeip2 H1). clear H1.
         specialize (H m).
-        rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ) in H.
-        apply Hwfc. apply Hsub. apply H. clear H.
+        rewrite -(@interpretation_fresh_evar_subterm _ _ _ Bigϕ) in H.
+        apply Hsub. apply H. clear H.
         
         unfold Minterp_inhabitant.
         unfold Ensembles.In in Hfeip2. unfold sym.
@@ -194,12 +194,11 @@ Section sorts.
     Lemma pattern_interpretation_exists_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      wfc_body_ex ϕ ->
       pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ) = Full
       <-> (∃ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m /\
                            pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
     Proof.
-      intros x Hpred Hwfc.
+      intros x Hpred.
       unfold patt_exists_of_sort.
       assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set s) and ϕ)).
       { unfold patt_and. unfold patt_or.  apply sub_imp_l. apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity. }
@@ -212,7 +211,7 @@ Section sorts.
           apply M_satisfies_theory.
         - subst x.
           apply M_predicate_evar_open_fresh_evar_2.
-          3: apply Hpred. 2: apply Hwfc.
+          2: apply Hpred.
           eapply evar_fresh_in_subformula. eauto. apply set_evar_fresh_is_fresh.
       }
       subst x.
@@ -236,8 +235,8 @@ Section sorts.
       split.
       - intros [m H].
         exists m.
-        rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ).
-        assumption. assumption.
+        rewrite -(@interpretation_fresh_evar_subterm _ _ _ Bigϕ).
+        assumption.
         rewrite {3}HeqBigϕ in H.
 
         apply pattern_interpretation_and_full in H.
@@ -270,18 +269,17 @@ Section sorts.
           rewrite -> pattern_interpretation_free_evar_independent.
           2: apply Hfresh.
           apply H1.
-        + rewrite -(@interpretation_fresh_evar_subterm_2 _ _ _ Bigϕ) in H2.
-          apply Hwfc. apply Hsub.
+        + rewrite -(@interpretation_fresh_evar_subterm _ _ _ Bigϕ) in H2.
+          apply Hsub.
           apply H2.
     Qed.
 
 
     Lemma M_predicate_exists_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
-      wfc_body_ex ϕ ->
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
     Proof.
-      intros x Hwfc Hpred.
+      intros x Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
       autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
@@ -290,7 +288,7 @@ Section sorts.
         apply M_satisfies_theory.
       - subst x.
         apply M_predicate_evar_open_fresh_evar_2.
-        3: apply Hpred. 2: apply Hwfc.
+        2: apply Hpred.
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
         unfold patt_and. unfold patt_not. unfold patt_or.
@@ -300,10 +298,9 @@ Section sorts.
 
     Lemma M_predicate_forall_of_sort s (Hpss : QSort s) ϕ :
       let x := fresh_evar ϕ in
-      wfc_body_ex ϕ ->
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
     Proof.
-      intros x Hwfc Hpred.
+      intros x Hpred.
       unfold patt_forall_of_sort.
       apply M_predicate_forall.
       autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
@@ -312,7 +309,7 @@ Section sorts.
         apply M_satisfies_theory.
       - subst x.
         apply M_predicate_evar_open_fresh_evar_2.
-        3: apply Hpred. 2: apply Hwfc.
+        2: apply Hpred.
         eapply evar_fresh_in_subformula. 2: apply set_evar_fresh_is_fresh.
         apply sub_imp_r. apply sub_eq. reflexivity.
     Qed.
