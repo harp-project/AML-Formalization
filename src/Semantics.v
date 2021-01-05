@@ -1901,7 +1901,6 @@ Proof.
   apply set_evar_fresh_is_fresh.
 Qed.
 
-(* TODO *)
 Lemma Private_pattern_interpretation_nest_ex M sz ϕ x dbi e ρₑ ρₛ :
   size ϕ <= sz ->
   evar_is_fresh_in x ϕ ->
@@ -2004,7 +2003,9 @@ Lemma pattern_interpretation_nest_ex M ϕ x e ρₑ ρₛ :
   evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x (nest_ex ϕ))
   = @pattern_interpretation M ρₑ ρₛ ϕ.
-Abort.
+Proof.
+  intros Hfr. apply Private_pattern_interpretation_nest_ex with (sz := size ϕ). lia. assumption.
+Qed.
 
 End semantics.
 
