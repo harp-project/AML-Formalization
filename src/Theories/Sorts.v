@@ -51,13 +51,6 @@ Section sorts.
        unary_svar_open := svar_open_inhabitant_set ;
     |}.
 
-  (* A pattern representing sort that can be quantified over *)
-  (* TODO some instances for automation *)
-  Class QSort (patt_sort : Pattern) :=
-    {
-      qsort_not_occur_0 : bevar_occur patt_sort 0 = false;
-    }.
-
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 
@@ -77,7 +70,7 @@ Section sorts.
 
     (*
   #[global]
-   Instance EBinder_forall_of_sort s (QS : QSort s) : EBinder (patt_forall_of_sort s) :=
+   Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) :=
     {|
     |}.*)
 
@@ -101,7 +94,7 @@ Section sorts.
     (* ϕ is expected to be a sort pattern *)
     Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).    
     
-    Lemma pattern_interpretation_forall_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
+    Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
       pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
@@ -214,7 +207,7 @@ Section sorts.
         apply Hfeip2.
     Qed.
 
-    Lemma pattern_interpretation_exists_of_sort_predicate s (Hpss : QSort s) ϕ ρₑ ρₛ:
+    Lemma pattern_interpretation_exists_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
       pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ) = Full
@@ -323,7 +316,7 @@ Section sorts.
     Qed.
 
 
-    Lemma M_predicate_exists_of_sort s (Hpss : QSort s) ϕ :
+    Lemma M_predicate_exists_of_sort s ϕ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
     Proof.
@@ -344,7 +337,7 @@ Section sorts.
         apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity.
     Qed.
 
-    Lemma M_predicate_forall_of_sort s (Hpss : QSort s) ϕ :
+    Lemma M_predicate_forall_of_sort s ϕ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
     Proof.
