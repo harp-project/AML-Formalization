@@ -3,8 +3,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Setoid.
 From Coq Require Import Unicode.Utf8.
 From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
+From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base.
 
@@ -57,23 +59,65 @@ Section sorts.
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
 
-  Lemma evar_open_forall_of_sort db x s ϕ :
-    bevar_occur s 0 = false ->
-    evar_open db x (patt_forall_of_sort s ϕ) = patt_forall_of_sort s (evar_open (db+1) x ϕ).
+  Lemma evar_open_forall_of_sort s db x ϕ :
+    evar_open db x (patt_forall_of_sort s ϕ) = patt_forall_of_sort (evar_open db x s) (evar_open (db+1) x ϕ).
   Proof.
     unfold patt_forall_of_sort.
     rewrite !simpl_evar_open.
-    (*Check unit. Check id. Check (id 0).*)
+    (* TODO rewrite all _+1 to 1+_ *)
+    rewrite PeanoNat.Nat.add_comm. simpl.
+    unfold nest_ex.
+    rewrite evar_open_nest_ex_aux_comm.
     simpl.
-  Abort.
-  
+    rewrite PeanoNat.Nat.sub_0_r.
+    reflexivity.
+  Qed.
 
-    (*
+  Lemma svar_open_forall_of_sort s db X ϕ :
+    svar_open db X (patt_forall_of_sort s ϕ) = patt_forall_of_sort (svar_open db X s) (svar_open db X ϕ).
+  Proof.
+    unfold patt_forall_of_sort.
+    rewrite !simpl_svar_open. simpl.
+    rewrite svar_open_nest_ex_comm.
+    reflexivity.
+  Qed. 
+
+  Lemma evar_open_exists_of_sort s db x ϕ :
+    evar_open db x (patt_exists_of_sort s ϕ) = patt_exists_of_sort (evar_open db x s) (evar_open (db+1) x ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    rewrite !simpl_evar_open.
+    (* TODO rewrite all _+1 to 1+_ *)
+    rewrite PeanoNat.Nat.add_comm. simpl.
+    unfold nest_ex.
+    rewrite evar_open_nest_ex_aux_comm.
+    simpl.
+    rewrite PeanoNat.Nat.sub_0_r.
+    reflexivity.
+  Qed.
+
+  Lemma svar_open_exists_of_sort s db X ϕ :
+    svar_open db X (patt_exists_of_sort s ϕ) = patt_exists_of_sort (svar_open db X s) (svar_open db X ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    rewrite !simpl_svar_open. simpl.
+    rewrite svar_open_nest_ex_comm.
+    reflexivity.
+  Qed.
+    
   #[global]
-   Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) :=
+   Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
     {|
-    |}.*)
+    ebinder_evar_open := evar_open_forall_of_sort s ;
+    ebinder_svar_open := svar_open_forall_of_sort s ;
+    |}.
 
+  #[global]
+   Instance EBinder_exists_of_sort s : EBinder (patt_exists_of_sort s) _ _:=
+    {|
+    ebinder_evar_open := evar_open_exists_of_sort s ;
+    ebinder_svar_open := svar_open_exists_of_sort s ;
+    |}.
   
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
 
@@ -357,18 +401,90 @@ Section sorts.
 
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
+      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full <->
       ∀ (m₁ : Domain M),
         Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
         ∃ (m₂ : Domain M),
-          Minterp_inhabitant s₂ ρₑ ρₛ m₂ ->
+          Minterp_inhabitant (nest_ex s₂) ρₑ ρₛ m₂ /\
           app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
           = Ensembles.Singleton (Domain M) m₂.
-    Proof.
-      intros Hfun m₁ H1.
-      unfold patt_total_function in Hfun.
-      rewrite -> pattern_interpretation_forall_of_sort_predicate in Hfun.
-      specialize (Hfun m₁ H1).
+    Proof.      
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: rewrite !simpl_evar_open; apply M_predicate_exists_of_sort;
+        apply T_predicate_equals; apply M_satisfies_theory.
+
+      (*
+      setoid_rewrite pattern_interpretation_exists_of_sort_predicate.
+      setoid_symmetry*)
+      (*Check leibniz_equiv_iff.
+      Locate relation. Print iff.
+      Check all_iff_morphism.
+      Print Instances Equivalence.*)
+      (*Print Instances Morphisms.Proper.*)
+      (*Set Typeclasses Debug.*)
+      (*Hint Constants Opaque : rewrite.*)
+      (*
+      Set Ltac Debug.
+      Set Ltac Batch Debug.*)
+      (*Set Debug Auto.*)
+      (*Set Debug Tactic Unification.*) (* This may be helpful. We may try to remove 'Tactic' *)
+      rewrite !simpl_evar_open.
+      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal (f $ b1) b0))) as x'.
+      unfold nest_ex.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      fold (nest_ex s₂).
+      Check @pattern_interpretation_exists_of_sort_predicate.
+      (*Set Printing Implicit.*)
+
+      (*
+      split. intros H m₁ Hinhs₁. specialize (H m₁ Hinhs₁).
+      move: H.*)
+      (*Unset Printing Notations.*)
+      apply all_iff_morphism.
+      unfold pointwise_relation. intros m₁.
+      apply all_iff_morphism. unfold pointwise_relation. intros Hinh1.
+      
+      rewrite pattern_interpretation_exists_of_sort_predicate.
+      2: rewrite !simpl_evar_open; apply T_predicate_equals; apply M_satisfies_theory.
+      apply ex_iff_morphism. unfold pointwise_relation. intros m₂.
+
+      unfold Minterp_inhabitant.
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite 2!pattern_interpretation_sym_simpl.
+      Search pattern_interpretation update_evar_val.
+      rewrite pattern_interpretation_free_evar_independent.
+      Check evar_is_fresh_in.
+      fold (evar_is_fresh_in x' (nest_ex s₂)).
+
+      assert (Hfreq: x' = fresh_evar (patt_imp s₂ f)).
+      { rewrite Heqx'. unfold fresh_evar. apply f_equal. simpl.
+        rewrite 2!free_evars_nest_ex_aux.
+        rewrite !(left_id_L ∅ union). rewrite !(right_id_L ∅ union).
+        rewrite (idemp_L union). reflexivity.
+
+      }
+      rewrite Hfreq.
+      unfold nest_ex.
+      unfold evar_is_fresh_in.
+      rewrite free_evars_nest_ex_aux.
+      fold (evar_is_fresh_in (fresh_evar (s₂ ---> f)) s₂).
+      eapply evar_fresh_in_subformula'. 2: apply set_evar_fresh_is_fresh.
+      simpl. rewrite is_subformula_of_refl. rewrite orb_true_r. auto.
+
+      apply and_iff_morphism. auto.
+      rewrite !simpl_evar_open.
+      remember (fresh_evar (patt_equal (evar_open 1 x' f $ patt_free_evar x') b0)) as x''.
+
+      rewrite equal_iff_interpr_same. 2: apply M_satisfies_theory.
+      simpl. rewrite pattern_interpretation_free_evar_simpl.
+      rewrite update_evar_val_same.
+      rewrite pattern_interpretation_app_simpl.
+      rewrite pattern_interpretation_free_evar_simpl.
+
+      assert (Hx''neqx': x'' <> x'). admit.
+      rewrite {2}update_evar_val_comm. apply Hx''neqx'.
+      rewrite update_evar_val_same.
+      
     Abort.
 
   End with_model.
