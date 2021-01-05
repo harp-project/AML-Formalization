@@ -356,7 +356,7 @@ Section sorts.
     Qed.
 
     
-    Lemma interp_total_function f s₁ s₂ (Hpss₁ : QSort s₁) (Hpss₂ : QSort s₂) ρₑ ρₛ :
+    Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full ->
       ∀ (m₁ : Domain M),
         Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
