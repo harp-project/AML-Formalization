@@ -59,10 +59,10 @@ Section sorts.
     }.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
-    patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set sort)) ---> phi).
+    patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
-    patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set sort)) and phi).
+    patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
 
   Lemma evar_open_forall_of_sort db x s ϕ :
     bevar_occur s 0 = false ->
@@ -87,10 +87,10 @@ Section sorts.
   (* TODO a lemma about patt_forall_of_sort *)
   
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort to (patt_equal (patt_app phi b1) b0)).
+    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_equal (patt_app phi b1) b0)).
 
   Definition patt_partial_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort to (patt_subseteq (patt_app phi b1) b0)).
+    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_subseteq (patt_app phi b1) b0)).
 
   Section with_model.
     Context {M : Model}.
@@ -110,7 +110,7 @@ Section sorts.
     Proof.
       intros x Hpred.
       unfold patt_forall_of_sort.
-      assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set s) ---> ϕ)).
+      assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ)).
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite pattern_interpretation_forall_predicate.
       2: {
@@ -123,11 +123,11 @@ Section sorts.
         - subst x.
           apply M_predicate_evar_open_fresh_evar_2.
           2: apply Hpred.
-          eapply evar_fresh_in_subformula. eauto. apply set_evar_fresh_is_fresh.
+          eapply evar_fresh_in_subformula. apply Hsub. apply set_evar_fresh_is_fresh.
       }
       subst x.
-      remember (patt_in b0 (patt_inhabitant_set s) ---> ϕ) as Bigϕ.
-      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) $ s)).
+      remember (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ) as Bigϕ.
+      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) $ (nest_ex s))).
       { rewrite HeqBigϕ.
         unfold patt_inhabitant_set.
         fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant $ s) ---> ϕ)) (patt_sym (inj inhabitant) $ s)).
@@ -141,7 +141,22 @@ Section sorts.
         apply sub_imp_l. apply sub_imp_r.
         apply sub_imp_l. apply sub_eq. reflexivity.
       }
-      
+
+      remember (patt_in b0 (patt_inhabitant_set s) ---> ϕ) as Bigϕ'.
+      assert (HfreeBigϕ: free_evars Bigϕ = free_evars Bigϕ').
+      { subst. simpl. unfold nest_ex. rewrite free_evars_nest_ex_aux. reflexivity. }
+      assert (HfreshBigϕ: fresh_evar Bigϕ = fresh_evar Bigϕ').
+      { unfold fresh_evar. rewrite HfreeBigϕ. reflexivity. }
+      clear HfreeBigϕ.
+
+      assert (Hfrs: evar_is_fresh_in (fresh_evar Bigϕ) s).
+      { unfold evar_is_fresh_in.
+        rewrite HfreshBigϕ. fold (evar_is_fresh_in (fresh_evar Bigϕ') s).
+        eapply evar_fresh_in_subformula'. 2: apply set_evar_fresh_is_fresh.
+        rewrite HeqBigϕ'. simpl. rewrite is_subformula_of_refl. simpl.
+        rewrite !orb_true_r. auto.
+      }
+            
       split.
       - intros H m H'.
         specialize (H m).
@@ -157,19 +172,22 @@ Section sorts.
         autorewrite with ml_db. simpl. fold evar_open.
   
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) s) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
         unfold Ensembles.In.
-        rewrite -> evar_open_not_occur. 2: apply qsort_not_occur_0.
-
-        rewrite -> pattern_interpretation_free_evar_independent.
-        2: apply Hfresh.
-        apply H'.
         
+        rewrite pattern_interpretation_app_simpl.
+        rewrite pattern_interpretation_nest_ex. apply Hfrs.
+        rewrite pattern_interpretation_sym_simpl.
+
+        rewrite pattern_interpretation_app_simpl in H'.
+        rewrite pattern_interpretation_sym_simpl in H'.
+        apply H'.
+
       - intros H m.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) s) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
+        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
         rewrite {3}HeqBigϕ.
         apply pattern_interpretation_predicate_impl.
@@ -184,10 +202,15 @@ Section sorts.
         
         unfold Minterp_inhabitant.
         unfold Ensembles.In in Hfeip2. unfold sym.
-        rewrite -> evar_open_not_occur in Hfeip2. 2: apply qsort_not_occur_0.
-        rewrite -> update_evar_val_same in Hfeip2.
-        rewrite -> pattern_interpretation_free_evar_independent in Hfeip2.
-        2: apply Hfresh.
+
+
+        rewrite pattern_interpretation_app_simpl in Hfeip2.
+        rewrite pattern_interpretation_nest_ex in Hfeip2. apply Hfrs.
+        rewrite pattern_interpretation_sym_simpl in Hfeip2.
+
+        rewrite pattern_interpretation_app_simpl.
+        rewrite pattern_interpretation_sym_simpl.
+        rewrite update_evar_val_same in Hfeip2.
         apply Hfeip2.
     Qed.
 

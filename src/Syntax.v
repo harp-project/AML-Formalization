@@ -1749,6 +1749,16 @@ Section syntax.
       + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
   Qed.
 
+  Lemma is_subformula_of_refl ϕ:
+    is_subformula_of ϕ ϕ = true.
+  Proof.
+    destruct (is_subformula_of_P ϕ ϕ).
+    - reflexivity.
+    - assert (H: is_subformula_of_ind ϕ ϕ).
+      apply sub_eq. reflexivity. contradiction.
+  Qed.
+  
+
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
     is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
@@ -1824,6 +1834,16 @@ Section syntax.
     intros Hsub Hfresh.
     apply free_evars_subformula in Hsub.
     auto.
+  Qed.
+
+  Lemma evar_fresh_in_subformula' x ϕ₁ ϕ₂ :
+    is_subformula_of ϕ₁ ϕ₂ ->
+    evar_is_fresh_in x ϕ₂ ->
+    evar_is_fresh_in x ϕ₁.
+  Proof.
+    intros Hsub Hfr.
+    pose proof (H := elimT (is_subformula_of_P ϕ₁ ϕ₂) Hsub).
+    eapply evar_fresh_in_subformula. eauto. auto.
   Qed.
 
   Lemma free_svars_subformula ϕ₁ ϕ₂ :
