@@ -1642,6 +1642,42 @@ Section syntax.
     - auto.
   Qed.
 
+  Lemma svar_is_fresh_in_evar_open X Y dbi ϕ:
+    X <> Y ->
+    svar_is_fresh_in X ϕ ->
+    svar_is_fresh_in X (svar_open dbi Y ϕ).
+  Proof.
+    unfold svar_is_fresh_in.
+    move=> Hneq Hfr.
+    pose proof (H := @free_svars_svar_open ϕ Y dbi).
+    intros Contra.
+    rewrite -> elem_of_subseteq in H.
+    specialize (H X Contra). clear Contra.
+    apply elem_of_union in H.
+    destruct H.
+    - apply elem_of_singleton_1 in H.
+      contradiction.
+    - contradiction.
+  Qed.
+  
+  Lemma evar_is_fresh_in_evar_open x y dbi ϕ:
+    x <> y ->
+    evar_is_fresh_in x ϕ ->
+    evar_is_fresh_in x (evar_open dbi y ϕ).
+  Proof.
+    unfold evar_is_fresh_in.
+    move=> Hneq Hfr.
+    pose proof (H := @free_evars_evar_open ϕ y dbi).
+    intros Contra.
+    rewrite -> elem_of_subseteq in H.
+    specialize (H x Contra). clear Contra.
+    apply elem_of_union in H.
+    destruct H.
+    - apply elem_of_singleton_1 in H.
+      contradiction.
+    - contradiction.
+  Qed.
+  
   
   Inductive Application_context : Type :=
   | box
