@@ -1829,7 +1829,7 @@ Proof.
 Qed.
 
 Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
-  x ∉ free_evars ϕ ->
+  evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.

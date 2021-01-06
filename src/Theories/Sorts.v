@@ -413,21 +413,6 @@ Section sorts.
       2: rewrite !simpl_evar_open; apply M_predicate_exists_of_sort;
         apply T_predicate_equals; apply M_satisfies_theory.
 
-      (*
-      setoid_rewrite pattern_interpretation_exists_of_sort_predicate.
-      setoid_symmetry*)
-      (*Check leibniz_equiv_iff.
-      Locate relation. Print iff.
-      Check all_iff_morphism.
-      Print Instances Equivalence.*)
-      (*Print Instances Morphisms.Proper.*)
-      (*Set Typeclasses Debug.*)
-      (*Hint Constants Opaque : rewrite.*)
-      (*
-      Set Ltac Debug.
-      Set Ltac Batch Debug.*)
-      (*Set Debug Auto.*)
-      (*Set Debug Tactic Unification.*) (* This may be helpful. We may try to remove 'Tactic' *)
       rewrite !simpl_evar_open.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
@@ -480,27 +465,45 @@ Section sorts.
       rewrite pattern_interpretation_app_simpl.
       rewrite pattern_interpretation_free_evar_simpl.
 
-      assert (Hx''neqx': x'' <> x'). admit.
+      (*  Hx''neqx' : x'' ≠ x'
+          Hx''freeinf : x'' ∉ free_evars f
+       *)
+      pose proof (HB := @set_evar_fresh_is_fresh' _ (free_evars(patt_equal (nest_ex (nest_ex f) $ patt_free_evar x') b0))).
+      pose proof (Heqx''2 := Heqx'').
+      unfold fresh_evar in Heqx''2.
+      rewrite -Heqx''2 in HB.
+      simpl in HB.
+      rewrite !(left_id_L ∅ union) in HB.
+      rewrite !(right_id_L ∅ union) in HB.
+      apply sets.not_elem_of_union in HB. destruct HB as [HB _].
+      apply sets.not_elem_of_union in HB. destruct HB as [Hx''freeinf Hx''neqx'].
+      apply stdpp_ext.not_elem_of_singleton_1 in Hx''neqx'.
+      unfold nest_ex in Hx''freeinf.
+      rewrite 2!free_evars_nest_ex_aux in Hx''freeinf.
+
+      (* Hx'fr : x' ∉ free_evars f *)
+      pose proof (Hx'fr := @set_evar_fresh_is_fresh _ (patt_exists_of_sort (nest_ex s₂) (patt_equal (nest_ex (nest_ex f) $ b1) b0))).
+      rewrite -Heqx' in Hx'fr.
+      unfold evar_is_fresh_in in Hx'fr. simpl in Hx'fr.
+      rewrite !(left_id_L ∅ union) in Hx'fr.
+      rewrite !(right_id_L ∅ union) in Hx'fr.
+      apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [_ Hx'fr].
+      apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [Hx'fr _].
+      rewrite 2!free_evars_nest_ex_aux in Hx'fr.
+      
       rewrite {2}update_evar_val_comm. apply Hx''neqx'.
       rewrite update_evar_val_same.
       unfold nest_ex.
-      Search evar_open nest_ex_aux.
       rewrite evar_open_nest_ex_aux_comm. simpl.
       fold (nest_ex f). fold (nest_ex (nest_ex f)).
 
-      assert (evar_is_fresh_in x' (nest_ex (nest_ex f))). admit.
-      assert (evar_is_fresh_in x'' (nest_ex (nest_ex f))). admit.
-      Search pattern_interpretation update_svar_val svar_is_fresh_in.
-      Check interpretation_fresh_svar.
-
       unfold nest_ex.
-      Search pattern_interpretation nest_ex_aux.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
-      Search pattern_interpretation update_evar_val.
-      Check pattern_interpretation_free_evar_independent.
-      
-    Abort.
+      rewrite pattern_interpretation_free_evar_independent. assumption.
+      rewrite pattern_interpretation_free_evar_independent. assumption.
+      auto.      
+    Qed.
 
   End with_model.
     
