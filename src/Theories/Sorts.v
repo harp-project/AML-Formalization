@@ -216,7 +216,7 @@ Section sorts.
         unfold Ensembles.In.
         
         rewrite pattern_interpretation_app_simpl.
-        rewrite pattern_interpretation_nest_ex. apply Hfrs.
+        rewrite pattern_interpretation_evar_open_nest_ex. apply Hfrs.
         rewrite pattern_interpretation_sym_simpl.
 
         rewrite pattern_interpretation_app_simpl in H'.
@@ -242,7 +242,7 @@ Section sorts.
 
 
         rewrite pattern_interpretation_app_simpl in Hfeip2.
-        rewrite pattern_interpretation_nest_ex in Hfeip2. apply Hfrs.
+        rewrite pattern_interpretation_evar_open_nest_ex in Hfeip2. apply Hfrs.
         rewrite pattern_interpretation_sym_simpl in Hfeip2.
 
         rewrite pattern_interpretation_app_simpl.
@@ -329,7 +329,7 @@ Section sorts.
         unfold Ensembles.In in H1.
 
         rewrite pattern_interpretation_app_simpl in H1.
-        rewrite pattern_interpretation_nest_ex in H1. apply Hfrs.
+        rewrite pattern_interpretation_evar_open_nest_ex in H1. apply Hfrs.
         rewrite pattern_interpretation_sym_simpl in H1.
 
         rewrite pattern_interpretation_app_simpl.
@@ -351,7 +351,7 @@ Section sorts.
           rewrite pattern_interpretation_sym_simpl in H1.
 
           rewrite pattern_interpretation_app_simpl.
-          rewrite pattern_interpretation_nest_ex. apply Hfrs.
+          rewrite pattern_interpretation_evar_open_nest_ex. apply Hfrs.
           rewrite pattern_interpretation_sym_simpl.
           apply H1.
         + rewrite -(@interpretation_fresh_evar_subterm _ _ _ Bigϕ) in H2.
