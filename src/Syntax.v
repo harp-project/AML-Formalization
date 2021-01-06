@@ -380,12 +380,15 @@ Section syntax.
 
 
   (* TODO free_evars, free_svars *)
-  Class EBinder (ebinder : Pattern -> Pattern) :=
+Class EBinder (ebinder : Pattern -> Pattern)
+      (fevo: db_index -> evar -> Pattern -> Pattern )
+      (fsvo: db_index -> svar -> Pattern -> Pattern ) :=
     {
       ebinder_evar_open :
-        forall k n ϕ, evar_open k n (ebinder ϕ) = ebinder (evar_open (k + 1) n ϕ) ;
+        forall k n ϕ, evar_open k n (ebinder ϕ) = fevo k n ϕ ;
+                        (*ebinder (evar_open (k + 1) n ϕ) ;*)
       ebinder_svar_open :
-        forall k n ϕ, svar_open k n (ebinder ϕ) = ebinder (svar_open k n ϕ) ;
+        forall k n ϕ, svar_open k n (ebinder ϕ) = fsvo k n ϕ ; (*ebinder (svo a) (svar_open k n ϕ) ;*)
     }.
 
   Class SBinder (sbinder : Pattern -> Pattern) :=
@@ -440,7 +443,7 @@ Section syntax.
   
 
   #[global]
-  Instance EBinder_exists : EBinder patt_exists :=
+  Instance EBinder_exists : EBinder patt_exists _ _ :=
     {|
        ebinder_evar_open := evar_open_exists ;
        ebinder_svar_open := svar_open_exists ;
@@ -1589,7 +1592,7 @@ Section syntax.
     |}.
 
   #[global]
-  Instance EBinder_forall : EBinder patt_forall :=
+  Instance EBinder_forall : EBinder patt_forall _ _ :=
     {|
        ebinder_evar_open := evar_open_forall ;
        ebinder_svar_open := svar_open_forall ;
@@ -1642,6 +1645,42 @@ Section syntax.
     - auto.
   Qed.
 
+  Lemma svar_is_fresh_in_evar_open X Y dbi ϕ:
+    X <> Y ->
+    svar_is_fresh_in X ϕ ->
+    svar_is_fresh_in X (svar_open dbi Y ϕ).
+  Proof.
+    unfold svar_is_fresh_in.
+    move=> Hneq Hfr.
+    pose proof (H := @free_svars_svar_open ϕ Y dbi).
+    intros Contra.
+    rewrite -> elem_of_subseteq in H.
+    specialize (H X Contra). clear Contra.
+    apply elem_of_union in H.
+    destruct H.
+    - apply elem_of_singleton_1 in H.
+      contradiction.
+    - contradiction.
+  Qed.
+  
+  Lemma evar_is_fresh_in_evar_open x y dbi ϕ:
+    x <> y ->
+    evar_is_fresh_in x ϕ ->
+    evar_is_fresh_in x (evar_open dbi y ϕ).
+  Proof.
+    unfold evar_is_fresh_in.
+    move=> Hneq Hfr.
+    pose proof (H := @free_evars_evar_open ϕ y dbi).
+    intros Contra.
+    rewrite -> elem_of_subseteq in H.
+    specialize (H x Contra). clear Contra.
+    apply elem_of_union in H.
+    destruct H.
+    - apply elem_of_singleton_1 in H.
+      contradiction.
+    - contradiction.
+  Qed.
+  
   
   Inductive Application_context : Type :=
   | box
@@ -1712,6 +1751,16 @@ Section syntax.
       + apply ReflectT. apply sub_mu. assumption.
       + apply ReflectF. intros Contra. inversion Contra; subst; contradiction.
   Qed.
+
+  Lemma is_subformula_of_refl ϕ:
+    is_subformula_of ϕ ϕ = true.
+  Proof.
+    destruct (is_subformula_of_P ϕ ϕ).
+    - reflexivity.
+    - assert (H: is_subformula_of_ind ϕ ϕ).
+      apply sub_eq. reflexivity. contradiction.
+  Qed.
+  
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
@@ -1788,6 +1837,16 @@ Section syntax.
     intros Hsub Hfresh.
     apply free_evars_subformula in Hsub.
     auto.
+  Qed.
+
+  Lemma evar_fresh_in_subformula' x ϕ₁ ϕ₂ :
+    is_subformula_of ϕ₁ ϕ₂ ->
+    evar_is_fresh_in x ϕ₂ ->
+    evar_is_fresh_in x ϕ₁.
+  Proof.
+    intros Hsub Hfr.
+    pose proof (H := elimT (is_subformula_of_P ϕ₁ ϕ₂) Hsub).
+    eapply evar_fresh_in_subformula. eauto. auto.
   Qed.
 
   Lemma free_svars_subformula ϕ₁ ϕ₂ :
@@ -2082,7 +2141,7 @@ Section syntax.
     done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_app_l : core.
+  (*Hint Resolve evar_is_fresh_in_app_l : core.*)
 
   Lemma evar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
     evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
@@ -2092,7 +2151,7 @@ Section syntax.
     done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_app_r : core.
+  (*Hint Resolve evar_is_fresh_in_app_r : core.*)
 
   Lemma evar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
@@ -2102,7 +2161,7 @@ Section syntax.
     done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_imp_l : core.
+  (*Hint Resolve evar_is_fresh_in_imp_l : core.*)
 
   Lemma evar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
     evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
@@ -2112,7 +2171,7 @@ Section syntax.
     done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_imp_r : core.
+  (*Hint Resolve evar_is_fresh_in_imp_r : core.*)
 
   Lemma evar_is_fresh_in_exists x ϕ :
     evar_is_fresh_in x (patt_exists ϕ) -> evar_is_fresh_in x ϕ.
@@ -2120,7 +2179,7 @@ Section syntax.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_exists : core.
+  (*Hint Resolve evar_is_fresh_in_exists : core.*)
 
   Lemma evar_is_fresh_in_mu x ϕ :
     evar_is_fresh_in x (patt_mu ϕ) -> evar_is_fresh_in x ϕ.
@@ -2128,7 +2187,7 @@ Section syntax.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
 
-  Hint Resolve evar_is_fresh_in_mu : core.
+  (*Hint Resolve evar_is_fresh_in_mu : core.*)
 
   (**)
   Lemma svar_is_fresh_in_app_l x ϕ₁ ϕ₂ :

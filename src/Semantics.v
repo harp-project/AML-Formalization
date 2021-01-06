@@ -548,7 +548,7 @@ Proof.
 Admitted.
      *)
 
-      
+      (* TODO for evar *)
       Lemma Private_interpretation_fresh_svar sz X ϕ ρₑ ρₛ S:
         size ϕ <= sz ->
         svar_is_fresh_in X ϕ ->
@@ -1650,21 +1650,17 @@ Proof.
       remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
       remember (update_svar_val X (pattern_interpretation evar_val svar_val phi2) svar_val) as svar_val2'.
       pose proof (Hfresh_subst := @interpretation_fresh_evar_open M phi1' Xfr2' Xu c 0 evar_val svar_val2').
-      Search well_formed_closed patt_mu.
-      Search wfc_body_mu.
       pose proof (Hwbm := wfc_mu_to_wfc_body).
       specialize (Hwbm _ Hwfc1).
       unfold wfc_body_mu in Hwbm.
       rewrite -> free_svars_exists in Hwbm.
       specialize (Hwbm X H).
       rewrite !simpl_svar_open in Hwbm.
-      Search wfc_body_ex.
       apply wfc_ex_to_wfc_body in Hwbm.
       unfold wfc_body_ex in Hwbm.
       rewrite -> Hfresh_subst.
       
       2: { specialize (Hwbm Xfr2'). rewrite -> free_evars_svar_open in Hwbm.
-           Check evar_is_fresh_in.
            assert (HXfr2': evar_is_fresh_in Xfr2' phi1).
            subst Xfr2' phi1'.
            unfold fresh_evar. rewrite -> free_evars_svar_open.
@@ -1751,13 +1747,14 @@ Admitted.
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
   size ϕ <= sz ->
-  x ∉ free_evars ϕ ->
+  evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
   generalize dependent v. generalize dependent x.
   generalize dependent ρₛ. generalize dependent ρₑ. generalize dependent ϕ.
-  induction sz; intros ϕ ρₑ ρₛ x v; destruct ϕ; simpl; intros Hsz Hnotin.
+  induction sz; intros ϕ ρₑ ρₛ x v; destruct ϕ; simpl; intros Hsz Hnotin; unfold evar_is_fresh_in in Hnotin;
+    simpl in Hnotin.
   - repeat rewrite -> pattern_interpretation_free_evar_simpl.
     apply f_equal. unfold update_evar_val.
     destruct (evar_eqdec x x0); simpl.
@@ -1832,7 +1829,7 @@ Proof.
 Qed.
 
 Lemma pattern_interpretation_free_evar_independent M ρₑ ρₛ x v ϕ:
-  x ∉ free_evars ϕ ->
+  evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
@@ -1901,24 +1898,32 @@ Proof.
   apply set_evar_fresh_is_fresh.
 Qed.
 
-(* TODO *)
-Lemma Private_pattern_interpretation_nest_ex M sz ϕ x e ρₑ ρₛ :
+Lemma Private_pattern_interpretation_evar_open_nest_ex M sz ϕ x dbi e ρₑ ρₛ :
   size ϕ <= sz ->
   evar_is_fresh_in x ϕ ->
-  @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x (nest_ex ϕ))
+  @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open dbi x (nest_ex_aux dbi ϕ))
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
-  move: ϕ x e ρₑ ρₛ.
-  induction sz; move=> ϕ x e ρₑ ρₛ.
-  - destruct ϕ; simpl; move=> Hsz; try reflexivity; try lia.
-    intros Hfr.
+  move: ϕ x dbi e ρₑ ρₛ.
+  induction sz; move=> ϕ x dbi e ρₑ ρₛ.
+  - destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity; try lia.
     apply pattern_interpretation_free_evar_independent.
     unfold evar_is_fresh_in in Hfr. apply Hfr.
+    destruct (Nat.leb_spec0 dbi n).
+    + destruct (eqb_reflect (S n) dbi); try lia.
+      rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
+    + destruct (eqb_reflect n dbi); try lia.
+      rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
   - pose proof (Hnot0 := not_bevar_occur_0_nest_ex ϕ).
     destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
     + (* duplicate *)
       apply pattern_interpretation_free_evar_independent.
       unfold evar_is_fresh_in in Hfr. apply Hfr.
+    + destruct (Nat.leb_spec0 dbi n).
+      * destruct (eqb_reflect (S n) dbi); try lia.
+        rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
+      * destruct (eqb_reflect n dbi); try lia.
+        rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.        
     + simpl in Hnot0.
       apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
       rewrite 2!pattern_interpretation_app_simpl.
@@ -1935,18 +1940,50 @@ Proof.
       rewrite 2!pattern_interpretation_ex_simpl. simpl.
       apply f_equal. apply functional_extensionality.
       intros c.
-      Search svar_open nest_ex_aux.
-      remember (evar_open 1 x (nest_ex_aux 1 ϕ)) as ϕ'.
+      remember (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)) as ϕ'.
+      remember (fresh_evar (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) as x'.
+
+      assert (Hplus1: dbi+1 = S dbi). lia. rewrite Hplus1. clear Hplus1.
+
+      (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
+
+      remember ((@singleton evar (@EVarSet signature) _ x)
+                  ∪ ((free_evars (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)))
+               ∪ (free_evars ϕ))) as B.
+      remember (evar_fresh (elements B)) as x''.
+      assert(HB: x'' ∉ B).
+      { subst. apply set_evar_fresh_is_fresh'. }
+      rewrite HeqB in HB.
+      apply not_elem_of_union in HB.
+      destruct HB as [Hx''neqx HB].
+      apply not_elem_of_singleton_1 in Hx''neqx.
+      apply not_elem_of_union in HB.
+      destruct HB as [Hfree1 Hfree2].
+      
+      fold (evar_is_fresh_in x'' (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) in Hfree1.
+      rewrite (@interpretation_fresh_evar_open _ _ _ x'').
+      apply set_evar_fresh_is_fresh. apply Hfree1.
+      
       rewrite evar_open_nest_ex_aux_comm in Heqϕ'.
-      destruct (compare_nat 1 1); try lia.
-      subst ϕ'.
-      admit.
+      destruct (compare_nat (S dbi) (S dbi)); try lia.
+
+      rewrite evar_open_comm. lia.
+      rewrite (evar_open_nest_ex_aux_comm _ _ 0).
+      destruct (compare_nat 0 (S dbi)); try lia.
+
+      rewrite update_evar_val_comm. apply Hx''neqx.
+      rewrite (IHsz _ x (S dbi)). rewrite -evar_open_size. lia.
+      apply evar_is_fresh_in_evar_open. intros Contra. symmetry in Contra. contradiction.
+      apply evar_is_fresh_in_exists in Hfr. apply Hfr.
+
+      apply interpretation_fresh_evar_open. apply Hfree2.
+      apply set_evar_fresh_is_fresh.
     + simpl in Hnot0.
       fold (nest_ex ϕ) in Hnot0.
 
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
       apply f_equal. apply f_equal. apply functional_extensionality.
-      (*fold (nest_ex ϕ).*)
+
       intros S.
       rewrite -svar_open_evar_open_comm.
       rewrite svar_open_nest_ex_aux_comm.
@@ -1957,13 +1994,53 @@ Proof.
       rewrite fresh_svar_evar_open. rewrite fresh_svar_nest_ex_aux.
       1,2: apply set_svar_fresh_is_fresh.
       reflexivity.
-Abort.
+Qed.
 
-Lemma pattern_interpretation_nest_ex M ϕ x e ρₑ ρₛ :
+Lemma pattern_interpretation_evar_open_nest_ex M ϕ x e ρₑ ρₛ :
   evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x (nest_ex ϕ))
   = @pattern_interpretation M ρₑ ρₛ ϕ.
-Abort.
+Proof.
+  intros Hfr. apply Private_pattern_interpretation_evar_open_nest_ex with (sz := size ϕ). lia. assumption.
+Qed.
+
+
+Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρₛ :
+  size ϕ <= sz ->
+  @pattern_interpretation M ρₑ ρₛ (nest_ex_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  move: ϕ level ρₑ ρₛ.
+  induction sz; move=> ϕ; destruct ϕ; move=> level ρₑ ρₛ Hsz; simpl; simpl in Hsz; try reflexivity; try lia.
+  - rewrite 2!pattern_interpretation_app_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_imp_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_ex_simpl.
+    simpl. apply f_equal. apply functional_extensionality.
+    intros m.
+    rewrite evar_open_nest_ex_aux_comm. simpl.
+    rewrite IHsz. rewrite -evar_open_size. lia.
+    rewrite fresh_evar_nest_ex_aux.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_mu_simpl.
+    simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+    intros S.
+    rewrite svar_open_nest_ex_aux_comm.
+    rewrite IHsz. rewrite -svar_open_size. lia.
+    rewrite fresh_svar_nest_ex_aux.
+    reflexivity.
+Qed.
+
+Lemma pattern_interpretation_nest_ex_aux M ϕ level ρₑ ρₛ :
+  @pattern_interpretation M ρₑ ρₛ (nest_ex_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  apply Private_pattern_interpretation_nest_ex_aux with (sz := size ϕ).
+  lia.
+Qed.
 
 End semantics.
 
