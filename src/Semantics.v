@@ -1650,21 +1650,17 @@ Proof.
       remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
       remember (update_svar_val X (pattern_interpretation evar_val svar_val phi2) svar_val) as svar_val2'.
       pose proof (Hfresh_subst := @interpretation_fresh_evar_open M phi1' Xfr2' Xu c 0 evar_val svar_val2').
-      Search well_formed_closed patt_mu.
-      Search wfc_body_mu.
       pose proof (Hwbm := wfc_mu_to_wfc_body).
       specialize (Hwbm _ Hwfc1).
       unfold wfc_body_mu in Hwbm.
       rewrite -> free_svars_exists in Hwbm.
       specialize (Hwbm X H).
       rewrite !simpl_svar_open in Hwbm.
-      Search wfc_body_ex.
       apply wfc_ex_to_wfc_body in Hwbm.
       unfold wfc_body_ex in Hwbm.
       rewrite -> Hfresh_subst.
       
       2: { specialize (Hwbm Xfr2'). rewrite -> free_evars_svar_open in Hwbm.
-           Check evar_is_fresh_in.
            assert (HXfr2': evar_is_fresh_in Xfr2' phi1).
            subst Xfr2' phi1'.
            unfold fresh_evar. rewrite -> free_evars_svar_open.
@@ -1751,13 +1747,14 @@ Admitted.
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
   size ϕ <= sz ->
-  x ∉ free_evars ϕ ->
+  evar_is_fresh_in x ϕ ->
   @pattern_interpretation M (update_evar_val x v ρₑ) ρₛ ϕ
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
   generalize dependent v. generalize dependent x.
   generalize dependent ρₛ. generalize dependent ρₑ. generalize dependent ϕ.
-  induction sz; intros ϕ ρₑ ρₛ x v; destruct ϕ; simpl; intros Hsz Hnotin.
+  induction sz; intros ϕ ρₑ ρₛ x v; destruct ϕ; simpl; intros Hsz Hnotin; unfold evar_is_fresh_in in Hnotin;
+    simpl in Hnotin.
   - repeat rewrite -> pattern_interpretation_free_evar_simpl.
     apply f_equal. unfold update_evar_val.
     destruct (evar_eqdec x x0); simpl.

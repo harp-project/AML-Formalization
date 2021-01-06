@@ -493,9 +493,12 @@ Section sorts.
       Search pattern_interpretation update_svar_val svar_is_fresh_in.
       Check interpretation_fresh_svar.
 
-      Search pattern_interpretation nest_ex.
-      (* TODO pattern_interpretation of nest_ex ϕ = pattern_interpretation ϕ, because all bound vars go to empty set *)
+      unfold nest_ex.
+      Search pattern_interpretation nest_ex_aux.
+      rewrite 2!pattern_interpretation_nest_ex_aux.
 
+      Search pattern_interpretation update_evar_val.
+      Check pattern_interpretation_free_evar_independent.
       
     Abort.
 
