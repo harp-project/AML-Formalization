@@ -129,6 +129,22 @@ Section sorts.
   Definition patt_partial_function(phi from to : Pattern) : Pattern :=
     patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_subseteq (patt_app (nest_ex (nest_ex phi)) b1) b0)).
 
+
+  (* Assuming `f` is a total function, says it is injective on given domain. Does not quite work for partial functions. *)
+  Definition patt_total_function_injective f from : Pattern :=
+    patt_forall_of_sort from (patt_forall_of_sort from (patt_imp (patt_equal (patt_app f b1) (patt_app f b0)) (patt_equal b1 b0))).
+
+  (* Assuming `f` is a partial function, says it is injective on given domain. Works for total functions, too. *)
+  Definition patt_partial_function_injective f from : Pattern :=
+    patt_forall_of_sort
+      from
+      (patt_forall_of_sort
+         from
+         (patt_imp
+            (patt_not (patt_equal (patt_app f b1) patt_bott ))
+            (patt_imp (patt_equal (patt_app f b1) (patt_app f b0)) (patt_equal b1 b0)))).
+  
+
   Section with_model.
     Context {M : Model}.
     Hypothesis M_satisfies_theory : M ⊨ᵀ Definedness.theory.
@@ -381,6 +397,8 @@ Section sorts.
         apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity.
     Qed.
 
+    Hint Resolve M_predicate_exists_of_sort : core.
+
     Lemma M_predicate_forall_of_sort s ϕ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
@@ -399,6 +417,7 @@ Section sorts.
         apply sub_imp_r. apply sub_eq. reflexivity.
     Qed.
 
+    Hint Resolve M_predicate_forall_of_sort : core.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full <->
@@ -410,8 +429,7 @@ Section sorts.
           = Ensembles.Singleton (Domain M) m₂.
     Proof.      
       rewrite pattern_interpretation_forall_of_sort_predicate.
-      2: rewrite !simpl_evar_open; apply M_predicate_exists_of_sort;
-        apply T_predicate_equals; apply M_satisfies_theory.
+      2: { eauto. }
 
       rewrite !simpl_evar_open.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
@@ -508,7 +526,6 @@ Section sorts.
       auto.      
     Qed.
 
-
     Lemma interp_partial_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function f s₁ s₂) = Full <->
       ∀ (m₁ : Domain M),
@@ -519,9 +536,7 @@ Section sorts.
             (app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁))
             (Ensembles.Singleton (Domain M) m₂).
     Proof.
-      rewrite pattern_interpretation_forall_of_sort_predicate.
-      2: rewrite !simpl_evar_open; apply M_predicate_exists_of_sort;
-        apply T_predicate_subseteq; apply M_satisfies_theory.
+      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto. }
 
       rewrite !simpl_evar_open.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
@@ -620,3 +635,9 @@ Section sorts.
   End with_model.
     
 End sorts.
+
+    #[export]
+    Hint Resolve M_predicate_exists_of_sort : core.
+
+        #[export]
+    Hint Resolve M_predicate_forall_of_sort : core.

@@ -439,6 +439,8 @@ Section definedness.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
   Qed.
 
+  Hint Resolve T_predicate_defined : core.
+
   Lemma T_predicate_total : forall ϕ, T_predicate theory (patt_total ϕ).
   Proof.
     intros. unfold patt_total.
@@ -446,20 +448,28 @@ Section definedness.
     apply T_predicate_defined.
   Qed.
 
+  Hint Resolve T_predicate_total : core.
+
   Lemma T_predicate_subseteq : forall ϕ₁ ϕ₂, T_predicate theory (patt_subseteq ϕ₁ ϕ₂).
   Proof.
     intros. unfold patt_subseteq. apply T_predicate_total.
   Qed.
+
+  Hint Resolve T_predicate_subseteq : core.
   
   Lemma T_predicate_equals : forall ϕ₁ ϕ₂, T_predicate theory (patt_equal ϕ₁ ϕ₂).
   Proof.
     intros. unfold patt_equal. apply T_predicate_total.
   Qed.
 
+  Hint Resolve T_predicate_equals : core.
+
   Lemma T_predicate_in : forall ϕ₁ ϕ₂, T_predicate theory (patt_in ϕ₁ ϕ₂).
   Proof.
     intros. unfold patt_equal. apply T_predicate_defined.
   Qed.
+
+  Hint Resolve T_predicate_in : core.
 
   (* defined, total, subseteq, equal, in *)
   Lemma evar_open_defined db x ϕ : evar_open db x (patt_defined ϕ) = patt_defined (evar_open db x ϕ).
@@ -534,3 +544,9 @@ Hint Rewrite ->
   @evar_open_in
   @svar_open_in
   : ml_db.
+
+  Hint Resolve T_predicate_defined : core.
+  Hint Resolve T_predicate_total : core.
+  Hint Resolve T_predicate_subseteq : core.
+  Hint Resolve T_predicate_equals : core.
+  Hint Resolve T_predicate_in : core.
