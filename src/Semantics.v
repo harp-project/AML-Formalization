@@ -1699,17 +1699,13 @@ Proof.
       apply wfc_ex_to_wfc_body in Hwbm.
       unfold wfc_body_ex in Hwbm.
       rewrite -> Hfresh_subst.
-      
-      2: { specialize (Hwbm Xfr2'). rewrite -> free_evars_svar_open in Hwbm.
-           assert (HXfr2': evar_is_fresh_in Xfr2' phi1).
-           subst Xfr2' phi1'.
-           unfold fresh_evar. rewrite -> free_evars_svar_open.
-           apply set_evar_fresh_is_fresh.
-           specialize (Hwbm HXfr2'). subst phi1'. auto.
-           admit.
+      2: { subst Xfr2'. apply set_evar_fresh_is_fresh. }
+      2: { pose proof (Hfr := set_evar_fresh_is_fresh').
+           specialize (Hfr (union (free_evars phi1') (free_evars phi2))).
+           subst Xu.
+           apply not_elem_of_union in Hfr. destruct Hfr as [Hfr _]. auto.
          }
-      2: { specialize (Hwbm Xu). admit. }
-      
+
       remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c evar_val) as evar_val1'.
       remember (update_evar_val Xu c evar_val) as evar_val2'.
       rewrite -> evar_open_bsvar_subst. 2: auto.
@@ -1760,6 +1756,7 @@ Proof.
         * auto.
         * rewrite -> free_svars_evar_open. auto.
       -- (* dbi does not occur in phi1 *)
+        pose proof (HeqHoc' := HeqHoc).
         rewrite -> bsvar_subst_not_occur_is_noop.
         (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc).
            We need a lemma for that. *)
@@ -1775,7 +1772,21 @@ Proof.
         subst evar_val1'. subst evar_val2'.
         rewrite -> interpretation_fresh_evar_open with (y := Xu).
         apply Same_set_refl.
-        admit. admit. admit.
+        { subst Xfr1.
+          symmetry in HeqHoc'.
+          pose proof (Hsubst := @bsvar_subst_not_occur_is_noop _ phi1 phi2 dbi HeqHoc').
+          rewrite Hsubst. apply set_evar_fresh_is_fresh.
+        }
+        { pose proof (Hfr := set_evar_fresh_is_fresh').
+          specialize (Hfr (union (free_evars (svar_open dbi X phi1)) (free_evars phi2))).
+          subst Xu.
+          apply not_elem_of_union in Hfr. destruct Hfr as [Hfr _].
+          rewrite free_evars_svar_open in Hfr.
+          rewrite free_evars_svar_open. auto.
+        }
+        {
+          apply bsvar_occur_evar_open. symmetry. auto.
+        }
 
     + (* Mu case *)
       admit.
