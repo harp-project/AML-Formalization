@@ -2007,6 +2007,44 @@ Proof.
   intros Hfr. apply Private_pattern_interpretation_evar_open_nest_ex with (sz := size ϕ). lia. assumption.
 Qed.
 
+
+Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρₛ :
+  size ϕ <= sz ->
+  @pattern_interpretation M ρₑ ρₛ (nest_ex_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  move: ϕ level ρₑ ρₛ.
+  induction sz; move=> ϕ; destruct ϕ; move=> level ρₑ ρₛ Hsz; simpl; simpl in Hsz; try reflexivity; try lia.
+  - rewrite 2!pattern_interpretation_app_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_imp_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_ex_simpl.
+    simpl. apply f_equal. apply functional_extensionality.
+    intros m.
+    rewrite evar_open_nest_ex_aux_comm. simpl.
+    rewrite IHsz. rewrite -evar_open_size. lia.
+    rewrite fresh_evar_nest_ex_aux.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_mu_simpl.
+    simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+    intros S.
+    rewrite svar_open_nest_ex_aux_comm.
+    rewrite IHsz. rewrite -svar_open_size. lia.
+    rewrite fresh_svar_nest_ex_aux.
+    reflexivity.
+Qed.
+
+Lemma pattern_interpretation_nest_ex_aux M ϕ level ρₑ ρₛ :
+  @pattern_interpretation M ρₑ ρₛ (nest_ex_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  apply Private_pattern_interpretation_nest_ex_aux with (sz := size ϕ).
+  lia.
+Qed.
+
 End semantics.
 
 
