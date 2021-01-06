@@ -508,6 +508,115 @@ Section sorts.
       auto.      
     Qed.
 
+
+    Lemma interp_partial_function f s₁ s₂ ρₑ ρₛ :
+      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function f s₁ s₂) = Full <->
+      ∀ (m₁ : Domain M),
+        Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
+        ∃ (m₂ : Domain M),
+          Minterp_inhabitant s₂ ρₑ ρₛ m₂ /\
+          Ensembles.Included _
+            (app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁))
+            (Ensembles.Singleton (Domain M) m₂).
+    Proof.
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: rewrite !simpl_evar_open; apply M_predicate_exists_of_sort;
+        apply T_predicate_subseteq; apply M_satisfies_theory.
+
+      rewrite !simpl_evar_open.
+      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
+      rewrite [nest_ex s₂]/nest_ex.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite -/(nest_ex s₂).
+
+      apply all_iff_morphism.
+      unfold pointwise_relation. intros m₁.
+      apply all_iff_morphism. unfold pointwise_relation. intros Hinh1.
+      
+      rewrite pattern_interpretation_exists_of_sort_predicate.
+      2: rewrite !simpl_evar_open; apply T_predicate_subseteq; apply M_satisfies_theory.
+      apply ex_iff_morphism. unfold pointwise_relation. intros m₂.
+
+      unfold Minterp_inhabitant.
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite 2!pattern_interpretation_sym_simpl.
+      rewrite pattern_interpretation_free_evar_independent.
+      {
+        fold (evar_is_fresh_in x' (nest_ex s₂)).
+
+        assert (Hfreq: x' = fresh_evar (patt_imp s₂ (nest_ex (nest_ex f)))).
+        { rewrite Heqx'. unfold fresh_evar. apply f_equal. simpl.
+          rewrite 2!free_evars_nest_ex_aux.
+          rewrite !(left_id_L ∅ union). rewrite !(right_id_L ∅ union).
+          reflexivity.
+        }
+
+        rewrite Hfreq.
+        unfold nest_ex.
+        unfold evar_is_fresh_in.
+        rewrite free_evars_nest_ex_aux.
+        fold (evar_is_fresh_in (fresh_evar (s₂ ---> f)) s₂).
+        eapply evar_fresh_in_subformula'. 2: apply set_evar_fresh_is_fresh.
+        simpl. rewrite is_subformula_of_refl. rewrite orb_true_r. auto.
+      }
+
+      apply and_iff_morphism.
+      rewrite pattern_interpretation_nest_ex_aux. reflexivity.
+
+      unfold nest_ex.      
+      rewrite !simpl_evar_open.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      fold (nest_ex f). fold (nest_ex (nest_ex f)).
+      
+      
+      remember (fresh_evar (patt_subseteq (nest_ex (nest_ex f) $ patt_free_evar x') b0)) as x''.
+
+      rewrite subseteq_iff_interpr_subseteq. 2: apply M_satisfies_theory.
+      simpl. rewrite pattern_interpretation_free_evar_simpl.
+      rewrite update_evar_val_same.
+      rewrite pattern_interpretation_app_simpl.
+      rewrite pattern_interpretation_free_evar_simpl.
+
+      (*  Hx''neqx' : x'' ≠ x'
+          Hx''freeinf : x'' ∉ free_evars f
+       *)
+      pose proof (HB := @set_evar_fresh_is_fresh' _ (free_evars(patt_subseteq (nest_ex (nest_ex f) $ patt_free_evar x') b0))).
+      pose proof (Heqx''2 := Heqx'').
+      unfold fresh_evar in Heqx''2.
+      rewrite -Heqx''2 in HB.
+      simpl in HB.
+      rewrite !(left_id_L ∅ union) in HB.
+      rewrite !(right_id_L ∅ union) in HB.
+      apply sets.not_elem_of_union in HB. destruct HB as [Hx''freeinf Hx''neqx'].
+      apply stdpp_ext.not_elem_of_singleton_1 in Hx''neqx'.
+      unfold nest_ex in Hx''freeinf.
+      rewrite 2!free_evars_nest_ex_aux in Hx''freeinf.
+
+      (* Hx'fr : x' ∉ free_evars f *)
+      pose proof (Hx'fr := @set_evar_fresh_is_fresh _ (patt_exists_of_sort (nest_ex s₂) (patt_subseteq (nest_ex (nest_ex f) $ b1) b0))).
+      rewrite -Heqx' in Hx'fr.
+      unfold evar_is_fresh_in in Hx'fr. simpl in Hx'fr.
+      rewrite !(left_id_L ∅ union) in Hx'fr.
+      rewrite !(right_id_L ∅ union) in Hx'fr.
+      apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [_ Hx'fr].
+      rewrite 2!free_evars_nest_ex_aux in Hx'fr.
+      
+      rewrite {2}update_evar_val_comm. apply Hx''neqx'.
+      rewrite update_evar_val_same.
+      unfold nest_ex.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      fold (nest_ex f). fold (nest_ex (nest_ex f)).
+
+      unfold nest_ex.
+      rewrite 2!pattern_interpretation_nest_ex_aux.
+
+      rewrite pattern_interpretation_free_evar_independent. assumption.
+      rewrite pattern_interpretation_free_evar_independent. assumption.
+      auto.      
+    Qed.
+
+    
   End with_model.
     
 End sorts.
