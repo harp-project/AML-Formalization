@@ -405,7 +405,7 @@ Section sorts.
       ∀ (m₁ : Domain M),
         Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
         ∃ (m₂ : Domain M),
-          Minterp_inhabitant (nest_ex s₂) ρₑ ρₛ m₂ /\
+          Minterp_inhabitant s₂ ρₑ ρₛ m₂ /\
           app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
           = Ensembles.Singleton (Domain M) m₂.
     Proof.      
@@ -431,6 +431,7 @@ Section sorts.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite 2!pattern_interpretation_sym_simpl.
       rewrite pattern_interpretation_free_evar_independent.
+      (* two subgoals *)
       fold (evar_is_fresh_in x' (nest_ex s₂)).
 
       assert (Hfreq: x' = fresh_evar (patt_imp s₂ (nest_ex (nest_ex f)))).
@@ -447,8 +448,10 @@ Section sorts.
       fold (evar_is_fresh_in (fresh_evar (s₂ ---> f)) s₂).
       eapply evar_fresh_in_subformula'. 2: apply set_evar_fresh_is_fresh.
       simpl. rewrite is_subformula_of_refl. rewrite orb_true_r. auto.
+      (* one subgoal remains *)
 
-      apply and_iff_morphism. auto.
+      apply and_iff_morphism.
+      rewrite pattern_interpretation_nest_ex_aux. reflexivity.
 
       unfold nest_ex.      
       rewrite !simpl_evar_open.
