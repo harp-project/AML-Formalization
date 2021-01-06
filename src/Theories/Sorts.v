@@ -124,10 +124,10 @@ Section sorts.
   (* TODO a lemma about patt_forall_of_sort *)
   
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_equal (patt_app phi b1) b0)).
+    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_equal (patt_app (nest_ex (nest_ex phi)) b1) b0)).
 
   Definition patt_partial_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_subseteq (patt_app phi b1) b0)).
+    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_subseteq (patt_app (nest_ex (nest_ex phi)) b1) b0)).
 
   Section with_model.
     Context {M : Model}.
@@ -429,17 +429,11 @@ Section sorts.
       (*Set Debug Auto.*)
       (*Set Debug Tactic Unification.*) (* This may be helpful. We may try to remove 'Tactic' *)
       rewrite !simpl_evar_open.
-      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal (f $ b1) b0))) as x'.
-      unfold nest_ex.
+      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
+      rewrite [nest_ex s₂]/nest_ex.
       rewrite evar_open_nest_ex_aux_comm. simpl.
-      fold (nest_ex s₂).
-      Check @pattern_interpretation_exists_of_sort_predicate.
-      (*Set Printing Implicit.*)
+      rewrite -/(nest_ex s₂).
 
-      (*
-      split. intros H m₁ Hinhs₁. specialize (H m₁ Hinhs₁).
-      move: H.*)
-      (*Unset Printing Notations.*)
       apply all_iff_morphism.
       unfold pointwise_relation. intros m₁.
       apply all_iff_morphism. unfold pointwise_relation. intros Hinh1.
@@ -451,18 +445,16 @@ Section sorts.
       unfold Minterp_inhabitant.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite 2!pattern_interpretation_sym_simpl.
-      Search pattern_interpretation update_evar_val.
       rewrite pattern_interpretation_free_evar_independent.
-      Check evar_is_fresh_in.
       fold (evar_is_fresh_in x' (nest_ex s₂)).
 
-      assert (Hfreq: x' = fresh_evar (patt_imp s₂ f)).
+      assert (Hfreq: x' = fresh_evar (patt_imp s₂ (nest_ex (nest_ex f)))).
       { rewrite Heqx'. unfold fresh_evar. apply f_equal. simpl.
         rewrite 2!free_evars_nest_ex_aux.
         rewrite !(left_id_L ∅ union). rewrite !(right_id_L ∅ union).
         rewrite (idemp_L union). reflexivity.
-
       }
+
       rewrite Hfreq.
       unfold nest_ex.
       unfold evar_is_fresh_in.
@@ -472,8 +464,15 @@ Section sorts.
       simpl. rewrite is_subformula_of_refl. rewrite orb_true_r. auto.
 
       apply and_iff_morphism. auto.
+
+      unfold nest_ex.      
       rewrite !simpl_evar_open.
-      remember (fresh_evar (patt_equal (evar_open 1 x' f $ patt_free_evar x') b0)) as x''.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      fold (nest_ex f). fold (nest_ex (nest_ex f)).
+      
+      
+      remember (fresh_evar (patt_equal (nest_ex (nest_ex f) $ patt_free_evar x') b0)) as x''.
 
       rewrite equal_iff_interpr_same. 2: apply M_satisfies_theory.
       simpl. rewrite pattern_interpretation_free_evar_simpl.
@@ -484,6 +483,19 @@ Section sorts.
       assert (Hx''neqx': x'' <> x'). admit.
       rewrite {2}update_evar_val_comm. apply Hx''neqx'.
       rewrite update_evar_val_same.
+      unfold nest_ex.
+      Search evar_open nest_ex_aux.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      fold (nest_ex f). fold (nest_ex (nest_ex f)).
+
+      assert (evar_is_fresh_in x' (nest_ex (nest_ex f))). admit.
+      assert (evar_is_fresh_in x'' (nest_ex (nest_ex f))). admit.
+      Search pattern_interpretation update_svar_val svar_is_fresh_in.
+      Check interpretation_fresh_svar.
+
+      Search pattern_interpretation nest_ex.
+      (* TODO pattern_interpretation of nest_ex ϕ = pattern_interpretation ϕ, because all bound vars go to empty set *)
+
       
     Abort.
 
