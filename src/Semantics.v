@@ -683,27 +683,36 @@ repeat
       + left. apply Extensionality_Ensembles. apply Union_Compl_Fullset.
     Qed.
 
+        Hint Resolve M_predicate_impl : core.
+
     Lemma M_predicate_bott M : M_predicate M patt_bott.
     Proof.
       unfold M_predicate. intros. right.
       apply pattern_interpretation_bott_simpl.
     Qed.
 
+        Hint Resolve M_predicate_bott : core.
+
     Lemma M_predicate_not M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
     Proof.
       intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bott.
     Qed.
+
+        Hint Resolve M_predicate_not : core.
 
     Lemma M_predicate_or M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_or ϕ₁ ϕ₂).
     Proof.
       intros. unfold patt_or. auto using M_predicate_not, M_predicate_impl.
     Qed.
 
+        Hint Resolve M_predicate_or : core.
+
     Lemma M_predicate_and M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_and ϕ₁ ϕ₂).
     Proof.
       intros. unfold patt_and. auto using M_predicate_or, M_predicate_not.
     Qed.
 
+        Hint Resolve M_predicate_and : core.
 
     Lemma M_predicate_exists M ϕ :
       let x := evar_fresh (elements (free_evars ϕ)) in
@@ -735,10 +744,14 @@ repeat
         + unfold Included. intros. inversion H1.
     Qed.
 
+        Hint Resolve M_predicate_exists : core.
+
     Lemma M_predicate_top M : M_predicate M patt_top.
     Proof.
       unfold patt_top. apply M_predicate_not. apply M_predicate_bott.
     Qed.
+
+        Hint Resolve M_predicate_top : core.
 
     Lemma M_predicate_forall M ϕ :
       let x := evar_fresh (elements (free_evars ϕ)) in
@@ -756,6 +769,8 @@ repeat
       apply Hpred.
     Qed.
 
+        Hint Resolve M_predicate_forall : core.
+
     Lemma M_predicate_iff M ϕ₁ ϕ₂ :
       M_predicate M ϕ₁ ->
       M_predicate M ϕ₂ ->
@@ -765,6 +780,8 @@ repeat
       unfold patt_iff.
       apply M_predicate_and; apply M_predicate_impl; auto.
     Qed.
+
+        Hint Resolve M_predicate_iff : core.
 
     (* TODO forall *)
 
@@ -1108,12 +1125,27 @@ repeat
     
     Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
 
+         Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => rewrite !simpl_evar_open : core.
+         Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => rewrite !simpl_evar_open : core.
+         Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => rewrite !simpl_svar_open : core.
+        Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => rewrite !simpl_svar_open : core.
+    
+    Lemma T_predicate_impl_M_predicate M Γ ϕ:
+      satisfies_theory M Γ -> T_predicate Γ ϕ -> M_predicate M ϕ.
+    Proof.
+      unfold T_predicate. auto.
+    Qed.
+
+        Hint Resolve T_predicate_impl_M_predicate : core.
+
     Lemma T_predicate_impl Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_imp ϕ₁ ϕ₂).
     Proof.
       unfold T_predicate.
       intros.
       auto using M_predicate_impl.
     Qed.
+
+        Hint Resolve T_predicate_impl : core.
 
     Lemma T_predicate_bot Γ : T_predicate Γ patt_bott.
     Proof.
@@ -1122,12 +1154,16 @@ repeat
       auto using M_predicate_bott.
     Qed.
 
+        Hint Resolve T_predicate_bot : core.
+
     Lemma T_predicate_not Γ ϕ : T_predicate Γ ϕ -> T_predicate Γ (patt_not ϕ).
     Proof.
       unfold T_predicate.
       intros.
       auto using M_predicate_not.
     Qed.
+
+        Hint Resolve T_predicate_not : core.
 
     Lemma T_predicate_or Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_or ϕ₁ ϕ₂).
     Proof.
@@ -1136,12 +1172,16 @@ repeat
       auto using M_predicate_or.
     Qed.
 
+        Hint Resolve T_predicate_or : core.
+
     Lemma T_predicate_and Γ ϕ₁ ϕ₂ : T_predicate Γ ϕ₁ -> T_predicate Γ ϕ₂ -> T_predicate Γ (patt_and ϕ₁ ϕ₂).
     Proof.
       unfold T_predicate.
       intros.
       auto using M_predicate_and.
     Qed.
+
+        Hint Resolve T_predicate_or : core.
 
     (* TODO: top iff exists forall *)
 
@@ -2055,3 +2095,44 @@ Notation "G ⊨ phi" := (satisfies G phi) (left associativity, at level 50) : ml
 Notation "M ⊨ᵀ Gamma" := (satisfies_theory M Gamma)
     (left associativity, at level 50) : ml_scope.
 End Notations.
+
+(*Module Hints.*)
+#[export]
+        Hint Resolve M_predicate_impl : core.
+#[export]
+        Hint Resolve M_predicate_bott : core.
+ #[export]
+       Hint Resolve M_predicate_not : core.
+ #[export]
+       Hint Resolve M_predicate_or : core.
+ #[export]
+       Hint Resolve M_predicate_and : core.
+ #[export]
+       Hint Resolve M_predicate_exists : core.
+ #[export]
+       Hint Resolve M_predicate_top : core.
+ #[export]
+       Hint Resolve M_predicate_forall : core.
+ #[export]
+       Hint Resolve M_predicate_iff : core.
+ #[export]
+        Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => rewrite !simpl_evar_open : core.
+ #[export]
+        Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => rewrite !simpl_evar_open : core.
+ #[export]
+        Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => rewrite !simpl_svar_open : core.
+ #[export]
+       Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => rewrite !simpl_svar_open : core.
+ #[export]
+       Hint Resolve T_predicate_impl_M_predicate : core.
+ #[export]
+       Hint Resolve T_predicate_impl : core.
+ #[export]
+       Hint Resolve T_predicate_bot : core.
+ #[export]
+       Hint Resolve T_predicate_not : core.
+ #[export]
+       Hint Resolve T_predicate_or : core.
+ #[export]
+       Hint Resolve T_predicate_or : core.
+(*End Hints.*)
