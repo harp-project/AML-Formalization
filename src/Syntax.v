@@ -1789,7 +1789,23 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply sub_exists. auto.
     - apply sub_mu. apply IHϕ₁. auto.
   Qed.
-    
+
+  Lemma Private_bsvar_occur_evar_open sz dbi1 dbi2 X phi:
+    size phi <= sz ->
+    bsvar_occur phi dbi1 = false ->
+    bsvar_occur (evar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    move: phi dbi1 dbi2.
+    induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
+    1,2: (destruct (n=? dbi2); reflexivity).
+  Qed.
+
+  Lemma bsvar_occur_evar_open dbi1 dbi2 X phi:
+    bsvar_occur phi dbi1 = false ->
+    bsvar_occur (evar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    apply Private_bsvar_occur_evar_open with (sz := size phi). lia.
+  Qed.  
   
   Lemma free_evars_subformula ϕ₁ ϕ₂ :
     is_subformula_of_ind ϕ₁ ϕ₂ -> free_evars ϕ₁ ⊆ free_evars ϕ₂.
