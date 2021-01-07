@@ -2288,6 +2288,18 @@ Class EBinder (ebinder : Pattern -> Pattern)
     @free_evars_nest_ex_aux
   ).
 
+    Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
+      x = fresh_evar ϕ ->
+      x ∉ free_evars ϕ.
+    Proof.
+      intros H.
+      rewrite H.
+      unfold fresh_evar.
+      apply set_evar_fresh_is_fresh'.
+    Qed.
+
+    Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
+
 End syntax.
 
 Hint Rewrite ->
@@ -2365,7 +2377,9 @@ End BoundVarSugar.
  Hint Resolve
  evar_is_fresh_in_richer
 set_evar_fresh_is_fresh
-set_svar_fresh_is_fresh : core.
+set_svar_fresh_is_fresh
+x_eq_fresh_impl_x_notin_free_evars
+  : core.
 
   Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
     simpl;
@@ -2395,3 +2409,32 @@ set_svar_fresh_is_fresh : core.
 #[export]
  Hint Extern 10 (free_evars _ ⊆ free_evars _) => solve_free_evars_inclusion : core.
 *)
+
+  (* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
+     or `x₂ = fresh_evar ...`
+  *)
+  Ltac solve_fresh_neq :=
+    repeat (
+        match goal with
+        | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+        | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+        end
+      );
+    (idtac + apply nesym);
+    match goal with
+    | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
+      simpl in H;
+      (do ! rewrite simpl_free_evars/= in H);
+      rewrite -!union_assoc_L in H;
+      repeat (
+          match goal with
+          | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+            apply stdpp_ext.not_elem_of_singleton_1 in H;
+            first [ exact H | clear H]
+          | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+          end
+        );
+      fail
+    end.

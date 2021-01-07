@@ -697,10 +697,6 @@ Section sorts.
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
         eapply evar_is_fresh_in_richer. 2: { subst. auto. }
-        (*
-        do ! rewrite simpl_free_evars'/=.
-        rewrite !simpl_free_evars'/=.
-        Print simpl_free_evars'.*)
         solve_free_evars_inclusion 5.
       }
       rewrite pattern_interpretation_evar_open_nest_ex.
@@ -710,11 +706,7 @@ Section sorts.
       }
       rewrite pattern_interpretation_free_evar_simpl.
       rewrite update_evar_val_neq.
-      {
-        rewrite Heqx₁. rewrite Heqx₂.
-        intros Contra. unfold fresh_evar in Contra.
-        simpl in Contra.
-      }
+      { solve_fresh_neq. }
       rewrite update_evar_val_same.
       fold (rel_of ρₑ ρₛ f m₁).
       apply all_iff_morphism. unfold pointwise_relation. intros Hnonempty.
