@@ -692,3 +692,25 @@ Proof.
   destruct H as [H1 H2].
   split; apply Same_set_to_eq; auto.
 Qed.
+
+Lemma Compl_Compl_Ensembles_eq : forall T :Type, forall A :Ensemble T,
+  (Complement T (Complement T A)) = A.
+Proof.
+  intros T A.
+  apply eq_iff_Same_set.
+  apply Compl_Compl_Ensembles.
+Qed.
+
+Lemma Singleton_eq_iff_eq: forall T : Type, forall (x y : T),
+      Singleton T x = Singleton T y <-> x = y.
+Proof.
+  intros T x y.
+  split; intros H.
+  - apply eq_iff_Same_set in H.
+    unfold Same_set, Included, In in H.
+    destruct H as [H1 H2].
+    specialize (H1 x).
+    specialize (H1 (In_singleton _ x)).
+    inversion H1. reflexivity.
+  - subst. reflexivity.
+Qed.
