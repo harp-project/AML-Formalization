@@ -716,13 +716,19 @@ Section sorts.
       rewrite equal_iff_interpr_same. 2: apply M_satisfies_theory.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite !pattern_interpretation_evar_open_nest_ex.
-      { admit. }
-      { admit. }
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
       rewrite equal_iff_interpr_same. 2: { apply M_satisfies_theory. }
       rewrite !pattern_interpretation_free_evar_simpl.
       rewrite update_evar_val_same.
       rewrite update_evar_val_neq.
-      { admit. }
+      { solve_fresh_neq. }
       rewrite update_evar_val_same.
       unfold rel_of.
       apply all_iff_morphism. intros Hfm1eqfm2.
@@ -730,7 +736,7 @@ Section sorts.
       
       auto.
       
-    Admitted.
+    Qed.
         
   End with_model.
     
