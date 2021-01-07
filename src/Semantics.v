@@ -905,7 +905,30 @@ repeat
           rewrite -> Union_Full_l_eq. unfold Full.
           reflexivity.
     Qed.
-    
+
+    Lemma pattern_interpretation_predicate_not M ρₑ ρₛ ϕ :
+      M_predicate M ϕ ->
+      pattern_interpretation ρₑ ρₛ (patt_not ϕ) = Full
+      <-> @pattern_interpretation M ρₑ ρₛ ϕ <> Full.
+    Proof.
+      intros Hpred.
+      rewrite pattern_interpretation_not_simpl.
+      split; intros H.
+      - apply predicate_not_full_iff_empty.
+        { apply Hpred. }
+        apply eq_iff_Same_set in H.
+        rewrite <- Compl_Compl_Ensembles_eq in H.
+        apply Same_set_Compl in H.
+        rewrite Complement_Full_is_Empty_eq in H.
+        apply eq_iff_Same_set in H.
+        unfold Empty.
+        apply H.
+      - apply predicate_not_full_iff_empty in H.
+        2: { apply Hpred. }
+        rewrite H.
+        unfold Empty. unfold Full.
+        apply Complement_Empty_is_Full_eq.
+    Qed.
     
     (* ϕ is a well-formed body of ex *)
     Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρₛ :
@@ -1897,7 +1920,6 @@ Lemma interpretation_fresh_evar_subterm M ϕ₁ ϕ₂ c dbi ρₑ ρₛ :
 Proof.
   intros Hsub.
   apply interpretation_fresh_evar_open; auto.
-  2: apply set_evar_fresh_is_fresh.
   eapply evar_fresh_in_subformula. apply Hsub.
   apply set_evar_fresh_is_fresh.
 Qed.
@@ -1946,7 +1968,6 @@ Lemma M_predicate_evar_open_fresh_evar_2 M x ϕ :
 Proof.
   intros Hfr H.
   apply M_predicate_evar_open_fresh_evar_1 with (x₁ := fresh_evar ϕ); auto.
-  apply set_evar_fresh_is_fresh.
 Qed.
 
 Lemma Private_pattern_interpretation_evar_open_nest_ex M sz ϕ x dbi e ρₑ ρₛ :
@@ -2092,6 +2113,10 @@ Proof.
   apply Private_pattern_interpretation_nest_ex_aux with (sz := size ϕ).
   lia.
 Qed.
+
+Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
+  λ m₁,
+  (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
 
 End semantics.
 

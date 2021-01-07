@@ -8,7 +8,7 @@ From Coq Require Import Unicode.Utf8.
 From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
 From Coq.Classes Require Import Morphisms_Prop.
 
-From stdpp Require Import base.
+From stdpp Require Import base sets.
 
 From MatchingLogic Require Import Syntax Semantics.
 Require Import MatchingLogic.Theories.Definedness.
@@ -132,17 +132,17 @@ Section sorts.
 
   (* Assuming `f` is a total function, says it is injective on given domain. Does not quite work for partial functions. *)
   Definition patt_total_function_injective f from : Pattern :=
-    patt_forall_of_sort from (patt_forall_of_sort from (patt_imp (patt_equal (patt_app f b1) (patt_app f b0)) (patt_equal b1 b0))).
+    patt_forall_of_sort from (patt_forall_of_sort from (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0))).
 
   (* Assuming `f` is a partial function, says it is injective on given domain. Works for total functions, too. *)
   Definition patt_partial_function_injective f from : Pattern :=
     patt_forall_of_sort
       from
       (patt_forall_of_sort
-         from
+         (nest_ex from)
          (patt_imp
-            (patt_not (patt_equal (patt_app f b1) patt_bott ))
-            (patt_imp (patt_equal (patt_app f b1) (patt_app f b0)) (patt_equal b1 b0)))).
+            (patt_not (patt_equal (patt_app (nest_ex (nest_ex f)) b1) patt_bott ))
+            (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0)))).
   
 
   Section with_model.
@@ -631,7 +631,113 @@ Section sorts.
       auto.      
     Qed.
 
+    Lemma Minterp_inhabitant_evar_open_update_evar_val ρₑ ρₛ x e s m:
+      evar_is_fresh_in x s ->
+      Minterp_inhabitant (evar_open 0 x (nest_ex s)) (update_evar_val x e ρₑ) ρₛ m
+      = Minterp_inhabitant s ρₑ ρₛ m.
+    Proof.
+      intros Hfr.
+      unfold Minterp_inhabitant.
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite 2!pattern_interpretation_sym_simpl.
+      rewrite pattern_interpretation_evar_open_nest_ex. { exact Hfr. }
+      reflexivity.
+   Qed.
+
     
+    Lemma interp_partial_function_injective f s ρₑ ρₛ :
+      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function_injective f s) = Full <->
+      ∀ (m₁ : Domain M),
+        Minterp_inhabitant s ρₑ ρₛ m₁ ->
+        ∀ (m₂ : Domain M),          
+          Minterp_inhabitant s ρₑ ρₛ m₂ ->
+          (rel_of ρₑ ρₛ f) m₁ ≠ Empty ->
+          (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
+          m₁ = m₂.
+    Proof.
+      unfold patt_partial_function_injective.
+      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      remember
+      (fresh_evar
+               (patt_forall_of_sort (nest_ex s)
+                  (¬ patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
+                     patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) ---> patt_equal b1 b0)))
+      as x₁.
+      apply all_iff_morphism. intros m₁.
+      apply all_iff_morphism. intros Hm₁s.
+
+      rewrite simpl_evar_open.
+      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      rewrite [0+1]/=.
+      remember
+      (fresh_evar
+               (evar_open 1 x₁
+                  (¬ patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
+                     patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) ---> patt_equal b1 b0)))
+      as x₂.
+        
+      apply all_iff_morphism. intros m₂.
+      rewrite Minterp_inhabitant_evar_open_update_evar_val.
+      {        
+        eapply evar_is_fresh_in_richer.
+        2: { subst. auto. }
+        solve_free_evars_inclusion 5.
+      }
+      apply all_iff_morphism. intros Hm₂s.
+      rewrite !simpl_evar_open.
+
+      rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
+      simpl.
+      rewrite pattern_interpretation_predicate_not. 2: { eauto. }
+      rewrite equal_iff_interpr_same.
+      rewrite pattern_interpretation_bott_simpl. 2: apply M_satisfies_theory.
+      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite pattern_interpretation_app_simpl.
+      fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
+      rewrite pattern_interpretation_evar_open_nest_ex.
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 5.
+      }
+      rewrite pattern_interpretation_evar_open_nest_ex.
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
+      rewrite pattern_interpretation_free_evar_simpl.
+      rewrite update_evar_val_neq.
+      { solve_fresh_neq. }
+      rewrite update_evar_val_same.
+      fold (rel_of ρₑ ρₛ f m₁).
+      apply all_iff_morphism. unfold pointwise_relation. intros Hnonempty.
+
+      rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
+      (*rewrite simpl_evar_open.*)
+      rewrite equal_iff_interpr_same. 2: apply M_satisfies_theory.
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite !pattern_interpretation_evar_open_nest_ex.
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
+      rewrite equal_iff_interpr_same. 2: { apply M_satisfies_theory. }
+      rewrite !pattern_interpretation_free_evar_simpl.
+      rewrite update_evar_val_same.
+      rewrite update_evar_val_neq.
+      { solve_fresh_neq. }
+      rewrite update_evar_val_same.
+      unfold rel_of.
+      apply all_iff_morphism. intros Hfm1eqfm2.
+      rewrite Ensembles_Ext.Singleton_eq_iff_eq.
+      
+      auto.
+      
+    Qed.
+        
   End with_model.
     
 End sorts.

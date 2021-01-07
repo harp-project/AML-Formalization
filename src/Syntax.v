@@ -9,6 +9,7 @@ Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
 
+(*From Ltac2 Require Import Ltac2.*)
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
@@ -757,6 +758,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     apply set_evar_fresh_is_fresh'.
   Qed.
 
+  Hint Resolve set_evar_fresh_is_fresh : core.
+
   Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
   Proof.
     intros H.
@@ -773,6 +776,32 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold fresh_svar.
     apply set_svar_fresh_is_fresh'.
   Qed.
+
+  Hint Resolve set_svar_fresh_is_fresh : core.
+  
+  Lemma evar_is_fresh_in_richer x ϕ₁ ϕ₂:
+    free_evars ϕ₁ ⊆ free_evars ϕ₂ ->
+    evar_is_fresh_in x ϕ₂ ->
+    evar_is_fresh_in x ϕ₁.
+  Proof.
+    intros Hsub.
+    unfold evar_is_fresh_in.
+    intros Hnotin.
+    pose proof (Hsub' := (iffLR (elem_of_subseteq _ (free_evars ϕ₂)) Hsub)).
+    auto.
+  Qed.
+
+  (*
+  Lemma fresh_neq_fresh_l ϕ₁ ϕ₂ :
+    (*~ evar_is_fresh_in (fresh_evar ϕ₁) ϕ₂ ->*)
+    free_evars ϕ₁ ⊈
+    fresh_evar ϕ₁ ≠ fresh_evar ϕ₂.
+  Proof.
+    intros H.
+    unfold fresh_evar at 2.
+   *)
+  
+  Hint Resolve evar_is_fresh_in_richer : core.
 
   (*If phi is a closed body, then (ex, phi) is closed too*)
   Lemma wfc_body_to_wfc_ex:
@@ -2250,6 +2279,26 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold svar_is_fresh_in. simpl. done.
   Qed.
 
+    Definition simpl_free_evars :=
+  (
+    (@left_id_L EVarSet  ∅ (@union _ _)),
+    (@right_id_L EVarSet ∅ (@union _ _)),
+    @free_evars_nest_ex_aux,
+    @evar_open_nest_ex_aux_comm,
+    @free_evars_nest_ex_aux
+  ).
+
+    Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
+      x = fresh_evar ϕ ->
+      x ∉ free_evars ϕ.
+    Proof.
+      intros H.
+      rewrite H.
+      unfold fresh_evar.
+      apply set_evar_fresh_is_fresh'.
+    Qed.
+
+    Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
 
 End syntax.
 
@@ -2323,3 +2372,69 @@ Module BoundVarSugar.
   Notation b9 := (patt_bound_evar 9).
   
 End BoundVarSugar.
+
+#[export]
+ Hint Resolve
+ evar_is_fresh_in_richer
+set_evar_fresh_is_fresh
+set_svar_fresh_is_fresh
+x_eq_fresh_impl_x_notin_free_evars
+  : core.
+
+  Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
+    simpl;
+    (do ! [rewrite simpl_free_evars/=]) ;
+    apply elem_of_subseteq;
+    let x := fresh "x" in
+    let H := fresh "Hxin" in
+    (* TODO: maybe we need something like: *)
+    (*rewrite -!union_assoc_L.*)
+    (* We may also want to remove duplicates, at least those that are neighbors *)
+    intros x H;
+    repeat (
+        match H with
+        | ?L /\ ?R => fail "Not implemented: destruct H"
+        | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
+        end
+      ).
+(*
+        eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
+*)
+  (*
+  eauto depth using @sets.union_subseteq_l, @sets.union_subseteq_r
+    with typeclass_instances.
+*)
+
+(*
+#[export]
+ Hint Extern 10 (free_evars _ ⊆ free_evars _) => solve_free_evars_inclusion : core.
+*)
+
+  (* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
+     or `x₂ = fresh_evar ...`
+  *)
+  Ltac solve_fresh_neq :=
+    repeat (
+        match goal with
+        | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+        | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+        end
+      );
+    (idtac + apply nesym);
+    match goal with
+    | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
+      simpl in H;
+      (do ! rewrite simpl_free_evars/= in H);
+      rewrite -!union_assoc_L in H;
+      repeat (
+          match goal with
+          | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+            apply stdpp_ext.not_elem_of_singleton_1 in H;
+            first [ exact H | clear H]
+          | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+          end
+        );
+      fail
+    end.
