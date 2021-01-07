@@ -8,7 +8,7 @@ From Coq Require Import Unicode.Utf8.
 From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
 From Coq.Classes Require Import Morphisms_Prop.
 
-From stdpp Require Import base.
+From stdpp Require Import base sets.
 
 From MatchingLogic Require Import Syntax Semantics.
 Require Import MatchingLogic.Theories.Definedness.
@@ -678,7 +678,11 @@ Section sorts.
         
       apply all_iff_morphism. intros m₂.
       rewrite Minterp_inhabitant_evar_open_update_evar_val.
-      { admit. }
+      {        
+        eapply evar_is_fresh_in_richer.
+        2: { subst. auto. }
+        solve_free_evars_inclusion 5.
+      }
       apply all_iff_morphism. intros Hm₂s.
       rewrite !simpl_evar_open.
 
@@ -691,12 +695,26 @@ Section sorts.
       rewrite pattern_interpretation_app_simpl.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite pattern_interpretation_evar_open_nest_ex.
-      { admit. }
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        (*
+        do ! rewrite simpl_free_evars'/=.
+        rewrite !simpl_free_evars'/=.
+        Print simpl_free_evars'.*)
+        solve_free_evars_inclusion 5.
+      }
       rewrite pattern_interpretation_evar_open_nest_ex.
-      { admit. }
+      {
+        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        solve_free_evars_inclusion 4.
+      }
       rewrite pattern_interpretation_free_evar_simpl.
       rewrite update_evar_val_neq.
-      { admit. }
+      {
+        rewrite Heqx₁. rewrite Heqx₂.
+        intros Contra. unfold fresh_evar in Contra.
+        simpl in Contra.
+      }
       rewrite update_evar_val_same.
       fold (rel_of ρₑ ρₛ f m₁).
       apply all_iff_morphism. unfold pointwise_relation. intros Hnonempty.
@@ -717,7 +735,9 @@ Section sorts.
       unfold rel_of.
       apply all_iff_morphism. intros Hfm1eqfm2.
       rewrite Ensembles_Ext.Singleton_eq_iff_eq.
+      
       auto.
+      
     Admitted.
         
   End with_model.

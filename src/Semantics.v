@@ -1920,7 +1920,6 @@ Lemma interpretation_fresh_evar_subterm M ϕ₁ ϕ₂ c dbi ρₑ ρₛ :
 Proof.
   intros Hsub.
   apply interpretation_fresh_evar_open; auto.
-  2: apply set_evar_fresh_is_fresh.
   eapply evar_fresh_in_subformula. apply Hsub.
   apply set_evar_fresh_is_fresh.
 Qed.
@@ -1969,7 +1968,6 @@ Lemma M_predicate_evar_open_fresh_evar_2 M x ϕ :
 Proof.
   intros Hfr H.
   apply M_predicate_evar_open_fresh_evar_1 with (x₁ := fresh_evar ϕ); auto.
-  apply set_evar_fresh_is_fresh.
 Qed.
 
 Lemma Private_pattern_interpretation_evar_open_nest_ex M sz ϕ x dbi e ρₑ ρₛ :
