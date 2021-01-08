@@ -2296,6 +2296,45 @@ Proof.
   lia.
 Qed.
 
+Lemma Private_pattern_interpretation_nest_mu_aux M sz ϕ level ρₑ ρₛ :
+  size ϕ <= sz ->
+  @pattern_interpretation M ρₑ ρₛ (nest_mu_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  move: ϕ level ρₑ ρₛ.
+  induction sz; move=> ϕ; destruct ϕ; move=> level ρₑ ρₛ Hsz; simpl; simpl in Hsz; try reflexivity; try lia.
+  - rewrite 2!pattern_interpretation_app_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_imp_simpl.
+    rewrite IHsz. lia. rewrite IHsz. lia.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_ex_simpl.
+    simpl. apply f_equal. apply functional_extensionality.
+    intros m.
+    rewrite evar_open_nest_mu_aux_comm. simpl.
+    rewrite IHsz. rewrite -evar_open_size. lia.
+    rewrite fresh_evar_nest_mu_aux.
+    reflexivity.
+  - rewrite 2!pattern_interpretation_mu_simpl.
+    simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+    intros S.
+    rewrite svar_open_nest_mu_aux_comm.
+    rewrite IHsz. rewrite -svar_open_size. lia.
+    rewrite fresh_svar_nest_mu_aux.
+    reflexivity.
+Qed.
+
+Lemma pattern_interpretation_nest_mu_aux M ϕ level ρₑ ρₛ :
+  @pattern_interpretation M ρₑ ρₛ (nest_mu_aux level ϕ)
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  apply Private_pattern_interpretation_nest_mu_aux with (sz := size ϕ).
+  lia.
+Qed.
+
+
+
 Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   λ m₁,
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
