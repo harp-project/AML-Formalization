@@ -1674,7 +1674,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - auto.
   Qed.
 
-  Lemma svar_is_fresh_in_evar_open X Y dbi ϕ:
+  Lemma svar_is_fresh_in_svar_open X Y dbi ϕ:
     X <> Y ->
     svar_is_fresh_in X ϕ ->
     svar_is_fresh_in X (svar_open dbi Y ϕ).
