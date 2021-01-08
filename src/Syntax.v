@@ -2488,27 +2488,65 @@ Class EBinder (ebinder : Pattern -> Pattern)
 
     Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
 
-    Check positive_occurrence_db.
-    Print nest_mu_aux.
-    Lemma positive_occurrence_db_nest_mu_aux dbi level ϕ:
-      (positive_occurrence_db dbi (nest_mu_aux level ϕ)
-      <-> match (compare_nat dbi level) with
-          | Nat_less _ _ _ => positive_occurrence_db dbi ϕ
-          | Nat_equal _ _ _ => False
-          | Nat_greater _ _ _ => positive_occurrence_db (dbi-1) ϕ
+    Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
+      (no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+      = match (compare_nat dbi level) with
+          | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
+          | Nat_equal _ _ _ => true
+          | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
           end
       ) /\ (
-      negative_occurrence_db dbi (nest_mu_aux level ϕ)
-      <-> match (compare_nat dbi level) with
-          | Nat_less _ _ _ => negative_occurrence_db dbi ϕ
-          | Nat_equal _ _ _ => False
-          | Nat_greater _ _ _ => negative_occurrence_db (dbi-1) ϕ
+      no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
+      = match (compare_nat dbi level) with
+          | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
+          | Nat_equal _ _ _ => true
+          | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
           end
       ).
     Proof.
       move: dbi level.
-      induction ϕ; move=> dbi level; simpl.
-    Abort.
+      induction ϕ; intros dbi level; simpl;
+        destruct (compare_nat dbi level); auto;
+      repeat (
+          match goal with
+          | |- context G [?x <=? ?y] => destruct (Nat.leb_spec0 x y)
+          | |- context G [?x =? ?y] => destruct (Nat.eqb_spec x y)
+          end
+        ); simpl; try lia; auto;
+        try rewrite (proj1 (IHϕ1 _ _));
+        try rewrite (proj2 (IHϕ1 _ _));
+        try rewrite (proj1 (IHϕ2 _ _));
+        try rewrite (proj2 (IHϕ2 _ _));
+        try rewrite (proj1 (IHϕ _ _));
+        try rewrite (proj2 (IHϕ _ _));
+        simpl;
+        destruct (compare_nat dbi level),(compare_nat (S dbi) (S level)); simpl; try lia; auto.
+      assert (Harith1: dbi - 0 = dbi). lia. rewrite !Harith1.
+      assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
+      auto.
+    Qed.
+
+    Lemma no_negative_occurrence_db_nest_mu_aux dbi level ϕ:
+      no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+      = match (compare_nat dbi level) with
+          | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
+          | Nat_equal _ _ _ => true
+          | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
+        end.
+    Proof.
+      apply Private_positive_negative_occurrence_db_nest_mu_aux.
+    Qed.
+
+    Lemma no_positive_occurrence_db_nest_mu_aux dbi level ϕ:
+      no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
+      = match (compare_nat dbi level) with
+          | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
+          | Nat_equal _ _ _ => true
+          | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
+        end.
+    Proof.
+      apply Private_positive_negative_occurrence_db_nest_mu_aux.
+    Qed.
       
     Lemma well_formed_positive_nest_mu ϕ:
       well_formed_positive (nest_mu ϕ) <-> well_formed_positive ϕ.
