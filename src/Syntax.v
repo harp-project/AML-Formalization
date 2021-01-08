@@ -2548,13 +2548,18 @@ Class EBinder (ebinder : Pattern -> Pattern)
       apply Private_positive_negative_occurrence_db_nest_mu_aux.
     Qed.
       
-    Lemma well_formed_positive_nest_mu ϕ:
-      well_formed_positive (nest_mu ϕ) <-> well_formed_positive ϕ.
+    Lemma well_formed_positive_nest_mu_aux level ϕ:
+      well_formed_positive (nest_mu_aux level ϕ) <-> well_formed_positive ϕ.
     Proof.
-      unfold well_formed_positive.
-      induction ϕ.
-    Abort.
-    
+      move: level.
+      induction ϕ; intros level; simpl; auto.
+      - rewrite IHϕ1. rewrite IHϕ2. auto.
+      - rewrite IHϕ1. rewrite IHϕ2. auto.
+      - rewrite IHϕ. Search no_negative_occurrence_db_b.
+        rewrite !(reflect_iff _ _ (no_negative_occurrence_P _ _)).
+        rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
+        auto.
+    Qed.
 
     (* inductive generation *)
     Definition patt_ind_gen base step :=
@@ -2568,8 +2573,12 @@ Class EBinder (ebinder : Pattern -> Pattern)
       intros Hwfpbase Hwfpstep.
       unfold patt_ind_gen. simpl.
       rewrite !(right_id True and).
-    Abort.
-    
+      rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
+      simpl.
+      rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
+      rewrite !well_formed_positive_nest_mu_aux.
+      auto.
+    Qed.
 
 End syntax.
 
