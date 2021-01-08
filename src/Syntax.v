@@ -2048,7 +2048,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Qed.
 
   (* TODO nest_mu *)
-  Fixpoint nest_ex_aux level ϕ : Pattern :=
+  Fixpoint nest_ex_aux level ϕ {struct ϕ} : Pattern :=
     match ϕ with
     | patt_free_evar _ => ϕ
     | patt_free_svar _ => ϕ
@@ -2062,8 +2062,33 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_mu ϕ' => patt_mu (nest_ex_aux level ϕ')
     end.
 
+  Fixpoint nest_mu_aux level ϕ {struct ϕ} : Pattern :=
+    match ϕ with
+    | patt_free_evar _ => ϕ
+    | patt_free_svar _ => ϕ
+    | patt_bound_evar _ => ϕ
+    | patt_bound_svar n => patt_bound_svar (if (level <=? n) then (S n) else n)
+    | patt_sym _ => ϕ
+    | patt_bott => ϕ
+    | patt_app ϕ₁ ϕ₂ => patt_app (nest_mu_aux level ϕ₁) (nest_mu_aux level ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_mu_aux level ϕ₁) (nest_mu_aux level ϕ₂)
+    | patt_exists ϕ' => patt_exists (nest_mu_aux level ϕ')
+    | patt_mu ϕ' => patt_mu (nest_mu_aux (S level) ϕ')
+    end.
+
   Lemma not_bevar_occur_level_nest_ex_aux level ϕ :
     bevar_occur (nest_ex_aux level ϕ) level = false.
+  Proof.
+    move: ϕ level.
+    induction ϕ; move=> level; simpl; auto.
+    - case_bool_decide. 2: reflexivity.
+      destruct (PeanoNat.Nat.leb_spec0 level n); lia.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+  Qed.
+
+  Lemma not_bsvar_occur_level_nest_mu_aux level ϕ :
+    bsvar_occur (nest_mu_aux level ϕ) level = false.
   Proof.
     move: ϕ level.
     induction ϕ; move=> level; simpl; auto.
@@ -2085,6 +2110,17 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - rewrite IHϕ. reflexivity.
   Qed.
 
+  Lemma evar_open_nest_mu_aux_comm level ϕ dbi X:
+    evar_open dbi X (nest_mu_aux level ϕ) = nest_mu_aux level (evar_open dbi X ϕ).
+  Proof.
+    move: level dbi.
+    induction ϕ; move=> level dbi; simpl; auto.
+    - case (n =? dbi); reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
 
   Lemma evar_open_nest_ex_aux_comm level ϕ dbi X:
     evar_open dbi X (nest_ex_aux level ϕ)
@@ -2128,9 +2164,63 @@ Class EBinder (ebinder : Pattern -> Pattern)
     assert (Hdbi2: dbi - 1 + 1 = dbi). lia.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
+
+  Lemma svar_open_nest_mu_aux_comm level ϕ dbi X:
+    svar_open dbi X (nest_mu_aux level ϕ)
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_mu_aux level (svar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_mu_aux level ϕ
+      | Nat_greater _ _ _ => nest_mu_aux level (svar_open (dbi-1) X ϕ)
+      end.
+  Proof.
+    move: level dbi.
+    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
+    1: {destruct (Nat.leb_spec0 level n); simpl;
+      destruct dbi; simpl;
+        destruct (Nat.leb_spec0 level n); simpl;
+          try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
+            try reflexivity; try lia;
+              destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
+      1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
+      1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
+      }
+    1: {destruct (Nat.leb_spec level n); simpl.
+      + destruct dbi.
+        * reflexivity.
+        * destruct (eqb_reflect n dbi); try lia. reflexivity.
+      + destruct (eqb_reflect n dbi); try lia. reflexivity.
+    }
+    
+    1: {destruct (Nat.leb_spec0 level n); simpl;
+        destruct (eqb_reflect n (dbi - 1)).
+      1,2: destruct dbi; try lia.
+      1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
+      1,2: destruct (eqb_reflect level n); simpl;
+        destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
+    }
+    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
+                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    
+    1,2,3: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (dbi + 1) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi + 1 - 1 = dbi). lia.
+    assert (Hdbi2: dbi - 1 + 1 = dbi). lia.
+    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+  Qed.
+
   
   Lemma free_svars_nest_ex_aux dbi ϕ:
     free_svars (nest_ex_aux dbi ϕ) = free_svars ϕ.
+  Proof.
+    move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
+
+  Lemma free_evars_nest_mu_aux dbi ϕ:
+    free_evars (nest_mu_aux dbi ϕ) = free_evars ϕ.
   Proof.
     move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
@@ -2149,6 +2239,16 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - rewrite IHϕ. reflexivity.
   Qed.
 
+  Lemma free_svars_nest_mu_aux dbi ϕ:
+    free_svars (nest_mu_aux dbi ϕ) = free_svars ϕ.
+  Proof.
+    move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ. reflexivity.
+  Qed.
+
   Lemma fresh_svar_nest_ex_aux dbi ϕ:
     fresh_svar (nest_ex_aux dbi ϕ) = fresh_svar ϕ.
   Proof.
@@ -2156,15 +2256,30 @@ Class EBinder (ebinder : Pattern -> Pattern)
       by rewrite free_svars_nest_ex_aux.
   Qed.
 
+  Lemma fresh_evar_nest_mu_aux dbi ϕ:
+    fresh_evar (nest_mu_aux dbi ϕ) = fresh_evar ϕ.
+  Proof.
+    unfold fresh_evar.
+      by rewrite free_evars_nest_mu_aux.
+  Qed.
+
   Lemma fresh_evar_nest_ex_aux dbi ϕ:
     fresh_evar (nest_ex_aux dbi ϕ) = fresh_evar ϕ.
   Proof.
     unfold fresh_evar.
       by rewrite free_evars_nest_ex_aux.
-  Qed.  
+  Qed.
+
+  Lemma fresh_svar_nest_mu_aux dbi ϕ:
+    fresh_svar (nest_mu_aux dbi ϕ) = fresh_svar ϕ.
+  Proof.
+    unfold fresh_svar.
+      by rewrite free_svars_nest_mu_aux.
+  Qed.
   
 
   Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
+  Definition nest_mu ϕ := nest_mu_aux 0 ϕ.
 
   Lemma not_bevar_occur_0_nest_ex ϕ :
     bevar_occur (nest_ex ϕ) 0 = false.
@@ -2172,10 +2287,22 @@ Class EBinder (ebinder : Pattern -> Pattern)
     exact (not_bevar_occur_level_nest_ex_aux 0 ϕ).
   Qed.
 
+  Lemma not_bsvar_occur_0_nest_mu ϕ :
+    bsvar_occur (nest_mu ϕ) 0 = false.
+  Proof.
+    exact (not_bsvar_occur_level_nest_mu_aux 0 ϕ).
+  Qed.
+
   Lemma svar_open_nest_ex_comm ϕ dbi X:
     svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
   Proof.
     exact (svar_open_nest_ex_aux_comm 0 ϕ dbi X).
+  Qed.
+
+  Lemma evar_open_nest_mu_comm ϕ dbi X:
+    evar_open dbi X (nest_mu ϕ) = nest_mu (evar_open dbi X ϕ).
+  Proof.
+    exact (evar_open_nest_mu_aux_comm 0 ϕ dbi X).
   Qed.
 
   Lemma evar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
