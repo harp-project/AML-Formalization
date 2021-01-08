@@ -596,6 +596,67 @@ Class EBinder (ebinder : Pattern -> Pattern)
       negative_occurrence_db n (patt_mu phi)
   .
 
+  (* for bound set variables *)
+  Fixpoint no_negative_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
+    match ϕ with
+    | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_sym _ | patt_bott => true
+    | patt_bound_svar n => true
+    | patt_app ϕ₁ ϕ₂ => no_negative_occurrence_db_b dbi ϕ₁ && no_negative_occurrence_db_b dbi ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => no_positive_occurrence_db_b dbi ϕ₁ && no_negative_occurrence_db_b dbi ϕ₂
+    | patt_exists ϕ' => no_negative_occurrence_db_b dbi ϕ'
+    | patt_mu ϕ' => no_negative_occurrence_db_b (1+dbi) ϕ'
+    end
+  with
+  no_positive_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
+    match ϕ with
+    | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_sym _ | patt_bott => true
+    | patt_bound_svar n => negb (n =? dbi)
+    | patt_app ϕ₁ ϕ₂ => no_positive_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => no_negative_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
+    | patt_exists ϕ' => no_positive_occurrence_db_b dbi ϕ'
+    | patt_mu ϕ' => no_positive_occurrence_db_b (1+dbi) ϕ'                                  
+    end.
+
+  Lemma Private_no_negative_positive_occurrence_P dbi ϕ :
+    prod (reflect (positive_occurrence_db dbi ϕ) (no_negative_occurrence_db_b dbi ϕ))
+         (reflect (negative_occurrence_db dbi ϕ) (no_positive_occurrence_db_b dbi ϕ)).
+  Proof.
+    move: dbi.
+    induction ϕ; intros dbi; simpl; constructor;
+      try (apply ReflectT; subst; constructor);
+      try (
+          destruct (fst (IHϕ1 dbi)), (snd (IHϕ1 dbi)), (fst (IHϕ2 dbi)), (snd (IHϕ2 dbi)); simpl;
+          try (apply ReflectT; subst; constructor; auto);
+          try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
+        ).
+    1: {  destruct (Nat.eqb_spec n dbi); simpl.
+      + apply ReflectF. intros Contra. inversion Contra. subst. contradiction.
+      + apply ReflectT. constructor. apply nesym.  assumption.  }
+    1,2: (
+          destruct (fst (IHϕ dbi)), (snd (IHϕ dbi)); simpl;
+          try (apply ReflectT; subst; constructor; auto);
+          try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
+         ).
+
+    1,2: (  destruct (fst (IHϕ (S dbi))), (snd (IHϕ (S dbi))); simpl;
+            assert (Heq: dbi+1 = S dbi); try lia;
+           try (apply ReflectT; subst; try constructor; try rewrite -> Heq in *; auto);
+           try (apply ReflectF; intros Contra; inversion Contra; subst; try rewrite -> Heq in *; contradiction)
+         ).
+  Qed.
+
+  Lemma no_negative_occurrence_P dbi ϕ :
+    reflect (positive_occurrence_db dbi ϕ) (no_negative_occurrence_db_b dbi ϕ).
+  Proof.
+    apply Private_no_negative_positive_occurrence_P.
+  Qed.
+
+  Lemma no_positive_occurrence_P dbi ϕ :
+    reflect (negative_occurrence_db dbi ϕ) (no_positive_occurrence_db_b dbi ϕ).
+  Proof.
+    apply Private_no_negative_positive_occurrence_P.
+  Qed.
+
   (* Lemmas about opening and positive occurrence *)
   Lemma positive_negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
       (*le db1 db2 ->*)
@@ -2426,6 +2487,51 @@ Class EBinder (ebinder : Pattern -> Pattern)
     Qed.
 
     Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
+
+    Check positive_occurrence_db.
+    Print nest_mu_aux.
+    Lemma positive_occurrence_db_nest_mu_aux dbi level ϕ:
+      (positive_occurrence_db dbi (nest_mu_aux level ϕ)
+      <-> match (compare_nat dbi level) with
+          | Nat_less _ _ _ => positive_occurrence_db dbi ϕ
+          | Nat_equal _ _ _ => False
+          | Nat_greater _ _ _ => positive_occurrence_db (dbi-1) ϕ
+          end
+      ) /\ (
+      negative_occurrence_db dbi (nest_mu_aux level ϕ)
+      <-> match (compare_nat dbi level) with
+          | Nat_less _ _ _ => negative_occurrence_db dbi ϕ
+          | Nat_equal _ _ _ => False
+          | Nat_greater _ _ _ => negative_occurrence_db (dbi-1) ϕ
+          end
+      ).
+    Proof.
+      move: dbi level.
+      induction ϕ; move=> dbi level; simpl.
+    Abort.
+      
+    Lemma well_formed_positive_nest_mu ϕ:
+      well_formed_positive (nest_mu ϕ) <-> well_formed_positive ϕ.
+    Proof.
+      unfold well_formed_positive.
+      induction ϕ.
+    Abort.
+    
+
+    (* inductive generation *)
+    Definition patt_ind_gen base step :=
+      patt_mu (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
+
+    Lemma patt_ind_gen_wfp base step:
+      well_formed_positive base ->
+      well_formed_positive step ->
+      well_formed_positive (patt_ind_gen base step).
+    Proof.
+      intros Hwfpbase Hwfpstep.
+      unfold patt_ind_gen. simpl.
+      rewrite !(right_id True and).
+    Abort.
+    
 
 End syntax.
 
