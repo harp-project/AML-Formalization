@@ -9,7 +9,7 @@ Unset Printing Implicit Defensive.
 
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
-From MatchingLogic Require Import Syntax Semantics.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic.Utils Require Import Ensembles_Ext. 
 
 Import MatchingLogic.Syntax.Notations.

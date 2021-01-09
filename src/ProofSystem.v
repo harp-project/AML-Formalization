@@ -1,7 +1,7 @@
 From Coq Require Import Ensembles.
 
 From MatchingLogic.Utils Require Import Ensembles_Ext.
-From MatchingLogic Require Import Syntax Semantics Helpers.monotonic.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import fin_sets.
 
 Import MatchingLogic.Syntax.Notations.

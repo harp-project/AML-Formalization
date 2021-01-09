@@ -10,7 +10,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax Semantics.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 Require Import MatchingLogic.Theories.Definedness.
 
 Import MatchingLogic.Syntax.Notations.
