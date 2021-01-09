@@ -322,6 +322,10 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. Defined.
       Next Obligation. Tactics.program_simpl. Defined.
 
+
+      Definition Fassoc ρₑ ρₛ ϕ X :=
+        λ S, pattern_interpretation ρₑ (update_svar_val X S ρₛ) ϕ.
+      
       (* TODO: Need to be able to simplify Program Fixpoint definitions *)
 
       Lemma pattern_interpretation_free_evar_simpl
@@ -399,7 +403,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
                                                           (update_svar_val X S svar_val)
                                                           (svar_open 0 X p)).
       Admitted.
-
+      
       Lemma pattern_interpretation_not_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal) (phi : Pattern),
           pattern_interpretation evar_val svar_val (patt_not phi) = Complement (Domain m) (pattern_interpretation evar_val svar_val phi).
       Proof.
@@ -2338,6 +2342,7 @@ Qed.
 Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   λ m₁,
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
+
 
 End semantics.
 

@@ -170,13 +170,12 @@ Section monotonic.
         auto.
     Qed.
     
-    Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern),
+    Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern) (X : svar),
         well_formed_positive (patt_mu phi) ->
-        let X := fresh_svar phi in
+        svar_is_fresh_in X phi ->
         respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros. destruct H as [Hpo Hwfp].
-      pose proof (Hfr := @set_svar_fresh_is_fresh sig phi).
       auto using positive_occurrence_respects_blacklist_svar_open.
     Qed.
 
@@ -471,7 +470,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
             
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
-            { subst. apply mu_wellformed_respects_blacklist. assumption. }
+            { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
             assert (Hwfp' : well_formed_positive phi').
             { subst. apply wfp_svar_open. assumption. }
@@ -542,7 +541,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
             
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
-            { subst. apply mu_wellformed_respects_blacklist. assumption. }
+            { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
             assert (Hwfp' : well_formed_positive phi').
             { subst. apply wfp_svar_open. assumption. }
@@ -599,28 +598,29 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
     Qed.
 
     Lemma is_monotonic : forall (phi : @Pattern sig)
+                                (X : svar)
                                 (evar_val : @EVarVal sig M)
                                 (svar_val : @SVarVal sig M),
-        well_formed (mu, phi) ->
-        let X := fresh_svar phi in
+        well_formed_positive (mu, phi) ->
+        svar_is_fresh_in X phi ->
         @MonotonicFunction A OS
                            (fun S : Ensemble (Domain M) =>
                               (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
                                                        (svar_open 0 X phi))).
     Proof.
-      simpl. intros. unfold well_formed in H. destruct H as [Hwfp Hwfc].
-      pose proof (Hrb := mu_wellformed_respects_blacklist phi Hwfp).
+      simpl. intros phi X evar_val svar_val Hwfp Hfr.
+      pose proof (Hrb := mu_wellformed_respects_blacklist phi X Hwfp Hfr).
       simpl in Hrb.
       inversion Hwfp.
-      remember (svar_open 0 (fresh_svar phi) phi) as phi'.
+      remember (svar_open 0 X phi) as phi'.
       assert (Hsz : size phi' <= size phi').
       { lia. }
       pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
       assert (Hwfp' : well_formed_positive phi').
-      { subst. apply wfp_svar_open. assumption. }
+      { subst. apply wfp_svar_open. apply Hwfp. }
       specialize (Hmono Hsz Hwfp').
-      specialize (Hmono (Empty_set svar) (Ensembles.Singleton svar (fresh_svar phi))).
-      specialize (Hmono Hrb evar_val svar_val (fresh_svar phi)).
+      specialize (Hmono (Empty_set svar) (Ensembles.Singleton svar X)).
+      specialize (Hmono Hrb evar_val svar_val X).
       destruct Hmono.
       apply H2.
       constructor.
