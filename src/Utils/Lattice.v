@@ -161,12 +161,17 @@ Definition LeastFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattice A
            (f : A -> A) : A :=
   meet (PrefixpointsOf f).
 
+Arguments LeastFixpointOf : simpl never.
+
+
 Definition PostfixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : Ensemble A :=
   fun x => leq x (f x).
 
 Definition GreatestFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattice A}
            (f : A -> A) : A :=
   join (PostfixpointsOf f).
+
+Arguments GreatestFixpointOf : simpl never.
 
 Lemma PrefixpointsOfDualArePostfixpoints {A : Type} :
   forall (OS : OrderedSet A) (f : A -> A),

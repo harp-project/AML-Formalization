@@ -611,7 +611,7 @@ Admitted.
            rewrite -> free_svars_evar_open. auto.
          + (* mu *)
            repeat rewrite -> pattern_interpretation_mu_simpl.
-           simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+           simpl. apply f_equal. apply functional_extensionality.
            intros S'. unfold svar_is_fresh_in in *. simpl in H.
            destruct (svar_eqdec X (fresh_svar ϕ)).
            * subst. rewrite -> update_svar_val_shadow. auto.
@@ -1389,7 +1389,7 @@ Proof.
         apply set_evar_fresh_is_fresh.
         reflexivity.
       + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
-        apply f_equal. apply f_equal. apply functional_extensionality.
+        apply f_equal. apply functional_extensionality.
         intros S'.
 
         remember (fresh_svar (svar_open (dbi + 1) X ϕ)) as X'.
@@ -1540,7 +1540,7 @@ Proof.
         apply Hfry. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
         reflexivity.
       + rewrite 2!pattern_interpretation_mu_simpl. fold evar_open. simpl.
-        apply f_equal. apply f_equal. apply functional_extensionality.
+        apply f_equal. apply functional_extensionality.
         intros S'.
         rewrite -2!svar_open_evar_open_comm.
         rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -svar_open_size. lia.
@@ -1889,7 +1889,7 @@ Proof.
       reflexivity.
   - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
     
-    apply f_equal. apply f_equal. apply functional_extensionality.
+    apply f_equal. apply functional_extensionality.
     intros e.
     rewrite -> IHsz.
     3: { intros Contra.
@@ -1970,7 +1970,7 @@ Proof.
     { apply svar_fresh_evar_open. apply Hnotin. }
     reflexivity.
   - repeat rewrite pattern_interpretation_mu_simpl. simpl.
-    apply f_equal. apply f_equal. apply functional_extensionality.
+    apply f_equal. apply functional_extensionality.
     intros e.
     destruct (svar_eqdec (fresh_svar ϕ) X).
     + rewrite e0. rewrite update_svar_val_shadow. reflexivity.
@@ -2121,7 +2121,7 @@ Proof.
       fold (nest_ex ϕ) in Hnot0.
 
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
-      apply f_equal. apply f_equal. apply functional_extensionality.
+      apply f_equal. apply functional_extensionality.
 
       intros S.
       rewrite -svar_open_evar_open_comm.
@@ -2198,7 +2198,7 @@ Proof.
       
     + simpl in Hnot0.
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
-      apply f_equal. apply f_equal. apply functional_extensionality.
+      apply f_equal. apply functional_extensionality.
       intros S'.
 
       assert (Hplus1: dbi+1 = 1+dbi).
@@ -2280,7 +2280,7 @@ Proof.
     rewrite fresh_evar_nest_ex_aux.
     reflexivity.
   - rewrite 2!pattern_interpretation_mu_simpl.
-    simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+    simpl. apply f_equal. apply functional_extensionality.
     intros S.
     rewrite svar_open_nest_ex_aux_comm.
     rewrite IHsz. rewrite -svar_open_size. lia.
@@ -2317,7 +2317,7 @@ Proof.
     rewrite fresh_evar_nest_mu_aux.
     reflexivity.
   - rewrite 2!pattern_interpretation_mu_simpl.
-    simpl. apply f_equal. apply f_equal. apply functional_extensionality.
+    simpl. apply f_equal. apply functional_extensionality.
     intros S.
     rewrite svar_open_nest_mu_aux_comm.
     rewrite IHsz. rewrite -svar_open_size. lia.
