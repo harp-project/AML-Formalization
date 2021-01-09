@@ -577,12 +577,6 @@ repeat
 
     Hint Resolve M_predicate_bott : core.
 
-    Lemma M_predicate_not M ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
-    Proof.
-      intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bott.
-    Qed.
-
-
     Lemma M_predicate_exists M ϕ :
       let x := evar_fresh (elements (free_evars ϕ)) in
       M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists ϕ).
@@ -2023,8 +2017,6 @@ End Notations.
         Hint Resolve M_predicate_impl : core.
 #[export]
         Hint Resolve M_predicate_bott : core.
- #[export]
-       Hint Resolve M_predicate_not : core.
  #[export]
        Hint Resolve M_predicate_exists : core.
  #[export]

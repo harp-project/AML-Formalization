@@ -14,11 +14,115 @@ Module Syntax.
   Section with_signature.
     Context {Σ : Signature}.
     Existing Instance variables.
+
+    
+    Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
+
+    Definition patt_or  (l r : Pattern) := patt_imp (patt_not l) r.
+
+    Definition patt_and (l r : Pattern) :=
+      patt_not (patt_or (patt_not l) (patt_not r)).
+
+    Definition patt_top := (patt_not patt_bott).
+
+    Definition patt_iff (l r : Pattern) :=
+      patt_and (patt_imp l r) (patt_imp r l).
+
+    Definition patt_forall (phi : Pattern) :=
+      patt_not (patt_exists (patt_not phi)).
+
+    Definition patt_nu (phi : Pattern) :=
+      patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
+
+    
+    Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
+    Proof. simpl. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_iff k x ϕ₁ ϕ₂ : evar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_open k x ϕ₁) (evar_open k x ϕ₂).
+    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
+    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (k+1) x ϕ).
+    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+
+    Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
+    Proof. simpl. unfold patt_nu. unfold patt_not. rewrite -> evar_open_bsvar_subst. Abort.
+
+    Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
+    Proof. simpl. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
+    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
+    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+
+    #[global]
+     Instance Unary_not : Unary patt_not :=
+      {|
+      unary_evar_open := evar_open_not ;
+      unary_svar_open := svar_open_not ;
+      |}.
+
+    #[global]
+     Instance NVNullary_top : NVNullary patt_top :=
+      {|
+      nvnullary_evar_open := evar_open_top ;
+      nvnullary_svar_open := svar_open_top ;
+      |}.
+
+    #[global]
+     Instance Binary_or : Binary patt_or :=
+      {|
+      binary_evar_open := evar_open_or ;
+      binary_svar_open := svar_open_or ;
+      |}.
+
+    #[global]
+     Instance Binary_and : Binary patt_and :=
+      {|
+      binary_evar_open := evar_open_and ;
+      binary_svar_open := svar_open_and ;
+      |}.
+
+    #[global]
+     Instance Binary_iff : Binary patt_iff :=
+      {|
+      binary_evar_open := evar_open_iff ;
+      binary_svar_open := svar_open_iff ;
+      |}.
+
+    #[global]
+     Instance EBinder_forall : EBinder patt_forall _ _ :=
+      {|
+      ebinder_evar_open := evar_open_forall ;
+      ebinder_svar_open := svar_open_forall ;
+      |}.
+
   End with_signature.
 End Syntax.
 
 
 Module Notations.
+  Import Syntax.
+  
   Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
   Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
   Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
@@ -159,6 +263,10 @@ Module Semantics.
           right; apply H in H1; assumption.
       Qed.
 
+      Lemma M_predicate_not ϕ : M_predicate M ϕ -> M_predicate M (patt_not ϕ).
+      Proof.
+        intros. unfold patt_not. auto using M_predicate_impl, M_predicate_bott.
+      Qed.
 
       Hint Resolve M_predicate_not : core.
 
@@ -391,8 +499,8 @@ End Semantics.
 Export Syntax Semantics.
 
 (*Module Hints.*)
-#[export]
-        Hint Resolve M_predicate_impl : core.
+ #[export]
+       Hint Resolve M_predicate_not : core.
  #[export]
        Hint Resolve M_predicate_or : core.
  #[export]
@@ -410,3 +518,20 @@ Export Syntax Semantics.
  #[export]
        Hint Resolve T_predicate_or : core.
 (*End Hints.*)
+
+
+ Hint Rewrite ->
+     @evar_open_not
+     @evar_open_or
+     @evar_open_and
+     @evar_open_iff
+     @evar_open_forall
+     @evar_open_top
+
+     @svar_open_not
+     @svar_open_or
+     @svar_open_and
+     @svar_open_iff
+     @svar_open_forall
+     @evar_open_top
+  : ml_db.

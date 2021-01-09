@@ -604,7 +604,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_app ϕ₁ ϕ₂ => no_negative_occurrence_db_b dbi ϕ₁ && no_negative_occurrence_db_b dbi ϕ₂
     | patt_imp ϕ₁ ϕ₂ => no_positive_occurrence_db_b dbi ϕ₁ && no_negative_occurrence_db_b dbi ϕ₂
     | patt_exists ϕ' => no_negative_occurrence_db_b dbi ϕ'
-    | patt_mu ϕ' => no_negative_occurrence_db_b (1+dbi) ϕ'
+    | patt_mu ϕ' => no_negative_occurrence_db_b (S dbi) ϕ'
     end
   with
   no_positive_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
@@ -614,7 +614,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_app ϕ₁ ϕ₂ => no_positive_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
     | patt_imp ϕ₁ ϕ₂ => no_negative_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
     | patt_exists ϕ' => no_positive_occurrence_db_b dbi ϕ'
-    | patt_mu ϕ' => no_positive_occurrence_db_b (1+dbi) ϕ'                                  
+    | patt_mu ϕ' => no_positive_occurrence_db_b (S dbi) ϕ'                                  
     end.
 
   Lemma Private_no_negative_positive_occurrence_P dbi ϕ :
@@ -988,27 +988,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply (@wfp_ex_to_wfp_body phi H). assumption.
     - apply (@wfc_ex_to_wfc_body phi H1). assumption.
   Qed.
-
-
-  
-  Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
-
-  Definition patt_or  (l r : Pattern) := patt_imp (patt_not l) r.
-
-  Definition patt_and (l r : Pattern) :=
-    patt_not (patt_or (patt_not l) (patt_not r)).
-
-  Definition patt_top := (patt_not patt_bott).
-
-  Definition patt_iff (l r : Pattern) :=
-    patt_and (patt_imp l r) (patt_imp r l).
-
-  Definition patt_forall (phi : Pattern) :=
-    patt_not (patt_exists (patt_not phi)).
-
-  Definition patt_nu (phi : Pattern) :=
-    patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
-
 
   Inductive well_formed_closed_induc : Pattern -> Prop :=
   | wfc_free_evar : forall (x : evar), well_formed_closed_induc (patt_free_evar x)
@@ -1606,88 +1585,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     apply f_equal.
     apply free_svars_evar_open.
   Qed.
-
-  Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
-  Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-  Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-  Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_iff k x ϕ₁ ϕ₂ : evar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-  Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
-  Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (k+1) x ϕ).
-  Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-  Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
-  Proof. simpl. unfold patt_nu. unfold patt_not. rewrite -> evar_open_bsvar_subst. Abort.
-
-  Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
-  Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-  Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-  Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-  Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-  Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-  Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-  Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-  Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
-  Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-  Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
-  Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-  #[global]
-  Instance Unary_not : Unary patt_not :=
-    {|
-       unary_evar_open := evar_open_not ;
-       unary_svar_open := svar_open_not ;
-    |}.
-
-  #[global]
-  Instance NVNullary_top : NVNullary patt_top :=
-    {|
-       nvnullary_evar_open := evar_open_top ;
-       nvnullary_svar_open := svar_open_top ;
-    |}.
-
-  #[global]
-  Instance Binary_or : Binary patt_or :=
-    {|
-       binary_evar_open := evar_open_or ;
-       binary_svar_open := svar_open_or ;
-    |}.
-
-  #[global]
-  Instance Binary_and : Binary patt_and :=
-    {|
-       binary_evar_open := evar_open_and ;
-       binary_svar_open := svar_open_and ;
-    |}.
-
-  #[global]
-  Instance Binary_iff : Binary patt_iff :=
-    {|
-       binary_evar_open := evar_open_iff ;
-       binary_svar_open := svar_open_iff ;
-    |}.
-
-  #[global]
-  Instance EBinder_forall : EBinder patt_forall _ _ :=
-    {|
-       ebinder_evar_open := evar_open_forall ;
-       ebinder_svar_open := svar_open_forall ;
-    |}.
-
   
   Lemma free_svars_svar_open ϕ X dbi :
     free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
@@ -2555,29 +2452,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
       induction ϕ; intros level; simpl; auto.
       - rewrite IHϕ1. rewrite IHϕ2. auto.
       - rewrite IHϕ1. rewrite IHϕ2. auto.
-      - rewrite IHϕ. Search no_negative_occurrence_db_b.
+      - rewrite IHϕ.
         rewrite !(reflect_iff _ _ (no_negative_occurrence_P _ _)).
         rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
         auto.
-    Qed.
-
-    (* inductive generation *)
-    Definition patt_ind_gen base step :=
-      patt_mu (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
-
-    Lemma patt_ind_gen_wfp base step:
-      well_formed_positive base ->
-      well_formed_positive step ->
-      well_formed_positive (patt_ind_gen base step).
-    Proof.
-      intros Hwfpbase Hwfpstep.
-      unfold patt_ind_gen. simpl.
-      rewrite !(right_id True and).
-      rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
-      simpl.
-      rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
-      rewrite !well_formed_positive_nest_mu_aux.
-      auto.
     Qed.
 
 End syntax.
@@ -2593,12 +2471,6 @@ Hint Rewrite ->
      @evar_open_imp
      @evar_open_exists
      @evar_open_mu
-     @evar_open_not
-     @evar_open_or
-     @evar_open_and
-     @evar_open_iff
-     @evar_open_forall
-     @evar_open_top
 
      @svar_open_free_evar
      @svar_open_free_svar
@@ -2610,12 +2482,6 @@ Hint Rewrite ->
      @svar_open_imp
      @svar_open_exists
      @svar_open_mu
-     @svar_open_not
-     @svar_open_or
-     @svar_open_and
-     @svar_open_iff
-     @svar_open_forall
-     @evar_open_top
   : ml_db.
 
 Module Notations.

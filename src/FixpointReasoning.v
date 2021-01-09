@@ -3,14 +3,39 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Setoid.
 From Coq Require Import Ensembles.
 
-From MatchingLogic Require Import Syntax Semantics Helpers.monotonic Utils.Lattice.
+From stdpp Require Import base.
+
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.Lattice.
 
 Section with_signature.
   Context {Σ : Signature}.
   Existing Instance variables.
 
+      (* inductive generation *)
+    Definition patt_ind_gen base step :=
+      patt_mu (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
+
+    Lemma patt_ind_gen_wfp base step:
+      well_formed_positive base ->
+      well_formed_positive step ->
+      well_formed_positive (patt_ind_gen base step).
+    Proof.
+      intros Hwfpbase Hwfpstep.
+      unfold patt_ind_gen. simpl.
+      rewrite !(right_id True and).
+      rewrite !well_formed_positive_nest_mu_aux.
+      split.
+      2: { auto. }
+      
+      rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
+      cbn. fold no_negative_occurrence_db_b.
+
+      rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
+      auto.
+    Qed.
 
   Lemma pattern_interpretation_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
     well_formed_positive (patt_mu ϕ) ->
