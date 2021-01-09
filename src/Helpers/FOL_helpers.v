@@ -1,7 +1,7 @@
 From Coq Require Import Ensembles.
-From MatchingLogic Require Import Syntax Semantics ProofSystem.
-(*Require Export locally_nameless.*)
-Import MatchingLogic.Syntax.Notations.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
+
+Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 Open Scope ml_scope.
 Section FOL_helpers.

@@ -14,6 +14,7 @@ From MatchingLogic.Utils Require Import Ensembles_Ext.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.DerivedOperators.Notations.
 
 Open Scope ml_scope.
 

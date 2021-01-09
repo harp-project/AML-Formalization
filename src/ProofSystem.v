@@ -6,6 +6,7 @@ From stdpp Require Import fin_sets.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.DerivedOperators.Notations.
 
 Section ml_proof_system.
   Open Scope ml_scope.

@@ -16,6 +16,7 @@ Require Import MatchingLogic.Theories.Definedness.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.DerivedOperators.Notations.
 
 Section sorts.
 

@@ -10,7 +10,28 @@ From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.
 
-Section with_signature.
+Module Syntax.
+  Section with_signature.
+    Context {Σ : Signature}.
+    Existing Instance variables.
+  End with_signature.
+End Syntax.
+
+
+Module Notations.
+  Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
+  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
+  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
+  Notation "a <---> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
+  Notation "'Top'" := patt_top : ml_scope.
+  Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
+  Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
+End Notations.
+
+Module Semantics.
+  Import Syntax Notations.
+  
+  Section with_signature.
     Context {Σ : Signature}.
     Existing Instance variables.
 
@@ -364,7 +385,10 @@ Section with_signature.
     Hint Resolve T_predicate_or : core.
 
 
-End with_signature.
+  End with_signature.
+End Semantics.
+
+Export Syntax Semantics.
 
 (*Module Hints.*)
 #[export]

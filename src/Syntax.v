@@ -2629,13 +2629,6 @@ Module Notations.
   Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
   Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
 
-  Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
-  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
-  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
-  Notation "a <---> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
-  Notation "'Top'" := patt_top : ml_scope.
-  Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
-  Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
 End Notations.
 
 Module BoundVarSugar.
@@ -2650,6 +2643,17 @@ Module BoundVarSugar.
   Notation b7 := (patt_bound_evar 7).
   Notation b8 := (patt_bound_evar 8).
   Notation b9 := (patt_bound_evar 9).
+
+  Notation B0 := (patt_bound_svar 0).
+  Notation B1 := (patt_bound_svar 1).
+  Notation B2 := (patt_bound_svar 2).
+  Notation B3 := (patt_bound_svar 3).
+  Notation B4 := (patt_bound_svar 4).
+  Notation B5 := (patt_bound_svar 5).
+  Notation B6 := (patt_bound_svar 6).
+  Notation B7 := (patt_bound_svar 7).
+  Notation B8 := (patt_bound_svar 8).
+  Notation B9 := (patt_bound_svar 9).
   
 End BoundVarSugar.
 

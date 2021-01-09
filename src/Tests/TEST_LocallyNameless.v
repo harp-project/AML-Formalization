@@ -6,6 +6,7 @@ From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.DerivedOperators.Notations.
 
 (* In this module we show how to define a signature and build patterns *)
 Module test_1.
