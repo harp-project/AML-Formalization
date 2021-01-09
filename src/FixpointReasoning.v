@@ -95,10 +95,29 @@ Section with_signature.
     intros Hfix Hleast.
     rewrite pattern_interpretation_mu_simpl. simpl.
     unfold Fassoc in HeqF. unfold Power in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
+    apply LeastFixpoint_unique. { apply Hfix. } apply Hleast.
+  Qed.
 
-  Abort.
-  
-
+  Lemma pattern_interpretation_mu_lfp_iff M ρₑ ρₛ ϕ Sfix :
+    well_formed_positive (patt_mu ϕ) ->
+    let X := fresh_svar ϕ in
+    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
+    (
+    F Sfix = Sfix /\
+    (∀ S, Included _ (F S) S -> Included _ Sfix S)
+    ) <-> Sfix = @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ).
+  Proof.
+    intros Hwfp. simpl.
+    remember (fresh_svar ϕ) as X.
+    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
+    remember (@pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix'.
+    split.
+    - intros [H1 H2]. subst.
+      auto using pattern_interpretation_mu_if_lfp.
+    - intros H. split.
+      + subst. apply pattern_interpretation_mu_lfp_fixpoint. apply Hwfp.
+      + intros S. subst. apply pattern_interpretation_mu_lfp_least. apply Hwfp.
+  Qed.
   
   (* inductive generation *)
   Definition patt_ind_gen base step :=
