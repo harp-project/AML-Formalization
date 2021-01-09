@@ -3,6 +3,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Coq Require Import Ensembles.
+
 From MatchingLogic Require Import Syntax Semantics Helpers.monotonic Utils.Lattice.
 
 Section with_signature.
@@ -10,7 +12,7 @@ Section with_signature.
   Existing Instance variables.
 
 
-  Lemma pattern_interpretation_mu_lfp M ρₑ ρₛ ϕ :
+  Lemma pattern_interpretation_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
@@ -25,14 +27,55 @@ Section with_signature.
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
 
-    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint.
-      rewrite HeqF. rewrite /Fassoc.
-      apply is_monotonic. apply Hwfp. rewrite HeqX. apply set_svar_fresh_is_fresh.
+    assert (HFmono: MonotonicFunction F).
+    { rewrite HeqF. rewrite /Fassoc. apply is_monotonic. apply Hwfp.
+      rewrite HeqX. apply set_svar_fresh_is_fresh.
     }
-    
-    rewrite pattern_interpretation_mu_simpl in HeqSfix.
-    unfold isFixpoint in Ffix.
-  Abort.
 
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. apply HFmono.
+    }
+
+    unfold isFixpoint in Ffix.
+    rewrite pattern_interpretation_mu_simpl in HeqSfix.
+    simpl in HeqSfix.
+    unfold Fassoc in HeqF.
+    rewrite HeqX in HeqF.
+    rewrite -HeqF in HeqSfix.
+    rewrite -HeqSfix in Ffix.
+    apply Ffix.
+  Qed.
+
+
+  Lemma pattern_interpretation_mu_lfp_least M ρₑ ρₛ ϕ S:
+    well_formed_positive (patt_mu ϕ) ->
+    let X := fresh_svar ϕ in
+    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
+    let Sfix := @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ) in
+    Included _ (F S) S ->
+    Included _ Sfix S.
+  Proof.
+    simpl.
+    remember (fresh_svar ϕ) as X.
+    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
+    remember (@pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
+    pose (OS := EnsembleOrderedSet (Domain M)).
+    pose (L := PowersetLattice (Domain M)).
+    intros Hwfp.
+
+    assert (HFmono: MonotonicFunction F).
+    { rewrite HeqF. rewrite /Fassoc. apply is_monotonic. apply Hwfp.
+      rewrite HeqX. apply set_svar_fresh_is_fresh.
+    }
+
+    assert (Hlfp: LeastFixpointOf F = Sfix).
+    { subst. rewrite pattern_interpretation_mu_simpl. simpl. unfold Fassoc. reflexivity. }
+
+    intros Hincl.
+
+    pose proof (Hleast := LeastFixpoint_LesserThanPrefixpoint _ _ _ F S).
+    simpl in Hleast. specialize (Hleast Hincl).
+    rewrite Hlfp in Hleast. apply Hleast.
+  Qed.
+  
 End with_signature.
