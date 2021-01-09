@@ -325,6 +325,36 @@ Proof.
   apply (ord_refl A leq leq_order x).
 Qed.
 
+Proposition LeastFixpoint_unique :
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (Sfix : A),
+    f Sfix = Sfix ->
+    (forall x, leq (f x) x -> leq Sfix x) ->
+    Sfix = LeastFixpointOf f.
+Proof.
+  intros A OS L f Sfix.
+  intros Hfix Hleast.
+  assert (H1: leq (f Sfix) Sfix).
+  { rewrite Hfix. apply (@ord_refl _ _ leq_order). }
+
+  assert (H2: In _ (PrefixpointsOf f) Sfix).
+  { unfold PrefixpointsOf. unfold In. apply H1. }
+
+  pose proof (H3 := meet_isMeet).
+  unfold isMeet in H3.
+  specialize (H3 (PrefixpointsOf f)).
+  unfold greatestLowerBound in H3.
+  destruct H3 as [H3 H3'].
+  
+  pose proof (H4 := H3 _ H2).
+  fold (LeastFixpointOf f) in H4.
+
+  eapply (@ord_antisym _ _ leq_order). 2: apply H4.
+  apply H3'.
+
+  unfold lowerBound. intros x H.
+  unfold PrefixpointsOf in H. unfold In in H.
+  apply Hleast. apply H.
+Qed.
 
 Lemma lfp_preserves_order {A : Type} (OS : OrderedSet A) (L : CompleteLattice A) (f g : A -> A) :
   MonotonicFunction f -> MonotonicFunction g ->
