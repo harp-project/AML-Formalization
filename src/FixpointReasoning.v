@@ -6,6 +6,7 @@ Unset Printing Implicit Defensive.
 Require Import Setoid.
 From Coq Require Import Ensembles.
 From Coq.Logic Require Import FunctionalExtensionality.
+From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
 From stdpp Require Import base list.
 
@@ -197,25 +198,88 @@ Section with_signature.
         subst F. unfold Fassoc.
         reflexivity.
       Qed.      
-      
+
+      Definition witnessing_function := (λ (Acc : Prop * (Domain M)) new,
+                                         let (P, old) := Acc in
+                                         (app_ext
+                                            (@pattern_interpretation Σ M ρₑ ρₛ step)
+                                            (Ensembles.Singleton _ old)
+                                            new,
+                                          new)
+                                        ).
 
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
          | [] => False
          | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
-                     /\ fst (foldl (λ (Acc : Prop * (Domain M)) new,
-                                    let (P, old) := Acc in
-                                    (app_ext
-                                       (@pattern_interpretation Σ M ρₑ ρₛ step)
-                                       (Ensembles.Singleton _ old)
-                                       new,
-                                     new)
-                                   ) (True, m₀) ms)
+                     /\ fst (foldl witnessing_function (True, m₀) ms)
          end).
 
       Definition witnessed_elements : Ensemble (Domain M) :=
         λ m, ∃ l, is_witnessing_sequence m l.
+
+      Lemma witnessed_elements_prefixpoint : Included _ (F witnessed_elements) witnessed_elements.
+      Proof.
+        unfold Included. unfold Ensembles.In.
+        intros x Hx.
+        unfold F in Hx. unfold Fassoc in Hx.
+        rewrite pattern_interpretation_or_simpl in Hx.
+        destruct Hx.
+        - unfold Ensembles.In in H.
+          unfold witnessed_elements.
+          exists [x]. unfold is_witnessing_sequence.
+          simpl.
+          split.
+          { reflexivity. }
+          split.
+          2: { constructor. }
+          rewrite pattern_interpretation_free_svar_independent in H.
+          {
+            eapply svar_is_fresh_in_richer. 2: { subst. auto. }
+            solve_free_svars_inclusion 5.
+          }
+          assumption.
+        - unfold Ensembles.In in H.
+          rewrite pattern_interpretation_app_simpl in H.
+          rewrite pattern_interpretation_free_svar_simpl in H.
+          rewrite update_svar_val_same in H.
+          unfold app_ext in H.
+          destruct H as [step' [m [H1 [H2 Happ]]]].
+          unfold witnessed_elements in H2.
+          destruct H2 as [l Hl].
+          unfold is_witnessing_sequence in Hl.
+          destruct Hl as [Hlast Hl].
+          destruct l as [|m₀ l'] eqn:Heql.
+          { contradiction. }
+          destruct Hl as [Hm₀ Hl].
+
+          unfold witnessed_elements.
+          exists (l ++ [x]). unfold is_witnessing_sequence.
+          simpl. rewrite last_snoc.
+          split.
+          { reflexivity. }
+          rewrite Heql. simpl.
+          split.
+          { apply Hm₀. }
+
+          rewrite foldl_app. simpl.
+          assert (foldl witnessing_function (True, m₀) l' = (True, m)).
+          { rewrite (@surjective_pairing _ _ (foldl witnessing_function (True, m₀) l')).
+            rewrite (@surjective_pairing _ _ (True, m)).
+            simpl in Hl.
+            (* We need propositional extensionality here.
+               It would be better to reformulate *)
+            rewrite (provable_prop_ext propositional_extensionality _ Hl).
+            simpl.
+            admit. (*rewrite Hl.*)
+            
+          }
+          rewrite H. simpl.
+          unfold app_ext.
+          exists step'. exists x.
+          admit.
+      Abort.
       
       Lemma patt_ind_gen_simpl:
         @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
