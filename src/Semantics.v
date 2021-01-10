@@ -1943,7 +1943,7 @@ Proof.
 Qed.
 
 
-Lemma Private_pattern_interpretation_svar_open_nest_mu M sz ϕ X dbi S ρₑ ρₛ :
+Lemma Private_pattern_interpretation_svar_open_nest_mu_aux M sz ϕ X dbi S ρₑ ρₛ :
   size ϕ <= sz ->
   svar_is_fresh_in X ϕ ->
   @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X (nest_mu_aux dbi ϕ))
@@ -2049,13 +2049,21 @@ Proof.
 Qed.
 
 
-Lemma pattern_interpretation_svar_open_nest_mu M ϕ X dbi S ρₑ ρₛ :
+Lemma pattern_interpretation_svar_open_nest_mu_aux M ϕ X dbi S ρₑ ρₛ :
   svar_is_fresh_in X ϕ ->
   @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open dbi X (nest_mu_aux dbi ϕ))
   = @pattern_interpretation M ρₑ ρₛ ϕ.
 Proof.
-  apply Private_pattern_interpretation_svar_open_nest_mu with (sz := size ϕ).
+  apply Private_pattern_interpretation_svar_open_nest_mu_aux with (sz := size ϕ).
   lia.
+Qed.
+
+Lemma pattern_interpretation_svar_open_nest_mu M ϕ X S ρₑ ρₛ :
+  svar_is_fresh_in X ϕ ->
+  @pattern_interpretation M ρₑ (update_svar_val X S ρₛ) (svar_open 0 X (nest_mu ϕ))
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  apply pattern_interpretation_svar_open_nest_mu_aux.
 Qed.
 
 Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρₛ :
