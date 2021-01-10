@@ -85,17 +85,17 @@ Section with_signature.
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
-    F Sfix = Sfix ->
+    Included _ (F Sfix) Sfix ->
     (∀ S, Included _ (F S) S -> Included _ Sfix S) ->
     Sfix = @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    intros Hfix Hleast.
+    intros Hprefix Hleast.
     rewrite pattern_interpretation_mu_simpl. simpl.
     unfold Fassoc in HeqF. unfold Power in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
-    apply LeastFixpoint_unique. { apply Hfix. } apply Hleast.
+    apply LeastFixpoint_unique. { apply Hprefix. } apply Hleast.
   Qed.
 
   Lemma pattern_interpretation_mu_lfp_iff M ρₑ ρₛ ϕ Sfix :
@@ -103,7 +103,7 @@ Section with_signature.
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
     (
-    F Sfix = Sfix /\
+    Included _ (F Sfix) Sfix /\
     (∀ S, Included _ (F S) S -> Included _ Sfix S)
     ) <-> Sfix = @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ).
   Proof.
@@ -115,7 +115,8 @@ Section with_signature.
     - intros [H1 H2]. subst.
       auto using pattern_interpretation_mu_if_lfp.
     - intros H. split.
-      + subst. apply pattern_interpretation_mu_lfp_fixpoint. apply Hwfp.
+      + subst. apply Ensembles_Ext.Included_refl_eq.
+        apply pattern_interpretation_mu_lfp_fixpoint. apply Hwfp.
       + intros S. subst. apply pattern_interpretation_mu_lfp_least. apply Hwfp.
   Qed.
   
@@ -123,11 +124,12 @@ Section with_signature.
     Context (base step : Pattern).
 
     Let patt_ind_gen_body := (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
+    Let patt_ind_gen_simple_body := (patt_or base (patt_app step (patt_free_svar (fresh_svar patt_ind_gen_body)))).
+    
     
     Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
-    Search evar_open nest_ex.
-    (*Search svar_open nest_mu.*)
+    Search svar_open nest_mu.
 
     Hypothesis (Hwfpbase : well_formed_positive base).
     Hypothesis (Hwfpstep : well_formed_positive step).
@@ -149,11 +151,53 @@ Section with_signature.
     Qed.
 
 
+    Lemma svar_open_patt_ind_gen_body_simpl M ρₑ ρₛ X:
+      svar_is_fresh_in X patt_ind_gen_body ->
+      @pattern_interpretation Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body)
+      = @pattern_interpretation Σ M ρₑ ρₛ (patt_or base (patt_app step (patt_free_svar X))).
+    Proof.
+      intros Hfr.
+      unfold svar_is_fresh_in in Hfr. simpl in Hfr.
+      rewrite !simpl_free_svars in Hfr.
+      apply sets.not_elem_of_union in Hfr.
+      destruct Hfr as [Hfr1 Hfr2].
+
+      rewrite /patt_ind_gen_body.
+      rewrite !simpl_svar_open. simpl.
+      rewrite 2!pattern_interpretation_or_simpl.
+      rewrite pattern_interpretation_svar_open_nest_mu'.
+      { assumption.  }
+      apply f_equal.
+
+      rewrite 2!pattern_interpretation_app_simpl.
+      rewrite pattern_interpretation_svar_open_nest_mu'.
+      { assumption. }
+      apply f_equal.
+
+      reflexivity.
+    Qed.
+    
     
     Section with_interpretation.
       Context (M : @Model Σ).
       Context (ρₑ : @EVarVal Σ M).
       Context (ρₛ : @SVarVal Σ M).
+
+
+      Let F := @Fassoc Σ M ρₑ ρₛ patt_ind_gen_simple_body (fresh_svar patt_ind_gen_body).
+      
+      Lemma svar_open_patt_ind_gen_body_assoc S:
+        let X := fresh_svar patt_ind_gen_body in
+        pattern_interpretation ρₑ (update_svar_val X S ρₛ) (svar_open 0 X patt_ind_gen_body)
+        = F S.
+      Proof.
+        cbv zeta.
+        rewrite svar_open_patt_ind_gen_body_simpl.
+        { apply set_svar_fresh_is_fresh. }
+        subst F. unfold Fassoc.
+        reflexivity.
+      Qed.      
+      
 
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\

@@ -327,17 +327,15 @@ Qed.
 
 Proposition LeastFixpoint_unique :
   forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A) (f : A -> A) (Sfix : A),
-    f Sfix = Sfix ->
+    leq (f Sfix) Sfix ->
     (forall x, leq (f x) x -> leq Sfix x) ->
     Sfix = LeastFixpointOf f.
 Proof.
   intros A OS L f Sfix.
-  intros Hfix Hleast.
-  assert (H1: leq (f Sfix) Sfix).
-  { rewrite Hfix. apply (@ord_refl _ _ leq_order). }
+  intros Hprefix Hleast.
 
   assert (H2: In _ (PrefixpointsOf f) Sfix).
-  { unfold PrefixpointsOf. unfold In. apply H1. }
+  { unfold PrefixpointsOf. unfold In. apply Hprefix. }
 
   pose proof (H3 := meet_isMeet).
   unfold isMeet in H3.
