@@ -839,19 +839,49 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Qed.
 
   Hint Resolve set_svar_fresh_is_fresh : core.
+
+  Lemma evar_is_fresh_in_richer' x ϕ B:
+    free_evars ϕ ⊆ B ->
+    x ∉ B ->
+    evar_is_fresh_in x ϕ.
+  Proof.
+    intros Hsub.
+    unfold evar_is_fresh_in.
+    intros Hnotin.
+    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
+    auto.
+  Qed.
   
   Lemma evar_is_fresh_in_richer x ϕ₁ ϕ₂:
     free_evars ϕ₁ ⊆ free_evars ϕ₂ ->
     evar_is_fresh_in x ϕ₂ ->
     evar_is_fresh_in x ϕ₁.
   Proof.
+    intros Hsub Hnotin.
+    eapply evar_is_fresh_in_richer'; auto.
+  Qed.
+
+  Lemma svar_is_fresh_in_richer' X ϕ B:
+    free_svars ϕ ⊆ B ->
+    X ∉ B ->
+    svar_is_fresh_in X ϕ.
+  Proof.
     intros Hsub.
-    unfold evar_is_fresh_in.
+    unfold svar_is_fresh_in.
     intros Hnotin.
-    pose proof (Hsub' := (iffLR (elem_of_subseteq _ (free_evars ϕ₂)) Hsub)).
+    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
     auto.
   Qed.
 
+  Lemma svar_is_fresh_in_richer X ϕ₁ ϕ₂:
+    free_svars ϕ₁ ⊆ free_svars ϕ₂ ->
+    svar_is_fresh_in X ϕ₂ ->
+    svar_is_fresh_in X ϕ₁.
+  Proof.
+    intros Hsub Hnotin.
+    eapply svar_is_fresh_in_richer'; auto.
+  Qed.
+  
   (*
   Lemma fresh_neq_fresh_l ϕ₁ ϕ₂ :
     (*~ evar_is_fresh_in (fresh_evar ϕ₁) ϕ₂ ->*)
@@ -2385,6 +2415,45 @@ Class EBinder (ebinder : Pattern -> Pattern)
 
     Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
 
+    Definition simpl_free_svars :=
+      (
+        (@left_id_L SVarSet  ∅ (@union _ _)),
+        (@right_id_L SVarSet ∅ (@union _ _)),
+        @free_svars_nest_ex_aux,
+        @svar_open_nest_ex_aux_comm,
+        @free_svars_nest_ex_aux
+      ).
+    
+    Lemma X_eq_fresh_impl_X_notin_free_svars X ϕ:
+      X = fresh_svar ϕ ->
+      X ∉ free_svars ϕ.
+    Proof.
+      intros H.
+      rewrite H.
+      unfold fresh_svar.
+      apply set_svar_fresh_is_fresh'.
+    Qed.
+
+    Lemma X_eq_evar_fresh_impl_X_notin_S X (S:EVarSet):
+      X = evar_fresh (elements S) ->
+      X ∉ S.
+    Proof.
+      intros H.
+      rewrite H.
+      apply set_evar_fresh_is_fresh'.
+    Qed.
+    
+    Lemma X_eq_svar_fresh_impl_X_notin_S X (S:SVarSet):
+      X = svar_fresh (elements S) ->
+      X ∉ S.
+    Proof.
+      intros H.
+      rewrite H.
+      apply set_svar_fresh_is_fresh'.
+    Qed.
+
+    Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
+
     Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
       (no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
       = match (compare_nat dbi level) with
@@ -2547,6 +2616,23 @@ x_eq_fresh_impl_x_notin_free_evars
         | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
         end
       ).
+
+  Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
+    simpl;
+    (do ? [rewrite simpl_free_svars/=]) ;
+    apply elem_of_subseteq;
+    let x := fresh "x" in
+    let H := fresh "Hxin" in
+    (* TODO: maybe we need something like: *)
+    (*rewrite -!union_assoc_L.*)
+    (* We may also want to remove duplicates, at least those that are neighbors *)
+    intros x H;
+    repeat (
+        match H with
+        | ?L /\ ?R => fail "Not implemented: destruct H"
+        | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
+        end
+      ).
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
 *)
@@ -2578,6 +2664,50 @@ x_eq_fresh_impl_x_notin_free_evars
       simpl in H;
       (do ! rewrite simpl_free_evars/= in H);
       rewrite -!union_assoc_L in H;
+      repeat (
+          match goal with
+          | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+            apply stdpp_ext.not_elem_of_singleton_1 in H;
+            first [ exact H | clear H]
+          | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+          end
+        );
+      fail
+    end.
+
+  Ltac remember_fresh_svars :=
+    unfold fresh_svar in *;
+    repeat(
+        match goal with
+        | |- context G [svar_fresh ?Y] =>
+          match goal with
+          | H: ?X = svar_fresh Y |- _ => fail 2
+          | _ => remember (svar_fresh Y)
+          end
+        | H1: context G [svar_fresh ?Y] |- _ =>
+          match goal with
+          | H2: ?X = svar_fresh Y |- _ => fail 2
+          | _ => remember (svar_fresh Y)
+          end
+        end
+      ).
+
+  Ltac solve_fresh_svar_neq :=
+    subst; remember_fresh_svars;
+    repeat (
+        match goal with
+        | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+          pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+          pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        end
+      );
+    (idtac + apply nesym);
+    match goal with
+    | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
+      simpl in H;
+      (do ? rewrite simpl_free_svars/= in H);
+      rewrite -?union_assoc_L in H;
       repeat (
           match goal with
           | H: (not (elem_of ?x (singleton ?y))) |- _ =>

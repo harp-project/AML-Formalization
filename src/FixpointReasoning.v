@@ -119,47 +119,67 @@ Section with_signature.
       + intros S. subst. apply pattern_interpretation_mu_lfp_least. apply Hwfp.
   Qed.
   
-  (* inductive generation *)
-  Definition patt_ind_gen base step :=
-    patt_mu (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
+  Section inductive_generation.
+    Context (base step : Pattern).
 
-  Lemma patt_ind_gen_wfp base step:
-    well_formed_positive base ->
-    well_formed_positive step ->
-    well_formed_positive (patt_ind_gen base step).
-  Proof.
-    intros Hwfpbase Hwfpstep.
-    unfold patt_ind_gen. simpl.
-    rewrite !(right_id True and).
-    rewrite !well_formed_positive_nest_mu_aux.
-    split.
-    2: { auto. }
+    Let patt_ind_gen_body := (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
     
-    rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
-    cbn. fold no_negative_occurrence_db_b.
+    Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
-    rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
-    auto.
-  Qed.
+    Search evar_open nest_ex.
+    (*Search svar_open nest_mu.*)
 
-  Lemma patt_ind_gen_simpl base step M ρₑ ρₛ:
-    @pattern_interpretation Σ M ρₑ ρₛ (patt_ind_gen base step) =
-    λ (m : Domain M), ∃ (l : list (Domain M)),
-      (last l = Some m) /\
-      (match l with
-      | [] => False
-      | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
-                  /\ fst (foldl (λ (Acc : Prop * (Domain M)) new,
-                                 let (P, old) := Acc in
-                                 (app_ext
-                                    (@pattern_interpretation Σ M ρₑ ρₛ step)
-                                    (Ensembles.Singleton _ old)
-                                    new,
-                                  new)
-                                ) (True, m₀) ms)
-       end).
-  Proof.
-  Abort.
+    Hypothesis (Hwfpbase : well_formed_positive base).
+    Hypothesis (Hwfpstep : well_formed_positive step).
+
+    Lemma patt_ind_gen_wfp:
+      well_formed_positive patt_ind_gen.
+    Proof.
+      unfold patt_ind_gen. simpl.
+      rewrite !(right_id True and).
+      rewrite !well_formed_positive_nest_mu_aux.
+      split.
+      2: { auto. }
+      
+      rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
+      cbn. fold no_negative_occurrence_db_b.
+
+      rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
+      auto.
+    Qed.
+
+
+    
+    Section with_interpretation.
+      Context (M : @Model Σ).
+      Context (ρₑ : @EVarVal Σ M).
+      Context (ρₛ : @SVarVal Σ M).
+
+      Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
+        (last l = Some m) /\
+        (match l with
+         | [] => False
+         | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
+                     /\ fst (foldl (λ (Acc : Prop * (Domain M)) new,
+                                    let (P, old) := Acc in
+                                    (app_ext
+                                       (@pattern_interpretation Σ M ρₑ ρₛ step)
+                                       (Ensembles.Singleton _ old)
+                                       new,
+                                     new)
+                                   ) (True, m₀) ms)
+         end).
+
+      Definition witnessed_elements : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence m l.
+      
+      Lemma patt_ind_gen_simpl:
+        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
+      Proof.
+      Abort.
+
+    End with_interpretation.
+  End inductive_generation.
   
   
 End with_signature.
