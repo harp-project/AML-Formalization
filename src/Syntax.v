@@ -2419,9 +2419,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
       (
         (@left_id_L SVarSet  ∅ (@union _ _)),
         (@right_id_L SVarSet ∅ (@union _ _)),
-        @free_svars_nest_ex_aux,
-        @svar_open_nest_ex_aux_comm,
-        @free_svars_nest_ex_aux
+        @free_svars_nest_mu_aux,
+        @svar_open_nest_mu_aux_comm,
+        @free_svars_nest_mu_aux
       ).
     
     Lemma X_eq_fresh_impl_X_notin_free_svars X ϕ:

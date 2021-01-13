@@ -1942,6 +1942,18 @@ Proof.
   intros Hfr. apply Private_pattern_interpretation_evar_open_nest_ex with (sz := size ϕ). lia. assumption.
 Qed.
 
+Lemma pattern_interpretation_evar_open_nest_ex' M ϕ x ρₑ ρₛ :
+  evar_is_fresh_in x ϕ ->
+  @pattern_interpretation M ρₑ ρₛ (evar_open 0 x (nest_ex ϕ))
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  intros Hfr.
+  rewrite -{1}(@update_evar_val_same_2 M x ρₑ).
+  apply pattern_interpretation_evar_open_nest_ex.
+  apply Hfr.  
+Qed.
+
+
 
 Lemma Private_pattern_interpretation_svar_open_nest_mu_aux M sz ϕ X dbi S ρₑ ρₛ :
   size ϕ <= sz ->
@@ -2065,6 +2077,18 @@ Lemma pattern_interpretation_svar_open_nest_mu M ϕ X S ρₑ ρₛ :
 Proof.
   apply pattern_interpretation_svar_open_nest_mu_aux.
 Qed.
+
+Lemma pattern_interpretation_svar_open_nest_mu' M ϕ X ρₑ ρₛ :
+  svar_is_fresh_in X ϕ ->
+  @pattern_interpretation M ρₑ ρₛ (svar_open 0 X (nest_mu ϕ))
+  = @pattern_interpretation M ρₑ ρₛ ϕ.
+Proof.
+  intros Hfr.
+  rewrite -{1}(@update_svar_val_same_2 M X ρₛ).
+  apply pattern_interpretation_svar_open_nest_mu.
+  apply Hfr.
+Qed.
+
 
 Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρₛ :
   size ϕ <= sz ->

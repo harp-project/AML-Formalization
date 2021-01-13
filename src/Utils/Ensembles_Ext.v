@@ -714,3 +714,16 @@ Proof.
     inversion H1. reflexivity.
   - subst. reflexivity.
 Qed.
+
+Lemma Included_refl_eq : forall T : Type, forall (x y : Ensemble T),
+      x = y -> Included T x y.
+Proof.
+  intros T x y H.
+  unfold Included.
+  intros x0.
+  subst.
+  auto.
+Qed.
+
+  
+  
