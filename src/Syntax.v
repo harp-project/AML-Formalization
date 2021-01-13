@@ -1598,6 +1598,15 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
+  Lemma svar_open_bsvar_subst m phi1 phi2 dbi X
+    : well_formed_closed phi2 ->
+      m <> dbi ->
+      svar_open m X (bsvar_subst phi1 phi2 dbi)
+      = bsvar_subst (svar_open m X phi1) phi2 dbi.
+  Proof.
+  Admitted.
+  
+  
   Lemma fresh_evar_svar_open dbi X phi :
     fresh_evar (svar_open dbi X phi) = fresh_evar phi.
   Proof.

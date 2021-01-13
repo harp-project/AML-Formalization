@@ -1485,7 +1485,47 @@ Proof.
         }
 
     + (* Mu case *)
-      admit.
+      rewrite 2!pattern_interpretation_mu_simpl. simpl.
+      apply f_equal. apply functional_extensionality. intros E.
+      assert (Htmp: dbi+1 = (S dbi)) by lia; rewrite !Htmp; clear Htmp.
+      
+      rewrite svar_open_bsvar_subst.
+      { assumption. }
+      { lia. }
+      (*rewrite update_svar_val_comm. { admit. }*)
+      rewrite -> IHsz with (X := X).
+      remember (update_svar_val (fresh_svar (bsvar_subst phi1 phi2 (S dbi))) E svar_val) as svar_val'.
+      rewrite svar_open_comm.
+      { lia. }
+      remember (bsvar_occur phi1 (S dbi)) as Hoc.
+      destruct Hoc.
+      -- assert (Hpieq: pattern_interpretation evar_val svar_val' phi2
+                        = pattern_interpretation evar_val svar_val phi2).
+         { admit. }
+         rewrite Hpieq.
+         simpl. subst.
+         rewrite update_svar_val_comm. admit.
+         apply interpretation_fresh_svar_open.
+         2: apply set_svar_fresh_is_fresh.
+         admit.
+      -- rewrite bsvar_subst_not_occur_is_noop. auto.
+         rewrite bsvar_subst_not_occur_is_noop in Heqsvar_val'. auto.
+         pose proof (Hsvar_not_occur := svar_open_not_occur_is_noop).
+         specialize (Hsvar_not_occur phi1 X (S dbi)).
+         symmetry in HeqHoc.
+         specialize (Hsvar_not_occur HeqHoc).
+         rewrite !Hsvar_not_occur.
+
+         (* everything up to auto below is unsound *)
+         (* We can try to make it sound by employing fresh variables
+            that are distinct from other variables *)
+         rewrite update_svar_val_comm. admit.
+         
+         subst.
+         Search update_svar_val pattern_interpretation.
+         rewrite !interpretation_fresh_svar.
+         admit. admit. admit. admit.
+         auto.
         
 
 Admitted.
