@@ -218,12 +218,14 @@ Theorem Soundness :
   well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
 Proof.
   intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
-  intros m Hv evar_val svar_val.
+  intros m Hv evar_val svar_val. 
+  generalize dependent svar_val. generalize dependent evar_val. generalize dependent Hv.
   induction Hp.
 
-  * apply Hv. assumption.
+  * intros Hv evar_val svar_val. apply Hv. assumption.
 
-  * repeat rewrite pattern_interpretation_imp_simpl.
+  * intros Hv evar_val svar_val.
+    repeat rewrite pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     apply Extensionality_Ensembles.
@@ -233,7 +235,8 @@ Proof.
     unfold Included; intros; apply Union_is_or.
     inversion H1. left. assumption. right. apply Union_intror. assumption.
 
-  * repeat rewrite pattern_interpretation_imp_simpl.
+  * intros Hv evar_val svar_val.
+    repeat rewrite pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (pattern_interpretation evar_val svar_val xi) as Xxi.
@@ -277,25 +280,30 @@ Proof.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
-  * repeat rewrite pattern_interpretation_imp_simpl; rewrite pattern_interpretation_bott_simpl.
+  * intros Hv evar_val svar_val. 
+    repeat rewrite pattern_interpretation_imp_simpl; rewrite pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
     apply Extensionality_Ensembles.
     apply Union_Compl_Fullset.
 
-  * rewrite pattern_interpretation_iff_subset in IHHp2.
+  * intros Hv evar_val svar_val.
+    pose (IHHp2 H0 Hv evar_val svar_val) as e.
+    rewrite pattern_interpretation_iff_subset in e.
     apply Extensionality_Ensembles.
-    constructor. constructor. rewrite <- IHHp1. apply IHHp2; assumption. assumption.
+    constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
-  * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_ex_simpl.
+  * intros Hv evar_val svar_val. 
+    rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_ex_simpl.
     unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros. admit.
 
   * admit.
 
-  * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+  * intros Hv evar_val svar_val. 
+    rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     apply Extensionality_Ensembles.
     constructor. constructor.
@@ -303,7 +311,8 @@ Proof.
     epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
-  * rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+  * intros Hv evar_val svar_val. 
+    rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
     apply Extensionality_Ensembles.
     constructor. constructor.
@@ -311,7 +320,8 @@ Proof.
     epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
-  * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
+  * intros Hv evar_val svar_val. 
+    unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
     repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite H2; clear H2.
@@ -335,7 +345,8 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-  * unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
+  * intros Hv evar_val svar_val. 
+    unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
     repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     simpl.
@@ -360,41 +371,64 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
-  * apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
+  * intros Hv evar_val svar_val. 
+    apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv ).
 
-  * apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
+  * intros Hv evar_val svar_val. 
+    apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv).
 
-  * rewrite pattern_interpretation_iff_subset.
-    rewrite pattern_interpretation_iff_subset in IHHp.
+  * intros Hv evar_val svar_val. 
+    rewrite pattern_interpretation_iff_subset.
+    epose (IHHp _ Hv evar_val svar_val) as e.
+    rewrite pattern_interpretation_iff_subset in e.
     repeat rewrite pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
     exists le, re.
-    split. apply IHHp. admit. assumption.
+    split. apply e. assumption.
+    Unshelve.
     split; assumption.
+    {
+      inversion Hwf.
+      unfold well_formed. split.
+      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
+      - unfold well_formed_closed. simpl. 
+        inversion H0. inversion H1. inversion H2. split; assumption.
+    }
 
-  * rewrite pattern_interpretation_iff_subset.
-    rewrite pattern_interpretation_iff_subset in IHHp.
+  * intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_iff_subset.
+    epose (IHHp _ Hv evar_val svar_val) as e.
+    rewrite pattern_interpretation_iff_subset in e.
     repeat rewrite pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
     exists le, re.
     split. assumption.
-    split. apply IHHp. admit. assumption.
+    Unshelve.
+    split. apply e. assumption.
     assumption.
+    {
+      inversion Hwf.
+      unfold well_formed. split.
+      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
+      - unfold well_formed_closed. simpl. 
+        inversion H0. inversion H1. inversion H2. split; assumption.
+    }
 
-  * apply Extensionality_Ensembles.
+  * admit. (* apply Extensionality_Ensembles.
     constructor. constructor.
     apply eq_to_Same_set in IHHp.
     destruct IHHp. admit.
     unfold Included in *.
-    admit.
+    admit. *)
     
-  * apply pattern_interpretation_iff_subset. simpl.
+  * intros Hv evar_val svar_val.
+    apply pattern_interpretation_iff_subset. simpl.
     rewrite -> pattern_interpretation_mu_simpl.
     simpl.
     remember (fun S : Ensemble (Domain m) =>
@@ -428,12 +462,14 @@ Proof.
     unfold Included. intros. unfold In.*)
     admit.
 
-  * rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
-    simpl in IHHp. rewrite pattern_interpretation_imp_simpl in IHHp.
+  * intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
+    epose (IHHp _ Hv evar_val svar_val) as e.
+    simpl in e. rewrite pattern_interpretation_imp_simpl in e.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included. intros.
-    destruct IHHp. admit.
+    destruct e.
     left. unfold In. unfold Complement. unfold not. unfold In. unfold Ensembles_Ext.mu.
     unfold FA_Inters_cond. intros.
     (*
@@ -447,3 +483,4 @@ Proof.
 Admitted.
 
 End ml_proof_system.
+
