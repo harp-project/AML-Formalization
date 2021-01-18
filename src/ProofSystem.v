@@ -129,8 +129,6 @@ Proof.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
     unfold Same_set, Included, In. split.
     + intros. unfold fresh_evar in H.
-     pose (IHsz (evar_open 0 (evar_fresh (((elements (free_evars phi)) ∪ (elements (free_evars (free_svar_subst phi psi X)))))) phi)
-              psi X svar_val ).
 Admitted.
 
 Lemma proof_rule_set_var_subst_sound {m : Model}:
@@ -144,7 +142,7 @@ Lemma proof_rule_set_var_subst_sound {m : Model}:
 Proof.
   intros. pose (H0 evar_val (update_svar_val X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val)).
-  erewrite <- proof_helper in e. exact e. reflexivity.
+  erewrite <- proof_rule_set_var_subst_sound_helper in e. exact e. reflexivity.
 Qed.
 
   
