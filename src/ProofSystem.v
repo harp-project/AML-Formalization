@@ -101,6 +101,51 @@ Proof.
       + assumption.
 Qed.
 
+Lemma proof_rule_set_var_subst_sound_helper {m : Model}: ∀ sz phi psi X svar_val evar_val,
+  le (Syntax.size phi) sz →
+  pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) =
+  pattern_interpretation evar_val (@update_svar_val signature m X 
+                                  (pattern_interpretation evar_val svar_val psi) svar_val) 
+                                  phi.
+Proof. 
+  induction sz; destruct phi; intros psi X svar_val evar_val Hsz; simpl in *; try inversion Hsz; auto.
+  - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
+    destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + reflexivity.
+    + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
+  - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
+    destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + reflexivity.
+    + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
+  - repeat rewrite -> pattern_interpretation_app_simpl.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+  - repeat rewrite -> pattern_interpretation_app_simpl.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+  - repeat rewrite -> pattern_interpretation_imp_simpl.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+  - repeat rewrite -> pattern_interpretation_imp_simpl.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+  - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
+    apply Extensionality_Ensembles. apply FA_Union_same. intros.
+    unfold Same_set, Included, In. split.
+    + intros. unfold fresh_evar in H.
+     pose (IHsz (evar_open 0 (evar_fresh (((elements (free_evars phi)) ∪ (elements (free_evars (free_svar_subst phi psi X)))))) phi)
+              psi X svar_val ).
+Admitted.
+
+Lemma proof_rule_set_var_subst_sound {m : Model}:
+  ∀ phi psi,
+  well_formed phi  →
+        (∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+         pattern_interpretation evar_val svar_val phi = Full)
+  →
+  ∀ X evar_val svar_val,
+  @pattern_interpretation signature m evar_val svar_val (free_svar_subst phi psi X) = Full.
+Proof.
+  intros. pose (H0 evar_val (update_svar_val X 
+                                  (pattern_interpretation evar_val svar_val psi) svar_val)).
+  erewrite <- proof_helper in e. exact e. reflexivity.
+Qed.
 
   
   (* Proof system for AML ref. snapshot: Section 3 *)

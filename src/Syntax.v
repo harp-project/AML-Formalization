@@ -1391,15 +1391,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     inversion Hpos. inversion Hclos.
     split. assumption. unfold well_formed_closed. assumption.
   Qed.
-  
-  Lemma well_formed_imp_2 : forall (phi1 phi2 : Pattern),
-      well_formed (patt_imp phi1 phi2) -> well_formed phi2.
-  Proof.
-    unfold well_formed. intros.
-    destruct H as [Hpos Hclos].
-    inversion Hpos. inversion Hclos.
-    split. assumption. unfold well_formed_closed. assumption.
-  Qed.
 
   Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
       free_svars (evar_open dbi x ϕ) = free_svars ϕ.
