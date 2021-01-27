@@ -1,3 +1,4 @@
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1153,7 +1154,6 @@ Proof.
         reflexivity.
       + rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
         apply f_equal. apply functional_extensionality. intros e.
-
         remember (fresh_evar (evar_open (dbi + 1) x ϕ)) as x'.
         remember (fresh_evar (evar_open (dbi + 1) y ϕ)) as y'.
         remember ((@singleton evar (@EVarSet signature) _ x) ∪ ((singleton y) ∪ ((singleton x')

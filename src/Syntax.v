@@ -1,3 +1,4 @@
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -1104,6 +1105,37 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity. exact H1.
     - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity.  exact H1.
   Qed.
+  
+  Lemma svar_open_last2: forall phi i u j v,
+      svar_open i u (evar_open j v phi) = evar_open j v phi
+      ->
+      (svar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity.  exact H1.
+  Qed.
+  
+  Lemma svar_open_last3: forall phi i u j v,
+      (i <> j) -> svar_open i u (svar_open j v phi) = svar_open j v phi
+      ->
+      (svar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl in H. destruct (n=?j) eqn:D.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. apply Nat.eqb_eq in D. lia.
+        * auto.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. simpl in H0. rewrite D in H0. simpl in H0. rewrite Nat.eqb_refl in H0. congruence.
+        * auto.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+  Qed.
 
   (* evar_open of fresh name does not change in a well-formed pattern*)
   Lemma evar_open_fresh :
@@ -1121,6 +1153,22 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
       instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
   Qed.
+  
+    Lemma svar_open_fresh :
+    forall phi,
+      well_formed_closed phi ->
+      forall n v,
+        svar_open n v phi = phi.
+  Proof.
+    intros phi IHwf. apply (wfc_wfc_ind) in IHwf.
+    induction IHwf; firstorder.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. eapply (@svar_open_last2 _ _ _ _ (fresh_evar phi)) in H0. erewrite H0. reflexivity.
+      apply set_evar_fresh_is_fresh.
+    - simpl. eapply svar_open_last3 in H0. erewrite H0. reflexivity. lia.
+      instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
+  Qed. 
 
   Lemma evar_open_comm:
     forall n m,
@@ -1372,7 +1420,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     + inversion H. inversion H0. subst.
       constructor. firstorder.
   Qed.
-
 
   Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
       well_formed (patt_app phi1 phi2) -> well_formed phi1.

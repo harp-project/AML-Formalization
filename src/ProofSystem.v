@@ -2,6 +2,7 @@ From Coq Require Import Ensembles.
 
 From MatchingLogic.Utils Require Import Ensembles_Ext.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
+From Coq.Logic Require Import FunctionalExtensionality Classical_Pred_Type.
 From stdpp Require Import fin_sets.
 
 Import MatchingLogic.Syntax.Notations.
@@ -13,7 +14,7 @@ Section ml_proof_system.
 
   Context {signature : Signature}.
 
-Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
+Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
   (well_formed (ex, phi)) -> (@well_formed signature psi) ->
@@ -24,15 +25,15 @@ Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pa
   pattern_interpretation evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi) = Full.
 Proof.
   intros Hwf H H0 Hv.
-  rewrite pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
+  rewrite -> pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
     constructor. constructor.
     remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
-    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
-    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    right. rewrite -> pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hunion [Hext_le Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
     exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
@@ -50,7 +51,7 @@ Proof.
         rewrite -> (evar_open_fresh). unfold well_formed in H0. destruct H0. assumption.
         unfold well_formed in H0. destruct H0. assumption.
         {
-          rewrite evar_open_fresh. unfold fresh_evar. simpl. 
+          rewrite -> evar_open_fresh. unfold fresh_evar. simpl. 
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
           apply not_elem_of_union in n. destruct n. assumption.
           unfold well_formed in H0. destruct H0. assumption.
@@ -69,18 +70,18 @@ Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pat
   pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi) = Full.
 Proof.
   intros Hwf H H0 Hv.
-  rewrite pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
+  rewrite -> pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
     constructor. constructor.
     remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
     apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
     unfold Included; intros. inversion H1; subst.
     left. assumption.
-    right. rewrite pattern_interpretation_ex_simpl. simpl. constructor.
-    rewrite pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
+    right. rewrite -> pattern_interpretation_ex_simpl. simpl. constructor.
+    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
     destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
     destruct H2 as [c Hext_re].
-    exists c. rewrite pattern_interpretation_app_simpl. unfold app_ext.
+    exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
     split.
     - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
@@ -101,14 +102,108 @@ Proof.
       + assumption.
 Qed.
 
+Lemma evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
+  (le (Syntax.size phi) sz) → (well_formed psi) → evar_is_fresh_in fresh phi →
+  evar_is_fresh_in fresh (free_svar_subst phi psi X)
+  →
+  (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+Proof.
+  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
+  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + rewrite -> evar_open_fresh. reflexivity. destruct Hwf. assumption.
+    + simpl. reflexivity.
+  - simpl. destruct (n =? n0) eqn:P.
+    + reflexivity.
+    + reflexivity.
+  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+    apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
+    apply (evar_is_fresh_in_app_l Hfresh2).
+  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply (evar_is_fresh_in_imp_r Hfresh1).
+    apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_imp_l Hfresh1).
+    apply (evar_is_fresh_in_imp_l Hfresh2).
+  - simpl. rewrite -> IHsz. reflexivity. lia. assumption.
+    apply evar_is_fresh_in_exists in Hfresh1. assumption.
+    simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
+  - simpl. rewrite -> IHsz. reflexivity.
+    lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
+    simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
+Qed.
+
+Lemma ex_body_svar_open_id : ∀ phi n fresh x,
+  well_formed_closed (evar_open 0 x phi) → svar_is_fresh_in fresh phi
+  → 
+  svar_open n fresh phi = phi.
+Proof.
+  intros. induction phi; auto.
+  - intros. simpl in H. inversion H.
+  - intros. simpl in H. apply wfc_wfc_ind in H. inversion H.
+    simpl. erewrite -> IHphi1. erewrite -> IHphi2. reflexivity.
+    apply wfc_ind_wfc. exact H4.
+    apply svar_is_fresh_in_app_r in H0. assumption.
+    apply wfc_ind_wfc. exact H3.
+    apply svar_is_fresh_in_app_l in H0. assumption.
+  - intros. simpl in H. apply wfc_wfc_ind in H. inversion H.
+    simpl. erewrite -> IHphi1. erewrite -> IHphi2. reflexivity.
+    apply wfc_ind_wfc. exact H4.
+    apply svar_is_fresh_in_imp_r in H0. assumption.
+    apply wfc_ind_wfc. exact H3.
+    apply svar_is_fresh_in_imp_l in H0. assumption.
+  Admitted.
+    
+
+Lemma svar_open_free_svar_subst_comm {m : Model}: ∀ sz phi evar_val svar_val psi fresh n X,
+  (le (Syntax.size phi) sz) → (well_formed psi) → well_formed phi → svar_is_fresh_in fresh phi →
+  svar_is_fresh_in fresh (free_svar_subst phi psi X)
+  →
+  pattern_interpretation evar_val svar_val (svar_open n fresh (free_svar_subst phi psi X)) = 
+  @pattern_interpretation signature m evar_val svar_val (free_svar_subst (svar_open n fresh phi) psi X).
+Proof.
+  induction sz; destruct phi; intros evar_val svar_val psi fresh n0 X Hsz Hwf1 Hwf2 Hfresh1 Hfresh2; try inversion Hsz; auto.
+  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + rewrite -> svar_open_fresh. reflexivity. destruct Hwf1. assumption.
+    + simpl. reflexivity.
+  - inversion Hwf2. inversion H0.
+  - simpl. repeat rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply well_formed_app_2 in Hwf2. assumption.
+    apply (svar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+    apply (svar_is_fresh_in_app_r Hfresh2). 
+    apply well_formed_app_1 in Hwf2. assumption.
+    apply (svar_is_fresh_in_app_l Hfresh1).
+    apply (svar_is_fresh_in_app_l Hfresh2).
+  - simpl. repeat rewrite -> pattern_interpretation_imp_simpl.
+    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply well_formed_app_2 in Hwf2. assumption.
+    apply (svar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+    apply (svar_is_fresh_in_app_r Hfresh2). 
+    apply well_formed_app_1 in Hwf2. assumption.
+    apply (svar_is_fresh_in_app_l Hfresh1).
+    apply (svar_is_fresh_in_app_l Hfresh2).
+  - simpl. repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
+    apply Extensionality_Ensembles. apply FA_Union_same. intros.
+    unfold Same_set, Included, In. split.
+    + intros. 
+      repeat rewrite -> fresh_evar_svar_open in H. 
+      rewrite -> svar_open_evar_open_comm in H. 
+      erewrite -> evar_open_free_svar_subst_comm in H.
+      erewrite -> IHsz in H.
+      erewrite -> evar_open_free_svar_subst_comm.
+      rewrite -> svar_open_evar_open_comm. Check evar_open_fresh.
+      (*TODO: if phi is a ex's body then opening phi with set vars makes no diff*)
+      
+    
+Admitted.
+
 Lemma proof_rule_set_var_subst_sound_helper {m : Model}: ∀ sz phi psi X svar_val evar_val,
-  le (Syntax.size phi) sz →
+  le (Syntax.size phi) sz → well_formed psi →(*  well_formed phi → *)
   pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) =
   pattern_interpretation evar_val (@update_svar_val signature m X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val) 
                                   phi.
 Proof. 
-  induction sz; destruct phi; intros psi X svar_val evar_val Hsz; simpl in *; try inversion Hsz; auto.
+  induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf (* Hwf2 *); simpl in *; try inversion Hsz; auto.
   - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
     destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
     + reflexivity.
@@ -118,31 +213,222 @@ Proof.
     + reflexivity.
     + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
   - repeat rewrite -> pattern_interpretation_app_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
   - repeat rewrite -> pattern_interpretation_app_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
   - repeat rewrite -> pattern_interpretation_imp_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
   - repeat rewrite -> pattern_interpretation_imp_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. lia.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
   - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
     unfold Same_set, Included, In. split.
-    + intros. unfold fresh_evar in H.
+    + intros.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      assert(fresh ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst fresh. subst B. apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val svar_val
+             H1 H2) as HFresh.
+      rewrite -> HFresh in H.
+      clear HFresh.
+      assert(evar_is_fresh_in fresh phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert(evar_is_fresh_in (fresh_evar phi) phi).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val)
+             _ _) as HFresh.
+      rewrite -> HFresh.
+      clear HFresh.
+      epose (IHsz (evar_open 0 fresh phi) 
+                           psi X svar_val 
+                          (update_evar_val fresh c evar_val) _ _ ).
+      pose (@pattern_interpretation_free_evar_independent signature m evar_val svar_val fresh c psi).
+      rewrite -> e0 in e. clear e0.
+      rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)) in H.
+      rewrite -> e in H.
+      exact H. lia. assumption. assumption. assumption. assumption.
+    + intros.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      assert(fresh ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst fresh. subst B. apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val svar_val
+             H1 H2) as HFresh.
+      rewrite -> HFresh.
+      clear HFresh.
+      assert(evar_is_fresh_in fresh phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert(evar_is_fresh_in (fresh_evar phi) phi).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val)
+             _ _) as HFresh.
+      rewrite -> HFresh in H.
+      clear HFresh.
+      epose (IHsz (evar_open 0 fresh phi) 
+                           psi X svar_val 
+                          (update_evar_val fresh c evar_val) _ _ ).
+      pose (@pattern_interpretation_free_evar_independent signature m evar_val svar_val fresh c psi).
+      rewrite -> e0 in e. clear e0.
+      rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)).
+      rewrite -> e.
+      exact H. lia. assumption. assumption. assumption. assumption.
+  - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
+    apply Extensionality_Ensembles. apply FA_Union_same. intros.
+    unfold Same_set, Included, In. split.
+    + intros.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      assert(fresh ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst fresh. subst B. apply not_elem_of_union in H3. destruct H3.
+      apply not_elem_of_union in H3. destruct H3.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val svar_val
+             H2 H3) as HFresh.
+      rewrite -> HFresh in H1.
+      clear HFresh.
+      assert(evar_is_fresh_in fresh phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert(evar_is_fresh_in (fresh_evar phi) phi).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val)
+             _ _) as HFresh.
+      rewrite -> HFresh.
+      clear HFresh.
+      epose (IHsz (evar_open 0 fresh phi) 
+                           psi X svar_val 
+                          (update_evar_val fresh c evar_val) _ _ ).
+      pose (@pattern_interpretation_free_evar_independent signature m evar_val svar_val fresh c psi).
+      rewrite -> e0 in e. clear e0.
+      rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)) in H1.
+      rewrite -> e in H1.
+      exact H1. lia. assumption. assumption. assumption. assumption.
+    + intros.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      assert(fresh ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst fresh. subst B. apply not_elem_of_union in H3. destruct H3.
+      apply not_elem_of_union in H3. destruct H3.
+      remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+      assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val svar_val
+             H2 H3) as HFresh.
+      rewrite -> HFresh.
+      clear HFresh.
+      assert(evar_is_fresh_in fresh phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert(evar_is_fresh_in (fresh_evar phi) phi).
+      {
+        apply set_evar_fresh_is_fresh.
+      }
+      epose (interpretation_fresh_evar_open c 0 evar_val (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val)
+             _ _) as HFresh.
+      rewrite -> HFresh in H1.
+      clear HFresh.
+      epose (IHsz (evar_open 0 fresh phi) 
+                           psi X svar_val 
+                          (update_evar_val fresh c evar_val) _ _ ).
+      pose (@pattern_interpretation_free_evar_independent signature m evar_val svar_val fresh c psi).
+      rewrite -> e0 in e. clear e0.
+      rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)).
+      rewrite -> e.
+      exact H1. lia. assumption. assumption. assumption. assumption.
+  - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
+    assert ((λ S : Ensemble (Domain m),
+     pattern_interpretation evar_val
+       (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
+       (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
+       (λ S : Ensemble (Domain m),
+     pattern_interpretation evar_val
+       (update_svar_val (fresh_svar phi) S
+          (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
+       (svar_open 0 (fresh_svar phi) phi))).
+       apply functional_extensionality. intros.
+       remember (fresh_svar phi) as fresh.
+       epose (IHsz (svar_open 0 fresh phi) psi X svar_val evar_val _ _).
+    + 
+      
+      
+    
 Admitted.
 
 Lemma proof_rule_set_var_subst_sound {m : Model}:
   ∀ phi psi,
-  well_formed phi  →
+  well_formed phi  → well_formed psi →
         (∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
          pattern_interpretation evar_val svar_val phi = Full)
   →
   ∀ X evar_val svar_val,
   @pattern_interpretation signature m evar_val svar_val (free_svar_subst phi psi X) = Full.
 Proof.
-  intros. pose (H0 evar_val (update_svar_val X 
+  intros. pose (H1 evar_val (update_svar_val X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val)).
-  erewrite <- proof_rule_set_var_subst_sound_helper in e. exact e. reflexivity.
+  erewrite <- proof_rule_set_var_subst_sound_helper in e. exact e. reflexivity. assumption.
 Qed.
 
   
@@ -231,6 +517,7 @@ Qed.
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
   | Svar_subst (phi psi : Pattern) (X : svar) :
+      well_formed psi ->
       theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
@@ -268,7 +555,7 @@ Proof.
   * intros Hv evar_val svar_val. apply Hv. assumption.
 
   * intros Hv evar_val svar_val.
-    repeat rewrite pattern_interpretation_imp_simpl.
+    repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     apply Extensionality_Ensembles.
@@ -279,41 +566,41 @@ Proof.
     inversion H1. left. assumption. right. apply Union_intror. assumption.
 
   * intros Hv evar_val svar_val.
-    repeat rewrite pattern_interpretation_imp_simpl.
+    repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (pattern_interpretation evar_val svar_val xi) as Xxi.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
     epose proof Union_Transitive (Ensembles.Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
           (Complement (Domain m) Xphi) Xxi.
     apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi).
-    apply Same_set_to_eq in H2; rewrite H2; clear H2.
+    apply Same_set_to_eq in H2; rewrite -> H2; clear H2.
     epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
     epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite -> H2; clear H2.
+    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite -> H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xpsi) Xxi.
-    apply Same_set_to_eq in H2; erewrite H2; clear H2.
+    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
     pose proof Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi).
     apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
     pose proof Union_Symmetric (Complement (Domain m) Xphi) Xxi.
-    apply Same_set_to_eq in H2; erewrite H2; clear H2.
+    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
     pose proof Compl_Compl_Ensembles (Domain m) Xxi.
     apply Same_set_to_eq in H2; rewrite <- H2 at 2; clear H2.
     pose proof Intersection_Symmetric Xpsi (Complement (Domain m) Xxi).
-    apply Same_set_to_eq in H2; erewrite H2; clear H2.
+    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
     epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.    
     epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
 
     apply Extensionality_Ensembles.
     constructor. constructor.
@@ -324,21 +611,21 @@ Proof.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
   * intros Hv evar_val svar_val. 
-    repeat rewrite pattern_interpretation_imp_simpl; rewrite pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite H0; clear H0.
+    repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite -> H0; clear H0.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite -> H0; clear H0.
     apply Extensionality_Ensembles.
     apply Union_Compl_Fullset.
 
   * intros Hv evar_val svar_val.
     pose (IHHp2 H0 Hv evar_val svar_val) as e.
-    rewrite pattern_interpretation_iff_subset in e.
+    rewrite -> pattern_interpretation_iff_subset in e.
     apply Extensionality_Ensembles.
     constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
   * intros Hv evar_val svar_val. 
-    rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_ex_simpl.
+    rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_ex_simpl.
     unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros. admit.
@@ -346,31 +633,31 @@ Proof.
   * admit.
 
   * intros Hv evar_val svar_val. 
-    rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
+    rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * intros Hv evar_val svar_val. 
-    rewrite pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite H0; clear H0.
+    rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite H1; clear H1.
+    epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   * intros Hv evar_val svar_val. 
-    unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
-    repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
-    rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite H2; clear H2.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
+    repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
+    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite -> H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
@@ -389,14 +676,14 @@ Proof.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
   * intros Hv evar_val svar_val. 
-    unfold patt_or, patt_not. repeat rewrite pattern_interpretation_imp_simpl.
-    repeat rewrite pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
-    rewrite pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
+    repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
+    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite H2; clear H2.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite -> H2; clear H2.
+    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
@@ -423,10 +710,10 @@ Proof.
           (svar_val) Hwf H H0 Hv).
 
   * intros Hv evar_val svar_val. 
-    rewrite pattern_interpretation_iff_subset.
+    rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
-    rewrite pattern_interpretation_iff_subset in e.
-    repeat rewrite pattern_interpretation_app_simpl.
+    rewrite -> pattern_interpretation_iff_subset in e.
+    repeat rewrite -> pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
@@ -443,10 +730,10 @@ Proof.
     }
 
   * intros Hv evar_val svar_val.
-    rewrite pattern_interpretation_iff_subset.
+    rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
-    rewrite pattern_interpretation_iff_subset in e.
-    repeat rewrite pattern_interpretation_app_simpl.
+    rewrite -> pattern_interpretation_iff_subset in e.
+    repeat rewrite -> pattern_interpretation_app_simpl.
     unfold Included in *; intros; unfold In in *.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
@@ -488,7 +775,7 @@ Proof.
     }
     unfold Lattice.isFixpoint in Ffix.
     assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
-    { rewrite Ffix. apply Same_set_refl. }
+    { rewrite -> Ffix. apply Same_set_refl. }
     destruct Ffix_set. clear H0.
     eapply Included_transitive.
     2: { apply H. }
@@ -500,15 +787,15 @@ Proof.
     
     (*Check plugging_patterns.*)
     (*
-    simpl. rewrite ext_valuation_imp_simpl. rewrite ext_valuation_mu_simpl.
+    simpl. rewrite -> ext_valuation_imp_simpl. rewrite -> ext_valuation_mu_simpl.
     constructor. constructor.
     unfold Included. intros. unfold In.*)
     admit.
 
   * intros Hv evar_val svar_val.
-    rewrite pattern_interpretation_imp_simpl. rewrite pattern_interpretation_mu_simpl.
+    rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
     epose (IHHp _ Hv evar_val svar_val) as e.
-    simpl in e. rewrite pattern_interpretation_imp_simpl in e.
+    simpl in e. rewrite -> pattern_interpretation_imp_simpl in e.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included. intros.
