@@ -15,6 +15,12 @@ jobs:
       - run:
           name: "Build in Docker"
           command: ./build-in-docker.sh 
+      - run:
+          name: "CoqDoc"
+          command: ./run-in-docker.sh make html
+      - persist_to_workspace:
+          root: html
+          paths: html
 
 workflows:
   # Name the workflow "welcome"
