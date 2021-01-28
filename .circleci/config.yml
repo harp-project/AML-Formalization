@@ -5,12 +5,8 @@ version: 2.1
 #  # Declare a dependency on the welcome-orb
 #  welcome: circleci/welcome-orb@0.4.1
 # Orchestrate or schedule a set of jobs
-workflows:
-#  # Name the workflow "welcome"
-#  welcome:
-#    # Run the welcome/run job in its own container
-#    jobs:
-#      - welcome/run
+
+jobs:
   build:
     machine:
       image: ubuntu-2004:202010-01
@@ -18,4 +14,14 @@ workflows:
       - checkout
       - run:
         name: "Build in Docker"
-        command: ./build-in-docker.sh
+        command: ./build-in-docker.sh 
+
+workflows:
+  # Name the workflow "welcome"
+  welcome:
+    jobs:
+      - build
+#    # Run the welcome/run job in its own container
+#    jobs:
+#      - welcome/run
+
