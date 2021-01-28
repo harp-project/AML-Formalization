@@ -18,9 +18,30 @@ jobs:
       - run:
           name: "CoqDoc"
           command: ./run-in-docker.sh make html
+      - run:
+          name: "Test ls"
+          command: ls -la
       - persist_to_workspace:
-          root: html
+          root: .
           paths: html
+
+  # Taken from https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
+  docs-deploy:
+    docker:
+      - image: node:8.10.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: docs/_build
+      - run:
+          name: Install and configure dependencies
+          command: |
+            npm install -g --silent gh-pages@2.0.1
+            git config user.email "ci-build@klukas.net"
+            git config user.name "ci-build"
+      - run:
+          name: Deploy docs to gh-pages branch
+          command: gh-pages --dist docs/_build/html
 
 workflows:
   # Name the workflow "welcome"
