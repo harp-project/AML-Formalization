@@ -32,7 +32,10 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: docs/_build
+          at: docs/build
+      - run:
+          name: Disable Jekyll builds
+          command: touch docs/build/html/.nojekyll
       - run:
           name: Install and configure dependencies
           command: |
@@ -44,7 +47,7 @@ jobs:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dist ./html
+          command: gh-pages --dotfiles --message "[skip ci] Updates" --dist docs/build/html
 
 workflows:
   # Name the workflow "welcome"
