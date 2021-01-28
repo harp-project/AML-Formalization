@@ -13,8 +13,8 @@ jobs:
     steps:
       - checkout
       - run:
-        name: "Build in Docker"
-        command: ./build-in-docker.sh 
+          name: "Build in Docker"
+          command: ./build-in-docker.sh 
 
 workflows:
   # Name the workflow "welcome"
