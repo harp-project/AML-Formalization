@@ -154,7 +154,7 @@ Proof.
     
 
 Lemma svar_open_free_svar_subst_comm {m : Model}: ∀ sz phi evar_val svar_val psi fresh n X,
-  (le (Syntax.size phi) sz) → (well_formed psi) → well_formed phi → svar_is_fresh_in fresh phi →
+  (le (Syntax.size phi) sz) → (well_formed psi) → well_formed_closed (svar_open n fresh phi) → svar_is_fresh_in fresh phi →
   svar_is_fresh_in fresh (free_svar_subst phi psi X)
   →
   pattern_interpretation evar_val svar_val (svar_open n fresh (free_svar_subst phi psi X)) = 
@@ -164,8 +164,9 @@ Proof.
   - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
     + rewrite -> svar_open_fresh. reflexivity. destruct Hwf1. assumption.
     + simpl. reflexivity.
-  - inversion Hwf2. inversion H0.
-  - simpl. repeat rewrite -> pattern_interpretation_app_simpl.
+  - simpl in Hwf2. destruct (n =? n0) eqn:P.
+    + simpl. rewrite P.
+(*   - simpl. repeat rewrite -> pattern_interpretation_app_simpl.
     rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
     reflexivity. apply well_formed_app_2 in Hwf2. assumption.
     apply (svar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
@@ -190,20 +191,20 @@ Proof.
       erewrite -> evar_open_free_svar_subst_comm in H.
       erewrite -> IHsz in H.
       erewrite -> evar_open_free_svar_subst_comm.
-      rewrite -> svar_open_evar_open_comm. Check evar_open_fresh.
-      (*TODO: if phi is a ex's body then opening phi with set vars makes no diff*)
-      
+      rewrite -> svar_open_evar_open_comm.
+      (*TODO: if phi is a ex's body then opening phi with set vars makes no diff*) *)
     
 Admitted.
 
 Lemma proof_rule_set_var_subst_sound_helper {m : Model}: ∀ sz phi psi X svar_val evar_val,
-  le (Syntax.size phi) sz → well_formed psi →(*  well_formed phi → *)
+  le (Syntax.size phi) sz → well_formed psi → well_formed_closed phi → 
   pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) =
   pattern_interpretation evar_val (@update_svar_val signature m X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val) 
                                   phi.
 Proof. 
-  induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf (* Hwf2 *); simpl in *; try inversion Hsz; auto.
+  induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf Hwfc ; simpl in *; try inversion Hsz;
+  apply wfc_wfc_ind in Hwfc; auto.
   - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
     destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
     + reflexivity.
@@ -213,13 +214,21 @@ Proof.
     + reflexivity.
     + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
   - repeat rewrite -> pattern_interpretation_app_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption.
   - repeat rewrite -> pattern_interpretation_app_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption.
   - repeat rewrite -> pattern_interpretation_imp_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption.
   - repeat rewrite -> pattern_interpretation_imp_simpl.
-    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption. lia. assumption.
+    erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption. lia. assumption.
+    apply wfc_ind_wfc. inversion Hwfc. assumption.
   - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
     unfold Same_set, Included, In. split.
@@ -265,7 +274,9 @@ Proof.
       rewrite -> e0 in e. clear e0.
       rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)) in H.
       rewrite -> e in H.
-      exact H. lia. assumption. assumption. assumption. assumption.
+      exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
+      unfold evar_is_fresh_in in H6. assumption. lia. assumption. assumption.
+      assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
       remember (@evar_fresh (@variables signature) (elements B)) as fresh.
@@ -308,7 +319,9 @@ Proof.
       rewrite -> e0 in e. clear e0.
       rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)).
       rewrite -> e.
-      exact H. lia. assumption. assumption. assumption. assumption.
+      exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
+      unfold evar_is_fresh_in in H6. assumption.
+      lia. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
     unfold Same_set, Included, In. split.
@@ -354,7 +367,9 @@ Proof.
       rewrite -> e0 in e. clear e0.
       rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)) in H1.
       rewrite -> e in H1.
-      exact H1. lia. assumption. assumption. assumption. assumption.
+      exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
+      unfold evar_is_fresh_in in H6. assumption.
+      lia. assumption. assumption. assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
       remember (@evar_fresh (@variables signature) (elements B)) as fresh.
@@ -397,7 +412,9 @@ Proof.
       rewrite -> e0 in e. clear e0.
       rewrite -> (evar_open_free_svar_subst_comm (Syntax.size phi)).
       rewrite -> e.
-      exact H1. lia. assumption. assumption. assumption. assumption.
+      exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
+      unfold evar_is_fresh_in in H6. assumption.
+      lia. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
     assert ((λ S : Ensemble (Domain m),
      pattern_interpretation evar_val
@@ -409,9 +426,18 @@ Proof.
           (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
        (svar_open 0 (fresh_svar phi) phi))).
        apply functional_extensionality. intros.
-       remember (fresh_svar phi) as fresh.
-       epose (IHsz (svar_open 0 fresh phi) psi X svar_val evar_val _ _).
-    + 
+    + remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X))) as B.
+      remember (@svar_fresh (@variables signature) (elements B)) as MuZ.
+      remember (fresh_svar phi) as MuX.
+      remember (fresh_svar (free_svar_subst phi psi X)) as MuY.
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuX MuZ).
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuY MuZ).
+      
+      erewrite -> svar_open_free_svar_subst_comm. rewrite update_svar_val_comm. 
+      epose (IHsz (svar_open 0 MuZ phi) psi X (update_svar_val MuZ x svar_val) evar_val _ _ ).
+      rewrite e. erewrite (@pattern_interpretation_free_svar_independent _ _ _ _ MuZ x psi).
+      reflexivity. 
+     
       
       
     
@@ -429,7 +455,7 @@ Proof.
   intros. pose (H1 evar_val (update_svar_val X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val)).
   erewrite <- proof_rule_set_var_subst_sound_helper in e. exact e. reflexivity. assumption.
-Qed.
+Admitted.
 
   
   (* Proof system for AML ref. snapshot: Section 3 *)
