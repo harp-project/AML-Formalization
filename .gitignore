@@ -34,3 +34,6 @@ nra.cache
 *.swp
 # Emacs
 *~
+
+# Generated documentation
+html/*
