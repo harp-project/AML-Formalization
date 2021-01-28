@@ -37,17 +37,26 @@ jobs:
           name: Install and configure dependencies
           command: |
             npm install -g --silent gh-pages@2.0.1
-            git config user.email "ci-build@klukas.net"
+            git config user.email "jenda.tusil+ci@gmail.com"
             git config user.name "ci-build"
+      - add_ssh_keys:
+          fingerprints:
+            - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dist docs/_build/html
+          command: gh-pages --dist ./html
 
 workflows:
   # Name the workflow "welcome"
   welcome:
     jobs:
       - build
+      - docs-deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
 #    # Run the welcome/run job in its own container
 #    jobs:
 #      - welcome/run
