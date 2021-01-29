@@ -131,69 +131,194 @@ Proof.
     simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
 Qed.
 
-Lemma ex_body_svar_open_id : ∀ phi n fresh x,
-  well_formed_closed (evar_open 0 x phi) → svar_is_fresh_in fresh phi
-  → 
-  svar_open n fresh phi = phi.
-Proof.
-  intros. induction phi; auto.
-  - intros. simpl in H. inversion H.
-  - intros. simpl in H. apply wfc_wfc_ind in H. inversion H.
-    simpl. erewrite -> IHphi1. erewrite -> IHphi2. reflexivity.
-    apply wfc_ind_wfc. exact H4.
-    apply svar_is_fresh_in_app_r in H0. assumption.
-    apply wfc_ind_wfc. exact H3.
-    apply svar_is_fresh_in_app_l in H0. assumption.
-  - intros. simpl in H. apply wfc_wfc_ind in H. inversion H.
-    simpl. erewrite -> IHphi1. erewrite -> IHphi2. reflexivity.
-    apply wfc_ind_wfc. exact H4.
-    apply svar_is_fresh_in_imp_r in H0. assumption.
-    apply wfc_ind_wfc. exact H3.
-    apply svar_is_fresh_in_imp_l in H0. assumption.
-  Admitted.
-    
-
 Lemma svar_open_free_svar_subst_comm {m : Model}: ∀ sz phi evar_val svar_val psi fresh n X,
-  (le (Syntax.size phi) sz) → (well_formed psi) → well_formed_closed (svar_open n fresh phi) → svar_is_fresh_in fresh phi →
-  svar_is_fresh_in fresh (free_svar_subst phi psi X)
+  (le (Syntax.size phi) sz) → (well_formed psi) → well_formed_closed (svar_open n fresh phi) →  
+  svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
   →
   pattern_interpretation evar_val svar_val (svar_open n fresh (free_svar_subst phi psi X)) = 
   @pattern_interpretation signature m evar_val svar_val (free_svar_subst (svar_open n fresh phi) psi X).
 Proof.
-  induction sz; destruct phi; intros evar_val svar_val psi fresh n0 X Hsz Hwf1 Hwf2 Hfresh1 Hfresh2; try inversion Hsz; auto.
+  induction sz; destruct phi; intros evar_val svar_val psi fresh n0 X Hsz Hwf1 Hwf2 Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
   - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
     + rewrite -> svar_open_fresh. reflexivity. destruct Hwf1. assumption.
     + simpl. reflexivity.
   - simpl in Hwf2. destruct (n =? n0) eqn:P.
-    + simpl. rewrite P.
-(*   - simpl. repeat rewrite -> pattern_interpretation_app_simpl.
+    + simpl. rewrite P. simpl. destruct (svar_eqdec X fresh) eqn:D.
+      * rewrite -> e in Hneq. assert (fresh = fresh). reflexivity. contradiction.
+      * reflexivity.
+    + inversion Hwf2.
+  - simpl. repeat rewrite -> pattern_interpretation_app_simpl.
+    simpl in Hwf2. apply wfc_wfc_ind in Hwf2. inversion Hwf2.
     rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. apply well_formed_app_2 in Hwf2. assumption.
+    reflexivity. apply wfc_ind_wfc. assumption.
     apply (svar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
     apply (svar_is_fresh_in_app_r Hfresh2). 
-    apply well_formed_app_1 in Hwf2. assumption.
+    apply wfc_ind_wfc. assumption.
     apply (svar_is_fresh_in_app_l Hfresh1).
     apply (svar_is_fresh_in_app_l Hfresh2).
   - simpl. repeat rewrite -> pattern_interpretation_imp_simpl.
+    simpl in Hwf2. apply wfc_wfc_ind in Hwf2. inversion Hwf2.
     rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. apply well_formed_app_2 in Hwf2. assumption.
+    reflexivity. apply wfc_ind_wfc. assumption.
     apply (svar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
     apply (svar_is_fresh_in_app_r Hfresh2). 
-    apply well_formed_app_1 in Hwf2. assumption.
+    apply wfc_ind_wfc. assumption.
     apply (svar_is_fresh_in_app_l Hfresh1).
     apply (svar_is_fresh_in_app_l Hfresh2).
   - simpl. repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
     unfold Same_set, Included, In. split.
-    + intros. 
-      repeat rewrite -> fresh_evar_svar_open in H. 
+    + intros.
+      (*Create a new fresh variable and then switch to it in H and in the goal.*)
+      remember (fresh_evar (svar_open n0 fresh (free_svar_subst phi psi X))) as fresh1.
+      remember (fresh_evar (free_svar_subst (svar_open n0 fresh phi) psi X)) as fresh2.
+      remember ((free_evars (free_svar_subst (svar_open n0 fresh phi) psi X)) ∪
+      (free_evars (svar_open n0 fresh (free_svar_subst phi psi X)) ∪ 
+      (free_evars (svar_open n0 fresh phi)) ∪ (free_evars phi) ∪
+      (free_evars (free_svar_subst phi psi X)))) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as freshall.
+      assert(freshall ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst B.  apply not_elem_of_union in H1. destruct H1.
+      apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      assert (evar_is_fresh_in freshall (free_svar_subst (svar_open n0 fresh phi) psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (svar_open n0 fresh (free_svar_subst phi psi X))).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (svar_open n0 fresh phi)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      erewrite (@interpretation_fresh_evar_open _ _ _ fresh1 freshall) in H; try assumption.
+      erewrite (@interpretation_fresh_evar_open _ _ _ fresh2 freshall); try assumption.
+      
       rewrite -> svar_open_evar_open_comm in H. 
-      erewrite -> evar_open_free_svar_subst_comm in H.
-      erewrite -> IHsz in H.
-      erewrite -> evar_open_free_svar_subst_comm.
+      erewrite -> evar_open_free_svar_subst_comm in H; try assumption.
+      erewrite -> IHsz in H; try assumption.
+      erewrite -> evar_open_free_svar_subst_comm; try assumption.
       rewrite -> svar_open_evar_open_comm.
-      (*TODO: if phi is a ex's body then opening phi with set vars makes no diff*) *)
-    
+      exact H. reflexivity. 
+      rewrite <- H0. erewrite <- evar_open_size. reflexivity.
+      {
+        rewrite <- svar_open_evar_open_comm. simpl in Hwf2. apply wfc_wfc_ind in Hwf2.
+        inversion Hwf2. apply wfc_ind_wfc. eapply (H12 freshall _).
+      }
+      {
+        apply svar_is_fresh_in_exists in Hfresh1. unfold svar_is_fresh_in.
+        rewrite free_svars_evar_open. assumption.
+      }
+      {
+        erewrite <- evar_open_free_svar_subst_comm. unfold svar_is_fresh_in.
+        rewrite free_svars_evar_open. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh2.
+        assumption. reflexivity. assumption. assumption. assumption.
+      }
+      reflexivity. subst fresh2. apply set_evar_fresh_is_fresh.
+      subst fresh1. apply set_evar_fresh_is_fresh.
+    + intros.
+      (*Create a new fresh variable and then switch to it in H and in the goal.*)
+      remember (fresh_evar (svar_open n0 fresh (free_svar_subst phi psi X))) as fresh1.
+      remember (fresh_evar (free_svar_subst (svar_open n0 fresh phi) psi X)) as fresh2.
+      remember ((free_evars (free_svar_subst (svar_open n0 fresh phi) psi X)) ∪
+      (free_evars (svar_open n0 fresh (free_svar_subst phi psi X)) ∪ 
+      (free_evars (svar_open n0 fresh phi)) ∪ (free_evars phi) ∪
+      (free_evars (free_svar_subst phi psi X)))) as B.
+      remember (@evar_fresh (@variables signature) (elements B)) as freshall.
+      assert(freshall ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst B.  apply not_elem_of_union in H1. destruct H1.
+      apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      apply not_elem_of_union in H2. destruct H2.
+      assert (evar_is_fresh_in freshall (free_svar_subst (svar_open n0 fresh phi) psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (svar_open n0 fresh (free_svar_subst phi psi X))).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (svar_open n0 fresh phi)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall phi).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      assert (evar_is_fresh_in freshall (free_svar_subst phi psi X)).
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      erewrite (@interpretation_fresh_evar_open _ _ _ fresh1 freshall); try assumption.
+      erewrite (@interpretation_fresh_evar_open _ _ _ fresh2 freshall) in H; try assumption.
+      rewrite -> svar_open_evar_open_comm. 
+      erewrite -> evar_open_free_svar_subst_comm; try assumption.
+      erewrite -> IHsz; try assumption.
+      erewrite -> evar_open_free_svar_subst_comm in H; try assumption.
+      rewrite -> svar_open_evar_open_comm in H.
+      exact H. reflexivity. 
+      rewrite <- H0. erewrite <- evar_open_size. reflexivity.
+      {
+        rewrite <- svar_open_evar_open_comm. simpl in Hwf2. apply wfc_wfc_ind in Hwf2.
+        inversion Hwf2. apply wfc_ind_wfc. eapply (H12 freshall _).
+      }
+      {
+        apply svar_is_fresh_in_exists in Hfresh1. unfold svar_is_fresh_in.
+        rewrite free_svars_evar_open. assumption.
+      }
+      {
+        erewrite <- evar_open_free_svar_subst_comm. unfold svar_is_fresh_in.
+        rewrite free_svars_evar_open. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh2.
+        assumption. reflexivity. assumption. assumption. assumption.
+      }
+      reflexivity. subst fresh2. apply set_evar_fresh_is_fresh.
+      subst fresh1. apply set_evar_fresh_is_fresh.
+  - simpl. repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
+    assert (
+    (λ S : Ensemble (Domain m),
+       pattern_interpretation evar_val
+         (update_svar_val (fresh_svar (svar_open (n0 + 1) fresh (free_svar_subst phi psi X))) S svar_val)
+         (svar_open 0 (fresh_svar (svar_open (n0 + 1) fresh (free_svar_subst phi psi X)))
+            (svar_open (n0 + 1) fresh (free_svar_subst phi psi X)))) =
+    (λ S : Ensemble (Domain m),
+       pattern_interpretation evar_val
+         (update_svar_val (fresh_svar (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X)) S svar_val)
+         (svar_open 0 (fresh_svar (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X))
+            (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X)))).
+    + apply functional_extensionality. intros.
+      remember (fresh_svar (svar_open (n0 + 1) fresh (free_svar_subst phi psi X))) as fresh1.
+      remember (fresh_svar (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X)) as fresh2.
+      (*Create a common fresh var.*)
+      remember ((free_svars (svar_open (n0 + 1) fresh (free_svar_subst phi psi X))) ∪
+                (free_svars (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X))) as B.
+      remember (@svar_fresh (@variables signature) (elements B)) as freshall.
+      assert(freshall ∉ B).
+      {
+        subst. apply set_svar_fresh_is_fresh'.
+      }
+      subst B. apply not_elem_of_union in H. destruct H.
+      erewrite (@interpretation_fresh_svar_open _ _ _ fresh1 freshall); try assumption.
+      erewrite (@interpretation_fresh_svar_open _ _ _ fresh2 freshall); try assumption.
+      simpl in Hwf2.
+      erewrite -> IHsz.
 Admitted.
 
 Lemma proof_rule_set_var_subst_sound_helper {m : Model}: ∀ sz phi psi X svar_val evar_val,
@@ -426,22 +551,133 @@ Proof.
           (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
        (svar_open 0 (fresh_svar phi) phi))).
        apply functional_extensionality. intros.
-    + remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X))) as B.
+    + (*Create a common fresh var.*)
+      remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X)) ∪ 
+      (free_svars (patt_free_svar X))) as B.
       remember (@svar_fresh (@variables signature) (elements B)) as MuZ.
       remember (fresh_svar phi) as MuX.
       remember (fresh_svar (free_svar_subst phi psi X)) as MuY.
-      erewrite (@interpretation_fresh_svar_open _ _ _ MuX MuZ).
-      erewrite (@interpretation_fresh_svar_open _ _ _ MuY MuZ).
+      assert(MuZ ∉ B).
+      {
+        subst. apply set_svar_fresh_is_fresh'.
+      }
+      subst B. apply not_elem_of_union in H. destruct H.
+      apply not_elem_of_union in H. destruct H.
+      apply not_elem_of_union in H. destruct H.
       
-      erewrite -> svar_open_free_svar_subst_comm. rewrite update_svar_val_comm. 
-      epose (IHsz (svar_open 0 MuZ phi) psi X (update_svar_val MuZ x svar_val) evar_val _ _ ).
-      rewrite e. erewrite (@pattern_interpretation_free_svar_independent _ _ _ _ MuZ x psi).
-      reflexivity. 
-     
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuX MuZ); try assumption.
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuY MuZ); try assumption.
+      erewrite -> svar_open_free_svar_subst_comm; try assumption.
+      rewrite update_svar_val_comm; try assumption. 
+      epose (IHsz (svar_open 0 MuZ phi) psi X 
+      (update_svar_val MuZ x svar_val) evar_val _ _ ).
+      rewrite e. 
+      erewrite (@pattern_interpretation_free_svar_independent _ _ _ _ MuZ x psi); 
+      try assumption.
+      reflexivity.
+      {
+        inversion Hwfc. pose (H5 MuZ H). apply wfc_ind_wfc in w. assumption.
+      }
+      {
+        simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
+      }
+      reflexivity.
+      {
+        inversion Hwfc. pose (H5 MuZ H). apply wfc_ind_wfc in w. assumption.
+      }
+      {
+        simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
+      }
+      {
+        subst MuY. apply set_svar_fresh_is_fresh.
+      }
+      {
+        subst MuX. apply set_svar_fresh_is_fresh.
+      }
+    + rewrite H. reflexivity.
+  - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
+    assert ((λ S : Ensemble (Domain m),
+     pattern_interpretation evar_val
+       (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
+       (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
+       (λ S : Ensemble (Domain m),
+     pattern_interpretation evar_val
+       (update_svar_val (fresh_svar phi) S
+          (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
+       (svar_open 0 (fresh_svar phi) phi))).
+       apply functional_extensionality. intros.
+    + (*Create a common fresh var.*)
+      remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X)) ∪ 
+      (free_svars (patt_free_svar X))) as B.
+      remember (@svar_fresh (@variables signature) (elements B)) as MuZ.
+      remember (fresh_svar phi) as MuX.
+      remember (fresh_svar (free_svar_subst phi psi X)) as MuY.
+      assert(MuZ ∉ B).
+      {
+        subst. apply set_svar_fresh_is_fresh'.
+      }
+      subst B. apply not_elem_of_union in H1. destruct H1.
+      apply not_elem_of_union in H1. destruct H1.
+      apply not_elem_of_union in H1. destruct H1.
       
-      
-    
-Admitted.
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuX MuZ); try assumption.
+      erewrite (@interpretation_fresh_svar_open _ _ _ MuY MuZ); try assumption.
+      erewrite -> svar_open_free_svar_subst_comm; try assumption.
+      rewrite update_svar_val_comm; try assumption. 
+      epose (IHsz (svar_open 0 MuZ phi) psi X 
+      (update_svar_val MuZ x svar_val) evar_val _ _ ).
+      rewrite e. 
+      erewrite (@pattern_interpretation_free_svar_independent _ _ _ _ MuZ x psi); 
+      try assumption.
+      reflexivity.
+      {
+        inversion Hwfc. pose (H6 MuZ H1). apply wfc_ind_wfc in w. assumption.
+      }
+      {
+        simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
+      }
+      reflexivity.
+      {
+        inversion Hwfc. pose (H6 MuZ H1). apply wfc_ind_wfc in w. assumption.
+      }
+      {
+        simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
+      }
+      {
+        subst MuY. apply set_svar_fresh_is_fresh.
+      }
+      {
+        subst MuX. apply set_svar_fresh_is_fresh.
+      }
+    + rewrite H1. reflexivity.
+    Unshelve. 
+    apply set_evar_fresh_is_fresh.
+    assumption.
+    {
+      subst sz. erewrite <- evar_open_size. reflexivity.
+    }
+    assumption. apply set_evar_fresh_is_fresh. assumption.
+    {
+      subst sz. erewrite <- evar_open_size. reflexivity.
+    }
+    assumption. apply set_evar_fresh_is_fresh. assumption.
+    {
+      erewrite <- evar_open_size. lia.
+    }
+    assumption. apply set_evar_fresh_is_fresh. assumption.
+    {
+      erewrite <- evar_open_size. lia.
+    }
+    assumption. 
+    {
+      subst sz. erewrite <- svar_open_size. reflexivity.
+    }
+    assumption. 
+    {
+      erewrite <- svar_open_size. lia.
+    }
+    assumption.
+Qed.
 
 Lemma proof_rule_set_var_subst_sound {m : Model}:
   ∀ phi psi,
