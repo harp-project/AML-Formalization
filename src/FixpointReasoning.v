@@ -130,8 +130,6 @@ Section with_signature.
     
     Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
-    Search svar_open nest_mu.
-
     Hypothesis (Hwfpbase : well_formed_positive base).
     Hypothesis (Hwfpstep : well_formed_positive step).
 
@@ -185,36 +183,97 @@ Section with_signature.
       Context (ρₛ : @SVarVal Σ M).
 
 
-      Let F := @Fassoc Σ M ρₑ ρₛ patt_ind_gen_simple_body (fresh_svar patt_ind_gen_body).
-      
+      Let F := let X := fresh_svar patt_ind_gen_body in
+               @Fassoc Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body) X.
+      (*
       Lemma svar_open_patt_ind_gen_body_assoc S:
         let X := fresh_svar patt_ind_gen_body in
         pattern_interpretation ρₑ (update_svar_val X S ρₛ) (svar_open 0 X patt_ind_gen_body)
         = F S.
-      Proof.
+      Proof. reflexivity.
+             (*
         cbv zeta.
         rewrite svar_open_patt_ind_gen_body_simpl.
         { apply set_svar_fresh_is_fresh. }
         subst F. unfold Fassoc.
-        reflexivity.
-      Qed.      
-
-      Definition witnessing_function := (λ (Acc : Prop * (Domain M)) new,
-                                         let (P, old) := Acc in
-                                         (app_ext
-                                            (@pattern_interpretation Σ M ρₑ ρₛ step)
-                                            (Ensembles.Singleton _ old)
-                                            new,
-                                          new)
-                                        ).
-
+        rewrite svar_open_patt_ind_gen_body_simpl.
+        { apply set_svar_fresh_is_fresh.  }
+        reflexivity.*)
+      Qed.
+*)
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
          | [] => False
          | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
-                     /\ fst (foldl witnessing_function (True, m₀) ms)
+(*                     /\ forall (n : nat), n <= length ms ->*)
+                                                             
+                     /\  (@Forall _
+                                  (λ (x : (Domain M) * (Domain M)),
+                                   let (old, new) := x in
+                                  app_ext
+                                    (@pattern_interpretation Σ M ρₑ ρₛ step)
+                                    (Ensembles.Singleton _ old)
+                                    new
+                                 )
+                                 (zip (m₀::ms) ms)
+                         )
+                           
          end).
+
+      Lemma witnessing_sequence_extend
+            (m x step' m' : Domain M) (l : list (Domain M)):
+        is_witnessing_sequence m (x::l) ->
+        pattern_interpretation ρₑ ρₛ step step' ->
+        app_interp step' m m' ->
+        is_witnessing_sequence m' ((x::l) ++ [m']).
+      Proof.
+        intros Hwit Hstep' Hm'.
+        destruct Hwit as [Hwit1 [Hwit2 Hwit3]].
+        split.
+        { apply last_snoc. }
+        simpl.
+        split.
+        { apply Hwit2. }
+        
+        destruct l.
+        { simpl. apply Forall_cons. split. 2: { apply Forall_nil. exact I. }
+          exists step'. exists x. split.
+          { apply Hstep'. }
+          split.
+          { constructor. }
+          simpl in Hwit1. inversion Hwit1. subst. apply Hm'.
+        }
+        simpl.
+        apply Forall_cons.
+        simpl in Hwit3. inversion Hwit3. subst. clear Hwit3.
+        rename H1 into Hd. rename H2 into Hwit.
+        split.
+        { apply Hd. } clear Hd.
+
+        move: d Hwit1 Hwit.
+        induction l.
+        - intros D Hm _.
+          simpl. simpl in Hm. inversion Hm. subst.
+          clear Hm.
+          apply Forall_cons.
+          split.
+          2: { apply Forall_nil. exact I. }
+          exists step'. exists m. split.
+          { apply Hstep'. }
+          split.
+          { constructor. }
+          apply Hm'.
+        - intros d Hlast Hwit. simpl.
+          inversion Hwit. subst.
+          apply Forall_cons.
+          split.
+          { apply H1. }
+          apply IHl. simpl in Hlast. simpl. apply Hlast.
+          apply H2.
+      Qed.
+      
+      
 
       Definition witnessed_elements : Ensemble (Domain M) :=
         λ m, ∃ l, is_witnessing_sequence m l.
@@ -224,7 +283,7 @@ Section with_signature.
         unfold Included. unfold Ensembles.In.
         intros x Hx.
         unfold F in Hx. unfold Fassoc in Hx.
-        rewrite pattern_interpretation_or_simpl in Hx.
+        rewrite pattern_interpretation_or_simpl in Hx. fold svar_open in Hx. simpl in Hx.
         destruct Hx.
         - unfold Ensembles.In in H.
           unfold witnessed_elements.
@@ -238,6 +297,14 @@ Section with_signature.
           {
             eapply svar_is_fresh_in_richer. 2: { subst. auto. }
             solve_free_svars_inclusion 5.
+          }
+          simpl.
+          rewrite pattern_interpretation_svar_open_nest_mu' in H.
+          { 
+            eapply svar_is_fresh_in_richer.
+            2: { apply set_svar_fresh_is_fresh. }
+            simpl.
+            solve_free_svars_inclusion 2.
           }
           assumption.
         - unfold Ensembles.In in H.
@@ -263,22 +330,16 @@ Section with_signature.
           split.
           { apply Hm₀. }
 
-          rewrite foldl_app. simpl.
-          assert (foldl witnessing_function (True, m₀) l' = (True, m)).
-          { rewrite (@surjective_pairing _ _ (foldl witnessing_function (True, m₀) l')).
-            rewrite (@surjective_pairing _ _ (True, m)).
-            simpl in Hl.
-            (* We need propositional extensionality here.
-               It would be better to reformulate *)
-            rewrite (provable_prop_ext propositional_extensionality _ Hl).
-            simpl.
-            admit. (*rewrite Hl.*)
-            
+
+          (* We also need to show/assume that `step` does not contain `fresh_svar patt_ind_gen_body` *)
+          rewrite pattern_interpretation_svar_open_nest_mu in H1.
+          {
+            eapply svar_is_fresh_in_richer.
+            2: { apply set_svar_fresh_is_fresh. }
+            solve_free_svars_inclusion 2.
           }
-          rewrite H. simpl.
-          unfold app_ext.
-          exists step'. exists x.
-          admit.
+          
+          assert (Hlink: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) m) x).
       Abort.
       
       Lemma patt_ind_gen_simpl:
