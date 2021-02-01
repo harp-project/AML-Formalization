@@ -315,23 +315,14 @@ Section with_signature.
           destruct H as [step' [m [H1 [H2 Happ]]]].
           unfold witnessed_elements in H2.
           destruct H2 as [l Hl].
-          unfold is_witnessing_sequence in Hl.
-          destruct Hl as [Hlast Hl].
-          destruct l as [|m₀ l'] eqn:Heql.
-          { contradiction. }
-          destruct Hl as [Hm₀ Hl].
 
           unfold witnessed_elements.
-          exists (l ++ [x]). unfold is_witnessing_sequence.
-          simpl. rewrite last_snoc.
-          split.
-          { reflexivity. }
-          rewrite Heql. simpl.
-          split.
-          { apply Hm₀. }
+          exists (l ++ [x]).
 
+          (* `l` is not empty *)
+          destruct l as [|m₀ l'] eqn:Heql.
+          { unfold is_witnessing_sequence in Hl. destruct Hl. simpl in H. inversion H. }
 
-          (* We also need to show/assume that `step` does not contain `fresh_svar patt_ind_gen_body` *)
           rewrite pattern_interpretation_svar_open_nest_mu in H1.
           {
             eapply svar_is_fresh_in_richer.
@@ -339,8 +330,9 @@ Section with_signature.
             solve_free_svars_inclusion 2.
           }
           
-          assert (Hlink: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) m) x).
-      Abort.
+          exact (@witnessing_sequence_extend _ _ _ _ _ Hl H1 Happ).
+      Qed.
+      
       
       Lemma patt_ind_gen_simpl:
         @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
