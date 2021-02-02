@@ -1487,8 +1487,23 @@ Proof.
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
       apply f_equal. apply functional_extensionality. intros E.
       assert (Htmp: dbi+1 = (S dbi)) by lia; rewrite !Htmp; clear Htmp.
+
+      Check interpretation_fresh_svar_open.
+      remember (bsvar_subst phi1 phi2 (S dbi)) as phi_subst.
+      remember (union (free_svars phi_subst) (singleton (fresh_svar phi1))) as B.
+
+      remember (svar_fresh (elements B)) as Y.
+      assert (Hfreshy: Y <> fresh_svar phi1).
+      { solve_fresh_svar_neq. }
+
+      rewrite -> interpretation_fresh_svar_open with (X := fresh_svar phi_subst) (Y := Y).
+      2: { apply set_svar_fresh_is_fresh. }
+      2: { rewrite -> HeqY.
+           rewrite -> HeqB.
+           unfold svar_is_fresh_in. admit. }
       
-      rewrite svar_open_bsvar_subst.
+      subst phi_subst. rewrite svar_open_bsvar_subst.
+(*
       { assumption. }
       { lia. }
       (*rewrite update_svar_val_comm. { admit. }*)
@@ -1518,14 +1533,20 @@ Proof.
          (* everything up to auto below is unsound *)
          (* We can try to make it sound by employing fresh variables
             that are distinct from other variables *)
+         remember (union (free_svars phi1) (singleton (fresh_svar phi1))) as B.
+         remember (svar_fresh (elements B)) as Y.
+         assert (Hfreshy: Y <> fresh_svar phi1).
+         { solve_fresh_svar_neq. }
+         (*rewrite -> interpretation_fresh_svar_open with (Y := Y).*)
          rewrite update_svar_val_comm. admit.
          
          subst.
+         Search pattern_interpretation svar_open.
          Search update_svar_val pattern_interpretation.
          rewrite !interpretation_fresh_svar.
          admit. admit. admit. admit.
          auto.
-        
+*)        
 
 Admitted.
 
