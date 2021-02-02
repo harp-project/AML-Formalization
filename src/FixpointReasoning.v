@@ -200,7 +200,36 @@ Section with_signature.
         { apply set_svar_fresh_is_fresh.  }
         reflexivity.*)
       Qed.
-*)
+       *)
+
+      (* I can imagine this lemma to be proven automatically. *)
+      Lemma F_interp: F = λ A, Ensembles.Union _ (pattern_interpretation ρₑ ρₛ base)
+                                               (app_ext (pattern_interpretation ρₑ ρₛ step) A).
+      Proof.
+        unfold F. unfold Fassoc. apply functional_extensionality.
+        intros A. rewrite svar_open_patt_ind_gen_body_simpl.
+        { apply set_svar_fresh_is_fresh. }
+
+        rewrite pattern_interpretation_or_simpl.
+        rewrite pattern_interpretation_app_simpl.
+        rewrite pattern_interpretation_free_svar_simpl.
+        rewrite update_svar_val_same.
+        rewrite pattern_interpretation_free_svar_independent.
+        {
+          eapply svar_is_fresh_in_richer.
+          2: { apply set_svar_fresh_is_fresh. }
+          solve_free_svars_inclusion 5.
+        }
+        rewrite pattern_interpretation_free_svar_independent.
+        {
+          eapply svar_is_fresh_in_richer.
+          2: { apply set_svar_fresh_is_fresh. }
+          solve_free_svars_inclusion 5.
+        }
+        reflexivity.
+      Qed.
+      
+      
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
@@ -222,55 +251,108 @@ Section with_signature.
          end).
 
       Lemma witnessing_sequence_extend
-            (m x step' m' : Domain M) (l : list (Domain M)):
-        is_witnessing_sequence m (x::l) ->
-        pattern_interpretation ρₑ ρₛ step step' ->
-        app_interp step' m m' ->
-        is_witnessing_sequence m' ((x::l) ++ [m']).
+            (m x m' : Domain M) (l : list (Domain M)):
+        (is_witnessing_sequence m (x::l) /\
+        ∃ step', (pattern_interpretation ρₑ ρₛ step step' /\
+        app_interp step' m m')) <->
+        (last (x::l) = Some m /\ is_witnessing_sequence m' ((x::l) ++ [m'])).
       Proof.
-        intros Hwit Hstep' Hm'.
-        destruct Hwit as [Hwit1 [Hwit2 Hwit3]].
         split.
-        { apply last_snoc. }
-        simpl.
-        split.
-        { apply Hwit2. }
-        
-        destruct l.
-        { simpl. apply Forall_cons. split. 2: { apply Forall_nil. exact I. }
-          exists step'. exists x. split.
-          { apply Hstep'. }
+        -
+          intros [Hwit [step' [Hstep' Hm']]].
+          destruct Hwit as [Hwit1 [Hwit2 Hwit3]].
           split.
-          { constructor. }
-          simpl in Hwit1. inversion Hwit1. subst. apply Hm'.
-        }
-        simpl.
-        apply Forall_cons.
-        simpl in Hwit3. inversion Hwit3. subst. clear Hwit3.
-        rename H1 into Hd. rename H2 into Hwit.
-        split.
-        { apply Hd. } clear Hd.
+          { apply Hwit1. }
+          split.
+          { apply last_snoc. }
+          simpl.
+          split.
+          { apply Hwit2. }
+          
+          destruct l.
+          { simpl. apply Forall_cons. split. 2: { apply Forall_nil. exact I. }
+            exists step'. exists x. split.
+            { apply Hstep'. }
+            split.
+            { constructor. }
+            simpl in Hwit1. inversion Hwit1. subst. apply Hm'.
+          }
+          simpl.
+          apply Forall_cons.
+          simpl in Hwit3. inversion Hwit3. subst. clear Hwit3.
+          rename H1 into Hd. rename H2 into Hwit.
+          split.
+          { apply Hd. } clear Hd.
 
-        move: d Hwit1 Hwit.
-        induction l.
-        - intros D Hm _.
-          simpl. simpl in Hm. inversion Hm. subst.
-          clear Hm.
-          apply Forall_cons.
-          split.
-          2: { apply Forall_nil. exact I. }
-          exists step'. exists m. split.
-          { apply Hstep'. }
-          split.
-          { constructor. }
-          apply Hm'.
-        - intros d Hlast Hwit. simpl.
-          inversion Hwit. subst.
-          apply Forall_cons.
-          split.
-          { apply H1. }
-          apply IHl. simpl in Hlast. simpl. apply Hlast.
-          apply H2.
+          move: d Hwit1 Hwit.
+          induction l.
+          + intros D Hm _.
+            simpl. simpl in Hm. inversion Hm. subst.
+            clear Hm.
+            apply Forall_cons.
+            split.
+            2: { apply Forall_nil. exact I. }
+            exists step'. exists m. split.
+            { apply Hstep'. }
+            split.
+            { constructor. }
+            apply Hm'.
+          + intros d Hlast Hwit. simpl.
+            inversion Hwit. subst.
+            apply Forall_cons.
+            split.
+            { apply H1. }
+            apply IHl. simpl in Hlast. simpl. apply Hlast.
+            apply H2.
+        - intros [Hlast H].
+          unfold is_witnessing_sequence in H.
+          destruct H as [_ H].
+          move: x Hlast H.
+          induction l.
+          + intros x Hlast H.
+            simpl in Hlast. inversion Hlast. subst. clear Hlast.
+            simpl in H. destruct H as [Hm Hall].
+            inversion Hall. subst. clear H2.
+            destruct H1 as [step' [m'' [Hstep' [Hm'm'' Hstep'm'']]]].
+            inversion Hm'm''. subst. clear Hm'm''.
+            split.
+            2: { exists step'. split. apply Hstep'. apply Hstep'm''. }
+            split.
+            { reflexivity. }
+            split.
+            { apply Hm. }
+            simpl. apply Forall_nil. exact I.
+          + intros x Hlast H.
+            destruct l as [|x' l'].
+            { simpl in Hlast. inversion Hlast. clear Hlast. subst.
+              simpl in H. destruct H as [Hx Hall].
+              inversion Hall. subst. clear Hall.
+              inversion H2. subst. clear H2. clear H4.
+              split.
+              {
+                split.
+                { reflexivity. }
+                split.
+                { apply Hx. }
+                simpl.
+                apply Forall_cons.
+                split.
+                2: { apply Forall_nil. exact I. }
+                apply H1.
+              }
+              destruct H3 as [step' Hstep'].
+              exists step'.
+              destruct Hstep' as [m'' [Hstep' [Hmm'' Hm'']]].
+              split.
+              { apply Hstep'. }
+              inversion Hmm''. subst.
+              apply Hm''.
+            }
+            simpl in Hlast. simpl in IHl. specialize (IHl Hlast).
+            simpl in H.
+            Print "/\".
+            
+            
       Qed.
       
       
@@ -332,6 +414,76 @@ Section with_signature.
           
           exact (@witnessing_sequence_extend _ _ _ _ _ Hl H1 Happ).
       Qed.
+
+      Lemma witnessed_elements_included_in_interp:
+        Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements.
+      Proof.
+        apply pattern_interpretation_mu_lfp_least.
+        { apply patt_ind_gen_wfp. }
+        apply witnessed_elements_prefixpoint.
+      Qed.
+
+      Lemma pattern_interpretation_patt_ind_gen_fix :
+        let Sfix := pattern_interpretation ρₑ ρₛ patt_ind_gen in
+        F Sfix = Sfix.
+      Proof.
+        apply pattern_interpretation_mu_lfp_fixpoint.
+        apply patt_ind_gen_wfp.
+      Qed.
+      
+      
+
+      
+      Definition witnessed_elements_of_max_len len : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence m l /\ length l <= len.
+
+      Lemma witnessed_elements_of_max_len_included_in_interp len:
+        Included _ (witnessed_elements_of_max_len (S len)) (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Proof.
+        induction len.
+        - unfold Included. intros m.
+          rewrite -pattern_interpretation_patt_ind_gen_fix.
+          unfold Ensembles.In.
+          intros H.
+          unfold witnessed_elements_of_max_len.
+          rewrite F_interp.
+          destruct H as [l [Hwit Hlen]].
+          unfold is_witnessing_sequence in Hwit.
+          destruct Hwit as [Hlast Hm].
+          destruct l.
+          { simpl in Hlast. inversion Hlast. }
+          destruct l.
+          2: { simpl in Hlen. lia. }
+          simpl in Hlast. inversion Hlast. clear Hlast. subst.
+          destruct Hm as [Hm _].
+          left. unfold Ensembles.In. apply Hm.
+        - unfold Included. intros m.
+          rewrite -pattern_interpretation_patt_ind_gen_fix.
+          unfold Ensembles.In. intros H.
+          destruct H as [l [Hwit Hlen]].
+          unfold Included in IHlen. unfold Ensembles.In in IHlen.
+          rewrite F_interp. 
+          unfold is_witnessing_sequence in Hwit.
+          destruct Hwit as [Hlast Hl].
+          destruct l.
+          { contradiction. }
+          simpl in Hlen.
+          destruct Hl as [Hd Hl].
+          destruct l.
+          + simpl in Hlast. inversion Hlast. clear Hlast. subst.
+            left. unfold Ensembles.In. apply Hd.
+          + right. unfold Ensembles.In.
+            simpl in Hl.
+            inversion Hl. subst.
+            destruct H1 as [step' [d' [Hstep' [Hd' Hd0]]]].
+          
+      
+      Lemma witnessed_elements_included_in_interp:
+        Included _ witnessed_elements (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Proof.
+
+      Abort.
+        
       
       
       Lemma patt_ind_gen_simpl:
