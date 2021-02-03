@@ -1104,6 +1104,37 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity. exact H1.
     - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity.  exact H1.
   Qed.
+  
+  Lemma svar_open_last2: forall phi i u j v,
+      svar_open i u (evar_open j v phi) = evar_open j v phi
+      ->
+      (svar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity.  exact H1.
+  Qed.
+  
+  Lemma svar_open_last3: forall phi i u j v,
+      (i <> j) -> svar_open i u (svar_open j v phi) = svar_open j v phi
+      ->
+      (svar_open i u phi) = phi.
+  Proof.
+    induction phi; firstorder.
+    - simpl in H. destruct (n=?j) eqn:D.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. apply Nat.eqb_eq in D. lia.
+        * auto.
+      + simpl. destruct (n =? i) eqn:D1.
+        * apply Nat.eqb_eq in D1. subst. simpl in H0. rewrite D in H0. simpl in H0. rewrite Nat.eqb_refl in H0. congruence.
+        * auto.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+  Qed.
 
   (* evar_open of fresh name does not change in a well-formed pattern*)
   Lemma evar_open_fresh :
@@ -1121,6 +1152,22 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. eapply svar_open_last in H0. erewrite H0. reflexivity. 
       instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
   Qed.
+  
+    Lemma svar_open_fresh :
+    forall phi,
+      well_formed_closed phi ->
+      forall n v,
+        svar_open n v phi = phi.
+  Proof.
+    intros phi IHwf. apply (wfc_wfc_ind) in IHwf.
+    induction IHwf; firstorder.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. rewrite IHIHwf1. rewrite IHIHwf2. reflexivity.
+    - simpl. eapply (@svar_open_last2 _ _ _ _ (fresh_evar phi)) in H0. erewrite H0. reflexivity.
+      apply set_evar_fresh_is_fresh.
+    - simpl. eapply svar_open_last3 in H0. erewrite H0. reflexivity. lia.
+      instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
+  Qed. 
 
   Lemma evar_open_comm:
     forall n m,
@@ -1372,7 +1419,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     + inversion H. inversion H0. subst.
       constructor. firstorder.
   Qed.
-
 
   Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
       well_formed (patt_app phi1 phi2) -> well_formed phi1.
@@ -2535,6 +2581,220 @@ Class EBinder (ebinder : Pattern -> Pattern)
         rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
         auto.
     Qed.
+    
+Lemma evar_open_inj : ∀ phi psi x n,
+  evar_is_fresh_in x phi → evar_is_fresh_in x psi →
+  evar_open n x phi =
+    evar_open n x psi
+    → phi = psi.
+Proof.
+  induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
+  - simpl in H1. destruct (n =? n0) eqn:P.
+    + inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
+      congruence.
+    + congruence.
+  - simpl in H1. destruct (n =? n0) eqn:P.
+    + inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
+      congruence.
+    + congruence.
+  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+    + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
+    + congruence.
+    + congruence.
+    + inversion H1. reflexivity.
+  - simpl in H1. destruct (n =? n1) eqn:P.
+    + inversion H1.
+    + congruence.
+  - inversion H1. destruct (n0 =? n1) eqn:P.
+    + inversion H3.
+    + assumption.
+  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+    apply evar_is_fresh_in_app_r in H. assumption.
+    apply evar_is_fresh_in_app_r in H0. assumption.
+    apply evar_is_fresh_in_app_l in H. assumption.
+    apply evar_is_fresh_in_app_l in H0. assumption.
+  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+    apply evar_is_fresh_in_imp_r in H. assumption.
+    apply evar_is_fresh_in_imp_r in H0. assumption.
+    apply evar_is_fresh_in_imp_l in H. assumption.
+    apply evar_is_fresh_in_imp_l in H0. assumption.
+  - inversion H1. apply IHphi in H3. subst. reflexivity.
+    apply evar_is_fresh_in_exists in H. assumption.
+    apply evar_is_fresh_in_exists in H0. assumption.
+  - inversion H1. apply IHphi in H3. subst. reflexivity.
+    apply evar_is_fresh_in_mu in H. assumption.
+    apply evar_is_fresh_in_mu in H0. assumption.
+Qed.
+
+Lemma svar_open_inj : ∀ phi psi X n,
+  svar_is_fresh_in X phi → svar_is_fresh_in X psi →
+  svar_open n X phi =
+    svar_open n X psi
+    → phi = psi.
+Proof.
+  induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
+  - simpl in H1. destruct (n =? n0) eqn:P.
+    + inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
+      congruence.
+    + congruence.
+  - inversion H1. destruct (n0 =? n1) eqn:P.
+    + inversion H3.
+    + assumption.
+  - simpl in H1. destruct (n =? n0) eqn:P.
+    + inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
+      congruence.
+    + congruence.
+  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+    + inversion H1. 
+    + congruence.
+    + congruence.
+    + inversion H1.
+  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+    + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
+    + congruence.
+    + congruence.
+    + inversion H1. reflexivity.
+  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+    apply svar_is_fresh_in_app_r in H. assumption.
+    apply svar_is_fresh_in_app_r in H0. assumption.
+    apply svar_is_fresh_in_app_l in H. assumption.
+    apply svar_is_fresh_in_app_l in H0. assumption.
+  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+    apply svar_is_fresh_in_imp_r in H. assumption.
+    apply svar_is_fresh_in_imp_r in H0. assumption.
+    apply svar_is_fresh_in_imp_l in H. assumption.
+    apply svar_is_fresh_in_imp_l in H0. assumption.
+  - inversion H1. apply IHphi in H3. subst. reflexivity.
+    apply svar_is_fresh_in_exists in H. assumption.
+    apply svar_is_fresh_in_exists in H0. assumption.
+  - inversion H1. apply IHphi in H3. subst. reflexivity.
+    apply svar_is_fresh_in_mu in H. assumption.
+    apply svar_is_fresh_in_mu in H0. assumption.
+Qed.
+
+Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
+  (le (size phi) sz) → (well_formed_closed psi) → evar_is_fresh_in fresh phi →
+  evar_is_fresh_in fresh (free_svar_subst phi psi X)
+  →
+  (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+Proof.
+  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
+  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + rewrite -> evar_open_fresh. reflexivity. assumption.
+    + simpl. reflexivity.
+  - simpl. destruct (n =? n0) eqn:P.
+    + reflexivity.
+    + reflexivity.
+  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+    apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
+    apply (evar_is_fresh_in_app_l Hfresh2).
+  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. apply (evar_is_fresh_in_imp_r Hfresh1).
+    apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_imp_l Hfresh1).
+    apply (evar_is_fresh_in_imp_l Hfresh2).
+  - simpl. rewrite -> IHsz. reflexivity. lia. assumption.
+    apply evar_is_fresh_in_exists in Hfresh1. assumption.
+    simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
+  - simpl. rewrite -> IHsz. reflexivity.
+    lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
+    simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
+Qed.
+
+Lemma evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
+  (well_formed_closed psi) → evar_is_fresh_in fresh phi →
+  evar_is_fresh_in fresh (free_svar_subst phi psi X)
+  →
+  (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+Proof.
+ intros. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
+Qed.
+
+Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
+  (le (size phi) sz) → (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
+  svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+  →
+  (svar_open n fresh (free_svar_subst phi psi X)) = 
+  (free_svar_subst (svar_open n fresh phi) psi X).
+Proof.
+  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
+  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    + rewrite -> svar_open_fresh. reflexivity. assumption.
+    + simpl. reflexivity.
+  - (* simpl in Hwfc. *) simpl. destruct (n =? n0) eqn:P.
+    + simpl. destruct (svar_eqdec X fresh) eqn:D.
+      * rewrite -> e in Hneq. assert (fresh = fresh). reflexivity. contradiction.
+      * reflexivity.
+    + simpl. reflexivity.
+  - simpl. (* simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. (* apply wfc_ind_wfc. assumption. *)
+    simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
+    simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
+    (*apply wfc_ind_wfc. assumption. *)
+    simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
+    simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
+  - simpl. (*  simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+    reflexivity. 
+    (* apply wfc_ind_wfc. assumption. *)
+    simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
+    simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
+    (* apply wfc_ind_wfc. assumption. *)
+    simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
+    simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
+  - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
+      (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
+    simpl. remember (@evar_fresh (@variables signature) (elements B)) as x.
+    assert(x ∉ B).
+      {
+        subst. apply set_evar_fresh_is_fresh'.
+      }
+      subst B.  apply not_elem_of_union in H. destruct H.
+    (*magic happens*)
+    erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open n0 fresh phi) psi X) x 0 _ _ ).
+    reflexivity.
+    (*x needs to be fresh in ...*)
+     rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
+     apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
+  - remember ((free_svars (svar_open (n0 + 1) fresh (free_svar_subst phi psi X)) ∪
+      (free_svars (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X)))) as B.
+    simpl. remember (@svar_fresh (@variables signature) (elements B)) as X'.
+    assert(X' ∉ B).
+      {
+        subst. apply set_svar_fresh_is_fresh'.
+      }
+      subst B.  apply not_elem_of_union in H. destruct H.
+    simpl.
+    (*magic happens*)
+    erewrite (@svar_open_inj (svar_open (n0+1) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (n0+1) fresh phi) psi X) X' 0 _ _ ).
+    reflexivity.
+    (*x needs to be fresh in ...*)
+     rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.
+     Unshelve.
+     {
+      unfold evar_is_fresh_in. assumption.
+     }
+     {
+      unfold evar_is_fresh_in. assumption.
+     }
+     {
+      unfold evar_is_fresh_in. assumption.
+     }
+     {
+      unfold evar_is_fresh_in. assumption.
+     }
+Qed.
+
+Lemma svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
+  (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
+  svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+  →
+  (svar_open n fresh (free_svar_subst phi psi X)) = 
+  (free_svar_subst (svar_open n fresh phi) psi X).
+Proof.
+  intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
+Qed.
 
 End syntax.
 
