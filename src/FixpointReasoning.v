@@ -307,40 +307,44 @@ Section with_signature.
         - intros [Hlast H].
           unfold is_witnessing_sequence in H.
           destruct H as [_ H].
-          move: x Hlast H.
-          induction l.
-          + intros x Hlast H.
-            simpl in Hlast. inversion Hlast. subst. clear Hlast.
-            simpl in H. destruct H as [Hm Hall].
-            inversion Hall. subst. clear H2.
+          remember (length l) as len.
+          assert (Hlen: length l <= len).
+          { lia. }
+          clear Heqlen. simpl in H.
+          destruct H as [Hbase Hall].
+          unfold is_witnessing_sequence.
+          apply and_assoc.
+          split.
+          { apply Hlast. }
+          apply and_assoc.
+          split.
+          { apply Hbase. }
+          clear Hbase.
+          
+          move: x l Hlast Hall Hlen.
+          induction len.
+          + intros x l Hlast Hall Hlen.
+            destruct l.
+            2: { simpl in Hlen. lia.  }
+            simpl. simpl in Hall.
+            split.
+            { apply Forall_nil. exact I. }
+            inversion Hall. subst. clear Hall. clear H2.
             destruct H1 as [step' [m'' [Hstep' [Hm'm'' Hstep'm'']]]].
             inversion Hm'm''. subst. clear Hm'm''.
-            split.
-            2: { exists step'. split. apply Hstep'. apply Hstep'm''. }
-            split.
-            { reflexivity. }
-            split.
-            { apply Hm. }
-            simpl. apply Forall_nil. exact I.
-          + intros x Hlast H.
+            exists step'. split. apply Hstep'.
+            simpl in Hlast. inversion Hlast. subst.
+            apply Hstep'm''.
+          + intros x l Hlast Hall Hlen.
             destruct l as [|x' l'].
             { simpl in Hlast. inversion Hlast. clear Hlast. subst.
-              simpl in H. destruct H as [Hx Hall].
+              simpl in Hall.
               inversion Hall. subst. clear Hall.
-              inversion H2. subst. clear H2. clear H4.
+              clear H2.
+              simpl.
               split.
-              {
-                split.
-                { reflexivity. }
-                split.
-                { apply Hx. }
-                simpl.
-                apply Forall_cons.
-                split.
-                2: { apply Forall_nil. exact I. }
-                apply H1.
-              }
-              destruct H3 as [step' Hstep'].
+              { apply Forall_nil. exact I. }
+              destruct H1 as [step' Hstep'].
               exists step'.
               destruct Hstep' as [m'' [Hstep' [Hmm'' Hm'']]].
               split.
@@ -348,11 +352,16 @@ Section with_signature.
               inversion Hmm''. subst.
               apply Hm''.
             }
-            simpl in Hlast. simpl in IHl. specialize (IHl Hlast).
-            simpl in H.
-            Print "/\".
-            
-            
+            simpl in Hall. simpl in IHlen. simpl in Hlast.
+            inversion Hall. subst. clear Hall.
+            specialize (IHlen x' l' Hlast H2).
+            simpl.
+            rewrite Forall_cons.
+            apply and_assoc.
+            split.
+            { apply H1. }
+            apply IHlen.
+            simpl in Hlen. lia.
       Qed.
       
       
