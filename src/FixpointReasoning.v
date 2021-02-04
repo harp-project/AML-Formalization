@@ -687,15 +687,28 @@ Section with_signature.
       Lemma witnessed_elements_included_in_interp:
         Included _ witnessed_elements (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
-
-      Abort.
+        intros x H.
+        unfold Ensembles.In in H. unfold witnessed_elements in H.
+        destruct H as [wit Hwit].
+        assert (H': Ensembles.In (Domain M) (witnessed_elements_of_max_len (length wit)) x).
+        { unfold Ensembles.In. exists wit. split. apply Hwit. lia. }
+        destruct wit as [|y l'] eqn:Hl.
+        { unfold is_witnessing_sequence in Hwit. destruct Hwit. contradiction. }
+        eapply witnessed_elements_of_max_len_included_in_interp.
+        simpl in H'.
+        apply H'.
+      Qed.
         
       
       
       Lemma patt_ind_gen_simpl:
         @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
       Proof.
-      Abort.
+        apply Ensembles_Ext.eq_iff_Same_set.
+        split.
+        + apply interp_included_in_witnessed_elements.
+        + apply witnessed_elements_included_in_interp.
+      Qed.
 
     End with_interpretation.
   End inductive_generation.
