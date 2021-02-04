@@ -10,7 +10,7 @@ From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
 From stdpp Require Import base list.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.Lattice.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.Lattice Utils.stdpp_ext.
 
 Section with_signature.
   Context {Σ : Signature}.
@@ -430,7 +430,7 @@ Section with_signature.
           apply P.
       Qed.
 
-      Lemma witnessed_elements_included_in_interp:
+      Lemma interp_included_in_witnessed_elements:
         Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements.
       Proof.
         apply pattern_interpretation_mu_lfp_least.
@@ -446,111 +446,6 @@ Section with_signature.
         apply patt_ind_gen_wfp.
       Qed.
       
-
-      Lemma rev_tail_rev_app A (l : list A) (a : A) :
-        l <> [] -> rev (tail (l ++ [a])) = a :: rev (tail l).
-      Proof.
-        remember (length l) as len.
-        assert (length l <= len).
-        { lia. }
-        clear Heqlen.
-        move: l H.
-        induction len; intros l; destruct l.
-        - simpl. intros _ H. contradiction.
-        - simpl. intros H. lia.
-        - intros _ H. contradiction.
-        - simpl. intros _ _.
-          destruct l.
-          + reflexivity.
-          + simpl. rewrite rev_app_distr.
-            reflexivity.
-      Qed.
-        
-      
-      (* [1,2,3,4,5] -> [5,4,3,2,1] -> [4,3,2,1] -> [1,2,3,4] *)
-      Lemma rev_tail_rev_app_last A (l : list A) (xlast : A):
-        last l = Some xlast ->
-        rev (tail (rev l)) ++ [xlast] = l.
-      Proof.        
-        move: xlast.
-        induction l.
-        - intros xlast. simpl. intros H. inversion H.
-        - intros xlast. intros H. simpl.
-          destruct l as [|b l'].
-          + simpl. simpl in H. inversion H. reflexivity.
-          + simpl. simpl in IHl. simpl in H.
-            assert (Ha: [a] = rev [a]).
-            { reflexivity. }
-            assert (Hb: [b] = rev [b]).
-            { reflexivity. }
-            assert (Hxlast: [xlast] = rev [xlast]).
-            { reflexivity. }
-            specialize (IHl xlast H).
-            rewrite -IHl.
-            rewrite Hxlast.
-            rewrite rev_tail_rev_app.
-            { intros Contra.
-              assert (Heqlen: length (rev l' ++ [b]) = @length A []).
-              { rewrite Contra. reflexivity. }
-              rewrite app_length in Heqlen. simpl in Heqlen. lia.
-            }
-            simpl. reflexivity.
-      Qed.
-      
-
-      Lemma length_tail_zero A l: @length A (tail l) = 0 <-> (@length A l = 0 \/ @length A l = 1).
-      Proof.
-        destruct l.
-        - simpl. split. intros H. left. apply H.
-          intros [H|H]. apply H. inversion H.
-        - simpl. split.
-          + intros H. rewrite H. right. reflexivity.
-          + intros [H|H]. inversion H. lia.
-      Qed.
-
-      Check head.
-      Lemma hd_error_app A (a b : A) (l : list A) :
-        hd_error ((l ++ [a]) ++ [b]) = hd_error (l ++ [a]).
-      Proof.
-        induction l.
-        - reflexivity.
-        - reflexivity.
-      Qed.
-        
-               
-      Lemma last_rev_head A (l : list A) (x : A) : last (x :: l) = hd_error (rev l ++ [x]).
-      Proof.
-        remember (length l) as len.
-        assert (Hlen: length l <= len).
-        { lia. }
-        clear Heqlen.
-        move: l Hlen x.
-        induction len; intros l Hlen x; destruct l eqn:Hl.
-        - reflexivity.
-        - simpl in Hlen. lia.
-        - reflexivity.
-        - simpl. Search hd_error "++".
-          rewrite hd_error_app.
-          rewrite - (IHlen l0).
-          { simpl in Hlen. lia. }
-          simpl. reflexivity.
-      Qed.
-
-      Lemma hd_error_lookup A (l : list A) :
-        l !! 0 = hd_error l.
-      Proof.
-        destruct l; reflexivity.
-      Qed.
-
-      Lemma list_len_slice A (l1 l2 : list A) (a b : A) :
-        a :: l1 = l2 ++ [b] -> length l1 = length l2.
-      Proof.
-        intros H1.
-        assert (H2: length (a :: l1) = length (l2 ++ [b])).
-        { rewrite H1. reflexivity. }
-        simpl in H2.
-        rewrite app_length in H2. simpl in H2. lia.
-      Qed.
       
       Definition witnessed_elements_of_max_len len : Ensemble (Domain M) :=
         λ m, ∃ l, is_witnessing_sequence m l /\ length l <= len.
@@ -593,7 +488,6 @@ Section with_signature.
           + simpl in Hlast. inversion Hlast. clear Hlast. subst.
             left. unfold Ensembles.In. apply Hd.
           + right. unfold Ensembles.In.
-            Check witnessing_sequence_extend.
             pose proof (P := witnessing_sequence_extend).
             destruct l as [|x' l'].
             { simpl in Hlast. inversion Hlast. subst.
@@ -647,7 +541,6 @@ Section with_signature.
             {
               apply f_equal.
               simpl.
-              Check rev_tail_rev_app_last.
               assert (Hx'r: [x'] = rev [x']).
               { reflexivity. }
               rewrite Hx'r.
@@ -677,8 +570,6 @@ Section with_signature.
             simpl in P.
             rewrite -H2 in P.
             
-            Check mprev.
-            
             assert (Hm : (match l with [] => Some d1 | _ :: _ => last l end ) = Some mprev).
             {
               clear P Heqrev H1 H3 H4 mp.
@@ -687,7 +578,7 @@ Section with_signature.
               simpl.
               simpl in H2.
               inversion H2. subst x' l'. clear H2.
-              simpl in Htot. Search mprev.
+              simpl in Htot.
               destruct (l ++ [m]) eqn:Hcontra.
               { pose proof (Hcontra' := @app_length _ l [m]).
                 rewrite Hcontra in Hcontra'.
@@ -704,7 +595,6 @@ Section with_signature.
               rewrite hd_error_app. rewrite hd_error_app.
               apply last_rev_head.
             }
-            Check @conj.
             specialize (P (@conj _ _ Hm Hwit')). clear Hm Hwit'.
             destruct P as [Hwitmprev [step' [Hstep' Hm]]].
             exists step'. exists mprev.
@@ -720,12 +610,11 @@ Section with_signature.
             assert (Hlen': S (length l') <= len).
             { lia. }
             assert (length (l') = length (l)).
-            { apply (list_len_slice H2). }
+            { apply (@list_len_slice _ _ _ _ _ H2). }
             rewrite -H. lia.
       Qed.
       
           
-      
       Lemma witnessed_elements_included_in_interp:
         Included _ witnessed_elements (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
