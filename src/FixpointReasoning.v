@@ -253,6 +253,75 @@ Section with_signature.
                            
          end).
 
+      Definition is_witnessing_sequence_alt (m : Domain M) (l : list (Domain M)) :=
+        (∃ lst, last l = Some lst /\ @pattern_interpretation Σ M ρₑ ρₛ base lst)
+          /\
+          hd_error l = Some m
+          /\
+          ((@Forall _
+                    (λ (x : (Domain M) * (Domain M)),
+                     let (new, old) := x in
+                     app_ext
+                       (@pattern_interpretation Σ M ρₑ ρₛ step)
+                       (Ensembles.Singleton _ old)
+                       new
+                    )
+                    (zip l (tail l))
+          )).
+
+      Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
+        (is_witnessing_sequence_alt m l
+         /\ (∃ step', pattern_interpretation ρₑ ρₛ step step' /\ app_interp step' m m')
+        ) <-> (is_witnessing_sequence_alt m' (m'::l) /\ l ≠ []).
+      Proof.
+        split.
+        - intros [[[lst [Hlst Hbase]] [Hhd Hwit]] [step' [Hstep' Hm']]].
+          split.
+          2: { destruct l. simpl in Hhd. inversion Hhd. discriminate. }
+          move: m Hhd m' step' Hm' Hstep'.
+          induction l; intros m Hhd m' step' Hm' Hstep'.
+          + simpl in Hhd. inversion Hhd.
+          + simpl in Hhd. inversion Hhd. subst a. clear Hhd.
+            unfold is_witnessing_sequence_alt.
+            destruct l.
+            { simpl in Hlst. inversion Hlst. subst m. clear Hlst.
+              split.
+              { exists lst. simpl. split. reflexivity. apply Hbase. }
+              simpl. split. reflexivity. apply Forall_cons.
+              split. exists step'. exists lst. split.
+              apply Hstep'. split. constructor. apply Hm'.
+              apply Forall_nil. exact I.
+            }
+            split.
+            { exists lst. split. simpl. simpl in Hlst. apply Hlst. apply Hbase. }
+            split.
+            { reflexivity. }
+            simpl in Hwit. simpl.
+            apply Forall_cons.
+            simpl in IHl. simpl in Hlst.
+            specialize (IHl Hlst).
+            inversion Hwit. subst. clear Hwit.
+            specialize (IHl H2). clear Hlst H2.
+            split.
+            { exists step'. exists m. split. apply Hstep'. split. constructor. apply Hm'. }
+            apply Forall_cons.
+            split.
+            { apply H1. }
+            specialize (IHl d).
+            specialize (IHl (eq_refl (Some d))).
+            destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d'']]]].
+            inversion Hd''. subst d''. clear Hd''.
+            specialize (IHl m step'' Hstep''d'' Hstep'').
+            unfold is_witnessing_sequence_alt in IHl.
+            simpl in IHl.
+            destruct IHl as [_ [_ Hforall]].
+            inversion Hforall. subst. apply H2.
+        -            
+      Abort.
+            
+          
+
+
       Lemma witnessing_sequence_extend
             (m x m' : Domain M) (l : list (Domain M)):
         (is_witnessing_sequence m (x::l) /\
