@@ -447,11 +447,31 @@ Section with_signature.
       Qed.
       
 
+      Lemma rev_tail_rev_app A (l : list A) (a : A) :
+        l <> [] -> rev (tail (l ++ [a])) = a :: rev (tail l).
+      Proof.
+        remember (length l) as len.
+        assert (length l <= len).
+        { lia. }
+        clear Heqlen.
+        move: l H.
+        induction len; intros l; destruct l.
+        - simpl. intros _ H. contradiction.
+        - simpl. intros H. lia.
+        - intros _ H. contradiction.
+        - simpl. intros _ _.
+          destruct l.
+          + reflexivity.
+          + simpl. rewrite rev_app_distr.
+            reflexivity.
+      Qed.
+        
+      
       (* [1,2,3,4,5] -> [5,4,3,2,1] -> [4,3,2,1] -> [1,2,3,4] *)
       Lemma rev_tail_rev_app_last A (l : list A) (xlast : A):
         last l = Some xlast ->
         rev (tail (rev l)) ++ [xlast] = l.
-      Proof.
+      Proof.        
         move: xlast.
         induction l.
         - intros xlast. simpl. intros H. inversion H.
@@ -465,10 +485,18 @@ Section with_signature.
             { reflexivity. }
             assert (Hxlast: [xlast] = rev [xlast]).
             { reflexivity. }
-            
+            specialize (IHl xlast H).
+            rewrite -IHl.
             rewrite Hxlast.
-            rewrite -rev_app_distr.
-      Admitted.
+            rewrite rev_tail_rev_app.
+            { intros Contra.
+              assert (Heqlen: length (rev l' ++ [b]) = @length A []).
+              { rewrite Contra. reflexivity. }
+              rewrite app_length in Heqlen. simpl in Heqlen. lia.
+            }
+            simpl. reflexivity.
+      Qed.
+      
 
       Lemma length_tail_zero A l: @length A (tail l) = 0 <-> (@length A l = 0 \/ @length A l = 1).
       Proof.
