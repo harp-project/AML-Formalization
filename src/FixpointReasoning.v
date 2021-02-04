@@ -120,13 +120,16 @@ Section with_signature.
         apply pattern_interpretation_mu_lfp_fixpoint. apply Hwfp.
       + intros S. subst. apply pattern_interpretation_mu_lfp_least. apply Hwfp.
   Qed.
-  
+
+  (* mu X. base \/ step X *)
+  (* [Nats] = mu X. 0 \/ succ X *)
+  (* [Nats] = \{ x | \ex x0,x1,..x_n . x0 \in 0 /\ x(i+1) \in succ xi }*)
+  (*  0, 1, 2,... x*)
   Section inductive_generation.
     Context (base step : Pattern).
 
     Let patt_ind_gen_body := (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
     Let patt_ind_gen_simple_body := (patt_or base (patt_app step (patt_free_svar (fresh_svar patt_ind_gen_body)))).
-    
     
     Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
@@ -420,8 +423,11 @@ Section with_signature.
             2: { apply set_svar_fresh_is_fresh. }
             solve_free_svars_inclusion 2.
           }
-          
-          exact (@witnessing_sequence_extend _ _ _ _ _ Hl H1 Happ).
+
+          epose proof (P := @witnessing_sequence_extend _ _ _ _).
+          destruct P as [P _].
+          specialize (P (conj Hl (@ex_intro _ _ step' (conj H1 Happ)))).
+          apply P.
       Qed.
 
       Lemma witnessed_elements_included_in_interp:
@@ -440,8 +446,83 @@ Section with_signature.
         apply patt_ind_gen_wfp.
       Qed.
       
-      
 
+      (* [1,2,3,4,5] -> [5,4,3,2,1] -> [4,3,2,1] -> [1,2,3,4] *)
+      Lemma rev_tail_rev_app_last A (l : list A) (xlast : A):
+        last l = Some xlast ->
+        rev (tail (rev l)) ++ [xlast] = l.
+      Proof.
+        move: xlast.
+        induction l.
+        - intros xlast. simpl. intros H. inversion H.
+        - intros xlast. intros H. simpl.
+          destruct l as [|b l'].
+          + simpl. simpl in H. inversion H. reflexivity.
+          + simpl. simpl in IHl. simpl in H.
+            assert (Ha: [a] = rev [a]).
+            { reflexivity. }
+            assert (Hb: [b] = rev [b]).
+            { reflexivity. }
+            assert (Hxlast: [xlast] = rev [xlast]).
+            { reflexivity. }
+            
+            rewrite Hxlast.
+            rewrite -rev_app_distr.
+      Admitted.
+
+      Lemma length_tail_zero A l: @length A (tail l) = 0 <-> (@length A l = 0 \/ @length A l = 1).
+      Proof.
+        destruct l.
+        - simpl. split. intros H. left. apply H.
+          intros [H|H]. apply H. inversion H.
+        - simpl. split.
+          + intros H. rewrite H. right. reflexivity.
+          + intros [H|H]. inversion H. lia.
+      Qed.
+
+      Check head.
+      Lemma hd_error_app A (a b : A) (l : list A) :
+        hd_error ((l ++ [a]) ++ [b]) = hd_error (l ++ [a]).
+      Proof.
+        induction l.
+        - reflexivity.
+        - reflexivity.
+      Qed.
+        
+               
+      Lemma last_rev_head A (l : list A) (x : A) : last (x :: l) = hd_error (rev l ++ [x]).
+      Proof.
+        remember (length l) as len.
+        assert (Hlen: length l <= len).
+        { lia. }
+        clear Heqlen.
+        move: l Hlen x.
+        induction len; intros l Hlen x; destruct l eqn:Hl.
+        - reflexivity.
+        - simpl in Hlen. lia.
+        - reflexivity.
+        - simpl. Search hd_error "++".
+          rewrite hd_error_app.
+          rewrite - (IHlen l0).
+          { simpl in Hlen. lia. }
+          simpl. reflexivity.
+      Qed.
+
+      Lemma hd_error_lookup A (l : list A) :
+        l !! 0 = hd_error l.
+      Proof.
+        destruct l; reflexivity.
+      Qed.
+
+      Lemma list_len_slice A (l1 l2 : list A) (a b : A) :
+        a :: l1 = l2 ++ [b] -> length l1 = length l2.
+      Proof.
+        intros H1.
+        assert (H2: length (a :: l1) = length (l2 ++ [b])).
+        { rewrite H1. reflexivity. }
+        simpl in H2.
+        rewrite app_length in H2. simpl in H2. lia.
+      Qed.
       
       Definition witnessed_elements_of_max_len len : Ensemble (Domain M) :=
         λ m, ∃ l, is_witnessing_sequence m l /\ length l <= len.
@@ -471,20 +552,150 @@ Section with_signature.
           unfold Ensembles.In. intros H.
           destruct H as [l [Hwit Hlen]].
           unfold Included in IHlen. unfold Ensembles.In in IHlen.
-          rewrite F_interp. 
+          rewrite F_interp.
+          pose proof (Hwit' := Hwit).
           unfold is_witnessing_sequence in Hwit.
           destruct Hwit as [Hlast Hl].
           destruct l.
           { contradiction. }
+          
           simpl in Hlen.
           destruct Hl as [Hd Hl].
           destruct l.
           + simpl in Hlast. inversion Hlast. clear Hlast. subst.
             left. unfold Ensembles.In. apply Hd.
           + right. unfold Ensembles.In.
+            Check witnessing_sequence_extend.
+            pose proof (P := witnessing_sequence_extend).
+            destruct l as [|x' l'].
+            { simpl in Hlast. inversion Hlast. subst.
+              specialize (P d d m []).
+              destruct P as [_ P]. simpl in P.
+              simpl in Hl.
+              inversion Hl. subst. clear Hl.
+              assert (Hsomed: Some d = Some d).
+              { reflexivity. }
+              specialize (P (conj Hsomed Hwit')).
+              destruct P as [Hwitd [step' Hstep']].
+              exists step'. exists d.
+              destruct Hstep' as [Hstep' Hm].
+              split.
+              { apply Hstep'. }
+              split.
+              { apply IHlen. unfold witnessed_elements_of_max_len.
+                exists [d].
+                split.
+                2: { simpl. lia. }
+                unfold is_witnessing_sequence. simpl.
+                split.
+                { reflexivity. }
+                split.
+                { apply Hd. }
+                apply Forall_nil.
+                exact I.
+              }
+              apply Hm.
+            }
+            simpl in P.
+            simpl in Hlast.
             simpl in Hl.
-            inversion Hl. subst.
-            destruct H1 as [step' [d' [Hstep' [Hd' Hd0]]]].
+            inversion Hl. subst. clear Hl.
+            inversion H2. subst. clear H2.
+            pose (mp := (rev (d0 :: x' :: l')) !! 1).
+            simpl in mp.
+            epose proof (Htot := (@list_lookup_lookup_total_lt (Domain M) _ (rev (d0 :: x' :: l')) 1 _)).
+            Unshelve. 2: { constructor. exact d0. }
+            2: { simpl. rewrite app_length. rewrite app_length. simpl.  lia.  }
+
+            remember (@lookup_total nat (@Domain Σ M) (list (@Domain Σ M))
+                 (@list_lookup_total (@Domain Σ M) {| inhabitant := d0 |}) (S O)
+                 (@rev (@Domain Σ M) (@cons (@Domain Σ M) d0 (@cons (@Domain Σ M) x' l')))) as mprev.
+
+            specialize (IHlen mprev).
+            unfold witnessed_elements_of_max_len in IHlen.
+            specialize (P mprev d m  (rev (tl (rev (d0::x'::l'))))).
+
+            assert (Heq1: d::d0::x'::l' = d::(rev (tail (rev (d0::x'::l')))) ++ [m]).
+            {
+              apply f_equal.
+              simpl.
+              Check rev_tail_rev_app_last.
+              assert (Hx'r: [x'] = rev [x']).
+              { reflexivity. }
+              rewrite Hx'r.
+              rewrite -rev_app_distr.
+              assert (Hd0r: [d0] = rev [d0]).
+              { reflexivity. }
+              rewrite Hd0r.
+              rewrite -rev_app_distr.
+              rewrite rev_tail_rev_app_last.
+              simpl.
+              apply Hlast.
+              reflexivity.
+            }
+            destruct P as [_ P].
+            
+
+            destruct (rev (tail (rev (d0 :: x' :: l')))) eqn:Heqrev.
+            {
+              apply length_zero_iff_nil in Heqrev.
+              rewrite rev_length in Heqrev.
+              apply length_tail_zero in Heqrev.
+              rewrite rev_length in Heqrev.
+              simpl in Heqrev. lia.
+            }
+
+            simpl in Heq1. inversion Heq1. subst d0. clear Heq1.
+            simpl in P.
+            rewrite -H2 in P.
+            
+            Check mprev.
+            
+            assert (Hm : (match l with [] => Some d1 | _ :: _ => last l end ) = Some mprev).
+            {
+              clear P Heqrev H1 H3 H4 mp.
+              destruct l.
+              { simpl in H2. inversion H2. subst. reflexivity. }
+              simpl.
+              simpl in H2.
+              inversion H2. subst x' l'. clear H2.
+              simpl in Htot. Search mprev.
+              destruct (l ++ [m]) eqn:Hcontra.
+              { pose proof (Hcontra' := @app_length _ l [m]).
+                rewrite Hcontra in Hcontra'.
+                simpl in Hcontra'. lia.
+              }
+              rewrite -Hcontra in Htot.
+              rewrite rev_app_distr in Htot. simpl in Htot.
+
+              destruct l.
+              { simpl in Htot. apply Htot. }
+              simpl in Htot.
+              rewrite -Htot.
+              rewrite hd_error_lookup.
+              rewrite hd_error_app. rewrite hd_error_app.
+              apply last_rev_head.
+            }
+            Check @conj.
+            specialize (P (@conj _ _ Hm Hwit')). clear Hm Hwit'.
+            destruct P as [Hwitmprev [step' [Hstep' Hm]]].
+            exists step'. exists mprev.
+            split.
+            { apply Hstep'. }
+            split.
+            2: { apply Hm. }
+            apply IHlen.
+            exists (d::d1::l).
+            split.
+            { apply Hwitmprev. }
+            simpl. simpl in Hlen.
+            assert (Hlen': S (length l') <= len).
+            { lia. }
+            assert (length (l') = length (l)).
+            { apply (list_len_slice H2). }
+            rewrite -H. lia.
+      Qed.
+      
           
       
       Lemma witnessed_elements_included_in_interp:
