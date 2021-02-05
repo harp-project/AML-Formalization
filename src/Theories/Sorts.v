@@ -54,6 +54,14 @@ Section sorts.
        unary_svar_open := svar_open_inhabitant_set ;
     |}.
 
+  (* BV : nat -> sort *)
+  (* BV_inc : \forall n, BV n -> BV n *)
+  (* forall n:nat, forall x: BV n, exists y:BV n, BV_inc x = y *)
+  (* forall n:nat, forall x : BV n, P *)
+  (* forall n, n \in [[nat]] -> forall x, x \in [[BV n]], P *)
+  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV b1]], P  *)
+  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV (nest_ex b0)]], P  *)
+  (* forall, b0 \in [[nat]] -> Q(b0)*)
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 
