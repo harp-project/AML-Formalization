@@ -8,16 +8,16 @@ version: 2.1
 
 jobs:
   build:
-    machine:
-      image: ubuntu-2004:202010-01
+    docker:
+      - image: nixos/nix
     steps:
       - checkout
       - run:
-          name: "Build in Docker"
-          command: ./build-in-docker.sh 
+          name: "Build"
+          command: nix-build
       - run:
           name: "CoqDoc"
-          command: ./run-in-docker.sh make html
+          command: nix-shell "make html"
       - persist_to_workspace:
           root: .
           paths: html
