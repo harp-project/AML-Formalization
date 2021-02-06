@@ -14,7 +14,7 @@ jobs:
       - checkout
       - run:
           name: "Build"
-          command: nix-build
+          command: nix-build --show-trace
       - run:
           name: "CoqDoc"
           command: nix-shell "make html"
