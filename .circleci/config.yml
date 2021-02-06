@@ -8,16 +8,22 @@ version: 2.1
 
 jobs:
   build:
-    machine:
-      image: ubuntu-2004:202010-01
+    docker:
+      - image: nixos/nix
     steps:
+      - run:
+          name: "Install git"
+          command: |
+            nix-channel --update
+            nix-env --upgrade
+            nix-env -iA nixpkgs.git
       - checkout
       - run:
-          name: "Build in Docker"
-          command: ./build-in-docker.sh 
+          name: "Build"
+          command: nix-build --show-trace
       - run:
           name: "CoqDoc"
-          command: ./run-in-docker.sh make html
+          command: nix-shell --run "make html"
       - persist_to_workspace:
           root: .
           paths: html
