@@ -4,7 +4,7 @@ with import <nixpkgs> {};
 let
 
   deps = import ./nix/deps.nix { inherit coqVersion; };
-/*  deps = { coq = ncoq; inherit stdpp; }; */
+
   self = stdenv.mkDerivation {
     name = "coq${deps.coq.coq-version}-matching-logic";
 
