@@ -53,7 +53,7 @@ Proof.
     rewrite -> decode_encode. simpl. reflexivity.
 Qed.
 
-Program Instance inj_unit_r : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
+Program Instance inj_unit_r {K} : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
 Next Obligation.
   intros. destruct x,y. simpl in H. subst. destruct u. destruct u0. reflexivity.
 Defined.
