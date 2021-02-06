@@ -23,7 +23,7 @@ jobs:
           command: nix-build --show-trace
       - run:
           name: "CoqDoc"
-          command: nix-shell "make html"
+          command: nix-shell --run "make html"
       - persist_to_workspace:
           root: .
           paths: html
