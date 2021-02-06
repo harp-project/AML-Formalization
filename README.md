@@ -13,23 +13,25 @@ opam install coq-matching-logic
 
 ## For developers
 
-### Dependencies:
-- Coq 8.12
-- stdpp (development version)
+### Build
+
+The easiest way to build this library is using the Nix package manager.
+
+1. [Install Nix](https://nixos.org/download.html)
 ```sh
-opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
-opam install coq-stdpp
+$ curl -L https://nixos.org/nix/install | sh
 ```
 
-The project can be built using `make`:
+2. Run Nix shell and let Nix handle all the dependencies
 ```sh
-make
+$ nix-shell
 ```
-or using `dune`:
+
+3. Build using `make`
 ```sh
-dune build
+$ make
 ```
-for both of which one needs to have Coq 8.12 installed.
+
 Alternatively, it is possible to build the project in Docker:
 ```sh
 ./build-in-docker.sh
