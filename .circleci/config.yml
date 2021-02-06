@@ -11,6 +11,12 @@ jobs:
     docker:
       - image: nixos/nix
     steps:
+      - run:
+          name: "Install git"
+          command: |
+            nix-channel --update
+            nix-env --upgrade
+            nix-env -iA nixpkgs.git
       - checkout
       - run:
           name: "Build"
