@@ -15,7 +15,9 @@ echo "$REV" > "$STDPP_REV_FILE"
 
 git diff --exit-code
 if [[ $? -eq 1 ]]; then
-  git checkout -b "auto-update-stdpp-$(date +'%Y-%m-%d--%H-%M-%S')"
+  BRANCH="auto-update-stdpp-$(date +'%Y-%m-%d--%H-%M-%S')"
+  git checkout -b "$BRANCH"
   git commit -a -m 'Bump stdpp version'
+  git push origin "$BRANCH"
   gh pr create --title 'Bump stdpp version'
 fi
