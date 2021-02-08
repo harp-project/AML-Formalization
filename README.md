@@ -37,6 +37,10 @@ Alternatively, it is possible to build the project in Docker:
 ./build-in-docker.sh
 ```
 
+### IDE setup
+If you have ProofGeneral or CoqIde installed, just run them inside the `nix-shell`.
+It will detect the nix-provided coq and libraries automatically.
+
 ### Structure
 
 - `MatchingLogic.Utils` - A collection of generally usefull definitions and lemmas, independent of Matching Logic.
