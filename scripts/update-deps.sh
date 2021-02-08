@@ -12,3 +12,10 @@ echo "rev: $REV"
 rm -rf "$STDPP_GIT_DIR"
 
 echo "$REV" > "$STDPP_REV_FILE"
+
+git diff --exit-code
+if [[ $? -eq 1 ]]; then
+  git checkout -b "auto-update-stdpp-$(date +'%Y-%m-%d--%H-%M-%S')"
+  git commit -a -m 'Bump stdpp version'
+  gh pr create --title 'Bump stdpp version'
+fi
