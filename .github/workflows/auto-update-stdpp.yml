@@ -18,4 +18,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SECRET_GITHUB_TOKEN }}
         run: |
           cd $GITHUB_WORKSPACE
+          gh auth login --with-token process.env.GITHUB_TOKEN
           ./scripts/update-deps.sh
