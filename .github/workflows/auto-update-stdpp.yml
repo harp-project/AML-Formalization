@@ -12,7 +12,10 @@ jobs:
     name: Stdpp auto update
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
       - env:
           GITHUB_TOKEN: ${{ secrets.SECRET_GITHUB_TOKEN }}
-        run:
+        run: |
+          cd $GITHUB_WORKSPACE
           ./scripts/update-deps
