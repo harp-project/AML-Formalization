@@ -18,5 +18,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           gh config set prompt disabled
+          git config user.email "jenda.tusil@gmail.com"
+          git config user.name "Jan Tusil (GH Actions)"
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           ./scripts/update-deps.sh
