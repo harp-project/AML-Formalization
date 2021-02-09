@@ -1,0 +1,14 @@
+name: Auto update stdpp
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Every Monday at 4:15 am
+    - cron:  '15 4 * * 1'
+
+jobs:
+  stdpp-auto-update:
+    name: Stdpp auto update
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./scripts/update-deps
