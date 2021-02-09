@@ -3,8 +3,8 @@ name: Auto update stdpp
 on:
   schedule:
     # * is a special character in YAML so you have to quote this string
-    # Every Tuesday at 4:15 am
-    - cron:  '15 4 * * 2'
+    # Every Monday at 4:15 am
+    - cron:  '15 4 * * 1'
 
 jobs:
   stdpp-auto-update:
