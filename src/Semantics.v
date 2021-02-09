@@ -1496,24 +1496,21 @@ Proof.
       assert (Hfreshy: Y <> fresh_svar phi1).
       { solve_fresh_svar_neq. }
 
-      rewrite -> interpretation_fresh_svar_open with (X := fresh_svar phi_subst) (Y := Y).
-      2: { apply set_svar_fresh_is_fresh. }
-      2: { rewrite -> HeqY.
-           rewrite -> HeqB.
-           unfold svar_is_fresh_in. admit. }
-      
-      subst phi_subst. rewrite svar_open_bsvar_subst.
-(*
-      { assumption. }
-      { lia. }
-      (*rewrite update_svar_val_comm. { admit. }*)
-      rewrite -> IHsz with (X := X).
-      remember (update_svar_val (fresh_svar (bsvar_subst phi1 phi2 (S dbi))) E svar_val) as svar_val'.
-      rewrite svar_open_comm.
-      { lia. }
       remember (bsvar_occur phi1 (S dbi)) as Hoc.
       destruct Hoc.
-      -- assert (Hpieq: pattern_interpretation evar_val svar_val' phi2
+      --
+        subst phi_subst. rewrite svar_open_bsvar_subst.
+        { assumption. }
+        { lia. }
+        (*rewrite update_svar_val_comm. { admit. }*)
+        rewrite -> IHsz with (X := X).
+        2: { rewrite -svar_open_size. simpl in Hsz. lia.  }
+        
+        remember (update_svar_val (fresh_svar (bsvar_subst phi1 phi2 (S dbi))) E svar_val) as svar_val'.
+        rewrite svar_open_comm.
+        { lia. }
+
+        assert (Hpieq: pattern_interpretation evar_val svar_val' phi2
                         = pattern_interpretation evar_val svar_val phi2).
          { admit. }
          rewrite Hpieq.
@@ -1521,11 +1518,45 @@ Proof.
          rewrite update_svar_val_comm. admit.
          apply interpretation_fresh_svar_open.
          2: apply set_svar_fresh_is_fresh.
-         admit.
-      -- rewrite bsvar_subst_not_occur_is_noop. auto.
-         rewrite bsvar_subst_not_occur_is_noop in Heqsvar_val'. auto.
-         pose proof (Hsvar_not_occur := svar_open_not_occur_is_noop).
-         specialize (Hsvar_not_occur phi1 X (S dbi)).
+         admit. admit. admit. admit.
+      --
+
+        rewrite Heqphi_subst.
+        rewrite bsvar_subst_not_occur_is_noop. { auto. }
+        rewrite bsvar_subst_not_occur_is_noop in Heqphi_subst. { auto. }
+        
+        rewrite -> interpretation_fresh_svar_open with (X := fresh_svar phi1) (Y := Y).
+        2: { apply set_svar_fresh_is_fresh. }
+        2: { subst.
+             eapply svar_is_fresh_in_richer'.
+             2: apply set_svar_fresh_is_fresh'.
+             solve_free_svars_inclusion 5.
+        }
+
+        simpl in Hsz.
+        
+        subst phi_subst. (*rewrite svar_open_bsvar_subst.
+        { assumption. }
+        { lia. }*)
+        (*rewrite update_svar_val_comm. { admit. }*)
+
+        Search svar_open bsvar_occur.
+        Check @svar_open_not_occur_is_noop.
+        rewrite -> svar_open_not_occur_is_noop with (X0 := X)(dbi0 := S dbi).
+        2: { symmetry. apply HeqHoc. }
+        Search pattern_interpretation svar_is_fresh_in.
+        (* We want to 'forget' about phi2 in the RHS *)
+        (*
+        rewrite -> IHsz with (X := Y).
+        2: { rewrite -svar_open_size. simpl in Hsz. lia.  }
+        
+        remember (update_svar_val Y E svar_val) as svar_val'.
+        rewrite svar_open_comm.
+        { lia. }
+
+        rewrite bsvar_subst_not_occur_is_noop in Heqsvar_val'. auto.
+        pose proof (Hsvar_not_occur := svar_open_not_occur_is_noop).
+        specialize (Hsvar_not_occur phi1 X (S dbi)).
          symmetry in HeqHoc.
          specialize (Hsvar_not_occur HeqHoc).
          rewrite !Hsvar_not_occur.
@@ -1547,7 +1578,6 @@ Proof.
          admit. admit. admit. admit.
          auto.
 *)        
-
 Admitted.
 
 
