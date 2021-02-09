@@ -11,4 +11,7 @@ jobs:
     name: Stdpp auto update
     runs-on: ubuntu-latest
     steps:
-      - run: ./scripts/update-deps
+      - env:
+          GITHUB_TOKEN: ${{ secrets.SECRET_GITHUB_TOKEN }}
+        run:
+          ./scripts/update-deps
