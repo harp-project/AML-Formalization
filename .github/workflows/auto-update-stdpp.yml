@@ -5,6 +5,7 @@ on:
     # * is a special character in YAML so you have to quote this string
     # Every Monday at 4:15 am
     - cron:  '15 4 * * 1'
+  workflow_dispatch:
 
 jobs:
   stdpp-auto-update:
