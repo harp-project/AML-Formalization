@@ -19,5 +19,5 @@ if [[ $? -eq 1 ]]; then
   git checkout -b "$BRANCH"
   git commit -a -m 'Bump stdpp version'
   git push origin "$BRANCH"
-  gh pr create --title 'Bump stdpp version'
+  gh pr create --title 'Bump stdpp version' --body 'This PR was auto-generated.'
 fi
