@@ -1545,6 +1545,16 @@ Proof.
         rewrite -> svar_open_not_occur_is_noop with (X0 := X)(dbi0 := S dbi).
         2: { symmetry. apply HeqHoc. }
         Search pattern_interpretation svar_is_fresh_in.
+        destruct (svar_eqdec X (fresh_svar phi1)).
+        ++ subst X. rewrite update_svar_val_shadow.
+           apply interpretation_fresh_svar_open.
+           admit. apply set_svar_fresh_is_fresh.
+        ++ rewrite update_svar_val_comm.
+           { apply not_eq_sym. apply n. }                              
+           rewrite (@interpretation_fresh_svar _ X).
+           { admit. }
+           apply interpretation_fresh_svar_open.
+           admit. apply set_svar_fresh_is_fresh.
         (* We want to 'forget' about phi2 in the RHS *)
         (*
         rewrite -> IHsz with (X := Y).
