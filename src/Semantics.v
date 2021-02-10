@@ -1490,11 +1490,19 @@ Proof.
 
       Check interpretation_fresh_svar_open.
       remember (bsvar_subst phi1 phi2 (S dbi)) as phi_subst.
-      remember (union (free_svars phi_subst) (singleton (fresh_svar phi1))) as B.
+      remember (union (union (free_svars phi_subst) (singleton (fresh_svar phi1))) (free_svars phi1)) as B.
 
       remember (svar_fresh (elements B)) as Y.
       assert (Hfreshy: Y <> fresh_svar phi1).
       { solve_fresh_svar_neq. }
+
+      assert (Hfreshy': svar_is_fresh_in Y phi1).
+      {
+        subst.
+        eapply svar_is_fresh_in_richer'.
+        2: apply set_svar_fresh_is_fresh'.
+        solve_free_svars_inclusion 5.
+      }
 
       remember (bsvar_occur phi1 (S dbi)) as Hoc.
       destruct Hoc.
@@ -1511,14 +1519,14 @@ Proof.
         { lia. }
 
         assert (Hpieq: pattern_interpretation evar_val svar_val' phi2
-                        = pattern_interpretation evar_val svar_val phi2).
-         { admit. }
-         rewrite Hpieq.
-         simpl. subst.
-         rewrite update_svar_val_comm. admit.
-         apply interpretation_fresh_svar_open.
-         2: apply set_svar_fresh_is_fresh.
-         admit. admit. admit. admit.
+                       = pattern_interpretation evar_val svar_val phi2).
+        { admit. }
+        rewrite Hpieq.
+        simpl. subst.
+        rewrite update_svar_val_comm. admit.
+        apply interpretation_fresh_svar_open.
+        2: apply set_svar_fresh_is_fresh.
+        admit. admit. admit. admit.
       --
 
         rewrite Heqphi_subst.
@@ -1548,46 +1556,18 @@ Proof.
         destruct (svar_eqdec X (fresh_svar phi1)).
         ++ subst X. rewrite update_svar_val_shadow.
            apply interpretation_fresh_svar_open.
-           admit. apply set_svar_fresh_is_fresh.
+           { apply Hfreshy'. }
+           apply set_svar_fresh_is_fresh.
         ++ rewrite update_svar_val_comm.
            { apply not_eq_sym. apply n. }                              
            rewrite (@interpretation_fresh_svar _ X).
-           { admit. }
+           { apply svar_is_fresh_in_svar_open.
+             { apply n. }
+             simpl in H. apply H.
+           }
            apply interpretation_fresh_svar_open.
-           admit. apply set_svar_fresh_is_fresh.
-        (* We want to 'forget' about phi2 in the RHS *)
-        (*
-        rewrite -> IHsz with (X := Y).
-        2: { rewrite -svar_open_size. simpl in Hsz. lia.  }
-        
-        remember (update_svar_val Y E svar_val) as svar_val'.
-        rewrite svar_open_comm.
-        { lia. }
-
-        rewrite bsvar_subst_not_occur_is_noop in Heqsvar_val'. auto.
-        pose proof (Hsvar_not_occur := svar_open_not_occur_is_noop).
-        specialize (Hsvar_not_occur phi1 X (S dbi)).
-         symmetry in HeqHoc.
-         specialize (Hsvar_not_occur HeqHoc).
-         rewrite !Hsvar_not_occur.
-
-         (* everything up to auto below is unsound *)
-         (* We can try to make it sound by employing fresh variables
-            that are distinct from other variables *)
-         remember (union (free_svars phi1) (singleton (fresh_svar phi1))) as B.
-         remember (svar_fresh (elements B)) as Y.
-         assert (Hfreshy: Y <> fresh_svar phi1).
-         { solve_fresh_svar_neq. }
-         (*rewrite -> interpretation_fresh_svar_open with (Y := Y).*)
-         rewrite update_svar_val_comm. admit.
-         
-         subst.
-         Search pattern_interpretation svar_open.
-         Search update_svar_val pattern_interpretation.
-         rewrite !interpretation_fresh_svar.
-         admit. admit. admit. admit.
-         auto.
-*)        
+           { apply Hfreshy'. }
+           apply set_svar_fresh_is_fresh.
 Admitted.
 
 
