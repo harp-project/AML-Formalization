@@ -1490,7 +1490,7 @@ Proof.
 
       Check interpretation_fresh_svar_open.
       remember (bsvar_subst phi1 phi2 (S dbi)) as phi_subst.
-      remember (union (union (free_svars phi_subst) (singleton (fresh_svar phi1))) (free_svars phi1)) as B.
+      remember (union (union (union (union (union (free_svars phi_subst) (singleton (fresh_svar phi1))) (free_svars phi1)) (free_svars (svar_open (S dbi) X phi1))) (singleton X)) (free_svars phi2)) as B.
 
       remember (svar_fresh (elements B)) as Y.
       assert (Hfreshy: Y <> fresh_svar phi1).
@@ -1504,14 +1504,82 @@ Proof.
         solve_free_svars_inclusion 5.
       }
 
+      assert (Hfreshy'': svar_is_fresh_in Y (svar_open (S dbi) X phi1)).
+      {
+        subst.
+        eapply svar_is_fresh_in_richer'.
+        2: apply set_svar_fresh_is_fresh'.
+        solve_free_svars_inclusion 5.
+      }
+
+      assert (Hfreshy''': Y <> X).
+      { solve_fresh_svar_neq. }
+
+      assert (Hfreshy'''': svar_is_fresh_in Y phi2).
+      {
+        subst.
+        eapply svar_is_fresh_in_richer'.
+        2: apply set_svar_fresh_is_fresh'.
+        solve_free_svars_inclusion 5.
+      }
+      
+      
+
       remember (bsvar_occur phi1 (S dbi)) as Hoc.
       destruct Hoc.
       --
-        subst phi_subst. rewrite svar_open_bsvar_subst.
+        subst phi_subst.
+
+        (*
+        rewrite svar_open_bsvar_subst.
         { assumption. }
+        { lia. } *)
+        
+        Check interpretation_fresh_svar_open.
+        rewrite (@interpretation_fresh_svar_open _ _ ((fresh_svar (svar_open (S dbi) X phi1))) Y).
+        { apply set_svar_fresh_is_fresh. }
+        { apply Hfreshy''. }
+        
+        rewrite update_svar_val_comm.
+        { apply Hfreshy'''. }
+        rewrite svar_open_comm.
         { lia. }
-        (*rewrite update_svar_val_comm. { admit. }*)
-        rewrite -> IHsz with (X := X).
+
+        (*remember (fresh_svar (svar_open (S dbi) X phi1)) as X'.*)
+        remember ((update_svar_val Y E svar_val)) as svar_val'.
+
+        assert (Hpieq: (pattern_interpretation evar_val svar_val' phi2) = (pattern_interpretation evar_val svar_val phi2)).
+        { subst svar_val'.
+          apply interpretation_fresh_svar.
+          apply Hfreshy''''.
+        }
+        rewrite -Hpieq.
+        clear Hpieq.
+        
+        rewrite <- IHsz.
+        5: { apply svar_is_fresh_in_svar_open.
+             apply not_eq_sym.
+             apply Hfreshy'''.
+             simpl in H.
+             apply H.
+        }
+        4: { apply Hwfc2. }
+        3: { admit. }
+        2: { rewrite -svar_open_size. simpl in Hsz. lia. }
+        
+        subst svar_val'.
+        rewrite svar_open_bsvar_subst.
+        { apply Hwfc2. }
+        { lia. }
+        admit.
+        (*
+        
+        pose proof (IH := @IHsz (S dbi) M (svar_open 0 Y phi1) phi2).
+        erewrite <- IH.
+        rewrite -> IHsz with (X := Y).
+        5: admit.
+        4: admit.
+        3: admit.
         2: { rewrite -svar_open_size. simpl in Hsz. lia.  }
         
         remember (update_svar_val (fresh_svar (bsvar_subst phi1 phi2 (S dbi))) E svar_val) as svar_val'.
@@ -1520,13 +1588,22 @@ Proof.
 
         assert (Hpieq: pattern_interpretation evar_val svar_val' phi2
                        = pattern_interpretation evar_val svar_val phi2).
-        { admit. }
+        {   admit. }
         rewrite Hpieq.
-        simpl. subst.
-        rewrite update_svar_val_comm. admit.
-        apply interpretation_fresh_svar_open.
+        simpl. (* subst. *)
+        Check interpretation_fresh_svar_open.
+        Search svar_open "comm".
+        rewrite svar_open_comm. { lia. }
+        (* rewrite -> interpretation_fresh_svar_open with (X := X) (Y := Y).*)
+                                rewrite update_svar_val_comm.
+        
+        
+        
+        { admit. }
+        rewrite interpretation_fresh_svar_open.
         2: apply set_svar_fresh_is_fresh.
         admit. admit. admit. admit.
+*)
       --
 
         rewrite Heqphi_subst.
