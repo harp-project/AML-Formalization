@@ -1261,7 +1261,7 @@ Qed.
 Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
     size phi1 <= sz -> forall (evar_val : EVarVal)
                               (svar_val : SVarVal) (X : svar), (* TODO X not free in ?? *)
-    well_formed_closed (patt_mu phi1) ->
+    (*well_formed_closed (patt_mu phi1) ->*)
     well_formed_closed phi2 ->
     ~ elem_of X (free_svars phi1) ->
     @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi (*0?*)) (*~ open_svar dbi phi2 ph1*)
@@ -1269,7 +1269,7 @@ Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) 
                      (update_svar_val X (@pattern_interpretation M evar_val svar_val phi2) svar_val)
                      (svar_open dbi X phi1).
 Proof.
-  induction sz; intros dbi M phi1 phi2 Hsz evar_val svar_val X Hwfc1 Hwfc2 H.
+  induction sz; intros dbi M phi1 phi2 Hsz evar_val svar_val X (* Hwfc1 *) Hwfc2 H.
   - (* sz == 0 *)
     destruct phi1; simpl in Hsz; simpl.
     + (* free_evar *)
@@ -1282,9 +1282,8 @@ Proof.
         apply elem_of_singleton_2. auto.
       * auto.
     + (* bound_evar *)
-      apply wfc_body_wfc_mu_iff in Hwfc1. unfold wfc_body_mu in Hwfc1.
-      specialize (Hwfc1 X H). unfold well_formed_closed in Hwfc1; simpl in Hwfc1.
-      lia. assumption.
+      rewrite 2!pattern_interpretation_bound_evar_simpl.
+      reflexivity.
     + (* bound_svar *)
       simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
@@ -1318,9 +1317,7 @@ Proof.
         apply elem_of_singleton_2. auto.
       * auto.
     + (* bound_evar *)
-      apply wfc_body_wfc_mu_iff in Hwfc1. unfold wfc_body_mu in Hwfc1.
-      specialize (Hwfc1 X H). unfold well_formed_closed in Hwfc1; simpl in Hwfc1.
-      lia. assumption.
+      rewrite !pattern_interpretation_bound_evar_simpl. reflexivity.
     + (* bound_svar *)
       simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
       * symmetry in Heq; apply beq_nat_eq in Heq. lia.
@@ -1341,15 +1338,15 @@ Proof.
       repeat rewrite <- IHsz.
        * reflexivity.
        * lia.
-       * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+       (** apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
          apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
-         inversion Hwfc1; auto.
+         inversion Hwfc1; auto.*)
        * assumption.
        * auto.
        * lia.
-       * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+       (** apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
          apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
-         inversion Hwfc1; auto.
+         inversion Hwfc1; auto.*)
        * assumption.
        * auto.
     + (* Bot. Again, a duplication of the sz=0 case *)
@@ -1361,15 +1358,15 @@ Proof.
       repeat rewrite <- IHsz.
       * reflexivity.
       * lia.
-      * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+      (** apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
         apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
-        inversion Hwfc1; auto.
+        inversion Hwfc1; auto.*)
       * assumption.
       * auto.
       * lia.
-      * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+      (** apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
         apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
-        inversion Hwfc1; auto.
+        inversion Hwfc1; auto.*)
       * assumption.
       * auto.
     (* TODO *)
@@ -1385,14 +1382,7 @@ Proof.
       remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
       remember (update_svar_val X (pattern_interpretation evar_val svar_val phi2) svar_val) as svar_val2'.
       pose proof (Hfresh_subst := @interpretation_fresh_evar_open M phi1' Xfr2' Xu c 0 evar_val svar_val2').
-      pose proof (Hwbm := wfc_mu_to_wfc_body).
-      specialize (Hwbm _ Hwfc1).
-      unfold wfc_body_mu in Hwbm.
-      rewrite -> free_svars_exists in Hwbm.
-      specialize (Hwbm X H).
-      rewrite !simpl_svar_open in Hwbm.
-      apply wfc_ex_to_wfc_body in Hwbm.
-      unfold wfc_body_ex in Hwbm.
+
       rewrite -> Hfresh_subst.
       2: { subst Xfr2'. apply set_evar_fresh_is_fresh. }
       2: { pose proof (Hfr := set_evar_fresh_is_fresh').
@@ -1445,9 +1435,9 @@ Proof.
         rewrite <- IHsz.
         * apply Same_set_refl.
         * rewrite <- evar_open_size. lia. 
-        * apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
+        (** apply wfc_body_to_wfc_mu. unfold wfc_body_mu. intros.
           apply wfc_aux_body_mu_imp1. unfold well_formed_closed in Hwfc1.
-          simpl in Hwfc1. apply wfc_aux_body_ex_imp1. auto.
+          simpl in Hwfc1. apply wfc_aux_body_ex_imp1. auto. *)
         * auto.
         * rewrite -> free_svars_evar_open. auto.
       -- (* dbi does not occur in phi1 *)
@@ -1522,9 +1512,15 @@ Proof.
         2: apply set_svar_fresh_is_fresh'.
         solve_free_svars_inclusion 5.
       }
-      
-      
 
+      assert (Hfreshy5: svar_is_fresh_in Y (bsvar_subst phi1 phi2 (S dbi))).
+      {
+        subst.
+        eapply svar_is_fresh_in_richer'.
+        2: apply set_svar_fresh_is_fresh'.
+        solve_free_svars_inclusion 7.
+      }
+      
       remember (bsvar_occur phi1 (S dbi)) as Hoc.
       destruct Hoc.
       --
@@ -1557,21 +1553,32 @@ Proof.
         clear Hpieq.
         
         rewrite <- IHsz.
-        5: { apply svar_is_fresh_in_svar_open.
+        4: { apply svar_is_fresh_in_svar_open.
              apply not_eq_sym.
              apply Hfreshy'''.
              simpl in H.
              apply H.
         }
-        4: { apply Hwfc2. }
-        3: { admit. }
+        3: { apply Hwfc2. }
         2: { rewrite -svar_open_size. simpl in Hsz. lia. }
         
         subst svar_val'.
         rewrite svar_open_bsvar_subst.
         { apply Hwfc2. }
         { lia. }
-        admit.
+        remember  (fresh_svar (bsvar_subst phi1 phi2 (S dbi))) as X'.
+        Search pattern_interpretation update_svar_val.
+        Check interpretation_fresh_svar_open.
+        Search bsvar_subst svar_open.
+        rewrite -svar_open_bsvar_subst.
+        { apply Hwfc2. }
+        { lia. }
+        rewrite -svar_open_bsvar_subst.
+        { apply Hwfc2. }
+        { lia. }
+        apply interpretation_fresh_svar_open.
+        { subst X'. apply set_svar_fresh_is_fresh. }
+        { apply Hfreshy5.  }
         (*
         
         pose proof (IH := @IHsz (S dbi) M (svar_open 0 Y phi1) phi2).
@@ -1645,7 +1652,7 @@ Proof.
            apply interpretation_fresh_svar_open.
            { apply Hfreshy'. }
            apply set_svar_fresh_is_fresh.
-Admitted.
+Qed.
 
 
 
