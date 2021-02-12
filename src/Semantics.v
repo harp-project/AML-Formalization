@@ -2666,6 +2666,14 @@ Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
 
 
+Definition is_total_function M f d c ρₑ ρₛ :=
+  ∀ (m₁ : Domain M),
+    d m₁ ->
+    ∃ (m₂ : Domain M),
+      c m₂ /\
+      app_ext (@pattern_interpretation M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
+      = Ensembles.Singleton (Domain M) m₂.
+
 End semantics.
 
 

@@ -709,7 +709,16 @@ Section with_signature.
         + apply witnessed_elements_included_in_interp.
       Qed.
 
+      
+      Section injective.
+        (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
+      End injective.
+      
     End with_interpretation.
+
+    
+
+    
   End inductive_generation.
   
   
