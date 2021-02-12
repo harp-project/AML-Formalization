@@ -187,3 +187,37 @@ Proof.
   simpl in H2.
   rewrite app_length in H2. simpl in H2. lia.
 Qed.
+
+Fixpoint skip_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :=
+  match l with
+  | nil => nil
+  | (x,y) :: xs =>
+    match (decide (x=y)) with
+    | left _ => @skip_eq _ eqdec xs
+    | right _ => l
+    end
+  end.
+
+Lemma skip_eq_head_not_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :
+  ∀ x y, hd_error (skip_eq l) = Some (x,y) -> x <> y.
+Proof.
+  induction l; intros x y; simpl; intros H.
+  - inversion H.
+  - destruct a as [a₁ a₂].
+    destruct (decide (a₁ = a₂)) eqn:Heq.
+    + apply IHl. apply H.
+    + simpl in H. inversion H. subst. apply n.
+Qed.
+
+Definition tail_skip_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :=
+  reverse (skip_eq (reverse l)).
+
+Lemma tail_skip_eq_last_not_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :
+  ∀ x y, last (tail_skip_eq l) = Some (x, y) -> x <> y.
+Proof.
+  intros x y H.
+  unfold tail_skip_eq in H.
+  rewrite last_reverse in H.
+  apply skip_eq_head_not_eq in H.
+  apply H.
+Qed.
