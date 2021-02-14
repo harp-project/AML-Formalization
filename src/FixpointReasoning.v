@@ -712,6 +712,52 @@ Section with_signature.
       
       Section injective.
         (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
+        Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
+        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
+
+        Lemma witnessed_elements_unique_seq :
+          ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
+        Proof.
+          intros m l₁ l₂.
+          wlog: l₁ l₂ / (length l₂ <= length l₁).
+          { intros H Hw₁ Hw₂.
+            destruct (decide (length l₁ <= length l₂)).
+            - symmetry. apply H; auto.
+            - apply H. lia. auto. auto.
+          }
+          intros Hlen12 Hw₁ Hw₂.
+          Print Model.
+          assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) (reverse l₁) (reverse l₂) = length l₂)).
+          {
+            remember (length l₂) as len₂.
+            assert (Hlen₂: length l₂ <= len₂).
+            { lia. }
+            clear Heqlen₂.
+            move: l₁ l₂ Hlen₂ Hlen12 Hw₁ Hw₂.
+            induction len₂; intros l₁ l₂ Hlen₂ Hlen12 Hw₁ Hw₂;destruct l₁,l₂; simpl.
+            - reflexivity.
+            - destruct Hw₁ as [_ Hcontra]. contradiction.
+            - destruct Hw₂ as [_ Hcontra]. contradiction.
+            - simpl in Hlen₂. lia.
+            - simpl in Hlen12. lia.
+            - simpl in Hlen12. lia.
+            - destruct Hw₂ as [_ Hcontra]. contradiction.
+            - rewrite 2!reverse_cons.
+              rename d into d₁. rename d0 into d₂.
+              simpl in Hlen₂.
+              assert (Hlen₂': length l₂ <= len₂).
+              { lia. }
+              simpl in Hlen12.
+              assert (Hlen12': len₂ <= length l₁).
+              { lia. }
+              specialize (IHlen₂ l₁ l₂ Hlen₂' Hlen12').
+              (* Problem: l₁ and l₂ are not witnessing sequences. 
+                 We probably want to weaken the condition, because
+                 we only need to know that they are `step`-sequences *)
+          
+        Abort.
+        
+        
       End injective.
       
     End with_interpretation.

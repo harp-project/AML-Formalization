@@ -221,3 +221,39 @@ Proof.
   apply skip_eq_head_not_eq in H.
   apply H.
 Qed.
+
+Fixpoint common_length {A} {eqdec: EqDecision A} (l₁ l₂ : list A) :=
+  match l₁,l₂ with
+  | nil,nil => 0
+  | nil,_ => 0
+  | _,nil => 0
+  | (x::xs),(y::ys) =>
+    match (decide (x=y)) with
+    | left _ => S (@common_length _ eqdec xs ys)
+    | right _ => 0
+    end
+  end.
+
+Lemma common_length_l_nil {A} {eqdec: EqDecision A} (l₁ : list A) :
+  common_length l₁ nil = 0.
+Proof.
+  induction l₁; reflexivity.
+Qed.
+
+Lemma common_length_sym {A} {eqdec: EqDecision A} (l₁ l₂ : list A) :
+  common_length l₁ l₂ = common_length l₂ l₁.
+Proof.
+  induction l₁; destruct l₂; simpl; try reflexivity.
+  - rename IHl₁ into IH. simpl in IH.
+    destruct (decide (a=a0)),(decide (a0=a)).
+    + apply f_equal. destruct l₁.
+      * simpl. rewrite common_length_l_nil. destruct l₂; reflexivity.
+      * subst. destruct l₂.
+        {rewrite common_length_l_nil. reflexivity. }
+        simpl.
+        destruct (decide (a1 = a)),(decide (a = a1)).
+        4: reflexivity.
+        3: { subst. contradiction. }
+        2: { subst. contradiction.  }
+        apply f_equal.
+Abort.

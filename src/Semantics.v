@@ -29,7 +29,8 @@ Section semantics.
       (* TODO think about whether or not to make it an existential formula. Because that would affect the equality,
      due to proof irrelevance. *)
       nonempty_witness : Domain;
-      Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
+      (*Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};*)
+      Domain_eq_dec : EqDecision Domain;
       app_interp : Domain -> Domain -> Power Domain;
       sym_interp (sigma : symbols) : Power Domain;
                    }.
@@ -2666,13 +2667,16 @@ Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
 
 
-Definition is_total_function M f d c ρₑ ρₛ :=
+Definition is_total_function M f (d c : Ensemble (Domain M)) ρₑ ρₛ :=
   ∀ (m₁ : Domain M),
     d m₁ ->
     ∃ (m₂ : Domain M),
       c m₂ /\
       app_ext (@pattern_interpretation M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
       = Ensembles.Singleton (Domain M) m₂.
+
+Definition is_functional_pattern ϕ M ρₑ ρₛ :=
+  ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = Ensembles.Singleton (Domain M) m.
 
 End semantics.
 
