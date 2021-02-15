@@ -478,9 +478,6 @@ Proof.
     reflexivity.
 Qed.
 
-    
-
-
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :
   Forall (curry f) (zip (m::l) (tail (m::l)))
   <->
@@ -488,13 +485,6 @@ Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list 
 Proof.
   rewrite -forall_zip_flip.
   rewrite -Forall_reverse.
-  Search tail zip.
-  Search zip_with.
-  Search tail drop.
-  Check Forall_rev.
-  split.
-  - intros H.
-    rewrite reverse_cons.
-    Check Forall_rev.
-    Check Forall_forall.
-Abort.
+  rewrite reverse_zip_tail_r.
+  reflexivity.
+Qed.
