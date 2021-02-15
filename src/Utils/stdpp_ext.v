@@ -1,6 +1,6 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect.
-From stdpp Require Import pmap gmap mapset fin_sets sets.
+From stdpp Require Import pmap gmap mapset fin_sets sets list.
 
 Lemma not_elem_of_singleton_1 `{SemiSet A C} x y : ~ elem_of x ((singleton y) : C) -> ~ x = y.
 Proof.
@@ -330,6 +330,38 @@ Proof.
     rewrite zip_with_app_r.
     (* Oops *)
 Abort.
+
+Lemma forall_zip_flip {A B : Type} (f : A -> B -> Prop) (xs : list A) (ys: list B) :
+  Forall (curry f) (zip xs ys) <-> Forall (curry (flip f)) (zip ys xs).
+Proof.
+  split.
+  - intros H.
+    move: ys H.
+    induction xs as [|x xs]; intros ys H.
+    + rewrite zip_with_nil_r.
+      apply Forall_nil.
+      exact I.
+    + destruct ys as [|y ys].
+      { simpl. apply Forall_nil. exact I. }
+      simpl in H. simpl.
+      inversion H. subst. simpl in H2.
+      apply Forall_cons. split.
+      { simpl. apply H2. }
+      apply IHxs. apply H3.
+  - intros H.
+    move: ys H.
+    induction xs as [|x xs]; intros ys H.
+    + simpl. apply Forall_nil. exact I.
+    + destruct ys as [|y ys].
+      { simpl. apply Forall_nil. exact I. }
+      simpl in H. simpl.
+      inversion H. subst. simpl in H2.
+      apply Forall_cons. split.
+      { simpl. apply H2. }
+      apply IHxs. apply H3.
+Qed.
+
+      
 
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :
   Forall (curry f) (zip (m::l) (tail (m::l)))
