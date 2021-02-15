@@ -232,13 +232,11 @@ Section with_signature.
       Qed.
       
       
-      Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
+      Definition is_witnessing_sequence_old (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
          | [] => False
          | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
-(*                     /\ forall (n : nat), n <= length ms ->*)
-                                                             
                      /\  (@Forall _
                                   (λ (x : (Domain M) * (Domain M)),
                                    let (old, new) := x in
@@ -252,7 +250,7 @@ Section with_signature.
                            
          end).
 
-      Definition is_witnessing_sequence_alt (m : Domain M) (l : list (Domain M)) :=
+      Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (∃ lst, last l = Some lst /\ @pattern_interpretation Σ M ρₑ ρₛ base lst)
           /\
           hd_error l = Some m
@@ -266,8 +264,8 @@ Section with_signature.
                     (zip l (tail l))
           )).
 
-      Lemma is_witnessing_sequence_alt_iff_is_witnessing_sequence_reverse (m : Domain M) (l : list (Domain M)) :
-        is_witnessing_sequence_alt m l <-> is_witnessing_sequence m (reverse l).
+      Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
+        is_witnessing_sequence m l <-> is_witnessing_sequence_old m (reverse l).
       Proof.
         assert (Feq: (curry (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new)))
                      =  (λ x : Domain M * Domain M, let (old, new) := x in app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) ).
@@ -362,10 +360,10 @@ Section with_signature.
           apply Hfa.
       Qed.
 
-      Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
-        (is_witnessing_sequence_alt m l
+      Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
+        (is_witnessing_sequence m l
          /\ (∃ step', pattern_interpretation ρₑ ρₛ step step' /\ app_interp step' m m')
-        ) <-> (is_witnessing_sequence_alt m' (m'::l) /\ l ≠ []).
+        ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
         - intros [[[lst [Hlst Hbase]] [Hhd Hwit]] [step' [Hstep' Hm']]].
@@ -375,7 +373,7 @@ Section with_signature.
           induction l; intros m Hhd m' step' Hm' Hstep'.
           + simpl in Hhd. inversion Hhd.
           + simpl in Hhd. inversion Hhd. subst a. clear Hhd.
-            unfold is_witnessing_sequence_alt.
+            unfold is_witnessing_sequence.
             destruct l.
             { simpl in Hlst. inversion Hlst. subst m. clear Hlst.
               split.
@@ -405,7 +403,7 @@ Section with_signature.
             destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d'']]]].
             inversion Hd''. subst d''. clear Hd''.
             specialize (IHl m step'' Hstep''d'' Hstep'').
-            unfold is_witnessing_sequence_alt in IHl.
+            unfold is_witnessing_sequence in IHl.
             simpl in IHl.
             destruct IHl as [_ [_ Hforall]].
             inversion Hforall. subst. apply H2.
@@ -415,12 +413,12 @@ Section with_signature.
           
 
 
-      Lemma witnessing_sequence_extend
+      Lemma witnessing_sequence_old_extend
             (m x m' : Domain M) (l : list (Domain M)):
-        (is_witnessing_sequence m (x::l) /\
+        (is_witnessing_sequence_old m (x::l) /\
         ∃ step', (pattern_interpretation ρₑ ρₛ step step' /\
         app_interp step' m m')) <->
-        (last (x::l) = Some m /\ is_witnessing_sequence m' ((x::l) ++ [m'])).
+        (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
         split.
         -
@@ -531,10 +529,10 @@ Section with_signature.
       
       
 
-      Definition witnessed_elements : Ensemble (Domain M) :=
-        λ m, ∃ l, is_witnessing_sequence m l.
+      Definition witnessed_elements_old : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence_old m l.
 
-      Lemma witnessed_elements_prefixpoint : Included _ (F witnessed_elements) witnessed_elements.
+      Lemma witnessed_elements_old_prefixpoint : Included _ (F witnessed_elements_old) witnessed_elements_old.
       Proof.
         unfold Included. unfold Ensembles.In.
         intros x Hx.
@@ -542,8 +540,8 @@ Section with_signature.
         rewrite pattern_interpretation_or_simpl in Hx. fold svar_open in Hx. simpl in Hx.
         destruct Hx.
         - unfold Ensembles.In in H.
-          unfold witnessed_elements.
-          exists [x]. unfold is_witnessing_sequence.
+          unfold witnessed_elements_old.
+          exists [x]. unfold is_witnessing_sequence_old.
           simpl.
           split.
           { reflexivity. }
@@ -569,10 +567,10 @@ Section with_signature.
           rewrite update_svar_val_same in H.
           unfold app_ext in H.
           destruct H as [step' [m [H1 [H2 Happ]]]].
-          unfold witnessed_elements in H2.
+          unfold witnessed_elements_old in H2.
           destruct H2 as [l Hl].
 
-          unfold witnessed_elements.
+          unfold witnessed_elements_old.
           exists (l ++ [x]).
 
           (* `l` is not empty *)
@@ -586,18 +584,18 @@ Section with_signature.
             solve_free_svars_inclusion 2.
           }
 
-          epose proof (P := @witnessing_sequence_extend _ _ _ _).
+          epose proof (P := @witnessing_sequence_old_extend _ _ _ _).
           destruct P as [P _].
           specialize (P (conj Hl (@ex_intro _ _ step' (conj H1 Happ)))).
           apply P.
       Qed.
 
-      Lemma interp_included_in_witnessed_elements:
-        Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements.
+      Lemma interp_included_in_witnessed_elements_old:
+        Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements_old.
       Proof.
         apply pattern_interpretation_mu_lfp_least.
         { apply patt_ind_gen_wfp. }
-        apply witnessed_elements_prefixpoint.
+        apply witnessed_elements_old_prefixpoint.
       Qed.
 
       Lemma pattern_interpretation_patt_ind_gen_fix :
@@ -609,18 +607,18 @@ Section with_signature.
       Qed.
       
       
-      Definition witnessed_elements_of_max_len len : Ensemble (Domain M) :=
-        λ m, ∃ l, is_witnessing_sequence m l /\ length l <= len.
+      Definition witnessed_elements_old_of_max_len len : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len.
 
-      Lemma witnessed_elements_of_max_len_included_in_interp len:
-        Included _ (witnessed_elements_of_max_len (S len)) (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Lemma witnessed_elements_old_of_max_len_included_in_interp len:
+        Included _ (witnessed_elements_old_of_max_len (S len)) (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         induction len.
         - unfold Included. intros m.
           rewrite -pattern_interpretation_patt_ind_gen_fix.
           unfold Ensembles.In.
           intros H.
-          unfold witnessed_elements_of_max_len.
+          unfold witnessed_elements_old_of_max_len.
           rewrite F_interp.
           destruct H as [l [Hwit Hlen]].
           unfold is_witnessing_sequence in Hwit.
@@ -650,7 +648,7 @@ Section with_signature.
           + simpl in Hlast. inversion Hlast. clear Hlast. subst.
             left. unfold Ensembles.In. apply Hd.
           + right. unfold Ensembles.In.
-            pose proof (P := witnessing_sequence_extend).
+            pose proof (P := witnessing_sequence_old_extend).
             destruct l as [|x' l'].
             { simpl in Hlast. inversion Hlast. subst.
               specialize (P d d m []).
@@ -666,7 +664,7 @@ Section with_signature.
               split.
               { apply Hstep'. }
               split.
-              { apply IHlen. unfold witnessed_elements_of_max_len.
+              { apply IHlen. unfold witnessed_elements_old_of_max_len.
                 exists [d].
                 split.
                 2: { simpl. lia. }
@@ -696,7 +694,7 @@ Section with_signature.
                  (@rev (@Domain Σ M) (@cons (@Domain Σ M) d0 (@cons (@Domain Σ M) x' l')))) as mprev.
 
             specialize (IHlen mprev).
-            unfold witnessed_elements_of_max_len in IHlen.
+            unfold witnessed_elements_old_of_max_len in IHlen.
             specialize (P mprev d m  (rev (tl (rev (d0::x'::l'))))).
 
             assert (Heq1: d::d0::x'::l' = d::(rev (tail (rev (d0::x'::l')))) ++ [m]).
@@ -777,41 +775,40 @@ Section with_signature.
       Qed.
       
           
-      Lemma witnessed_elements_included_in_interp:
-        Included _ witnessed_elements (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Lemma witnessed_elements_old_included_in_interp:
+        Included _ witnessed_elements_old (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         intros x H.
-        unfold Ensembles.In in H. unfold witnessed_elements in H.
+        unfold Ensembles.In in H. unfold witnessed_elements_old in H.
         destruct H as [wit Hwit].
-        assert (H': Ensembles.In (Domain M) (witnessed_elements_of_max_len (length wit)) x).
+        assert (H': Ensembles.In (Domain M) (witnessed_elements_old_of_max_len (length wit)) x).
         { unfold Ensembles.In. exists wit. split. apply Hwit. lia. }
         destruct wit as [|y l'] eqn:Hl.
         { unfold is_witnessing_sequence in Hwit. destruct Hwit. contradiction. }
-        eapply witnessed_elements_of_max_len_included_in_interp.
+        eapply witnessed_elements_old_of_max_len_included_in_interp.
         simpl in H'.
         apply H'.
       Qed.
-        
       
       
       Lemma patt_ind_gen_simpl:
-        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
+        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements_old.
       Proof.
         apply Ensembles_Ext.eq_iff_Same_set.
         split.
-        + apply interp_included_in_witnessed_elements.
-        + apply witnessed_elements_included_in_interp.
+        + apply interp_included_in_witnessed_elements_old.
+        + apply witnessed_elements_old_included_in_interp.
       Qed.
 
       
       Section injective.
         (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
         Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
-        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
+        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements_old witnessed_elements_old ρₑ ρₛ).
         (* TODO we need a hypothesis for injectivity *)
 
         Lemma witnessed_elements_unique_seq :
-          ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
+          ∀ m l₁ l₂, is_witnessing_sequence_old m l₁ -> is_witnessing_sequence_old m l₂ -> l₁ = l₂.
         Proof.
           intros m l₁ l₂.
           wlog: l₁ l₂ / (length l₂ <= length l₁).
