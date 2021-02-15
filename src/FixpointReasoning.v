@@ -266,9 +266,15 @@ Section with_signature.
                     (zip l (tail l))
           )).
 
-      Lemma is_witnessing_sequence_alt_iff_is_witnessing_sequence_rev (m : Domain M) (l : list (Domain M)) :
+      Lemma is_witnessing_sequence_alt_iff_is_witnessing_sequence_reverse (m : Domain M) (l : list (Domain M)) :
         is_witnessing_sequence_alt m l <-> is_witnessing_sequence m (reverse l).
       Proof.
+        assert (Feq: (curry (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new)))
+                     =  (λ x : Domain M * Domain M, let (old, new) := x in app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) ).
+        { apply functional_extensionality. intros [x₁ x₂].
+          reflexivity.
+        }
+        
         split.
         - intros [[m' [Hlast Hbase]] [Hhd Hfa]].
           destruct l as [|x l].
@@ -313,17 +319,48 @@ Section with_signature.
           apply Forall_zip_flip_reverse in Hfa.
           clear Hlast.
 
-          assert (Feq: (curry (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new)))
-                       =  (λ x : Domain M * Domain M, let (old, new) := x in app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) ).
-          { apply functional_extensionality. intros [x₁ x₂].
-            reflexivity.
-          }
           rewrite Feq in Hfa.
           apply Hfa.
         - intros H.
-      Abort.
-      
+          destruct H as [Hlast H2].
+          destruct l as [|x l].
+          { simpl in Hlast. inversion Hlast. }
+
+          destruct (reverse (x::l)) as [|y ys] eqn:Heq.
+          { inversion H2. }
+          destruct H2 as [Hbase Hfa].
+
+          rewrite -(reverse_involutive (y::ys)) in Heq.
+          apply (@inj _ _ (=) _ reverse) in Heq.
+          2: typeclasses eauto.
           
+          split.
+          { exists y.
+            split.
+            rewrite Heq.
+            rewrite last_reverse.
+            reflexivity.
+            apply Hbase.
+          }
+
+          split.
+          {
+            rewrite Heq.
+            rewrite head_reverse.
+            apply Hlast.
+          }
+
+          assert (Hfeq': (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) = flip (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new))).
+          { apply functional_extensionality. intros x0.
+            apply functional_extensionality. intros x1.
+            reflexivity.
+          }
+          rewrite Hfeq'.
+          rewrite Heq.
+          rewrite -Forall_zip_flip_reverse.
+          rewrite Feq.
+          apply Hfa.
+      Qed.
 
       Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence_alt m l
@@ -784,7 +821,7 @@ Section with_signature.
             - apply H. lia. auto. auto.
           }
           intros Hlen12 Hw₁ Hw₂.
-          Print Model.
+
           assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) (reverse l₁) (reverse l₂) = length l₂)).
           {
             unfold is_witnessing_sequence in Hw₁.
@@ -814,7 +851,6 @@ Section with_signature.
               rewrite 2!reverse_cons.
               destruct l₁.
               { simpl. inversion Hlast₁. subst. destruct (decide (m=m)). reflexivity. contradiction. }
-              Search reverse last.
         Abort.
         (*
               destruct Hw₁ as [_ Hcontra]. contradiction.
