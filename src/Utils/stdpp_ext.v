@@ -312,25 +312,6 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma reverse_zip_with {A B C : Type} (f : A -> B -> C) (l₁ : list A) (l₂ : list B) :
-  reverse (zip_with f l₁ l₂) = zip_with f (reverse l₁) (reverse l₂).
-Proof.
-  move: l₂.
-  induction l₁; intros l₂.
-  - reflexivity.
-  - simpl.
-    destruct l₂.
-    { rewrite !reverse_nil.
-      rewrite zip_with_nil_r.
-      reflexivity.
-    }
-    rewrite !reverse_cons.
-    rewrite IHl₁.
-    Search zip_with app.
-    rewrite zip_with_app_r.
-    (* Oops *)
-Abort.
-
 Lemma forall_zip_flip {A B : Type} (f : A -> B -> Prop) (xs : list A) (ys: list B) :
   Forall (curry f) (zip xs ys) <-> Forall (curry (flip f)) (zip ys xs).
 Proof.
@@ -440,7 +421,7 @@ Proof.
     remember (length (tail (reverse (x' :: l')))) as len'.
 
     assert (len' = length l').
-    { rewrite Heqlen'. Search length tail.
+    { rewrite Heqlen'.
       rewrite length_tail.
       rewrite reverse_length.
       simpl.

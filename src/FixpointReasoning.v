@@ -257,14 +257,12 @@ Section with_signature.
           /\
           hd_error l = Some m
           /\
-          ((@Forall _
-                    (λ (x : (Domain M) * (Domain M)),
-                     let (new, old) := x in
+          ((@Forall _ (curry (λ new old,
                      app_ext
                        (@pattern_interpretation Σ M ρₑ ρₛ step)
                        (Ensembles.Singleton _ old)
                        new
-                    )
+                    ))
                     (zip l (tail l))
           )).
 
@@ -304,7 +302,6 @@ Section with_signature.
           split.
           { apply Hbase. }
           clear Hbase.
-          (*clear Heq.*)
 
           pose proof (Heq' := f_equal reverse Heq).
           rewrite reverse_involutive in Heq'.
@@ -313,7 +310,19 @@ Section with_signature.
           rewrite -> Heq'' at 2. clear Heq''.
           rewrite -Heq.
           clear Heq' Heq l0.
-          Check flip.
+          apply Forall_zip_flip_reverse in Hfa.
+          clear Hlast.
+
+          assert (Feq: (curry (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new)))
+                       =  (λ x : Domain M * Domain M, let (old, new) := x in app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) ).
+          { apply functional_extensionality. intros [x₁ x₂].
+            reflexivity.
+          }
+          rewrite Feq in Hfa.
+          apply Hfa.
+        - intros H.
+      Abort.
+      
           
 
       Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
@@ -762,6 +771,7 @@ Section with_signature.
         (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
         Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
+        (* TODO we need a hypothesis for injectivity *)
 
         Lemma witnessed_elements_unique_seq :
           ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
@@ -805,7 +815,8 @@ Section with_signature.
               destruct l₁.
               { simpl. inversion Hlast₁. subst. destruct (decide (m=m)). reflexivity. contradiction. }
               Search reverse last.
-              
+        Abort.
+        (*
               destruct Hw₁ as [_ Hcontra]. contradiction.
             - destruct Hw₂ as [_ Hcontra]. contradiction.
             - simpl in Hlen₂. lia.
@@ -826,6 +837,7 @@ Section with_signature.
                  we only need to know that they are `step`-sequences *)
           
         Abort.
+        *)
         
         
       End injective.
