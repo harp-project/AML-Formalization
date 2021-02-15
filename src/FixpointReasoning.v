@@ -789,11 +789,29 @@ Section with_signature.
         simpl in H'.
         apply H'.
       Qed.
-      
+
+      Definition witnessed_elements : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence m l.
+
+      Lemma witnessed_elements_old_eq_witnessed_elements :
+        witnessed_elements_old = witnessed_elements.
+      Proof.
+        apply (@Extensionality_Ensembles _).
+        split; unfold Included; unfold Ensembles.In;
+          unfold witnessed_elements_old; unfold witnessed_elements; intros m; intros [l H].
+        + exists (reverse l).
+          apply is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse.
+          rewrite reverse_involutive.
+          exact H.
+        + exists (reverse l).
+          apply is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse.
+          apply H.
+      Qed.
       
       Lemma patt_ind_gen_simpl:
-        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements_old.
+        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
       Proof.
+        rewrite -witnessed_elements_old_eq_witnessed_elements.
         apply Ensembles_Ext.eq_iff_Same_set.
         split.
         + apply interp_included_in_witnessed_elements_old.
@@ -804,11 +822,11 @@ Section with_signature.
       Section injective.
         (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
         Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
-        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements_old witnessed_elements_old ρₑ ρₛ).
+        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
         (* TODO we need a hypothesis for injectivity *)
 
         Lemma witnessed_elements_unique_seq :
-          ∀ m l₁ l₂, is_witnessing_sequence_old m l₁ -> is_witnessing_sequence_old m l₂ -> l₁ = l₂.
+          ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
         Proof.
           intros m l₁ l₂.
           wlog: l₁ l₂ / (length l₂ <= length l₁).
@@ -819,35 +837,17 @@ Section with_signature.
           }
           intros Hlen12 Hw₁ Hw₂.
 
-          assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) (reverse l₁) (reverse l₂) = length l₂)).
+          assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) l₁ l₂ = length l₂)).
           {
-            unfold is_witnessing_sequence in Hw₁.
+            destruct Hw₁ as [[lst₁ [Hlst₁ Hbase₁]] [Hhd₁ Hfa₁]].
             destruct l₁ as [|m₁ l₁].
-            { destruct Hw₁. contradiction. }
-            destruct Hw₁ as [Hlast₁ [Hbase₁ Hstep₁]].
+            { simpl in Hlst₁. inversion Hlst₁. }
+            simpl in Hhd₁. inversion Hhd₁. subst. clear Hhd₁.
 
-            unfold is_witnessing_sequence in Hw₂.
+            destruct Hw₂ as [[lst₂ [Hlst₂ Hbase₂]] [Hhd₂ Hfa₂]].
             destruct l₂ as [|m₂ l₂].
-            { destruct Hw₂. contradiction. }
-            destruct Hw₂ as [Hlast₂ [Hbase₂ Hstep₂]].
-
-            
-            
-            remember (length l₂) as len₂.
-            assert (Hlen₂: length l₂ <= len₂).
-            { lia. }
-            clear Heqlen₂.
-            move: l₁ l₂ Hlast₁ Hlast₂ Hstep₁ Hstep₂ Hlen₂ Hlen12.
-            induction len₂; intros l₁ l₂ Hlast₁ Hlast₂ Hstep₁ Hstep₂ Hlen₂ Hlen12; destruct l₁,l₂; simpl.
-            - simpl in Hlast₁. simpl in Hlast₂. inversion Hlast₁. inversion Hlast₂. subst.
-              destruct (decide (m=m)).
-              { reflexivity. }
-              contradiction.
-            - simpl in Hlen₂. lia.
-            - simpl in Hlast₁. simpl in Hlast₂. inversion Hlast₂. subst.
-              rewrite 2!reverse_cons.
-              destruct l₁.
-              { simpl. inversion Hlast₁. subst. destruct (decide (m=m)). reflexivity. contradiction. }
+            { simpl in Hlst₂. inversion Hlst₂. }
+            simpl in Hhd₂. inversion Hhd₂. subst. clear Hhd₂.
         Abort.
         (*
               destruct Hw₁ as [_ Hcontra]. contradiction.
