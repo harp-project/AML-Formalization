@@ -361,13 +361,137 @@ Proof.
       apply IHxs. apply H3.
 Qed.
 
-      
+Lemma tail_app_nonempty {A : Type} (x : A) (xs ys : list A) :
+  tail ((x::xs) ++ ys) = (tail (x::xs)) ++ ys.
+Proof.
+  remember (length xs) as len.
+  assert (Hlen: length xs <= len).
+  { lia. }
+  clear Heqlen.
+  move: x xs Hlen.
+  induction len; intros x xs Hlen.
+  - destruct xs.
+    2: { simpl in Hlen. inversion Hlen. }
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma tail_app_nonempty' {A : Type} (xs ys : list A) :
+  length xs >= 1 ->
+  tail (xs ++ ys) = (tail xs) ++ ys.
+Proof.
+  intros H.
+  destruct xs as [|z zs].
+  { simpl in H. lia. }
+  rewrite tail_app_nonempty.
+  reflexivity.
+Qed.
+
+Lemma length_tail {A : Type} (l : list A) :
+  length (tail l) = length l - 1.
+Proof.
+  destruct l.
+  - reflexivity.
+  - simpl.
+    rewrite PeanoNat.Nat.sub_0_r.
+    reflexivity.
+Qed.
+
+Lemma reverse_zip_tail_r {A : Type} (m : A) (l : list A) :
+  reverse (zip (m :: l) (tail (m :: l)))
+  = zip (tail (reverse (m :: l))) (reverse (m :: l)).
+Proof.
+  remember (length l) as len.
+  assert (Hlen: length l <= len).
+  { lia. }
+  clear Heqlen.
+  move: m l Hlen.
+  induction len; intros m l Hlen.
+  - destruct l.
+    2: { simpl in Hlen. inversion Hlen. }
+    reflexivity.
+  - destruct l as [|x l].
+    { reflexivity. }
+    simpl.
+    (*rewrite !reverse_cons.*)
+    destruct l as [|x' l'] eqn:Heq.
+    { reflexivity. }
+    simpl in IHlen.
+    rewrite 3!reverse_cons.
+
+    simpl in Hlen.
+    (*assert (S (length l') <= len).
+    { lia. }*)
+    assert (length (x'::l') <= len).
+    { simpl. lia. }
+
+    (* extract `m` out of `tail` *)
+    rewrite -> tail_app_nonempty'.
+    2: { rewrite reverse_length. simpl. lia. }
+
+    (* extract `x` out of `tail` *)
+    rewrite 1!reverse_cons.
+    rewrite -> tail_app_nonempty'.
+    2: { rewrite reverse_length. simpl. lia. }
+
+    rewrite -!app_assoc.
+    rewrite [[x]++[m]]/=.
+    rewrite zip_with_app_l.
+    remember (length (tail (reverse (x' :: l')))) as len'.
+
+    assert (len' = length l').
+    { rewrite Heqlen'. Search length tail.
+      rewrite length_tail.
+      rewrite reverse_length.
+      simpl.
+      rewrite PeanoNat.Nat.sub_0_r.
+      reflexivity.
+    }
+    assert (len' = length (reverse l')).
+    { rewrite reverse_length. apply H0. }
+    rewrite reverse_cons.
+    rewrite -!app_assoc.
+    rewrite H1.
+    rewrite take_app.
+    rewrite drop_app.
+
+    rewrite [zip [x;m] _]/=.
+
+    simpl.
+    rewrite IHlen.
+    { simpl in H. lia. }
+    simpl.
+    rewrite reverse_cons.
+
+    assert (reverse l' = take (length (tail (reverse l' ++ [x']))) (reverse l' ++ [x'])).
+    { rewrite length_tail. rewrite app_length. simpl.
+      assert (length (reverse l') + 1 - 1 = length (reverse l')).
+      { lia. }
+      rewrite H2.
+      rewrite take_app.
+      reflexivity.
+    }
+    rewrite -> H2 at 4.
+
+    rewrite zip_with_take_r.
+    { rewrite length_tail. lia. }
+    reflexivity.
+Qed.
+
+    
+
 
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :
   Forall (curry f) (zip (m::l) (tail (m::l)))
   <->
   Forall (curry (flip f)) (zip (reverse (m::l)) (tail (reverse (m::l)))).
 Proof.
+  rewrite -forall_zip_flip.
+  rewrite -Forall_reverse.
+  Search tail zip.
+  Search zip_with.
+  Search tail drop.
+  Check Forall_rev.
   split.
   - intros H.
     rewrite reverse_cons.
