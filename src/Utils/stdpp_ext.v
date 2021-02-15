@@ -172,6 +172,27 @@ Proof.
     simpl. reflexivity.
 Qed.
 
+(* The same lemma for stdpp's `reverse *)
+Lemma last_reverse_head A (l : list A) (x : A) : last (x :: l) = hd_error (reverse l ++ [x]).
+Proof.
+  remember (length l) as len.
+  assert (Hlen: length l <= len).
+  { lia. }
+  clear Heqlen.
+  move: l Hlen x.
+  induction len; intros l Hlen x; destruct l eqn:Hl.
+  - reflexivity.
+  - simpl in Hlen. lia.
+  - reflexivity.
+  - simpl.
+    rewrite reverse_cons.
+    rewrite hd_error_app.
+    rewrite - (IHlen l0).
+    { simpl in Hlen. lia. }
+    simpl. reflexivity.
+Qed.
+
+
 Lemma hd_error_lookup A (l : list A) :
   l !! 0 = hd_error l.
 Proof.
@@ -256,4 +277,68 @@ Proof.
         3: { subst. contradiction. }
         2: { subst. contradiction.  }
         apply f_equal.
+Abort.
+
+Lemma common_length_rev {A} {eqdec: EqDecision A} (x y : A) (xs ys : list A) :
+  common_length (reverse (x::xs)) (y::ys) =
+  match (decide ((last (x::xs)) = Some y)) with
+  | left _ => S (common_length (reverse (tail (reverse (x::xs)))) ys)
+  | right _ => 0
+  end.
+Proof.
+  induction xs; destruct ys.
+  - simpl.
+    destruct (decide (x=y)), (decide (Some x = Some y)); simpl; try reflexivity.
+    subst. contradiction.
+    inversion e. subst. contradiction.
+Abort.
+
+Lemma last_app_singleton {A} (m : A) (l : list A) :
+  last (l ++ [m]) = Some m.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl.
+    destruct (l ++ [m]).
+    { simpl in IHl. inversion IHl. }
+    apply IHl.
+Qed.
+                                
+Lemma rev_reverse {A} (l : list A) :
+  rev l = reverse l.
+Proof.
+  unfold reverse.
+  rewrite -rev_alt.
+  reflexivity.
+Qed.
+
+Lemma reverse_zip_with {A B C : Type} (f : A -> B -> C) (l₁ : list A) (l₂ : list B) :
+  reverse (zip_with f l₁ l₂) = zip_with f (reverse l₁) (reverse l₂).
+Proof.
+  move: l₂.
+  induction l₁; intros l₂.
+  - reflexivity.
+  - simpl.
+    destruct l₂.
+    { rewrite !reverse_nil.
+      rewrite zip_with_nil_r.
+      reflexivity.
+    }
+    rewrite !reverse_cons.
+    rewrite IHl₁.
+    Search zip_with app.
+    rewrite zip_with_app_r.
+    (* Oops *)
+Abort.
+
+Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :
+  Forall (curry f) (zip (m::l) (tail (m::l)))
+  <->
+  Forall (curry (flip f)) (zip (reverse (m::l)) (tail (reverse (m::l)))).
+Proof.
+  split.
+  - intros H.
+    rewrite reverse_cons.
+    Check Forall_rev.
+    Check Forall_forall.
 Abort.

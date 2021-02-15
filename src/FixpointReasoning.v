@@ -268,6 +268,54 @@ Section with_signature.
                     (zip l (tail l))
           )).
 
+      Lemma is_witnessing_sequence_alt_iff_is_witnessing_sequence_rev (m : Domain M) (l : list (Domain M)) :
+        is_witnessing_sequence_alt m l <-> is_witnessing_sequence m (reverse l).
+      Proof.
+        split.
+        - intros [[m' [Hlast Hbase]] [Hhd Hfa]].
+          destruct l as [|x l].
+          { simpl in Hhd. inversion Hhd. }
+          simpl in Hhd. inversion Hhd. subst. clear Hhd.
+          split.
+          { rewrite reverse_cons. rewrite last_app_singleton.
+            reflexivity.
+          }
+
+          (* reverse (m::l) <> nil *)
+          destruct (reverse (m::l)) eqn:Heq.
+          { assert ( length (reverse (m::l)) = @length (Domain M) []).
+            { rewrite Heq. reflexivity. }
+            rewrite reverse_length in H.
+            simpl in H. inversion H.
+          }
+
+          assert (Hm'd: m' = d).
+          {
+            rewrite reverse_cons in Heq.
+            pose proof (H := @last_reverse_head _ l m).
+            rewrite Hlast in H.
+            unfold reverse in Heq.
+            rewrite Heq in H.
+            simpl in H.
+            inversion H. subst.
+            reflexivity.
+          }
+          subst.
+          split.
+          { apply Hbase. }
+          clear Hbase.
+          (*clear Heq.*)
+
+          pose proof (Heq' := f_equal reverse Heq).
+          rewrite reverse_involutive in Heq'.
+          assert (Heq'' : l0 = tail (d::l0)).
+          { reflexivity. }
+          rewrite -> Heq'' at 2. clear Heq''.
+          rewrite -Heq.
+          clear Heq' Heq l0.
+          Check flip.
+          
+
       Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence_alt m l
          /\ (∃ step', pattern_interpretation ρₑ ρₛ step step' /\ app_interp step' m m')
@@ -729,14 +777,36 @@ Section with_signature.
           Print Model.
           assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) (reverse l₁) (reverse l₂) = length l₂)).
           {
+            unfold is_witnessing_sequence in Hw₁.
+            destruct l₁ as [|m₁ l₁].
+            { destruct Hw₁. contradiction. }
+            destruct Hw₁ as [Hlast₁ [Hbase₁ Hstep₁]].
+
+            unfold is_witnessing_sequence in Hw₂.
+            destruct l₂ as [|m₂ l₂].
+            { destruct Hw₂. contradiction. }
+            destruct Hw₂ as [Hlast₂ [Hbase₂ Hstep₂]].
+
+            
+            
             remember (length l₂) as len₂.
             assert (Hlen₂: length l₂ <= len₂).
             { lia. }
             clear Heqlen₂.
-            move: l₁ l₂ Hlen₂ Hlen12 Hw₁ Hw₂.
-            induction len₂; intros l₁ l₂ Hlen₂ Hlen12 Hw₁ Hw₂;destruct l₁,l₂; simpl.
-            - reflexivity.
-            - destruct Hw₁ as [_ Hcontra]. contradiction.
+            move: l₁ l₂ Hlast₁ Hlast₂ Hstep₁ Hstep₂ Hlen₂ Hlen12.
+            induction len₂; intros l₁ l₂ Hlast₁ Hlast₂ Hstep₁ Hstep₂ Hlen₂ Hlen12; destruct l₁,l₂; simpl.
+            - simpl in Hlast₁. simpl in Hlast₂. inversion Hlast₁. inversion Hlast₂. subst.
+              destruct (decide (m=m)).
+              { reflexivity. }
+              contradiction.
+            - simpl in Hlen₂. lia.
+            - simpl in Hlast₁. simpl in Hlast₂. inversion Hlast₂. subst.
+              rewrite 2!reverse_cons.
+              destruct l₁.
+              { simpl. inversion Hlast₁. subst. destruct (decide (m=m)). reflexivity. contradiction. }
+              Search reverse last.
+              
+              destruct Hw₁ as [_ Hcontra]. contradiction.
             - destruct Hw₂ as [_ Hcontra]. contradiction.
             - simpl in Hlen₂. lia.
             - simpl in Hlen12. lia.
