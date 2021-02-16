@@ -558,3 +558,17 @@ Lemma tail_drop_comm {A : Type} (l : list A) (n : nat) :
 Proof.
     by rewrite tail_drop drop_tail.
 Qed.
+
+Lemma hd_drop_lookup {A : Type} (l : list A) (n : nat) (m : A) :
+  l !! n = Some m ->
+  hd_error (drop n l) = Some m.
+Proof.
+  move: l.
+  induction n; intros l.
+  - rewrite drop_0. by rewrite hd_error_lookup.
+  - destruct l as [|x l].
+    { simpl. intros H. exact H. }
+    simpl.
+    intros H.
+    by rewrite IHn.
+Qed.

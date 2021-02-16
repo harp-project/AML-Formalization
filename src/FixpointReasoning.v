@@ -287,7 +287,11 @@ Section with_signature.
         }
         split.
         { admit. }
-        { Check Forall_drop. Search zip_with drop. }
+        { rewrite tail_drop_comm.
+          rewrite -zip_with_drop.
+          apply Forall_drop.
+          apply Hfa.
+        }
       Abort.
       
 
