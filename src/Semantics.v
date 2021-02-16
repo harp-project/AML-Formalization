@@ -2675,6 +2675,14 @@ Definition is_total_function M f (d c : Ensemble (Domain M)) ρₑ ρₛ :=
       app_ext (@pattern_interpretation M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
       = Ensembles.Singleton (Domain M) m₂.
 
+ Definition total_function_is_injective M f (d : Ensemble (Domain M)) ρₑ ρₛ :=
+   ∀ (m₁ : Domain M),
+     d m₁ ->
+     ∀ (m₂ : Domain M),
+       d m₂ ->
+         (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
+          m₁ = m₂.
+
 Definition is_functional_pattern ϕ M ρₑ ρₛ :=
   ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = Ensembles.Singleton (Domain M) m.
 

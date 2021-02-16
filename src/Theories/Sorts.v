@@ -746,13 +746,9 @@ Section sorts.
 
     Lemma interp_total_function_injective f s ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function_injective f s) = Full <->
-      ∀ (m₁ : Domain M),
-        Minterp_inhabitant s ρₑ ρₛ m₁ ->
-        ∀ (m₂ : Domain M),          
-          Minterp_inhabitant s ρₑ ρₛ m₂ ->
-          (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
-          m₁ = m₂.
+      total_function_is_injective f (Minterp_inhabitant s ρₑ ρₛ) ρₑ ρₛ.
     Proof.
+      unfold total_function_is_injective.
       unfold patt_partial_function_injective.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
       remember
