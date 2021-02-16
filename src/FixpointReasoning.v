@@ -820,10 +820,9 @@ Section with_signature.
 
       
       Section injective.
-        (* `base` is functional, and `step` is an injective function on witnessed_elements. *)
         Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
-        (* TODO we need a hypothesis for injectivity *)
+        Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
 
         Lemma witnessed_elements_unique_seq :
           ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
@@ -836,6 +835,9 @@ Section with_signature.
             - apply H. lia. auto. auto.
           }
           intros Hlen12 Hw₁ Hw₂.
+
+          assert (Hmwit: witnessed_elements m).
+          { exists l₁. apply Hw₁. }
 
           assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) l₁ l₂ = length l₂)).
           {
@@ -854,6 +856,114 @@ Section with_signature.
             2: { contradiction. }
             clear e.
             apply f_equal.
+
+            simpl in Hlen12. rename Hlen12 into Hlen12'.
+            assert (Hlen12: length l₂ <= length l₁).
+            { lia. }
+            clear Hlen12'.
+
+            remember (length l₁) as len₁.
+            rewrite Heqlen₁ in Hlen12.
+            assert (Hlen₁ : length l₁ <= len₁).
+            { lia. }
+            clear Heqlen₁.
+            
+            move: m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
+            induction len₁; intros m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
+            - destruct l₁.
+              2: { simpl in Hlen₁. lia. }
+              destruct l₂.
+              + reflexivity.
+              + assert (length (d::l₂) = 0).
+                { simpl in Hlen12. lia. }
+                rewrite H. reflexivity.
+            - destruct l₂ as [|b l₂].
+              { rewrite common_length_l_nil. reflexivity. }
+
+              destruct l₁ as [|a l'₁] eqn:Heq.
+              { simpl in Hlen12. lia. }
+
+
+              simpl in Hfa₁. inversion Hfa₁. subst. clear Hfa₁.
+              rename H1 into Hma. rename H2 into Hfa₁.
+              simpl in Hfa₂. inversion Hfa₂. subst. clear Hfa₂.
+              rename H1 into Hmb. rename H2 into Hfa₂.
+
+              assert (Hwita: witnessed_elements a).
+              { exists (a::l'₁).
+                split.
+                { exists lst₁. split.
+                  { simpl in Hlst₁. simpl. apply Hlst₁. }
+                  apply Hbase₁.
+                }
+                split.
+                { reflexivity. }
+                simpl. apply Hfa₁.
+              }
+
+              assert (Hwitb: witnessed_elements b).
+              { exists (b::l₂).
+                split.
+                { exists lst₂. split.
+                  { simpl in Hlst₂. simpl. apply Hlst₂. }
+                  apply Hbase₂.
+                }
+                split.
+                { reflexivity. }
+                simpl. apply Hfa₂.
+              }
+              
+              simpl in Hma. simpl in Hmb.
+
+              assert (Ham: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) a) = Ensembles.Singleton (Domain M) m).
+              {
+                unfold is_total_function in Hstep_total_function.
+                pose proof (Hstep_total_function Hwita).
+                destruct H as [a' [_ Ha']].
+                rewrite Ha' in Hma.
+                inversion Hma. subst.
+                apply Ha'.
+              }
+
+              assert (Hbm: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) b) = Ensembles.Singleton (Domain M) m).
+              {
+                unfold is_total_function in Hstep_total_function.
+                pose proof (Hstep_total_function Hwitb).
+                destruct H as [b' [_ Hb']].
+                rewrite Hb' in Hmb.
+                inversion Hmb. subst.
+                apply Hb'.
+              }
+
+              assert (Haeqb: a = b).
+              { apply Hstep_injective.
+                apply Hwita. apply Hwitb.
+                unfold rel_of.
+                rewrite Ham.
+                rewrite Hbm.
+                reflexivity.
+              }
+              subst.
+              clear Ham Hbm Hwita Hma.
+              
+              simpl.
+              destruct (decide (b=b)).
+              2: { contradiction. }
+              apply f_equal.
+
+              apply IHlen₁ with (m := b).
+              { simpl in Hlen12.  lia. }
+              { simpl in Hlen₁. lia. }
+              simpl in Hlst₁. simpl. apply Hlst₁.
+              simpl in Hlst₂. simpl. apply Hlst₂.
+
+              simpl. apply Hfa₁.
+              simpl. apply Hfa₂.
+              apply Hwitb.
+          }
+          
+              
+              
         Abort.
         (*
               destruct Hw₁ as [_ Hcontra]. contradiction.
