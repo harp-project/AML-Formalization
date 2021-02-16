@@ -489,3 +489,42 @@ Proof.
     simpl. apply IHlen. simpl in Hlen. lia.
     inversion H. assumption.
 Qed.
+
+Lemma last_drop {A : Type} (l : list A) (n : nat) (x : A) :
+  last l = Some x ->
+  n < length l ->
+  last (drop n l) = Some x.
+Proof.
+  remember (length l) as len.
+  assert (Hlen: length l <= len).
+  { lia. }
+
+  move: l Hlen n x Heqlen.
+  induction len; intros l Hlen n x Heqlen Hlast Hless.
+  - inversion Hless.
+  - destruct l as [|y l].
+    { simpl in Hlast. inversion Hlast. }
+    destruct n.
+    { simpl. simpl in Hlast. apply Hlast. }
+    rewrite skipn_cons.
+    assert (n < len).
+    { lia. }
+    clear Hless.
+    rename H into Hless.
+
+    simpl in Hlen.
+    assert (length l > 0).
+    { simpl in Heqlen. lia. }
+
+    destruct l.
+    { simpl in H. lia. }
+
+    simpl in Heqlen. inversion Heqlen. clear Heqlen.
+    assert (length (a :: l) ≤ len).
+    { simpl. lia. }
+    apply IHlen.
+    { simpl in Hlen. lia. }
+    { simpl in Hlast. simpl. apply H1. }
+    { simpl in Hlast. simpl. apply Hlast. }
+    lia.
+Qed.

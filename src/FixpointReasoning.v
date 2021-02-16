@@ -264,6 +264,21 @@ Section with_signature.
                     (zip l (tail l))
           )).
 
+      (* If we have a witnessing sequence x₁ x₂ ... xₙ xₙ₊₁ ... xlast
+         and xₙ matches `base`, then xₙ xₙ₊₁ is a witnessing sequence, too.
+       *)
+      Lemma witnessing_sequence_middle (m : Domain M) (l : list (Domain M)) (n : nat) (m' : Domain M) :
+        is_witnessing_sequence m l ->
+        l !! n = Some m' ->
+        @pattern_interpretation Σ M ρₑ ρₛ base m' ->
+        is_witnessing_sequence m' (drop n l).
+      Proof.
+        intros [[lst [Hlst Hbase]] [Hhd Hfa]] Hm' Hbase'.
+        split.
+        { exists lst. split. Search last drop.
+      Abort.
+      
+
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
         is_witnessing_sequence m l <-> is_witnessing_sequence_old m (reverse l).
       Proof.
