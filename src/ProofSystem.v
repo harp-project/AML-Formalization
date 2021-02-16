@@ -477,6 +477,72 @@ Proof.
 
   * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
+
+
+   simpl.
+    remember (fun S : Ensemble (Domain m) =>
+                pattern_interpretation evar_val
+                                       (update_svar_val (fresh_svar phi) S svar_val)
+                                       (svar_open 0 (fresh_svar phi) phi)) as F.
+
+    pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
+    pose (L := Lattice.PowersetLattice (@Domain signature m)).
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
+      inversion Hwf. unfold well_formed.
+      inversion H. inversion H0. assumption.
+      apply set_svar_fresh_is_fresh.
+    }
+    unfold Lattice.isFixpoint in Ffix.
+    assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
+    { rewrite -> Ffix. apply Same_set_refl. }
+    destruct Ffix_set. clear H0.
+    unfold Full.
+    symmetry.
+    apply Same_set_to_eq.
+    apply Same_set_Full_set.
+    (* FULL ⊆ /A U B <-> A ⊆ B *)
+    (* TODO: turn this into lemma in Ensembles_Ext.v *)
+    assert (Hsubset_complement : forall D A B,
+               Included D (Full_set D) (Ensembles.Union D (Complement D A) B) <->
+               Included D A B).
+    { admit. }
+    apply Hsubset_complement.
+    pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint).
+    specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
+
+    assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
+    { admit. }
+    specialize (IHHp Hwf').
+
+    simpl in IHHp.
+    destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc.
+    subst psi0. subst phi0.
+
+    (*
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint .
+    unfold Included. intros. 
+    Search eq Same_set.
+    apply eq_iff_Same_set.
+    Print Same_set_full_set.
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint with (OS := OS)(L := L)(f := F) in H.
+    eapply Included_transitive.
+    2: { apply H. }
+    rewrite -> HeqF.
+    epose proof (Hsimpl := pattern_interpretation_mu_simpl).
+    specialize (Hsimpl evar_val svar_val phi).
+    simpl in Hsimpl. subst OS. subst L.
+    rewrite <- Hsimpl.
+    
+    rewrite <- set_substitution_lemma.
+    2: { simpl in Hwf. unfold well_formed in Hwf. destruct Hwf as [_ Hwfc].
+         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+         apply wfc_ind_wfc. assumption.
+    }
+    2: { apply set_svar_fresh_is_fresh. }
+    unfold Included. intros. auto.
+
+    
     epose (IHHp _ Hv evar_val svar_val) as e.
     simpl in e. rewrite -> pattern_interpretation_imp_simpl in e.
     apply Extensionality_Ensembles.
@@ -492,7 +558,7 @@ Proof.
     apply H2. unfold Included. intros.
     unfold In. admit.*)
     admit.
-
+*)
 Admitted.
 
 End ml_proof_system.
