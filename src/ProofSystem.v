@@ -308,7 +308,7 @@ Proof.
     apply Extensionality_Ensembles.
     constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
-  * intros Hv evar_val svar_val. 
+  * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_ex_simpl.
     unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
@@ -467,12 +467,13 @@ Proof.
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
     
-    (*Check plugging_patterns.*)
-    (*
-    simpl. rewrite -> ext_valuation_imp_simpl. rewrite -> ext_valuation_mu_simpl.
-    constructor. constructor.
-    unfold Included. intros. unfold In.*)
-    admit.
+    rewrite <- set_substitution_lemma.
+    2: { simpl in Hwf. unfold well_formed in Hwf. destruct Hwf as [_ Hwfc].
+         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+         apply wfc_ind_wfc. assumption.
+    }
+    2: { apply set_svar_fresh_is_fresh. }
+    unfold Included. intros. auto.
 
   * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.

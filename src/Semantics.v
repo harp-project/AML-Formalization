@@ -1256,9 +1256,8 @@ Qed.
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
- TODO prefix with Private_ and creaate a wrapper.
 *)
-Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
+Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
     size phi1 <= sz -> forall (evar_val : EVarVal)
                               (svar_val : SVarVal) (X : svar),
     well_formed_closed phi2 ->
@@ -1589,6 +1588,20 @@ Proof.
            apply set_svar_fresh_is_fresh.
 Qed.
 
+
+Lemma set_substitution_lemma : forall (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
+    forall (evar_val : EVarVal) (svar_val : SVarVal) (X : svar),
+    well_formed_closed phi2 ->
+    ~ elem_of X (free_svars phi1) ->
+    @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
+    = @pattern_interpretation M evar_val
+                     (update_svar_val X (@pattern_interpretation M evar_val svar_val phi2) svar_val)
+                     (svar_open dbi X phi1).
+Proof.
+  intros.
+  apply Private_plugging_patterns with (sz := size phi1).
+  lia. auto. auto.
+Qed.
 
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
