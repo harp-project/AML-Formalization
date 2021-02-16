@@ -528,3 +528,11 @@ Proof.
     { simpl in Hlast. simpl. apply Hlast. }
     lia.
 Qed.
+
+Lemma tail_drop {A : Type} (l : list A) (n : nat) :
+  tail (drop n l) = drop n (tail l).
+Proof.
+Abort.
+
+
+  

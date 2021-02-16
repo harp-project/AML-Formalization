@@ -275,7 +275,19 @@ Section with_signature.
       Proof.
         intros [[lst [Hlst Hbase]] [Hhd Hfa]] Hm' Hbase'.
         split.
-        { exists lst. split. Search last drop.
+        { exists lst. split. Check last_drop.
+          rewrite -> last_drop with (x := lst).
+          { reflexivity. }
+          { apply Hlst. }
+          Search list lookup length.
+          { apply lookup_lt_is_Some_1.
+            rewrite Hm'. exists m'. reflexivity.
+          }
+          apply Hbase.
+        }
+        split.
+        { admit. }
+        { Check Forall_drop. Search zip_with drop. }
       Abort.
       
 
