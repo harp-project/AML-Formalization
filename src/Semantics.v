@@ -2678,6 +2678,19 @@ Definition is_total_function M f (d c : Ensemble (Domain M)) ρₑ ρₛ :=
 Definition is_functional_pattern ϕ M ρₑ ρₛ :=
   ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = Ensembles.Singleton (Domain M) m.
 
+Lemma functional_pattern_inj ϕ M ρₑ ρₛ m₁ m₂ :
+  @is_functional_pattern ϕ M ρₑ ρₛ ->
+  @pattern_interpretation M ρₑ ρₛ ϕ m₁ ->
+  @pattern_interpretation M ρₑ ρₛ ϕ m₂ ->
+  m₁ = m₂.
+Proof.
+  intros [m Hm] Hm₁ Hm₂.
+  rewrite Hm in Hm₁. inversion Hm₁. subst. clear Hm₁.
+  rewrite Hm in Hm₂. inversion Hm₂. subst. clear Hm₂.
+  reflexivity.
+Qed.
+
+
 End semantics.
 
 

@@ -848,6 +848,12 @@ Section with_signature.
             destruct l₂ as [|m₂ l₂].
             { simpl in Hlst₂. inversion Hlst₂. }
             simpl in Hhd₂. inversion Hhd₂. subst. clear Hhd₂.
+            
+            simpl.
+            destruct (decide (m=m)).
+            2: { contradiction. }
+            clear e.
+            apply f_equal.
         Abort.
         (*
               destruct Hw₁ as [_ Hcontra]. contradiction.
