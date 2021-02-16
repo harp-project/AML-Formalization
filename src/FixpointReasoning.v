@@ -279,20 +279,19 @@ Section with_signature.
           rewrite -> last_drop with (x := lst).
           { reflexivity. }
           { apply Hlst. }
-          Search list lookup length.
           { apply lookup_lt_is_Some_1.
             rewrite Hm'. exists m'. reflexivity.
           }
           apply Hbase.
         }
         split.
-        { admit. }
+        { apply hd_drop_lookup. apply Hm'. }
         { rewrite tail_drop_comm.
           rewrite -zip_with_drop.
           apply Forall_drop.
           apply Hfa.
         }
-      Abort.
+      Qed.
       
 
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
