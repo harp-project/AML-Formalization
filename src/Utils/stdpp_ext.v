@@ -469,3 +469,23 @@ Proof.
   rewrite reverse_zip_tail_r.
   reflexivity.
 Qed.
+
+Lemma Forall_drop {A : Type} (P : A -> Prop) (n : nat) (l : list A) :
+  Forall P l -> Forall P (drop n l).
+Proof.
+  remember (length l) as len.
+  assert (Hlen: length l <= len).
+  { lia. }
+  clear Heqlen.
+  move: n l Hlen.
+  induction len; intros n l Hlen H.
+  - destruct l as [|x l].
+    { rewrite drop_nil. apply H. }
+    simpl in Hlen. lia.
+  - destruct l as [|x l], n.
+    { simpl. apply Forall_nil. exact I. }
+    { rewrite drop_nil. apply Forall_nil. exact I. }
+    { simpl. apply H. }
+    simpl. apply IHlen. simpl in Hlen. lia.
+    inversion H. assumption.
+Qed.
