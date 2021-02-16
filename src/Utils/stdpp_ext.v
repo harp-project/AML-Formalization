@@ -530,9 +530,31 @@ Proof.
 Qed.
 
 Lemma tail_drop {A : Type} (l : list A) (n : nat) :
+  tail (drop n l) = drop (S n) l.
+Proof.
+  move: n.
+  induction l; intros n.
+  - simpl. rewrite drop_nil. reflexivity.
+  - simpl.
+    destruct n.
+    { by rewrite drop_0. }
+      by rewrite -IHl.
+Qed.
+
+Lemma drop_tail {A : Type} (l : list A) (n : nat) :
+  drop n (tail l) = drop (S n) l.
+Proof.
+  move: n.
+  induction l; intros n.
+  - simpl. rewrite drop_nil. reflexivity.
+  - simpl.
+    destruct n.
+    { by rewrite drop_0. }
+      by rewrite -IHl.
+Qed.
+
+Lemma tail_drop_comm {A : Type} (l : list A) (n : nat) :
   tail (drop n l) = drop n (tail l).
 Proof.
-Abort.
-
-
-  
+    by rewrite tail_drop drop_tail.
+Qed.
