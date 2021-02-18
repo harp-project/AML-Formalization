@@ -400,6 +400,24 @@ Proof.
     apply Union_intror. exact H0.
 Qed.
 
+(* FULL ⊆ /L U R <-> L ⊆ R *)
+Lemma Full_subset_union_iff_subset:
+  forall (T : Type) (L R : Ensemble T),
+  Included T (Full_set T) (Union T (Complement T L) R) <-> Included T L R.
+Proof.
+  intros.
+  split; intros.
+  * unfold Included; intros.
+    assert (Hin: In T (Union T (Complement T L) R) x). apply H. constructor.
+    inversion Hin. contradiction. assumption.
+  *  assert (Hfull: Union T (Complement T L) L = Full_set T).
+     { apply Same_set_to_eq; apply Union_Compl_Fullset. }
+     rewrite <- Hfull. unfold Included. intros.
+     inversion H0.
+     - left. assumption.
+     - right. apply H. assumption.
+Qed.
+
 Lemma Empty_is_Empty : forall T : Type, forall x : T, ~ In T (Empty_set T) x.
 Proof. unfold not. intros. inversion H. Qed.
 

@@ -226,7 +226,8 @@ Qed.
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
   Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
-  (* Soundness theorem *)
+
+(* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
   well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
@@ -501,13 +502,7 @@ Proof.
     symmetry.
     apply Same_set_to_eq.
     apply Same_set_Full_set.
-    (* FULL ⊆ /A U B <-> A ⊆ B *)
-    (* TODO: turn this into lemma in Ensembles_Ext.v *)
-    assert (Hsubset_complement : forall D A B,
-               Included D (Full_set D) (Ensembles.Union D (Complement D A) B) <->
-               Included D A B).
-    { admit. }
-    apply Hsubset_complement.
+    apply Full_subset_union_iff_subset.
     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint).
     specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
 
