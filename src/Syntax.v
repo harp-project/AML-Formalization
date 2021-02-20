@@ -796,6 +796,33 @@ Class EBinder (ebinder : Pattern -> Pattern)
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
 
+  Check bsvar_subst.
+  Print well_formed_positive.
+
+    
+  Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
+    well_formed_positive psi ->
+    positive_occurrence_db n phi ->
+    well_formed_positive phi ->
+    well_formed_positive (bsvar_subst phi psi n).
+  Proof.
+    intros Hwfppsi.
+    move: n.
+    induction phi; intros n' Hposn Hwfpphi; simpl; auto.
+    - destruct (compare_nat n n'); auto.
+    - split. apply IHphi1. admit. admit. admit.
+    - admit.
+    - apply IHphi. admit. admit.
+    - Search bsvar_subst.  positive_occurrence_db.
+      split. 2: { apply IHphi. Abort.
+  
+  Lemma wfp_bsvar_subst (phi psi : Pattern) :
+    well_formed_positive (patt_mu phi) ->
+    well_formed_positive psi ->
+    well_formed_positive (bsvar_subst phi psi 0).
+  Proof. Abort.
+    
+
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
 

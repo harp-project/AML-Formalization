@@ -507,7 +507,11 @@ Proof.
     specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
 
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
-    { admit. }
+    { destruct Hwf as [Hwfp Hwfc]. split.
+      destruct Hwfp as [Hwfp1 Hwfp2]. simpl. split.
+      2: { assumption. }
+      Search well_formed_positive patt_mu.
+    }
     specialize (IHHp Hwf').
 
     simpl in IHHp.
