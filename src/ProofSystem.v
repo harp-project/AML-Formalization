@@ -514,6 +514,17 @@ Proof.
     destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc.
     subst psi0. subst phi0.
 
+    unfold instantiate in Hp.
+    apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
+    rewrite pattern_interpretation_iff_subset in Hv.
+
+    subst F.
+    rewrite <- set_substitution_lemma.
+    apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
+
+    (* F(rhobar(psi)) \subseteq rhobar(psi) 
+       rho[rhobar(psi)/X](phi) \subseteq rhobar(psi)
+    *)
     (*
     apply Lattice.LeastFixpoint_LesserThanPrefixpoint .
     unfold Included. intros. 
