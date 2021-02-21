@@ -796,9 +796,46 @@ Class EBinder (ebinder : Pattern -> Pattern)
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
 
-  Check bsvar_subst.
-  Print well_formed_positive.
+  Lemma wfc_implies_not_bsvar_occur phi n :
+    well_formed_closed phi ->
+    ~ bsvar_occur phi n.
+  Proof.
+    intros H.
+    induction phi; simpl; auto.
+    -
+  Abort.
 
+  Lemma not_bsvar_occur_bsvar_subst phi psi n:
+    well_formed_closed psi ->
+    (*~ bsvar_occur psi n ->*)
+    ~ bsvar_occur (bsvar_subst phi psi n) n.
+  Proof.
+    move: n.
+    induction phi; intros n' H; simpl; auto.
+    - destruct (compare_nat n n') eqn:Heq.
+      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
+        apply bool_decide_eq_true in Heq'.
+        lia. unfold not. apply ssrbool.not_false_is_true.
+      + Print well_formed_closed. Search well_formed_closed bsvar_occur. admit. (*  exact H.*)
+      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
+        apply bool_decide_eq_true in Heq'.
+        lia. unfold not. apply ssrbool.not_false_is_true.
+    - intros Hcontra.
+      destruct (bsvar_occur (bsvar_subst phi1 psi n') n') eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      + eapply IHphi2. apply H. apply Heq2.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi2. apply H. apply Heq2.
+      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
+    - intros Hcontra.
+      destruct (bsvar_occur (bsvar_subst phi1 psi n') n')
+               eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi2. apply H. apply Heq2.
+      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
+  Admitted.
+  
+      
     
   Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
     well_formed_positive psi ->
@@ -813,8 +850,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - split. apply IHphi1. admit. admit. admit.
     - admit.
     - apply IHphi. admit. admit.
-    - Search bsvar_subst.  positive_occurrence_db.
-      split. 2: { apply IHphi. Abort.
+    - split. 2: { apply IHphi. Abort.
   
   Lemma wfp_bsvar_subst (phi psi : Pattern) :
     well_formed_positive (patt_mu phi) ->
