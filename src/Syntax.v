@@ -684,19 +684,45 @@ Class EBinder (ebinder : Pattern -> Pattern)
     firstorder.
   Qed.
 
+  Lemma no_negative_occurrence_evar_open phi db1 db2 x:
+    no_negative_occurrence_db_b db1 phi ->
+    no_negative_occurrence_db_b db1 (evar_open db2 x phi).
+  Proof.
+    intros H.
+    eapply elimT in H.
+    2: apply no_negative_occurrence_P.
+    eapply introT.
+    apply no_negative_occurrence_P.
+    apply positive_occurrence_db_evar_open.
+    apply H.
+  Qed.
+
+  Lemma no_positive_occurrence_evar_open phi db1 db2 x:
+    no_positive_occurrence_db_b db1 phi ->
+    no_positive_occurrence_db_b db1 (evar_open db2 x phi).
+  Proof.
+    intros H.
+    eapply elimT in H.
+    2: apply no_positive_occurrence_P.
+    eapply introT.
+    apply no_positive_occurrence_P.
+    apply negative_occurrence_db_evar_open.
+    apply H.
+  Qed.
+
   (* TODO replace with a boolean version - that enables us to prove by computation. *)
-  Fixpoint well_formed_positive (phi : Pattern) : Prop :=
+  Fixpoint well_formed_positive (phi : Pattern) : bool :=
     match phi with
-    | patt_free_evar _ => True
-    | patt_free_svar _ => True
-    | patt_bound_evar _ => True
-    | patt_bound_svar _ => True
-    | patt_sym _ => True
-    | patt_app psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
-    | patt_bott => True
-    | patt_imp psi1 psi2 => well_formed_positive psi1 /\ well_formed_positive psi2
+    | patt_free_evar _ => true
+    | patt_free_svar _ => true
+    | patt_bound_evar _ => true
+    | patt_bound_svar _ => true
+    | patt_sym _ => true
+    | patt_app psi1 psi2 => well_formed_positive psi1 && well_formed_positive psi2
+    | patt_bott => true
+    | patt_imp psi1 psi2 => well_formed_positive psi1 && well_formed_positive psi2
     | patt_exists psi => well_formed_positive psi
-    | patt_mu psi => positive_occurrence_db 0 psi /\ well_formed_positive psi
+    | patt_mu psi => no_negative_occurrence_db_b 0 psi && well_formed_positive psi
     end.
 
   Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : Prop :=
@@ -992,11 +1018,33 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_positive phi ->
       well_formed_positive (evar_open n x phi).
   Proof.
-    induction phi; firstorder.
-    - intros. simpl. destruct (n =? n0) eqn:P.
+    induction phi; simpl in *; intros x' n' H; auto.
+    - intros. simpl. destruct (n =? n') eqn:P.
       + simpl. trivial.
       + simpl. trivial.
-    - simpl in *. firstorder. apply positive_occurrence_db_evar_open. assumption.
+    - apply andb_prop in H.
+      destruct H as [H1 H2].
+      apply andb_true_iff.
+      split.
+      + apply IHphi1. apply H1.
+      + apply IHphi2. apply H2.
+    - apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      apply andb_true_iff.
+      split.
+      * apply IHphi1,H1.
+      * apply IHphi2,H2.
+    - apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      apply andb_true_iff.
+      split.
+      eapply introT.
+      apply no_negative_occurrence_P.      
+      apply positive_occurrence_db_evar_open.
+      eapply elimT.
+      apply no_negative_occurrence_P.
+      apply H1.
+      apply IHphi. apply H2.
   Qed.
 
   Lemma wfp_ex_to_wfp_body: forall phi,
@@ -1427,7 +1475,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold well_formed. intros.
     destruct H as [Hpos Hclos].
     inversion Hpos. inversion Hclos.
-    split. assumption. unfold well_formed_closed. assumption.
+    apply andb_true_iff in H0. destruct H0 as [H01 H02].
+    split.
+    + assumption.
+    + unfold well_formed_closed. assumption.
   Qed.
 
   Lemma well_formed_app_2 : forall (phi1 phi2 : Pattern),
@@ -1436,7 +1487,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold well_formed. intros.
     destruct H as [Hpos Hclos].
     inversion Hpos. inversion Hclos.
-    split. assumption. unfold well_formed_closed. assumption.
+    apply andb_true_iff in H0. destruct H0 as [H01 H02].
+    split.
+    + assumption.
+    + unfold well_formed_closed. assumption.
   Qed.
 
   Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
@@ -1510,21 +1564,35 @@ Class EBinder (ebinder : Pattern -> Pattern)
     induction sz; destruct phi; intros Hsz dbi e Hwfp; simpl in *; auto; try inversion Hsz; subst.
     + destruct (n =? dbi). constructor. assumption.
     + destruct (n =? dbi). constructor. assumption.
-    + destruct Hwfp as [Hwfp1 Hwfp2].
+    + apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff.
       split; apply IHsz. lia. assumption. lia. assumption.
-    + destruct Hwfp as [Hwfp1 Hwfp2].
+    + apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff.
       split; apply IHsz. lia. assumption. lia. assumption.
-    + destruct Hwfp as [Hwfp1 Hwfp2].
+    + apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff.
       split; apply IHsz. lia. assumption. lia. assumption.
-    + destruct Hwfp as [Hwfp1 Hwfp2].
+    + apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff.
       split; apply IHsz. lia. assumption. lia. assumption.
     + apply IHsz. lia. assumption.
     + apply IHsz. lia. assumption.
-    + split.
-      * apply positive_occurrence_db_evar_open. firstorder.
+    + apply andb_true_iff.
+      apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      split.
+      * apply no_negative_occurrence_evar_open. assumption.
       * apply IHsz. lia. firstorder.
-    + split.
-      * apply positive_occurrence_db_evar_open. firstorder.
+    + apply andb_true_iff.
+      apply andb_true_iff in Hwfp.
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      split.
+      * apply no_negative_occurrence_evar_open. assumption.
       * apply IHsz. lia. firstorder.
   Qed.
 
@@ -1566,21 +1634,24 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_positive phi ->
       well_formed_positive (svar_open dbi X phi).
   Proof.
-    induction phi; intros.
+    induction phi; simpl; intros.
     + constructor.
     + constructor.
     + constructor.
     + simpl. destruct (n =? dbi); constructor.
     + constructor.
-    + inversion H. firstorder.
+    + inversion H. apply andb_true_iff in H1. destruct H1 as [H1 H2].
+      rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
     + constructor.
-    + inversion H. firstorder.
+    + apply andb_true_iff in H. destruct H as [H1 H2]. rewrite IHphi1. apply H1. rewrite IHphi2. apply H2.
+      reflexivity.
     + simpl in H. simpl. auto.
-    + simpl in H. simpl.
-      split.
-      * apply positive_negative_occurrence_db_svar_open_le.
-        lia. firstorder.
-      * firstorder.
+    + simpl in H. simpl. apply andb_true_iff in H. destruct H as [H1 H2].
+      rewrite IHphi. apply H2. rewrite andb_true_r.
+      eapply introT. apply no_negative_occurrence_P.
+      apply positive_negative_occurrence_db_svar_open_le. lia.
+      eapply elimT. apply no_negative_occurrence_P.
+      apply H1.
   Qed.
 
 
@@ -2736,18 +2807,17 @@ Class EBinder (ebinder : Pattern -> Pattern)
     Proof.
       apply Private_positive_negative_occurrence_db_nest_mu_aux.
     Qed.
-      
+
     Lemma well_formed_positive_nest_mu_aux level ϕ:
-      well_formed_positive (nest_mu_aux level ϕ) <-> well_formed_positive ϕ.
+      well_formed_positive (nest_mu_aux level ϕ) = well_formed_positive ϕ.
     Proof.
       move: level.
       induction ϕ; intros level; simpl; auto.
       - rewrite IHϕ1. rewrite IHϕ2. auto.
       - rewrite IHϕ1. rewrite IHϕ2. auto.
       - rewrite IHϕ.
-        rewrite !(reflect_iff _ _ (no_negative_occurrence_P _ _)).
         rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
-        auto.
+        reflexivity.
     Qed.
     
 Lemma evar_open_inj : ∀ phi psi x n,
