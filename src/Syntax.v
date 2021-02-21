@@ -795,68 +795,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold well_formed_closed in *. simpl in H.
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
-
-  Lemma wfc_implies_not_bsvar_occur phi n :
-    well_formed_closed phi ->
-    ~ bsvar_occur phi n.
-  Proof.
-    intros H.
-    induction phi; simpl; auto.
-    -
-  Abort.
-
-  Lemma not_bsvar_occur_bsvar_subst phi psi n:
-    well_formed_closed psi ->
-    (*~ bsvar_occur psi n ->*)
-    ~ bsvar_occur (bsvar_subst phi psi n) n.
-  Proof.
-    move: n.
-    induction phi; intros n' H; simpl; auto.
-    - destruct (compare_nat n n') eqn:Heq.
-      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
-        apply bool_decide_eq_true in Heq'.
-        lia. unfold not. apply ssrbool.not_false_is_true.
-      + Print well_formed_closed. Search well_formed_closed bsvar_occur. admit. (*  exact H.*)
-      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
-        apply bool_decide_eq_true in Heq'.
-        lia. unfold not. apply ssrbool.not_false_is_true.
-    - intros Hcontra.
-      destruct (bsvar_occur (bsvar_subst phi1 psi n') n') eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
-      + eapply IHphi2. apply H. apply Heq2.
-      + eapply IHphi1. apply H. apply Heq1.
-      + eapply IHphi2. apply H. apply Heq2.
-      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
-    - intros Hcontra.
-      destruct (bsvar_occur (bsvar_subst phi1 psi n') n')
-               eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
-      + eapply IHphi1. apply H. apply Heq1.
-      + eapply IHphi1. apply H. apply Heq1.
-      + eapply IHphi2. apply H. apply Heq2.
-      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
-  Admitted.
-  
-      
-    
-  Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
-    well_formed_positive psi ->
-    positive_occurrence_db n phi ->
-    well_formed_positive phi ->
-    well_formed_positive (bsvar_subst phi psi n).
-  Proof.
-    intros Hwfppsi.
-    move: n.
-    induction phi; intros n' Hposn Hwfpphi; simpl; auto.
-    - destruct (compare_nat n n'); auto.
-    - split. apply IHphi1. admit. admit. admit.
-    - admit.
-    - apply IHphi. admit. admit.
-    - split. 2: { apply IHphi. Abort.
-  
-  Lemma wfp_bsvar_subst (phi psi : Pattern) :
-    well_formed_positive (patt_mu phi) ->
-    well_formed_positive psi ->
-    well_formed_positive (bsvar_subst phi psi 0).
-  Proof. Abort.
     
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
@@ -2153,7 +2091,95 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
   Qed.
 
-  (* TODO nest_mu *)
+  Lemma wfc_aux_implies_not_bsvar_occur phi ne ns :
+    well_formed_closed_aux phi ne ns ->
+    ~ bsvar_occur phi ns.
+  Proof.
+    move: ne ns.
+    induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
+    - intros Hcontra.
+      apply bool_decide_eq_true in Hcontra. lia.
+    - destruct Hwfc as [Hwfc1 Hwfc2].
+      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
+      + eapply IHphi1. apply Hwfc1. apply Heq1.
+      + eapply IHphi1. apply Hwfc1. apply Heq1.
+      + eapply IHphi2. apply Hwfc2. apply Heq2.
+      + auto.
+    - destruct Hwfc as [Hwfc1 Hwfc2].
+      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
+      + eapply IHphi1. apply Hwfc1. apply Heq1.
+      + eapply IHphi1. apply Hwfc1. apply Heq1.
+      + eapply IHphi2. apply Hwfc2. apply Heq2.
+      + auto.
+    - eapply IHphi. apply Hwfc.
+    - eapply IHphi. rewrite Nat.add_1_r in Hwfc. apply Hwfc.
+  Qed.
+  
+  Lemma wfc_implies_not_bsvar_occur phi n :
+    well_formed_closed phi ->
+    ~ bsvar_occur phi n.
+  Proof.
+    intros.
+    eapply Private_wfc_aux_implies_not_bsvar_occur.
+    unfold well_formed_closed in H.
+  Abort.
+
+  Lemma not_bsvar_occur_bsvar_subst phi psi n:
+    well_formed_closed psi ->
+    (*~ bsvar_occur psi n ->*)
+    ~ bsvar_occur (bsvar_subst phi psi n) n.
+  Proof.
+    move: n.
+    induction phi; intros n' H; simpl; auto.
+    - destruct (compare_nat n n') eqn:Heq.
+      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
+        apply bool_decide_eq_true in Heq'.
+        lia. unfold not. apply ssrbool.not_false_is_true.
+      + subst. Print well_formed_closed. Search well_formed_closed bsvar_occur. admit. (*  exact H.*)
+      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
+        apply bool_decide_eq_true in Heq'.
+        lia. unfold not. apply ssrbool.not_false_is_true.
+    - intros Hcontra.
+      destruct (bsvar_occur (bsvar_subst phi1 psi n') n') eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      + eapply IHphi2. apply H. apply Heq2.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi2. apply H. apply Heq2.
+      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
+    - intros Hcontra.
+      destruct (bsvar_occur (bsvar_subst phi1 psi n') n')
+               eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi1. apply H. apply Heq1.
+      + eapply IHphi2. apply H. apply Heq2.
+      + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
+  Admitted.
+  
+      
+    
+  Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
+    well_formed_positive psi ->
+    positive_occurrence_db n phi ->
+    well_formed_positive phi ->
+    well_formed_positive (bsvar_subst phi psi n).
+  Proof.
+    intros Hwfppsi.
+    move: n.
+    induction phi; intros n' Hposn Hwfpphi; simpl; auto.
+    - destruct (compare_nat n n'); auto.
+    - split. apply IHphi1. admit. admit. admit.
+    - admit.
+    - apply IHphi. admit. admit.
+    - split. 2: { apply IHphi. Abort.
+  
+  Lemma wfp_bsvar_subst (phi psi : Pattern) :
+    well_formed_positive (patt_mu phi) ->
+    well_formed_positive psi ->
+    well_formed_positive (bsvar_subst phi psi 0).
+  Proof. Abort.
+
+
+  (* Section: nest_ex, nest_mu *)
+
   Fixpoint nest_ex_aux level ϕ {struct ϕ} : Pattern :=
     match ϕ with
     | patt_free_evar _ => ϕ
