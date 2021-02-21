@@ -2226,19 +2226,29 @@ Class EBinder (ebinder : Pattern -> Pattern)
     well_formed_positive psi ->
     positive_occurrence_db n phi ->
     well_formed_positive phi ->
-    well_formed_positive (bsvar_subst phi psi n).
+    well_formed_positive (patt_mu (bsvar_subst phi psi n)).
+    (*well_formed_positive (bsvar_subst phi psi n).*)
   Proof.
     intros Hwfppsi.
     move: n.
     induction phi; intros n' Hposn Hwfpphi; simpl; auto.
-    - destruct (compare_nat n n'); auto.
+  Abort.
+  (*
+    - admit. (*destruct (compare_nat n n'); auto.*)
     - split. apply IHphi1. admit. admit. admit.
     - admit.
     - apply IHphi. admit. admit.
-    - split.
-      2: { apply IHphi. apply not_bsvar_occur_impl_pos_occ_db. Search not bsvar_occur.
-           apply wfc_implies_not_bsvar_occur.
-  Abort.
+    - Print well_formed_positive. simpl in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+      inversion Hposn. rename H1 into HposSn. subst. rewrite Nat.add_1_r in HposSn.
+      split.
+      2: { apply IHphi.
+           apply HposSn. apply Hwfpphi2.
+      }
+      
+           apply not_bsvar_occur_impl_pos_occ_db.
+           (*eapply wfc_aux_implies_not_bsvar_occur.*)
+           apply wfc_implies_not_bsvar_occur. unfold well_formed_closed.
+  Abort.*)
   
   Lemma wfp_bsvar_subst (phi psi : Pattern) :
     well_formed_positive (patt_mu phi) ->
