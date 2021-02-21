@@ -2156,8 +2156,71 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + eapply IHphi2. apply H. apply Heq2.
       + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
   Qed.
+
+  Lemma not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ phi n:
+    ~ bsvar_occur phi n ->
+    no_negative_occurrence_db_b n phi && no_positive_occurrence_db_b n phi.
+  Proof.
+    move: n.
+    induction phi; intros n' H; simpl; simpl in H; auto.
+    - unfold not in H.
+      destruct (n =? n') eqn:Heq1, (bool_decide (n = n')) eqn:Heq2; simpl; auto.
+      + apply beq_nat_true in Heq1. subst. rewrite -Heq2.
+        apply bool_decide_eq_true. reflexivity.
+    - destruct (bsvar_occur phi1 n') eqn: Heq3;
+        destruct (bsvar_occur phi2 n') eqn:Heq4;
+        simpl; auto.
+      specialize (IHphi1 n'). specialize (IHphi2 n').
+      rewrite Heq3 in IHphi1. rewrite Heq4 in IHphi2. clear Heq3 Heq4.
+      specialize (IHphi1 ssrbool.not_false_is_true).
+      specialize (IHphi2 ssrbool.not_false_is_true).
+      apply andb_true_iff in IHphi1.
+      apply andb_true_iff in IHphi2.
+      destruct IHphi1 as [H1n H1p].
+      destruct IHphi2 as [H2n H2p].
+      rewrite H1n. rewrite H1p. rewrite H2n. rewrite H2p.
+      simpl. reflexivity.
+    - destruct (bsvar_occur phi1 n') eqn: Heq3;
+        destruct (bsvar_occur phi2 n') eqn:Heq4;
+        simpl; auto.
+      specialize (IHphi1 n'). specialize (IHphi2 n').
+      rewrite Heq3 in IHphi1. rewrite Heq4 in IHphi2. clear Heq3 Heq4.
+      specialize (IHphi1 ssrbool.not_false_is_true).
+      specialize (IHphi2 ssrbool.not_false_is_true).
+      apply andb_true_iff in IHphi1.
+      apply andb_true_iff in IHphi2.
+      destruct IHphi1 as [H1n H1p].
+      destruct IHphi2 as [H2n H2p].
+      rewrite H1n. rewrite H1p. rewrite H2n. rewrite H2p.
+      simpl. reflexivity.
+  Qed.
   
-      
+  Lemma not_bsvar_occur_impl_pos_occ_db phi n:
+    ~ bsvar_occur phi n ->
+    positive_occurrence_db n phi.
+  Proof.
+    intros H.
+    eapply elimT.
+    apply (no_negative_occurrence_P n phi).
+    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
+    apply andb_true_iff in H1.
+    destruct H1 as [H1 H2].
+    apply H1.
+  Qed.
+
+  Lemma not_bsvar_occur_impl_neg_occ_db phi n:
+    ~ bsvar_occur phi n ->
+    negative_occurrence_db n phi.
+  Proof.
+    intros H.
+    eapply elimT.
+    apply (no_positive_occurrence_P n phi).
+    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
+    apply andb_true_iff in H1.
+    destruct H1 as [H1 H2].
+    apply H2.
+  Qed.
+  
     
   Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
     well_formed_positive psi ->
@@ -2172,7 +2235,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - split. apply IHphi1. admit. admit. admit.
     - admit.
     - apply IHphi. admit. admit.
-    - split. 2: { apply IHphi. Abort.
+    - split.
+      2: { apply IHphi. apply not_bsvar_occur_impl_pos_occ_db. Search not bsvar_occur.
+           apply wfc_implies_not_bsvar_occur.
+  Abort.
   
   Lemma wfp_bsvar_subst (phi psi : Pattern) :
     well_formed_positive (patt_mu phi) ->
