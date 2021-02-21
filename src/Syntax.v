@@ -717,7 +717,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0 0.
 
   Lemma well_formed_closed_aux_ind (phi : Pattern) (ind_evar1 ind_evar2 ind_svar1 ind_svar2: db_index) :
-    ind_evar1 < ind_evar2 -> ind_svar1 < ind_svar2  
+    ind_evar1 <= ind_evar2 -> ind_svar1 <= ind_svar2  
     -> well_formed_closed_aux phi ind_evar1 ind_svar1 
     -> well_formed_closed_aux phi ind_evar2 ind_svar2.
   Proof.
@@ -735,7 +735,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + assumption.
         Unshelve.
         lia.
-  Qed.  
+  Qed.
 
   Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
 
@@ -2120,13 +2120,16 @@ Class EBinder (ebinder : Pattern -> Pattern)
     ~ bsvar_occur phi n.
   Proof.
     intros.
-    eapply Private_wfc_aux_implies_not_bsvar_occur.
+    eapply wfc_aux_implies_not_bsvar_occur.
     unfold well_formed_closed in H.
-  Abort.
+    eapply well_formed_closed_aux_ind.
+    3: apply H.
+    2: lia.
+    constructor.
+  Qed.
 
   Lemma not_bsvar_occur_bsvar_subst phi psi n:
     well_formed_closed psi ->
-    (*~ bsvar_occur psi n ->*)
     ~ bsvar_occur (bsvar_subst phi psi n) n.
   Proof.
     move: n.
@@ -2135,7 +2138,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
         apply bool_decide_eq_true in Heq'.
         lia. unfold not. apply ssrbool.not_false_is_true.
-      + subst. Print well_formed_closed. Search well_formed_closed bsvar_occur. admit. (*  exact H.*)
+      + subst. apply wfc_implies_not_bsvar_occur. apply H.
       + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
         apply bool_decide_eq_true in Heq'.
         lia. unfold not. apply ssrbool.not_false_is_true.
@@ -2152,7 +2155,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + eapply IHphi1. apply H. apply Heq1.
       + eapply IHphi2. apply H. apply Heq2.
       + simpl in Hcontra. apply notF in Hcontra. exact Hcontra.
-  Admitted.
+  Qed.
   
       
     
