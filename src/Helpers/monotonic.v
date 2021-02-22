@@ -1,3 +1,5 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+
 From Coq Require Import Ensembles.
 From stdpp Require Import fin_sets.
 From MatchingLogic.Utils Require Import Lattice.
@@ -175,8 +177,16 @@ Section monotonic.
         svar_is_fresh_in X phi ->
         respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
-      intros. destruct H as [Hpo Hwfp].
-      auto using positive_occurrence_respects_blacklist_svar_open.
+      intros phi X H Hfr. simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [Hpo Hwfp].
+      apply positive_occurrence_respects_blacklist_svar_open.
+      { eapply elimT.
+        apply no_negative_occurrence_P.
+        rewrite Hpo.
+        constructor.
+      }
+      apply Hfr.
     Qed.
 
 
@@ -307,8 +317,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         * (* App *)
           remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
           remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-          inversion Hwfp.
-          rename H into Hwfp1. rename H0 into Hwfp2.
+          simpl in Hwfp.
+          apply andb_true_iff in Hwfp.
+          destruct Hwfp as [Hwfp1 Hwfp2].
 
           (* phi1 and phi2 are smaller then the whole implication *)
           simpl in Hsz.
@@ -361,7 +372,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           apply IHn. simpl. lia. assumption. assumption.
         * (* Impl *)
           (* phi1 and phi2 are well-formed-positive *)
-          inversion Hwfp. rename H into Hwfp1. rename H0 into Hwfp2.
+          simpl in Hwfp.
+          apply andb_true_iff in Hwfp.
+          destruct Hwfp as [Hwfp1 Hwfp2].
 
           (* phi1 and phi2 are smaller then the whole implication *)
           simpl in Hsz.
@@ -472,8 +485,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
             { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
+            simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+            destruct Hwfpmu as [Hnonegphi Hwfpphi].
             assert (Hwfp' : well_formed_positive phi').
-            { subst. apply wfp_svar_open. assumption. }
+            { subst. apply wfp_svar_open. exact Hwfpphi. }
 
             remember IHn as IHn'. clear HeqIHn'.
             specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb' evar_val).
@@ -543,8 +558,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
             { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
+            simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+            destruct Hwfpmu as [Hnonegphi Hwfpphi].
             assert (Hwfp' : well_formed_positive phi').
-            { subst. apply wfp_svar_open. assumption. }
+            { subst. apply wfp_svar_open. exact Hwfpphi. }
 
             remember IHn as IHn'. clear HeqIHn'.
             specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb' evar_val).
@@ -617,12 +634,15 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       { lia. }
       pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
       assert (Hwfp' : well_formed_positive phi').
-      { subst. apply wfp_svar_open. apply Hwfp. }
+      { subst. apply wfp_svar_open.
+        apply andb_true_iff in Hwfp.
+        apply (proj2 Hwfp).
+      }
       specialize (Hmono Hsz Hwfp').
       specialize (Hmono (Empty_set svar) (Ensembles.Singleton svar X)).
       specialize (Hmono Hrb evar_val svar_val X).
-      destruct Hmono.
-      apply H2.
+      destruct Hmono as [Hantimono Hmono].
+      apply Hmono.
       constructor.
     Qed.
   End with_model.

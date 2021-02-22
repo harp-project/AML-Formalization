@@ -1,3 +1,4 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles.
 
 From MatchingLogic.Utils Require Import Ensembles_Ext.
@@ -408,10 +409,18 @@ Proof.
     split; assumption.
     {
       inversion Hwf.
-      unfold well_formed. split.
-      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
-      - unfold well_formed_closed. simpl. 
-        inversion H0. inversion H1. inversion H2. split; assumption.
+      simpl in H.
+      unfold well_formed.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      apply andb_true_iff in H1. destruct H1 as [H3 H4].
+      apply andb_true_iff in H2. destruct H2 as [H5 H6].
+      simpl. rewrite H3. rewrite H5. simpl.
+      split.
+      { auto. }
+      unfold well_formed_closed. simpl.
+      inversion H0. simpl in H. simpl in H1.
+      destruct H as [H7 H8]. destruct H1 as [H9 H10].
+      split; assumption.
     }
 
   * intros Hv evar_val svar_val.
@@ -429,15 +438,21 @@ Proof.
     assumption.
     {
       inversion Hwf.
-      unfold well_formed. split.
-      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
-      - unfold well_formed_closed. simpl. 
-        inversion H0. inversion H1. inversion H2. split; assumption.
+      unfold well_formed. simpl.
+      simpl in H.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      apply andb_true_iff in H1. destruct H1 as [H3 H4].
+      apply andb_true_iff in H2. destruct H2 as [H5 H6].
+      rewrite H4. rewrite H6. simpl.
+      split.
+      { constructor. }
+      unfold well_formed_closed. simpl. 
+      inversion H0. inversion H. inversion H1. split; assumption.
     }
 
   * intros. epose (IHHp H Hv ) as IH.
     unfold well_formed in H. destruct H.
-    eapply (proof_rule_set_var_subst_sound phi psi w0 H0 ) in IH.
+    eapply (proof_rule_set_var_subst_sound phi psi w H0 ) in IH.
     exact IH.
     
   * intros Hv evar_val svar_val.
@@ -453,7 +468,11 @@ Proof.
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
     { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
       inversion Hwf. unfold well_formed.
-      inversion H. inversion H0. assumption.
+      inversion H. inversion H0.
+      simpl.
+      apply andb_true_iff in H2. destruct H2 as [Hwfpsubst H2].
+      apply andb_true_iff in H2. destruct H2 as [Hnonegphi Hwfpphi].
+      rewrite Hnonegphi. rewrite Hwfpphi. auto.
       apply set_svar_fresh_is_fresh.
     }
     unfold Lattice.isFixpoint in Ffix.
@@ -491,7 +510,10 @@ Proof.
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
     { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
       inversion Hwf. unfold well_formed.
-      inversion H. inversion H0. assumption.
+      inversion H. inversion H0.
+      apply andb_true_iff in H2. destruct H2 as [H2 Hwfppsi].
+      simpl.
+      assumption.
       apply set_svar_fresh_is_fresh.
     }
     unfold Lattice.isFixpoint in Ffix.
@@ -508,13 +530,13 @@ Proof.
 
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
     { destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. apply andb_true_iff in Hwfp. 
       destruct Hwfp as [Hwfp1 Hwfp2].
       simpl in Hwfp1.
       apply wfc_wfc_ind in Hwfc.
       inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
 
-      split. simpl. split. 
-      2: { assumption. }
+      split. simpl. rewrite Hwfp2.
       2: { simpl. admit. }
       subst phi0. subst psi0.
       Search well_formed_positive patt_mu.
@@ -528,7 +550,7 @@ Proof.
 
     unfold instantiate in Hp.
     apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
-    rewrite pattern_interpretation_iff_subset in Hv.
+    apply pattern_interpretation_iff_subset in Hv.
 
     subst F.
     rewrite <- set_substitution_lemma.
