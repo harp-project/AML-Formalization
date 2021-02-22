@@ -2355,7 +2355,9 @@ Proof.
       rewrite -> (@evar_open_free_svar_subst_comm) in H.
       rewrite -> e in H.
       exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
-      unfold evar_is_fresh_in in H6. assumption. destruct Hwf. assumption. assumption.
+      unfold evar_is_fresh_in in H6. assumption. unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf. assumption. assumption.
       assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
@@ -2401,6 +2403,8 @@ Proof.
       rewrite -> e.
       exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
@@ -2449,6 +2453,7 @@ Proof.
       rewrite -> e in H1.
       exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf. apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
@@ -2494,6 +2499,7 @@ Proof.
       rewrite -> e.
       exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf. apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
     assert ((λ S : Ensemble (Domain m),
@@ -2534,6 +2540,8 @@ Proof.
       {
         inversion Hwfc. pose (H5 MuZ H). apply wfc_ind_wfc in w. assumption.
       }
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       destruct Hwf. assumption.
       {
         simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
@@ -2584,7 +2592,10 @@ Proof.
         inversion Hwfc. pose (H6 MuZ H1). apply wfc_ind_wfc in w. assumption.
       }
       erewrite (@pattern_interpretation_free_svar_independent m _ _ MuZ x psi); try assumption.
-      reflexivity. destruct Hwf. assumption.
+      reflexivity.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf. assumption.
       {
         simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
       }
