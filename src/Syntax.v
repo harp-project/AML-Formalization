@@ -725,17 +725,17 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_mu psi => no_negative_occurrence_db_b 0 psi && well_formed_positive psi
     end.
 
-  Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : Prop :=
+  Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : bool :=
     match phi with
-    | patt_free_evar _ => True
-    | patt_free_svar _ => True
-    | patt_bound_evar n => n < max_ind_evar
-    | patt_bound_svar n => n < max_ind_svar
-    | patt_sym _ => True
-    | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar /\
+    | patt_free_evar _ => true
+    | patt_free_svar _ => true
+    | patt_bound_evar n => n <? max_ind_evar
+    | patt_bound_svar n => n <? max_ind_svar
+    | patt_sym _ => true
+    | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar &&
                             well_formed_closed_aux psi2 max_ind_evar max_ind_svar
-    | patt_bott => True
-    | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar /\
+    | patt_bott => true
+    | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar &&
                             well_formed_closed_aux psi2 max_ind_evar max_ind_svar
     | patt_exists psi => well_formed_closed_aux psi (max_ind_evar + 1) max_ind_svar
     | patt_mu psi => well_formed_closed_aux psi max_ind_evar (max_ind_svar + 1)
@@ -747,23 +747,30 @@ Class EBinder (ebinder : Pattern -> Pattern)
     -> well_formed_closed_aux phi ind_evar1 ind_svar1 
     -> well_formed_closed_aux phi ind_evar2 ind_svar2.
   Proof.
-    intros. 
+    intros.
     generalize dependent ind_evar1. generalize dependent ind_evar2.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
-    induction phi; intros; simpl in *; try lia.
-    inversion H1. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-    inversion H1. split. eapply IHphi1; eassumption. eapply IHphi2; eassumption.
-    - eapply (IHphi ind_svar2 ind_svar1 H0  (ind_evar2 + 1) (ind_evar1 + 1)).
+    induction phi; intros ind_svar_2 ind_svar_1 Hleqsvar ind_evar_2 ind_evar_1 Heqevar H;
+      simpl in *; try lia; auto. Search "<?" "<".
+    - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
+    - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
+    - apply andb_true_iff in H. destruct H as [H1 H2].
+      erewrite IHphi1. erewrite IHphi2. reflexivity. eassumption. eassumption. rewrite H2. reflexivity.
+      eassumption. eassumption. rewrite H1. reflexivity.
+    - apply andb_true_iff in H. destruct H as [H1 H2].
+      erewrite IHphi1. 2,3: eassumption. erewrite IHphi2. 2,3: eassumption.
+      2,3: assumption. reflexivity.
+    - eapply (IHphi ind_svar_2 ind_svar_1 _  (ind_evar_2 + 1) (ind_evar_1 + 1)).
       + lia.
       + assumption.
-    - eapply (IHphi (ind_svar2 + 1) (ind_svar1 + 1) _  ind_evar2 ind_evar1).
+    - eapply (IHphi (ind_svar_2 + 1) (ind_svar_1 + 1) _  ind_evar_2 ind_evar_1).
       + lia.
       + assumption.
         Unshelve.
-        lia.
+        lia. lia.
   Qed.
 
-  Definition well_formed (phi : Pattern) := well_formed_positive phi /\ well_formed_closed phi.
+  Definition well_formed (phi : Pattern) := well_formed_positive phi && well_formed_closed phi.
 
   (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
   Definition wfc_body_ex phi  := forall x, 
@@ -775,17 +782,17 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_closed_aux phi (S n) n'
       ->
       well_formed_closed_aux (evar_open n x phi) n n'.
-  Proof.
+  Proof using .
     - induction phi; intros; try lia; auto.
-      * simpl. inversion H.
-        -- simpl. rewrite -> Nat.eqb_refl. simpl. trivial.
-        -- subst. rewrite -> Nat.le_succ_l in H1. destruct (n =? n0) eqn:D1.
-      + apply Nat.eqb_eq in D1. rewrite D1 in H1. lia.
-      + simpl. auto.
-        * simpl in H. destruct H. firstorder.
-        * firstorder.
-        * firstorder.
-        * firstorder.
+      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n0) eqn:Heq.
+        -- reflexivity.
+        -- simpl. apply Nat.ltb_lt. apply beq_nat_false in Heq. lia.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
+      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
+      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
   Qed.
 
   (*Helper lemma for wf_body_to_wf_ex*)
@@ -794,11 +801,22 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_closed_aux (evar_open n x phi) n n'
       ->
       well_formed_closed_aux phi (S n) n'.
-  Proof.
+  Proof using .
     induction phi; firstorder.
     - simpl. simpl in H. destruct (n =? n0) eqn:P.
-      + apply beq_nat_true in P. rewrite P. lia.
-      + simpl in H. lia.
+      + apply beq_nat_true in P. rewrite P. apply Nat.ltb_lt. lia.
+      + simpl in H. apply Nat.ltb_lt. apply Nat.ltb_lt in H.
+        apply beq_nat_false in P. lia.
+    - simpl in H. simpl.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      erewrite IHphi1. 2: apply H1.
+      erewrite IHphi2. 2: apply H2.
+      reflexivity.
+    - simpl in H. simpl.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      erewrite IHphi1. 2: apply H1.
+      erewrite IHphi2. 2: apply H2.
+      reflexivity.
   Qed.
 
   Lemma wfc_aux_body_iff: 
@@ -955,15 +973,15 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_closed_aux (svar_open n' X phi) n n'.
   Proof.
     - induction phi; intros; try lia; auto.
-      * simpl. inversion H.
-        -- simpl. rewrite Nat.eqb_refl. simpl. trivial.
-        -- subst. rewrite -> Nat.le_succ_l in H1. destruct (n =? n') eqn:D1.
-      + apply Nat.eqb_eq in D1. rewrite -> D1 in H1. lia.
-      + simpl. auto. 
-        * simpl in H. destruct H. firstorder.
-        * firstorder.
-        * firstorder.
-        * firstorder.
+      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n') eqn:Heq.
+        -- reflexivity.
+        -- simpl. apply Nat.ltb_lt. apply beq_nat_false in Heq. lia.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
+      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
+      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
   Qed.
 
   (*Helper for *)
@@ -974,9 +992,19 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed_closed_aux phi n (S n').
   Proof.
     induction phi; firstorder.
-    - simpl. simpl in H. destruct (n =? n') eqn:P.
-      + apply beq_nat_true in P. rewrite P. lia.
-      + simpl in H. lia.
+    - simpl. simpl in H. destruct (n =? n') eqn:P; simpl in H.
+      + apply beq_nat_true in P. rewrite P. apply Nat.ltb_lt. lia.
+      + apply Nat.ltb_lt. apply Nat.ltb_lt in H. lia.
+    - simpl in H. simpl.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      erewrite IHphi1. 2: apply H1.
+      erewrite IHphi2. 2: apply H2.
+      reflexivity.
+    -  simpl in H. simpl.
+       apply andb_true_iff in H. destruct H as [H1 H2].
+       erewrite IHphi1. 2: apply H1.
+       erewrite IHphi2. 2: apply H2.
+       reflexivity.
   Qed.
 
   (*If (mu, phi) is closed, then its body is closed too*)
@@ -1063,9 +1091,12 @@ Class EBinder (ebinder : Pattern -> Pattern)
       well_formed (patt_exists phi) ->
       wf_body_ex phi.
   Proof.
-    unfold wf_body_ex. intros. unfold well_formed in *. destruct H. split.
-    - apply (@wfp_ex_to_wfp_body phi H). assumption.
-    - apply (@wfc_ex_to_wfc_body phi H1). assumption.
+    unfold wf_body_ex. intros. unfold well_formed in *.
+    apply andb_true_iff in H.
+    destruct H as [H1 H2].
+    rewrite (@wfp_ex_to_wfp_body phi H1). assumption.
+    rewrite (@wfc_ex_to_wfc_body phi H2). assumption.
+    reflexivity.
   Qed.
 
   Inductive well_formed_closed_induc : Pattern -> Prop :=
@@ -1098,11 +1129,21 @@ Class EBinder (ebinder : Pattern -> Pattern)
     induction sz; destruct phi; intros Hwf Hsz ; simpl in *; try inversion Hsz; auto. 1, 2, 5, 6 : constructor.
     - inversion Hwf.
     - inversion Hwf.
-    - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
-    - constructor. apply IHsz. firstorder. lia. apply IHsz. firstorder. lia.
-    - constructor. apply wfc_ex_to_wfc_body in Hwf. unfold wfc_body_ex in Hwf. intros. 
+    - unfold well_formed_closed in Hwf.
+      simpl in Hwf. apply andb_true_iff in Hwf. destruct Hwf as [Hwf1 Hwf2].
+      constructor.
+      { apply IHsz. apply Hwf1. lia. }
+      { apply IHsz. apply Hwf2. lia. }
+    - unfold well_formed_closed in Hwf.
+      simpl in Hwf. apply andb_true_iff in Hwf. destruct Hwf as [Hwf1 Hwf2].
+      constructor.
+      { apply IHsz. apply Hwf1. lia. }
+      { apply IHsz. apply Hwf2. lia. }
+    - unfold well_formed_closed in Hwf. simpl in Hwf.
+      constructor. apply wfc_ex_to_wfc_body in Hwf. unfold wfc_body_ex in Hwf. intros. 
       apply (IHsz (evar_open 0 x phi)). apply Hwf. assumption. erewrite evar_open_size in Hsz.  apply Peano.le_S_n in Hsz. exact Hsz.
-    - constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
+    - unfold well_formed_closed in Hwf. simpl in Hwf.
+      constructor. apply wfc_mu_to_wfc_body in Hwf. unfold wfc_body_mu in Hwf. intros. 
       apply (IHsz (svar_open 0 X phi)). apply Hwf. assumption. erewrite svar_open_size in Hsz. apply Peano.le_S_n in Hsz. exact Hsz.
   Qed.
 
@@ -1118,7 +1159,13 @@ Class EBinder (ebinder : Pattern -> Pattern)
       ->
       well_formed_closed phi.
   Proof.
-    intros. induction H; firstorder.
+    intros. induction H; simpl; auto.
+    - unfold well_formed_closed. simpl. unfold well_formed_closed in *.
+      rewrite IHwell_formed_closed_induc1.
+      rewrite IHwell_formed_closed_induc2. reflexivity.
+    - unfold well_formed_closed. simpl. unfold well_formed_closed in *.
+      rewrite IHwell_formed_closed_induc1.
+      rewrite IHwell_formed_closed_induc2. reflexivity. 
     - apply wfc_body_to_wfc_ex. unfold wfc_body_ex. assumption.
     - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
   Qed.
@@ -1472,25 +1519,23 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
       well_formed (patt_app phi1 phi2) -> well_formed phi1.
   Proof.
-    unfold well_formed. intros.
+    unfold well_formed. simpl. intros phi1 phi2 H.
+    apply andb_true_iff in H.
     destruct H as [Hpos Hclos].
-    inversion Hpos. inversion Hclos.
-    apply andb_true_iff in H0. destruct H0 as [H01 H02].
-    split.
-    + assumption.
-    + unfold well_formed_closed. assumption.
+    apply andb_true_iff in Hpos. destruct Hpos as [Hpos1 Hpos2].
+    rewrite Hpos1. simpl. apply wfc_wfc_ind in Hclos. inversion Hclos. subst.
+    apply wfc_ind_wfc. apply H1.
   Qed.
 
   Lemma well_formed_app_2 : forall (phi1 phi2 : Pattern),
       well_formed (patt_app phi1 phi2) -> well_formed phi2.
   Proof.
-    unfold well_formed. intros.
+    unfold well_formed. simpl. intros phi1 phi2 H.
+    apply andb_true_iff in H.
     destruct H as [Hpos Hclos].
-    inversion Hpos. inversion Hclos.
-    apply andb_true_iff in H0. destruct H0 as [H01 H02].
-    split.
-    + assumption.
-    + unfold well_formed_closed. assumption.
+    apply andb_true_iff in Hpos. destruct Hpos as [Hpos1 Hpos2].
+    rewrite Hpos2. simpl. apply wfc_wfc_ind in Hclos. inversion Hclos. subst.
+    apply wfc_ind_wfc. apply H2.
   Qed.
 
   Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
@@ -1681,12 +1726,14 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Proof.
     generalize dependent dbs. generalize dependent db2. generalize dependent db1.
     induction phi; intros db1 db2 dbs Hle Hwfca; simpl; simpl in Hwfca; auto.
-    * destruct (eqb_reflect n db2). lia. auto.
-    * rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto. 
-      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
+    * destruct (eqb_reflect n db2). apply Nat.ltb_lt in Hwfca. lia. auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto. 
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
       auto.
-    * rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
-      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: firstorder. 2: auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
       auto.
     * apply f_equal.
       rewrite -> IHphi with (dbs := dbs)(db1 := db1 + 1). 3: auto. 2: lia. auto.
@@ -1716,6 +1763,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
+  (* TODO!! *)
   Lemma svar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       m <> dbi ->
@@ -2169,14 +2217,16 @@ Class EBinder (ebinder : Pattern -> Pattern)
     move: ne ns.
     induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
     - intros Hcontra.
-      apply bool_decide_eq_true in Hcontra. lia.
-    - destruct Hwfc as [Hwfc1 Hwfc2].
+      apply bool_decide_eq_true in Hcontra. apply Nat.ltb_lt in Hwfc. lia.
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
       destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
       + eapply IHphi1. apply Hwfc1. apply Heq1.
       + eapply IHphi1. apply Hwfc1. apply Heq1.
       + eapply IHphi2. apply Hwfc2. apply Heq2.
       + auto.
-    - destruct Hwfc as [Hwfc1 Hwfc2].
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
       destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
       + eapply IHphi1. apply Hwfc1. apply Heq1.
       + eapply IHphi1. apply Hwfc1. apply Heq1.
