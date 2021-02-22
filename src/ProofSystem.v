@@ -1,3 +1,4 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles.
 
 From MatchingLogic.Utils Require Import Ensembles_Ext.
@@ -46,14 +47,22 @@ Proof.
     }
     split.
       * erewrite -> (update_valuation_fresh). erewrite -> (evar_open_fresh). exact Hext_le.
-        unfold well_formed in H0. destruct H0. assumption.
-        rewrite -> (evar_open_fresh). unfold well_formed in H0. destruct H0. assumption.
-        unfold well_formed in H0. destruct H0. assumption.
+        unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
+        rewrite -> (evar_open_fresh). unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
+        unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
         {
           rewrite -> evar_open_fresh. unfold fresh_evar. simpl. 
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
           apply not_elem_of_union in n. destruct n. assumption.
-          unfold well_formed in H0. destruct H0. assumption.
+          unfold well_formed in H0.
+          apply andb_true_iff in H0.
+          destruct H0. assumption.
         }
       * assumption.
 Qed.
@@ -84,13 +93,17 @@ Proof.
     exists le, re.
     split.
     - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
-      unfold well_formed in H0. destruct H0. assumption.
+      unfold well_formed in H0.
+      apply andb_true_iff in H0.
+      destruct H0. assumption.
       {
         unfold fresh_evar. simpl. unfold evar_is_fresh_in.
         pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
       }
-      unfold well_formed in H0. destruct H0. assumption.
+      unfold well_formed in H0.
+      apply andb_true_iff in H0.
+      destruct H0. assumption.
     - split.
       + erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
@@ -226,7 +239,8 @@ Qed.
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
   Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
-  (* Soundness theorem *)
+
+(* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
   well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
@@ -308,7 +322,7 @@ Proof.
     apply Extensionality_Ensembles.
     constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
-  * intros Hv evar_val svar_val. 
+  * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_ex_simpl.
     unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
@@ -406,11 +420,23 @@ Proof.
     Unshelve.
     split; assumption.
     {
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       inversion Hwf.
-      unfold well_formed. split.
-      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
-      - unfold well_formed_closed. simpl. 
-        inversion H0. inversion H1. inversion H2. split; assumption.
+      simpl in H.
+      unfold well_formed.
+      apply andb_true_iff in H. destruct H as [H1 H2].
+      apply andb_true_iff in H1. destruct H1 as [H3 H4].
+      apply andb_true_iff in H2. destruct H2 as [H5 H6].
+      simpl. rewrite H3. rewrite H5. simpl.
+      unfold well_formed_closed.
+      unfold well_formed_closed in H0. simpl in H0.
+      apply andb_true_iff in H0. destruct H0 as [H01 H02].
+      apply andb_true_iff in H01. destruct H01 as [H011 H012].
+      apply andb_true_iff in H02. destruct H02 as [H021 H022].
+      simpl.
+      rewrite H011. rewrite H021.
+      reflexivity.
     }
 
   * intros Hv evar_val svar_val.
@@ -427,16 +453,27 @@ Proof.
     split. apply e. assumption.
     assumption.
     {
-      inversion Hwf.
-      unfold well_formed. split.
-      - inversion H. inversion H1. inversion H2. simpl. split; assumption.
-      - unfold well_formed_closed. simpl. 
-        inversion H0. inversion H1. inversion H2. split; assumption.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      simpl in Hwf1. apply andb_true_iff in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
+      apply andb_true_iff in Hwf11. destruct Hwf11 as [Hwf111 Hwf112].
+      apply andb_true_iff in Hwf12. destruct Hwf12 as [Hwf121 Hwf122].
+      unfold well_formed. simpl.
+      rewrite Hwf112. rewrite Hwf122. simpl.
+      unfold well_formed_closed in Hwf2. simpl in Hwf2.
+      apply andb_true_iff in Hwf2. destruct Hwf2 as [Hwfc1 Hwfc2].
+      apply andb_true_iff in Hwfc1. destruct Hwfc1 as [Hwfc3 Hwfc4].
+      apply andb_true_iff in Hwfc2. destruct Hwfc2 as [H2fc5 Hwfc6].
+      unfold well_formed_closed. simpl.
+      rewrite Hwfc4. rewrite Hwfc6.
+      reflexivity.
     }
 
-  * intros. epose (IHHp H Hv ) as IH.
-    unfold well_formed in H. destruct H.
-    eapply (proof_rule_set_var_subst_sound phi psi w0 H0 ) in IH.
+  * intros. epose proof (IHHp H Hv ) as IH.
+    unfold well_formed in H.
+    apply andb_true_iff in H. destruct H as [H1 H2].
+    eapply (proof_rule_set_var_subst_sound phi psi _ H0 ) in IH.
     exact IH.
     
   * intros Hv evar_val svar_val.
@@ -450,9 +487,15 @@ Proof.
     pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
     pose (L := Lattice.PowersetLattice (@Domain signature m)).
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
-      inversion Hwf. unfold well_formed.
-      inversion H. inversion H0. assumption.
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. unfold well_formed_closed in Hwfc. simpl in Hwfc.
+      apply andb_true_iff in Hwfp. destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff in Hwfp2. destruct Hwfp2 as [Hwfp2 Hwfp3].
+      simpl. rewrite Hwfp3. rewrite Hwfp2.
+      reflexivity.
       apply set_svar_fresh_is_fresh.
     }
     unfold Lattice.isFixpoint in Ffix.
@@ -467,15 +510,109 @@ Proof.
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
     
-    (*Check plugging_patterns.*)
-    (*
-    simpl. rewrite -> ext_valuation_imp_simpl. rewrite -> ext_valuation_mu_simpl.
-    constructor. constructor.
-    unfold Included. intros. unfold In.*)
-    admit.
+    rewrite <- set_substitution_lemma.
+    2: { simpl in Hwf. unfold well_formed in Hwf.
+         apply andb_true_iff in Hwf.
+         destruct Hwf as [_ Hwfc].
+         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+         apply wfc_ind_wfc. assumption.
+    }
+    2: { apply set_svar_fresh_is_fresh. }
+    unfold Included. intros. auto.
 
   * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
+
+
+   simpl.
+    remember (fun S : Ensemble (Domain m) =>
+                pattern_interpretation evar_val
+                                       (update_svar_val (fresh_svar phi) S svar_val)
+                                       (svar_open 0 (fresh_svar phi) phi)) as F.
+
+    pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
+    pose (L := Lattice.PowersetLattice (@Domain signature m)).
+
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. unfold well_formed_closed in Hwfc. simpl in Hwfc.
+      apply andb_true_iff in Hwfp. destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff in Hwfp1. destruct Hwfp1 as [Hwfp1 Hwfp3].
+      simpl. rewrite Hwfp1. rewrite Hwfp3.
+      reflexivity.
+      apply set_svar_fresh_is_fresh.
+    }
+    
+    unfold Lattice.isFixpoint in Ffix.
+    assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
+    { rewrite -> Ffix. apply Same_set_refl. }
+    destruct Ffix_set. clear H0.
+    unfold Full.
+    symmetry.
+    apply Same_set_to_eq.
+    apply Same_set_Full_set.
+    apply Full_subset_union_iff_subset.
+    pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint).
+    specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
+
+    assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
+    { unfold well_formed in Hwf. apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. apply andb_true_iff in Hwfp. 
+      destruct Hwfp as [Hwfp1 Hwfp2].
+      simpl in Hwfp1.
+      apply wfc_wfc_ind in Hwfc.
+      inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
+      simpl. unfold well_formed. simpl.
+      rewrite Hwfp2.
+      admit.
+    }
+    specialize (IHHp Hwf').
+
+    simpl in IHHp.
+    unfold well_formed in Hwf.
+    apply andb_true_iff in Hwf.
+    destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc.
+    subst psi0. subst phi0.
+
+    unfold instantiate in Hp.
+    apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
+    apply pattern_interpretation_iff_subset in Hv.
+
+    subst F.
+    rewrite <- set_substitution_lemma.
+    apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
+
+    (* F(rhobar(psi)) \subseteq rhobar(psi) 
+       rho[rhobar(psi)/X](phi) \subseteq rhobar(psi)
+    *)
+    (*
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint .
+    unfold Included. intros. 
+    Search eq Same_set.
+    apply eq_iff_Same_set.
+    Print Same_set_full_set.
+    apply Lattice.LeastFixpoint_LesserThanPrefixpoint with (OS := OS)(L := L)(f := F) in H.
+    eapply Included_transitive.
+    2: { apply H. }
+    rewrite -> HeqF.
+    epose proof (Hsimpl := pattern_interpretation_mu_simpl).
+    specialize (Hsimpl evar_val svar_val phi).
+    simpl in Hsimpl. subst OS. subst L.
+    rewrite <- Hsimpl.
+    
+    rewrite <- set_substitution_lemma.
+    2: { simpl in Hwf. unfold well_formed in Hwf. destruct Hwf as [_ Hwfc].
+         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
+         apply wfc_ind_wfc. assumption.
+    }
+    2: { apply set_svar_fresh_is_fresh. }
+    unfold Included. intros. auto.
+
+    
     epose (IHHp _ Hv evar_val svar_val) as e.
     simpl in e. rewrite -> pattern_interpretation_imp_simpl in e.
     apply Extensionality_Ensembles.
@@ -491,7 +628,7 @@ Proof.
     apply H2. unfold Included. intros.
     unfold In. admit.*)
     admit.
-
+*)
 Admitted.
 
 End ml_proof_system.

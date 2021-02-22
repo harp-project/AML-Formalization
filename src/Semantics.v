@@ -1256,9 +1256,8 @@ Qed.
 (* There are two ways how to plug a pattern phi2 into a pattern phi1:
    either substitute it for some variable,
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
- TODO prefix with Private_ and creaate a wrapper.
 *)
-Lemma plugging_patterns_helper : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
+Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
     size phi1 <= sz -> forall (evar_val : EVarVal)
                               (svar_val : SVarVal) (X : svar),
     well_formed_closed phi2 ->
@@ -1589,6 +1588,20 @@ Proof.
            apply set_svar_fresh_is_fresh.
 Qed.
 
+
+Lemma set_substitution_lemma : forall (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
+    forall (evar_val : EVarVal) (svar_val : SVarVal) (X : svar),
+    well_formed_closed phi2 ->
+    ~ elem_of X (free_svars phi1) ->
+    @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
+    = @pattern_interpretation M evar_val
+                     (update_svar_val X (@pattern_interpretation M evar_val svar_val phi2) svar_val)
+                     (svar_open dbi X phi1).
+Proof.
+  intros.
+  apply Private_plugging_patterns with (sz := size phi1).
+  lia. auto. auto.
+Qed.
 
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
@@ -2342,7 +2355,9 @@ Proof.
       rewrite -> (@evar_open_free_svar_subst_comm) in H.
       rewrite -> e in H.
       exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
-      unfold evar_is_fresh_in in H6. assumption. destruct Hwf. assumption. assumption.
+      unfold evar_is_fresh_in in H6. assumption. unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf. assumption. assumption.
       assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
@@ -2388,6 +2403,8 @@ Proof.
       rewrite -> e.
       exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
     apply Extensionality_Ensembles. apply FA_Union_same. intros.
@@ -2436,6 +2453,7 @@ Proof.
       rewrite -> e in H1.
       exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf. apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
     + intros.
       remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
@@ -2481,6 +2499,7 @@ Proof.
       rewrite -> e.
       exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
       unfold evar_is_fresh_in in H6. assumption.
+      unfold well_formed in Hwf. apply andb_true_iff in Hwf.
       destruct Hwf. assumption. assumption. assumption. assumption.
   - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
     assert ((λ S : Ensemble (Domain m),
@@ -2521,6 +2540,8 @@ Proof.
       {
         inversion Hwfc. pose (H5 MuZ H). apply wfc_ind_wfc in w. assumption.
       }
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       destruct Hwf. assumption.
       {
         simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
@@ -2571,7 +2592,10 @@ Proof.
         inversion Hwfc. pose (H6 MuZ H1). apply wfc_ind_wfc in w. assumption.
       }
       erewrite (@pattern_interpretation_free_svar_independent m _ _ MuZ x psi); try assumption.
-      reflexivity. destruct Hwf. assumption.
+      reflexivity.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf. assumption.
       {
         simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
       }

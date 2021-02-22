@@ -140,18 +140,17 @@ Section with_signature.
       well_formed_positive patt_ind_gen.
     Proof.
       unfold patt_ind_gen. simpl.
-      rewrite !(right_id True and).
+      rewrite !andb_true_r.
       rewrite !well_formed_positive_nest_mu_aux.
-      split.
-      2: { auto. }
-      
-      rewrite (reflect_iff _ _ (no_negative_occurrence_P _ _)).
+      rewrite Hwfpbase.
+      rewrite Hwfpstep.
+      rewrite !andb_true_r.
+
       cbn. fold no_negative_occurrence_db_b.
 
       rewrite !no_negative_occurrence_db_nest_mu_aux. simpl.
       auto.
     Qed.
-
 
     Lemma svar_open_patt_ind_gen_body_simpl M ρₑ ρₛ X:
       svar_is_fresh_in X patt_ind_gen_body ->
