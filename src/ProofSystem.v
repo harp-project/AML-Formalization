@@ -47,14 +47,22 @@ Proof.
     }
     split.
       * erewrite -> (update_valuation_fresh). erewrite -> (evar_open_fresh). exact Hext_le.
-        unfold well_formed in H0. destruct H0. assumption.
-        rewrite -> (evar_open_fresh). unfold well_formed in H0. destruct H0. assumption.
-        unfold well_formed in H0. destruct H0. assumption.
+        unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
+        rewrite -> (evar_open_fresh). unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
+        unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
         {
           rewrite -> evar_open_fresh. unfold fresh_evar. simpl. 
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
           apply not_elem_of_union in n. destruct n. assumption.
-          unfold well_formed in H0. destruct H0. assumption.
+          unfold well_formed in H0.
+          apply andb_true_iff in H0.
+          destruct H0. assumption.
         }
       * assumption.
 Qed.
@@ -85,13 +93,17 @@ Proof.
     exists le, re.
     split.
     - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
-      unfold well_formed in H0. destruct H0. assumption.
+      unfold well_formed in H0.
+      apply andb_true_iff in H0.
+      destruct H0. assumption.
       {
         unfold fresh_evar. simpl. unfold evar_is_fresh_in.
         pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
       }
-      unfold well_formed in H0. destruct H0. assumption.
+      unfold well_formed in H0.
+      apply andb_true_iff in H0.
+      destruct H0. assumption.
     - split.
       + erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
@@ -408,6 +420,8 @@ Proof.
     Unshelve.
     split; assumption.
     {
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
       inversion Hwf.
       simpl in H.
       unfold well_formed.
@@ -415,12 +429,14 @@ Proof.
       apply andb_true_iff in H1. destruct H1 as [H3 H4].
       apply andb_true_iff in H2. destruct H2 as [H5 H6].
       simpl. rewrite H3. rewrite H5. simpl.
-      split.
-      { auto. }
-      unfold well_formed_closed. simpl.
-      inversion H0. simpl in H. simpl in H1.
-      destruct H as [H7 H8]. destruct H1 as [H9 H10].
-      split; assumption.
+      unfold well_formed_closed.
+      unfold well_formed_closed in H0. simpl in H0.
+      apply andb_true_iff in H0. destruct H0 as [H01 H02].
+      apply andb_true_iff in H01. destruct H01 as [H011 H012].
+      apply andb_true_iff in H02. destruct H02 as [H021 H022].
+      simpl.
+      rewrite H011. rewrite H021.
+      reflexivity.
     }
 
   * intros Hv evar_val svar_val.
@@ -437,22 +453,27 @@ Proof.
     split. apply e. assumption.
     assumption.
     {
-      inversion Hwf.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      simpl in Hwf1. apply andb_true_iff in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
+      apply andb_true_iff in Hwf11. destruct Hwf11 as [Hwf111 Hwf112].
+      apply andb_true_iff in Hwf12. destruct Hwf12 as [Hwf121 Hwf122].
       unfold well_formed. simpl.
-      simpl in H.
-      apply andb_true_iff in H. destruct H as [H1 H2].
-      apply andb_true_iff in H1. destruct H1 as [H3 H4].
-      apply andb_true_iff in H2. destruct H2 as [H5 H6].
-      rewrite H4. rewrite H6. simpl.
-      split.
-      { constructor. }
-      unfold well_formed_closed. simpl. 
-      inversion H0. inversion H. inversion H1. split; assumption.
+      rewrite Hwf112. rewrite Hwf122. simpl.
+      unfold well_formed_closed in Hwf2. simpl in Hwf2.
+      apply andb_true_iff in Hwf2. destruct Hwf2 as [Hwfc1 Hwfc2].
+      apply andb_true_iff in Hwfc1. destruct Hwfc1 as [Hwfc3 Hwfc4].
+      apply andb_true_iff in Hwfc2. destruct Hwfc2 as [H2fc5 Hwfc6].
+      unfold well_formed_closed. simpl.
+      rewrite Hwfc4. rewrite Hwfc6.
+      reflexivity.
     }
 
-  * intros. epose (IHHp H Hv ) as IH.
-    unfold well_formed in H. destruct H.
-    eapply (proof_rule_set_var_subst_sound phi psi w H0 ) in IH.
+  * intros. epose proof (IHHp H Hv ) as IH.
+    unfold well_formed in H.
+    apply andb_true_iff in H. destruct H as [H1 H2].
+    eapply (proof_rule_set_var_subst_sound phi psi _ H0 ) in IH.
     exact IH.
     
   * intros Hv evar_val svar_val.
@@ -466,13 +487,15 @@ Proof.
     pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
     pose (L := Lattice.PowersetLattice (@Domain signature m)).
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
-      inversion Hwf. unfold well_formed.
-      inversion H. inversion H0.
-      simpl.
-      apply andb_true_iff in H2. destruct H2 as [Hwfpsubst H2].
-      apply andb_true_iff in H2. destruct H2 as [Hnonegphi Hwfpphi].
-      rewrite Hnonegphi. rewrite Hwfpphi. auto.
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. unfold well_formed_closed in Hwfc. simpl in Hwfc.
+      apply andb_true_iff in Hwfp. destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff in Hwfp2. destruct Hwfp2 as [Hwfp2 Hwfp3].
+      simpl. rewrite Hwfp3. rewrite Hwfp2.
+      reflexivity.
       apply set_svar_fresh_is_fresh.
     }
     unfold Lattice.isFixpoint in Ffix.
@@ -488,7 +511,9 @@ Proof.
     rewrite <- Hsimpl.
     
     rewrite <- set_substitution_lemma.
-    2: { simpl in Hwf. unfold well_formed in Hwf. destruct Hwf as [_ Hwfc].
+    2: { simpl in Hwf. unfold well_formed in Hwf.
+         apply andb_true_iff in Hwf.
+         destruct Hwf as [_ Hwfc].
          apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
          apply wfc_ind_wfc. assumption.
     }
@@ -507,15 +532,20 @@ Proof.
 
     pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
     pose (L := Lattice.PowersetLattice (@Domain signature m)).
+
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic. 
-      inversion Hwf. unfold well_formed.
-      inversion H. inversion H0.
-      apply andb_true_iff in H2. destruct H2 as [H2 Hwfppsi].
-      simpl.
-      assumption.
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+      unfold well_formed in Hwf.
+      apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
+      simpl in Hwfp. unfold well_formed_closed in Hwfc. simpl in Hwfc.
+      apply andb_true_iff in Hwfp. destruct Hwfp as [Hwfp1 Hwfp2].
+      apply andb_true_iff in Hwfp1. destruct Hwfp1 as [Hwfp1 Hwfp3].
+      simpl. rewrite Hwfp1. rewrite Hwfp3.
+      reflexivity.
       apply set_svar_fresh_is_fresh.
     }
+    
     unfold Lattice.isFixpoint in Ffix.
     assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
     { rewrite -> Ffix. apply Same_set_refl. }
@@ -529,22 +559,22 @@ Proof.
     specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
 
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
-    { destruct Hwf as [Hwfp Hwfc].
+    { unfold well_formed in Hwf. apply andb_true_iff in Hwf.
+      destruct Hwf as [Hwfp Hwfc].
       simpl in Hwfp. apply andb_true_iff in Hwfp. 
       destruct Hwfp as [Hwfp1 Hwfp2].
       simpl in Hwfp1.
       apply wfc_wfc_ind in Hwfc.
       inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
-
-      split. simpl. rewrite Hwfp2.
-      2: { simpl. admit. }
-      subst phi0. subst psi0.
-      Search well_formed_positive patt_mu.
+      simpl. unfold well_formed. simpl.
+      rewrite Hwfp2.
       admit.
     }
     specialize (IHHp Hwf').
 
     simpl in IHHp.
+    unfold well_formed in Hwf.
+    apply andb_true_iff in Hwf.
     destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc.
     subst psi0. subst phi0.
 
