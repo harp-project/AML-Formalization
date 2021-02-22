@@ -1,3 +1,5 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+
 From Coq Require Import Ensembles.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
@@ -16,18 +18,17 @@ Proof.
   - exact H.
   - exact H0.
   - split.
-    + destruct H. destruct IHC. simpl. split.
-      * exact H1.
-      * destruct Prf. exact H3.
+    + destruct H. destruct IHC. simpl. rewrite H1. simpl.
+      destruct Prf. exact H3.
     + simpl. unfold well_formed_closed in *. simpl.  split.
       * destruct IHC. exact H1.
       * destruct Prf. exact H1.
-  - split.
-    + simpl. split.
-      * destruct Prf. exact H0.
-      * destruct IHC. exact H0.
+  - destruct Prf.
+    split.
+    + simpl. rewrite i. simpl.
+      destruct IHC. exact H0.
     + simpl. unfold well_formed_closed in *. simpl. split.
-      * destruct Prf. exact H1.
+      * assumption.
       * destruct IHC. exact H1.
 Qed.
 
@@ -37,12 +38,9 @@ Proof.
   intros.
   induction C.
   - auto.
-  - simpl. split.
-    + exact IHC.
-    + unfold well_formed in Prf. destruct Prf. exact H0.
-  - simpl. split.
-    + unfold well_formed in Prf. destruct Prf. exact H0.
-    + exact IHC.
+  - simpl. rewrite IHC. simpl.
+    unfold well_formed in Prf. destruct Prf. exact H0.
+  - simpl. unfold well_formed in Prf. destruct Prf. rewrite H0. rewrite IHC. reflexivity.
 Qed.
 
 Lemma wc_sctx (C : Application_context) (A : Pattern) :
@@ -76,7 +74,7 @@ Ltac wf_proof :=
   | H  : well_formed_closed _     |- well_formed_closed _       => exact H
   | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
   | H  : well_formed_closed_aux _ _   |- well_formed_closed_aux (subst_ctx _ _) _ => eapply (wc_sctx _ _ H)
-  | H0 : well_formed_positive _   |- well_formed_positive _               => exact H0
+  | H0 : well_formed_positive _   |- well_formed_positive _               => rewrite H0; reflexivity
   | H1 : well_formed_closed_aux _ _ _
                                   |- well_formed_closed_aux _ _ _         => exact H1
   |                               |- True                                 => trivial
