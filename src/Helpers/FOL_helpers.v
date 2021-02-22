@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Coq Require Import Ensembles.
+From Coq Require Import Ensembles Bool.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
@@ -14,22 +14,28 @@ Lemma wf_sctx (C : Application_context) (A : Pattern) :
   well_formed A -> @well_formed Σ (subst_ctx C A).
 Proof.
   intros.
-  induction C; unfold well_formed in *. destruct H; split; unfold well_formed_closed in *; simpl.
-  - exact H.
-  - exact H0.
-  - split.
-    + destruct H. destruct IHC. simpl. rewrite H1. simpl.
-      destruct Prf. exact H3.
-    + simpl. unfold well_formed_closed in *. simpl.  split.
-      * destruct IHC. exact H1.
-      * destruct Prf. exact H1.
-  - destruct Prf.
-    split.
-    + simpl. rewrite i. simpl.
-      destruct IHC. exact H0.
-    + simpl. unfold well_formed_closed in *. simpl. split.
-      * assumption.
-      * destruct IHC. exact H1.
+  unfold well_formed in H.
+  apply andb_true_iff in H. destruct H as [Hwfp Hwfc].
+  unfold well_formed_closed in Hwfc.
+  induction C; simpl.
+  - unfold well_formed. rewrite Hwfp. unfold well_formed_closed. rewrite Hwfc. reflexivity.
+  - unfold well_formed. simpl.
+    unfold well_formed in IHC. apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+    rewrite IHC1. simpl.
+    unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+    rewrite Prf1. simpl.
+    unfold well_formed_closed. simpl.
+    unfold well_formed_closed in IHC2. rewrite IHC2. simpl.
+    fold (well_formed_closed p). rewrite Prf2.
+    reflexivity.
+  - unfold well_formed in *. simpl.
+    apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+    rewrite Prf1. simpl.
+    apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+    rewrite IHC1. simpl.
+    unfold well_formed_closed in *. simpl.
+    rewrite Prf2. simpl.
+    rewrite IHC2. reflexivity.
 Qed.
 
 Lemma wp_sctx (C : Application_context) (A : Pattern) :
@@ -39,8 +45,9 @@ Proof.
   induction C.
   - auto.
   - simpl. rewrite IHC. simpl.
-    unfold well_formed in Prf. destruct Prf. exact H0.
-  - simpl. unfold well_formed in Prf. destruct Prf. rewrite H0. rewrite IHC. reflexivity.
+    unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf. exact H0.
+  - simpl. unfold well_formed in Prf. apply andb_true_iff in Prf.
+    destruct Prf. rewrite H0. rewrite IHC. reflexivity.
 Qed.
 
 Lemma wc_sctx (C : Application_context) (A : Pattern) :
@@ -49,27 +56,48 @@ Proof.
   intros.
   induction C.
   - auto.
-  - simpl. split.
-    + exact IHC.
-    + unfold well_formed in Prf. destruct Prf. unfold well_formed_closed in H1. exact H1.
-  - simpl. split.
-    + unfold well_formed in Prf. destruct Prf. unfold well_formed_closed in H1. exact H1.
-    + exact IHC.
+  - simpl. rewrite IHC. simpl.
+    unfold well_formed in Prf. apply andb_true_iff in Prf.
+    destruct Prf. unfold well_formed_closed in H1. exact H1.
+  - simpl. rewrite IHC.
+    unfold well_formed in Prf. apply andb_true_iff in Prf.
+    destruct Prf. unfold well_formed_closed in H1. rewrite H1.
+    reflexivity.
 Qed.
 
+Ltac wf_decompose_hypotheses :=
+  unfold well_formed in * |- ;
+  unfold well_formed_closed in * |- ;
+  simpl in * |- ;
+  repeat (
+      match goal with
+      | H : is_true _ |- _
+        => unfold is_true in H
+      | H : (andb _ _) = true |- _
+        => apply andb_true_iff in H
+      | H : (_ /\ _) |- _
+        => destruct H
+      | H : (true = true) |- _
+        => clear H (* just to be safe from infinite loops *)
+      end
+    ).  
+               
+                                                                                
+
 (*Use this tactic for most of the well-formedness related goals*)
-Ltac wf_proof := 
-  unfold well_formed; unfold well_formed_closed; simpl;
-  
-  repeat (match goal with
-  | H : well_formed _         |- _ => destruct H
-  | H0 : well_formed_closed _ |- _ => (unfold well_formed_closed in H0; simpl)
-  end);
-  
-  repeat (match goal with
-  | |- _ /\ _ => split
-  end);
-  
+Ltac wf_proof :=
+  wf_decompose_hypotheses;
+  unfold well_formed in *; unfold well_formed_closed in *; simpl;
+
+  (* Simplifications *)
+  repeat (
+      match goal with
+      | H  : (?X = true) |- context G[?X]
+        => rewrite H 
+      end
+    );
+
+  simpl; reflexivity. (*
   match goal with
   | H  : well_formed_closed _     |- well_formed_closed _       => exact H
   | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
@@ -79,7 +107,7 @@ Ltac wf_proof :=
                                   |- well_formed_closed_aux _ _ _         => exact H1
   |                               |- True                                 => trivial
   | _                                                                     => idtac
-  end .
+  end . *)
 
 Ltac wf_check := 
 match goal with
@@ -93,16 +121,17 @@ Lemma A_impl_A (theory : Theory) (A : Pattern)  :
 (well_formed A) -> theory ⊢ (A ---> A).
 Proof. 
   intros.
-  epose(_1 := P2 theory A (A ---> A) A _ _ _).
-  epose(_2 := P1 theory A (A ---> A) _ _).
+  epose proof (_1 := P2 theory A (A ---> A) A _ _ _).
+  epose proof (_2 := P1 theory A (A ---> A) _ _).
 
-  epose(_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
+  epose proof (_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
   
-  epose(_4 := P1 theory A A _ _).
+  epose proof (_4 := P1 theory A A _ _).
   
-  epose(_5 := Modus_ponens theory _ _ _ _ _4 _3).
+  epose proof (_5 := Modus_ponens theory _ _ _ _ _4 _3).
   exact _5.
   Unshelve.
+
   all:wf_proof.
 Qed.
   
@@ -141,7 +170,7 @@ Lemma reorder (theory : Theory) (A B C : Pattern) :
 well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
 Proof.
   intros.
-  epose(t1 := (Modus_ponens theory _ _ _ _
+  epose proof (t1 := (Modus_ponens theory _ _ _ _
               (P1 theory ((A ---> B) ---> A ---> C) B _ _)
               (P1 theory (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
   
@@ -284,7 +313,7 @@ Proof.
   Unshelve.
   (*TODO: Investigate why this wf_proof doesn't finish...*)
   (* all:wf_proof. *)
-  all:wf_check.
+  Fail all:wf_check.
 Admitted.
 
 Lemma P4 (theory : Theory) (A B : Pattern)  :
@@ -310,7 +339,7 @@ Proof.
   (* all:try (timeout 2 wf_proof). *)
   (* Too slow because of unfolding hypothesises in posed lemmas too *)
   (* all:wf_proof. *)
-  all:wf_check.
+  Fail all:wf_check.
 Admitted.
 
 Lemma conj_intro (theory : Theory) (A B : Pattern) :
@@ -356,7 +385,7 @@ Proof.
   Unshelve.
   (*TODO: This doesn't finish too*)
   (* all:wf_proof. *)
-  all:wf_check.
+  Fail all:wf_check.
 Admitted.
 
 Lemma conj_intro_meta (theory : Theory) (A B : Pattern) :
@@ -381,11 +410,11 @@ Lemma disj (theory : Theory) (A B : Pattern) :
 Proof.
   intros. unfold patt_or.
   
-  epose(t1 := (P1 theory B (¬A) _ _)).
+  epose proof (t1 := (P1 theory B (¬A) _ _)).
   
-  epose(t2 := (P1 theory (B ---> (¬A ---> B)) A _ _)).
+  epose proof (t2 := (P1 theory (B ---> (¬A ---> B)) A _ _)).
   
-  epose(t3 := Modus_ponens theory _ _ _ _ t1 t2).
+  epose proof (t3 := Modus_ponens theory _ _ _ _ t1 t2).
   
   exact t3.
   Unshelve.
@@ -526,7 +555,7 @@ Lemma P4m_neg (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
 Proof.
   intros.
-  epose (PT := (P4 theory B A _ _)).
+  epose proof (PT := (P4 theory B A _ _)).
   eapply (syllogism_intro _ _ _ _ _ _ _).
   - exact PT.
   - eapply (P4m _ _ _ _ _).
@@ -538,12 +567,12 @@ Lemma not_not_impl_intro_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ (A ---> B) -> theory ⊢ ((¬¬A) ---> (¬¬B)).
 Proof.
   intros.
-  epose (NN1 := not_not_elim theory A _).
-  epose (NN2 := not_not_intro theory B _).
+  epose proof (NN1 := not_not_elim theory A _).
+  epose proof (NN2 := not_not_intro theory B _).
   
-  epose (S1 := syllogism_intro _ _ _ _ _ _ _ H1 NN2).
+  epose proof (S1 := syllogism_intro _ _ _ _ _ _ _ H1 NN2).
   
-  epose (S2 := syllogism_intro _ _ _ _ _ _ _ NN1 S1).
+  epose proof (S2 := syllogism_intro _ _ _ _ _ _ _ NN1 S1).
   exact S2.
   Unshelve.
   all:wf_proof.
@@ -577,7 +606,7 @@ Proof.
   Unshelve.
   (* TODO: Doesn't finish
   all:wf_proof. *)
-  all:wf_check.
+  Fail all:wf_check.
 Admitted.
 
 Lemma contraposition (theory : Theory) (A B : Pattern) : 
@@ -585,7 +614,7 @@ Lemma contraposition (theory : Theory) (A B : Pattern) :
   theory ⊢ ((A ---> B) ---> ((¬ B) ---> (¬ A))).
 Proof.
   intros.
-  epose(P4 theory (¬ A) (¬ B) _ _).
+  epose proof (P4 theory (¬ A) (¬ B) _ _) as m.
   apply syllogism_intro with (B := (¬ (¬ A) ---> ¬ (¬ B))).
   - shelve.
   - shelve.
@@ -602,11 +631,11 @@ Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
 Proof.
   intros. unfold patt_or in *.
   
-  epose (P4 := (P4 theory A (¬B) _ _)).
+  epose proof (P4 := (P4 theory A (¬B) _ _)).
   
-  epose (NNI := not_not_intro theory B _).
+  epose proof (NNI := not_not_intro theory B _).
   
-  epose (SI := syllogism_intro theory _ _ _ _ _ _ H1 NNI).
+  epose proof (SI := syllogism_intro theory _ _ _ _ _ _ H1 NNI).
   
   eapply (Modus_ponens _ _ _ _ _).
   - exact SI.
@@ -619,9 +648,9 @@ Lemma A_implies_not_not_A_alt (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ A -> theory ⊢ (¬( ¬A )).
 Proof.
   intros. unfold patt_not.
-  epose (NN := not_not_intro theory A _).
+  epose proof (NN := not_not_intro theory A _).
   
-  epose (MP := Modus_ponens _ _ _ _ _ H0 NN).
+  epose proof (MP := Modus_ponens _ _ _ _ _ H0 NN).
   assumption.
   Unshelve.
   all:wf_proof.
@@ -632,11 +661,11 @@ Lemma P5i (theory : Theory) (A B : Pattern) :
 Proof.
   intros.
   
-  epose (Ax1 := (P1 theory (¬A) (¬B) _ _)).
+  epose proof (Ax1 := (P1 theory (¬A) (¬B) _ _)).
   
-  epose (Ax2 := (P4 theory B A _ _)).
+  epose proof (Ax2 := (P4 theory B A _ _)).
   
-  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
+  epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
   assumption.
   Unshelve.
   all:wf_proof.
@@ -647,8 +676,8 @@ Lemma false_implies_everything (theory : Theory) (phi : Pattern) :
 Proof.
   intro.
   
-  epose (B_B := (A_impl_A theory Bot _)).
-  epose (P4 := P5i theory Bot phi _ _).
+  epose proof (B_B := (A_impl_A theory Bot _)).
+  epose proof (P4 := P5i theory Bot phi _ _).
   
   eapply (Modus_ponens _ _ _ _ _) in P4.
   - assumption.
@@ -677,14 +706,20 @@ Lemma Prop_bot (theory : Theory) (C : Application_context) :
 Proof.
   induction C.
   - simpl. eapply false_implies_everything. shelve.
-  - simpl. epose (Framing_left theory (subst_ctx C Bot) (Bot) p IHC).
-           epose (syllogism_intro theory _ _ _ _ _ _ (m) (Prop_bott_left theory p Prf)). exact m0.
-  - simpl. epose (Framing_right theory (subst_ctx C Bot) (Bot) p IHC).
-           epose (syllogism_intro theory _ _ _ _ _ _ (m) (Prop_bott_right theory p Prf)). exact m0.
-  Unshelve.
-  all:wf_proof.
-  all: assert(@well_formed Σ Bot).
-  all:wf_proof.
+  - simpl. epose proof (m0 := Framing_left theory (subst_ctx C Bot) (Bot) p IHC).
+           epose proof (m1 := syllogism_intro theory _ _ _ _ _ _ (m0) (Prop_bott_left theory p Prf)). exact m1.
+  - simpl. epose proof (m2 := Framing_right theory (subst_ctx C Bot) (Bot) p IHC).
+
+    epose proof (m3 := syllogism_intro theory _ _ _ _ _ _ (m2) (Prop_bott_right theory p Prf)). exact m3.
+    
+    Unshelve.
+    1: wf_proof.
+    2: wf_proof.
+    2: wf_proof.
+    3: wf_proof.
+    3: wf_proof.  
+    
+    Fail all:wf_proof.
 Admitted.
 
 (*Was an axiom in AML_definition.v*)
@@ -703,10 +738,10 @@ Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_c
   well_formed A -> theory ⊢ A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))).
 Proof.
   intros.
-  epose (ANNA := A_implies_not_not_A_alt theory _ _ H0).
+  epose proof (ANNA := A_implies_not_not_A_alt theory _ _ H0).
   replace (¬ (¬ A)) with ((¬ A) ---> Bot) in ANNA. 2: auto.
-  epose (EF := Framing _ C (¬ A) Bot _ _ ANNA).
-  epose (PB := Prop_bot theory C).
+  epose proof (EF := Framing _ C (¬ A) Bot _ _ ANNA).
+  epose proof (PB := Prop_bot theory C).
   
   epose (TRANS := syllogism_intro _ _ _ _ _ _ _ EF PB).
   
@@ -715,16 +750,16 @@ Proof.
   Unshelve.
   2,4:assert (@well_formed Σ (¬ A)).
   6,7:assert (@well_formed Σ (Bot)).
-  all:wf_proof.
+  Fail all:wf_proof.
 Admitted.
 
 Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
 Proof.
   intros. unfold patt_not.
-  epose (NN := not_not_intro G A _).
+  epose proof (NN := not_not_intro G A _).
   
-  epose (MP := Modus_ponens G _ _ _ _ H0 NN).
+  epose proof (MP := Modus_ponens G _ _ _ _ H0 NN).
   
   assumption.
   Unshelve.
@@ -743,15 +778,15 @@ Lemma ctx_bot_prop (theory : Theory) (C : Application_context) (A : Pattern) :
   well_formed A -> theory ⊢ (A ---> Bot) -> theory ⊢ (subst_ctx C A ---> Bot).
 Proof.
   intros.
-  epose (FR := Framing theory C A Bot _ _ H0).
-  epose (BPR := Prop_bot theory C).
+  epose proof (FR := Framing theory C A Bot _ _ H0).
+  epose proof (BPR := Prop_bot theory C).
   
-  epose (TRANS := syllogism_intro _ _ _ _ _ _ _ FR BPR).
+  epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ FR BPR).
   
   assumption.
   Unshelve.
   4: assert (@well_formed Σ (Bot)).
-  all:wf_proof.
+  Fail all:wf_proof.
 Admitted.
 
 Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
