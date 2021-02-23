@@ -563,11 +563,19 @@ Proof.
       destruct Hwf as [Hwfp Hwfc].
       simpl in Hwfp. apply andb_true_iff in Hwfp. 
       destruct Hwfp as [Hwfp1 Hwfp2].
-      simpl in Hwfp1.
       apply wfc_wfc_ind in Hwfc.
       inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
       simpl. unfold well_formed. simpl.
       rewrite Hwfp2.
+      apply andb_true_iff. split.
+      2: { unfold well_formed_closed. simpl.
+           apply andb_true_iff. split.
+           2: { assumption. }
+           apply wfc_ind_wfc in H2.
+           unfold well_formed_closed in H2.
+           simpl in H2.
+           apply wfc_aux_body_mu_imp_bsvar_subst; assumption.
+         }
       admit.
     }
     specialize (IHHp Hwf').
