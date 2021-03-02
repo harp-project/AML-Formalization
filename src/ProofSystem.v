@@ -568,6 +568,11 @@ Proof.
       inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
       simpl. unfold well_formed. simpl.
       rewrite Hwfp2.
+      apply wfc_ind_wfc in H2.
+
+      Check wfp_bsvar_subst.
+      rewrite wfp_bsvar_subst; auto.
+      simpl.
       admit.
     }
     specialize (IHHp Hwf').

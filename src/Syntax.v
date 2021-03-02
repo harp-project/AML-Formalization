@@ -2451,16 +2451,54 @@ Class EBinder (ebinder : Pattern -> Pattern)
   
   Lemma no_neg_occ_db_bsvar_subst phi psi dbi1 dbi2:
     well_formed_closed psi = true ->
-    no_negative_occurrence_db_b dbi1 phi = true ->
-    no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true.
+    (no_negative_occurrence_db_b dbi1 phi = true ->
+    no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true)
+  /\ (no_positive_occurrence_db_b dbi1 phi = true ->
+    no_positive_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true).
   Proof.
     intros Hwfcpsi.
-    move: dbi1.
-    induction phi; intros dbi1 Hnonegphi; simpl; auto.
+    move: dbi1 dbi2.
+
+    induction phi; intros dbi1 dbi2; simpl; auto.
     - destruct (compare_nat n dbi2); auto.
-      Search well_formed_closed no_negative_occurrence_db_b.
-  Abort.
-  
+      split; intros H.
+      + apply wfc_impl_no_neg_occ. apply Hwfcpsi.
+      + apply wfc_impl_no_pos_occ. apply Hwfcpsi.
+    - specialize (IHphi1 dbi1 dbi2).
+      specialize (IHphi2 dbi1 dbi2).
+      destruct IHphi1 as [IHphi11 IHphi12].
+      destruct IHphi2 as [IHphi21 IHphi22].
+      split; intro H.
+      + eapply elimT in H.
+        2: apply andP.
+        destruct H as [H1 H2].
+        specialize (IHphi11 H1).
+        specialize (IHphi21 H2).
+        rewrite IHphi11 IHphi21. reflexivity.
+      + eapply elimT in H.
+        2: apply andP.
+        destruct H as [H1 H2].
+        specialize (IHphi12 H1).
+        specialize (IHphi22 H2).
+        rewrite IHphi12 IHphi22. reflexivity.
+    - specialize (IHphi1 dbi1 dbi2).
+      specialize (IHphi2 dbi1 dbi2).
+      destruct IHphi1 as [IHphi11 IHphi12].
+      destruct IHphi2 as [IHphi21 IHphi22].
+      split; intro H.
+      + eapply elimT in H.
+        2: apply andP.
+        destruct H as [H1 H2].
+        specialize (IHphi12 H1).
+        specialize (IHphi21 H2).
+        rewrite IHphi12 IHphi21. reflexivity.
+      + eapply elimT in H.
+        2: apply andP.
+        destruct H as [H1 H2].
+        specialize (IHphi11 H1).
+        specialize (IHphi22 H2).
+        rewrite IHphi11 IHphi22. reflexivity.
+  Qed.
   
 
   Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
@@ -2551,8 +2589,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       destruct IHphi' as [IHphi1' IHphi2'].
       assert (H: no_negative_occurrence_db_b 0 (bsvar_subst phi psi (S n'))).
       { clear IHphi1' IHphi2'.
-        Search bsvar_subst no_negative_occurrence_db_b.
-        admit.
+        apply no_neg_occ_db_bsvar_subst; auto.
       }
       split.
       + intros Hnonegphi.
@@ -2566,14 +2603,25 @@ Class EBinder (ebinder : Pattern -> Pattern)
         rewrite Hnopos.
         2: rewrite Hwfpphi'.
         1,2,3: auto.
-  Abort.
+  Qed.
 
   
   Lemma wfp_bsvar_subst (phi psi : Pattern) :
     well_formed_positive (patt_mu phi) ->
     well_formed_positive psi ->
+    well_formed_closed psi ->
     well_formed_positive (bsvar_subst phi psi 0).
-  Proof. Abort.
+  Proof.
+    intros H1 H2 H3.
+    simpl in H1.
+    eapply elimT in H1. 2: apply andP.
+    destruct H1 as [Hnonegphi Hwfpphi].
+    pose proof (H4 := Private_wfp_bsvar_subst).
+    specialize (H4 phi psi 0 H2 H3 Hwfpphi).
+    destruct H4 as [H41 H42].
+    apply H41.
+    apply Hnonegphi.
+ Qed.
 
 
   (* Section: nest_ex, nest_mu *)
