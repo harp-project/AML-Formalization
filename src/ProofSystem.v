@@ -568,7 +568,18 @@ Proof.
       inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
       simpl. unfold well_formed. simpl.
       rewrite Hwfp2.
-      admit.
+      apply wfc_ind_wfc in H2.
+
+      Check wfp_bsvar_subst.
+      rewrite wfp_bsvar_subst; auto.
+      simpl.
+
+      unfold well_formed_closed. simpl.
+      apply andb_true_iff. split.
+      2: { assumption. }
+      unfold well_formed_closed in H2.
+      simpl in H2.
+      apply wfc_aux_body_mu_imp_bsvar_subst; assumption.
     }
     specialize (IHHp Hwf').
 
@@ -586,50 +597,12 @@ Proof.
     rewrite <- set_substitution_lemma.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
 
-    (* F(rhobar(psi)) \subseteq rhobar(psi) 
-       rho[rhobar(psi)/X](phi) \subseteq rhobar(psi)
-    *)
-    (*
-    apply Lattice.LeastFixpoint_LesserThanPrefixpoint .
-    unfold Included. intros. 
-    Search eq Same_set.
-    apply eq_iff_Same_set.
-    Print Same_set_full_set.
-    apply Lattice.LeastFixpoint_LesserThanPrefixpoint with (OS := OS)(L := L)(f := F) in H.
-    eapply Included_transitive.
-    2: { apply H. }
-    rewrite -> HeqF.
-    epose proof (Hsimpl := pattern_interpretation_mu_simpl).
-    specialize (Hsimpl evar_val svar_val phi).
-    simpl in Hsimpl. subst OS. subst L.
-    rewrite <- Hsimpl.
-    
-    rewrite <- set_substitution_lemma.
-    2: { simpl in Hwf. unfold well_formed in Hwf. destruct Hwf as [_ Hwfc].
-         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
-         apply wfc_ind_wfc. assumption.
-    }
-    2: { apply set_svar_fresh_is_fresh. }
-    unfold Included. intros. auto.
+  * admit.
+  * admit.
 
-    
-    epose (IHHp _ Hv evar_val svar_val) as e.
-    simpl in e. rewrite -> pattern_interpretation_imp_simpl in e.
-    apply Extensionality_Ensembles.
-    constructor. constructor.
-    unfold Included. intros.
-    destruct e.
-    left. unfold In. unfold Complement. unfold not. unfold In. unfold Ensembles_Ext.mu.
-    unfold FA_Inters_cond. intros.
-    (*
-    inversion H0; subst.
-    edestruct H1 with x. assumption.
-    unfold In, Complement, not in H3. apply H3.
-    apply H2. unfold Included. intros.
-    unfold In. admit.*)
-    admit.
-*)
+    Unshelve. rewrite H2; reflexivity.
 Admitted.
+
 
 End ml_proof_system.
 
