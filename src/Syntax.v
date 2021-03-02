@@ -2342,34 +2342,108 @@ Class EBinder (ebinder : Pattern -> Pattern)
     apply H2.
   Qed.
   
-    
+
   Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
     well_formed_positive psi ->
-    positive_occurrence_db n phi ->
     well_formed_positive phi ->
-    well_formed_positive (patt_mu (bsvar_subst phi psi n)).
-    (*well_formed_positive (bsvar_subst phi psi n).*)
+    (
+    no_negative_occurrence_db_b n phi ->
+    well_formed_positive (bsvar_subst phi psi n) )
+    /\ (no_positive_occurrence_db_b n phi ->
+        forall phi',
+          well_formed_positive phi' ->
+          well_formed_positive (patt_imp (bsvar_subst phi psi n) phi')
+       )
+  .
   Proof.
     intros Hwfppsi.
     move: n.
-    induction phi; intros n' Hposn Hwfpphi; simpl; auto.
-  Abort.
-  (*
-    - admit. (*destruct (compare_nat n n'); auto.*)
-    - split. apply IHphi1. admit. admit. admit.
-    - admit.
-    - apply IHphi. admit. admit.
-    - Print well_formed_positive. simpl in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
-      inversion Hposn. rename H1 into HposSn. subst. rewrite Nat.add_1_r in HposSn.
+    induction phi; intros n' Hwfpphi; simpl in *; auto.
+    - split.
+      + intros _. destruct (compare_nat n n'); auto.
+      + intros H phi' Hwfphi'.
+        destruct (compare_nat n n'); auto. rewrite Hwfppsi. rewrite Hwfphi'.
+        auto.
+    - split.
+      + intros Hnoneg.
+        apply andb_prop in Hnoneg. destruct Hnoneg as [Hnoneg1 Hnoneg2].
+        apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+        
+        specialize (IHphi1 n' Hwfpphi1).
+        destruct IHphi1 as [IHphi11 IHphi12].
+        specialize (IHphi11 Hnoneg1).
+        rewrite IHphi11.
+
+        specialize (IHphi2 n' Hwfpphi2).
+        destruct IHphi2 as [IHphi21 IHphi22].
+        specialize (IHphi21 Hnoneg2).
+        rewrite IHphi21.
+        auto.
+        
+      + intros Hnopos.
+        apply andb_prop in Hnopos. destruct Hnopos as [Hnopos1 Hnopos2].
+        apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+        intros phi' Hwfpphi'.
+
+        specialize (IHphi1 n' Hwfpphi1).
+        specialize (IHphi2 n' Hwfpphi2).
+        destruct IHphi1 as [IHphi11 IHphi12].
+        destruct IHphi2 as [IHphi21 IHphi22].
+        rewrite IHphi12.
+        { rewrite Hnopos1. auto. }
+        specialize (IHphi22 Hnopos2 phi' Hwfpphi').
+        apply andb_prop in IHphi22. destruct IHphi22 as [IHphi221 IHphi222].
+        rewrite IHphi221. auto.
+        rewrite Hwfpphi'. auto.
+
+    - split.
+      + intros Hnoposneg.
+        apply andb_prop in Hnoposneg. destruct Hnoposneg as [Hnopos1 Hnoneg2].
+        apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+        specialize (IHphi1 n' Hwfpphi1).
+        specialize (IHphi2 n' Hwfpphi2).
+        destruct IHphi1 as [IHphi11 IHphi12].
+        destruct IHphi2 as [IHphi21 IHphi22].
+        specialize (IHphi12 Hnopos1). clear IHphi11.
+        specialize (IHphi21 Hnoneg2). clear IHphi22.
+        rewrite IHphi21.
+
+        specialize (IHphi12 patt_bott). simpl in IHphi12.
+        assert (Htrue: is_true true).
+        { auto. }
+        specialize (IHphi12 Htrue).
+        rewrite IHphi12.
+        auto.
+      + intros Hnoposneg phi' Hwfpphi'.
+        apply andb_prop in Hnoposneg. destruct Hnoposneg as [Hnopos1 Hnoneg2].
+        apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+        specialize (IHphi1 n' Hwfpphi1).
+        specialize (IHphi2 n' Hwfpphi2).
+        destruct IHphi1 as [IHphi11 IHphi12].
+        destruct IHphi2 as [IHphi21 IHphi22].
+        specialize (IHphi11 Hnopos1). clear IHphi12.
+        specialize (IHphi22 Hnoneg2). clear IHphi21.
+        rewrite IHphi11. rewrite IHphi22; auto.
+    -
+      apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
+      pose proof (IHphi' := IHphi (S n') Hwfpphi2).
+      destruct IHphi' as [IHphi1' IHphi2'].
+      assert (H: no_negative_occurrence_db_b 0 (bsvar_subst phi psi (S n'))).
+      { admit. }
       split.
-      2: { apply IHphi.
-           apply HposSn. apply Hwfpphi2.
-      }
-      
-           apply not_bsvar_occur_impl_pos_occ_db.
-           (*eapply wfc_aux_implies_not_bsvar_occur.*)
-           apply wfc_implies_not_bsvar_occur. unfold well_formed_closed.
-  Abort.*)
+      + intros Hnonegphi.
+        specialize (IHphi1' Hnonegphi).
+        rewrite IHphi1'.
+        rewrite H.
+        auto.
+      + intros Hnopos phi' Hwfpphi'.
+        rewrite H.
+        rewrite IHphi2'.
+        rewrite Hnopos.
+        2: rewrite Hwfpphi'.
+        1,2,3: auto.      
+  Abort.
+
   
   Lemma wfp_bsvar_subst (phi psi : Pattern) :
     well_formed_positive (patt_mu phi) ->
