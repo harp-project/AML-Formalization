@@ -2341,10 +2341,131 @@ Class EBinder (ebinder : Pattern -> Pattern)
     destruct H1 as [H1 H2].
     apply H2.
   Qed.
+
+  Lemma Private_wfc_impl_no_neg_pos_occ psi maxevar maxsvar dbi:
+    well_formed_closed_aux psi maxevar maxsvar = true ->
+    maxsvar <=? dbi ->
+    no_negative_occurrence_db_b dbi psi = true
+  /\ no_positive_occurrence_db_b dbi psi = true.
+  Proof.
+    move: dbi maxevar maxsvar.
+    induction psi; intros dbi maxevar maxsvar Hwfc Hleq; simpl; auto.
+    - split.
+      { auto. }
+      simpl in Hwfc.
+      eapply introT.
+      apply negP.
+      intros Hcontra.
+      eapply elimT in Hwfc.
+      2: apply Nat.ltb_spec0.
+      eapply elimT in Hcontra.
+      2: apply Nat.eqb_spec.
+      eapply elimT in Hleq.
+      2: apply Nat.leb_spec0.
+      lia.
+    - split.
+      + simpl in Hwfc.
+        apply andb_prop in Hwfc. destruct Hwfc as [Hwfc1 Hwfc2].
+        specialize (IHpsi1 dbi maxevar maxsvar Hwfc1 Hleq).
+        specialize (IHpsi2 dbi maxevar maxsvar Hwfc2 Hleq).
+        destruct IHpsi1 as [IHpsi11 IHpsi12].
+        destruct IHpsi2 as [IHpsi21 IHpsi22].
+        rewrite IHpsi11.
+        rewrite IHpsi21.
+        auto.
+      + simpl in Hwfc.
+        apply andb_prop in Hwfc. destruct Hwfc as [Hwfc1 Hwfc2].
+        specialize (IHpsi1 dbi maxevar maxsvar Hwfc1 Hleq).
+        specialize (IHpsi2 dbi maxevar maxsvar Hwfc2 Hleq).
+        destruct IHpsi1 as [IHpsi11 IHpsi12].
+        destruct IHpsi2 as [IHpsi21 IHpsi22].
+        rewrite IHpsi12.
+        rewrite IHpsi22.
+        auto.
+    - split.
+      + simpl in Hwfc.
+        apply andb_prop in Hwfc. destruct Hwfc as [Hwfc1 Hwfc2].
+        specialize (IHpsi1 dbi maxevar maxsvar Hwfc1 Hleq).
+        specialize (IHpsi2 dbi maxevar maxsvar Hwfc2 Hleq).
+        destruct IHpsi1 as [IHpsi11 IHpsi12].
+        destruct IHpsi2 as [IHpsi21 IHpsi22].
+        rewrite IHpsi12.
+        rewrite IHpsi21.
+        auto.
+      + simpl in Hwfc.
+        apply andb_prop in Hwfc. destruct Hwfc as [Hwfc1 Hwfc2].
+        specialize (IHpsi1 dbi maxevar maxsvar Hwfc1 Hleq).
+        specialize (IHpsi2 dbi maxevar maxsvar Hwfc2 Hleq).
+        destruct IHpsi1 as [IHpsi11 IHpsi12].
+        destruct IHpsi2 as [IHpsi21 IHpsi22].
+        rewrite IHpsi11.
+        rewrite IHpsi22.
+        auto.
+    - simpl in Hwfc.
+      specialize (IHpsi dbi (maxevar + 1) maxsvar Hwfc Hleq).
+      destruct IHpsi.
+      rewrite H. rewrite H0. auto.
+    - simpl in Hwfc.
+      specialize (IHpsi (S dbi) maxevar (S maxsvar)).
+      rewrite Nat.add_1_r in Hwfc.
+      assert (HS: S maxsvar <=? S dbi).
+      { eapply elimT in Hleq.
+        2: apply Nat.leb_spec0.
+        eapply introT.
+        apply Nat.leb_spec0.
+        lia.
+      }
+      specialize (IHpsi Hwfc HS).
+      apply IHpsi.
+  Qed.
+  
+
+  Lemma wfc_impl_no_neg_occ psi dbi:
+    well_formed_closed psi = true ->
+    no_negative_occurrence_db_b dbi psi = true.
+  Proof.
+    intros H.
+    unfold well_formed_closed in H.
+    pose proof (HX := Private_wfc_impl_no_neg_pos_occ).
+    specialize (HX psi 0 0 dbi H).
+    simpl in HX.
+    specialize (HX isT).
+    destruct HX as [HX1 HX2].
+    apply HX1.
+  Qed.
+
+  Lemma wfc_impl_no_pos_occ psi dbi:
+    well_formed_closed psi = true ->
+    no_positive_occurrence_db_b dbi psi = true.
+  Proof.
+    intros H.
+    unfold well_formed_closed in H.
+    pose proof (HX := Private_wfc_impl_no_neg_pos_occ).
+    specialize (HX psi 0 0 dbi H).
+    simpl in HX.
+    specialize (HX isT).
+    destruct HX as [HX1 HX2].
+    apply HX2.
+  Qed.
+  
+  
+  Lemma no_neg_occ_db_bsvar_subst phi psi dbi1 dbi2:
+    well_formed_closed psi = true ->
+    no_negative_occurrence_db_b dbi1 phi = true ->
+    no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true.
+  Proof.
+    intros Hwfcpsi.
+    move: dbi1.
+    induction phi; intros dbi1 Hnonegphi; simpl; auto.
+    - destruct (compare_nat n dbi2); auto.
+      Search well_formed_closed no_negative_occurrence_db_b.
+  Abort.
+  
   
 
   Lemma Private_wfp_bsvar_subst (phi psi : Pattern) (n : nat) :
     well_formed_positive psi ->
+    well_formed_closed psi ->
     well_formed_positive phi ->
     (
     no_negative_occurrence_db_b n phi ->
@@ -2356,7 +2477,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
        )
   .
   Proof.
-    intros Hwfppsi.
+    intros Hwfppsi Hwfcpsi.
     move: n.
     induction phi; intros n' Hwfpphi; simpl in *; auto.
     - split.
@@ -2429,7 +2550,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
       pose proof (IHphi' := IHphi (S n') Hwfpphi2).
       destruct IHphi' as [IHphi1' IHphi2'].
       assert (H: no_negative_occurrence_db_b 0 (bsvar_subst phi psi (S n'))).
-      { admit. }
+      { clear IHphi1' IHphi2'.
+        Search bsvar_subst no_negative_occurrence_db_b.
+        admit.
+      }
       split.
       + intros Hnonegphi.
         specialize (IHphi1' Hnonegphi).
@@ -2441,7 +2565,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
         rewrite IHphi2'.
         rewrite Hnopos.
         2: rewrite Hwfpphi'.
-        1,2,3: auto.      
+        1,2,3: auto.
   Abort.
 
   
