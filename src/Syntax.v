@@ -1007,6 +1007,52 @@ Class EBinder (ebinder : Pattern -> Pattern)
        reflexivity.
   Qed.
 
+    Lemma wfc_aux_extend:
+    forall phi n n' m m',
+      well_formed_closed_aux phi n m
+      -> n <= n' -> m <= m'
+      -> well_formed_closed_aux phi n' m'.
+  Proof.
+    intros.
+    generalize dependent n. generalize dependent n'.
+    generalize dependent m. generalize dependent m'.
+    induction phi; intros; try lia; auto.
+    * simpl. inversion H. apply Nat.ltb_lt. apply Nat.ltb_lt in H3. lia.
+    * simpl. inversion H. apply Nat.ltb_lt. apply Nat.ltb_lt in H3. lia.
+    * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H2 H3].
+      apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
+    * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H2 H3].
+      apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
+    * simpl. simpl in H. erewrite IHphi with (n := n + 1) (m := m); eauto. lia.
+    * simpl. simpl in H. erewrite IHphi with (n := n) (m := m + 1); eauto. lia.
+  Qed.
+
+  Lemma wfc_aux_body_mu_imp_bsvar_subst:
+    forall phi psi n n',
+      well_formed_closed_aux phi n (S n')
+      -> well_formed_closed_aux psi n n'
+      -> well_formed_closed_aux (bsvar_subst phi psi n') n n'.
+  Proof.
+    - intros. generalize dependent n. generalize dependent n'. generalize dependent psi.
+      induction phi; intros; try lia; auto.
+      * simpl. inversion H. apply Nat.ltb_lt in H2. destruct (compare_nat n n').
+        -- simpl. apply Nat.ltb_lt. assumption.
+        -- assumption.
+        -- simpl. apply Nat.ltb_lt. lia.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+        reflexivity.
+      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+        reflexivity.
+      * simpl. simpl in H. rewrite IHphi. assumption.
+        eapply wfc_aux_extend; eauto. lia. reflexivity.
+      * simpl. simpl in H.
+        rewrite PeanoNat.Nat.add_1_r. rewrite PeanoNat.Nat.add_1_r in H.
+        rewrite IHphi. apply H.
+        eapply wfc_aux_extend; eauto. reflexivity.
+  Qed.
+
   (*If (mu, phi) is closed, then its body is closed too*)
   Lemma wfc_mu_to_wfc_body:
     forall phi, well_formed_closed (patt_mu phi) -> wfc_body_mu phi.
