@@ -626,3 +626,27 @@ Proof.
     apply IHlen.
     simpl in Hlen. lia.
 Qed.
+
+Lemma equal_up_to_common_length {A : Type} {eqdec: EqDecision A} (l₁ l₂ : list A) :
+  forall (n:nat),
+    n < common_length l₁ l₂ ->
+    l₁ !! n = l₂ !! n.
+Proof.
+  intros n.
+  move: l₁ l₂.
+  induction n; intros l₁ l₂ H.
+  - destruct l₁,l₂; simpl.
+    + reflexivity.
+    + simpl in H. lia.
+    + simpl in H. lia.
+    + simpl in H. destruct (decide (a = a0)).
+      * subst. reflexivity.
+      * lia.
+  - destruct l₁,l₂; simpl.
+    + reflexivity.
+    + simpl in H. lia.
+    + simpl in H. lia.
+    + simpl in H. destruct (decide (a = a0)).
+      * subst. apply IHn. lia.
+      * lia.
+Qed.
