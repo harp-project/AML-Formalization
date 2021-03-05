@@ -597,9 +597,3 @@ Proof.
         { lia. }
         apply IHlen. lia. lia.
 Qed.
-    
-
-  
-  induction l; simpl; intros H.
-  - lia.
-  - 
