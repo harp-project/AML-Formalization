@@ -599,22 +599,20 @@ Proof.
 Qed.
 
 Lemma list_last_length {A : Type} (l : list A):
-  l <> [] ->
   last l = l !! (length l - 1).
 Proof.
-  intros Hneq.
   remember (length l) as len.
   rewrite Heqlen.
   assert (Hlen : length l <= len).
   { lia. }
   clear Heqlen.
 
-  move: l Hneq Hlen.
-  induction len; simpl; intros l Hneq Hlen.
+  move: l Hlen.
+  induction len; simpl; intros l Hlen.
   - assert (length l = 0).
     { lia. }
     apply nil_length_inv in H.
-    contradiction.
+    rewrite H. reflexivity.
   - destruct l.
     { reflexivity. }
     destruct l.
@@ -623,9 +621,7 @@ Proof.
     specialize (IHlen (a0::l)).
     assert (Hneq' : a0 :: l <> []).
     { discriminate. }
-    specialize (IHlen Hneq').
     simpl in IHlen.
-    Search "-" 0.
     rewrite Nat.sub_0_r in IHlen.
     apply IHlen.
     simpl in Hlen. lia.
