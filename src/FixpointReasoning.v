@@ -848,6 +848,18 @@ Section with_signature.
         + apply witnessed_elements_old_included_in_interp.
       Qed.
 
+      (*
+      Lemma last_matches_base m l m':
+        is_witnessing_sequence m l ->
+        l !! (length l - 1) = Some m' ->
+        pattern_interpretation ρₑ ρₛ base m'.
+      Proof.
+        unfold is_witnessing_sequence.
+        Check last.
+        Search last length.
+        intros H.
+      Abort.
+      *)
       
       Section injective.
         (*Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).*)
@@ -995,20 +1007,42 @@ Section with_signature.
               simpl. apply Hfa₂.
               apply Hwitb.
           }
+
+          assert (Hlast12: l₁ !! (length l₂ - 1) = l₂ !! (length l₂ - 1)).
+          {
+            eapply equal_up_to_common_length.
+            erewrite Hlcom.
+            assert (length l₂ > 0).
+            {
+              destruct l₂.
+              { unfold is_witnessing_sequence in Hw₂.
+                simpl in Hw₂. destruct Hw₂ as [_ [Contra _]].
+                inversion Contra.
+              }
+              simpl. lia.
+            }
+            lia.
+          }
+          
+          
           assert (~ (length l₁ > length l₂)).
           {
             intros Hcontra.
-            epose proof (H := list_lookup_lookup_total_lt).
-            Unshelve. 3: { constructor. exact (nonempty_witness M). }
-            specialize (H l₁ (length l₂ - 1)).
             assert (Hlt : length l₂ - 1 < length l₁).
             { lia. }
-            specialize (H Hlt). clear Hlt.
+            pose proof (Hexm := list_ex_elem l₁ (length l₂ - 1) Hlt). clear Hlt.
+            destruct Hexm as [m' Hm'].
+            pose proof (Hwsm := witnessing_sequence_middle Hw₁ Hm').
+            pose proof (Hw₂' := Hw₂).
+            unfold is_witnessing_sequence in Hw₂'.
+            destruct Hw₂' as [[lst [Hlst1 Hlst2]] _].
+            rewrite list_last_length in Hlst1.
+            assert (Hlsteqm' : m' = lst).
+            {
+              assert (Some m' = Some lst).
+              { rewrite -Hm'. rewrite -Hlst1. reflexivity.  }
+            }
 
-            Check  witnessing_sequence_middle.
-            pose proof (witnessing_sequence_middle Hw₁ H).
-            Search list length ex.
-            
           }
           
           Print is_witnessing_sequence.
