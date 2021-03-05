@@ -323,10 +323,22 @@ Proof.
     constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
   * intros Hv evar_val svar_val.
-    rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_ex_simpl.
+    simpl.
+    rewrite -> pattern_interpretation_imp_simpl.
+    rewrite -> pattern_interpretation_ex_simpl.
+    simpl.
+    
     unfold instantiate. apply Extensionality_Ensembles.
     constructor. constructor.
-    unfold Included; intros. admit.
+    unfold Included; unfold Ensembles.In; intros x _.
+    rewrite -> element_substitution_lemma with (x0 := fresh_evar phi).
+    2: apply set_evar_fresh_is_fresh.
+    destruct (classic (  Complement (Domain m)
+    (pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
+                            (evar_open 0 (fresh_evar phi) phi)) x)).
+    -- left. apply H0.
+    -- right. unfold Complement in H0. apply NNPP in H0.
+       constructor. exists (evar_val y). apply H0.
 
   * admit.
 
