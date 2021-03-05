@@ -572,3 +572,34 @@ Proof.
     intros H.
     by rewrite IHn.
 Qed.
+
+Lemma list_ex_elem {A : Type} (l : list A) (n : nat) :
+  n < length l -> exists x, l!!n = Some x.
+Proof.
+  remember (length l) as len.
+  rewrite Heqlen.
+  assert (Hlen: length l <= len).
+  { lia. }
+  clear Heqlen.
+
+  move: l n Hlen.
+  induction len; intros l n Hlen.
+  - destruct l; intros H; lia.
+  - destruct l; simpl.
+    + simpl in IHlen.
+      intros H. apply IHlen. lia. apply H.
+    + intros H. destruct n.
+      * simpl. exists a. reflexivity.
+      * simpl.
+        specialize (IHlen l).
+        simpl in Hlen.
+        assert (Hlen': length l <= len).
+        { lia. }
+        apply IHlen. lia. lia.
+Qed.
+    
+
+  
+  induction l; simpl; intros H.
+  - lia.
+  - 
