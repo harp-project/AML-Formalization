@@ -1603,6 +1603,19 @@ Proof.
   lia. auto. auto.
 Qed.
 
+Lemma element_substitution_lemma
+      (M : Model) (ϕ : Pattern) (x y : evar) (ρₑ : EVarVal) (ρₛ : SVarVal) (dbi : db_index) :
+  evar_is_fresh_in x ϕ ->
+  pattern_interpretation ρₑ ρₛ (bevar_subst ϕ (patt_free_evar y) dbi)
+  = @pattern_interpretation M
+      (update_evar_val x (ρₑ y) ρₑ)
+      ρₛ
+      (evar_open dbi x ϕ).
+Proof.
+Admitted.
+
+  
+
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
   size ϕ <= sz ->
