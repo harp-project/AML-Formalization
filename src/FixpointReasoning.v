@@ -850,9 +850,13 @@ Section with_signature.
 
       
       Section injective.
-        Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).
+        (*Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).*)
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
         Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
+
+        Hypothesis (Hbase_step_no_confusion
+                    : Ensembles_Ext.Empty_Intersection (Domain M) (pattern_interpretation ρₑ ρₛ base)
+                                         (app_ext (pattern_interpretation ρₑ ρₛ step) witnessed_elements )).
 
         Lemma witnessed_elements_unique_seq :
           ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
@@ -991,6 +995,23 @@ Section with_signature.
               simpl. apply Hfa₂.
               apply Hwitb.
           }
+          assert (~ (length l₁ > length l₂)).
+          {
+            intros Hcontra.
+            epose proof (H := list_lookup_lookup_total_lt).
+            Unshelve. 3: { constructor. exact (nonempty_witness M). }
+            specialize (H l₁ (length l₂ - 1)).
+            assert (Hlt : length l₂ - 1 < length l₁).
+            { lia. }
+            specialize (H Hlt). clear Hlt.
+
+            Check  witnessing_sequence_middle.
+            pose proof (witnessing_sequence_middle Hw₁ H).
+            Search list length ex.
+            
+          }
+          
+          Print is_witnessing_sequence.
           
               
               
