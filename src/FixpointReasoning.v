@@ -275,7 +275,7 @@ Section with_signature.
       Proof.
         intros [[lst [Hlst Hbase]] [Hhd Hfa]] Hm' Hbase'.
         split.
-        { exists lst. split. Check last_drop.
+        { exists lst. split.
           rewrite -> last_drop with (x := lst).
           { reflexivity. }
           { apply Hlst. }
@@ -869,22 +869,8 @@ Section with_signature.
         + apply interp_included_in_witnessed_elements_old.
         + apply witnessed_elements_old_included_in_interp.
       Qed.
-
-      (*
-      Lemma last_matches_base m l m':
-        is_witnessing_sequence m l ->
-        l !! (length l - 1) = Some m' ->
-        pattern_interpretation ρₑ ρₛ base m'.
-      Proof.
-        unfold is_witnessing_sequence.
-        Check last.
-        Search last length.
-        intros H.
-      Abort.
-      *)
       
       Section injective.
-        (*Hypothesis (Hbase_functional : @is_functional_pattern _ base M ρₑ ρₛ).*)
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
         Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
 
@@ -1096,7 +1082,7 @@ Section with_signature.
             assert (Htmp: Some d0 = Some d0).
             { reflexivity. }
             specialize (Hwd0 Htmp). clear Htmp.
-            Check witnessed_elements.
+
             assert (Hd0we : witnessed_elements d0).
             { exists (d0::l). apply Hwd0. }
 
