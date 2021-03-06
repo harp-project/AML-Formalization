@@ -1107,7 +1107,7 @@ Section with_signature.
               reflexivity.
             }
             subst m'.
-            (* TODO *)
+
             (* `m'=d` matches `app_ext (pattern_interpretation ρₑ ρₛ step) d0` *)
             assert (app_ext
                       (pattern_interpretation ρₑ ρₛ step)
@@ -1141,35 +1141,12 @@ Section with_signature.
               { apply Hd0we. }
               inversion H2. subst. apply H3.
           }
-          
-          Print is_witnessing_sequence.
-          
-              
-              
-        Abort.
-        (*
-              destruct Hw₁ as [_ Hcontra]. contradiction.
-            - destruct Hw₂ as [_ Hcontra]. contradiction.
-            - simpl in Hlen₂. lia.
-            - simpl in Hlen12. lia.
-            - simpl in Hlen12. lia.
-            - destruct Hw₂ as [_ Hcontra]. contradiction.
-            - rewrite 2!reverse_cons.
-              rename d into d₁. rename d0 into d₂.
-              simpl in Hlen₂.
-              assert (Hlen₂': length l₂ <= len₂).
-              { lia. }
-              simpl in Hlen12.
-              assert (Hlen12': len₂ <= length l₁).
-              { lia. }
-              specialize (IHlen₂ l₁ l₂ Hlen₂' Hlen12').
-              (* Problem: l₁ and l₂ are not witnessing sequences. 
-                 We probably want to weaken the condition, because
-                 we only need to know that they are `step`-sequences *)
-          
-        Abort.
-        *)
-        
+          assert (Hlength12: length l₁ = length l₂).
+          { lia. }
+          clear Hlen12 H.
+
+          apply (common_length_impl_eq _ _ Hlength12 Hlcom).
+        Qed.        
         
       End injective.
       
