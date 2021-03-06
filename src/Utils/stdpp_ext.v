@@ -650,3 +650,41 @@ Proof.
       * subst. apply IHn. lia.
       * lia.
 Qed.
+
+Lemma last_tail {A : Type} (l : list A) (lst m : A) :
+  last l = Some lst ->
+  head (tail l) = Some m ->
+  last (tail l) = Some lst.
+Proof.
+  remember (length l) as len.
+  assert (Hlen: length l <= len).
+  { lia. }
+  clear Heqlen.
+
+  move: l Hlen m.
+  induction len; intros l Hlen m Hlast Hhd.
+  - destruct l.
+    + auto.
+    + simpl in Hlen. lia.
+  - destruct l.
+    { simpl. auto. }
+    simpl.
+    simpl in Hhd.
+    simpl in Hlast.
+    simpl in Hlen.
+    destruct l.
+    { simpl in Hhd. inversion Hhd. }
+    simpl in Hlen.
+    assert (Hlen' : S (length l) <= len).
+    { lia. }
+
+    destruct l.
+    { apply Hlast. }
+
+    specialize (IHlen (a0::a1::l)).
+    simpl in IHlen. simpl.
+    apply IHlen with (m := a1).
+    { simpl in Hlen. lia. }
+    simpl in Hlast. apply Hlast.
+    reflexivity.
+Qed.
