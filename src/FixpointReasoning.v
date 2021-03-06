@@ -1045,7 +1045,8 @@ Section with_signature.
             }
             lia.
           }
-          
+
+          (*assert (Hbasem': pattern_interpretation ρₑ ρₛ base lst).*)          
           
           assert (~ (length l₁ > length l₂)).
           {
@@ -1089,10 +1090,56 @@ Section with_signature.
               }
               lia.
             }
-            (* TODO *)
             (* `d0` is a member of `witnessed_elements` *)
+            epose proof (Hwd0 := witnessing_sequence_tail Hwsm).
+            simpl in Hwd0.
+            assert (Htmp: Some d0 = Some d0).
+            { reflexivity. }
+            specialize (Hwd0 Htmp). clear Htmp.
+            Check witnessed_elements.
+            assert (Hd0we : witnessed_elements d0).
+            { exists (d0::l). apply Hwd0. }
+
+            assert (Heqm'd : m' = d).
+            { unfold is_witnessing_sequence in Hwsm.
+              destruct Hwsm as [_ [H _]].
+              simpl in H. inversion H.
+              reflexivity.
+            }
+            subst m'.
+            (* TODO *)
             (* `m'=d` matches `app_ext (pattern_interpretation ρₑ ρₛ step) d0` *)
-            (* ==> contradiction *)
+            assert (app_ext
+                      (pattern_interpretation ρₑ ρₛ step)
+                      (Ensembles.Singleton (Domain M) d0)
+                      d).
+            {
+              unfold is_witnessing_sequence in Hwsm.
+              simpl in Hwsm.
+              destruct Hwsm as [_ [_ Hwsm]].
+              inversion Hwsm. subst.
+              simpl in H1.
+              apply H1.
+            }
+            unfold Ensembles_Ext.Empty_Intersection in Hbase_step_no_confusion.
+            apply Ensembles_Ext.eq_iff_Same_set in Hbase_step_no_confusion.
+            destruct Hbase_step_no_confusion as [H1 _].
+            unfold Included in H1.
+            specialize (H1 d).
+            unfold Ensembles.In in H1.
+            eapply Ensembles_Ext.Empty_is_Empty.
+            apply H1. clear H1.
+            split.
+            - apply Hlst2.
+            - unfold Ensembles.In.
+              unfold app_ext.
+              destruct H as [le' [re' [H1 [H2 H3]]]].
+              exists le'. exists d0.
+              split.
+              { apply H1. }
+              split.
+              { apply Hd0we. }
+              inversion H2. subst. apply H3.
           }
           
           Print is_witnessing_sequence.
