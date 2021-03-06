@@ -232,13 +232,11 @@ Section with_signature.
       Qed.
       
       
-      Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
+      Definition is_witnessing_sequence_old (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
          | [] => False
          | m₀::ms => (@pattern_interpretation Σ M ρₑ ρₛ base) m₀
-(*                     /\ forall (n : nat), n <= length ms ->*)
-                                                             
                      /\  (@Forall _
                                   (λ (x : (Domain M) * (Domain M)),
                                    let (old, new) := x in
@@ -252,26 +250,172 @@ Section with_signature.
                            
          end).
 
-      Definition is_witnessing_sequence_alt (m : Domain M) (l : list (Domain M)) :=
+      Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (∃ lst, last l = Some lst /\ @pattern_interpretation Σ M ρₑ ρₛ base lst)
           /\
           hd_error l = Some m
           /\
-          ((@Forall _
-                    (λ (x : (Domain M) * (Domain M)),
-                     let (new, old) := x in
+          ((@Forall _ (curry (λ new old,
                      app_ext
                        (@pattern_interpretation Σ M ρₑ ρₛ step)
                        (Ensembles.Singleton _ old)
                        new
-                    )
+                    ))
                     (zip l (tail l))
           )).
 
-      Lemma witnessing_sequence_alt_extend (m m' : Domain M) (l : list (Domain M)) :
-        (is_witnessing_sequence_alt m l
+      (* If we have a witnessing sequence x₁ x₂ ... xₙ xₙ₊₁ ... xlast
+         and xₙ matches `base`, then xₙ xₙ₊₁ is a witnessing sequence, too.
+       *)
+      Lemma witnessing_sequence_middle (m : Domain M) (l : list (Domain M)) (n : nat) (m' : Domain M) :
+        is_witnessing_sequence m l ->
+        l !! n = Some m' ->
+        @pattern_interpretation Σ M ρₑ ρₛ base m' ->
+        is_witnessing_sequence m' (drop n l).
+      Proof.
+        intros [[lst [Hlst Hbase]] [Hhd Hfa]] Hm' Hbase'.
+        split.
+        { exists lst. split.
+          rewrite -> last_drop with (x := lst).
+          { reflexivity. }
+          { apply Hlst. }
+          { apply lookup_lt_is_Some_1.
+            rewrite Hm'. exists m'. reflexivity.
+          }
+          apply Hbase.
+        }
+        split.
+        { apply hd_drop_lookup. apply Hm'. }
+        { rewrite tail_drop_comm.
+          rewrite -zip_with_drop.
+          apply Forall_drop.
+          apply Hfa.
+        }
+      Qed.
+
+      Lemma witnessing_sequence_tail (m : Domain M) (l : list (Domain M)) (m' : Domain M) :
+        is_witnessing_sequence m l ->
+        head (tail l) = Some m' ->
+        is_witnessing_sequence m' (tail l).
+      Proof.
+        intros Hw Hhead.
+        unfold is_witnessing_sequence in Hw.
+        destruct Hw as [[lst [Hlst1 Hlst2]] Hw].
+        unfold is_witnessing_sequence.
+        split.
+        { exists lst.
+          split. 2: apply Hlst2.
+          eapply last_tail. 2: apply Hhead. apply Hlst1.
+        }
+        split.
+        { apply Hhead. }
+        rewrite -tail_zip.
+        apply Forall_tail.
+        destruct Hw as [Hw1 Hw2].
+        apply Hw2.
+      Qed.
+      
+
+      Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
+        is_witnessing_sequence m l <-> is_witnessing_sequence_old m (reverse l).
+      Proof.
+        assert (Feq: (curry (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new)))
+                     =  (λ x : Domain M * Domain M, let (old, new) := x in app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) ).
+        { apply functional_extensionality. intros [x₁ x₂].
+          reflexivity.
+        }
+        
+        split.
+        - intros [[m' [Hlast Hbase]] [Hhd Hfa]].
+          destruct l as [|x l].
+          { simpl in Hhd. inversion Hhd. }
+          simpl in Hhd. inversion Hhd. subst. clear Hhd.
+          split.
+          { rewrite reverse_cons. rewrite last_app_singleton.
+            reflexivity.
+          }
+
+          (* reverse (m::l) <> nil *)
+          destruct (reverse (m::l)) eqn:Heq.
+          { assert ( length (reverse (m::l)) = @length (Domain M) []).
+            { rewrite Heq. reflexivity. }
+            rewrite reverse_length in H.
+            simpl in H. inversion H.
+          }
+
+          assert (Hm'd: m' = d).
+          {
+            rewrite reverse_cons in Heq.
+            pose proof (H := @last_reverse_head _ l m).
+            rewrite Hlast in H.
+            unfold reverse in Heq.
+            rewrite Heq in H.
+            simpl in H.
+            inversion H. subst.
+            reflexivity.
+          }
+          subst.
+          split.
+          { apply Hbase. }
+          clear Hbase.
+
+          pose proof (Heq' := f_equal reverse Heq).
+          rewrite reverse_involutive in Heq'.
+          assert (Heq'' : l0 = tail (d::l0)).
+          { reflexivity. }
+          rewrite -> Heq'' at 2. clear Heq''.
+          rewrite -Heq.
+          clear Heq' Heq l0.
+          apply Forall_zip_flip_reverse in Hfa.
+          clear Hlast.
+
+          rewrite Feq in Hfa.
+          apply Hfa.
+        - intros H.
+          destruct H as [Hlast H2].
+          destruct l as [|x l].
+          { simpl in Hlast. inversion Hlast. }
+
+          destruct (reverse (x::l)) as [|y ys] eqn:Heq.
+          { inversion H2. }
+          destruct H2 as [Hbase Hfa].
+
+          rewrite -(reverse_involutive (y::ys)) in Heq.
+          apply (@inj _ _ (=) _ reverse) in Heq.
+          2: typeclasses eauto.
+          
+          split.
+          { exists y.
+            split.
+            rewrite Heq.
+            rewrite last_reverse.
+            reflexivity.
+            apply Hbase.
+          }
+
+          split.
+          {
+            rewrite Heq.
+            rewrite head_reverse.
+            apply Hlast.
+          }
+
+          assert (Hfeq': (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new) = flip (flip (λ new old : Domain M, app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) old) new))).
+          { apply functional_extensionality. intros x0.
+            apply functional_extensionality. intros x1.
+            reflexivity.
+          }
+          rewrite Hfeq'.
+          rewrite Heq.
+          rewrite -Forall_zip_flip_reverse.
+          rewrite Feq.
+          apply Hfa.
+      Qed.
+
+      Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
+        (is_witnessing_sequence m l
          /\ (∃ step', pattern_interpretation ρₑ ρₛ step step' /\ app_interp step' m m')
-        ) <-> (is_witnessing_sequence_alt m' (m'::l) /\ l ≠ []).
+        ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
         - intros [[[lst [Hlst Hbase]] [Hhd Hwit]] [step' [Hstep' Hm']]].
@@ -281,7 +425,7 @@ Section with_signature.
           induction l; intros m Hhd m' step' Hm' Hstep'.
           + simpl in Hhd. inversion Hhd.
           + simpl in Hhd. inversion Hhd. subst a. clear Hhd.
-            unfold is_witnessing_sequence_alt.
+            unfold is_witnessing_sequence.
             destruct l.
             { simpl in Hlst. inversion Hlst. subst m. clear Hlst.
               split.
@@ -311,7 +455,7 @@ Section with_signature.
             destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d'']]]].
             inversion Hd''. subst d''. clear Hd''.
             specialize (IHl m step'' Hstep''d'' Hstep'').
-            unfold is_witnessing_sequence_alt in IHl.
+            unfold is_witnessing_sequence in IHl.
             simpl in IHl.
             destruct IHl as [_ [_ Hforall]].
             inversion Hforall. subst. apply H2.
@@ -321,12 +465,12 @@ Section with_signature.
           
 
 
-      Lemma witnessing_sequence_extend
+      Lemma witnessing_sequence_old_extend
             (m x m' : Domain M) (l : list (Domain M)):
-        (is_witnessing_sequence m (x::l) /\
+        (is_witnessing_sequence_old m (x::l) /\
         ∃ step', (pattern_interpretation ρₑ ρₛ step step' /\
         app_interp step' m m')) <->
-        (last (x::l) = Some m /\ is_witnessing_sequence m' ((x::l) ++ [m'])).
+        (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
         split.
         -
@@ -437,10 +581,10 @@ Section with_signature.
       
       
 
-      Definition witnessed_elements : Ensemble (Domain M) :=
-        λ m, ∃ l, is_witnessing_sequence m l.
+      Definition witnessed_elements_old : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence_old m l.
 
-      Lemma witnessed_elements_prefixpoint : Included _ (F witnessed_elements) witnessed_elements.
+      Lemma witnessed_elements_old_prefixpoint : Included _ (F witnessed_elements_old) witnessed_elements_old.
       Proof.
         unfold Included. unfold Ensembles.In.
         intros x Hx.
@@ -448,8 +592,8 @@ Section with_signature.
         rewrite pattern_interpretation_or_simpl in Hx. fold svar_open in Hx. simpl in Hx.
         destruct Hx.
         - unfold Ensembles.In in H.
-          unfold witnessed_elements.
-          exists [x]. unfold is_witnessing_sequence.
+          unfold witnessed_elements_old.
+          exists [x]. unfold is_witnessing_sequence_old.
           simpl.
           split.
           { reflexivity. }
@@ -475,10 +619,10 @@ Section with_signature.
           rewrite update_svar_val_same in H.
           unfold app_ext in H.
           destruct H as [step' [m [H1 [H2 Happ]]]].
-          unfold witnessed_elements in H2.
+          unfold witnessed_elements_old in H2.
           destruct H2 as [l Hl].
 
-          unfold witnessed_elements.
+          unfold witnessed_elements_old.
           exists (l ++ [x]).
 
           (* `l` is not empty *)
@@ -492,18 +636,18 @@ Section with_signature.
             solve_free_svars_inclusion 2.
           }
 
-          epose proof (P := @witnessing_sequence_extend _ _ _ _).
+          epose proof (P := @witnessing_sequence_old_extend _ _ _ _).
           destruct P as [P _].
           specialize (P (conj Hl (@ex_intro _ _ step' (conj H1 Happ)))).
           apply P.
       Qed.
 
-      Lemma interp_included_in_witnessed_elements:
-        Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements.
+      Lemma interp_included_in_witnessed_elements_old:
+        Included _ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) witnessed_elements_old.
       Proof.
         apply pattern_interpretation_mu_lfp_least.
         { apply patt_ind_gen_wfp. }
-        apply witnessed_elements_prefixpoint.
+        apply witnessed_elements_old_prefixpoint.
       Qed.
 
       Lemma pattern_interpretation_patt_ind_gen_fix :
@@ -515,18 +659,18 @@ Section with_signature.
       Qed.
       
       
-      Definition witnessed_elements_of_max_len len : Ensemble (Domain M) :=
-        λ m, ∃ l, is_witnessing_sequence m l /\ length l <= len.
+      Definition witnessed_elements_old_of_max_len len : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len.
 
-      Lemma witnessed_elements_of_max_len_included_in_interp len:
-        Included _ (witnessed_elements_of_max_len (S len)) (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Lemma witnessed_elements_old_of_max_len_included_in_interp len:
+        Included _ (witnessed_elements_old_of_max_len (S len)) (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         induction len.
         - unfold Included. intros m.
           rewrite -pattern_interpretation_patt_ind_gen_fix.
           unfold Ensembles.In.
           intros H.
-          unfold witnessed_elements_of_max_len.
+          unfold witnessed_elements_old_of_max_len.
           rewrite F_interp.
           destruct H as [l [Hwit Hlen]].
           unfold is_witnessing_sequence in Hwit.
@@ -556,7 +700,7 @@ Section with_signature.
           + simpl in Hlast. inversion Hlast. clear Hlast. subst.
             left. unfold Ensembles.In. apply Hd.
           + right. unfold Ensembles.In.
-            pose proof (P := witnessing_sequence_extend).
+            pose proof (P := witnessing_sequence_old_extend).
             destruct l as [|x' l'].
             { simpl in Hlast. inversion Hlast. subst.
               specialize (P d d m []).
@@ -572,7 +716,7 @@ Section with_signature.
               split.
               { apply Hstep'. }
               split.
-              { apply IHlen. unfold witnessed_elements_of_max_len.
+              { apply IHlen. unfold witnessed_elements_old_of_max_len.
                 exists [d].
                 split.
                 2: { simpl. lia. }
@@ -602,7 +746,7 @@ Section with_signature.
                  (@rev (@Domain Σ M) (@cons (@Domain Σ M) d0 (@cons (@Domain Σ M) x' l')))) as mprev.
 
             specialize (IHlen mprev).
-            unfold witnessed_elements_of_max_len in IHlen.
+            unfold witnessed_elements_old_of_max_len in IHlen.
             specialize (P mprev d m  (rev (tl (rev (d0::x'::l'))))).
 
             assert (Heq1: d::d0::x'::l' = d::(rev (tail (rev (d0::x'::l')))) ++ [m]).
@@ -683,33 +827,320 @@ Section with_signature.
       Qed.
       
           
-      Lemma witnessed_elements_included_in_interp:
-        Included _ witnessed_elements (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+      Lemma witnessed_elements_old_included_in_interp:
+        Included _ witnessed_elements_old (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         intros x H.
-        unfold Ensembles.In in H. unfold witnessed_elements in H.
+        unfold Ensembles.In in H. unfold witnessed_elements_old in H.
         destruct H as [wit Hwit].
-        assert (H': Ensembles.In (Domain M) (witnessed_elements_of_max_len (length wit)) x).
+        assert (H': Ensembles.In (Domain M) (witnessed_elements_old_of_max_len (length wit)) x).
         { unfold Ensembles.In. exists wit. split. apply Hwit. lia. }
         destruct wit as [|y l'] eqn:Hl.
         { unfold is_witnessing_sequence in Hwit. destruct Hwit. contradiction. }
-        eapply witnessed_elements_of_max_len_included_in_interp.
+        eapply witnessed_elements_old_of_max_len_included_in_interp.
         simpl in H'.
         apply H'.
       Qed.
-        
-      
+
+      Definition witnessed_elements : Ensemble (Domain M) :=
+        λ m, ∃ l, is_witnessing_sequence m l.
+
+      Lemma witnessed_elements_old_eq_witnessed_elements :
+        witnessed_elements_old = witnessed_elements.
+      Proof.
+        apply (@Extensionality_Ensembles _).
+        split; unfold Included; unfold Ensembles.In;
+          unfold witnessed_elements_old; unfold witnessed_elements; intros m; intros [l H].
+        + exists (reverse l).
+          apply is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse.
+          rewrite reverse_involutive.
+          exact H.
+        + exists (reverse l).
+          apply is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse.
+          apply H.
+      Qed.
       
       Lemma patt_ind_gen_simpl:
         @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
       Proof.
+        rewrite -witnessed_elements_old_eq_witnessed_elements.
         apply Ensembles_Ext.eq_iff_Same_set.
         split.
-        + apply interp_included_in_witnessed_elements.
-        + apply witnessed_elements_included_in_interp.
+        + apply interp_included_in_witnessed_elements_old.
+        + apply witnessed_elements_old_included_in_interp.
       Qed.
+      
+      Section injective.
+        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
+        Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
 
+        Hypothesis (Hbase_step_no_confusion
+                    : Ensembles_Ext.Empty_Intersection (Domain M) (pattern_interpretation ρₑ ρₛ base)
+                                         (app_ext (pattern_interpretation ρₑ ρₛ step) witnessed_elements )).
+
+        Lemma witnessed_elements_unique_seq :
+          ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
+        Proof.
+          intros m l₁ l₂.
+          wlog: l₁ l₂ / (length l₂ <= length l₁).
+          { intros H Hw₁ Hw₂.
+            destruct (decide (length l₁ <= length l₂)).
+            - symmetry. apply H; auto.
+            - apply H. lia. auto. auto.
+          }
+          intros Hlen12 Hw₁ Hw₂.
+
+          assert (Hmwit: witnessed_elements m).
+          { exists l₁. apply Hw₁. }
+
+          assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) l₁ l₂ = length l₂)).
+          {
+            destruct Hw₁ as [[lst₁ [Hlst₁ Hbase₁]] [Hhd₁ Hfa₁]].
+            destruct l₁ as [|m₁ l₁].
+            { simpl in Hlst₁. inversion Hlst₁. }
+            simpl in Hhd₁. inversion Hhd₁. subst. clear Hhd₁.
+
+            destruct Hw₂ as [[lst₂ [Hlst₂ Hbase₂]] [Hhd₂ Hfa₂]].
+            destruct l₂ as [|m₂ l₂].
+            { simpl in Hlst₂. inversion Hlst₂. }
+            simpl in Hhd₂. inversion Hhd₂. subst. clear Hhd₂.
+            
+            simpl.
+            destruct (decide (m=m)).
+            2: { contradiction. }
+            clear e.
+            apply f_equal.
+
+            simpl in Hlen12. rename Hlen12 into Hlen12'.
+            assert (Hlen12: length l₂ <= length l₁).
+            { lia. }
+            clear Hlen12'.
+
+            remember (length l₁) as len₁.
+            rewrite Heqlen₁ in Hlen12.
+            assert (Hlen₁ : length l₁ <= len₁).
+            { lia. }
+            clear Heqlen₁.
+            
+            move: m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
+            induction len₁; intros m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
+            - destruct l₁.
+              2: { simpl in Hlen₁. lia. }
+              destruct l₂.
+              + reflexivity.
+              + assert (length (d::l₂) = 0).
+                { simpl in Hlen12. lia. }
+                rewrite H. reflexivity.
+            - destruct l₂ as [|b l₂].
+              { rewrite common_length_l_nil. reflexivity. }
+
+              destruct l₁ as [|a l'₁] eqn:Heq.
+              { simpl in Hlen12. lia. }
+
+
+              simpl in Hfa₁. inversion Hfa₁. subst. clear Hfa₁.
+              rename H1 into Hma. rename H2 into Hfa₁.
+              simpl in Hfa₂. inversion Hfa₂. subst. clear Hfa₂.
+              rename H1 into Hmb. rename H2 into Hfa₂.
+
+              assert (Hwita: witnessed_elements a).
+              { exists (a::l'₁).
+                split.
+                { exists lst₁. split.
+                  { simpl in Hlst₁. simpl. apply Hlst₁. }
+                  apply Hbase₁.
+                }
+                split.
+                { reflexivity. }
+                simpl. apply Hfa₁.
+              }
+
+              assert (Hwitb: witnessed_elements b).
+              { exists (b::l₂).
+                split.
+                { exists lst₂. split.
+                  { simpl in Hlst₂. simpl. apply Hlst₂. }
+                  apply Hbase₂.
+                }
+                split.
+                { reflexivity. }
+                simpl. apply Hfa₂.
+              }
+              
+              simpl in Hma. simpl in Hmb.
+
+              assert (Ham: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) a) = Ensembles.Singleton (Domain M) m).
+              {
+                unfold is_total_function in Hstep_total_function.
+                pose proof (Hstep_total_function Hwita).
+                destruct H as [a' [_ Ha']].
+                rewrite Ha' in Hma.
+                inversion Hma. subst.
+                apply Ha'.
+              }
+
+              assert (Hbm: app_ext (pattern_interpretation ρₑ ρₛ step) (Ensembles.Singleton (Domain M) b) = Ensembles.Singleton (Domain M) m).
+              {
+                unfold is_total_function in Hstep_total_function.
+                pose proof (Hstep_total_function Hwitb).
+                destruct H as [b' [_ Hb']].
+                rewrite Hb' in Hmb.
+                inversion Hmb. subst.
+                apply Hb'.
+              }
+
+              assert (Haeqb: a = b).
+              { apply Hstep_injective.
+                apply Hwita. apply Hwitb.
+                unfold rel_of.
+                rewrite Ham.
+                rewrite Hbm.
+                reflexivity.
+              }
+              subst.
+              clear Ham Hbm Hwita Hma.
+              
+              simpl.
+              destruct (decide (b=b)).
+              2: { contradiction. }
+              apply f_equal.
+
+              apply IHlen₁ with (m := b).
+              { simpl in Hlen12.  lia. }
+              { simpl in Hlen₁. lia. }
+              simpl in Hlst₁. simpl. apply Hlst₁.
+              simpl in Hlst₂. simpl. apply Hlst₂.
+
+              simpl. apply Hfa₁.
+              simpl. apply Hfa₂.
+              apply Hwitb.
+          }
+
+          assert (Hlast12: l₁ !! (length l₂ - 1) = l₂ !! (length l₂ - 1)).
+          {
+            eapply equal_up_to_common_length.
+            erewrite Hlcom.
+            assert (length l₂ > 0).
+            {
+              destruct l₂.
+              { unfold is_witnessing_sequence in Hw₂.
+                simpl in Hw₂. destruct Hw₂ as [_ [Contra _]].
+                inversion Contra.
+              }
+              simpl. lia.
+            }
+            lia.
+          }
+
+          (*assert (Hbasem': pattern_interpretation ρₑ ρₛ base lst).*)          
+          
+          assert (~ (length l₁ > length l₂)).
+          {
+            intros Hcontra.
+            assert (Hlt : length l₂ - 1 < length l₁).
+            { lia. }
+            pose proof (Hexm := list_ex_elem l₁ (length l₂ - 1) Hlt). clear Hlt.
+            destruct Hexm as [m' Hm'].
+            pose proof (Hwsm := witnessing_sequence_middle Hw₁ Hm').
+            pose proof (Hw₂' := Hw₂).
+            unfold is_witnessing_sequence in Hw₂'.
+            destruct Hw₂' as [[lst [Hlst1 Hlst2]] _].
+            rewrite list_last_length in Hlst1.
+            assert (Hlsteqm' : m' = lst).
+            {
+              assert (Some m' = Some lst).
+              { rewrite -Hm'. rewrite -Hlst1. apply Hlast12.  }
+              inversion H. reflexivity.
+            }
+            subst lst.
+            specialize (Hwsm Hlst2).
+            clear Hm' Hlst1.
+
+            destruct (drop (length l₂ - 1) l₁) eqn:Heq.
+            {
+              destruct Hwsm as [_ [Contra _]].
+              inversion Contra.
+            }
+            (* if `l` is empty, then length l₁ = length l₂ -> Contradiction *)
+            destruct l.
+            {
+              assert (Hlendrop: length (drop (length l₂ - 1) l₁) = 1).
+              { rewrite Heq. reflexivity. }
+              rewrite drop_length in Hlendrop.
+              assert (length l₂ <> 0).
+              { intros Hcontra'.
+                apply nil_length_inv in Hcontra'.
+                subst l₂.
+                destruct Hw₂ as [_ [HContra'' _]].
+                inversion HContra''.
+              }
+              lia.
+            }
+            (* `d0` is a member of `witnessed_elements` *)
+            epose proof (Hwd0 := witnessing_sequence_tail Hwsm).
+            simpl in Hwd0.
+            assert (Htmp: Some d0 = Some d0).
+            { reflexivity. }
+            specialize (Hwd0 Htmp). clear Htmp.
+
+            assert (Hd0we : witnessed_elements d0).
+            { exists (d0::l). apply Hwd0. }
+
+            assert (Heqm'd : m' = d).
+            { unfold is_witnessing_sequence in Hwsm.
+              destruct Hwsm as [_ [H _]].
+              simpl in H. inversion H.
+              reflexivity.
+            }
+            subst m'.
+
+            (* `m'=d` matches `app_ext (pattern_interpretation ρₑ ρₛ step) d0` *)
+            assert (app_ext
+                      (pattern_interpretation ρₑ ρₛ step)
+                      (Ensembles.Singleton (Domain M) d0)
+                      d).
+            {
+              unfold is_witnessing_sequence in Hwsm.
+              simpl in Hwsm.
+              destruct Hwsm as [_ [_ Hwsm]].
+              inversion Hwsm. subst.
+              simpl in H1.
+              apply H1.
+            }
+            unfold Ensembles_Ext.Empty_Intersection in Hbase_step_no_confusion.
+            apply Ensembles_Ext.eq_iff_Same_set in Hbase_step_no_confusion.
+            destruct Hbase_step_no_confusion as [H1 _].
+            unfold Included in H1.
+            specialize (H1 d).
+            unfold Ensembles.In in H1.
+            eapply Ensembles_Ext.Empty_is_Empty.
+            apply H1. clear H1.
+            split.
+            - apply Hlst2.
+            - unfold Ensembles.In.
+              unfold app_ext.
+              destruct H as [le' [re' [H1 [H2 H3]]]].
+              exists le'. exists d0.
+              split.
+              { apply H1. }
+              split.
+              { apply Hd0we. }
+              inversion H2. subst. apply H3.
+          }
+          assert (Hlength12: length l₁ = length l₂).
+          { lia. }
+          clear Hlen12 H.
+
+          apply (common_length_impl_eq _ _ Hlength12 Hlcom).
+        Qed.        
+        
+      End injective.
+      
     End with_interpretation.
+
+    
+
+    
   End inductive_generation.
   
   

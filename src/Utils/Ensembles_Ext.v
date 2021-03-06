@@ -743,5 +743,6 @@ Proof.
   auto.
 Qed.
 
-  
+Definition Empty_Intersection T A B : Prop :=
+  Intersection T A B = Empty_set T.
   

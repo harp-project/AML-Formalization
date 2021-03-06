@@ -29,7 +29,8 @@ Section semantics.
       (* TODO think about whether or not to make it an existential formula. Because that would affect the equality,
      due to proof irrelevance. *)
       nonempty_witness : Domain;
-      Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};
+      (*Domain_eq_dec : forall (a b : Domain), {a = b} + {a <> b};*)
+      Domain_eq_dec : EqDecision Domain;
       app_interp : Domain -> Domain -> Power Domain;
       sym_interp (sigma : symbols) : Power Domain;
                    }.
@@ -2664,6 +2665,38 @@ Qed.
 Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   λ m₁,
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).
+
+
+Definition is_total_function M f (d c : Ensemble (Domain M)) ρₑ ρₛ :=
+  ∀ (m₁ : Domain M),
+    d m₁ ->
+    ∃ (m₂ : Domain M),
+      c m₂ /\
+      app_ext (@pattern_interpretation M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
+      = Ensembles.Singleton (Domain M) m₂.
+
+ Definition total_function_is_injective M f (d : Ensemble (Domain M)) ρₑ ρₛ :=
+   ∀ (m₁ : Domain M),
+     d m₁ ->
+     ∀ (m₂ : Domain M),
+       d m₂ ->
+         (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
+          m₁ = m₂.
+
+Definition is_functional_pattern ϕ M ρₑ ρₛ :=
+  ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = Ensembles.Singleton (Domain M) m.
+
+Lemma functional_pattern_inj ϕ M ρₑ ρₛ m₁ m₂ :
+  @is_functional_pattern ϕ M ρₑ ρₛ ->
+  @pattern_interpretation M ρₑ ρₛ ϕ m₁ ->
+  @pattern_interpretation M ρₑ ρₛ ϕ m₂ ->
+  m₁ = m₂.
+Proof.
+  intros [m Hm] Hm₁ Hm₂.
+  rewrite Hm in Hm₁. inversion Hm₁. subst. clear Hm₁.
+  rewrite Hm in Hm₂. inversion Hm₂. subst. clear Hm₂.
+  reflexivity.
+Qed.
 
 
 End semantics.

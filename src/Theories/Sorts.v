@@ -430,13 +430,9 @@ Section sorts.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full <->
-      ∀ (m₁ : Domain M),
-        Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
-        ∃ (m₂ : Domain M),
-          Minterp_inhabitant s₂ ρₑ ρₛ m₂ /\
-          app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁)
-          = Ensembles.Singleton (Domain M) m₂.
-    Proof.      
+      @is_total_function sig M f (Minterp_inhabitant s₁ ρₑ ρₛ) (Minterp_inhabitant s₂ ρₑ ρₛ) ρₑ ρₛ.
+    Proof.
+      unfold is_total_function.
       rewrite pattern_interpretation_forall_of_sort_predicate.
       2: { eauto. }
 
@@ -750,13 +746,9 @@ Section sorts.
 
     Lemma interp_total_function_injective f s ρₑ ρₛ :
       @pattern_interpretation sig M ρₑ ρₛ (patt_total_function_injective f s) = Full <->
-      ∀ (m₁ : Domain M),
-        Minterp_inhabitant s ρₑ ρₛ m₁ ->
-        ∀ (m₂ : Domain M),          
-          Minterp_inhabitant s ρₑ ρₛ m₂ ->
-          (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
-          m₁ = m₂.
+      total_function_is_injective f (Minterp_inhabitant s ρₑ ρₛ) ρₑ ρₛ.
     Proof.
+      unfold total_function_is_injective.
       unfold patt_partial_function_injective.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
       remember
