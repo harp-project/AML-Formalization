@@ -704,3 +704,23 @@ Lemma tail_zip {A : Type} (l₁ l₂ : list A) :
 Proof.
   apply tail_zip_with.
 Qed.
+
+Lemma common_length_impl_eq {A : Type} {eqdec: EqDecision A} (l₁ l₂ : list A) :
+  length l₁ = length l₂ ->
+  common_length l₁ l₂ = length l₂ ->
+  l₁ = l₂.
+Proof.
+  intros Hlength Hcommlength.
+  Search list length lt eq lookup.
+  eapply list_eq_same_length.
+  2: apply Hlength.
+  { reflexivity. }
+  intros i x y Hi Hl₁ Hl₂.
+  assert (H: Some x = Some y).
+  { rewrite -Hl₁ -Hl₂.
+    apply equal_up_to_common_length.
+    lia.
+  }
+  inversion H.
+  reflexivity.
+Qed.
