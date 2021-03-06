@@ -292,6 +292,25 @@ Section with_signature.
           apply Hfa.
         }
       Qed.
+
+      Lemma witnessing_sequence_tail (m : Domain M) (l : list (Domain M)) (m' : Domain M) :
+        is_witnessing_sequence m l ->
+        head (tail l) = Some m' ->
+        is_witnessing_sequence m' (tail l).
+      Proof.
+        intros Hw Hhead.
+        unfold is_witnessing_sequence in Hw.
+        destruct Hw as [[lst [Hlst1 Hlst2]] Hw].
+        unfold is_witnessing_sequence.
+        split.
+        { exists lst.
+          split. 2: apply Hlst2.
+          eapply last_tail. 2: apply Hhead. apply Hlst1.
+        }
+        split.
+        { apply Hhead. }
+      Abort.
+      
       
 
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
@@ -1040,9 +1059,37 @@ Section with_signature.
             assert (Hlsteqm' : m' = lst).
             {
               assert (Some m' = Some lst).
-              { rewrite -Hm'. rewrite -Hlst1. reflexivity.  }
+              { rewrite -Hm'. rewrite -Hlst1. apply Hlast12.  }
+              inversion H. reflexivity.
             }
+            subst lst.
+            specialize (Hwsm Hlst2).
+            clear Hm' Hlst1.
 
+            destruct (drop (length l₂ - 1) l₁) eqn:Heq.
+            {
+              destruct Hwsm as [_ [Contra _]].
+              inversion Contra.
+            }
+            (* if `l` is empty, then length l₁ = length l₂ -> Contradiction *)
+            destruct l.
+            {
+              assert (Hlendrop: length (drop (length l₂ - 1) l₁) = 1).
+              { rewrite Heq. reflexivity. }
+              rewrite drop_length in Hlendrop.
+              assert (length l₂ <> 0).
+              { intros Hcontra'.
+                apply nil_length_inv in Hcontra'.
+                subst l₂.
+                destruct Hw₂ as [_ [HContra'' _]].
+                inversion HContra''.
+              }
+              lia.
+            }
+            (* TODO *)
+            (* `d0` is a member of `witnessed_elements` *)
+            (* `m'=d` matches `app_ext (pattern_interpretation ρₑ ρₛ step) d0` *)
+            (* ==> contradiction *)
           }
           
           Print is_witnessing_sequence.
