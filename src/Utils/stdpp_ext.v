@@ -688,3 +688,19 @@ Proof.
     simpl in Hlast. apply Hlast.
     reflexivity.
 Qed.
+
+Lemma tail_zip_with {A B C : Type} (f : A -> B -> C) (l₁ : list A) (l₂ : list B) :
+  tail (zip_with f l₁ l₂) = zip_with f (tail l₁) (tail l₂).
+Proof.
+  destruct l₁.
+  { reflexivity. }
+  destruct l₂.
+  { simpl. rewrite zip_with_nil_r. reflexivity. }
+  reflexivity.
+Qed.
+
+Lemma tail_zip {A : Type} (l₁ l₂ : list A) :
+  tail (zip l₁ l₂) = zip (tail l₁) (tail l₂).
+Proof.
+  apply tail_zip_with.
+Qed.
