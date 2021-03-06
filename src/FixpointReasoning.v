@@ -309,8 +309,11 @@ Section with_signature.
         }
         split.
         { apply Hhead. }
-      Abort.
-      
+        rewrite -tail_zip.
+        apply Forall_tail.
+        destruct Hw as [Hw1 Hw2].
+        apply Hw2.
+      Qed.
       
 
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
