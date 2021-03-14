@@ -1604,19 +1604,124 @@ Proof.
   lia. auto. auto.
 Qed.
 
-Lemma element_substitution_lemma
-      (M : Model) (ϕ : Pattern) (x y : evar) (ρₑ : EVarVal) (ρₛ : SVarVal) (dbi : db_index) :
-  evar_is_fresh_in x ϕ ->
-  pattern_interpretation ρₑ ρₛ (bevar_subst ϕ (patt_free_evar y) dbi)
-  = @pattern_interpretation M
-      (update_evar_val x (ρₑ y) ρₑ)
-      ρₛ
-      (evar_open dbi x ϕ).
+Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) (M : Model) (phi : Pattern) (y : evar),
+    size phi <= sz -> forall (evar_val : EVarVal)
+                             (svar_val : SVarVal) (x : evar),
+    evar_is_fresh_in x phi ->
+    @pattern_interpretation M evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
+    = @pattern_interpretation M
+                              (update_evar_val x (evar_val y) evar_val)
+                              svar_val
+                              (evar_open dbi x phi).
 Proof.
+    induction sz; intros dbi M phi y Hsz evar_val svar_val x H.
+  - (* sz == 0 *)
+    destruct phi; simpl in Hsz; simpl.
+    + (* free_evar *)
+      unfold evar_is_fresh_in in H.
+      repeat rewrite -> pattern_interpretation_free_evar_simpl.
+      unfold update_evar_val.
+      destruct (evar_eqdec x x0).
+      * simpl. unfold not in H. exfalso. apply H.
+        apply elem_of_singleton_2. auto.
+      * auto.
+    + (* free_svar *)
+      repeat rewrite -> pattern_interpretation_free_svar_simpl.
+      auto.
+    + (* bound_evar *)
+      destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
+      * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+      * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
+        destruct (evar_eqdec x x). auto. contradiction.
+      * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+      * auto.
+      * apply beq_nat_false in Heq. lia.
+      * auto.
+    + (* bound_svar *)
+      rewrite 2!pattern_interpretation_bound_svar_simpl; auto.
+    + (* sym *)
+      simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
+    + (* app *)
+      lia.
+    + (* bot *)
+      simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
+    + (* impl *)
+      lia.
+    + (* ex *)
+      lia.
+    + (* mu *)
+      lia.
+  - (* sz = S sz' *)
+    destruct phi; simpl.
+    (* HERE we duplicate some of the effort. I do not like it. *)
+    + (* free_evar *)
+      unfold evar_is_fresh_in in H.
+      repeat rewrite -> pattern_interpretation_free_evar_simpl.
+      unfold update_evar_val.
+      destruct (evar_eqdec x x0).
+      * simpl. unfold not in H. exfalso. apply H.
+        apply elem_of_singleton_2. auto.
+      * auto.
+    + (* free_svar *)
+      repeat rewrite -> pattern_interpretation_free_svar_simpl.
+      auto.
+    + (* bound_evar *)
+      destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
+      * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+      * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
+        destruct (evar_eqdec x x). auto. contradiction.
+      * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+      * auto.
+      * apply beq_nat_false in Heq. lia.
+      * auto.
+    + (* bound_svar *)
+      rewrite 2!pattern_interpretation_bound_svar_simpl; auto.
+    + (* sym *)
+      simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
+      (* HERE the duplication ends *)
+    + (* app *)
+      unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
+      repeat rewrite -> pattern_interpretation_app_simpl.
+      simpl in Hsz.
+      repeat rewrite <- IHsz.
+       * reflexivity.
+       * lia.
+       * assumption.
+       * lia.
+       * auto.
+    + (* Bot. Again, a duplication of the sz=0 case *)
+      simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
+    + (* imp *)
+      simpl in Hsz.
+      unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
+      repeat rewrite -> pattern_interpretation_imp_simpl.
+      repeat rewrite <- IHsz.
+      * reflexivity.
+      * lia.
+      * assumption.
+      * lia.
+      * auto.
+
+    + (* ex *)
+      simpl in Hsz.
+      unfold evar_is_fresh_in in H. simpl in H.
+      repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
+      apply Same_set_to_eq. apply FA_Union_same. intros c.
 Admitted.
 
-  
-
+Lemma element_substitution_lemma
+      (M : Model) (phi : Pattern) (x y : evar) (evar_val : EVarVal) (svar_val : SVarVal) (dbi : db_index) :
+  evar_is_fresh_in x phi ->
+  pattern_interpretation evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
+  = @pattern_interpretation M
+      (update_evar_val x (evar_val y) evar_val)
+      svar_val
+      (evar_open dbi x phi).
+Proof.
+  intros.
+  apply Private_plugging_patterns_bevar_subst with (sz := size phi).
+  lia. auto.
+Qed.
 
 Lemma Private_pattern_interpretation_free_evar_independent M ρₑ ρₛ x v sz ϕ:
   size ϕ <= sz ->
