@@ -430,7 +430,7 @@ Section definedness.
       rewrite -> pattern_interpretation_free_evar_simpl in H1.
       unfold In in H1. inversion H1. subst. assumption.
   Qed.
-
+  
   Lemma T_predicate_defined : forall ϕ, T_predicate theory (patt_defined ϕ).
   Proof.
     intros. unfold T_predicate. intros. unfold M_predicate. intros.
@@ -530,6 +530,29 @@ Section definedness.
     {| binary_evar_open := evar_open_in ;
        binary_svar_open := svar_open_in ;
     |}.
+
+
+  Check patt_exists.
+  (* Defines ϕ₁ to be an inversion of ϕ₂ *)
+  (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)  *)
+  Definition patt_eq_inversion_of ϕ₁ ϕ₂
+    := patt_forall
+         (patt_equal
+            (patt_app ϕ₁ (patt_bound_evar 0))
+            (patt_exists (patt_and (patt_bound_evar 0)
+                                   (patt_in (patt_bound_evar 1) (patt_app ϕ₂ (patt_bound_evar 0)))))).
+
+  Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂, T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂ M Hm.
+    unfold patt_eq_inversion_of.
+    apply M_predicate_forall.
+    rewrite simpl_evar_open.
+    apply T_predicate_equals.
+    apply Hm.
+  Qed.
+
+
   
 End definedness.
 
