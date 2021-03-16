@@ -264,8 +264,8 @@ Section syntax.
     | patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
     | patt_bott => patt_bott
     | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
-    | patt_exists p' => patt_exists (evar_quantify x (level + 1) p')
-    | patt_mu p' => patt_mu (evar_quantify x (level + 1) p')
+    | patt_exists p' => patt_exists (evar_quantify x (S level) p')
+    | patt_mu p' => patt_mu (evar_quantify x (S level) p')
     end.
 
   Definition exists_quantify (x : evar)
@@ -292,7 +292,7 @@ Section syntax.
     | patt_app ls rs => patt_app (evar_open k n ls) (evar_open k n rs)
     | patt_bott => patt_bott
     | patt_imp ls rs => patt_imp (evar_open k n ls) (evar_open k n rs)
-    | patt_exists p' => patt_exists (evar_open (k + 1) n p')
+    | patt_exists p' => patt_exists (evar_open (S k) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
 
@@ -315,7 +315,7 @@ Section syntax.
       rewrite -> IHϕ1 by auto.
       rewrite -> IHϕ2 by auto.
       reflexivity.
-    - rewrite -> IHϕ. 2: {rewrite Nat.add_comm. simpl. assumption.  } reflexivity.
+    - rewrite -> IHϕ. 2: { assumption.  } reflexivity.
     - rewrite -> IHϕ by auto. auto.
   Qed.
   
@@ -336,7 +336,7 @@ Section syntax.
   Proof. reflexivity. Qed.
   Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
   Proof. reflexivity. Qed.
-  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (k + 1) n p').
+  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (S k) n p').
   Proof. reflexivity. Qed.
   Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
   Proof. reflexivity. Qed.  
@@ -354,7 +354,7 @@ Section syntax.
     | patt_bott => patt_bott
     | patt_imp ls rs => patt_imp (svar_open k n ls) (svar_open k n rs)
     | patt_exists p' => patt_exists (svar_open k n p')
-    | patt_mu p' => patt_mu (svar_open (k + 1) n p')
+    | patt_mu p' => patt_mu (svar_open (S k) n p')
     end.
 
 
@@ -376,7 +376,7 @@ Section syntax.
   Proof. reflexivity. Qed.
   Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
   Proof. reflexivity. Qed.
-  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (k + 1) n p').
+  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (S k) n p').
   Proof. reflexivity. Qed.
 
 
@@ -397,7 +397,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       sbinder_evar_open :
         forall k n ϕ, evar_open k n (sbinder ϕ) = sbinder (evar_open k n ϕ) ;
       sbinder_svar_open :
-        forall k n ϕ, svar_open k n (sbinder ϕ) = sbinder (svar_open (k + 1) n ϕ) ;
+        forall k n ϕ, svar_open k n (sbinder ϕ) = sbinder (svar_open (S k) n ϕ) ;
     }.
 
   (* Non-variable nullary operation *)
@@ -495,7 +495,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     destruct (n0 =? k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-    rewrite (IHp (k + 1)); reflexivity.
+    rewrite (IHp (S k)); reflexivity.
     rewrite (IHp k); reflexivity.
   Qed.
 
@@ -509,7 +509,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
     rewrite (IHp k); reflexivity.
-    rewrite (IHp (k + 1)); reflexivity.
+    rewrite (IHp (S k)); reflexivity.
   Qed.
 
   Inductive positive_occurrence_named : svar -> Pattern -> Prop :=
@@ -572,7 +572,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       positive_occurrence_db n phi ->
       positive_occurrence_db n (patt_exists phi)
   | podb_mu (phi : Pattern) (n : db_index) :
-      positive_occurrence_db (n+1) phi ->
+      positive_occurrence_db (S n) phi ->
       positive_occurrence_db n (patt_mu phi)
   with negative_occurrence_db : db_index -> Pattern -> Prop :=
   | nodb_free_evar (x : evar) (n : db_index) : negative_occurrence_db n (patt_free_evar x)
@@ -592,7 +592,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       negative_occurrence_db n phi ->
       negative_occurrence_db n (patt_exists phi)
   | nodb_mu (phi : Pattern) (n : db_index) :
-      negative_occurrence_db (n+1) phi ->
+      negative_occurrence_db (S n) phi ->
       negative_occurrence_db n (patt_mu phi)
   .
 
@@ -737,8 +737,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_bott => true
     | patt_imp psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar &&
                             well_formed_closed_aux psi2 max_ind_evar max_ind_svar
-    | patt_exists psi => well_formed_closed_aux psi (max_ind_evar + 1) max_ind_svar
-    | patt_mu psi => well_formed_closed_aux psi max_ind_evar (max_ind_svar + 1)
+    | patt_exists psi => well_formed_closed_aux psi (S max_ind_evar) max_ind_svar
+    | patt_mu psi => well_formed_closed_aux psi max_ind_evar (S max_ind_svar)
     end.
   Definition well_formed_closed (phi : Pattern) := well_formed_closed_aux phi 0 0.
 
@@ -760,10 +760,10 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply andb_true_iff in H. destruct H as [H1 H2].
       erewrite IHphi1. 2,3: eassumption. erewrite IHphi2. 2,3: eassumption.
       2,3: assumption. reflexivity.
-    - eapply (IHphi ind_svar_2 ind_svar_1 _  (ind_evar_2 + 1) (ind_evar_1 + 1)).
+    - eapply (IHphi ind_svar_2 ind_svar_1 _  (S ind_evar_2) (S ind_evar_1)).
       + lia.
       + assumption.
-    - eapply (IHphi (ind_svar_2 + 1) (ind_svar_1 + 1) _  ind_evar_2 ind_evar_1).
+    - eapply (IHphi (S ind_svar_2) (S ind_svar_1) _  ind_evar_2 ind_evar_1).
       + lia.
       + assumption.
         Unshelve.
@@ -1023,8 +1023,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
       apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
     * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H2 H3].
       apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
-    * simpl. simpl in H. erewrite IHphi with (n := n + 1) (m := m); eauto. lia.
-    * simpl. simpl in H. erewrite IHphi with (n := n) (m := m + 1); eauto. lia.
+    * simpl. simpl in H. erewrite IHphi with (n := S n) (m := m); eauto. lia.
+    * simpl. simpl in H. erewrite IHphi with (n := n) (m := S m); eauto. lia.
   Qed.
 
   Lemma wfc_aux_body_mu_imp_bsvar_subst:
@@ -1046,9 +1046,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
         rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
         reflexivity.
       * simpl. simpl in H. rewrite IHphi. assumption.
-        eapply wfc_aux_extend; eauto. lia. reflexivity.
+        eapply wfc_aux_extend; eauto. auto.
       * simpl. simpl in H.
-        rewrite PeanoNat.Nat.add_1_r. rewrite PeanoNat.Nat.add_1_r in H.
         rewrite IHphi. apply H.
         eapply wfc_aux_extend; eauto. reflexivity.
   Qed.
@@ -1231,7 +1230,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
         * auto.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
-    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
     - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
   Qed.
 
@@ -1243,8 +1242,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     induction phi; firstorder.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity. exact H1.
-    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity.  exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (S i) _ (j)). reflexivity. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (S j)). reflexivity.  exact H1.
   Qed.
   
   Lemma svar_open_last2: forall phi i u j v,
@@ -1255,8 +1254,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     induction phi; firstorder.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (j+1)). reflexivity. exact H1.
-    - simpl in H. inversion H. simpl. erewrite (IHphi (i+1) _ (j)). reflexivity.  exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (i) _ (S j)). reflexivity. exact H1.
+    - simpl in H. inversion H. simpl. erewrite (IHphi (S i) _ (j)). reflexivity.  exact H1.
   Qed.
   
   Lemma svar_open_last3: forall phi i u j v,
@@ -1275,7 +1274,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - simpl. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - simpl in H0. inversion H0. simpl. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
-    - simpl in H0. inversion H0. simpl. erewrite (IHphi (i+1) _ (j+1)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. simpl. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
   Qed.
 
   (* evar_open of fresh name does not change in a well-formed pattern*)
@@ -1782,8 +1781,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
       rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
       auto.
     * apply f_equal.
-      rewrite -> IHphi with (dbs := dbs)(db1 := db1 + 1). 3: auto. 2: lia. auto.
-    * apply f_equal. rewrite -> IHphi with (dbs := dbs + 1)(db1 := db1). auto. auto. auto.
+      rewrite -> IHphi with (dbs := dbs)(db1 := S db1). 3: auto. 2: lia. auto.
+    * apply f_equal. rewrite -> IHphi with (dbs := S dbs)(db1 := db1). auto. auto. auto.
   Qed.
 
   Lemma evar_open_wfc m X phi : well_formed_closed phi -> evar_open m X phi = phi.
@@ -2253,7 +2252,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       rewrite -> IHϕ₁2. 2: auto.
       auto.
     - rewrite -> IHϕ₁. 2: auto. auto.
-    - rewrite -> IHϕ₁. 2: auto. auto. rewrite Nat.add_1_r. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
   Qed.
 
   Lemma wfc_aux_implies_not_bsvar_occur phi ne ns :
@@ -2279,7 +2278,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + eapply IHphi2. apply Hwfc2. apply Heq2.
       + auto.
     - eapply IHphi. apply Hwfc.
-    - eapply IHphi. rewrite Nat.add_1_r in Hwfc. apply Hwfc.
+    - eapply IHphi. apply Hwfc.
   Qed.
   
   Lemma wfc_implies_not_bsvar_occur phi n :
@@ -2448,12 +2447,11 @@ Class EBinder (ebinder : Pattern -> Pattern)
         rewrite IHpsi22.
         auto.
     - simpl in Hwfc.
-      specialize (IHpsi dbi (maxevar + 1) maxsvar Hwfc Hleq).
+      specialize (IHpsi dbi (S maxevar) maxsvar Hwfc Hleq).
       destruct IHpsi.
       rewrite H. rewrite H0. auto.
     - simpl in Hwfc.
       specialize (IHpsi (S dbi) maxevar (S maxsvar)).
-      rewrite Nat.add_1_r in Hwfc.
       assert (HS: S maxsvar <=? S dbi).
       { eapply elimT in Hleq.
         2: apply Nat.leb_spec0.
@@ -2783,9 +2781,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
     
     4,5,6: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (dbi + 1) (S level)); simpl; try reflexivity; try lia).
-    assert (Hdbi1: dbi + 1 - 1 = dbi). lia.
-    assert (Hdbi2: dbi - 1 + 1 = dbi). lia.
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi - 0 = dbi). lia.
+    assert (Hdbi2: S (dbi - 1) = dbi). lia.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
 
@@ -2826,9 +2824,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
     
     1,2,3: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (dbi + 1) (S level)); simpl; try reflexivity; try lia).
-    assert (Hdbi1: dbi + 1 - 1 = dbi). lia.
-    assert (Hdbi2: dbi - 1 + 1 = dbi). lia.
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi - 0 = dbi). lia.
+    assert (Hdbi2: S (dbi - 1) = dbi). lia.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
 
@@ -3337,8 +3335,8 @@ Proof.
     (*x needs to be fresh in ...*)
      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
      apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
-  - remember ((free_svars (svar_open (n0 + 1) fresh (free_svar_subst phi psi X)) ∪
-      (free_svars (free_svar_subst (svar_open (n0 + 1) fresh phi) psi X)))) as B.
+  - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
+      (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
     simpl. remember (@svar_fresh (@variables signature) (elements B)) as X'.
     assert(X' ∉ B).
       {
@@ -3347,7 +3345,7 @@ Proof.
       subst B.  apply not_elem_of_union in H. destruct H.
     simpl.
     (*magic happens*)
-    erewrite (@svar_open_inj (svar_open (n0+1) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (n0+1) fresh phi) psi X) X' 0 _ _ ).
+    erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
     reflexivity.
     (*x needs to be fresh in ...*)
      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.

@@ -1066,11 +1066,11 @@ Proof.
         apply f_equal. apply functional_extensionality.
         intros S'.
 
-        remember (fresh_svar (svar_open (dbi + 1) X ϕ)) as X'.
-        remember (fresh_svar (svar_open (dbi + 1) Y ϕ)) as Y'.
+        remember (fresh_svar (svar_open (Datatypes.S dbi) X ϕ)) as X'.
+        remember (fresh_svar (svar_open (Datatypes.S dbi) Y ϕ)) as Y'.
         remember ((@singleton svar (@SVarSet signature) _ X) ∪ ((singleton Y) ∪ ((singleton X')
                  ∪ ((singleton Y')
-              ∪ ((free_svars (svar_open (dbi+1) X ϕ)) ∪ (free_svars (svar_open (dbi+1) Y ϕ)
+              ∪ ((free_svars (svar_open (Datatypes.S dbi) X ϕ)) ∪ (free_svars (svar_open (Datatypes.S dbi) Y ϕ)
                 ∪ (free_svars ϕ))))))) as B.
         remember (@svar_fresh (@variables signature) (elements B)) as fresh3.
         assert(HB: fresh3 ∉ B).
@@ -1078,8 +1078,8 @@ Proof.
           subst. apply set_svar_fresh_is_fresh'.
         }
 
-        remember (free_svars (svar_open (dbi+1) Y ϕ) ∪ (free_svars ϕ)) as B0.
-        remember ((free_svars (svar_open (dbi+1) X ϕ)) ∪ B0) as B1.
+        remember (free_svars (svar_open (Datatypes.S dbi) Y ϕ) ∪ (free_svars ϕ)) as B0.
+        remember ((free_svars (svar_open (Datatypes.S dbi) X ϕ)) ∪ B0) as B1.
         remember ({[Y']} ∪ B1) as B2.
         remember ({[X']} ∪ B2) as B3.
         remember ({[Y]} ∪ B3) as B4.
@@ -1088,7 +1088,7 @@ Proof.
         pose proof (i1 := not_elem_of_union fresh3 {[X']} B2).
         pose proof (i2 := not_elem_of_union fresh3 {[Y']} B1).
         pose proof (i3 := not_elem_of_union fresh3 
-                                            (free_svars (svar_open (dbi+1) X ϕ)) 
+                                            (free_svars (svar_open (Datatypes.S dbi) X ϕ)) 
                                             B0).
         subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
         
@@ -1112,8 +1112,8 @@ Proof.
         rewrite HeqX'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree1.
         rewrite (proj1 (IHsz _ _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
         rewrite HeqY'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree2.
-        rewrite (@svar_open_comm signature 0 (dbi+1) _ fresh3 X ϕ). lia.
-        rewrite (@svar_open_comm signature 0 (dbi+1) _ fresh3 Y ϕ). lia.
+        rewrite (@svar_open_comm signature 0 (Datatypes.S dbi) _ fresh3 X ϕ). lia.
+        rewrite (@svar_open_comm signature 0 (Datatypes.S dbi) _ fresh3 Y ϕ). lia.
         rewrite (@update_svar_val_comm _ fresh3 X). apply Hneqfr1.
         rewrite (@update_svar_val_comm _ fresh3 Y). apply Hneqfr2.
         apply svar_is_fresh_in_exists in HfrX.
@@ -1154,11 +1154,11 @@ Proof.
         reflexivity.
       + rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
         apply f_equal. apply functional_extensionality. intros e.
-        remember (fresh_evar (evar_open (dbi + 1) x ϕ)) as x'.
-        remember (fresh_evar (evar_open (dbi + 1) y ϕ)) as y'.
+        remember (fresh_evar (evar_open (Datatypes.S dbi) x ϕ)) as x'.
+        remember (fresh_evar (evar_open (Datatypes.S dbi) y ϕ)) as y'.
         remember ((@singleton evar (@EVarSet signature) _ x) ∪ ((singleton y) ∪ ((singleton x')
                  ∪ ((singleton y')
-              ∪ ((free_evars (evar_open (dbi+1) x ϕ)) ∪ (free_evars (evar_open (dbi+1) y ϕ)
+              ∪ ((free_evars (evar_open (Datatypes.S dbi) x ϕ)) ∪ (free_evars (evar_open (Datatypes.S dbi) y ϕ)
                 ∪ (free_evars ϕ))))))) as B.
         remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
         assert(HB: fresh3 ∉ B).
@@ -1166,8 +1166,8 @@ Proof.
           subst. apply set_evar_fresh_is_fresh'.
         }
 
-        remember (free_evars (evar_open (dbi+1) y ϕ) ∪ (free_evars ϕ)) as B0.
-        remember ((free_evars (evar_open (dbi+1) x ϕ)) ∪ B0) as B1.
+        remember (free_evars (evar_open (Datatypes.S dbi) y ϕ) ∪ (free_evars ϕ)) as B0.
+        remember ((free_evars (evar_open (Datatypes.S dbi) x ϕ)) ∪ B0) as B1.
         remember ({[y']} ∪ B1) as B2.
         remember ({[x']} ∪ B2) as B3.
         remember ({[y]} ∪ B3) as B4.
@@ -1176,7 +1176,7 @@ Proof.
         pose proof (i1 := not_elem_of_union fresh3 {[x']} B2).
         pose proof (i2 := not_elem_of_union fresh3 {[y']} B1).
         pose proof (i3 := not_elem_of_union fresh3 
-                                            (free_evars (evar_open (dbi+1) x ϕ)) 
+                                            (free_evars (evar_open (Datatypes.S dbi) x ϕ)) 
                                             B0).
         subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
         
@@ -1199,8 +1199,8 @@ Proof.
         rewrite Heqx'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree1.
         rewrite (proj2 (IHsz _ _ _ _ _) y' fresh3). rewrite -evar_open_size. lia.
         rewrite Heqy'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree2.
-        rewrite (@evar_open_comm signature 0 (dbi+1) _ fresh3 x ϕ). lia.
-        rewrite (@evar_open_comm signature 0 (dbi+1) _ fresh3 y ϕ). lia.
+        rewrite (@evar_open_comm signature 0 (Datatypes.S dbi) _ fresh3 x ϕ). lia.
+        rewrite (@evar_open_comm signature 0 (Datatypes.S dbi) _ fresh3 y ϕ). lia.
         rewrite (@update_evar_val_comm _ fresh3 x). apply Hneqfr1.
         rewrite (@update_evar_val_comm _ fresh3 y). apply Hneqfr2.
         apply evar_is_fresh_in_exists in Hfrx.
@@ -1458,7 +1458,6 @@ Proof.
     + (* Mu case *)
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
       apply f_equal. apply functional_extensionality. intros E.
-      assert (Htmp: dbi+1 = (S dbi)) by lia; rewrite !Htmp; clear Htmp.
 
       remember (bsvar_subst phi1 phi2 (S dbi)) as phi_subst.
       remember (union (union (union (union (union (free_svars phi_subst) (singleton (fresh_svar phi1))) (free_svars phi1)) (free_svars (svar_open (S dbi) X phi1))) (singleton X)) (free_svars phi2)) as B.
@@ -1984,10 +1983,10 @@ Proof.
       rewrite 2!pattern_interpretation_ex_simpl. simpl.
       apply f_equal. apply functional_extensionality.
       intros c.
-      remember (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)) as ϕ'.
+      remember (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)) as ϕ' in |-.
       remember (fresh_evar (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) as x'.
 
-      assert (Hplus1: dbi+1 = S dbi). lia. rewrite Hplus1. clear Hplus1.
+      (*assert (Hplus1: dbi+1 = S dbi). lia. rewrite Hplus1. clear Hplus1.*)
 
       (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
 
@@ -2006,7 +2005,8 @@ Proof.
       
       fold (evar_is_fresh_in x'' (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) in Hfree1.
       rewrite (@interpretation_fresh_evar_open _ _ _ x'').
-      apply set_evar_fresh_is_fresh. apply Hfree1.
+      { subst. apply set_evar_fresh_is_fresh. }
+      { subst. apply Hfree1. }
       
       rewrite evar_open_nest_ex_aux_comm in Heqϕ'.
       destruct (compare_nat (S dbi) (S dbi)); try lia.
@@ -2242,10 +2242,6 @@ Proof.
       rewrite 2!pattern_interpretation_mu_simpl. simpl.
       apply f_equal. apply functional_extensionality.
       intros S'.
-
-      assert (Hplus1: dbi+1 = 1+dbi).
-      { lia. }
-      rewrite Hplus1. clear Hplus1. simpl.
       
       remember (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) ϕ)) as ϕ'.
       remember (fresh_svar ϕ') as X'.
