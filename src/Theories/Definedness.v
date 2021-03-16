@@ -9,6 +9,8 @@ Unset Printing Implicit Defensive.
 
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
+From Coq.Classes Require Import Morphisms_Prop.
+
 From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic.Utils Require Import Ensembles_Ext. 
 
@@ -538,9 +540,10 @@ Section definedness.
   Definition patt_eq_inversion_of ϕ₁ ϕ₂
     := patt_forall
          (patt_equal
-            (patt_app ϕ₁ (patt_bound_evar 0))
+            (patt_app (nest_ex ϕ₁) (patt_bound_evar 0))
             (patt_exists (patt_and (patt_bound_evar 0)
-                                   (patt_in (patt_bound_evar 1) (patt_app ϕ₂ (patt_bound_evar 0)))))).
+                                   (patt_in (patt_bound_evar 1)
+                                            (patt_app (nest_ex (nest_ex ϕ₂)) (patt_bound_evar 0)))))).
 
   Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂, T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
   Proof.
@@ -551,6 +554,27 @@ Section definedness.
     apply T_predicate_equals.
     apply Hm.
   Qed.
+
+  Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
+    M ⊨ᵀ theory ->
+    @pattern_interpretation sig M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = Full
+    <-> (forall m₁ m₂,
+            rel_of ρₑ ρₛ ϕ₁ m₁ m₂ <-> rel_of ρₑ ρₛ ϕ₂ m₂ m₁
+        ).
+  Proof.
+    intros Htheory.
+    Search patt_forall Full.
+    rewrite pattern_interpretation_forall_predicate.
+    2: { rewrite simpl_evar_open. apply T_predicate_equals. apply Htheory. }
+    apply all_iff_morphism. intros m₁.
+    remember ((fresh_evar
+          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
+             (ex ,
+              (BoundVarSugar.b0
+                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
+    rewrite !simpl_evar_open.
+  Abort.
+  
 
 
   
