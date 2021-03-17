@@ -9,7 +9,9 @@ Unset Printing Implicit Defensive.
 
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
+From Coq.Logic Require Import FunctionalExtensionality.
 From Coq.Classes Require Import Morphisms_Prop.
+From Coq.Unicode Require Import Utf8.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic.Utils Require Import Ensembles_Ext. 
@@ -17,6 +19,7 @@ From MatchingLogic.Utils Require Import Ensembles_Ext.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.Syntax.BoundVarSugar.
 
 Open Scope ml_scope.
 
@@ -573,6 +576,27 @@ Section definedness.
               (BoundVarSugar.b0
                  and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
     rewrite !simpl_evar_open.
+    rewrite equal_iff_interpr_same.
+    2: { apply Htheory. }
+
+    rewrite pattern_interpretation_set_builder.
+    { rewrite !simpl_evar_open. apply T_predicate_in. apply Htheory. }
+
+    assert (Hpi: ∀ M ev sv phi rhs,
+               @pattern_interpretation _ M ev sv phi = rhs
+               <-> (∀ m, @pattern_interpretation _ M ev sv phi m <-> rhs m)).
+    { split; intros H.
+      + rewrite H. auto.
+      + apply eq_iff_Same_set.
+        unfold Same_set. unfold Included. unfold In.
+        split.
+        * intros x0. specialize (H x0). destruct H as [H1 H2].
+          apply H1.
+        * intros x0. specialize (H x0). destruct H as [H1 H2].
+          apply H2.
+    }
+    rewrite Hpi.
+    apply all_iff_morphism. intros m₂.
   Abort.
   
 
