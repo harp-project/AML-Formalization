@@ -569,7 +569,6 @@ Section definedness.
         ).
   Proof.
     intros Htheory.
-    Search patt_forall Full.
     rewrite pattern_interpretation_forall_predicate.
     2: { rewrite simpl_evar_open. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
@@ -671,10 +670,12 @@ Section definedness.
 
     rewrite update_evar_val_comm.
     { solve_fresh_neq. }
-    
-    
-  Abort.
-  
+
+    rewrite update_evar_val_same.
+    unfold Ensembles.In.
+    fold (rel_of ρₑ ρₛ ϕ₂ m₂).
+    auto.
+  Qed.
 
 
   
