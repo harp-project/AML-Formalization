@@ -1816,6 +1816,14 @@ Class EBinder (ebinder : Pattern -> Pattern)
       = bsvar_subst (svar_open m X phi1) phi2 dbi.
   Proof.
   Admitted.
+
+  Lemma evar_open_bevar_subst m phi1 phi2 dbi X
+    : well_formed_closed phi2 ->
+      m <> dbi ->
+      evar_open m X (bevar_subst phi1 phi2 dbi)
+      = bevar_subst (evar_open m X phi1) phi2 dbi.
+  Proof.
+  Admitted.
   
   
   Lemma fresh_evar_svar_open dbi X phi :

@@ -1706,6 +1706,37 @@ Proof.
       unfold evar_is_fresh_in in H. simpl in H.
       repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
+      remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
+      Search evar_open bevar_subst.
+      rewrite evar_open_bevar_subst.
+      { auto. }
+      { lia. }
+
+      remember (evar_open (S dbi) x phi) as phi'.
+      remember (fresh_evar phi') as Xfr'.
+      remember (evar_fresh (elements (union (free_evars phi') (singleton x')))) as Xu.
+
+      rewrite -> IHsz with (x := Xu).
+      Search evar_is_fresh_in evar_open.
+      3: { apply evar_is_fresh_in_evar_open.
+           admit. admit. (*solve_fresh_neq*)
+      }
+      2: { rewrite -evar_open_size. lia. }
+      
+      destruct (evar_eqdec y x').
+      -- subst y.
+         rewrite update_evar_val_same.
+         admit.
+      -- rewrite [update_evar_val x' c evar_val y]update_evar_val_neq.
+         apply not_eq_sym. apply n.
+         rewrite update_evar_val_comm.
+         { admit. }
+         subst phi'.
+         rewrite evar_open_comm.
+         { lia. }
+         rewrite -> interpretation_fresh_evar_open with (y := Xfr').
+         admit.
+        
 Admitted.
 
 Lemma element_substitution_lemma
