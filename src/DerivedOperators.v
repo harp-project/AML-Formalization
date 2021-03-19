@@ -50,7 +50,7 @@ Module Syntax.
     Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
     Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
 
-    Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (k+1) x ϕ).
+    Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (S k) x ϕ).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
     Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
@@ -371,6 +371,8 @@ Module Semantics.
           + apply eq_to_Same_set in H. destruct H as [H1 H2]. unfold Included in H2.
             specialize (H2 m). apply H2. unfold Ensembles.In. constructor.
       Qed.
+
+
 
       Lemma pattern_interpretation_forall_predicate ϕ ρₑ ρₛ :
         let x := fresh_evar ϕ in
