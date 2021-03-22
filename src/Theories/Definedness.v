@@ -89,7 +89,9 @@ Section definedness.
     unfold app_ext.
     apply Same_set_Full_set.
     unfold Included. unfold In. intros. clear H0.
-    pose proof (H' := satisfies_theory_impl_satisfies_named_axiom H AxDefinedness).
+    unfold theory in H.
+    pose proof (H' := proj1 (satisfies_theory_iff_satisfies_named_axioms named_axioms M)).
+    specialize (H' H AxDefinedness).
     simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
