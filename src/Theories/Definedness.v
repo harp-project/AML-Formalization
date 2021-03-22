@@ -677,7 +677,39 @@ Section definedness.
     auto.
   Qed.
 
-
+  Lemma single_element_definedness_impl_satisfies_definedness (M : @Model sig) :
+    (exists (hashdef : Domain M),
+        sym_interp (inj definedness) = Ensembles.Singleton _ hashdef
+        /\ forall x, app_interp hashdef x = Ensembles.Full_set _
+    ) ->
+        satisfies_model M (axiom AxDefinedness).
+  Proof.
+    intros [hashdef [Hhashdefsym Hhashdeffull]].
+    unfold satisfies_model. intros.
+    unfold axiom.
+    unfold sym.
+    unfold patt_defined.
+    unfold evarn.
+    rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> pattern_interpretation_sym_simpl.
+    simpl. apply Extensionality_Ensembles.
+    apply Same_set_symmetric. apply Same_set_Full_set.
+    unfold Included. intros x H.
+    clear H. (* useless *)
+    intros.
+    unfold Ensembles.In.
+    unfold app_ext.
+    exists hashdef.
+    rewrite Hhashdefsym.
+    rewrite -> pattern_interpretation_free_evar_simpl.
+    exists (evar_val (nevar "x")).
+    split.
+    { constructor. }
+    split.
+    { constructor. }
+    rewrite Hhashdeffull.
+    constructor.
+  Qed.
   
 End definedness.
 
