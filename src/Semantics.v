@@ -797,14 +797,22 @@ repeat
     Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
       fun p => exists (n : NAName NAs), p = NAAxiom n.
 
-    Lemma satisfies_theory_impl_satisfies_named_axiom NAs M:
-      satisfies_theory M (theory_of_NamedAxioms NAs) ->
+    Lemma satisfies_theory_iff_satisfies_named_axioms NAs M:
+      satisfies_theory M (theory_of_NamedAxioms NAs) <->
       forall (n : NAName NAs), satisfies_model M (NAAxiom n).
     Proof.
-      intros. unfold satisfies_theory in H.
-      specialize (H (NAAxiom n)). apply H.
-      unfold In. unfold theory_of_NamedAxioms.
-      exists n. auto.
+      split.
+      - intros. unfold satisfies_theory in H.
+        specialize (H (NAAxiom n)). apply H.
+        unfold In. unfold theory_of_NamedAxioms.
+        exists n. auto.
+      - intros H.
+        intros ax Hax.
+        unfold In in Hax.
+        unfold theory_of_NamedAxioms in Hax.
+        destruct Hax as [axname Haxname].
+        subst ax.
+        apply H.
     Qed.
     
     (* TODO do we want to make this a type class? *)
