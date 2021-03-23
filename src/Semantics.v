@@ -1724,6 +1724,9 @@ Proof.
       remember (fresh_evar phi') as Xfr'.
       remember (evar_fresh (elements (union (free_evars phi') (singleton x')))) as Xu.
 
+      (* The same destruct as in the mu case of the set substitution lemma *)
+      destruct (bevar_occur phi (S dbi)) eqn:Hbevar.
+
       rewrite -> IHsz with (x := Xu).
       Search evar_is_fresh_in evar_open.
       3: { apply evar_is_fresh_in_evar_open.
@@ -1734,6 +1737,16 @@ Proof.
       destruct (evar_eqdec y x').
       -- subst y.
          rewrite update_evar_val_same.
+         subst phi'.
+         rewrite [evar_open 0 Xfr' (evar_open (S dbi) x phi)]evar_open_comm.
+         { lia. }
+         (* S dbi does not occur in phi because of Heqx' *)
+         Check bevar_occur.
+         assert (~ bevar_occur phi (S dbi)).
+         { admit. }
+         Check interpretation_fresh_evar_open.
+         rewrite -> interpretation_fresh_evar_open with (y := x).
+         2: { (* we can make this true *) admit. }
          admit.
       -- rewrite [update_evar_val x' c evar_val y]update_evar_val_neq.
          apply not_eq_sym. apply n.
