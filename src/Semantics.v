@@ -1726,7 +1726,24 @@ Proof.
 
       (* The same destruct as in the mu case of the set substitution lemma *)
       destruct (bevar_occur phi (S dbi)) eqn:Hbevar.
+      -- admit.
+      -- 
+         rewrite Heqx'.
+         (*rewrite bevar_subst_not_occur_is_noop in Heqx'. { auto. }*)
+         rewrite bevar_subst_not_occur_is_noop.
+         { auto. }
+         rewrite bevar_subst_not_occur_is_noop.
+         { apply bevar_occur_evar_open. apply Hbevar. }
+         rewrite HeqXfr'.
+         rewrite -> interpretation_fresh_evar_open with (y := fresh_evar phi').
+         2: { apply set_evar_fresh_is_fresh. }
+         2: { subst.
+              eapply evar_is_fresh_in_richer'.
+              2: apply set_evar_fresh_is_fresh'.
+              apply free_evars_evar_open'.
+         }
 
+         
       rewrite -> IHsz with (x := Xu).
       Search evar_is_fresh_in evar_open.
       3: { apply evar_is_fresh_in_evar_open.
