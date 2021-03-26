@@ -536,6 +536,97 @@ Admitted.
         apply Private_interpretation_fresh_svar with (sz := size ϕ).
         lia.
       Qed.
+
+
+      Lemma Private_interpretation_fresh_evar sz y ϕ ρₑ ρₛ S:
+        size ϕ <= sz ->
+        evar_is_fresh_in y ϕ ->
+        pattern_interpretation (update_evar_val y S ρₑ) ρₛ ϕ
+        = pattern_interpretation ρₑ ρₛ ϕ.
+      Proof.
+        generalize dependent S.
+        generalize dependent y.
+        generalize dependent ρₛ.
+        generalize dependent ρₑ.
+        generalize dependent ϕ.
+        induction sz.
+        - (* sz = 0 *)
+          destruct ϕ; simpl; intros ρₑ ρₛ y S Hsz H; try inversion Hsz.
+          + repeat rewrite -> pattern_interpretation_free_evar_simpl.
+            rewrite -> update_evar_val_neq.
+            * auto.
+            * unfold evar_is_fresh_in in H. simpl in H.
+              apply not_elem_of_singleton_1 in H. auto.
+          + repeat rewrite -> pattern_interpretation_free_svar_simpl.
+            reflexivity.
+          + repeat rewrite -> pattern_interpretation_bound_evar_simpl.
+            auto.
+          + repeat rewrite -> pattern_interpretation_bound_svar_simpl.
+            auto.
+          + repeat rewrite -> pattern_interpretation_sym_simpl.
+            auto.
+          + repeat rewrite -> pattern_interpretation_bott_simpl.
+            auto.
+        - (* sz > 0 *)
+          destruct ϕ; simpl; intros ρₑ ρₛ y S Hsz H.
+          + (* free_evar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* free_svar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* bound_evar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* bound_svar *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* sym *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* app *)
+            repeat rewrite -> pattern_interpretation_app_simpl.
+            unfold evar_is_fresh_in in *. simpl in H.
+            apply not_elem_of_union in H. destruct H.
+            repeat rewrite -> IHsz. auto. lia. auto. lia. auto.
+          + (* bot *)
+            rewrite -> IHsz. auto. simpl. lia. auto.
+          + (* imp *)
+            repeat rewrite -> pattern_interpretation_imp_simpl.
+            unfold evar_is_fresh_in in *. simpl in H.
+            apply not_elem_of_union in H. destruct H.
+            repeat rewrite -> IHsz. auto. lia. auto. lia. auto.
+         + (* exists *)
+           repeat rewrite -> pattern_interpretation_ex_simpl.
+           simpl. apply f_equal.
+           apply functional_extensionality.
+
+           intros x'. unfold evar_is_fresh_in in *. simpl in H.
+           destruct (evar_eqdec y (fresh_evar ϕ)).
+           * subst. rewrite -> update_evar_val_shadow. auto.
+           * rewrite -> update_evar_val_comm. 2: auto.
+             rewrite -> IHsz. auto.
+             rewrite <- evar_open_size. lia. auto.
+             pose proof (Feeo := @free_evars_evar_open _ ϕ (fresh_evar ϕ) 0).
+             rewrite -> elem_of_subseteq in Feeo.
+             unfold not. intros H'.
+             specialize (Feeo y H').
+             rewrite -> elem_of_union in Feeo.
+             destruct Feeo.
+             -- apply elem_of_singleton_1 in H0. contradiction.
+             -- contradiction.
+         + (* mu *)
+           repeat rewrite -> pattern_interpretation_mu_simpl.
+           simpl. apply f_equal. apply functional_extensionality.
+
+           intros. unfold evar_is_fresh_in in *. simpl in H.
+           rewrite -> IHsz. auto. rewrite <- svar_open_size. lia.
+           rewrite -> free_evars_svar_open. auto.
+      Qed.
+
+      Lemma interpretation_fresh_evar x ϕ ρₑ ρₛ S:
+        evar_is_fresh_in x ϕ ->
+        pattern_interpretation (update_evar_val x S ρₑ) ρₛ ϕ
+        = pattern_interpretation ρₑ ρₛ ϕ.
+      Proof.
+        apply Private_interpretation_fresh_evar with (sz := size ϕ).
+        lia.
+      Qed.
       
     (*
 Ltac proof_ext_val :=
@@ -1743,6 +1834,17 @@ Proof.
               apply free_evars_evar_open'.
          }
 
+         rewrite evar_open_not_occur in Heqphi'.
+         { apply Hbevar. }
+         subst phi'.
+         destruct (evar_eqdec x (fresh_evar phi)).
+         ++ rewrite <- e. rewrite update_evar_val_shadow. apply Same_set_refl.
+         ++ rewrite update_evar_val_comm.
+            { apply not_eq_sym. assumption. }
+            rewrite <- interpretation_fresh_evar with (x0 := x) (S := evar_val y).
+            { apply Same_set_refl. }
+            { apply evar_is_fresh_in_evar_open; assumption. }
+                                          
          
       rewrite -> IHsz with (x := Xu).
       Search evar_is_fresh_in evar_open.
