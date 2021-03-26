@@ -312,14 +312,17 @@ Next Obligation.
   intros. simpl in H. inversion H. reflexivity.
 Qed.
 
-Class SymbolsH := { SHSymbols : Type; SHSymbols_dec : forall (s1 s2 : SHSymbols), {s1 = s2} + {s1 <> s2}; }.
+Class SymbolsH (SHSymbols : Type) :=
+  { SHSymbols_eqdec : EqDecision SHSymbols; }.
 
 Section helper.
-  Context {SH : SymbolsH}.
+  Context
+    {SHSymbols : Type}
+    {SHSymbols_h : SymbolsH SHSymbols}.
 
   Instance SignatureFromSymbols : Signature :=
     {| symbols := SHSymbols;
-       sym_eq := SHSymbols_dec;
+       sym_eq := SHSymbols_eqdec;
        variables := DefaultMLVariables;
     |}.
 

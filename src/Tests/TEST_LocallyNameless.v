@@ -1,6 +1,8 @@
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
+From stdpp Require Import base.
+
 From MatchingLogic Require Import Syntax Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
@@ -13,16 +15,20 @@ Module test_1.
   (* We have three symbols *)
   Inductive Symbols := ctor| p | f .
 
-  Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
-  Proof.
-    decide equality.
-  Qed. (* We may need Defined here *)
 
-  Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
-  Instance signature : Signature := @SignatureFromSymbols symbols_H.
+  Instance Symbols_eqdec : EqDecision Symbols.
+  Proof.
+    intros s1 s2. unfold Decision. decide equality.
+  Defined.
+
+  Instance Symbols_h : SymbolsH Symbols := Build_SymbolsH Symbols Symbols_eqdec.
+  
+  Instance signature : Signature := @SignatureFromSymbols Symbols _.
     
   (* Example patterns *)
-
+  
+  Definition a_symbol := sym ctor.
+  
   Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
   Example e1 X: evar_open 0 X more = more.
@@ -71,15 +77,16 @@ Module test_2.
     (* If symbols are created as a sum type of various sets, we may want to have a tactic that does
        'decide equality' recursively.
      *)
-    Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
+    Lemma Symbols_eqdec : EqDecision Symbols.
     Proof.
+      intros x y. unfold Decision.
       decide equality.
       * decide equality.
       * decide equality.
     Qed.
-
-    Instance symbols_H : SymbolsH := {| SHSymbols := Symbols; SHSymbols_dec := Symbols_dec; |}.
-    Instance signature : Signature := @SignatureFromSymbols symbols_H.
+    
+    Instance symbols_H : SymbolsH Symbols := {| SHSymbols_eqdec := Symbols_eqdec; |}.
+    Instance signature : Signature := @SignatureFromSymbols Symbols symbols_H.
     (* https://stackoverflow.com/a/44769124/6209703 *)
     (*Hint Extern 4 => unfold signature : core.*)
     
