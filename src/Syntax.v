@@ -3576,7 +3576,7 @@ x_eq_fresh_impl_x_notin_free_evars
     match goal with
     | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
       simpl in H;
-      (do ! rewrite simpl_free_evars/= in H);
+      (do ? rewrite simpl_free_evars/= in H);
       rewrite -?union_assoc_L in H;
       repeat (
           match goal with

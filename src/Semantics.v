@@ -1817,9 +1817,41 @@ Proof.
 
       (* The same destruct as in the mu case of the set substitution lemma *)
       destruct (bevar_occur phi (S dbi)) eqn:Hbevar.
-      -- admit.
-      -- 
-         rewrite Heqx'.
+      --
+        remember (union (union (free_evars phi') (singleton Xfr')) (singleton x)) as B.
+        remember (evar_fresh (elements B)) as yB.
+
+        assert (HyBx: yB <> x).
+        { admit. (*solve_fresh_neq.*) }
+
+        assert (HyBXfr': yB <> Xfr').
+        { admit. (* solve_fresh_neq. *) }
+
+        assert (HyBfphi': evar_is_fresh_in yB phi').
+        {
+          subst.
+          eapply evar_is_fresh_in_richer'.
+          2: apply set_evar_fresh_is_fresh'.
+          rewrite <- union_subseteq_l.
+          apply union_subseteq_l.
+        }
+
+
+        rewrite -> interpretation_fresh_evar_open with (y := yB).
+        3: { apply HyBfphi'. }
+        2: { subst. apply set_evar_fresh_is_fresh. }
+        
+        rewrite update_evar_val_comm.
+        { apply HyBx. }
+        Check IHsz.
+        
+        
+
+      subst x'.
+        rewrite -IHsz.
+         
+
+      -- rewrite Heqx'.
          (*rewrite bevar_subst_not_occur_is_noop in Heqx'. { auto. }*)
          rewrite bevar_subst_not_occur_is_noop.
          { auto. }
@@ -1844,7 +1876,6 @@ Proof.
             rewrite <- interpretation_fresh_evar with (x0 := x) (S := evar_val y).
             { apply Same_set_refl. }
             { apply evar_is_fresh_in_evar_open; assumption. }
-                                          
          
       rewrite -> IHsz with (x := Xu).
       Search evar_is_fresh_in evar_open.
