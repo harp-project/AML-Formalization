@@ -1843,6 +1843,47 @@ Proof.
         
         rewrite update_evar_val_comm.
         { apply HyBx. }
+        subst phi'.
+        rewrite evar_open_comm.
+        { lia. }
+
+        remember (update_evar_val yB c evar_val) as evar_val'.
+        remember (evar_open (S dbi) x (evar_open 0 yB phi)) as phi'.
+
+        assert (Hpiq: pattern_interpretation (update_evar_val x (evar_val y) evar_val') svar_val phi' = pattern_interpretation (update_evar_val x (evar_val y) evar_val) svar_val phi').
+        {
+          subst evar_val'. subst phi'.
+          clear -HyBx HyBfphi'.
+          (* HERE we want to make a lemma out of what we have *)
+          move: dbi HyBfphi'.
+          induction phi; intros dbi HyBfphi'.
+          9:{ simpl.   }
+
+
+          rewrite update_evar_val_comm. apply not_eq_sym. apply HyBx.
+          rewrite evar_open_comm.
+          { lia. }
+          (*
+
+
+*)
+          rewrite interpretation_fresh_evar.
+          rewrite evar_open_comm in Heqphi'.
+          { lia. }
+          subst phi'.
+          Search pattern_interpretation update_evar_val.
+          Search pattern_interpretation evar_open.
+          Check interpretation_fresh_evar_open.
+          rewrite interpretation_fresh_evar.
+          }
+        Search pattern_interpretation update_evar_val.
+        { apply functional_extensionality. intros x0.
+          destruct (evar_eqdec x x0).
+          { subst x. rewrite 2!update_evar_val_same. reflexivity. }
+          { repeat rewrite update_evar_val_neq; auto.
+            subst evar_val'.
+
+
         Check IHsz.
         
         
