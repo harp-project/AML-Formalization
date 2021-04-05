@@ -1806,7 +1806,6 @@ Proof.
       repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
       remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
-      Search evar_open bevar_subst.
       rewrite evar_open_bevar_subst.
       { auto. }
       { lia. }
@@ -1818,7 +1817,7 @@ Proof.
       (* The same destruct as in the mu case of the set substitution lemma *)
       destruct (bevar_occur phi (S dbi)) eqn:Hbevar.
       --
-        remember (union (union (free_evars phi') (singleton Xfr')) (singleton x)) as B.
+        remember (union (union (union (free_evars phi) (free_evars phi')) (singleton Xfr')) (singleton x)) as B.
         remember (evar_fresh (elements B)) as yB.
 
         assert (HyBx: yB <> x).
@@ -1827,15 +1826,25 @@ Proof.
         assert (HyBXfr': yB <> Xfr').
         { admit. (* solve_fresh_neq. *) }
 
+        assert (HyBfphi: evar_is_fresh_in yB phi).
+        {
+          subst.
+          eapply evar_is_fresh_in_richer'.
+          2: apply set_evar_fresh_is_fresh'.
+          rewrite <- union_subseteq_l.
+          rewrite <- union_subseteq_l.
+          apply union_subseteq_l.
+        }
+
         assert (HyBfphi': evar_is_fresh_in yB phi').
         {
           subst.
           eapply evar_is_fresh_in_richer'.
           2: apply set_evar_fresh_is_fresh'.
           rewrite <- union_subseteq_l.
-          apply union_subseteq_l.
+          rewrite <- union_subseteq_l.
+          apply union_subseteq_r.
         }
-
 
         rewrite -> interpretation_fresh_evar_open with (y := yB).
         3: { apply HyBfphi'. }
