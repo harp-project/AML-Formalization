@@ -1050,6 +1050,17 @@ repeat
         + rewrite -> H2. reflexivity.
     Qed.
 
+    Lemma update_svar_valuation_fresh {m : Model}  :
+      forall phi,
+        well_formed_closed phi ->
+        forall v,
+          svar_is_fresh_in v phi ->
+          forall evar_val svar_val c,
+            @pattern_interpretation m evar_val (update_svar_val v c svar_val) phi =
+            @pattern_interpretation m evar_val svar_val phi.
+    Proof.
+      Admitted.
+
 Lemma Private_interpretation_fresh_var_open M sz ϕ dbi ρₑ ρₛ:
   size ϕ <= sz ->
   (
@@ -1862,43 +1873,23 @@ Proof.
         assert (Hpiq: pattern_interpretation (update_evar_val x (evar_val y) evar_val') svar_val phi' = pattern_interpretation (update_evar_val x (evar_val y) evar_val) svar_val phi').
         {
           subst evar_val'. subst phi'.
-          clear -HyBx HyBfphi'.
           (* HERE we want to make a lemma out of what we have *)
-          move: dbi HyBfphi'.
-          induction phi; intros dbi HyBfphi'.
-          9:{ simpl.   }
-
-
-          rewrite update_evar_val_comm. apply not_eq_sym. apply HyBx.
-          rewrite evar_open_comm.
-          { lia. }
-          (*
-
-
-*)
+          rewrite update_evar_val_comm. apply not_eq_sym. assumption.
+          rewrite evar_open_fresh.
+          apply wfc_ex_to_wfc_body.
+          { admit. (* can get this assumption *) }
+          assumption.
+          rewrite update_evar_val_comm. assumption.
           rewrite interpretation_fresh_evar.
-          rewrite evar_open_comm in Heqphi'.
-          { lia. }
-          subst phi'.
-          Search pattern_interpretation update_evar_val.
-          Search pattern_interpretation evar_open.
-          Check interpretation_fresh_evar_open.
-          rewrite interpretation_fresh_evar.
-          }
-        Search pattern_interpretation update_evar_val.
-        { apply functional_extensionality. intros x0.
-          destruct (evar_eqdec x x0).
-          { subst x. rewrite 2!update_evar_val_same. reflexivity. }
-          { repeat rewrite update_evar_val_neq; auto.
-            subst evar_val'.
+          apply evar_is_fresh_in_evar_open. apply not_eq_sym. assumption. assumption.
 
+          rewrite [pattern_interpretation (update_evar_val x (evar_val y) evar_val) svar_val
+                                          (evar_open 0 yB phi)](interpretation_fresh_evar).
+          apply evar_is_fresh_in_evar_open. apply not_eq_sym. assumption. assumption.
+          admit.
+        }
 
-        Check IHsz.
-        
-        
-
-      subst x'.
-        rewrite -IHsz.
+        admit.
          
 
       -- rewrite Heqx'.
@@ -1927,37 +1918,88 @@ Proof.
             { apply Same_set_refl. }
             { apply evar_is_fresh_in_evar_open; assumption. }
          
-      rewrite -> IHsz with (x := Xu).
-      Search evar_is_fresh_in evar_open.
-      3: { apply evar_is_fresh_in_evar_open.
-           admit. admit. (*solve_fresh_neq*)
-      }
-      2: { rewrite -evar_open_size. lia. }
+    + rewrite 2!pattern_interpretation_mu_simpl. simpl.
+      apply f_equal. apply functional_extensionality. intros x0.
+      remember (evar_open dbi x phi) as phi'.
+      remember (fresh_svar phi') as Xfr'.
+      remember (svar_fresh (elements (free_svars phi'))) as Xu.
+      remember (update_evar_val x (evar_val y) evar_val) as evar_val'.
+      pose proof (Hfresh_subst := @interpretation_fresh_svar_open M phi' Xfr' Xu x0 0 evar_val' svar_val).
+      rewrite -> Hfresh_subst.
+      2: { subst Xfr'. apply set_svar_fresh_is_fresh. }
+      2: { subst Xu. apply set_svar_fresh_is_fresh'. }
+
+      remember (update_svar_val (fresh_svar (bevar_subst phi (patt_free_evar y) dbi)) x0 svar_val) as svar_val1'.
+      remember (update_svar_val Xu x0 svar_val) as svar_val2'.
+      rewrite -> svar_open_bevar_subst. 2: auto.
+      remember (fresh_svar (bevar_subst phi (patt_free_evar y) dbi)) as Xfr1.
       
-      destruct (evar_eqdec y x').
-      -- subst y.
-         rewrite update_evar_val_same.
-         subst phi'.
-         rewrite [evar_open 0 Xfr' (evar_open (S dbi) x phi)]evar_open_comm.
-         { lia. }
-         (* S dbi does not occur in phi because of Heqx' *)
-         Check bevar_occur.
-         assert (~ bevar_occur phi (S dbi)).
-         { admit. }
-         Check interpretation_fresh_evar_open.
-         rewrite -> interpretation_fresh_evar_open with (y := x).
-         2: { (* we can make this true *) admit. }
-         admit.
-      -- rewrite [update_evar_val x' c evar_val y]update_evar_val_neq.
-         apply not_eq_sym. apply n.
-         rewrite update_evar_val_comm.
-         { admit. }
-         subst phi'.
-         rewrite evar_open_comm.
-         { lia. }
-         rewrite -> interpretation_fresh_evar_open with (y := Xfr').
-         admit.
-        
+      (* dbi may or may not occur in phi1 *)
+      remember (bevar_occur phi dbi) as Hoc.
+      move: HeqHoc.
+      case: Hoc => HeqHoc.
+      -- (* dbi ocurs in phi1 *)
+        pose proof (HXfr1Fresh := @set_svar_fresh_is_fresh signature (bevar_subst phi (patt_free_evar y) dbi)).
+        rewrite <- HeqXfr1 in HXfr1Fresh.
+        symmetry in HeqHoc.
+        pose proof (Hsub := @bevar_subst_contains_subformula signature phi (patt_free_evar y) dbi HeqHoc).
+        pose proof (HXfr1Fresh2 := svar_fresh_in_subformula Hsub HXfr1Fresh).
+
+        assert (HXu: (Xfr1 = Xu)).
+        { subst Xfr1. subst Xu. subst phi'. unfold fresh_svar.
+          rewrite -> free_svars_bevar_subst_eq.          
+          rewrite -> free_svars_evar_open.
+          assert (Hsvev: free_svars (patt_free_evar y) = ∅) by auto.
+          rewrite Hsvev.
+          admit.
+        }
+
+        rewrite -> HXu in *.
+        assert (Hs1s2 : svar_val1' = svar_val2').
+        { subst. auto. }
+        rewrite Hs1s2.
+        subst svar_val2'.
+        subst evar_val'.
+        assert (Hs1s1': update_svar_val Xu x0 svar_val1' = update_svar_val Xu x0 svar_val).
+        { subst. rewrite update_svar_val_shadow. reflexivity. }
+
+        subst phi'.
+        rewrite <- svar_open_evar_open_comm.
+
+        rewrite <- IHsz.
+        * reflexivity.
+        * rewrite <- svar_open_size. simpl in Hsz. lia.
+        * apply evar_fresh_svar_open. apply evar_is_fresh_in_mu. apply H.
+
+      -- (* dbi does not occur in phi1 *)
+        pose proof (HeqHoc' := HeqHoc).
+        rewrite -> bevar_subst_not_occur_is_noop.
+        (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc). *)
+        symmetry in HeqHoc. apply evar_open_not_occur with (x1:=x) in HeqHoc.
+        (* X is not free in phi1, so the fact that in evar_val' it is updated to some 
+           value is irrelevant. *)
+        assert (Hpi: pattern_interpretation evar_val svar_val2' (svar_open 0 Xu phi')
+                   = pattern_interpretation evar_val' svar_val2' (svar_open 0 Xu phi')).
+        { subst evar_val'. rewrite interpretation_fresh_evar. unfold evar_is_fresh_in.
+          rewrite -> free_evars_svar_open. subst phi'. rewrite -> HeqHoc. auto.
+          reflexivity.
+        }
+        rewrite <- Hpi. subst phi'. rewrite -> HeqHoc.
+        subst svar_val1'. subst svar_val2'.
+        rewrite -> interpretation_fresh_svar_open with (Y := Xu). reflexivity.
+        { subst Xfr1.
+          symmetry in HeqHoc'.
+          pose proof (Hsubst := @bevar_subst_not_occur_is_noop _ phi (patt_free_evar y) dbi HeqHoc').
+          rewrite Hsubst. apply set_svar_fresh_is_fresh.
+        }
+        { pose proof (Hfr := set_svar_fresh_is_fresh').
+          specialize (Hfr (free_svars (evar_open dbi x phi))).
+          subst Xu.
+          rewrite free_svars_evar_open in Hfr.
+          rewrite free_svars_evar_open. auto.
+        }
+        { apply bevar_occur_svar_open. symmetry. auto. }
+      
 Admitted.
 
 Lemma element_substitution_lemma

@@ -1791,6 +1791,36 @@ Class EBinder (ebinder : Pattern -> Pattern)
     auto.
   Qed.
 
+  Lemma svar_open_wfc_aux db1 db2 dbs X phi :
+    db1 <= db2 ->
+    well_formed_closed_aux phi dbs db1 ->
+    svar_open db2 X phi = phi.
+  Proof.
+    generalize dependent dbs. generalize dependent db2. generalize dependent db1.
+    induction phi; intros db1 db2 dbs Hle Hwfca; simpl; simpl in Hwfca; auto.
+    * destruct (eqb_reflect n db2). apply Nat.ltb_lt in Hwfca. lia. auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto. 
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply f_equal.
+      rewrite -> IHphi with (dbs := S dbs)(db1 := db1). 3: auto. 2: lia. auto.
+    * apply f_equal. rewrite -> IHphi with (dbs := dbs)(db1 := S db1). auto. lia. auto.
+  Qed.
+
+  Lemma svar_open_wfc m X phi : well_formed_closed phi -> svar_open m X phi = phi.
+  Proof.
+    intros.
+    unfold well_formed_closed in H.
+    apply svar_open_wfc_aux with (X := X)(db2 := m) in H.
+    2: lia.
+    auto.
+  Qed.
+
   Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       evar_open m X (bsvar_subst phi1 phi2 dbi)
@@ -1799,6 +1829,20 @@ Class EBinder (ebinder : Pattern -> Pattern)
     generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
     - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
     - simpl. destruct (compare_nat n dbi); simpl; auto. auto using evar_open_wfc.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
+    - simpl. rewrite -> IHphi1. auto. auto.
+  Qed.
+
+  Lemma svar_open_bevar_subst m phi1 phi2 dbi X
+    : well_formed_closed phi2 ->
+      svar_open m X (bevar_subst phi1 phi2 dbi)
+      = bevar_subst (svar_open m X phi1) phi2 dbi.
+  Proof.
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
+    - simpl. destruct (compare_nat n dbi); simpl; auto. auto using svar_open_wfc.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
     - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
     - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
     - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
@@ -2022,7 +2066,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - assert (H: is_subformula_of_ind ϕ ϕ).
       apply sub_eq. reflexivity. contradiction.
   Qed.
-  
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
@@ -2052,6 +2095,34 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply sub_mu. apply IHϕ₁. auto.
   Qed.
 
+  Lemma bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
+    bevar_occur ϕ₁ dbi = true ->
+    is_subformula_of_ind ϕ₂ (bevar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
+    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
+      + lia.
+      + constructor. reflexivity.
+      + lia.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bevar_occur ϕ₁1 dbi); case: (bevar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_app_l. auto.
+      + apply sub_app_l. auto.
+      + apply sub_app_r. auto.
+      + done.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bevar_occur ϕ₁1 dbi); case: (bevar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_r. auto.
+      + done.
+    - apply sub_exists. auto.
+    - apply sub_mu. apply IHϕ₁. auto.
+  Qed.
+
   Lemma Private_bsvar_occur_evar_open sz dbi1 dbi2 X phi:
     size phi <= sz ->
     bsvar_occur phi dbi1 = false ->
@@ -2067,6 +2138,23 @@ Class EBinder (ebinder : Pattern -> Pattern)
     bsvar_occur (evar_open dbi2 X phi) dbi1 = false.
   Proof.
     apply Private_bsvar_occur_evar_open with (sz := size phi). lia.
+  Qed.
+
+  Lemma Private_bevar_occur_svar_open sz dbi1 dbi2 X phi:
+    size phi <= sz ->
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    move: phi dbi1 dbi2.
+    induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
+    1,2: (destruct (n =? dbi2); reflexivity).
+  Qed.
+
+  Lemma bevar_occur_svar_open dbi1 dbi2 X phi:
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    apply Private_bevar_occur_svar_open with (sz := size phi). lia.
   Qed.
 
   Lemma Private_bevar_occur_evar_open sz dbi1 dbi2 X phi:
@@ -2222,8 +2310,66 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - auto.
   Qed.
 
+  Lemma free_svars_bevar_subst ϕ₁ ϕ₂ dbi:
+    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) ⊆ free_svars ϕ₁ ∪ free_svars ϕ₂.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros db; simpl.
+    - apply empty_subseteq.
+    - apply union_subseteq_l.
+    - destruct (compare_nat n db); simpl.
+      + apply empty_subseteq.
+      + apply union_subseteq_r.
+      +  apply empty_subseteq.
+    - apply empty_subseteq.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars ϕ₁1) as B1.
+      remember (free_svars ϕ₁2) as B2.
+      remember (free_svars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars ϕ₁1) as B1.
+      remember (free_svars ϕ₁2) as B2.
+      remember (free_svars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
   Lemma free_evars_bsvar_subst_1 ϕ₁ ϕ₂ dbi:
     free_evars ϕ₁ ⊆ free_evars (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi; simpl; try apply reflexivity.
+    - apply empty_subseteq.
+    - apply union_mono; auto.
+    - apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_svars_bevar_subst_1 ϕ₁ ϕ₂ dbi:
+    free_svars ϕ₁ ⊆ free_svars (bevar_subst ϕ₁ ϕ₂ dbi).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi; simpl; try apply reflexivity.
@@ -2245,6 +2391,19 @@ Class EBinder (ebinder : Pattern -> Pattern)
       + apply free_evars_bsvar_subst_1.
       + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
         apply free_evars_subformula. auto.
+  Qed.
+
+  Lemma free_svars_bevar_subst_eq ϕ₁ ϕ₂ dbi:
+    bevar_occur ϕ₁ dbi ->
+    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) = free_svars ϕ₁ ∪ free_svars ϕ₂.
+  Proof.
+    intros H.
+    apply (anti_symm subseteq).
+    - apply free_svars_bevar_subst.
+    - apply union_least.
+      + apply free_svars_bevar_subst_1.
+      + pose proof (Hsub := @bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+        apply free_svars_subformula. auto.
   Qed.
 
   Lemma bsvar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:
