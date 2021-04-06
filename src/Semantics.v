@@ -1828,7 +1828,13 @@ Proof.
       (* The same destruct as in the mu case of the set substitution lemma *)
       destruct (bevar_occur phi (S dbi)) eqn:Hbevar.
       --
-        remember (union (union (union (free_evars phi) (free_evars phi')) (singleton Xfr')) (singleton x)) as B.
+        remember (union (union (union (union
+                                         (union (free_evars phi) (free_evars phi'))
+                                         (free_evars (bevar_subst phi (patt_free_evar y) (S dbi))))
+                                      (singleton Xfr'))
+                               (singleton x))
+                        (singleton y))  as B.
+
         remember (evar_fresh (elements B)) as yB.
 
         assert (HyBx: yB <> x).
@@ -1837,13 +1843,15 @@ Proof.
         assert (HyBXfr': yB <> Xfr').
         { admit. (* solve_fresh_neq. *) }
 
+        assert (HyBy: yB <> y).
+        { admit. (* solve_fresh_neq. *) }
+
         assert (HyBfphi: evar_is_fresh_in yB phi).
         {
           subst.
           eapply evar_is_fresh_in_richer'.
           2: apply set_evar_fresh_is_fresh'.
-          rewrite <- union_subseteq_l.
-          rewrite <- union_subseteq_l.
+          rewrite <- 4!union_subseteq_l.
           apply union_subseteq_l.
         }
 
@@ -1852,12 +1860,20 @@ Proof.
           subst.
           eapply evar_is_fresh_in_richer'.
           2: apply set_evar_fresh_is_fresh'.
-          rewrite <- union_subseteq_l.
-          rewrite <- union_subseteq_l.
+          rewrite <- 4!union_subseteq_l.
           apply union_subseteq_r.
         }
 
-        rewrite -> interpretation_fresh_evar_open with (y := yB).
+        assert (HyBfbevar_open: evar_is_fresh_in yB (bevar_subst phi (patt_free_evar y) (S dbi))).
+        { 
+          subst.
+          eapply evar_is_fresh_in_richer'.
+          2: apply set_evar_fresh_is_fresh'.
+          rewrite <- 3!union_subseteq_l.
+          apply union_subseteq_r.
+        }
+
+        rewrite -> interpretation_fresh_evar_open with (x := Xfr') (y := yB).
         3: { apply HyBfphi'. }
         2: { subst. apply set_evar_fresh_is_fresh. }
         
@@ -1870,27 +1886,27 @@ Proof.
         remember (update_evar_val yB c evar_val) as evar_val'.
         remember (evar_open (S dbi) x (evar_open 0 yB phi)) as phi'.
 
-        assert (Hpiq: pattern_interpretation (update_evar_val x (evar_val y) evar_val') svar_val phi' = pattern_interpretation (update_evar_val x (evar_val y) evar_val) svar_val phi').
-        {
-          subst evar_val'. subst phi'.
-          (* HERE we want to make a lemma out of what we have *)
-          rewrite update_evar_val_comm. apply not_eq_sym. assumption.
-          rewrite evar_open_fresh.
-          apply wfc_ex_to_wfc_body.
-          { admit. (* can get this assumption *) }
-          assumption.
-          rewrite update_evar_val_comm. assumption.
-          rewrite interpretation_fresh_evar.
-          apply evar_is_fresh_in_evar_open. apply not_eq_sym. assumption. assumption.
+        subst phi'.
 
-          rewrite [pattern_interpretation (update_evar_val x (evar_val y) evar_val) svar_val
-                                          (evar_open 0 yB phi)](interpretation_fresh_evar).
-          apply evar_is_fresh_in_evar_open. apply not_eq_sym. assumption. assumption.
-          admit.
-        }
+        assert (Hevar_val: evar_val y = evar_val' y).
+        { subst evar_val'. rewrite update_evar_val_neq. apply HyBy. reflexivity. }
+        rewrite Hevar_val.
 
-        admit.
-         
+        rewrite <- IHsz.
+        subst evar_val'.
+        rewrite <- evar_open_bevar_subst.
+        rewrite <- evar_open_bevar_subst.
+        rewrite -> interpretation_fresh_evar_open with (y := yB).
+        apply Same_set_refl.
+
+        { rewrite Heqx'. apply set_evar_fresh_is_fresh. }
+        { apply HyBfbevar_open. }
+        { auto. }
+        { lia. }
+        { auto. }
+        { lia. }
+        { rewrite <- evar_open_size. lia. }
+        { apply evar_is_fresh_in_evar_open. apply not_eq_sym. apply HyBx. apply H. }
 
       -- rewrite Heqx'.
          (*rewrite bevar_subst_not_occur_is_noop in Heqx'. { auto. }*)
@@ -1951,7 +1967,9 @@ Proof.
           rewrite -> free_svars_evar_open.
           assert (Hsvev: free_svars (patt_free_evar y) = ∅) by auto.
           rewrite Hsvev.
-          admit.
+          rewrite union_empty_r_L.
+          reflexivity.
+          assumption.
         }
 
         rewrite -> HXu in *.
