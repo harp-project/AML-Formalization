@@ -2802,6 +2802,17 @@ Proof.
   lia. assumption. assumption.
 Qed.
 
+(* rho(psi) = empty then C[rho(psi)] = empty *)
+Lemma propagate_context_empty M psi evar_val svar_val C :
+  @pattern_interpretation M evar_val svar_val psi = Empty ->
+  @pattern_interpretation M evar_val svar_val (subst_ctx C psi) = Empty.
+Proof.
+  intro Hpsi. induction C.
+  * auto.
+  * simpl. rewrite pattern_interpretation_app_simpl. rewrite IHC. apply app_ext_bot_l.
+  * simpl. rewrite pattern_interpretation_app_simpl. rewrite IHC. apply app_ext_bot_r.
+Qed.
+
 Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=
   λ m₁,
   (app_ext (@pattern_interpretation M ρₑ ρₛ ϕ) (Ensembles.Singleton (Domain M) m₁)).

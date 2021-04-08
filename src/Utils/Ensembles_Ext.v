@@ -229,6 +229,22 @@ unfold Same_set. unfold Included. intros. apply conj;intros.
 * unfold In in *. constructor. exact H. constructor.
 Qed.
 
+Lemma Intersection_Empty_r {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T (Empty_set T) A) (Empty_set T).
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H0.
+* inversion H.
+Qed.
+
+Lemma Intersection_Empty_l {T : Type} : forall A : Ensemble T,
+Same_set T (Intersection T A (Empty_set T)) (Empty_set T).
+Proof.
+unfold Same_set. unfold Included. intros. apply conj;intros.
+* inversion H. exact H1.
+* inversion H.
+Qed.
+
 Lemma Compl_Compl_Ensembles : forall T :Type, forall A :Ensemble T,
   Same_set T (Complement T (Complement T A)) A.
 Proof.

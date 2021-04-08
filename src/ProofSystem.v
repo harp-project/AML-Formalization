@@ -610,7 +610,43 @@ Proof.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
 
   * admit.
-  * admit.
+
+  * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
+               pattern_interpretation
+                 evar_val svar_val
+                 (subst_ctx C1 (patt_free_evar x and phi)
+                            and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
+               = Semantics.Empty).
+    { intros evar_val svar_val.
+      rewrite -> pattern_interpretation_and_simpl.
+      Check Ensembles.In.
+      Print Ensembles.In.
+      destruct (Ensembles_Ext.In_dec (pattern_interpretation evar_val svar_val phi) (evar_val x)).
+      - rewrite [(pattern_interpretation
+                    evar_val svar_val
+                    (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
+                propagate_context_empty.
+        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_l. }
+        rewrite pattern_interpretation_and_simpl.
+        rewrite pattern_interpretation_free_evar_simpl.
+        rewrite pattern_interpretation_imp_simpl.
+        rewrite pattern_interpretation_bott_simpl.
+        rewrite Union_Empty_l_eq.
+        rewrite eq_iff_Same_set.
+        rewrite Intersection_singleton_empty.
+        unfold not. intros. contradiction.
+      - rewrite propagate_context_empty.
+        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_r. }
+        rewrite pattern_interpretation_and_simpl.
+        rewrite pattern_interpretation_free_evar_simpl.
+        rewrite eq_iff_Same_set.
+        rewrite <- Intersection_singleton in H.
+        apply NNPP. exact H.
+    }
+    intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_predicate_not.
+    - apply empty_impl_not_full. rewrite Hemp. reflexivity.
+    - unfold M_predicate. right. apply Hemp.
 
     Unshelve. rewrite H2; reflexivity.
 Admitted.
