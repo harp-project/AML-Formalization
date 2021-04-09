@@ -609,7 +609,32 @@ Proof.
     rewrite <- set_substitution_lemma.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
 
-  * admit.
+  * intros Hv evar_val svar_val.
+    assert (pattern_interpretation evar_val svar_val (ex , BoundVarSugar.b0)
+            = pattern_interpretation evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
+    { repeat rewrite pattern_interpretation_ex_simpl. simpl.
+      rewrite eq_iff_Same_set. apply FA_Union_same. intros.
+      repeat rewrite pattern_interpretation_imp_simpl.
+      repeat rewrite pattern_interpretation_bott_simpl.
+      repeat rewrite Union_Empty_l_eq.
+      repeat rewrite Compl_Compl_Ensembles_eq.
+      rewrite Union_Empty_l_eq.
+      rewrite Compl_Compl_Ensembles_eq.
+      apply Same_set_refl.
+    }
+    rewrite H.
+    rewrite pattern_interpretation_set_builder.
+    { unfold M_predicate. left. simpl. rewrite pattern_interpretation_imp_simpl.
+      rewrite pattern_interpretation_bott_simpl.
+      rewrite Union_Empty_l_eq.
+      apply Complement_Empty_is_Full_eq.
+    }
+    simpl.
+    rewrite eq_iff_Same_set. constructor. constructor.
+    unfold Included. intros. unfold Ensembles.In.
+    rewrite pattern_interpretation_imp_simpl.
+    Search Ensembles.Union Complement.
+    rewrite eq_iff_Same_set. apply Union_Compl_Fullset.
 
   * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
                pattern_interpretation
