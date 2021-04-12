@@ -340,7 +340,31 @@ Proof.
     -- right. unfold Complement in H0. apply NNPP in H0.
        constructor. exists (evar_val y). apply H0.
 
-  * admit.
+  * intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_imp_simpl.
+    apply Same_set_to_eq. constructor. constructor.
+    rewrite <- IHHp with (evar_val := evar_val) (svar_val := svar_val).
+    2: { unfold well_formed. simpl. unfold well_formed in H, H0.
+         unfold well_formed_closed. unfold well_formed_closed in H, H0.
+         simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
+         destruct H as [Hwfp_phi1 Hwfc_phi1].
+         destruct H0 as [Hwfp_phi2 Hwfc_phi2].
+         apply andb_true_iff; split; apply andb_true_iff; split; assumption.
+    }
+    2: { apply Hv. }
+    rewrite pattern_interpretation_imp_simpl.
+    unfold Included. unfold Ensembles.In. intros. inversion H2; subst.
+    -- unfold exists_quantify.
+       apply Union_introl.
+       unfold Ensembles.In, Complement, not, Ensembles.In.
+       unfold Ensembles.In, Complement, not, Ensembles.In in H3.
+       intros. apply H3.
+       rewrite pattern_interpretation_ex_simpl in H4. simpl in H4.
+       eapply FA_Union_ind with (P := pattern_interpretation evar_val svar_val phi1) in H4.
+       apply H4.
+       intros. destruct H5.
+       admit.
+    -- apply Union_intror. assumption.
 
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
