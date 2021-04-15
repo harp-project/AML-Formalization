@@ -341,30 +341,35 @@ Proof.
        constructor. exists (evar_val y). apply H0.
 
   * intros Hv evar_val svar_val.
-    rewrite pattern_interpretation_imp_simpl.
-    apply Same_set_to_eq. constructor. constructor.
-    rewrite <- IHHp with (evar_val := evar_val) (svar_val := svar_val).
-    2: { unfold well_formed. simpl. unfold well_formed in H, H0.
-         unfold well_formed_closed. unfold well_formed_closed in H, H0.
-         simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
-         destruct H as [Hwfp_phi1 Hwfc_phi1].
-         destruct H0 as [Hwfp_phi2 Hwfc_phi2].
-         apply andb_true_iff; split; apply andb_true_iff; split; assumption.
+    rewrite pattern_interpretation_iff_subset.
+    assert (Hwf_imp: well_formed (phi1 ---> phi2)).
+    { unfold well_formed. simpl. unfold well_formed in H, H0.
+      unfold well_formed_closed. unfold well_formed_closed in H, H0.
+      simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
+      destruct H as [Hwfp_phi1 Hwfc_phi1].
+      destruct H0 as [Hwfp_phi2 Hwfc_phi2].
+      apply andb_true_iff; split; apply andb_true_iff; split; assumption.
     }
-    2: { apply Hv. }
-    rewrite pattern_interpretation_imp_simpl.
-    unfold Included. unfold Ensembles.In. intros. inversion H2; subst.
-    -- unfold exists_quantify.
-       apply Union_introl.
-       unfold Ensembles.In, Complement, not, Ensembles.In.
-       unfold Ensembles.In, Complement, not, Ensembles.In in H3.
-       intros. apply H3.
-       rewrite pattern_interpretation_ex_simpl in H4. simpl in H4.
-       eapply FA_Union_ind with (P := pattern_interpretation evar_val svar_val phi1) in H4.
-       apply H4.
-       intros. destruct H5.
-       admit.
-    -- apply Union_intror. assumption.
+    specialize (IHHp Hwf_imp Hv evar_val svar_val). clear Hv. clear Hwf_imp.
+    erewrite pattern_interpretation_iff_subset in IHHp.
+    apply pattern_interpretation_subset_union with (x0 := x) in IHHp.
+    unfold Included, Ensembles.In. intros x0 Hphi1.
+    unfold Included, Ensembles.In in IHHp.
+    destruct IHHp with (x0 := x0).
+    -- assert (Included (Domain m)
+                        (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
+                        (FA_Union
+                           (λ e : Domain m, pattern_interpretation
+                                              (update_evar_val x e evar_val) svar_val phi1))).
+       { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
+         apply FA_Union_included. unfold Included, Ensembles.In. intros.
+         admit.
+       }
+       unfold Included, Ensembles.In in H2. apply H2. apply Hphi1.
+
+    -- destruct H2 as [c Hphi2].
+       rewrite pattern_interpretation_free_evar_independent in Hphi2. apply H1.
+       apply Hphi2.
 
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
@@ -606,7 +611,6 @@ Proof.
       rewrite Hwfp2.
       apply wfc_ind_wfc in H2.
 
-      Check wfp_bsvar_subst.
       rewrite wfp_bsvar_subst; auto.
       simpl.
 
@@ -657,7 +661,6 @@ Proof.
     rewrite eq_iff_Same_set. constructor. constructor.
     unfold Included. intros. unfold Ensembles.In.
     rewrite pattern_interpretation_imp_simpl.
-    Search Ensembles.Union Complement.
     rewrite eq_iff_Same_set. apply Union_Compl_Fullset.
 
   * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
@@ -668,8 +671,6 @@ Proof.
                = Semantics.Empty).
     { intros evar_val svar_val.
       rewrite -> pattern_interpretation_and_simpl.
-      Check Ensembles.In.
-      Print Ensembles.In.
       destruct (Ensembles_Ext.In_dec (pattern_interpretation evar_val svar_val phi) (evar_val x)).
       - rewrite [(pattern_interpretation
                     evar_val svar_val

@@ -60,6 +60,16 @@ eapply conj;intros;eapply FA_Uni_intro;inversion H0;destruct H1;destruct(H x1);
 eapply ex_intro;auto.
 Qed.
 
+Lemma FA_Union_included : forall T C : Type, forall f f' : C -> Ensemble T,
+(forall c, Included _ (f c) (f' c)) ->
+Included _ (FA_Union f) (FA_Union f').
+Proof.
+intros. unfold Included in *. unfold In in *.
+intros;eapply FA_Uni_intro;inversion H0;destruct H1.
+eapply ex_intro; eauto.
+Qed.
+
+
 (** Properties of the standard set operators
 
    see also:
