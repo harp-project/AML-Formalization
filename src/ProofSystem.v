@@ -164,7 +164,6 @@ Qed.
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar) :
-      well_formed phi ->
       theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
@@ -336,9 +335,9 @@ Proof.
     destruct (classic (  Complement (Domain m)
     (pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
                             (evar_open 0 (fresh_evar phi) phi)) x)).
-    -- left. apply H0.
-    -- right. unfold Complement in H0. apply NNPP in H0.
-       constructor. exists (evar_val y). apply H0.
+    -- left. apply H.
+    -- right. unfold Complement in H. apply NNPP in H.
+       constructor. exists (evar_val y). apply H.
 
   * intros Hv evar_val svar_val.
     rewrite pattern_interpretation_iff_subset.
