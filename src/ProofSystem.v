@@ -349,12 +349,18 @@ Proof.
       destruct H0 as [Hwfp_phi2 Hwfc_phi2].
       apply andb_true_iff; split; apply andb_true_iff; split; assumption.
     }
-    specialize (IHHp Hwf_imp Hv evar_val svar_val). clear Hv. clear Hwf_imp.
-    erewrite pattern_interpretation_iff_subset in IHHp.
-    apply pattern_interpretation_subset_union with (x0 := x) in IHHp.
+    specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
+    assert (forall evar_val svar_val,
+               Included (Domain m)
+                        (pattern_interpretation evar_val svar_val phi1)
+                        (pattern_interpretation evar_val svar_val phi2)
+           ).
+    { intros. apply pattern_interpretation_iff_subset. apply IHHp. }
+    apply pattern_interpretation_subset_union
+      with (evar_val0 := evar_val) (svar_val0 := svar_val) (x0 := x) in H2.
     unfold Included, Ensembles.In. intros x0 Hphi1.
     unfold Included, Ensembles.In in IHHp.
-    destruct IHHp with (x0 := x0).
+    destruct H2 with (x0 := x0).
     -- assert (Included (Domain m)
                         (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
                         (FA_Union
@@ -362,6 +368,10 @@ Proof.
                                               (update_evar_val x e evar_val) svar_val phi1))).
        { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
          apply FA_Union_included. unfold Included, Ensembles.In. intros.
+         remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
+         erewrite interpretation_fresh_evar_open with (y := x) in H3.
+         3: { apply evar_is_fresh_in_evar_quantify. }
+         2: { subst x2. apply set_evar_fresh_is_fresh. }
          admit.
        }
        unfold Included, Ensembles.In in H2. apply H2. apply Hphi1.

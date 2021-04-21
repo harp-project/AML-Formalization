@@ -959,18 +959,23 @@ repeat
         + rewrite -> H2. reflexivity.
     Qed.
 
-    Lemma pattern_interpretation_subset_union M evar_val svar_val x phi1 phi2 :
-      Included (Domain M) (pattern_interpretation evar_val svar_val phi1)
-               (pattern_interpretation evar_val svar_val phi2)
-      -> Included (Domain M)
+    Lemma pattern_interpretation_subset_union M x phi1 phi2 :
+      (forall evar_val svar_val,
+          Included (Domain M) (pattern_interpretation evar_val svar_val phi1)
+                   (pattern_interpretation evar_val svar_val phi2)
+      )
+      -> (forall evar_val svar_val,
+             Included (Domain M)
                   (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
                                                              svar_val
                                                              phi1))
                   (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
                                                              svar_val
-                                                             phi2)).
+                                                             phi2))
+          ).
     Proof.
-    Admitted.
+      intros H. induction phi1; intros; apply FA_Union_included; auto.
+    Qed.
 
 Lemma Private_interpretation_fresh_var_open M sz ϕ dbi ρₑ ρₛ:
   size ϕ <= sz ->

@@ -252,7 +252,6 @@ Section syntax.
     | patt_mu phi => free_svars phi
     end.
 
-
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
@@ -295,7 +294,7 @@ Section syntax.
     | patt_exists p' => patt_exists (evar_open (S k) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
-
+  
   Lemma evar_open_not_occur n x ϕ :
     bevar_occur ϕ n = false ->
     evar_open n x ϕ = ϕ.
@@ -839,7 +838,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold well_formed_closed in *. simpl in H.
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
-    
+
+
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
@@ -939,6 +939,27 @@ Class EBinder (ebinder : Pattern -> Pattern)
   
   Hint Resolve evar_is_fresh_in_richer : core.
 
+  Lemma evar_is_fresh_in_evar_quantify x n phi:
+    evar_is_fresh_in x (evar_quantify x n phi).
+  Proof.
+    move: n.
+    unfold evar_is_fresh_in.
+    induction phi; intros n'; simpl; try apply not_elem_of_empty.
+    - destruct (evar_eqdec x x0); simpl.
+      + apply not_elem_of_empty.
+      + apply not_elem_of_singleton_2. assumption.
+    - apply not_elem_of_union.
+      split; auto.
+    - apply not_elem_of_union.
+      split; auto.
+    - auto.
+    - auto.
+  Qed.
+  
+      
+                     
+
+  
   (*If phi is a closed body, then (ex, phi) is closed too*)
   Lemma wfc_body_to_wfc_ex:
     forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
@@ -1215,6 +1236,32 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
   Qed.
 
+
+  Lemma evar_open_evar_quantify x n phi:
+    well_formed_closed phi ->
+    (evar_open n x (evar_quantify x n phi)) = phi.
+  Proof.
+    intros H.
+    apply wfc_wfc_ind in H.
+    move: n.
+    induction phi; intros n'; simpl; auto.
+    - destruct (evar_eqdec x x0); simpl.
+      + rewrite Nat.eqb_refl. subst. reflexivity.
+      + reflexivity.
+    - apply wfc_ind_wfc in H. inversion H.
+    - inversion H. subst.
+      rewrite -> IHphi1, IHphi2 by assumption.
+      reflexivity.
+    - inversion H. subst.
+      rewrite -> IHphi1, IHphi2 by assumption.
+      reflexivity.
+    - inversion H. subst.
+      rewrite IHphi.
+  Abort.
+  
+  
+
+  
   Lemma evar_open_last: forall phi i u j v,
       (i <> j) -> evar_open i u (evar_open j v phi) = evar_open j v phi
       ->
