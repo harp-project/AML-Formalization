@@ -361,22 +361,28 @@ Proof.
     unfold Included, Ensembles.In. intros x0 Hphi1.
     unfold Included, Ensembles.In in IHHp.
     destruct H2 with (x0 := x0).
-    -- assert (Included (Domain m)
-                        (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
-                        (FA_Union
-                           (λ e : Domain m, pattern_interpretation
-                                              (update_evar_val x e evar_val) svar_val phi1))).
+    -- assert (Hinc: Included (Domain m)
+                              (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
+                              (FA_Union
+                                 (λ e : Domain m, pattern_interpretation
+                                                    (update_evar_val x e evar_val) svar_val phi1))).
        { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
          apply FA_Union_included. unfold Included, Ensembles.In. intros.
          remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
          erewrite interpretation_fresh_evar_open with (y := x) in H3.
          3: { apply evar_is_fresh_in_evar_quantify. }
          2: { subst x2. apply set_evar_fresh_is_fresh. }
-         admit.
+         unfold well_formed in H.
+         apply andb_true_iff in H.
+         destruct H as [Hwfp Hwfc].
+         unfold well_formed_closed in Hwfc.
+         rewrite -> evar_open_evar_quantify with (n' := 0) in H3.
+         assumption.
+         rewrite Hwfc. auto.
        }
-       unfold Included, Ensembles.In in H2. apply H2. apply Hphi1.
+       unfold Included, Ensembles.In in Hinc. apply Hinc. apply Hphi1.
 
-    -- destruct H2 as [c Hphi2].
+    -- destruct H3 as [c Hphi2].
        rewrite pattern_interpretation_free_evar_independent in Hphi2. apply H1.
        apply Hphi2.
 
@@ -708,7 +714,7 @@ Proof.
     - unfold M_predicate. right. apply Hemp.
 
     Unshelve. rewrite H2; reflexivity.
-Admitted.
+Qed.
 
 
 End ml_proof_system.

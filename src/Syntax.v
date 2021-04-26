@@ -264,7 +264,7 @@ Section syntax.
     | patt_bott => patt_bott
     | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
     | patt_exists p' => patt_exists (evar_quantify x (S level) p')
-    | patt_mu p' => patt_mu (evar_quantify x (S level) p')
+    | patt_mu p' => patt_mu (evar_quantify x level p')
     end.
 
   Definition exists_quantify (x : evar)
@@ -723,7 +723,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_exists psi => well_formed_positive psi
     | patt_mu psi => no_negative_occurrence_db_b 0 psi && well_formed_positive psi
     end.
-
+  
   Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : bool :=
     match phi with
     | patt_free_evar _ => true
@@ -1236,30 +1236,35 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
   Qed.
 
-
-  Lemma evar_open_evar_quantify x n phi:
-    well_formed_closed phi ->
+  Lemma evar_open_evar_quantify x n n' phi:
+    well_formed_closed_aux phi n n' ->
     (evar_open n x (evar_quantify x n phi)) = phi.
   Proof.
     intros H.
-    apply wfc_wfc_ind in H.
-    move: n.
-    induction phi; intros n'; simpl; auto.
+    (*apply wfc_wfc_ind in H.*)
+    move: n n' H.
+    induction phi; intros n' n'' H; simpl; auto.
     - destruct (evar_eqdec x x0); simpl.
       + rewrite Nat.eqb_refl. subst. reflexivity.
       + reflexivity.
-    - apply wfc_ind_wfc in H. inversion H.
-    - inversion H. subst.
-      rewrite -> IHphi1, IHphi2 by assumption.
+    - simpl in *. apply Nat.ltb_lt in H.
+      destruct (n =? n') eqn:Heq.
+      + apply Nat.eqb_eq in Heq. lia.
+      + reflexivity.
+    - simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      erewrite -> IHphi1, IHphi2 by eassumption.
       reflexivity.
-    - inversion H. subst.
-      rewrite -> IHphi1, IHphi2 by assumption.
+    - simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      erewrite -> IHphi1, IHphi2 by eassumption.
       reflexivity.
-    - inversion H. subst.
-      rewrite IHphi.
-  Abort.
-  
-  
+    - simpl in H.
+      erewrite -> IHphi by eassumption. reflexivity.
+    - simpl in H. apply IHphi in H. rewrite H. reflexivity.
+  Qed.
 
   
   Lemma evar_open_last: forall phi i u j v,
