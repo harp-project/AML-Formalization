@@ -1846,6 +1846,36 @@ Class EBinder (ebinder : Pattern -> Pattern)
     auto.
   Qed.
 
+  Lemma svar_open_wfc_aux db1 db2 dbs X phi :
+    db1 <= db2 ->
+    well_formed_closed_aux phi dbs db1 ->
+    svar_open db2 X phi = phi.
+  Proof.
+    generalize dependent dbs. generalize dependent db2. generalize dependent db1.
+    induction phi; intros db1 db2 dbs Hle Hwfca; simpl; simpl in Hwfca; auto.
+    * destruct (eqb_reflect n db2). apply Nat.ltb_lt in Hwfca. lia. auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto. 
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply f_equal.
+      rewrite -> IHphi with (dbs := S dbs)(db1 := db1). 3: auto. 2: auto. auto.
+    * apply f_equal. rewrite -> IHphi with (dbs := dbs)(db1 := S db1). auto. lia. auto.
+  Qed.
+
+  Lemma svar_open_wfc m X phi : well_formed_closed phi -> svar_open m X phi = phi.
+  Proof.
+    intros.
+    unfold well_formed_closed in H.
+    apply svar_open_wfc_aux with (X := X)(db2 := m) in H.
+    2: lia.
+    auto.
+  Qed.
+
   Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       evar_open m X (bsvar_subst phi1 phi2 dbi)
@@ -1860,14 +1890,25 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
-  (* TODO!! *)
   Lemma svar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       m <> dbi ->
       svar_open m X (bsvar_subst phi1 phi2 dbi)
       = bsvar_subst (svar_open m X phi1) phi2 dbi.
   Proof.
-  Admitted.
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hneq; auto.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n dbi) eqn:Hdbi; simpl; auto.
+      + rewrite Heq. reflexivity.
+      + apply beq_nat_true in Heq. lia.
+      + rewrite Heq. reflexivity.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+      + rewrite Hdbi. apply svar_open_wfc. assumption.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. apply f_equal. rewrite -> IHphi1; auto.
+    - simpl. rewrite -> IHphi1; auto.
+  Qed.
 
   Lemma evar_open_bevar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->

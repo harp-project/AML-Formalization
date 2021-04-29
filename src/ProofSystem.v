@@ -716,6 +716,4 @@ Proof.
     Unshelve. rewrite H2; reflexivity.
 Qed.
 
-
 End ml_proof_system.
-
