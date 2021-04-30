@@ -1733,7 +1733,6 @@ Proof.
       repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
       remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
-      Search evar_open bevar_subst.
       rewrite evar_open_bevar_subst.
       { auto. }
       { lia. }
@@ -1743,7 +1742,6 @@ Proof.
       remember (evar_fresh (elements (union (free_evars phi') (singleton x')))) as Xu.
 
       rewrite -> IHsz with (x := Xu).
-      Search evar_is_fresh_in evar_open.
       3: { apply evar_is_fresh_in_evar_open.
            admit. admit. (*solve_fresh_neq*)
       }

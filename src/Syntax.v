@@ -750,7 +750,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     generalize dependent ind_evar1. generalize dependent ind_evar2.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
     induction phi; intros ind_svar_2 ind_svar_1 Hleqsvar ind_evar_2 ind_evar_1 Heqevar H;
-      simpl in *; try lia; auto. Search "<?" "<".
+      simpl in *; try lia; auto.
     - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
     - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
     - apply andb_true_iff in H. destruct H as [H1 H2].
