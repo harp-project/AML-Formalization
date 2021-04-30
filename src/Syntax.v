@@ -1912,12 +1912,25 @@ Class EBinder (ebinder : Pattern -> Pattern)
 
   Lemma evar_open_bevar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
-      m <> dbi ->
+      m < dbi ->
       evar_open m X (bevar_subst phi1 phi2 dbi)
       = bevar_subst (evar_open m X phi1) phi2 dbi.
   Proof.
-  Admitted.
-  
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hneq; auto.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n dbi) eqn:Hdbi; simpl; auto.
+      + rewrite Heq. reflexivity.
+      + apply beq_nat_true in Heq. lia.
+      + apply beq_nat_true in Heq. lia.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+      + rewrite Hdbi. apply evar_open_wfc. assumption.
+      + destruct (Init.Nat.pred n =? m) eqn:Hpred; rewrite Hdbi.
+        * apply beq_nat_true in Hpred. lia.
+        * reflexivity.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. apply f_equal. rewrite -> IHphi1; auto. lia.
+    - simpl. rewrite -> IHphi1; auto.
+  Qed.
   
   Lemma fresh_evar_svar_open dbi X phi :
     fresh_evar (svar_open dbi X phi) = fresh_evar phi.
