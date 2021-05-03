@@ -252,7 +252,6 @@ Section syntax.
     | patt_mu phi => free_svars phi
     end.
 
-
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
@@ -265,7 +264,7 @@ Section syntax.
     | patt_bott => patt_bott
     | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
     | patt_exists p' => patt_exists (evar_quantify x (S level) p')
-    | patt_mu p' => patt_mu (evar_quantify x (S level) p')
+    | patt_mu p' => patt_mu (evar_quantify x level p')
     end.
 
   Definition exists_quantify (x : evar)
@@ -295,7 +294,7 @@ Section syntax.
     | patt_exists p' => patt_exists (evar_open (S k) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
-
+  
   Lemma evar_open_not_occur n x ϕ :
     bevar_occur ϕ n = false ->
     evar_open n x ϕ = ϕ.
@@ -724,7 +723,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     | patt_exists psi => well_formed_positive psi
     | patt_mu psi => no_negative_occurrence_db_b 0 psi && well_formed_positive psi
     end.
-
+  
   Fixpoint well_formed_closed_aux (phi : Pattern) (max_ind_evar : db_index) (max_ind_svar : db_index) : bool :=
     match phi with
     | patt_free_evar _ => true
@@ -751,7 +750,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     generalize dependent ind_evar1. generalize dependent ind_evar2.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
     induction phi; intros ind_svar_2 ind_svar_1 Hleqsvar ind_evar_2 ind_evar_1 Heqevar H;
-      simpl in *; try lia; auto. Search "<?" "<".
+      simpl in *; try lia; auto.
     - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
     - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
     - apply andb_true_iff in H. destruct H as [H1 H2].
@@ -839,7 +838,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold well_formed_closed in *. simpl in H.
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
-    
+
+
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
@@ -939,6 +939,27 @@ Class EBinder (ebinder : Pattern -> Pattern)
   
   Hint Resolve evar_is_fresh_in_richer : core.
 
+  Lemma evar_is_fresh_in_evar_quantify x n phi:
+    evar_is_fresh_in x (evar_quantify x n phi).
+  Proof.
+    move: n.
+    unfold evar_is_fresh_in.
+    induction phi; intros n'; simpl; try apply not_elem_of_empty.
+    - destruct (evar_eqdec x x0); simpl.
+      + apply not_elem_of_empty.
+      + apply not_elem_of_singleton_2. assumption.
+    - apply not_elem_of_union.
+      split; auto.
+    - apply not_elem_of_union.
+      split; auto.
+    - auto.
+    - auto.
+  Qed.
+  
+      
+                     
+
+  
   (*If phi is a closed body, then (ex, phi) is closed too*)
   Lemma wfc_body_to_wfc_ex:
     forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
@@ -1215,6 +1236,37 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
   Qed.
 
+  Lemma evar_open_evar_quantify x n n' phi:
+    well_formed_closed_aux phi n n' ->
+    (evar_open n x (evar_quantify x n phi)) = phi.
+  Proof.
+    intros H.
+    (*apply wfc_wfc_ind in H.*)
+    move: n n' H.
+    induction phi; intros n' n'' H; simpl; auto.
+    - destruct (evar_eqdec x x0); simpl.
+      + rewrite Nat.eqb_refl. subst. reflexivity.
+      + reflexivity.
+    - simpl in *. apply Nat.ltb_lt in H.
+      destruct (n =? n') eqn:Heq.
+      + apply Nat.eqb_eq in Heq. lia.
+      + reflexivity.
+    - simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      erewrite -> IHphi1, IHphi2 by eassumption.
+      reflexivity.
+    - simpl in H.
+      apply andb_true_iff in H.
+      destruct H as [H1 H2].
+      erewrite -> IHphi1, IHphi2 by eassumption.
+      reflexivity.
+    - simpl in H.
+      erewrite -> IHphi by eassumption. reflexivity.
+    - simpl in H. apply IHphi in H. rewrite H. reflexivity.
+  Qed.
+
+  
   Lemma evar_open_last: forall phi i u j v,
       (i <> j) -> evar_open i u (evar_open j v phi) = evar_open j v phi
       ->
@@ -1794,6 +1846,36 @@ Class EBinder (ebinder : Pattern -> Pattern)
     auto.
   Qed.
 
+  Lemma svar_open_wfc_aux db1 db2 dbs X phi :
+    db1 <= db2 ->
+    well_formed_closed_aux phi dbs db1 ->
+    svar_open db2 X phi = phi.
+  Proof.
+    generalize dependent dbs. generalize dependent db2. generalize dependent db1.
+    induction phi; intros db1 db2 dbs Hle Hwfca; simpl; simpl in Hwfca; auto.
+    * destruct (eqb_reflect n db2). apply Nat.ltb_lt in Hwfca. lia. auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto. 
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply andb_true_iff in Hwfca. destruct Hwfca as [Hwfca1 Hwfca2].
+      rewrite -> IHphi1 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      rewrite -> IHphi2 with (dbs := dbs)(db1 := db1). 3: auto. 2: auto.
+      auto.
+    * apply f_equal.
+      rewrite -> IHphi with (dbs := S dbs)(db1 := db1). 3: auto. 2: auto. auto.
+    * apply f_equal. rewrite -> IHphi with (dbs := dbs)(db1 := S db1). auto. lia. auto.
+  Qed.
+
+  Lemma svar_open_wfc m X phi : well_formed_closed phi -> svar_open m X phi = phi.
+  Proof.
+    intros.
+    unfold well_formed_closed in H.
+    apply svar_open_wfc_aux with (X := X)(db2 := m) in H.
+    2: lia.
+    auto.
+  Qed.
+
   Lemma evar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       evar_open m X (bsvar_subst phi1 phi2 dbi)
@@ -1808,23 +1890,47 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
-  (* TODO!! *)
   Lemma svar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       m <> dbi ->
       svar_open m X (bsvar_subst phi1 phi2 dbi)
       = bsvar_subst (svar_open m X phi1) phi2 dbi.
   Proof.
-  Admitted.
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hneq; auto.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n dbi) eqn:Hdbi; simpl; auto.
+      + rewrite Heq. reflexivity.
+      + apply beq_nat_true in Heq. lia.
+      + rewrite Heq. reflexivity.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+      + rewrite Hdbi. apply svar_open_wfc. assumption.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. apply f_equal. rewrite -> IHphi1; auto.
+    - simpl. rewrite -> IHphi1; auto.
+  Qed.
 
   Lemma evar_open_bevar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
-      m <> dbi ->
+      m < dbi ->
       evar_open m X (bevar_subst phi1 phi2 dbi)
       = bevar_subst (evar_open m X phi1) phi2 dbi.
   Proof.
-  Admitted.
-  
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc Hneq; auto.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n dbi) eqn:Hdbi; simpl; auto.
+      + rewrite Heq. reflexivity.
+      + apply beq_nat_true in Heq. lia.
+      + apply beq_nat_true in Heq. lia.
+      + rewrite Heq. rewrite Hdbi. reflexivity.
+      + rewrite Hdbi. apply evar_open_wfc. assumption.
+      + destruct (Init.Nat.pred n =? m) eqn:Hpred; rewrite Hdbi.
+        * apply beq_nat_true in Hpred. lia.
+        * reflexivity.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
+    - simpl. apply f_equal. rewrite -> IHphi1; auto. lia.
+    - simpl. rewrite -> IHphi1; auto.
+  Qed.
   
   Lemma fresh_evar_svar_open dbi X phi :
     fresh_evar (svar_open dbi X phi) = fresh_evar phi.

@@ -164,7 +164,6 @@ Qed.
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar) :
-      well_formed phi ->
       theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
@@ -336,11 +335,56 @@ Proof.
     destruct (classic (  Complement (Domain m)
     (pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
                             (evar_open 0 (fresh_evar phi) phi)) x)).
-    -- left. apply H0.
-    -- right. unfold Complement in H0. apply NNPP in H0.
-       constructor. exists (evar_val y). apply H0.
+    -- left. apply H.
+    -- right. unfold Complement in H. apply NNPP in H.
+       constructor. exists (evar_val y). apply H.
 
-  * admit.
+  * intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_iff_subset.
+    assert (Hwf_imp: well_formed (phi1 ---> phi2)).
+    { unfold well_formed. simpl. unfold well_formed in H, H0.
+      unfold well_formed_closed. unfold well_formed_closed in H, H0.
+      simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
+      destruct H as [Hwfp_phi1 Hwfc_phi1].
+      destruct H0 as [Hwfp_phi2 Hwfc_phi2].
+      apply andb_true_iff; split; apply andb_true_iff; split; assumption.
+    }
+    specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
+    assert (forall evar_val svar_val,
+               Included (Domain m)
+                        (pattern_interpretation evar_val svar_val phi1)
+                        (pattern_interpretation evar_val svar_val phi2)
+           ).
+    { intros. apply pattern_interpretation_iff_subset. apply IHHp. }
+    apply pattern_interpretation_subset_union
+      with (evar_val0 := evar_val) (svar_val0 := svar_val) (x0 := x) in H2.
+    unfold Included, Ensembles.In. intros x0 Hphi1.
+    unfold Included, Ensembles.In in IHHp.
+    destruct H2 with (x0 := x0).
+    -- assert (Hinc: Included (Domain m)
+                              (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
+                              (FA_Union
+                                 (λ e : Domain m, pattern_interpretation
+                                                    (update_evar_val x e evar_val) svar_val phi1))).
+       { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
+         apply FA_Union_included. unfold Included, Ensembles.In. intros.
+         remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
+         erewrite interpretation_fresh_evar_open with (y := x) in H3.
+         3: { apply evar_is_fresh_in_evar_quantify. }
+         2: { subst x2. apply set_evar_fresh_is_fresh. }
+         unfold well_formed in H.
+         apply andb_true_iff in H.
+         destruct H as [Hwfp Hwfc].
+         unfold well_formed_closed in Hwfc.
+         rewrite -> evar_open_evar_quantify with (n' := 0) in H3.
+         assumption.
+         rewrite Hwfc. auto.
+       }
+       unfold Included, Ensembles.In in Hinc. apply Hinc. apply Hphi1.
+
+    -- destruct H3 as [c Hphi2].
+       rewrite pattern_interpretation_free_evar_independent in Hphi2. apply H1.
+       apply Hphi2.
 
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
@@ -582,7 +626,6 @@ Proof.
       rewrite Hwfp2.
       apply wfc_ind_wfc in H2.
 
-      Check wfp_bsvar_subst.
       rewrite wfp_bsvar_subst; auto.
       simpl.
 
@@ -609,12 +652,68 @@ Proof.
     rewrite <- set_substitution_lemma.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
 
-  * admit.
-  * admit.
+  * intros Hv evar_val svar_val.
+    assert (pattern_interpretation evar_val svar_val (ex , BoundVarSugar.b0)
+            = pattern_interpretation evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
+    { repeat rewrite pattern_interpretation_ex_simpl. simpl.
+      rewrite eq_iff_Same_set. apply FA_Union_same. intros.
+      repeat rewrite pattern_interpretation_imp_simpl.
+      repeat rewrite pattern_interpretation_bott_simpl.
+      repeat rewrite Union_Empty_l_eq.
+      repeat rewrite Compl_Compl_Ensembles_eq.
+      rewrite Union_Empty_l_eq.
+      rewrite Compl_Compl_Ensembles_eq.
+      apply Same_set_refl.
+    }
+    rewrite H.
+    rewrite pattern_interpretation_set_builder.
+    { unfold M_predicate. left. simpl. rewrite pattern_interpretation_imp_simpl.
+      rewrite pattern_interpretation_bott_simpl.
+      rewrite Union_Empty_l_eq.
+      apply Complement_Empty_is_Full_eq.
+    }
+    simpl.
+    rewrite eq_iff_Same_set. constructor. constructor.
+    unfold Included. intros. unfold Ensembles.In.
+    rewrite pattern_interpretation_imp_simpl.
+    rewrite eq_iff_Same_set. apply Union_Compl_Fullset.
+
+  * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
+               pattern_interpretation
+                 evar_val svar_val
+                 (subst_ctx C1 (patt_free_evar x and phi)
+                            and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
+               = Semantics.Empty).
+    { intros evar_val svar_val.
+      rewrite -> pattern_interpretation_and_simpl.
+      destruct (Ensembles_Ext.In_dec (pattern_interpretation evar_val svar_val phi) (evar_val x)).
+      - rewrite [(pattern_interpretation
+                    evar_val svar_val
+                    (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
+                propagate_context_empty.
+        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_l. }
+        rewrite pattern_interpretation_and_simpl.
+        rewrite pattern_interpretation_free_evar_simpl.
+        rewrite pattern_interpretation_imp_simpl.
+        rewrite pattern_interpretation_bott_simpl.
+        rewrite Union_Empty_l_eq.
+        rewrite eq_iff_Same_set.
+        rewrite Intersection_singleton_empty.
+        unfold not. intros. contradiction.
+      - rewrite propagate_context_empty.
+        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_r. }
+        rewrite pattern_interpretation_and_simpl.
+        rewrite pattern_interpretation_free_evar_simpl.
+        rewrite eq_iff_Same_set.
+        rewrite <- Intersection_singleton in H.
+        apply NNPP. exact H.
+    }
+    intros Hv evar_val svar_val.
+    rewrite pattern_interpretation_predicate_not.
+    - apply empty_impl_not_full. rewrite Hemp. reflexivity.
+    - unfold M_predicate. right. apply Hemp.
 
     Unshelve. rewrite H2; reflexivity.
-Admitted.
-
+Qed.
 
 End ml_proof_system.
-

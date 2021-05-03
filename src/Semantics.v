@@ -959,6 +959,24 @@ repeat
         + rewrite -> H2. reflexivity.
     Qed.
 
+    Lemma pattern_interpretation_subset_union M x phi1 phi2 :
+      (forall evar_val svar_val,
+          Included (Domain M) (pattern_interpretation evar_val svar_val phi1)
+                   (pattern_interpretation evar_val svar_val phi2)
+      )
+      -> (forall evar_val svar_val,
+             Included (Domain M)
+                  (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
+                                                             svar_val
+                                                             phi1))
+                  (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
+                                                             svar_val
+                                                             phi2))
+          ).
+    Proof.
+      intros H. induction phi1; intros; apply FA_Union_included; auto.
+    Qed.
+
 Lemma Private_interpretation_fresh_var_open M sz ϕ dbi ρₑ ρₛ:
   size ϕ <= sz ->
   (
@@ -1715,7 +1733,6 @@ Proof.
       repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
       apply Same_set_to_eq. apply FA_Union_same. intros c.
       remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
-      Search evar_open bevar_subst.
       rewrite evar_open_bevar_subst.
       { auto. }
       { lia. }
@@ -1725,7 +1742,6 @@ Proof.
       remember (evar_fresh (elements (union (free_evars phi') (singleton x')))) as Xu.
 
       rewrite -> IHsz with (x := Xu).
-      Search evar_is_fresh_in evar_open.
       3: { apply evar_is_fresh_in_evar_open.
            admit. admit. (*solve_fresh_neq*)
       }
@@ -2800,6 +2816,17 @@ Lemma free_svar_subst_update_exchange {m : Model}: ∀ phi psi X svar_val evar_v
 Proof. 
   intros. apply Private_free_svar_subst_update_exchange with (sz := size phi). 
   lia. assumption. assumption.
+Qed.
+
+(* rho(psi) = empty then C[rho(psi)] = empty *)
+Lemma propagate_context_empty M psi evar_val svar_val C :
+  @pattern_interpretation M evar_val svar_val psi = Empty ->
+  @pattern_interpretation M evar_val svar_val (subst_ctx C psi) = Empty.
+Proof.
+  intro Hpsi. induction C.
+  * auto.
+  * simpl. rewrite pattern_interpretation_app_simpl. rewrite IHC. apply app_ext_bot_l.
+  * simpl. rewrite pattern_interpretation_app_simpl. rewrite IHC. apply app_ext_bot_r.
 Qed.
 
 Definition rel_of M ρₑ ρₛ ϕ: Domain M -> Ensemble (Domain M) :=

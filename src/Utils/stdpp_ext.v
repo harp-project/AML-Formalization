@@ -711,7 +711,6 @@ Lemma common_length_impl_eq {A : Type} {eqdec: EqDecision A} (l₁ l₂ : list A
   l₁ = l₂.
 Proof.
   intros Hlength Hcommlength.
-  Search list length lt eq lookup.
   eapply list_eq_same_length.
   2: apply Hlength.
   { reflexivity. }
