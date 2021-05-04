@@ -444,7 +444,7 @@ Section definedness.
   Lemma T_predicate_defined : forall ϕ, T_predicate theory (patt_defined ϕ).
   Proof.
     intros. unfold T_predicate. intros. unfold M_predicate. intros.
-    pose proof (Hlr := classic ( pattern_interpretation ρₑ ρₛ ϕ = Semantics.Empty )).
+    pose proof (Hlr := classic ( pattern_interpretation ρₑ ρ ϕ = Semantics.Empty )).
     destruct Hlr.
     + apply definedness_empty_1 in H0. right. apply H0. apply H.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
@@ -541,8 +541,6 @@ Section definedness.
        binary_svar_open := svar_open_in ;
     |}.
 
-
-  Check patt_exists.
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)
   (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)  *)
   Definition patt_eq_inversion_of ϕ₁ ϕ₂

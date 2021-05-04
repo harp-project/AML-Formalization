@@ -47,25 +47,22 @@ Proof.
       apply not_elem_of_union in n. destruct n. assumption.
     }
     split.
-      * erewrite -> (update_valuation_fresh). erewrite -> (evar_open_fresh). exact Hext_le.
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        rewrite -> (evar_open_fresh). unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        {
-          rewrite -> evar_open_fresh. unfold fresh_evar. simpl. 
-          pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-          unfold well_formed in H0.
-          apply andb_true_iff in H0.
-          destruct H0. assumption.
-        }
-      * assumption.
+  * erewrite -> pattern_interpretation_free_evar_independent.
+    erewrite -> evar_open_fresh. exact Hext_le.
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+    rewrite -> evar_open_fresh.
+    {
+      unfold fresh_evar. simpl. 
+      pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+
+  * assumption.
 Qed.
 
 (* soundness for prop_ex_left *)
@@ -94,26 +91,25 @@ Proof.
     exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
     split.
-    - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
-      unfold well_formed in H0.
-      apply andb_true_iff in H0.
-      destruct H0. assumption.
-      {
-        unfold fresh_evar. simpl. unfold evar_is_fresh_in.
-        pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-      }
-      unfold well_formed in H0.
-      apply andb_true_iff in H0.
-      destruct H0. assumption.
-    - split.
-      + erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
-        apply set_evar_fresh_is_fresh.
-        {
-          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-        }
-      + assumption.
+  * erewrite -> evar_open_fresh.
+    erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. 
+    {
+      unfold fresh_evar. simpl. unfold evar_is_fresh_in.
+      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+  * split; try assumption.
+    erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
+    apply set_evar_fresh_is_fresh.
+    {
+      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
 Qed.
 
 (* free_svar_subst maintains soundness *)
