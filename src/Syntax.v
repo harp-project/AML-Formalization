@@ -9,7 +9,6 @@ Require Import Ensembles.
 Require Import Coq.Strings.String.
 Require Import extralibrary.
 
-(*From Ltac2 Require Import Ltac2.*)
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable.
 From stdpp Require Import pmap gmap mapset fin_sets.
@@ -79,22 +78,7 @@ Section syntax.
 
   Definition Theory := Ensemble Pattern.
   
-  (** There are two substitution operations over types, written
-  [vsubst] and [psubst] in Pollack's talk.  
-  [vsubst] substitutes a pattern for a bound variable (a de Bruijn index).
-  [psubst] substitutes a pattern for a free variable (a name).
-
-  The crucial observation is that variable capture cannot occur
-  during either substitution:
-  - Types never contain free de Bruijn indices, since these
-    indices are used only for representing bound variables.
-    Therefore, [vsubst] does not need to
-    perform lifting of de Bruijn indices in the substituted type.
-  - Types never bind names, only de Bruijn indices.
-    Therefore, [psubst] never needs to perform renaming of
-    names in the substituted term when descending below a
-    binder.
-   *)
+  (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
 
   (* substitute bound variable x for psi in phi *)
   Fixpoint bevar_subst (phi psi : Pattern) (x : db_index) :=
@@ -162,7 +146,7 @@ Section syntax.
     | patt_mu phi' => bevar_occur phi' x
     end.
 
-    Fixpoint bsvar_occur (phi : Pattern) (x : db_index) : bool :=
+  Fixpoint bsvar_occur (phi : Pattern) (x : db_index) : bool :=
     match phi with
     | patt_free_evar x' => false
     | patt_free_svar x' => false
@@ -176,7 +160,7 @@ Section syntax.
     | patt_exists phi' => bsvar_occur phi' x
     | patt_mu phi' => bsvar_occur phi' (S x)
     end.
-    
+  
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
@@ -193,6 +177,7 @@ Section syntax.
     | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
     end.
 
+  (* substitute free set variable X for psi in phi *)
   Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
@@ -252,6 +237,7 @@ Section syntax.
     | patt_mu phi => free_svars phi
     end.
 
+  (* replace element varial x with de Bruijn index level *)
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
@@ -280,6 +266,7 @@ Section syntax.
     | _ => 0
     end.
 
+  (* replace de Bruijn index k with element variable n *)
   Fixpoint evar_open (k : db_index) (n : evar)
            (p : Pattern) : Pattern :=
     match p with
@@ -294,7 +281,8 @@ Section syntax.
     | patt_exists p' => patt_exists (evar_open (S k) n p')
     | patt_mu p' => patt_mu (evar_open k n p')
     end.
-  
+
+  (* evar_open is identity if n does not occur in phi *)
   Lemma evar_open_not_occur n x ϕ :
     bevar_occur ϕ n = false ->
     evar_open n x ϕ = ϕ.
@@ -340,7 +328,7 @@ Section syntax.
   Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
   Proof. reflexivity. Qed.  
   
-
+  (* replace de Bruijn index k with set variable n *)
   Fixpoint svar_open (k : db_index) (n : svar)
            (p : Pattern) : Pattern :=
     match p with
@@ -356,7 +344,7 @@ Section syntax.
     | patt_mu p' => patt_mu (svar_open (S k) n p')
     end.
 
-
+  (* More trivial but useful lemmas *)
   Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
   Proof. reflexivity. Qed.
   Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
@@ -380,48 +368,48 @@ Section syntax.
 
 
   (* TODO free_evars, free_svars *)
-Class EBinder (ebinder : Pattern -> Pattern)
-      (fevo: db_index -> evar -> Pattern -> Pattern )
-      (fsvo: db_index -> svar -> Pattern -> Pattern ) :=
+  Class EBinder (ebinder : Pattern -> Pattern)
+        (fevo: db_index -> evar -> Pattern -> Pattern )
+        (fsvo: db_index -> svar -> Pattern -> Pattern ) :=
     {
-      ebinder_evar_open :
-        forall k n ϕ, evar_open k n (ebinder ϕ) = fevo k n ϕ ;
-                        (*ebinder (evar_open (k + 1) n ϕ) ;*)
-      ebinder_svar_open :
-        forall k n ϕ, svar_open k n (ebinder ϕ) = fsvo k n ϕ ; (*ebinder (svo a) (svar_open k n ϕ) ;*)
+    ebinder_evar_open :
+      forall k n ϕ, evar_open k n (ebinder ϕ) = fevo k n ϕ ;
+    (*ebinder (evar_open (k + 1) n ϕ) ;*)
+    ebinder_svar_open :
+      forall k n ϕ, svar_open k n (ebinder ϕ) = fsvo k n ϕ ; (*ebinder (svo a) (svar_open k n ϕ) ;*)
     }.
 
   Class SBinder (sbinder : Pattern -> Pattern) :=
     {
-      sbinder_evar_open :
-        forall k n ϕ, evar_open k n (sbinder ϕ) = sbinder (evar_open k n ϕ) ;
-      sbinder_svar_open :
-        forall k n ϕ, svar_open k n (sbinder ϕ) = sbinder (svar_open (S k) n ϕ) ;
+    sbinder_evar_open :
+      forall k n ϕ, evar_open k n (sbinder ϕ) = sbinder (evar_open k n ϕ) ;
+    sbinder_svar_open :
+      forall k n ϕ, svar_open k n (sbinder ϕ) = sbinder (svar_open (S k) n ϕ) ;
     }.
 
   (* Non-variable nullary operation *)
   Class NVNullary (nvnullary : Pattern) :=
     {
-      nvnullary_evar_open :
-        forall k n, evar_open k n nvnullary = nvnullary ;
-      nvnullary_svar_open :
-        forall k n, svar_open k n nvnullary = nvnullary ;
+    nvnullary_evar_open :
+      forall k n, evar_open k n nvnullary = nvnullary ;
+    nvnullary_svar_open :
+      forall k n, svar_open k n nvnullary = nvnullary ;
     }.
 
   Class Unary (patt : Pattern -> Pattern) :=
     {
-      unary_evar_open :
-        forall k n ϕ, evar_open k n (patt ϕ) = patt (evar_open k n ϕ) ;
-      unary_svar_open :
-        forall k n ϕ, svar_open k n (patt ϕ) = patt (svar_open k n ϕ) ;
+    unary_evar_open :
+      forall k n ϕ, evar_open k n (patt ϕ) = patt (evar_open k n ϕ) ;
+    unary_svar_open :
+      forall k n ϕ, svar_open k n (patt ϕ) = patt (svar_open k n ϕ) ;
     }.
 
   Class Binary (binary : Pattern -> Pattern -> Pattern) :=
     {
-      binary_evar_open :
-        forall k n ϕ₁ ϕ₂, evar_open k n (binary ϕ₁ ϕ₂) = binary (evar_open k n ϕ₁) (evar_open k n ϕ₂) ;
-      binary_svar_open :
-        forall k n ϕ₁ ϕ₂, svar_open k n (binary ϕ₁ ϕ₂) = binary (svar_open k n ϕ₁) (svar_open k n ϕ₂) ;
+    binary_evar_open :
+      forall k n ϕ₁ ϕ₂, evar_open k n (binary ϕ₁ ϕ₂) = binary (evar_open k n ϕ₁) (evar_open k n ϕ₂) ;
+    binary_svar_open :
+      forall k n ϕ₁ ϕ₂, svar_open k n (binary ϕ₁ ϕ₂) = binary (svar_open k n ϕ₁) (svar_open k n ϕ₂) ;
     }.
 
   (* TODO the same for svar_open *)
@@ -443,46 +431,46 @@ Class EBinder (ebinder : Pattern -> Pattern)
   
 
   #[global]
-  Instance EBinder_exists : EBinder patt_exists _ _ :=
+   Instance EBinder_exists : EBinder patt_exists _ _ :=
     {|
-       ebinder_evar_open := evar_open_exists ;
-       ebinder_svar_open := svar_open_exists ;
+    ebinder_evar_open := evar_open_exists ;
+    ebinder_svar_open := svar_open_exists ;
     |}.
 
   #[global]
-  Instance SBinder_mu : SBinder patt_mu :=
+   Instance SBinder_mu : SBinder patt_mu :=
     {|
-       sbinder_evar_open := evar_open_mu ;
-       sbinder_svar_open := svar_open_mu ;
+    sbinder_evar_open := evar_open_mu ;
+    sbinder_svar_open := svar_open_mu ;
     |}.
 
 
   #[global]
-  Instance NVNullary_bott : NVNullary patt_bott :=
+   Instance NVNullary_bott : NVNullary patt_bott :=
     {|
-       nvnullary_evar_open := evar_open_bott ;
-       nvnullary_svar_open := svar_open_bott ;
+    nvnullary_evar_open := evar_open_bott ;
+    nvnullary_svar_open := svar_open_bott ;
     |}.
 
   #[global]
-  Instance NVNullary_sym s : NVNullary (patt_sym s) :=
+   Instance NVNullary_sym s : NVNullary (patt_sym s) :=
     {|
-       nvnullary_evar_open := λ k n, @evar_open_sym k n s ;
-       nvnullary_svar_open := λ k n, @svar_open_sym k n s ;
+    nvnullary_evar_open := λ k n, @evar_open_sym k n s ;
+    nvnullary_svar_open := λ k n, @svar_open_sym k n s ;
     |}.
 
   #[global]
-  Instance Binary_app : Binary patt_app :=
+   Instance Binary_app : Binary patt_app :=
     {|
-       binary_evar_open := evar_open_app ;
-       binary_svar_open := svar_open_app ;
+    binary_evar_open := evar_open_app ;
+    binary_svar_open := svar_open_app ;
     |}.
 
   #[global]
-  Instance Binary_imp : Binary patt_imp :=
+   Instance Binary_imp : Binary patt_imp :=
     {|
-       binary_evar_open := evar_open_imp ;
-       binary_svar_open := svar_open_imp ;
+    binary_evar_open := evar_open_imp ;
+    binary_svar_open := svar_open_imp ;
     |}.
   
   Lemma evar_open_size :
@@ -510,6 +498,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     rewrite (IHp k); reflexivity.
     rewrite (IHp (S k)); reflexivity.
   Qed.
+
+  (* set variable occurs positively in pattern *)
 
   Inductive positive_occurrence_named : svar -> Pattern -> Prop :=
   | po_free_evar (x : evar) (sv : svar) : positive_occurrence_named sv (patt_free_evar x)
@@ -629,18 +619,18 @@ Class EBinder (ebinder : Pattern -> Pattern)
           try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
         ).
     1: {  destruct (Nat.eqb_spec n dbi); simpl.
-      + apply ReflectF. intros Contra. inversion Contra. subst. contradiction.
-      + apply ReflectT. constructor. apply nesym.  assumption.  }
+          + apply ReflectF. intros Contra. inversion Contra. subst. contradiction.
+          + apply ReflectT. constructor. apply nesym.  assumption.  }
     1,2: (
-          destruct (fst (IHϕ dbi)), (snd (IHϕ dbi)); simpl;
-          try (apply ReflectT; subst; constructor; auto);
-          try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
+           destruct (fst (IHϕ dbi)), (snd (IHϕ dbi)); simpl;
+           try (apply ReflectT; subst; constructor; auto);
+           try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
          ).
 
     1,2: (  destruct (fst (IHϕ (S dbi))), (snd (IHϕ (S dbi))); simpl;
             assert (Heq: dbi+1 = S dbi); try lia;
-           try (apply ReflectT; subst; try constructor; try rewrite -> Heq in *; auto);
-           try (apply ReflectF; intros Contra; inversion Contra; subst; try rewrite -> Heq in *; contradiction)
+            try (apply ReflectT; subst; try constructor; try rewrite -> Heq in *; auto);
+            try (apply ReflectF; intros Contra; inversion Contra; subst; try rewrite -> Heq in *; contradiction)
          ).
   Qed.
 
@@ -840,12 +830,15 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Qed.
 
 
+  (* fresh variables *)
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
 
   Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
   Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
+
+  (* Lemmas about fresh variables *)
 
   Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
   Proof.
@@ -955,11 +948,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - auto.
     - auto.
   Qed.
-  
-      
-                     
 
-  
+  (* Lemmas about wfc_ex and wfc_mu *)
+
   (*If phi is a closed body, then (ex, phi) is closed too*)
   Lemma wfc_body_to_wfc_ex:
     forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
@@ -986,7 +977,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Definition wfc_body_mu phi := forall X, 
       X ∉ (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
 
-  (*Helper for wfc_mu_to_wfc_body*)
+  (* Helper for wfc_mu_to_wfc_body *)
   Lemma wfc_aux_body_mu_imp1:
     forall phi n n' X,
       well_formed_closed_aux phi n (S n')
@@ -1005,7 +996,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
   Qed.
 
-  (*Helper for *)
+  (* Helper for wfc_body_to_wfc_mu *)
   Lemma wfc_aux_body_mu_imp2:
     forall phi n n' X,
       well_formed_closed_aux (svar_open n' X phi) n n'
@@ -1028,7 +1019,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
        reflexivity.
   Qed.
 
-    Lemma wfc_aux_extend:
+  Lemma wfc_aux_extend:
     forall phi n n' m m',
       well_formed_closed_aux phi n m
       -> n <= n' -> m <= m'
@@ -1165,21 +1156,25 @@ Class EBinder (ebinder : Pattern -> Pattern)
     reflexivity.
   Qed.
 
+
+  (* inductive def of well_formed_closed, corresponding lemmas *)
+  
   Inductive well_formed_closed_induc : Pattern -> Prop :=
   | wfc_free_evar : forall (x : evar), well_formed_closed_induc (patt_free_evar x)
   | wfc_free_svar : forall (X : svar), well_formed_closed_induc (patt_free_svar X)
   | wfc_sym       : forall (sym : symbols), well_formed_closed_induc (patt_sym sym)
-  | wfc_app       : forall (phi psi : Pattern), well_formed_closed_induc phi 
-                                                -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_app phi psi)
+  | wfc_app       : forall (phi psi : Pattern),
+      well_formed_closed_induc phi -> well_formed_closed_induc psi
+      -> well_formed_closed_induc (patt_app phi psi)
   | wfc_bott      : well_formed_closed_induc patt_bott
-  | wfc_imp       : forall (phi psi : Pattern), well_formed_closed_induc phi 
-                                                -> well_formed_closed_induc psi -> well_formed_closed_induc (patt_imp phi psi)
+  | wfc_imp       : forall (phi psi : Pattern),
+      well_formed_closed_induc phi -> well_formed_closed_induc psi
+      -> well_formed_closed_induc (patt_imp phi psi)
   | wfc_ex        : forall phi : Pattern, 
       (forall (x : evar), 
           x ∉ (free_evars phi) ->
           well_formed_closed_induc (evar_open 0 x phi))
-      -> 
-      well_formed_closed_induc (patt_exists phi)
+      -> well_formed_closed_induc (patt_exists phi)
   | wfc_mu        : forall phi : Pattern, 
       (forall (X : svar),
           X ∉ (free_svars phi) ->
@@ -1236,6 +1231,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - apply wfc_body_to_wfc_mu. unfold wfc_body_mu. assumption.
   Qed.
 
+  (* Additional lemmas: evar_open, svar_open, freshness, well_formedness, etc. *)
+
+  (* evar_open and evar_quantify are inverses *)
   Lemma evar_open_evar_quantify x n n' phi:
     well_formed_closed_aux phi n n' ->
     (evar_open n x (evar_quantify x n phi)) = phi.
@@ -1266,7 +1264,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - simpl in H. apply IHphi in H. rewrite H. reflexivity.
   Qed.
 
-  
   Lemma evar_open_last: forall phi i u j v,
       (i <> j) -> evar_open i u (evar_open j v phi) = evar_open j v phi
       ->
@@ -1346,7 +1343,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
       instantiate (1 := fresh_svar phi). apply set_svar_fresh_is_fresh.
   Qed.
   
-    Lemma svar_open_fresh :
+  Lemma svar_open_fresh :
     forall phi,
       well_formed_closed phi ->
       forall n v,
@@ -1414,6 +1411,19 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
     - rewrite IHphi. lia. reflexivity.
     - rewrite IHphi. lia. reflexivity.
+  Qed.
+
+  Lemma svar_open_evar_open_comm
+    : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
+      evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
+  Proof.
+    induction phi; intros; simpl; try reflexivity.
+    * destruct (n =? dbi1); reflexivity.
+    * destruct (n =? dbi2); reflexivity.
+    * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
+    * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
+    * rewrite -> IHphi. reflexivity.
+    * rewrite -> IHphi. reflexivity.
   Qed.
   
   (* TODO make a wrapper that does not have the 'sz' variable *)
@@ -1581,38 +1591,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     * apply IHphi. auto.
   Qed.
 
-  Lemma positive_negative_occurrence_db_named :
-    forall (phi : Pattern) (dbi : db_index) (X : svar),
-      (positive_occurrence_db dbi phi ->
-       positive_occurrence_named X phi ->
-       positive_occurrence_named X (svar_open dbi X phi))
-      /\ (negative_occurrence_db dbi phi ->
-          negative_occurrence_named X phi ->
-          negative_occurrence_named X (svar_open dbi X phi)).
-  Proof.
-    induction phi; intros; split; simpl; try firstorder.
-    + destruct ( n =? dbi). constructor. constructor.
-    + destruct (eqb_reflect n dbi).
-      { inversion H. subst. lia. }
-      { constructor. }
-    + inversion H; subst. inversion H0; subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. apply IHphi. firstorder. assumption.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
-  Qed.
-
   Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
       well_formed (patt_app phi1 phi2) -> well_formed phi1.
   Proof.
@@ -1649,20 +1627,39 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Lemma free_svars_exists : forall (ϕ : Pattern),
       free_svars (patt_exists ϕ) = free_svars ϕ.
   Proof. done. Qed.
-  
-  Lemma svar_open_evar_open_comm
-    : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
-      evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
-  Proof.
-    induction phi; intros; simpl; try reflexivity.
-    * destruct (n =? dbi1); reflexivity.
-    * destruct (n =? dbi2); reflexivity.
-    * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
-    * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
-    * rewrite -> IHphi. reflexivity.
-    * rewrite -> IHphi. reflexivity.
-  Qed.
 
+  Lemma positive_negative_occurrence_db_named :
+    forall (phi : Pattern) (dbi : db_index) (X : svar),
+      (positive_occurrence_db dbi phi ->
+       positive_occurrence_named X phi ->
+       positive_occurrence_named X (svar_open dbi X phi))
+      /\ (negative_occurrence_db dbi phi ->
+          negative_occurrence_named X phi ->
+          negative_occurrence_named X (svar_open dbi X phi)).
+  Proof.
+    induction phi; intros; split; simpl; try firstorder.
+    + destruct ( n =? dbi). constructor. constructor.
+    + destruct (eqb_reflect n dbi).
+      { inversion H. subst. lia. }
+      { constructor. }
+    + inversion H; subst. inversion H0; subst.
+      constructor. firstorder. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. apply IHphi. firstorder. assumption.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder.
+    + inversion H. inversion H0. subst.
+      constructor. firstorder.
+  Qed.
+  
   Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
       (positive_occurrence_named X (evar_open dbi x ϕ) <-> positive_occurrence_named X ϕ)
       /\ (negative_occurrence_named X (evar_open dbi x ϕ) <-> negative_occurrence_named X ϕ).
@@ -1750,7 +1747,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
       * subst. constructor. assumption.
   Qed.
 
-  
   Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar),
       dbi1 < dbi2 ->
       (
@@ -1795,7 +1791,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
       eapply elimT. apply no_negative_occurrence_P.
       apply H1.
   Qed.
-
 
   Lemma positive_negative_occurrence_named_svar_open :
     forall (phi : Pattern) (X Y : svar) (dbi : db_index),
@@ -2111,7 +2106,6 @@ Class EBinder (ebinder : Pattern -> Pattern)
     - assert (H: is_subformula_of_ind ϕ ϕ).
       apply sub_eq. reflexivity. contradiction.
   Qed.
-  
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
@@ -2505,7 +2499,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     well_formed_closed_aux psi maxevar maxsvar = true ->
     maxsvar <=? dbi ->
     no_negative_occurrence_db_b dbi psi = true
-  /\ no_positive_occurrence_db_b dbi psi = true.
+    /\ no_positive_occurrence_db_b dbi psi = true.
   Proof.
     move: dbi maxevar maxsvar.
     induction psi; intros dbi maxevar maxsvar Hwfc Hleq; simpl; auto.
@@ -2610,9 +2604,9 @@ Class EBinder (ebinder : Pattern -> Pattern)
   Lemma no_neg_occ_db_bsvar_subst phi psi dbi1 dbi2:
     well_formed_closed psi = true ->
     (no_negative_occurrence_db_b dbi1 phi = true ->
-    no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true)
-  /\ (no_positive_occurrence_db_b dbi1 phi = true ->
-    no_positive_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true).
+     no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true)
+    /\ (no_positive_occurrence_db_b dbi1 phi = true ->
+        no_positive_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true).
   Proof.
     intros Hwfcpsi.
     move: dbi1 dbi2.
@@ -2664,8 +2658,8 @@ Class EBinder (ebinder : Pattern -> Pattern)
     well_formed_closed psi ->
     well_formed_positive phi ->
     (
-    no_negative_occurrence_db_b n phi ->
-    well_formed_positive (bsvar_subst phi psi n) )
+      no_negative_occurrence_db_b n phi ->
+      well_formed_positive (bsvar_subst phi psi n) )
     /\ (no_positive_occurrence_db_b n phi ->
         forall phi',
           well_formed_positive phi' ->
@@ -2779,7 +2773,7 @@ Class EBinder (ebinder : Pattern -> Pattern)
     destruct H4 as [H41 H42].
     apply H41.
     apply Hnonegphi.
- Qed.
+  Qed.
 
 
   (* Section: nest_ex, nest_mu *)
@@ -2869,27 +2863,27 @@ Class EBinder (ebinder : Pattern -> Pattern)
     move: level dbi.
     induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
     1: {destruct (Nat.leb_spec0 level n); simpl;
-      destruct dbi; simpl;
+        destruct dbi; simpl;
         destruct (Nat.leb_spec0 level n); simpl;
-          try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
-            try reflexivity; try lia;
-              destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
-      1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
-      1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
-      }
+        try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
+        try reflexivity; try lia;
+        destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
+        1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
+        1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
+    }
     1: {destruct (Nat.leb_spec level n); simpl.
-      + destruct dbi.
-        * reflexivity.
-        * destruct (eqb_reflect n dbi); try lia. reflexivity.
-      + destruct (eqb_reflect n dbi); try lia. reflexivity.
+        + destruct dbi.
+          * reflexivity.
+          * destruct (eqb_reflect n dbi); try lia. reflexivity.
+        + destruct (eqb_reflect n dbi); try lia. reflexivity.
     }
     
     1: {destruct (Nat.leb_spec0 level n); simpl;
         destruct (eqb_reflect n (dbi - 1)).
-      1,2: destruct dbi; try lia.
-      1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
-      1,2: destruct (eqb_reflect level n); simpl;
-        destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
+        1,2: destruct dbi; try lia.
+        1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
+        1,2: destruct (eqb_reflect level n); simpl;
+          destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
     }
     1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
@@ -2912,27 +2906,27 @@ Class EBinder (ebinder : Pattern -> Pattern)
     move: level dbi.
     induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
     1: {destruct (Nat.leb_spec0 level n); simpl;
-      destruct dbi; simpl;
+        destruct dbi; simpl;
         destruct (Nat.leb_spec0 level n); simpl;
-          try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
-            try reflexivity; try lia;
-              destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
-      1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
-      1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
-      }
+        try destruct (eqb_reflect n dbi),(eqb_reflect n (S dbi)); simpl;
+        try reflexivity; try lia;
+        destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
+        1,2: destruct (eqb_reflect n 0); simpl; try lia; try reflexivity.
+        1,2: destruct (Nat.leb_spec0 level n); try lia; try reflexivity.
+    }
     1: {destruct (Nat.leb_spec level n); simpl.
-      + destruct dbi.
-        * reflexivity.
-        * destruct (eqb_reflect n dbi); try lia. reflexivity.
-      + destruct (eqb_reflect n dbi); try lia. reflexivity.
+        + destruct dbi.
+          * reflexivity.
+          * destruct (eqb_reflect n dbi); try lia. reflexivity.
+        + destruct (eqb_reflect n dbi); try lia. reflexivity.
     }
     
     1: {destruct (Nat.leb_spec0 level n); simpl;
         destruct (eqb_reflect n (dbi - 1)).
-      1,2: destruct dbi; try lia.
-      1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
-      1,2: destruct (eqb_reflect level n); simpl;
-        destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
+        1,2: destruct dbi; try lia.
+        1,2,3,4: destruct (eqb_reflect n dbi); simpl; try reflexivity; try lia.
+        1,2: destruct (eqb_reflect level n); simpl;
+          destruct (Nat.leb_spec0 level n); try reflexivity; try lia.
     }
     1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
@@ -3142,376 +3136,376 @@ Class EBinder (ebinder : Pattern -> Pattern)
     unfold svar_is_fresh_in. simpl. done.
   Qed.
 
-    Definition simpl_free_evars :=
-  (
-    (@left_id_L EVarSet  ∅ (@union _ _)),
-    (@right_id_L EVarSet ∅ (@union _ _)),
-    @free_evars_nest_ex_aux,
-    @evar_open_nest_ex_aux_comm,
-    @free_evars_nest_ex_aux
-  ).
+  Definition simpl_free_evars :=
+    (
+      (@left_id_L EVarSet  ∅ (@union _ _)),
+      (@right_id_L EVarSet ∅ (@union _ _)),
+      @free_evars_nest_ex_aux,
+      @evar_open_nest_ex_aux_comm,
+      @free_evars_nest_ex_aux
+    ).
 
-    Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
-      x = fresh_evar ϕ ->
-      x ∉ free_evars ϕ.
-    Proof.
-      intros H.
-      rewrite H.
-      unfold fresh_evar.
-      apply set_evar_fresh_is_fresh'.
-    Qed.
+  Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
+    x = fresh_evar ϕ ->
+    x ∉ free_evars ϕ.
+  Proof.
+    intros H.
+    rewrite H.
+    unfold fresh_evar.
+    apply set_evar_fresh_is_fresh'.
+  Qed.
 
-    Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
+  Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
 
-    Definition simpl_free_svars :=
-      (
-        (@left_id_L SVarSet  ∅ (@union _ _)),
-        (@right_id_L SVarSet ∅ (@union _ _)),
-        @free_svars_nest_mu_aux,
-        @svar_open_nest_mu_aux_comm,
-        @free_svars_nest_mu_aux
-      ).
-    
-    Lemma X_eq_fresh_impl_X_notin_free_svars X ϕ:
-      X = fresh_svar ϕ ->
-      X ∉ free_svars ϕ.
-    Proof.
-      intros H.
-      rewrite H.
-      unfold fresh_svar.
-      apply set_svar_fresh_is_fresh'.
-    Qed.
+  Definition simpl_free_svars :=
+    (
+      (@left_id_L SVarSet  ∅ (@union _ _)),
+      (@right_id_L SVarSet ∅ (@union _ _)),
+      @free_svars_nest_mu_aux,
+      @svar_open_nest_mu_aux_comm,
+      @free_svars_nest_mu_aux
+    ).
+  
+  Lemma X_eq_fresh_impl_X_notin_free_svars X ϕ:
+    X = fresh_svar ϕ ->
+    X ∉ free_svars ϕ.
+  Proof.
+    intros H.
+    rewrite H.
+    unfold fresh_svar.
+    apply set_svar_fresh_is_fresh'.
+  Qed.
 
-    Lemma X_eq_evar_fresh_impl_X_notin_S X (S:EVarSet):
-      X = evar_fresh (elements S) ->
-      X ∉ S.
-    Proof.
-      intros H.
-      rewrite H.
-      apply set_evar_fresh_is_fresh'.
-    Qed.
-    
-    Lemma X_eq_svar_fresh_impl_X_notin_S X (S:SVarSet):
-      X = svar_fresh (elements S) ->
-      X ∉ S.
-    Proof.
-      intros H.
-      rewrite H.
-      apply set_svar_fresh_is_fresh'.
-    Qed.
+  Lemma X_eq_evar_fresh_impl_X_notin_S X (S:EVarSet):
+    X = evar_fresh (elements S) ->
+    X ∉ S.
+  Proof.
+    intros H.
+    rewrite H.
+    apply set_evar_fresh_is_fresh'.
+  Qed.
+  
+  Lemma X_eq_svar_fresh_impl_X_notin_S X (S:SVarSet):
+    X = svar_fresh (elements S) ->
+    X ∉ S.
+  Proof.
+    intros H.
+    rewrite H.
+    apply set_svar_fresh_is_fresh'.
+  Qed.
 
-    Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
+  Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
 
-    Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-      (no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
-      = match (compare_nat dbi level) with
-          | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
-          | Nat_equal _ _ _ => true
-          | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
-          end
-      ) /\ (
+  Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
+    (no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+     = match (compare_nat dbi level) with
+       | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
+       | Nat_equal _ _ _ => true
+       | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
+       end
+    ) /\ (
       no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
       = match (compare_nat dbi level) with
-          | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
-          | Nat_equal _ _ _ => true
-          | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
-          end
-      ).
-    Proof.
-      move: dbi level.
-      induction ϕ; intros dbi level; simpl;
-        destruct (compare_nat dbi level); auto;
-      repeat (
-          match goal with
-          | |- context G [?x <=? ?y] => destruct (Nat.leb_spec0 x y)
-          | |- context G [?x =? ?y] => destruct (Nat.eqb_spec x y)
-          end
-        ); simpl; try lia; auto;
-        try rewrite (proj1 (IHϕ1 _ _));
-        try rewrite (proj2 (IHϕ1 _ _));
-        try rewrite (proj1 (IHϕ2 _ _));
-        try rewrite (proj2 (IHϕ2 _ _));
-        try rewrite (proj1 (IHϕ _ _));
-        try rewrite (proj2 (IHϕ _ _));
-        simpl;
-        destruct (compare_nat dbi level),(compare_nat (S dbi) (S level)); simpl; try lia; auto.
-      assert (Harith1: dbi - 0 = dbi). lia. rewrite !Harith1.
-      assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
-      auto.
-    Qed.
+        | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
+        | Nat_equal _ _ _ => true
+        | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
+        end
+    ).
+  Proof.
+    move: dbi level.
+    induction ϕ; intros dbi level; simpl;
+      destruct (compare_nat dbi level); auto;
+        repeat (
+            match goal with
+            | |- context G [?x <=? ?y] => destruct (Nat.leb_spec0 x y)
+            | |- context G [?x =? ?y] => destruct (Nat.eqb_spec x y)
+            end
+          ); simpl; try lia; auto;
+          try rewrite (proj1 (IHϕ1 _ _));
+          try rewrite (proj2 (IHϕ1 _ _));
+          try rewrite (proj1 (IHϕ2 _ _));
+          try rewrite (proj2 (IHϕ2 _ _));
+          try rewrite (proj1 (IHϕ _ _));
+          try rewrite (proj2 (IHϕ _ _));
+          simpl;
+          destruct (compare_nat dbi level),(compare_nat (S dbi) (S level)); simpl; try lia; auto.
+    assert (Harith1: dbi - 0 = dbi). lia. rewrite !Harith1.
+    assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
+    auto.
+  Qed.
 
-    Lemma no_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-      no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
-      = match (compare_nat dbi level) with
-          | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
-          | Nat_equal _ _ _ => true
-          | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
-        end.
-    Proof.
-      apply Private_positive_negative_occurrence_db_nest_mu_aux.
-    Qed.
+  Lemma no_negative_occurrence_db_nest_mu_aux dbi level ϕ:
+    no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
+      | Nat_equal _ _ _ => true
+      | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
+      end.
+  Proof.
+    apply Private_positive_negative_occurrence_db_nest_mu_aux.
+  Qed.
 
-    Lemma no_positive_occurrence_db_nest_mu_aux dbi level ϕ:
-      no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
-      = match (compare_nat dbi level) with
-          | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
-          | Nat_equal _ _ _ => true
-          | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
-        end.
-    Proof.
-      apply Private_positive_negative_occurrence_db_nest_mu_aux.
-    Qed.
+  Lemma no_positive_occurrence_db_nest_mu_aux dbi level ϕ:
+    no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
+      | Nat_equal _ _ _ => true
+      | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
+      end.
+  Proof.
+    apply Private_positive_negative_occurrence_db_nest_mu_aux.
+  Qed.
 
-    Lemma well_formed_positive_nest_mu_aux level ϕ:
-      well_formed_positive (nest_mu_aux level ϕ) = well_formed_positive ϕ.
-    Proof.
-      move: level.
-      induction ϕ; intros level; simpl; auto.
-      - rewrite IHϕ1. rewrite IHϕ2. auto.
-      - rewrite IHϕ1. rewrite IHϕ2. auto.
-      - rewrite IHϕ.
-        rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
-        reflexivity.
-    Qed.
-    
-Lemma evar_open_inj : ∀ phi psi x n,
-  evar_is_fresh_in x phi → evar_is_fresh_in x psi →
-  evar_open n x phi =
-    evar_open n x psi
-    → phi = psi.
-Proof.
-  induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
-  - simpl in H1. destruct (n =? n0) eqn:P.
-    + inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
-      congruence.
-    + congruence.
-  - simpl in H1. destruct (n =? n0) eqn:P.
-    + inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
-      congruence.
-    + congruence.
-  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
-    + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
-    + congruence.
-    + congruence.
-    + inversion H1. reflexivity.
-  - simpl in H1. destruct (n =? n1) eqn:P.
-    + inversion H1.
-    + congruence.
-  - inversion H1. destruct (n0 =? n1) eqn:P.
-    + inversion H3.
-    + assumption.
-  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
-    apply evar_is_fresh_in_app_r in H. assumption.
-    apply evar_is_fresh_in_app_r in H0. assumption.
-    apply evar_is_fresh_in_app_l in H. assumption.
-    apply evar_is_fresh_in_app_l in H0. assumption.
-  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
-    apply evar_is_fresh_in_imp_r in H. assumption.
-    apply evar_is_fresh_in_imp_r in H0. assumption.
-    apply evar_is_fresh_in_imp_l in H. assumption.
-    apply evar_is_fresh_in_imp_l in H0. assumption.
-  - inversion H1. apply IHphi in H3. subst. reflexivity.
-    apply evar_is_fresh_in_exists in H. assumption.
-    apply evar_is_fresh_in_exists in H0. assumption.
-  - inversion H1. apply IHphi in H3. subst. reflexivity.
-    apply evar_is_fresh_in_mu in H. assumption.
-    apply evar_is_fresh_in_mu in H0. assumption.
-Qed.
+  Lemma well_formed_positive_nest_mu_aux level ϕ:
+    well_formed_positive (nest_mu_aux level ϕ) = well_formed_positive ϕ.
+  Proof.
+    move: level.
+    induction ϕ; intros level; simpl; auto.
+    - rewrite IHϕ1. rewrite IHϕ2. auto.
+    - rewrite IHϕ1. rewrite IHϕ2. auto.
+    - rewrite IHϕ.
+      rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
+      reflexivity.
+  Qed.
+  
+  Lemma evar_open_inj : ∀ phi psi x n,
+      evar_is_fresh_in x phi → evar_is_fresh_in x psi →
+      evar_open n x phi =
+      evar_open n x psi
+      → phi = psi.
+  Proof.
+    induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
+    - simpl in H1. destruct (n =? n0) eqn:P.
+      + inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
+        congruence.
+      + congruence.
+    - simpl in H1. destruct (n =? n0) eqn:P.
+      + inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
+        congruence.
+      + congruence.
+    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+      + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
+      + congruence.
+      + congruence.
+      + inversion H1. reflexivity.
+    - simpl in H1. destruct (n =? n1) eqn:P.
+      + inversion H1.
+      + congruence.
+    - inversion H1. destruct (n0 =? n1) eqn:P.
+      + inversion H3.
+      + assumption.
+    - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+      apply evar_is_fresh_in_app_r in H. assumption.
+      apply evar_is_fresh_in_app_r in H0. assumption.
+      apply evar_is_fresh_in_app_l in H. assumption.
+      apply evar_is_fresh_in_app_l in H0. assumption.
+    - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+      apply evar_is_fresh_in_imp_r in H. assumption.
+      apply evar_is_fresh_in_imp_r in H0. assumption.
+      apply evar_is_fresh_in_imp_l in H. assumption.
+      apply evar_is_fresh_in_imp_l in H0. assumption.
+    - inversion H1. apply IHphi in H3. subst. reflexivity.
+      apply evar_is_fresh_in_exists in H. assumption.
+      apply evar_is_fresh_in_exists in H0. assumption.
+    - inversion H1. apply IHphi in H3. subst. reflexivity.
+      apply evar_is_fresh_in_mu in H. assumption.
+      apply evar_is_fresh_in_mu in H0. assumption.
+  Qed.
 
-Lemma svar_open_inj : ∀ phi psi X n,
-  svar_is_fresh_in X phi → svar_is_fresh_in X psi →
-  svar_open n X phi =
-    svar_open n X psi
-    → phi = psi.
-Proof.
-  induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
-  - simpl in H1. destruct (n =? n0) eqn:P.
-    + inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
-      congruence.
-    + congruence.
-  - inversion H1. destruct (n0 =? n1) eqn:P.
-    + inversion H3.
-    + assumption.
-  - simpl in H1. destruct (n =? n0) eqn:P.
-    + inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
-      congruence.
-    + congruence.
-  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
-    + inversion H1. 
-    + congruence.
-    + congruence.
-    + inversion H1.
-  - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
-    + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
-    + congruence.
-    + congruence.
-    + inversion H1. reflexivity.
-  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
-    apply svar_is_fresh_in_app_r in H. assumption.
-    apply svar_is_fresh_in_app_r in H0. assumption.
-    apply svar_is_fresh_in_app_l in H. assumption.
-    apply svar_is_fresh_in_app_l in H0. assumption.
-  - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
-    apply svar_is_fresh_in_imp_r in H. assumption.
-    apply svar_is_fresh_in_imp_r in H0. assumption.
-    apply svar_is_fresh_in_imp_l in H. assumption.
-    apply svar_is_fresh_in_imp_l in H0. assumption.
-  - inversion H1. apply IHphi in H3. subst. reflexivity.
-    apply svar_is_fresh_in_exists in H. assumption.
-    apply svar_is_fresh_in_exists in H0. assumption.
-  - inversion H1. apply IHphi in H3. subst. reflexivity.
-    apply svar_is_fresh_in_mu in H. assumption.
-    apply svar_is_fresh_in_mu in H0. assumption.
-Qed.
+  Lemma svar_open_inj : ∀ phi psi X n,
+      svar_is_fresh_in X phi → svar_is_fresh_in X psi →
+      svar_open n X phi =
+      svar_open n X psi
+      → phi = psi.
+  Proof.
+    induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
+    - simpl in H1. destruct (n =? n0) eqn:P.
+      + inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
+        congruence.
+      + congruence.
+    - inversion H1. destruct (n0 =? n1) eqn:P.
+      + inversion H3.
+      + assumption.
+    - simpl in H1. destruct (n =? n0) eqn:P.
+      + inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
+        congruence.
+      + congruence.
+    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+      + inversion H1. 
+      + congruence.
+      + congruence.
+      + inversion H1.
+    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+      + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
+      + congruence.
+      + congruence.
+      + inversion H1. reflexivity.
+    - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+      apply svar_is_fresh_in_app_r in H. assumption.
+      apply svar_is_fresh_in_app_r in H0. assumption.
+      apply svar_is_fresh_in_app_l in H. assumption.
+      apply svar_is_fresh_in_app_l in H0. assumption.
+    - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
+      apply svar_is_fresh_in_imp_r in H. assumption.
+      apply svar_is_fresh_in_imp_r in H0. assumption.
+      apply svar_is_fresh_in_imp_l in H. assumption.
+      apply svar_is_fresh_in_imp_l in H0. assumption.
+    - inversion H1. apply IHphi in H3. subst. reflexivity.
+      apply svar_is_fresh_in_exists in H. assumption.
+      apply svar_is_fresh_in_exists in H0. assumption.
+    - inversion H1. apply IHphi in H3. subst. reflexivity.
+      apply svar_is_fresh_in_mu in H. assumption.
+      apply svar_is_fresh_in_mu in H0. assumption.
+  Qed.
 
-Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
-  (le (size phi) sz) → (well_formed_closed psi) → evar_is_fresh_in fresh phi →
-  evar_is_fresh_in fresh (free_svar_subst phi psi X)
-  →
-  (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
-Proof.
-  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
-  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
-    + rewrite -> evar_open_fresh. reflexivity. assumption.
-    + simpl. reflexivity.
-  - simpl. destruct (n =? n0) eqn:P.
-    + reflexivity.
-    + reflexivity.
-  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
-    apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
-    apply (evar_is_fresh_in_app_l Hfresh2).
-  - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. apply (evar_is_fresh_in_imp_r Hfresh1).
-    apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_imp_l Hfresh1).
-    apply (evar_is_fresh_in_imp_l Hfresh2).
-  - simpl. rewrite -> IHsz. reflexivity. lia. assumption.
-    apply evar_is_fresh_in_exists in Hfresh1. assumption.
-    simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
-  - simpl. rewrite -> IHsz. reflexivity.
-    lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
-    simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
-Qed.
+  Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
+      (le (size phi) sz) → (well_formed_closed psi) → evar_is_fresh_in fresh phi →
+      evar_is_fresh_in fresh (free_svar_subst phi psi X)
+      →
+      (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+  Proof.
+    induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
+    - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+      + rewrite -> evar_open_fresh. reflexivity. assumption.
+      + simpl. reflexivity.
+    - simpl. destruct (n =? n0) eqn:P.
+      + reflexivity.
+      + reflexivity.
+    - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+      reflexivity. apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+      apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
+      apply (evar_is_fresh_in_app_l Hfresh2).
+    - simpl. rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+      reflexivity. apply (evar_is_fresh_in_imp_r Hfresh1).
+      apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_imp_l Hfresh1).
+      apply (evar_is_fresh_in_imp_l Hfresh2).
+    - simpl. rewrite -> IHsz. reflexivity. lia. assumption.
+      apply evar_is_fresh_in_exists in Hfresh1. assumption.
+      simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
+    - simpl. rewrite -> IHsz. reflexivity.
+      lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
+      simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
+  Qed.
 
-Lemma evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
-  (well_formed_closed psi) → evar_is_fresh_in fresh phi →
-  evar_is_fresh_in fresh (free_svar_subst phi psi X)
-  →
-  (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
-Proof.
- intros. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
-Qed.
+  Lemma evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
+      (well_formed_closed psi) → evar_is_fresh_in fresh phi →
+      evar_is_fresh_in fresh (free_svar_subst phi psi X)
+      →
+      (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+  Proof.
+    intros. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
+  Qed.
 
-Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
-  (le (size phi) sz) → (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
-  svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
-  →
-  (svar_open n fresh (free_svar_subst phi psi X)) = 
-  (free_svar_subst (svar_open n fresh phi) psi X).
-Proof.
-  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
-  - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
-    + rewrite -> svar_open_fresh. reflexivity. assumption.
-    + simpl. reflexivity.
-  - (* simpl in Hwfc. *) simpl. destruct (n =? n0) eqn:P.
-    + simpl. destruct (svar_eqdec X fresh) eqn:D.
-      * rewrite -> e in Hneq. assert (fresh = fresh). reflexivity. contradiction.
-      * reflexivity.
-    + simpl. reflexivity.
-  - simpl. (* simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
-    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. (* apply wfc_ind_wfc. assumption. *)
-    simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
-    simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
-    (*apply wfc_ind_wfc. assumption. *)
-    simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
-    simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
-  - simpl. (*  simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
-    rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
-    reflexivity. 
-    (* apply wfc_ind_wfc. assumption. *)
-    simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
-    simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
-    (* apply wfc_ind_wfc. assumption. *)
-    simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
-    simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
-  - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
-      (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
-    simpl. remember (@evar_fresh (@variables signature) (elements B)) as x.
-    assert(x ∉ B).
+  Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
+      (le (size phi) sz) → (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
+      svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+      →
+      (svar_open n fresh (free_svar_subst phi psi X)) = 
+      (free_svar_subst (svar_open n fresh phi) psi X).
+  Proof.
+    induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
+    - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+      + rewrite -> svar_open_fresh. reflexivity. assumption.
+      + simpl. reflexivity.
+    - (* simpl in Hwfc. *) simpl. destruct (n =? n0) eqn:P.
+      + simpl. destruct (svar_eqdec X fresh) eqn:D.
+        * rewrite -> e in Hneq. assert (fresh = fresh). reflexivity. contradiction.
+        * reflexivity.
+      + simpl. reflexivity.
+    - simpl. (* simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+      rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+      reflexivity. (* apply wfc_ind_wfc. assumption. *)
+      simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
+      simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
+      (*apply wfc_ind_wfc. assumption. *)
+      simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
+      simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
+    - simpl. (*  simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+      rewrite -> IHsz; try lia; try assumption. rewrite -> IHsz; try lia; try assumption.
+      reflexivity. 
+      (* apply wfc_ind_wfc. assumption. *)
+      simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
+      simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
+      (* apply wfc_ind_wfc. assumption. *)
+      simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
+      simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
+    - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
+                                                                              (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
+      simpl. remember (@evar_fresh (@variables signature) (elements B)) as x.
+      assert(x ∉ B).
       {
         subst. apply set_evar_fresh_is_fresh'.
       }
       subst B.  apply not_elem_of_union in H. destruct H.
-    (*magic happens*)
-    erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open n0 fresh phi) psi X) x 0 _ _ ).
-    reflexivity.
-    (*x needs to be fresh in ...*)
-     rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
-     apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
-  - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
-      (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
-    simpl. remember (@svar_fresh (@variables signature) (elements B)) as X'.
-    assert(X' ∉ B).
+      (*magic happens*)
+      erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open n0 fresh phi) psi X) x 0 _ _ ).
+      reflexivity.
+      (*x needs to be fresh in ...*)
+      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
+      apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
+    - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
+                            (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
+      simpl. remember (@svar_fresh (@variables signature) (elements B)) as X'.
+      assert(X' ∉ B).
       {
         subst. apply set_svar_fresh_is_fresh'.
       }
       subst B.  apply not_elem_of_union in H. destruct H.
-    simpl.
-    (*magic happens*)
-    erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
-    reflexivity.
-    (*x needs to be fresh in ...*)
-     rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.
-     Unshelve.
-     {
-      unfold evar_is_fresh_in. assumption.
-     }
-     {
-      unfold evar_is_fresh_in. assumption.
-     }
-     {
-      unfold evar_is_fresh_in. assumption.
-     }
-     {
-      unfold evar_is_fresh_in. assumption.
-     }
-Qed.
+      simpl.
+      (*magic happens*)
+      erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
+      reflexivity.
+      (*x needs to be fresh in ...*)
+      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.
+      Unshelve.
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+      {
+        unfold evar_is_fresh_in. assumption.
+      }
+  Qed.
 
-Lemma svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
-  (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
-  svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
-  →
-  (svar_open n fresh (free_svar_subst phi psi X)) = 
-  (free_svar_subst (svar_open n fresh phi) psi X).
-Proof.
-  intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
-Qed.
+  Lemma svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
+      (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
+      svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+      →
+      (svar_open n fresh (free_svar_subst phi psi X)) = 
+      (free_svar_subst (svar_open n fresh phi) psi X).
+  Proof.
+    intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
+  Qed.
 
 End syntax.
 
 Hint Rewrite ->
-     @evar_open_free_evar
-     @evar_open_free_svar
-     @evar_open_bound_evar
-     @evar_open_bound_svar
-     @evar_open_sym
-     @evar_open_bott
-     @evar_open_app
-     @evar_open_imp
-     @evar_open_exists
-     @evar_open_mu
+@evar_open_free_evar
+  @evar_open_free_svar
+  @evar_open_bound_evar
+  @evar_open_bound_svar
+  @evar_open_sym
+  @evar_open_bott
+  @evar_open_app
+  @evar_open_imp
+  @evar_open_exists
+  @evar_open_mu
 
-     @svar_open_free_evar
-     @svar_open_free_svar
-     @svar_open_bound_evar
-     @svar_open_bound_svar
-     @svar_open_sym
-     @svar_open_bott
-     @svar_open_app
-     @svar_open_imp
-     @svar_open_exists
-     @svar_open_mu
+  @svar_open_free_evar
+  @svar_open_free_svar
+  @svar_open_bound_evar
+  @svar_open_bound_svar
+  @svar_open_sym
+  @svar_open_bott
+  @svar_open_app
+  @svar_open_imp
+  @svar_open_exists
+  @svar_open_mu
   : ml_db.
 
 Module Notations.
@@ -3521,7 +3515,7 @@ Module Notations.
   Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
   Notation "'Bot'" := patt_bott : ml_scope.
   Notation "a ---> b"  := (patt_imp a b) (at level 90, right associativity,
-                                         b at level 200) : ml_scope.
+                                          b at level 200) : ml_scope.
   Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
   Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
 
@@ -3556,126 +3550,128 @@ End BoundVarSugar.
 #[export]
  Hint Resolve
  evar_is_fresh_in_richer
-set_evar_fresh_is_fresh
-set_svar_fresh_is_fresh
-x_eq_fresh_impl_x_notin_free_evars
+ set_evar_fresh_is_fresh
+ set_svar_fresh_is_fresh
+ x_eq_fresh_impl_x_notin_free_evars
   : core.
 
-  Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
-    simpl;
-    (do ! [rewrite simpl_free_evars/=]) ;
-    apply elem_of_subseteq;
-    let x := fresh "x" in
-    let H := fresh "Hxin" in
-    (* TODO: maybe we need something like: *)
-    (*rewrite -!union_assoc_L.*)
-    (* We may also want to remove duplicates, at least those that are neighbors *)
-    intros x H;
-    repeat (
-        match H with
-        | ?L /\ ?R => fail "Not implemented: destruct H"
-        | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-        end
-      ).
+(* Tactics for resolving goals involving sets *)
 
-  Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
-    simpl;
-    (do ? [rewrite simpl_free_svars/=]) ;
-    apply elem_of_subseteq;
-    let x := fresh "x" in
-    let H := fresh "Hxin" in
-    (* TODO: maybe we need something like: *)
-    (*rewrite -!union_assoc_L.*)
-    (* We may also want to remove duplicates, at least those that are neighbors *)
-    intros x H;
-    repeat (
-        match H with
-        | ?L /\ ?R => fail "Not implemented: destruct H"
-        | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-        end
-      ).
+Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
+  simpl;
+  (do ! [rewrite simpl_free_evars/=]) ;
+  apply elem_of_subseteq;
+  let x := fresh "x" in
+  let H := fresh "Hxin" in
+  (* TODO: maybe we need something like: *)
+  (*rewrite -!union_assoc_L.*)
+  (* We may also want to remove duplicates, at least those that are neighbors *)
+  intros x H;
+  repeat (
+      match H with
+      | ?L /\ ?R => fail "Not implemented: destruct H"
+      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
+      end
+    ).
+
+Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
+  simpl;
+  (do ? [rewrite simpl_free_svars/=]) ;
+  apply elem_of_subseteq;
+  let x := fresh "x" in
+  let H := fresh "Hxin" in
+  (* TODO: maybe we need something like: *)
+  (*rewrite -!union_assoc_L.*)
+  (* We may also want to remove duplicates, at least those that are neighbors *)
+  intros x H;
+  repeat (
+      match H with
+      | ?L /\ ?R => fail "Not implemented: destruct H"
+      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
+      end
+    ).
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
-*)
-  (*
+ *)
+(*
   eauto depth using @sets.union_subseteq_l, @sets.union_subseteq_r
     with typeclass_instances.
-*)
+ *)
 
 (*
 #[export]
  Hint Extern 10 (free_evars _ ⊆ free_evars _) => solve_free_evars_inclusion : core.
-*)
+ *)
 
-  (* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
+(* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
      or `x₂ = fresh_evar ...`
-  *)
-  Ltac solve_fresh_neq :=
+ *)
+Ltac solve_fresh_neq :=
+  repeat (
+      match goal with
+      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+        pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+        pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+      end
+    );
+  (idtac + apply nesym);
+  match goal with
+  | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
+    simpl in H;
+    (do ! rewrite simpl_free_evars/= in H);
+    rewrite -?union_assoc_L in H;
     repeat (
         match goal with
-        | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
-        | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-          pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
+        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+          apply stdpp_ext.not_elem_of_singleton_1 in H;
+          first [ exact H | clear H]
+        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
-    (idtac + apply nesym);
-    match goal with
-    | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
-      simpl in H;
-      (do ! rewrite simpl_free_evars/= in H);
-      rewrite -?union_assoc_L in H;
-      repeat (
-          match goal with
-          | H: (not (elem_of ?x (singleton ?y))) |- _ =>
-            apply stdpp_ext.not_elem_of_singleton_1 in H;
-            first [ exact H | clear H]
-          | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
-          end
-        );
-      fail
-    end.
+    fail
+  end.
 
-  Ltac remember_fresh_svars :=
-    unfold fresh_svar in *;
-    repeat(
+Ltac remember_fresh_svars :=
+  unfold fresh_svar in *;
+  repeat(
+      match goal with
+      | |- context G [svar_fresh ?Y] =>
         match goal with
-        | |- context G [svar_fresh ?Y] =>
-          match goal with
-          | H: ?X = svar_fresh Y |- _ => fail 2
-          | _ => remember (svar_fresh Y)
-          end
-        | H1: context G [svar_fresh ?Y] |- _ =>
-          match goal with
-          | H2: ?X = svar_fresh Y |- _ => fail 2
-          | _ => remember (svar_fresh Y)
-          end
+        | H: ?X = svar_fresh Y |- _ => fail 2
+        | _ => remember (svar_fresh Y)
         end
-      ).
+      | H1: context G [svar_fresh ?Y] |- _ =>
+        match goal with
+        | H2: ?X = svar_fresh Y |- _ => fail 2
+        | _ => remember (svar_fresh Y)
+        end
+      end
+    ).
 
-  Ltac solve_fresh_svar_neq :=
-    subst; remember_fresh_svars;
+Ltac solve_fresh_svar_neq :=
+  subst; remember_fresh_svars;
+  repeat (
+      match goal with
+      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+      end
+    );
+  (idtac + apply nesym);
+  match goal with
+  | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
+    simpl in H;
+    (do ? rewrite simpl_free_svars/= in H);
+    rewrite -?union_assoc_L in H;
     repeat (
         match goal with
-        | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-          pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
-        | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-          pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+          apply stdpp_ext.not_elem_of_singleton_1 in H;
+          first [ exact H | clear H]
+        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
-    (idtac + apply nesym);
-    match goal with
-    | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
-      simpl in H;
-      (do ? rewrite simpl_free_svars/= in H);
-      rewrite -?union_assoc_L in H;
-      repeat (
-          match goal with
-          | H: (not (elem_of ?x (singleton ?y))) |- _ =>
-            apply stdpp_ext.not_elem_of_singleton_1 in H;
-            first [ exact H | clear H]
-          | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
-          end
-        );
-      fail
-    end.
+    fail
+  end.

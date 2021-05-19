@@ -14,6 +14,7 @@ Section ml_proof_system.
 
   Context {signature : Signature}.
 
+(* soundness for prop_ex_right *)
 Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
@@ -46,27 +47,25 @@ Proof.
       apply not_elem_of_union in n. destruct n. assumption.
     }
     split.
-      * erewrite -> (update_valuation_fresh). erewrite -> (evar_open_fresh). exact Hext_le.
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        rewrite -> (evar_open_fresh). unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
-        {
-          rewrite -> evar_open_fresh. unfold fresh_evar. simpl. 
-          pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-          unfold well_formed in H0.
-          apply andb_true_iff in H0.
-          destruct H0. assumption.
-        }
-      * assumption.
+  * erewrite -> pattern_interpretation_free_evar_independent.
+    erewrite -> evar_open_fresh. exact Hext_le.
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+    rewrite -> evar_open_fresh.
+    {
+      unfold fresh_evar. simpl. 
+      pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+
+  * assumption.
 Qed.
 
+(* soundness for prop_ex_left *)
 Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
       (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
   (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
@@ -92,36 +91,35 @@ Proof.
     exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
     exists le, re.
     split.
-    - rewrite -> evar_open_fresh. rewrite -> update_valuation_fresh. assumption.
-      unfold well_formed in H0.
-      apply andb_true_iff in H0.
-      destruct H0. assumption.
-      {
-        unfold fresh_evar. simpl. unfold evar_is_fresh_in.
-        pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-      }
-      unfold well_formed in H0.
-      apply andb_true_iff in H0.
-      destruct H0. assumption.
-    - split.
-      + erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
-        apply set_evar_fresh_is_fresh.
-        {
-          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-          apply not_elem_of_union in n. destruct n. assumption.
-        }
-      + assumption.
+  * erewrite -> evar_open_fresh.
+    erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
+    unfold well_formed in H0.
+    apply andb_true_iff in H0.
+    destruct H0. 
+    {
+      unfold fresh_evar. simpl. unfold evar_is_fresh_in.
+      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
+    apply andb_true_iff in H0.
+    destruct H0. assumption.
+  * split; try assumption.
+    erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
+    apply set_evar_fresh_is_fresh.
+    {
+      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+      apply not_elem_of_union in n. destruct n. assumption.
+    }
 Qed.
 
-Lemma proof_rule_set_var_subst_sound {m : Model}:
-  ∀ phi psi,
-  well_formed_closed phi  → well_formed psi →
-        (∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
-         pattern_interpretation evar_val svar_val phi = Full)
+(* free_svar_subst maintains soundness *)
+Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
+  well_formed_closed phi → well_formed psi →
+  (∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+      pattern_interpretation evar_val svar_val phi = Full)
   →
   ∀ X evar_val svar_val,
-  @pattern_interpretation signature m evar_val svar_val (free_svar_subst phi psi X) = Full.
+    @pattern_interpretation signature m evar_val svar_val (free_svar_subst phi psi X) = Full.
 Proof.
   intros. pose (H1 evar_val (update_svar_val X 
                                   (pattern_interpretation evar_val svar_val psi) svar_val)).
@@ -130,9 +128,6 @@ Qed.
 
   
   (* Proof system for AML ref. snapshot: Section 3 *)
-  (* TODO: all propagation rules, framing, use left and right rules (no contexts) like in bott *)
-  (* TODO: add well-formedness of theory *)
-  (* TODO: use well-formedness as parameter in proof system *)
 
   Reserved Notation "theory ⊢ pattern" (at level 1).
   Inductive ML_proof_system (theory : Theory) :
@@ -217,7 +212,6 @@ Qed.
       theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
-  (* TODO: is this correct? *)
   | Pre_fixp (phi : Pattern) :
       theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
@@ -233,7 +227,7 @@ Qed.
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
       theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
-                                                             (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
+                   (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
 
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
@@ -249,8 +243,10 @@ Proof.
   generalize dependent svar_val. generalize dependent evar_val. generalize dependent Hv.
   induction Hp.
 
+  (* hypothesis *)
   * intros Hv evar_val svar_val. apply Hv. assumption.
 
+  (* FOL reasoning - P1 *)
   * intros Hv evar_val svar_val.
     repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
@@ -262,6 +258,7 @@ Proof.
     unfold Included; intros; apply Union_is_or.
     inversion H1. left. assumption. right. apply Union_intror. assumption.
 
+  (* FOL reasoning - P2 *)
   * intros Hv evar_val svar_val.
     repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
@@ -307,6 +304,7 @@ Proof.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
+  (* FOL reasoning - P3 *)
   * intros Hv evar_val svar_val. 
     repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
@@ -315,12 +313,14 @@ Proof.
     apply Extensionality_Ensembles.
     apply Union_Compl_Fullset.
 
+  (* Modus ponens *)
   * intros Hv evar_val svar_val.
     pose (IHHp2 H0 Hv evar_val svar_val) as e.
     rewrite -> pattern_interpretation_iff_subset in e.
     apply Extensionality_Ensembles.
     constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
 
+  (* Existential quantifier *)
   * intros Hv evar_val svar_val.
     simpl.
     rewrite -> pattern_interpretation_imp_simpl.
@@ -339,6 +339,7 @@ Proof.
     -- right. unfold Complement in H. apply NNPP in H.
        constructor. exists (evar_val y). apply H.
 
+  (* Existential generalization *)
   * intros Hv evar_val svar_val.
     rewrite pattern_interpretation_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
@@ -386,6 +387,7 @@ Proof.
        rewrite pattern_interpretation_free_evar_independent in Hphi2. apply H1.
        apply Hphi2.
 
+  (* Propagation bottom - left *)
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
@@ -395,6 +397,7 @@ Proof.
     epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
+  (* Propagation bottom - right *)
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
@@ -404,6 +407,7 @@ Proof.
     epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
+  (* Propagation disjunction - left *)
   * intros Hv evar_val svar_val. 
     unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
     repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
@@ -429,6 +433,7 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
+  (* Propagation disjunction - right *)
   * intros Hv evar_val svar_val. 
     unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
     repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
@@ -455,14 +460,17 @@ Proof.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
+  (* Propagation exists - left *)
   * intros Hv evar_val svar_val. 
     apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv ).
 
+  (* Propagation exists - right *)
   * intros Hv evar_val svar_val. 
     apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
           (svar_val) Hwf H H0 Hv).
 
+  (* Framing - left *)
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
@@ -495,6 +503,7 @@ Proof.
       reflexivity.
     }
 
+  (* Framing - right *)
   * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
@@ -526,12 +535,14 @@ Proof.
       reflexivity.
     }
 
+  (* Set Variable Substitution *)
   * intros. epose proof (IHHp H Hv ) as IH.
     unfold well_formed in H.
     apply andb_true_iff in H. destruct H as [H1 H2].
-    eapply (proof_rule_set_var_subst_sound phi psi _ H0 ) in IH.
+    eapply (proof_rule_set_var_subst_sound phi psi H2 H0 ) in IH.
     exact IH.
-    
+
+  (* Pre-Fixpoint *)
   * intros Hv evar_val svar_val.
     apply pattern_interpretation_iff_subset. simpl.
     rewrite -> pattern_interpretation_mu_simpl.
@@ -576,11 +587,10 @@ Proof.
     2: { apply set_svar_fresh_is_fresh. }
     unfold Included. intros. auto.
 
+  (* Knaster-Tarski *)
   * intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
-
-
-   simpl.
+    simpl.
     remember (fun S : Ensemble (Domain m) =>
                 pattern_interpretation evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
@@ -652,6 +662,7 @@ Proof.
     rewrite <- set_substitution_lemma.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
 
+  (* Existence *)
   * intros Hv evar_val svar_val.
     assert (pattern_interpretation evar_val svar_val (ex , BoundVarSugar.b0)
             = pattern_interpretation evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
@@ -678,6 +689,7 @@ Proof.
     rewrite pattern_interpretation_imp_simpl.
     rewrite eq_iff_Same_set. apply Union_Compl_Fullset.
 
+  (* Singleton *)
   * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
                pattern_interpretation
                  evar_val svar_val
@@ -712,8 +724,6 @@ Proof.
     rewrite pattern_interpretation_predicate_not.
     - apply empty_impl_not_full. rewrite Hemp. reflexivity.
     - unfold M_predicate. right. apply Hemp.
-
-    Unshelve. rewrite H2; reflexivity.
 Qed.
 
 End ml_proof_system.
