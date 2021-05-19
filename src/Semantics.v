@@ -1743,7 +1743,8 @@ Proof.
 
       rewrite -> IHsz with (x := Xu).
       3: { apply evar_is_fresh_in_evar_open.
-           admit. admit. (*solve_fresh_neq*)
+           { solve_fresh_neq. }
+           admit. (*solve_fresh_neq*)
       }
       2: { rewrite -evar_open_size. lia. }
       
