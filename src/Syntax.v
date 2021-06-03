@@ -3603,35 +3603,6 @@ Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
  Hint Extern 10 (free_evars _ ⊆ free_evars _) => solve_free_evars_inclusion : core.
  *)
 
-(* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
-     or `x₂ = fresh_evar ...`
- *)
-Ltac solve_fresh_neq :=
-  repeat (
-      match goal with
-      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
-      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (x_eq_fresh_impl_x_notin_free_evars Heq); clear Heq
-      end
-    );
-  (idtac + apply nesym);
-  match goal with
-  | H: not (elem_of ?x (free_evars ?phi)) |- not (eq ?x ?y) =>
-    simpl in H;
-    (do ! rewrite simpl_free_evars/= in H);
-    rewrite -?union_assoc_L in H;
-    repeat (
-        match goal with
-        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
-          apply stdpp_ext.not_elem_of_singleton_1 in H;
-          first [ exact H | clear H]
-        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
-        end
-      );
-    fail
-  end.
-
 Ltac remember_fresh_svars :=
   unfold fresh_svar in *;
   repeat(
@@ -3648,6 +3619,55 @@ Ltac remember_fresh_svars :=
         end
       end
     ).
+
+Ltac remember_fresh_evars :=
+  unfold fresh_evar in *;
+  repeat(
+      match goal with
+      | |- context G [evar_fresh ?Y] =>
+        match goal with
+        | H: ?X = evar_fresh Y |- _ => fail 2
+        | _ => remember (evar_fresh Y)
+        end
+      | H1: context G [evar_fresh ?Y] |- _ =>
+        match goal with
+        | H2: ?X = evar_fresh Y |- _ => fail 2
+        | _ => remember (evar_fresh Y)
+        end
+      end
+    ).
+
+
+(* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
+     or `x₂ = fresh_evar ...`
+ *)
+Ltac solve_fresh_neq :=
+  subst; remember_fresh_evars;
+  repeat (
+      match goal with
+      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+      end
+    );
+  (idtac + apply nesym);
+  match goal with
+  | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
+    simpl in H;
+    (do ? rewrite simpl_free_evars/= in H);
+    rewrite -?union_assoc_L in H;
+    repeat (
+        match goal with
+        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+          apply stdpp_ext.not_elem_of_singleton_1 in H;
+          first [ exact H | clear H]
+        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+        end
+      );
+    fail
+  end.
+
 
 Ltac solve_fresh_svar_neq :=
   subst; remember_fresh_svars;
