@@ -2168,6 +2168,34 @@ Section syntax.
     - apply sub_mu. apply IHϕ₁. auto.
   Qed.
 
+  Lemma bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
+    bevar_occur ϕ₁ dbi = true ->
+    is_subformula_of_ind ϕ₂ (bevar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
+    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
+      + lia.
+      + constructor. reflexivity.
+      + lia.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bevar_occur ϕ₁1 dbi); case: (bevar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_app_l. auto.
+      + apply sub_app_l. auto.
+      + apply sub_app_r. auto.
+      + done.
+    - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
+      move: H H1 IHϕ₁1 IHϕ₁2.
+      case: (bevar_occur ϕ₁1 dbi); case: (bevar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_l. auto.
+      + apply sub_imp_r. auto.
+      + done.
+    - apply sub_exists. auto.
+    - apply sub_mu. apply IHϕ₁. auto.
+  Qed.
+
   Lemma Private_bsvar_occur_evar_open sz dbi1 dbi2 X phi:
     size phi <= sz ->
     bsvar_occur phi dbi1 = false ->
@@ -2355,8 +2383,66 @@ Section syntax.
     - auto.
   Qed.
 
+    Lemma free_svars_bevar_subst ϕ₁ ϕ₂ dbi:
+    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) ⊆ free_svars ϕ₁ ∪ free_svars ϕ₂.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros db; simpl.
+    - apply empty_subseteq.
+    - apply union_subseteq_l.
+    - destruct (compare_nat n db); simpl.
+      + apply empty_subseteq.
+      + apply union_subseteq_r.
+      +  apply empty_subseteq.
+    - apply empty_subseteq.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars ϕ₁1) as B1.
+      remember (free_svars ϕ₁2) as B2.
+      remember (free_svars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - apply empty_subseteq.
+    - specialize (IHϕ₁1 db).
+      specialize (IHϕ₁2 db).
+      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
+      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars ϕ₁1) as B1.
+      remember (free_svars ϕ₁2) as B2.
+      remember (free_svars ϕ₂) as C.
+      rewrite <- union_assoc_L.
+      rewrite {1}[B2 ∪ C]union_comm_L.
+      rewrite -{1}[C]union_idemp_L.
+      rewrite -[C ∪ C ∪ B2]union_assoc_L.
+      rewrite [B1 ∪ _]union_assoc_L.
+      rewrite [C ∪ B2]union_comm_L.
+      apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
   Lemma free_evars_bsvar_subst_1 ϕ₁ ϕ₂ dbi:
     free_evars ϕ₁ ⊆ free_evars (bsvar_subst ϕ₁ ϕ₂ dbi).
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi; simpl; try apply reflexivity.
+    - apply empty_subseteq.
+    - apply union_mono; auto.
+    - apply union_mono; auto.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_svars_bevar_subst_1 ϕ₁ ϕ₂ dbi:
+    free_svars ϕ₁ ⊆ free_svars (bevar_subst ϕ₁ ϕ₂ dbi).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi; simpl; try apply reflexivity.
@@ -2378,6 +2464,19 @@ Section syntax.
       + apply free_evars_bsvar_subst_1.
       + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
         apply free_evars_subformula. auto.
+  Qed.
+
+  Lemma free_svars_bevar_subst_eq ϕ₁ ϕ₂ dbi:
+    bevar_occur ϕ₁ dbi ->
+    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) = free_svars ϕ₁ ∪ free_svars ϕ₂.
+  Proof.
+    intros H.
+    apply (anti_symm subseteq).
+    - apply free_svars_bevar_subst.
+    - apply union_least.
+      + apply free_svars_bevar_subst_1.
+      + pose proof (Hsub := @bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+        apply free_svars_subformula. auto.
   Qed.
 
   Lemma bsvar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:

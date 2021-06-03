@@ -2046,7 +2046,8 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
            value is irrelevant. *)
             assert (Hpi: pattern_interpretation evar_val svar_val2' (svar_open 0 Xu phi')
                          = pattern_interpretation evar_val' svar_val2' (svar_open 0 Xu phi')).
-            { subst evar_val'. rewrite interpretation_fresh_evar. unfold evar_is_fresh_in.
+            { subst evar_val'. rewrite pattern_interpretation_free_evar_independent.
+              unfold evar_is_fresh_in.
               rewrite -> free_evars_svar_open. subst phi'. rewrite -> HeqHoc. auto.
               reflexivity.
             }
@@ -2064,8 +2065,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
               rewrite free_svars_evar_open in Hfr.
               rewrite free_svars_evar_open. auto.
             }
-            { apply bevar_occur_svar_open. symmetry. auto. }
-            
+            { apply bevar_occur_svar_open. symmetry. auto. } 
   Qed.
 
   Lemma element_substitution_lemma
