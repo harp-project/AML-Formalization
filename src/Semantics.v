@@ -8,6 +8,8 @@ From Coq.Logic Require Import FunctionalExtensionality Classical_Pred_Type.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
+From Equations Require Import Equations.
+
 From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets.
 
