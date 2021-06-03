@@ -1735,7 +1735,8 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
         rewrite -> IHsz with (x := Xu).
         3: { apply evar_is_fresh_in_evar_open.
-             admit. admit. (*solve_fresh_neq*)
+             { solve_fresh_neq. }
+             admit.
         }
         2: { rewrite -evar_open_size. lia. }
         
@@ -1746,7 +1747,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         -- rewrite [update_evar_val x' c evar_val y]update_evar_val_neq.
            apply not_eq_sym. apply n.
            rewrite update_evar_val_comm.
-           { admit. }
+           { solve_fresh_neq. }
            subst phi'.
            rewrite evar_open_comm.
            { lia. }
