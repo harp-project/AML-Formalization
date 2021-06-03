@@ -88,7 +88,7 @@ Section syntax.
     | patt_bound_evar n => match compare_nat n x with
                            | Nat_less _ _ _ => patt_bound_evar n
                            | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_evar (pred n)
+                           | Nat_greater _ _ _ => patt_bound_evar n (* (pred n) in Leroy's paper *)
                            end
     | patt_bound_svar n => patt_bound_svar n
     | patt_sym sigma => patt_sym sigma
@@ -109,8 +109,7 @@ Section syntax.
      our version keeps the greater indices intact. If someone needs the original behavior,
      she may write a standalone operation that only decrements high indices.
 
-     The function `bevar_subst` is kept in the original form, since I do not have a use-case
-     for the simplified version yet. But feel free to simplify it too.
+     The function `bevar_subst` is also changed.
    *)
   Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
     match phi with
@@ -1885,6 +1884,20 @@ Section syntax.
     - simpl. rewrite -> IHphi1. auto. auto.
   Qed.
 
+    Lemma svar_open_bevar_subst m phi1 phi2 dbi X
+    : well_formed_closed phi2 ->
+      svar_open m X (bevar_subst phi1 phi2 dbi)
+      = bevar_subst (svar_open m X phi1) phi2 dbi.
+  Proof.
+    generalize dependent dbi. generalize dependent m. induction phi1; intros m dbi Hwfc; auto.
+    - simpl. destruct (compare_nat n dbi); simpl; auto. auto using svar_open_wfc.
+    - simpl. destruct (n =? m) eqn:Heq, (compare_nat n (S dbi)) eqn:Hdbi; simpl; auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. rewrite -> IHphi1_1. rewrite -> IHphi1_2. auto. auto. auto.
+    - simpl. apply f_equal. rewrite -> IHphi1. auto. auto.
+    - simpl. rewrite -> IHphi1. auto. auto.
+  Qed.
+
   Lemma svar_open_bsvar_subst m phi1 phi2 dbi X
     : well_formed_closed phi2 ->
       m <> dbi ->
@@ -1920,7 +1933,7 @@ Section syntax.
       + rewrite Hdbi. apply evar_open_wfc. assumption.
       + destruct (Init.Nat.pred n =? m) eqn:Hpred; rewrite Hdbi.
         * apply beq_nat_true in Hpred. lia.
-        * reflexivity.
+        * rewrite Heq. reflexivity.
     - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
     - simpl. rewrite -> IHphi1_1; auto. rewrite -> IHphi1_2; auto.
     - simpl. apply f_equal. rewrite -> IHphi1; auto. lia.
@@ -1987,6 +2000,26 @@ Section syntax.
         apply union_mono_l. apply union_subseteq_l.
       + eapply PreOrder_Transitive. apply IHϕ2.
         apply union_mono_l. apply union_subseteq_r.
+    - auto.
+    - auto.
+  Qed.
+
+  Lemma free_evars_evar_open' ϕ x dbi:
+    free_evars ϕ ⊆ free_evars (evar_open dbi x ϕ).
+  Proof.
+    move: dbi.
+    induction ϕ; intros dbi; simpl; try apply empty_subseteq.
+    - apply PreOrder_Reflexive.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_subseteq_r.
+    - apply union_least.
+      + eapply PreOrder_Transitive. apply IHϕ1.
+        apply union_subseteq_l.
+      + eapply PreOrder_Transitive. apply IHϕ2.
+        apply union_subseteq_r.
     - auto.
     - auto.
   Qed.
@@ -2151,7 +2184,41 @@ Section syntax.
   Proof.
     apply Private_bsvar_occur_evar_open with (sz := size phi). lia.
   Qed.  
-  
+
+  Lemma Private_bevar_occur_svar_open sz dbi1 dbi2 X phi:
+    size phi <= sz ->
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    move: phi dbi1 dbi2.
+    induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
+    1,2: (destruct (n =? dbi2); reflexivity).
+  Qed.
+
+  Lemma bevar_occur_svar_open dbi1 dbi2 X phi:
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    apply Private_bevar_occur_svar_open with (sz := size phi). lia.
+  Qed.
+
+  Lemma Private_bevar_occur_evar_open sz dbi1 dbi2 X phi:
+    size phi <= sz ->
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (evar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    move: phi dbi1 dbi2.
+    induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
+    1,2: (destruct (n=? dbi2); auto).
+  Qed.
+
+  Lemma bevar_occur_evar_open dbi1 dbi2 X phi:
+    bevar_occur phi dbi1 = false ->
+    bevar_occur (evar_open dbi2 X phi) dbi1 = false.
+  Proof.
+    apply Private_bevar_occur_evar_open with (sz := size phi). lia.
+  Qed.
+
   Lemma free_evars_subformula ϕ₁ ϕ₂ :
     is_subformula_of_ind ϕ₁ ϕ₂ -> free_evars ϕ₁ ⊆ free_evars ϕ₂.
   Proof.
@@ -2338,6 +2405,31 @@ Section syntax.
     - rewrite -> IHϕ₁. 2: auto. auto.
   Qed.
 
+  Lemma bevar_subst_not_occur_is_noop ϕ₁ ϕ₂ dbi:
+    bevar_occur ϕ₁ dbi = false ->
+    bevar_subst ϕ₁ ϕ₂ dbi = ϕ₁.
+  Proof.
+    generalize dependent dbi.
+    induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
+    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
+      + inversion H.
+      + inversion H.
+      + inversion H.
+      + auto.
+      + contradiction.
+      + auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - apply orb_false_iff in H. destruct H as [H1 H2].
+      rewrite -> IHϕ₁1. 2: auto.
+      rewrite -> IHϕ₁2. 2: auto.
+      auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+    - rewrite -> IHϕ₁. 2: auto. auto.
+  Qed.
+  
   Lemma svar_open_not_occur_is_noop ϕ₁ X dbi:
     bsvar_occur ϕ₁ dbi = false ->
     svar_open dbi X ϕ₁ = ϕ₁.
