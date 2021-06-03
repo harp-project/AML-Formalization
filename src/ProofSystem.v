@@ -726,4 +726,6 @@ Proof.
     - unfold M_predicate. right. apply Hemp.
 Qed.
 
+Print Assumptions Soundness.
+
 End ml_proof_system.
