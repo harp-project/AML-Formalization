@@ -232,7 +232,7 @@ Section semantics.
 
   (* Semantics of AML ref. snapshot: Definition 3 *)
 
-  (*
+  (**)
 Definition pattern_lt (p1 p2 : Pattern) :=
   size p1 < size p2.
 Lemma pattern_lt_well_founded : well_founded (@pattern_lt).
@@ -252,7 +252,7 @@ Equations pattern_interpretation_aux {m : Model}
   pattern_interpretation_aux evar_val svar_val (patt_free_svar X) := svar_val X;
   pattern_interpretation_aux evar_val svar_val (patt_bound_evar x) := Empty_set _;
   pattern_interpretation_aux evar_val svar_val (patt_bound_svar x) := Empty_set _;
-  pattern_interpretation_aux evar_val svar_val (patt_sym s) := (sym_interp m) s;
+  pattern_interpretation_aux evar_val svar_val (patt_sym s) := (@sym_interp m) s;
   pattern_interpretation_aux evar_val svar_val (patt_app ls rs) :=
     app_ext (pattern_interpretation_aux evar_val svar_val ls)
                   (pattern_interpretation_aux evar_val svar_val rs);
@@ -261,12 +261,12 @@ Equations pattern_interpretation_aux {m : Model}
     Union _ (Complement _ (pattern_interpretation_aux evar_val svar_val ls))
             (pattern_interpretation_aux evar_val svar_val rs);
   pattern_interpretation_aux evar_val svar_val (patt_exists p') :=
-    let x := evar_fresh variables (free_evars p') in
+    let x := (fresh_evar p') in
     FA_Union
       (fun e => pattern_interpretation_aux (update_evar_val x e evar_val) svar_val
                                   (evar_open 0 x p'));
   pattern_interpretation_aux evar_val svar_val (patt_mu p') :=
-    let X := svar_fresh variables (free_svars p') in
+    let X := (fresh_svar p') in
     Ensembles_Ext.mu
       (fun S => pattern_interpretation_aux evar_val (update_svar_val X S svar_val)
                                   (svar_open 0 X p')).
@@ -274,9 +274,9 @@ Next Obligation. unfold pattern_lt. simpl. lia. Defined.
 Next Obligation. unfold pattern_lt. simpl. lia. Defined.
 Next Obligation. unfold pattern_lt. simpl. lia. Defined.
 Next Obligation. unfold pattern_lt. simpl. lia. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- evar_open_size. lia. apply signature. Defined.
-Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply signature. Defined.
-   *)
+Next Obligation. unfold pattern_lt. intros. simpl. rewrite <- evar_open_size. lia. Defined.
+
+(* *)
 
   Section with_model.
     Context {m : Model}.
