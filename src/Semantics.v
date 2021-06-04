@@ -369,7 +369,15 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       app_ext (pattern_interpretation evar_val svar_val ls)
               (pattern_interpretation evar_val svar_val rs).
     Proof.
-    Admitted.
+      unfold pattern_interpretation, pattern_interpretation_func.
+      rewrite fix_sub_eq.
+      intros x f g Heq.
+      destruct x. Tactics.program_simpl. unfold projT1, projT2.
+      destruct X; auto with f_equal.
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. }
+    Qed.
 
     Lemma pattern_interpretation_bott_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)) :
@@ -385,7 +393,15 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
                       (pattern_interpretation evar_val svar_val rs).
     Proof.
-    Admitted.
+      unfold pattern_interpretation, pattern_interpretation_func.
+      rewrite fix_sub_eq.
+      intros x f g Heq.
+      destruct x. Tactics.program_simpl. unfold projT1, projT2.
+      destruct X; auto with f_equal.
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. }
+    Qed.
 
     Lemma pattern_interpretation_ex_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
@@ -397,7 +413,15 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
                                          svar_val
                                          (evar_open 0 x p)).
     Proof.
-    Admitted.
+      unfold pattern_interpretation, pattern_interpretation_func.
+      rewrite fix_sub_eq.
+      intros x f g Heq.
+      destruct x. Tactics.program_simpl. unfold projT1, projT2.
+      destruct X; auto with f_equal.
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. }
+    Qed.
 
     Lemma pattern_interpretation_mu_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
@@ -409,7 +433,15 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
                                                         (update_svar_val X S svar_val)
                                                         (svar_open 0 X p)).
     Proof.
-    Admitted.
+      unfold pattern_interpretation, pattern_interpretation_func.
+      rewrite fix_sub_eq.
+      intros x f g Heq.
+      destruct x. Tactics.program_simpl. unfold projT1, projT2.
+      destruct X; auto with f_equal.
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. apply functional_extensionality; auto. }
+      { f_equal. }
+    Qed.
 
     (* TODO extend with derived constructs using typeclasses *)
     Definition pattern_interpretation_simpl :=
@@ -1620,146 +1652,6 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     lia. auto. auto.
   Qed.
 
-  (* analog of plugging patterns with element variables *)
-  Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) (M : Model) (phi : Pattern) (y : evar),
-      size phi <= sz -> forall (evar_val : EVarVal)
-                               (svar_val : SVarVal) (x : evar),
-        evar_is_fresh_in x phi ->
-        @pattern_interpretation M evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
-        = @pattern_interpretation M
-                                  (update_evar_val x (evar_val y) evar_val)
-                                  svar_val
-                                  (evar_open dbi x phi).
-  Proof.
-    induction sz; intros dbi M phi y Hsz evar_val svar_val x H.
-    - (* sz == 0 *)
-      destruct phi; simpl in Hsz; simpl.
-      + (* free_evar *)
-        unfold evar_is_fresh_in in H.
-        repeat rewrite -> pattern_interpretation_free_evar_simpl.
-        unfold update_evar_val.
-        destruct (evar_eqdec x x0).
-        * simpl. unfold not in H. exfalso. apply H.
-          apply elem_of_singleton_2. auto.
-        * auto.
-      + (* free_svar *)
-        repeat rewrite -> pattern_interpretation_free_svar_simpl.
-        auto.
-      + (* bound_evar *)
-        destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-          destruct (evar_eqdec x x). auto. contradiction.
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * auto.
-        * apply beq_nat_false in Heq. lia.
-        * auto.
-      + (* bound_svar *)
-        rewrite 2!pattern_interpretation_bound_svar_simpl; auto.
-      + (* sym *)
-        simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
-      + (* app *)
-        lia.
-      + (* bot *)
-        simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
-      + (* impl *)
-        lia.
-      + (* ex *)
-        lia.
-      + (* mu *)
-        lia.
-    - (* sz = S sz' *)
-      destruct phi; simpl.
-      (* HERE we duplicate some of the effort. I do not like it. *)
-      + (* free_evar *)
-        unfold evar_is_fresh_in in H.
-        repeat rewrite -> pattern_interpretation_free_evar_simpl.
-        unfold update_evar_val.
-        destruct (evar_eqdec x x0).
-        * simpl. unfold not in H. exfalso. apply H.
-          apply elem_of_singleton_2. auto.
-        * auto.
-      + (* free_svar *)
-        repeat rewrite -> pattern_interpretation_free_svar_simpl.
-        auto.
-      + (* bound_evar *)
-        destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-          destruct (evar_eqdec x x). auto. contradiction.
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * auto.
-        * apply beq_nat_false in Heq. lia.
-        * auto.
-      + (* bound_svar *)
-        rewrite 2!pattern_interpretation_bound_svar_simpl; auto.
-      + (* sym *)
-        simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
-      (* HERE the duplication ends *)
-      + (* app *)
-        unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
-        repeat rewrite -> pattern_interpretation_app_simpl.
-        simpl in Hsz.
-        repeat rewrite <- IHsz.
-        * reflexivity.
-        * lia.
-        * assumption.
-        * lia.
-        * auto.
-      + (* Bot. Again, a duplication of the sz=0 case *)
-        simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
-      + (* imp *)
-        simpl in Hsz.
-        unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
-        repeat rewrite -> pattern_interpretation_imp_simpl.
-        repeat rewrite <- IHsz.
-        * reflexivity.
-        * lia.
-        * assumption.
-        * lia.
-        * auto.
-
-      + (* ex *)
-        simpl in Hsz.
-        unfold evar_is_fresh_in in H. simpl in H.
-        repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
-        apply Same_set_to_eq. apply FA_Union_same. intros c.
-        remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
-        rewrite evar_open_bevar_subst.
-        { auto. }
-        { lia. }
-
-        remember (evar_open (S dbi) x phi) as phi'.
-        remember (fresh_evar phi') as Xfr'.
-        remember (evar_fresh (elements (union (free_evars phi') (singleton x')))) as Xu.
-
-        rewrite -> IHsz with (x := Xu).
-        3: { apply evar_is_fresh_in_evar_open.
-             { solve_fresh_neq. }
-             admit.
-        }
-        2: { rewrite -evar_open_size. lia. }
-        
-        destruct (evar_eqdec y x').
-        -- subst y.
-           rewrite update_evar_val_same.
-           subst phi'.
-           rewrite evar_open_comm. lia.
-           Search update_evar_val evar_open.
-           admit.
-        -- rewrite [update_evar_val x' c evar_val y]update_evar_val_neq.
-           apply not_eq_sym. apply n.
-           rewrite update_evar_val_comm.
-           { solve_fresh_neq. }
-           subst phi'.
-           rewrite evar_open_comm.
-           { lia. }
-           rewrite -> interpretation_fresh_evar_open with (y := Xfr').
-           
-           admit.
-           
-  Abort.
-
   Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) (M : Model) (phi : Pattern) (y : evar),
       size phi <= sz -> forall (evar_val : EVarVal)
                                (svar_val : SVarVal) (x : evar),
@@ -1957,7 +1849,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
         -- rewrite Heqx'.
            (*rewrite bevar_subst_not_occur_is_noop in Heqx'. { auto. }*)
-           Search bsvar_subst. rewrite bevar_subst_not_occur_is_noop.
+           rewrite bevar_subst_not_occur_is_noop.
            { auto. }
            rewrite bevar_subst_not_occur_is_noop.
            { apply bevar_occur_evar_open. apply Hbevar. }
