@@ -15,6 +15,9 @@ let
           url = "https://gitlab.mpi-sws.org/iris/stdpp.git";
           rev = lib.strings.fileContents ../deps/stdpp.rev;
         };
+        postPatch = ''
+          patchShebangs --build coq-lint.sh
+        '';
         buildInputs = with coq.ocamlPackages; [ ocaml camlp5 ];
         propagatedBuildInputs = [ coq ];
         enableParallelBuilding = true;
