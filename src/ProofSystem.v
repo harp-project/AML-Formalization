@@ -775,14 +775,78 @@ Locate unit.
 Example ex1 : void -> unit.
 Proof. tauto. Qed.
 
-Fixpoint pp_toCoq (pp : PropPattern) :=
+Fixpoint pp_toCoq (pp : PropPattern) : Prop :=
   match pp with
-  | pp_false => void
+  | pp_false => False
   | pp_atomic p => ((Empty_set _) ⊢ p)
-  | pp_imp p1 p2 => ((pp_toCoq p1) * (pp_toCoq p2))%type
+  | pp_imp p1 p2 => forall (prf : (pp_toCoq p1)), (pp_toCoq p2)
   end.
 
-  
+Fixpoint abstract_pp (p : Pattern) : PropPattern :=
+  match p with
+  | patt_bott => pp_false
+  | patt_imp p1 p2 => pp_imp (abstract_pp p1) (abstract_pp p2)
+  | _ => pp_atomic p
+  end.
 
+Lemma pp_flatten_abstract (p : Pattern) : pp_flatten (abstract_pp p) = p.
+Proof.
+  induction p; simpl; auto.
+  rewrite IHp1. rewrite IHp2. reflexivity.
+Qed.
+
+Lemma extractProof : forall (pp : PropPattern),
+    (pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)))
+    /\ (~(pp_toCoq pp) -> ((Empty_set _) ⊢ (patt_not (pp_flatten pp)))).
+Proof.
+  induction pp; split; simpl; intros H.
+  - inversion H.
+  - admit.
+  - exact H.
+  - admit.
+  - destruct IHpp1 as [IHpp11 IHpp12].
+    destruct IHpp2 as [IHpp21 IHpp22].
+    destruct (classic (pp_toCoq pp1)).
+    + specialize (H H0).
+      specialize (IHpp11 H0).
+      specialize (IHpp21 H).
+      clear IHpp12 IHpp22 H H0.
+      admit.
+    + specialize (IHpp12 H0).
+      clear -IHpp12.
+      admit.
+  - destruct IHpp1 as [IHpp11 IHpp12].
+    destruct IHpp2 as [IHpp21 IHpp22].
+    destruct (classic (pp_toCoq pp2)).
+    + assert (H2 : pp_toCoq pp1 -> pp_toCoq pp2).
+      { auto. }
+      contradiction.
+    + assert (H1 : pp_toCoq pp1).
+      { tauto. }
+      clear H.
+      specialize (IHpp11 H1).
+      clear IHpp12.
+      clear IHpp21.
+      specialize (IHpp22 H0).
+      clear H0 H1.
+      admit.
+Abort.
+
+Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
+Proof.
+  induction pp; simpl; intros H.
+  - inversion H.
+  - exact H.
+  - 
+
+  
+  intros pp H.
+  induction pp; simpl in H; simpl.
+  - inversion H.
+  - exact H.
+  - 
+    destruct H as [H1 H2].
+    specialize (IHpp1 H1).
+    specialize (IHpp2 H2).
 
 End ml_proof_system.
