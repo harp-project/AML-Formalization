@@ -801,9 +801,11 @@ Lemma extractProof : forall (pp : PropPattern),
 Proof.
   induction pp; split; simpl; intros H.
   - inversion H.
-  - admit.
+  - (* should work *)
+    admit.
   - exact H.
-  - admit.
+  - (* FAIL, cannot work. Maybe for predicate patterns..? *)
+    admit.
   - destruct IHpp1 as [IHpp11 IHpp12].
     destruct IHpp2 as [IHpp21 IHpp22].
     destruct (classic (pp_toCoq pp1)).
@@ -811,9 +813,11 @@ Proof.
       specialize (IHpp11 H0).
       specialize (IHpp21 H).
       clear IHpp12 IHpp22 H H0.
+      (* This should work *)
       admit.
     + specialize (IHpp12 H0).
       clear -IHpp12.
+      (* This should work *)
       admit.
   - destruct IHpp1 as [IHpp11 IHpp12].
     destruct IHpp2 as [IHpp21 IHpp22].
@@ -829,6 +833,7 @@ Proof.
       clear IHpp21.
       specialize (IHpp22 H0).
       clear H0 H1.
+      (* This should work *)
       admit.
 Abort.
 
@@ -837,16 +842,13 @@ Proof.
   induction pp; simpl; intros H.
   - inversion H.
   - exact H.
-  - 
-
-  
-  intros pp H.
-  induction pp; simpl in H; simpl.
-  - inversion H.
-  - exact H.
-  - 
-    destruct H as [H1 H2].
-    specialize (IHpp1 H1).
-    specialize (IHpp2 H2).
+  - destruct (classic (pp_toCoq pp1)).
+    + specialize (H H0).
+      specialize (IHpp1 H0).
+      specialize (IHpp2 H).
+      clear H H0.
+      (* This should work! *)
+      admit.
+Abort.
 
 End ml_proof_system.
