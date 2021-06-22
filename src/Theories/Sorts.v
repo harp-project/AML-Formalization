@@ -503,7 +503,7 @@ Section sorts.
       rewrite !(right_id_L ∅ union) in HB.
       apply sets.not_elem_of_union in HB. destruct HB as [HB _].
       apply sets.not_elem_of_union in HB. destruct HB as [Hx''freeinf Hx''neqx'].
-      apply stdpp_ext.not_elem_of_singleton_1 in Hx''neqx'.
+      apply not_elem_of_singleton_1 in Hx''neqx'.
       unfold nest_ex in Hx''freeinf.
       rewrite 2!free_evars_nest_ex_aux in Hx''freeinf.
 
@@ -609,7 +609,7 @@ Section sorts.
       rewrite !(left_id_L ∅ union) in HB.
       rewrite !(right_id_L ∅ union) in HB.
       apply sets.not_elem_of_union in HB. destruct HB as [Hx''freeinf Hx''neqx'].
-      apply stdpp_ext.not_elem_of_singleton_1 in Hx''neqx'.
+      apply not_elem_of_singleton_1 in Hx''neqx'.
       unfold nest_ex in Hx''freeinf.
       rewrite 2!free_evars_nest_ex_aux in Hx''freeinf.
 
