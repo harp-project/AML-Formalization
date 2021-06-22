@@ -728,24 +728,6 @@ Qed.
 
 Print Assumptions Soundness.
 
-Inductive PropPattern : Type :=
-| pp_false
-| pp_atomic (p : Pattern)
-| pp_and (p1 p2 : PropPattern)
-| pp_or (p1 p2 : PropPattern)
-(*| pp_impl (p1 p2 : PropPattern)*)
-| pp_neg (p : PropPattern)
-.
-
-Fixpoint pp_flatten (pp : PropPattern) : Pattern :=
-  match pp with
-  | pp_false => patt_bott
-  | pp_atomic p => p
-  | pp_and p1 p2 => patt_and (pp_flatten p1) (pp_flatten p2)
-  | pp_or p1 p2 => patt_or (pp_flatten p1) (pp_flatten p2)
-  | pp_neg p => patt_not (pp_flatten p)
-  end.
-
 Definition match_not (p : Pattern) : option Pattern :=
   match p with
   | patt_imp p patt_bott => Some p
@@ -776,7 +758,30 @@ Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
   | _ => None
   end.
 
+Inductive PropPattern : Type :=
+| pp_false
+| pp_atomic (p : Pattern)
+| pp_imp (p1 p2 : PropPattern)
+.
                 
+Fixpoint pp_flatten (pp : PropPattern) : Pattern :=
+  match pp with
+  | pp_false => patt_bott
+  | pp_atomic p => p
+  | pp_imp p1 p2 => patt_imp (pp_flatten p1) (pp_flatten p2)
+  end.
+
+Locate unit.
+Example ex1 : void -> unit.
+Proof. tauto. Qed.
+
+Fixpoint pp_toCoq (pp : PropPattern) :=
+  match pp with
+  | pp_false => void
+  | pp_atomic p => ((Empty_set _) ⊢ p)
+  | pp_imp p1 p2 => ((pp_toCoq p1) * (pp_toCoq p2))%type
+  end.
+
   
 
 
