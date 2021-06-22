@@ -2,16 +2,6 @@
 From Coq Require Import ssreflect.
 From stdpp Require Import pmap gmap mapset fin_sets sets list.
 
-Lemma not_elem_of_singleton_1 `{SemiSet A C} x y : ~ elem_of x ((singleton y) : C) -> ~ x = y.
-Proof.
-  unfold not. intros. rewrite <- elem_of_singleton in H5. auto.
-Qed.
-
-Lemma not_elem_of_singleton_2 `{SemiSet A C} x y : ~ x = y -> ~ elem_of x ((singleton y) : C).
-Proof.
-  unfold not. intros. rewrite -> elem_of_singleton in H5. auto.
-Qed.
-
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
 Proof.

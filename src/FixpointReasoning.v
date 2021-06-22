@@ -805,6 +805,7 @@ Section with_signature.
               rewrite -Htot.
               rewrite hd_error_lookup.
               rewrite hd_error_app. rewrite hd_error_app.
+              simpl.
               apply last_rev_head.
             }
             specialize (P (@conj _ _ Hm Hwit')). clear Hm Hwit'.

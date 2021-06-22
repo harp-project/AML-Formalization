@@ -3851,7 +3851,7 @@ Ltac solve_fresh_neq :=
     repeat (
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
-          apply stdpp_ext.not_elem_of_singleton_1 in H;
+          apply not_elem_of_singleton_1 in H;
           first [ exact H | clear H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
@@ -3879,7 +3879,7 @@ Ltac solve_fresh_svar_neq :=
     repeat (
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
-          apply stdpp_ext.not_elem_of_singleton_1 in H;
+          apply not_elem_of_singleton_1 in H;
           first [ exact H | clear H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
