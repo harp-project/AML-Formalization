@@ -14,6 +14,51 @@ Section ml_tauto.
   Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 
   Inductive PropPattern : Type :=
+  | pp_atomic (p : Pattern)
+  | pp_natomic (p : Pattern)
+  | pp_and (p1 p2 : PropPattern)
+  | pp_or (p1 p2 : PropPattern)
+  .
+
+  Fixpoint pp_flatten (pp : PropPattern) : Pattern :=
+    match pp with
+    | pp_atomic p => p
+    | pp_natomic p => patt_not p
+    | pp_and p1 p2 => patt_and (pp_flatten p1) (pp_flatten p2)
+    | pp_or p1 p2 => patt_or (pp_flatten p1) (pp_flatten p2)
+    end.
+
+  Fixpoint pp_toCoq (pp : PropPattern) : Prop :=
+    match pp with
+    | pp_atomic p => ((Empty_set _) ⊢ p)
+    | pp_natomic p => ((Empty_set _) ⊢ (patt_not p))
+    | pp_and p1 p2 => (pp_toCoq p1) /\ (pp_toCoq p2)
+    | pp_or p1 p2 => (pp_toCoq p1) \/ (pp_toCoq p2)
+    end.
+
+  Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
+  Proof.
+    induction pp; simpl; intros H.
+    - exact H.
+    - exact H.
+    - destruct H as [H1 H2].
+      specialize (IHpp1 H1).
+      specialize (IHpp2 H2).
+      clear H1 H2.
+      admit.
+    - destruct H as [H1|H2].
+      + specialize (IHpp1 H1).
+        clear IHpp2 H1.
+        admit.
+      + specialize (IHpp2 H2).
+        clear IHpp1 H2.
+        admit.
+  Abort.
+  
+
+  
+  
+  Inductive PropPattern : Type :=
   | pp_false
   | pp_atomic (p : Pattern)
   | pp_imp (p1 p2 : PropPattern)
@@ -56,6 +101,7 @@ Section ml_tauto.
       admit.
     - exact H.
     - (* FAIL, cannot work. Maybe for predicate patterns..? *)
+      simpl.
       admit.
     - destruct IHpp1 as [IHpp11 IHpp12].
       destruct IHpp2 as [IHpp21 IHpp22].
@@ -88,6 +134,13 @@ Section ml_tauto.
         admit.
   Abort.
 
+  Example ex2 {A B C : Prop} :
+    A \/ ~A.
+  Proof.
+    tauto. Show Proof.
+  Qed.
+  Print Assumptions ex2.
+  
   Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
   Proof.
     induction pp; simpl; intros H.
@@ -98,7 +151,13 @@ Section ml_tauto.
         specialize (IHpp1 H0).
         specialize (IHpp2 H).
         clear H H0.
+        Check deduction.
+        apply deduction.
+        3,4: assumption.
         (* This should work! *)
+        admit.
+        admit.
+      + (* This cannot work :-( *)
         admit.
   Abort.
 
