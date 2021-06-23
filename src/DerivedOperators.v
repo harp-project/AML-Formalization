@@ -34,6 +34,46 @@ Module Syntax.
     Definition patt_nu (phi : Pattern) :=
       patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
+    Lemma well_formed_not (phi : Pattern) :
+      well_formed phi ->
+      well_formed (patt_not phi).
+    Proof.
+      unfold well_formed. simpl.
+      unfold well_formed_closed. simpl.
+      intros H.
+      apply andb_prop in H. destruct H as [H1 H2].
+      rewrite H1. rewrite H2. reflexivity.
+    Qed.
+
+    Lemma well_formed_or (phi1 phi2 : Pattern) :
+      well_formed phi1 ->
+      well_formed phi2 ->
+      well_formed (patt_or phi1 phi2).
+    Proof.
+      unfold patt_or.
+      unfold well_formed. simpl.
+      unfold well_formed_closed. simpl.
+      intros H1 H2.
+      apply andb_prop in H1. destruct H1 as [H11 H12].
+      apply andb_prop in H2. destruct H2 as [H21 H22].
+      rewrite !(H11,H12,H21,H22).
+      reflexivity.
+    Qed.
+
+    Lemma well_formed_and (phi1 phi2 : Pattern) :
+      well_formed phi1 ->
+      well_formed phi2 ->
+      well_formed (patt_and phi1 phi2).
+    Proof.
+      unfold patt_or.
+      unfold well_formed. simpl.
+      unfold well_formed_closed. simpl.
+      intros H1 H2.
+      apply andb_prop in H1. destruct H1 as [H11 H12].
+      apply andb_prop in H2. destruct H2 as [H21 H22].
+      rewrite !(H11,H12,H21,H22).
+      reflexivity.
+    Qed.
     
     Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
     Proof. simpl. unfold patt_not. reflexivity. Qed.
@@ -501,6 +541,15 @@ End Semantics.
 Export Syntax Semantics.
 
 (*Module Hints.*)
+#[export]
+ Hint Resolve well_formed_not : core.
+
+#[export]
+ Hint Resolve well_formed_or : core.
+
+#[export]
+ Hint Resolve well_formed_and : core.
+
  #[export]
        Hint Resolve M_predicate_not : core.
  #[export]
@@ -519,7 +568,7 @@ Export Syntax Semantics.
        Hint Resolve T_predicate_or : core.
  #[export]
        Hint Resolve T_predicate_or : core.
-(*End Hints.*)
+ (*End Hints.*)
 
 
  Hint Rewrite ->

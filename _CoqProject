@@ -12,6 +12,7 @@ src/FixpointReasoning.v
 src/DerivedOperators.v
 src/SignatureHelper.v
 src/Logic.v
+src/MLTauto.v
 
 src/Helpers/monotonic.v
 src/Helpers/FOL_helpers.v

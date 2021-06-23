@@ -502,6 +502,34 @@ Proof.
   all:wf_proof. 
 Qed.
 
+Lemma disj_right_intro_meta (theory : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  theory ⊢ B ->
+  theory ⊢ (A or B).
+Proof.
+  intros HwfA HwfB HB.
+  eapply (Modus_ponens _ _ _ _ _).
+  { exact HB. }
+  eapply disj_right_intro; assumption.
+  Unshelve.
+  all: auto.
+Qed.
+
+Lemma disj_left_intro_meta (theory : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  theory ⊢ A ->
+  theory ⊢ (A or B).
+Proof.
+  intros HwfA HwfB HA.
+  eapply (Modus_ponens _ _ _ _ _).
+  { exact HA. }
+  eapply disj_left_intro; assumption.
+  Unshelve.
+  all: auto.
+Qed.
+
 (*TODO: Is this redundant?*)
 Lemma not_not_elim (theory : Theory) (A : Pattern) :
   well_formed A -> theory ⊢ (¬(¬A) ---> A).
