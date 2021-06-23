@@ -55,11 +55,12 @@ Section ml_tauto.
     - destruct H as [H1|H2].
       + specialize (IHpp1 H1).
         clear IHpp2 H1.
-        admit.
+        apply disj_left_intro_meta; auto using pp_flatten_well_formed.
       + specialize (IHpp2 H2).
         clear IHpp1 H2.
-        admit.
-  Abort.
+        apply disj_right_intro_meta; auto using pp_flatten_well_formed.
+  Qed.
+  
 
   (* TODO: a function [abstract : Pattern -> PropPattern] *)
 End ml_tauto.

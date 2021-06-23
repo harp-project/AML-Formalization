@@ -828,6 +828,26 @@ Section syntax.
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
 
+  Lemma well_formed_bott:
+    well_formed patt_bott.
+  Proof.
+    unfold well_formed. simpl.
+    unfold well_formed_closed. simpl.
+    reflexivity.
+  Qed.
+
+  Lemma well_formed_imp ϕ₁ ϕ₂:
+    well_formed ϕ₁ ->
+    well_formed ϕ₂ ->
+    well_formed (patt_imp ϕ₁ ϕ₂).
+  Proof.
+    unfold well_formed. unfold well_formed_closed. simpl.
+    intros H1 H2.
+    apply andb_prop in H1. destruct H1 as [H11 H12].
+    apply andb_prop in H2. destruct H2 as [H21 H22].
+    rewrite !(H11,H12,H21,H22).
+    reflexivity.
+  Qed.        
 
   (* fresh variables *)
 
@@ -3745,6 +3765,14 @@ End BoundVarSugar.
  set_svar_fresh_is_fresh
  x_eq_fresh_impl_x_notin_free_evars
   : core.
+
+#[export]
+ Hint Resolve well_formed_bott : core.
+
+#[export]
+ Hint Resolve well_formed_imp : core.
+
+
 
 (* Tactics for resolving goals involving sets *)
 
