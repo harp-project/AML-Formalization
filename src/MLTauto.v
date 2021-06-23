@@ -14,24 +14,30 @@ Section ml_tauto.
   Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 
   Inductive PropPattern : Type :=
-  | pp_atomic (p : Pattern)
-  | pp_natomic (p : Pattern)
+  | pp_atomic (p : Pattern) (wf : well_formed p)
+  | pp_natomic (p : Pattern) (wf : well_formed p)
   | pp_and (p1 p2 : PropPattern)
   | pp_or (p1 p2 : PropPattern)
   .
 
   Fixpoint pp_flatten (pp : PropPattern) : Pattern :=
     match pp with
-    | pp_atomic p => p
-    | pp_natomic p => patt_not p
+    | pp_atomic p _ => p
+    | pp_natomic p _ => patt_not p
     | pp_and p1 p2 => patt_and (pp_flatten p1) (pp_flatten p2)
     | pp_or p1 p2 => patt_or (pp_flatten p1) (pp_flatten p2)
     end.
 
+  Lemma pp_flatten_well_formed (pp : PropPattern) :
+    well_formed (pp_flatten pp).
+  Proof.
+    induction pp; simpl; auto.
+  Qed.
+  
   Fixpoint pp_toCoq (pp : PropPattern) : Prop :=
     match pp with
-    | pp_atomic p => ((Empty_set _) ⊢ p)
-    | pp_natomic p => ((Empty_set _) ⊢ (patt_not p))
+    | pp_atomic p _ => ((Empty_set _) ⊢ p)
+    | pp_natomic p _ => ((Empty_set _) ⊢ (patt_not p))
     | pp_and p1 p2 => (pp_toCoq p1) /\ (pp_toCoq p2)
     | pp_or p1 p2 => (pp_toCoq p1) \/ (pp_toCoq p2)
     end.
@@ -45,7 +51,7 @@ Section ml_tauto.
       specialize (IHpp1 H1).
       specialize (IHpp2 H2).
       clear H1 H2.
-      admit.
+      apply conj_intro_meta; auto using pp_flatten_well_formed.
     - destruct H as [H1|H2].
       + specialize (IHpp1 H1).
         clear IHpp2 H1.
@@ -54,5 +60,6 @@ Section ml_tauto.
         clear IHpp1 H2.
         admit.
   Abort.
-  
+
+  (* TODO: a function [abstract : Pattern -> PropPattern] *)
 End ml_tauto.
