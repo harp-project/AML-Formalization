@@ -60,7 +60,50 @@ Section ml_tauto.
         clear IHpp1 H2.
         apply disj_right_intro_meta; auto using pp_flatten_well_formed.
   Qed.
-  
+
+  (* Negates and to or and vice versa *)
+  Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
+    match (match_and p) with
+    | Some (p1, p2) => patt_or (negate p1) (negate p2)
+    | None =>
+      match (match_or p) with
+      | Some (p1, p2) => patt_and (negate p1) (negate p2)
+      | None =>
+        match (match_not p) with
+        | Some p' => p'
+        | None => patt_not p
+        end
+      end
+    end.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_and_size in Heq_anonymous.
+    exact (proj1 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_and_size in Heq_anonymous.
+    exact (proj2 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_or_size in Heq_anonymous.
+    exact (proj1 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_or_size in Heq_anonymous.
+    exact (proj2 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+
+  (* TODO: prove that negation is equivalent to the original *)
 
   (* TODO: a function [abstract : Pattern -> PropPattern] *)
 End ml_tauto.
