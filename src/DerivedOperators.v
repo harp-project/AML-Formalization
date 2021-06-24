@@ -167,6 +167,15 @@ Module Syntax.
   Proof.
     reflexivity.
   Qed.
+
+  Lemma match_not_size (p p' : Pattern) :
+    match_not p = Some p' ->
+    size p' < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    destruct p2; inversion H1; clear H1.
+    subst. simpl. lia.
+  Qed.  
     
   Definition match_or (p : Pattern) : option (Pattern * Pattern) :=
     match p with
@@ -182,6 +191,18 @@ Module Syntax.
     match_or (patt_or p1 p2) = Some (p1, p2).
   Proof.
     reflexivity.
+  Qed.
+
+  Lemma match_or_size (p p1 p2 : Pattern) :
+    match_or p = Some (p1, p2) ->
+    size p1 < size p /\ size p2 < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    remember (match_not p3) as p3'. destruct p3'.
+    2: { inversion H1. }
+    inversion H1; subst; clear H1.
+    symmetry in Heqp3'. apply match_not_size in Heqp3'.
+    lia.
   Qed.
   
   Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
@@ -204,6 +225,34 @@ Module Syntax.
     reflexivity.
   Qed.
 
+  Lemma match_and_size (p p1 p2 : Pattern) :
+    match_and p = Some (p1, p2) ->
+    size p1 < size p /\ size p2 < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    unfold match_and in H1.
+    remember (match_not (patt_imp p3 p4)) as q1.
+    destruct q1.
+    2: { inversion H1. }
+    remember (match_or p) as q2.
+    destruct q2.
+    2: { inversion H1. }
+    destruct p0 as [q3 q4].
+    remember (match_not q3) as q5.
+    destruct q5.
+    2: { inversion H1. }
+    remember (match_not q4) as q6.
+    destruct q6.
+    2: { inversion H1. }
+    inversion H1. subst p0 p5. clear H1.
+    symmetry in Heqq1. apply match_not_size in Heqq1. simpl in Heqq1.
+    symmetry in Heqq2. apply match_or_size in Heqq2.
+    symmetry in Heqq5. apply match_not_size in Heqq5.
+    symmetry in Heqq6. apply match_not_size in Heqq6.
+    lia.
+  Qed.
+
+  
   End with_signature.
 
 End Syntax.
