@@ -5,6 +5,34 @@ From Coq.micromega Require Import Lia.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
+(*
+  Γ ⊢ patt_or A (patt_not A)
+  ==> ((Γ ⊢ A) \/ ~ (Γ ⊢ A))
+  ==> pp_toCoq (patt_or A (patt_not A)) = ((Γ ⊢ A) \/ ~ (Γ ⊢ A))
+  ==> tauto
+  ==>
+  Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
+  (* TODO: a function [abstract : Pattern -> PropPattern] *)
+
+  abstract: Pattern -> PropPattern
+  A -> B ==> pp_or (pp_natomic A) (pp_atomic B)
+  A \/ B == ~A -> B ==> pp_or (pp_atomic A) (pp_atomic B)
+  ~A -> (B -> C) ==> A \/ (B -> C)
+
+  Lemma flatten_abstract: ⊢ pp_flatten (abstract phi) <-> phi
+
+  |- A <-> B ==> |- C[A] <-> C[B]
+
+  Goal: Γ ⊢ patt_or A (patt_not A)
+
+  Γ ⊢ pp_flatten ( pp_or (pp_atomic A) (pp_natomic A) )
+
+Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
+
+ apply extractProof.
+
+
+ *)
 
 Section ml_tauto.
   Open Scope ml_scope.
@@ -62,9 +90,6 @@ Section ml_tauto.
         apply disj_right_intro_meta; auto using pp_flatten_well_formed.
   Qed.
 
-  
-
-  
   (* Negates and to or and vice versa *)
   Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
     match (match_and p) with
@@ -75,7 +100,11 @@ Section ml_tauto.
       | None =>
         match (match_not p) with
         | Some p' => p'
-        | None => patt_not p
+        | None =>
+          match p with
+          | patt_imp p1 p2 => patt_and p1 (negate p2)
+          | _ => patt_not p
+          end
         end
       end
     end.
@@ -104,8 +133,39 @@ Section ml_tauto.
     exact (proj2 Heq_anonymous).
   Defined.
   Next Obligation.
+    intros.
+    subst. simpl. lia.
+  Defined.
+  Next Obligation.
     Tactics.program_simpl.
   Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+    Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+    Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+    Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+    Next Obligation.
+    Tactics.program_simpl.
+  Defined.    
 
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
@@ -158,8 +218,7 @@ Section ml_tauto.
     destruct x; auto.
     cbv [match_and]. cbv [match_or]. cbv [match_not].
     (* TODO improve performance *)
-    destruct x1,x2;
-      try reflexivity;
+    destruct x1,x2; auto with f_equal;
       destruct x1_2;
       auto with f_equal;
       intros;
@@ -178,7 +237,7 @@ Section ml_tauto.
     rewrite Wf.fix_sub_eq; unfold match_and; unfold match_or; unfold match_not;
       try destruct x; auto; try destruct x_2; auto.
 
-    destruct x2; destruct x1; auto; destruct x1_2; auto with f_equal;
+    destruct x2; destruct x1; auto with f_equal; destruct x1_2; auto with f_equal;
       destruct x1_1; auto with f_equal; destruct x1_1_2; auto with f_equal;
         destruct x1_1_1; auto with f_equal; destruct x1_1_1_2; auto with f_equal.
 
