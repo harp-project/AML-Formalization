@@ -24,5 +24,4 @@ let
 
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
-  equations = ncoqPackages.equations;
-in { inherit stdpp; coq = ncoq; inherit equations; }
+in { inherit stdpp; coq = ncoq;  }
