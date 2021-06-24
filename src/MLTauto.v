@@ -64,6 +64,75 @@ Section ml_tauto.
         apply disj_right_intro_meta; auto using pp_flatten_well_formed.
   Qed.
 
+
+  #[tactic=simpl]
+  Equations negate_eq (p : Pattern) : Pattern by wf (size p) lt :=
+    negate_eq patt_bott := patt_not patt_bott ;
+    negate_eq (patt_free_evar x) := patt_not (patt_free_evar x) ;
+    negate_eq (patt_free_svar X) := patt_not (patt_free_svar X) ;
+    negate_eq (patt_bound_evar n) := patt_not (patt_bound_evar n) ;
+    negate_eq (patt_bound_svar n) := patt_not (patt_bound_svar n) ;
+    negate_eq (patt_sym s) := patt_not (patt_sym s) ;
+    negate_eq (patt_app phi1 phi2) := patt_not (patt_app phi1 phi2) ;
+    negate_eq (patt_exists phi) := patt_not (patt_exists phi) ;
+    negate_eq (patt_mu phi) := patt_not (patt_mu phi) ;
+    
+    negate_eq (patt_imp phi1 phi2) with
+        (match_and (patt_imp phi1 phi2),
+        match_or (patt_imp phi1 phi2),
+        match_not (patt_imp phi1 phi2)) := {
+      | (Some (a1, a2), _, _) := patt_or (negate_eq a1) (negate_eq a2) ;
+      | (None, (Some (a1, a2)), _) := patt_and (negate_eq a1) (negate_eq a2) ;
+      | (None, None, (Some p')) := p' ;
+      | (None, None, None) :=
+        (* This would not make the termination checker happy *)
+        (* patt_and phi1 (negate_eq phi2) *)
+        patt_not (patt_imp phi1 phi2) }.
+
+    (*
+    negate_eq (patt_imp phi1 phi2) with
+        match_and (patt_imp phi1 phi2),
+        match_or (patt_imp phi1 phi2),
+        match_not (patt_imp phi1 phi2) => {
+      negate_eq (patt_imp phi1 phi2) (Some (a1, a2)) _ _ => patt_or (negate_eq a1) (negate_eq a2) ;
+      negate_eq (patt_imp phi1 phi2) None (Some (a1, a2)) _ => patt_and (negate_eq a1) (negate_eq a2) ;
+      negate_eq (patt_imp phi1 phi2) None None (Some p') => p' ;
+      negate_eq (patt_imp phi1 phi2) None None None :=
+        (* This would not make the termination checker happy *)
+        (* patt_and phi1 (negate_eq phi2) *)
+        patt_not (patt_imp phi1 phi2) }.*)
+  Proof.
+    
+    simpl. lia.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_and_size in Heq_anonymous.
+    exact (proj1 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_and_size in Heq_anonymous.
+    exact (proj2 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_or_size in Heq_anonymous.
+    exact (proj1 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    intros.
+    symmetry in Heq_anonymous.
+    apply match_or_size in Heq_anonymous.
+    exact (proj2 Heq_anonymous).
+  Defined.
+  Next Obligation.
+    Tactics.program_simpl.
+  Defined.
+
+  
   (* Negates and to or and vice versa *)
   Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
     match (match_and p) with
@@ -106,11 +175,6 @@ Section ml_tauto.
     Tactics.program_simpl.
   Defined.
 
-  Lemma negate_free_evar_simpl x:
-    negate (patt_free_evar x) = patt_not (patt_free_evar x).
-  Proof.
-    unfold negate. simpl.
-  
   (* TODO: prove that negation is equivalent to the negation of the original *)
   Lemma negate_equiv (p : Pattern) :
     (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).

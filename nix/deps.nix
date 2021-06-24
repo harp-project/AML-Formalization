@@ -24,5 +24,25 @@ let
 
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
-  equations = ncoqPackages.equations;
+  equations = ncoqPackages.callPackage
+    ( { coq, stdenv, fetchFromGithub }:
+      stdenv.mkDerivation {
+        name = "coq${coq.coq-version}-equations-head";
+
+        src = fetchGit {
+          url = "https://github.com/mattam82/Coq-Equations.git";
+          rev = lib.strings.fileContents ../deps/equations.rev;
+        };
+        buildInputs = with coq.ocamlPackages; [ ocaml ];
+        propagatedBuildInputs = [ coq ];
+        enableParallelBuilding = true;
+        postPatch = ''
+          patchShebangs --build configure.sh
+        '';
+        configurePhase = "./configure.sh";
+
+        installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+      } ) { } ;
+
+
 in { inherit stdpp; coq = ncoq; inherit equations; }
