@@ -156,7 +156,56 @@ Module Syntax.
       ebinder_svar_open := svar_open_forall ;
       |}.
 
+  Definition match_not (p : Pattern) : option Pattern :=
+    match p with
+    | patt_imp p patt_bott => Some p
+    | _ => None
+    end.
+
+  Lemma match_not_patt_not (p : Pattern) :
+    match_not (patt_not p) = Some p.
+  Proof.
+    reflexivity.
+  Qed.
+    
+  Definition match_or (p : Pattern) : option (Pattern * Pattern) :=
+    match p with
+    | patt_imp p1' p2 =>
+      match (match_not p1') with
+      | Some p1 => Some (p1, p2)
+      | _ => None
+      end
+    | _ => None
+    end.
+
+  Lemma match_or_patt_or (p1 p2 : Pattern) :
+    match_or (patt_or p1 p2) = Some (p1, p2).
+  Proof.
+    reflexivity.
+  Qed.
+  
+  Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
+    match (match_not p) with
+    | Some p' =>
+      match (match_or p') with
+      | Some (p1', p2') =>
+        match (match_not p1'),(match_not p2') with
+        | Some p1, Some p2 => Some (p1, p2)
+        | _,_ => None
+        end 
+      | _ => None
+      end
+    | _ => None
+    end.
+
+  Lemma match_and_patt_and (p1 p2 : Pattern) :
+    match_and (patt_and p1 p2) = Some (p1, p2).
+  Proof.
+    reflexivity.
+  Qed.
+
   End with_signature.
+
 End Syntax.
 
 
