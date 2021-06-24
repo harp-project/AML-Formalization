@@ -279,7 +279,23 @@ Section ml_tauto.
     - destruct p; simpl in Hsz;
        try (apply IHsz; auto; simpl; lia).
       + rewrite negate_app_simpl. apply conj_intro_meta; auto; apply A_impl_A; auto.
-      + 
+      + unfold negate. rewrite Wf.fix_sub_eq.
+        {intros.
+        destruct x; auto; simpl;
+          destruct x1,x2; unfold match_and, match_not; auto with f_equal;
+            destruct x1_2; simpl; auto with f_equal;
+              destruct x1_1; unfold match_not; auto with f_equal;
+                destruct x1_1_2; auto with f_equal;
+                  destruct x1_1_1; auto with f_equal;
+                    destruct x1_1_1_2; auto with f_equal.
+        destruct x1_2_2; auto with f_equal.
+        }
+
+        simpl. unfold match_and, match_not; auto with f_equal. simpl.
+        destruct p2; auto with f_equal; simpl;
+          destruct p1; auto with f_equal; simpl.
+
+        fold (negate ((patt_free_evar x0) ---> (patt_free_evar x))).
   Abort.
   
 
