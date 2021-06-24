@@ -1,5 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
+From Coq.micromega Require Import Lia.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
@@ -103,7 +104,26 @@ Section ml_tauto.
     Tactics.program_simpl.
   Defined.
 
-  (* TODO: prove that negation is equivalent to the original *)
+  Lemma negate_free_evar_simpl x:
+    negate (patt_free_evar x) = patt_not (patt_free_evar x).
+  Proof.
+    unfold negate. simpl.
+  
+  (* TODO: prove that negation is equivalent to the negation of the original *)
+  Lemma negate_equiv (p : Pattern) :
+    (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).
+  Proof.
+    remember (size p) as sz.
+    assert (Hsz: size p <= sz).
+    { lia. }
+    clear Heqsz.
+    induction sz.
+    - destruct p; simpl in Hsz; try lia.
+      
+    induction p; simpl.
+    - cbv [negate].
+  Abort.
+  
 
   (* TODO: a function [abstract : Pattern -> PropPattern] *)
 End ml_tauto.
