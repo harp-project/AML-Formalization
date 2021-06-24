@@ -64,6 +64,9 @@ Section ml_tauto.
         apply disj_right_intro_meta; auto using pp_flatten_well_formed.
   Qed.
 
+  
+
+  
   (* Negates and to or and vice versa *)
   Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
     match (match_and p) with
@@ -109,21 +112,117 @@ Section ml_tauto.
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
   Proof.
-    unfold negate. simpl.
+    reflexivity.
+  Qed.
+
+  Lemma negate_free_svar_simpl X:
+    negate (patt_free_svar X) = patt_not (patt_free_svar X).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_bound_evar_simpl n:
+    negate (patt_bound_evar n) = patt_not (patt_bound_evar n).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_bound_svar_simpl n:
+    negate (patt_bound_svar n) = patt_not (patt_bound_svar n).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_sym_simpl s:
+    negate (patt_sym s) = patt_not (patt_sym s).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_bott_simpl:
+    negate patt_bott = patt_not patt_bott.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_app_simpl p1 p2:
+    negate (patt_app p1 p2) = patt_not (patt_app p1 p2).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma negate_and_simpl p1 p2:
+    negate (patt_and p1 p2) = patt_or (negate p1) (negate p2).
+  Proof.
+    unfold negate. rewrite Wf.fix_sub_eq.
+    2: { Tactics.program_simpl. }
+    intros x f g H.
+    destruct x; auto.
+    cbv [match_and]. cbv [match_or]. cbv [match_not].
+    (* TODO improve performance *)
+    destruct x1,x2;
+      try reflexivity;
+      destruct x1_2;
+      auto with f_equal;
+      intros;
+      destruct x1_1; auto with f_equal;
+      destruct x1_1_2; auto with f_equal;
+      destruct x1_1_1; auto with f_equal;
+        try destruct x1_1_1_2; auto with f_equal.
+
+    destruct x1_2_2; auto with f_equal.
+  Qed.
+
+  Lemma negate_or_simpl p1 p2:
+    negate (patt_or p1 p2) = patt_and (negate p1) (negate p2).
+  Proof.
+    unfold negate.
+    rewrite Wf.fix_sub_eq; unfold match_and; unfold match_or; unfold match_not;
+      try destruct x; auto; try destruct x_2; auto.
+
+    destruct x2; destruct x1; auto; destruct x1_2; auto with f_equal;
+      destruct x1_1; auto with f_equal; destruct x1_1_2; auto with f_equal;
+        destruct x1_1_1; auto with f_equal; destruct x1_1_1_2; auto with f_equal.
+
+    2: { unfold patt_or; destruct p2; auto. unfold patt_not. destruct p1; auto.
+         destruct p1_2; auto. destruct p1_1; auto.
+         destruct p1_1_2; auto.
+    }
+
+    destruct x1_2_2; auto. intros. auto with f_equal.
+  Qed.
+    
+
+  Definition negate_simpl :=
+    ( negate_free_evar_simpl,
+      negate_free_svar_simpl,
+      negate_bound_evar_simpl,
+      negate_bound_svar_simpl,
+      negate_sym_simpl,
+      negate_bott_simpl,
+      negate_app_simpl,
+      negate_and_simpl,
+      negate_or_simpl
+    ).
+
   
-  (* TODO: prove that negation is equivalent to the negation of the original *)
   Lemma negate_equiv (p : Pattern) :
+    well_formed p ->
     (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).
   Proof.
+    intros Hwfp.
     remember (size p) as sz.
     assert (Hsz: size p <= sz).
     { lia. }
     clear Heqsz.
-    induction sz.
-    - destruct p; simpl in Hsz; try lia.
-      
-    induction p; simpl.
-    - cbv [negate].
+    move: p Hwfp Hsz.
+    induction sz; intros p Hwfp Hsz.
+    - destruct p; simpl in Hsz; try lia; rewrite negate_simpl;
+        apply conj_intro_meta; auto; apply A_impl_A; auto.
+    - destruct p; simpl in Hsz;
+       try (apply IHsz; auto; simpl; lia).
+      + rewrite negate_app_simpl. apply conj_intro_meta; auto; apply A_impl_A; auto.
+      + 
   Abort.
   
 
