@@ -129,10 +129,13 @@ Section ml_tauto.
       end
     end.
 
+  Definition negate'_enough_fuel (p : Pattern) : nat := S (size p).
+
   Lemma negate'_terminates (p : Pattern) :
-    negate' (1 + size p) p <> None.
+    negate' (negate'_enough_fuel p) p <> None.
   Proof.
-    remember (1 + size p) as sz.
+    unfold negate'_enough_fuel.
+    remember (S (size p)) as sz.
     assert (Hsz: 1 + size p <= sz).
     { lia. }
     clear Heqsz.
@@ -199,90 +202,67 @@ Section ml_tauto.
     simpl in *. lia.
   Qed.
 
+  Lemma negate'_monotone (p : Pattern) (fuel fuel' : nat) :
+    fuel >= negate'_enough_fuel p ->
+    fuel' >= fuel ->
+    negate' fuel' p = negate' fuel p.
+  Proof.
+    remember (size p) as sz.
+    assert (Hsz: size p <= sz).
+    lia.
+    clear Heqsz.
+    move: p fuel fuel' Hsz.
+    induction sz;
+    intros p fuel fuel' Hsz Henough Hmore;
+    destruct p; simpl in Hsz; unfold negate'_enough_fuel in Henough; simpl in Henough; try lia;
+      destruct fuel,fuel'; try lia; simpl; try reflexivity.
+
+    remember (match_and (p1 ---> p2)) as q.
+    destruct q.
+    { destruct p.
+      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq. destruct Heqq as [Hsz1 Hsz2].
+      rewrite -> IHsz with (fuel := fuel).
+      2: { lia. }
+      2: { unfold negate'_enough_fuel. lia. }
+      2: { lia. }
+
+      rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
+      2: { lia. }
+      2: { unfold negate'_enough_fuel. lia. }
+      2: { lia. }
+      reflexivity.
+    }
+
+    remember (match_not p1) as q2.
+    destruct q2.
+    {
+      symmetry in Heqq2. apply match_not_size in Heqq2.
+      rewrite -> IHsz with (fuel := fuel).
+      2: { lia. }
+      2: { unfold negate'_enough_fuel. lia. }
+      2: { lia. }
+
+      rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
+      2: { lia. }
+      2: { unfold negate'_enough_fuel. lia. }
+      2: { lia. }
+      reflexivity.
+    }
+
+    destruct p2; try reflexivity; unfold fmap,option_fmap,option_map; rewrite -> IHsz with (fuel := fuel);
+      try reflexivity; unfold negate'_enough_fuel; try lia.
+  Qed.
+
+    
+  Definition negate''(p : Pattern) : option Pattern := negate' (S (size p)) p.
+  
   Definition negate (p : Pattern) : Pattern.
   Proof.
-    remember (negate' (S (size p)) p) as np.
+    remember (negate'' p) as np.
     destruct np.
     2: { symmetry in Heqnp. apply negate'_terminates in Heqnp. contradiction. }
     exact p0.
   Defined.
-  
-  (* Negates and to or and vice versa *)
-  Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
-    match (match_and p) with
-    | Some (p1, p2) => patt_or (negate p1) (negate p2)
-    | None =>
-      match (match_or p) with
-      | Some (p1, p2) => patt_and (negate p1) (negate p2)
-      | None =>
-        match (match_not p) with
-        | Some p' => p'
-        | None =>
-          match p with
-          | patt_imp p1 p2 => patt_and p1 (negate p2)
-          | _ => patt_not p
-          end
-        end
-      end
-    end.
-  Next Obligation.
-    intros.
-    symmetry in Heq_anonymous.
-    apply match_and_size in Heq_anonymous.
-    exact (proj1 Heq_anonymous).
-  Defined.
-  Next Obligation.
-    intros.
-    symmetry in Heq_anonymous.
-    apply match_and_size in Heq_anonymous.
-    exact (proj2 Heq_anonymous).
-  Defined.
-  Next Obligation.
-    intros.
-    symmetry in Heq_anonymous.
-    apply match_or_size in Heq_anonymous.
-    exact (proj1 Heq_anonymous).
-  Defined.
-  Next Obligation.
-    intros.
-    symmetry in Heq_anonymous.
-    apply match_or_size in Heq_anonymous.
-    exact (proj2 Heq_anonymous).
-  Defined.
-  Next Obligation.
-    intros.
-    subst. simpl. lia.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-  Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-    Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-    Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-    Next Obligation.
-    Tactics.program_simpl.
-  Defined.
-    Next Obligation.
-    Tactics.program_simpl.
-  Defined.    
 
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
@@ -326,14 +306,60 @@ Section ml_tauto.
     reflexivity.
   Qed.
 
+  Lemma negate''_and_simpl p1 p2:
+    negate'' (patt_and p1 p2) = option_bimap patt_or (negate'' p1) (negate'' p2).
+  Proof.
+    unfold negate'' at 1, negate' at 1.
+    rewrite match_and_patt_and.
+    fold negate'. (* TODO monotonicity *)
+
+
+
+    
+    unfold negate'', negate'.
+    rewrite match_and_patt_and.
+    rewrite size_and. rewrite [5+_+_]/=.
+    
+    cbv fix. cbv beta. cbv iota. cbv beta.
+            
+    rewrite [option_bimap patt_or]/option_bimap.
+    unfold option_bimap at 1.
+    cbv fix. cbv beta. cbv match.
+                                
+
+                                                                      
+    simpl.
+    unfold option_bimap.
+    
+    simpl.
+    simpl.
+
+  
   Lemma negate_and_simpl p1 p2:
     negate (patt_and p1 p2) = patt_or (negate p1) (negate p2).
   Proof.
-    unfold negate. rewrite Wf.fix_sub_eq.
-    2: { Tactics.program_simpl. }
-    intros x f g H.
-    destruct x; auto.
-    cbv [match_and]. cbv [match_or]. cbv [match_not].
+    unfold negate,negate'.
+    rewrite -> match_and_patt_and at 2.
+
+    
+    remember (negate (p1 and p2)) as n0.
+    remember (negate p1) as n1.
+    remember (negate p2) as n2.
+
+    unfold negate in Heqn0.
+    unfold negate' in Heqn0.
+    Check @match_and_patt_and.
+    
+    rewrite -> (@match_and_patt_and Σ p1 p2) in Heqn0.
+    rewrite -> match_and_patt_and in Heqn0 at 1.
+    Search match_and.
+    (*
+    cbv [negate'].
+    cbv [match_and]. cbv [match_or]. cbv [match_not].*)
+    cbv [negate'].
+    unfold negate'. match_and, match_or, match_not.
+    unfold patt_and, patt_not, patt_or, patt_not.
+    unfold option_bimap.
     (* TODO improve performance *)
     destruct x1,x2; auto with f_equal;
       destruct x1_2;

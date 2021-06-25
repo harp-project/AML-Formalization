@@ -34,6 +34,24 @@ Module Syntax.
     Definition patt_nu (phi : Pattern) :=
       patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
+    Lemma size_not (phi : Pattern) :
+      size (patt_not phi) = 1 + size phi.
+    Proof.
+      simpl. lia.
+    Qed.
+
+    Lemma size_or (l r : Pattern) :
+      size (patt_or l r) = 2 + size l + size r.
+    Proof.
+      simpl. lia.
+    Qed.
+
+    Lemma size_and (l r : Pattern) :
+      size (patt_and l r) = 5 + size l + size r.
+    Proof.
+      simpl. lia.
+    Qed.
+    
     Lemma well_formed_not (phi : Pattern) :
       well_formed phi ->
       well_formed (patt_not phi).

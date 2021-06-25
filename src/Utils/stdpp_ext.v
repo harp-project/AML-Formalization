@@ -713,19 +713,3 @@ Proof.
   inversion H.
   reflexivity.
 Qed.
-
-Class BiMap (M : Type -> Type -> Type) := bimap : forall {A B C D}, (A -> B) -> (C -> D) -> M A C -> M B D.
-Global Arguments bimap {_ _ _ _ _ _} _ _ ! _ / : assert.
-Global Hint Mode BiMap ! : typeclass_instances.
-
-Print fmap.
-
-(* Haskell's `first` *)
-Definition first {M : Type -> Type -> Type} {BM : BiMap M} {A B C} f := @bimap M BM A B C C f id.
-(* Haskell's `second` *)
-Definition second {M : Type -> Type -> Type} {BM : BiMap M} {A C D} f := @bimap M BM A A C D id f.
-
-
-(*Definition pair_bimap {A B C D}*)
-
-(* My goal: pair (option A) (option B) -> option (pair A B)
