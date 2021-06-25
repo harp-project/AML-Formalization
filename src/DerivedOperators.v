@@ -193,7 +193,19 @@ Module Syntax.
     destruct p; simpl; intros H; inversion H; clear H.
     destruct p2; inversion H1; clear H1.
     subst. simpl. lia.
-  Qed.  
+  Qed.
+
+  Lemma match_not_patt_or_1 (p1 p2 : Pattern) :
+    p2 <> patt_bott <->
+    match_not (patt_or p1 p2) = None.
+  Proof.
+    split.
+    - intros H.
+      simpl. destruct p2; try reflexivity. contradiction.
+    - intros H.
+      simpl in H. destruct p2; try discriminate.
+  Qed.
+  
     
   Definition match_or (p : Pattern) : option (Pattern * Pattern) :=
     match p with
@@ -270,6 +282,36 @@ Module Syntax.
     lia.
   Qed.
 
+  
+  Lemma match_and_patt_or (p1 p2 : Pattern) :
+    match_and (patt_or p1 p2) = None.
+  Proof.
+    unfold match_and.
+    remember (match_not (patt_or p1 p2)) as q1.
+    destruct q1.
+    2: reflexivity.
+    remember (match_or p) as q2.
+    destruct q2.
+    2: reflexivity.
+    destruct p0.
+    remember (match_not p0) as q3.
+    destruct q3.
+    2: reflexivity.
+    remember (match_not p3) as q4.
+    destruct q4.
+    2: reflexivity.
+    destruct p3; simpl in Heqq4; inversion Heqq4; clear Heqq4.
+    destruct p3_2; inversion H0. subst. clear H0.
+    destruct p0; simpl in Heqq3; inversion Heqq3; clear Heqq3.
+    destruct p0_2; inversion H0. subst. clear H0.
+    destruct p; simpl in Heqq2; inversion Heqq2. clear Heqq2.
+    remember (match_not p3) as p5.
+    destruct p5; inversion H0. subst. clear H0.
+    destruct p3; simpl in Heqp5; inversion Heqp5. clear Heqp5.
+    destruct p3_3; inversion H0. subst. clear H0.
+    destruct p1,p2; simpl in Heqq1; inversion Heqq1.
+  Qed.
+  
   
   End with_signature.
 
