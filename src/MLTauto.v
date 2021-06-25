@@ -254,8 +254,9 @@ Section ml_tauto.
   Qed.
 
     
-  Definition negate''(p : Pattern) : option Pattern := negate' (S (size p)) p.
-  
+  Definition negate''(p : Pattern) : option Pattern := negate' (negate'_enough_fuel p) p.
+
+  (*
   Definition negate (p : Pattern) : Pattern.
   Proof.
     remember (negate'' p) as np.
@@ -263,6 +264,24 @@ Section ml_tauto.
     2: { symmetry in Heqnp. apply negate'_terminates in Heqnp. contradiction. }
     exact p0.
   Defined.
+   *)
+
+  Definition negate (p : Pattern) :=
+    let np := negate'' p in
+    let Heqnp : np = negate'' p := erefl np in
+    match np as o return (o = negate'' p → Pattern) with
+    | Some p0 => λ _, p0
+    | None =>
+      λ Heqnp0 : None = negate'' p,
+                 match (negate'_terminates p (eq_sym Heqnp0)) with end
+    end Heqnp.
+
+  (*
+  Definition mynegate (p : Pattern) : Pattern :=
+    let onp := negate'' p in
+    match onp with
+    | Some np
+           *)
 
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
@@ -309,70 +328,48 @@ Section ml_tauto.
   Lemma negate''_and_simpl p1 p2:
     negate'' (patt_and p1 p2) = option_bimap patt_or (negate'' p1) (negate'' p2).
   Proof.
-    unfold negate'' at 1, negate' at 1.
+    unfold negate'' at 1, negate'_enough_fuel at 1, negate' at 1.
     rewrite match_and_patt_and.
-    fold negate'. (* TODO monotonicity *)
-
-
-
-    
-    unfold negate'', negate'.
-    rewrite match_and_patt_and.
-    rewrite size_and. rewrite [5+_+_]/=.
-    
-    cbv fix. cbv beta. cbv iota. cbv beta.
-            
-    rewrite [option_bimap patt_or]/option_bimap.
-    unfold option_bimap at 1.
-    cbv fix. cbv beta. cbv match.
-                                
-
-                                                                      
-    simpl.
-    unfold option_bimap.
-    
-    simpl.
-    simpl.
-
+    fold negate'.
+    erewrite negate'_monotone with (fuel := negate'_enough_fuel p1).
+    fold (negate'' p1).
+    erewrite negate'_monotone with (fuel := negate'_enough_fuel p2).
+    fold (negate'' p2).
+    reflexivity.
+    all: simpl; unfold negate'_enough_fuel; lia.
+  Qed.
   
   Lemma negate_and_simpl p1 p2:
     negate (patt_and p1 p2) = patt_or (negate p1) (negate p2).
   Proof.
-    unfold negate,negate'.
-    rewrite -> match_and_patt_and at 2.
-
-    
-    remember (negate (p1 and p2)) as n0.
-    remember (negate p1) as n1.
-    remember (negate p2) as n2.
-
-    unfold negate in Heqn0.
-    unfold negate' in Heqn0.
-    Check @match_and_patt_and.
-    
-    rewrite -> (@match_and_patt_and Σ p1 p2) in Heqn0.
-    rewrite -> match_and_patt_and in Heqn0 at 1.
-    Search match_and.
-    (*
-    cbv [negate'].
-    cbv [match_and]. cbv [match_or]. cbv [match_not].*)
-    cbv [negate'].
-    unfold negate'. match_and, match_or, match_not.
-    unfold patt_and, patt_not, patt_or, patt_not.
-    unfold option_bimap.
-    (* TODO improve performance *)
-    destruct x1,x2; auto with f_equal;
-      destruct x1_2;
-      auto with f_equal;
-      intros;
-      destruct x1_1; auto with f_equal;
-      destruct x1_1_2; auto with f_equal;
-      destruct x1_1_1; auto with f_equal;
-        try destruct x1_1_1_2; auto with f_equal.
-
-    destruct x1_2_2; auto with f_equal.
+    unfold negate at 1.
+    (* < magic > *)
+    move: (erefl (negate'' (p1 and p2))).
+    case: {1 3}(negate'' (p1 and p2)) => //.
+    2: { intros e. destruct (negate'_terminates (p1 and p2) (eq_sym e)). }
+    (* </magic > *)
+    intros. symmetry in e.
+    pose proof (H := negate''_and_simpl p1 p2).
+    rewrite e in H. unfold option_bimap in H.
+    remember (negate'' p1) as np1.
+    remember (negate'' p2) as np2.
+    destruct np1, np2; inversion H; clear H; subst.
+    unfold negate.
+    (* < magic > *)
+    move: (erefl (negate'' p1)).
+    case: {1 3}(negate'' p1) => //.
+    2: { intros e1. destruct (negate'_terminates p1 (eq_sym e1)). }
+    (* </magic > *)
+    intros.
+    (* < magic > *)
+    move: (erefl (negate'' p2)).
+    case: {1 3}(negate'' p2) => //.
+    2: { intros e2. destruct (negate'_terminates p2 (eq_sym e2)). }
+      (* </magic > *)
+    intros.
+    congruence.
   Qed.
-
+  
   Lemma negate_or_simpl p1 p2:
     negate (patt_or p1 p2) = patt_and (negate p1) (negate p2).
   Proof.
