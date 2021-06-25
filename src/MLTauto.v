@@ -2,6 +2,8 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
 From Coq.micromega Require Import Lia.
 
+From stdpp Require Import base option.
+
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
@@ -90,6 +92,115 @@ Section ml_tauto.
         apply disj_right_intro_meta; auto using pp_flatten_well_formed.
   Qed.
 
+  Definition option_bimap {A B C : Type} (f : A -> B -> C) (x : option A) (y : option B) : option C :=
+    match x with
+    | Some a =>
+      match y with
+      | Some b => Some (f a b)
+      | None => None
+      end
+    | None => None
+    end.
+
+  (*
+  Definition option_bimap' {A B C : Type} (f : A -> B -> C) (x : option A) (y : option B) : option C :=
+    mjoin (fmap (fun (a : A) => fmap (f a) y) x).
+   *)
+  
+  Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
+    match fuel with
+    | 0 => None
+    | S fuel' =>
+      match (match_and p) with
+      | Some (p1, p2) => option_bimap patt_or (negate' fuel' p1) (negate' fuel' p2)
+      | None =>
+        match (match_or p) with
+        | Some (p1, p2) => option_bimap patt_and (negate' fuel' p1) (negate' fuel' p2)
+        | None =>
+          match (match_not p) with
+          | Some p' => Some p'
+          | None =>
+            match p with
+            | patt_imp p1 p2 => (patt_and p1) <$> (negate' fuel' p2)
+            | _ => Some (patt_not p)
+            end
+          end
+        end
+      end
+    end.
+
+  Lemma negate'_terminates (p : Pattern) :
+    negate' (1 + size p) p <> None.
+  Proof.
+    remember (1 + size p) as sz.
+    assert (Hsz: 1 + size p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz.
+    { intros. lia. }
+    intros p Hsz.
+    destruct p; simpl; try discriminate.
+
+    remember (match_and (p1 ---> p2)) as a'.
+    destruct a'.
+    {
+      destruct p as [p1' p2'].
+      symmetry in Heqa'.
+      pose proof (H := match_and_size Heqa').
+      destruct H as [H1 H2].
+      unfold option_bimap.
+      remember (negate' sz p1') as n1'.
+      destruct n1'.
+      2: {
+        symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
+        simpl in *. lia.
+      }
+      remember (negate' sz p2') as n2'.
+      destruct n2'.
+      2: {
+        symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
+        simpl in *. lia.
+      }
+      discriminate.
+    }
+
+
+    remember (match_not p1) as b'.
+    destruct b'.
+    {
+      symmetry in Heqb'.
+      pose proof (H := match_not_size Heqb').
+      unfold option_bimap.
+      remember (negate' sz p) as n1'.
+      destruct n1'.
+      2: {
+        symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
+        simpl in *. lia.
+      }
+      remember (negate' sz p2) as n2'.
+      destruct n2'.
+      2: {
+        symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
+        simpl in *. lia.
+      }
+      discriminate.
+    }
+
+    remember (match p2 with Bot => Some p1 | _ => None end) as c'.
+    destruct c'. discriminate.
+
+    unfold fmap. unfold option_fmap. unfold option_map.
+
+    remember (negate' sz p2) as n'.
+    destruct n'. discriminate.
+    symmetry in Heqn'. apply IHsz in Heqn'. inversion Heqn'.
+    simpl in *. lia.
+  Qed.
+  
+  
+  
   (* Negates and to or and vice versa *)
   Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
     match (match_and p) with
@@ -295,7 +406,10 @@ Section ml_tauto.
         destruct p2; auto with f_equal; simpl;
           destruct p1; auto with f_equal; simpl.
 
-        fold (negate ((patt_free_evar x0) ---> (patt_free_evar x))).
+        Print negate.
+        remember negate as mynegate.
+        unfold negate in Heqmynegate. simpl in Heqmynegate.
+        fold (negate ((patt_free_evar x0) ---> (patt_free_evar x))).6
   Abort.
   
 
