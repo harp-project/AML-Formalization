@@ -187,7 +187,7 @@ Section ml_tauto.
       }
       discriminate.
     }
-
+ 
     remember (match p2 with Bot => Some p1 | _ => None end) as c'.
     destruct c'. discriminate.
 
@@ -198,8 +198,14 @@ Section ml_tauto.
     symmetry in Heqn'. apply IHsz in Heqn'. inversion Heqn'.
     simpl in *. lia.
   Qed.
-  
-  
+
+  Definition negate (p : Pattern) : Pattern.
+  Proof.
+    remember (negate' (S (size p)) p) as np.
+    destruct np.
+    2: { symmetry in Heqnp. apply negate'_terminates in Heqnp. contradiction. }
+    exact p0.
+  Defined.
   
   (* Negates and to or and vice versa *)
   Program Fixpoint negate (p : Pattern) {measure (size p)} : Pattern :=
