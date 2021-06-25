@@ -374,7 +374,7 @@ Section ml_tauto.
     negate'' (patt_or p1 p2) = option_bimap patt_and (negate'' p1) (negate'' p2).
   Proof.
     unfold negate'' at 1, negate'_enough_fuel at 1, negate' at 1.
-    rewrite match_and_patt_or.
+    rewrite match_and_patt_or. rewrite match_or_patt_or.
     fold negate'.
     erewrite negate'_monotone with (fuel := negate'_enough_fuel p1).
     fold (negate'' p1).
@@ -384,17 +384,17 @@ Section ml_tauto.
     all: simpl; unfold negate'_enough_fuel; lia.
   Qed.
   
-  Lemma negate_and_simpl p1 p2:
-    negate (patt_and p1 p2) = patt_or (negate p1) (negate p2).
+  Lemma negate_or_simpl p1 p2:
+    negate (patt_or p1 p2) = patt_and (negate p1) (negate p2).
   Proof.
     unfold negate at 1.
     (* < magic > *)
-    move: (erefl (negate'' (p1 and p2))).
-    case: {1 3}(negate'' (p1 and p2)) => //.
-    2: { intros e. destruct (negate'_terminates (p1 and p2) (eq_sym e)). }
+    move: (erefl (negate'' (p1 or p2))).
+    case: {1 3}(negate'' (p1 or p2)) => //.
+    2: { intros e. destruct (negate'_terminates (p1 or p2) (eq_sym e)). }
     (* </magic > *)
     intros. symmetry in e.
-    pose proof (H := negate''_and_simpl p1 p2).
+    pose proof (H := negate''_or_simpl p1 p2).
     rewrite e in H. unfold option_bimap in H.
     remember (negate'' p1) as np1.
     remember (negate'' p2) as np2.
@@ -414,29 +414,7 @@ Section ml_tauto.
     intros.
     congruence.
   Qed.
-
-
   
-  Lemma negate_or_simpl p1 p2:
-    negate (patt_or p1 p2) = patt_and (negate p1) (negate p2).
-  Proof.
-    unfold negate.
-    rewrite Wf.fix_sub_eq; unfold match_and; unfold match_or; unfold match_not;
-      try destruct x; auto; try destruct x_2; auto.
-
-    destruct x2; destruct x1; auto with f_equal; destruct x1_2; auto with f_equal;
-      destruct x1_1; auto with f_equal; destruct x1_1_2; auto with f_equal;
-        destruct x1_1_1; auto with f_equal; destruct x1_1_1_2; auto with f_equal.
-
-    2: { unfold patt_or; destruct p2; auto. unfold patt_not. destruct p1; auto.
-         destruct p1_2; auto. destruct p1_1; auto.
-         destruct p1_1_2; auto.
-    }
-
-    destruct x1_2_2; auto. intros. auto with f_equal.
-  Qed.
-    
-
   Definition negate_simpl :=
     ( negate_free_evar_simpl,
       negate_free_svar_simpl,
