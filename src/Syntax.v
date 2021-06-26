@@ -896,7 +896,7 @@ Section syntax.
   Qed.
 
   Hint Resolve set_svar_fresh_is_fresh : core.
-
+  
   Lemma evar_is_fresh_in_richer' x ϕ B:
     free_evars ϕ ⊆ B ->
     x ∉ B ->
@@ -905,8 +905,7 @@ Section syntax.
     intros Hsub.
     unfold evar_is_fresh_in.
     intros Hnotin.
-    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
-    auto.
+    eauto using not_elem_of_larger_impl_not_elem_of.
   Qed.
   
   Lemma evar_is_fresh_in_richer x ϕ₁ ϕ₂:
@@ -926,8 +925,7 @@ Section syntax.
     intros Hsub.
     unfold svar_is_fresh_in.
     intros Hnotin.
-    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
-    auto.
+    eauto using not_elem_of_larger_impl_not_elem_of.
   Qed.
 
   Lemma svar_is_fresh_in_richer X ϕ₁ ϕ₂:
@@ -2301,14 +2299,49 @@ Section syntax.
   .
   
 
-  Definition PatternCtx2ApplicationContext (C : PatternCtx) (wf : well_formed (pcPattern C)) : Application_context :=
-    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) wf.
+  Definition PatternCtx2ApplicationContext (C : PatternCtx) : Application_context :=
+    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) (pcPattern_wf C).
 
-  (*
+  Lemma count_evar_occurrences_subst_ctx AC x:
+    x ∉ free_evars_ctx AC ->
+    count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1.
+  Proof.
+    intros H.
+    induction AC; simpl.
+    - destruct (evar_eqdec x x); [reflexivity|contradiction].
+    - simpl in H. apply not_elem_of_union in H.
+      rewrite IHAC;[exact (proj1 H)|].
+      rewrite count_evar_occurrences_0; [exact (proj2 H)|].
+      reflexivity.
+    - simpl in H. apply not_elem_of_union in H.
+      rewrite IHAC;[exact (proj2 H)|].
+      rewrite count_evar_occurrences_0; [exact (proj1 H)|].
+      reflexivity.
+  Qed.
+  
+        
+  
   Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
-    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) ()
-    *)
-
+    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) = AC.
+  Proof.
+    induction AC.
+    - reflexivity.
+    - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+      cbv [PatternCtx2ApplicationContext].
+      rewrite [pcEvar _]/=.
+      rewrite [pcPattern_wf _]/=.
+      (*lazy [PatternCtx2ApplicationContext'].*)
+      cbv delta [PatternCtx2ApplicationContext'].
+      rewrite [pcPattern _]/=.
+      remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as x.
+      simpl.
+      rewrite count_evar_occurrences_subst_ctx.
+      { subst x. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        solve_set_inclusion 5.
+      }
+Abort.
     
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
@@ -3983,39 +4016,15 @@ End BoundVarSugar.
 
 (* Tactics for resolving goals involving sets *)
 
-Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
+Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
   simpl;
-  (do ! [rewrite simpl_free_evars/=]) ;
-  apply elem_of_subseteq;
-  let x := fresh "x" in
-  let H := fresh "Hxin" in
-  (* TODO: maybe we need something like: *)
-  (*rewrite -!union_assoc_L.*)
-  (* We may also want to remove duplicates, at least those that are neighbors *)
-  intros x H;
-  repeat (
-      match H with
-      | ?L /\ ?R => fail "Not implemented: destruct H"
-      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-      end
-    ).
+  (do ? [rewrite simpl_free_evars/=]) ;
+  solve_set_inclusion depth.
 
-Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
+Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
   simpl;
   (do ? [rewrite simpl_free_svars/=]) ;
-  apply elem_of_subseteq;
-  let x := fresh "x" in
-  let H := fresh "Hxin" in
-  (* TODO: maybe we need something like: *)
-  (*rewrite -!union_assoc_L.*)
-  (* We may also want to remove duplicates, at least those that are neighbors *)
-  intros x H;
-  repeat (
-      match H with
-      | ?L /\ ?R => fail "Not implemented: destruct H"
-      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-      end
-    ).
+  solve_set_inclusion depth.
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
  *)
