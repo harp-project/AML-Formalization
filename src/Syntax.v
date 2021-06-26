@@ -2181,6 +2181,14 @@ Section syntax.
     pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
 
+  Program Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
+    @ApplicationContext2PatternCtx' (evar_fresh (elements (free_evars_ctx AC))) AC _.
+  Next Obligation.
+    intros.
+    apply set_evar_fresh_is_fresh'.
+  Defined.
+  
+
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
   | sub_app_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
