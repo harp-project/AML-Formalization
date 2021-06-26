@@ -76,6 +76,12 @@ Section syntax.
     - apply sym_eq.
   Qed.
 
+  Record PatternCtx : Type :=
+    { pcPattern : Pattern
+    ; pcEvar : evar
+    }.
+      
+
   Definition Theory := Ensemble Pattern.
   
   (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
@@ -129,7 +135,7 @@ Section syntax.
     | patt_exists phi' => patt_exists (bsvar_subst phi' psi x)
     | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
     end.
-
+  
   Fixpoint bevar_occur (phi : Pattern) (x : db_index) : bool :=
     match phi with
     | patt_free_evar x' => false
@@ -192,6 +198,11 @@ Section syntax.
     | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
     end.
 
+
+  Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
+    free_evar_subst (pcPattern ctx) p (pcEvar ctx).
+    
+  
   (* instantiate exists x. p or mu x. p with psi for p *)
   Definition instantiate (phi psi : Pattern) :=
     match phi with
