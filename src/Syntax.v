@@ -2327,6 +2327,7 @@ Section syntax.
     induction AC.
     - reflexivity.
     - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+      pose proof (ApplicationContext2Pattern_one_occ (ApplicationContext2PatternCtx_obligation_1 (AC:=ctx_app_l AC Prf))) as HoneOcc.
       cbv [PatternCtx2ApplicationContext].
       rewrite [pcEvar _]/=.
       rewrite [pcPattern_wf _]/=.
@@ -2335,12 +2336,25 @@ Section syntax.
       rewrite [pcPattern _]/=.
       remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as x.
       simpl.
-      rewrite count_evar_occurrences_subst_ctx.
-      { subst x. simpl.
-        eapply not_elem_of_larger_impl_not_elem_of.
-        2: { apply set_evar_fresh_is_fresh'. }
-        solve_set_inclusion 5.
+
+      assert (Hcount1: count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1).
+      { rewrite count_evar_occurrences_subst_ctx.
+        { subst x. simpl.
+          eapply not_elem_of_larger_impl_not_elem_of.
+          2: { apply set_evar_fresh_is_fresh'. }
+          solve_set_inclusion 5.
+        }
+        reflexivity.
       }
+      rewrite Hcount1.
+      destruct (decide (1 = 0)); [inversion e|simpl].
+      clear n.
+      rewrite -Heqx in HoneOcc.
+      simpl in HoneOcc.
+      rewrite Hcount1 in HoneOcc.
+      assert (Hcount0: count_evar_occurrences x p = 0).
+      { lia. }
+      rewrite Hcount0.
 Abort.
     
 
