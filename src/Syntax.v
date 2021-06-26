@@ -74,13 +74,7 @@ Section syntax.
     - apply nat_eq_dec.
     - apply nat_eq_dec.
     - apply sym_eq.
-  Qed.
-
-  Record PatternCtx : Type :=
-    { pcPattern : Pattern
-    ; pcEvar : evar
-    }.
-      
+  Qed.     
 
   Definition Theory := Ensemble Pattern.
   
@@ -196,12 +190,7 @@ Section syntax.
     | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
     | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
     | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
-    end.
-
-
-  Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
-    free_evar_subst (pcPattern ctx) p (pcEvar ctx).
-    
+    end.    
   
   (* instantiate exists x. p or mu x. p with psi for p *)
   Definition instantiate (phi psi : Pattern) :=
@@ -2090,7 +2079,49 @@ Section syntax.
       contradiction.
     - contradiction.
   Qed.
+
+  Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
+    match p with
+    | patt_free_evar x' => if evar_eqdec x' x then 1 else 0 
+    | patt_free_svar _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_sym _ => 0
+    | patt_app phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_bott => 0
+    | patt_imp phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_exists phi' => count_evar_occurrences x phi'
+    | patt_mu phi' => count_evar_occurrences x phi'
+    end.
+
+  Lemma count_evar_occurrences_0 (x : evar) (p : Pattern) :
+    x ∉ free_evars p ->
+    count_evar_occurrences x p = 0.
+  Proof.
+    intros H.
+    induction p; simpl in H; simpl; auto.
+    - apply not_elem_of_singleton_1 in H.
+      destruct (evar_eqdec x0 x). subst. contradiction. reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+  Qed.
   
+  Record PatternCtx : Type :=
+    { pcPattern : Pattern
+      ; pcEvar : evar
+      ; pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  
+    }.
+
+
+  Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
+    free_evar_subst (pcPattern ctx) p (pcEvar ctx).
+
   
   Inductive Application_context : Type :=
   | box
@@ -2114,6 +2145,41 @@ Section syntax.
     | @ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
+
+  Definition ApplicationContext2Pattern (boxvar : evar) (AC : Application_context) :=
+    subst_ctx AC (patt_free_evar boxvar).
+
+  Lemma ApplicationContext2Pattern_one_occ (AC : Application_context) (boxvar : evar):
+    boxvar ∉ free_evars_ctx AC ->
+    count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar AC) = 1.
+  Proof.
+    intros H.
+    induction AC; simpl.
+    - destruct (evar_eqdec boxvar boxvar). reflexivity. contradiction.
+    - simpl in H. apply not_elem_of_union in H. 
+      rewrite IHAC.
+      { exact (proj1 H). }
+      simpl in H.
+      rewrite count_evar_occurrences_0. 2: lia.
+      exact (proj2 H).
+    - simpl in H. apply not_elem_of_union in H. 
+      rewrite IHAC.
+      { exact (proj2 H). }
+      simpl in H.
+      rewrite count_evar_occurrences_0. 2: lia.
+      exact (proj1 H).
+  Qed.
+
+  Definition ApplicationContext2PatternCtx'
+             (boxvar : evar)
+             (AC : Application_context)
+             (pf : boxvar ∉ free_evars_ctx AC)
+    : PatternCtx :=
+    {|
+    pcPattern := ApplicationContext2Pattern boxvar AC;
+    pcEvar := boxvar;
+    pcOneOcc := ApplicationContext2Pattern_one_occ pf
+    |}.
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
