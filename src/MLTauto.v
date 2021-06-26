@@ -276,13 +276,6 @@ Section ml_tauto.
                  match (negate'_terminates p (eq_sym Heqnp0)) with end
     end Heqnp.
 
-  (*
-  Definition mynegate (p : Pattern) : Pattern :=
-    let onp := negate'' p in
-    match onp with
-    | Some np
-           *)
-
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
   Proof.
@@ -337,6 +330,22 @@ Section ml_tauto.
     fold (negate'' p2).
     reflexivity.
     all: simpl; unfold negate'_enough_fuel; lia.
+  Qed.
+
+  Lemma negate_from_negate'' p np:
+    negate'' p = Some np ->
+    negate p = np.
+  Proof.
+    intros H.
+    unfold negate.
+    (* < magic > *)
+    move: (erefl (negate'' p)).
+    case: {1 3}(negate'' p) => //.
+    2: { intros e. destruct (negate'_terminates p (eq_sym e)). }
+    (* </magic > *)
+    intros a e.
+    rewrite -e in H. clear e.
+    inversion H. reflexivity.
   Qed.
   
   Lemma negate_and_simpl p1 p2:
@@ -444,26 +453,63 @@ Section ml_tauto.
     - destruct p; simpl in Hsz;
        try (apply IHsz; auto; simpl; lia).
       + rewrite negate_app_simpl. apply conj_intro_meta; auto; apply A_impl_A; auto.
-      + unfold negate. rewrite Wf.fix_sub_eq.
-        {intros.
-        destruct x; auto; simpl;
-          destruct x1,x2; unfold match_and, match_not; auto with f_equal;
-            destruct x1_2; simpl; auto with f_equal;
-              destruct x1_1; unfold match_not; auto with f_equal;
-                destruct x1_1_2; auto with f_equal;
-                  destruct x1_1_1; auto with f_equal;
-                    destruct x1_1_1_2; auto with f_equal.
-        destruct x1_2_2; auto with f_equal.
-        }
-
-        simpl. unfold match_and, match_not; auto with f_equal. simpl.
-        destruct p2; auto with f_equal; simpl;
-          destruct p1; auto with f_equal; simpl.
-
-        Print negate.
-        remember negate as mynegate.
-        unfold negate in Heqmynegate. simpl in Heqmynegate.
-        fold (negate ((patt_free_evar x0) ---> (patt_free_evar x))).6
+      + unfold negate.
+        (* < magic > *)
+        move: (erefl (negate'' (p1 ---> p2))).
+        case: {1 3}(negate'' (p1 ---> p2)) => //.
+        2: { intros e. destruct (negate'_terminates (p1 ---> p2) (eq_sym e)). }
+        (* </magic > *)
+        intros a Ha.
+        unfold negate'',negate'_enough_fuel,negate' in Ha. fold negate' in Ha.
+        remember (match_and (p1 ---> p2)) as q1.
+        remember (match_or (p1 ---> p2)) as q2.
+        remember (match_not (p1 ---> p2)) as q3.
+        destruct q1.
+        { destruct p as [p3 p4].
+          pose proof (Hszp3p4 := match_and_size (eq_sym Heqq1)).
+          simpl in Hszp3p4.
+          destruct Hszp3p4 as [Hp3sz Hp4sz].
+          rewrite -> negate'_monotone with (fuel := negate'_enough_fuel p3) in Ha.
+          2: { lia. }
+          2: { unfold negate'_enough_fuel. simpl. lia. }
+          fold (negate'' p3) in Ha.
+          rewrite -> negate'_monotone with (fuel := negate'_enough_fuel p4) in Ha.
+          2: { lia. }
+          2: { unfold negate'_enough_fuel. simpl. lia. }
+          fold (negate'' p4) in Ha.
+          unfold option_bimap in Ha.
+          remember (negate'' p3) as q4.
+          destruct q4.
+          2: { inversion Ha. }
+          remember (negate'' p4) as q5.
+          destruct q5.
+          2: { inversion Ha. }
+          inversion Ha. clear Ha. subst a.
+          symmetry in Heqq5. apply negate_from_negate'' in Heqq5. subst p0.
+          symmetry in Heqq4. apply negate_from_negate'' in Heqq4. subst p.
+          clear Hp4sz Hp3sz Heqq3 q3 Heqq2 q2.
+          unfold match_and in Heqq1.
+          unfold match_not in Heqq1.
+          destruct p2; inversion Heqq1; clear Heqq1.
+          remember (match_or p1) as q1.
+          destruct q1.
+          2: { inversion H0. }
+          destruct p as [p5 p6].
+          destruct p5; inversion H0; clear H0.
+          destruct p5_2; inversion H1; clear H1.
+          destruct p6; inversion H0; clear H0.
+          destruct p6_2; inversion H1; clear H1.
+          subst p5_1 p6_1.
+          unfold match_or in Heqq1.
+          destruct p1; inversion Heqq1; clear Heqq1.
+          remember (match_not p1_1) as np1_1.
+          destruct np1_1; inversion H0; subst.
+          unfold match_not in Heqnp1_1. destruct p1_1; inversion Heqnp1_1; clear Heqnp1_1.
+          destruct p1_1_2; inversion H1; clear H1. subst.
+          clear H0.
+          fold (patt_not p3). fold (patt_not (patt_not p3)).
+          fold (patt_not p4). fold (patt_or (patt_not p3) (patt_not p4)).
+          fold (patt_not (patt_or (patt_not p3) (patt_not p4))).
   Abort.
   
 
