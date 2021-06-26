@@ -2113,9 +2113,10 @@ Section syntax.
   Qed.
   
   Record PatternCtx : Type :=
-    { pcPattern : Pattern
-      ; pcEvar : evar
-      ; pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  
+    { pcEvar : evar ;
+      pcPattern : Pattern;
+      pcPattern_wf : well_formed pcPattern ;
+      pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  ;
     }.
 
 
@@ -2137,6 +2138,62 @@ Section syntax.
     | @ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
     end.
 
+  Lemma wf_sctx (C : Application_context) (A : Pattern) :
+    well_formed A -> well_formed (subst_ctx C A).
+  Proof.
+    intros.
+    unfold well_formed in H.
+    apply andb_true_iff in H. destruct H as [Hwfp Hwfc].
+    unfold well_formed_closed in Hwfc.
+    induction C; simpl.
+    - unfold well_formed. rewrite Hwfp. unfold well_formed_closed. rewrite Hwfc. reflexivity.
+    - unfold well_formed. simpl.
+      unfold well_formed in IHC. apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+      rewrite IHC1. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+      rewrite Prf1. simpl.
+      unfold well_formed_closed. simpl.
+      unfold well_formed_closed in IHC2. rewrite IHC2. simpl.
+      fold (well_formed_closed p). rewrite Prf2.
+      reflexivity.
+    - unfold well_formed in *. simpl.
+      apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+      rewrite Prf1. simpl.
+      apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+      rewrite IHC1. simpl.
+      unfold well_formed_closed in *. simpl.
+      rewrite Prf2. simpl.
+      rewrite IHC2. reflexivity.
+  Qed.
+
+  Lemma wp_sctx (C : Application_context) (A : Pattern) :
+    well_formed_positive A -> well_formed_positive (subst_ctx C A).
+  Proof.
+    intros.
+    induction C.
+    - auto.
+    - simpl. rewrite IHC. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf. exact H0.
+    - simpl. unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. rewrite H0. rewrite IHC. reflexivity.
+  Qed.
+
+  Lemma wc_sctx (C : Application_context) (A : Pattern) :
+    well_formed_closed_aux A 0 0 -> well_formed_closed_aux (subst_ctx C A) 0 0.
+  Proof.
+    intros.
+    induction C.
+    - auto.
+    - simpl. rewrite IHC. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. unfold well_formed_closed in H1. exact H1.
+    - simpl. rewrite IHC.
+      unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. unfold well_formed_closed in H1. rewrite H1.
+      reflexivity.
+  Qed.
+
+  
   Fixpoint free_evars_ctx (C : Application_context)
     : (EVarSet) :=
     match C with
@@ -2170,16 +2227,23 @@ Section syntax.
       exact (proj1 H).
   Qed.
 
-  Definition ApplicationContext2PatternCtx'
+  Program Definition ApplicationContext2PatternCtx'
              (boxvar : evar)
              (AC : Application_context)
              (pf : boxvar ∉ free_evars_ctx AC)
     : PatternCtx :=
     {|
-    pcPattern := ApplicationContext2Pattern boxvar AC;
     pcEvar := boxvar;
+    pcPattern := ApplicationContext2Pattern boxvar AC;
     pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
+  Next Obligation.
+    intros.
+    apply wf_sctx.
+    reflexivity.
+  Defined.
+
+  Print ApplicationContext2PatternCtx'.
 
   Program Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
     @ApplicationContext2PatternCtx' (evar_fresh (elements (free_evars_ctx AC))) AC _.
@@ -2187,7 +2251,65 @@ Section syntax.
     intros.
     apply set_evar_fresh_is_fresh'.
   Defined.
+
+  Definition is_application (p : Pattern) : bool :=
+    match p with
+    | patt_app _ _ => true
+    | _ => false
+    end.
+
+  Definition is_free_evar (p : Pattern) : bool :=
+    match p with
+    | patt_free_evar _ => true
+    | _ => false
+    end.
+
+  Definition is_application_or_free_evar (p : Pattern) : bool :=
+    is_application p || is_free_evar p.
+
+  Lemma ApplicationContext2PatternCtx_is_application (AC : Application_context) :
+    let p := pcPattern (ApplicationContext2PatternCtx AC) in
+    is_application_or_free_evar p = true.
+  Proof.
+    destruct AC; reflexivity.
+  Qed.
+
+  Definition is_application_or_free_evar_x (x : evar) (p : Pattern)  : bool :=
+    is_application p ||
+                   (match p with
+                    | patt_free_evar x' => if evar_eqdec x' x then true else false
+                    | _ => false
+                    end).
+
+  Fixpoint PatternCtx2ApplicationContext'
+           (box_evar : evar)
+           (p : Pattern)
+           (wf : well_formed p)
+    : Application_context :=
+    (match p as q return well_formed q -> Application_context with
+     | patt_app p1 p2 =>
+       fun wf =>
+      if decide (count_evar_occurrences box_evar p1 = 0) then
+        @ctx_app_r p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 wf)) (well_formed_app_1 wf)
+      else if decide (count_evar_occurrences box_evar p2 = 0) then
+             @ctx_app_l (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 wf)) p2 (well_formed_app_2 wf)
+           else
+             box
+    | _ => fun _ => box
+    end
+    ) wf
+  .
   
+
+  Definition PatternCtx2ApplicationContext (C : PatternCtx) (wf : well_formed (pcPattern C)) : Application_context :=
+    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) wf.
+
+  (*
+  Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
+    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) ()
+    *)
+
+    
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
