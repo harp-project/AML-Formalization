@@ -10,56 +10,6 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
   
-Ltac wf_decompose_hypotheses :=
-  unfold well_formed in * |- ;
-  unfold well_formed_closed in * |- ;
-  simpl in * |- ;
-  repeat (
-      match goal with
-      | H : is_true _ |- _
-        => unfold is_true in H
-      | H : (andb _ _) = true |- _
-        => apply andb_true_iff in H
-      | H : (_ /\ _) |- _
-        => destruct H
-      | H : (true = true) |- _
-        => clear H (* just to be safe from infinite loops *)
-      end
-    ).  
-               
-                                                                                
-
-(*Use this tactic for most of the well-formedness related goals*)
-Ltac wf_proof :=
-  wf_decompose_hypotheses;
-  unfold well_formed in *; unfold well_formed_closed in *; simpl;
-
-  (* Simplifications *)
-  repeat (
-      match goal with
-      | H  : (?X = true) |- context G[?X]
-        => rewrite H 
-      end
-    );
-
-  simpl; reflexivity. (*
-  match goal with
-  | H  : well_formed_closed _     |- well_formed_closed _       => exact H
-  | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
-  | H  : well_formed_closed_aux _ _   |- well_formed_closed_aux (subst_ctx _ _) _ => eapply (wc_sctx _ _ H)
-  | H0 : well_formed_positive _   |- well_formed_positive _               => rewrite H0; reflexivity
-  | H1 : well_formed_closed_aux _ _ _
-                                  |- well_formed_closed_aux _ _ _         => exact H1
-  |                               |- True                                 => trivial
-  | _                                                                     => idtac
-  end . *)
-
-Ltac wf_check := 
-match goal with
-| |- well_formed _ => admit
-| _                => fail
-end. 
-
 Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
@@ -661,7 +611,7 @@ Proof.
   epose (syllogism_intro theory _ _ _ _ _ _ (m0) (m1)).
   exact m2.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed. *)
 
 (*Was an axiom in AML_definition.v*)
