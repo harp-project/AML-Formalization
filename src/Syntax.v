@@ -847,7 +847,20 @@ Section syntax.
     apply andb_prop in H2. destruct H2 as [H21 H22].
     rewrite !(H11,H12,H21,H22).
     reflexivity.
-  Qed.        
+  Qed.
+
+  Lemma well_formed_app ϕ₁ ϕ₂:
+    well_formed ϕ₁ ->
+    well_formed ϕ₂ ->
+    well_formed (patt_app ϕ₁ ϕ₂).
+  Proof.
+    unfold well_formed. unfold well_formed_closed. simpl.
+    intros H1 H2.
+    apply andb_prop in H1. destruct H1 as [H11 H12].
+    apply andb_prop in H2. destruct H2 as [H21 H22].
+    rewrite !(H11,H12,H21,H22).
+    reflexivity.
+  Qed.
 
   (* fresh variables *)
 
@@ -4051,7 +4064,11 @@ End BoundVarSugar.
 #[export]
  Hint Resolve well_formed_imp : core.
 
+#[export]
+ Hint Resolve well_formed_app : core.
 
+#[export]
+ Hint Resolve wf_sctx : core.
 
 (* Tactics for resolving goals involving sets *)
 
