@@ -507,9 +507,12 @@ Section ml_tauto.
           unfold match_not in Heqnp1_1. destruct p1_1; inversion Heqnp1_1; clear Heqnp1_1.
           destruct p1_1_2; inversion H1; clear H1. subst.
           clear H0.
-          fold (patt_not p3). fold (patt_not (patt_not p3)).
-          fold (patt_not p4). fold (patt_or (patt_not p3) (patt_not p4)).
-          fold (patt_not (patt_or (patt_not p3) (patt_not p4))).
+          fold (patt_not p3) in *. fold (patt_not (patt_not p3)) in *.
+          fold (patt_not p4) in *. fold (patt_or (patt_not p3) (patt_not p4)) in *.
+          fold (patt_not (patt_or (patt_not p3) (patt_not p4))) in *.
+          Search evar.
+          
+          Print countable.Countable.
   Abort.
   
 

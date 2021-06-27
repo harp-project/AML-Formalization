@@ -10,56 +10,6 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
   
-Ltac wf_decompose_hypotheses :=
-  unfold well_formed in * |- ;
-  unfold well_formed_closed in * |- ;
-  simpl in * |- ;
-  repeat (
-      match goal with
-      | H : is_true _ |- _
-        => unfold is_true in H
-      | H : (andb _ _) = true |- _
-        => apply andb_true_iff in H
-      | H : (_ /\ _) |- _
-        => destruct H
-      | H : (true = true) |- _
-        => clear H (* just to be safe from infinite loops *)
-      end
-    ).  
-               
-                                                                                
-
-(*Use this tactic for most of the well-formedness related goals*)
-Ltac wf_proof :=
-  wf_decompose_hypotheses;
-  unfold well_formed in *; unfold well_formed_closed in *; simpl;
-
-  (* Simplifications *)
-  repeat (
-      match goal with
-      | H  : (?X = true) |- context G[?X]
-        => rewrite H 
-      end
-    );
-
-  simpl; reflexivity. (*
-  match goal with
-  | H  : well_formed_closed _     |- well_formed_closed _       => exact H
-  | H  : well_formed_positive _   |- well_formed_positive (subst_ctx _ _) => eapply (wp_sctx _ _ H)
-  | H  : well_formed_closed_aux _ _   |- well_formed_closed_aux (subst_ctx _ _) _ => eapply (wc_sctx _ _ H)
-  | H0 : well_formed_positive _   |- well_formed_positive _               => rewrite H0; reflexivity
-  | H1 : well_formed_closed_aux _ _ _
-                                  |- well_formed_closed_aux _ _ _         => exact H1
-  |                               |- True                                 => trivial
-  | _                                                                     => idtac
-  end . *)
-
-Ltac wf_check := 
-match goal with
-| |- well_formed _ => admit
-| _                => fail
-end. 
-
 Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 
 Lemma A_impl_A (theory : Theory) (A : Pattern)  :
@@ -77,7 +27,7 @@ Proof.
   exact _5.
   Unshelve.
 
-  all:wf_proof.
+  all: auto.
 Qed.
   
 Lemma P4m (theory : Theory) (A B : Pattern) :
@@ -96,7 +46,7 @@ Proof.
                  ((A ---> B ---> Bot) ---> A ---> B)
                  ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _).
   Unshelve.
-  all: wf_proof.
+  all: auto 10.
 Qed.
 
 
@@ -108,7 +58,7 @@ Proof.
   - eapply (A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
   - eapply (P4m _ A A _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto 10.
 Qed.
 
 Lemma reorder (theory : Theory) (A B C : Pattern) :
@@ -145,7 +95,7 @@ Proof.
         -- eapply(P2 _ ABC (B ---> (A ---> B) ---> A ---> C) ((B ---> A ---> B) ---> B ---> A ---> C) _ _ _).
     + eapply(P2 _ ABC (B ---> A ---> B) (B ---> A ---> C) _ _ _).
   Unshelve.
-  all:wf_proof.
+  all: try unfold ABC; auto 10.
 Qed.
 
 Lemma reorder_meta (theory : Theory) {A B C : Pattern} :
@@ -169,7 +119,7 @@ Proof.
         -- shelve.
         -- exact (P2 _ B (A ---> B) (A ---> C) H0 H3 H4).
   Unshelve.
-  all:wf_proof.
+  all:auto.
 Qed.
 
 Lemma syllogism (theory : Theory) (A B C : Pattern) :
@@ -185,7 +135,7 @@ Proof.
       * eapply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C) _ _).
     + eapply (P2 _ (B ---> C) (A ---> B ---> C) ((A ---> B) ---> A ---> C) _ _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto 10.
 Qed.
 
 Lemma syllogism_intro (theory : Theory) (A B C : Pattern) :
@@ -198,7 +148,7 @@ Proof.
     + exact H3.
     + eapply (reorder_meta _ _ _ _). exact (syllogism _ A B C H H0 H1).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma modus_ponens (theory : Theory) ( A B : Pattern) :
@@ -214,7 +164,7 @@ Proof.
       + eapply (reorder_meta _ _ _ _).
         * eapply (syllogism _ A ((A ---> B) ---> A) ((A ---> B) ---> B) _ _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto 10.
 Qed.
 
 Lemma not_not_intro (theory : Theory) (A : Pattern) :
@@ -225,7 +175,7 @@ Proof.
   shelve.
   exact (modus_ponens _ A Bot H H0).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma deduction (theory : Theory) (A B : Pattern) :
@@ -236,7 +186,7 @@ Proof.
   - exact H2.
   - eapply (P1 _ B A _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma P4_intro (theory : Theory) (A B : Pattern)  :
@@ -254,12 +204,12 @@ Proof.
   epose (P3 theory B _).
   epose (syllogism_intro theory A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
   exact m6.
-  
+
   Unshelve.
-  (*TODO: Investigate why this wf_proof doesn't finish...*)
-  (* all:wf_proof. *)
-  Fail all:wf_check.
-Admitted.
+  all: auto.
+  auto 10.
+Qed.
+
 
 Lemma P4 (theory : Theory) (A B : Pattern)  :
 well_formed A -> well_formed B -> 
@@ -278,14 +228,8 @@ Proof.
   epose (reorder theory (A ---> Bot) (B) (Bot) _ _ _).
   eapply (Modus_ponens theory _ _ _ _ m8 m7).
   Unshelve.
-  (*TODO: This wf_proof doesn't finish too*)
-  (* 1-3: wf_proof. assert (theory ⊢ ((((A ---> Bot) ---> Bot) ---> A) --->
-        B ---> ((A ---> Bot) ---> Bot) ---> A)). auto. clear m0. *)
-  (* all:try (timeout 2 wf_proof). *)
-  (* Too slow because of unfolding hypothesises in posed lemmas too *)
-  (* all:wf_proof. *)
-  Fail all:wf_check.
-Admitted.
+  all: auto 10.
+Qed.
 
 Lemma conj_intro (theory : Theory) (A B : Pattern) :
 well_formed A -> well_formed B -> theory ⊢ (A ---> B ---> (A and B)).
@@ -328,10 +272,9 @@ Proof.
   unfold patt_and.  unfold patt_or.
   exact t7.
   Unshelve.
-  (*TODO: This doesn't finish too*)
-  (* all:wf_proof. *)
-  Fail all:wf_check.
-Admitted.
+  all: auto 10.
+Qed.
+
 
 Lemma conj_intro_meta (theory : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A and B).
@@ -342,9 +285,8 @@ Proof.
   - eapply (Modus_ponens _ _ _ _ _).
     + exact H1.
     + exact (conj_intro _ A B H H0).
-  Unshelve.
-  all:unfold patt_and.
-  all:wf_proof.
+      Unshelve.
+  all: auto.
 Qed.
 
 (* Lemma conj_intro_meta_e (theory : Theory) (A B : Pattern) : *) 
@@ -363,7 +305,7 @@ Proof.
   
   exact t3.
   Unshelve.
-  all:wf_proof.
+  all: auto 10.
 Qed.
 
 Lemma disj_intro (theory : Theory) (A B : Pattern) :
@@ -376,7 +318,7 @@ Proof.
     + exact H1.
     + exact (disj _ A B H H0).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma syllogism_4_meta (theory : Theory) (A B C D : Pattern) :
@@ -396,7 +338,7 @@ Proof.
       * eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
     + eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma bot_elim (theory : Theory) (A : Pattern) :
@@ -413,7 +355,7 @@ Proof.
     + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
   - eapply (P4 _ A Bot _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma modus_ponens' (theory : Theory) (A B : Pattern) :
@@ -424,7 +366,7 @@ Proof.
   shelve.
   exact (reorder_meta theory H1 H H0 (P4 _ B A H0 H)).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma disj_right_intro (theory : Theory) (A B : Pattern) :
@@ -435,7 +377,7 @@ Proof.
   shelve.
   exact (P1 _ B (¬A) H0 H1).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma disj_left_intro (theory : Theory) (A B : Pattern) :
@@ -444,7 +386,7 @@ Proof.
   intros.
   eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot _ _) (bot_elim _ B _)).
   Unshelve.
-  all:wf_proof. 
+  all: auto.
 Qed.
 
 Lemma disj_right_intro_meta (theory : Theory) (A B : Pattern) :
@@ -492,7 +434,7 @@ Proof.
   - eapply (P4 _ (¬A) (¬B) _ _).
   - eapply (P4 _ B A _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma double_neg_elim_meta (theory : Theory) (A B : Pattern) :
@@ -504,7 +446,7 @@ Proof.
   - exact H1.
   - exact (double_neg_elim _ A B H H0).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma P4_rev_meta (theory : Theory) (A B : Pattern) :
@@ -521,7 +463,7 @@ Proof.
       * eapply (not_not_intro _ B _).
     + eapply (P4 _ (¬A) (¬B) _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma P4m_neg (theory : Theory) (A B : Pattern) :
@@ -533,7 +475,7 @@ Proof.
   - exact PT.
   - eapply (P4m _ _ _ _ _).
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma not_not_impl_intro_meta (theory : Theory) (A B : Pattern) :
@@ -548,7 +490,7 @@ Proof.
   epose proof (S2 := syllogism_intro _ _ _ _ _ _ _ NN1 S1).
   exact S2.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma not_not_impl_intro (theory : Theory) (A B : Pattern) :
@@ -577,10 +519,9 @@ Proof.
     - assumption.
     - assumption.
   Unshelve.
-  (* TODO: Doesn't finish
-  all:wf_proof. *)
-  Fail all:wf_check.
-Admitted.
+  all: auto 10.
+Qed.
+
 
 Lemma contraposition (theory : Theory) (A B : Pattern) : 
   well_formed A -> well_formed B -> 
@@ -595,7 +536,7 @@ Proof.
   - eapply (not_not_impl_intro _ _ _ _ _).
   - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
@@ -614,7 +555,7 @@ Proof.
   - exact SI.
   - exact P4.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma A_implies_not_not_A_alt (theory : Theory) (A : Pattern) :
@@ -626,7 +567,7 @@ Proof.
   epose proof (MP := Modus_ponens _ _ _ _ _ H0 NN).
   assumption.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma P5i (theory : Theory) (A B : Pattern) :
@@ -641,7 +582,7 @@ Proof.
   epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
   assumption.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma false_implies_everything (theory : Theory) (phi : Pattern) :
@@ -656,7 +597,7 @@ Proof.
   - assumption.
   - assumption.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 
@@ -670,7 +611,7 @@ Proof.
   epose (syllogism_intro theory _ _ _ _ _ _ (m0) (m1)).
   exact m2.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed. *)
 
 (*Was an axiom in AML_definition.v*)
@@ -686,14 +627,8 @@ Proof.
     epose proof (m3 := syllogism_intro theory _ _ _ _ _ _ (m2) (Prop_bott_right theory p Prf)). exact m3.
     
     Unshelve.
-    1: wf_proof.
-    2: wf_proof.
-    2: wf_proof.
-    3: wf_proof.
-    3: wf_proof.  
-    
-    Fail all:wf_proof.
-Admitted.
+    all: auto.
+Qed.
 
 (*Was an axiom in AML_definition.v*)
 Lemma Framing (theory : Theory) (C : Application_context) (A B : Pattern):
@@ -704,7 +639,7 @@ Proof.
   - simpl. epose (Framing_left theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
    - simpl. epose (Framing_right theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_context) :
@@ -723,8 +658,9 @@ Proof.
   Unshelve.
   2,4:assert (@well_formed Σ (¬ A)).
   6,7:assert (@well_formed Σ (Bot)).
-  Fail all:wf_proof.
-Admitted.
+  all: auto.
+Qed.
+
 
 Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
@@ -736,7 +672,7 @@ Proof.
   
   assumption.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 (* Lemma equiv_implies_eq (theory : Theory) (A B : Pattern) :
@@ -759,8 +695,8 @@ Proof.
   assumption.
   Unshelve.
   4: assert (@well_formed Σ (Bot)).
-  Fail all:wf_proof.
-Admitted.
+  all: auto.
+Qed.
 
 Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
   well_formed A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))) -> theory ⊢ A.
@@ -778,6 +714,7 @@ Proof.
     epose (MP := Modus_ponens _ _ _ _ _ TRANS NN). assumption.
   - eapply IHC.
   Unshelve.
+  all: auto.
 Abort.
 
 Definition empty_theory := Empty_set (@Pattern Σ).
@@ -788,7 +725,7 @@ Proof.
   epose(Modus_ponens G A Bot _ _ H0 H1).
   assumption.
   Unshelve.
-  all:wf_proof.
+  all: auto.
 Qed.
 
 (* Axiom extension : forall G A B,
