@@ -10,61 +10,6 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
   
-Lemma wf_sctx (C : Application_context) (A : Pattern) :
-  well_formed A -> @well_formed Σ (subst_ctx C A).
-Proof.
-  intros.
-  unfold well_formed in H.
-  apply andb_true_iff in H. destruct H as [Hwfp Hwfc].
-  unfold well_formed_closed in Hwfc.
-  induction C; simpl.
-  - unfold well_formed. rewrite Hwfp. unfold well_formed_closed. rewrite Hwfc. reflexivity.
-  - unfold well_formed. simpl.
-    unfold well_formed in IHC. apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
-    rewrite IHC1. simpl.
-    unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
-    rewrite Prf1. simpl.
-    unfold well_formed_closed. simpl.
-    unfold well_formed_closed in IHC2. rewrite IHC2. simpl.
-    fold (well_formed_closed p). rewrite Prf2.
-    reflexivity.
-  - unfold well_formed in *. simpl.
-    apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
-    rewrite Prf1. simpl.
-    apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
-    rewrite IHC1. simpl.
-    unfold well_formed_closed in *. simpl.
-    rewrite Prf2. simpl.
-    rewrite IHC2. reflexivity.
-Qed.
-
-Lemma wp_sctx (C : Application_context) (A : Pattern) :
-  well_formed_positive A -> @well_formed_positive Σ (subst_ctx C A).
-Proof.
-  intros.
-  induction C.
-  - auto.
-  - simpl. rewrite IHC. simpl.
-    unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf. exact H0.
-  - simpl. unfold well_formed in Prf. apply andb_true_iff in Prf.
-    destruct Prf. rewrite H0. rewrite IHC. reflexivity.
-Qed.
-
-Lemma wc_sctx (C : Application_context) (A : Pattern) :
-  well_formed_closed_aux A 0 0 -> @well_formed_closed_aux Σ (subst_ctx C A) 0 0.
-Proof.
-  intros.
-  induction C.
-  - auto.
-  - simpl. rewrite IHC. simpl.
-    unfold well_formed in Prf. apply andb_true_iff in Prf.
-    destruct Prf. unfold well_formed_closed in H1. exact H1.
-  - simpl. rewrite IHC.
-    unfold well_formed in Prf. apply andb_true_iff in Prf.
-    destruct Prf. unfold well_formed_closed in H1. rewrite H1.
-    reflexivity.
-Qed.
-
 Ltac wf_decompose_hypotheses :=
   unfold well_formed in * |- ;
   unfold well_formed_closed in * |- ;
@@ -835,10 +780,6 @@ Proof.
   Unshelve.
 Abort.
 
-(* Does not work without `Program`.
-   But we could always use:
-  Definition empty_theory := @Build_Theory Σ (Empty_set Pattern).
-*)
 Definition empty_theory := Empty_set (@Pattern Σ).
 Lemma exclusion (G : Theory) (A : Pattern) :
   well_formed A -> G ⊢ A -> G ⊢ (A ---> Bot) -> G ⊢ Bot.
@@ -849,12 +790,6 @@ Proof.
   Unshelve.
   all:wf_proof.
 Qed.
-
-Axiom exclusion_axiom : forall G A,
-  G ⊢ A -> G ⊢ (¬ A) -> False.
-
-Axiom or_or : forall G A,
-(G ⊢ A) \/ (G ⊢ (¬ A)).
 
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)

@@ -74,7 +74,7 @@ Section syntax.
     - apply nat_eq_dec.
     - apply nat_eq_dec.
     - apply sym_eq.
-  Qed.
+  Qed.     
 
   Definition Theory := Ensemble Pattern.
   
@@ -129,7 +129,7 @@ Section syntax.
     | patt_exists phi' => patt_exists (bsvar_subst phi' psi x)
     | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
     end.
-
+  
   Fixpoint bevar_occur (phi : Pattern) (x : db_index) : bool :=
     match phi with
     | patt_free_evar x' => false
@@ -190,8 +190,8 @@ Section syntax.
     | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
     | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
     | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
-    end.
-
+    end.    
+  
   (* instantiate exists x. p or mu x. p with psi for p *)
   Definition instantiate (phi psi : Pattern) :=
     match phi with
@@ -896,7 +896,7 @@ Section syntax.
   Qed.
 
   Hint Resolve set_svar_fresh_is_fresh : core.
-
+  
   Lemma evar_is_fresh_in_richer' x ϕ B:
     free_evars ϕ ⊆ B ->
     x ∉ B ->
@@ -905,8 +905,7 @@ Section syntax.
     intros Hsub.
     unfold evar_is_fresh_in.
     intros Hnotin.
-    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
-    auto.
+    eauto using not_elem_of_larger_impl_not_elem_of.
   Qed.
   
   Lemma evar_is_fresh_in_richer x ϕ₁ ϕ₂:
@@ -926,8 +925,7 @@ Section syntax.
     intros Hsub.
     unfold svar_is_fresh_in.
     intros Hnotin.
-    pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
-    auto.
+    eauto using not_elem_of_larger_impl_not_elem_of.
   Qed.
 
   Lemma svar_is_fresh_in_richer X ϕ₁ ϕ₂:
@@ -2079,7 +2077,50 @@ Section syntax.
       contradiction.
     - contradiction.
   Qed.
+
+  Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
+    match p with
+    | patt_free_evar x' => if evar_eqdec x' x then 1 else 0 
+    | patt_free_svar _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_sym _ => 0
+    | patt_app phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_bott => 0
+    | patt_imp phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_exists phi' => count_evar_occurrences x phi'
+    | patt_mu phi' => count_evar_occurrences x phi'
+    end.
+
+  Lemma count_evar_occurrences_0 (x : evar) (p : Pattern) :
+    x ∉ free_evars p ->
+    count_evar_occurrences x p = 0.
+  Proof.
+    intros H.
+    induction p; simpl in H; simpl; auto.
+    - apply not_elem_of_singleton_1 in H.
+      destruct (evar_eqdec x0 x). subst. contradiction. reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+  Qed.
   
+  Record PatternCtx : Type :=
+    { pcEvar : evar ;
+      pcPattern : Pattern;
+      pcPattern_wf : well_formed pcPattern ;
+      pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  ;
+    }.
+
+
+  Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
+    free_evar_subst (pcPattern ctx) p (pcEvar ctx).
+
   
   Inductive Application_context : Type :=
   | box
@@ -2095,6 +2136,62 @@ Section syntax.
     | @ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
     end.
 
+  Lemma wf_sctx (C : Application_context) (A : Pattern) :
+    well_formed A -> well_formed (subst_ctx C A).
+  Proof.
+    intros.
+    unfold well_formed in H.
+    apply andb_true_iff in H. destruct H as [Hwfp Hwfc].
+    unfold well_formed_closed in Hwfc.
+    induction C; simpl.
+    - unfold well_formed. rewrite Hwfp. unfold well_formed_closed. rewrite Hwfc. reflexivity.
+    - unfold well_formed. simpl.
+      unfold well_formed in IHC. apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+      rewrite IHC1. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+      rewrite Prf1. simpl.
+      unfold well_formed_closed. simpl.
+      unfold well_formed_closed in IHC2. rewrite IHC2. simpl.
+      fold (well_formed_closed p). rewrite Prf2.
+      reflexivity.
+    - unfold well_formed in *. simpl.
+      apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
+      rewrite Prf1. simpl.
+      apply andb_true_iff in IHC. destruct IHC as [IHC1 IHC2].
+      rewrite IHC1. simpl.
+      unfold well_formed_closed in *. simpl.
+      rewrite Prf2. simpl.
+      rewrite IHC2. reflexivity.
+  Qed.
+
+  Lemma wp_sctx (C : Application_context) (A : Pattern) :
+    well_formed_positive A -> well_formed_positive (subst_ctx C A).
+  Proof.
+    intros.
+    induction C.
+    - auto.
+    - simpl. rewrite IHC. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf. exact H0.
+    - simpl. unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. rewrite H0. rewrite IHC. reflexivity.
+  Qed.
+
+  Lemma wc_sctx (C : Application_context) (A : Pattern) :
+    well_formed_closed_aux A 0 0 -> well_formed_closed_aux (subst_ctx C A) 0 0.
+  Proof.
+    intros.
+    induction C.
+    - auto.
+    - simpl. rewrite IHC. simpl.
+      unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. unfold well_formed_closed in H1. exact H1.
+    - simpl. rewrite IHC.
+      unfold well_formed in Prf. apply andb_true_iff in Prf.
+      destruct Prf. unfold well_formed_closed in H1. rewrite H1.
+      reflexivity.
+  Qed.
+
+  
   Fixpoint free_evars_ctx (C : Application_context)
     : (EVarSet) :=
     match C with
@@ -2103,6 +2200,188 @@ Section syntax.
     | @ctx_app_r p cc prf => union (free_evars p) (free_evars_ctx cc)
     end.
 
+
+  Definition ApplicationContext2Pattern (boxvar : evar) (AC : Application_context) :=
+    subst_ctx AC (patt_free_evar boxvar).
+
+  Lemma ApplicationContext2Pattern_one_occ (AC : Application_context) (boxvar : evar):
+    boxvar ∉ free_evars_ctx AC ->
+    count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar AC) = 1.
+  Proof.
+    intros H.
+    induction AC; simpl.
+    - destruct (evar_eqdec boxvar boxvar). reflexivity. contradiction.
+    - simpl in H. apply not_elem_of_union in H. 
+      rewrite IHAC.
+      { exact (proj1 H). }
+      simpl in H.
+      rewrite count_evar_occurrences_0. 2: lia.
+      exact (proj2 H).
+    - simpl in H. apply not_elem_of_union in H. 
+      rewrite IHAC.
+      { exact (proj2 H). }
+      simpl in H.
+      rewrite count_evar_occurrences_0. 2: lia.
+      exact (proj1 H).
+  Qed.
+
+  Program Definition ApplicationContext2PatternCtx'
+             (boxvar : evar)
+             (AC : Application_context)
+             (pf : boxvar ∉ free_evars_ctx AC)
+    : PatternCtx :=
+    {|
+    pcEvar := boxvar;
+    pcPattern := ApplicationContext2Pattern boxvar AC;
+    pcOneOcc := ApplicationContext2Pattern_one_occ pf
+    |}.
+  Next Obligation.
+    intros.
+    apply wf_sctx.
+    reflexivity.
+  Defined.
+
+  Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
+    let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
+    @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' _).
+
+  Definition is_application (p : Pattern) : bool :=
+    match p with
+    | patt_app _ _ => true
+    | _ => false
+    end.
+
+  Definition is_free_evar (p : Pattern) : bool :=
+    match p with
+    | patt_free_evar _ => true
+    | _ => false
+    end.
+
+  Definition is_application_or_free_evar (p : Pattern) : bool :=
+    is_application p || is_free_evar p.
+
+  Lemma ApplicationContext2PatternCtx_is_application (AC : Application_context) :
+    let p := pcPattern (ApplicationContext2PatternCtx AC) in
+    is_application_or_free_evar p = true.
+  Proof.
+    destruct AC; reflexivity.
+  Qed.
+
+  Definition is_application_or_free_evar_x (x : evar) (p : Pattern)  : bool :=
+    is_application p ||
+                   (match p with
+                    | patt_free_evar x' => if evar_eqdec x' x then true else false
+                    | _ => false
+                    end).
+
+  Fixpoint PatternCtx2ApplicationContext'
+           (box_evar : evar)
+           (p : Pattern)
+           (wf : well_formed p)
+    : Application_context :=
+    (match p as q return well_formed q -> Application_context with
+     | patt_app p1 p2 =>
+       fun wf =>
+      if decide (count_evar_occurrences box_evar p1 = 0) then
+        @ctx_app_r p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 wf)) (well_formed_app_1 wf)
+      else if decide (count_evar_occurrences box_evar p2 = 0) then
+             @ctx_app_l (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 wf)) p2 (well_formed_app_2 wf)
+           else
+             box
+    | _ => fun _ => box
+    end
+    ) wf
+  .
+  
+
+  Definition PatternCtx2ApplicationContext (C : PatternCtx) : Application_context :=
+    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) (pcPattern_wf C).
+
+  Lemma count_evar_occurrences_subst_ctx AC x:
+    x ∉ free_evars_ctx AC ->
+    count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1.
+  Proof.
+    intros H.
+    induction AC; simpl.
+    - destruct (evar_eqdec x x); [reflexivity|contradiction].
+    - simpl in H. apply not_elem_of_union in H.
+      rewrite IHAC;[exact (proj1 H)|].
+      rewrite count_evar_occurrences_0; [exact (proj2 H)|].
+      reflexivity.
+    - simpl in H. apply not_elem_of_union in H.
+      rewrite IHAC;[exact (proj2 H)|].
+      rewrite count_evar_occurrences_0; [exact (proj1 H)|].
+      reflexivity.
+  Qed.
+  
+  Lemma ApplicationContext2PatternCtx2ApplicationContext'
+        (boxvar : evar)
+        (AC : Application_context)
+        (Hnotin: boxvar ∉ free_evars_ctx AC) :
+    let C : PatternCtx := @ApplicationContext2PatternCtx' boxvar AC Hnotin in
+    PatternCtx2ApplicationContext' boxvar (pcPattern_wf C) = AC.
+  Proof.
+    simpl.
+    move: (ApplicationContext2PatternCtx'_obligation_1 boxvar AC).
+    move: boxvar Hnotin.
+    
+    induction AC; intros boxvar Hnotin pf.
+    - reflexivity.
+    - simpl.
+      simpl in Hnotin.
+      pose proof (Hnotin' := Hnotin).
+      apply not_elem_of_union in Hnotin'.
+      destruct Hnotin' as [HnotinAC Hnotinp].
+      assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+      { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+      rewrite Hcount1.
+      destruct (decide (1 = 0)); [inversion e|simpl].
+      clear n.
+
+      assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC Prf)) = 1).
+      { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+      simpl in HoneOcc.
+      rewrite Hcount1 in HoneOcc.
+      assert (Hcount0: count_evar_occurrences boxvar p = 0).
+      { lia. }
+      rewrite Hcount0.
+      destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+      f_equal.
+      2: { apply proof_irrelevance. }
+      rewrite IHAC;[assumption|reflexivity].
+    - simpl.
+      simpl in Hnotin.
+      pose proof (Hnotin' := Hnotin).
+      apply not_elem_of_union in Hnotin'.
+      destruct Hnotin' as [Hnotinp HnotinAC].
+
+      assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r AC Prf)) = 1).
+      { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+      
+      assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+      { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+
+      simpl in HoneOcc.
+      rewrite Hcount1 in HoneOcc.
+      assert (Hcount0: count_evar_occurrences boxvar p = 0).
+      { lia. }
+
+      rewrite Hcount0.
+      destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+
+      f_equal.
+      2: { apply proof_irrelevance. }
+      rewrite IHAC;[assumption|reflexivity].
+  Qed.
+  
+  Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
+    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) = AC.
+  Proof.
+    unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
+    apply ApplicationContext2PatternCtx2ApplicationContext'.
+  Qed.
+  
+    
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
@@ -3776,39 +4055,15 @@ End BoundVarSugar.
 
 (* Tactics for resolving goals involving sets *)
 
-Tactic Notation "solve_free_evars_inclusion" integer(depth) :=
+Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
   simpl;
-  (do ! [rewrite simpl_free_evars/=]) ;
-  apply elem_of_subseteq;
-  let x := fresh "x" in
-  let H := fresh "Hxin" in
-  (* TODO: maybe we need something like: *)
-  (*rewrite -!union_assoc_L.*)
-  (* We may also want to remove duplicates, at least those that are neighbors *)
-  intros x H;
-  repeat (
-      match H with
-      | ?L /\ ?R => fail "Not implemented: destruct H"
-      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-      end
-    ).
+  (do ? [rewrite simpl_free_evars/=]) ;
+  solve_set_inclusion depth.
 
-Tactic Notation "solve_free_svars_inclusion" integer(depth) :=
+Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
   simpl;
   (do ? [rewrite simpl_free_svars/=]) ;
-  apply elem_of_subseteq;
-  let x := fresh "x" in
-  let H := fresh "Hxin" in
-  (* TODO: maybe we need something like: *)
-  (*rewrite -!union_assoc_L.*)
-  (* We may also want to remove duplicates, at least those that are neighbors *)
-  intros x H;
-  repeat (
-      match H with
-      | ?L /\ ?R => fail "Not implemented: destruct H"
-      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
-      end
-    ).
+  solve_set_inclusion depth.
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
  *)

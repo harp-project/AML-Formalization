@@ -713,3 +713,29 @@ Proof.
   inversion H.
   reflexivity.
 Qed.
+
+
+Lemma not_elem_of_larger_impl_not_elem_of {A C : Type} {H : ElemOf A C} (x : A) (S B : C) :
+  S ⊆ B ->
+  x ∉ B ->
+  x ∉ S.
+Proof.
+  intros Hsub Hnotin.
+  pose proof (Hsub' := (iffLR (elem_of_subseteq _ B) Hsub)).
+  auto.
+Qed.
+
+Tactic Notation "solve_set_inclusion" int_or_var(depth) :=
+  apply elem_of_subseteq;
+  let x := fresh "x" in
+  let H := fresh "Hxin" in
+  (* TODO: maybe we need something like: *)
+  (*rewrite -!union_assoc_L.*)
+  (* We may also want to remove duplicates, at least those that are neighbors *)
+  intros x H;
+  repeat (
+      match H with
+      | ?L /\ ?R => fail "Not implemented: destruct H"
+      | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
+      end
+    ).

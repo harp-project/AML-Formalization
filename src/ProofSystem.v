@@ -726,36 +726,4 @@ Proof.
     - unfold M_predicate. right. apply Hemp.
 Qed.
 
-Print Assumptions Soundness.
-
-Definition match_not (p : Pattern) : option Pattern :=
-  match p with
-  | patt_imp p patt_bott => Some p
-  | _ => None
-  end.
-
-Definition match_or (p : Pattern) : option (Pattern * Pattern) :=
-  match p with
-  | patt_imp p1' p2 =>
-    match (match_not p1') with
-    | Some p1 => Some (p1, p2)
-    | _ => None
-    end
-  | _ => None
-  end.
-
-Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
-  match (match_not p) with
-  | Some p' =>
-    match (match_or p') with
-    | Some (p1', p2') =>
-      match (match_not p1'),(match_not p2') with
-      | Some p1, Some p2 => Some (p1, p2)
-      | _,_ => None
-      end 
-    | _ => None
-    end
-  | _ => None
-  end.
-
 End ml_proof_system.

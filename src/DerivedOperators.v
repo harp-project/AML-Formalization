@@ -34,6 +34,24 @@ Module Syntax.
     Definition patt_nu (phi : Pattern) :=
       patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
 
+    Lemma size_not (phi : Pattern) :
+      size (patt_not phi) = 1 + size phi.
+    Proof.
+      simpl. lia.
+    Qed.
+
+    Lemma size_or (l r : Pattern) :
+      size (patt_or l r) = 2 + size l + size r.
+    Proof.
+      simpl. lia.
+    Qed.
+
+    Lemma size_and (l r : Pattern) :
+      size (patt_and l r) = 5 + size l + size r.
+    Proof.
+      simpl. lia.
+    Qed.
+    
     Lemma well_formed_not (phi : Pattern) :
       well_formed phi ->
       well_formed (patt_not phi).
@@ -156,7 +174,147 @@ Module Syntax.
       ebinder_svar_open := svar_open_forall ;
       |}.
 
+  Definition match_not (p : Pattern) : option Pattern :=
+    match p with
+    | patt_imp p patt_bott => Some p
+    | _ => None
+    end.
+
+  Lemma match_not_patt_not (p : Pattern) :
+    match_not (patt_not p) = Some p.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma match_not_size (p p' : Pattern) :
+    match_not p = Some p' ->
+    size p' < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    destruct p2; inversion H1; clear H1.
+    subst. simpl. lia.
+  Qed.
+
+  Lemma match_not_patt_or_1 (p1 p2 : Pattern) :
+    p2 <> patt_bott <->
+    match_not (patt_or p1 p2) = None.
+  Proof.
+    split.
+    - intros H.
+      simpl. destruct p2; try reflexivity. contradiction.
+    - intros H.
+      simpl in H. destruct p2; try discriminate.
+  Qed.
+  
+    
+  Definition match_or (p : Pattern) : option (Pattern * Pattern) :=
+    match p with
+    | patt_imp p1' p2 =>
+      match (match_not p1') with
+      | Some p1 => Some (p1, p2)
+      | _ => None
+      end
+    | _ => None
+    end.
+
+  Lemma match_or_patt_or (p1 p2 : Pattern) :
+    match_or (patt_or p1 p2) = Some (p1, p2).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma match_or_size (p p1 p2 : Pattern) :
+    match_or p = Some (p1, p2) ->
+    size p1 < size p /\ size p2 < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    remember (match_not p3) as p3'. destruct p3'.
+    2: { inversion H1. }
+    inversion H1; subst; clear H1.
+    symmetry in Heqp3'. apply match_not_size in Heqp3'.
+    lia.
+  Qed.
+  
+  Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
+    match (match_not p) with
+    | Some p' =>
+      match (match_or p') with
+      | Some (p1', p2') =>
+        match (match_not p1'),(match_not p2') with
+        | Some p1, Some p2 => Some (p1, p2)
+        | _,_ => None
+        end 
+      | _ => None
+      end
+    | _ => None
+    end.
+
+  Lemma match_and_patt_and (p1 p2 : Pattern) :
+    match_and (patt_and p1 p2) = Some (p1, p2).
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma match_and_size (p p1 p2 : Pattern) :
+    match_and p = Some (p1, p2) ->
+    size p1 < size p /\ size p2 < size p.
+  Proof.
+    destruct p; simpl; intros H; inversion H; clear H.
+    unfold match_and in H1.
+    remember (match_not (patt_imp p3 p4)) as q1.
+    destruct q1.
+    2: { inversion H1. }
+    remember (match_or p) as q2.
+    destruct q2.
+    2: { inversion H1. }
+    destruct p0 as [q3 q4].
+    remember (match_not q3) as q5.
+    destruct q5.
+    2: { inversion H1. }
+    remember (match_not q4) as q6.
+    destruct q6.
+    2: { inversion H1. }
+    inversion H1. subst p0 p5. clear H1.
+    symmetry in Heqq1. apply match_not_size in Heqq1. simpl in Heqq1.
+    symmetry in Heqq2. apply match_or_size in Heqq2.
+    symmetry in Heqq5. apply match_not_size in Heqq5.
+    symmetry in Heqq6. apply match_not_size in Heqq6.
+    lia.
+  Qed.
+
+  
+  Lemma match_and_patt_or (p1 p2 : Pattern) :
+    match_and (patt_or p1 p2) = None.
+  Proof.
+    unfold match_and.
+    remember (match_not (patt_or p1 p2)) as q1.
+    destruct q1.
+    2: reflexivity.
+    remember (match_or p) as q2.
+    destruct q2.
+    2: reflexivity.
+    destruct p0.
+    remember (match_not p0) as q3.
+    destruct q3.
+    2: reflexivity.
+    remember (match_not p3) as q4.
+    destruct q4.
+    2: reflexivity.
+    destruct p3; simpl in Heqq4; inversion Heqq4; clear Heqq4.
+    destruct p3_2; inversion H0. subst. clear H0.
+    destruct p0; simpl in Heqq3; inversion Heqq3; clear Heqq3.
+    destruct p0_2; inversion H0. subst. clear H0.
+    destruct p; simpl in Heqq2; inversion Heqq2. clear Heqq2.
+    remember (match_not p3) as p5.
+    destruct p5; inversion H0. subst. clear H0.
+    destruct p3; simpl in Heqp5; inversion Heqp5. clear Heqp5.
+    destruct p3_3; inversion H0. subst. clear H0.
+    destruct p1,p2; simpl in Heqq1; inversion Heqq1.
+  Qed.
+  
+  
   End with_signature.
+
 End Syntax.
 
 
