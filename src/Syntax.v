@@ -4017,6 +4017,7 @@ Module Notations.
   (* TODO: change Bot and Top to unicode symbols *)
   Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
   Notation "'Bot'" := patt_bott : ml_scope.
+  Notation "⊥" := patt_bott : ml_scope.
   Notation "a ---> b"  := (patt_imp a b) (at level 90, right associativity,
                                           b at level 200) : ml_scope.
   Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
