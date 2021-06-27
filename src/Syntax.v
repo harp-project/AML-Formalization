@@ -2241,14 +2241,9 @@ Section syntax.
     reflexivity.
   Defined.
 
-  Print ApplicationContext2PatternCtx'.
-
-  Program Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
-    @ApplicationContext2PatternCtx' (evar_fresh (elements (free_evars_ctx AC))) AC _.
-  Next Obligation.
-    intros.
-    apply set_evar_fresh_is_fresh'.
-  Defined.
+  Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
+    let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
+    @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' _).
 
   Definition is_application (p : Pattern) : bool :=
     match p with
@@ -2319,43 +2314,73 @@ Section syntax.
       reflexivity.
   Qed.
   
-        
+  Lemma ApplicationContext2PatternCtx2ApplicationContext'
+        (boxvar : evar)
+        (AC : Application_context)
+        (Hnotin: boxvar ∉ free_evars_ctx AC) :
+    let C : PatternCtx := @ApplicationContext2PatternCtx' boxvar AC Hnotin in
+    PatternCtx2ApplicationContext' boxvar (pcPattern_wf C) = AC.
+  Proof.
+    simpl.
+    move: (ApplicationContext2PatternCtx'_obligation_1 boxvar AC).
+    move: boxvar Hnotin.
+    
+    induction AC; intros boxvar Hnotin pf.
+    - reflexivity.
+    - simpl.
+      simpl in Hnotin.
+      pose proof (Hnotin' := Hnotin).
+      apply not_elem_of_union in Hnotin'.
+      destruct Hnotin' as [HnotinAC Hnotinp].
+      assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+      { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+      rewrite Hcount1.
+      destruct (decide (1 = 0)); [inversion e|simpl].
+      clear n.
+
+      assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC Prf)) = 1).
+      { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+      simpl in HoneOcc.
+      rewrite Hcount1 in HoneOcc.
+      assert (Hcount0: count_evar_occurrences boxvar p = 0).
+      { lia. }
+      rewrite Hcount0.
+      destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+      f_equal.
+      2: { apply proof_irrelevance. }
+      rewrite IHAC;[assumption|reflexivity].
+    - simpl.
+      simpl in Hnotin.
+      pose proof (Hnotin' := Hnotin).
+      apply not_elem_of_union in Hnotin'.
+      destruct Hnotin' as [Hnotinp HnotinAC].
+
+      assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r AC Prf)) = 1).
+      { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+      
+      assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+      { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+
+      simpl in HoneOcc.
+      rewrite Hcount1 in HoneOcc.
+      assert (Hcount0: count_evar_occurrences boxvar p = 0).
+      { lia. }
+
+      rewrite Hcount0.
+      destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+
+      f_equal.
+      2: { apply proof_irrelevance. }
+      rewrite IHAC;[assumption|reflexivity].
+  Qed.
   
   Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
     PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) = AC.
   Proof.
-    induction AC.
-    - reflexivity.
-    - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-      pose proof (ApplicationContext2Pattern_one_occ (ApplicationContext2PatternCtx_obligation_1 (AC:=ctx_app_l AC Prf))) as HoneOcc.
-      cbv [PatternCtx2ApplicationContext].
-      rewrite [pcEvar _]/=.
-      rewrite [pcPattern_wf _]/=.
-      (*lazy [PatternCtx2ApplicationContext'].*)
-      cbv delta [PatternCtx2ApplicationContext'].
-      rewrite [pcPattern _]/=.
-      remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as x.
-      simpl.
-
-      assert (Hcount1: count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1).
-      { rewrite count_evar_occurrences_subst_ctx.
-        { subst x. simpl.
-          eapply not_elem_of_larger_impl_not_elem_of.
-          2: { apply set_evar_fresh_is_fresh'. }
-          solve_set_inclusion 5.
-        }
-        reflexivity.
-      }
-      rewrite Hcount1.
-      destruct (decide (1 = 0)); [inversion e|simpl].
-      clear n.
-      rewrite -Heqx in HoneOcc.
-      simpl in HoneOcc.
-      rewrite Hcount1 in HoneOcc.
-      assert (Hcount0: count_evar_occurrences x p = 0).
-      { lia. }
-      rewrite Hcount0.
-Abort.
+    unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
+    apply ApplicationContext2PatternCtx2ApplicationContext'.
+  Qed.
+  
     
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
