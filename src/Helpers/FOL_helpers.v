@@ -12,28 +12,28 @@ Section FOL_helpers.
   
   Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
 
-  Lemma A_impl_A (theory : Theory) (A : Pattern)  :
-    (well_formed A) -> theory ⊢ (A ---> A).
+  Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
+    (well_formed A) -> Γ ⊢ (A ---> A).
   Proof. 
     intros.
-    epose proof (_1 := P2 theory A (A ---> A) A _ _ _).
-    epose proof (_2 := P1 theory A (A ---> A) _ _).
+    epose proof (_1 := P2 Γ A (A ---> A) A _ _ _).
+    epose proof (_2 := P1 Γ A (A ---> A) _ _).
 
     epose proof (_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
     
-    epose proof (_4 := P1 theory A A _ _).
+    epose proof (_4 := P1 Γ A A _ _).
     
-    epose proof (_5 := Modus_ponens theory _ _ _ _ _4 _3).
+    epose proof (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
     exact _5.
     Unshelve.
 
     all: auto.
   Qed.
   
-  Lemma P4m (theory : Theory) (A B : Pattern) :
-    (well_formed A) -> (well_formed B) -> theory ⊢ ((A ---> B) ---> ((A ---> ¬B) ---> ¬A)).
+  Lemma P4m (Γ : Theory) (A B : Pattern) :
+    (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> ¬B) ---> ¬A)).
   Proof.
-    intros. eapply (Modus_ponens theory _ _ _ _).
+    intros. eapply (Modus_ponens Γ _ _ _ _).
     - eapply(P1 _ (A ---> B) (A ---> B ---> Bot) _ _).
     - eapply (Modus_ponens _ _ _ _ _).
       + eapply (Modus_ponens _ _ _ _ _).
@@ -51,8 +51,8 @@ Section FOL_helpers.
 
 
 
-  Lemma P4i (theory : Theory) (A : Pattern) :
-    well_formed A -> theory ⊢ ((A ---> ¬A) ---> ¬A).
+  Lemma P4i (Γ : Theory) (A : Pattern) :
+    well_formed A -> Γ ⊢ ((A ---> ¬A) ---> ¬A).
   Proof.
     intros. eapply (Modus_ponens _ _ _ _ _).
     - eapply (A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
@@ -61,13 +61,13 @@ Section FOL_helpers.
       all: auto 10.
   Qed.
 
-  Lemma reorder (theory : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
+  Lemma reorder (Γ : Theory) (A B C : Pattern) :
+    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
   Proof.
     intros.
-    epose proof (t1 := (Modus_ponens theory _ _ _ _
-                                     (P1 theory ((A ---> B) ---> A ---> C) B _ _)
-                                     (P1 theory (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
+    epose proof (t1 := (Modus_ponens Γ _ _ _ _
+                                     (P1 Γ ((A ---> B) ---> A ---> C) B _ _)
+                                     (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
     
     pose(ABC := (A ---> B ---> C)).
     
@@ -98,9 +98,9 @@ Section FOL_helpers.
         all: try unfold ABC; auto 10.
   Qed.
 
-  Lemma reorder_meta (theory : Theory) {A B C : Pattern} :
+  Lemma reorder_meta (Γ : Theory) {A B C : Pattern} :
     well_formed A -> well_formed B -> well_formed C ->  
-    theory ⊢ (A ---> B ---> C) -> theory ⊢ (B ---> A ---> C).
+    Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (B ---> A ---> C).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -122,8 +122,8 @@ Section FOL_helpers.
              all:auto.
   Qed.
 
-  Lemma syllogism (theory : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> theory ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C)).
+  Lemma syllogism (Γ : Theory) (A B C : Pattern) :
+    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C)).
   Proof.
     intros.
     eapply (reorder_meta _ _ _ _).
@@ -138,8 +138,8 @@ Section FOL_helpers.
         all: auto 10.
   Qed.
 
-  Lemma syllogism_intro (theory : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> theory ⊢ (A ---> B) -> theory ⊢ (B ---> C) -> theory ⊢ (A ---> C).
+  Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
+    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -151,8 +151,8 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
-  Lemma modus_ponens (theory : Theory) ( A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> (A ---> B) ---> B).
+  Lemma modus_ponens (Γ : Theory) ( A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> (A ---> B) ---> B).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -167,8 +167,8 @@ Section FOL_helpers.
           all: auto 10.
   Qed.
 
-  Lemma not_not_intro (theory : Theory) (A : Pattern) :
-    well_formed A -> theory ⊢ (A ---> ¬(¬A)).
+  Lemma not_not_intro (Γ : Theory) (A : Pattern) :
+    well_formed A -> Γ ⊢ (A ---> ¬(¬A)).
   Proof.
     intros.
     assert(@well_formed Σ Bot).
@@ -178,8 +178,8 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma deduction (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A ---> B).
+  Lemma deduction (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -189,20 +189,20 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma P4_intro (theory : Theory) (A B : Pattern)  :
+  Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
-    theory ⊢ ((¬ B) ---> (¬ A)) -> theory ⊢ (A ---> B).
+    Γ ⊢ ((¬ B) ---> (¬ A)) -> Γ ⊢ (A ---> B).
   Proof.
     intros.
-    epose (Modus_ponens theory _ _ _ _ H1 (P4m theory (¬ B) (¬ A) _ _)).
-    epose (P1 theory (¬ ¬A) (¬ B) _ _).
-    epose (syllogism_intro theory (¬ (¬ A)) (¬ B ---> ¬ (¬ A)) (¬ (¬ B)) _ _ _ m0 m).
-    epose (not_not_intro theory A _).
-    epose (not_not_intro theory B _).
-    epose (syllogism_intro theory A (¬ (¬ A)) (¬ (¬ B)) _ _ _ m2 m1).
+    epose (Modus_ponens Γ _ _ _ _ H1 (P4m Γ (¬ B) (¬ A) _ _)).
+    epose (P1 Γ (¬ ¬A) (¬ B) _ _).
+    epose (syllogism_intro Γ (¬ (¬ A)) (¬ B ---> ¬ (¬ A)) (¬ (¬ B)) _ _ _ m0 m).
+    epose (not_not_intro Γ A _).
+    epose (not_not_intro Γ B _).
+    epose (syllogism_intro Γ A (¬ (¬ A)) (¬ (¬ B)) _ _ _ m2 m1).
     unfold patt_not in m4.
-    epose (P3 theory B _).
-    epose (syllogism_intro theory A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
+    epose (P3 Γ B _).
+    epose (syllogism_intro Γ A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
     exact m6.
 
     Unshelve.
@@ -211,63 +211,63 @@ Section FOL_helpers.
   Qed.
 
 
-  Lemma P4 (theory : Theory) (A B : Pattern)  :
+  Lemma P4 (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
-    theory ⊢ (((¬ A) ---> (¬ B)) ---> (B ---> A)).
+    Γ ⊢ (((¬ A) ---> (¬ B)) ---> (B ---> A)).
   Proof.
     intros.
-    epose (P3 theory A _).
-    epose (P1 theory (((A ---> Bot) ---> Bot) ---> A) B _ _).
-    epose (P2 theory (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
-    epose (Modus_ponens theory _ _ _ _ m m0).
-    epose (Modus_ponens theory _ _ _ _ m2 m1).
-    epose (P1 theory ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
-    epose (Modus_ponens theory _ _ _ _ m3 m4).
-    epose (P2 theory ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
-    epose (Modus_ponens theory _ _ _ _ m5 m6).
-    epose (reorder theory (A ---> Bot) (B) (Bot) _ _ _).
-    eapply (Modus_ponens theory _ _ _ _ m8 m7).
+    epose (P3 Γ A _).
+    epose (P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
+    epose (P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
+    epose (Modus_ponens Γ _ _ _ _ m m0).
+    epose (Modus_ponens Γ _ _ _ _ m2 m1).
+    epose (P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
+    epose (Modus_ponens Γ _ _ _ _ m3 m4).
+    epose (P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
+    epose (Modus_ponens Γ _ _ _ _ m5 m6).
+    epose (reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
+    eapply (Modus_ponens Γ _ _ _ _ m8 m7).
     Unshelve.
     all: auto 10.
   Qed.
 
-  Lemma conj_intro (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> B ---> (A and B)).
+  Lemma conj_intro (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A and B)).
   Proof.
     intros.
-    epose(tB := (A_impl_A theory B _)).
-    epose(t1 := Modus_ponens theory _ _ _ _ (P2 _ (¬(¬A) ---> ¬B) A Bot _ _ _)
+    epose(tB := (A_impl_A Γ B _)).
+    epose(t1 := Modus_ponens Γ _ _ _ _ (P2 _ (¬(¬A) ---> ¬B) A Bot _ _ _)
                              (P1 _ _ B _ _)).
-    epose(t2 := Modus_ponens theory _ _ _ _  (reorder_meta _ _ _ _ (P4 _ (¬A) B _ _))
+    epose(t2 := Modus_ponens Γ _ _ _ _  (reorder_meta _ _ _ _ (P4 _ (¬A) B _ _))
                              (P1 _ _ B _ _)).
-    epose(t3'' := Modus_ponens theory _ _ _ _ (P1 _ A (¬(¬A) ---> ¬B) _ _)
+    epose(t3'' := Modus_ponens Γ _ _ _ _ (P1 _ A (¬(¬A) ---> ¬B) _ _)
                                (P1 _ _ B _ _)).
-    epose(t4 := Modus_ponens theory _ _ _ _ tB
-                             (Modus_ponens theory _ _ _ _ t2
+    epose(t4 := Modus_ponens Γ _ _ _ _ tB
+                             (Modus_ponens Γ _ _ _ _ t2
                                            (P2 _ B B _ _ _ _))).
     epose(t5'' := 
-            Modus_ponens theory _ _ _ _ t4
-                         (Modus_ponens theory _ _ _ _ t1
+            Modus_ponens Γ _ _ _ _ t4
+                         (Modus_ponens Γ _ _ _ _ t1
                                        (P2 _ B ((¬(¬A) ---> ¬B) ---> ¬A)
                                            (((¬(¬A) ---> ¬B) ---> A) ---> ¬(¬(¬A) ---> ¬B)) _ _ _))).
     
-    epose(tA := (P1 theory A B) _ _).
-    epose(tB' := Modus_ponens theory _ _ _ _ tB
+    epose(tA := (P1 Γ A B) _ _).
+    epose(tB' := Modus_ponens Γ _ _ _ _ tB
                               (P1 _ (B ---> B) A _ _)).
-    epose(t3' := Modus_ponens theory _ _ _ _ t3''
+    epose(t3' := Modus_ponens Γ _ _ _ _ t3''
                               (P2 _ B A ((¬(¬A) ---> ¬B) ---> A) _ _ _)).
-    epose(t3 := Modus_ponens theory _ _ _ _ t3'
+    epose(t3 := Modus_ponens Γ _ _ _ _ t3'
                              (P1 _ ((B ---> A) ---> B ---> (¬ (¬ A) ---> ¬ B) ---> A) A _ _)).
-    epose(t5' := Modus_ponens theory _ _ _ _ t5''
+    epose(t5' := Modus_ponens Γ _ _ _ _ t5''
                               (P2 _ B ((¬(¬A) ---> ¬B) ---> A) (¬(¬(¬A) ---> ¬B)) _ _ _)).
-    epose(t5 := Modus_ponens theory _ _ _ _ t5' 
+    epose(t5 := Modus_ponens Γ _ _ _ _ t5' 
                              (P1 _ ((B ---> (¬ (¬ A) ---> ¬ B) ---> A) ---> B ---> ¬ (¬ (¬ A) ---> ¬ B))
                                  A _ _)).
-    epose(t6 := Modus_ponens theory _ _ _ _ tA
-                             (Modus_ponens theory _ _ _ _ t3
+    epose(t6 := Modus_ponens Γ _ _ _ _ tA
+                             (Modus_ponens Γ _ _ _ _ t3
                                            (P2 _ A (B ---> A) (B ---> (¬(¬A) ---> ¬B) ---> A) _ _ _))).
-    epose(t7 := Modus_ponens theory _ _ _ _ t6 
-                             (Modus_ponens theory _ _ _ _ t5 
+    epose(t7 := Modus_ponens Γ _ _ _ _ t6 
+                             (Modus_ponens Γ _ _ _ _ t5 
                                            (P2 _ A (B ---> (¬(¬A) ---> ¬B) ---> A) (B ---> ¬(¬(¬A) ---> ¬B)) _ _ _))).
     unfold patt_and.  unfold patt_or.
     exact t7.
@@ -276,8 +276,8 @@ Section FOL_helpers.
   Qed.
 
 
-  Lemma conj_intro_meta (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A and B).
+  Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A and B).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -289,27 +289,27 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
-  (* Lemma conj_intro_meta_e (theory : Theory) (A B : Pattern) : *) 
+  (* Lemma conj_intro_meta_e (Γ : Theory) (A B : Pattern) : *) 
   Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
 
-  Lemma disj (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> B ---> (A or B)).
+  Lemma disj (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A or B)).
   Proof.
     intros. unfold patt_or.
     
-    epose proof (t1 := (P1 theory B (¬A) _ _)).
+    epose proof (t1 := (P1 Γ B (¬A) _ _)).
     
-    epose proof (t2 := (P1 theory (B ---> (¬A ---> B)) A _ _)).
+    epose proof (t2 := (P1 Γ (B ---> (¬A ---> B)) A _ _)).
     
-    epose proof (t3 := Modus_ponens theory _ _ _ _ t1 t2).
+    epose proof (t3 := Modus_ponens Γ _ _ _ _ t1 t2).
     
     exact t3.
     Unshelve.
     all: auto 10.
   Qed.
 
-  Lemma disj_intro (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ A -> theory ⊢ B -> theory ⊢ (A or B).
+  Lemma disj_intro (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A or B).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -321,9 +321,9 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
-  Lemma syllogism_4_meta (theory : Theory) (A B C D : Pattern) :
+  Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    theory ⊢ (A ---> B ---> C) -> theory ⊢ (C ---> D) -> theory ⊢ (A ---> B ---> D).
+    Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (C ---> D) -> Γ ⊢ (A ---> B ---> D).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -341,8 +341,8 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
-  Lemma bot_elim (theory : Theory) (A : Pattern) :
-    well_formed A -> theory ⊢ (Bot ---> A).
+  Lemma bot_elim (Γ : Theory) (A : Pattern) :
+    well_formed A -> Γ ⊢ (Bot ---> A).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -358,19 +358,19 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma modus_ponens' (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> (¬B ---> ¬A) ---> B).
+  Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> (¬B ---> ¬A) ---> B).
   Proof.
     intros.
     assert(well_formed (¬ B ---> ¬ A)).
     shelve.
-    exact (reorder_meta theory H1 H H0 (P4 _ B A H0 H)).
+    exact (reorder_meta Γ H1 H H0 (P4 _ B A H0 H)).
     Unshelve.
     all: auto.
   Qed.
 
-  Lemma disj_right_intro (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (B ---> (A or B)).
+  Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
   Proof.
     intros.
     assert(well_formed (¬A)).
@@ -380,8 +380,8 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma disj_left_intro (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> (A or B)).
+  Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> (A or B)).
   Proof.
     intros.
     eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot _ _) (bot_elim _ B _)).
@@ -389,11 +389,11 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma disj_right_intro_meta (theory : Theory) (A B : Pattern) :
+  Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    theory ⊢ B ->
-    theory ⊢ (A or B).
+    Γ ⊢ B ->
+    Γ ⊢ (A or B).
   Proof.
     intros HwfA HwfB HB.
     eapply (Modus_ponens _ _ _ _ _).
@@ -403,11 +403,11 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma disj_left_intro_meta (theory : Theory) (A B : Pattern) :
+  Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    theory ⊢ A ->
-    theory ⊢ (A or B).
+    Γ ⊢ A ->
+    Γ ⊢ (A or B).
   Proof.
     intros HwfA HwfB HA.
     eapply (Modus_ponens _ _ _ _ _).
@@ -418,16 +418,16 @@ Section FOL_helpers.
   Qed.
 
   (*TODO: Is this redundant?*)
-  Lemma not_not_elim (theory : Theory) (A : Pattern) :
-    well_formed A -> theory ⊢ (¬(¬A) ---> A).
+  Lemma not_not_elim (Γ : Theory) (A : Pattern) :
+    well_formed A -> Γ ⊢ (¬(¬A) ---> A).
   Proof.
     intros.
     unfold patt_not.
-    exact (P3 theory A H).
+    exact (P3 Γ A H).
   Qed.
 
-  Lemma double_neg_elim (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
+  Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
   Proof.
     intros.
     eapply (syllogism_intro _ _ _ _ _ _ _).
@@ -437,9 +437,9 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma double_neg_elim_meta (theory : Theory) (A B : Pattern) :
+  Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> 
-    theory ⊢ ((¬(¬A)) ---> (¬(¬B))) -> theory ⊢ (A ---> B).
+    Γ ⊢ ((¬(¬A)) ---> (¬(¬B))) -> Γ ⊢ (A ---> B).
   Proof.
     intros.
     eapply (Modus_ponens _ _ _ _ _).
@@ -449,8 +449,8 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma P4_rev_meta (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> B) -> theory ⊢ ((A ---> B) ---> (¬B ---> ¬A)).
+  Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (¬B ---> ¬A)).
   Proof.
     intros.
     eapply (deduction _ _ _ _ _).
@@ -466,11 +466,11 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
-  Lemma P4m_neg (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
+  Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
   Proof.
     intros.
-    epose proof (PT := (P4 theory B A _ _)).
+    epose proof (PT := (P4 Γ B A _ _)).
     eapply (syllogism_intro _ _ _ _ _ _ _).
     - exact PT.
     - eapply (P4m _ _ _ _ _).
@@ -478,12 +478,12 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma not_not_impl_intro_meta (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (A ---> B) -> theory ⊢ ((¬¬A) ---> (¬¬B)).
+  Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((¬¬A) ---> (¬¬B)).
   Proof.
     intros.
-    epose proof (NN1 := not_not_elim theory A _).
-    epose proof (NN2 := not_not_intro theory B _).
+    epose proof (NN1 := not_not_elim Γ A _).
+    epose proof (NN2 := not_not_intro Γ B _).
     
     epose proof (S1 := syllogism_intro _ _ _ _ _ _ _ H1 NN2).
     
@@ -493,22 +493,22 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma not_not_impl_intro (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ ((A ---> B) ---> ((¬¬A) ---> (¬¬B))).
+  Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((¬¬A) ---> (¬¬B))).
   Proof.
     intros.
     
-    epose (S1 := syllogism theory (¬¬A) A B _ _ _).
+    epose (S1 := syllogism Γ (¬¬A) A B _ _ _).
     
     epose (MP1 := Modus_ponens _ (¬ (¬ A) ---> A) ((A ---> B) ---> ¬ (¬ A) ---> B) _ _ (not_not_elim _ A _) S1).
     
-    epose(NNB := not_not_intro theory B _).
+    epose(NNB := not_not_intro Γ B _).
 
-    epose(P1 := (P1 theory (B ---> ¬ (¬ B)) (¬¬A) _ _)).
+    epose(P1 := (P1 Γ (B ---> ¬ (¬ B)) (¬¬A) _ _)).
     
     epose(MP2 := Modus_ponens _ _ _ _ _ NNB P1).
     
-    epose(P2 := (P2 theory (¬¬A) B (¬¬B) _ _ _)).
+    epose(P2 := (P2 Γ (¬¬A) B (¬¬B) _ _ _)).
     
     epose(MP3 := Modus_ponens _ _ _ _ _ MP2 P2).
     
@@ -523,12 +523,12 @@ Section FOL_helpers.
   Qed.
 
 
-  Lemma contraposition (theory : Theory) (A B : Pattern) : 
+  Lemma contraposition (Γ : Theory) (A B : Pattern) : 
     well_formed A -> well_formed B -> 
-    theory ⊢ ((A ---> B) ---> ((¬ B) ---> (¬ A))).
+    Γ ⊢ ((A ---> B) ---> ((¬ B) ---> (¬ A))).
   Proof.
     intros.
-    epose proof (P4 theory (¬ A) (¬ B) _ _) as m.
+    epose proof (P4 Γ (¬ A) (¬ B) _ _) as m.
     apply syllogism_intro with (B := (¬ (¬ A) ---> ¬ (¬ B))).
     - shelve.
     - shelve.
@@ -539,17 +539,17 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma or_comm_meta (theory : Theory) (A B : Pattern) :
+  Lemma or_comm_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B ->
-    theory ⊢ (A or B) -> theory ⊢ (B or A).
+    Γ ⊢ (A or B) -> Γ ⊢ (B or A).
   Proof.
     intros. unfold patt_or in *.
     
-    epose proof (P4 := (P4 theory A (¬B) _ _)).
+    epose proof (P4 := (P4 Γ A (¬B) _ _)).
     
-    epose proof (NNI := not_not_intro theory B _).
+    epose proof (NNI := not_not_intro Γ B _).
     
-    epose proof (SI := syllogism_intro theory _ _ _ _ _ _ H1 NNI).
+    epose proof (SI := syllogism_intro Γ _ _ _ _ _ _ H1 NNI).
     
     eapply (Modus_ponens _ _ _ _ _).
     - exact SI.
@@ -558,11 +558,11 @@ Section FOL_helpers.
       all: auto.
   Qed.
 
-  Lemma A_implies_not_not_A_alt (theory : Theory) (A : Pattern) :
-    well_formed A -> theory ⊢ A -> theory ⊢ (¬( ¬A )).
+  Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
+    well_formed A -> Γ ⊢ A -> Γ ⊢ (¬( ¬A )).
   Proof.
     intros. unfold patt_not.
-    epose proof (NN := not_not_intro theory A _).
+    epose proof (NN := not_not_intro Γ A _).
     
     epose proof (MP := Modus_ponens _ _ _ _ _ H0 NN).
     assumption.
@@ -570,14 +570,14 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma P5i (theory : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> theory ⊢ (¬ A ---> (A ---> B)).
+  Lemma P5i (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (¬ A ---> (A ---> B)).
   Proof.
     intros.
     
-    epose proof (Ax1 := (P1 theory (¬A) (¬B) _ _)).
+    epose proof (Ax1 := (P1 Γ (¬A) (¬B) _ _)).
     
-    epose proof (Ax2 := (P4 theory B A _ _)).
+    epose proof (Ax2 := (P4 Γ B A _ _)).
     
     epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
     assumption.
@@ -585,13 +585,13 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  Lemma false_implies_everything (theory : Theory) (phi : Pattern) :
-    well_formed phi -> theory ⊢ (Bot ---> phi).
+  Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
+    well_formed phi -> Γ ⊢ (Bot ---> phi).
   Proof.
     intro.
     
-    epose proof (B_B := (A_impl_A theory Bot _)).
-    epose proof (P4 := P5i theory Bot phi _ _).
+    epose proof (B_B := (A_impl_A Γ Bot _)).
+    epose proof (P4 := P5i Γ Bot phi _ _).
     
     eapply (Modus_ponens _ _ _ _ _) in P4.
     - assumption.
@@ -601,33 +601,33 @@ Section FOL_helpers.
   Qed.
 
 
-  (* Goal  forall (A B : Pattern) (theory : Theory) , well_formed A -> well_formed B ->
-  theory ⊢ ((A $ Bot) $ B ---> Bot).
+  (* Goal  forall (A B : Pattern) (Γ : Theory) , well_formed A -> well_formed B ->
+  Γ ⊢ ((A $ Bot) $ B ---> Bot).
 Proof.
   intros.
-  epose (Prop_bott_right theory A H).
-  epose (Framing_left theory (A $ Bot) (Bot) B (m)).
-  epose (Prop_bott_left theory B H0).
-  epose (syllogism_intro theory _ _ _ _ _ _ (m0) (m1)).
+  epose (Prop_bott_right Γ A H).
+  epose (Framing_left Γ (A $ Bot) (Bot) B (m)).
+  epose (Prop_bott_left Γ B H0).
+  epose (syllogism_intro Γ _ _ _ _ _ _ (m0) (m1)).
   exact m2.
   Unshelve.
   all: auto.
 Qed. *)
 
-  (* Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity). *)
+  (* Notation "Γ ⊢ pattern" := (@ML_proof_system Σ Γ pattern) (at level 95, no associativity). *)
   Check ⊥.
 
   (*Was an axiom in AML_definition.v*)
-  Lemma Prop_bot (theory : Theory) (C : Application_context) :
-    theory ⊢ ((subst_ctx C patt_bott) ---> patt_bott).
+  Lemma Prop_bot (Γ : Theory) (C : Application_context) :
+    Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott).
   Proof.
     induction C.
     - simpl. eapply false_implies_everything. shelve.
-    - simpl. epose proof (m0 := Framing_left theory (subst_ctx C Bot) (Bot) p IHC).
-      epose proof (m1 := syllogism_intro theory _ _ _ _ _ _ (m0) (Prop_bott_left theory p Prf)). exact m1.
-    - simpl. epose proof (m2 := Framing_right theory (subst_ctx C Bot) (Bot) p IHC).
+    - simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p IHC).
+      epose proof (m1 := syllogism_intro Γ _ _ _ _ _ _ (m0) (Prop_bott_left Γ p Prf)). exact m1.
+    - simpl. epose proof (m2 := Framing_right Γ (subst_ctx C Bot) (Bot) p IHC).
 
-      epose proof (m3 := syllogism_intro theory _ _ _ _ _ _ (m2) (Prop_bott_right theory p Prf)). exact m3.
+      epose proof (m3 := syllogism_intro Γ _ _ _ _ _ _ (m2) (Prop_bott_right Γ p Prf)). exact m3.
       
       Unshelve.
       all: auto.
@@ -642,25 +642,25 @@ Qed. *)
 
 
   (*Was an axiom in AML_definition.v*)
-  Lemma Framing (theory : Theory) (C : Application_context) (A B : Pattern):
-    well_formed A -> well_formed B -> theory ⊢ (A ---> B) -> theory ⊢ ((subst_ctx C A) ---> (subst_ctx C B)).
+  Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern):
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)).
   Proof.
     induction C; intros.
     - simpl. exact H1.
-    - simpl. epose (Framing_left theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
-    - simpl. epose (Framing_right theory (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
+    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
+    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
       Unshelve.
       all: auto.
   Qed.
 
-  Lemma A_implies_not_not_A_ctx (theory : Theory) (A : Pattern) (C : Application_context) :
-    well_formed A -> theory ⊢ A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))).
+  Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
+    well_formed A -> Γ ⊢ A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))).
   Proof.
     intros.
-    epose proof (ANNA := A_implies_not_not_A_alt theory _ _ H0).
+    epose proof (ANNA := A_implies_not_not_A_alt Γ _ _ H0).
     replace (¬ (¬ A)) with ((¬ A) ---> Bot) in ANNA. 2: auto.
     epose proof (EF := Framing _ C (¬ A) Bot _ _ ANNA).
-    epose proof (PB := Prop_bot theory C).
+    epose proof (PB := Prop_bot Γ C).
     
     epose (TRANS := syllogism_intro _ _ _ _ _ _ _ EF PB).
     
@@ -673,7 +673,7 @@ Qed. *)
   Qed.
 
 
-  Lemma A_implies_not_not_A_alt_theory (G : Theory) (A : Pattern) :
+  Lemma A_implies_not_not_A_alt_Γ (G : Theory) (A : Pattern) :
     well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
   Proof.
     intros. unfold patt_not.
@@ -686,20 +686,20 @@ Qed. *)
     all: auto.
   Qed.
 
-  (* Lemma equiv_implies_eq (theory : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> theory ⊢ (A <---> B) -> theory ⊢ ()
+  (* Lemma equiv_implies_eq (Γ : Theory) (A B : Pattern) :
+  well_formed A -> well_formed B -> Γ ⊢ (A <---> B) -> Γ ⊢ ()
    *) (*Need equal*)
   
-  (* Lemma equiv_implies_eq_theory *)
+  (* Lemma equiv_implies_eq_Γ *)
 
   (*...Missing some lemmas because of the lack of defidness definition...*)
 
-  Lemma ctx_bot_prop (theory : Theory) (C : Application_context) (A : Pattern) :
-    well_formed A -> theory ⊢ (A ---> Bot) -> theory ⊢ (subst_ctx C A ---> Bot).
+  Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) :
+    well_formed A -> Γ ⊢ (A ---> Bot) -> Γ ⊢ (subst_ctx C A ---> Bot).
   Proof.
     intros.
-    epose proof (FR := Framing theory C A Bot _ _ H0).
-    epose proof (BPR := Prop_bot theory C).
+    epose proof (FR := Framing Γ C A Bot _ _ H0).
+    epose proof (BPR := Prop_bot Γ C).
     
     epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ FR BPR).
     
@@ -709,26 +709,26 @@ Qed. *)
     all: auto.
   Qed.
 
-  Lemma not_not_A_ctx_implies_A (theory : Theory) (C : Application_context) (A : Pattern):
-    well_formed A -> theory ⊢ (¬ (subst_ctx C ( ¬A ))) -> theory ⊢ A.
+  Lemma not_not_A_ctx_implies_A (Γ : Theory) (C : Application_context) (A : Pattern):
+    well_formed A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))) -> Γ ⊢ A.
   Proof.
     intros.
     unfold patt_not in H0 at 1.
     
-    epose (BIE := false_implies_everything theory (subst_ctx C Bot) _).
+    epose (BIE := false_implies_everything Γ (subst_ctx C Bot) _).
     
     epose (TRANS := syllogism_intro _ _ _ _ _ _ _ H0 BIE).
     
     induction C.
     - simpl in TRANS.
-      epose (NN := not_not_elim theory A _).
+      epose (NN := not_not_elim Γ A _).
       epose (MP := Modus_ponens _ _ _ _ _ TRANS NN). assumption.
     - eapply IHC.
       Unshelve.
       all: auto.
   Abort.
 
-  Definition empty_theory := Empty_set (@Pattern Σ).
+  Definition empty_Γ := Empty_set (@Pattern Σ).
   Lemma exclusion (G : Theory) (A : Pattern) :
     well_formed A -> G ⊢ A -> G ⊢ (A ---> Bot) -> G ⊢ Bot.
   Proof.
@@ -742,29 +742,29 @@ Qed. *)
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
 
-(* Lemma empty_theory_implies_any A : forall G,
-  empty_theory ⊢ A -> G ⊢ A. *)
+(* Lemma empty_Γ_implies_any A : forall G,
+  empty_Γ ⊢ A -> G ⊢ A. *)
 
 (* Lemma equiv_cong G phi1 phi2 C x :
   (G ⊢ (phi1 <~> phi2)) -> G ⊢ ((e_subst_var C phi1 x) <~> (e_subst_var C phi2 x)). *)
 
 (* Lemma eq_refl
-  (phi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory ⊢ (phi ~=~ phi). *)
+  (phi : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
+    Γ ⊢ (phi ~=~ phi). *)
 
 (* Lemma eq_trans
-  (phi1 phi2 phi3 : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory ⊢ (phi1 ~=~ phi2) -> theory ⊢ (phi2 ~=~ phi3) ->
-    theory ⊢ (phi1 ~=~ phi3). *)
+  (phi1 phi2 phi3 : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
+    Γ ⊢ (phi1 ~=~ phi2) -> Γ ⊢ (phi2 ~=~ phi3) ->
+    Γ ⊢ (phi1 ~=~ phi3). *)
 
 (* Lemma eq_symm
-  (phi1 phi2 : Sigma_pattern)  (theory : Ensemble Sigma_pattern) :
-    theory ⊢ (phi1 ~=~ phi2) -> theory ⊢ (phi2 ~=~ phi1). *)
+  (phi1 phi2 : Sigma_pattern)  (Γ : Ensemble Sigma_pattern) :
+    Γ ⊢ (phi1 ~=~ phi2) -> Γ ⊢ (phi2 ~=~ phi1). *)
 
 (* Lemma eq_evar_subst
-  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (theory : Ensemble Sigma_pattern) :
-    theory ⊢ (phi1 ~=~ phi2) ->
-    theory ⊢ ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)). *)
+  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
+    Γ ⊢ (phi1 ~=~ phi2) ->
+    Γ ⊢ ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)). *)
 
 (* Lemma A_implies_A_totality A:
   A proved -> |_ A _| proved. *)
@@ -772,6 +772,6 @@ Qed. *)
 (* Lemma A_totality_implies_A A:
   |_ A _| proved -> A proved. *)
 
-(* Lemma universal_instantiation (theory : Theory) (A : Pattern) (x y : evar):
-  theory ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
+(* Lemma universal_instantiation (Γ : Theory) (A : Pattern) (x y : evar):
+  Γ ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
 End FOL_helpers.
