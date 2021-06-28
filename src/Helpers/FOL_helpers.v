@@ -29,6 +29,8 @@ Section FOL_helpers.
 
     all: auto.
   Qed.
+
+  #[local] Hint Resolve A_impl_A : core.
   
   Lemma P4m (Γ : Theory) (A B : Pattern) :
     (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> ¬B) ---> ¬A)).
@@ -138,6 +140,8 @@ Section FOL_helpers.
         all: auto 10.
   Qed.
 
+  #[local] Hint Resolve syllogism : core.
+  
   Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
   Proof.
@@ -151,6 +155,8 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
+  #[local] Hint Resolve syllogism_intro : core.
+  
   Lemma modus_ponens (Γ : Theory) ( A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (A ---> B) ---> B).
   Proof.
@@ -167,6 +173,8 @@ Section FOL_helpers.
           all: auto 10.
   Qed.
 
+  #[local] Hint Resolve modus_ponens : core.
+  
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (A ---> ¬(¬A)).
   Proof.
@@ -288,7 +296,7 @@ Section FOL_helpers.
         Unshelve.
         all: auto.
   Qed.
-
+  
   (* Lemma conj_intro_meta_e (Γ : Theory) (A B : Pattern) : *) 
   Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
 
@@ -380,6 +388,8 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
+  #[local] Hint Resolve disj_right_intro : core.
+  
   Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (A or B)).
   Proof.
@@ -388,6 +398,8 @@ Section FOL_helpers.
     Unshelve.
     all: auto.
   Qed.
+
+  #[local] Hint Resolve disj_left_intro : core.
 
   Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -417,7 +429,6 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
-  (*TODO: Is this redundant?*)
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (¬(¬A) ---> A).
   Proof.
@@ -425,6 +436,8 @@ Section FOL_helpers.
     unfold patt_not.
     exact (P3 Γ A H).
   Qed.
+
+  #[local] Hint Resolve not_not_elim : core.
 
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
@@ -633,14 +646,6 @@ Qed. *)
       all: auto.
   Qed.
 
-  (* TODO: <---> and its properties: reflexivity, symmetry, transitivity. And later, congruence. *)
-  Lemma Prop_bott_iff Γ AC:
-    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
-  Proof.
-
-  Abort.
-
-
   (*Was an axiom in AML_definition.v*)
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern):
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)).
@@ -739,6 +744,142 @@ Qed. *)
     all: auto.
   Qed.
 
+  Lemma modus_tollens Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (¬B ---> ¬A).
+  Proof.
+    intros. unfold patt_not.
+  Abort.
+
+  Lemma A_impl_not_not_B Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ ((A ---> ¬¬B) ---> (A ---> B)).
+  Proof.
+    intros.
+    assert (Γ ⊢ (¬¬B ---> B)) by auto.
+    assert (Γ ⊢ ((A ---> ¬¬B) ---> (¬¬B ---> B) ---> (A ---> B))) by auto.
+    apply reorder_meta in H2; auto.
+    eapply Modus_ponens. 4: apply H2. all: auto 10.
+  Qed.
+
+  Lemma A_impl_not_not_B_meta Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> ¬¬B) ->
+    Γ ⊢ (A ---> B).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: { apply A_impl_not_not_B; auto. }
+    all: auto.
+  Qed.
+  
+
+  Lemma pf_conj_elim_l Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A and B ---> A).
+  Proof.
+    intros. unfold patt_and. unfold patt_not at 1.
+
+    assert (Γ ⊢ (¬ A ---> (¬ A or ¬ B))) by auto.
+    assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
+    assert (Γ ⊢ (¬ A ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
+    { eapply syllogism_intro. 5: apply H2. 4: apply H1. all: auto. }
+    epose proof (reorder_meta _ _ _ _ H3).
+    apply A_impl_not_not_B_meta; auto.
+    Unshelve.
+    all: auto.
+  Qed.
+
+  Lemma pf_conj_elim_r Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A and B ---> B).
+  Proof.
+    intros. unfold patt_and. unfold patt_not at 1.
+
+    assert (Γ ⊢ (¬ B ---> (¬ A or ¬ B))) by auto.
+    assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
+    assert (Γ ⊢ (¬ B ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
+    { eapply syllogism_intro. 5: apply H2. 4: apply H1. all: auto. }
+    epose proof (reorder_meta _ _ _ _ H3).
+    apply A_impl_not_not_B_meta; auto.
+    Unshelve.
+    all: auto.
+  Qed.
+
+  Lemma pf_conj_elim_l_meta Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A and B) ->
+    Γ ⊢ A.
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: apply pf_conj_elim_l.
+    3: apply H1.
+    all: auto.
+  Qed.
+  
+  Lemma pf_conj_elim_r_meta Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A and B) ->
+    Γ ⊢ B.
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: apply pf_conj_elim_r.
+    3: apply H1.
+    all: auto.
+  Qed.
+  
+  Lemma pf_iff_split Γ A B:
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (B ---> A) ->
+    Γ ⊢ (A <---> B).
+  Proof.
+    intros wfA wfB AimplB BimplA.
+    unfold patt_iff.
+    apply conj_intro_meta; auto.
+  Qed.
+  
+
+  Lemma pf_iff_equiv_refl Γ A :
+    well_formed A ->
+    Γ ⊢ (A <---> A).
+  Proof.
+    intros.
+    apply pf_iff_split; auto.
+  Qed.
+
+  Lemma pf_iff_equiv_sym Γ A B :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A <---> B) ->
+    Γ ⊢ (B <---> A).
+  Proof.
+    intros.
+    Search ML_proof_system patt_and.
+  Abort.
+  
+    
+
+  (* TODO: <---> and its properties: reflexivity, symmetry, transitivity. And later, congruence. *)
+  Lemma Prop_bott_iff Γ AC:
+    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
+  Proof.
+
+  Abort.
+
+
+  
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
 
@@ -775,3 +916,7 @@ Qed. *)
 (* Lemma universal_instantiation (Γ : Theory) (A : Pattern) (x y : evar):
   Γ ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
 End FOL_helpers.
+
+(* Hints *)
+#[export]
+ Hint Resolve A_impl_A : core.
