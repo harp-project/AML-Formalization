@@ -914,11 +914,32 @@ Qed. *)
     split; eauto.
   Qed.
     
-  Lemma Prop_bott_iff Γ AC:
+  Lemma pf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
   Proof.
-
-  Abort.
+    induction AC; simpl.
+    - apply pf_iff_equiv_refl; auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_left in H.
+        eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥)).
+        { apply Prop_bott_left. shelve. }
+        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3: auto.
+      + apply bot_elim; auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_right in H.
+        eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥)).
+        { apply Prop_bott_right. shelve. }
+        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3: auto.
+      + apply bot_elim; auto.
+        Unshelve. all: auto.
+  Qed.
+  
 
 
   
