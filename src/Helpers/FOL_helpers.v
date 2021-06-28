@@ -849,7 +849,36 @@ Qed. *)
     unfold patt_iff.
     apply conj_intro_meta; auto.
   Qed.
+
+  Lemma pf_iff_proj1 Γ A B:
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A <---> B) ->
+    Γ ⊢ (A ---> B).
+  Proof.
+    intros. unfold patt_iff in H1.
+    apply pf_conj_elim_l_meta in H1; auto.
+  Qed.
+
+  Lemma pf_iff_proj2 Γ A B:
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A <---> B) ->
+    Γ ⊢ (B ---> A).
+  Proof.
+    intros. unfold patt_iff in H1.
+    apply pf_conj_elim_r_meta in H1; auto.
+  Qed.
+
+  Lemma pf_iff_iff Γ A B:
+    well_formed A ->
+    well_formed B ->
+    (Γ ⊢ (A <---> B)) <-> ((Γ ⊢ (A ---> B)) /\ (Γ ⊢ (B ---> A))).
+  Proof.
+    intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
+  Qed.
   
+      
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
@@ -865,13 +894,26 @@ Qed. *)
     Γ ⊢ (A <---> B) ->
     Γ ⊢ (B <---> A).
   Proof.
-    intros.
-    Search ML_proof_system patt_and.
-  Abort.
-  
-    
+    intros wfA wfB H.
+    apply pf_iff_iff in H; auto. apply pf_iff_iff; auto.
+    exact (conj (proj2 H) (proj1 H)).
+  Qed.
 
-  (* TODO: <---> and its properties: reflexivity, symmetry, transitivity. And later, congruence. *)
+  Lemma pf_iff_equiv_trans Γ A B C :
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    Γ ⊢ (A <---> B) ->
+    Γ ⊢ (B <---> C) ->
+    Γ ⊢ (A <---> C).
+  Proof.
+    intros wfA wfB wfC AeqB BeqC.
+    apply pf_iff_iff in AeqB; auto. destruct AeqB as [AimpB BimpA].
+    apply pf_iff_iff in BeqC; auto. destruct BeqC as [BimpC CimpB].
+    apply pf_iff_iff; auto.
+    split; eauto.
+  Qed.
+    
   Lemma Prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
   Proof.
