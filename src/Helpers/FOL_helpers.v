@@ -795,6 +795,8 @@ Qed. *)
     eapply Modus_ponens. 4: apply H2. all: auto 10.
   Qed.
 
+  #[local] Hint Resolve A_impl_not_not_B : core.
+  
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
     well_formed B ->
@@ -893,6 +895,20 @@ Qed. *)
   Qed.
 
   Lemma conclusion_anyway Γ A B:
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ ((A ---> B) ---> (¬ A ---> B) ---> B).
+  Proof.
+    intros wfA wfB.
+    assert (H1: Γ ⊢ (B ---> ¬ ¬ B)) by auto.
+
+    assert (H2: Γ ⊢ ((A ---> B) ---> (¬ A ---> B) ---> ¬¬B)) by admit.
+    assert (H3: Γ ⊢ (((¬ A ---> B) ---> ¬ ¬ B) ---> ((¬ A ---> B) ---> B))) by auto.
+    assert (H4: Γ ⊢ (((A ---> B) ---> ((¬ A ---> B) ---> ¬ ¬ B)) ---> ((A ---> B) ---> ((¬ A ---> B) ---> B)))).
+    (* Give up *)
+  Abort.
+  
+  Lemma conclusion_anyway_meta Γ A B:
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> B) ->
@@ -1045,9 +1061,14 @@ Qed. *)
     intros wfp wfq.
     induction AC; simpl.
     - apply pf_iff_equiv_refl; auto.
-    - apply pf_iff_split; auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
       + admit.
-      +
+      + 
+        Set Printing All.
+        Check pf_or_elim.
+        eapply pf_or_elim.
         Search patt_or ML_proof_system.
   Abort.
   
