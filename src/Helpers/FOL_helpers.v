@@ -186,6 +186,8 @@ Section FOL_helpers.
     all: auto.
   Qed.
 
+  #[local] Hint Resolve not_not_intro : core.
+
   Lemma deduction (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
   Proof.
@@ -439,6 +441,19 @@ Section FOL_helpers.
 
   #[local] Hint Resolve not_not_elim : core.
 
+  Lemma not_not_elim_meta Γ A :
+    well_formed A ->
+    Γ ⊢ (¬ ¬ A) ->
+    Γ ⊢ A.
+  Proof.
+    intros wfA nnA.
+    pose proof (H := not_not_elim Γ A wfA).
+    eapply Modus_ponens. 4: apply H.
+    all: auto.
+  Qed.
+
+  #[local] Hint Resolve not_not_elim_meta : core.
+
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
   Proof.
@@ -479,6 +494,21 @@ Section FOL_helpers.
         all: auto.
   Qed.
 
+  Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (¬B ---> ¬A).
+  Proof.
+    intros wfA wfB AimpB.
+    pose proof (H := P4_rev_meta Γ A B wfA wfB AimpB).
+    eapply Modus_ponens.
+    4: apply H.
+    all: auto.
+  Qed.
+
+  #[local] Hint Resolve P4_rev_meta' : core.
+  
   Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
   Proof.
@@ -837,6 +867,74 @@ Qed. *)
     3: apply H1.
     all: auto.
   Qed.
+
+  Lemma A_or_notA Γ A :
+    well_formed A ->
+    Γ ⊢ (A or ¬ A).
+  Proof.
+    intros wfA.
+    unfold patt_or.
+    auto.
+  Qed.
+
+  Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (A ---> ¬B) ->
+    Γ ⊢ ¬A.
+  Proof.
+    intros wfA wfB AimpB AimpnB.
+    Check P4m.
+    pose proof (H1 := P4m Γ A B wfA wfB).
+    assert (H2 : Γ ⊢ (A ---> ¬ B) ---> ¬ A).
+    { eapply Modus_ponens. 4: apply H1. all: auto. }
+    eapply Modus_ponens. 4: apply H2. all: auto.
+  Qed.
+
+  Lemma conclusion_anyway Γ A B:
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (¬ A ---> B) ->
+    Γ ⊢ B.
+  Proof.
+    intros wfA wfB AimpB nAimpB.
+    assert (H1: Γ ⊢ (B ---> ¬ ¬ B)) by auto.
+    assert (H2: Γ ⊢ (¬ A ---> ¬ ¬ B)).
+    { eapply syllogism_intro. 5: apply H1. all: auto. }
+    clear H1.
+    assert (H3: Γ ⊢ (¬ B ---> ¬ A)) by auto.
+    epose proof (H4 := P4m_neg Γ (¬B) A _ _).
+    assert (H5: Γ ⊢ ((¬ B ---> ¬ A) ---> ¬ ¬ B)).
+    { eapply Modus_ponens. 4: apply H4. all: auto. }
+    assert (H6: Γ ⊢ (¬ ¬ B)).
+    { eapply Modus_ponens. 4: apply H5. all: auto. }
+    auto.
+    Unshelve. all: auto.
+  Qed.
+    
+  Lemma pf_or_elim Γ A B C :
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    Γ ⊢ (A ---> C) ->
+    Γ ⊢ (B ---> C) ->
+    Γ ⊢ (A or B) ->
+    Γ ⊢ C.
+  Proof.
+    intros wfA wfB wfC AimpC BimpC AorB.
+    unfold patt_or.
+    assert (H1: Γ ⊢ ((¬ A ---> B) ---> (B ---> C) ---> (¬ A ---> C))).
+    { eapply syllogism; auto. }
+    apply reorder_meta in H1; auto.
+    assert (H2: Γ ⊢ ((¬ A ---> B) ---> (¬ A ---> C))).
+    { eapply Modus_ponens. 4: apply H1. all: auto. }
+    unfold patt_or in AorB.
+    assert (H3: Γ ⊢ (¬ A ---> C)).
+    { eapply Modus_ponens. 4: apply H2. all: auto. }
+    eapply conclusion_anyway. 4: apply H3. all: auto.
+  Qed.
   
   Lemma pf_iff_split Γ A B:
     well_formed A ->
@@ -878,7 +976,6 @@ Qed. *)
     intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
   Qed.
   
-      
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
@@ -912,7 +1009,7 @@ Qed. *)
     apply pf_iff_iff in BeqC; auto. destruct BeqC as [BimpC CimpB].
     apply pf_iff_iff; auto.
     split; eauto.
-  Qed.
+  Qed.  
     
   Lemma pf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
@@ -940,7 +1037,20 @@ Qed. *)
         Unshelve. all: auto.
   Qed.
   
-
+  Lemma pf_prop_or_iff Γ AC p q:
+    well_formed p ->
+    well_formed q ->
+    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))).
+  Proof.
+    intros wfp wfq.
+    induction AC; simpl.
+    - apply pf_iff_equiv_refl; auto.
+    - apply pf_iff_split; auto.
+      + admit.
+      +
+        Search patt_or ML_proof_system.
+  Abort.
+  
 
   
 (* Axiom extension : forall G A B,

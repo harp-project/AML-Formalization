@@ -4023,6 +4023,9 @@ Module Notations.
   Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
   Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
 
+  (*Notation "AC [ p ]" := (subst_ctx AC p) (at level 90) : ml_scope.*)
+  Notation "C [ p ]" := (emplace C p) (at level 90) : ml_scope.
+
 End Notations.
 
 Module BoundVarSugar.
