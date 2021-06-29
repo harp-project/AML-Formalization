@@ -810,6 +810,21 @@ Qed. *)
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
 
+  Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
+    well_formed A ->
+    well_formed B ->
+    well_formed B' ->
+    Γ ⊢ (B ---> B') ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (A ---> B').
+  Proof.
+    intros.
+    eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H3. all: auto.
+  Qed.
+  
+    
+
+  
   Lemma prf_strenghten_premise_meta Γ A A' B :
     well_formed A ->
     well_formed A' ->
@@ -833,7 +848,6 @@ Qed. *)
     4: { apply A_impl_not_not_B; auto. }
     all: auto.
   Qed.
-  
 
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
@@ -919,6 +933,49 @@ Qed. *)
     eapply Modus_ponens. 4: apply H2. all: auto.
   Qed.
 
+
+  Lemma test_lemma Γ A B A' B':
+    well_formed A ->
+    well_formed B ->
+    well_formed A' ->
+    well_formed B' ->
+    Γ ⊢ (A' ---> B') ->
+    Γ ⊢ (A ---> A') ->
+    Γ ⊢ (B' ---> B) ->
+    Γ ⊢ (A ---> B).
+  Proof.
+    intros wfA wfB wfA' wfB' A'impB' AimpA' B'impB.
+    (* A term with a hole, representing the goal. It will be hidden inside the 'our' context. *)
+    (* Another existential hypotheses that our goal will have will be the well_formed-ness assumptions. *)
+    epose (G1 := ?[g1] : (Γ ⊢ (A ---> B))).
+
+    (* Now we try to simulate the following apply: *)
+    (* eapply (prf_weaken_conclusion_meta_meta Γ _ _ _ _ _ _ B'impB). *)
+
+    (* First, lets create a new goal *)
+    epose (G2 := ?[g2] : (Γ ⊢ (A ---> B'))).
+    (* Now, lets try to unify G1 with this. *)
+    Check (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
+    unify ?g1 (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
+    Fail unify ?Goal0 I.
+    (* Ok, it works, but: unify renamed our question mark variables.
+       I can see two possible workarounds: (1) match on the 'current goal' hypothesis and derive the
+       variable from the match; (2) remember in the context the terms to unify but do not unify them
+       until the very end.
+     *)
+
+    (* Also, we probably want the context to be part of the goal, and not part of the Coq's context. *)
+    move: G2.
+    (* But then, how do we remember the name of the unification variable? *)
+    (* Also:
+       '''Error: ?Goal is a generated name. Only user-given names for existential variables can be referenced.
+          To give a user name to an existential variable, introduce it with the ?[name] syntax.'''
+       So it looks we need to defer the unification to later. And that is ugly, because we do not get
+       checking when doing the interactive proof.
+     *)
+  Abort.
+  
+  
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -927,9 +984,13 @@ Qed. *)
     intros wfA wfB.
     assert (H1: Γ ⊢ (B ---> ¬ ¬ B)) by auto.
 
+    epose proof (H10 := P4m_neg Γ (¬B) A _ _). Unshelve. all: auto.
+    
     assert (H2: Γ ⊢ ((A ---> B) ---> (¬ A ---> B) ---> ¬¬B)) by admit.
     assert (H3: Γ ⊢ (((¬ A ---> B) ---> ¬ ¬ B) ---> ((¬ A ---> B) ---> B))) by auto.
     assert (H4: Γ ⊢ (((A ---> B) ---> ((¬ A ---> B) ---> ¬ ¬ B)) ---> ((A ---> B) ---> ((¬ A ---> B) ---> B)))).
+    { apply prf_weaken_conclusion_meta; auto. }
+    eapply Modus_ponens. 4: apply H4. all: auto 10.
     (* Give up *)
   Abort.
   
