@@ -796,6 +796,31 @@ Qed. *)
   Qed.
 
   #[local] Hint Resolve A_impl_not_not_B : core.
+
+  Lemma prf_weaken_conclusion_meta Γ A B B' :
+    well_formed A ->
+    well_formed B ->
+    well_formed B' ->
+    Γ ⊢ (B ---> B') ->
+    Γ ⊢ ((A ---> B) ---> (A ---> B')).
+  Proof.
+    intros wfA wfB wfB' BimpB'.
+    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B'))) by auto.
+    apply reorder_meta in H1; auto.
+    eapply Modus_ponens. 4: apply H1. all: auto 10.
+  Qed.
+
+  Lemma prf_strenghten_premise_meta Γ A A' B :
+    well_formed A ->
+    well_formed A' ->
+    well_formed B ->
+    Γ ⊢ (A' ---> A) ->
+    Γ ⊢ ((A ---> B) ---> (A' ---> B)).
+  Proof.
+    intros wfA wfA' wfB A'impA.
+    assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B))) by auto.
+    eapply Modus_ponens. 4: apply H1. all: auto 10.
+  Qed.
   
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
