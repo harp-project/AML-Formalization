@@ -799,6 +799,20 @@ Qed. *)
 
   #[local] Hint Resolve A_impl_not_not_B : core.
 
+  Definition wf (l : list Pattern) := fold_right andb true (map well_formed l).
+
+  Lemma well_formed_foldr g xs :
+    well_formed g ->
+    wf xs ->
+    well_formed (foldr patt_imp g xs).
+  Proof.
+    intros wfg wfxs.
+    induction xs.
+    - simpl. exact wfg.
+    - simpl. unfold wf in wfxs. simpl in wfxs.
+      apply andb_prop in wfxs. destruct wfxs. auto.
+  Qed.
+  
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
     well_formed B ->
@@ -811,6 +825,31 @@ Qed. *)
     apply reorder_meta in H1; auto.
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
+
+
+  Fixpoint prf_weaken_conclusion_meta_iter Γ l g g'
+           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') (gimpg' : Γ ⊢ (g ---> g')) :
+    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l))
+    :=
+      (match l as a return
+             (Γ ⊢ (g ---> g')) ->
+             wf a ->
+             Γ ⊢ ((fold_right patt_imp g a) ---> (fold_right patt_imp g' a))
+       with
+      | [] => fun gimpg' wfl => gimpg'
+      | cons x xs =>
+        fun gimpg' wfl =>
+          let wfx := (proj1 (andb_prop _ _ wfl)) in
+          let wfxs := (proj2 (andb_prop _ _ wfl)) in
+          (prf_weaken_conclusion_meta
+             Γ x (foldr patt_imp g xs) (foldr patt_imp g' xs)
+             wfx
+             (well_formed_foldr _ _ wfg wfxs)
+             (well_formed_foldr _ _ wfg' wfxs)
+             (prf_weaken_conclusion_meta_iter Γ xs g g' wfxs wfg wfg' gimpg')
+          )
+            
+       end) gimpg' wfl.  
 
   Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
     well_formed A ->
@@ -958,6 +997,7 @@ Qed. *)
     epose (G2 := ?[g2] : (Γ ⊢ (A ---> B'))).
     (* Now, lets try to unify G1 with this. *)
     Check (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
+    (*instantiate (g1 := (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2)).*)
     unify ?g1 (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
     Fail unify ?Goal0 I.
     (* Ok, it works, but: unify renamed our question mark variables.
@@ -981,7 +1021,7 @@ Qed. *)
 
   Definition MyGoal_from_goal (Γ : Theory) (goal : Pattern) : MyGoal := mkMyGoal Γ nil goal.
 
-  Notation "[ G ⊢ l ++> g ]" := (mkMyGoal G l g).
+  Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
 
   Compute (MyGoal_from_goal (Empty_set _) patt_bott).
 
@@ -993,11 +1033,49 @@ Qed. *)
   Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) <-> (Γ ⊢ goal).
   Proof. reflexivity. Qed.
 
+  Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
+    mkMyGoal Γ (l ++ [x]) g ->
+    mkMyGoal Γ l (x ---> g).
+  Proof.
+    intros H.
+    unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
+  Qed.
+  
+  
   Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
+  Ltac fromMyGoal := unfold of_MyGoal; simpl.
+  Ltac mgIntro := apply MyGoal_intro; simpl.
 
   Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2).
   Proof.
-    toMyGoal.
+    toMyGoal. mgIntro. fromMyGoal.
+  Abort.
+
+  Goal
+    (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2) ->
+    (Empty_set _) ⊢ (patt_bound_evar 2 ---> patt_bound_evar 3)
+  .
+  Proof.
+    intros H.
+    toMyGoal. mgIntro. fromMyGoal.
+  Abort.
+
+  Search list nat.
+
+  Lemma MyGoal_weakenConclusion Γ l g g':
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ (g ---> g') ->
+    mkMyGoal Γ l g ->
+    mkMyGoal Γ l g'.
+  Proof.
+    intros wfg wfg' gimpg' H.
+    induction l.
+    - fromMyGoal. unfold of_MyGoal in H. simpl in H. eapply Modus_ponens. 4: apply gimpg'. all: auto.
+    - unfold of_MyGoal in *. simpl in *.
+      Check prf_weaken_conclusion_meta.
+      eapply prf_weaken_conclusion_meta_meta.
+      5: apply H.
   Abort.
   
   
