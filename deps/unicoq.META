@@ -1,0 +1,14 @@
+description = ""
+version = ""
+
+directory = ""
+requires = ""
+
+package "unicoq" (
+
+  description = "Unicoq"
+  version     = "8.13"
+
+  archive(byte)    = "unicoq.cma"
+  archive(native)  = "unicoq.cmxa"
+)

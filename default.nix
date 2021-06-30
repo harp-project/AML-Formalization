@@ -11,7 +11,7 @@ let
     src = ./.;
 
     buildInputs = [git];
-    propagatedBuildInputs = [deps.coq deps.stdpp];
+    propagatedBuildInputs = [deps.coq deps.stdpp deps.mtac2];
 
     buildPhase = ''
         make
