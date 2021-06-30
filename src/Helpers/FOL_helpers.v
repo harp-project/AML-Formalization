@@ -5,6 +5,8 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
+From stdpp Require Import list.
+
 Open Scope ml_scope.
 Section FOL_helpers.
 
@@ -973,6 +975,29 @@ Qed. *)
        So it looks we need to defer the unification to later. And that is ugly, because we do not get
        checking when doing the interactive proof.
      *)
+  Abort.
+
+  Record MyGoal : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
+
+  Definition MyGoal_from_goal (Γ : Theory) (goal : Pattern) : MyGoal := mkMyGoal Γ nil goal.
+
+  Notation "[ G ⊢ l ++> g ]" := (mkMyGoal G l g).
+
+  Compute (MyGoal_from_goal (Empty_set _) patt_bott).
+
+  Check fold_right.
+  Coercion of_MyGoal (MG : MyGoal) : Prop := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+
+  Compute of_MyGoal (mkMyGoal (Empty_set _) [(patt_bound_evar 1); (patt_bound_evar 2)] (patt_bound_evar 3)).
+
+  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) <-> (Γ ⊢ goal).
+  Proof. reflexivity. Qed.
+
+  Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
+
+  Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2).
+  Proof.
+    toMyGoal.
   Abort.
   
   
