@@ -849,8 +849,21 @@ Qed. *)
              (prf_weaken_conclusion_meta_iter Γ xs g g' wfxs wfg wfg' gimpg')
           )
             
-       end) gimpg' wfl.  
+       end) gimpg' wfl.
 
+  Lemma prf_weaken_conclusion_meta_iter_meta Γ l g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ (g ---> g') ->
+    Γ ⊢ (fold_right patt_imp g l) ->
+    Γ ⊢ (fold_right patt_imp g' l).
+  Proof.
+    intros wfl wfg wfg' gimpg' H.
+    eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta_iter. 3: apply H.
+    all: auto using well_formed_foldr.
+  Qed.
+    
   Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
     well_formed A ->
     well_formed B ->
@@ -1063,6 +1076,7 @@ Qed. *)
   Search list nat.
 
   Lemma MyGoal_weakenConclusion Γ l g g':
+    wf l ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (g ---> g') ->
@@ -1070,14 +1084,9 @@ Qed. *)
     mkMyGoal Γ l g'.
   Proof.
     intros wfg wfg' gimpg' H.
-    induction l.
-    - fromMyGoal. unfold of_MyGoal in H. simpl in H. eapply Modus_ponens. 4: apply gimpg'. all: auto.
-    - unfold of_MyGoal in *. simpl in *.
-      Check prf_weaken_conclusion_meta.
-      eapply prf_weaken_conclusion_meta_meta.
-      5: apply H.
-  Abort.
-  
+    unfold of_MyGoal in *. simpl in *.
+    eauto using prf_weaken_conclusion_meta_iter_meta.
+  Qed.  
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
