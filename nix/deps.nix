@@ -64,20 +64,21 @@ let
 
         src = fetchGit {
           url = "https://github.com/Mtac2/Mtac2.git";
+          ref = "master-8.13";
           rev = lib.strings.fileContents ../deps/mtac2.rev;
         };
 
         postPatch = ''
-          patchShebangs --build configure.sh
+          patchShebangs --build configure.sh ./tests/sf5/configure.sh
         '';
 
 
         configurePhase = "mkdir -p .git/hooks; ./configure.sh";
         buildPhase = ''
-          make VERBOSE=1 CAMLPKGS='-package Unicoq'
+          make VERBOSE=1 CAMLPKGS='-package Unicoq' real-all
         '';
 
-        buildInputs = with coq.ocamlPackages; [ ocaml camlp5 unicoq ];
+        buildInputs = with coq.ocamlPackages; [ ocaml camlp5 unicoq zarith ];
         propagatedBuildInputs = [ coq unicoq ];
         enableParallelBuilding = true;
 
