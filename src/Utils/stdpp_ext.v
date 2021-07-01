@@ -1,5 +1,5 @@
 (* Extensions to the stdpp library *)
-From Coq Require Import ssreflect.
+From Coq Require Import ssreflect ssrfun ssrbool.
 From stdpp Require Import pmap gmap mapset fin_sets sets list.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
@@ -739,3 +739,53 @@ Tactic Notation "solve_set_inclusion" int_or_var(depth) :=
       | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
       end
     ).
+
+Lemma map_take {A B : Type} (f : A -> B) (l : list A) (n : nat) :
+  map f (take n l) = take n (map f l).
+Proof.
+  move: n.
+  induction l; intros n.
+  - simpl. rewrite take_nil. simpl. rewrite take_nil. reflexivity.
+  - simpl. destruct n; simpl.
+    + reflexivity.
+    + rewrite IHl. reflexivity.
+Qed.
+
+Lemma map_drop {A B : Type} (f : A -> B) (l : list A) (n : nat) :
+  map f (drop n l) = drop n (map f l).
+Proof.
+  move: n.
+  induction l; intros n.
+  - simpl. rewrite drop_nil. simpl. rewrite drop_nil. reflexivity.
+  - simpl. destruct n; simpl.
+    + reflexivity.
+    + rewrite IHl. reflexivity.
+Qed.
+
+Lemma foldr_andb_true_take n l:
+  foldr andb true l ->
+  foldr andb true (take n l).
+Proof.
+  intros H.
+  move: n.
+  induction l; intros n; simpl.
+  - rewrite take_nil. exact H.
+  - simpl in H. apply andb_prop in H. destruct H as [Ha H].
+    subst a. destruct n.
+    + reflexivity.
+    + simpl. apply IHl. apply H.
+Qed.  
+
+Lemma foldr_andb_true_drop n l:
+  foldr andb true l ->
+  foldr andb true (drop n l).
+Proof.
+  intros H.
+  move: n.
+  induction l; intros n; simpl.
+  - rewrite drop_nil. exact H.
+  - simpl in H. apply andb_prop in H. destruct H as [Ha H].
+    subst a. destruct n.
+    + simpl. exact H.
+    + simpl. apply IHl. apply H.
+Qed.

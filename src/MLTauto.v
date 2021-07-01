@@ -510,9 +510,9 @@ Section ml_tauto.
           fold (patt_not p3) in *. fold (patt_not (patt_not p3)) in *.
           fold (patt_not p4) in *. fold (patt_or (patt_not p3) (patt_not p4)) in *.
           fold (patt_not (patt_or (patt_not p3) (patt_not p4))) in *.
-          Search evar.
+          (*Search evar.
           
-          Print countable.Countable.
+          Print countable.Countable.*)
   Abort.
   
 
