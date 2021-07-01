@@ -3,9 +3,10 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Bool.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
-
 From stdpp Require Import list.
+
+From MatchingLogic.Utils Require Import stdpp_ext.
+Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 Open Scope ml_scope.
 Section FOL_helpers.
@@ -812,6 +813,17 @@ Qed. *)
     - simpl. unfold wf in wfxs. simpl in wfxs.
       apply andb_prop in wfxs. destruct wfxs. auto.
   Qed.
+
+  #[local] Hint Resolve well_formed_foldr : core.
+
+  Lemma wf_take n xs :
+    wf xs ->
+    wf (take n xs).
+  Proof.
+    unfold wf. intros H.
+    rewrite map_take.
+    Search
+    Search foldr andb.
   
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
@@ -925,7 +937,7 @@ Qed. *)
     remember (foldr patt_imp g (drop n l)) as g1.
     remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
     apply prf_weaken_conclusion_meta_iter.
-    { admit. }
+    {  admit. }
     { admit. }
     { admit. }
     remember (drop n l) as l'.
