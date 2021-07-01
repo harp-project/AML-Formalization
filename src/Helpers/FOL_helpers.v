@@ -876,6 +876,19 @@ Qed. *)
     intros wfA wfB wfB'.
     apply reorder_meta; auto.
   Qed.
+  
+  Lemma prf_weaken_conclusion_meta Γ A B B' :
+    well_formed A ->
+    well_formed B ->
+    well_formed B' ->
+    Γ ⊢ (B ---> B') ->
+    Γ ⊢ ((A ---> B) ---> (A ---> B')).
+  Proof.
+    intros wfA wfB wfB' BimpB'.
+    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B'))) by auto.
+    apply reorder_meta in H1; auto.
+    eapply Modus_ponens. 4: apply H1. all: auto 10.
+  Qed.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
@@ -893,46 +906,21 @@ Qed. *)
       apply well_formed_imp.
       all: apply well_formed_foldr; auto.
   Qed.
-    
-  Lemma prf_weaken_conclusion_meta Γ A B B' :
-    well_formed A ->
-    well_formed B ->
-    well_formed B' ->
-    Γ ⊢ (B ---> B') ->
-    Γ ⊢ ((A ---> B) ---> (A ---> B')).
+
+  Lemma prf_weaken_conclusion_iter_meta Γ l g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ (g ---> g') ->
+    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l)).
   Proof.
-    intros wfA wfB wfB' BimpB'.
-    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B'))) by auto.
-    apply reorder_meta in H1; auto.
-    eapply Modus_ponens. 4: apply H1. all: auto 10.
+    intros wfl wfg wfg' gimpg'.
+    eapply Modus_ponens.
+    4: apply prf_weaken_conclusion_iter.
+    all: auto.
   Qed.
 
-
-  Fixpoint prf_weaken_conclusion_meta_iter Γ l g g'
-           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') (gimpg' : Γ ⊢ (g ---> g')) :
-    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l))
-    :=
-      (match l as a return
-             (Γ ⊢ (g ---> g')) ->
-             wf a ->
-             Γ ⊢ ((fold_right patt_imp g a) ---> (fold_right patt_imp g' a))
-       with
-      | [] => fun gimpg' wfl => gimpg'
-      | cons x xs =>
-        fun gimpg' wfl =>
-          let wfx := (proj1 (andb_prop _ _ wfl)) in
-          let wfxs := (proj2 (andb_prop _ _ wfl)) in
-          (prf_weaken_conclusion_meta
-             Γ x (foldr patt_imp g xs) (foldr patt_imp g' xs)
-             wfx
-             (well_formed_foldr _ _ wfg wfxs)
-             (well_formed_foldr _ _ wfg' wfxs)
-             (prf_weaken_conclusion_meta_iter Γ xs g g' wfxs wfg wfg' gimpg')
-          )
-            
-       end) gimpg' wfl.
-
-  Lemma prf_weaken_conclusion_meta_iter_meta Γ l g g':
+  Lemma prf_weaken_conclusion_iter_meta_meta Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
@@ -941,8 +929,8 @@ Qed. *)
     Γ ⊢ (fold_right patt_imp g' l).
   Proof.
     intros wfl wfg wfg' gimpg' H.
-    eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta_iter. 3: apply H.
-    all: auto using well_formed_foldr.
+    eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_meta. 3: apply H.
+    all: auto.
   Qed.
     
   Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
@@ -956,6 +944,67 @@ Qed. *)
     intros.
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H3. all: auto.
   Qed.
+
+  Lemma prf_strenghten_premise Γ A A' B :
+    well_formed A ->
+    well_formed A' ->
+    well_formed B ->
+    Γ ⊢ ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))).
+  Proof.
+    intros wfA wfA' wfB. auto.
+  Qed.
+
+  Lemma prf_strenghten_premise_iter Γ l n h h' g :
+    wf l ->
+    well_formed h ->
+    well_formed h' ->
+    well_formed g ->
+    l !! n = Some h ->
+    Γ ⊢ ((h' ---> h) ---> ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l)))).
+  Proof.
+    intros wfl wfh wfh' wfg ln.
+    pose proof (Hn := lookup_lt_Some _ _ _ ln).
+
+    rewrite <- (take_drop n l).
+    rewrite <- (take_drop n l) in ln.
+    rewrite lookup_app_r in ln.
+    { apply firstn_le_length.  }
+    assert (Hlentake: length (take n l) + 0 = n).
+    { rewrite firstn_length. lia. }
+    rewrite <- Hlentake at 3.
+    clear Hlentake.
+
+    simpl.
+    rewrite insert_app_r.
+    repeat rewrite foldr_app.
+
+    move: n Hn ln.
+    induction l; intros n Hn ln.
+    - rewrite take_nil. simpl.
+      rewrite drop_nil. simpl. apply reorder_meta. 4: apply P1. all: auto.
+    - pose proof (wfal := wfl).
+      remember (foldr patt_imp g (drop n l)) as g1.
+      remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl.
+      destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      simpl in Hn.
+      destruct n.
+      { subst. inversion ln. subst a. simpl. apply prf_strenghten_premise; auto. }
+      assert (Hn': n < length l) by lia.
+      simpl.
+      specialize (IHl n ltac:(lia)).
+      simpl in ln. specialize (IHl ln).
+      remember (foldr patt_imp (foldr patt_imp g (drop n l)) (take n l)) as b.
+      remember (foldr patt_imp (foldr patt_imp g (<[0:=h']> (drop n l))) (take n l)) as b'.
+
+      assert (prf: Γ ⊢ ((b ---> b') ---> ((a ---> b) ---> (a ---> b')))).
+      { apply prf_weaken_conclusion; subst; auto. }
+
+      eapply syllogism_intro. 5: apply prf. all: subst; auto 10.
+  Qed.
+
+
   
   Lemma prf_strenghten_premise_meta Γ A A' B :
     well_formed A ->
@@ -969,7 +1018,7 @@ Qed. *)
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
 
-  Lemma prf_strenghten_premise_meta_iter Γ l n h h' g :
+  Lemma prf_strenghten_premise_iter_meta Γ l n h h' g :
     wf l ->
     well_formed h ->
     well_formed h' ->
@@ -978,39 +1027,11 @@ Qed. *)
     Γ ⊢ (h' ---> h) ->
     Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l))).
   Proof.
-    intros wfl wfh wfh' wfg ln H.
-    pose proof (Hn := lookup_lt_Some _ _ _ ln).
-
-    rewrite <- (take_drop n l).
-    rewrite <- (take_drop n l) in ln.
-    rewrite lookup_app_r in ln.
-    { apply firstn_le_length.  }
-    assert (Hlentake: length (take n l) + 0 = n).
-    { rewrite firstn_length. lia. }
-    rewrite <- Hlentake at 3.
-
-    simpl.
-    rewrite insert_app_r.
-    repeat rewrite foldr_app.
-    remember (foldr patt_imp g (drop n l)) as g1.
-    remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
-    apply prf_weaken_conclusion_meta_iter; subst; auto.
-    remember (drop n l) as l'.
-    destruct l'.
-    { simpl in *. subst. auto. }
-    assert (p = h).
-    {
-      assert (Hn0: n - length (take n l) = 0).
-      { pose proof (firstn_le_length n l). lia. }
-      rewrite Hn0 in ln.
-      simpl in ln.
-      inversion ln.
-      reflexivity.
-    }
-    subst p.
-    apply prf_strenghten_premise_meta; auto.
-    apply well_formed_foldr; auto.
-    eapply wf_tail'. erewrite Heql'. auto.
+    intros.
+    eapply Modus_ponens.
+    4: apply prf_strenghten_premise_iter.
+    3: apply H4.
+    all: auto.
   Qed.
     
   Lemma A_impl_not_not_B_meta Γ A B :
