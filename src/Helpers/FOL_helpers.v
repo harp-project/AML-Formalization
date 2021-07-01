@@ -876,7 +876,42 @@ Qed. *)
     intros wfA wfB wfB'.
     apply reorder_meta; auto.
   Qed.
-  
+
+  Fixpoint prf_weaken_conclusion_iter Γ l g g'
+          (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
+    Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
+    :=
+      (match l as a return
+             wf a ->
+             Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g a ---> fold_right patt_imp g' a))
+       with
+       | [] =>
+         fun wfl =>
+           A_impl_A Γ (g ---> g') (well_formed_imp wfg wfg')
+       | cons x xs =>
+         fun wfl =>
+           let wfx := (proj1 (andb_prop _ _ wfl)) in
+           let wfxs := (proj2 (andb_prop _ _ wfl)) in
+           syllogism_intro
+             Γ _ _ _
+             (well_formed_imp wfg wfg')
+             (well_formed_imp (well_formed_foldr _ _ wfg wfxs) (well_formed_foldr _ _ wfg' wfxs))
+             (well_formed_imp
+                (well_formed_imp wfx (well_formed_foldr _ _ wfg wfxs))
+                (well_formed_imp wfx (well_formed_foldr _ _ wfg' wfxs)))
+             (prf_weaken_conclusion_iter Γ _ _ _ wfxs wfg wfg')
+             (prf_weaken_conclusion
+                Γ x
+                (fold_right patt_imp g xs)
+                (fold_right patt_imp g' xs)
+                ltac:(auto)
+                ltac:(auto)
+                ltac:(auto)
+             )
+             
+       end
+      ) wfl
+  .
     
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
