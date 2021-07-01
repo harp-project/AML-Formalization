@@ -1226,7 +1226,7 @@ Qed. *)
   Proof.
     intros wfg wfg' gimpg' H.
     unfold of_MyGoal in *. simpl in *.
-    eauto using prf_weaken_conclusion_meta_iter_meta.
+    eauto using prf_weaken_conclusion_iter_meta_meta.
   Qed.
   
   Lemma conclusion_anyway Γ A B:
