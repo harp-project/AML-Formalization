@@ -660,9 +660,6 @@ Proof.
   all: auto.
 Qed. *)
 
-  (* Notation "Γ ⊢ pattern" := (@ML_proof_system Σ Γ pattern) (at level 95, no associativity). *)
-  Check ⊥.
-
   (*Was an axiom in AML_definition.v*)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott).
@@ -958,7 +955,7 @@ Qed. *)
     pose proof (Hn := lookup_lt_Some _ _ _ ln).
 
     rewrite <- (take_drop n l).
-    rewrite <- (take_drop n l) in ln. Search app "!!".
+    rewrite <- (take_drop n l) in ln.
     rewrite lookup_app_r in ln.
     { apply firstn_le_length.  }
     assert (Hlentake: length (take n l) + 0 = n).
@@ -1171,8 +1168,6 @@ Qed. *)
     toMyGoal. mgIntro. fromMyGoal.
   Abort.
 
-  Search list nat.
-
   Lemma MyGoal_weakenConclusion Γ l g g':
     wf l ->
     well_formed g ->
@@ -1245,7 +1240,7 @@ Qed. *)
     unfold patt_or in AorB.
     assert (H3: Γ ⊢ (¬ A ---> C)).
     { eapply Modus_ponens. 4: apply H2. all: auto. }
-    eapply conclusion_anyway. 4: apply H3. all: auto.
+    eapply conclusion_anyway_meta. 4: apply H3. all: auto.
   Qed.
   
   Lemma pf_iff_split Γ A B:
@@ -1361,11 +1356,7 @@ Qed. *)
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + admit.
-      + 
-        Set Printing All.
-        Check pf_or_elim.
-        eapply pf_or_elim.
-        Search patt_or ML_proof_system.
+      + eapply pf_or_elim.
   Abort.
   
 
