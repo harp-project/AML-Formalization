@@ -739,3 +739,14 @@ Tactic Notation "solve_set_inclusion" int_or_var(depth) :=
       | _ => eauto depth using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances
       end
     ).
+
+Lemma map_take {A B : Type} (f : A -> B) (l : list A) (n : nat) :
+  map f (take n l) = take n (map f l).
+Proof.
+  move: n.
+  induction l; intros n.
+  - simpl. rewrite take_nil. simpl. rewrite take_nil. reflexivity.
+  - simpl. destruct n; simpl.
+    + reflexivity.
+    + rewrite IHl. reflexivity.
+Qed.
