@@ -890,7 +890,64 @@ Qed. *)
     assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B))) by auto.
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
+
+  Check nth_error.
+  Search list_lookup.
+  Search list nat.
+
+  Search nth_error Some.
+  Lemma prf_strenghten_premise_meta_iter Γ l n h h' g :
+    wf l ->
+    well_formed h ->
+    well_formed h' ->
+    well_formed g ->
+    l !! n = Some h ->
+    Γ ⊢ (h' ---> h) ->
+    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l))).
+  Proof.
+    intros wfl wfh wfh' wfg ln H.
+    Search list_lookup Some.
+    pose proof (Hn := lookup_lt_Some _ _ _ ln).
+    Check take_drop.
+
+    rewrite <- (take_drop n l).
+    rewrite <- (take_drop n l) in ln. Search app "!!".
+    rewrite lookup_app_r in ln.
+    { apply firstn_le_length.  }
+    assert (Hlentake: length (take n l) + 0 = n).
+    { rewrite firstn_length. lia. }
+    rewrite <- Hlentake at 3.
+    (*erewrite <- (take_drop (S n) l).*)
+    Search list_insert app.
+    simpl.
+    rewrite insert_app_r.
+    repeat rewrite foldr_app.
+    remember (foldr patt_imp g (drop n l)) as g1.
+    remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
+    apply prf_weaken_conclusion_meta_iter.
+    { admit. }
+    { admit. }
+    { admit. }
+    remember (drop n l) as l'.
+    destruct l'.
+    { simpl in *. subst. auto. }
+    simpl in Heqg1. simpl in Heqg2.
+    assert (p = h).
+    {
+      assert (Hn0: n - length (take n l) = 0).
+      { pose proof (firstn_le_length n l). lia. }
+      rewrite Hn0 in ln.
+      simpl in ln.
+      inversion ln.
+      reflexivity.
+    }
+    subst p.
+    subst g1 g2.
+    apply prf_strenghten_premise_meta; auto.
+  Admitted.
   
+
+    
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
     well_formed B ->
@@ -1086,7 +1143,7 @@ Qed. *)
     intros wfg wfg' gimpg' H.
     unfold of_MyGoal in *. simpl in *.
     eauto using prf_weaken_conclusion_meta_iter_meta.
-  Qed.  
+  Qed.
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
