@@ -802,6 +802,7 @@ Qed. *)
 
   Definition wf (l : list Pattern) := fold_right andb true (map well_formed l).
 
+  (* TODO: maybe generalize to any connective? *)
   Lemma well_formed_foldr g xs :
     well_formed g ->
     wf xs ->
@@ -815,15 +816,59 @@ Qed. *)
   Qed.
 
   #[local] Hint Resolve well_formed_foldr : core.
-
+  
   Lemma wf_take n xs :
     wf xs ->
     wf (take n xs).
   Proof.
     unfold wf. intros H.
     rewrite map_take.
-    Search
-    Search foldr andb.
+    rewrite foldr_andb_true_take; auto.
+  Qed.
+
+  #[local] Hint Resolve wf_take : core.
+
+  Lemma wf_drop n xs:
+    wf xs ->
+    wf (drop n xs).
+  Proof.
+    unfold wf. intros H.
+    rewrite map_drop.
+    rewrite foldr_andb_true_drop; auto.
+  Qed.
+  
+  #[local] Hint Resolve wf_drop : core.
+
+  Lemma wf_insert n p xs:
+    wf xs ->
+    well_formed p ->
+    wf (<[n := p]> xs).
+  Proof.
+    intros wfxs wfp.
+    move: xs wfxs.
+    induction n; intros xs wfxs; destruct xs; simpl; auto.
+    - unfold wf in wfxs. simpl in wfxs. apply andb_prop in wfxs.
+      destruct wfxs as [wfp0 wfxs].
+      unfold wf. simpl. rewrite wfp. rewrite wfxs.
+      reflexivity.
+    - unfold wf in wfxs. simpl in wfxs. apply andb_prop in wfxs.
+      destruct wfxs as [wfp0 wfxs].
+      unfold wf. simpl.
+      unfold wf in IHn.
+      rewrite wfp0.
+      rewrite IHn; auto.
+  Qed.
+
+  #[local] Hint Resolve wf_insert : core.
+
+  Lemma wf_tail' p xs:
+    wf (p :: xs) ->
+    wf xs.
+  Proof.
+    unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
+  Qed.
+
+  #[local] Hint Resolve wf_tail' : core.
   
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
@@ -888,9 +933,6 @@ Qed. *)
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H3. all: auto.
   Qed.
   
-    
-
-  
   Lemma prf_strenghten_premise_meta Γ A A' B :
     well_formed A ->
     well_formed A' ->
@@ -903,11 +945,6 @@ Qed. *)
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
 
-  Check nth_error.
-  Search list_lookup.
-  Search list nat.
-
-  Search nth_error Some.
   Lemma prf_strenghten_premise_meta_iter Γ l n h h' g :
     wf l ->
     well_formed h ->
@@ -918,9 +955,7 @@ Qed. *)
     Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l))).
   Proof.
     intros wfl wfh wfh' wfg ln H.
-    Search list_lookup Some.
     pose proof (Hn := lookup_lt_Some _ _ _ ln).
-    Check take_drop.
 
     rewrite <- (take_drop n l).
     rewrite <- (take_drop n l) in ln. Search app "!!".
@@ -929,21 +964,16 @@ Qed. *)
     assert (Hlentake: length (take n l) + 0 = n).
     { rewrite firstn_length. lia. }
     rewrite <- Hlentake at 3.
-    (*erewrite <- (take_drop (S n) l).*)
-    Search list_insert app.
+
     simpl.
     rewrite insert_app_r.
     repeat rewrite foldr_app.
     remember (foldr patt_imp g (drop n l)) as g1.
     remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
-    apply prf_weaken_conclusion_meta_iter.
-    {  admit. }
-    { admit. }
-    { admit. }
+    apply prf_weaken_conclusion_meta_iter; subst; auto.
     remember (drop n l) as l'.
     destruct l'.
     { simpl in *. subst. auto. }
-    simpl in Heqg1. simpl in Heqg2.
     assert (p = h).
     {
       assert (Hn0: n - length (take n l) = 0).
@@ -954,11 +984,10 @@ Qed. *)
       reflexivity.
     }
     subst p.
-    subst g1 g2.
     apply prf_strenghten_premise_meta; auto.
-  Admitted.
-  
-
+    apply well_formed_foldr; auto.
+    eapply wf_tail'. erewrite Heql'. auto.
+  Qed.
     
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
