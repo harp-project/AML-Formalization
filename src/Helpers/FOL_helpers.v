@@ -866,7 +866,18 @@ Qed. *)
   Qed.
 
   #[local] Hint Resolve wf_tail' : core.
+
+  Lemma prf_weaken_conclusion Γ A B B' :
+    well_formed A ->
+    well_formed B ->
+    well_formed B' ->
+    Γ ⊢ ((B ---> B') ---> ((A ---> B) ---> (A ---> B'))).
+  Proof.
+    intros wfA wfB wfB'.
+    apply reorder_meta; auto.
+  Qed.
   
+    
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
     well_formed B ->
