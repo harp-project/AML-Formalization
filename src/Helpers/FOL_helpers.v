@@ -1128,7 +1128,7 @@ Qed. *)
     well_formed a ->
     wf l₁ ->
     wf l₂ ->
-    Γ ⊢ (fold_right patt_imp a (l₁ ++ [a] ++ l₂)).
+    Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂)).
   Proof.
     intros wfa wfl₁ wfl₂.
     induction l₁; simpl.
@@ -1337,15 +1337,32 @@ Qed. *)
     intros H.
     unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
   Qed.
-  
+
+  Lemma MyGoal_exact Γ l g n:
+    wf l ->
+    well_formed g ->
+    l !! n = Some g ->
+    mkMyGoal Γ l g.
+  Proof.
+    intros wfl wfg ln.
+    pose proof (Hn := lookup_lt_Some l n g ln).
+    Check take_drop_middle.
+    pose proof (Heq := take_drop_middle l n g ln).
+    rewrite -Heq.
+    unfold of_MyGoal. simpl.
+    apply nested_const_middle; auto.
+  Qed.  
   
   Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
   Ltac fromMyGoal := unfold of_MyGoal; simpl.
   Ltac mgIntro := apply MyGoal_intro; simpl.
+  Ltac mlExactn n := apply (MyGoal_exact _ _ _ n); auto.
 
-  Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2).
+  (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
+  Print Signature. Print MLVariables. Check (@variables Σ).
+  Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
   Proof.
-    toMyGoal. mgIntro. fromMyGoal.
+    toMyGoal. mgIntro. mgIntro. mgIntro. mlExactn 1.
   Abort.
 
   Goal
