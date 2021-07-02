@@ -1047,6 +1047,18 @@ Qed. *)
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Qed.
 
+  Lemma prf_strenghten_premise_meta_meta Γ A A' B :
+    well_formed A ->
+    well_formed A' ->
+    well_formed B ->
+    Γ ⊢ (A' ---> A) ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (A' ---> B).
+  Proof.
+    intros wfA wfA' wfB A'impA AimpB.
+    eapply Modus_ponens. 4: apply prf_strenghten_premise_meta. 3: apply AimpB. all: auto.
+  Qed.
+  
   Lemma prf_strenghten_premise_iter_meta Γ l n h h' g :
     wf l ->
     well_formed h ->
@@ -1112,6 +1124,31 @@ Qed. *)
       5: apply H1. all: auto.
   Qed.
 
+  Lemma nested_const_middle Γ a l₁ l₂:
+    well_formed a ->
+    wf l₁ ->
+    wf l₂ ->
+    Γ ⊢ (fold_right patt_imp a (l₁ ++ [a] ++ l₂)).
+  Proof.
+    intros wfa wfl₁ wfl₂.
+    induction l₁; simpl.
+    - apply nested_const; auto.
+    - pose proof (wfa0l₁ := wfl₁).
+      unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+      specialize (IHl₁ wfl₁). simpl in IHl₁.
+      remember (l₁ ++ a :: l₂) as xs.
+      assert (wf xs).
+      { subst. auto. }
+      destruct xs as [|x xs].
+      { assert (@length Pattern nil = length (l₁ ++ a :: l₂)). rewrite Heqxs. reflexivity.
+        simpl in H0. rewrite app_length in H0. simpl in H0. lia.
+      }
+      simpl. simpl in IHl₁.
+      unfold wf in H. apply andb_prop in H. destruct H as [wfx wfxs].
+      apply reorder_meta; auto.
+      eapply prf_strenghten_premise_meta_meta. 4: apply IHl₁. all: auto using P1.
+  Qed.
+  
   Lemma prf_reorder_iter Γ a b g l₁ l₂:
     well_formed a ->
     well_formed b ->
@@ -1126,9 +1163,17 @@ Qed. *)
     - pose proof (wfa0l₁ := wfl₁).
       unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁).
-      Check prf_weaken_conclusion_meta.
       eapply prf_weaken_conclusion_meta; auto.
   Qed.
+
+  (*
+  Lemma prf_reorder_move_to_top Γ a g l₁ l₂:
+    well_formed a ->
+    well_formed g ->
+    wf l₁ ->
+    wf l₂ ->
+    Γ ⊢ ((a --> (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂))) ---> (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂))).
+    *)
   
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
