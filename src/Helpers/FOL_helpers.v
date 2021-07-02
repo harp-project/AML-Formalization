@@ -1033,7 +1033,56 @@ Qed. *)
     3: apply H4.
     all: auto.
   Qed.
-    
+
+  (* TODO rename *)
+  Lemma rewrite_under_implication Γ g g':
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ ((g ---> g') ---> g) ->
+    Γ ⊢ ((g ---> g') ---> g').
+  Proof.
+    intros wfg wfg' H.
+    assert (H1 : Γ ⊢ ((g ---> g') ---> (g ---> g'))) by auto.
+    assert (H2 : Γ ⊢ (((g ---> g') ---> (g ---> g'))
+                        --->
+                        (((g ---> g') ---> g) ---> ((g ---> g') ---> g')))) by auto using P2.
+    assert (H3 : Γ ⊢ (((g ---> g') ---> g) ---> ((g ---> g') ---> g'))).
+    { eapply Modus_ponens. 4: apply H2. all: auto. }
+    eapply Modus_ponens. 4: apply H3. all: auto.
+  Qed.
+
+  Example example_nested_const Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    (* like P2 but nested a bit *)
+    Γ ⊢ (a ---> (b ---> (c ---> a))).
+  Proof.
+    intros wfa wfb wfc.
+    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a)))) by auto using P1.
+    assert (H2: Γ ⊢ (a ---> (c ---> a))) by auto using P1.
+    (*Check prf_strenghten_premise_meta.*)
+    eapply (syllogism_intro _ _ _ _ _ _ _ H2 H1).
+    Unshelve. all: auto.
+  Qed.
+
+  (* This will form a base for the tactic 'exact 0' *)
+  Lemma nested_const Γ a l:
+    well_formed a ->
+    wf l ->
+    Γ ⊢ (a ---> (fold_right patt_imp a l)).
+  Proof.
+    intros wfa wfl.
+    induction l; simpl.
+    - auto.
+    - pose proof (wfa0l := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+      specialize (IHl wfl).
+      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l)))) by auto using P1.
+      eapply syllogism_intro.
+      5: apply H1. all: auto.
+  Qed.  
+  
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
     well_formed B ->
@@ -1216,7 +1265,7 @@ Qed. *)
     toMyGoal. mgIntro. fromMyGoal.
   Abort.
 
-  Lemma MyGoal_weakenConclusion Γ l g g':
+  Lemma MyGoal_weakenConclusion' Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
@@ -1228,6 +1277,18 @@ Qed. *)
     unfold of_MyGoal in *. simpl in *.
     eauto using prf_weaken_conclusion_iter_meta_meta.
   Qed.
+
+  Lemma MyGoal_weakenConclusion Γ l g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    mkMyGoal Γ ((g ---> g') :: l) g ->
+    mkMyGoal Γ ((g ---> g') :: l) g'.
+  Proof.
+    intros wfl wfg wfg' H.
+    unfold of_MyGoal in *. simpl in *.
+    Check prf_weaken_conclusion_iter.
+  Abort.
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
