@@ -867,6 +867,35 @@ Qed. *)
 
   #[local] Hint Resolve wf_tail' : core.
 
+  Lemma wf_cons x xs:
+    well_formed x ->
+    wf xs ->
+    wf (x :: xs).
+  Proof.
+    intros wfx wfxs.
+    unfold wf. simpl. rewrite wfx.
+    unfold wf in wfxs. rewrite wfxs.
+    reflexivity.
+  Qed.
+
+  #[local] Hint Resolve wf_cons : core.
+  
+  Lemma wf_app xs ys:
+    wf xs ->
+    wf ys ->
+    wf (xs ++ ys).
+  Proof.
+    intros wfxs wfys.
+    unfold wf in *.
+    rewrite map_app.
+    rewrite foldr_app.
+    rewrite wfys.
+    rewrite wfxs.
+    reflexivity.
+  Qed.
+
+  #[local] Hint Resolve wf_app : core.
+
   Lemma prf_weaken_conclusion Γ A B B' :
     well_formed A ->
     well_formed B ->
@@ -1081,7 +1110,25 @@ Qed. *)
       assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l)))) by auto using P1.
       eapply syllogism_intro.
       5: apply H1. all: auto.
-  Qed.  
+  Qed.
+
+  Lemma prf_reorder_iter Γ a b g l₁ l₂:
+    well_formed a ->
+    well_formed b ->
+    well_formed g ->
+    wf l₁ ->
+    wf l₂ ->
+    Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) ---> (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂))).
+  Proof.
+    intros wfa wfb wfg wfl₁ wfl₂.
+    induction l₁; simpl in *.
+    - apply reorder; auto.
+    - pose proof (wfa0l₁ := wfl₁).
+      unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+      specialize (IHl₁ wfl₁).
+      Check prf_weaken_conclusion_meta.
+      eapply prf_weaken_conclusion_meta; auto.
+  Qed.
   
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
