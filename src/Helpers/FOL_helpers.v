@@ -1484,11 +1484,25 @@ Qed. *)
     mkMyGoal Γ ((g ---> g') :: l) g ->
     mkMyGoal Γ ((g ---> g') :: l) g'.
   Proof.
-    apply prf_weaken_conclusion_iter_under_implication.
+    apply prf_weaken_conclusion_iter_under_implication_meta.
   Qed.
 
-  (* TODO change Coq implication to ML implication. *)
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
+    wf l₁ ->
+    wf l₂ ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) ---> (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂))).
+  Proof.
+    intros wfl₁ wfl₂ wfg wfg'.
+    induction l₁; simpl.
+    - apply prf_weaken_conclusion_iter_under_implication; auto.
+    - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+      destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
+      eapply prf_weaken_conclusion_meta. all: auto.
+  Qed.
+
+  Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g':
     wf l₁ ->
     wf l₂ ->
     well_formed g ->
@@ -1497,12 +1511,11 @@ Qed. *)
     Γ ⊢ (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)).
   Proof.
     intros wfl₁ wfl₂ wfg wfg' H.
-    induction l₁; simpl.
-    - apply prf_weaken_conclusion_iter_under_implication; auto.
-    - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
-      destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁). simpl in H.
-  Abort.
-  
+    eapply Modus_ponens.
+    4: apply prf_weaken_conclusion_iter_under_implication_iter.
+    all: auto 10.
+  Qed.
+
   
   Lemma Constructive_dilemma Γ p q r s:
     Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)).
