@@ -1449,8 +1449,23 @@ Qed. *)
     all: auto.
   Qed.
 
+  Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l))).
+  Proof.
+    intros wfl wfg wfg'.
+    pose proof (H1 := prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg').
+    remember ((g ---> g')) as a.
+    remember (foldr patt_imp g l) as b.
+    remember (foldr patt_imp g' l) as c.
+    pose proof (H2 := prf_weaken_conclusion_under_implication Γ a b c ltac:(subst;auto) ltac:(subst;auto) ltac:(subst; auto)).
+    apply reorder_meta in H2. 2,3,4: subst;auto.
+    eapply Modus_ponens. 4: apply H2. all: subst;auto.
+  Qed.
 
- Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
+  Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
@@ -1458,23 +1473,36 @@ Qed. *)
     Γ ⊢ ((g ---> g') ---> (foldr patt_imp g' l)).
   Proof.
     intros wfl wfg wfg' H.
-    unfold of_MyGoal in *. simpl in *.
-    Check prf_weaken_conclusion_iter.
-    pose proof (H1 := prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg').
-    eapply prf_weaken_conclusion_under_implication_meta_meta.
-    5: apply H1. all: auto.
+    eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_under_implication.
+    all: auto.
   Qed.
   
- Lemma MyGoal_weakenConclusion Γ l g g':
+  Lemma MyGoal_weakenConclusion Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
     mkMyGoal Γ ((g ---> g') :: l) g ->
     mkMyGoal Γ ((g ---> g') :: l) g'.
- Proof.
-   apply prf_weaken_conclusion_iter_under_implication.
+  Proof.
+    apply prf_weaken_conclusion_iter_under_implication.
   Qed.
 
+  (* TODO change Coq implication to ML implication. *)
+  Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
+    wf l₁ ->
+    wf l₂ ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) ->
+    Γ ⊢ (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)).
+  Proof.
+    intros wfl₁ wfl₂ wfg wfg' H.
+    induction l₁; simpl.
+    - apply prf_weaken_conclusion_iter_under_implication; auto.
+    - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+      destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁). simpl in H.
+  Abort.
+  
   
   Lemma Constructive_dilemma Γ p q r s:
     Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)).
