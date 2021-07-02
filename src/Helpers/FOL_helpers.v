@@ -1386,18 +1386,102 @@ Qed. *)
     unfold of_MyGoal in *. simpl in *.
     eauto using prf_weaken_conclusion_iter_meta_meta.
   Qed.
+  
+  Lemma prf_contraction Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((a ---> (a ---> b)) ---> (a ---> b)).
+  Proof.
+    intros wfa wfb.
+    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
+    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b)))) by auto using P2.
+    eapply Modus_ponens. 4: apply H2. all: auto.
+  Qed.
 
-  Lemma MyGoal_weakenConclusion Γ l g g':
+  #[local] Hint Resolve prf_contraction : core.
+  
+
+  Lemma prf_weaken_conclusion_under_implication Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))).
+  Proof.
+    intros wfa wfb wfc.
+    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c)))) by auto using reorder.
+    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c)))).
+    { apply prf_strenghten_premise_meta; auto. }
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply H2. all: auto. clear H1 H2.
+    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c))))) by auto.
+    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c))) by auto.
+    assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
+                   = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
+    rewrite Hiter. 
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    4: apply H4. all: auto.
+  Qed.
+
+  Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ (a ---> b) ->
+    Γ ⊢ ((a ---> (b ---> c)) ---> (a ---> c)).
+  Proof.
+    intros wfa wfb wfc H.
+    eapply Modus_ponens.
+    4: apply prf_weaken_conclusion_under_implication.
+    all: auto.
+  Qed.
+
+  Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ (a ---> b) ->
+    Γ ⊢ (a ---> (b ---> c)) ->
+    Γ ⊢ (a ---> c).
+  Proof.
+    intros wfa wfb wfc H1 H2.
+    eapply Modus_ponens.
+    4: apply prf_weaken_conclusion_under_implication_meta. 3: apply H2.
+    all: auto.
+  Qed.
+
+
+ Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g l)) ->
+    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g' l)).
+  Proof.
+    intros wfl wfg wfg' H.
+    unfold of_MyGoal in *. simpl in *.
+    Check prf_weaken_conclusion_iter.
+    pose proof (H1 := prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg').
+    eapply prf_weaken_conclusion_under_implication_meta_meta.
+    5: apply H1. all: auto.
+  Qed.
+  
+ Lemma MyGoal_weakenConclusion Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
     mkMyGoal Γ ((g ---> g') :: l) g ->
     mkMyGoal Γ ((g ---> g') :: l) g'.
+ Proof.
+   apply prf_weaken_conclusion_iter_under_implication.
+  Qed.
+
+  
+  Lemma Constructive_dilemma Γ p q r s:
+    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)).
   Proof.
-    intros wfl wfg wfg' H.
-    unfold of_MyGoal in *. simpl in *.
-    Check prf_weaken_conclusion_iter.
+    unfold patt_or.
   Abort.
+  
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
