@@ -1356,13 +1356,13 @@ Qed. *)
   Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
   Ltac fromMyGoal := unfold of_MyGoal; simpl.
   Ltac mgIntro := apply MyGoal_intro; simpl.
-  Ltac mlExactn n := apply (MyGoal_exact _ _ _ n); auto.
+  Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
 
   (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
   Print Signature. Print MLVariables. Check (@variables Σ).
   Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
   Proof.
-    toMyGoal. mgIntro. mgIntro. mgIntro. mlExactn 1.
+    toMyGoal. mgIntro. mgIntro. mgIntro. mgExactn 1.
   Abort.
 
   Goal
@@ -1560,7 +1560,13 @@ Qed. *)
 
     toMyGoal. mgIntro. mgIntro. mgIntro. mgIntro.
     mgApply' 1 7.
-  Abort.
+    mgApply' 2 7.
+    mgIntro.
+    mgApply' 3 7.
+    mgApply' 0 7.
+    mgExactn 4.
+    auto 8.
+  Qed.
   
   
   Lemma conclusion_anyway Γ A B:
