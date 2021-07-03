@@ -1477,7 +1477,7 @@ Qed. *)
     all: auto.
   Qed.
   
-  Lemma MyGoal_weakenConclusion Γ l g g':
+  Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
@@ -1516,11 +1516,50 @@ Qed. *)
     all: auto 10.
   Qed.
 
+
+  Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
+    wf l₁ ->
+    wf l₂ ->
+    well_formed g ->
+    well_formed g' ->
+    mkMyGoal Γ (l₁ ++ (g ---> g') :: l₂) g ->
+    mkMyGoal Γ (l₁ ++ (g ---> g') :: l₂) g'.
+  Proof.
+    apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+  Qed.
+
+  Lemma MyGoal_weakenConclusion_under_nth Γ l n g g':
+    wf l ->
+    well_formed g ->
+    well_formed g' ->
+    l !! n = Some (g ---> g') ->
+    mkMyGoal Γ l g ->
+    mkMyGoal Γ l g'.
+  Proof.
+    intros wfl wfg wfg' ln H.
+    pose proof (Hmid := take_drop_middle l n (g ---> g') ln).
+    rewrite -Hmid in H. rewrite -Hmid. apply MyGoal_weakenConclusion; auto.
+  Qed.
+
+  Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
+    match goal with
+    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
+      eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
+    end.
+  Ltac mgApply n := mgApply' n 5.
   
   Lemma Constructive_dilemma Γ p q r s:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    well_formed s ->
     Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)).
   Proof.
+    intros wfp wfq wfr wfs.
     unfold patt_or.
+
+    toMyGoal. mgIntro. mgIntro. mgIntro. mgIntro.
+    mgApply' 1 7.
   Abort.
   
   
