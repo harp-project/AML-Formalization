@@ -1669,6 +1669,21 @@ Qed. *)
     eapply prf_strenghten_premise_meta_meta. 4: apply H2. all: auto.
     eapply prf_weaken_conclusion_meta_meta. 4: apply not_not_elim. all: auto.
   Qed.
+
+  #[local] Hint Resolve P4i' : core.
+
+  Lemma tofold p:
+    p = fold_right patt_imp p [].
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma consume p q l:
+    fold_right patt_imp (p ---> q) l = fold_right patt_imp q (l ++ [p]).
+  Proof.
+    rewrite foldr_app. reflexivity.
+  Qed.
+  
   
   Lemma prf_disj_elim Γ p q r:
     well_formed p ->
@@ -1676,14 +1691,13 @@ Qed. *)
     well_formed r ->
     Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r).
   Proof.
-    Check  Constructive_dilemma.
     intros wfp wfq wfr.
     pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
     assert (Γ ⊢ ((r or r) ---> r)).
-    { unfold patt_or.
-    toMyGoal. mgIntro.
-    mgAssert (H : (q ---> q)).
-  Abort.
+    { unfold patt_or. apply P4i'; auto. }
+    rewrite -> tofold in H1. rewrite 3!consume in H1.
+    eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H. all: auto 10.
+  Qed.
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
