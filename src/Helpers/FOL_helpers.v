@@ -1656,13 +1656,31 @@ Qed. *)
       [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
     end.
 
+  Lemma P4i' (Γ : Theory) (A : Pattern) :
+    well_formed A →
+    Γ ⊢ ((¬A ---> A) ---> A).
+  Proof.
+    intros wfA.
+    assert (H1: Γ ⊢ ((¬ A ---> ¬ ¬ A) ---> ¬ ¬ A)).
+    { apply P4i. auto. }
+    assert (H2: Γ ⊢ ((¬ A ---> A) ---> (¬ A ---> ¬ ¬ A))).
+    { eapply prf_weaken_conclusion_meta; auto. }
+    
+    eapply prf_strenghten_premise_meta_meta. 4: apply H2. all: auto.
+    eapply prf_weaken_conclusion_meta_meta. 4: apply not_not_elim. all: auto.
+  Qed.
+  
   Lemma prf_disj_elim Γ p q r:
     well_formed p ->
     well_formed q ->
     well_formed r ->
     Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r).
   Proof.
-    intros wfp wfg wfr.
+    Check  Constructive_dilemma.
+    intros wfp wfq wfr.
+    pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
+    assert (Γ ⊢ ((r or r) ---> r)).
+    { unfold patt_or.
     toMyGoal. mgIntro.
     mgAssert (H : (q ---> q)).
   Abort.
