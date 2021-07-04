@@ -1567,7 +1567,105 @@ Qed. *)
     mgExactn 4.
     auto 8.
   Qed.
+
+  Lemma prf_add_assumption Γ a b :
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ b ->
+    Γ ⊢ (a ---> b).
+  Proof.
+    intros wfa wfb H.
+    eapply Modus_ponens.
+    4: apply P1. all: auto.
+  Qed.
+
+  Lemma prf_impl_distr_meta Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ (a ---> (b ---> c)) ->
+    Γ ⊢ ((a ---> b) ---> (a ---> c)).
+  Proof.
+    intros wfa wfb wfc H.
+    eapply Modus_ponens. 4: apply P2. all: auto.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ ((foldr patt_imp h l) ---> ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l))).
+  Proof.
+    intros wfl wfg wfh.
+    induction l; simpl.
+    - apply modus_ponens; auto.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l).
+      { apply prf_add_assumption; auto 10. }
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) ---> (a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)).
+      { apply prf_impl_distr_meta; auto. }
+      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
+                          ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))).
+      { auto using P2. }
+
+      eapply prf_weaken_conclusion_meta_meta.
+      4: apply H3. all: auto 10.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication_meta Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l) ->
+    Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l) ->
+    Γ ⊢ (foldr patt_imp g (l ++ [h])) ->
+    Γ ⊢ (foldr patt_imp g l).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
+    3: apply H3. all: auto 7.
+  Qed.
+
+  Lemma myGoal_assert Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Γ l h ->
+    mkMyGoal Γ (l ++ [h]) g ->
+    mkMyGoal Γ l g.
+  Proof.
+    intros.
+    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H2. all: auto.
+  Qed.  
   
+  Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+    match goal with
+    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
+      (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
+      assert (n : mkMyGoal Ctx l t);
+      [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+    end.
+
+  Lemma prf_disj_elim Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r).
+  Proof.
+    intros wfp wfg wfr.
+    toMyGoal. mgIntro.
+    mgAssert (H : (q ---> q)).
+  Abort.
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
