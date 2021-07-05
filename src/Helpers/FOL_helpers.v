@@ -1567,8 +1567,176 @@ Qed. *)
     mgExactn 4.
     auto 8.
   Qed.
+
+  Lemma prf_add_assumption Γ a b :
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ b ->
+    Γ ⊢ (a ---> b).
+  Proof.
+    intros wfa wfb H.
+    eapply Modus_ponens.
+    4: apply P1. all: auto.
+  Qed.
+
+  Lemma prf_impl_distr_meta Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ (a ---> (b ---> c)) ->
+    Γ ⊢ ((a ---> b) ---> (a ---> c)).
+  Proof.
+    intros wfa wfb wfc H.
+    eapply Modus_ponens. 4: apply P2. all: auto.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ ((foldr patt_imp h l) ---> ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l))).
+  Proof.
+    intros wfl wfg wfh.
+    induction l; simpl.
+    - apply modus_ponens; auto.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l).
+      { apply prf_add_assumption; auto 10. }
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) ---> (a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)).
+      { apply prf_impl_distr_meta; auto. }
+      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
+                          ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))).
+      { auto using P2. }
+
+      eapply prf_weaken_conclusion_meta_meta.
+      4: apply H3. all: auto 10.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication_meta Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l) ->
+    Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
+  Qed.
+
+  Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l) ->
+    Γ ⊢ (foldr patt_imp g (l ++ [h])) ->
+    Γ ⊢ (foldr patt_imp g l).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
+    3: apply H3. all: auto 7.
+  Qed.
+
+  Lemma myGoal_assert Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Γ l h ->
+    mkMyGoal Γ (l ++ [h]) g ->
+    mkMyGoal Γ l g.
+  Proof.
+    intros.
+    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H2. all: auto.
+  Qed.  
+  
+  Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+    match goal with
+    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
+      (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
+      assert (n : mkMyGoal Ctx l t);
+      [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+    end.
+
+  Lemma P4i' (Γ : Theory) (A : Pattern) :
+    well_formed A →
+    Γ ⊢ ((¬A ---> A) ---> A).
+  Proof.
+    intros wfA.
+    assert (H1: Γ ⊢ ((¬ A ---> ¬ ¬ A) ---> ¬ ¬ A)).
+    { apply P4i. auto. }
+    assert (H2: Γ ⊢ ((¬ A ---> A) ---> (¬ A ---> ¬ ¬ A))).
+    { eapply prf_weaken_conclusion_meta; auto. }
+    
+    eapply prf_strenghten_premise_meta_meta. 4: apply H2. all: auto.
+    eapply prf_weaken_conclusion_meta_meta. 4: apply not_not_elim. all: auto.
+  Qed.
+
+  #[local] Hint Resolve P4i' : core.
+
+  Lemma tofold p:
+    p = fold_right patt_imp p [].
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma consume p q l:
+    fold_right patt_imp (p ---> q) l = fold_right patt_imp q (l ++ [p]).
+  Proof.
+    rewrite foldr_app. reflexivity.
+  Qed.
   
   
+  Lemma prf_disj_elim Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r).
+  Proof.
+    intros wfp wfq wfr.
+    pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
+    assert (Γ ⊢ ((r or r) ---> r)).
+    { unfold patt_or. apply P4i'; auto. }
+    rewrite -> tofold in H1. rewrite 3!consume in H1.
+    eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H. all: auto 10.
+  Qed.
+
+
+  Lemma prf_disj_elim_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ ((q ---> r) ---> (p or q) ---> r).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim.
+    all: auto.
+  Qed.
+  
+  
+  Lemma prf_disj_elim_meta_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ (q ---> r) ->
+    Γ ⊢ ((p or q) ---> r).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta.
+    all: auto.
+  Qed.
+
+  Lemma prf_disj_elim_meta_meta_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ (q ---> r) ->
+    Γ ⊢ (p or q) ->
+    Γ ⊢ r.
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
+    all: auto.
+  Qed.
+    
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -1706,7 +1874,7 @@ Qed. *)
     split; eauto.
   Qed.  
     
-  Lemma pf_prop_bott_iff Γ AC:
+  Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
   Proof.
     induction AC; simpl.
@@ -1732,7 +1900,7 @@ Qed. *)
         Unshelve. all: auto.
   Qed.
   
-  Lemma pf_prop_or_iff Γ AC p q:
+  Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))).
@@ -1743,11 +1911,88 @@ Qed. *)
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_left in H.
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_left. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_right in H.
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_right. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+  Qed.
+
+  Lemma prf_prop_ex_iff Γ AC p:
+    well_formed (patt_exists p) ->
+    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (patt_exists (subst_ctx AC p))).
+  Proof.
+    intros Hwf.
+
+    induction AC; simpl.
+    - apply pf_iff_equiv_refl; auto.
+    -
+      assert (Hwfex: well_formed (ex , subst_ctx AC p)).
+      { unfold well_formed. simpl.
+        pose proof (Hwf' := Hwf).
+        unfold well_formed in Hwf. simpl in Hwf.
+        apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
+        apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
+        Check wc_sctx.
+        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
+      }
+      
+      apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_left in IH1.
+        eapply syllogism_intro. 4: apply IH1.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        apply Prop_ex_left. all: subst; auto.
       + admit.
-      + eapply pf_or_elim.
+    -
+      assert (Hwfex: well_formed (ex , subst_ctx AC p)).
+      { unfold well_formed. simpl.
+        pose proof (Hwf' := Hwf).
+        unfold well_formed in Hwf. simpl in Hwf.
+        apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
+        apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
+        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
+      }
+      
+      apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_right in IH1.
+        eapply syllogism_intro. 4: apply IH1.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        apply Prop_ex_right. all: subst; auto.
+      + admit.
   Abort.
   
-
   
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
