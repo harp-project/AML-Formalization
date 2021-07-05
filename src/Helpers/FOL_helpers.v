@@ -1698,7 +1698,45 @@ Qed. *)
     rewrite -> tofold in H1. rewrite 3!consume in H1.
     eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H. all: auto 10.
   Qed.
+
+
+  Lemma prf_disj_elim_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ ((q ---> r) ---> (p or q) ---> r).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim.
+    all: auto.
+  Qed.
   
+  
+  Lemma prf_disj_elim_meta_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ (q ---> r) ->
+    Γ ⊢ ((p or q) ---> r).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta.
+    all: auto.
+  Qed.
+
+  Lemma prf_disj_elim_meta_meta_meta Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> r) ->
+    Γ ⊢ (q ---> r) ->
+    Γ ⊢ (p or q) ->
+    Γ ⊢ r.
+  Proof.
+    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
+    all: auto.
+  Qed.
+    
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -1836,7 +1874,7 @@ Qed. *)
     split; eauto.
   Qed.  
     
-  Lemma pf_prop_bott_iff Γ AC:
+  Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
   Proof.
     induction AC; simpl.
@@ -1862,7 +1900,7 @@ Qed. *)
         Unshelve. all: auto.
   Qed.
   
-  Lemma pf_prop_or_iff Γ AC p q:
+  Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))).
@@ -1873,10 +1911,34 @@ Qed. *)
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
-      + admit.
-      + eapply pf_or_elim.
-  Abort.
-  
+      + pose proof (H := IH1).
+        eapply Framing_left in H.
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_left. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_right in H.
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_right. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+  Qed.
 
   
 (* Axiom extension : forall G A B,
