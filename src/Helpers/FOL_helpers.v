@@ -1941,11 +1941,9 @@ Qed. *)
   Qed.
 
   Lemma prf_prop_ex_iff Γ AC p:
-    (*well_formed (subst_ctx AC (patt_exists p)) ->*)
     well_formed (patt_exists p) ->
     Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (patt_exists (subst_ctx AC p))).
   Proof.
-    (*intros Hwf1 Hwf2.*)
     intros Hwf.
 
     induction AC; simpl.
@@ -1956,16 +1954,17 @@ Qed. *)
         pose proof (Hwf' := Hwf).
         unfold well_formed in Hwf. simpl in Hwf.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-        eapply wp_sctx in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-        eapply wc_sctx. rewrite Hwfc. reflexivity.
+        Check wc_sctx.
+        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
       
       apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
-        eapply Framing_left in IH1. eapply Framing_left in IH2.
+        eapply Framing_left in IH1.
         eapply syllogism_intro. 4: apply IH1.
         all:auto.
         remember (subst_ctx AC p) as p'.
@@ -1977,16 +1976,16 @@ Qed. *)
         pose proof (Hwf' := Hwf).
         unfold well_formed in Hwf. simpl in Hwf.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-        eapply wp_sctx in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-        eapply wc_sctx. rewrite Hwfc. reflexivity.
+        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
       
       apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
-        eapply Framing_right in IH1. eapply Framing_right in IH2.
+        eapply Framing_right in IH1.
         eapply syllogism_intro. 4: apply IH1.
         all:auto.
         remember (subst_ctx AC p) as p'.
