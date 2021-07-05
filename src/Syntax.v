@@ -862,6 +862,31 @@ Section syntax.
     reflexivity.
   Qed.
 
+  Lemma well_formed_ex_app ϕ₁ ϕ₂:
+    well_formed (patt_exists ϕ₁) ->
+    well_formed (patt_exists ϕ₂) ->
+    well_formed (patt_exists (patt_app ϕ₁ ϕ₂)).
+  Proof.
+    intros Hwf1 Hwf2.
+    unfold well_formed in *.
+    apply andb_prop in Hwf1. apply andb_prop in Hwf2.
+    destruct Hwf1 as [Hwfp1 Hwfc1]. destruct Hwf2 as [Hwfp2 Hwfc2].
+    simpl in *. rewrite Hwfp1 Hwfp2. simpl. clear Hwfp1 Hwfp2.
+    unfold well_formed_closed in *. simpl in *.
+    rewrite Hwfc1. rewrite Hwfc2.
+    reflexivity.
+  Qed.
+
+  Lemma well_formed_impl_well_formed_ex ϕ:
+    well_formed ϕ ->
+    well_formed (patt_exists ϕ).
+  Proof.
+    intros H. unfold well_formed in *. apply andb_prop in H. destruct H as [Hwfp Hwfc].
+    simpl in *. rewrite Hwfp. clear Hwfp. simpl.
+    unfold well_formed_closed in *. simpl. Search well_formed_closed_aux.
+    eapply well_formed_closed_aux_ind. 3: apply Hwfc. all: lia.
+  Qed.
+
   (* fresh variables *)
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
@@ -2189,19 +2214,20 @@ Section syntax.
       destruct Prf. rewrite H0. rewrite IHC. reflexivity.
   Qed.
 
-  Lemma wc_sctx (C : Application_context) (A : Pattern) :
-    well_formed_closed_aux A 0 0 -> well_formed_closed_aux (subst_ctx C A) 0 0.
+  Lemma wc_sctx (C : Application_context) (A : Pattern) idx1 idx2 :
+    well_formed_closed_aux A idx1 idx2 -> well_formed_closed_aux (subst_ctx C A) idx1 idx2.
   Proof.
     intros.
     induction C.
     - auto.
     - simpl. rewrite IHC. simpl.
       unfold well_formed in Prf. apply andb_true_iff in Prf.
-      destruct Prf. unfold well_formed_closed in H1. exact H1.
+      destruct Prf. unfold well_formed_closed in H1.
+      eapply well_formed_closed_aux_ind. 3: eassumption. all: lia.
     - simpl. rewrite IHC.
       unfold well_formed in Prf. apply andb_true_iff in Prf.
-      destruct Prf. unfold well_formed_closed in H1. rewrite H1.
-      reflexivity.
+      destruct Prf. unfold well_formed_closed in H1.
+      eapply (@well_formed_closed_aux_ind _ 0 idx1 0 idx2) in H1. 2,3: lia. rewrite H1. reflexivity.
   Qed.
 
   
@@ -4073,6 +4099,12 @@ End BoundVarSugar.
 
 #[export]
  Hint Resolve wf_sctx : core.
+
+#[export]
+ Hint Resolve well_formed_ex_app : core.
+
+#[export]
+ Hint Resolve well_formed_impl_well_formed_ex : core.
 
 (* Tactics for resolving goals involving sets *)
 

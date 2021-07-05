@@ -1940,6 +1940,59 @@ Qed. *)
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
   Qed.
 
+  Lemma prf_prop_ex_iff Γ AC p:
+    (*well_formed (subst_ctx AC (patt_exists p)) ->*)
+    well_formed (patt_exists p) ->
+    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (patt_exists (subst_ctx AC p))).
+  Proof.
+    (*intros Hwf1 Hwf2.*)
+    intros Hwf.
+
+    induction AC; simpl.
+    - apply pf_iff_equiv_refl; auto.
+    -
+      assert (Hwfex: well_formed (ex , subst_ctx AC p)).
+      { unfold well_formed. simpl.
+        pose proof (Hwf' := Hwf).
+        unfold well_formed in Hwf. simpl in Hwf.
+        apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
+        eapply wp_sctx in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
+        eapply wc_sctx. rewrite Hwfc. reflexivity.
+      }
+      
+      apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_left in H
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_left. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_left.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+    - apply pf_iff_iff in IHAC; auto.
+      destruct IHAC as [IH1 IH2].
+      apply pf_iff_split; auto.
+      + pose proof (H := IH1).
+        eapply Framing_right in H.
+        eapply syllogism_intro. 4: apply H.
+        all:auto.
+        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC q) as q'.
+        apply Prop_disj_right. all: subst; auto.
+      + eapply prf_disj_elim_meta_meta; auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        * apply Framing_right.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+
+
   
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
