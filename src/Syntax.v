@@ -2419,7 +2419,21 @@ Section syntax.
     unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
     apply ApplicationContext2PatternCtx2ApplicationContext'.
   Qed.
-  
+
+  Fixpoint is_implicative_context' (box_evar : evar) (phi : Pattern) : bool :=
+    match phi with
+    | patt_bott => true
+    | patt_free_evar _ => true
+    | patt_imp phi1 phi2 =>
+      (if decide(count_evar_occurrences box_evar phi1 <> 0)
+       then is_implicative_context' box_evar phi1 else true) &&
+      (if decide(count_evar_occurrences box_evar phi2 <> 0)
+       then is_implicative_context' box_evar phi2 else true)
+    | _ => false
+    end.
+
+  Definition is_implicative_context (C : PatternCtx) :=
+    is_implicative_context' (pcEvar C) (pcPattern C).
     
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=

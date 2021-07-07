@@ -1872,7 +1872,62 @@ Qed. *)
     apply pf_iff_iff in BeqC; auto. destruct BeqC as [BimpC CimpB].
     apply pf_iff_iff; auto.
     split; eauto.
-  Qed.  
+  Qed.
+
+  Lemma prf_conclusion Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ b ->
+    Γ ⊢ (a ---> b).
+  Proof.
+    intros. eapply Modus_ponens. 4: apply P1. all: auto.
+  Qed.
+  
+
+  Lemma prf_equiv_congruence_implicative_ctx Γ p q C:
+    well_formed p ->
+    well_formed q ->
+    is_implicative_context C ->
+    Γ ⊢ ((p <---> q) ---> ((emplace C p) <---> (emplace C q))).
+  Proof.
+    intros wfp wfq impC.
+    destruct C.
+    induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
+      unfold emplace; simpl.
+    - destruct (evar_eqdec pcEvar x); simpl.
+      + apply A_impl_A. unfold patt_iff. auto.
+      + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.
+    - apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.
+    - unfold emplace in *. simpl in *.
+      pose proof (pwf := pcPattern_wf).
+      unfold well_formed,well_formed_closed in pwf. simpl in pwf.
+      apply andb_prop in pwf. destruct pwf as [pwf1 pwf2].
+      apply andb_prop in pwf1. destruct pwf1 as [pwfp1 pwfp2].
+      apply andb_prop in pwf2. destruct pwf2 as [pwfc1 pwfc2].
+      assert (well_formed pcPattern1).
+      { unfold well_formed,well_formed_closed. rewrite pwfp1 pwfc1. reflexivity. }
+      assert (well_formed pcPattern2).
+      { unfold well_formed,well_formed_closed. rewrite pwfp2 pwfc2. reflexivity. }
+      
+      destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
+      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in H0; try lia.
+      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
+        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
+        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
+        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
+        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
+        { lia. }
+        specialize (IHpcPattern1 ltac:(auto) ltac:(lia)).
+        unfold is_implicative_context in IHpcPattern1.
+        simpl in IHpcPattern1.
+        simpl in impC. rewrite andbT in impC.
+        specialize (IHpcPattern1 impC).
+        clear IHpcPattern2. (* Can't specialize. *)
+        (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
+           Therefore, p2 = q2. We need a lemma for that. *)
+  Abort.
+  
+      
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
