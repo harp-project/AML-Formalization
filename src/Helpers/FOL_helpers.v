@@ -1888,25 +1888,27 @@ Qed. *)
     well_formed p ->
     well_formed q ->
     is_implicative_context C ->
-    Γ ⊢ ((p <---> q) ---> ((emplace C p) <---> (emplace C q))).
+    Γ ⊢ (p <---> q) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))).
   Proof.
-    intros wfp wfq impC.
+    intros wfp wfq impC Hiff.
     destruct C.
     induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
       unfold emplace; simpl.
-    - destruct (evar_eqdec pcEvar x); simpl.
+    - destruct (evar_eqdec pcEvar x); simpl. exact Hiff. apply pf_iff_equiv_refl. auto.
+      (*
       + apply A_impl_A. unfold patt_iff. auto.
-      + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.
-    - apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.
+      + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
+    - apply pf_iff_equiv_refl. auto.  (*apply prf_conclusion; auto unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
     - unfold emplace in *. simpl in *.
       pose proof (pwf := pcPattern_wf).
       unfold well_formed,well_formed_closed in pwf. simpl in pwf.
       apply andb_prop in pwf. destruct pwf as [pwf1 pwf2].
       apply andb_prop in pwf1. destruct pwf1 as [pwfp1 pwfp2].
       apply andb_prop in pwf2. destruct pwf2 as [pwfc1 pwfc2].
-      assert (well_formed pcPattern1).
+      assert (Hwf1 : well_formed pcPattern1).
       { unfold well_formed,well_formed_closed. rewrite pwfp1 pwfc1. reflexivity. }
-      assert (well_formed pcPattern2).
+      assert (Hwf2 : well_formed pcPattern2).
       { unfold well_formed,well_formed_closed. rewrite pwfp2 pwfc2. reflexivity. }
       
       destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
@@ -1925,6 +1927,13 @@ Qed. *)
         clear IHpcPattern2. (* Can't specialize. *)
         (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
            Therefore, p2 = q2. We need a lemma for that. *)
+        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ pcEvar pcPattern2 p ltac:(lia)).
+        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ pcEvar pcPattern2 q ltac:(lia)).
+        subst p2 q2. rewrite Hnoocp Hnoocq.
+        unfold patt_iff.
+        Search free_evar_subst.
+        apply conj_intro_meta; auto.
+        
   Abort.
   
       
