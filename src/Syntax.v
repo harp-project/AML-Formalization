@@ -4069,16 +4069,25 @@ Section syntax.
 
   Lemma well_formed_free_evar_subst' x p q n1 n2:
     well_formed q ->
-    well_formed_positive p && well_formed_closed_aux p n1 n2->
-    well_formed_positive (free_evar_subst p q x) && well_formed_closed_aux (free_evar_subst p q x) n1 n2.
+    well_formed_positive p && well_formed_closed_aux p n1 n2 ->
+    no_negative_occurrence_db_b n2 (free_evar_subst p q x) && no_positive_occurrence_db_b n2 (free_evar_subst p q x) &&
+    well_formed_positive (free_evar_subst p q x) && well_formed_closed_aux (free_evar_subst p q x) n1 n2 = true.
   Proof.
     intros wfq wfp.
     move: n1 n2 wfp.
     induction p; intros n1 n2 wfp; simpl; auto.
     - destruct (evar_eqdec x x0); simpl; auto.
       unfold well_formed in wfq. apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
-      rewrite wfpq. simpl.
-      eapply well_formed_closed_aux_ind. 3: apply wfcq. all: lia.
+      rewrite wfpq. simpl in *.
+      pose proof (H1 := @well_formed_closed_aux_ind q 0 0 0 n2 ltac:(lia) ltac:(lia) wfcq).
+      pose proof (H2 := wfc_impl_no_neg_pos_occ H1).
+      rewrite H2. simpl.
+      eapply well_formed_closed_aux_ind.
+      3: apply wfcq. all: lia.
+    - simpl in *. rewrite wfp.
+      rewrite !andbT.
+      apply negb_true_iff. apply PeanoNat.Nat.eqb_neq.
+      apply Nat.ltb_lt in wfp. lia.
     - unfold well_formed, well_formed_closed in *. simpl in *.
       apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
       apply andb_prop in wfpp. destruct wfpp as [wfpp1 wfpp2].
@@ -4089,8 +4098,14 @@ Section syntax.
       simpl in *.
       specialize (IHp1 ltac:(auto)).
       specialize (IHp2 ltac:(auto)).
-      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1]. rewrite IHp1 IHc1.
-      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2]. rewrite IHp2 IHc2.
+      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1].
+      apply andb_prop in IHp1. destruct IHp1 as [IHn1 IHp1].
+      rewrite IHp1 IHc1. apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn11 IHn12. simpl.
+      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2].
+      apply andb_prop in IHp2. destruct IHp2 as [IHn2 IHp2].
+      rewrite IHp2 IHc2. apply andb_prop in IHn2. destruct IHn2 as [IHn21 IHn22].
+      rewrite IHn21 IHn22.
       reflexivity.
     - unfold well_formed, well_formed_closed in *. simpl in *.
       apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
@@ -4102,16 +4117,28 @@ Section syntax.
       simpl in *.
       specialize (IHp1 ltac:(auto)).
       specialize (IHp2 ltac:(auto)).
-      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1]. rewrite IHp1 IHc1.
-      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2]. rewrite IHp2 IHc2.
+      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1].
+      apply andb_prop in IHp1. destruct IHp1 as [IHn1 IHp1].
+      rewrite IHp1 IHc1. apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn11 IHn12. simpl.
+      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2].
+      apply andb_prop in IHp2. destruct IHp2 as [IHn2 IHp2].
+      rewrite IHp2 IHc2. apply andb_prop in IHn2. destruct IHn2 as [IHn21 IHn22].
+      rewrite IHn21 IHn22.
       reflexivity.
-    - unfold well_formed, well_formed_closed in *. simpl in *.
+    - simpl in wfp.
+      unfold well_formed, well_formed_closed in *. simpl in *.
       apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
+      pose proof (IHp' := IHp).
       specialize (IHp n1 (S n2)).
       apply andb_prop in wfpp. destruct wfpp as [nnop wfpp].
       rewrite wfpp in IHp. simpl in IHp. rewrite wfcp in IHp.
       specialize (IHp ltac:(auto)).
-      apply andb_prop in IHp. destruct IHp as [IHp IHc]. rewrite IHp IHc.
+      apply andb_prop in IHp. destruct IHp as [IHp IHc].
+      apply andb_prop in IHp. destruct IHp as [IHn1 IHn2].
+      apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn12 IHn11. simpl. rewrite IHn2.
+      rewrite IHc.
       Check wfc_impl_no_neg_pos_occ.
       pose proof (wfc_impl_no_neg_pos_occ IHc).
       unfold well_formed_positive in IHp
