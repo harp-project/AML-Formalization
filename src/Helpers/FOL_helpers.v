@@ -1786,7 +1786,55 @@ Qed. *)
       eapply prf_strenghten_premise_meta_meta. 5: apply H. all: auto.
       apply reorder; auto.
   Qed.
+
+  Lemma prf_add_proved_to_assumptions_meta Γ l a g:
+    wf l ->
+    well_formed a ->
+    well_formed g ->
+    Γ ⊢ a ->
+    Γ ⊢ (foldr patt_imp g (a::l)) ->
+    Γ ⊢ (foldr patt_imp g l).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: eapply prf_add_proved_to_assumptions.
+    3: apply H3.
+    all: auto.
+  Qed.
   
+  Lemma MyGoal_add Γ l g h:
+    Γ ⊢ h ->
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Γ (h::l) g ->
+    mkMyGoal Γ l g.
+  Proof.
+    intros.
+    apply prf_add_proved_to_assumptions_meta with (a := h).
+    all: auto.
+  Qed.
+
+  Tactic Notation "mgAdd" ident(n) :=
+    match goal with
+    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
+      apply (MyGoal_add Ctx l g _ n)
+    end.
+
+  Lemma test_mgAdd Γ l g h:
+    wf l ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (h ---> g) ->
+    Γ ⊢ h ->
+    Γ ⊢ g.
+  Proof.
+    intros. toMyGoal.
+    mgAdd H3; [auto|auto|auto|].
+    mgAdd H2; [auto|auto|auto|].
+    mgApply' 0 5. mgExactn 1.
+  Qed.
+
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
