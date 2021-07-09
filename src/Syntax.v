@@ -4066,6 +4066,37 @@ Section syntax.
     intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
   Qed.
 
+  Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
+    well_formed q ->
+    no_negative_occurrence_db_b n p ->
+    no_negative_occurrence_db_b n (free_evar_subst p q x)
+  with
+  free_evar_subst_preserves_no_positive_occurrence x p q n:
+    well_formed q ->
+    no_positive_occurrence_db_b n p ->
+    no_positive_occurrence_db_b n (free_evar_subst p q x)
+  .
+  Proof.
+    - intros wfq nno.
+      induction p; simpl; auto.
+      + destruct (evar_eqdec x x0); simpl; auto.
+        apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+        apply wfc_impl_no_neg_occ. apply wfcq.
+      + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
+        rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
+      + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
+        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_positive_occurrence; auto.
+    - intros wfq npo.
+      induction p; simpl; auto.
+      + destruct (evar_eqdec x x0); simpl; auto.
+        apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+        apply wfc_impl_no_pos_occ. apply wfcq.
+      + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
+        rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
+      + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
+        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  Qed.
+      
 
   Lemma well_formed_free_evar_subst' x p q n1 n2:
     well_formed q ->
