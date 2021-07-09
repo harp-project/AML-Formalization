@@ -4098,7 +4098,7 @@ Section syntax.
   Qed.
       
 
-  Lemma well_formed_free_evar_subst' x p q n1 n2:
+  Lemma Private_well_formed_free_evar_subst' x p q n1 n2:
     well_formed q ->
     well_formed_positive p && well_formed_closed_aux p n1 n2 ->
     no_negative_occurrence_db_b n2 (free_evar_subst p q x) && no_positive_occurrence_db_b n2 (free_evar_subst p q x) &&
@@ -4170,13 +4170,20 @@ Section syntax.
       apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
       rewrite IHn12 IHn11. simpl. rewrite IHn2.
       rewrite IHc.
-      Check wfc_impl_no_neg_pos_occ.
-      pose proof (wfc_impl_no_neg_pos_occ IHc).
-      unfold well_formed_positive in IHp
-      Search "no_negative_occurrence" "subst".
-      reflexivity.
-  Abort.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  Qed.
 
+  Lemma well_formed_free_evar_subst x p q:
+    well_formed q ->
+    well_formed p ->
+    well_formed (free_evar_subst p q x).
+  Proof.
+    intros wfp wfq.
+    pose proof (H := Private_well_formed_free_evar_subst' x wfp wfq).
+    unfold well_formed, well_formed_closed.
+    apply andb_prop in H. destruct H as [H H2]. rewrite H2. clear H2.
+    apply andb_prop in H. destruct H as [H H2]. rewrite H2. reflexivity.
+  Qed.
   
 
 End syntax.
