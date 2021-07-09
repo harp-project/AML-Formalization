@@ -883,7 +883,7 @@ Section syntax.
   Proof.
     intros H. unfold well_formed in *. apply andb_prop in H. destruct H as [Hwfp Hwfc].
     simpl in *. rewrite Hwfp. clear Hwfp. simpl.
-    unfold well_formed_closed in *. simpl. Search well_formed_closed_aux.
+    unfold well_formed_closed in *. simpl.
     eapply well_formed_closed_aux_ind. 3: apply Hwfc. all: lia.
   Qed.
 
@@ -4280,6 +4280,9 @@ End BoundVarSugar.
 
 #[export]
  Hint Resolve well_formed_impl_well_formed_ex : core.
+
+#[export]
+ Hint Resolve well_formed_free_evar_subst : core.
 
 (* Tactics for resolving goals involving sets *)
 

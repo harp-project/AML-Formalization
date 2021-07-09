@@ -1075,6 +1075,22 @@ Qed. *)
     all: auto.
   Qed.
 
+  Lemma prf_strenghten_premise_iter_meta_meta Γ l n h h' g :
+    wf l ->
+    well_formed h ->
+    well_formed h' ->
+    well_formed g ->
+    l !! n = Some h ->
+    Γ ⊢ (h' ---> h) ->
+    Γ ⊢ (fold_right patt_imp g l) ->
+    Γ ⊢ (fold_right patt_imp g (<[n := h']> l)).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: eapply prf_strenghten_premise_iter_meta.
+    8: apply H3. all: auto.
+  Qed.
+
   (* TODO rename *)
   Lemma rewrite_under_implication Γ g g':
     well_formed g ->
@@ -1736,7 +1752,41 @@ Qed. *)
     intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
     all: auto.
   Qed.
-    
+
+
+  Lemma prf_add_proved_to_assumptions Γ l a g:
+    wf l ->
+    well_formed a ->
+    well_formed g ->
+    Γ ⊢ a ->
+    Γ ⊢ ((foldr patt_imp g (a::l)) ---> (foldr patt_imp g l)).
+  Proof.
+    intros wfl wfa wfg Ha.
+    induction l.
+    - simpl.
+      pose proof (modus_ponens Γ _ _ wfa wfg).
+      eapply Modus_ponens. 4: apply H. all: auto.
+    - pose proof (wfa0l := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+      specialize (IHl wfl).
+      simpl in IHl. simpl.
+      (* < change a0 and a in the LHS > *)
+      assert (H : Γ ⊢ (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l)).
+      { apply reorder; auto. }
+      rewrite -> tofold. rewrite consume.
+      pose proof (H0 := prf_strenghten_premise_iter_meta_meta Γ ([] ++ [a0 ---> a ---> foldr patt_imp g l]) 0).
+      simpl in H0.
+      specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
+      specialize (H0 (a0 ---> foldr patt_imp g l)).
+      simpl. apply H0. all: auto. clear H0 H.
+      (* </change a0 and a > *)
+      assert (Γ ⊢ ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l))).
+      { eapply Modus_ponens. 4: apply modus_ponens. all: auto 10. }
+      
+      eapply prf_strenghten_premise_meta_meta. 5: apply H. all: auto.
+      apply reorder; auto.
+  Qed.
+  
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -1931,8 +1981,16 @@ Qed. *)
         pose proof (Hnoocq := @free_evar_subst_no_occurrence _ pcEvar pcPattern2 q ltac:(lia)).
         subst p2 q2. rewrite Hnoocp Hnoocq.
         unfold patt_iff.
-        Search free_evar_subst.
-        apply conj_intro_meta; auto.
+
+        epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
+        epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
+        Unshelve. 2,3,4,5: subst; auto.
+        
+        apply conj_intro_meta. 1,2: subst; auto.
+        unfold patt_iff in IHpcPattern1. Search patt_and.
+        
+        (* We need to add H1 or H2 to the assumptions
+           and then use the proof mode to reason about them. *)
         
   Abort.
   
