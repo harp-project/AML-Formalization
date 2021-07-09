@@ -2035,13 +2035,51 @@ Qed. *)
         Unshelve. 2,3,4,5: subst; auto.
         
         apply conj_intro_meta. 1,2: subst; auto.
-        unfold patt_iff in IHpcPattern1. Search patt_and.
+        unfold patt_iff in IHpcPattern1.
+
+        * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
+          mgApply' 1 5. 1,2: subst; auto.
+          mgApply' 0 5. 1,2,3: subst; auto.
+          mgExactn 2; subst; auto.
+
+        * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
+          mgApply' 1 5. 1,2: subst; auto.
+          mgApply' 0 5. 1,2,3: subst; auto.
+          mgExactn 2; subst; auto.
+      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
+        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
+        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
+        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
+        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
+        { lia. }
+        specialize (IHpcPattern2 ltac:(auto) ltac:(lia)).
+        unfold is_implicative_context in IHpcPattern1.
+        simpl in IHpcPattern1.
+        simpl in impC. (*rewrite andbT in impC.*)
+        specialize (IHpcPattern2 impC).
+        clear IHpcPattern1. (* Can't specialize. *)
+        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ pcEvar pcPattern1 p ltac:(lia)).
+        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ pcEvar pcPattern1 q ltac:(lia)).
+        subst p1 q1. rewrite Hnoocp Hnoocq.
+        unfold patt_iff.
+
+        epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
+        epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
+        Unshelve. 2,3,4,5: subst; auto.
         
-        (* We need to add H1 or H2 to the assumptions
-           and then use the proof mode to reason about them. *)
+        apply conj_intro_meta. 1,2: subst; auto.
+        unfold patt_iff in IHpcPattern2.
         
-  Abort.
-  
+        * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
+          mgApply' 0 5. 1,2,3: subst; auto.
+          mgApply' 1 5. 1,2: subst; auto.
+          mgExactn 2; subst; auto.
+
+        * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
+          mgApply' 0 5. 1,2,3: subst; auto.
+          mgApply' 1 5. 1,2: subst; auto.
+          mgExactn 2; subst; auto.      
+  Qed.
       
     
   Lemma prf_prop_bott_iff Γ AC:
