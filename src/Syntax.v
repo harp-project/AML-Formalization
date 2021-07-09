@@ -883,7 +883,7 @@ Section syntax.
   Proof.
     intros H. unfold well_formed in *. apply andb_prop in H. destruct H as [Hwfp Hwfc].
     simpl in *. rewrite Hwfp. clear Hwfp. simpl.
-    unfold well_formed_closed in *. simpl. Search well_formed_closed_aux.
+    unfold well_formed_closed in *. simpl.
     eapply well_formed_closed_aux_ind. 3: apply Hwfc. all: lia.
   Qed.
 
@@ -2147,7 +2147,48 @@ Section syntax.
       rewrite IHp2; [assumption|].
       reflexivity.
   Qed.
-  
+
+  Lemma free_evar_subst_no_occurrence x p q:
+    count_evar_occurrences x p = 0 ->
+    free_evar_subst p q x = p.
+  Proof.
+    intros.
+    induction p; simpl; auto.
+    - simpl in H.
+      destruct (evar_eqdec x x0).
+      + subst x0. destruct (evar_eqdec x x). simpl in H. inversion H. contradiction.
+      + reflexivity.
+    - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
+    - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
+    - simpl in H. rewrite IHp. lia. reflexivity.
+    - simpl in H. rewrite IHp. lia. reflexivity.
+  Qed.
+
+
+  Lemma wfc_impl_no_neg_pos_occ p n m:
+    well_formed_closed_aux p n m ->
+    (no_negative_occurrence_db_b m p && no_positive_occurrence_db_b m p) = true.
+  Proof.
+    intros H.
+    move: n m H.
+    induction p; intros n' m H; simpl; simpl in H; auto.
+    - apply negb_true_iff. apply PeanoNat.Nat.eqb_neq.
+      apply Nat.ltb_lt in H. lia.
+    - apply andb_prop in H. destruct H as [H1 H2].
+      specialize (IHp1 n' m H1). specialize (IHp2 n' m H2).
+      apply andb_prop in IHp1. destruct IHp1 as [IHp11 IHp12].
+      apply andb_prop in IHp2. destruct IHp2 as [IHp21 IHp22].
+      rewrite IHp11 IHp12 IHp21 IHp22. reflexivity.
+    - apply andb_prop in H. destruct H as [H1 H2].
+      specialize (IHp1 n' m H1). specialize (IHp2 n' m H2).
+      apply andb_prop in IHp1. destruct IHp1 as [IHp11 IHp12].
+      apply andb_prop in IHp2. destruct IHp2 as [IHp21 IHp22].
+      rewrite IHp11 IHp12 IHp21 IHp22. reflexivity.
+    - specialize (IHp (S n') m H).
+      apply IHp.
+    - specialize (IHp n' (S m) H). apply IHp.
+  Qed.
+    
   Record PatternCtx : Type :=
     { pcEvar : evar ;
       pcPattern : Pattern;
@@ -2419,7 +2460,21 @@ Section syntax.
     unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
     apply ApplicationContext2PatternCtx2ApplicationContext'.
   Qed.
-  
+
+  Fixpoint is_implicative_context' (box_evar : evar) (phi : Pattern) : bool :=
+    match phi with
+    | patt_bott => true
+    | patt_free_evar _ => true
+    | patt_imp phi1 phi2 =>
+      (if decide(count_evar_occurrences box_evar phi1 <> 0)
+       then is_implicative_context' box_evar phi1 else true) &&
+      (if decide(count_evar_occurrences box_evar phi2 <> 0)
+       then is_implicative_context' box_evar phi2 else true)
+    | _ => false
+    end.
+
+  Definition is_implicative_context (C : PatternCtx) :=
+    is_implicative_context' (pcEvar C) (pcPattern C).
     
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
@@ -4011,6 +4066,126 @@ Section syntax.
     intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
   Qed.
 
+  Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
+    well_formed q ->
+    no_negative_occurrence_db_b n p ->
+    no_negative_occurrence_db_b n (free_evar_subst p q x)
+  with
+  free_evar_subst_preserves_no_positive_occurrence x p q n:
+    well_formed q ->
+    no_positive_occurrence_db_b n p ->
+    no_positive_occurrence_db_b n (free_evar_subst p q x)
+  .
+  Proof.
+    - intros wfq nno.
+      induction p; simpl; auto.
+      + destruct (evar_eqdec x x0); simpl; auto.
+        apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+        apply wfc_impl_no_neg_occ. apply wfcq.
+      + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
+        rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
+      + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
+        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_positive_occurrence; auto.
+    - intros wfq npo.
+      induction p; simpl; auto.
+      + destruct (evar_eqdec x x0); simpl; auto.
+        apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+        apply wfc_impl_no_pos_occ. apply wfcq.
+      + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
+        rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
+      + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
+        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  Qed.
+      
+
+  Lemma Private_well_formed_free_evar_subst' x p q n1 n2:
+    well_formed q ->
+    well_formed_positive p && well_formed_closed_aux p n1 n2 ->
+    no_negative_occurrence_db_b n2 (free_evar_subst p q x) && no_positive_occurrence_db_b n2 (free_evar_subst p q x) &&
+    well_formed_positive (free_evar_subst p q x) && well_formed_closed_aux (free_evar_subst p q x) n1 n2 = true.
+  Proof.
+    intros wfq wfp.
+    move: n1 n2 wfp.
+    induction p; intros n1 n2 wfp; simpl; auto.
+    - destruct (evar_eqdec x x0); simpl; auto.
+      unfold well_formed in wfq. apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+      rewrite wfpq. simpl in *.
+      pose proof (H1 := @well_formed_closed_aux_ind q 0 0 0 n2 ltac:(lia) ltac:(lia) wfcq).
+      pose proof (H2 := wfc_impl_no_neg_pos_occ H1).
+      rewrite H2. simpl.
+      eapply well_formed_closed_aux_ind.
+      3: apply wfcq. all: lia.
+    - simpl in *. rewrite wfp.
+      rewrite !andbT.
+      apply negb_true_iff. apply PeanoNat.Nat.eqb_neq.
+      apply Nat.ltb_lt in wfp. lia.
+    - unfold well_formed, well_formed_closed in *. simpl in *.
+      apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
+      apply andb_prop in wfpp. destruct wfpp as [wfpp1 wfpp2].
+      apply andb_prop in wfcp. destruct wfcp as [wfcp1 wfcp2].
+      specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
+      rewrite wfpp1 wfcp1 in IHp1.
+      rewrite wfpp2 wfcp2 in IHp2.
+      simpl in *.
+      specialize (IHp1 ltac:(auto)).
+      specialize (IHp2 ltac:(auto)).
+      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1].
+      apply andb_prop in IHp1. destruct IHp1 as [IHn1 IHp1].
+      rewrite IHp1 IHc1. apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn11 IHn12. simpl.
+      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2].
+      apply andb_prop in IHp2. destruct IHp2 as [IHn2 IHp2].
+      rewrite IHp2 IHc2. apply andb_prop in IHn2. destruct IHn2 as [IHn21 IHn22].
+      rewrite IHn21 IHn22.
+      reflexivity.
+    - unfold well_formed, well_formed_closed in *. simpl in *.
+      apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
+      apply andb_prop in wfpp. destruct wfpp as [wfpp1 wfpp2].
+      apply andb_prop in wfcp. destruct wfcp as [wfcp1 wfcp2].
+      specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
+      rewrite wfpp1 wfcp1 in IHp1.
+      rewrite wfpp2 wfcp2 in IHp2.
+      simpl in *.
+      specialize (IHp1 ltac:(auto)).
+      specialize (IHp2 ltac:(auto)).
+      apply andb_prop in IHp1. destruct IHp1 as [IHp1 IHc1].
+      apply andb_prop in IHp1. destruct IHp1 as [IHn1 IHp1].
+      rewrite IHp1 IHc1. apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn11 IHn12. simpl.
+      apply andb_prop in IHp2. destruct IHp2 as [IHp2 IHc2].
+      apply andb_prop in IHp2. destruct IHp2 as [IHn2 IHp2].
+      rewrite IHp2 IHc2. apply andb_prop in IHn2. destruct IHn2 as [IHn21 IHn22].
+      rewrite IHn21 IHn22.
+      reflexivity.
+    - simpl in wfp.
+      unfold well_formed, well_formed_closed in *. simpl in *.
+      apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
+      pose proof (IHp' := IHp).
+      specialize (IHp n1 (S n2)).
+      apply andb_prop in wfpp. destruct wfpp as [nnop wfpp].
+      rewrite wfpp in IHp. simpl in IHp. rewrite wfcp in IHp.
+      specialize (IHp ltac:(auto)).
+      apply andb_prop in IHp. destruct IHp as [IHp IHc].
+      apply andb_prop in IHp. destruct IHp as [IHn1 IHn2].
+      apply andb_prop in IHn1. destruct IHn1 as [IHn11 IHn12].
+      rewrite IHn12 IHn11. simpl. rewrite IHn2.
+      rewrite IHc.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  Qed.
+
+  Lemma well_formed_free_evar_subst x p q:
+    well_formed q ->
+    well_formed p ->
+    well_formed (free_evar_subst p q x).
+  Proof.
+    intros wfp wfq.
+    pose proof (H := Private_well_formed_free_evar_subst' x wfp wfq).
+    unfold well_formed, well_formed_closed.
+    apply andb_prop in H. destruct H as [H H2]. rewrite H2. clear H2.
+    apply andb_prop in H. destruct H as [H H2]. rewrite H2. reflexivity.
+  Qed.
+  
+
 End syntax.
 
 Hint Rewrite ->
@@ -4105,6 +4280,9 @@ End BoundVarSugar.
 
 #[export]
  Hint Resolve well_formed_impl_well_formed_ex : core.
+
+#[export]
+ Hint Resolve well_formed_free_evar_subst : core.
 
 (* Tactics for resolving goals involving sets *)
 

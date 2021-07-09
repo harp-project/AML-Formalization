@@ -510,6 +510,21 @@ Section ml_tauto.
           fold (patt_not p3) in *. fold (patt_not (patt_not p3)) in *.
           fold (patt_not p4) in *. fold (patt_or (patt_not p3) (patt_not p4)) in *.
           fold (patt_not (patt_or (patt_not p3) (patt_not p4))) in *.
+          pose proof (Hwfp' := Hwfp).
+          (* TODO automate this ugly thing *)
+          unfold well_formed, well_formed_closed in Hwfp'. simpl in Hwfp'.
+          rewrite !andbT in Hwfp'.
+          apply andb_prop in Hwfp'. destruct Hwfp' as [Hwfp' Hwfc'].
+          apply andb_prop in Hwfp'. destruct Hwfp' as [Hwfpp3 Hwfpp4].
+          apply andb_prop in Hwfc'. destruct Hwfc' as [Hwfcp3 Hwfcp4].
+          assert (Hwfp3: well_formed p3).
+          { unfold well_formed, well_formed_closed. rewrite Hwfpp3 Hwfcp3. reflexivity. }
+          assert (Hwfp4: well_formed p4).
+          { unfold well_formed, well_formed_closed. rewrite Hwfpp4 Hwfcp4. reflexivity. }
+          simpl in Hsz.
+          pose proof (IHp3 := IHsz p3 ltac:(auto) ltac:(lia)).
+          pose proof (IHp4 := IHsz p4 ltac:(auto) ltac:(lia)).
+          
           (*Search evar.
           
           Print countable.Countable.*)
