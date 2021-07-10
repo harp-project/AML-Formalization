@@ -195,6 +195,57 @@ Section ml_tauto.
     symmetry in Heqn'. apply IHsz in Heqn'. inversion Heqn'.
     simpl in *. lia.
   Qed.  
+
+  Lemma and_or_not_size'_monotone (p : Pattern) (fuel fuel' : nat) :
+    fuel >= and_or_not_size'_enough_fuel p ->
+    fuel' >= fuel ->
+    and_or_not_size' fuel' p = and_or_not_size' fuel p.
+  Proof.
+    remember (size p) as sz.
+    assert (Hsz: size p <= sz).
+    lia.
+    clear Heqsz.
+    move: p fuel fuel' Hsz.
+    induction sz;
+    intros p fuel fuel' Hsz Henough Hmore;
+    destruct p; simpl in Hsz; unfold and_or_not_size'_enough_fuel in Henough; simpl in Henough; try lia;
+      destruct fuel,fuel'; try lia; simpl; try reflexivity.
+
+    remember (match_and (p1 ---> p2)) as q.
+    destruct q.
+    { destruct p.
+      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq. destruct Heqq as [Hsz1 Hsz2].
+      rewrite -> IHsz with (fuel := fuel).
+      2: { lia. }
+      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { lia. }
+
+      rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
+      2: { lia. }
+      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { lia. }
+      reflexivity.
+    }
+
+    remember (match_not p1) as q2.
+    destruct q2.
+    {
+      symmetry in Heqq2. apply match_not_size in Heqq2.
+      rewrite -> IHsz with (fuel := fuel).
+      2: { lia. }
+      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { lia. }
+
+      rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
+      2: { lia. }
+      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { lia. }
+      reflexivity.
+    }
+
+    destruct p2; try reflexivity; unfold fmap,option_fmap,option_map; rewrite -> IHsz with (fuel := fuel);
+      try reflexivity; unfold and_or_not_size'_enough_fuel; try lia.
+  Qed.
   
   Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
     match fuel with
