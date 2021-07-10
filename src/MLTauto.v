@@ -246,6 +246,20 @@ Section ml_tauto.
     destruct p2; try reflexivity; unfold fmap,option_fmap,option_map; rewrite -> IHsz with (fuel := fuel);
       try reflexivity; unfold and_or_not_size'_enough_fuel; try lia.
   Qed.
+
+
+  Definition and_or_not_size''(p : Pattern) : option nat := and_or_not_size' (and_or_not_size'_enough_fuel p) p.
+
+  Definition and_or_not_size (p : Pattern) : nat :=
+    let np := and_or_not_size'' p in
+    let Heqnp : np = and_or_not_size'' p := erefl np in
+    match np as o return (o = and_or_not_size'' p → nat) with
+    | Some p0 => λ _, p0
+    | None =>
+      λ Heqnp0 : None = and_or_not_size'' p,
+                 match (and_or_not_size'_terminates p (eq_sym Heqnp0)) with end
+    end Heqnp.
+
   
   Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
     match fuel with
