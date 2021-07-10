@@ -600,82 +600,108 @@ Section ml_tauto.
     destruct oa, ob; simpl in *; auto.
   Qed.
   
-  
+
+  Check sigT.
+  Print sigT.
+  Print CombinedRelation.
+  Check existT.
+
   Lemma wf_negate' n p np:
     well_formed p ->
     negate' n p = Some np ->
     well_formed np.
   Proof.
-    intros wfnp Hsome.
-    remember (size p) as sz.
-    assert (Hsz : size p <= sz).
-    { lia. }
-    clear Heqsz.
-
-    move: p wfnp Hsz n np Hsome.
-    induction sz; intros p wfnp Hsz n' np Hsome;
-      destruct n'; destruct p; unfold negate' in Hsome; try solve [(simpl in Hsome; inversion Hsome; auto)]; auto.
-    { simpl in Hsz. lia. }
-    fold negate' in Hsome.
-    
-   
-    remember (match_and (p1 ---> p2)) as q1.
-    remember (match_or (p1 ---> p2)) as q2.
-    remember (match_not (p1 ---> p2)) as q3.
-    pose proof (wfp1impp2 := wfnp).
-    unfold well_formed, well_formed_closed in wfnp.
-    simpl in wfnp.
-    apply andb_prop in wfnp.
-    destruct wfnp as [wfnp1 wfnp2].
-    apply andb_prop in wfnp1. destruct wfnp1 as [wfpp1 wfpp2].
-    apply andb_prop in wfnp2. destruct wfnp2 as [wfcp1 wfcp2].
-    assert (wfp1: well_formed p1).
-    { unfold well_formed, well_formed_closed. rewrite wfpp1 wfcp1. reflexivity. }
-    assert (wfp2: well_formed p2).
-    { unfold well_formed, well_formed_closed. rewrite wfpp2 wfcp2. reflexivity. }
-    
-    simpl in Hsz. simpl in IHsz.
-    assert (Hszp1: size p1 <= sz) by lia.
-    assert (Hszp2: size p2 <= sz) by lia.
-   
-    destruct q1.
-    { destruct p as [p1' p2'].
-      remember (negate' n' p1') as np1'.
-      remember (negate' n' p2') as np2'.
-      symmetry in Heqq1.
-      pose proof (H := match_and_size Heqq1).
-      destruct H as [Hszp1' Hszp2'].
-      
-      destruct np1', np2'; simpl in Hsome; inversion Hsome.
+    assert (forall x : {_ : Pattern & Pattern},
+               let p := projT2 x in
+                well_formed p -> forall n np, negate' n p = Some np -> well_formed np).
+    {
+      clear.
+      apply (Fix CombinedRelation_wf (fun x => let p := projT2 x in
+                                               well_formed p ->
+                                               forall n np,
+                                                 negate' n p = Some np ->
+                                                 well_formed np)).
       simpl.
-      pose proof (H' := match_and_wf wfp1impp2 Heqq1).
-      destruct H' as [wfp1' wfp2'].
-      simpl in Hszp1'. simpl in Hszp2'.
-      symmetry in Heqnp1'. symmetry in Heqnp2'.
-      pose proof (Hwfp := IHsz p1' wfp1' ltac:(lia) n' p Heqnp1').
-      pose proof (Hwfp0 := IHsz p2' wfp2' ltac:(lia) n' p0 Heqnp2').
-      auto.
-    }
+      intros x IH wfp n np Hsome.
+      destruct x as [x0 x1]. simpl in *. rename x1 into p.
+      destruct n; destruct p; unfold negate' in Hsome; try solve [(simpl in Hsome; inversion Hsome; auto)]; auto.
+      fold negate' in Hsome.
+      
+      remember (match_and (p1 ---> p2)) as q1.
+      remember (match_or (p1 ---> p2)) as q2.
+      remember (match_not (p1 ---> p2)) as q3.
+      pose proof (wfp1impp2 := wfp).
+      unfold well_formed, well_formed_closed in wfp.
+      simpl in wfp.
+      apply andb_prop in wfp.
+      destruct wfp as [wfp1 wfp2].
+      apply andb_prop in wfp1. destruct wfp1 as [wfpp1 wfpp2].
+      apply andb_prop in wfp2. destruct wfp2 as [wfcp1 wfcp2].
+      assert (wfp1: well_formed p1).
+      { unfold well_formed, well_formed_closed. rewrite wfpp1 wfcp1. reflexivity. }
+      assert (wfp2: well_formed p2).
+      { unfold well_formed, well_formed_closed. rewrite wfpp2 wfcp2. reflexivity. }
 
-    destruct q2.
-    { destruct p as [q21 q22].
-      symmetry in Heqq2.
-      pose proof (H' := match_or_wf wfp1impp2 Heqq2).
-      destruct H' as [wfq21 wfq22].
-      eapply option_well_formed_wf.
-      2: { apply Hsome. }
+      (*
+      simpl in Hsz. simpl in IHsz.
+      assert (Hszp1: size p1 <= sz) by lia.
+      assert (Hszp2: size p2 <= sz) by lia.
+       *)
+      destruct q1.
+      { destruct p as [p1' p2'].
+        remember (negate' n p1') as np1'.
+        remember (negate' n p2') as np2'.
+        symmetry in Heqq1.
+        pose proof (H := match_and_size Heqq1).
+        destruct H as [Hszp1' Hszp2'].
+        
+        destruct np1', np2'; simpl in Hsome; inversion Hsome.
+        simpl.
+        pose proof (H' := match_and_wf wfp1impp2 Heqq1).
+        destruct H' as [wfp1' wfp2'].
+        simpl in Hszp1'. simpl in Hszp2'.
+        symmetry in Heqnp1'. symmetry in Heqnp2'.
+        assert (HC1: CombinedRelation (existT x0 p1') (existT x0 (p1 ---> p2))).
+        {
+          unfold CombinedRelation.
+          eapply right_lex. unfold SizeRelation. simpl. lia.
+        }
+        assert (HC2: CombinedRelation (existT x0 p2') (existT x0 (p1 ---> p2))).
+        {
+          unfold CombinedRelation.
+          eapply right_lex. unfold SizeRelation. simpl. lia.
+        }
+        pose proof (IH1 := IH _ HC1 wfp1' _ _ Heqnp1').
+        pose proof (IH2 := IH _ HC2 wfp2' _ _ Heqnp2').
+        auto.
+      }
 
-      pose proof (Hsome' := Hsome).
-      unfold option_bimap in Hsome'.
-      remember (negate' n' q21) as nq21.
-      remember (negate' n' q22) as nq22.
-      destruct nq21, nq22; inversion Hsome'. subst np. clear Hsome'.
-      pose proof (IHsz q21 wfq21).
-      (* Oops. We cannot instantiate IHsz because we do not know whether q12 and q22 are smaller than sz.
+      destruct q2.
+      { destruct p as [q21 q22].
+        symmetry in Heqq2.
+        pose proof (H' := match_or_wf wfp1impp2 Heqq2).
+        destruct H' as [wfq21 wfq22].
+        eapply option_well_formed_wf.
+        2: { apply Hsome. }
+
+        pose proof (Hsome' := Hsome).
+        unfold option_bimap in Hsome'.
+        remember (negate' n q21) as nq21.
+        remember (negate' n q22) as nq22.
+        destruct nq21, nq22; inversion Hsome'. subst np. clear Hsome'.
+        simpl.
+        (* p, p0 are results of negate'. As such, they should be smaller???? *)
+        Print negate'.
+        pose proof (IHsz q21 wfq21).
+        (* OLD COMMENT. Now it might somehow work. *)
+        (* Oops. We cannot instantiate IHsz because we do not know whether q12 and q22 are smaller than sz.
          They may not be, because negate' can increase a size of a formula:
          it replaces a general implication with conjunction.
-       *)
-      Print negate'.
+         *)
+        
+        
+        admit.
+      }
   Abort.
   
     
