@@ -1,5 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
+From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Lexicographic_Product.
 From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base option.
@@ -547,7 +548,33 @@ Section ml_tauto.
                  match (count_general_implications'_terminates p (eq_sym Heqnp0)) with end
     end Heqnp.
 
+  Definition SizeRelation (p1 p2 : Pattern) : Prop :=
+    size p1 < size p2.
+
+  Lemma SizeRelation_wf : well_founded SizeRelation.
+  Proof. apply well_founded_ltof. Defined.
   
+  Definition GeneralImplicationCountRelation (p1 p2 : Pattern) : Prop :=
+    count_general_implications p1 < count_general_implications p2.
+
+  Lemma GeneralImplicationCountRelation_wf : well_founded GeneralImplicationCountRelation.
+  Proof. apply well_founded_ltof. Defined.
+
+  Definition CombinedRelation := lexprod Pattern (λ _ : Pattern, Pattern) GeneralImplicationCountRelation (λ _ : Pattern, SizeRelation).
+
+  Lemma CombinedRelation_wf : well_founded CombinedRelation.
+  Proof.
+    apply (wf_lexprod
+           Pattern
+           (fun=> Pattern)
+           GeneralImplicationCountRelation
+           (fun=> SizeRelation)
+           GeneralImplicationCountRelation_wf
+           (fun=> SizeRelation_wf)
+          ).
+  Defined.
+  
+    
   Definition option_well_formed (op : option Pattern) : bool :=
     match op with
     | Some p => well_formed p
