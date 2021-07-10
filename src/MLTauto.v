@@ -532,6 +532,21 @@ Section ml_tauto.
 
     all: rewrite -> IHsz with (fuel := fuel); simpl; try lia; auto.
   Qed.
+
+
+  Definition count_general_implications''(p : Pattern) : option nat :=
+    count_general_implications' (count_general_implications'_enough_fuel p) p.
+
+  Definition count_general_implications (p : Pattern) :=
+    let np := count_general_implications'' p in
+    let Heqnp : np = count_general_implications'' p := erefl np in
+    match np as o return (o = count_general_implications'' p → nat) with
+    | Some p0 => λ _, p0
+    | None =>
+      λ Heqnp0 : None = count_general_implications'' p,
+                 match (count_general_implications'_terminates p (eq_sym Heqnp0)) with end
+    end Heqnp.
+
   
   Definition option_well_formed (op : option Pattern) : bool :=
     match op with
