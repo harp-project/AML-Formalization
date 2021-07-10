@@ -590,6 +590,84 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
+  Lemma and_or_not_size_negate' (fuel fuel' fuel'' : nat) (p np : Pattern) (sz sz' : nat) :
+    and_or_not_size' fuel p = Some sz ->
+    (negate' fuel'' p) = Some np ->
+    and_or_not_size' fuel' np = Some sz' ->
+    1 + sz = sz'.
+  Proof.
+    intros Hsz Hnp Hsz'.
+    remember (size p) as isz.
+    assert (Hisz: size p <= isz).
+    { lia. }
+    clear Heqisz.
+    move: p Hsz Hnp Hisz.
+    induction isz; intros p Hsz Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
+      inversion Hsz; inversion Hnp; inversion Hsz'; try subst sz; try subst np; clear Hsz Hnp Hsz';
+        simpl in *.
+
+    all: unfold fmap, option_fmap,option_map in H2; destruct fuel'; simpl in H2; inversion H2; clear H2;
+      unfold fmap, option_fmap,option_map in H0; destruct fuel; simpl in H0; inversion H0; clear H0; auto.
+
+    
+    Ltac remember_and_destruct exp :=
+      let Heq := fresh "Heq" in
+      remember exp as Heq;
+      destruct Heq.
+
+    Ltac match_and_destruct :=
+      match goal with
+      | pts : Pattern * Pattern |- _ => destruct pts
+      | H : Some _ = None |- _ => inversion H
+      | H : None = Some _ |- _ => inversion H
+      | H : Some _ = Some _ |- _ => inversion H; clear H
+      | H : context [(match ?p with _ => _ end)]  |- _
+        => remember_and_destruct p
+      end.
+
+    (* Solve subgoal 1 *)
+    repeat match_and_destruct.
+
+    (* Second subgoal *)
+    repeat (unfold option_bimap in *; simpl in *; match_and_destruct).
+    
+    
+     (*
+    
+    - remember (match_and (p1 ---> p2)) as q1; destruct q1 as [[q1 q2]|];
+        remember (match_and (patt_not (p1 ---> p2))) as qtmp; destruct qtmp as [[q3 q4]|]; inversion H2;
+          (*pose proof (IH1 := IHisz (p1 ---> p2)); rewrite -Heqqtmp in IH1; rewrite -Heqq1 in IH1;*)
+            clear H2;
+            remember (match_not (p1 ---> p2)) as q3; destruct q3; destruct p2; inversion H0.
+    - remember (match_and (p1 ---> p2)) as q1; destruct q1 as [[q1 q2]|];
+        remember (match_and (patt_not (p1 ---> p2))) as qtmp; destruct qtmp as [[q3 q4]|]; inversion H2; clear H2;
+          pose proof (IH1 := IHisz (p1 ---> p2)); rewrite -Heqqtmp in IH1; rewrite -Heqq1 in IH1;
+            remember (match_and np) as q5; destruct q5 as [[q5 q6]|]; inversion H3; clear H3;
+              remember (match_or np) as q7; destruct q7 as [[q7 q8]|]; inversion H2; clear H2;
+                remember (match_not np) as nnp; destruct nnp; inversion H3; clear H3; subst sz'.
+
+      + remember (match_and q3) as aq3; destruct aq3 as [[q9 q10]|];
+          remember (match_and q4) as aq4; destruct aq4 as [[q11 q12]|].
+        * remember (option_bimap
+                      Nat.add (S <$> option_bimap Nat.add (and_or_not_size' fuel q9) (and_or_not_size' fuel q10))
+                      (S <$> option_bimap Nat.add (and_or_not_size' fuel q11) (and_or_not_size' fuel q12))) as Big.
+          destruct Big; inversion H0. subst sz.
+          unfold option_bimap in HeqBig.
+          remember (and_or_not_size' fuel q9) as szq9.
+          remember (and_or_not_size' fuel q10) as szq10.
+          remember (and_or_not_size' fuel q11) as szq11.
+          remember (and_or_not_size' fuel q12) as szq12.
+          destruct szq9,szq10,szq11,szq12; unfold fmap,option_fmap,option_map in HeqBig;
+            inversion HeqBig; clear HeqBig; subst n.
+          apply IH1.
+          
+                   
+      *)
+    
+      
+      
+     
+  
   Fixpoint count_general_implications' (fuel : nat) (p : Pattern) : option nat :=
     match fuel with
     | 0 => None
