@@ -195,6 +195,18 @@ Module Syntax.
     subst. simpl. lia.
   Qed.
 
+  Lemma match_not_wf (p p' : Pattern) :
+    well_formed p ->
+    match_not p = Some p' ->
+    well_formed p'.
+  Proof.
+    intros wfp Hp'.
+    destruct p; simpl in Hp'; inversion Hp'.
+    destruct p2; inversion Hp'. subst.
+    unfold well_formed, well_formed_closed in *. simpl in wfp.
+    rewrite !andbT in wfp. exact wfp.
+  Qed.
+  
   Lemma match_not_patt_or_1 (p1 p2 : Pattern) :
     p2 <> patt_bott <->
     match_not (patt_or p1 p2) = None.
@@ -234,6 +246,32 @@ Module Syntax.
     symmetry in Heqp3'. apply match_not_size in Heqp3'.
     lia.
   Qed.
+
+  Lemma match_or_wf (p p1 p2 : Pattern) :
+    well_formed p ->
+    match_or p = Some (p1, p2) ->
+    well_formed p1 /\ well_formed p2.
+  Proof.
+    intros wfp Hp'.
+    destruct p; simpl in Hp'; inversion Hp'.
+    remember (match_not p3) as q1.
+    destruct q1; inversion Hp'. subst.
+    symmetry in Heqq1.
+
+    unfold well_formed, well_formed_closed in wfp. simpl in wfp.
+    apply andb_prop in wfp. destruct wfp as [Hwfp1 Hwfp3].
+    apply andb_prop in Hwfp1. destruct Hwfp1 as [Hwfp1 Hwfp2].
+    apply andb_prop in Hwfp3. destruct Hwfp3 as [Hwfp3 Hwfp4].
+    assert (wfp2: well_formed p2).
+    { unfold well_formed, well_formed_closed. rewrite Hwfp2. rewrite Hwfp4. reflexivity. }
+    assert (wfp3: well_formed p3).
+    { unfold well_formed, well_formed_closed. rewrite Hwfp1. rewrite Hwfp3. reflexivity. }
+
+    clear Hp' H0.
+    pose proof (match_not_wf wfp3 Heqq1).
+    split; assumption.
+  Qed.
+  
   
   Definition match_and (p : Pattern) : option (Pattern * Pattern) :=
     match (match_not p) with
@@ -282,6 +320,36 @@ Module Syntax.
     lia.
   Qed.
 
+  Lemma match_and_wf (p p1 p2 : Pattern) :
+    well_formed p ->
+    match_and p = Some (p1, p2) ->
+    well_formed p1 /\ well_formed p2.
+  Proof.
+    intros wfp Hp'.
+    unfold match_and in Hp'.
+    remember (match_not p) as q.
+    destruct q; inversion Hp'. clear H0.
+    remember (match_or p0) as q'.
+    destruct q'.
+    2: { inversion Hp'. }
+    destruct p3 as [q1 q2].
+    remember (match_not q1) as q1'.
+    remember (match_not q2) as q2'.
+    destruct q1'.
+    2: { inversion Hp'. }
+    destruct q2'.
+    2: { inversion Hp'. }
+
+    inversion Hp'. subst p3 p4.
+
+    symmetry in Heqq. symmetry in Heqq'. symmetry in Heqq1'. symmetry in Heqq2'.
+    pose proof (wfp0 := match_not_wf wfp Heqq).
+    pose proof (wfq1q2 := match_or_wf wfp0 Heqq').
+    destruct wfq1q2 as [wfq1 wfq2].
+    pose proof (wfp1 := match_not_wf wfq1 Heqq1').
+    pose proof (wfp2 := match_not_wf wfq2 Heqq2').
+    split; assumption.
+  Qed.
   
   Lemma match_and_patt_or (p1 p2 : Pattern) :
     match_and (patt_or p1 p2) = None.
