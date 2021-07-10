@@ -499,6 +499,40 @@ Section ml_tauto.
   Qed.
 
   
+  Lemma count_general_implications'_monotone (p : Pattern) (fuel fuel' : nat) :
+    fuel >= count_general_implications'_enough_fuel p ->
+    fuel' >= fuel ->
+    count_general_implications' fuel' p = count_general_implications' fuel p.
+  Proof.
+    remember (size p) as sz.
+    assert (Hsz: size p <= sz).
+    lia.
+    clear Heqsz.
+    move: p fuel fuel' Hsz.
+    induction sz;
+    intros p fuel fuel' Hsz Henough Hmore;
+    destruct p; simpl in Hsz; unfold count_general_implications'_enough_fuel in Henough; simpl in Henough; try lia;
+      destruct fuel,fuel'; try lia; simpl; try reflexivity.
+
+    remember (match_and (p1 ---> p2)) as q.
+    destruct q.
+    { reflexivity. }
+
+    remember (match_not p1) as q2.
+    destruct q2.
+    { reflexivity. }
+
+    destruct p2; try reflexivity; unfold option_bimap;
+      remember (count_general_implications' fuel' p1) as c';
+      remember (count_general_implications' fuel p1) as c;
+      destruct c,c'; try reflexivity; simpl in *;
+        rewrite -> IHsz with (fuel := fuel) in Heqc';
+        try rewrite -Heqc' in Heqc; try inversion Heqc; subst; clear Heqc;
+        unfold count_general_implications'_enough_fuel in *; try lia.
+
+    all: rewrite -> IHsz with (fuel := fuel); simpl; try lia; auto.
+  Qed.
+  
   Definition option_well_formed (op : option Pattern) : bool :=
     match op with
     | Some p => well_formed p
