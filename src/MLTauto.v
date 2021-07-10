@@ -102,7 +102,100 @@ Section ml_tauto.
       end
     | None => None
     end.
-    
+
+  Fixpoint and_or_not_size' (fuel : nat) (p : Pattern) : option nat :=
+    match fuel with
+    | 0 => None
+    | S fuel' =>
+      match (match_and p) with
+      | Some (p1, p2) => S <$> (option_bimap plus (and_or_not_size' fuel' p1) (and_or_not_size' fuel' p2))
+      | None =>
+        match (match_or p) with
+        | Some (p1, p2) => S <$> (option_bimap plus (and_or_not_size' fuel' p1) (and_or_not_size' fuel' p2))
+        | None =>
+          match (match_not p) with
+          | Some p' => S <$> (and_or_not_size' fuel' p')
+          | None => Some 1
+          end
+        end
+      end
+    end.
+
+  Definition and_or_not_size'_enough_fuel (p : Pattern) : nat := S (size p).
+  
+  Lemma and_or_not_size'_terminates (p : Pattern) :
+    and_or_not_size' (and_or_not_size'_enough_fuel p) p <> None.
+  Proof.
+    unfold and_or_not_size'_enough_fuel.
+    remember (S (size p)) as sz.
+    assert (Hsz: 1 + size p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz.
+    { intros. lia. }
+    intros p Hsz.
+    destruct p; simpl; try discriminate.
+
+    remember (match_and (p1 ---> p2)) as a'.
+    destruct a'.
+    {
+      destruct p as [p1' p2'].
+      symmetry in Heqa'.
+      pose proof (H := match_and_size Heqa').
+      destruct H as [H1 H2].
+      unfold option_bimap.
+      remember (and_or_not_size' sz p1') as n1'.
+      destruct n1'.
+      2: {
+        symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
+        simpl in *. lia.
+      }
+      remember (and_or_not_size' sz p2') as n2'.
+      destruct n2'.
+      2: {
+        symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
+        simpl in *. lia.
+      }
+      simpl.
+      discriminate.
+    }
+
+    remember (match_not p1) as b'.
+    destruct b'.
+    {
+      symmetry in Heqb'.
+      pose proof (H := match_not_size Heqb').
+      unfold option_bimap.
+      remember (and_or_not_size' sz p) as n1'.
+      destruct n1'.
+      2: {
+        symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
+        simpl in *. lia.
+      }
+      remember (and_or_not_size' sz p2) as n2'.
+      destruct n2'.
+      2: {
+        symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
+        simpl in *. lia.
+      }
+      discriminate.
+    }
+ 
+    remember (match p2 with Bot => Some p1 | _ => None end) as c'.
+    destruct c'. 2: { discriminate. }
+
+    unfold fmap. unfold option_fmap. unfold option_map.
+
+    destruct p2; inversion Heqc'. subst p1.
+
+    remember (and_or_not_size' sz p) as n'.
+    destruct n'. discriminate.
+    symmetry in Heqn'. apply IHsz in Heqn'. inversion Heqn'.
+    simpl in *. lia.
+  Qed.  
+  
   Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
     match fuel with
     | 0 => None
