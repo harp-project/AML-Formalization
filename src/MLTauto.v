@@ -101,12 +101,7 @@ Section ml_tauto.
       end
     | None => None
     end.
-
-  (*
-  Definition option_bimap' {A B C : Type} (f : A -> B -> C) (x : option A) (y : option B) : option C :=
-    mjoin (fmap (fun (a : A) => fmap (f a) y) x).
-   *)
-  
+    
   Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
     match fuel with
     | 0 => None
@@ -130,7 +125,7 @@ Section ml_tauto.
     end.
 
   Definition negate'_enough_fuel (p : Pattern) : nat := S (size p).
-
+  
   Lemma negate'_terminates (p : Pattern) :
     negate' (negate'_enough_fuel p) p <> None.
   Proof.
@@ -436,6 +431,100 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
+  Fixpoint count_general_implications' (fuel : nat) (p : Pattern) : option nat :=
+    match fuel with
+    | 0 => None
+    | S fuel' =>
+      match (match_and p) with
+      | Some _ => Some 0
+      | None =>
+        match (match_or p) with
+        | Some _ => Some 0
+        | None =>
+          match (match_not p) with
+          | Some _ => Some 0
+          | None =>
+            match p with
+            | patt_imp p1 p2 =>
+              option_bimap
+                plus
+                (count_general_implications' fuel' p1)
+                (count_general_implications' fuel' p2)
+            | _ => Some 0
+            end
+          end
+        end
+      end
+    end.
+  
+  Definition count_general_implications'_enough_fuel (p : Pattern) : nat := S (size p).
+
+  Lemma count_general_implications'_terminates (p : Pattern) :
+    count_general_implications' (count_general_implications'_enough_fuel p) p <> None.
+  Proof.
+    unfold count_general_implications'_enough_fuel.
+    remember (S (size p)) as sz.
+    assert (Hsz: 1 + size p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz.
+    { intros. lia. }
+    intros p Hsz.
+    destruct p; simpl; try discriminate.
+
+    remember (match_and (p1 ---> p2)) as a'.
+    destruct a'.
+    { discriminate. }
+
+
+    remember (match_not p1) as b'.
+    destruct b'.
+    { discriminate. }
+ 
+    remember (match p2 with Bot => Some p1 | _ => None end) as c'.
+    destruct c'. discriminate.
+
+    unfold option_bimap.
+    remember (count_general_implications' sz p1) as c1.
+    remember (count_general_implications' sz p2) as c2.
+    simpl in Hsz.
+    pose proof (IHsz p1 ltac:(lia)).
+    pose proof (IHsz p2 ltac:(lia)).
+    destruct c1,c2; try discriminate.
+    { rewrite -Heqc2 in H0. contradiction. }
+    { rewrite -Heqc1 in H. contradiction. }
+    { rewrite -Heqc2 in H0. contradiction. }
+  Qed.
+
+  
+  Definition option_well_formed (op : option Pattern) : bool :=
+    match op with
+    | Some p => well_formed p
+    | None => true
+    end.
+
+  Lemma option_well_formed_wf (op : option Pattern) (p : Pattern) :
+    option_well_formed op ->
+    op = Some p ->
+    well_formed p.
+  Proof.
+    intros owf Hsome.
+    destruct op; inversion Hsome. subst. simpl in owf. exact owf.
+  Qed.
+  
+    
+  Lemma option_bimap_and_wf oa ob:
+    option_well_formed oa ->
+    option_well_formed ob ->
+    option_well_formed (option_bimap patt_and oa ob).
+  Proof.
+    intros Hoa Hob.
+    destruct oa, ob; simpl in *; auto.
+  Qed.
+  
+  
   Lemma wf_negate' n p np:
     well_formed p ->
     negate' n p = Some np ->
@@ -449,11 +538,14 @@ Section ml_tauto.
 
     move: p wfnp Hsz n np Hsome.
     induction sz; intros p wfnp Hsz n' np Hsome;
-      destruct n'; destruct p; unfold negate' in Hsome; simpl in Hsome; inversion Hsome; auto;
-        fold negate' in H0, Hsome.
+      destruct n'; destruct p; unfold negate' in Hsome; try solve [(simpl in Hsome; inversion Hsome; auto)]; auto.
     { simpl in Hsz. lia. }
+    fold negate' in Hsome.
     
+   
     remember (match_and (p1 ---> p2)) as q1.
+    remember (match_or (p1 ---> p2)) as q2.
+    remember (match_not (p1 ---> p2)) as q3.
     pose proof (wfp1impp2 := wfnp).
     unfold well_formed, well_formed_closed in wfnp.
     simpl in wfnp.
@@ -465,26 +557,49 @@ Section ml_tauto.
     { unfold well_formed, well_formed_closed. rewrite wfpp1 wfcp1. reflexivity. }
     assert (wfp2: well_formed p2).
     { unfold well_formed, well_formed_closed. rewrite wfpp2 wfcp2. reflexivity. }
-
-    clear H0.
-
+    
     simpl in Hsz. simpl in IHsz.
     assert (Hszp1: size p1 <= sz) by lia.
     assert (Hszp2: size p2 <= sz) by lia.
-    
+   
     destruct q1.
     { destruct p as [p1' p2'].
       remember (negate' n' p1') as np1'.
       remember (negate' n' p2') as np2'.
-      Search match_and size.
       symmetry in Heqq1.
       pose proof (H := match_and_size Heqq1).
       destruct H as [Hszp1' Hszp2'].
       
       destruct np1', np2'; simpl in Hsome; inversion Hsome.
       simpl.
-      pose proof (IHsz p1').
-      (*rewrite H0.*)
+      pose proof (H' := match_and_wf wfp1impp2 Heqq1).
+      destruct H' as [wfp1' wfp2'].
+      simpl in Hszp1'. simpl in Hszp2'.
+      symmetry in Heqnp1'. symmetry in Heqnp2'.
+      pose proof (Hwfp := IHsz p1' wfp1' ltac:(lia) n' p Heqnp1').
+      pose proof (Hwfp0 := IHsz p2' wfp2' ltac:(lia) n' p0 Heqnp2').
+      auto.
+    }
+
+    destruct q2.
+    { destruct p as [q21 q22].
+      symmetry in Heqq2.
+      pose proof (H' := match_or_wf wfp1impp2 Heqq2).
+      destruct H' as [wfq21 wfq22].
+      eapply option_well_formed_wf.
+      2: { apply Hsome. }
+
+      pose proof (Hsome' := Hsome).
+      unfold option_bimap in Hsome'.
+      remember (negate' n' q21) as nq21.
+      remember (negate' n' q22) as nq22.
+      destruct nq21, nq22; inversion Hsome'. subst np. clear Hsome'.
+      pose proof (IHsz q21 wfq21).
+      (* Oops. We cannot instantiate IHsz because we do not know whether q12 and q22 are smaller than sz.
+         They may not be, because negate' can increase a size of a formula:
+         it replaces a general implication with conjunction.
+       *)
+      Print negate'.
   Abort.
   
     
