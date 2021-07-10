@@ -436,6 +436,59 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
+  Lemma wf_negate' n p np:
+    well_formed p ->
+    negate' n p = Some np ->
+    well_formed np.
+  Proof.
+    intros wfnp Hsome.
+    remember (size p) as sz.
+    assert (Hsz : size p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p wfnp Hsz n np Hsome.
+    induction sz; intros p wfnp Hsz n' np Hsome;
+      destruct n'; destruct p; unfold negate' in Hsome; simpl in Hsome; inversion Hsome; auto;
+        fold negate' in H0, Hsome.
+    { simpl in Hsz. lia. }
+    
+    remember (match_and (p1 ---> p2)) as q1.
+    pose proof (wfp1impp2 := wfnp).
+    unfold well_formed, well_formed_closed in wfnp.
+    simpl in wfnp.
+    apply andb_prop in wfnp.
+    destruct wfnp as [wfnp1 wfnp2].
+    apply andb_prop in wfnp1. destruct wfnp1 as [wfpp1 wfpp2].
+    apply andb_prop in wfnp2. destruct wfnp2 as [wfcp1 wfcp2].
+    assert (wfp1: well_formed p1).
+    { unfold well_formed, well_formed_closed. rewrite wfpp1 wfcp1. reflexivity. }
+    assert (wfp2: well_formed p2).
+    { unfold well_formed, well_formed_closed. rewrite wfpp2 wfcp2. reflexivity. }
+
+    clear H0.
+
+    simpl in Hsz. simpl in IHsz.
+    assert (Hszp1: size p1 <= sz) by lia.
+    assert (Hszp2: size p2 <= sz) by lia.
+    
+    destruct q1.
+    { destruct p as [p1' p2'].
+      remember (negate' n' p1') as np1'.
+      remember (negate' n' p2') as np2'.
+      Search match_and size.
+      symmetry in Heqq1.
+      pose proof (H := match_and_size Heqq1).
+      destruct H as [Hszp1' Hszp2'].
+      
+      destruct np1', np2'; simpl in Hsome; inversion Hsome.
+      simpl.
+      pose proof (IHsz p1').
+      (*rewrite H0.*)
+  Abort.
+  
+    
+    
   
   Lemma negate_equiv (p : Pattern) :
     well_formed p ->
@@ -524,6 +577,14 @@ Section ml_tauto.
           simpl in Hsz.
           pose proof (IHp3 := IHsz p3 ltac:(auto) ltac:(lia)).
           pose proof (IHp4 := IHsz p4 ltac:(auto) ltac:(lia)).
+
+          remember (fresh_evar (¬ ¬ (¬ p3 or ¬ p4) <---> negate p3 or negate p4)) as star.
+          Check prf_equiv_congruence_implicative_ctx.
+          Search PatternCtx.
+          remember (¬ ¬ (¬ p3 or ¬ p4) <---> (patt_free_evar star) or negate p4) as ctx'.
+          assert (well_formed ctx'). { subst. auto 15. (*TODO we need well_formed (negate) *) *)
+          eremember (@Build_PatternCtx _ star ctx' _) as ctx.
+          simpl in Heqctx.
           
           (*Search evar.
           
