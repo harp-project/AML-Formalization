@@ -615,23 +615,26 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
-  Compute (and_or_not_size (patt_bound_evar 0 ---> patt_bound_evar 1)).
-  Compute (and_or_not_size (patt_not (patt_bound_evar 0 ---> patt_bound_evar 1))).
-  Compute (and_or_not_size (negate (patt_bound_evar 0 ---> patt_bound_evar 1))).
+  Compute (and_or_size (patt_bound_evar 0 ---> patt_bound_evar 1)).
+  Compute (and_or_size (patt_not (patt_bound_evar 0 ---> patt_bound_evar 1))).
+  Compute (and_or_size (negate (patt_bound_evar 0 ---> patt_bound_evar 1))).
   
-  Lemma and_or_not_size_negate' (fuel fuel' fuel'' : nat) (p np : Pattern) (sz sz' : nat) :
-    and_or_not_size' fuel p = Some sz ->
+  Lemma and_or_size_negate' (fuel fuel' fuel'' : nat) (p np : Pattern) (sz sz' : nat) :
+    fuel >= and_or_size'_enough_fuel p ->
+    fuel' >= and_or_size'_enough_fuel np ->
+    fuel'' >= negate'_enough_fuel p ->
+    and_or_size' fuel p = Some sz ->
     (negate' fuel'' p) = Some np ->
-    and_or_not_size' fuel' np = Some sz' ->
-    1 + sz = sz'.
+    and_or_size' fuel' np = Some sz' ->
+    sz = sz'.
   Proof.
-    intros Hsz Hnp Hsz'.
+    intros Hfuel Hfuel' Hfuel'' Hsz Hnp Hsz'.
     remember (size p) as isz.
     assert (Hisz: size p <= isz).
     { lia. }
     clear Heqisz.
-    move: p Hsz Hnp Hisz.
-    induction isz; intros p Hsz Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
+    move: p Hfuel Hfuel' Hfuel'' Hsz Hnp Hisz.
+    induction isz; intros p Hfuel Hfuel' Hfuel'' Hsz Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
       inversion Hsz; inversion Hnp; inversion Hsz'; try subst sz; try subst np; clear Hsz Hnp Hsz';
         simpl in *.
 
@@ -650,16 +653,46 @@ Section ml_tauto.
       | H : Some _ = None |- _ => inversion H
       | H : None = Some _ |- _ => inversion H
       | H : Some _ = Some _ |- _ => inversion H; clear H
-      | H : context [(match ?p with _ => _ end)]  |- _
-        => remember_and_destruct p
+      | H : context C [(match ?p with _ => _ end)]  |- _
+        => idtac "Hypothesis " H;
+           remember_and_destruct p
       end.
 
     
     (* Solve subgoal 1 *)
     repeat match_and_destruct.
 
+    do 2 match_and_destruct.
+    
+    Ltac instantiate_IH IHisz :=
+      match goal with
+      | H : Some (?q1, ?q2) = match_and (?p1 ---> ?p2) |- _
+        => let IHx := fresh "IH" in
+           pose proof (IHx := IHisz (p1 ---> p2));
+           rewrite -H in IHx;
+           unfold option_bimap in IHx
+      end.
+
+    {
+    instantiate_IH IHisz.
+    match type of IH with
+    | context C [match and_or_size' ?fuel ?p with _ => _ end]
+      => let Hsz := fresh "Hsz" in
+         remember (and_or_size' fuel p) as Hsz;
+           destruct Hsz
+    end.
+    }
+    
+    unfold option_bimap in IH.
+    
+      pose proof (IHisz (p1 ---> p2)) as IH1. rewrite -HeqHeq in IH1.
+    do 5 match_and_destruct.
+    
     (* Second subgoal *)
-    repeat (unfold option_bimap in *; simpl in *; match_and_destruct).
+    {
+      unfold option_bimap in *; simpl in *.
+      do 5 (unfold option_bimap in *; simpl in *; match_and_destruct; subst; try lia).
+    }
     
     
      (*
