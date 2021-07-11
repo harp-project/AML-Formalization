@@ -633,8 +633,8 @@ Section ml_tauto.
     assert (Hisz: size p <= isz).
     { lia. }
     clear Heqisz.
-    move: p fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz.
-    induction isz; intros p fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
+    move: p np fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz.
+    induction isz; intros p np fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
       inversion Hsz; inversion Hnp; inversion Hsz'; try subst sz; try subst np; clear Hsz Hnp Hsz';
         simpl in *.
 
@@ -787,6 +787,39 @@ Section ml_tauto.
                   subst.
                   rewrite match_and_patt_and in HeqHeq2.
                   inversion HeqHeq2. clear HeqHeq2. subst.
+
+                  pose proof (IH1 := IHisz p2 p3).
+                  specialize (IH1 (and_or_size'_enough_fuel p2) ltac:(lia)).
+                  specialize (IH1 (and_or_size'_enough_fuel p3) ltac:(lia)).
+                  specialize (IH1 (negate'_enough_fuel p2) ltac:(lia)).
+                  assert (Hszp2: size p2 <= isz).
+                  { lia. }
+                  assert (Hp2fuel: negate'_enough_fuel p2 <= fuel'').
+                  { unfold negate'_enough_fuel in *. simpl in *.  lia. }
+
+                  rewrite <- negate'_monotone with (fuel' := fuel'') in IH1.
+                  2,3: lia.
+                  rewrite <- HeqHeq3 in IH1.
+                  rewrite [and_or_size' _ p3]/= in IH1.
+                  rewrite -HeqHeq9 in IH1.
+
+                  rewrite <- and_or_size'_monotone with (fuel := size p3)(fuel' := fuel') in IH1.
+                  3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  rewrite <- HeqHeq14 in IH1.
+                  rewrite <- and_or_size'_monotone with (fuel := size p3)(fuel' := fuel') in IH1.
+                  3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  rewrite <- HeqHeq15 in IH1.
+                  rewrite [_ <$> _ ]/= in IH1.
+
+                  rewrite [and_or_size' _ _]/= in IH1.
+                  rewrite -HeqHeq11 in IH1.
+                  unfold and_or_size' in IH1 at 1.
+                  Search p2.
+                  
+                  
+
+                  remember (patt_not (patt_or (patt_not p1) (patt_not p3))) as P.
+                  
                   remember_and_destruct_2 (match_not p1). clear HeqHeq0.
                   apply IHisz.
                                         
