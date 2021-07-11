@@ -694,19 +694,31 @@ Section ml_tauto.
       - pose proof (Htmpsz := match_and_size (eq_sym HeqHeq)).
         simpl in Htmpsz.
         destruct Htmpsz as [Hszp Hszp0].
-        admit.
+        remember_and_destruct_2 (negate' fuel'' p).
+        2: { simpl in H1. inversion H1. }
+        simpl in H1.
+        remember_and_destruct_2 (negate' fuel'' p0).
+        subst np.
+        remember_and_destruct_2 (match_and (p3 or p4)).
+        remember_and_destruct_2 (match_or (p3 or p4)).
+        rewrite match_or_patt_or in HeqHeq3. inversion HeqHeq3.
       - remember_and_destruct_2 (match_not p1).
         + pose proof (Hszp := match_not_size (eq_sym HeqHeq0)).
           simpl in Hszp.
-          
+          remember_and_destruct_2 (negate' fuel'' p).
+          2: { simpl in H1. inversion H1. }
+          remember_and_destruct_2 (negate' fuel'' p2).
+          2: { simpl in H1. inversion H1. }
+          simpl in H1. inversion H1. subst np. clear H1.
+          remember_and_destruct_2 (match_and (p0 and p3)).
+          rewrite match_and_patt_and in HeqHeq3. inversion HeqHeq3.
         + remember_and_destruct_2 (match p2 with | ⊥ => Some p1 | _ => None end).
           * subst np.
             remember_and_destruct_2 (match_and p).
             remember_and_destruct_2 (match_or p).
             remember_and_destruct_2 (match_not p).
             destruct p,p2; inversion H3; inversion H2; auto.
-          *
-            remember_and_destruct_2 (negate' fuel'' p2).
+          * remember_and_destruct_2 (negate' fuel'' p2).
             2: { simpl in H1. inversion H1. }
             simpl in H1. inversion H1. subst np. clear H1.
             remember_and_destruct_2 (match_and (p1 and p)).
@@ -714,6 +726,12 @@ Section ml_tauto.
             simpl. Search match_and.
             rewrite match_and_patt_and in HeqHeq3. inversion HeqHeq3.
     }
+
+    (* Subgoal 3 *)
+    {
+      
+    }
+    
     
 
     }
