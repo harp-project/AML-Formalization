@@ -729,8 +729,78 @@ Section ml_tauto.
 
     (* Subgoal 3 *)
     {
-      
+      remember_and_destruct_2 (match_and (p1 ---> p2)).
+      remember_and_destruct_2 (match match_not p1 with | Some p1 => Some (p1, p2) | None => None end).
+      remember_and_destruct_2 (match p2 with | ⊥ => Some p1 | _ => None end).
     }
+
+    (* Subgoal 4 *)
+    {
+      remember_and_destruct_2 (match_and (p1 ---> p2)).
+      + admit.
+      + remember_and_destruct_2 (match match_not p1 with | Some p1 => Some (p1, p2) | None => None end).
+        * admit.
+        * remember_and_destruct_2 (match p2 with | ⊥ => Some p1 | _ => None end).
+          -- admit.
+          -- remember_and_destruct_2 (match_and np).
+             ++ remember_and_destruct_2 (negate' fuel'' p2).
+                2: { simpl in H1. inversion H1. }
+                simpl in H1. inversion H1. subst np. clear H1.
+                match type of H2 with
+                | (match ?exp with _ => _ end) = _ => remember_and_destruct_2 exp
+                end.
+                match type of H3 with
+                | (match ?exp with _ => _ end) = _ => remember_and_destruct_2 exp
+                end.
+                subst sz sz'.
+                
+                match type of HeqHeq5 with
+                | _ = (option_bimap _ ?e1 ?e2)
+                  => remember_and_destruct_2 e1;
+                       remember_and_destruct_2 e2
+                end; simpl in HeqHeq5; inversion HeqHeq5.
+                subst n0.
+                match type of HeqHeq4 with
+                | _ = (option_bimap _ ?e1 ?e2)
+                  => remember_and_destruct_2 e1;
+                       remember_and_destruct_2 e2
+                end; simpl in HeqHeq4; inversion HeqHeq4.
+                subst n.
+                clear HeqHeq4.
+
+                remember_and_destruct_2 (match_and p);
+                remember_and_destruct_2 (match_and p0);
+                remember_and_destruct_2 (match_and p1);
+                remember_and_destruct_2 (match_and p2).
+                **
+                  
+                  remember_and_destruct_2 (and_or_size' fuel' p4);
+                    remember_and_destruct_2 (and_or_size' fuel' p5);
+                    remember_and_destruct_2 (and_or_size' fuel' p6);
+                    remember_and_destruct_2 (and_or_size' fuel' p7);
+                    remember_and_destruct_2 (and_or_size' fuel p8);
+                    remember_and_destruct_2 (and_or_size' fuel p9);
+                    remember_and_destruct_2 (and_or_size' fuel p10);
+                    remember_and_destruct_2 (and_or_size' fuel p11);
+                    simpl in *.
+                  all: repeat inverts_and_destructs.
+                  subst.
+                  rewrite match_and_patt_and in HeqHeq2.
+                  inversion HeqHeq2. clear HeqHeq2. subst.
+                  remember_and_destruct_2 (match_not p1). clear HeqHeq0.
+                  apply IHisz.
+                                        
+                ** remember_and_destruct_2 (and_or_size' fuel p4); simpl in HeqHeq5.
+                   2: { inversion HeqHeq5. }
+                   remember_and_destruct_2 (and_or_size' fuel p5); simpl in HeqHeq5.
+                   2: { inversion HeqHeq5. }
+                   inversion HeqHeq5. subst n3. clear HeqHeq5.
+
+                   remember_and_destruct_2 (match_and p1)
+                   admit.
+                ** 
+    }
+    
     
     
 
