@@ -633,8 +633,8 @@ Section ml_tauto.
     assert (Hisz: size p <= isz).
     { lia. }
     clear Heqisz.
-    move: p Hfuel Hfuel' Hfuel'' Hsz Hnp Hisz.
-    induction isz; intros p Hfuel Hfuel' Hfuel'' Hsz Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
+    move: p fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz.
+    induction isz; intros p fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
       inversion Hsz; inversion Hnp; inversion Hsz'; try subst sz; try subst np; clear Hsz Hnp Hsz';
         simpl in *.
 
