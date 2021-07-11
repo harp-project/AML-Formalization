@@ -803,16 +803,41 @@ Section ml_tauto.
                   rewrite [and_or_size' _ p3]/= in IH1.
                   rewrite -HeqHeq9 in IH1.
 
+                  pose proof (Htmp := match_and_size (eq_sym HeqHeq9)).
+                  destruct Htmp as [Hszp6p3 Hszp7p3].
                   rewrite <- and_or_size'_monotone with (fuel := size p3)(fuel' := fuel') in IH1.
                   3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  2: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
                   rewrite <- HeqHeq14 in IH1.
                   rewrite <- and_or_size'_monotone with (fuel := size p3)(fuel' := fuel') in IH1.
                   3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  2: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
                   rewrite <- HeqHeq15 in IH1.
                   rewrite [_ <$> _ ]/= in IH1.
 
                   rewrite [and_or_size' _ _]/= in IH1.
                   rewrite -HeqHeq11 in IH1.
+
+
+                  pose proof (Htmp := match_and_size (eq_sym HeqHeq11)).
+                  destruct Htmp as [Hszp10p2 Hszp11p2].
+                  rewrite <- and_or_size'_monotone with (fuel := size p2) (fuel' := fuel) in IH1.
+                  3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  2: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  rewrite -HeqHeq18 in IH1.
+                  rewrite <- and_or_size'_monotone with (fuel := size p2) (fuel' := fuel) in IH1.
+                  3: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  2: { unfold and_or_size'_enough_fuel in *. simpl in *. lia. }
+                  rewrite -HeqHeq19 in IH1.
+                  rewrite [_ <$> _ ]/= in IH1.
+                  specialize (IH1 (S(n9 + n10)) (eq_refl _)).
+                  specialize (IH1 (S(n5 + n6)) (eq_refl _)).
+                  specialize (IH1 (eq_refl _) Hszp2).
+                  rewrite IH1.
+                  
+
+
+                  (* Proof ends here *)
                   unfold and_or_size' in IH1 at 1.
                   Search p2.
                   
