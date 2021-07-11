@@ -834,7 +834,21 @@ Section ml_tauto.
                   specialize (IH1 (S(n5 + n6)) (eq_refl _)).
                   specialize (IH1 (eq_refl _) Hszp2).
                   rewrite IH1.
+
+                  (* Now I need to connect n7,n8 with n,n4; that is, p8,p9 with p4,p5 *)
+                  rewrite -HeqHeq4  in HeqHeq10.
+                  inversion HeqHeq10. subst p8 p9. clear HeqHeq10.
+
+                  pose proof (Htmp := match_and_size (eq_sym HeqHeq4)).
+                  destruct Htmp as [Hszp4p1 Hszp5p1].
+                  assert (and_or_size' fuel' p4 = and_or_size' fuel p4).
                   
+                  { unfold and_or_size'_enough_fuel in *.
+                    apply and_or_size'_monotone.
+                    simpl in *.  unfold and_or_size'_enough_fuel in *. lia.
+                    unfold negate'_enough_fuel in *. simpl in *. lia.
+                  
+                  rewrite -HeqHeq12 in HeqHeq16.
 
 
                   (* Proof ends here *)
