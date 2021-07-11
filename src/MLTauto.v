@@ -103,30 +103,37 @@ Section ml_tauto.
     | None => None
     end.
 
-  Fixpoint and_or_not_size' (fuel : nat) (p : Pattern) : option nat :=
+  Fixpoint and_or_size' (fuel : nat) (p : Pattern) : option nat :=
     match fuel with
     | 0 => None
     | S fuel' =>
       match (match_and p) with
-      | Some (p1, p2) => S <$> (option_bimap plus (and_or_not_size' fuel' p1) (and_or_not_size' fuel' p2))
+      | Some (p1, p2) => S <$> (option_bimap plus (and_or_size' fuel' p1) (and_or_size' fuel' p2))
       | None =>
         match (match_or p) with
-        | Some (p1, p2) => S <$> (option_bimap plus (and_or_not_size' fuel' p1) (and_or_not_size' fuel' p2))
+        | Some (p1, p2) => S <$> (option_bimap plus (and_or_size' fuel' p1) (and_or_size' fuel' p2))
         | None =>
           match (match_not p) with
-          | Some p' => S <$> (and_or_not_size' fuel' p')
-          | None => Some 1
+          | Some p' => and_or_size' fuel' p'
+          | None =>
+            match p with
+            | p1 ---> p2
+              => (* we treat the implication as [¬(p1 and ¬p2)], or as [¬ p1 or p2] -
+                    that is, there is one and/or connective *)
+              S <$> (option_bimap plus (and_or_size' fuel' p1) (and_or_size' fuel' p2))
+            | _ => Some 1
+            end
           end
         end
       end
     end.
 
-  Definition and_or_not_size'_enough_fuel (p : Pattern) : nat := S (size p).
+  Definition and_or_size'_enough_fuel (p : Pattern) : nat := S (size p).
   
-  Lemma and_or_not_size'_terminates (p : Pattern) :
-    and_or_not_size' (and_or_not_size'_enough_fuel p) p <> None.
+  Lemma and_or_size'_terminates (p : Pattern) :
+    and_or_size' (and_or_size'_enough_fuel p) p <> None.
   Proof.
-    unfold and_or_not_size'_enough_fuel.
+    unfold and_or_size'_enough_fuel.
     remember (S (size p)) as sz.
     assert (Hsz: 1 + size p <= sz).
     { lia. }
@@ -146,13 +153,13 @@ Section ml_tauto.
       pose proof (H := match_and_size Heqa').
       destruct H as [H1 H2].
       unfold option_bimap.
-      remember (and_or_not_size' sz p1') as n1'.
+      remember (and_or_size' sz p1') as n1'.
       destruct n1'.
       2: {
         symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
         simpl in *. lia.
       }
-      remember (and_or_not_size' sz p2') as n2'.
+      remember (and_or_size' sz p2') as n2'.
       destruct n2'.
       2: {
         symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
@@ -168,13 +175,13 @@ Section ml_tauto.
       symmetry in Heqb'.
       pose proof (H := match_not_size Heqb').
       unfold option_bimap.
-      remember (and_or_not_size' sz p) as n1'.
+      remember (and_or_size' sz p) as n1'.
       destruct n1'.
       2: {
         symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
         simpl in *. lia.
       }
-      remember (and_or_not_size' sz p2) as n2'.
+      remember (and_or_size' sz p2) as n2'.
       destruct n2'.
       2: {
         symmetry in Heqn2'. apply IHsz in Heqn2'. inversion Heqn2'.
@@ -182,24 +189,29 @@ Section ml_tauto.
       }
       discriminate.
     }
+
+    simpl in Hsz.
+    pose proof (IHp1 := IHsz p1 ltac:(lia)).
+    pose proof (IHp2 := IHsz p2 ltac:(lia)).
+    unfold option_bimap.
+    remember (and_or_size' sz p1) as szp1.
+    remember (and_or_size' sz p2) as szp2.
+    destruct szp2.
+    2: { contradiction. }
+    destruct szp1.
+    2: { contradiction. }
+    unfold fmap,option_fmap,option_map.
  
     remember (match p2 with Bot => Some p1 | _ => None end) as c'.
     destruct c'. 2: { discriminate. }
+    apply IHsz.
+    destruct p2; inversion Heqc'. subst. lia.
+  Qed.
 
-    unfold fmap. unfold option_fmap. unfold option_map.
-
-    destruct p2; inversion Heqc'. subst p1.
-
-    remember (and_or_not_size' sz p) as n'.
-    destruct n'. discriminate.
-    symmetry in Heqn'. apply IHsz in Heqn'. inversion Heqn'.
-    simpl in *. lia.
-  Qed.  
-
-  Lemma and_or_not_size'_monotone (p : Pattern) (fuel fuel' : nat) :
-    fuel >= and_or_not_size'_enough_fuel p ->
+  Lemma and_or_size'_monotone (p : Pattern) (fuel fuel' : nat) :
+    fuel >= and_or_size'_enough_fuel p ->
     fuel' >= fuel ->
-    and_or_not_size' fuel' p = and_or_not_size' fuel p.
+    and_or_size' fuel' p = and_or_size' fuel p.
   Proof.
     remember (size p) as sz.
     assert (Hsz: size p <= sz).
@@ -208,7 +220,7 @@ Section ml_tauto.
     move: p fuel fuel' Hsz.
     induction sz;
     intros p fuel fuel' Hsz Henough Hmore;
-    destruct p; simpl in Hsz; unfold and_or_not_size'_enough_fuel in Henough; simpl in Henough; try lia;
+    destruct p; simpl in Hsz; unfold and_or_size'_enough_fuel in Henough; simpl in Henough; try lia;
       destruct fuel,fuel'; try lia; simpl; try reflexivity.
 
     remember (match_and (p1 ---> p2)) as q.
@@ -217,12 +229,12 @@ Section ml_tauto.
       symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq. destruct Heqq as [Hsz1 Hsz2].
       rewrite -> IHsz with (fuel := fuel).
       2: { lia. }
-      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { unfold and_or_size'_enough_fuel. lia. }
       2: { lia. }
 
       rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
       2: { lia. }
-      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { unfold and_or_size'_enough_fuel. lia. }
       2: { lia. }
       reflexivity.
     }
@@ -233,33 +245,46 @@ Section ml_tauto.
       symmetry in Heqq2. apply match_not_size in Heqq2.
       rewrite -> IHsz with (fuel := fuel).
       2: { lia. }
-      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { unfold and_or_size'_enough_fuel. lia. }
       2: { lia. }
 
       rewrite -> IHsz with (fuel':=fuel') (fuel := fuel).
       2: { lia. }
-      2: { unfold and_or_not_size'_enough_fuel. lia. }
+      2: { unfold and_or_size'_enough_fuel. lia. }
       2: { lia. }
       reflexivity.
     }
 
-    destruct p2; try reflexivity; unfold fmap,option_fmap,option_map; rewrite -> IHsz with (fuel := fuel);
-      try reflexivity; unfold and_or_not_size'_enough_fuel; try lia.
+    rewrite -> IHsz with (fuel := fuel).
+    4: { lia. }
+    3: { unfold and_or_size'_enough_fuel. lia. }
+    2: { lia. }
+
+    rewrite -> IHsz with (p := p2)(fuel := fuel).
+    4: { lia. }
+    3: { unfold and_or_size'_enough_fuel. lia. }
+    2: { lia. }
+
+    destruct p2; auto.
+    rewrite -> IHsz with (p := p1)(fuel := fuel).
+    4: { lia. }
+    3: { unfold and_or_size'_enough_fuel. lia. }
+    2: { lia. }
+    reflexivity.
   Qed.
 
 
-  Definition and_or_not_size''(p : Pattern) : option nat := and_or_not_size' (and_or_not_size'_enough_fuel p) p.
+  Definition and_or_size''(p : Pattern) : option nat := and_or_size' (and_or_size'_enough_fuel p) p.
 
-  Definition and_or_not_size (p : Pattern) : nat :=
-    let np := and_or_not_size'' p in
-    let Heqnp : np = and_or_not_size'' p := erefl np in
-    match np as o return (o = and_or_not_size'' p → nat) with
+  Definition and_or_size (p : Pattern) : nat :=
+    let np := and_or_size'' p in
+    let Heqnp : np = and_or_size'' p := erefl np in
+    match np as o return (o = and_or_size'' p → nat) with
     | Some p0 => λ _, p0
     | None =>
-      λ Heqnp0 : None = and_or_not_size'' p,
-                 match (and_or_not_size'_terminates p (eq_sym Heqnp0)) with end
+      λ Heqnp0 : None = and_or_size'' p,
+                 match (and_or_size'_terminates p (eq_sym Heqnp0)) with end
     end Heqnp.
-
   
   Fixpoint negate' (fuel : nat) (p : Pattern) : option Pattern :=
     match fuel with
@@ -282,7 +307,7 @@ Section ml_tauto.
         end
       end
     end.
-
+  
   Definition negate'_enough_fuel (p : Pattern) : nat := S (size p).
   
   Lemma negate'_terminates (p : Pattern) :
@@ -429,7 +454,7 @@ Section ml_tauto.
       λ Heqnp0 : None = negate'' p,
                  match (negate'_terminates p (eq_sym Heqnp0)) with end
     end Heqnp.
-
+  
   Lemma negate_free_evar_simpl x:
     negate (patt_free_evar x) = patt_not (patt_free_evar x).
   Proof.
@@ -590,6 +615,10 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
+  Compute (and_or_not_size (patt_bound_evar 0 ---> patt_bound_evar 1)).
+  Compute (and_or_not_size (patt_not (patt_bound_evar 0 ---> patt_bound_evar 1))).
+  Compute (and_or_not_size (negate (patt_bound_evar 0 ---> patt_bound_evar 1))).
+  
   Lemma and_or_not_size_negate' (fuel fuel' fuel'' : nat) (p np : Pattern) (sz sz' : nat) :
     and_or_not_size' fuel p = Some sz ->
     (negate' fuel'' p) = Some np ->
@@ -625,6 +654,7 @@ Section ml_tauto.
         => remember_and_destruct p
       end.
 
+    
     (* Solve subgoal 1 *)
     repeat match_and_destruct.
 
