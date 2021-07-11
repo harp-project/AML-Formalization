@@ -658,11 +658,14 @@ Section ml_tauto.
            remember_and_destruct p
       end.
 
-    
-    (* Solve subgoal 1 *)
-    repeat match_and_destruct.
 
-    do 2 match_and_destruct.
+    Ltac inverts_and_destructs :=
+      match goal with
+      | pts : Pattern * Pattern |- _ => destruct pts
+      | H : Some _ = None |- _ => inversion H
+      | H : None = Some _ |- _ => inversion H
+      | H : Some _ = Some _ |- _ => inversion H; clear H
+      end.
     
     Ltac instantiate_IH IHisz :=
       match goal with
@@ -670,11 +673,143 @@ Section ml_tauto.
         => let IHx := fresh "IH" in
            pose proof (IHx := IHisz (p1 ---> p2));
            rewrite -H in IHx;
-           unfold option_bimap in IHx
+           unfold option_bimap in IHx;
+           unfold and_or_size'_enough_fuel,negate'_enough_fuel in *;
+           simpl in *;
+           specialize (IHx ltac:(lia) ltac:(lia) ltac:(lia))
       end.
 
+    Ltac remember_and_destruct_2 exp := remember_and_destruct exp; repeat inverts_and_destructs.
+    
+    unfold and_or_size'_enough_fuel in Hfuel. simpl in Hfuel.
+    unfold and_or_size'_enough_fuel in Hfuel'. simpl in Hfuel'.
+    unfold negate'_enough_fuel in Hfuel''. simpl in Hfuel''.
+    
+    (* Solve subgoal 1 *)
+    repeat match_and_destruct.
+
+    (* Work on subgoal 2 *)
     {
-    instantiate_IH IHisz.
+      remember_and_destruct_2 (match_and (p1 ---> p2)).
+      - pose proof (Htmpsz := match_and_size (eq_sym HeqHeq)).
+        simpl in Htmpsz.
+        destruct Htmpsz as [Hszp Hszp0].
+        admit.
+      - remember_and_destruct_2 (match_not p1).
+        + pose proof (Hszp := match_not_size (eq_sym HeqHeq0)).
+          simpl in Hszp.
+          
+        + remember_and_destruct_2 (match p2 with | ⊥ => Some p1 | _ => None end).
+          * subst np.
+            remember_and_destruct_2 (match_and p).
+            remember_and_destruct_2 (match_or p).
+            remember_and_destruct_2 (match_not p).
+            destruct p,p2; inversion H3; inversion H2; auto.
+          *
+            remember_and_destruct_2 (negate' fuel'' p2).
+            2: { simpl in H1. inversion H1. }
+            simpl in H1. inversion H1. subst np. clear H1.
+            remember_and_destruct_2 (match_and (p1 and p)).
+            (* A contradiction. *)
+            simpl. Search match_and.
+            rewrite match_and_patt_and in HeqHeq3. inversion HeqHeq3.
+    }
+    
+
+    }
+    
+    
+    do 2 match_and_destruct.
+
+    {
+      instantiate_IH IHisz.
+      remember_and_destruct_2 (match_and p).
+      - pose proof (Htmpsz := match_and_size (eq_sym HeqHeq)).
+        simpl in Htmpsz.
+        destruct Htmpsz as [Hszp Hszp0].
+        pose proof (Htmpsz := match_and_size (eq_sym HeqHeq0)).
+        simpl in Htmpsz.
+        destruct Htmpsz as [Hszp3 Hszp4].
+        remember_and_destruct_2 (match_and p0).
+        + pose proof (Htmpsz := match_and_size (eq_sym HeqHeq1)).
+          simpl in Htmpsz.
+          destruct Htmpsz as [Hszp5 Hszp6].
+          remember_and_destruct_2 (option_bimap
+                                     Nat.add
+                                     (S <$> option_bimap Nat.add (and_or_size' fuel p3) (and_or_size' fuel p4))
+                                     (S <$> option_bimap Nat.add (and_or_size' fuel p5) (and_or_size' fuel p6))).
+          remember_and_destruct_2 (and_or_size' fuel p3);
+            remember_and_destruct_2 (and_or_size' fuel p4);
+            remember_and_destruct_2 (and_or_size' fuel p5);
+            remember_and_destruct_2 (and_or_size' fuel p6);
+            simpl in HeqHeq2;
+            inversion HeqHeq2;
+            clear HeqHeq2.
+          destruct sz; try lia. inversion H0; clear H0. subst sz. subst n.
+          simpl in IH.
+          specialize (IH (eq_refl _)).
+          remember_and_destruct_2 (match_and np).
+          remember_and_destruct_2 (match_or np).
+          remember_and_destruct_2 (match_not np).
+          pose proof (IH' := flip IH). clear IH.
+          specialize (IH' ltac:(lia)).
+
+          destruct np; inversion H3.
+          
+          remember_and_destruct_2 (negate' fuel'' p).
+          
+          apply IH.
+          
+          * subst sz.
+            unfold option_bimap in HeqHeq2.
+            remember_and_destruct_2 (and_or_size' fuel p3).
+            2: { pose proof (Htmp := and_or_size'_terminates).
+                 unfold and_or_size'_enough_fuel in Htmp.
+                 specialize (Htmp p3).
+                 Check match_and_size.
+                 pose proof (Htmpsz := match_and_size (eq_sym HeqHeq0)).
+                 destruct Htmpsz as [Hszp3 Hszp4].
+                 assert (fuel >= S (size p3)).
+                 specialize (Htmp ltac:(lia)).
+              remember_and_destruct_2 (and_or_size' fuel p4).
+                                     
+
+      4: {
+      
+      1:{ remember_and_destruct_2 (option_bimap
+                                     Nat.add
+                                     (S <$> option_bimap Nat.add (and_or_size' fuel p3) (and_or_size' fuel p4))
+                                     (S <$> option_bimap Nat.add (and_or_size' fuel p5) (and_or_size' fuel p6))).
+      }
+      
+      3: {
+                                
+      
+
+      
+      destruct p,p0; simpl in *; specialize (IH H2); inversion H2; try subst sz; clear H2;
+        destruct fuel''; simpl in *; inversion H1; try subst np.
+      all: try specialize (IH (eq_refl _ )); simpl in *; try specialize (IH ltac:(lia)); auto.
+      (* 20 subgoals left *)
+      all: try lia.
+      all: (do 2 match_and_destruct); repeat inverts_and_destructs; subst.
+      (* solves 9 subgoals out of 39 *)
+      all: try specialize (IH (eq_refl _ )); simpl in *; try specialize (IH ltac:(lia)); auto.
+
+      all: destruct fuel''; simpl in *; inversion H1; clear H1.
+      all: try (remember (option_bimap Nat.add (S <$> option_bimap Nat.add (and_or_size' fuel p) (and_or_size' fuel p0)) (Some 1)) as obm; destruct obm; inversion H0; clear H0).
+
+
+
+      try inversion H2; try subst np; clear H2.
+        remember_and_destruct (match_and (p0_1 ---> p0_2)).
+      
+      
+      do 4 (try instantiate_IH IHisz; match_and_destruct).
+      Search and_or_size'.
+      Search p.
+      specialize (IH ).
+      
     match type of IH with
     | context C [match and_or_size' ?fuel ?p with _ => _ end]
       => let Hsz := fresh "Hsz" in
