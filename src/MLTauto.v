@@ -297,7 +297,7 @@ Section ml_tauto.
         | Some (p1, p2) => option_bimap patt_and (negate' fuel' p1) (negate' fuel' p2)
         | None =>
           match (match_not p) with
-          | Some p' => Some p'
+          | Some p' => Some (patt_not (patt_not p'))
           | None =>
             match p with
             | patt_imp p1 p2 => (patt_and p1) <$> (negate' fuel' p2)
