@@ -151,13 +151,13 @@ Section ml_tauto.
       destruct p as [p1' p2'].
       symmetry in Heqa'.
       pose proof (H := match_and_size Heqa').
-      destruct H as [H1 H2].
       unfold option_bimap.
       remember (and_or_size' sz p1') as n1'.
       destruct n1'.
       2: {
         symmetry in Heqn1'. apply IHsz in Heqn1'. inversion Heqn1'.
-        simpl in *. lia.
+        simpl in *.
+        lia.
       }
       remember (and_or_size' sz p2') as n2'.
       destruct n2'.
@@ -226,7 +226,7 @@ Section ml_tauto.
     remember (match_and (p1 ---> p2)) as q.
     destruct q.
     { destruct p.
-      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq. destruct Heqq as [Hsz1 Hsz2].
+      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq.
       rewrite -> IHsz with (fuel := fuel).
       2: { lia. }
       2: { unfold and_or_size'_enough_fuel. lia. }
@@ -331,7 +331,6 @@ Section ml_tauto.
       destruct p as [p1' p2'].
       symmetry in Heqa'.
       pose proof (H := match_and_size Heqa').
-      destruct H as [H1 H2].
       unfold option_bimap.
       remember (negate' sz p1') as n1'.
       destruct n1'.
@@ -399,7 +398,7 @@ Section ml_tauto.
     remember (match_and (p1 ---> p2)) as q.
     destruct q.
     { destruct p.
-      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq. destruct Heqq as [Hsz1 Hsz2].
+      symmetry in Heqq. apply match_and_size in Heqq. simpl in Heqq.
       rewrite -> IHsz with (fuel := fuel).
       2: { lia. }
       2: { unfold negate'_enough_fuel. lia. }
@@ -634,7 +633,7 @@ Section ml_tauto.
   
   Lemma size_negate' fuel p np:
     negate' fuel p = Some np ->
-    size np > size p.
+    size np >= size p.
   Proof.
     intros Hn.
 
@@ -650,11 +649,11 @@ Section ml_tauto.
 
       subst np.
       pose proof (Htmp := match_and_size (eq_sym HeqHeq)).
-      simpl in Htmp. destruct Htmp as [Hp Hp0].
+      simpl in Htmp.
 
       pose proof (IH1 := IHfuel _ _ (eq_sym HeqHeq0)).
       pose proof (IH2 := IHfuel _ _ (eq_sym HeqHeq1)).
-      simpl.
+      simpl. lia.
       Fail lia.
       
       simpl in H'n. inversion H'n. clear H'n. subst np.
