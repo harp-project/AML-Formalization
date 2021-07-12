@@ -633,7 +633,7 @@ Section ml_tauto.
   
   Lemma size_negate' fuel p np:
     negate' fuel p = Some np ->
-    size np >= size p.
+    size np > size p.
   Proof.
     intros Hn.
 
@@ -653,14 +653,11 @@ Section ml_tauto.
 
       pose proof (IH1 := IHfuel _ _ (eq_sym HeqHeq0)).
       pose proof (IH2 := IHfuel _ _ (eq_sym HeqHeq1)).
-      simpl. lia.
+      simpl. rewrite Htmp.
+      Print negate'.
       Fail lia.
-      
-      simpl in H'n. inversion H'n. clear H'n. subst np.
-      simpl.
-      2: { lia.
-
-    
+      (* But this does not hold! Because for patt_not phi, it just strips the patt_not.
+         So the result is sometimes smaller! *)
   Abort.
   
   (*
