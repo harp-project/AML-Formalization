@@ -188,7 +188,7 @@ Module Syntax.
 
   Lemma match_not_size (p p' : Pattern) :
     match_not p = Some p' ->
-    size p' < size p.
+    S (size p') = (size p).
   Proof.
     destruct p; simpl; intros H; inversion H; clear H.
     destruct p2; inversion H1; clear H1.
@@ -237,13 +237,14 @@ Module Syntax.
 
   Lemma match_or_size (p p1 p2 : Pattern) :
     match_or p = Some (p1, p2) ->
-    size p1 < size p /\ size p2 < size p.
+    2 + size p1 + size p2 = size p.
   Proof.
     destruct p; simpl; intros H; inversion H; clear H.
     remember (match_not p3) as p3'. destruct p3'.
     2: { inversion H1. }
     inversion H1; subst; clear H1.
     symmetry in Heqp3'. apply match_not_size in Heqp3'.
+    rewrite -Heqp3'.
     lia.
   Qed.
 
@@ -295,7 +296,7 @@ Module Syntax.
 
   Lemma match_and_size (p p1 p2 : Pattern) :
     match_and p = Some (p1, p2) ->
-    size p1 < size p /\ size p2 < size p.
+    size p = 5 + size p1 + size p2.
   Proof.
     destruct p; simpl; intros H; inversion H; clear H.
     unfold match_and in H1.

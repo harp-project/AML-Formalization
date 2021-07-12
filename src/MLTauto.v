@@ -615,11 +615,63 @@ Section ml_tauto.
       negate_or_simpl
     ).
 
+  
+  Ltac remember_and_destruct exp :=
+    let Heq := fresh "Heq" in
+    remember exp as Heq;
+    destruct Heq.
+
+
+  Ltac inverts_and_destructs :=
+    match goal with
+    | pts : Pattern * Pattern |- _ => destruct pts
+    | H : Some _ = None |- _ => inversion H
+    | H : None = Some _ |- _ => inversion H
+    | H : Some _ = Some _ |- _ => inversion H; clear H
+    end.
+  Ltac remember_and_destruct_2 exp := remember_and_destruct exp; repeat inverts_and_destructs.
+  
+  
+  Lemma size_negate' fuel p np:
+    negate' fuel p = Some np ->
+    size np > size p.
+  Proof.
+    intros Hn.
+
+    move: p np Hn.
+    induction fuel; intros p np Hn; destruct p; simpl in *;
+      simpl in Hn; inversion Hn as [H'n]; clear Hn; subst;
+        simpl; try lia.
+
+    remember_and_destruct_2 (match_and (p1 ---> p2)).
+    { remember_and_destruct_2 (negate' fuel p);
+        remember_and_destruct_2 (negate' fuel p0);
+        simpl in H'n; inversion H'n; clear H'n.
+
+      subst np.
+      pose proof (Htmp := match_and_size (eq_sym HeqHeq)).
+      simpl in Htmp. destruct Htmp as [Hp Hp0].
+
+      pose proof (IH1 := IHfuel _ _ (eq_sym HeqHeq0)).
+      pose proof (IH2 := IHfuel _ _ (eq_sym HeqHeq1)).
+      simpl.
+      Fail lia.
+      
+      simpl in H'n. inversion H'n. clear H'n. subst np.
+      simpl.
+      2: { lia.
+
+    
+  Abort.
+  
+  (*
   Compute (and_or_size (patt_bound_evar 0 ---> patt_bound_evar 1)).
   Compute (and_or_size (patt_not (patt_bound_evar 0 ---> patt_bound_evar 1))).
   Compute (and_or_size (negate (patt_bound_evar 0 ---> patt_bound_evar 1))).
+   *)
   
   Lemma and_or_size_negate' (fuel fuel' fuel'' : nat) (p np : Pattern) (sz sz' : nat) :
+    fuel' >= fuel ->
     fuel >= and_or_size'_enough_fuel p ->
     fuel' >= and_or_size'_enough_fuel np ->
     fuel'' >= negate'_enough_fuel p ->
@@ -628,24 +680,19 @@ Section ml_tauto.
     and_or_size' fuel' np = Some sz' ->
     sz = sz'.
   Proof.
-    intros Hfuel Hfuel' Hfuel'' Hsz Hnp Hsz'.
+    intros Hfuel'gtfuel Hfuel Hfuel' Hfuel'' Hsz Hnp Hsz'.
     remember (size p) as isz.
     assert (Hisz: size p <= isz).
     { lia. }
     clear Heqisz.
-    move: p np fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz.
-    induction isz; intros p np fuel Hfuel fuel' Hfuel' fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
+    move: p np fuel Hfuel fuel' Hfuel' Hfuel'gtfuel fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz.
+    induction isz; intros p np fuel Hfuel fuel' Hfuel' Hfuel'gtfuel fuel'' Hfuel'' sz Hsz sz' Hsz' Hnp Hisz; destruct fuel,fuel',fuel'',p; simpl in *; try lia;
       inversion Hsz; inversion Hnp; inversion Hsz'; try subst sz; try subst np; clear Hsz Hnp Hsz';
         simpl in *.
 
     all: unfold fmap, option_fmap,option_map in H2; destruct fuel'; simpl in H2; inversion H2; clear H2;
       unfold fmap, option_fmap,option_map in H0; destruct fuel; simpl in H0; inversion H0; clear H0; auto.
 
-    
-    Ltac remember_and_destruct exp :=
-      let Heq := fresh "Heq" in
-      remember exp as Heq;
-      destruct Heq.
 
     Ltac match_and_destruct :=
       match goal with
@@ -658,15 +705,6 @@ Section ml_tauto.
            remember_and_destruct p
       end.
 
-
-    Ltac inverts_and_destructs :=
-      match goal with
-      | pts : Pattern * Pattern |- _ => destruct pts
-      | H : Some _ = None |- _ => inversion H
-      | H : None = Some _ |- _ => inversion H
-      | H : Some _ = Some _ |- _ => inversion H; clear H
-      end.
-    
     Ltac instantiate_IH IHisz :=
       match goal with
       | H : Some (?q1, ?q2) = match_and (?p1 ---> ?p2) |- _
@@ -678,8 +716,6 @@ Section ml_tauto.
            simpl in *;
            specialize (IHx ltac:(lia) ltac:(lia) ltac:(lia))
       end.
-
-    Ltac remember_and_destruct_2 exp := remember_and_destruct exp; repeat inverts_and_destructs.
     
     unfold and_or_size'_enough_fuel in Hfuel. simpl in Hfuel.
     unfold and_or_size'_enough_fuel in Hfuel'. simpl in Hfuel'.
@@ -791,6 +827,9 @@ Section ml_tauto.
                   pose proof (IH1 := IHisz p2 p3).
                   specialize (IH1 (and_or_size'_enough_fuel p2) ltac:(lia)).
                   specialize (IH1 (and_or_size'_enough_fuel p3) ltac:(lia)).
+                  unfold and_or_size'_enough_fuel in IH1 at 1 2.
+                  (* TODO We need to prove a lemma saying that size of negated formula is larger. *)
+                  Check IH1.
                   specialize (IH1 (negate'_enough_fuel p2) ltac:(lia)).
                   assert (Hszp2: size p2 <= isz).
                   { lia. }
@@ -841,6 +880,8 @@ Section ml_tauto.
 
                   pose proof (Htmp := match_and_size (eq_sym HeqHeq4)).
                   destruct Htmp as [Hszp4p1 Hszp5p1].
+
+                  
                   assert (and_or_size' fuel' p4 = and_or_size' fuel p4).
                   
                   { unfold and_or_size'_enough_fuel in *.
