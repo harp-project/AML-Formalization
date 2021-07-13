@@ -144,6 +144,7 @@ Section ml_tauto.
   Check sum.
   Print sum.
 
+  Print Decision.
   Lemma e_match_not (p : Pattern) : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p').
   Proof.
     destruct p; try (right;intros;discriminate).
@@ -205,10 +206,23 @@ Section ml_tauto.
     destruct s, s0. subst.
     left. eapply existT. eapply existT. reflexivity.
   Defined.
-  
+
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size (p1 ---> p2) with e_match_and (p1 ---> p2) => {
+      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      | inr _
+          with e_match_or (p1 ---> p2) => {
+            | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+            | inr _ :=
+              1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
+        }
+    } ;
+    e_and_or_imp_size _ := 1.
+  Solve Obligations with
+      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
     
   
-  
+  (*
   (*Set Equations Transparent.*)
   Equations e_match_not (p : Pattern) : Decision ( exists p', p = patt_not p') :=
     e_match_not (p ---> ⊥) := left _ ;
@@ -261,9 +275,9 @@ Section ml_tauto.
       | right _ => right _
     }.
                                          
-                       
+*)                       
                    
-
+(*
   Check e_match_not.
   
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
@@ -276,8 +290,9 @@ Section ml_tauto.
         }
     } ;
 
-  
+  *)
 
+  (*
   Program Fixpoint pf_and_or_size'  (p : Pattern) {measure (size p)} : nat :=
     match (match_and p) with
     | Some (p1, p2) => S (plus (pf_and_or_size' p1) (pf_and_or_size' p2))
@@ -301,6 +316,7 @@ Section ml_tauto.
   Next Obligation.
     (* This generates OK obligations *)
     intros.
+    *)
   
   Obligation Tactic := idtac.
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
@@ -316,6 +332,7 @@ Section ml_tauto.
   Solve Obligations with
       Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
   Next Obligation.
+    
   intros. Check sigmaI. Print sigma.
   
   (* (* This does not scale :-( Since we have formulas of depth 6, it generates 800 obligations
