@@ -137,15 +137,172 @@ Section ml_tauto.
       end
     end.
 
-  Compute (patt_or (patt_bound_evar 0) (patt_bound_evar 1)).
-  Show Obligation Tactic.
 
+  Check existT.
+  Print existT.
+  Print Decision.
+  Check sum.
+  Print sum.
 
-  Check @Classes.WellFounded Pattern.
-  Check (well_founded_Pattern_subterm Σ).
-  Check @signature_pack.
-  Check (WellFounded (Pattern_subterm Σ)).
+  Lemma e_match_not (p : Pattern) : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p').
+  Proof.
+    destruct p; try (right;intros;discriminate).
+    destruct p2;try (right;intros;discriminate).
+    left.
+    eapply existT. reflexivity.
+  Defined.
 
+  Lemma e_match_or (p : Pattern) :
+    ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}})
+    + (forall p1 p2, p <> patt_or p1 p2).
+  Proof.
+    destruct p; try (right;intros;discriminate).
+    pose proof (X := e_match_not p1).
+    destruct X.
+    2: { right. intros. unfold patt_or.
+         assert (p1 <> patt_not p0). auto.
+         congruence.
+    }
+    destruct s. subst.
+    left.
+    eapply existT. eapply existT. reflexivity.
+  Defined.
+
+  Lemma e_match_and (p : Pattern) :
+    ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}})
+    + (forall p1 p2, p <> patt_and p1 p2).
+  Proof.
+    pose proof (X := e_match_not p).
+    destruct X.
+    2: {
+      right. intros. firstorder.
+    }
+    destruct s. subst p.
+
+    pose proof (Y := e_match_or x).
+    destruct Y.
+    2: {
+      right. intros. unfold patt_and.
+      specialize (n (patt_not p1) (patt_not p2)).
+      intros Hcontra. inversion Hcontra. contradiction.
+    }
+    destruct s. destruct s. subst x.
+
+    pose proof (Z := e_match_not x0).
+    destruct Z.
+    2: {
+      right. intros. unfold not. intros Hcontra.
+      inversion Hcontra. subst. specialize (n p1). contradiction.
+    }
+
+    pose proof (T := e_match_not x1).
+    destruct T.
+    2: {
+      right. intros. unfold not. intros Hcontra.
+      inversion Hcontra. subst. specialize (n p2). contradiction.
+    }
+
+    destruct s, s0. subst.
+    left. eapply existT. eapply existT. reflexivity.
+  Defined.
+  
+    
+  
+  
+  (*Set Equations Transparent.*)
+  Equations e_match_not (p : Pattern) : Decision ( exists p', p = patt_not p') :=
+    e_match_not (p ---> ⊥) := left _ ;
+    e_match_not _ := right _ .
+  Solve Obligations with
+      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf; try (eexists; reflexivity).
+
+  Print match_or.
+  Equations e_match_or (p : Pattern) : Decision (exists p1 p2, p = patt_or p1 p2) :=
+    e_match_or (p1' ---> p2) with e_match_not p1' => {
+      | left e => left _ ;
+      | right _ => right _
+    } ;
+    e_match_or _ => right _ .
+  Solve Obligations with
+      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
+  Next Obligation.
+    intros. destruct e. eexists. eexists. rewrite H. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. unfold not. intros.
+    destruct H as [p1 [p3 H]].
+    apply wildcard. unfold patt_or in H. inversion H. subst.
+    eexists. reflexivity.
+  Defined.
+
+  Print match_and.
+  Print ex_intro.
+
+  Lemma e_match_and (p : Pattern) : Decision (exists p1 p2, p = patt_and p1 p2).
+  Proof.
+    remember (e_match_not p) as enp.
+    destruct enp.
+    2: {
+      right. unfold not. intros Hcontra. apply n.
+      destruct Hcontra as [p1 [p2 Hcontra]].
+      subst p. eexists. reflexivity.
+    }
+    destruct e as [p' H].
+    
+                                             
+  
+  Equations e_match_and (p : Pattern) : Decision (exists p1 p2, p = patt_and p1 p2) :=
+    e_match_and p with e_match_not p => {
+      | left H =>
+          match e_match_or (ex_proj1 H) with
+            | left _ => left _
+            | right _ => right _
+          end ;
+      | right _ => right _
+    }.
+                                         
+                       
+                   
+
+  Check e_match_not.
+  
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size (p1 ---> p2) with match_and (p1 ---> p2) => {
+      | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      | None with match_or (p1 ---> p2) => {
+          | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+          | None := (* general implication *)
+            1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
+        }
+    } ;
+
+  
+
+  Program Fixpoint pf_and_or_size'  (p : Pattern) {measure (size p)} : nat :=
+    match (match_and p) with
+    | Some (p1, p2) => S (plus (pf_and_or_size' p1) (pf_and_or_size' p2))
+    | None =>
+      match (match_or p) with
+      | Some (p1, p2) => S ( plus (pf_and_or_size' p1) (pf_and_or_size' p2))
+      | None =>
+        match (match_not p) with
+        | Some p' => pf_and_or_size' p'
+        | None =>
+          match p with
+          | p1 ---> p2
+            => (* we treat the implication as [¬(p1 and ¬p2)], or as [¬ p1 or p2] -
+                    that is, there is one and/or connective *)
+            S (plus (pf_and_or_size'  p1) (pf_and_or_size' p2))
+          | _ => 1
+          end
+        end
+      end
+    end.
+  Next Obligation.
+    (* This generates OK obligations *)
+    intros.
+  
+  Obligation Tactic := idtac.
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     e_and_or_imp_size (p1 ---> p2) with match_and (p1 ---> p2) => {
       | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
@@ -158,6 +315,8 @@ Section ml_tauto.
     e_and_or_imp_size _ := 1.
   Solve Obligations with
       Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
+  Next Obligation.
+  intros. Check sigmaI. Print sigma.
   
   (* (* This does not scale :-( Since we have formulas of depth 6, it generates 800 obligations
         and proof search cannot solve them because the subpatterns are too deep. I guess.
