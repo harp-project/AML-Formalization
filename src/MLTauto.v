@@ -7,7 +7,7 @@ From Coq.micromega Require Import Lia.
 From Equations Require Import Equations.
 Show Obligation Tactic.
 
-From stdpp Require Import base option.
+(*From stdpp Require Import base option.*)
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
@@ -112,6 +112,7 @@ Section ml_tauto.
     | None => None
     end.
 
+  (*
   Fixpoint and_or_size' (fuel : nat) (p : Pattern) : option nat :=
     match fuel with
     | 0 => None
@@ -145,6 +146,8 @@ Section ml_tauto.
   Print sum.
 
   Print Decision.
+   *)
+  
   Lemma e_match_not (p : Pattern) : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p').
   Proof.
     destruct p; try (right;intros;discriminate).
@@ -207,6 +210,7 @@ Section ml_tauto.
     left. eapply existT. eapply existT. reflexivity.
   Defined.
 
+  Set Equations Derive Eliminator.
   (*Set Equations Transparent.*)
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     e_and_or_imp_size (p1 ---> p2) with e_match_and (p1 ---> p2) => {
@@ -219,12 +223,14 @@ Section ml_tauto.
         }
     } ;
     e_and_or_imp_size _ := 0.
-  Solve Obligations with
+  Solve All Obligations with
       (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+  Transparent e_and_or_imp_size.
 
   Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
   Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
   Proof.
+    funelim e_and_or_imp_size.
     reflexivity.
   Qed.
 
@@ -243,133 +249,34 @@ Section ml_tauto.
   Solve Obligations with
       (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
+  Check f_elim.
+  Derive FunctionalElimination for e_negate.
+  
   Example simple: e_negate ((patt_bound_evar 0) and (patt_bound_evar 1)) =
                   patt_or (patt_not (patt_bound_evar 0)) (patt_not (patt_bound_evar 1)).
   Proof.
     reflexivity.
   Qed.
 
-  (* negate (p and q) <-> not (p and q)
-     ==
-     negate p or negate q
-
-     negate p <-> not p from the IH
-
-     (count_general_implications, size)
-   *)
-  
-  (*
-  (*Set Equations Transparent.*)
-  Equations e_match_not (p : Pattern) : Decision ( exists p', p = patt_not p') :=
-    e_match_not (p ---> ⊥) := left _ ;
-    e_match_not _ := right _ .
-  Solve Obligations with
-      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf; try (eexists; reflexivity).
-
-  Print match_or.
-  Equations e_match_or (p : Pattern) : Decision (exists p1 p2, p = patt_or p1 p2) :=
-    e_match_or (p1' ---> p2) with e_match_not p1' => {
-      | left e => left _ ;
-      | right _ => right _
-    } ;
-    e_match_or _ => right _ .
-  Solve Obligations with
-      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
-  Next Obligation.
-    intros. destruct e. eexists. eexists. rewrite H. reflexivity.
-  Defined.
-  Next Obligation.
-    intros. unfold not. intros.
-    destruct H as [p1 [p3 H]].
-    apply wildcard. unfold patt_or in H. inversion H. subst.
-    eexists. reflexivity.
-  Defined.
-
-  Print match_and.
-  Print ex_intro.
-
-  Lemma e_match_and (p : Pattern) : Decision (exists p1 p2, p = patt_and p1 p2).
+  Lemma and_or_size_negate p:
+    e_and_or_imp_size (e_negate p) = e_and_or_imp_size p.
   Proof.
-    remember (e_match_not p) as enp.
-    destruct enp.
-    2: {
-      right. unfold not. intros Hcontra. apply n.
-      destruct Hcontra as [p1 [p2 Hcontra]].
-      subst p. eexists. reflexivity.
-    }
-    destruct e as [p' H].
-    
-                                             
-  
-  Equations e_match_and (p : Pattern) : Decision (exists p1 p2, p = patt_and p1 p2) :=
-    e_match_and p with e_match_not p => {
-      | left H =>
-          match e_match_or (ex_proj1 H) with
-            | left _ => left _
-            | right _ => right _
-          end ;
-      | right _ => right _
-    }.
-                                         
-*)                       
-                   
-(*
-  Check e_match_not.
-  
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size (p1 ---> p2) with match_and (p1 ---> p2) => {
-      | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      | None with match_or (p1 ---> p2) => {
-          | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-          | None := (* general implication *)
-            1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
-        }
-    } ;
+    remember (size p) as sz.
+    assert (Hsz : size p <= sz).
+    { lia. }
+    clear Heqsz.
 
-  *)
-
-  (*
-  Program Fixpoint pf_and_or_size'  (p : Pattern) {measure (size p)} : nat :=
-    match (match_and p) with
-    | Some (p1, p2) => S (plus (pf_and_or_size' p1) (pf_and_or_size' p2))
-    | None =>
-      match (match_or p) with
-      | Some (p1, p2) => S ( plus (pf_and_or_size' p1) (pf_and_or_size' p2))
-      | None =>
-        match (match_not p) with
-        | Some p' => pf_and_or_size' p'
-        | None =>
-          match p with
-          | p1 ---> p2
-            => (* we treat the implication as [¬(p1 and ¬p2)], or as [¬ p1 or p2] -
-                    that is, there is one and/or connective *)
-            S (plus (pf_and_or_size'  p1) (pf_and_or_size' p2))
-          | _ => 1
-          end
-        end
-      end
-    end.
-  Next Obligation.
-    (* This generates OK obligations *)
-    intros.
-    *)
-  
-  Obligation Tactic := idtac.
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size (p1 ---> p2) with match_and (p1 ---> p2) => {
-      | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      | None with match_or (p1 ---> p2) => {
-          | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-          | None := (* general implication *)
-            1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
-        }
-    } ;
-    e_and_or_imp_size _ := 1.
-  Solve Obligations with
-      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
-  Next Obligation.
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia.
+    Fail Check e_and_or_imp_size_elim.
+    dependent elimination e_and_or_imp_size.
+      simp e_negate; simp e_and_or_imp_size; unfold patt_not.
     
-  intros. Check sigmaI. Print sigma.
+    simp e_and_or_imp_size.
+    apply_funelim.
+    simp e_match_and.
+    simp e_and_or_imp_size_unfold_clause_1.
+
   
   (* (* This does not scale :-( Since we have formulas of depth 6, it generates 800 obligations
         and proof search cannot solve them because the subpatterns are too deep. I guess.
