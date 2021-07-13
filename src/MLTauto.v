@@ -1,7 +1,11 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
 From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Lexicographic_Product.
+From Coq Require Import Logic.FunctionalExtensionality.
 From Coq.micromega Require Import Lia.
+
+From Equations Require Import Equations.
+Show Obligation Tactic.
 
 From stdpp Require Import base option.
 
@@ -36,6 +40,11 @@ Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) �
 
 
  *)
+
+Global Set Transparent Obligations.
+Derive NoConfusion for Pattern.
+Derive Subterm for Pattern.                
+
 
 Section ml_tauto.
   Open Scope ml_scope.
@@ -127,6 +136,44 @@ Section ml_tauto.
         end
       end
     end.
+
+  Compute (patt_or (patt_bound_evar 0) (patt_bound_evar 1)).
+  Show Obligation Tactic.
+
+
+  Check @Classes.WellFounded Pattern.
+  Check (well_founded_Pattern_subterm Σ).
+  Check @signature_pack.
+  Check (WellFounded (Pattern_subterm Σ)).
+
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size (p1 ---> p2) with match_and (p1 ---> p2) => {
+      | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      | None with match_or (p1 ---> p2) => {
+          | Some (p1', p2') := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+          | None := (* general implication *)
+            1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
+        }
+    } ;
+    e_and_or_imp_size _ := 1.
+  Solve Obligations with
+      Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
+  
+  (* (* This does not scale :-( Since we have formulas of depth 6, it generates 800 obligations
+        and proof search cannot solve them because the subpatterns are too deep. I guess.
+      *)
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    (* patt_and p1 p2 *)
+    e_and_or_imp_size ((((p1 ---> ⊥) ---> ⊥) ---> p2 ---> ⊥) ---> ⊥)
+      := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+    e_and_or_imp_size ((p1 ---> ⊥) ---> p2)
+      := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+    e_and_or_imp_size (p1 ---> p2)
+      := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+    e_and_or_imp_size _ := 1.
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf.
+  *)
+  
 
   Definition and_or_size'_enough_fuel (p : Pattern) : nat := S (size p).
   
