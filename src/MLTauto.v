@@ -207,6 +207,7 @@ Section ml_tauto.
     left. eapply existT. eapply existT. reflexivity.
   Defined.
 
+  (*Set Equations Transparent.*)
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     e_and_or_imp_size (p1 ---> p2) with e_match_and (p1 ---> p2) => {
       | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
@@ -217,10 +218,45 @@ Section ml_tauto.
               1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
         }
     } ;
-    e_and_or_imp_size _ := 1.
+    e_and_or_imp_size _ := 0.
   Solve Obligations with
       (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-    
+
+  Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
+  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
+  Proof.
+    reflexivity.
+  Qed.
+
+
+  Equations e_negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
+    e_negate (p1 ---> p2) with e_match_and (p1 ---> p2) => {
+      | inl (existT p1' (existT p2' e)) := patt_or (e_negate p1') (e_negate p2') ;
+      | inr _
+          with e_match_or (p1 ---> p2) => {
+          | inl (existT p1' (existT p2' e)) := patt_and (e_negate p1') (e_negate p2') ;
+          | inr _ :=
+              patt_and p1 (e_negate p2)
+        }
+    } ;
+    e_negate p := patt_not p.
+  Solve Obligations with
+      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
+  Example simple: e_negate ((patt_bound_evar 0) and (patt_bound_evar 1)) =
+                  patt_or (patt_not (patt_bound_evar 0)) (patt_not (patt_bound_evar 1)).
+  Proof.
+    reflexivity.
+  Qed.
+
+  (* negate (p and q) <-> not (p and q)
+     ==
+     negate p or negate q
+
+     negate p <-> not p from the IH
+
+     (count_general_implications, size)
+   *)
   
   (*
   (*Set Equations Transparent.*)
