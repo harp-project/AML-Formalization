@@ -321,83 +321,6 @@ Section ml_tauto.
     intros. eapply existT. eapply existT. reflexivity.
   Defined.
 
-  (*
-  
-  Lemma e_match_imp (p : Pattern) :
-    ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}})
-    + (forall p1 p2, p <> patt_imp p1 p2).
-  Proof.
-    destruct p; try (right;intros;discriminate).
-    left. eapply existT. eapply existT. reflexivity.
-  Defined.
-
-  Lemma e_match_imp_patt_imp p1 p2: is_inl (e_match_imp (patt_imp p1 p2)).
-  Proof. reflexivity. Qed.
-  *)
-
-
-  (*
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size p with e_match_and p => {
-      e_and_or_imp_size p (inl (existT p1' (existT p2' e)))
-      := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      e_and_or_imp_size p (inr _) with e_match_or p => {
-        e_and_or_imp_size p (inr _) (inl (existT p1' (existT p2' e)))
-        := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-        e_and_or_imp_size p (inr _) (inr _) := 1
-                                                 (*
-            | inr _
-                with e_match_imp p => {
-                | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
-                | inr _ => 1
-              }
-*)
-                                        
-        }
-    }.
-  Solve All Obligations with
-      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  *)
-
-  (* This works *)
-  (*
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size (patt_imp p1 p2) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
-    e_and_or_imp_size _ := 0.
-  Solve All Obligations with
-      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  *)
-
-  (* This works without the inversion*)
-  (*
-  (*Set Equations Debug.*)
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size p with e_match_not p => {
-      | inl (existT p1' e) := 1 + (e_and_or_imp_size p1');
-      | inr _ := 0
-    }.
-  Solve All Obligations with
-      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  *)
-
-
-  (* Works without inversion *)
-  (*
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size p with e_match_and p => {
-      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      | inr _ := 1 
-    }.
-  Solve All Obligations with
-      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  *)
-  
-  (*Set Equations Debug.*)
-
-  (*Set Equations Derive Eliminator.*)
-  (*Set Equations Transparent.*)
-
-  (* TODO we want a clause for going through patt_not, in order to not count it *)
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     e_and_or_imp_size p with e_match_and p => {
       | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
@@ -412,13 +335,11 @@ Section ml_tauto.
                     | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
                     | inr _ => 1
                   }
-              }
-                                            
-                                        
+              }                                        
         }
     }.
   Solve All Obligations with
-      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+      (intros; Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
   (*Transparent e_and_or_imp_size.*)
 
@@ -450,46 +371,192 @@ Section ml_tauto.
 
 
   Equations e_negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
-    e_negate (p1 ---> p2) with e_match_and (p1 ---> p2) => {
+    e_negate p with e_match_and p => {
       | inl (existT p1' (existT p2' e)) := patt_or (e_negate p1') (e_negate p2') ;
       | inr _
-          with e_match_or (p1 ---> p2) => {
+          with e_match_or p => {
           | inl (existT p1' (existT p2' e)) := patt_and (e_negate p1') (e_negate p2') ;
-          | inr _ :=
-              patt_and p1 (e_negate p2)
+          | inr _
+              with e_match_imp p => {
+              | inl (existT p1 (existT p2 _)) := patt_and p1 (e_negate p2) ;
+              | inr _ => patt_not p
+            }
         }
-    } ;
-    e_negate p := patt_not p.
+    }.
   Solve Obligations with
-      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
-  Check f_elim.
-  Derive FunctionalElimination for e_negate.
-  
   Example simple: e_negate ((patt_bound_evar 0) and (patt_bound_evar 1)) =
                   patt_or (patt_not (patt_bound_evar 0)) (patt_not (patt_bound_evar 1)).
   Proof.
     reflexivity.
   Qed.
 
-  Lemma and_or_size_negate p:
+
+  (* This is an alternative function measuring the size of a pattern.
+     The advantage is that the result is never zero, and therefore
+     when doing induction on the size' of a pattern, the base cases are all trivially
+     solvable by lia.
+   *)
+  Fixpoint size' (p : Pattern) : nat :=
+    match p with
+    | ls $ rs | ls ---> rs => 1 + size' ls + size' rs
+    | ex , p' | mu , p' => 1 + size' p'
+    | _ => 1
+    end.
+
+  Lemma inr_impl_not_is_inl {A B : Type} (x : A + B) (b : B) :
+    x = inr b ->
+    is_inl x = false.
+  Proof.
+    intros. rewrite H. reflexivity.
+  Qed.
+  
+  Lemma and_or_imp_size_negate p:
     e_and_or_imp_size (e_negate p) = e_and_or_imp_size p.
   Proof.
-    remember (size p) as sz.
-    assert (Hsz : size p <= sz).
+    remember (size' p) as sz.
+    assert (Hsz : size' p <= sz).
     { lia. }
     clear Heqsz.
 
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in *; try lia.
-    Fail Check e_and_or_imp_size_elim.
-    dependent elimination e_and_or_imp_size.
-      simp e_negate; simp e_and_or_imp_size; unfold patt_not.
-    
-    simp e_and_or_imp_size.
-    apply_funelim.
-    simp e_match_and.
-    simp e_and_or_imp_size_unfold_clause_1.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _).
+      + funelim (e_and_or_imp_size _).
+        * pose proof (H3 := e_match_and_patt_or (e_negate p1'0) (e_negate p2'0)).
+          assert (H4 : is_inl (e_match_and (e_negate p1'0 or e_negate p2'0))).
+          { rewrite Heq. reflexivity. }
+          rewrite H3 in H4. inversion H4.
+        * funelim (e_and_or_imp_size (¬ p1'0 or ¬ p2'0 ---> ⊥)).
+          -- simpl in Hsz.
+             rewrite IHsz. lia. rewrite IHsz. lia.
+             inversion e. reflexivity.
+          -- inversion e.
+          -- inversion e. subst.
+             pose proof (e_match_and_patt_and (p1'0) (p2'0)).
+             assert (is_inl (e_match_and (¬ p1'0 or ¬ p2'0 ---> ⊥)) = false).
+             { rewrite Heq1. reflexivity. }
+             rewrite H4 in H5.
+             inversion H5.
+          -- inversion e. subst.
+             pose proof (e_match_and_patt_and (p1'0) (p2'0)).
+             assert (is_inl (e_match_and (¬ p1'0 or ¬ p2'0 ---> ⊥)) = false).
+             { rewrite Heq2. reflexivity. }
+             rewrite -> H5 in H6.
+             inversion H6.
+          -- pose proof (e_match_and_patt_and (p1'0) (p2'0)).
+             assert (is_inl (e_match_and (¬ p1'0 or ¬ p2'0 ---> ⊥)) = false).
+             { rewrite Heq2. reflexivity. }
+             rewrite H3 in H4.
+             inversion H4.
+        * pose proof (e_match_or_patt_or (e_negate p1'0) (e_negate p2')).
+          assert (is_inl (e_match_or (e_negate p1'0 or e_negate p2')) = false).
+          { rewrite Heq0. reflexivity. }
+          rewrite H2 in H3.
+          inversion H3.
+        * inversion e. subst.
+          simpl in Hsz.
+          rewrite IHsz. lia.
+          funelim (e_and_or_imp_size (¬ p1' or ¬ p2' ---> ⊥)).
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq2)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- inversion e.
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1'0) (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq4)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+        * funelim (e_and_or_imp_size (¬ p1' or ¬ p2' ---> ⊥)).
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq2)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- inversion e.
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1'0) (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq4)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- inversion e. subst.
+             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+          -- pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
+             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
+             rewrite HC1 in HC2.
+             inversion HC2.
+      + inversion e. subst.
+        simpl in Hsz.
+        funelim (e_and_or_imp_size (e_negate p1' and e_negate p2')).
+        * inversion e. subst.
+          rewrite IHsz. lia.
+          rewrite IHsz. lia.
+          funelim (e_and_or_imp_size (¬ p1'0 ---> p2'0)).
+          -- inversion e.
+          -- inversion e. subst.
+             reflexivity.
+          -- inversion e. subst.
+             funelim (e_and_or_imp_size ⊥); try inversion e.
+             Search p1'0.
+             funelim (e_and_or_imp_size (¬ p1'0)).
+             ++ inversion e. subst.
+                funelim (e_and_or_imp_size (¬ p1' or ¬ p2')).
+                ** clear H.
+                   inversion e.
+                ** clear H.
+                   inversion e.
+                   subst.
+                   admit.
+                ** inversion e.
+                   
+        
+             
+          
+      admit.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+    - funelim (e_negate _); inversion Heq.
+      funelim (e_and_or_imp_size _); inversion Heq.
+      reflexivity.
+  Qed.
+  
 
   
   (* (* This does not scale :-( Since we have formulas of depth 6, it generates 800 obligations
