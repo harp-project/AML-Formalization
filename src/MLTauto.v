@@ -417,7 +417,7 @@ Section ml_tauto.
       ).
 
 
-  Lemma wf_e_negate' p:
+  Lemma wf_e_negate p:
     well_formed p ->
     well_formed (e_negate p).
   Proof.
@@ -477,19 +477,53 @@ Section ml_tauto.
       pose proof (IHsz p2 ltac:(lia) H1).
       auto.
   Qed.
+
+  #[local] Hint Resolve wf_e_negate : core.
+  
+
+  Lemma negate_equiv (p : Pattern) :
+    well_formed p ->
+    (Empty_set _) ⊢ ((patt_not p) <---> (e_negate p)).
+  Proof.
+    intros Hwfp.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+    move: p Hwfp Hsz.
+    induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (e_negate _); try inversion e; subst;
+        try apply pf_iff_equiv_refl; auto.
+    - unfold well_formed, well_formed_closed in Hwfp.
+      simpl in Hwfp.
+      rewrite !andbT in Hwfp.
+      apply andb_prop in Hwfp. destruct Hwfp as [Hwf1 Hwf2].
+      apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
+      apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
+      assert (wfp1': well_formed p1').
+      { unfold well_formed, well_formed_closed. rewrite Hwf11 Hwf21. reflexivity. }
+      assert (wfp2': well_formed p2').
+      { unfold well_formed, well_formed_closed. rewrite Hwf12 Hwf22. reflexivity. }
+
+      simpl in Hsz.
+      pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
+      pose proof (IHp2' := IHsz p2' ltac:(auto) ltac:(lia)).
+
+      remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> e_negate p1' or e_negate p2')) as star.
+      remember (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> (patt_free_evar star) or e_negate p2') as ctx'.
+      assert (wfctx': well_formed ctx').
+      { subst. unfold patt_iff. auto 15. }
+      assert (countstar: count_evar_occurrences star ctx' = 1).
+      { rewrite Heqctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
+        simpl. (*
+      remember (@Build_PatternCtx _ star ctx' wfctx') as ctx.
+
+      Check prf_equiv_congruence_implicative_ctx.
+*)
+  Abort.
   
 
 
-      
-      
-      
-      pose proof (IH
-
-    pose proof (IHsz p1').
-    solve_match_impossibilities.
-    7: { 
-    
-  Abort.
   
   Lemma e_and_or_imp_size_bott:
     e_and_or_imp_size ⊥ = 0.
