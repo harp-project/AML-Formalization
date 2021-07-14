@@ -167,7 +167,18 @@ Section ml_tauto.
 
   Print Decision.
    *)
+
+  Equations e_match_not (p : Pattern)
+    : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p')
+    :=
+      e_match_not (p' ---> ⊥) := inl _ ;
+      e_match_not _ := inr _ .
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
+  Next Obligation.
+    intros. eapply existT. reflexivity.
+  Defined.
   
+  (*
   Lemma e_match_not (p : Pattern) : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p').
   Proof.
     destruct p; try (right;intros;discriminate).
@@ -175,7 +186,33 @@ Section ml_tauto.
     left.
     eapply existT. reflexivity.
   Defined.
+   *)
+  
+  Lemma e_match_not_patt_not p: is_inl (e_match_not (patt_not p)).
+  Proof.
+    funelim (e_match_not _). simpl. reflexivity.
+  Qed.
 
+  Equations e_match_or (p : Pattern)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}}) + (forall p1 p2, p <> patt_or p1 p2)
+    :=
+      e_match_or (p1 ---> p2) with e_match_not p1 => {
+        | inl (existT p1' e) => inl _
+        | inr _ => inr _
+      } ;      
+      e_match_or _ := inr _.
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
+  Next Obligation.
+    intros. inversion e. subst. eapply existT. eapply existT. reflexivity.
+  Defined.
+  Next Obligation.
+    intros.
+    unfold patt_or.
+    assert (p1 <> patt_not p0). auto.
+    congruence.
+  Defined.  
+
+  (*
   Lemma e_match_or (p : Pattern) :
     ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}})
     + (forall p1 p2, p <> patt_or p1 p2).
@@ -191,7 +228,40 @@ Section ml_tauto.
     left.
     eapply existT. eapply existT. reflexivity.
   Defined.
+  *)
 
+  Lemma e_match_or_patt_or p1 p2: is_inl (e_match_or (patt_or p1 p2)).
+  Proof. reflexivity. Qed.
+
+  Equations?  e_match_and (p : Pattern)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}}) + (forall p1 p2, p <> patt_and p1 p2)
+    :=
+      e_match_and p with e_match_not p => {
+        | inr _ := inr _ ;
+        | inl (existT p' e') with e_match_or p' => {
+            | inr _ := inr _ ;
+            | inl (existT p1 (existT p2 e12)) with e_match_not p1 => {
+                | inr _ := inr _ ;
+                | inl (existT np1 enp1) with e_match_not p2 => {
+                    | inr _ := inr _ ;
+                    | inl (existT np2 enp2) := inl _
+                  }
+              }
+          }                                        
+      }.
+  Proof.
+    - subst. eapply existT. eapply existT. reflexivity.
+    - subst. intros. unfold not. intros Hcontra. inversion Hcontra.
+      subst. specialize (n p0). contradiction.
+    - subst. intros. unfold not. intros Hcontra. inversion Hcontra.
+      subst. specialize (n p0). contradiction.
+    - subst. intros. unfold not. intros Hcontra. inversion Hcontra.
+      subst. specialize (n (patt_not p1) (patt_not p2)). contradiction.
+    - intros. unfold not. intros Hcontra. subst.
+      specialize (n ((patt_or (patt_not p1) (patt_not p2)))). contradiction.
+  Defined.
+  (*
+  
   Lemma e_match_and (p : Pattern) :
     ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}})
     + (forall p1 p2, p <> patt_and p1 p2).
@@ -229,6 +299,29 @@ Section ml_tauto.
     destruct s, s0. subst.
     left. eapply existT. eapply existT. reflexivity.
   Defined.
+   *)
+  
+
+  Lemma e_match_and_patt_and p1 p2: is_inl (e_match_and (patt_and p1 p2)).
+  Proof. reflexivity. Qed.
+
+  Lemma e_match_and_patt_or p1 p2: is_inl (e_match_and (patt_or p1 p2)) = false.
+  Proof.
+    funelim (e_match_and _); try reflexivity.
+    subst. inversion e'.
+  Qed.
+
+  Equations e_match_imp (p : Pattern)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}}) + (forall p1 p2, p <> patt_imp p1 p2)
+    :=
+      e_match_imp (p1 ---> p2) := inl _ ;
+      e_match_imp _ := inr _.
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
+  Next Obligation.
+    intros. eapply existT. eapply existT. reflexivity.
+  Defined.
+
+  (*
   
   Lemma e_match_imp (p : Pattern) :
     ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}})
@@ -236,8 +329,11 @@ Section ml_tauto.
   Proof.
     destruct p; try (right;intros;discriminate).
     left. eapply existT. eapply existT. reflexivity.
-  Qed.
-  
+  Defined.
+
+  Lemma e_match_imp_patt_imp p1 p2: is_inl (e_match_imp (patt_imp p1 p2)).
+  Proof. reflexivity. Qed.
+  *)
 
 
   (*
@@ -300,7 +396,8 @@ Section ml_tauto.
 
   (*Set Equations Derive Eliminator.*)
   (*Set Equations Transparent.*)
-  
+
+  (* TODO we want a clause for going through patt_not, in order to not count it *)
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     e_and_or_imp_size p with e_match_and p => {
       | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
@@ -308,21 +405,47 @@ Section ml_tauto.
           with e_match_or p => {
             | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
             | inr _
-                with e_match_imp p => {
-                | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
-                | inr _ => 1
+                with e_match_not p => {
+                | inl (existT p1' e) := e_and_or_imp_size p1' ;
+                | inr _
+                  with e_match_imp p => {
+                    | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+                    | inr _ => 1
+                  }
               }
+                                            
                                         
         }
-    }. (* ;
-    e_and_or_imp_size _ := 0.*)
+    }.
   Solve All Obligations with
       (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
-  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
+  (*Transparent e_and_or_imp_size.*)
+
+  Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
+  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 3.
   Proof.
+    (* [reflexivity] just works, but we want to test the functional elimination principle *)
+    (* reflexivity. *)
+
     funelim (e_and_or_imp_size _).
-    reflexivity.
+    - inversion e. subst.
+      repeat simp e_and_or_imp_size.
+      simp e_match_and.
+      simp e_match_not.
+      simpl e_match_and_clause_1.
+      simpl e_and_or_imp_size_unfold_clause_1.
+      simp e_match_or.
+      simpl e_and_or_imp_size_unfold_clause_1_clause_2.
+      simp e_match_not.
+      simpl e_and_or_imp_size_unfold_clause_1_clause_2_clause_2.
+      simp e_match_imp.
+      simpl e_and_or_imp_size_unfold_clause_1_clause_2_clause_2_clause_2.
+      lia.
+    - inversion Heq0.
+    - inversion Heq1.
+    - inversion Heq2.
+    - inversion Heq2.
   Qed.
 
 
