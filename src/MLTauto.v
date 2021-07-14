@@ -45,26 +45,6 @@ Global Set Transparent Obligations.
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
 
-Equations neg (b : bool) : bool :=
-neg true := false ;
-neg false := true.
-
-Equations filter {A} (l : list A) (p : A -> bool) : list A :=
-filter nil p := nil ;
-filter (cons a l) p with p a => {
-  filter (cons a l) p true := a :: filter l p ;
-  filter (cons a l) p false := filter l p }.
-
-Equations equal (n m : nat) : { n = m } + { n <> m } :=
-equal O O := left eq_refl ;
-equal (S n) (S m) with equal n m := {
-  equal (S n) (S ?(n)) (left eq_refl) := left eq_refl ;
-  equal (S n) (S m) (right p) := right _ } ;
-equal x y := right _.
-  Solve All Obligations with
-      (intros; Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-
-
 
 Section ml_tauto.
   Open Scope ml_scope.
@@ -396,7 +376,7 @@ Section ml_tauto.
     reflexivity.
   Qed.
 
-
+  
   (* This is an alternative function measuring the size of a pattern.
      The advantage is that the result is never zero, and therefore
      when doing induction on the size' of a pattern, the base cases are all trivially
@@ -406,9 +386,9 @@ Section ml_tauto.
     match p with
     | ls $ rs | ls ---> rs => 1 + size' ls + size' rs
     | ex , p' | mu , p' => 1 + size' p'
-    | _ => 0
+    | _ => 1
     end.
-
+  
   Lemma inr_impl_not_is_inl {A B : Type} (x : A + B) (b : B) :
     x = inr b ->
     is_inl x = false.
@@ -436,6 +416,81 @@ Section ml_tauto.
         end
       ).
 
+
+  Lemma wf_e_negate' p:
+    well_formed p ->
+    well_formed (e_negate p).
+  Proof.
+    intros wfp.
+    remember (size' p) as sz.
+    assert (Hsz : size' p <= sz).
+    { lia. }
+    clear Heqsz.
+    move: p Hsz wfp.
+    induction sz; intros p Hsz wfp; destruct p; simpl in *; try lia;
+      funelim (e_negate _); auto; try inversion e; subst.
+    - simpl in Hsz.
+      unfold well_formed, well_formed_closed in wfp.
+      simpl in wfp.
+
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wfp1 wfp2].
+      apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
+      apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
+      assert (well_formed p1').
+      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      assert (well_formed p2').
+      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      pose proof (IHsz p1' ltac:(lia) H1).
+      pose proof (IHsz p2' ltac:(lia) H2).
+      auto.
+    - simpl in Hsz.
+      unfold well_formed, well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wfp1 wfp2].
+      apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
+      apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
+      assert (well_formed p1').
+      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      assert (well_formed p2').
+      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      pose proof (IHsz p1' ltac:(lia) H1).
+      pose proof (IHsz p2' ltac:(lia) H2).
+      auto.
+    - simpl.
+      unfold well_formed, well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      fold (well_formed_closed p1') in wfp.
+      fold (well_formed p1') in wfp.
+      auto.
+    - unfold well_formed, well_formed_closed in wfp.
+      simpl in wfp.
+      apply andb_prop in wfp. destruct wfp as [wfp1 wfp2].
+      apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
+      apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
+      assert (well_formed p1).
+      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      assert (well_formed p2).
+      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      pose proof (IHsz p2 ltac:(lia) H1).
+      auto.
+  Qed.
+  
+
+
+      
+      
+      
+      pose proof (IH
+
+    pose proof (IHsz p1').
+    solve_match_impossibilities.
+    7: { 
+    
+  Abort.
+  
   Lemma e_and_or_imp_size_bott:
     e_and_or_imp_size ⊥ = 0.
   Proof.
