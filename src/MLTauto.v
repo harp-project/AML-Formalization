@@ -233,7 +233,11 @@ Section ml_tauto.
   Lemma e_match_imp (p : Pattern) :
     ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}})
     + (forall p1 p2, p <> patt_imp p1 p2).
-  Proof. Admitted.
+  Proof.
+    destruct p; try (right;intros;discriminate).
+    left. eapply existT. eapply existT. reflexivity.
+  Qed.
+  
 
 
   (*
@@ -317,7 +321,7 @@ Section ml_tauto.
 
   Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
   Proof.
-    funelim e_and_or_imp_size.
+    funelim (e_and_or_imp_size _).
     reflexivity.
   Qed.
 
