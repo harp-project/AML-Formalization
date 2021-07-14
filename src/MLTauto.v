@@ -7,7 +7,7 @@ From Coq.micromega Require Import Lia.
 From Equations Require Import Equations.
 Show Obligation Tactic.
 
-(*From stdpp Require Import base option.*)
+From stdpp Require Import base option.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
@@ -43,7 +43,27 @@ Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) �
 
 Global Set Transparent Obligations.
 Derive NoConfusion for Pattern.
-Derive Subterm for Pattern.                
+Derive Subterm for Pattern.
+
+Equations neg (b : bool) : bool :=
+neg true := false ;
+neg false := true.
+
+Equations filter {A} (l : list A) (p : A -> bool) : list A :=
+filter nil p := nil ;
+filter (cons a l) p with p a => {
+  filter (cons a l) p true := a :: filter l p ;
+  filter (cons a l) p false := filter l p }.
+
+Equations equal (n m : nat) : { n = m } + { n <> m } :=
+equal O O := left eq_refl ;
+equal (S n) (S m) with equal n m := {
+  equal (S n) (S ?(n)) (left eq_refl) := left eq_refl ;
+  equal (S n) (S m) (right p) := right _ } ;
+equal x y := right _.
+  Solve All Obligations with
+      (intros; Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
 
 
 Section ml_tauto.
@@ -209,25 +229,92 @@ Section ml_tauto.
     destruct s, s0. subst.
     left. eapply existT. eapply existT. reflexivity.
   Defined.
+  
+  Lemma e_match_imp (p : Pattern) :
+    ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}})
+    + (forall p1 p2, p <> patt_imp p1 p2).
+  Proof. Admitted.
 
-  Set Equations Derive Eliminator.
-  (*Set Equations Transparent.*)
+
+  (*
   Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size (p1 ---> p2) with e_match_and (p1 ---> p2) => {
-      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      | inr _
-          with e_match_or (p1 ---> p2) => {
-            | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-            | inr _ :=
-              1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2)
+    e_and_or_imp_size p with e_match_and p => {
+      e_and_or_imp_size p (inl (existT p1' (existT p2' e)))
+      := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      e_and_or_imp_size p (inr _) with e_match_or p => {
+        e_and_or_imp_size p (inr _) (inl (existT p1' (existT p2' e)))
+        := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+        e_and_or_imp_size p (inr _) (inr _) := 1
+                                                 (*
+            | inr _
+                with e_match_imp p => {
+                | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+                | inr _ => 1
+              }
+*)
+                                        
         }
-    } ;
+    }.
+  Solve All Obligations with
+      (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+  *)
+
+  (* This works *)
+  (*
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size (patt_imp p1 p2) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
     e_and_or_imp_size _ := 0.
   Solve All Obligations with
       (intros; try (inversion e; subst); Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  Transparent e_and_or_imp_size.
+  *)
 
-  Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
+  (* This works without the inversion*)
+  (*
+  (*Set Equations Debug.*)
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size p with e_match_not p => {
+      | inl (existT p1' e) := 1 + (e_and_or_imp_size p1');
+      | inr _ := 0
+    }.
+  Solve All Obligations with
+      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+  *)
+
+
+  (* Works without inversion *)
+  (*
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size p with e_match_and p => {
+      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      | inr _ := 1 
+    }.
+  Solve All Obligations with
+      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+  *)
+  
+  (*Set Equations Debug.*)
+
+  (*Set Equations Derive Eliminator.*)
+  (*Set Equations Transparent.*)
+  
+  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    e_and_or_imp_size p with e_match_and p => {
+      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+      | inr _ 
+          with e_match_or p => {
+            | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
+            | inr _
+                with e_match_imp p => {
+                | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
+                | inr _ => 1
+              }
+                                        
+        }
+    }. (* ;
+    e_and_or_imp_size _ := 0.*)
+  Solve All Obligations with
+      (intros; (*try (inversion e; subst);*) Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
   Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
   Proof.
     funelim e_and_or_imp_size.
