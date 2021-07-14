@@ -333,7 +333,7 @@ Section ml_tauto.
                 | inr _
                   with e_match_imp p => {
                     | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
-                    | inr _ => 1
+                    | inr _ => 0
                   }
               }                                        
         }
@@ -344,7 +344,7 @@ Section ml_tauto.
   (*Transparent e_and_or_imp_size.*)
 
   Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
-  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 3.
+  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
   Proof.
     (* [reflexivity] just works, but we want to test the functional elimination principle *)
     (* reflexivity. *)
@@ -377,9 +377,13 @@ Section ml_tauto.
           with e_match_or p => {
           | inl (existT p1' (existT p2' e)) := patt_and (e_negate p1') (e_negate p2') ;
           | inr _
-              with e_match_imp p => {
-              | inl (existT p1 (existT p2 _)) := patt_and p1 (e_negate p2) ;
-              | inr _ => patt_not p
+              with e_match_not p => {
+              | inl (existT p1' e) := patt_not (patt_not p1') ;
+              | inr _
+                  with e_match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := patt_and p1 (e_negate p2) ;
+                  | inr _ => patt_not p
+                }
             }
         }
     }.
@@ -402,7 +406,7 @@ Section ml_tauto.
     match p with
     | ls $ rs | ls ---> rs => 1 + size' ls + size' rs
     | ex , p' | mu , p' => 1 + size' p'
-    | _ => 1
+    | _ => 0
     end.
 
   Lemma inr_impl_not_is_inl {A B : Type} (x : A + B) (b : B) :
@@ -411,6 +415,86 @@ Section ml_tauto.
   Proof.
     intros. rewrite H. reflexivity.
   Qed.
+
+  Ltac solve_match_impossibilities :=
+    repeat (
+        match goal with
+        | H : e_match_or (patt_or ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := e_match_or_patt_or A B);
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : e_match_and (patt_and ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := e_match_and_patt_and A B);
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        end
+      ).
+
+  Lemma e_and_or_imp_size_bott:
+    e_and_or_imp_size ⊥ = 0.
+  Proof.
+    reflexivity.
+  Qed.
+  
+  Lemma e_and_or_imp_size_or p q:
+    e_and_or_imp_size (patt_or p q) = 1 + e_and_or_imp_size p + e_and_or_imp_size q.
+  Proof.
+    funelim (e_and_or_imp_size (p or q)).
+    - inversion e.
+    - inversion e. subst.
+      reflexivity.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+  Qed.
+  
+  
+  Lemma e_and_or_imp_size_not p:
+    e_and_or_imp_size (patt_not p) = e_and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz : size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia;
+      funelim (e_and_or_imp_size _); inversion Heq; try reflexivity.
+    - inversion e. subst.
+      funelim (e_and_or_imp_size (¬ ¬ p1' ---> ¬ p2')).
+      + inversion e.
+      + inversion e. subst.
+        simpl in Hsz.
+        rewrite IHsz. lia.
+        rewrite IHsz. lia.
+        reflexivity.
+      + inversion e.
+      + inversion e. subst.
+        simpl in Hsz.
+        rewrite IHsz. simpl. lia.
+        rewrite IHsz. lia.
+        rewrite IHsz. lia.
+        reflexivity.
+      + fold (patt_or (patt_not p1') (patt_not p2')) in Heq1.
+        solve_match_impossibilities.
+    - inversion e. subst.
+      funelim (e_and_or_imp_size (p1' ---> ⊥)).
+      + inversion e. subst.
+        rewrite e_and_or_imp_size_bott.
+        rewrite e_and_or_imp_size_or.
+        simpl in Hsz.
+        rewrite IHsz. lia.
+        rewrite IHsz. lia.
+        (* Oops. This does not hold! *)
+  Abort.
+  
+          
   
   Lemma and_or_imp_size_negate p:
     e_and_or_imp_size (e_negate p) = e_and_or_imp_size p.
@@ -487,40 +571,19 @@ Section ml_tauto.
              inversion HC2.
           -- inversion e.
           -- inversion e. subst.
-             pose proof (HC1 := e_match_or_patt_or (e_negate p1'0) (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq4)).
-             rewrite HC1 in HC2.
-             inversion HC2.
+             solve_match_impossibilities.
           -- inversion e. subst.
-             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
-             rewrite HC1 in HC2.
-             inversion HC2.
-          -- pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
-             rewrite HC1 in HC2.
-             inversion HC2.
+             solve_match_impossibilities.
+          -- solve_match_impossibilities.
         * funelim (e_and_or_imp_size (¬ p1' or ¬ p2' ---> ⊥)).
           -- inversion e. subst.
-             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq2)).
-             rewrite HC1 in HC2.
-             inversion HC2.
+             solve_match_impossibilities.
           -- inversion e.
           -- inversion e. subst.
-             pose proof (HC1 := e_match_or_patt_or (e_negate p1'0) (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq4)).
-             rewrite HC1 in HC2.
-             inversion HC2.
+             solve_match_impossibilities.
           -- inversion e. subst.
-             pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
-             rewrite HC1 in HC2.
-             inversion HC2.
-          -- pose proof (HC1 := e_match_or_patt_or (e_negate p1') (e_negate p2')).
-             pose proof (HC2 := (inr_impl_not_is_inl _ _ Heq5)).
-             rewrite HC1 in HC2.
-             inversion HC2.
+             solve_match_impossibilities.
+          -- solve_match_impossibilities.
       + inversion e. subst.
         simpl in Hsz.
         funelim (e_and_or_imp_size (e_negate p1' and e_negate p2')).
@@ -533,7 +596,6 @@ Section ml_tauto.
              reflexivity.
           -- inversion e. subst.
              funelim (e_and_or_imp_size ⊥); try inversion e.
-             Search p1'0.
              funelim (e_and_or_imp_size (¬ p1'0)).
              ++ inversion e. subst.
                 funelim (e_and_or_imp_size (¬ p1' or ¬ p2')).
