@@ -789,6 +789,11 @@ Section ml_tauto.
       }
       apply Step4. clear Step4.
 
+      apply conj_intro_meta; auto.
+      + apply not_not_elim. auto.
+      + apply not_not_intro. auto.
+    -
+      
       
   Abort.
   
