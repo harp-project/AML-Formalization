@@ -358,7 +358,7 @@ Section ml_tauto.
           | inl (existT p1' (existT p2' e)) := patt_and (e_negate p1') (e_negate p2') ;
           | inr _
               with e_match_not p => {
-              | inl (existT p1' e) := patt_not (patt_not p1') ;
+              | inl (existT p1' e) := p1';
               | inr _
                   with e_match_imp p => {
                   | inl (existT p1 (existT p2 _)) := patt_and p1 (e_negate p2) ;
@@ -533,7 +533,8 @@ Section ml_tauto.
       { auto. }
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
-      
+
+      Check  prf_equiv_congruence_implicative_ctx.
       remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> e_negate p1' or e_negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
@@ -595,8 +596,8 @@ Section ml_tauto.
           unfold ctx'.
           unfold patt_and. unfold patt_not at 1.
           unfold is_implicative_context'.
-          (* This takes awfully long, and generates long goal. We need some better reasoning about this. *)
-          simpl.
+          (* This generates a long goal. We need some better reasoning about this. *)
+          cbn.
           rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.
           destruct (evar_eqdec star star). 2: contradiction. simpl.
           reflexivity.
