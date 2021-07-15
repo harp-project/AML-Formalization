@@ -495,6 +495,15 @@ Section ml_tauto.
     - simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia. lia.
     - simpl in Hsz. rewrite IHsz. lia. lia.
   Qed.
+
+  (*
+  Check prf_equiv_congruence_implicative_ctx.
+  Lemma prf_equiv_congruence_implicative_ctx_alt Γ:
+    forall (C : PatternCtx),
+      is_implicative_context C ->
+      forall (p q : Pattern),
+        well_formed p ->
+        well_formed q *)
   
   
   Lemma negate_equiv (p : Pattern) :
@@ -565,6 +574,39 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
+
+      Tactic Notation "make_step" ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
+        set (ctx' := ctx_expr);
+        assert (wfctx': well_formed ctx');          
+        [unfold ctx'; unfold patt_iff; auto 15|];
+        assert (countstar: count_evar_occurrences star ctx' = 1);
+        [unfold ctx'; simpl; destruct (evar_eqdec star star); [|contradiction];
+         simpl; rewrite ?negate_count_evar_occurrences;
+         simpl_tactic;
+(*          rewrite ?Hcount_p1' Hcount_p2';*)
+          lia|
+        ];
+        set (ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar));
+        assert (Himpl: is_implicative_context ctx);
+        [ unfold ctx; unfold is_implicative_context;
+          rewrite [pcEvar _]/=; rewrite [pcPattern _]/=;
+          unfold ctx';
+          unfold patt_and; unfold patt_not at 1;
+          unfold is_implicative_context';
+          (* This generates a long goal. We need some better reasoning about this. *)
+          cbn;
+          simpl_tactic;
+          (*rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.*)
+          destruct (evar_eqdec star star); [|contradiction];
+          simpl;
+          reflexivity
+         |];
+        assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
+        [apply prf_equiv_congruence_implicative_ctx;auto|].
+
+                                                         
+                    
+      
       assert (Step1: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or e_negate p2')
                                    and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
@@ -574,37 +616,18 @@ Section ml_tauto.
              ).
       {
         intros BigH.
+        
 
-        set ctx' := ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or e_negate p2')
-                       and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥))).
+        make_step
+          star
+          (¬ p1')
+          (e_negate p1')
+          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or e_negate p2')
+             and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
+        .
         
-        
-        assert (wfctx': well_formed ctx').
-        { unfold ctx'. unfold patt_iff. auto 15. }
-        
-        assert (countstar: count_evar_occurrences star ctx' = 1).
-        { unfold ctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
-          simpl. rewrite negate_count_evar_occurrences.  rewrite negate_count_evar_occurrences.
-          rewrite Hcount_p1' Hcount_p2'.
-          lia.
-        }
-        set ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar).
-        
-        assert (Himpl: is_implicative_context ctx).
-        { unfold ctx. unfold is_implicative_context.
-          rewrite [pcEvar _]/=. rewrite [pcPattern _]/=.
-          unfold ctx'.
-          unfold patt_and. unfold patt_not at 1.
-          unfold is_implicative_context'.
-          (* This generates a long goal. We need some better reasoning about this. *)
-          cbn.
-          rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.
-          destruct (evar_eqdec star star). 2: contradiction. simpl.
-          reflexivity.
-        }
-        
-        pose proof (Hctx := prf_equiv_congruence_implicative_ctx
-                              (Empty_set Pattern) _ _ ctx Hwfnp1' Hwfnegp1' Himpl IHp1').
+               
         apply pf_iff_proj1 in Hctx.
 
         unfold ctx in Hctx. unfold ctx' in Hctx. simpl in Hctx. unfold emplace in Hctx. simpl in Hctx.
