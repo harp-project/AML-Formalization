@@ -524,31 +524,90 @@ Section ml_tauto.
       simpl in Hsz.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
       pose proof (IHp2' := IHsz p2' ltac:(auto) ltac:(lia)).
-
+      
       remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> e_negate p1' or e_negate p2')) as star.
-      remember (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> (patt_free_evar star) or e_negate p2') as ctx'.
+      unfold patt_iff. unfold patt_iff in Heqstar.
+
+      set ctx' := ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or e_negate p2')
+    and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥))).
+      
+      (*remember (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> (patt_free_evar star) or e_negate p2') as ctx'.*)
       assert (wfctx': well_formed ctx').
-      { subst. unfold patt_iff. auto 15. }
-      assert (countstar: count_evar_occurrences star ctx' = 1).
-      { rewrite Heqctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
-        simpl. rewrite negate_count_evar_occurrences.
-        (* Oh no, there are two occurrences of star in the context: one for each implication. *)
-        Search count_evar_occurrences
-        assert (count_evar_occurrences star p1.
+      { unfold ctx'. unfold patt_iff. auto 15. }
+
+
+      assert (Hcount_p1': count_evar_occurrences star p1' = 0).
+      {
         rewrite count_evar_occurrences_0.
         subst.
         eapply evar_is_fresh_in_richer'.
         2: apply set_evar_fresh_is_fresh'.
         solve_free_evars_inclusion 5.
-        
-        Check x_eq_fresh_impl_x_notin_free_evars.
-        Check set_evar_fresh_is_fresh.
-        Search not elem_of free_evars.
-        lia. (*
-      remember (@Build_PatternCtx _ star ctx' wfctx') as ctx.
+        reflexivity.
+      }
 
+      assert (Hcount_p2': count_evar_occurrences star p2' = 0).
+      {
+        rewrite count_evar_occurrences_0.
+        subst.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        solve_free_evars_inclusion 5.
+        reflexivity.
+      }
+
+      assert (Hcount_np1': count_evar_occurrences star (e_negate p1') = 0).
+      { rewrite negate_count_evar_occurrences. apply Hcount_p1'. }
+
+      assert (Hcount_np2': count_evar_occurrences star (e_negate p2') = 0).
+      { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
+      
+      assert (countstar: count_evar_occurrences star ctx' = 1).
+      { unfold ctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
+        simpl. rewrite negate_count_evar_occurrences.  rewrite negate_count_evar_occurrences.
+        rewrite Hcount_p1' Hcount_p2'.
+        lia.
+      }
+      set ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar).
+      
       Check prf_equiv_congruence_implicative_ctx.
-*)
+      assert (Himpl: is_implicative_context ctx).
+      { unfold ctx. unfold is_implicative_context.
+        rewrite [pcEvar _]/=. rewrite [pcPattern _]/=.
+        unfold ctx'.
+        unfold patt_and. unfold patt_not at 1.
+        unfold is_implicative_context'.
+        (* This takes awfully long, and generates long goal. We need some better reasoning about this. *)
+        simpl.
+        rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.
+        destruct (evar_eqdec star star). 2: contradiction. simpl.
+        reflexivity.
+      }
+
+      assert(Hwfnegp1': well_formed (e_negate p1')).
+      { auto. }
+      assert(Hwfnegp2': well_formed (e_negate p2')).
+      { auto. }
+      assert(Hwfnp1': well_formed (patt_not p1')).
+      { auto. }
+      assert(Hwfnp2': well_formed (patt_not p2')).
+      { auto. }
+      
+      pose proof (Hctx := prf_equiv_congruence_implicative_ctx
+                            (Empty_set Pattern) _ _ ctx Hwfnp1' Hwfnegp1' Himpl IHp1').
+      apply pf_iff_proj1 in Hctx.
+
+      unfold ctx in Hctx. unfold ctx' in Hctx. simpl in Hctx. unfold emplace in Hctx. simpl in Hctx.
+      destruct (evar_eqdec star star). 2: contradiction. simpl in Hctx.
+
+      repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption).
+      simpl in Hctx.
+      eapply Modus_ponens.
+      4: { apply Hctx. }
+      5: { apply well_formed_free_evar_subst. auto. auto. }
+      4: { apply well_formed_free_evar_subst; auto. }
+      1,2: auto 20.
+
   Abort.
   
 
