@@ -602,8 +602,12 @@ Section ml_tauto.
           reflexivity
          |];
         assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
-        [apply prf_equiv_congruence_implicative_ctx;auto|].
-
+        [apply prf_equiv_congruence_implicative_ctx;auto|];
+        apply pf_iff_proj1 in Hctx;
+        [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
+        unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
+        destruct (evar_eqdec star star); [|contradiction]; simpl in Hctx
+      .
                                                          
                     
       
@@ -626,12 +630,7 @@ Section ml_tauto.
              and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
-        
-               
-        apply pf_iff_proj1 in Hctx.
 
-        unfold ctx in Hctx. unfold ctx' in Hctx. simpl in Hctx. unfold emplace in Hctx. simpl in Hctx.
-        destruct (evar_eqdec star star). 2: contradiction. simpl in Hctx.
 
         repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption).
         simpl in Hctx.
