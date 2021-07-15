@@ -481,6 +481,22 @@ Section ml_tauto.
   #[local] Hint Resolve wf_e_negate : core.
   
 
+  Lemma negate_count_evar_occurrences p x :
+    count_evar_occurrences x (e_negate p) = count_evar_occurrences x p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (e_negate _); try inversion e; subst; simpl; auto.
+    - simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia. lia.
+    - simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia. lia.
+    - simpl in Hsz. rewrite IHsz. lia. lia.
+  Qed.
+  
+  
   Lemma negate_equiv (p : Pattern) :
     well_formed p ->
     (Empty_set _) ⊢ ((patt_not p) <---> (e_negate p)).
@@ -515,7 +531,20 @@ Section ml_tauto.
       { subst. unfold patt_iff. auto 15. }
       assert (countstar: count_evar_occurrences star ctx' = 1).
       { rewrite Heqctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
-        simpl. (*
+        simpl. rewrite negate_count_evar_occurrences.
+        (* Oh no, there are two occurrences of star in the context: one for each implication. *)
+        Search count_evar_occurrences
+        assert (count_evar_occurrences star p1.
+        rewrite count_evar_occurrences_0.
+        subst.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        solve_free_evars_inclusion 5.
+        
+        Check x_eq_fresh_impl_x_notin_free_evars.
+        Check set_evar_fresh_is_fresh.
+        Search not elem_of free_evars.
+        lia. (*
       remember (@Build_PatternCtx _ star ctx' wfctx') as ctx.
 
       Check prf_equiv_congruence_implicative_ctx.
