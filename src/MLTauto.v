@@ -675,7 +675,62 @@ Section ml_tauto.
         apply BigH.
       }
       apply Step2. clear Step2.
-      
+
+      assert (Step3: (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
+                                   and (¬ p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                      ->
+                      (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                                              and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+             ).
+      {
+        intros BigH.
+
+        set ctx' := ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                       and ((patt_free_evar star) or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥))).
+        
+        
+        assert (wfctx': well_formed ctx').
+        { unfold ctx'. unfold patt_iff. auto 15. }
+        
+        assert (countstar: count_evar_occurrences star ctx' = 1).
+        { unfold ctx'. simpl. destruct (evar_eqdec star star). 2: { contradiction. }
+          simpl. rewrite negate_count_evar_occurrences.
+          rewrite Hcount_p1' Hcount_p2'.
+          lia.
+        }
+        set ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar).
+        
+        assert (Himpl: is_implicative_context ctx).
+        { unfold ctx. unfold is_implicative_context.
+          rewrite [pcEvar _]/=. rewrite [pcPattern _]/=.
+          unfold ctx'.
+          unfold patt_and. unfold patt_not at 1.
+          unfold is_implicative_context'.
+          (* This takes awfully long, and generates long goal. We need some better reasoning about this. *)
+          simpl.
+          rewrite Hcount_p1' Hcount_p2'. rewrite Hcount_np2'.
+          destruct (evar_eqdec star star). 2: contradiction. simpl.
+          reflexivity.
+        }
+        
+        pose proof (Hctx := prf_equiv_congruence_implicative_ctx
+                              (Empty_set Pattern) _ _ ctx Hwfnp1' Hwfnegp1' Himpl IHp1').
+        apply pf_iff_proj1 in Hctx.
+
+        unfold ctx in Hctx. unfold ctx' in Hctx. simpl in Hctx. unfold emplace in Hctx. simpl in Hctx.
+        destruct (evar_eqdec star star). 2: contradiction. simpl in Hctx.
+
+        repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption).
+        simpl in Hctx.
+        eapply Modus_ponens.
+        4: { apply Hctx. }
+        5: { apply well_formed_free_evar_subst. auto. auto. }
+        4: { apply well_formed_free_evar_subst; auto. }
+        1,2: auto 20.
+        apply BigH.
+      }
+      apply Step3. clear Step3.
   Abort.
   
 
