@@ -781,11 +781,11 @@ Section ml_tauto.
     and_or_imp_size p with match_and p => {
       | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
       | inr _
-          with match_or p => {
-          | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+          with match_not p => {
+          | inl (existT p1' e) := and_or_imp_size p1';
           | inr _
-              with match_not p => {
-              | inl (existT p1' e) := and_or_imp_size p1';
+              with match_or p => {
+              | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
               | inr _
                   with match_imp p => {
                   | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
@@ -797,26 +797,6 @@ Section ml_tauto.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
-  Lemma and_or_imp_size_not p :
-    and_or_imp_size (patt_not p) = and_or_imp_size p.
-  Proof.
-    funelim (and_or_imp_size _); try inversion e; subst; auto.
-    + funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst.
-      (*reflexivity.*)
-  Abort.
-  
-  
-  Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    max_negation_size p with match_not p => {
-      | inl (existT p1' e) := and_or_imp_size p1';
-      | inr _
-          with match_imp p => {
-          | inl (existT p1 (existT p2 _)) := Nat.max (max_negation_size p1) (max_negation_size p2)
-          | inr _ => 0
-        }
-    }.
-  Solve Obligations with
-      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
   (* This may come handy later. If not, I can always delete that later. *)
   Ltac solve_match_impossibilities :=
@@ -857,6 +837,40 @@ Section ml_tauto.
         end
       ).
 
+
+  
+  Lemma and_or_imp_size_not p :
+    and_or_imp_size (patt_not p) = and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (and_or_imp_size _); try inversion e; subst; auto.
+    - funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst.
+      + simpl in Hsz. repeat rewrite IHsz. lia. lia. reflexivity.
+      + simpl in Hsz. repeat rewrite IHsz. simpl. lia. lia. lia. reflexivity.
+      + solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+  Qed.
+  
+  
+  Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    max_negation_size p with match_not p => {
+      | inl (existT p1' e) := and_or_imp_size p1';
+      | inr _
+          with match_imp p => {
+          | inl (existT p1 (existT p2 _)) := Nat.max (max_negation_size p1) (max_negation_size p2)
+          | inr _ => 0
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
   
   Lemma max_negation_size_not p:
     max_negation_size (patt_not p) = and_or_imp_size p.
