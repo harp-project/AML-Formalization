@@ -956,10 +956,8 @@ Section ml_tauto.
         .
       }
       apply Step2. clear Step2.
-
-      
-  Abort.
-  
+      apply and_impl_2; auto.
+  Qed.
 
 
   
