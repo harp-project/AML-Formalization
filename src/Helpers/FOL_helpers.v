@@ -1815,7 +1815,7 @@ Qed. *)
     all: auto.
   Qed.
 
-  Tactic Notation "mgAdd" ident(n) :=
+  Tactic Notation "mgAdd" constr(n) :=
     match goal with
     | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
       apply (MyGoal_add Ctx l g _ n)
@@ -2200,6 +2200,39 @@ Qed. *)
         apply Prop_ex_right. all: subst; auto.
       + admit.
   Abort.
+
+
+  Lemma and_of_negated_iff_not_impl Γ p1 p2:
+    well_formed p1 ->
+    well_formed p2 ->
+    Γ ⊢ (¬ (¬ p1 ---> p2) <---> ¬ p1 and ¬ p2).
+  Proof.
+    intros wfp1 wfp2.
+    apply conj_intro_meta; auto.
+    - toMyGoal.
+      mgIntro. mgIntro.
+      mgApply' 0 7.
+      mgIntro.
+      unfold patt_or.
+      mgAdd (not_not_elim Γ p2 ltac:(auto)); auto 10.
+      mgApply' 0 10.
+      mgApply' 2 10.
+      mgAdd (not_not_intro Γ (¬ p1) ltac:(auto)); auto 10.
+      mgApply' 0 10.
+      mgExactn 4. auto 10.
+    - toMyGoal.
+      mgIntro. mgIntro.
+      unfold patt_and.
+      mgApply' 0 10.
+      unfold patt_or.
+      mgIntro.
+      mgAdd (not_not_intro Γ p2 ltac:(auto)); auto 10.
+      mgApply' 0 10.
+      mgApply' 2 10.
+      mgAdd (not_not_elim Γ (¬ p1) ltac:(auto)); auto 10.
+      mgApply' 0 10.
+      mgExactn 4. auto 10.
+  Qed.
   
   
 (* Axiom extension : forall G A B,

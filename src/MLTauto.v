@@ -860,6 +860,10 @@ Section ml_tauto.
         .
       }
       apply Step4. clear Step4.
+      apply conj_intro_meta; auto.
+      + unfold patt_and. unfold patt_or.
+        toMyGoal.
+      
       
   Abort.
   
