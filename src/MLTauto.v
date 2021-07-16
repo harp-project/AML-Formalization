@@ -775,14 +775,22 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
       apply and_impl_2; auto.
-  Qed.
+  Qed.    
 
+  (* Huh, not true for p = ¬ ⊥ *)
+  Lemma negate_not_bot p:
+    negate p <> patt_bott.
+  Proof.
+    funelim (negate p); try inversion e; subst; try discriminate.
+  Abort.
+
+  
   Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     and_or_imp_size p with match_and p => {
       | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
       | inr _
           with match_not p => {
-          | inl (existT p1' e) := and_or_imp_size p1';
+          | inl (existT p1' e) := 1 + and_or_imp_size p1';
           | inr _
               with match_or p => {
               | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
@@ -837,10 +845,43 @@ Section ml_tauto.
         end
       ).
 
-
+  Lemma negate_other_than_imp p neq:
+    match_imp p = inr neq ->
+    negate p = ¬ p.
+  Proof.
+    intros H.
+    funelim (negate p); try inversion e; subst;
+      unfold patt_and in *; unfold patt_or in *; unfold patt_not in *;
+        solve_match_impossibilities.
+    reflexivity.
+  Qed.
   
+
+
+  (*
   Lemma and_or_imp_size_not p :
-    and_or_imp_size (patt_not p) = and_or_imp_size p.
+    and_or_imp_size (patt_not p) = 2 + and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (and_or_imp_size _); try inversion e; subst; auto; solve_match_impossibilities.
+    - funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst.
+      + simpl in Hsz. repeat rewrite IHsz. lia. lia. reflexivity.
+      + simpl in Hsz. repeat rewrite IHsz. simpl. lia. lia. lia. reflexivity.
+      + solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+  Qed.
+   *)
+  (*
+  Lemma and_or_imp_size_negate p:
+    and_or_imp_size (negate p) = and_or_imp_size p.
   Proof.
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz).
@@ -850,14 +891,16 @@ Section ml_tauto.
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
       funelim (and_or_imp_size _); try inversion e; subst; auto.
-    - funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst.
-      + simpl in Hsz. repeat rewrite IHsz. lia. lia. reflexivity.
-      + simpl in Hsz. repeat rewrite IHsz. simpl. lia. lia. lia. reflexivity.
-      + solve_match_impossibilities.
-    - solve_match_impossibilities.
-    - solve_match_impossibilities.
-    - solve_match_impossibilities.
-  Qed.
+    - clear H H0 Heq e.
+      funelim (negate (p1 ---> p2)); try inversion e; subst; try solve [inversion H2].
+      + rewrite -Heqcall in H2. inversion H2. subst. clear H2.
+        simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia.
+        clear H H0 e n Heq Heq0 Heqcall.
+        funelim (and_or_imp_size (¬ p1' ---> p2')); try inversion e; subst.
+      inversion H2.
+      funelim (and_or_imp_size (p1 ---> p2)); try inversion e; subst.
+  Abort.
+  *)
   
   
   Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
@@ -880,37 +923,88 @@ Section ml_tauto.
     + solve_match_impossibilities.
     + solve_match_impossibilities.
   Qed.
-  
-  Lemma max_negation_size_negate p q :
-    max_negation_size (negate (p ---> q)) < max_negation_size (patt_not (p ---> q)).
+
+  (*
+  Lemma max_negation_size_or p q:
+    max_negation_size (patt_or*)
+
+  Lemma and_or_imp_size_not p:
+    and_or_imp_size (¬ p) = 1 + and_or_imp_size p.
   Proof.
-    funelim (negate _); try inversion e; subst;
-      funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities;
-        funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities.
-
-    - rewrite H3.
-      clear Heq0 Heq1.
-    
-    
-
-    remember (size' (p ---> q)) as sz.
-    assert (Hsz: size' (p ---> q) <= sz).
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
     { lia. }
     clear Heqsz.
 
-    induction p; funelim (negate _); try inversion e; subst;
-      rewrite ?max_negation_size_not; simpl; solve_match_impossibilities.
+    move: p Hsz.
+    induction sz; intros p Hsz.
+    { destruct p; simpl in Hsz; lia. }
+    funelim (and_or_imp_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    - clear e H H0 Heq.
+      funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+      simpl in Hsz.
+      rewrite IHsz. lia. rewrite IHsz. lia.
+  Abort.
+  
+  
+  Lemma and_or_imp_size_not_2 p q d:
+    and_or_imp_size p + d =  and_or_imp_size q ->
+    and_or_imp_size (¬ p) + d =  and_or_imp_size (¬ q).
+  Proof.
+    intros H.
+    funelim (and_or_imp_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    - clear e H H0 Heq.
+      funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+      clear e n0 n H Heq H0 Heq0 Heq1.
+      rewrite -Heqcall in H1. clear Heqcall.
+      funelim (and_or_imp_size (¬ q)); try inversion e; subst; solve_match_impossibilities.
+      +   clear e H H0 Heq.
+        funelim (and_or_imp_size (¬ p1'0)); try inversion e; subst; solve_match_impossibilities.
+        * clear e H H0 Heq.
+          rewrite -Heqcall in H1. clear Heqcall.
 
-    - funelim (max_negation_size _); try inversion e; subst.
-      funelim (and_or_imp_size _); try inversion e; subst.
-      funelim (and_or_imp_size _); try inversion e; subst.
-      lia. lia. lia.
-    - 
-      
-    try (funelim (max_negation_size _); try inversion e; lia).
-    12: {
+  Abort.
 
-    (* Does not hold *)
+  Lemma and_or_imp_size_not p q:
+    and_or_imp_size p < and_or_imp_size q ->
+    and_or_imp_size (¬ p) < and_or_imp_size (¬ q).
+  Proof.
+  Abort.
+  
+    
+  
+  Check match_not.
+  Lemma max_negation_size_negate p:
+    is_inl (match_imp p) ->
+    max_negation_size (negate p) < max_negation_size (patt_not p).
+  Proof.
+    intros Himp.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Himp Hsz.
+    induction sz; intros p Himp Hsz; destruct p; simpl in Hsz; try lia; try inversion Himp.
+
+    clear Himp.
+    funelim (negate _); try inversion e; subst.
+    - clear e H H0 Heq.
+      funelim (max_negation_size _); try inversion e; subst.
+      + clear e Heq.
+        rewrite max_negation_size_not.
+        rewrite H1.
+        Search and_or_imp_size patt_not.
+        rewrite max_negation_size_not.
+        rewrite H3.
+        rewrite and_or_imp_size_not.
+        rewrite and_or_imp_size_not.
+        clear Heq0 H0 H Heq e e' e'0.
+        funelim (and_or_imp_size (_ or _)); try inversion e; subst.
+        * Search and_or_imp_size negate.
+        (*
+        simpl in Hsz.
+        pose proof (IHsz p1'0).*)
   Abort.
   
   
@@ -932,7 +1026,8 @@ Section ml_tauto.
         }                     
     }.
   Proof.
-    - subst p.
+    - subst p. destruct s as [p1 [p2 Himp]]. subst p'.
+      unfold np'.
   Defined.
   
 
