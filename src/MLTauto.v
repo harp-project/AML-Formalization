@@ -186,6 +186,15 @@ Section ml_tauto.
     intros. eapply existT. eapply existT. reflexivity.
   Defined.
 
+  Equations match_bott (p : Pattern)
+    : (p = patt_bott) + (p <> patt_bott)
+    :=
+      match_bott patt_bott := inl _ ;
+      match_bott _ := inr _.
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
+  Next Obligation. reflexivity. Defined.
+  
+
   Equations negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
     negate p with match_and p => {
       | inl (existT p1' (existT p2' e)) := patt_or (negate p1') (negate p2') ;
@@ -764,8 +773,42 @@ Section ml_tauto.
       apply Step2. clear Step2.
       apply and_impl_2; auto.
   Qed.
+  
+  Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    max_negation_size p with match_not p => {
+      | inl (existT p1' e) := 1 + size' p1';
+      | inr _
+          with match_imp p => {
+          | inl (existT p1 (existT p2 _)) := Nat.max (max_negation_size p1) (max_negation_size p2)
+          | inr _ => 0
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
+  
+  Equations? normalize' (ap : Pattern) (p : Pattern) : Pattern by wf (max_negation_size p) lt :=
+    normalize' ap p with match_not p => {
+      | inl (existT p' e) :=
+        let np' := negate p' in
+        normalize' ap np' ;
+      | inr _
+          with match_imp p => {
+          | inl (existT p1 (existT p2 _)) := patt_imp (normalize' ap p1) (normalize' ap p2) ;
+          | inr _ with match_bott p => {
+              | inl e := patt_and ap (patt_not ap) ;
+              | inr _ := p
+            }               
+        }                     
+    }.
+  Proof.
+    - intros.
+  Defined.
+  
 
 
+
+  
   (* This may come handy later. If not, I can always delete that later. *)
   Ltac solvmatch_impossibilities :=
     repeat (
