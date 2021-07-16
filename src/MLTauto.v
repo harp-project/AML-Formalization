@@ -526,6 +526,46 @@ Section ml_tauto.
     assert (Hsz: size' p <= sz).
     { lia. }
     clear Heqsz.
+
+
+    Tactic Notation "make_step" ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
+      set (ctx' := ctx_expr);
+      assert (wfctx': well_formed ctx');          
+      [unfold ctx'; unfold patt_iff; auto 15|];
+      assert (countstar: count_evar_occurrences star ctx' = 1);
+      [unfold ctx'; simpl; destruct (evar_eqdec star star); [|contradiction];
+       simpl; rewrite ?negate_count_evar_occurrences;
+       simpl_tactic;
+       (*          rewrite ?Hcount_p1' Hcount_p2';*)
+       lia|
+      ];
+      set (ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar));
+      assert (Himpl: is_implicative_context ctx);
+      [ unfold ctx; unfold is_implicative_context;
+        rewrite [pcEvar _]/=; rewrite [pcPattern _]/=;
+                unfold ctx';
+        unfold patt_and; unfold patt_not at 1;
+        unfold is_implicative_context';
+        (* This generates a long goal. We need some better reasoning about this. *)
+        cbn;
+        simpl_tactic;
+        (*rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.*)
+        destruct (evar_eqdec star star); [|contradiction];
+        simpl;
+        reflexivity
+       |];
+      assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
+      [apply prf_equiv_congruence_implicative_ctx;auto|];
+      apply pf_iff_proj1 in Hctx;
+      [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
+      unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
+      destruct (evar_eqdec star star); [|contradiction]; simpl in Hctx;
+      repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption);
+      simpl in Hctx;
+      apply (Modus_ponens_alt _ _ _ Hctx); auto 20
+    .
+
+    
     move: p Hwfp Hsz.
     induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
       funelim (e_negate _); try inversion e; subst;
@@ -554,7 +594,6 @@ Section ml_tauto.
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
 
-      Check  prf_equiv_congruence_implicative_ctx.
       remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> e_negate p1' or e_negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
@@ -584,46 +623,6 @@ Section ml_tauto.
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
       
       unfold patt_iff. unfold patt_iff in Heqstar.
-
-
-      Tactic Notation "make_step" ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
-        set (ctx' := ctx_expr);
-        assert (wfctx': well_formed ctx');          
-        [unfold ctx'; unfold patt_iff; auto 15|];
-        assert (countstar: count_evar_occurrences star ctx' = 1);
-        [unfold ctx'; simpl; destruct (evar_eqdec star star); [|contradiction];
-         simpl; rewrite ?negate_count_evar_occurrences;
-         simpl_tactic;
-(*          rewrite ?Hcount_p1' Hcount_p2';*)
-          lia|
-        ];
-        set (ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar));
-        assert (Himpl: is_implicative_context ctx);
-        [ unfold ctx; unfold is_implicative_context;
-          rewrite [pcEvar _]/=; rewrite [pcPattern _]/=;
-          unfold ctx';
-          unfold patt_and; unfold patt_not at 1;
-          unfold is_implicative_context';
-          (* This generates a long goal. We need some better reasoning about this. *)
-          cbn;
-          simpl_tactic;
-          (*rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.*)
-          destruct (evar_eqdec star star); [|contradiction];
-          simpl;
-          reflexivity
-         |];
-        assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
-        [apply prf_equiv_congruence_implicative_ctx;auto|];
-        apply pf_iff_proj1 in Hctx;
-        [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
-        unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
-        destruct (evar_eqdec star star); [|contradiction]; simpl in Hctx;
-        repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption);
-        simpl in Hctx;
-        apply (Modus_ponens_alt _ _ _ Hctx); auto 20
-      .
-                                                         
-                    
       
       assert (Step1: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or e_negate p2')
@@ -714,8 +713,153 @@ Section ml_tauto.
       apply conj_intro_meta; auto.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
-    -
+    - (*(¬ (¬ p1' ---> p2') <---> e_negate p1' and e_negate p2') *)
+
+      unfold well_formed, well_formed_closed in Hwfp.
+      simpl in Hwfp.
+      rewrite !andbT in Hwfp.
+      apply andb_prop in Hwfp. destruct Hwfp as [Hwf1 Hwf2].
+      apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
+      apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
+      assert (wfp1': well_formed p1').
+      { unfold well_formed, well_formed_closed. rewrite Hwf11 Hwf21. reflexivity. }
+      assert (wfp2': well_formed p2').
+      { unfold well_formed, well_formed_closed. rewrite Hwf12 Hwf22. reflexivity. }
+
+      simpl in Hsz.
+      pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
+      pose proof (IHp2' := IHsz p2' ltac:(auto) ltac:(lia)).
+
+      assert(Hwfnegp1': well_formed (e_negate p1')).
+      { auto. }
+      assert(Hwfnegp2': well_formed (e_negate p2')).
+      { auto. }
+      assert(Hwfnp1': well_formed (patt_not p1')).
+      { auto. }
+      assert(Hwfnp2': well_formed (patt_not p2')).
+      { auto. }
+
+      remember (fresh_evar (¬ (¬ p1' ---> p2') <---> e_negate p1' and e_negate p2')) as star.
+
+      assert (Hcount_p1': count_evar_occurrences star p1' = 0).
+      {
+        rewrite count_evar_occurrences_0.
+        subst.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        solve_free_evars_inclusion 5.
+        reflexivity.
+      }
+
+      assert (Hcount_p2': count_evar_occurrences star p2' = 0).
+      {
+        rewrite count_evar_occurrences_0.
+        subst.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        solve_free_evars_inclusion 5.
+        reflexivity.
+      }
+
+      assert (Hcount_np1': count_evar_occurrences star (e_negate p1') = 0).
+      { rewrite negate_count_evar_occurrences. apply Hcount_p1'. }
+
+      assert (Hcount_np2': count_evar_occurrences star (e_negate p2') = 0).
+      { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
       
+      unfold patt_iff. unfold patt_iff in Heqstar.
+
+      assert (Step1: (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and e_negate p2')
+                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                     ->
+                      (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> e_negate p1' and e_negate p2')
+                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                
+             ).
+      {
+        intros BigH.
+
+        make_step
+          star
+          (¬ p1')
+          (e_negate p1')
+          ((¬ (¬ p1' ---> p2') ---> (patt_free_evar star) and e_negate p2')
+             and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+          (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
+        .
+      }
+      apply Step1. clear Step1.
+
+      assert (Step2: (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                     ->
+                      (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and e_negate p2')
+                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                
+             ).
+      {
+        intros BigH.
+
+        make_step
+          star
+          (¬ p2')
+          (e_negate p2')
+          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and (patt_free_evar star))
+             and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+          (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
+        .
+      }
+      apply Step2. clear Step2.
+
+      assert (Step3: (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+                                   and (¬ p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                     ->
+                      (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                
+             ).
+      {
+        intros BigH.
+
+        make_step
+          star
+          (¬ p1')
+          (e_negate p1')
+          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+             and ((patt_free_evar star) and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+          (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
+        .
+      }
+      apply Step3. clear Step3.
+
+      assert (Step4: (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+                                   and (¬ p1' and ¬ p2' ---> ¬ (¬ p1' ---> p2'))))
+                     ->
+                      (Empty_set Pattern ⊢
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+                                   and (¬ p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                
+             ).
+      {
+        intros BigH.
+
+        make_step
+          star
+          (¬ p2')
+          (e_negate p2')
+          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
+             and ( ¬ p1' and (patt_free_evar star) ---> ¬ (¬ p1' ---> p2')))
+          (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
+        .
+      }
+      apply Step4. clear Step4.
       
   Abort.
   
