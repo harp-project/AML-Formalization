@@ -186,6 +186,9 @@ Section ml_tauto.
     intros. eapply existT. eapply existT. reflexivity.
   Defined.
 
+  Lemma match_imp_patt_imp p1 p2: is_inl (match_imp (patt_imp p1 p2)).
+  Proof. reflexivity. Qed.
+
   Equations match_bott (p : Pattern)
     : (p = patt_bott) + (p <> patt_bott)
     :=
@@ -773,10 +776,39 @@ Section ml_tauto.
       apply Step2. clear Step2.
       apply and_impl_2; auto.
   Qed.
+
+  Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    and_or_imp_size p with match_and p => {
+      | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+      | inr _
+          with match_or p => {
+          | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+          | inr _
+              with match_not p => {
+              | inl (existT p1' e) := and_or_imp_size p1';
+              | inr _
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
+                  | inr _ => 1
+                }
+            }
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
+  Lemma and_or_imp_size_not p :
+    and_or_imp_size (patt_not p) = and_or_imp_size p.
+  Proof.
+    funelim (and_or_imp_size _); try inversion e; subst; auto.
+    + funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst.
+      (*reflexivity.*)
+  Abort.
+  
   
   Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     max_negation_size p with match_not p => {
-      | inl (existT p1' e) := 1 + size' p1';
+      | inl (existT p1' e) := and_or_imp_size p1';
       | inr _
           with match_imp p => {
           | inl (existT p1 (existT p2 _)) := Nat.max (max_negation_size p1) (max_negation_size p2)
@@ -786,12 +818,96 @@ Section ml_tauto.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
+  (* This may come handy later. If not, I can always delete that later. *)
+  Ltac solve_match_impossibilities :=
+    repeat (
+        match goal with
+        | H : match_or (patt_or ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_or_patt_or A B);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : match_and (patt_and ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_and_patt_and A B);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : match_imp (patt_imp ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_imp_patt_imp A B);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : match_not (patt_not ?A) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_not_patt_not A);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        end
+      ).
+
+  
+  Lemma max_negation_size_not p:
+    max_negation_size (patt_not p) = and_or_imp_size p.
+  Proof.
+    funelim (max_negation_size _); try inversion e; subst.
+    + reflexivity.
+    + solve_match_impossibilities.
+    + solve_match_impossibilities.
+  Qed.
+  
+  Lemma max_negation_size_negate p q :
+    max_negation_size (negate (p ---> q)) < max_negation_size (patt_not (p ---> q)).
+  Proof.
+    funelim (negate _); try inversion e; subst;
+      funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities;
+        funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities.
+
+    - rewrite H3.
+      clear Heq0 Heq1.
+    
+    
+
+    remember (size' (p ---> q)) as sz.
+    assert (Hsz: size' (p ---> q) <= sz).
+    { lia. }
+    clear Heqsz.
+
+    induction p; funelim (negate _); try inversion e; subst;
+      rewrite ?max_negation_size_not; simpl; solve_match_impossibilities.
+
+    - funelim (max_negation_size _); try inversion e; subst.
+      funelim (and_or_imp_size _); try inversion e; subst.
+      funelim (and_or_imp_size _); try inversion e; subst.
+      lia. lia. lia.
+    - 
+      
+    try (funelim (max_negation_size _); try inversion e; lia).
+    12: {
+
+    (* Does not hold *)
+  Abort.
+  
   
   Equations? normalize' (ap : Pattern) (p : Pattern) : Pattern by wf (max_negation_size p) lt :=
     normalize' ap p with match_not p => {
-      | inl (existT p' e) :=
-        let np' := negate p' in
-        normalize' ap np' ;
+      | inl (existT p' e) with match_imp p' => {
+          | inl _ :=
+            let np' := negate p' in
+            normalize' ap np' ;
+          | inr _ := p
+        }
       | inr _
           with match_imp p => {
           | inl (existT p1 (existT p2 _)) := patt_imp (normalize' ap p1) (normalize' ap p2) ;
@@ -802,33 +918,9 @@ Section ml_tauto.
         }                     
     }.
   Proof.
-    - intros.
+    - subst p.
   Defined.
   
-
-
-
-  
-  (* This may come handy later. If not, I can always delete that later. *)
-  Ltac solvmatch_impossibilities :=
-    repeat (
-        match goal with
-        | H : match_or (patt_or ?A ?B) = inr _ |- _
-          =>
-          let HC1 := fresh "HC1" in
-          pose proof (HC1 := match_or_patt_or A B);
-          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
-          rewrite HC1 in HC2;
-          inversion HC2
-        | H : match_and (patt_and ?A ?B) = inr _ |- _
-          =>
-          let HC1 := fresh "HC1" in
-          pose proof (HC1 := match_and_patt_and A B);
-          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
-          rewrite HC1 in HC2;
-          inversion HC2
-        end
-      ).
 
 
   (* TODO: a function [abstract : Pattern -> PropPattern] *)
