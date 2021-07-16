@@ -1280,55 +1280,11 @@ Qed. *)
     Γ ⊢ ¬A.
   Proof.
     intros wfA wfB AimpB AimpnB.
-    Check P4m.
     pose proof (H1 := P4m Γ A B wfA wfB).
     assert (H2 : Γ ⊢ (A ---> ¬ B) ---> ¬ A).
     { eapply Modus_ponens. 4: apply H1. all: auto. }
     eapply Modus_ponens. 4: apply H2. all: auto.
   Qed.
-
-
-  Lemma test_lemma Γ A B A' B':
-    well_formed A ->
-    well_formed B ->
-    well_formed A' ->
-    well_formed B' ->
-    Γ ⊢ (A' ---> B') ->
-    Γ ⊢ (A ---> A') ->
-    Γ ⊢ (B' ---> B) ->
-    Γ ⊢ (A ---> B).
-  Proof.
-    intros wfA wfB wfA' wfB' A'impB' AimpA' B'impB.
-    (* A term with a hole, representing the goal. It will be hidden inside the 'our' context. *)
-    (* Another existential hypotheses that our goal will have will be the well_formed-ness assumptions. *)
-    epose (G1 := ?[g1] : (Γ ⊢ (A ---> B))).
-
-    (* Now we try to simulate the following apply: *)
-    (* eapply (prf_weaken_conclusion_meta_meta Γ _ _ _ _ _ _ B'impB). *)
-
-    (* First, lets create a new goal *)
-    epose (G2 := ?[g2] : (Γ ⊢ (A ---> B'))).
-    (* Now, lets try to unify G1 with this. *)
-    Check (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
-    (*instantiate (g1 := (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2)).*)
-    unify ?g1 (prf_weaken_conclusion_meta_meta Γ A B' B wfA wfB' wfB B'impB G2).
-    Fail unify ?Goal0 I.
-    (* Ok, it works, but: unify renamed our question mark variables.
-       I can see two possible workarounds: (1) match on the 'current goal' hypothesis and derive the
-       variable from the match; (2) remember in the context the terms to unify but do not unify them
-       until the very end.
-     *)
-
-    (* Also, we probably want the context to be part of the goal, and not part of the Coq's context. *)
-    move: G2.
-    (* But then, how do we remember the name of the unification variable? *)
-    (* Also:
-       '''Error: ?Goal is a generated name. Only user-given names for existential variables can be referenced.
-          To give a user name to an existential variable, introduce it with the ?[name] syntax.'''
-       So it looks we need to defer the unification to later. And that is ugly, because we do not get
-       checking when doing the interactive proof.
-     *)
-  Abort.
 
   Record MyGoal : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
 
@@ -1336,12 +1292,9 @@ Qed. *)
 
   Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
 
-  Compute (MyGoal_from_goal (Empty_set _) patt_bott).
 
-  Check fold_right.
   Coercion of_MyGoal (MG : MyGoal) : Prop := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
 
-  Compute of_MyGoal (mkMyGoal (Empty_set _) [(patt_bound_evar 1); (patt_bound_evar 2)] (patt_bound_evar 3)).
 
   Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) <-> (Γ ⊢ goal).
   Proof. reflexivity. Qed.
@@ -1362,7 +1315,6 @@ Qed. *)
   Proof.
     intros wfl wfg ln.
     pose proof (Hn := lookup_lt_Some l n g ln).
-    Check take_drop_middle.
     pose proof (Heq := take_drop_middle l n g ln).
     rewrite -Heq.
     unfold of_MyGoal. simpl.
@@ -1375,7 +1327,7 @@ Qed. *)
   Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
 
   (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
-  Print Signature. Print MLVariables. Check (@variables Σ).
+
   Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
   Proof.
     toMyGoal. mgIntro. mgIntro. mgIntro. mgExactn 1.
@@ -2164,7 +2116,6 @@ Qed. *)
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
         apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-        Check wc_sctx.
         apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
       

@@ -5,7 +5,6 @@ From Coq Require Import Logic.FunctionalExtensionality.
 From Coq.micromega Require Import Lia.
 
 From Equations Require Import Equations.
-Show Obligation Tactic.
 
 From stdpp Require Import base option.
 
@@ -278,7 +277,6 @@ Section ml_tauto.
 
   (*Transparent e_and_or_imp_size.*)
 
-  Compute (e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1))).
   Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
   Proof.
     (* [reflexivity] just works, but we want to test the functional elimination principle *)
