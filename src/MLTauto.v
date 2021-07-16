@@ -102,39 +102,29 @@ Section ml_tauto.
   Qed.
 
 
-  Equations e_match_not (p : Pattern)
+  Equations match_not (p : Pattern)
     : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p')
     :=
-      e_match_not (p' ---> ⊥) := inl _ ;
-      e_match_not _ := inr _ .
+      match_not (p' ---> ⊥) := inl _ ;
+      match_not _ := inr _ .
   Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
   Next Obligation.
     intros. eapply existT. reflexivity.
   Defined.
   
-  (*
-  Lemma e_match_not (p : Pattern) : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p').
+  Lemma match_not_patt_not p: is_inl (match_not (patt_not p)).
   Proof.
-    destruct p; try (right;intros;discriminate).
-    destruct p2;try (right;intros;discriminate).
-    left.
-    eapply existT. reflexivity.
-  Defined.
-   *)
-  
-  Lemma e_match_not_patt_not p: is_inl (e_match_not (patt_not p)).
-  Proof.
-    funelim (e_match_not _). simpl. reflexivity.
+    funelim (match_not _). simpl. reflexivity.
   Qed.
 
-  Equations e_match_or (p : Pattern)
+  Equations match_or (p : Pattern)
     : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}}) + (forall p1 p2, p <> patt_or p1 p2)
     :=
-      e_match_or (p1 ---> p2) with e_match_not p1 => {
+      match_or (p1 ---> p2) with match_not p1 => {
         | inl (existT p1' e) => inl _
         | inr _ => inr _
       } ;      
-      e_match_or _ := inr _.
+      match_or _ := inr _.
   Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
   Next Obligation.
     intros. inversion e. subst. eapply existT. eapply existT. reflexivity.
@@ -146,37 +136,19 @@ Section ml_tauto.
     congruence.
   Defined.  
 
-  (*
-  Lemma e_match_or (p : Pattern) :
-    ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}})
-    + (forall p1 p2, p <> patt_or p1 p2).
-  Proof.
-    destruct p; try (right;intros;discriminate).
-    pose proof (X := e_match_not p1).
-    destruct X.
-    2: { right. intros. unfold patt_or.
-         assert (p1 <> patt_not p0). auto.
-         congruence.
-    }
-    destruct s. subst.
-    left.
-    eapply existT. eapply existT. reflexivity.
-  Defined.
-  *)
-
-  Lemma e_match_or_patt_or p1 p2: is_inl (e_match_or (patt_or p1 p2)).
+  Lemma match_or_patt_or p1 p2: is_inl (match_or (patt_or p1 p2)).
   Proof. reflexivity. Qed.
 
-  Equations?  e_match_and (p : Pattern)
+  Equations?  match_and (p : Pattern)
     : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}}) + (forall p1 p2, p <> patt_and p1 p2)
     :=
-      e_match_and p with e_match_not p => {
+      match_and p with match_not p => {
         | inr _ := inr _ ;
-        | inl (existT p' e') with e_match_or p' => {
+        | inl (existT p' e') with match_or p' => {
             | inr _ := inr _ ;
-            | inl (existT p1 (existT p2 e12)) with e_match_not p1 => {
+            | inl (existT p1 (existT p2 e12)) with match_not p1 => {
                 | inr _ := inr _ ;
-                | inl (existT np1 enp1) with e_match_not p2 => {
+                | inl (existT np1 enp1) with match_not p2 => {
                     | inr _ := inr _ ;
                     | inl (existT np2 enp2) := inl _
                   }
@@ -194,127 +166,38 @@ Section ml_tauto.
     - intros. unfold not. intros Hcontra. subst.
       specialize (n ((patt_or (patt_not p1) (patt_not p2)))). contradiction.
   Defined.
-  (*
-  
-  Lemma e_match_and (p : Pattern) :
-    ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}})
-    + (forall p1 p2, p <> patt_and p1 p2).
-  Proof.
-    pose proof (X := e_match_not p).
-    destruct X.
-    2: {
-      right. intros. firstorder.
-    }
-    destruct s. subst p.
 
-    pose proof (Y := e_match_or x).
-    destruct Y.
-    2: {
-      right. intros. unfold patt_and.
-      specialize (n (patt_not p1) (patt_not p2)).
-      intros Hcontra. inversion Hcontra. contradiction.
-    }
-    destruct s. destruct s. subst x.
-
-    pose proof (Z := e_match_not x0).
-    destruct Z.
-    2: {
-      right. intros. unfold not. intros Hcontra.
-      inversion Hcontra. subst. specialize (n p1). contradiction.
-    }
-
-    pose proof (T := e_match_not x1).
-    destruct T.
-    2: {
-      right. intros. unfold not. intros Hcontra.
-      inversion Hcontra. subst. specialize (n p2). contradiction.
-    }
-
-    destruct s, s0. subst.
-    left. eapply existT. eapply existT. reflexivity.
-  Defined.
-   *)
-  
-
-  Lemma e_match_and_patt_and p1 p2: is_inl (e_match_and (patt_and p1 p2)).
+  Lemma match_and_patt_and p1 p2: is_inl (match_and (patt_and p1 p2)).
   Proof. reflexivity. Qed.
 
-  Lemma e_match_and_patt_or p1 p2: is_inl (e_match_and (patt_or p1 p2)) = false.
+  Lemma match_and_patt_or p1 p2: is_inl (match_and (patt_or p1 p2)) = false.
   Proof.
-    funelim (e_match_and _); try reflexivity.
+    funelim (match_and _); try reflexivity.
     subst. inversion e'.
   Qed.
 
-  Equations e_match_imp (p : Pattern)
+  Equations match_imp (p : Pattern)
     : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}}) + (forall p1 p2, p <> patt_imp p1 p2)
     :=
-      e_match_imp (p1 ---> p2) := inl _ ;
-      e_match_imp _ := inr _.
+      match_imp (p1 ---> p2) := inl _ ;
+      match_imp _ := inr _.
   Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
   Next Obligation.
     intros. eapply existT. eapply existT. reflexivity.
   Defined.
 
-  Equations e_and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    e_and_or_imp_size p with e_match_and p => {
-      | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-      | inr _ 
-          with e_match_or p => {
-            | inl (existT p1' (existT p2' e)) := 1 + (e_and_or_imp_size p1') + (e_and_or_imp_size p2') ;
-            | inr _
-                with e_match_not p => {
-                | inl (existT p1' e) := e_and_or_imp_size p1' ;
-                | inr _
-                  with e_match_imp p => {
-                    | inl (existT p1 (existT p2 _)) := 1 + (e_and_or_imp_size p1) + (e_and_or_imp_size p2) ;
-                    | inr _ => 0
-                  }
-              }                                        
-        }
-    }.
-  Solve All Obligations with
-      (intros; Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-
-  (*Transparent e_and_or_imp_size.*)
-
-  Example ex1: e_and_or_imp_size ((patt_bound_evar 0) and (patt_bound_evar 1)) = 1.
-  Proof.
-    (* [reflexivity] just works, but we want to test the functional elimination principle *)
-    (* reflexivity. *)
-
-    funelim (e_and_or_imp_size _).
-    - inversion e. subst.
-      repeat simp e_and_or_imp_size.
-      simp e_match_and.
-      simp e_match_not.
-      simpl e_match_and_clause_1.
-      simpl e_and_or_imp_size_unfold_clause_1.
-      simp e_match_or.
-      simpl e_and_or_imp_size_unfold_clause_1_clause_2.
-      simp e_match_not.
-      simpl e_and_or_imp_size_unfold_clause_1_clause_2_clause_2.
-      simp e_match_imp.
-      simpl e_and_or_imp_size_unfold_clause_1_clause_2_clause_2_clause_2.
-      lia.
-    - inversion Heq0.
-    - inversion Heq1.
-    - inversion Heq2.
-    - inversion Heq2.
-  Qed.
-
-
-  Equations e_negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
-    e_negate p with e_match_and p => {
-      | inl (existT p1' (existT p2' e)) := patt_or (e_negate p1') (e_negate p2') ;
+  Equations negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
+    negate p with match_and p => {
+      | inl (existT p1' (existT p2' e)) := patt_or (negate p1') (negate p2') ;
       | inr _
-          with e_match_or p => {
-          | inl (existT p1' (existT p2' e)) := patt_and (e_negate p1') (e_negate p2') ;
+          with match_or p => {
+          | inl (existT p1' (existT p2' e)) := patt_and (negate p1') (negate p2') ;
           | inr _
-              with e_match_not p => {
+              with match_not p => {
               | inl (existT p1' e) := p1';
               | inr _
-                  with e_match_imp p => {
-                  | inl (existT p1 (existT p2 _)) := patt_and p1 (e_negate p2) ;
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := patt_and p1 (negate p2) ;
                   | inr _ => patt_not p
                 }
             }
@@ -323,7 +206,7 @@ Section ml_tauto.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
-  Example simple: e_negate ((patt_bound_evar 0) and (patt_bound_evar 1)) =
+  Example simple: negate ((patt_bound_evar 0) and (patt_bound_evar 1)) =
                   patt_or (patt_not (patt_bound_evar 0)) (patt_not (patt_bound_evar 1)).
   Proof.
     reflexivity.
@@ -349,9 +232,9 @@ Section ml_tauto.
     intros. rewrite H. reflexivity.
   Qed.
 
-  Lemma wf_e_negate p:
+  Lemma wf_negate p:
     well_formed p ->
-    well_formed (e_negate p).
+    well_formed (negate p).
   Proof.
     intros wfp.
     remember (size' p) as sz.
@@ -360,7 +243,7 @@ Section ml_tauto.
     clear Heqsz.
     move: p Hsz wfp.
     induction sz; intros p Hsz wfp; destruct p; simpl in *; try lia;
-      funelim (e_negate _); auto; try inversion e; subst.
+      funelim (negate _); auto; try inversion e; subst.
     - simpl in Hsz.
       unfold well_formed, well_formed_closed in wfp.
       simpl in wfp.
@@ -410,11 +293,11 @@ Section ml_tauto.
       auto.
   Qed.
 
-  #[local] Hint Resolve wf_e_negate : core.
+  #[local] Hint Resolve wf_negate : core.
   
 
   Lemma negate_count_evar_occurrences p x :
-    count_evar_occurrences x (e_negate p) = count_evar_occurrences x p.
+    count_evar_occurrences x (negate p) = count_evar_occurrences x p.
   Proof.
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz).
@@ -422,7 +305,7 @@ Section ml_tauto.
     clear Heqsz.
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
-      funelim (e_negate _); try inversion e; subst; simpl; auto.
+      funelim (negate _); try inversion e; subst; simpl; auto.
     - simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia. lia.
     - simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia. lia.
     - simpl in Hsz. rewrite IHsz. lia. lia.
@@ -442,7 +325,7 @@ Section ml_tauto.
 
   Lemma negate_equiv (p : Pattern) :
     well_formed p ->
-    (Empty_set _) ⊢ ((patt_not p) <---> (e_negate p)).
+    (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).
   Proof.
     intros Hwfp.
     remember (size' p) as sz.
@@ -491,7 +374,7 @@ Section ml_tauto.
     
     move: p Hwfp Hsz.
     induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
-      funelim (e_negate _); try inversion e; subst;
+      funelim (negate _); try inversion e; subst;
         try apply pf_iff_equiv_refl; auto.
     - unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
@@ -508,16 +391,16 @@ Section ml_tauto.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
       pose proof (IHp2' := IHsz p2' ltac:(auto) ltac:(lia)).
 
-      assert(Hwfnegp1': well_formed (e_negate p1')).
+      assert(Hwfnegp1': well_formed (negate p1')).
       { auto. }
-      assert(Hwfnegp2': well_formed (e_negate p2')).
+      assert(Hwfnegp2': well_formed (negate p2')).
       { auto. }
       assert(Hwfnp1': well_formed (patt_not p1')).
       { auto. }
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
 
-      remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> e_negate p1' or e_negate p2')) as star.
+      remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> negate p1' or negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
@@ -539,20 +422,20 @@ Section ml_tauto.
         reflexivity.
       }
 
-      assert (Hcount_np1': count_evar_occurrences star (e_negate p1') = 0).
+      assert (Hcount_np1': count_evar_occurrences star (negate p1') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p1'. }
 
-      assert (Hcount_np2': count_evar_occurrences star (e_negate p2') = 0).
+      assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
       
       unfold patt_iff. unfold patt_iff in Heqstar.
       
       assert (Step1: (Empty_set Pattern ⊢
-                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or e_negate p2')
-                                   and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or negate p2')
+                                   and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> e_negate p1' or e_negate p2')
-                                             and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
+                                             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -561,9 +444,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p1')
-          (e_negate p1')
-          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or e_negate p2')
-             and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          (negate p1')
+          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or negate p2')
+             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -571,10 +454,10 @@ Section ml_tauto.
 
       assert (Step2: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
-                                   and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                   and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or e_negate p2')
-                                             and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
+                                             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -582,9 +465,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p2')
-          (e_negate p2')
+          (negate p2')
           ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or (patt_free_evar star))
-             and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -592,10 +475,10 @@ Section ml_tauto.
 
       assert (Step3: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
-                                   and (¬ p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                   and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
                       (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-                                              and (e_negate p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -603,9 +486,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p1')
-          (e_negate p1')
+          (negate p1')
           ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-             and ((patt_free_evar star) or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+             and ((patt_free_evar star) or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .          
       }
@@ -617,7 +500,7 @@ Section ml_tauto.
                                    and (¬ p1' or ¬ p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
                       (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-                                              and (¬ p1' or e_negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                                              and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -625,7 +508,7 @@ Section ml_tauto.
         make_step
           star
           (¬ p2')
-          (e_negate p2')
+          (negate p2')
           ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
              and (¬ p1' or (patt_free_evar star) ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
@@ -636,7 +519,7 @@ Section ml_tauto.
       apply conj_intro_meta; auto.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
-    - (*(¬ (¬ p1' ---> p2') <---> e_negate p1' and e_negate p2') *)
+    - (*(¬ (¬ p1' ---> p2') <---> negate p1' and negate p2') *)
 
       unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
@@ -653,16 +536,16 @@ Section ml_tauto.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
       pose proof (IHp2' := IHsz p2' ltac:(auto) ltac:(lia)).
 
-      assert(Hwfnegp1': well_formed (e_negate p1')).
+      assert(Hwfnegp1': well_formed (negate p1')).
       { auto. }
-      assert(Hwfnegp2': well_formed (e_negate p2')).
+      assert(Hwfnegp2': well_formed (negate p2')).
       { auto. }
       assert(Hwfnp1': well_formed (patt_not p1')).
       { auto. }
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
 
-      remember (fresh_evar (¬ (¬ p1' ---> p2') <---> e_negate p1' and e_negate p2')) as star.
+      remember (fresh_evar (¬ (¬ p1' ---> p2') <---> negate p1' and negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
@@ -684,21 +567,21 @@ Section ml_tauto.
         reflexivity.
       }
 
-      assert (Hcount_np1': count_evar_occurrences star (e_negate p1') = 0).
+      assert (Hcount_np1': count_evar_occurrences star (negate p1') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p1'. }
 
-      assert (Hcount_np2': count_evar_occurrences star (e_negate p2') = 0).
+      assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Empty_set Pattern ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and e_negate p2')
-                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
                       (Empty_set Pattern ⊢
-                                ((¬ (¬ p1' ---> p2') ---> e_negate p1' and e_negate p2')
-                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((¬ (¬ p1' ---> p2') ---> negate p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
              ).
       {
@@ -707,9 +590,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p1')
-          (e_negate p1')
-          ((¬ (¬ p1' ---> p2') ---> (patt_free_evar star) and e_negate p2')
-             and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+          (negate p1')
+          ((¬ (¬ p1' ---> p2') ---> (patt_free_evar star) and negate p2')
+             and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -717,11 +600,11 @@ Section ml_tauto.
 
       assert (Step2: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
                       (Empty_set Pattern ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and e_negate p2')
-                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
              ).
       {
@@ -730,9 +613,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p2')
-          (e_negate p2')
+          (negate p2')
           ((¬ (¬ p1' ---> p2') ---> ¬ p1' and (patt_free_evar star))
-             and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+             and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -740,11 +623,11 @@ Section ml_tauto.
 
       assert (Step3: (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (¬ p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                   and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
                       (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (e_negate p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
              ).
       {
@@ -753,9 +636,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p1')
-          (e_negate p1')
+          (negate p1')
           ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-             and ((patt_free_evar star) and e_negate p2' ---> ¬ (¬ p1' ---> p2')))
+             and ((patt_free_evar star) and negate p2' ---> ¬ (¬ p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -767,7 +650,7 @@ Section ml_tauto.
                      ->
                       (Empty_set Pattern ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (¬ p1' and e_negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                   and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
              ).
       {
@@ -776,7 +659,7 @@ Section ml_tauto.
         make_step
           star
           (¬ p2')
-          (e_negate p2')
+          (negate p2')
           ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
              and ( ¬ p1' and (patt_free_evar star) ---> ¬ (¬ p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
@@ -792,7 +675,7 @@ Section ml_tauto.
       apply conj_intro_meta; auto.
       + apply not_not_elim; auto.
       + apply not_not_intro; auto.
-    - (* (¬ (p1 ---> p2) <---> p1 and e_negate p2) *)
+    - (* (¬ (p1 ---> p2) <---> p1 and negate p2) *)
       unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
       apply andb_prop in Hwfp. destruct Hwfp as [Hwf1 Hwf2].
@@ -806,12 +689,12 @@ Section ml_tauto.
       simpl in Hsz.
       pose proof (IHp2 := IHsz p2 ltac:(auto) ltac:(lia)).
 
-      assert(Hwfnegp2: well_formed (e_negate p2)).
+      assert(Hwfnegp2: well_formed (negate p2)).
       { auto. }
       assert(Hwfnp2: well_formed (patt_not p2)).
       { auto. }
 
-      remember (fresh_evar (¬ (p1 ---> p2) <---> p1 and e_negate p2)) as star.
+      remember (fresh_evar (¬ (p1 ---> p2) <---> p1 and negate p2)) as star.
 
       assert (Hcount_p1: count_evar_occurrences star p1 = 0).
       {
@@ -833,16 +716,16 @@ Section ml_tauto.
         reflexivity.
       }
 
-      assert (Hcount_np2: count_evar_occurrences star (e_negate p2) = 0).
+      assert (Hcount_np2: count_evar_occurrences star (negate p2) = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2. }
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-                                and (p1 and e_negate p2 ---> ¬ (p1 ---> p2))))
+                                and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and e_negate p2)
-                                and (p1 and e_negate p2 ---> ¬ (p1 ---> p2))))
+                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
+                                and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
       {
@@ -851,9 +734,9 @@ Section ml_tauto.
         make_step
           star
           (¬ p2)
-          (e_negate p2)
+          (negate p2)
           ((¬ (p1 ---> p2) ---> p1 and (patt_free_evar star))
-             and (p1 and e_negate p2 ---> ¬ (p1 ---> p2)))
+             and (p1 and negate p2 ---> ¬ (p1 ---> p2)))
           (rewrite ?Hcount_p1 ?Hcount_p2 ?Hcount_np2)
         .
       }
@@ -863,7 +746,7 @@ Section ml_tauto.
                                              and (p1 and ¬ p2 ---> ¬ (p1 ---> p2))))
                      ->
                      (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-                                             and (p1 and e_negate p2 ---> ¬ (p1 ---> p2))))
+                                             and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
       {
@@ -872,7 +755,7 @@ Section ml_tauto.
         make_step
           star
           (¬ p2)
-          (e_negate p2)
+          (negate p2)
           ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
              and (p1 and (patt_free_evar star) ---> ¬ (p1 ---> p2)))
           (rewrite ?Hcount_p1 ?Hcount_p2 ?Hcount_np2)
@@ -884,20 +767,20 @@ Section ml_tauto.
 
 
   (* This may come handy later. If not, I can always delete that later. *)
-  Ltac solve_match_impossibilities :=
+  Ltac solvmatch_impossibilities :=
     repeat (
         match goal with
-        | H : e_match_or (patt_or ?A ?B) = inr _ |- _
+        | H : match_or (patt_or ?A ?B) = inr _ |- _
           =>
           let HC1 := fresh "HC1" in
-          pose proof (HC1 := e_match_or_patt_or A B);
+          pose proof (HC1 := match_or_patt_or A B);
           pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
           rewrite HC1 in HC2;
           inversion HC2
-        | H : e_match_and (patt_and ?A ?B) = inr _ |- _
+        | H : match_and (patt_and ?A ?B) = inr _ |- _
           =>
           let HC1 := fresh "HC1" in
-          pose proof (HC1 := e_match_and_patt_and A B);
+          pose proof (HC1 := match_and_patt_and A B);
           pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
           rewrite HC1 in HC2;
           inversion HC2
