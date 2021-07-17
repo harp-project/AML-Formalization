@@ -970,7 +970,48 @@ Section ml_tauto.
     and_or_imp_size (¬ p) < and_or_imp_size (¬ q).
   Proof.
   Abort.
-  
+
+  Lemma negate_is_bot p:
+    negate p = ⊥ ->
+    p = ¬ ⊥.
+  Proof.
+    intros H.
+    destruct p; inversion H.
+    assert (p2 = ⊥).
+    {
+      clear H1.
+      funelim (negate (p1 ---> p2)); try inversion e; subst; auto.
+      - rewrite -Heqcall in H1. inversion H1.
+      - rewrite H0 in Heqcall. inversion Heqcall.
+      - rewrite H in Heqcall. inversion Heqcall.
+    }
+    subst p2.
+
+    assert (p1 = ⊥).
+    {
+      clear H1.
+      funelim (negate (p1 ---> ⊥)); try inversion e; subst; auto.
+      - clear H H0.
+        simp negate in H1. rewrite Heq in H1.
+        unfold negate_unfold_clause_1 in H1.
+        inversion H1.
+      - clear H H0.
+        simp negate in H1. rewrite Heq0 in H1.
+        simpl in H1. rewrite Heq in H1. simpl in H1.
+        inversion H1.
+      - clear H.
+        simp negate in H0.
+        rewrite Heq2 in H0. simpl in H0.
+        rewrite Heq1 in H0. simpl in H0.
+        rewrite Heq0 in H0. simpl in H0.
+        rewrite Heq in H0. simpl in H0.
+        inversion H0.
+      - rewrite -Heqcall in H. inversion H.
+    }
+    subst p1.
+    clear H H1.
+    reflexivity.
+  Qed.
     
   
   Check match_not.
@@ -994,6 +1035,102 @@ Section ml_tauto.
       + clear e Heq.
         rewrite max_negation_size_not.
         rewrite H1.
+        (* (¬ (negate p1'0)) can be patt_and *)
+        (* the RHS is patt_and *)
+
+        
+        funelim (and_or_imp_size (¬ p1'0 or ¬ p2' ---> ⊥)); try inversion e; subst.
+        4: {
+          fold (patt_not (¬ p1'0 or ¬ p2')) in Heq1.
+          solve_match_impossibilities.
+        }
+        3: {
+          fold (patt_not (¬ p1'0 or ¬ p2')) in Heq2.
+          fold (patt_and p1'0 p2') in Heq2.
+          solve_match_impossibilities.
+        }
+        2: {
+          fold (patt_not (¬ p1'0 or ¬ p2')) in Heq0.
+          fold (patt_and p1'0 p2') in Heq0.
+          solve_match_impossibilities.
+        }
+        clear e H H0 Heq.
+
+        
+        funelim (and_or_imp_size (¬ negate p1')); try inversion e; subst;
+          solve_match_impossibilities.
+        * clear e H H0 Heq.
+          funelim (negate p1'0); try inversion e; subst.
+          5: { rewrite -Heqcall in H3. inversion H3. }
+          4: { rewrite -Heqcall in H3. inversion H3. }
+          3: { rewrite H3 in H.
+               pose proof (n p1'1 p2'). rewrite H in H0. contradiction.
+          }
+          2: {
+            rewrite -Heqcall in H3. inversion H3.
+          }
+          clear H2.
+          rewrite -Heqcall in H3. inversion H3.
+          clear H H0 Heq.
+          simpl in Hsz.
+          remember (match_imp p1'1) as Hmip1'1.
+          remember (match_imp p2'0) as Hmip2'0.
+          
+          destruct Hmip1'1, Hmip2'0.
+          -- symmetry in HeqHmip1'1.
+             symmetry in HeqHmip2'0.
+             assert (Htmp: match_imp p1'1).
+             { rewrite HeqHmip1'1. reflexivity. }
+             pose proof (IH1 := IHsz p1'1 Htmp).
+             clear Htmp.
+             assert (Htmp: match_imp p2'0).
+             { rewrite HeqHmip2'0. reflexivity. }
+             pose proof (IH2 := IHsz p2'0 Htmp).
+             clear Htmp.
+             destruct s0 as [p1 [p2 Hp1p2]].
+             subst p2'0.
+             destruct s as [p1'' [p2'' Hp1p2'']].
+             subst p1'1.
+             
+             rewrite H4 in H3. rewrite H5 in H3. clear H3.
+
+             clear HeqHmip1'1. clear HeqHmip2'0.
+
+             (* follows from H1 *)
+             assert (p2'1 = ¬ ⊥).
+             {
+               funelim (negate p2'1); try inversion e; subst.
+               - clear H H0. rewrite -Heqcall0 in H1. inversion H1.
+               - clear H H0. rewrite -Heqcall0 in H1. inversion H1.
+               - rewrite H1 in H. subst p. rewrite H1. reflexivity.
+               - clear n n0 n1 H Heq2 Heq1 H0 Heq Heq0.
+                  funelim (negate (p1 ---> p2)); try inversion e; subst.
+                  + rewrite -Heqcall0 in Heqcall. inversion Heqcall.
+                  + rewrite -Heqcall0 in Heqcall. inversion Heqcall.
+                    rewrite H3.
+                 
+                  cle
+               destruct p2'1.
+             }
+             
+             
+             funelim (negate p2'1); try inversion e; subst.
+             ++ clear H H0. rewrite -Heqcall0 in H1. inversion H1.
+             ++ clear H H0. rewrite -Heqcall0 in H1. inversion H1.
+             ++ rewrite H1 in H. subst p. rewrite H1. clear H1.
+                admit.
+             ++ 
+             
+             simpl in IH1. simpl in IH2.
+             specialize (IH1 ltac:(simpl; lia)).
+            destruct s as [p1 [p2 Hp12]].
+             subst p1'1.
+          pose proof (IH1 := IHsz p1'1).
+          
+          solve_match_impossibilities.
+        
+        
+        (*
         Search and_or_imp_size patt_not.
         rewrite max_negation_size_not.
         rewrite H3.
@@ -1005,6 +1142,7 @@ Section ml_tauto.
         (*
         simpl in Hsz.
         pose proof (IHsz p1'0).*)
+*)
   Abort.
   
   
