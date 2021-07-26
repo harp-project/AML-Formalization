@@ -1096,53 +1096,18 @@ Section ml_tauto.
 
              clear HeqHmip1'1. clear HeqHmip2'0.
 
-             (* follows from H1 *)
-             assert (p2'1 = ¬ ⊥).
-             {
-               funelim (negate p2'1); try inversion e; subst.
-               - clear H H0. rewrite -Heqcall0 in H1. inversion H1.
-               - clear H H0. rewrite -Heqcall0 in H1. inversion H1.
-               - rewrite H1 in H. subst p. rewrite H1. reflexivity.
-               - clear n n0 n1 H Heq2 Heq1 H0 Heq Heq0.
-                  funelim (negate (p1 ---> p2)); try inversion e; subst.
-                  + rewrite -Heqcall0 in Heqcall. inversion Heqcall.
-                  + rewrite -Heqcall0 in Heqcall. inversion Heqcall.
-                    rewrite H3.
-                 
-                  cle
-               destruct p2'1.
-             }
-             
-             
-             funelim (negate p2'1); try inversion e; subst.
-             ++ clear H H0. rewrite -Heqcall0 in H1. inversion H1.
-             ++ clear H H0. rewrite -Heqcall0 in H1. inversion H1.
-             ++ rewrite H1 in H. subst p. rewrite H1. clear H1.
-                admit.
-             ++ 
-             
-             simpl in IH1. simpl in IH2.
-             specialize (IH1 ltac:(simpl; lia)).
-            destruct s as [p1 [p2 Hp12]].
-             subst p1'1.
-          pose proof (IH1 := IHsz p1'1).
-          
-          solve_match_impossibilities.
-        
-        
-        (*
-        Search and_or_imp_size patt_not.
-        rewrite max_negation_size_not.
-        rewrite H3.
-        rewrite and_or_imp_size_not.
-        rewrite and_or_imp_size_not.
-        clear Heq0 H0 H Heq e e' e'0.
-        funelim (and_or_imp_size (_ or _)); try inversion e; subst.
-        * Search and_or_imp_size negate.
-        (*
-        simpl in Hsz.
-        pose proof (IHsz p1'0).*)
-*)
+             apply negate_is_bot in H1.
+             subst p2'1.
+             simpl in *.
+             (* ¬ (a -> b) = p and q = ¬ (¬ p or ¬ q)
+                <==>
+                a -> b = ¬ p or ¬ q = ¬ ¬ p ---> ¬ p
+
+                ¬ (a -> b) = p or q = ¬ p ---> q
+                (a ---> b) ---> ⊥ = (p ---> ⊥) ---> q
+                a = p /\ b = ⊥ /\ q = ⊥
+             *)
+                
   Abort.
   
   
