@@ -902,19 +902,25 @@ Section ml_tauto.
   Abort.
   *)
   
-  
+
+  (* mns (¬ s1 and s2) =  *)
   Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
-    max_negation_size p with match_not p => {
-      | inl (existT p1' e) := and_or_imp_size p1';
-      | inr _
-          with match_imp p => {
-          | inl (existT p1 (existT p2 _)) := Nat.max (max_negation_size p1) (max_negation_size p2)
-          | inr _ => 0
+    max_negation_size p with match_and p => {
+      | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2) + 1;
+      | inr _  with match_not p => {
+          | inl (existT p1' e) := size' p1';
+          | inr _ with match_imp p => {
+              | inl (existT p1 (existT p2 _)) :=
+                Nat.max (max_negation_size p1) (max_negation_size p2) + 1;
+              | inr _ => 0
+            }
         }
+                                     
     }.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
-  
+
+  (*
   Lemma max_negation_size_not p:
     max_negation_size (patt_not p) = and_or_imp_size p.
   Proof.
@@ -970,7 +976,7 @@ Section ml_tauto.
     and_or_imp_size (¬ p) < and_or_imp_size (¬ q).
   Proof.
   Abort.
-
+*)
   Lemma negate_is_bot p:
     negate p = ⊥ ->
     p = ¬ ⊥.
@@ -1013,7 +1019,7 @@ Section ml_tauto.
     reflexivity.
   Qed.
 
-
+(*
   Lemma and_or_imp_size_negate_and p q:
     and_or_imp_size (negate (p and q)) = and_or_imp_size (p and q).
   Proof.
@@ -1152,28 +1158,95 @@ Section ml_tauto.
              *)
                 
   Abort.
-  
-  
+  *)
+
+  (* normalize (s1 and s2) = (normalize s1) and (normalize s2) *)
+  (* normalize (s1 or s2) = normalize (¬ s1 ---> s2)*)
   Equations? normalize' (ap : Pattern) (p : Pattern) : Pattern by wf (max_negation_size p) lt :=
-    normalize' ap p with match_not p => {
-      | inl (existT p' e) with match_imp p' => {
-          | inl _ :=
-            let np' := negate p' in
-            normalize' ap np' ;
-          | inr _ := p
-        }
-      | inr _
-          with match_imp p => {
-          | inl (existT p1 (existT p2 _)) := patt_imp (normalize' ap p1) (normalize' ap p2) ;
-          | inr _ with match_bott p => {
-              | inl e := patt_and ap (patt_not ap) ;
+    normalize' ap p with match_and p => {
+      | inl (existT p1 (existT p2 e)) := patt_and (normalize' ap p1) (normalize' ap p2) ;
+      | inr _  with match_not p => {
+          | inl (existT p' e) with match_imp p' => {
+              | inl _ :=
+                let np' := negate p' in
+                normalize' ap np' ;
               | inr _ := p
-            }               
-        }                     
+            }
+          | inr _
+              with match_imp p => {
+              | inl (existT p1 (existT p2 _)) := patt_imp (normalize' ap p1) (normalize' ap p2) ;
+              | inr _ with match_bott p => {
+                  | inl e := patt_and ap (patt_not ap) ;
+                  | inr _ := p
+                }               
+            }                     
+        }
     }.
   Proof.
-    - subst p. destruct s as [p1 [p2 Himp]]. subst p'.
+    - subst p.
+      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - subst p.
+      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - admit.
+    - subst p.
+      funelim (max_negation_size (p1 ---> p2)); try inversion e; subst; solve_match_impossibilities.
+      
+      3: { lia. }
+      2: {
+        clear.
+        destruct p1'; simpl in *; funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities; simpl in *; try lia.
+      }
+      
+
+      destruct s as [p1 [p2 Himp]]. subst p'.
       unfold np'.
+      clear.
+      remember (size' (p1 ---> p2)) as sz.
+      assert (Hsz: (size' (p1 ---> p2)) <= sz).
+      { lia. }
+      clear Heqsz.
+
+      move: p1 p2 Hsz.
+      induction sz; intros p1 p2 Hsz; simpl in *; try lia.
+      
+      funelim (max_negation_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+      simpl.
+      funelim (negate (p1 ---> p2)); try inversion e; subst; solve_match_impossibilities.
+      + clear -IHsz Hsz. 
+        funelim (max_negation_size (negate p1' or negate p2')); try inversion e; subst.
+        * simpl. rewrite H1.
+          apply negate_is_bot in H1. subst p2'. simpl in *.
+          clear -IHsz Hsz.
+          pose proof (IH1 := IHsz p1'0 (⊥)  ltac:(simpl; lia)).
+          funelim (max_negation_size (¬ (p1'0 ---> ⊥))); try inversion e; subst; solve_match_impossibilities.
+          clear e Heq. clear Heqcall.
+          funelim (max_negation_size (negate (p1'0 ---> ⊥))); try inversion e; subst; solve_match_impossibilities.
+          3: {
+            (* Heqcall should imply that p1'0 is an atomic proposition - a symbol or variable *)
+            clear -Heqcall.
+
+            destruct p1'0; simpl in *; funelim (negate _); try inversion e; subst; solve_match_impossibilities; simpl in *; try lia.
+
+            (*
+            (((~p1') or (~p2')) –> bot) –> bot
+            ~(~(~p1' or ~p2'))
+            ~(p1' and p2')
+            maxₙegationₛize (p1' and p2')
+            ~(s1' and s2') ==> negate (s1' and s2') = ¬ (¬ s1' or ¬ s2') = s1' and s2'
+            ~s1' or ~s2'
+             *)
+                                               
+            
+            funelim (negate (p1'0 ---> ⊥)); try inversion e; subst; solve_match_impossibilities.
+          }
+          
+          
+          assert (size' (negate p1'0) < size' p1'0) by admit.
+          simpl. 
+      unfold size'.
+      unfold max_negation_size.
   Defined.
   
 
