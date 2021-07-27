@@ -943,7 +943,7 @@ Section ml_tauto.
     - clear e H H0 Heq.
       funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
       simpl in Hsz.
-      rewrite IHsz. lia. rewrite IHsz. lia.
+      rewrite IHsz. lia. rewrite IHsz. lia. 
   Abort.
   
   
@@ -1012,7 +1012,46 @@ Section ml_tauto.
     clear H H1.
     reflexivity.
   Qed.
-    
+
+
+  Lemma and_or_imp_size_negate_and p q:
+    and_or_imp_size (negate (p and q)) = and_or_imp_size (p and q).
+  Proof.
+    funelim (negate (p and q)); try inversion e; subst; solve_match_impossibilities.
+    clear e H H0 Heq.
+    funelim (and_or_imp_size (negate p1' or negate p2')); try inversion e; subst; solve_match_impossibilities.
+  Abort.
+  
+  Lemma and_or_imp_size_not_negate p:
+    and_or_imp_size (¬ (negate p)) = and_or_imp_size p.
+  Proof.
+    funelim (and_or_imp_size (¬ (negate p))); try inversion e; subst; solve_match_impossibilities;
+      [clear e H H0 Heq | clear e n H Heq Heq0]; funelim (negate p0); try inversion e; subst.
+    - (* this would work under two conditions: (1) and_or_imp_size (negate (p and q)) = and_or_imp_size (p and q) *)
+  Abort.
+  
+  
+  Lemma negate_is_neg_of_impl_impl_result_smaller p q r:
+    negate p = patt_not (q ---> r) ->
+    and_or_imp_size (q ---> r) <= and_or_imp_size p.
+  Proof.
+    intros H.
+    funelim (negate p); subst.
+    - clear H H0 Heq.
+      rewrite -Heqcall in H1. inversion H1. subst.
+      funelim (and_or_imp_size (p1' and p2')); try inversion e; subst; solve_match_impossibilities.
+      clear e H H0 H3 Heq.
+      rewrite H1. apply negate_is_bot in H1. rewrite H1.
+      funelim (and_or_imp_size (¬ ⊥)); try inversion e; subst; solve_match_impossibilities.
+      clear e n Heq H Heq0.
+      funelim (and_or_imp_size (⊥)); try inversion e; subst; solve_match_impossibilities.
+      clear.
+      Search and_or_imp_size patt_not.
+      funelim (and_or_imp_size (negate p1'0 ---> ⊥)); try inversion e; subst; solve_match_impossibilities.
+      + 
+      
+  Abort.
+  
   
   Check match_not.
   Lemma max_negation_size_negate p:
@@ -1099,6 +1138,10 @@ Section ml_tauto.
              apply negate_is_bot in H1.
              subst p2'1.
              simpl in *.
+             (* I want to prove that and_or_imp_size (p1'' ---> p2'') < and_or_imp_size p1',
+               given that negate p1' = (¬ (p1'' ---> p2'')) *)
+             (* I want a lemma saying that if negate x = ¬ (p ---> q),
+                then size' p < size' x and size' q < size' x. *)
              (* ¬ (a -> b) = p and q = ¬ (¬ p or ¬ q)
                 <==>
                 a -> b = ¬ p or ¬ q = ¬ ¬ p ---> ¬ p
