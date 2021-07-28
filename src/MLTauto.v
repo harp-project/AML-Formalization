@@ -1160,6 +1160,90 @@ Section ml_tauto.
   Abort.
   *)
 
+  Print PropPattern.
+  (* In the following examples, patterns named as [sᵢ] are symbols.
+     abstract' (s₁ ---> s₂) = pp_or (abstract (¬ s₁)) (abstract s₂)
+     - this recursive call does not decrease the size, or the max_negation_size 
+     better: ... = pp_or (abstract (negate s₁)) (abstract s₂) ?
+     Not really, because [negate s₁ = ¬ s₁ ].
+     So what does this recursive call decrease? In this case, the number of symbols / atomic propositions.
+     We need [measure (¬ s₁) < measure (s₁ ---> s₂)].
+     Or: [measure (negate s₁) < measure (s₁ ---> s₂)].
+     One option would be for measure to ignore ⊥.
+     But: abstract' (¬ (s₁ ---> s₂)) = abstract' (negate (s₁ ---> s₂)), therefore we need:
+     [measure (negate (s₁ ---> s₂)) < measure (¬ (s₁ ---> s₂))].
+
+
+     [measure (negate (s₁ ---> s₂)) < measure (¬ (s₁ ---> s₂))].
+     [ measure (¬ s₁) = measure (negate s₁) < measure (s₁ ---> s₂)].
+
+     Conditions:
+     (1)
+     if a) p₁ ---> p₂ <> patt_or _ _
+     and b) p₁ ---> p₂ <> patt_and _ _
+     and c) p₁ ---> p₂ <> patt_not _
+     then measure (¬ p₁) < measure (p₁ ---> p₂).
+     From (c) it follows that p₂ <> ⊥.
+
+     abstract (p₁ ---> p₂) ==>
+     abstract (p1 ---> ⊥)
+
+     (2)
+     if (¬ (p₁ ---> p₂)) <> patt_and _ _
+     and (¬ (p₁ ---> p₂)) <> patt_or _ _
+     then measure (negate (p₁ ---> p₂)) < measure (¬ (p₁ ---> p₂))].
+     (3) measure p < measure (p and q)
+     (4) measure q < measure (p and q)
+     (5) measure p < measure (p or q)
+     (6) measure q < measure (p or q)
+   *)
+  
+  Equations? abstract'
+           (ap : Pattern)
+           (wfap : well_formed ap)
+           (p : Pattern)
+           (wfp : well_formed p)
+    : PropPattern by wf (max_negation_size p) lt :=
+    abstract' ap wfap p wfp with match_and p => {
+      | inl (existT p1 (existT p2 e)) := pp_and (abstract' ap wfap p1 _) (abstract' ap wfap p2 _) ;
+      | inr _ with match_or p => {
+          | inl (existT p1 (existT p2 e)) := pp_or (abstract' ap wfap p1 _) (abstract' ap wfap p2 _) ;
+          | inr _  with match_not p => {
+              | inl (existT p' e) with match_imp p' => {
+                  | inl _ :=
+                    let np' := negate p' in
+                    abstract' ap wfap np' _ ;
+                  | inr _ := pp_natomic p' _
+                }
+              | inr _
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := pp_or (abstract' ap wfap (¬ p1) _) (abstract' ap wfap p2 _) ;
+                  | inr _ with match_bott p => {
+                      | inl e := pp_and (pp_atomic ap wfap) (pp_natomic ap wfap) ;
+                      | inr _ := pp_atomic p wfp
+                    }               
+                }                     
+            }
+        }
+    }.
+  Proof.
+    - admit.
+    - subst. clear abstract'.
+      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - admit.
+    - subst. clear abstract'.
+      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - admit.
+    - subst p. clear abstract' n.
+      funelim (max_negation_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+  Abort.
+  
+
+  
+  
   (* normalize (s1 and s2) = (normalize s1) and (normalize s2) *)
   (* normalize (s1 or s2) = normalize (¬ s1 ---> s2)*)
   Equations? normalize' (ap : Pattern) (p : Pattern) : Pattern by wf (max_negation_size p) lt :=
