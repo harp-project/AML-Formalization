@@ -1196,6 +1196,19 @@ Section ml_tauto.
      (4) measure q < measure (p and q)
      (5) measure p < measure (p or q)
      (6) measure q < measure (p or q)
+
+
+
+
+
+
+
+
+
+
+
+
+    
    *)
   
   Equations? abstract'
@@ -1217,7 +1230,27 @@ Section ml_tauto.
                 }
               | inr _
                   with match_imp p => {
-                  | inl (existT p1 (existT p2 _)) := pp_or (abstract' ap wfap (¬ p1) _) (abstract' ap wfap p2 _) ;
+                  (* This is an unrolled recursive call to abstract (the left one):
+                     [pp_or (abstract' ap wfap (¬ p1) _) (abstract' ap wfap p2 _)].
+                     We unroll it because otherwise the measure would not decrease easily.
+                   *)
+                  | inl (existT p1 (existT p2 _)) with match_and (¬ p1) => {
+                      | inl (existT p1' (existT p2' _)) :=
+                        pp_or
+                           (pp_and (abstract' ap wfap p1' _) (abstract' ap wfap p2' _))
+                           (abstract' ap wfap p2 _)
+                      ;
+                      | inr _ with match_or (¬ p1) => {
+                          | inl (existT p1' (existT p2' _)) :=
+                            pp_or
+                              (pp_or (abstract' ap wfap p1' _) (abstract' ap wfap p2' _))
+                              (abstract' ap wfap p2 _) ;
+                          | inr _ :=
+                              let np1 := negate p1 in
+                              abstract' ap wfap np1 _ ;
+                        }
+                                                        
+                    }
                   | inr _ with match_bott p => {
                       | inl e := pp_and (pp_atomic ap wfap) (pp_natomic ap wfap) ;
                       | inr _ := pp_atomic p wfp
