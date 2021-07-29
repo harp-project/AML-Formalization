@@ -801,7 +801,7 @@ Section ml_tauto.
               | inr _
                   with match_imp p => {
                   | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
-                  | inr _ => match p with ⊥ => 0 | _ => 1 end
+                  | inr _ => 1
                 }
             }
         }
