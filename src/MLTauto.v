@@ -784,20 +784,24 @@ Section ml_tauto.
     funelim (negate p); try inversion e; subst; try discriminate.
   Abort.
 
-  
+
+  (* The key property I want is that [and_or_imp_size (negate p) = and_or_imp_size p].
+     For this to hold, we need to resolve the not/or overlap in both functions
+     in the same way.
+   *)
   Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     and_or_imp_size p with match_and p => {
       | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
       | inr _
-          with match_not p => {
-          | inl (existT p1' e) := 1 + and_or_imp_size p1';
+          with match_or p => {
+          | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
           | inr _
-              with match_or p => {
-              | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+              with match_not p => {
+              | inl (existT p1' e) := and_or_imp_size p1';
               | inr _
                   with match_imp p => {
                   | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
-                  | inr _ => 1
+                  | inr _ => match p with ⊥ => 0 | _ => 1 end
                 }
             }
         }
@@ -879,7 +883,7 @@ Section ml_tauto.
     - solve_match_impossibilities.
   Qed.
    *)
-  (*
+  
   Lemma and_or_imp_size_negate p:
     and_or_imp_size (negate p) = and_or_imp_size p.
   Proof.
@@ -890,17 +894,44 @@ Section ml_tauto.
 
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
-      funelim (and_or_imp_size _); try inversion e; subst; auto.
-    - clear H H0 Heq e.
-      funelim (negate (p1 ---> p2)); try inversion e; subst; try solve [inversion H2].
-      + rewrite -Heqcall in H2. inversion H2. subst. clear H2.
-        simpl in Hsz. rewrite IHsz. lia. rewrite IHsz. lia.
-        clear H H0 e n Heq Heq0 Heqcall.
-        funelim (and_or_imp_size (¬ p1' ---> p2')); try inversion e; subst.
-      inversion H2.
-      funelim (and_or_imp_size (p1 ---> p2)); try inversion e; subst.
-  Abort.
-  *)
+      funelim (negate _); try inversion e; subst; auto.
+    - clear e H H0 Heq.
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e n H Heq H0 Heq0.
+      simpl in Hsz.
+      repeat (rewrite IHsz; [lia|]).
+      replace (¬ p1'0 or ¬ p2'0 ---> ⊥) with (p1'0 and p2'0) by reflexivity.
+      funelim (and_or_imp_size (_ and _)); try inversion e; subst; solve_match_impossibilities.
+      clear e H H0 Heq.
+      reflexivity.
+    - clear e n H H0 Heq Heq0.
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e H Heq H0.
+      simpl in Hsz.
+      repeat (rewrite IHsz; [lia|]).
+      replace (¬ p1'0 ---> p2'0) with (p1'0 or p2'0) by reflexivity.
+      funelim (and_or_imp_size (_ or _)); try inversion e; subst; solve_match_impossibilities.
+      reflexivity.
+    - replace (p1' ---> ⊥) with (¬ p1') by reflexivity.
+      funelim (and_or_imp_size (¬ p1')); try inversion e; subst; solve_match_impossibilities.
+      + clear e H H0 n0 Heq Heq0 Heq1.
+        fold (¬ (¬ p1' or ¬ p2')) in Heq2. fold (p1' and p2') in Heq2.
+        solve_match_impossibilities.
+      + fold (p1' or ⊥) in Heq2. solve_match_impossibilities.
+      + reflexivity.
+    - clear e Heq.
+      (*clear e n1 n0 n H Heq Heq0 Heq1 Heq2.*)
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e H Heq H0.
+      rewrite IHsz; [lia|].
+      funelim (and_or_imp_size (p1' ---> p2)); try inversion e; subst; solve_match_impossibilities.
+      + fold (¬ (¬ p1' or ¬ p2')) in Heq0. solve_match_impossibilities.
+      + fold (p1' or p2') in Heq1. solve_match_impossibilities.
+      + fold (¬ p1') in Heq4. solve_match_impossibilities.
+      + reflexivity.
+    - pose proof (n2 p1 p2). contradiction.
+  Qed.
+  
   
 
   (* mns (¬ s1 and s2) =  *)
