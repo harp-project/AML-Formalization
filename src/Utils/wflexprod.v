@@ -3,17 +3,21 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 Section lexprod'.
 
-Variable A : Type.
+Variable A B : Type.
 
 Variable ltA : A -> A -> Prop.
+Variable ltB : B -> B -> Prop.
 
-Inductive lexprod' : A * A -> A * A -> Prop :=
-| left_lex' : forall (x1 x2 y1 y2 : A), ltA x1 x2 -> lexprod' (x1, y1) (x2, y2)
-| right_lex' : forall (x y1 y2 : A), ltA y1 y2 -> lexprod' (x, y1) (x, y2).
+Inductive lexprod' : A * B -> A * B -> Prop :=
+| left_lex' : forall (x1 x2 : A) (y1 y2 : B), ltA x1 x2 -> lexprod' (x1, y1) (x2, y2)
+| right_lex' : forall (x : A) (y1 y2 : B), ltB y1 y2 -> lexprod' (x, y1) (x, y2).
 
-Lemma lexprod'_Acc : well_founded ltA -> forall x, Acc ltA x -> forall y, Acc ltA y -> Acc lexprod' (x, y).
+Lemma lexprod'_Acc :
+  well_founded ltA ->
+  well_founded ltB ->
+  forall x, Acc ltA x -> forall y, Acc ltB y -> Acc lexprod' (x, y).
 Proof.
-intros H x Hx.
+intros wfltA wfltB x Hx.
 induction Hx as [x _ IHacc].
 intros y Hy.
 induction Hy as [y _ IHacc0].
@@ -24,9 +28,9 @@ inversion HA; subst.
 - apply IHacc0; auto.
 Defined.
 
-Theorem wf_lexprod' : well_founded ltA -> well_founded lexprod'.
+Theorem wf_lexprod' : well_founded ltA -> well_founded ltB -> well_founded lexprod'.
 Proof.
-intros H_wf (x, y).
+intros H_wfA H_wfB (x, y).
 by auto using lexprod'_Acc.
 Defined.
 
