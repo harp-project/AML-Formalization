@@ -8,7 +8,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Import base option.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
+From MatchingLogic Require Import Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 (*
@@ -951,6 +951,23 @@ Section ml_tauto.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
+  Definition aoisz_mns_lexprod :=
+    @lexprod'
+      Pattern
+      Pattern
+      (ltof _ and_or_imp_size)
+      (ltof _ max_negation_size)
+  .
+
+  Lemma wf_aoisz_mns_lexprod : well_founded aoisz_mns_lexprod.
+  Proof.
+    apply wf_lexprod'.
+    - apply well_founded_ltof.
+    - apply well_founded_ltof.
+  Qed.
+  
+
+  
   (*
   Lemma max_negation_size_not p:
     max_negation_size (patt_not p) = and_or_imp_size p.
@@ -1191,57 +1208,6 @@ Section ml_tauto.
   Abort.
   *)
 
-  Print PropPattern.
-  (* In the following examples, patterns named as [sᵢ] are symbols.
-     abstract' (s₁ ---> s₂) = pp_or (abstract (¬ s₁)) (abstract s₂)
-     - this recursive call does not decrease the size, or the max_negation_size 
-     better: ... = pp_or (abstract (negate s₁)) (abstract s₂) ?
-     Not really, because [negate s₁ = ¬ s₁ ].
-     So what does this recursive call decrease? In this case, the number of symbols / atomic propositions.
-     We need [measure (¬ s₁) < measure (s₁ ---> s₂)].
-     Or: [measure (negate s₁) < measure (s₁ ---> s₂)].
-     One option would be for measure to ignore ⊥.
-     But: abstract' (¬ (s₁ ---> s₂)) = abstract' (negate (s₁ ---> s₂)), therefore we need:
-     [measure (negate (s₁ ---> s₂)) < measure (¬ (s₁ ---> s₂))].
-
-
-     [measure (negate (s₁ ---> s₂)) < measure (¬ (s₁ ---> s₂))].
-     [ measure (¬ s₁) = measure (negate s₁) < measure (s₁ ---> s₂)].
-
-     Conditions:
-     (1)
-     if a) p₁ ---> p₂ <> patt_or _ _
-     and b) p₁ ---> p₂ <> patt_and _ _
-     and c) p₁ ---> p₂ <> patt_not _
-     then measure (¬ p₁) < measure (p₁ ---> p₂).
-     From (c) it follows that p₂ <> ⊥.
-
-     abstract (p₁ ---> p₂) ==>
-     abstract (p1 ---> ⊥)
-
-     (2)
-     if (¬ (p₁ ---> p₂)) <> patt_and _ _
-     and (¬ (p₁ ---> p₂)) <> patt_or _ _
-     then measure (negate (p₁ ---> p₂)) < measure (¬ (p₁ ---> p₂))].
-     (3) measure p < measure (p and q)
-     (4) measure q < measure (p and q)
-     (5) measure p < measure (p or q)
-     (6) measure q < measure (p or q)
-
-
-
-
-
-
-
-
-
-
-
-
-    
-   *)
-  
   Equations? abstract'
            (ap : Pattern)
            (wfap : well_formed ap)
