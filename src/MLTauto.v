@@ -1199,16 +1199,42 @@ Section ml_tauto.
   Proof.
     - admit.
     - subst. clear abstract'.
-      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
     - admit.
     - subst. clear abstract'.
-      funelim (max_negation_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
     - admit.
-    - subst p. clear abstract' n.
-      funelim (max_negation_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
+    - admit.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - admit.
+    - subst. clear abstract'.
+      unfold np'. clear np'.
+      destruct s as [p1 [p2 Heqp']].
+      subst.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      unfold ltof.
+      apply right_lex'.
+      
   Abort.
   
 
