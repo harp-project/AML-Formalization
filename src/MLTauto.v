@@ -953,11 +953,15 @@ Section ml_tauto.
 
   Definition aoisz_mns_lexprod' :=
     @lexprod'
-      Pattern
-      Pattern
+      nat
+      nat
+      lt
+      lt
+  .
+  (*
       (ltof _ and_or_imp_size)
       (ltof _ max_negation_size)
-  .
+  .*)
 
   Lemma wf_aoisz_mns_lexprod' : well_founded aoisz_mns_lexprod'.
   Proof.
@@ -967,13 +971,15 @@ Section ml_tauto.
   Defined.
 
   Check aoisz_mns_lexprod'.
-  Definition aoisz_mns_lexprod p q := aoisz_mns_lexprod' (p,p) (q,q).
-  Check aoisz_mns_lexprod.
+  Definition aoisz_mns_lexprod p q :=
+    aoisz_mns_lexprod'
+      (and_or_imp_size p, max_negation_size p)
+      (and_or_imp_size q, max_negation_size q).
 
   Lemma wf_aoisz_mns_lexprod : well_founded aoisz_mns_lexprod.
   Proof.
     unfold aoisz_mns_lexprod.
-    apply (wf_inverse_image _ _ _ (fun x => (x,x))).
+    apply (wf_inverse_image _ _ _ (fun x => (and_or_imp_size x, max_negation_size x))).
     apply wf_aoisz_mns_lexprod'.
   Defined.
   
@@ -1201,7 +1207,7 @@ Section ml_tauto.
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
-      apply left_lex'. unfold ltof.
+      apply left_lex'.
       funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
     - admit.
@@ -1232,8 +1238,17 @@ Section ml_tauto.
       subst.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
-      unfold ltof.
-      apply right_lex'.
+      rewrite and_or_imp_size_negate.
+      funelim (and_or_imp_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+      + pose proof (Htmp := n p1' p2').
+        rewrite e in Htmp. contradiction.
+      + pose proof (Htmp := n0 p1' ⊥).
+        rewrite e in Htmp. contradiction.
+      + apply right_lex'.
+        clear e n0 n Heq H Heq0 Heq1.
+        funelim (negate (p1 ---> p2)); try inversion e; subst; solve_match_impossibilities.
+        * admit.
+        * 
       
   Abort.
   
