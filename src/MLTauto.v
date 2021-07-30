@@ -1246,8 +1246,45 @@ Section ml_tauto.
         rewrite e in Htmp. contradiction.
       + apply right_lex'.
         clear e n0 n Heq H Heq0 Heq1.
+        funelim (max_negation_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+        { pose proof (Htmp := n2 p1 p2). contradiction. }
+        clear.
+
+
+        remember (p1 ---> p2) as p1ip2.
+        remember (size' p1ip2) as sz. rewrite Heqsz.
+        assert (Hsz: size' p1ip2 <= sz) by lia.
+        clear Heqsz.
+
+        subst.
+        move: p1 p2 Hsz.
+        induction sz; intros p1 p2 Hsz; subst; simpl in Hsz; try lia.
+        simpl.
         funelim (negate (p1 ---> p2)); try inversion e; subst; solve_match_impossibilities.
-        * admit.
+        * clear e H H0 Heq.
+          remember (match_imp p1') as mip1'.
+          remember (match_imp p2') as mip2'.
+          destruct mip1',mip2'.
+          -- destruct s as [a [b Hab]].
+             destruct s0 as [c [d Hcd]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
+             funelim (max_negation_size (negate (a ---> b) or negate (c ---> d)));
+               try inversion e; subst; solve_match_impossibilities.
+             3: { lia. }
+             { rewrite H1.
+               Search negate ⊥.
+               apply negate_is_bot in H1.
+               rewrite H1.
+               simpl.
+               (*rewrite H1 in IH2.*)
+               clear Heq Heq0.
+               (* rewrite H1 in n. *)
+               clear e n.
+               clear IHsz sz Hsz IH2 H1.
+               funelim (negate (a ---> b)); try inversion e; subst; solve_match_impossibilities.
+               ++ clear e H H0 Heq.
         * 
       
   Abort.
