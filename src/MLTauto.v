@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
-From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Lexicographic_Product.
+From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Wellfounded.
 From Coq Require Import Logic.FunctionalExtensionality.
 From Coq.micromega Require Import Lia.
 
@@ -951,7 +951,7 @@ Section ml_tauto.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
-  Definition aoisz_mns_lexprod :=
+  Definition aoisz_mns_lexprod' :=
     @lexprod'
       Pattern
       Pattern
@@ -959,72 +959,31 @@ Section ml_tauto.
       (ltof _ max_negation_size)
   .
 
-  Lemma wf_aoisz_mns_lexprod : well_founded aoisz_mns_lexprod.
+  Lemma wf_aoisz_mns_lexprod' : well_founded aoisz_mns_lexprod'.
   Proof.
     apply wf_lexprod'.
     - apply well_founded_ltof.
     - apply well_founded_ltof.
-  Qed.
+  Defined.
+
+  Check aoisz_mns_lexprod'.
+  Definition aoisz_mns_lexprod p q := aoisz_mns_lexprod' (p,p) (q,q).
+  Check aoisz_mns_lexprod.
+
+  Lemma wf_aoisz_mns_lexprod : well_founded aoisz_mns_lexprod.
+  Proof.
+    unfold aoisz_mns_lexprod.
+    apply (wf_inverse_image _ _ _ (fun x => (x,x))).
+    apply wf_aoisz_mns_lexprod'.
+  Defined.
   
 
-  
-  (*
-  Lemma max_negation_size_not p:
-    max_negation_size (patt_not p) = and_or_imp_size p.
+  Instance wf_aoisz_mns_lexprod_ins : WellFounded aoisz_mns_lexprod.
   Proof.
-    funelim (max_negation_size _); try inversion e; subst.
-    + reflexivity.
-    + solve_match_impossibilities.
-    + solve_match_impossibilities.
-  Qed.
-
-  (*
-  Lemma max_negation_size_or p q:
-    max_negation_size (patt_or*)
-
-  Lemma and_or_imp_size_not p:
-    and_or_imp_size (¬ p) = 1 + and_or_imp_size p.
-  Proof.
-    remember (size' p) as sz.
-    assert (Hsz: size' p <= sz).
-    { lia. }
-    clear Heqsz.
-
-    move: p Hsz.
-    induction sz; intros p Hsz.
-    { destruct p; simpl in Hsz; lia. }
-    funelim (and_or_imp_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
-    - clear e H H0 Heq.
-      funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
-      simpl in Hsz.
-      rewrite IHsz. lia. rewrite IHsz. lia. 
-  Abort.
+    apply wf_aoisz_mns_lexprod.
+  Defined.
   
   
-  Lemma and_or_imp_size_not_2 p q d:
-    and_or_imp_size p + d =  and_or_imp_size q ->
-    and_or_imp_size (¬ p) + d =  and_or_imp_size (¬ q).
-  Proof.
-    intros H.
-    funelim (and_or_imp_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
-    - clear e H H0 Heq.
-      funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
-      clear e n0 n H Heq H0 Heq0 Heq1.
-      rewrite -Heqcall in H1. clear Heqcall.
-      funelim (and_or_imp_size (¬ q)); try inversion e; subst; solve_match_impossibilities.
-      +   clear e H H0 Heq.
-        funelim (and_or_imp_size (¬ p1'0)); try inversion e; subst; solve_match_impossibilities.
-        * clear e H H0 Heq.
-          rewrite -Heqcall in H1. clear Heqcall.
-
-  Abort.
-
-  Lemma and_or_imp_size_not p q:
-    and_or_imp_size p < and_or_imp_size q ->
-    and_or_imp_size (¬ p) < and_or_imp_size (¬ q).
-  Proof.
-  Abort.
-*)
   Lemma negate_is_bot p:
     negate p = ⊥ ->
     p = ¬ ⊥.
@@ -1213,7 +1172,7 @@ Section ml_tauto.
            (wfap : well_formed ap)
            (p : Pattern)
            (wfp : well_formed p)
-    : PropPattern by wf (max_negation_size p) lt :=
+    : PropPattern by wf p aoisz_mns_lexprod :=
     abstract' ap wfap p wfp with match_and p => {
       | inl (existT p1 (existT p2 e)) := pp_and (abstract' ap wfap p1 _) (abstract' ap wfap p2 _) ;
       | inr _ with match_or p => {
