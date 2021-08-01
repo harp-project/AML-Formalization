@@ -931,26 +931,68 @@ Section ml_tauto.
       + reflexivity.
     - pose proof (n2 p1 p2). contradiction.
   Qed.
-  
+
+  Compute (size' (¬ (patt_bound_evar 0))).
+  Compute (size' ((patt_bound_evar 0 and patt_bound_evar 1))).
   
 
-  (* mns (¬ s1 and s2) =  *)
+  (* mns (¬ s1 and s2) = 
+     mns (s₁ or s₂) = mns (¬ s₁ ---> s₂) = max ( mns (¬ s₁), mns (s₂) ) = max (size s₁, mns (s₂))
+
+     max_negation_size (¬ (p1 ---> p2)) > max_negation_size (negate (p1 ---> p2))
+
+     mns (¬ (s₁ or s₂)) = size (s₁ or s₂) = size s₁ + size s₂ + k
+     mns (negate (s₁ or s₂)) = mns (negate s₁ and negate s₂) = mns (¬ s₁ and ¬ s₂) = max (size s₁, size s₂)
+
+     mns (¬ (s₁ and s₂)) = size (s₁ and s₂) = size s₁ + size s₂ + k
+     mns (negate (s₁ and s₂)) = mns (negate s₁ or negate s₂) = mns (¬ (negate s₁) ---> negate s₂) = mns (¬¬ s₁ ---> ¬ s₂) = max (size (¬ s₁), size (s₂))
+
+                                                             = mns (¬ s₁ or ¬ s₂) = max (size s₁, size s₂)
+
+     mns (negate (s₁ and s₂))
+     = mns (negate s₁ or negate s₂)
+     = mns (¬ (negate s₁) ---> negate s₂)
+     = mns (¬¬ s₁ ---> ¬ s₂)
+     = max (size (¬ s₁), size (s₂))
+     = max (2 + size s₁, size s₂)
+     <? size s₁ + size s₂ + k
+
+
+    mns (¬ ¬ p)
+    ¬ ¬ p = p or ⊥
+   *)
   Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     max_negation_size p with match_and p => {
-      | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2) + 1;
-      | inr _  with match_not p => {
-          | inl (existT p1' e) := size' p1';
-          | inr _ with match_imp p => {
-              | inl (existT p1 (existT p2 _)) :=
-                Nat.max (max_negation_size p1) (max_negation_size p2) + 1;
-              | inr _ => 0
-            }
+      | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
+      | inr _ (**)with match_or p => {
+          | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
+          | inr _ (**) with match_not p => {
+              | inl (existT p1' e) := size' p1';
+              | inr _ with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) :=
+                    Nat.max (max_negation_size p1) (max_negation_size p2);
+                  | inr _ => 0
+                }
+            (**)}(**)
         }
-                                     
     }.
   Solve Obligations with
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
+
+  (* if p == ¬ p',
+     then mns (¬ p) = mns (¬ ¬ p) = mns (p or ⊥) = max (mns p) (mns ⊥)
+     TODO: this works only if we assume that ¬ p is not and
+   *)
+  Lemma max_negation_size_not p:
+    max_negation_size (¬ p) = size' p.
+  Proof.
+    funelim (max_negation_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    (*2: { reflexivity. }*)
+  Abort.
+  
+    
+  
   Definition aoisz_mns_lexprod' :=
     @lexprod'
       nat
@@ -1173,6 +1215,40 @@ Section ml_tauto.
   Abort.
   *)
 
+
+  Lemma negate_not_imp_is_not p:
+    (forall p1 p2, p <> (p1 ---> p2)) ->
+    negate p = ¬ p.
+  Proof.
+    intro H.
+    funelim (negate p); try inversion e; subst; solve_match_impossibilities.
+    5: { reflexivity. }
+    4: {
+      pose proof (Htmp := H0 p1 p2). contradiction.
+    }
+    3: {
+      pose proof (Htmp := H p1' ⊥). contradiction.
+    }
+    2: {
+      pose proof (Htmp := H1 (¬ p1') p2'). contradiction.
+    }
+    1: {
+      unfold patt_and, patt_or in H1.
+      unfold patt_not in H1 at 1.
+      pose proof (Htmp := H1 (¬ ¬ p1' ---> ¬ p2') ⊥). contradiction.
+    }
+  Qed.
+  
+    
+    
+    
+    
+  
+  (* p1 ---> (⊥ and ⊥) ==> ¬ p1 or (⊥ and ⊥) *)
+  (* abstract (p1 ---> p2) where p2 <> \bot  ===> abstract (¬ p1) = abstract (p1 ---> ⊥)   *)
+  (* abstract (¬ (p1 ---> p2)) ==> abstract (negate (p1 ---> p2))
+     max_negation_size (¬ (p1 ---> p2)) > max_negation_size (negate (p1 ---> p2))
+  *)
   Equations? abstract'
            (ap : Pattern)
            (wfap : well_formed ap)
@@ -1248,6 +1324,7 @@ Section ml_tauto.
         clear e n0 n Heq H Heq0 Heq1.
         funelim (max_negation_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
         { pose proof (Htmp := n2 p1 p2). contradiction. }
+        { pose proof (Htmp := n1 p1 ⊥). contradiction. }
         clear.
 
 
@@ -1272,19 +1349,24 @@ Section ml_tauto.
              pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
              funelim (max_negation_size (negate (a ---> b) or negate (c ---> d)));
                try inversion e; subst; solve_match_impossibilities.
-             3: { lia. }
-             { rewrite H1.
-               Search negate ⊥.
-               apply negate_is_bot in H1.
-               rewrite H1.
-               simpl.
-               (*rewrite H1 in IH2.*)
-               clear Heq Heq0.
-               (* rewrite H1 in n. *)
-               clear e n.
-               clear IHsz sz Hsz IH2 H1.
-               funelim (negate (a ---> b)); try inversion e; subst; solve_match_impossibilities.
-               ++ clear e H H0 Heq.
+             clear -IH1 IH2.
+             simpl in *. lia.
+          -- admit.
+          -- admit.
+          -- simpl in *. clear -n n0.
+             Check negate_not_imp_is_not.
+             apply negate_not_imp_is_not in n.
+             apply negate_not_imp_is_not in n0.
+             rewrite n n0.
+             funelim (max_negation_size (¬ p1' or ¬ p2')); try inversion e; subst;
+               solve_match_impossibilities.
+             
+             clear.
+             
+             funelim (max_negation_size (¬ p1')); try inversion e; subst;
+               solve_match_impossibilities;
+             funelim (max_negation_size (¬ p2')); try inversion e; subst;
+               solve_match_impossibilities; simpl in *; try lia.
         * 
       
   Abort.
