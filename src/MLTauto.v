@@ -956,6 +956,17 @@ Section ml_tauto.
      = max (size (¬ s₁), size (s₂))
      = max (2 + size s₁, size s₂)
      <? size s₁ + size s₂ + k
+     = size (s₁ and s₂)
+     = mns (¬ (s₁ and s₂))
+
+
+     mns (negate (s₁ or s₂))
+     = mns (negate s₁ and negate s₂)
+     = mns (¬ (¬ negate s₁ or ¬ negate s₂))
+     = size (¬ negate s₁ or ¬ negate s₂)
+     <?
+     = size (s₁ or s₂)
+     mns (¬ (s₁ or s₂)
 
 
     mns (¬ ¬ p)
@@ -964,9 +975,9 @@ Section ml_tauto.
   Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     max_negation_size p with match_and p => {
       | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
-      | inr _ (**)with match_or p => {
+      | inr _ with match_or p => {
           | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
-          | inr _ (**) with match_not p => {
+          | inr _  with match_not p => {
               | inl (existT p1' e) := size' p1';
               | inr _ with match_imp p => {
                   | inl (existT p1 (existT p2 _)) :=
@@ -980,14 +991,40 @@ Section ml_tauto.
       (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
 
+  Lemma max_negation_size_lt p:
+    max_negation_size p < size' p.
+  Proof.
+    remember (size' p) as sz.
+    rewrite Heqsz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia;
+      funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities; try lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+  Qed.
+  
   (* if p == ¬ p',
      then mns (¬ p) = mns (¬ ¬ p) = mns (p or ⊥) = max (mns p) (mns ⊥)
      TODO: this works only if we assume that ¬ p is not and
    *)
   Lemma max_negation_size_not p:
-    max_negation_size (¬ p) = size' p.
+    max_negation_size (¬ p) <= size' p.
   Proof.
     funelim (max_negation_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    3: { lia. }
+    
     (*2: { reflexivity. }*)
   Abort.
   
