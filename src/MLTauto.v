@@ -1492,7 +1492,24 @@ Section ml_tauto.
              pose proof (max_negation_size_not p3).
              lia.
 
-    - 
+    - admit.
+    - admit.
+    - subst.
+      unfold aoisz_mns_lexprod,aoisz_mns_lexprod'.
+      apply left_lex'.
+      funelim (and_or_imp_size (p1 ---> p2));
+        try inversion e; subst; solve_match_impossibilities.
+      3: { pose proof (n3 p1'). contradiction. }
+      2: { pose proof (n1 p1' p2'). contradiction. }
+      1: { unfold patt_and in n. unfold patt_not at 3 in n.
+           pose proof (n p1' p2'). contradiction.
+      }
+      clear -n4.
+      funelim (and_or_imp_size (¬ p1));
+        try inversion e; subst; solve_match_impossibilities.
+      + clear.
+        funelim (and_or_imp_size (¬ p1' or ¬ p2'));
+          try inversion e; subst; solve_match_impossibilities.
       
   Abort.
   
