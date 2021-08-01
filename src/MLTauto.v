@@ -1024,11 +1024,18 @@ Section ml_tauto.
   Proof.
     funelim (max_negation_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
     3: { lia. }
-    
-    (*2: { reflexivity. }*)
-  Abort.
-  
-    
+    2: {
+      clear.
+      funelim (max_negation_size ⊥); try inversion e; subst; solve_match_impossibilities.
+      pose proof (Hszp1 := max_negation_size_lt p1).
+      simpl. lia.
+    }
+    1: {
+      pose proof (Hszp1 := max_negation_size_lt p1).
+      pose proof (Hszp2 := max_negation_size_lt p2).
+      simpl. lia.
+    }
+  Qed.  
   
   Definition aoisz_mns_lexprod' :=
     @lexprod'
