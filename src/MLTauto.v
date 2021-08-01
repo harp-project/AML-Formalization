@@ -932,6 +932,67 @@ Section ml_tauto.
     - pose proof (n2 p1 p2). contradiction.
   Qed.
 
+  (* This does not work. Why do I need it in the first place? *)
+  (*
+  Lemma and_or_imp_size_not_is_and p:
+    ((exists q r, (¬ p) = (q and r)) ->
+                 and_or_imp_size (¬ p) = and_or_imp_size p)
+    /\ ( (forall q r, (¬ p) <> (q and r)) ->
+                     and_or_imp_size (¬ p) <= 2 + and_or_imp_size p
+    )
+  .
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia; split; intros H;
+      funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia.
+    - fold (¬ p1' or ¬ p2').
+      clear e H H0 Heq.
+      funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+      destruct H1 as [q [r Hqr]].
+      (* I need to case-split on whether ¬p1'0 is a [patt_and] or not.
+         But if it is not the case, the induction hypothesis is too weak, because it is only an inequality. *)
+
+    {
+      clear e H H0 Heq.
+      simpl in Hsz.
+      funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+      - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+      - rewrite IHsz. simpl. lia. rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    }
+   *)
+  (*
+  Lemma and_or_imp_size_not p:
+    and_or_imp_size (¬ p) = and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia;
+      funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia.
+
+    {
+      clear e H H0 Heq.
+      simpl in Hsz.
+      funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+      - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+      - rewrite IHsz. simpl. lia. rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    }
+    clear e H Heq H0 Heq0.
+    (* Now in this case, the lhs is strictly greather than rhs. But proving just that lhs >= rhs is not easy,
+       since the induction hypothesis is too weak. We want that in many cases, lhs = rhs; namely;
+       in those cases for which we use the IH. *)
+    rewrite IHsz. lia.
+    funelim (and_or_imp_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    3: { lia. }
+    2: {
+    *)                
+  
   Compute (size' (¬ (patt_bound_evar 0))).
   Compute (size' ((patt_bound_evar 0 and patt_bound_evar 1))).
   
@@ -1504,6 +1565,8 @@ Section ml_tauto.
       1: { unfold patt_and in n. unfold patt_not at 3 in n.
            pose proof (n p1' p2'). contradiction.
       }
+      (* The problem is, when stripping (p1 ---> p2) (which is not a patt_and)
+         into (p1 ---> ⊥) (= ¬ p1), it might create a patt_and *)
       clear -n4.
       funelim (and_or_imp_size (¬ p1));
         try inversion e; subst; solve_match_impossibilities.
