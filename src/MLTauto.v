@@ -1395,10 +1395,27 @@ Section ml_tauto.
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 IH2.
              simpl in *. lia.
-          -- admit.
-          -- admit.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n).
+             funelim (max_negation_size (negate (a ---> b) or negate p2'));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             simpl in *. lia.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n).
+             funelim (max_negation_size (negate p1' or negate (a ---> b)));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Isznp1' := max_negation_size_not p1').
+             simpl in *. lia.
           -- simpl in *. clear -n n0.
-             Check negate_not_imp_is_not.
              apply negate_not_imp_is_not in n.
              apply negate_not_imp_is_not in n0.
              rewrite n n0.
@@ -1406,11 +1423,9 @@ Section ml_tauto.
                solve_match_impossibilities.
              
              clear.
-             
-             funelim (max_negation_size (¬ p1')); try inversion e; subst;
-               solve_match_impossibilities;
-             funelim (max_negation_size (¬ p2')); try inversion e; subst;
-               solve_match_impossibilities; simpl in *; try lia.
+             pose proof (Hsznp1' := max_negation_size_not p1').
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             lia.
         * 
       
   Abort.
