@@ -1470,9 +1470,29 @@ Section ml_tauto.
              pose proof (Hsznp1' := max_negation_size_not p1').
              pose proof (Hsznp2' := max_negation_size_not p2').
              lia.
-        *
-          
+        * pose proof (max_negation_size_lt p1').
+          lia.
+        * remember (match_imp p2) as mip2.
+          destruct mip2.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH := IHsz a b ltac:(simpl; lia)).
+             clear e Heq H.
+             funelim (max_negation_size (p1 and negate (a ---> b)));
+               try inversion e; subst; solve_match_impossibilities.
+             pose proof (Hszp1 := max_negation_size_lt p1).
+             lia.
+          -- simpl in *. clear -n2.
+             apply negate_not_imp_is_not in n2.
+             rewrite n2.
+             funelim (max_negation_size (p1 and ¬ p2));
+               try inversion e; subst; solve_match_impossibilities.
+             clear.
+             pose proof (max_negation_size_lt p1).
+             pose proof (max_negation_size_not p3).
+             lia.
 
+    - 
       
   Abort.
   
