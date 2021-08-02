@@ -777,17 +777,24 @@ Section ml_tauto.
       apply and_impl_2; auto.
   Qed.    
 
-  (* Huh, not true for p = ¬ ⊥ *)
-  Lemma negate_not_bot p:
-    negate p <> patt_bott.
+  Lemma negate_is_bot p:
+    negate p = patt_bott ->
+    p = ¬ ⊥.
   Proof.
+    intros H.
     funelim (negate p); try inversion e; subst; try discriminate.
-  Abort.
+    - rewrite -Heqcall in H1. inversion H1.
+    - rewrite H. reflexivity.
+    - rewrite -Heqcall in H0. inversion H0.
+    - rewrite -Heqcall in H. inversion H.
+  Qed.
 
 
   (* The key property I want is that [and_or_imp_size (negate p) = and_or_imp_size p].
-     For this to hold, we need to resolve the not/or overlap in both functions
-     in the same way.
+     > For this to hold, we need to resolve the not/or overlap in both functions
+     > in the same way.
+     Really? Actually, I thin the reason is different: see the comment in the proof
+     of [and_or_imp_size_negate].
    *)
   Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
     and_or_imp_size p with match_and p => {
@@ -860,6 +867,29 @@ Section ml_tauto.
     reflexivity.
   Qed.
   
+  Lemma negate_not_imp_is_not p:
+    (forall p1 p2, p <> (p1 ---> p2)) ->
+    negate p = ¬ p.
+  Proof.
+    intro H.
+    funelim (negate p); try inversion e; subst; solve_match_impossibilities.
+    5: { reflexivity. }
+    4: {
+      pose proof (Htmp := H0 p1 p2). contradiction.
+    }
+    3: {
+      pose proof (Htmp := H p1' ⊥). contradiction.
+    }
+    2: {
+      pose proof (Htmp := H1 (¬ p1') p2'). contradiction.
+    }
+    1: {
+      unfold patt_and, patt_or in H1.
+      unfold patt_not in H1 at 1.
+      pose proof (Htmp := H1 (¬ ¬ p1' ---> ¬ p2') ⊥). contradiction.
+    }
+  Qed.
+  
 
 
   (*
@@ -896,6 +926,20 @@ Section ml_tauto.
     induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
       funelim (negate _); try inversion e; subst; auto.
     - clear e H H0 Heq.
+      (* here we need the [patt_or] at the LHS to *not* be interpreted as [patt_not],
+         because if it is interpreted as patt_not, then the lhs is equal to 
+         [aoisz (negate p1')] and the lhs to [1 + aoisz p1' + aoisz p2'].
+         For example, if [p1 = ¬ s₁] and [p2 = ¬ ⊥], then
+         and_or_imp_size (negate (¬ s1 or ¬ ⊥))
+         = and_or_imp_size (negate (¬ s1) or negate (¬ ⊥))
+         =(1) and_or_imp_size (s₁ or ⊥)
+         = and_or_imp_size (¬ ¬ s₁)
+         = and_or_imp_size (¬ s₁)
+         = and_or_imp_size s₁
+         < 1 + and_or_imp_size (¬ s₁) + and_or_imp_size ⊥
+         = and_or_imp_size (¬ s₁ or ¬ ⊥).
+       *)
+
       funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
       clear e n H Heq H0 Heq0.
       simpl in Hsz.
@@ -970,16 +1014,32 @@ Section ml_tauto.
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in *; try lia; split; intros H;
       funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia.
-    4: { destruct H1 as [q [r Hqr]]. inversion Hqr. subst.(* }
+    4: { destruct H1 as [q [r Hqr]]. inversion Hqr. subst.
+         clear e Heq H H0 Heq0.
+         funelim (and_or_imp_size ⊥); try inversion e; subst; solve_match_impossibilities.
+         clear n n0 n1 n2 Heq Heq0 Heq1 Heq2.
+         (* or: 2 + ? *)
+         admit.
+    }
+    3: {
+      destruct H1 as [q [r Hqr]].
+      inversion Hqr.
+    }
+    
     2: { destruct H1 as [q [r Hqr]]. inversion Hqr. }
-    
-    clear e H H0 Heq.
-    
-    funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
-    2: { pose proof (n0 (¬ p1') (¬ p2')). contradiction. }*)
+    1: {
+      (* (¬ p) = (q and r) *)
+      destruct H1 as [q [r Hqr]]. inversion Hqr. subst.
+      clear e H H0 Heq.
+      
+      funelim (and_or_imp_size (¬ ¬ q ---> ¬ r)); try inversion e; subst; solve_match_impossibilities.
+      2: { pose proof (n0 (¬ q) (¬ r)). contradiction. }
+      admit.
+    }
+   
   Abort.
 
-  
+  (*
   (* This does not work. Why do I need it in the first place? *)
   Lemma and_or_imp_size_not_is_and p:
     ((exists q r, (¬ p) = (q and r)) ->
@@ -1373,31 +1433,6 @@ Section ml_tauto.
                 
   Abort.
   *)
-
-
-  Lemma negate_not_imp_is_not p:
-    (forall p1 p2, p <> (p1 ---> p2)) ->
-    negate p = ¬ p.
-  Proof.
-    intro H.
-    funelim (negate p); try inversion e; subst; solve_match_impossibilities.
-    5: { reflexivity. }
-    4: {
-      pose proof (Htmp := H0 p1 p2). contradiction.
-    }
-    3: {
-      pose proof (Htmp := H p1' ⊥). contradiction.
-    }
-    2: {
-      pose proof (Htmp := H1 (¬ p1') p2'). contradiction.
-    }
-    1: {
-      unfold patt_and, patt_or in H1.
-      unfold patt_not in H1 at 1.
-      pose proof (Htmp := H1 (¬ ¬ p1' ---> ¬ p2') ⊥). contradiction.
-    }
-  Qed.
-  
     
     
     
