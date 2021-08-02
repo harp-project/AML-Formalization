@@ -1250,7 +1250,9 @@ Section ml_tauto.
     apply wf_aoisz_mns_lexprod.
   Defined.
   
-  
+
+  Check negate_is_bot.
+  (*
   Lemma negate_is_bot p:
     negate p = ⊥ ->
     p = ¬ ⊥.
@@ -1291,7 +1293,7 @@ Section ml_tauto.
     subst p1.
     clear H H1.
     reflexivity.
-  Qed.
+  Qed.*)
 
 (*
   Lemma and_or_imp_size_negate_and p q:
@@ -1434,7 +1436,32 @@ Section ml_tauto.
   Abort.
   *)
     
+
+  Check is_subformula_of.
+  Lemma and_or_imp_size_subformula p q:
+    is_subformula_of p q ->
+    (exists a b, q = patt_imp a b) ->
+    and_or_imp_size p <= and_or_imp_size q.
+  Proof.
+    intros Hsub Himp.
+    apply (elimT (is_subformula_of_P p q)) in Hsub.
+    remember (size' q) as sz.
+    assert (Hsz: size' q <= sz) by lia.
+    clear Heqsz.
+    move: p q Hsz Hsub Himp.
+    induction sz; intros p q Hsz Hsub Himp; destruct q; simpl in *; try lia;
+      inversion Hsub; subst; try lia.
     
+    - destruct Himp as [a [b Hab]]. inversion Hab.
+    - destruct Himp as [a [b Hab]]. inversion Hab.
+    - clear Himp.
+      pose proof (IHsz p q1 ltac:(lia) H1).
+      funelim (and_or_imp_size (q1 $ q2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+
+      funelim (and_or_imp_si
+      rewrite -Heqq. funelim (and_or_imp_size q); subst q; try inversion e; subst;
+        solve_match_impossibilities.
     
     
   
@@ -1662,6 +1689,7 @@ Section ml_tauto.
          (indirect) subformula relation.
        *)
       clear -n4.
+      (* Concretely, I need that aoisz (¬ p1) >= aoisz p1 *)
       funelim (and_or_imp_size (¬ p1));
         try inversion e; subst; solve_match_impossibilities.
       + clear.
