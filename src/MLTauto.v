@@ -932,14 +932,35 @@ Section ml_tauto.
     - pose proof (n2 p1 p2). contradiction.
   Qed.
 
-  (* This does not work. Why do I need it in the first place? *)
-  (*
+
+  Lemma and_or_imp_size_not_is_and p:
+    (exists q r, (¬ p) = (q and r)) ->
+                 and_or_imp_size (¬ p) = and_or_imp_size p
+  .
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia; intros H;
+      funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia.
+    2: { destruct H1 as [q [r Hqr]]. inversion Hqr. }
+    
+    clear e H H0 Heq.
+    
+    funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+    2: { pose proof (n0 (¬ p1') (¬ p2')). contradiction. }
+  Abort.
+  
+
+
   Lemma and_or_imp_size_not_is_and p:
     ((exists q r, (¬ p) = (q and r)) ->
-                 and_or_imp_size (¬ p) = and_or_imp_size p)
-    /\ ( (forall q r, (¬ p) <> (q and r)) ->
-                     and_or_imp_size (¬ p) <= 2 + and_or_imp_size p
-    )
+     and_or_imp_size (¬ p) = and_or_imp_size p)
+    /\ ((exists q r, (¬ p) = (q or r)) ->
+        and_or_imp_size (¬ p) = and_or_imp_size p
+        )
   .
   Proof.
     remember (size' p) as sz.
@@ -949,6 +970,39 @@ Section ml_tauto.
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in *; try lia; split; intros H;
       funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia.
+    4: { destruct H1 as [q [r Hqr]]. inversion Hqr. subst.(* }
+    2: { destruct H1 as [q [r Hqr]]. inversion Hqr. }
+    
+    clear e H H0 Heq.
+    
+    funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+    2: { pose proof (n0 (¬ p1') (¬ p2')). contradiction. }*)
+  Abort.
+
+  
+  (* This does not work. Why do I need it in the first place? *)
+  Lemma and_or_imp_size_not_is_and p:
+    ((exists q r, (¬ p) = (q and r)) ->
+                 and_or_imp_size (¬ p) = and_or_imp_size p)
+    /\ ( (forall q r, (¬ p) <> (q and r)) ->
+         (exists q r, p = (q ---> r)) ->
+                     and_or_imp_size (¬ p) = 2 + and_or_imp_size p
+    )
+  .
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia; split; intros H;
+      funelim (and_or_imp_size (¬ _)); try inversion e; subst; solve_match_impossibilities; try lia;
+        try (intros [q [r Hqr]]; inversion Hqr).
+    5: {
+      subst.
+    }
+    
+        
     - fold (¬ p1' or ¬ p2').
       clear e H H0 Heq.
       funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
@@ -1566,7 +1620,12 @@ Section ml_tauto.
            pose proof (n p1' p2'). contradiction.
       }
       (* The problem is, when stripping (p1 ---> p2) (which is not a patt_and)
-         into (p1 ---> ⊥) (= ¬ p1), it might create a patt_and *)
+         into (p1 ---> ⊥) (= ¬ p1), it might create a patt_and (or patt_or).
+         But in any such case, the and_or_imp_size of ¬ p1 should still be <= and_or_imp_size p1,
+         or not?
+         Maybe a useful lemma might be that and_or_imp_size is monotone with respect to the
+         (indirect) subformula relation.
+       *)
       clear -n4.
       funelim (and_or_imp_size (¬ p1));
         try inversion e; subst; solve_match_impossibilities.
