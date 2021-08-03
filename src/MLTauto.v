@@ -1102,7 +1102,7 @@ Section ml_tauto.
         }
     }.
   Proof.
-    - subst.
+    - subst. clear abstract'.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1117,7 +1117,7 @@ Section ml_tauto.
       apply left_lex'.
       funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst.
+    - subst. clear abstract'.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1132,7 +1132,7 @@ Section ml_tauto.
       apply left_lex'. unfold ltof.
       funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst.
+    - subst. clear abstract'.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1147,7 +1147,7 @@ Section ml_tauto.
       apply left_lex'. unfold ltof.
       funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst.
+    - subst. clear abstract'.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1162,7 +1162,7 @@ Section ml_tauto.
       apply left_lex'. unfold ltof.
       funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst.
+    - subst. clear -wfp.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1210,14 +1210,17 @@ Section ml_tauto.
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
+             clear Heqmip1' Heqmip2'.
              funelim (max_negation_size (negate (a ---> b) or negate (c ---> d)));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 IH2.
              simpl in *. lia.
           -- destruct s as [a [b Hab]].
              subst. simpl in Hsz.
+             clear Heqmip1' Heqmip2'.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n).
+             clear n IHsz.
              funelim (max_negation_size (negate (a ---> b) or negate p2'));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 Hn.
@@ -1226,8 +1229,10 @@ Section ml_tauto.
              simpl in *. lia.
           -- destruct s as [a [b Hab]].
              subst. simpl in Hsz.
+             clear Heqmip1' Heqmip2'.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n).
+             clear IHsz n.
              funelim (max_negation_size (negate p1' or negate (a ---> b)));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 Hn.
@@ -1238,6 +1243,7 @@ Section ml_tauto.
              apply negate_not_imp_is_not in n.
              apply negate_not_imp_is_not in n0.
              rewrite n n0.
+             clear n n0.
              funelim (max_negation_size (¬ p1' or ¬ p2')); try inversion e; subst;
                solve_match_impossibilities.
              
@@ -1254,6 +1260,7 @@ Section ml_tauto.
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
+             clear IHsz Hsz Heqmip1' Heqmip2' Heq0 H0 Heq e n H.
              funelim (max_negation_size (negate (a ---> b) and negate (c ---> d)));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 IH2.
@@ -1262,6 +1269,7 @@ Section ml_tauto.
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n0).
+             clear IHsz Hsz Heqmip1' Heqmip2' H n e H0 Heq0 Heq n0.
              funelim (max_negation_size (negate (a ---> b) and negate p2'));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 Hn.
@@ -1272,6 +1280,7 @@ Section ml_tauto.
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n0).
+             clear IHsz Hsz Heqmip1' Heqmip2' Heq0 Heq H H0 e n n0.
              funelim (max_negation_size (negate p1' and negate (a ---> b)));
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 Hn.
@@ -1281,7 +1290,7 @@ Section ml_tauto.
           -- simpl in *. clear -n0 n1.
              apply negate_not_imp_is_not in n0.
              apply negate_not_imp_is_not in n1.
-             rewrite n0 n1.
+             rewrite n0 n1. clear n0 n1.
              funelim (max_negation_size (¬ p1' and ¬ p2')); try inversion e; subst;
                solve_match_impossibilities.
              
@@ -1289,21 +1298,24 @@ Section ml_tauto.
              pose proof (Hsznp1' := max_negation_size_not p1').
              pose proof (Hsznp2' := max_negation_size_not p2').
              lia.
-        * pose proof (max_negation_size_lt p1').
+        * clear.
+          pose proof (max_negation_size_lt p1').
           lia.
         * remember (match_imp p2) as mip2.
           destruct mip2.
           -- destruct s as [a [b Hab]].
              subst. simpl in Hsz.
              pose proof (IH := IHsz a b ltac:(simpl; lia)).
-             clear e Heq H.
+             clear e Heq H IHsz Hsz Heqmip2.
+             clear Heq0 Heq1 Heq2 n n0 n1.
              funelim (max_negation_size (p1 and negate (a ---> b)));
                try inversion e; subst; solve_match_impossibilities.
              pose proof (Hszp1 := max_negation_size_lt p1).
+             clear e H Heq H0.
              lia.
           -- simpl in *. clear -n2.
              apply negate_not_imp_is_not in n2.
-             rewrite n2.
+             rewrite n2. clear n2.
              funelim (max_negation_size (p1 and ¬ p2));
                try inversion e; subst; solve_match_impossibilities.
              clear.
@@ -1312,6 +1324,7 @@ Section ml_tauto.
              lia.
 
     - subst.
+      clear abstract' n n0.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
@@ -1319,6 +1332,7 @@ Section ml_tauto.
       unfold well_formed,well_formed_closed.
       rewrite wf1 wf2. reflexivity.
     - subst.
+      clear abstract' n0 n1.
       apply wf_negate.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
@@ -1328,6 +1342,7 @@ Section ml_tauto.
       unfold well_formed,well_formed_closed.
       rewrite wf11 wf21. reflexivity.
     - subst.
+      clear abstract'.
       unfold aoisz_mns_lexprod,aoisz_mns_lexprod'.
       apply left_lex'.
       funelim (and_or_imp_size (p1 ---> p2));
@@ -1337,9 +1352,10 @@ Section ml_tauto.
       1: { unfold patt_and in n. unfold patt_not at 3 in n.
            pose proof (n p1' p2'). contradiction.
       }
-      clear -n n0 n1 n4.
+      clear.
       rewrite and_or_imp_size_negate. lia.
     - subst.
+      clear abstract' n n0 n1.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       apply andb_prop in wfp. destruct wfp as [wf1 wf2].
@@ -1348,12 +1364,14 @@ Section ml_tauto.
       unfold well_formed,well_formed_closed.
       rewrite wf12 wf22. reflexivity.
     - subst.
+      clear abstract'.
       apply left_lex'.
       funelim (and_or_imp_size (p1 ---> p2));
         try inversion e; subst; solve_match_impossibilities.
       3: { pose proof (n3 p1'). contradiction. }
       2: { pose proof (n1 p1' p2'). contradiction. }
       1: { pose proof (n p1' p2'). contradiction. }
+      clear.
       lia.
   Defined.
   (*
