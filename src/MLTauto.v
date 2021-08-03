@@ -1577,7 +1577,7 @@ Section ml_tauto.
               | inr _
                   with match_imp p => {
                   | inl (existT p1 (existT p2 _)) :=
-                    pp_or (abstract' ap wfap (¬ p1) _) (abstract' ap wfap p2 _)
+                    pp_or (abstract' ap wfap (negate p1) _) (abstract' ap wfap p2 _)
                   | inr _ with match_bott p => {
                       | inl e := pp_and (pp_atomic ap wfap) (pp_natomic ap wfap) ;
                       | inr _ := pp_atomic p wfp
@@ -1768,22 +1768,17 @@ Section ml_tauto.
       1: { unfold patt_and in n. unfold patt_not at 3 in n.
            pose proof (n p1' p2'). contradiction.
       }
-      (* The problem is, when stripping (p1 ---> p2) (which is not a patt_and)
-         into (p1 ---> ⊥) (= ¬ p1), it might create a patt_and (or patt_or).
-         But in any such case, the and_or_imp_size of ¬ p1 should still be <= and_or_imp_size p1,
-         or not?
-         Maybe a useful lemma might be that and_or_imp_size is monotone with respect to the
-         (indirect) subformula relation.
-       *)
-      
       clear -n n0 n1 n4.
-      (* Concretely, I need that aoisz (¬ p1) >= aoisz p1 *)
-      funelim (and_or_imp_size (¬ p1));
+      rewrite and_or_imp_size_negate. lia.
+    - admit.
+    - subst.
+      apply left_lex'.
+      funelim (and_or_imp_size (p1 ---> p2));
         try inversion e; subst; solve_match_impossibilities.
-      + clear.
-        funelim (and_or_imp_size (¬ p1' or ¬ p2'));
-          try inversion e; subst; solve_match_impossibilities.
-      
+      3: { pose proof (n3 p1'). contradiction. }
+      2: { pose proof (n1 p1' p2'). contradiction. }
+      1: { pose proof (n p1' p2'). contradiction. }
+      lia.
   Abort.
   
 
