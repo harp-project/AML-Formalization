@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Logic.Classical_Prop.
-From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Lexicographic_Product.
+From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Wellfounded.
 From Coq Require Import Logic.FunctionalExtensionality.
 From Coq.micromega Require Import Lia.
 
@@ -8,7 +8,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Import base option.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
+From MatchingLogic Require Import Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 (*
@@ -185,6 +185,18 @@ Section ml_tauto.
   Next Obligation.
     intros. eapply existT. eapply existT. reflexivity.
   Defined.
+
+  Lemma match_imp_patt_imp p1 p2: is_inl (match_imp (patt_imp p1 p2)).
+  Proof. reflexivity. Qed.
+
+  Equations match_bott (p : Pattern)
+    : (p = patt_bott) + (p <> patt_bott)
+    :=
+      match_bott patt_bott := inl _ ;
+      match_bott _ := inr _.
+  Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
+  Next Obligation. reflexivity. Defined.
+  
 
   Equations negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
     negate p with match_and p => {
@@ -763,17 +775,57 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
       apply and_impl_2; auto.
+  Qed.    
+
+  Lemma negate_is_bot p:
+    negate p = patt_bott ->
+    p = ¬ ⊥.
+  Proof.
+    intros H.
+    funelim (negate p); try inversion e; subst; try discriminate.
+    - rewrite -Heqcall in H1. inversion H1.
+    - rewrite H. reflexivity.
+    - rewrite -Heqcall in H0. inversion H0.
+    - rewrite -Heqcall in H. inversion H.
   Qed.
 
 
+  (* The key property I want is that [and_or_imp_size (negate p) = and_or_imp_size p].
+     > For this to hold, we need to resolve the not/or overlap in both functions
+     > in the same way.
+     Really? Actually, I thin the reason is different: see the comment in the proof
+     of [and_or_imp_size_negate].
+   *)
+  Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    and_or_imp_size p with match_and p => {
+      | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+      | inr _
+          with match_or p => {
+          | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+          | inr _
+              with match_not p => {
+              | inl (existT p1' e) := and_or_imp_size p1';
+              | inr _
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
+                  | inr _ => 0
+                }
+            }
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
+
   (* This may come handy later. If not, I can always delete that later. *)
-  Ltac solvmatch_impossibilities :=
+  Ltac solve_match_impossibilities :=
     repeat (
         match goal with
         | H : match_or (patt_or ?A ?B) = inr _ |- _
           =>
           let HC1 := fresh "HC1" in
           pose proof (HC1 := match_or_patt_or A B);
+          let HC2 := fresh "HC2" in
           pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
           rewrite HC1 in HC2;
           inversion HC2
@@ -781,12 +833,542 @@ Section ml_tauto.
           =>
           let HC1 := fresh "HC1" in
           pose proof (HC1 := match_and_patt_and A B);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : match_imp (patt_imp ?A ?B) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_imp_patt_imp A B);
+          let HC2 := fresh "HC2" in
+          pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
+          rewrite HC1 in HC2;
+          inversion HC2
+        | H : match_not (patt_not ?A) = inr _ |- _
+          =>
+          let HC1 := fresh "HC1" in
+          pose proof (HC1 := match_not_patt_not A);
+          let HC2 := fresh "HC2" in
           pose proof (HC2 := (inr_impl_not_is_inl _ _ H));
           rewrite HC1 in HC2;
           inversion HC2
         end
       ).
 
+  Lemma negate_other_than_imp p neq:
+    match_imp p = inr neq ->
+    negate p = ¬ p.
+  Proof.
+    intros H.
+    funelim (negate p); try inversion e; subst;
+      unfold patt_and in *; unfold patt_or in *; unfold patt_not in *;
+        solve_match_impossibilities.
+    reflexivity.
+  Qed.
+  
+  Lemma negate_not_imp_is_not p:
+    (forall p1 p2, p <> (p1 ---> p2)) ->
+    negate p = ¬ p.
+  Proof.
+    intro H.
+    funelim (negate p); try inversion e; subst; solve_match_impossibilities.
+    5: { reflexivity. }
+    4: {
+      pose proof (Htmp := H0 p1 p2). contradiction.
+    }
+    3: {
+      pose proof (Htmp := H p1' ⊥). contradiction.
+    }
+    2: {
+      pose proof (Htmp := H1 (¬ p1') p2'). contradiction.
+    }
+    1: {
+      unfold patt_and, patt_or in H1.
+      unfold patt_not in H1 at 1.
+      pose proof (Htmp := H1 (¬ ¬ p1' ---> ¬ p2') ⊥). contradiction.
+    }
+  Qed.
+  
 
-  (* TODO: a function [abstract : Pattern -> PropPattern] *)
+
+  (*
+  Lemma and_or_imp_size_not p :
+    and_or_imp_size (patt_not p) = 2 + and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (and_or_imp_size _); try inversion e; subst; auto; solve_match_impossibilities.
+    - funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst.
+      + simpl in Hsz. repeat rewrite IHsz. lia. lia. reflexivity.
+      + simpl in Hsz. repeat rewrite IHsz. simpl. lia. lia. lia. reflexivity.
+      + solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+    - solve_match_impossibilities.
+  Qed.
+   *)
+  
+  Lemma and_or_imp_size_negate p:
+    and_or_imp_size (negate p) = and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz).
+    { lia. }
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
+      funelim (negate _); try inversion e; subst; auto.
+    - clear e H H0 Heq.
+      (* here we need the [patt_or] at the LHS to *not* be interpreted as [patt_not],
+         because if it is interpreted as patt_not, then the lhs is equal to 
+         [aoisz (negate p1')] and the lhs to [1 + aoisz p1' + aoisz p2'].
+         For example, if [p1 = ¬ s₁] and [p2 = ¬ ⊥], then
+         and_or_imp_size (negate (¬ s1 or ¬ ⊥))
+         = and_or_imp_size (negate (¬ s1) or negate (¬ ⊥))
+         =(1) and_or_imp_size (s₁ or ⊥)
+         = and_or_imp_size (¬ ¬ s₁)
+         = and_or_imp_size (¬ s₁)
+         = and_or_imp_size s₁
+         < 1 + and_or_imp_size (¬ s₁) + and_or_imp_size ⊥
+         = and_or_imp_size (¬ s₁ or ¬ ⊥).
+       *)
+
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e n H Heq H0 Heq0.
+      simpl in Hsz.
+      repeat (rewrite IHsz; [lia|]).
+      replace (¬ p1'0 or ¬ p2'0 ---> ⊥) with (p1'0 and p2'0) by reflexivity.
+      funelim (and_or_imp_size (_ and _)); try inversion e; subst; solve_match_impossibilities.
+      clear e H H0 Heq.
+      reflexivity.
+    - clear e n H H0 Heq Heq0.
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e H Heq H0.
+      simpl in Hsz.
+      repeat (rewrite IHsz; [lia|]).
+      replace (¬ p1'0 ---> p2'0) with (p1'0 or p2'0) by reflexivity.
+      funelim (and_or_imp_size (_ or _)); try inversion e; subst; solve_match_impossibilities.
+      reflexivity.
+    - replace (p1' ---> ⊥) with (¬ p1') by reflexivity.
+      funelim (and_or_imp_size (¬ p1')); try inversion e; subst; solve_match_impossibilities.
+      + clear e H H0 n0 Heq Heq0 Heq1.
+        fold (¬ (¬ p1' or ¬ p2')) in Heq2. fold (p1' and p2') in Heq2.
+        solve_match_impossibilities.
+      + fold (p1' or ⊥) in Heq2. solve_match_impossibilities.
+      + reflexivity.
+    - clear e Heq.
+      (*clear e n1 n0 n H Heq Heq0 Heq1 Heq2.*)
+      funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
+      clear e H Heq H0.
+      rewrite IHsz; [lia|].
+      funelim (and_or_imp_size (p1' ---> p2)); try inversion e; subst; solve_match_impossibilities.
+      + fold (¬ (¬ p1' or ¬ p2')) in Heq0. solve_match_impossibilities.
+      + fold (p1' or p2') in Heq1. solve_match_impossibilities.
+      + fold (¬ p1') in Heq4. solve_match_impossibilities.
+      + reflexivity.
+    - pose proof (n2 p1 p2). contradiction.
+  Qed.
+
+  Equations max_negation_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    max_negation_size p with match_and p => {
+      | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
+      | inr _ with match_or p => {
+          | inl (existT p1 (existT p2 e)) := Nat.max (max_negation_size p1) (max_negation_size p2);
+          | inr _  with match_not p => {
+              | inl (existT p1' e) := size' p1';
+              | inr _ with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) :=
+                    Nat.max (max_negation_size p1) (max_negation_size p2);
+                  | inr _ => 0
+                }
+            }
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
+
+
+  Lemma max_negation_size_lt p:
+    max_negation_size p < size' p.
+  Proof.
+    remember (size' p) as sz.
+    rewrite Heqsz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia;
+      funelim (max_negation_size _); try inversion e; subst; solve_match_impossibilities; try lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+    - simpl in *.
+      pose proof (IH1 := IHsz p1 ltac:(lia)).
+      pose proof (IH2 := IHsz p2 ltac:(lia)).
+      lia.
+  Qed.
+  
+  Lemma max_negation_size_not p:
+    max_negation_size (¬ p) <= size' p.
+  Proof.
+    funelim (max_negation_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    3: { lia. }
+    2: {
+      clear.
+      funelim (max_negation_size ⊥); try inversion e; subst; solve_match_impossibilities.
+      pose proof (Hszp1 := max_negation_size_lt p1).
+      simpl. lia.
+    }
+    1: {
+      pose proof (Hszp1 := max_negation_size_lt p1).
+      pose proof (Hszp2 := max_negation_size_lt p2).
+      simpl. lia.
+    }
+  Qed.  
+  
+  Definition aoisz_mns_lexprod' :=
+    @lexprod'
+      nat
+      nat
+      lt
+      lt
+  .
+
+  Lemma wf_aoisz_mns_lexprod' : well_founded aoisz_mns_lexprod'.
+  Proof.
+    apply wf_lexprod'.
+    - apply well_founded_ltof.
+    - apply well_founded_ltof.
+  Defined.
+
+  Check aoisz_mns_lexprod'.
+  Definition aoisz_mns_lexprod p q :=
+    aoisz_mns_lexprod'
+      (and_or_imp_size p, max_negation_size p)
+      (and_or_imp_size q, max_negation_size q).
+
+  Lemma wf_aoisz_mns_lexprod : well_founded aoisz_mns_lexprod.
+  Proof.
+    unfold aoisz_mns_lexprod.
+    apply (wf_inverse_image _ _ _ (fun x => (and_or_imp_size x, max_negation_size x))).
+    apply wf_aoisz_mns_lexprod'.
+  Defined.
+  
+
+  Instance wf_aoisz_mns_lexprod_ins : WellFounded aoisz_mns_lexprod.
+  Proof.
+    apply wf_aoisz_mns_lexprod.
+  Defined.
+
+  Equations? abstract'
+           (ap : Pattern)
+           (wfap : well_formed ap)
+           (p : Pattern)
+           (wfp : well_formed p)
+    : PropPattern by wf p aoisz_mns_lexprod :=
+    abstract' ap wfap p wfp with match_and p => {
+      | inl (existT p1 (existT p2 e)) := pp_and (abstract' ap wfap p1 _) (abstract' ap wfap p2 _) ;
+      | inr _ with match_or p => {
+          | inl (existT p1 (existT p2 e)) := pp_or (abstract' ap wfap p1 _) (abstract' ap wfap p2 _) ;
+          | inr _  with match_not p => {
+              | inl (existT p' e) with match_imp p' => {
+                  | inl _ :=
+                    abstract' ap wfap (negate p') _ ;
+                  | inr _ := pp_natomic p' _
+                }
+              | inr _
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) :=
+                    pp_or (abstract' ap wfap (negate p1) _) (abstract' ap wfap p2 _)
+                  | inr _ with match_bott p => {
+                      | inl e := pp_and (pp_atomic ap wfap) (pp_natomic ap wfap) ;
+                      | inr _ := pp_atomic p wfp
+                    }
+                }                 
+            }
+        }
+    }.
+  Proof.
+    - subst. clear abstract'.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf11 wf21. reflexivity.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'.
+      funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - subst. clear abstract'.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf12 wf22. reflexivity.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - subst. clear abstract'.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf11 wf21. reflexivity.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - subst. clear abstract'.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf12 wf22. reflexivity.
+    - subst. clear abstract'.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      apply left_lex'. unfold ltof.
+      funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
+      lia.
+    - subst. clear -wfp.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply wf_negate.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      unfold well_formed,well_formed_closed.
+      rewrite wf1 wf2. reflexivity.
+    - subst. clear abstract'.
+      destruct s as [p1 [p2 Heqp']].
+      subst.
+      unfold aoisz_mns_lexprod.
+      unfold aoisz_mns_lexprod'.
+      rewrite and_or_imp_size_negate.
+      funelim (and_or_imp_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+      + pose proof (Htmp := n p1' p2').
+        rewrite e in Htmp. contradiction.
+      + pose proof (Htmp := n0 p1' ⊥).
+        rewrite e in Htmp. contradiction.
+      + apply right_lex'.
+        clear e n0 n Heq H Heq0 Heq1.
+        funelim (max_negation_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+        { pose proof (Htmp := n2 p1 p2). contradiction. }
+        { pose proof (Htmp := n1 p1 ⊥). contradiction. }
+        clear.
+
+
+        remember (p1 ---> p2) as p1ip2.
+        remember (size' p1ip2) as sz. rewrite Heqsz.
+        assert (Hsz: size' p1ip2 <= sz) by lia.
+        clear Heqsz.
+
+        subst.
+        move: p1 p2 Hsz.
+        induction sz; intros p1 p2 Hsz; subst; simpl in Hsz; try lia.
+        simpl.
+        funelim (negate (p1 ---> p2)); try inversion e; subst; solve_match_impossibilities.
+        * clear e H H0 Heq.
+          remember (match_imp p1') as mip1'.
+          remember (match_imp p2') as mip2'.
+          destruct mip1',mip2'.
+          -- destruct s as [a [b Hab]].
+             destruct s0 as [c [d Hcd]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
+             clear Heqmip1' Heqmip2'.
+             funelim (max_negation_size (negate (a ---> b) or negate (c ---> d)));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 IH2.
+             simpl in *. lia.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             clear Heqmip1' Heqmip2'.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n).
+             clear n IHsz.
+             funelim (max_negation_size (negate (a ---> b) or negate p2'));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             simpl in *. lia.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             clear Heqmip1' Heqmip2'.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n).
+             clear IHsz n.
+             funelim (max_negation_size (negate p1' or negate (a ---> b)));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Isznp1' := max_negation_size_not p1').
+             simpl in *. lia.
+          -- simpl in *. clear -n n0.
+             apply negate_not_imp_is_not in n.
+             apply negate_not_imp_is_not in n0.
+             rewrite n n0.
+             clear n n0.
+             funelim (max_negation_size (¬ p1' or ¬ p2')); try inversion e; subst;
+               solve_match_impossibilities.
+             
+             clear.
+             pose proof (Hsznp1' := max_negation_size_not p1').
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             lia.
+        * 
+          remember (match_imp p1') as mip1'.
+          remember (match_imp p2') as mip2'.
+          destruct mip1',mip2'.
+          -- destruct s as [a [b Hab]].
+             destruct s0 as [c [d Hcd]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
+             clear IHsz Hsz Heqmip1' Heqmip2' Heq0 H0 Heq e n H.
+             funelim (max_negation_size (negate (a ---> b) and negate (c ---> d)));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 IH2.
+             simpl in *. lia.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n0).
+             clear IHsz Hsz Heqmip1' Heqmip2' H n e H0 Heq0 Heq n0.
+             funelim (max_negation_size (negate (a ---> b) and negate p2'));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             simpl in *. lia.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
+             pose proof (Hn := negate_not_imp_is_not _ n0).
+             clear IHsz Hsz Heqmip1' Heqmip2' Heq0 Heq H H0 e n n0.
+             funelim (max_negation_size (negate p1' and negate (a ---> b)));
+               try inversion e; subst; solve_match_impossibilities.
+             clear -IH1 Hn.
+             rewrite Hn.
+             pose proof (Isznp1' := max_negation_size_not p1').
+             simpl in *. lia.
+          -- simpl in *. clear -n0 n1.
+             apply negate_not_imp_is_not in n0.
+             apply negate_not_imp_is_not in n1.
+             rewrite n0 n1. clear n0 n1.
+             funelim (max_negation_size (¬ p1' and ¬ p2')); try inversion e; subst;
+               solve_match_impossibilities.
+             
+             clear.
+             pose proof (Hsznp1' := max_negation_size_not p1').
+             pose proof (Hsznp2' := max_negation_size_not p2').
+             lia.
+        * clear.
+          pose proof (max_negation_size_lt p1').
+          lia.
+        * remember (match_imp p2) as mip2.
+          destruct mip2.
+          -- destruct s as [a [b Hab]].
+             subst. simpl in Hsz.
+             pose proof (IH := IHsz a b ltac:(simpl; lia)).
+             clear e Heq H IHsz Hsz Heqmip2.
+             clear Heq0 Heq1 Heq2 n n0 n1.
+             funelim (max_negation_size (p1 and negate (a ---> b)));
+               try inversion e; subst; solve_match_impossibilities.
+             pose proof (Hszp1 := max_negation_size_lt p1).
+             clear e H Heq H0.
+             lia.
+          -- simpl in *. clear -n2.
+             apply negate_not_imp_is_not in n2.
+             rewrite n2. clear n2.
+             funelim (max_negation_size (p1 and ¬ p2));
+               try inversion e; subst; solve_match_impossibilities.
+             clear.
+             pose proof (max_negation_size_lt p1).
+             pose proof (max_negation_size_not p3).
+             lia.
+
+    - subst.
+      clear abstract' n n0.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      rewrite !andbT in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      unfold well_formed,well_formed_closed.
+      rewrite wf1 wf2. reflexivity.
+    - subst.
+      clear abstract' n0 n1.
+      apply wf_negate.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf11 wf21. reflexivity.
+    - subst.
+      clear abstract'.
+      unfold aoisz_mns_lexprod,aoisz_mns_lexprod'.
+      apply left_lex'.
+      funelim (and_or_imp_size (p1 ---> p2));
+        try inversion e; subst; solve_match_impossibilities.
+      3: { pose proof (n3 p1'). contradiction. }
+      2: { pose proof (n1 p1' p2'). contradiction. }
+      1: { unfold patt_and in n. unfold patt_not at 3 in n.
+           pose proof (n p1' p2'). contradiction.
+      }
+      clear.
+      rewrite and_or_imp_size_negate. lia.
+    - subst.
+      clear abstract' n n0 n1.
+      unfold well_formed,well_formed_closed in wfp.
+      simpl in wfp.
+      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
+      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
+      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
+      unfold well_formed,well_formed_closed.
+      rewrite wf12 wf22. reflexivity.
+    - subst.
+      clear abstract'.
+      apply left_lex'.
+      funelim (and_or_imp_size (p1 ---> p2));
+        try inversion e; subst; solve_match_impossibilities.
+      3: { pose proof (n3 p1'). contradiction. }
+      2: { pose proof (n1 p1' p2'). contradiction. }
+      1: { pose proof (n p1' p2'). contradiction. }
+      clear.
+      lia.
+  Defined.
+  
 End ml_tauto.
