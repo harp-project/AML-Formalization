@@ -1071,7 +1071,6 @@ Section ml_tauto.
     apply wf_aoisz_mns_lexprod.
   Defined.
 
-  Set Equations Debug.
   Equations? abstract'
            (ap : Pattern)
            (wfap : well_formed ap)
@@ -1085,8 +1084,7 @@ Section ml_tauto.
           | inr _  with match_not p => {
               | inl (existT p' e) with match_imp p' => {
                   | inl _ :=
-                    let np' := negate p' in
-                    abstract' ap wfap np' _ ;
+                    abstract' ap wfap (negate p') _ ;
                   | inr _ := pp_natomic p' _
                 }
               | inr _
@@ -1166,13 +1164,11 @@ Section ml_tauto.
       unfold well_formed,well_formed_closed in wfp.
       simpl in wfp.
       rewrite !andbT in wfp.
-      unfold np'.
       apply wf_negate.
       apply andb_prop in wfp. destruct wfp as [wf1 wf2].
       unfold well_formed,well_formed_closed.
       rewrite wf1 wf2. reflexivity.
     - subst. clear abstract'.
-      unfold np'. clear np'.
       destruct s as [p1 [p2 Heqp']].
       subst.
       unfold aoisz_mns_lexprod.
@@ -1374,10 +1370,5 @@ Section ml_tauto.
       clear.
       lia.
   Defined.
-  (*
-Warning: Functional induction principle could not be proved automatically: 
-         Couldn't rewrite
-Warning: Functional induction principle could not be proved automatically, it is left as an obligation.
-   *)
   
 End ml_tauto.
