@@ -808,7 +808,7 @@ Section ml_tauto.
               | inr _
                   with match_imp p => {
                   | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
-                  | inr _ => 1
+                  | inr _ => 0
                 }
             }
         }
@@ -976,7 +976,7 @@ Section ml_tauto.
     - pose proof (n2 p1 p2). contradiction.
   Qed.
 
-
+(*
   Lemma and_or_imp_size_not_is_and p:
     (exists q r, (¬ p) = (q and r)) ->
                  and_or_imp_size (¬ p) = and_or_imp_size p
@@ -996,9 +996,9 @@ Section ml_tauto.
     funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst; solve_match_impossibilities.
     2: { pose proof (n0 (¬ p1') (¬ p2')). contradiction. }
   Abort.
-  
+  *)
 
-
+(*
   Lemma and_or_imp_size_not_is_and p:
     ((exists q r, (¬ p) = (q and r)) ->
      and_or_imp_size (¬ p) = and_or_imp_size p)
@@ -1038,7 +1038,7 @@ Section ml_tauto.
     }
    
   Abort.
-
+*)
   (*
   (* This does not work. Why do I need it in the first place? *)
   Lemma and_or_imp_size_not_is_and p:
@@ -1451,19 +1451,106 @@ Section ml_tauto.
     move: p q Hsz Hsub Himp.
     induction sz; intros p q Hsz Hsub Himp; destruct q; simpl in *; try lia;
       inversion Hsub; subst; try lia.
-    
-    - destruct Himp as [a [b Hab]]. inversion Hab.
-    - destruct Himp as [a [b Hab]]. inversion Hab.
-    - clear Himp.
-      pose proof (IHsz p q1 ltac:(lia) H1).
-      funelim (and_or_imp_size (q1 $ q2)); try inversion e; subst; solve_match_impossibilities.
-      lia.
 
-      funelim (and_or_imp_si
-      rewrite -Heqq. funelim (and_or_imp_size q); subst q; try inversion e; subst;
-        solve_match_impossibilities.
-    
-    
+    1,2,5,6: destruct Himp as [a [b Hab]]; inversion Hab.
+    - clear Himp.
+
+      funelim (and_or_imp_size (q1 ---> q2)); try inversion e;
+        subst; solve_match_impossibilities.
+      + clear e H H0 Heq.
+        inversion H1; subst.
+        (* problem: p1' = s, p2' = ¬ s *)
+        * funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+          clear e H Heq H0 Heq0.
+          simpl in Hsz.
+          (* problem: if p2'0 = ¬ s and p1'0 = s, then lhs = 2 and rhs = 1*)
+          funelim (and_or_imp_size (¬ p1'0)); try inversion e;
+            subst; solve_match_impossibilities.
+          -- clear e H H0 Heq.
+            (* problem: if p2'0 = ¬ s and p1' = p2' = s, then
+               lhs = 3 and rhs = 2 *)
+             funelim (and_or_imp_size (¬ p2'0)); try inversion e;
+               subst; solve_match_impossibilities.
+             ++ clear e H H0 Heq.
+                funelim (and_or_imp_size (¬ p1'0 or ¬ p2'0)); try inversion e;
+                  subst; solve_match_impossibilities.
+                clear e H Heq H0 Heq0.
+                funelim (and_or_imp_size (¬ p1'0 or ¬ p2'0)); try inversion e;
+                  subst; solve_match_impossibilities.
+                clear e H Heq H0.
+
+                simpl in Hsz.
+                assert (Hp1'0: and_or_imp_size p1'0 <= and_or_imp_size (¬ p1'0)).
+                { apply IHsz. simpl. lia. apply sub_imp_l. apply sub_eq. reflexivity.
+                  exists p1'0. exists ⊥. reflexivity.
+                }
+                assert (Hp2'0: and_or_imp_size p2'0 <= and_or_imp_size (¬ p2'0)).
+                { apply IHsz. simpl. lia. apply sub_imp_l. apply sub_eq. reflexivity.
+                  exists p2'0. exists ⊥. reflexivity.
+                }
+                assert (Hp1'1: and_or_imp_size p1'1 <= and_or_imp_size (¬ p1'1)).
+                { apply IHsz. simpl. lia. apply sub_imp_l. apply sub_eq. reflexivity.
+                  exists p1'1. exists ⊥. reflexivity.
+                }
+                assert (Hp2'1: and_or_imp_size p2'1 <= and_or_imp_size (¬ p2'1)).
+                { apply IHsz. simpl. lia. apply sub_imp_l. apply sub_eq. reflexivity.
+                  exists p2'1. exists ⊥. reflexivity.
+                }
+                lia.
+             ++
+               clear e H H0 Heq0 Heq.
+               funelim (and_or_imp_size (¬ p1'0 or ¬ p2'0)); try inversion e;
+                 subst; solve_match_impossibilities.
+               clear e H Heq H0.
+               (* problem: lhs >= 3, but if p1'1 = p2'0 = p1'0 = s (some symbol),
+                  then rhs = 2. *)
+  Abort.
+  
+
+  Lemma and_or_imp_size_not p:
+    and_or_imp_size (¬ p) = and_or_imp_size p.
+  Proof.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    move: p Hsz.
+    induction sz; intros p Hsz; destruct p; simpl in *; try lia.
+    all:
+      match goal with
+      | |- (and_or_imp_size (¬ ?p) = _)
+        => (funelim (and_or_imp_size (¬ p));
+            try inversion e; subst; solve_match_impossibilities;
+            simpl in *; try lia)
+      end.
+    2: { clear e H Heq H0 Heq0.
+         pose proof (IH := IHsz p1' ltac:(lia)).
+         fold (¬ p1').
+         funelim (and_or_imp_size (¬ p1')); try inversion e; subst; solve_match_impossibilities.
+         - clear e H H0 Heq.
+           funelim (and_or_imp_size (¬ p1' or ¬ p2')); try inversion e; subst; solve_match_impossibilities.
+           simpl in Hsz.
+           pose proof (IH1 := IHsz p1'0 ltac:(lia)).
+           pose proof (IH2 := IHsz p2'0 ltac:(lia)).
+           clear e H H0 Heq Heq0.
+           funelim (and_or_imp_size ⊥); try inversion e; subst; solve_match_impossibilities.
+           Abort. (*
+           lia.
+         - simpl in Hsz.
+           pose proof (IH1 := IHsz p1' ltac:(lia)).
+           lia.
+         - lia.
+    }
+    {
+      (* what if p = ¬ p1 or ¬ p2?
+         Then we have
+         LHS = aoisz (¬ p) = aoisz (p1 and p2) = 1 + aoisz p1 + aoisz p2
+         RHS = aoisz (¬ p1 or ¬ p2) = 1 + aoisz (¬ p1) + aoisz (¬ p2)
+      fold (¬ p1' or ¬ p2').
+    }*)
+         
+  Abort.
+  *)
   
   (* p1 ---> (⊥ and ⊥) ==> ¬ p1 or (⊥ and ⊥) *)
   (* abstract (p1 ---> p2) where p2 <> \bot  ===> abstract (¬ p1) = abstract (p1 ---> ⊥)   *)
@@ -1688,7 +1775,8 @@ Section ml_tauto.
          Maybe a useful lemma might be that and_or_imp_size is monotone with respect to the
          (indirect) subformula relation.
        *)
-      clear -n4.
+      
+      clear -n n0 n1 n4.
       (* Concretely, I need that aoisz (¬ p1) >= aoisz p1 *)
       funelim (and_or_imp_size (¬ p1));
         try inversion e; subst; solve_match_impossibilities.
