@@ -1182,6 +1182,23 @@ Qed. *)
       eapply prf_weaken_conclusion_meta; auto.
   Qed.
 
+  Lemma prf_reorder_iter_meta Γ a b g l₁ l₂:
+    well_formed a ->
+    well_formed b ->
+    well_formed g ->
+    wf l₁ ->
+    wf l₂ ->
+    Γ ⊢ (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) ->
+    Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)).
+  Proof.
+    (* TODO we should have a function/lemma for creating these "meta" variants. *)
+    intros.
+    eapply Modus_ponens.
+    4: { apply prf_reorder_iter; auto. }
+    all: auto 10.
+  Qed.
+  
+  
   (*
   Lemma prf_reorder_move_to_top Γ a g l₁ l₂:
     well_formed a ->
@@ -1704,7 +1721,7 @@ Qed. *)
     intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
     all: auto.
   Qed.
-
+  
 
   Lemma prf_add_proved_to_assumptions Γ l a g:
     wf l ->
@@ -1786,7 +1803,67 @@ Qed. *)
     mgAdd H2; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
   Qed.
+  
+  Lemma prf_disj_elim_iter Γ l p q r:
+    wf l ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((fold_right patt_imp r (l ++ [p]))
+           --->
+           ((fold_right patt_imp r (l ++ [q]))
+              --->                                                                
+              (fold_right patt_imp r (l ++ [p or q])))).
+            
+  Proof.
+    intros wfl wfp wfq wfr.
+    induction l.
+    - simpl. apply prf_disj_elim; auto.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      simpl in *.
+      toMyGoal. repeat mgIntro.
+      mgAdd IHl; auto 10.
+      Fail mgApply' 0 10. (* I need an iterative version of mgApply that works if the lemma to apply has multiple
+                             hypotheses. *)
 
+      Fail apply IHl.
+  Abort.
+
+
+    
+  Lemma not_concl Γ p q:
+    well_formed p ->
+    well_formed q ->
+    Γ ⊢ (p ---> (q ---> ((p ---> ¬ q) ---> ⊥))).
+  Proof.
+    intros wfp wfq.
+    rewrite -> tofold. repeat rewrite consume.
+    replace ((([] ++ [p]) ++ [q]) ++ [p ---> ¬ q]) with ([p;q;p--->¬q]) by reflexivity.
+    replace ([p;q;p--->¬q]) with ([p] ++ [q; p ---> ¬q] ++ []) by reflexivity.
+    apply prf_reorder_iter_meta; auto.
+    simpl.
+    fold (¬ q).
+    apply modus_ponens; auto.
+  Qed.
+  
+  Lemma and_impl Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (((p and q) ---> r) ---> (p ---> (q ---> r))).
+  Proof.
+    intros wfp wfq wfr.
+    toMyGoal. repeat mgIntro.
+    unfold patt_and. mgApply' 0 10.
+    mgIntro. unfold patt_or at 2.
+    Fail mgApply' 3 10.
+  Abort.
+
+  (*Check prf_strenghten_premise_iter.*)
+
+  
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -2114,7 +2191,7 @@ Qed. *)
         pose proof (Hwf' := Hwf).
         unfold well_formed in Hwf. simpl in Hwf.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-        apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+v        apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
         apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
@@ -2216,7 +2293,41 @@ Qed. *)
       mgExactn 4.
       auto 10.
   Qed.
+
+
+  (*
+  Lemma and_of_equiv_is_equiv Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ ((p <---> p') ---> ((q <---> q') ---> ((p and q) <---> (p' and q')))).
+  Proof.
+    intros wfp wfq wfp' wfq'.*)
   
+  Lemma and_of_equiv_is_equiv Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p and q) <---> (p' and q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+    
+    apply conj_intro_meta; auto.
+    - toMyGoal.
+      mgIntro. unfold patt_and.
+      mgIntro. mgApply' 0 10.
+      unfold patt_or. mgIntro. mgIntro.
+  Abort.
+  
+      
   
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
