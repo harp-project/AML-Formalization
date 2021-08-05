@@ -1886,9 +1886,25 @@ Qed. *)
       apply prf_reorder_iter_meta; auto.
       simpl. auto.
   Qed.
-      
+
+  Lemma reorder_last_to_head_meta Γ g x l:
+    wf l ->
+    well_formed g ->
+    well_formed x ->
+    Γ ⊢ (foldr patt_imp g (x::l)) ->
+    Γ ⊢ (foldr patt_imp g (l ++ [x])).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: apply reorder_last_to_head.
+    all: auto 10.
+  Qed.
   
-  Lemma helper_iter Γ l r:
+  (* Iterated modus ponens.
+     For l = [x₁, ..., xₙ], it says that
+     Γ ⊢ ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
+  *)
+  Lemma modus_ponens_iter Γ l r:
     wf l ->
     well_formed r ->
     Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])).
@@ -1896,8 +1912,17 @@ Qed. *)
     intros wfl wfr.
     induction l.
     - simpl. auto.
-    - simpl. rewrite foldr_app. simpl. rewrite consume. simpl.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      simpl. rewrite foldr_app. simpl. rewrite consume. simpl.
       rewrite foldr_app in IHl. simpl in IHl.
+      eapply prf_weaken_conclusion_meta_meta.
+      4: { apply reorder_last_to_head; auto. }
+      all: auto 10.
+      simpl. apply modus_ponens; auto.
+  Qed.
+  
 
   
   Lemma and_impl Γ p q r:
