@@ -1847,6 +1847,58 @@ Qed. *)
     fold (¬ q).
     apply modus_ponens; auto.
   Qed.
+
+  Lemma helper Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (p ---> (q ---> ((p ---> (q ---> r)) ---> r))).
+  Proof.
+    intros wfp wfq wfr.
+    rewrite -> tofold. repeat rewrite consume.
+    replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
+    replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
+    apply prf_reorder_iter_meta; auto.
+    simpl.
+    apply modus_ponens; auto.
+  Qed.
+
+  Lemma reorder_last_to_head Γ g x l:
+    wf l ->
+    well_formed g ->
+    well_formed x ->
+    Γ ⊢ ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))).
+  Proof.
+    intros wfl wfg wfx.
+    induction l.
+    - simpl. auto.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      simpl. simpl in IHl.
+      rewrite -> tofold. rewrite !consume.
+      eapply prf_weaken_conclusion_iter_meta_meta.
+      4: { apply IHl. }
+      all: auto 10.
+      rewrite consume.
+      replace ((([] ++ [x ---> a ---> foldr patt_imp g l]) ++ [a]) ++ [x])
+        with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
+      apply prf_reorder_iter_meta; auto.
+      simpl. auto.
+  Qed.
+      
+  
+  Lemma helper_iter Γ l r:
+    wf l ->
+    well_formed r ->
+    Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])).
+  Proof.
+    intros wfl wfr.
+    induction l.
+    - simpl. auto.
+    - simpl. rewrite foldr_app. simpl. rewrite consume. simpl.
+      rewrite foldr_app in IHl. simpl in IHl.
+
   
   Lemma and_impl Γ p q r:
     well_formed p ->
