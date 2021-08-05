@@ -1370,5 +1370,26 @@ Section ml_tauto.
       clear.
       lia.
   Defined.
+
+
+  Print abstract'_elim.
+
+
+  Check pp_flatten. Check abstract'.
+  Lemma abstract'_correct Γ ap ϕ
+    (wfap : well_formed ap)
+    (wfϕ : well_formed ϕ):
+    Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ))).
+  Proof.
+    funelim (abstract' _ _ _ _); try inversion e; subst; solve_match_impossibilities.
+    - rewrite -Heqcall.
+      simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
+      end.
+      
+      
+  Abort.
+  
   
 End ml_tauto.
