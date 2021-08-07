@@ -780,9 +780,13 @@ Qed. *)
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (¬B ---> ¬A).
   Proof.
-    intros. unfold patt_not.
-  Abort.
-
+    Check contraposition.
+    intros.
+    eapply Modus_ponens.
+    4: apply contraposition.
+    all: auto.
+  Qed.
+  
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
     well_formed B ->
@@ -2119,7 +2123,7 @@ Qed.
       rewrite [take _ _]/= in Htd;
       rewrite ![drop _ _]/= in Htd;
       rewrite -Htd; clear Htd;
-      apply MyGoal_disj_elim
+      apply MyGoal_disj_elim; simpl
     end.
 
   Example exd Γ a b p q c:
@@ -2600,7 +2604,13 @@ Qed.
     - toMyGoal.
       mgIntro. unfold patt_and.
       mgIntro. mgApply' 0 10.
-      Check prf_disj_elim_iter_2_meta_meta.
+      mgDestruct 1; auto.
+      + apply modus_tollens in pip'; auto.
+        mgAdd pip'; auto.
+        Check prf_weaken_conclusion_meta_meta.
+        Search (?a or ?b).
+        simpl.
+        
       (* mgDestruct 1. *)
       (* We want to 'destruct' on the second assumption in the LHS. *)
       unfold patt_or. mgIntro. mgIntro.
