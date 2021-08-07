@@ -1803,35 +1803,6 @@ Qed. *)
     mgAdd H2; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
   Qed.
-  
-  Lemma prf_disj_elim_iter Γ l p q r:
-    wf l ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢ ((fold_right patt_imp r (l ++ [p]))
-           --->
-           ((fold_right patt_imp r (l ++ [q]))
-              --->                                                                
-              (fold_right patt_imp r (l ++ [p or q])))).
-            
-  Proof.
-    intros wfl wfp wfq wfr.
-    induction l.
-    - simpl. apply prf_disj_elim; auto.
-    - pose proof (wfal := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      simpl in *.
-      toMyGoal. repeat mgIntro.
-      mgAdd IHl; auto 10.
-      Fail mgApply' 0 10. (* I need an iterative version of mgApply that works if the lemma to apply has multiple
-                             hypotheses. *)
-
-      Fail apply IHl.
-  Abort.
-
-
     
   Lemma not_concl Γ p q:
     well_formed p ->
@@ -1935,9 +1906,54 @@ Qed. *)
     toMyGoal. repeat mgIntro.
     unfold patt_and. mgApply' 0 10.
     mgIntro. unfold patt_or at 2.
-    Fail mgApply' 3 10.
+    mgAssert (nnp: (¬ ¬ p)).
+    {
+      mgAdd (not_not_intro Γ p wfp); auto 10.
+      mgApply' 0 10.
+      mgExactn 2; auto 10.
+    }
+    clear nnp.
+    mgAssert (nq: (¬ q)).
+    {
+      mgApply' 3 10. mgExactn 4; auto 10.
+    }
+    clear nq.
+    mgApply' 5 10. mgExactn 2; auto 10.
+    Unshelve. all: auto 10.
+  Qed.
+
+
+
+  Lemma prf_disj_elim_iter Γ l p q r:
+    wf l ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((fold_right patt_imp r (l ++ [p]))
+           --->
+           ((fold_right patt_imp r (l ++ [q]))
+              --->                                                                
+              (fold_right patt_imp r (l ++ [p or q])))).
+            
+  Proof.
+    intros wfl wfp wfq wfr.
+    induction l.
+    - simpl. apply prf_disj_elim; auto.
+    - pose proof (wfal := wfl).
+      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      specialize (IHl wfl).
+      simpl in *.
+      toMyGoal. repeat mgIntro.
+      mgAdd IHl; auto 10.
+      Check and_impl.
+      Fail mgApply' 0 10. (* I need an iterative version of mgApply that works if the lemma to apply has multiple
+                             hypotheses. *)
+
+      Fail apply IHl.
   Abort.
 
+
+  
   (*Check prf_strenghten_premise_iter.*)
 
   
