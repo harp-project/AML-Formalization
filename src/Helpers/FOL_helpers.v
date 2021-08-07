@@ -2090,6 +2090,55 @@ Qed.
     4: { apply prf_disj_elim_iter_2_meta; auto. }
     all: auto 10.
   Qed.
+
+  Lemma MyGoal_disj_elim Γ l₁ l₂ p q r:
+    wf l₁ ->
+    wf l₂ ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    mkMyGoal Γ (l₁ ++ [p] ++ l₂) r ->
+    mkMyGoal Γ (l₁ ++ [q] ++ l₂) r ->
+    mkMyGoal Γ (l₁ ++ [p or q] ++ l₂) r.
+  Proof.
+    intros.
+    apply prf_disj_elim_iter_2_meta_meta; auto.
+  Qed.
+
+  Tactic Notation "mgDestruct" constr(n) :=
+    match goal with
+    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
+      let Htd := fresh "Htd" in
+      epose proof (Htd :=take_drop);
+      specialize (Htd n l);
+      rewrite [take _ _]/= in Htd;
+      rewrite [drop _ _]/= in Htd;
+      rewrite -Htd; clear Htd;
+      epose proof (Htd :=take_drop);
+      specialize (Htd 1 (drop n l));
+      rewrite [take _ _]/= in Htd;
+      rewrite ![drop _ _]/= in Htd;
+      rewrite -Htd; clear Htd;
+      apply MyGoal_disj_elim
+    end.
+
+  Example exd Γ a b p q c:
+    well_formed a ->
+    well_formed b ->
+    well_formed p ->
+    well_formed q ->
+    well_formed c ->
+    Γ ⊢ (a ---> p ---> b ---> c) ->
+    Γ ⊢ (a ---> q ---> b ---> c) ->
+    Γ ⊢ (a ---> (p or q) ---> b ---> c).
+  Proof.
+    intros.
+    toMyGoal. repeat mgIntro.
+
+    mgDestruct 1; auto 10.
+  Abort.
+  
+    
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
@@ -2551,7 +2600,8 @@ Qed.
     - toMyGoal.
       mgIntro. unfold patt_and.
       mgIntro. mgApply' 0 10.
-      Check prf_disj_elim_iter_2.
+      Check prf_disj_elim_iter_2_meta_meta.
+      (* mgDestruct 1. *)
       (* We want to 'destruct' on the second assumption in the LHS. *)
       unfold patt_or. mgIntro. mgIntro.
   Abort.
