@@ -1988,6 +1988,28 @@ Qed. *)
       mgExactn 5; auto 15.
       Unshelve. all: auto 15.
   Qed.
+
+  
+  Lemma prf_disj_elim_iter_2 Γ l₁ l₂ p q r:
+    wf l₁ ->
+    wf l₂ ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
+           --->
+           ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
+              --->                                                                
+              (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)))).
+            
+  Proof.
+    intros wfl₁ wfl₂ wfp wfq wfr.
+    move: l₁ wfl₁.
+    induction l₂; intros l₁ wfl₁.
+    - simpl. apply prf_disj_elim_iter; auto.
+    - simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
+      (* Btw one can use metavariables when searching: Search (?a or ?b). *)
+  Abort.
   
   (*Check prf_strenghten_premise_iter.*)
 
