@@ -1896,7 +1896,7 @@ Qed. *)
   
 
   
-  Lemma and_impl Γ p q r:
+  Lemma and_impl_1 Γ p q r:
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -1922,7 +1922,37 @@ Qed. *)
     Unshelve. all: auto 10.
   Qed.
 
-
+  
+  Lemma and_impl_2 Γ p q r:
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ ((p ---> (q ---> r)) ---> ((p and q) ---> r)).
+  Proof.
+    intros wfp wfq wfr.
+    toMyGoal. repeat mgIntro.
+    mgAssert (Hp: p).
+    {
+      mgAdd (pf_conj_elim_l Γ p q wfp wfq); auto 10.
+      mgApply' 0 10.
+      mgExactn 2; auto 10.
+    }
+    mgAssert (Hq: q).
+    {
+      mgAdd (pf_conj_elim_r Γ p q wfp wfq); auto 10.
+      mgApply' 0 10.
+      mgExactn 2; auto 10.
+    }
+    clear Hp Hq.
+    (* This pattern is basically an "apply ... in" *)
+    mgAssert (Hqir: (q ---> r)).
+    { mgApply' 0 10. mgExactn 2; auto 10. }
+    clear Hqir.
+    mgApply' 4 10. mgExactn 3; auto 10.
+    Unshelve.
+    all: auto 10.
+  Qed.
+  
 
   Lemma prf_disj_elim_iter Γ l p q r:
     wf l ->
