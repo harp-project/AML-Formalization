@@ -1387,6 +1387,7 @@ Section ml_tauto.
       match goal with
       | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
       end.
+      clear -H0 H1.
       
       
   Abort.
