@@ -2007,13 +2007,56 @@ Qed. *)
     move: l₁ wfl₁.
     induction l₂; intros l₁ wfl₁.
     - simpl. apply prf_disj_elim_iter; auto.
-    - simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
-      (* Btw one can use metavariables when searching: Search (?a or ?b). *)
-  Abort.
-  
-  (*Check prf_strenghten_premise_iter.*)
+    - pose proof (wfal₂ := wfl₂).
+      unfold wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
 
-  
+      simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
+      (* Or we can swap p and a (move a to the end of l_1) *)
+      remember (foldr patt_imp r (l₁ ++ p :: a :: l₂)) as A.
+      remember (foldr patt_imp r (l₁ ++ q :: a :: l₂)) as B.
+      remember (foldr patt_imp r (l₁ ++ (p or q) :: a :: l₂)) as C.
+      rewrite -> tofold. rewrite consume. rewrite consume. rewrite [_ ++ [B]]/=.
+      subst.
+      eapply prf_weaken_conclusion_iter_meta_meta.
+      4: {
+        replace (l₁ ++ (p or q) :: a :: l₂) with (l₁ ++ [p or q; a] ++ l₂) by reflexivity.
+        apply prf_reorder_iter; auto.
+      }
+      all: auto 10.
+      simpl.
+      rewrite -> tofold. repeat rewrite consume. rewrite [_ ++ [_]]/=.
+      
+      replace
+        ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ q :: a :: l₂)])
+        with
+          (<[1 := foldr patt_imp r (l₁ ++ q :: a :: l₂)]>
+           ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
+          by reflexivity.
+      
+      eapply prf_strenghten_premise_iter_meta_meta with (n := 1).
+      5: { reflexivity. }
+      5: {  apply prf_reorder_iter; auto. }
+      all: auto 10.
+
+      replace
+        ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)])
+        with
+          (<[0 := foldr patt_imp r (l₁ ++ p :: a :: l₂)  ]>(
+             [foldr patt_imp r (l₁ ++ a :: p :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)]
+          ))
+        by reflexivity.
+      eapply prf_strenghten_premise_iter_meta_meta with (n := 0).
+      5: { reflexivity. }
+      5: {  apply prf_reorder_iter; auto. }
+      all: auto 10.
+
+      simpl.
+      replace (l₁ ++ a :: p :: l₂) with ((l₁ ++ [a]) ++ [p] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      replace (l₁ ++ a :: q :: l₂) with ((l₁ ++ [a]) ++ [q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      replace (l₁ ++ a :: (p or q) :: l₂) with ((l₁ ++ [a]) ++ [p or q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      apply IHl₂; auto.
+Qed.
+
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -2474,6 +2517,7 @@ Qed. *)
     - toMyGoal.
       mgIntro. unfold patt_and.
       mgIntro. mgApply' 0 10.
+      (* We want to 'destruct' on the second assumption in the LHS. *)
       unfold patt_or. mgIntro. mgIntro.
   Abort.
   
