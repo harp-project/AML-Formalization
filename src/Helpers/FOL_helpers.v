@@ -2057,6 +2057,40 @@ Qed. *)
       apply IHl₂; auto.
 Qed.
 
+  Lemma prf_disj_elim_iter_2_meta Γ l₁ l₂ p q r:
+    wf l₁ ->
+    wf l₂ ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) ->
+    Γ ⊢ ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
+              --->                                                                
+              (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))).
+            
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: { apply prf_disj_elim_iter_2; auto. }
+    all: auto 10.
+  Qed.
+  
+  Lemma prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r:
+    wf l₁ ->
+    wf l₂ ->
+    well_formed p ->
+    well_formed q ->
+    well_formed r ->
+    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) ->
+    Γ ⊢ (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) ->
+    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: { apply prf_disj_elim_iter_2_meta; auto. }
+    all: auto 10.
+  Qed.
+  
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
@@ -2517,6 +2551,7 @@ Qed.
     - toMyGoal.
       mgIntro. unfold patt_and.
       mgIntro. mgApply' 0 10.
+      Check prf_disj_elim_iter_2.
       (* We want to 'destruct' on the second assumption in the LHS. *)
       unfold patt_or. mgIntro. mgIntro.
   Abort.
