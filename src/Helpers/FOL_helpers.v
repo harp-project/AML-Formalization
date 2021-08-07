@@ -1975,14 +1975,19 @@ Qed. *)
       simpl in *.
       toMyGoal. repeat mgIntro.
       mgAdd IHl; auto 10.
-      Check and_impl.
-      Fail mgApply' 0 10. (* I need an iterative version of mgApply that works if the lemma to apply has multiple
-                             hypotheses. *)
-
-      Fail apply IHl.
-  Abort.
-
-
+      mgAssert (Hfp: (foldr patt_imp r (l ++ [p]))).
+      { mgApply' 1 10. mgExactn 3; auto 10. }
+      clear Hfp.
+      mgAssert (Hfq: (foldr patt_imp r (l ++ [q]))).
+      { mgApply' 2 10. mgExactn 3; auto 10. }
+      clear Hfq.
+      mgAssert (Hfqifpoq: (foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
+      { mgApply' 0 10. mgExactn 4; auto 10. }
+      clear Hfqifpoq.
+      mgApply' 6 14.
+      mgExactn 5; auto 15.
+      Unshelve. all: auto 15.
+  Qed.
   
   (*Check prf_strenghten_premise_iter.*)
 
