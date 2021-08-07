@@ -1896,7 +1896,7 @@ Qed. *)
   
 
   
-  Lemma and_impl_1 Γ p q r:
+  Lemma and_impl Γ p q r:
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -1923,7 +1923,7 @@ Qed. *)
   Qed.
 
   
-  Lemma and_impl_2 Γ p q r:
+  Lemma and_impl' Γ p q r:
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -2341,7 +2341,7 @@ Qed. *)
         pose proof (Hwf' := Hwf).
         unfold well_formed in Hwf. simpl in Hwf.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-v        apply (@ wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+        apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
         apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
