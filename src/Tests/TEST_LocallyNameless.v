@@ -3,6 +3,8 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base.
 
+From Equations Require Import Equations.
+
 From MatchingLogic Require Import Syntax Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import Ensembles_Ext.
@@ -181,6 +183,58 @@ Module test_2.
     
   End test_2.
 End test_2.
+
+
+(* Test the tautology solver *)
+Module test_3.
+  Require Import MLTauto ProofSystem Helpers.FOL_helpers.
+  Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
+  Section test_3.
+
+    Inductive Symbols := a | b | c | d.
+    
+    Lemma Symbols_eqdec : EqDecision Symbols.
+    Proof.
+      intros x y. unfold Decision.
+      decide equality.
+    Defined.
+    
+    Instance symbols_H : SymbolsH Symbols := {| SHSymbols_eqdec := Symbols_eqdec; |}.
+    Instance signature : Signature := @SignatureFromSymbols Symbols symbols_H.
+
+    Check ML_proof_system.
+    Example ex_tauto1:
+      ML_proof_system (Empty_set Pattern) (patt_sym b ---> patt_sym b).
+      
+    (* ML_proof_system (Empty_set Pattern) ((patt_sym a and patt_sym b) ---> (patt_sym b or patt_sym c)). *)
+  Proof.
+    simpl.
+    Check abstract'_correct.
+    match goal with
+    | |- (ML_proof_system ?Gamma ?Gl) =>
+      let Htmp := fresh "Htmp" in
+      epose proof (Htmp := abstract'_correct Gamma (patt_sym d) Gl ltac:(auto) ltac:(auto));
+        apply pf_conj_elim_r_meta in Htmp
+    end.
+    eapply Modus_ponens.
+    4: { apply Htmp. }
+    (*all: auto. (* TODO: export the hints *)*)
+    3: {
+      apply extractProof.
+      clear.
+      Transparent match_and.
+      Transparent match_or.
+      Transparent match_not.
+      Transparent match_imp.
+      Transparent match_bott.
+      Transparent negate.
+      repeat (simp abstract'; simpl).
+      Fail tauto.
+  Abort.
+  
+    
+  End test_3.
+End test_3.
 
 
   
