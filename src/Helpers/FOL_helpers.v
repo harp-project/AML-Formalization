@@ -2641,7 +2641,37 @@ Qed.
         Unshelve. all: auto.
   Qed.
   
-      
+
+  Lemma or_of_equiv_is_equiv Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p or q) <---> (p' or q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+    
+    apply conj_intro_meta; auto.
+    - toMyGoal.
+      mgIntro.
+      mgDestruct 0; auto.
+      + mgLeft; auto.
+      + mgRight; auto.
+    - toMyGoal.
+      mgIntro.
+      mgDestruct 0; auto.
+      + mgLeft; auto.
+      + mgRight; auto.
+        Unshelve. all: auto.
+  Qed.
+
+  
   
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
