@@ -335,9 +335,9 @@ Section ml_tauto.
     eapply Modus_ponens. 4: apply H. all: auto.
   Qed. 
 
-  Lemma negate_equiv (p : Pattern) :
+  Lemma negate_equiv Γ (p : Pattern) :
     well_formed p ->
-    (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).
+    Γ ⊢ ((patt_not p) <---> (negate p)).
   Proof.
     intros Hwfp.
     remember (size' p) as sz.
@@ -346,7 +346,7 @@ Section ml_tauto.
     clear Heqsz.
 
 
-    Tactic Notation "make_step" ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
+    Tactic Notation "make_step" ident(Γ) ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
       set (ctx' := ctx_expr);
       assert (wfctx': well_formed ctx');          
       [unfold ctx'; unfold patt_iff; auto 15|];
@@ -372,7 +372,7 @@ Section ml_tauto.
         simpl;
         reflexivity
        |];
-      assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
+      assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)));
       [apply prf_equiv_congruence_implicative_ctx;auto|];
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
@@ -442,11 +442,11 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
       
-      assert (Step1: (Empty_set Pattern ⊢
+      assert (Step1: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or negate p2')
                                    and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
+                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
@@ -454,6 +454,7 @@ Section ml_tauto.
         
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -464,17 +465,18 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢
+      assert (Step2: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
+                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -485,17 +487,18 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
 
-      assert (Step3: (Empty_set Pattern ⊢
+      assert (Step3: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
-                      (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
                                               and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -507,17 +510,18 @@ Section ml_tauto.
       apply Step3. clear Step3.
 
 
-      assert (Step4: (Empty_set Pattern ⊢
+      assert (Step4: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (¬ p1' or ¬ p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
-                      (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
                                               and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -587,11 +591,11 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
-      assert (Step1: (Empty_set Pattern ⊢
+      assert (Step1: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> negate p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -600,6 +604,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -610,11 +615,11 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢
+      assert (Step2: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -623,6 +628,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -633,11 +639,11 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
 
-      assert (Step3: (Empty_set Pattern ⊢
+      assert (Step3: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -646,6 +652,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -656,11 +663,11 @@ Section ml_tauto.
       }
       apply Step3. clear Step3.
 
-      assert (Step4: (Empty_set Pattern ⊢
+      assert (Step4: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and ¬ p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -669,6 +676,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -733,10 +741,10 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
-      assert (Step1: (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+      assert (Step1: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                 and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
+                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
                                 and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
@@ -744,6 +752,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2)
           (negate p2)
@@ -754,10 +763,10 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+      assert (Step2: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                              and (p1 and ¬ p2 ---> ¬ (p1 ---> p2))))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                              and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
@@ -765,6 +774,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2)
           (negate p2)
@@ -775,7 +785,7 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
       apply and_impl_2; auto.
-  Qed.    
+  Qed.
 
   Lemma negate_is_bot p:
     negate p = patt_bott ->
