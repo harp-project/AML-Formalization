@@ -335,9 +335,9 @@ Section ml_tauto.
     eapply Modus_ponens. 4: apply H. all: auto.
   Qed. 
 
-  Lemma negate_equiv (p : Pattern) :
+  Lemma negate_equiv Γ (p : Pattern) :
     well_formed p ->
-    (Empty_set _) ⊢ ((patt_not p) <---> (negate p)).
+    Γ ⊢ ((patt_not p) <---> (negate p)).
   Proof.
     intros Hwfp.
     remember (size' p) as sz.
@@ -346,7 +346,7 @@ Section ml_tauto.
     clear Heqsz.
 
 
-    Tactic Notation "make_step" ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
+    Tactic Notation "make_step" ident(Γ) ident(star) constr(p) constr(q) constr(ctx_expr) tactic(simpl_tactic) :=
       set (ctx' := ctx_expr);
       assert (wfctx': well_formed ctx');          
       [unfold ctx'; unfold patt_iff; auto 15|];
@@ -372,7 +372,7 @@ Section ml_tauto.
         simpl;
         reflexivity
        |];
-      assert (Hctx: (Empty_set Pattern ⊢ (emplace ctx p <---> emplace ctx q)));
+      assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)));
       [apply prf_equiv_congruence_implicative_ctx;auto|];
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
@@ -442,11 +442,11 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
       
-      assert (Step1: (Empty_set Pattern ⊢
+      assert (Step1: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or negate p2')
                                    and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
+                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
@@ -454,6 +454,7 @@ Section ml_tauto.
         
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -464,17 +465,18 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢
+      assert (Step2: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
+                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -485,17 +487,18 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
 
-      assert (Step3: (Empty_set Pattern ⊢
+      assert (Step3: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
-                      (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
                                               and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -507,17 +510,18 @@ Section ml_tauto.
       apply Step3. clear Step3.
 
 
-      assert (Step4: (Empty_set Pattern ⊢
+      assert (Step4: (Γ ⊢
                                 ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
                                    and (¬ p1' or ¬ p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
                       ->
-                      (Empty_set Pattern ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
+                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
                                               and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
              ).
       {
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -587,11 +591,11 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
-      assert (Step1: (Empty_set Pattern ⊢
+      assert (Step1: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> negate p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -600,6 +604,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -610,11 +615,11 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢
+      assert (Step2: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -623,6 +628,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -633,11 +639,11 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
 
-      assert (Step3: (Empty_set Pattern ⊢
+      assert (Step3: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -646,6 +652,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p1')
           (negate p1')
@@ -656,11 +663,11 @@ Section ml_tauto.
       }
       apply Step3. clear Step3.
 
-      assert (Step4: (Empty_set Pattern ⊢
+      assert (Step4: (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and ¬ p2' ---> ¬ (¬ p1' ---> p2'))))
                      ->
-                      (Empty_set Pattern ⊢
+                      (Γ ⊢
                                 ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
                                    and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
                                 
@@ -669,6 +676,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2')
           (negate p2')
@@ -733,10 +741,10 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
-      assert (Step1: (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+      assert (Step1: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                 and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
+                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
                                 and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
@@ -744,6 +752,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2)
           (negate p2)
@@ -754,10 +763,10 @@ Section ml_tauto.
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+      assert (Step2: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                              and (p1 and ¬ p2 ---> ¬ (p1 ---> p2))))
                      ->
-                     (Empty_set Pattern ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
+                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
                                              and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
                        
              ).
@@ -765,6 +774,7 @@ Section ml_tauto.
         intros BigH.
 
         make_step
+          Γ
           star
           (¬ p2)
           (negate p2)
@@ -775,7 +785,7 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
       apply and_impl_2; auto.
-  Qed.    
+  Qed.
 
   Lemma negate_is_bot p:
     negate p = patt_bott ->
@@ -1370,5 +1380,180 @@ Section ml_tauto.
       clear.
       lia.
   Defined.
+
+
+  Lemma wf_and_proj1 p q:
+    well_formed (p and q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
+
+  Lemma wf_and_proj2 p q:
+    well_formed (p and q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
+
+
+  Lemma wf_or_proj1 p q:
+    well_formed (p or q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
+
+  Lemma wf_or_proj2 p q:
+    well_formed (p or q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
+
+  Lemma wf_not_proj p:
+    well_formed (¬ p) ->
+    well_formed p.
+  Proof.
+    intros wfp.
+    unfold well_formed,well_formed_closed in *.
+    simpl in wfp.
+    rewrite !andbT in wfp.
+    exact wfp.
+  Qed.
+  
+  Lemma wf_imp_proj1 p q:
+    well_formed (p ---> q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
+
+  Lemma wf_imp_proj2 p q:
+    well_formed (p ---> q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
+
+  
+  #[local] Hint Resolve pp_flatten_well_formed : core.
+  
+  Lemma abstract'_correct Γ ap ϕ
+    (wfap : well_formed ap)
+    (wfϕ : well_formed ϕ):
+    Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ))).
+  Proof.
+    funelim (abstract' _ _ _ _); try inversion e; subst; solve_match_impossibilities.
+    - pose proof (wfp1 := wf_and_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_and_proj2 _ _ wfp).
+      rewrite -Heqcall.
+      simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
+      end.
+      apply and_of_equiv_is_equiv; subst; auto 10.
+    - pose proof (wfp1 := wf_or_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_or_proj2 _ _ wfp).
+      rewrite -Heqcall. simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      end.
+      apply or_of_equiv_is_equiv; subst; auto.
+    - pose proof (wfp' := wf_not_proj _ wfp).
+      rewrite -Heqcall. simpl.
+      eapply pf_iff_equiv_trans.
+      5: { apply H0. }
+      all: auto.
+      apply negate_equiv; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply pf_iff_equiv_refl; auto.
+    - pose proof (wfp1 := wf_imp_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_imp_proj2 _ _ wfp).
+      rewrite -Heqcall.
+      simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      end.
+      eapply pf_iff_equiv_trans.
+      5: {
+        apply or_of_equiv_is_equiv. 6: apply H1. 5: apply H0. all: subst; auto.
+      }
+      all: auto.
+      { subst; auto. }
+      eapply pf_iff_equiv_trans.
+      5: {
+        apply or_of_equiv_is_equiv. 6: apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
+        all: auto.
+      }
+      all: auto.
+      apply impl_iff_notp_or_q; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply p_and_notp_is_bot; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply pf_iff_equiv_refl; auto.
+  Qed.
+      
   
 End ml_tauto.
