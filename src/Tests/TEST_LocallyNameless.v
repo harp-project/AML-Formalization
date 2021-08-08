@@ -228,6 +228,7 @@ Module test_3.
       Transparent match_imp.
       Transparent match_bott.
       Transparent negate.
+      simp abstract'. simpl. repeat simp abstract'.
       repeat (simp abstract'; simpl).
       Fail tauto.
   Abort.

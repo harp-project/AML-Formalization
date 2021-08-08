@@ -102,6 +102,31 @@ Section ml_tauto.
   Qed.
 
 
+
+  Fixpoint pp_toCoq2 (pp : PropPattern) : Prop :=
+    match pp with
+    | pp_atomic p _ => ((Empty_set _) ⊢ p)
+    | pp_natomic p _ => ~((Empty_set _) ⊢ p)
+    | pp_and p1 p2 => (pp_toCoq2 p1) /\ (pp_toCoq2 p2)
+    | pp_or p1 p2 => (pp_toCoq2 p1) \/ (pp_toCoq2 p2)
+    end.
+
+  Lemma extractProof2 : forall (pp : PropPattern), ((Empty_set _) ⊢ (pp_flatten pp)) -> (pp_toCoq2 pp).
+  Proof.
+    induction pp; simpl; intros H.
+    - exact H.
+    - admit. (* By soundness. *)
+    -
+      pose proof (H1 := H).
+      apply pf_conj_elim_l_meta in H1. 2,3: auto using pp_flatten_well_formed.
+      rename H into H2.
+      apply pf_conj_elim_r_meta in H2. 2,3: auto using pp_flatten_well_formed.
+      split; auto.
+    - (* This requires the Classic axiom. *)
+  Abort.
+  
+  
+
   Equations match_not (p : Pattern)
     : ({ p' : Pattern & p = patt_not p'}) + (forall p', p <> patt_not p')
     :=
