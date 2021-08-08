@@ -1555,8 +1555,5 @@ Section ml_tauto.
       apply pf_iff_equiv_refl; auto.
   Qed.
       
-      
-  Abort.
-  
   
 End ml_tauto.
