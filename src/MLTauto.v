@@ -1405,6 +1405,41 @@ Section ml_tauto.
     rewrite wf'p2 wf'c2.
     reflexivity.
   Qed.
+
+
+  Lemma wf_or_proj1 p q:
+    well_formed (p or q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
+
+  Lemma wf_or_proj2 p q:
+    well_formed (p or q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
   
   #[local] Hint Resolve pp_flatten_well_formed : core.
   
@@ -1422,7 +1457,13 @@ Section ml_tauto.
       | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
       end.
       apply and_of_equiv_is_equiv; subst; auto 10.
-    - 
+    - pose proof (wfp1 := wf_or_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_or_proj2 _ _ wfp).
+      rewrite -Heqcall. simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      end.
+
       
   Abort.
   
