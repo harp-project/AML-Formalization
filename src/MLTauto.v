@@ -1462,6 +1462,38 @@ Section ml_tauto.
     exact wfp.
   Qed.
   
+  Lemma wf_imp_proj1 p q:
+    well_formed (p ---> q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
+
+  Lemma wf_imp_proj2 p q:
+    well_formed (p ---> q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
+
   
   #[local] Hint Resolve pp_flatten_well_formed : core.
   
@@ -1491,9 +1523,31 @@ Section ml_tauto.
       eapply pf_iff_equiv_trans.
       5: { apply H0. }
       all: auto.
-      Search (¬ ?a <---> negate ?a).
-      Fail apply negate_equiv. (* we need to generalize negate_equiv to work with any Γ *)
-
+      apply negate_equiv; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply pf_iff_equiv_refl; auto.
+    - pose proof (wfp1 := wf_imp_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_imp_proj2 _ _ wfp).
+      rewrite -Heqcall.
+      simpl.
+      match goal with
+      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      end.
+      eapply pf_iff_equiv_trans.
+      5: {
+        apply or_of_equiv_is_equiv. 6: apply H1. 5: apply H0. all: subst; auto.
+      }
+      all: auto.
+      { subst; auto. }
+      eapply pf_iff_equiv_trans.
+      5: {
+        apply or_of_equiv_is_equiv. 6: apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
+        all: auto.
+      }
+      all: auto.
+      
+      
       
   Abort.
   
