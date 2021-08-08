@@ -2671,7 +2671,29 @@ Qed.
         Unshelve. all: auto.
   Qed.
 
+  Lemma impl_iff_notp_or_q Γ p q:
+    well_formed p ->
+    well_formed q ->
+    Γ ⊢ ((p ---> q) <---> (¬ p or q)).
+  Proof.
+    intros wfp wfq.
+    apply conj_intro_meta; auto.
+    - toMyGoal. mgIntro.
+      mgAdd (A_or_notA Γ p wfp); auto.
+      mgDestruct 0; auto.
+      + mgRight; auto.
+        mgApply' 1 10.
+        mgExactn 0; auto.
+      + mgLeft; auto.
+        mgExactn 0; auto.
+    - toMyGoal. mgIntro. mgIntro. unfold patt_or.
+      mgApply' 0 10. Search (¬ ¬ ?a).
+      mgApplyMeta (not_not_intro _ _ _); auto.
+      mgExactn 1; auto.
+      Unshelve. all: auto.
+  Qed.
   
+      
   
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
