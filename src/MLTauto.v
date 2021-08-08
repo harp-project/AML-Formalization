@@ -1372,23 +1372,57 @@ Section ml_tauto.
   Defined.
 
 
-  Print abstract'_elim.
+  Lemma wf_and_proj1 p q:
+    well_formed (p and q) ->
+    well_formed p.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p1 wf'c1.
+    reflexivity.
+  Qed.
 
-
-  Check pp_flatten. Check abstract'.
+  Lemma wf_and_proj2 p q:
+    well_formed (p and q) ->
+    well_formed q.
+  Proof.
+    intros wfp'.
+    unfold well_formed,well_formed_closed in wfp'.
+    simpl in wfp'.
+    rewrite !andbT in wfp'.
+    apply andb_prop in wfp'.
+    destruct wfp' as [wf'p wf'c].
+    apply andb_prop in wf'p. apply andb_prop in wf'c.
+    destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
+    unfold well_formed, well_formed_closed.
+    rewrite wf'p2 wf'c2.
+    reflexivity.
+  Qed.
+  
+  #[local] Hint Resolve pp_flatten_well_formed : core.
+  
   Lemma abstract'_correct Γ ap ϕ
     (wfap : well_formed ap)
     (wfϕ : well_formed ϕ):
     Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ))).
   Proof.
     funelim (abstract' _ _ _ _); try inversion e; subst; solve_match_impossibilities.
-    - rewrite -Heqcall.
+    - pose proof (wfp1 := wf_and_proj1 _ _ wfp).
+      pose proof (wfp2 := wf_and_proj2 _ _ wfp).
+      rewrite -Heqcall.
       simpl.
       match goal with
       | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
       end.
-      clear -H0 H1.
-      
+      apply and_of_equiv_is_equiv; subst; auto 10.
+    - 
       
   Abort.
   
