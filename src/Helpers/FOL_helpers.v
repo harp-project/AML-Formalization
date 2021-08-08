@@ -2671,13 +2671,15 @@ Qed.
         Unshelve. all: auto.
   Qed.
 
+  Ltac mgSplit := apply conj_intro_meta; auto.
+  
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((p ---> q) <---> (¬ p or q)).
   Proof.
     intros wfp wfq.
-    apply conj_intro_meta; auto.
+    mgSplit.
     - toMyGoal. mgIntro.
       mgAdd (A_or_notA Γ p wfp); auto.
       mgDestruct 0; auto.
@@ -2687,12 +2689,25 @@ Qed.
       + mgLeft; auto.
         mgExactn 0; auto.
     - toMyGoal. mgIntro. mgIntro. unfold patt_or.
-      mgApply' 0 10. Search (¬ ¬ ?a).
+      mgApply' 0 10.
       mgApplyMeta (not_not_intro _ _ _); auto.
       mgExactn 1; auto.
       Unshelve. all: auto.
   Qed.
-  
+
+  Lemma p_and_notp_is_bot Γ p:
+    well_formed p ->
+    Γ ⊢ (⊥ <---> p and ¬ p).
+  Proof.
+    intros wfp.
+    mgSplit.
+    - apply bot_elim; auto.
+    - unfold patt_and. toMyGoal.
+      mgIntro.
+      mgApply' 0 10.
+      mgAdd (A_or_notA Γ (¬ p) ltac:(auto)); auto 10.
+      mgExactn 0; auto 10.
+  Qed.    
       
   
 (* Axiom extension : forall G A B,

@@ -1546,7 +1546,14 @@ Section ml_tauto.
         all: auto.
       }
       all: auto.
-      
+      apply impl_iff_notp_or_q; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply p_and_notp_is_bot; auto.
+    - rewrite -Heqcall.
+      simpl.
+      apply pf_iff_equiv_refl; auto.
+  Qed.
       
       
   Abort.
