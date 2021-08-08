@@ -2574,16 +2574,25 @@ Qed.
       auto 10.
   Qed.
 
-
-  (*
-  Lemma and_of_equiv_is_equiv Γ p q p' q':
-    well_formed p ->
-    well_formed q ->
-    well_formed p' ->
-    well_formed q' ->
-    Γ ⊢ ((p <---> p') ---> ((q <---> q') ---> ((p and q) <---> (p' and q')))).
+  Lemma MyGoal_applyMeta Γ l r r':
+    Γ ⊢ (r' ---> r) ->
+    wf l ->
+    well_formed r ->
+    well_formed r' ->
+    mkMyGoal Γ l r' ->
+    mkMyGoal Γ l r.
   Proof.
-    intros wfp wfq wfp' wfq'.*)
+    intros Himp wfl wfr wfr' H.
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    4: { apply Himp; auto. }
+    all: auto.
+  Qed.
+
+  Tactic Notation "mgApplyMeta" uconstr(t) :=
+    eapply (MyGoal_applyMeta _ _ _ _ t).
+
+  Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
+  Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
   
   Lemma and_of_equiv_is_equiv Γ p q p' q':
     well_formed p ->
@@ -2607,14 +2616,30 @@ Qed.
       mgDestruct 1; auto.
       + apply modus_tollens in pip'; auto.
         mgAdd pip'; auto.
-        Check prf_weaken_conclusion_meta_meta.
-        Search (?a or ?b).
-        simpl.
-        
-      (* mgDestruct 1. *)
-      (* We want to 'destruct' on the second assumption in the LHS. *)
-      unfold patt_or. mgIntro. mgIntro.
-  Abort.
+        mgLeft; auto 10.
+        mgApply' 0 10.
+        mgExactn 2; auto 10.
+      + apply modus_tollens in qiq'; auto.
+        mgAdd qiq'; auto.
+        mgRight; auto 10.
+        mgApply' 0 10.
+        mgExactn 2; auto 10.
+    - toMyGoal.
+      mgIntro. unfold patt_and.
+      mgIntro. mgApply' 0 10.
+      mgDestruct 1; auto.
+      + mgLeft; auto 10.
+        apply modus_tollens in p'ip; auto.
+        mgAdd p'ip; auto.
+        mgApply' 0 10.
+        mgExactn 2; auto 10.
+      + mgRight; auto 10.
+        apply modus_tollens in q'iq; auto.
+        mgAdd q'iq; auto.
+        mgApply' 0 10.
+        mgExactn 2; auto 10.
+        Unshelve. all: auto.
+  Qed.
   
       
   
