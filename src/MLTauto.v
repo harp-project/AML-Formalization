@@ -785,6 +785,18 @@ Section ml_tauto.
       }
       apply Step2. clear Step2.
       apply and_impl_2; auto.
+  Qed.    
+
+  Lemma negate_is_bot p:
+    negate p = patt_bott ->
+    p = ¬ ⊥.
+  Proof.
+    intros H.
+    funelim (negate p); try inversion e; subst; try discriminate.
+    - rewrite -Heqcall in H1. inversion H1.
+    - rewrite H. reflexivity.
+    - rewrite -Heqcall in H0. inversion H0.
+    - rewrite -Heqcall in H. inversion H.
   Qed.
 
   Lemma negate_is_bot p:
@@ -798,6 +810,33 @@ Section ml_tauto.
     - rewrite -Heqcall in H0. inversion H0.
     - rewrite -Heqcall in H. inversion H.
   Qed.
+
+
+  (* The key property I want is that [and_or_imp_size (negate p) = and_or_imp_size p].
+     > For this to hold, we need to resolve the not/or overlap in both functions
+     > in the same way.
+     Really? Actually, I thin the reason is different: see the comment in the proof
+     of [and_or_imp_size_negate].
+   *)
+  Equations and_or_imp_size (p : Pattern) : nat by wf p (Pattern_subterm Σ) :=
+    and_or_imp_size p with match_and p => {
+      | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+      | inr _
+          with match_or p => {
+          | inl (existT p1' (existT p2' e)) := 1 + (and_or_imp_size p1') + (and_or_imp_size p2') ;
+          | inr _
+              with match_not p => {
+              | inl (existT p1' e) := and_or_imp_size p1';
+              | inr _
+                  with match_imp p => {
+                  | inl (existT p1 (existT p2 _)) := 1 + (and_or_imp_size p1) + (and_or_imp_size p2) ;
+                  | inr _ => 0
+                }
+            }
+        }
+    }.
+  Solve Obligations with
+      (Tactics.program_simplify; CoreTactics.equations_simpl; try Tactics.program_solve_wf).
 
 
   (* The key property I want is that [and_or_imp_size (negate p) = and_or_imp_size p].
@@ -1381,7 +1420,6 @@ Section ml_tauto.
       lia.
   Defined.
 
-
   Lemma wf_and_proj1 p q:
     well_formed (p and q) ->
     well_formed p.
@@ -1554,9 +1592,5 @@ Section ml_tauto.
       simpl.
       apply pf_iff_equiv_refl; auto.
   Qed.
-      
-      
-  Abort.
-  
   
 End ml_tauto.
