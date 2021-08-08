@@ -1440,6 +1440,18 @@ Section ml_tauto.
     rewrite wf'p2 wf'c2.
     reflexivity.
   Qed.
+
+  Lemma wf_not_proj p:
+    well_formed (¬ p) ->
+    well_formed p.
+  Proof.
+    intros wfp.
+    unfold well_formed,well_formed_closed in *.
+    simpl in wfp.
+    rewrite !andbT in wfp.
+    exact wfp.
+  Qed.
+  
   
   #[local] Hint Resolve pp_flatten_well_formed : core.
   
@@ -1463,6 +1475,14 @@ Section ml_tauto.
       match goal with
       | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
       end.
+      apply or_of_equiv_is_equiv; subst; auto.
+    - pose proof (wfp' := wf_not_proj _ wfp).
+      rewrite -Heqcall. simpl.
+      eapply pf_iff_equiv_trans.
+      5: { apply H0. }
+      all: auto.
+      Search (¬ ?a <---> negate ?a).
+      Fail apply negate_equiv. (* we need to generalize negate_equiv to work with any Γ *)
 
       
   Abort.
