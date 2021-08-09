@@ -77,7 +77,7 @@ Section ml_tauto.
   Fixpoint pp_toCoq (pp : PropPattern) : Prop :=
     match pp with
     | pp_atomic p _ => ((Empty_set _) ⊢ p)
-    | pp_natomic p _ => ((Empty_set _) ⊢ (patt_not p))
+    | pp_natomic p _ => ((Empty_set _) ⊢ patt_not p)
     | pp_and p1 p2 => (pp_toCoq p1) /\ (pp_toCoq p2)
     | pp_or p1 p2 => (pp_toCoq p1) \/ (pp_toCoq p2)
     end.
@@ -123,8 +123,8 @@ Section ml_tauto.
       apply pf_conj_elim_r_meta in H2. 2,3: auto using pp_flatten_well_formed.
       split; auto.
     - (* This requires the Classic axiom. *)
-  Abort.
-  
+  Admitted.
+
   
 
   Equations match_not (p : Pattern)

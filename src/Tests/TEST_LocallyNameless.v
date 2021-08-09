@@ -1,3 +1,4 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
@@ -202,36 +203,44 @@ Module test_3.
     Instance symbols_H : SymbolsH Symbols := {| SHSymbols_eqdec := Symbols_eqdec; |}.
     Instance signature : Signature := @SignatureFromSymbols Symbols symbols_H.
 
-    Check ML_proof_system.
+    (* This should follow from soundness *)
+    Lemma pf_not_p_impl_notpf_f Γ p:
+      ML_proof_system Γ (¬ p) ->
+      ¬ (ML_proof_system Γ p).
+    Proof.
+      intros.
+    Admitted.
+    
+    
     Example ex_tauto1:
-      ML_proof_system (Empty_set Pattern) (patt_sym b ---> patt_sym b).
-      
+      ML_proof_system (Empty_set Pattern) (patt_sym b ---> patt_sym b).  
     (* ML_proof_system (Empty_set Pattern) ((patt_sym a and patt_sym b) ---> (patt_sym b or patt_sym c)). *)
-  Proof.
-    simpl.
-    Check abstract'_correct.
-    match goal with
-    | |- (ML_proof_system ?Gamma ?Gl) =>
-      let Htmp := fresh "Htmp" in
-      epose proof (Htmp := abstract'_correct Gamma (patt_sym d) Gl ltac:(auto) ltac:(auto));
-        apply pf_conj_elim_r_meta in Htmp
-    end.
-    eapply Modus_ponens.
-    4: { apply Htmp. }
-    (*all: auto. (* TODO: export the hints *)*)
-    3: {
-      apply extractProof.
-      clear.
-      Transparent match_and.
-      Transparent match_or.
-      Transparent match_not.
-      Transparent match_imp.
-      Transparent match_bott.
-      Transparent negate.
-      simp abstract'. simpl. repeat simp abstract'.
-      repeat (simp abstract'; simpl).
-      Fail tauto.
-  Abort.
+    Proof.
+      simpl.
+      Check abstract'_correct.
+      match goal with
+      | |- (ML_proof_system ?Gamma ?Gl) =>
+        let Htmp := fresh "Htmp" in
+        epose proof (Htmp := abstract'_correct Gamma (patt_sym d) Gl ltac:(auto) ltac:(auto));
+          apply pf_conj_elim_r_meta in Htmp
+      end.
+      eapply Modus_ponens.
+      4: { apply Htmp. }
+      (*all: auto. (* TODO: export the hints *)*)
+      3: {
+        apply extractProof.
+        clear.
+        Transparent match_and.
+        Transparent match_or.
+        Transparent match_not.
+        Transparent match_imp.
+        Transparent match_bott.
+        Transparent negate.
+        
+        repeat (simp abstract'; simpl).
+        Fail rewrite pf_not_p_impl_notpf_f.
+        Fail tauto.
+    Abort.
   
     
   End test_3.
