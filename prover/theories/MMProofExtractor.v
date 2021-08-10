@@ -1,4 +1,5 @@
 From Coq Require Import String.
+From stdpp Require Import base finite.
 From MatchingLogic Require Import Syntax ProofSystem.
 From MatchingLogicProver Require Import MMProofExtractorLoader.
 
@@ -54,7 +55,33 @@ Module MetaMath.
 
 End MetaMath.
 
+Import MetaMath.
+Section gen.
+  Print Signature.
+  Check Finite.
+  Context
+    {signature : Signature}
+    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }
+    (symbolPrinter : symbols -> string)
+  .
+
+  Check enum.
+  Print enum.
+  Check (enum symbols).
+
+  Print  Signature.
+  Check map.
+  Check axs.
+  Definition axiomForSymbol (s : symbols) : MetaMath.OutermostScopeStmt :=
+    oss_s (stmt_assert_stmt (as_axiom (axs
+                                         (tc (constant (ms (symbolPrinter s))))
+                                         []
+          ))).
+Definition generateSymbolAxioms : Database :=
+  map () (enum symbols)
+    
   
+End gen.
 
 
 
