@@ -1,6 +1,6 @@
 #!/bin/bash
 STDPP_REPO="https://gitlab.mpi-sws.org/iris/stdpp.git"
-STDPP_REV_FILE="$(pwd)/deps/stdpp.rev"
+STDPP_REV_FILE="$(pwd)/matching-logic/deps/stdpp.rev"
 
 STDPP_GIT_DIR=$(mktemp -d)
 

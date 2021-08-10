@@ -22,3 +22,4 @@ src/Theories/Definedness.v
 src/Theories/Sorts.v
 
 src/Tests/TEST_LocallyNameless.v
+src/Tests/TEST_proofExtraction.v

@@ -47,4 +47,6 @@ let
 
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
-in { inherit stdpp; coq = ncoq; inherit equations; }
+
+    metamath = pkgs.metamath;
+in { inherit stdpp; coq = ncoq; inherit equations; inherit metamath; }
