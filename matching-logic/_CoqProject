@@ -8,9 +8,9 @@ src/Utils/wflexprod.v
 
 src/Syntax.v
 src/Semantics.v
+src/DerivedOperators.v
 src/ProofSystem.v
 src/FixpointReasoning.v
-src/DerivedOperators.v
 src/SignatureHelper.v
 src/Logic.v
 
