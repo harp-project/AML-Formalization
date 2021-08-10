@@ -7,7 +7,7 @@ let
   
   self = mkShell {
     name="matching-logic-interactive-prover";
-    buildInputs = [deps.coq deps.stdpp deps.equations deps.metamath];
+    buildInputs = [deps.coq deps.mllib];
   };
 
 in

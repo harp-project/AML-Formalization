@@ -6,24 +6,8 @@ let
   pkgs = import <nixpkgs> { };
   ncoq = pkgs."coq_${coqVersion_}";
   ncoqPackages = pkgs."coqPackages_${coqVersion_}";
-  stdpp = ncoqPackages.callPackage
-    ( { coq, stdenv, fetchFromGithub }:
-      stdenv.mkDerivation {
-        name = "coq${coq.coq-version}-stdpp";
 
-        src = fetchGit {
-          url = "https://gitlab.mpi-sws.org/iris/stdpp.git";
-          rev = lib.strings.fileContents ../deps/stdpp.rev;
-        };
-        postPatch = ''
-          patchShebangs --build coq-lint.sh
-        '';
-        buildInputs = with coq.ocamlPackages; [ ocaml camlp5 ];
-        propagatedBuildInputs = [ coq ];
-        enableParallelBuilding = true;
-
-        installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-      } ) { } ;
+  mllib = import ../../matching-logic/default.nix { inherit coqVersion;  };
 
    equations = ncoqPackages.callPackage
     ( { coq, stdenv, fetchFromGithub }:
@@ -48,4 +32,5 @@ let
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
 
-in { inherit stdpp; coq = ncoq; inherit equations; }
+    metamath = pkgs.metamath;
+in { coq = ncoq; inherit equations; inherit metamath; inherit mllib; }
