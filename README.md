@@ -1,25 +1,31 @@
 # AML-Formalization
 
 In this project we attempt to fully implement the "Applicative Matching Logic" framework in Coq, with example intances.
-The project can be used as a Coq library, in which various Matching Logic theories can be defined and reasoned about.
+The project has two parts:
+1.  A matching logic library for Coq, in which various Matching Logic theories can be defined and reasoned about.
+    (see the directory `matching-logic`)
+2.  An interactive prover / proof mode for matching logic, built inside Coq (see `prover`). This prover uses the matching logic library, and additionally provides some other features, like proof extraction into Metamath (WIP).
+
+
 
 ## For users
 
-The project is available in the `coq-extra-dev` repository and can be installed as follows:
-```sh
-opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install coq-matching-logic
-```
+TODO lets have an example project here in this repository
 
 ## For developers
 
 ### Build
 
-The easiest way to build this library is using the Nix package manager.
+The easiest way to build the library is using the Nix package manager.
 
-1. [Install Nix](https://nixos.org/download.html)
+0. [Install Nix](https://nixos.org/download.html)
 ```sh
 $ curl -L https://nixos.org/nix/install | sh
+```
+
+1. Step into the directory with the library
+```sh
+$ cd matching-logic
 ```
 
 2. Run Nix shell and let Nix handle all the dependencies
