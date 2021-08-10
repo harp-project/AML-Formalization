@@ -57,36 +57,22 @@ End MetaMath.
 
 Import MetaMath.
 Section gen.
-  Print Signature.
-  Check Finite.
   Context
     {signature : Signature}
     {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }
     (symbolPrinter : symbols -> string)
   .
 
-  Check enum.
-  Print enum.
-  Check (enum symbols).
-
-  Print  Signature.
-  Check map.
-  Check axs.
   Definition axiomForSymbol (s : symbols) : MetaMath.OutermostScopeStmt :=
     oss_s (stmt_assert_stmt (as_axiom (axs
-                                         (tc (constant (ms (symbolPrinter s))))
-                                         []
+                                         (tc (constant (ms (symbolPrinter s ++ "-is-pattern"))))
+                                         [(ms "#Pattern"); (ms (symbolPrinter s))]
           ))).
-Definition generateSymbolAxioms : Database :=
-  map () (enum symbols)
-    
-  
+
+  Definition generateSymbolAxioms : Database :=
+    map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
+ 
 End gen.
-
-
-
-
-
 
 
 Write MetaMath Proof Object File "myfile.mm".
