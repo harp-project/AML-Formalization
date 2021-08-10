@@ -25,7 +25,7 @@ jobs:
           name: "CoqDoc"
           command: cd matching-logic; nix-shell --run "make html"
       - persist_to_workspace:
-          root: .
+          root: matching-logic
           paths: html
 
   # Taken from https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
