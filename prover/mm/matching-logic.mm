@@ -444,3 +444,12 @@ ${
     proof-rule-singleton.3 $e #Substitution ph4 ph1 ( \and x ( \not ph2 ) ) yY $.
     proof-rule-singleton $a |- ( \not ( \and ph3 ph4 ) ) $.    
 $}
+
+$(  Our tests   $)
+
+$c symbol-a $.
+$c symbol-b $.
+
+symbol-a-is-pattern $a #Pattern symbol-a $.
+symbol-b-is-pattern $a #Pattern symbol-b $.
+ab-is-patterng $p #Pattern ( \app symbol-a symbol-b ) $= symbol-a-is-pattern symbol-b-is-pattern app-is-pattern $.
