@@ -10,18 +10,18 @@ let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
                             (fun _ -> strbrk Mmpf_main.message)
 
 let mmpf_write fmt =
-  Format.fprintf fmt "Hello proof objects!\n"
+  Printf.fprintf fmt "Hello proof objects!\n"
 
 let mmpf_writeFile fname =
   let oc = open_out fname in
-  mmpf_write (Format.formatter_of_out_channel oc);
+  mmpf_write oc;
   close_out oc
 
 }
 
 VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
-| ["Write" "MetaMath" "Proof" "Object" "File" string(str)] -> {
-    mmpf_writeFile str
+| ["Write" "MetaMath" "Proof" "Object" "File" string(fname)] -> {
+    mmpf_writeFile fname
   }
 END
 
