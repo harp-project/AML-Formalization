@@ -36,6 +36,25 @@ Ltac liaContradiction :=
 Ltac caseEq name :=
   generalize (refl_equal name); pattern name at -1 in |- *; case name.
 
+(* alternative to destruct: when hypotheses/goals contain match expressions *)
+Ltac break_match_hyp :=
+match goal with
+| [ H : context [ match ?X with _=>_ end ] |- _] =>
+     match type of X with
+     | sumbool _ _=>destruct X
+     | _=>destruct X eqn:? 
+     end 
+end.
+
+Ltac break_match_goal :=
+match goal with
+| [ |- context [ match ?X with _=>_ end ] ] => 
+    match type of X with
+    | sumbool _ _ => destruct X
+    | _ => destruct X eqn:?
+    end
+end.
+
 (** ** Arithmetic *)
 
 Inductive comparison_nat (x y: nat) : Set :=

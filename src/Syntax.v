@@ -887,6 +887,23 @@ Section syntax.
     eapply well_formed_closed_aux_ind. 3: apply Hwfc. all: lia.
   Qed.
 
+  Lemma well_formed_aux_increase φ: forall n m n' m', n' >= n -> m' >= m ->
+    is_true (well_formed_closed_aux φ n m) ->
+    is_true (well_formed_closed_aux φ n' m').
+  Proof.
+    induction φ; intros; simpl; auto.
+    * simpl in H1. apply NPeano.Nat.ltb_lt in H1. apply NPeano.Nat.ltb_lt. lia.
+    * simpl in H1. apply NPeano.Nat.ltb_lt in H1. apply NPeano.Nat.ltb_lt. lia.
+    * simpl in H1. apply eq_sym, andb_true_eq in H1. destruct H1.
+      erewrite IHφ1, IHφ2. auto. 3: apply eq_sym, H2. 5: apply eq_sym, H1.
+      all: lia.
+    * simpl in H1. apply eq_sym, andb_true_eq in H1. destruct H1.
+      erewrite IHφ1, IHφ2. auto. 3: apply eq_sym, H2. 5: apply eq_sym, H1.
+      all: lia.
+    * simpl in H1. erewrite IHφ. 4: exact H1. all: auto; lia.
+    * simpl in H1. erewrite IHφ. 4: exact H1. all: auto; lia.
+  Qed.
+
   (* fresh variables *)
 
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
@@ -1317,6 +1334,65 @@ Section syntax.
     - simpl in H.
       erewrite -> IHphi by eassumption. reflexivity.
     - simpl in H. apply IHphi in H. rewrite H. reflexivity.
+  Qed.
+
+  Lemma double_evar_quantify φ : forall x n,
+    evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
+  Proof.
+    induction φ; intros; simpl; auto.
+    * break_match_goal; simpl; auto. rewrite Heqb. auto.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Lemma well_formed_bevar_subst φ : forall ψ n k m,
+    m >= n -> is_true (well_formed_closed_aux φ n k)
+  ->
+    bevar_subst φ ψ m = φ.
+  Proof.
+    induction φ; intros; simpl; auto.
+    * simpl in H0. break_match_goal; auto. apply NPeano.Nat.ltb_lt in H0. lia.
+    * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+      3: apply eq_sym, H1.
+      4: apply eq_sym, H0. all: auto.
+    * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+      3: apply eq_sym, H1.
+      4: apply eq_sym, H0. all: auto.
+    * simpl in H0. erewrite IHφ. 3: apply H0. auto. lia.
+    * simpl in H0. erewrite IHφ. 3: apply H0. all: auto.
+  Qed.
+
+  Lemma double_bevar_subst φ : forall ψ n k,
+    is_true (well_formed_closed_aux ψ n k) ->
+    bevar_subst (bevar_subst φ ψ n) ψ n = bevar_subst φ ψ n.
+  Proof.
+    induction φ; intros; simpl; auto.
+    * break_match_goal; simpl; auto.
+      - rewrite Heqc. auto.
+      - erewrite well_formed_bevar_subst. 3: exact H. all: auto. 
+      - rewrite Heqc. auto.
+    * erewrite IHφ1, IHφ2; eauto.
+    * erewrite IHφ1, IHφ2; eauto.
+    * erewrite IHφ. auto. eapply well_formed_aux_increase. 3: exact H. lia. auto.
+    * erewrite IHφ. auto. eapply well_formed_aux_increase. 3: exact H. lia. auto.
+  Qed.
+
+  Lemma bevar_subst_well_formedness φ : forall n m ψ,
+    is_true (well_formed_closed_aux φ (S n) m) -> is_true (well_formed_closed_aux ψ n m)
+  ->
+    is_true (well_formed_closed_aux (bevar_subst φ ψ n) n m).
+  Proof.
+    induction φ; intros; simpl; auto.
+    * break_match_goal; auto. simpl in H. simpl. apply NPeano.Nat.ltb_lt. auto.
+      simpl in H. apply NPeano.Nat.ltb_lt in H. lia.
+    * simpl in H. apply eq_sym, andb_true_eq in H. destruct H. rewrite -> IHφ1, -> IHφ2; auto.
+    * simpl in H. apply eq_sym, andb_true_eq in H. destruct H. rewrite -> IHφ1, -> IHφ2; auto.
+    * simpl. rewrite IHφ; auto.
+      eapply well_formed_aux_increase. 3: exact H0. all: lia.
+    * simpl. simpl in H. rewrite IHφ; auto.
+      eapply well_formed_aux_increase. 3: exact H0. all: lia.
   Qed.
 
   Lemma evar_open_last: forall phi i u j v,
@@ -4185,6 +4261,42 @@ Section syntax.
     apply andb_prop in H. destruct H as [H H2]. rewrite H2. reflexivity.
   Qed.
   
+  (* Mu-free patterns: *)
+  Inductive mu_free : Pattern -> Prop :=
+  | free_evar_mu_free x : mu_free (patt_free_evar x)
+  | free_svar_mu_free x : mu_free (patt_free_svar x)
+  | bound_evar_mu_free x : mu_free (patt_bound_evar x)
+  | bound_svar_mu_free x : mu_free (patt_bound_svar x)
+  | sym_mu_free x : mu_free (patt_sym x)
+  | bott_mu_free : mu_free (patt_bott)
+  | app_mu_free p1 p2 : 
+    mu_free p1 -> mu_free p2
+   ->
+    mu_free (patt_app p1 p2)
+  | imp_mu_free p1 p2 : 
+    mu_free p1 -> mu_free p2
+   ->
+    mu_free (patt_imp p1 p2)
+  | exs_mu_free p :
+    mu_free p
+   ->
+    mu_free (patt_exists p)
+  .
+
+  Lemma well_formed_positive_bevar_subst φ : forall n ψ,
+    mu_free φ ->
+    is_true (well_formed_positive φ) -> is_true (well_formed_positive ψ)
+  ->
+    is_true (well_formed_positive (bevar_subst φ ψ n)).
+  Proof.
+    induction φ; intros; simpl; auto.
+    2-3: inversion H; subst;
+         simpl in H0; apply eq_sym, andb_true_eq in H0; destruct H0; 
+         rewrite -> IHφ1, -> IHφ2; auto.
+    * break_match_goal; auto.
+    * inversion H. subst. rewrite IHφ; auto.
+    * inversion H.
+  Qed.
 
 End syntax.
 
