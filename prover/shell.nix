@@ -6,8 +6,8 @@ let
   deps = import ./nix/deps.nix { inherit coqVersion; };
   
   self = mkShell {
-    name="ml-in-coq-dev-env";
-    buildInputs = [deps.coq deps.stdpp deps.equations];
+    name="matching-logic-interactive-prover";
+    buildInputs = [deps.coq deps.mllib deps.equations];
   };
 
 in

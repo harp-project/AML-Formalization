@@ -4,17 +4,17 @@ src/Utils/Ensembles_Ext.v
 src/Utils/extralibrary.v
 src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
+src/Utils/wflexprod.v
 
 src/Syntax.v
 src/Semantics.v
+src/Helpers/monotonic.v
+src/DerivedOperators.v
 src/ProofSystem.v
 src/FixpointReasoning.v
-src/DerivedOperators.v
 src/SignatureHelper.v
 src/Logic.v
-src/MLTauto.v
 
-src/Helpers/monotonic.v
 src/Helpers/FOL_helpers.v
 
 src/Theories/Definedness.v
