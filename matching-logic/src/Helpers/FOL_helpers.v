@@ -2650,12 +2650,12 @@ Qed.
     Γ ⊢ (p <---> p') ->
     Γ ⊢ (q <---> q') ->
     Γ ⊢ ((p or q) <---> (p' or q')).
-  Proof.
+  Proof with auto.
     intros wfp wfq wfp' wfq' pep' qeq'.
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip...
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'...
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq...
     
     apply conj_intro_meta; auto.
     - toMyGoal.
@@ -2707,7 +2707,48 @@ Qed.
       mgApply' 0 10.
       mgAdd (A_or_notA Γ (¬ p) ltac:(auto)); auto 10.
       mgExactn 0; auto 10.
-  Qed.    
+  Qed.
+
+  Lemma weird_lemma Γ A B L R:
+    well_formed A ->
+    well_formed B ->
+    well_formed L ->
+    well_formed R ->
+    Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R))).
+  Proof.
+    intros wfA wfB wfL wfR.
+    toMyGoal. mgIntro. mgIntro.
+    mgAdd (A_or_notA Γ A wfA); auto 10.
+    mgDestruct 0; auto 10.
+    - mgAssert (Htmp: (B or R)); auto 10.
+      { mgApply' 1 10. unfold patt_and at 2. mgIntro.
+        mgDestruct 3; auto 10.
+        + mgApply' 3 10. mgExactn 2; auto 10.
+        + mgApply' 3 10. mgExactn 0; auto 10.
+      }
+      clear Htmp.
+      mgDestruct 3; auto 10.
+      + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
+      + mgRight; auto. mgExactn 3; auto.
+    - mgLeft; auto. mgIntro. Search ((⊥ ---> ?a)).
+      mgApplyMeta (bot_elim _ _ _); auto 10.
+      mgApply' 0 10. mgExactn 3; auto.
+      Unshelve. all: auto 10.
+  Qed.
+
+  Lemma weird_lemma_meta Γ A B L R:
+    well_formed A ->
+    well_formed B ->
+    well_formed L ->
+    well_formed R ->
+    Γ ⊢ ((L and A) ---> (B or R)) ->
+    Γ ⊢ (L ---> ((A ---> B) or R)).
+  Proof.
+    intros.
+    eapply Modus_ponens.
+    4: apply weird_lemma.
+    all: auto.
+  Qed.
       
   
 (* Axiom extension : forall G A B,
