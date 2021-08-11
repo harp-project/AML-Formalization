@@ -77,7 +77,7 @@ End gen.
 What's "hi".
 PrintString "hello".
 
-Write MetaMath Proof Object File "myfile.mm" "something".
+Write MetaMath Proof Object File "myfile.mm" (Compute ("something" ++ " else")).
 
 HelloWorld.
 
