@@ -9,21 +9,89 @@ open Ltac_plugin
 let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
                             (fun _ -> strbrk Mmpf_main.message)
 
-let mmpf_write fmt =
-  Printf.fprintf fmt "Hello proof objects!\n"
+let mmpf_write fmt s =
+  Printf.fprintf fmt "Hello proof objects: %s!\n" s
 
-let mmpf_writeFile fname =
+let mmpf_writeFile fname s =
   let oc = open_out fname in
-  mmpf_write oc;
+  mmpf_write oc s;
   close_out oc
+
+let print_input (a : 'a) (printer : 'a -> Pp.t) (type_str : string) : unit =
+  let msg = printer a ++ strbrk (Printf.sprintf " is a %s." type_str) in
+  Feedback.msg_notice msg
+
+
+let simple_body_access gref =
+  let open Names.GlobRef in
+  match gref with
+  | VarRef _ ->
+    failwith "variables are not covered in this example"
+  | IndRef _ ->
+    failwith "inductive types are not covered in this example"
+  | ConstructRef _ ->
+    failwith "constructors are not covered in this example"
+  | ConstRef cst ->
+    let cb = Environ.lookup_constant cst (Global.env()) in
+    match Global.body_of_constant_body Library.indirect_accessor cb with
+    | Some(e, _, _) -> EConstr.of_constr e
+    | None -> failwith "This term has no value"
+
+let strip_quotes (s : string) : string =
+  if (String.length s < 2) then s else (String.sub s 1 (String.length s - 2))
 
 }
 
 VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
-| ["Write" "MetaMath" "Proof" "Object" "File" string(fname)] -> {
-    mmpf_writeFile fname
+| ["Write" "MetaMath" "Proof" "Object" "File" string(fname) constr(e)] -> {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let s = Ppconstr.pr_constr_expr env sigma e in
+    mmpf_writeFile fname (strip_quotes (Pp.string_of_ppcmds s))
   }
 END
+
+
+VERNAC COMMAND EXTEND WhatIsThis CLASSIFIED AS QUERY
+| [ "What's" constr(e) ] ->
+   {
+     let env = Global.env () in (* we'll explain later *)
+     let sigma = Evd.from_env env in (* we'll explain later *)
+     print_input e (Ppconstr.pr_constr_expr env sigma) "term"
+   }
+| [ "What" "kind" "of" "term" "is" string(s) ] ->
+   { print_input s strbrk "string" }
+| [ "What" "kind" "of" "term" "is" int(i) ] ->
+   { print_input i Pp.int "int" }
+| [ "What" "kind" "of" "term" "is" ident(id) ] ->
+   { print_input id Ppconstr.pr_id "identifier" }
+| [ "What" "kind" "of" "identifier" "is" reference(r) ] ->
+   { print_input r Ppconstr.pr_qualid "reference" }
+END
+
+VERNAC COMMAND EXTEND ExamplePrint2 CLASSIFIED AS QUERY
+| [ "PrintString" constr(e) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let s = Ppconstr.pr_constr_expr env sigma e in
+     Feedback.msg_notice s
+   }
+END
+
+VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
+| [ "MyPrint" reference(r) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     try
+       let t = simple_body_access (Nametab.global r) in
+       Feedback.msg_notice (Printer.pr_econstr_env env sigma t)
+     with Failure s ->
+       CErrors.user_err (str s)
+   }
+END
+
 
 (*** Printing messages ***)
 

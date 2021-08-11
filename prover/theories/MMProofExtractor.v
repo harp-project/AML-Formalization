@@ -74,8 +74,10 @@ Section gen.
  
 End gen.
 
+What's "hi".
+PrintString "hello".
 
-Write MetaMath Proof Object File "myfile.mm".
+Write MetaMath Proof Object File "myfile.mm" "something".
 
 HelloWorld.
 
