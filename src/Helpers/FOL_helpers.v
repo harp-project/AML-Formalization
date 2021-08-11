@@ -2216,8 +2216,65 @@ Qed. *)
       mgExactn 4.
       auto 10.
   Qed.
-  
-  
+
+  Lemma conj_intro_meta_partial :
+  ∀ (Γ : Theory) (A B : Pattern),
+    well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (A and B).
+  Proof.
+    intros.
+    eapply (Modus_ponens _ _ _ _ _).
+    - exact H1.
+    - apply conj_intro; auto.
+    Unshelve. all: auto.
+  Qed.
+
+  Lemma and_impl_patt :
+    forall (A B C : Pattern) Γ, well_formed A → well_formed B → well_formed C →
+    Γ ⊢ A -> Γ ⊢ ((A and B) ---> C) -> Γ ⊢ (B ---> C).
+  Proof.
+    intros.
+    eapply syllogism_intro with (B := patt_and A B); auto.
+    apply conj_intro_meta_partial; auto.
+  Qed.
+
+  Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> (B ---> (B and A))).
+  Proof.
+    intros. eapply reorder_meta; auto.
+    apply conj_intro; auto.
+  Qed.
+
+  Lemma conj_intro_meta_partial2 :
+  ∀ (Γ : Theory) (A B : Pattern),
+    well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (B and A).
+  Proof.
+    intros.
+    eapply (Modus_ponens _ _ _ _ _).
+    - exact H1.
+    - apply conj_intro2; auto.
+    Unshelve. all: auto.
+  Qed.
+
+  Lemma and_impl_patt2 :
+    forall (A B C : Pattern) Γ, well_formed A → well_formed B → well_formed C →
+    Γ ⊢ A -> Γ ⊢ ((B and A) ---> C) -> Γ ⊢ (B ---> C).
+  Proof.
+    intros.
+    eapply syllogism_intro with (B := patt_and B A); auto.
+    pose conj_intro_meta_partial2; auto.
+  Qed.
+
+  Lemma patt_and_comm :
+    forall (A B : Pattern) Γ, well_formed A → well_formed B
+  ->
+    Γ ⊢ A and B -> Γ ⊢ B and A.
+  Proof.
+    intros.
+    apply pf_conj_elim_r_meta in H1 as P1.
+    apply pf_conj_elim_l_meta in H1 as P2. all: auto.
+    apply conj_intro_meta; auto.
+  Qed.
+
 (* Axiom extension : forall G A B,
   G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
 

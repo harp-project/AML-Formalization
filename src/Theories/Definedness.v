@@ -15,7 +15,8 @@ From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators.
-From MatchingLogic.Utils Require Import Ensembles_Ext. 
+From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
+From MatchingLogic.Utils Require Import Ensembles_Ext.
 
 From stdpp Require Import fin_sets.
 
@@ -710,6 +711,35 @@ Section definedness.
     rewrite Hhashdeffull.
     constructor.
   Qed.
+
+  Section ProofSystemTheorems.
+  
+    Import ProofSystem Helpers.FOL_helpers.
+    Notation "theory ⊢ pattern" := (@ML_proof_system sig theory pattern) (at level 95, no associativity).
+
+    Lemma patt_iff_implies_equal :
+    forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
+    Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ (patt_equal φ1 φ2).
+  Proof.
+    intros.
+    epose proof (A_implies_not_not_A_ctx Γ (φ1 <---> φ2) (ctx_app_r box _)). 
+    apply H2; auto. unfold patt_iff, patt_and, patt_or, patt_not.
+    unfold well_formed, well_formed_closed in *.
+    apply andb_true_iff in H. apply andb_true_iff in H0. destruct H, H0. cbn.
+    now rewrite -> H, -> H0, -> H3, -> H4.
+    Unshelve.
+    auto.
+  Qed.
+
+  Lemma patt_equal_refl :
+    forall φ Γ, well_formed φ ->
+    Γ ⊢ patt_equal φ φ.
+  Proof.
+    intros. pose proof (pf_iff_equiv_refl Γ φ H).
+    apply patt_iff_implies_equal in H0; auto.
+  Qed.
+
+  End ProofSystemTheorems.
   
 End definedness.
 
