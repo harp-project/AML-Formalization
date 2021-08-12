@@ -453,3 +453,5 @@ $c symbol-b $.
 symbol-a-is-pattern $a #Pattern symbol-a $.
 symbol-b-is-pattern $a #Pattern symbol-b $.
 ab-is-patterng $p #Pattern ( \app symbol-a symbol-b ) $= symbol-a-is-pattern symbol-b-is-pattern app-is-pattern $.
+
+a-imp-b-imp-a $p |- ( \imp symbol-a ( \imp symbol-b symbol-a ) ) $= symbol-a-is-pattern symbol-b-is-pattern proof-rule-prop-1 $.

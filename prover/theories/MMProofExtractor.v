@@ -269,8 +269,37 @@ Section gen.
 
   Definition dependenciesForPattern (p : Pattern) : Database :=
     concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
-  
-  
+
+  Print MathSymbol.
+  Fixpoint pattern2mm (p : Pattern) : list MathSymbol :=
+    match p with
+    | patt_sym s => [ms (symbolPrinter s)]
+    | patt_imp p1 p2 =>
+      let ms1 := pattern2mm p1 in
+      let ms2 := pattern2mm p2 in
+      [(ms "("); (ms "\imp")] ++ ms1 ++ ms2 ++ [ (ms ")")]
+    | patt_app p1 p2 =>
+      let ms1 := pattern2mm p1 in
+      let ms2 := pattern2mm p2 in
+      [(ms "("); (ms "\app")] ++ ms1 ++ ms2 ++ [ (ms ")")]
+    | _ => []
+    end.
+
+  Print Label.
+  Fixpoint pattern2proof (p : Pattern) : list Label :=
+    match p with
+    | patt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
+    | patt_imp p1 p2 =>
+      let ms1 := pattern2proof p1 in
+      let ms2 := pattern2proof p2 in
+      ms1 ++ ms2 ++ [(lbl "imp-is-pattern")]
+    | patt_app p1 p2 =>
+      let ms1 := pattern2proof p1 in
+      let ms2 := pattern2proof p2 in
+      ms1 ++ ms2 ++ [(lbl "app-is-pattern")]
+    | _ => []
+    end.
+
   (*
   Definition generateSymbolAxioms : Database :=
     map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
@@ -306,6 +335,9 @@ Module MMTest.
   Definition P := (patt_and
                      (patt_or (patt_sym a) (patt_not (patt_sym a)))
                      (patt_or (patt_sym b) (patt_sym a))).
+
+  Compute (pattern2mm symbolPrinter (patt_imp (patt_sym a) (patt_sym b))).
+  Compute (pattern2proof symbolPrinter (patt_imp (patt_sym a) (patt_sym b))).
 
   Compute (dependenciesForPattern symbolPrinter P).
   Write MetaMath Proof Object File "myfile.mm" (Database_toString (dependenciesForPattern symbolPrinter P)).
