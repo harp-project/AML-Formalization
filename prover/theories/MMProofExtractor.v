@@ -77,7 +77,9 @@ End gen.
 What's "hi".
 PrintString "hello".
 
-Write MetaMath Proof Object File "myfile.mm" (Compute ("something" ++ " else")).
+Definition myMetamathProofObject : string := "Hi " ++ " " ++ "proof".
+
+Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
 
 HelloWorld.
 
