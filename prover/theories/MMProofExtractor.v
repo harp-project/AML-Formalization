@@ -33,7 +33,7 @@ Module MetaMath.
 
   Inductive MMProof := pf (ll : list Label).
   
-  Inductive ProvableStmt := ps (tc : TypeCode) (lms : list MathSymbol) (pf : MMProof).
+  Inductive ProvableStmt := ps (l : Label) (tc : TypeCode) (lms : list MathSymbol) (pf : MMProof).
   
   Inductive AssertStmt :=
   | as_axiom (axs : AxiomStmt)
@@ -163,29 +163,52 @@ Module MetaMath.
       | pf ll =>  foldr append " "%string (map Label_toString ll)
       end.
 
-    
-    
-  Inductive ProvableStmt := ps (tc : TypeCode) (lms : list MathSymbol) (pf : MMProof).
-  
-  Inductive AssertStmt :=
-  | as_axiom (axs : AxiomStmt)
-  | as_provable (ps : ProvableStmt)
-  .
-  
-  Inductive Stmt :=
-  | stmt_block (ls : list Stmt)
-  | stmt_variable_stmt (vs : VariableStmt)
-  | stmt_disj_stmt (ds : DisjointStmt)
-  | stmt_hyp_stmt (hs : HypothesisStmt)
-  | stmt_assert_stmt (ass : AssertStmt).
-  
-  Inductive OutermostScopeStmt :=
-  | oss_inc (incs : IncludeStmt)
-  | oss_cs (cs : ConstantStmt)
-  | oss_s (st : Stmt)
-  .
-  
-  Definition Database := list OutermostScopeStmt.
+    Definition ProvableStmt_toString (x : ProvableStmt) : string :=
+      match x with
+      | ps l t lms p
+        => append
+             (Label_toString l)
+             (append
+                "$p"
+                (append
+                   (append
+                      (TypeCode_toString t)
+                      (foldr append " "%string (map MathSymbol_toString lms))
+                   )
+                   (append "$=" (append (MMProof_toString p)  "$."))
+                )
+             )
+      end.
+
+    Definition AssertStmt_toString (x : AssertStmt) : string :=
+      match x with
+      | as_axiom a => AxiomStmt_toString a
+      | as_provable p => ProvableStmt_toString p
+      end.
+
+    Fixpoint Stmt_toString (x : Stmt) : string :=
+      match x with
+      | stmt_block l
+        => append "${"
+                  (append
+                     (foldr append " "%string (map Stmt_toString l))
+                     "$}")
+      | stmt_variable_stmt v => VariableStmt_toString v
+      | stmt_disj_stmt d => DisjointStmt_toString d
+      | stmt_hyp_stmt h => HypothesisStmt_toString h
+      | stmt_assert_stmt a => AssertStmt_toString a
+      end.
+
+    Definition OutermostScopeStmt_toString (x : OutermostScopeStmt) : string :=
+      match x with
+      | oss_inc i => IncludeStmt_toString i
+      | oss_cs c => ConstantStmt_toString c
+      | oss_s s => Stmt_toString s
+      end.
+
+    Definition Database_toString (x : Database) : string :=
+      foldr append "
+"%string (map OutermostScopeStmt_toString x).
 
 
 End MetaMath.
