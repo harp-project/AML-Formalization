@@ -74,17 +74,7 @@ Section gen.
  
 End gen.
 
-What's "hi".
-PrintString "hello".
-
 Definition myMetamathProofObject : string := "Hi" ++ " " ++ "proof".
 
 Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
 
-HelloWorld.
-
-Lemma test : True.
-Proof.
-hello_world.
-Abort.
-HelloWorld.

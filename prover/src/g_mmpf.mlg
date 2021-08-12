@@ -2,40 +2,15 @@ DECLARE PLUGIN "mmpf_plugin"
 
 {
 
-open Pp
 open Stdarg
-open Ltac_plugin
-
-let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
-                            (fun _ -> strbrk Mmpf_main.message)
 
 let mmpf_write fmt s =
-  Printf.fprintf fmt "Hello proof objects: ###%s###!\n" s
+  Printf.fprintf fmt "%s" s
 
 let mmpf_writeFile fname s =
   let oc = open_out fname in
   mmpf_write oc s;
   close_out oc
-
-let print_input (a : 'a) (printer : 'a -> Pp.t) (type_str : string) : unit =
-  let msg = printer a ++ strbrk (Printf.sprintf " is a %s." type_str) in
-  Feedback.msg_notice msg
-
-
-let simple_body_access gref =
-  let open Names.GlobRef in
-  match gref with
-  | VarRef _ ->
-    failwith "variables are not covered in this example"
-  | IndRef _ ->
-    failwith "inductive types are not covered in this example"
-  | ConstructRef _ ->
-    failwith "constructors are not covered in this example"
-  | ConstRef cst ->
-    let cb = Environ.lookup_constant cst (Global.env()) in
-    match Global.body_of_constant_body Library.indirect_accessor cb with
-    | Some(e, _, _) -> EConstr.of_constr e
-    | None -> failwith "This term has no value"
 
 let strip_quotes (s : string) : string =
   if (String.length s < 9) then s else (String.sub s 1 (String.length s - 9))
@@ -48,8 +23,6 @@ VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
      let sigma = Evd.from_env env in
      let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
      let e1 : EConstr.constr = Reductionops.nf_all env sigma t in
-(*     let e1 : Constr.constr = Reduction.whd_all env t in *)
-(*     let s = Ppconstr.pr_constr_expr env sigma e1 in *)
       let s = Printer.pr_leconstr_env env sigma e1 in
 
     mmpf_writeFile fname  (strip_quotes (Pp.string_of_ppcmds s))
@@ -57,107 +30,4 @@ VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
 END
 
 
-VERNAC COMMAND EXTEND WhatIsThis CLASSIFIED AS QUERY
-| [ "What's" constr(e) ] ->
-   {
-     let env = Global.env () in (* we'll explain later *)
-     let sigma = Evd.from_env env in (* we'll explain later *)
-     print_input e (Ppconstr.pr_constr_expr env sigma) "term"
-   }
-| [ "What" "kind" "of" "term" "is" string(s) ] ->
-   { print_input s strbrk "string" }
-| [ "What" "kind" "of" "term" "is" int(i) ] ->
-   { print_input i Pp.int "int" }
-| [ "What" "kind" "of" "term" "is" ident(id) ] ->
-   { print_input id Ppconstr.pr_id "identifier" }
-| [ "What" "kind" "of" "identifier" "is" reference(r) ] ->
-   { print_input r Ppconstr.pr_qualid "reference" }
-END
-
-VERNAC COMMAND EXTEND ExamplePrint2 CLASSIFIED AS QUERY
-| [ "PrintString" constr(e) ] ->
-   {
-     let env = Global.env () in
-     let sigma = Evd.from_env env in
-     let s = Ppconstr.pr_constr_expr env sigma e in
-     Feedback.msg_notice s
-   }
-END
-
-VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
-| [ "MyPrint" reference(r) ] ->
-   {
-     let env = Global.env () in
-     let sigma = Evd.from_env env in
-     try
-       let t = simple_body_access (Nametab.global r) in
-       Feedback.msg_notice (Printer.pr_econstr_env env sigma t)
-     with Failure s ->
-       CErrors.user_err (str s)
-   }
-END
-
-
-(*** Printing messages ***)
-
-(*
- * This defines a command that prints HelloWorld.
- * Note that Feedback.msg_notice can be used to print messages.
- *)
-VERNAC COMMAND EXTEND HelloWorld CLASSIFIED AS QUERY
-| [ "HelloWorld" ] -> { Feedback.msg_notice (strbrk Mmpf_main.message) }
-END
-
-(*
- * This is a tactic version of the same thing.
- *)
-TACTIC EXTEND hello_world_tactic
-| [ "hello_world" ] ->
-  { let _ = Feedback.msg_notice (str Mmpf_main.message) in
-    Tacticals.New.tclIDTAC }
-END
-
-(*** Printing warnings ***)
-
-(*
- * This defines a command that prints HelloWorld as a warning.
- * tuto_warn is defined at the top-level, before the command runs,
- * which is standard.
- *)
-VERNAC COMMAND EXTEND HelloWarning CLASSIFIED AS QUERY
-| [ "HelloWarning" ] ->
-   {
-     tuto_warn ()
-   }
-END
-
-(*
- * This is a tactic version of the same thing.
- *)
-TACTIC EXTEND hello_warning_tactic
-| [ "hello_warning" ] ->
-   {
-     let _ = tuto_warn () in
-     Tacticals.New.tclIDTAC
-   }
-END
-
-(*** Printing errors ***)
-
-(*
- * This defines a command that prints HelloWorld inside of an error.
- * Note that CErrors.user_err can be used to raise errors to the user.
- *)
-VERNAC COMMAND EXTEND HelloError CLASSIFIED AS QUERY
-| [ "HelloError" ] -> { CErrors.user_err (str Mmpf_main.message) }
-END
-
-(*
- * This is a tactic version of the same thing.
- *)
-TACTIC EXTEND hello_error_tactic
-| [ "hello_error" ] ->
-  { let _ = CErrors.user_err (str Mmpf_main.message) in
-    Tacticals.New.tclIDTAC }
-END
 
