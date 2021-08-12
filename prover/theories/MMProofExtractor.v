@@ -1,6 +1,8 @@
 From Coq Require Import Strings.String.
 From stdpp Require Import base finite.
 From MatchingLogic Require Import Syntax ProofSystem.
+Require Import MatchingLogic.SignatureHelper.
+
 From MatchingLogicProver Require Import MMProofExtractorLoader.
 
 
@@ -75,7 +77,7 @@ Module MetaMath.
 
   Definition ConstantStmt_toString (x : ConstantStmt) : string :=
     match x with
-    | constant_stmt cs => append "$c" (append (foldr append " "%string (map Constant_toString cs)) "$.")
+    | constant_stmt cs => append "$c " (append (foldr append " "%string (map Constant_toString cs)) " $.")
     end.
   
   Definition Variabl_toString (x : Variabl) :=
@@ -85,13 +87,13 @@ Module MetaMath.
   
   Definition VariableStmt_toString (x : VariableStmt) : string :=
     match x with
-    | vs lv => append "$v" (append (foldr append " "%string (map Variabl_toString lv)) "$.")
+    | vs lv => append "$v " (append (foldr append " "%string (map Variabl_toString lv)) " $.")
     end.
   
 
   Definition DisjointStmt_toString (x : DisjointStmt) : string :=
     match x with
-    | ds lv => append "$d" (append (foldr append " "%string (map Variabl_toString lv)) "$.")
+    | ds lv => append "$d " (append (foldr append " "%string (map Variabl_toString lv)) " $.")
     end.
   
   Definition TypeCode_toString (x : TypeCode) : string :=
@@ -110,10 +112,10 @@ Module MetaMath.
     | fs l t var => append
                       (Label_toString l)
                       (append
-                         "$f"
+                         " $f "
                          (append
                             (append (TypeCode_toString t) (Variabl_toString var))
-                            "$."
+                            " $."
                          )
                       )
     end.
@@ -123,13 +125,13 @@ Module MetaMath.
     | es l t lms => append
                       (Label_toString l)
                       (append
-                         "$e"
+                         " $e "
                          (append
                             (append
                                (TypeCode_toString t)
                                (foldr append " "%string (map MathSymbol_toString lms))
                             )
-                            "$."
+                            " $."
                          )
                       )
     end.
@@ -147,13 +149,13 @@ Module MetaMath.
     | axs l t lms => append
                       (Label_toString l)
                       (append
-                         "$a"
+                         " $a "
                          (append
                             (append
                                (TypeCode_toString t)
                                (foldr append " "%string (map MathSymbol_toString lms))
                             )
-                            "$."
+                            " $."
                          )
                       )
     end.
@@ -169,13 +171,13 @@ Module MetaMath.
         => append
              (Label_toString l)
              (append
-                "$p"
+                " $p "
                 (append
                    (append
                       (TypeCode_toString t)
                       (foldr append " "%string (map MathSymbol_toString lms))
                    )
-                   (append "$=" (append (MMProof_toString p)  "$."))
+                   (append " $= " (append (MMProof_toString p)  " $."))
                 )
              )
       end.
@@ -189,10 +191,10 @@ Module MetaMath.
     Fixpoint Stmt_toString (x : Stmt) : string :=
       match x with
       | stmt_block l
-        => append "${"
+        => append "${ "
                   (append
                      (foldr append " "%string (map Stmt_toString l))
-                     "$}")
+                     " $}")
       | stmt_variable_stmt v => VariableStmt_toString v
       | stmt_disj_stmt d => DisjointStmt_toString d
       | stmt_hyp_stmt h => HypothesisStmt_toString h
@@ -208,7 +210,7 @@ Module MetaMath.
 
     Definition Database_toString (x : Database) : string :=
       foldr append "
-"%string (map OutermostScopeStmt_toString x).
+ "%string (map OutermostScopeStmt_toString x).
 
 
 End MetaMath.
@@ -217,31 +219,33 @@ Import MetaMath.
 Section gen.
   Context
     {signature : Signature}
-    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }
+(*    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }*)
     (symbolPrinter : symbols -> string)
   .
 
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_cs (constant_stmt [constant (ms (symbolPrinter s))]).
-  
+
+  Print Label.
   Definition axiomForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_s (stmt_assert_stmt (as_axiom (axs
-                                         (tc (constant (ms (symbolPrinter s ++ "-is-pattern"))))
-                                         [(ms "#Pattern"); (ms (symbolPrinter s))]
+                                         (lbl (symbolPrinter s ++ "-is-pattern"))
+                                         (tc (constant (ms "#Pattern")))
+                                         [(ms (symbolPrinter s))]
           ))).
 
   Definition constantAndAxiomForSymbol (s : symbols) : Database :=
     [constantForSymbol s; axiomForSymbol s].
-  
+
+  (*
   Definition generateSymbolAxioms : Database :=
     map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
- '
+*)
 End gen.
 
 
 Module MMTest.
 
-  Require Import MatchingLogic.SignatureHelper.
   Import MetaMath.
 
   Inductive Symbol := a | b | c .
@@ -262,12 +266,13 @@ Module MMTest.
     | b => "b"
     | c => "c"
     end.
-  
+
+  Compute (Database_toString (constantAndAxiomForSymbol symbolPrinter a)).
+
+
+  Definition myMetamathProofObject : string := Database_toString (constantAndAxiomForSymbol symbolPrinter a).
+
+  Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
+
   
 End MMTest.
-
-
-
-Definition myMetamathProofObject : string := "Hi" ++ " " ++ "proof".
-
-Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
