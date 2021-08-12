@@ -46,8 +46,12 @@ VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
 | ["Write" "MetaMath" "Proof" "Object" "File" string(fname) constr(e)] -> {
      let env = Global.env () in
      let sigma = Evd.from_env env in
-     let s = Ppconstr.pr_constr_expr env sigma e in
-    mmpf_writeFile fname (strip_quotes (Pp.string_of_ppcmds s))
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let e1 : Constr.constr = Reduction.whd_all env t in
+(*     let s = Ppconstr.pr_constr_expr env sigma e1 in *)
+(*      let s = Printer.pr_lconstr_env env sigma e1 in *)
+
+    mmpf_writeFile fname "HI" (* (strip_quotes "HI THERE" (* (Pp.string_of_ppcmds s)*))*)
   }
 END
 
