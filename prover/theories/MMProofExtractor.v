@@ -1,6 +1,6 @@
 From Coq Require Import Strings.String.
-From stdpp Require Import base finite.
-From MatchingLogic Require Import Syntax ProofSystem.
+From stdpp Require Import base finite gmap mapset listset_nodup.
+From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 Require Import MatchingLogic.SignatureHelper.
 
 From MatchingLogicProver Require Import MMProofExtractorLoader.
@@ -226,7 +226,7 @@ Section gen.
 (*    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }*)
     (symbolPrinter : symbols -> string)
   .
-
+  
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_cs (constant_stmt [constant (ms (symbolPrinter s))]).
 
@@ -240,6 +240,37 @@ Section gen.
   Definition constantAndAxiomForSymbol (s : symbols) : Database :=
     [constantForSymbol s; axiomForSymbol s].
 
+  (* For now, we will only use listSet. Later we may want to use gset,
+     for performance reasons; but then we will need to implement Countable
+     for symbols.
+   *)
+  (*
+  Context
+    {sym_countable : @Countable symbols sym_eq}
+  .
+
+  Definition SymSet := (@gset symbols sym_eq sym_countable).
+   *)
+
+  Check listset_nodup_union.
+  Definition SymSet := listset_nodup symbols.
+
+  Existing Instance sym_eq.
+
+  Fixpoint symbols_of (p : Pattern) : SymSet :=
+    match p with
+    | patt_bott | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_bound_svar _ => ∅
+    | patt_sym s => {[ s ]}
+    | patt_imp p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | patt_app p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | patt_exists p' => symbols_of p'
+    | patt_mu p' => symbols_of p'
+    end.
+
+  Definition dependenciesForPattern (p : Pattern) : Database :=
+    concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
+  
+  
   (*
   Definition generateSymbolAxioms : Database :=
     map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
@@ -248,6 +279,8 @@ End gen.
 
 
 Module MMTest.
+  Import MatchingLogic.Syntax.Notations.
+  Import MatchingLogic.DerivedOperators.Notations.
 
   Import MetaMath.
 
@@ -270,16 +303,12 @@ Module MMTest.
     | c => "sym-c"
     end.
 
-  (*
-  Compute ( (map OutermostScopeStmt_toString (constantAndAxiomForSymbol symbolPrinter a))).
-  Compute ( (constantAndAxiomForSymbol symbolPrinter a)).*)
-  Compute (Database_toString (constantAndAxiomForSymbol symbolPrinter a)).
+  Definition P := (patt_and
+                     (patt_or (patt_sym a) (patt_not (patt_sym a)))
+                     (patt_or (patt_sym b) (patt_sym a))).
 
-
-  Definition myMetamathProofObject : string := Database_toString (constantAndAxiomForSymbol symbolPrinter a).
-  (*Compute (myMetamathProofObject).*)
-
-  Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
+  Compute (dependenciesForPattern symbolPrinter P).
+  Write MetaMath Proof Object File "myfile.mm" (Database_toString (dependenciesForPattern symbolPrinter P)).
 
   
 End MMTest.
