@@ -38,7 +38,8 @@ Class MLVariables := {
 Class Signature := {
   variables : MLVariables;
   symbols : Type;
-  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};
+  sym_eq : EqDecision symbols;
+(*  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};*)
 }.
 
 (* TODO move to some other file *)
