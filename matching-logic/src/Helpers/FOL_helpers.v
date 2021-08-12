@@ -2574,22 +2574,23 @@ Qed.
       auto 10.
   Qed.
 
-  Lemma MyGoal_applyMeta Γ l r r':
+  Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
+    forall l,
     wf l ->
     well_formed r ->
     well_formed r' ->
     mkMyGoal Γ l r' ->
     mkMyGoal Γ l r.
   Proof.
-    intros Himp wfl wfr wfr' H.
+    intros Himp l wfl wfr wfr' H.
     eapply prf_weaken_conclusion_iter_meta_meta.
     4: { apply Himp; auto. }
     all: auto.
   Qed.
 
   Tactic Notation "mgApplyMeta" uconstr(t) :=
-    eapply (MyGoal_applyMeta _ _ _ _ t).
+    unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
 
   Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
   Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
