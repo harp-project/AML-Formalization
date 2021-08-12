@@ -75,9 +75,12 @@ Module MetaMath.
     | constant s => MathSymbol_toString s
     end.
 
+  Definition appendWith between x y :=
+    append x (append between y).
+  
   Definition ConstantStmt_toString (x : ConstantStmt) : string :=
     match x with
-    | constant_stmt cs => append "$c " (append (foldr append " "%string (map Constant_toString cs)) " $.")
+    | constant_stmt cs => append "$c " (append (foldr (appendWith " "%string) ""%string (map Constant_toString cs)) " $.")
     end.
   
   Definition Variabl_toString (x : Variabl) :=
@@ -87,13 +90,13 @@ Module MetaMath.
   
   Definition VariableStmt_toString (x : VariableStmt) : string :=
     match x with
-    | vs lv => append "$v " (append (foldr append " "%string (map Variabl_toString lv)) " $.")
+    | vs lv => append "$v " (append (foldr (appendWith " "%string) ""%string (map Variabl_toString lv)) " $.")
     end.
   
 
   Definition DisjointStmt_toString (x : DisjointStmt) : string :=
     match x with
-    | ds lv => append "$d " (append (foldr append " "%string (map Variabl_toString lv)) " $.")
+    | ds lv => append "$d " (append (foldr (appendWith " "%string) ""%string (map Variabl_toString lv)) " $.")
     end.
   
   Definition TypeCode_toString (x : TypeCode) : string :=
@@ -127,9 +130,9 @@ Module MetaMath.
                       (append
                          " $e "
                          (append
-                            (append
+                            (appendWith " "
                                (TypeCode_toString t)
-                               (foldr append " "%string (map MathSymbol_toString lms))
+                               (foldr (appendWith " "%string) ""%string (map MathSymbol_toString lms))
                             )
                             " $."
                          )
@@ -151,9 +154,9 @@ Module MetaMath.
                       (append
                          " $a "
                          (append
-                            (append
+                            (appendWith " "
                                (TypeCode_toString t)
-                               (foldr append " "%string (map MathSymbol_toString lms))
+                               (foldr (appendWith " "%string) ""%string (map MathSymbol_toString lms))
                             )
                             " $."
                          )
@@ -162,7 +165,7 @@ Module MetaMath.
 
     Definition MMProof_toString (x : MMProof) : string :=
       match x with
-      | pf ll =>  foldr append " "%string (map Label_toString ll)
+      | pf ll =>  foldr (appendWith " "%string) ""%string (map Label_toString ll)
       end.
 
     Definition ProvableStmt_toString (x : ProvableStmt) : string :=
@@ -175,7 +178,7 @@ Module MetaMath.
                 (append
                    (append
                       (TypeCode_toString t)
-                      (foldr append " "%string (map MathSymbol_toString lms))
+                      (foldr (appendWith " "%string) ""%string (map MathSymbol_toString lms))
                    )
                    (append " $= " (append (MMProof_toString p)  " $."))
                 )
@@ -193,7 +196,7 @@ Module MetaMath.
       | stmt_block l
         => append "${ "
                   (append
-                     (foldr append " "%string (map Stmt_toString l))
+                     (foldr (appendWith " "%string) ""%string (map Stmt_toString l))
                      " $}")
       | stmt_variable_stmt v => VariableStmt_toString v
       | stmt_disj_stmt d => DisjointStmt_toString d
@@ -209,8 +212,9 @@ Module MetaMath.
       end.
 
     Definition Database_toString (x : Database) : string :=
-      foldr append "
- "%string (map OutermostScopeStmt_toString x).
+      foldr (appendWith "
+"%string) "
+"%string (map OutermostScopeStmt_toString x).
 
 
 End MetaMath.
@@ -226,7 +230,6 @@ Section gen.
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_cs (constant_stmt [constant (ms (symbolPrinter s))]).
 
-  Print Label.
   Definition axiomForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_s (stmt_assert_stmt (as_axiom (axs
                                          (lbl (symbolPrinter s ++ "-is-pattern"))
@@ -262,15 +265,19 @@ Module MMTest.
 
   Definition symbolPrinter (s : Symbol) : string :=
     match s with
-    | a => "a"
-    | b => "b"
-    | c => "c"
+    | a => "sym-a"
+    | b => "sym-b"
+    | c => "sym-c"
     end.
 
+  (*
+  Compute ( (map OutermostScopeStmt_toString (constantAndAxiomForSymbol symbolPrinter a))).
+  Compute ( (constantAndAxiomForSymbol symbolPrinter a)).*)
   Compute (Database_toString (constantAndAxiomForSymbol symbolPrinter a)).
 
 
   Definition myMetamathProofObject : string := Database_toString (constantAndAxiomForSymbol symbolPrinter a).
+  (*Compute (myMetamathProofObject).*)
 
   Write MetaMath Proof Object File "myfile.mm" myMetamathProofObject.
 
