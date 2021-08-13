@@ -73,13 +73,13 @@ Section ml_tauto.
   Proof.
     induction pp; simpl; auto.
   Qed.
-  
-  Fixpoint pp_toCoq (pp : PropPattern) : Prop :=
+
+  Fixpoint pp_toCoq (pp : PropPattern) : Set :=
     match pp with
     | pp_atomic p _ => ((Empty_set _) ⊢ p)
     | pp_natomic p _ => ((Empty_set _) ⊢ (patt_not p))
-    | pp_and p1 p2 => (pp_toCoq p1) /\ (pp_toCoq p2)
-    | pp_or p1 p2 => (pp_toCoq p1) \/ (pp_toCoq p2)
+    | pp_and p1 p2 => prod (pp_toCoq p1) (pp_toCoq p2)
+    | pp_or p1 p2 => sum (pp_toCoq p1) (pp_toCoq p2)
     end.
 
   Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
@@ -1521,7 +1521,7 @@ Section ml_tauto.
     - pose proof (wfp' := wf_not_proj _ wfp).
       rewrite -Heqcall. simpl.
       eapply pf_iff_equiv_trans.
-      5: { apply H0. }
+      5: { auto. }
       all: auto.
       apply negate_equiv; auto.
     - rewrite -Heqcall.
@@ -1536,7 +1536,7 @@ Section ml_tauto.
       end.
       eapply pf_iff_equiv_trans.
       5: {
-        apply or_of_equiv_is_equiv. 6: apply H1. 5: apply H0. all: subst; auto.
+        apply or_of_equiv_is_equiv. 6: auto. 5: auto. all: subst; auto.
       }
       all: auto.
       { subst; auto. }
