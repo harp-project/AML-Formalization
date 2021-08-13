@@ -2238,15 +2238,14 @@ Qed.
     apply pf_conj_elim_r_meta in H1; auto.
   Qed.
 
-  (* TODO fix this *)
   Lemma pf_iff_iff Γ A B:
     well_formed A ->
     well_formed B ->
-    (Γ ⊢ (A <---> B)) <-> ((Γ ⊢ (A ---> B)) /\ (Γ ⊢ (B ---> A))).
+    prod ((Γ ⊢ (A <---> B)) -> (prod (Γ ⊢ (A ---> B)) (Γ ⊢ (B ---> A))))
+    ( (prod (Γ ⊢ (A ---> B))  (Γ ⊢ (B ---> A))) -> (Γ ⊢ (A <---> B))).
   Proof.
     intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
   Qed.
-  
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
@@ -2263,8 +2262,11 @@ Qed.
     Γ ⊢ (B <---> A).
   Proof.
     intros wfA wfB H.
-    apply pf_iff_iff in H; auto. apply pf_iff_iff; auto.
-    exact (conj (proj2 H) (proj1 H)).
+    pose proof (H2 := H).
+    apply pf_iff_proj2 in H2; auto.
+    rename H into H1.
+    apply pf_iff_proj1 in H1; auto.
+    apply pf_iff_split; auto.
   Qed.
 
   Lemma pf_iff_equiv_trans Γ A B C :
