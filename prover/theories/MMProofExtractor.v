@@ -332,6 +332,24 @@ Module MMTest.
     | c => "sym-c"
     end.
 
+  Definition ϕ₁ := patt_imp (patt_sym a) (patt_imp (patt_sym b) (patt_sym a)).
+
+  Lemma P1_holds:
+    ML_proof_system (Ensembles.Empty_set _) ϕ₁.
+  Proof.
+    apply P1; auto.
+  Qed.
+
+  Print ML_proof_system.
+  Check P1.
+  Fixpoint ϕ₁_proof_string (pf : ML_proof_system (Ensembles.Empty_set _) ϕ₁) : string :=
+    match pf as _ return string with
+    | P1 _ p q wfp wfq => "P1"%string
+    | _ => ""%string
+    end.
+  
+  
+  
   Definition P := (patt_and
                      (patt_or (patt_sym a) (patt_not (patt_sym a)))
                      (patt_or (patt_sym b) (patt_sym a))).

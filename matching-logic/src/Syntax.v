@@ -15,8 +15,8 @@ From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
 
 Class MLVariables := {
-  evar : Type;
-  svar : Type;
+  evar : Set;
+  svar : Set;
   evar_eqdec : EqDecision evar;
   evar_countable : Countable evar;
   svar_eqdec : EqDecision svar;
@@ -37,7 +37,7 @@ Class MLVariables := {
 
 Class Signature := {
   variables : MLVariables;
-  symbols : Type;
+  symbols : Set;
   sym_eq : EqDecision symbols;
 (*  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};*)
 }.
@@ -54,7 +54,7 @@ Section syntax.
   Context {signature : Signature}.
   Existing Instance variables.
 
-  Inductive Pattern : Type :=
+  Inductive Pattern : Set :=
   | patt_free_evar (x : evar)
   | patt_free_svar (x : svar)
   | patt_bound_evar (n : db_index)
