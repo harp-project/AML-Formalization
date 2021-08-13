@@ -57,6 +57,19 @@ Section definedness.
   Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
     patt_total (phi1 <---> phi2).
 
+  Lemma well_formed_equal (phi1 phi2 : Pattern) :
+    well_formed phi1 ->
+    well_formed phi2 ->
+    well_formed (patt_equal phi1 phi2).
+  Proof.
+    unfold patt_equal, patt_iff, patt_and, patt_or, patt_not. intros.
+    unfold well_formed in *. simpl.
+    unfold well_formed_closed in *. simpl.
+    apply andb_prop in H. destruct H as [H11 H12].
+    apply andb_prop in H0. destruct H0 as [H21 H22].
+    rewrite !(H11,H12,H21,H22). simpl. auto.
+  Qed.
+
   Definition patt_in (phi1 phi2 : Pattern) : Pattern :=
     patt_defined (patt_and phi1 phi2).
 
@@ -738,6 +751,73 @@ Section definedness.
     intros. pose proof (pf_iff_equiv_refl Γ φ H).
     apply patt_iff_implies_equal in H0; auto.
   Qed.
+
+  Theorem deduction_theorem :
+    forall φ ψ Γ, (* psi closed *)
+      Ensembles.Union Pattern Γ (Ensembles.Singleton Pattern ψ) ⊢ φ ->
+      Γ ⊢ patt_total (ψ) ---> φ.
+  Proof.
+  
+  Admitted.
+
+  Theorem reverse_deduction_theorem :
+    forall φ ψ Γ,
+      Γ ⊢ ((patt_total ψ) ---> φ) ->
+      Ensembles.Union Pattern Γ (Ensembles.Singleton Pattern ψ) ⊢ φ.
+  Proof.
+  
+  Admitted.
+
+  Lemma equality_elimination :
+    forall Γ φ1 φ2 C, 
+    well_formed φ1 -> well_formed φ2 ->
+    well_formed (subst_patctx C φ1) -> well_formed (subst_patctx C φ2) ->
+    Γ ⊢ (patt_equal φ1 φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
+       (subst_patctx C φ1) ---> (subst_patctx C φ2).
+  Proof.
+    intros. apply deduction_theorem.
+    remember (Ensembles.Union Pattern Γ (Ensembles.Singleton Pattern (φ1 <---> φ2))) 
+             as Γ'.
+    assert (Γ' ⊢ (φ1 <---> φ2)). {
+      apply hypothesis. now apply well_formed_iff.
+      rewrite HeqΓ'. apply Union_intror. constructor.
+    }
+    apply congruence_iff with (C0 := C) in H3.
+    apply pf_iff_proj1 in H3. all: auto.
+  Qed.
+
+  Lemma patt_eq_sym_meta : forall Γ φ1 φ2, 
+     well_formed φ1 -> well_formed φ2 ->
+     Γ ⊢ (patt_equal φ1 φ2) -> Γ ⊢  (patt_equal φ2 φ1).
+  Proof.
+    intros.
+    epose proof (@equality_elimination Γ φ1 φ2 pctx_box H H0 H H0) as P2. simpl in P2.
+    eapply Modus_ponens in P2; auto.
+    3: apply well_formed_imp; auto. 2-3: apply well_formed_equal; auto.
+    epose proof (@equality_elimination Γ φ1 φ2 (pctx_imp_l pctx_box φ1) H H0 ltac:(auto) ltac:(auto)) as P1.
+    simpl in P1.
+    apply Modus_ponens in P1; auto. 3: apply well_formed_imp; auto. 2-3: apply well_formed_equal; auto.
+    apply Modus_ponens in P1. 2-3: auto. 2: apply A_impl_A; auto.
+    Search patt_iff ML_proof_system.
+    apply pf_iff_split in P2; auto.
+    apply patt_iff_implies_equal in P2; auto.
+    Unshelve.
+    all: simpl; auto.
+  Qed.
+
+  Lemma exists_functional_subst :
+    forall φ φ' Γ, 
+      Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ).
+  Proof.
+  
+  Admitted.
+
+  Lemma forall_functional_subst :
+    forall φ φ' Γ, 
+      Γ ⊢ ((patt_forall φ) and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (bevar_subst φ φ' 0).
+  Proof.
+  
+  Admitted.
 
   End ProofSystemTheorems.
   

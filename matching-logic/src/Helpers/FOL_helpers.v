@@ -2843,6 +2843,94 @@ Qed.
 
 (* Lemma universal_instantiation (Γ : Theory) (A : Pattern) (x y : evar):
   Γ ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
+
+  Import extralibrary.
+  Theorem evar_open_bevar_subst_same :
+    forall x phi n, evar_open n x phi = bevar_subst phi (patt_free_evar x) n.
+  Proof.
+    induction phi; intros; auto; simpl.
+    * break_match_goal.
+      - apply Nat.eqb_eq in Heqb. subst. break_match_goal; auto; lia.
+      - apply Nat.eqb_neq in Heqb. subst. break_match_goal; auto; lia.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi; auto.
+    * rewrite -> IHphi; auto.
+  Qed.
+  
+  Theorem congruence_iff :
+    forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
+     Γ ⊢ (φ1 <---> φ2)
+    ->
+     well_formed (subst_patctx C φ1) -> well_formed (subst_patctx C φ2) ->
+     Γ ⊢ (subst_patctx C φ1 <---> subst_patctx C φ2).
+  Proof.
+    induction C; intros.
+    * apply H1.
+    * simpl. simpl in H2, H3. apply well_formed_app_1 in H2.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3.
+      specialize (IHC φ1 φ2 Γ).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r H4).
+      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r H5).
+      apply pf_iff_iff; auto.
+    * simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
+      apply well_formed_app_2 in H3 as H31. apply well_formed_app_1 in H3 as H3'.
+      specialize (IHC φ1 φ2 Γ).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l H4).
+      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l H5).
+      apply pf_iff_iff; auto.
+    * simpl in H2, H3. apply well_formed_app_1 in H2 as H2'.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'.
+      specialize (IHC φ1 φ2 Γ).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
+      apply pf_iff_iff; auto. split.
+      - pose proof (syllogism Γ B A r H31 H2' H3').
+        pose proof (Modus_ponens Γ (B ---> A) ((A ---> r) ---> B ---> r)
+                    ltac:(auto) ltac:(auto) H5 H6). auto.
+      - pose proof (syllogism Γ A B r H2' H31 H3').
+        pose proof (Modus_ponens Γ (A ---> B) ((B ---> r) ---> A ---> r)
+                    ltac:(auto) ltac:(auto) H4 H6). auto.
+    * simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'.
+      specialize (IHC φ1 φ2 Γ).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
+      apply pf_iff_iff; auto. split.
+      - pose proof (prf_weaken_conclusion Γ l A B H31 H2' H3').
+        pose proof (Modus_ponens Γ (A ---> B) ((l ---> A) ---> l ---> B)
+                    ltac:(auto) ltac:(auto) H4 H6). auto.
+      - pose proof (prf_weaken_conclusion Γ l B A H31 H3' H2').
+        pose proof (Modus_ponens Γ (B ---> A) ((l ---> B) ---> l ---> A)
+                    ltac:(auto) ltac:(auto) H5 H6). auto.
+    * simpl in H2, H3. apply wf_ex_to_wf_body in H2. apply wf_ex_to_wf_body in H3.
+      unfold wf_body_ex in *. Check evar_open_evar_quantify.
+      epose proof (H2 x _).
+      epose proof (H3 x _).
+      Unshelve. 2-3: admit. (* TODO: technical *)
+      erewrite evar_open_evar_quantify in H4.
+      erewrite evar_open_evar_quantify in H5. 2-3: admit. (* TODO: technical *)
+      specialize (IHC _ _ Γ H H0 H1 H4 H5).
+      simpl. unfold exists_quantify.
+      pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
+      pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
+      unfold instantiate in H6, H7.
+      rewrite <- evar_open_bevar_subst_same in H6, H7.
+      erewrite -> evar_open_evar_quantify in H6, H7. 2-3: admit. (* TODO: same as before *)
+      apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
+      all: auto.
+      apply pf_iff_split. 1-2: admit. (* TODO: technical *)
+      - Search patt_imp. Search patt_exists ML_proof_system.
+        eapply syllogism_intro.
+        (*
+          Existential instantiation needed for this one.
+          ∃x, P --> P[x/c], where c is a fresh constant symbol (not in Γ, P)
+          Question: How to connect P and P[x/c], where x is a free variable of P?
+        *)
+  Admitted.
+  
 End FOL_helpers.
 
 (* Hints *)

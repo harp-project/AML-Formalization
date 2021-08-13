@@ -252,9 +252,29 @@ Section syntax.
     | patt_mu p' => patt_mu (evar_quantify x level p')
     end.
 
+  Inductive PatCtx : Type :=
+  | pctx_box
+  | pctx_app_l (C : PatCtx) (r : Pattern)
+  | pctx_app_r (l : Pattern) (C : PatCtx)
+  | pctx_imp_l (C : PatCtx) (r : Pattern)
+  | pctx_imp_r (l : Pattern) (C : PatCtx)
+  | pctx_exists (x : evar) (C : PatCtx)
+  (* | ctx_mu (C : PatCtx) <--- restriction *).
+
   Definition exists_quantify (x : evar)
              (p : Pattern) : Pattern :=
     patt_exists (evar_quantify x 0 p).
+
+  Fixpoint subst_patctx (C : PatCtx) (p : Pattern) : Pattern :=
+  match C with
+   | pctx_box => p
+   | pctx_app_l C r => patt_app (subst_patctx C p) r
+   | pctx_app_r l C => patt_app l (subst_patctx C p)
+   | pctx_imp_l C r => patt_imp (subst_patctx C p) r
+   | pctx_imp_r l C => patt_imp l (subst_patctx C p)
+   | pctx_exists x C => exists_quantify x (subst_patctx C p)
+   (* | ctx_mu C => patt_mu (subst_patctx C p) *)
+  end.
 
   Fixpoint size (p : Pattern) : nat :=
     match p with

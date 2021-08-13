@@ -77,6 +77,19 @@ Module Syntax.
       rewrite !(H11,H12,H21,H22).
       reflexivity.
     Qed.
+    
+    Lemma well_formed_iff (phi1 phi2 : Pattern) :
+      well_formed phi1 ->
+      well_formed phi2 ->
+      well_formed (patt_iff phi1 phi2).
+    Proof.
+      unfold patt_iff, patt_and, patt_or, patt_not. intros.
+      unfold well_formed in *. simpl.
+      unfold well_formed_closed in *. simpl.
+      apply andb_prop in H. destruct H as [H11 H12].
+      apply andb_prop in H0. destruct H0 as [H21 H22].
+      rewrite !(H11,H12,H21,H22). simpl. auto.
+    Qed.
 
     Lemma well_formed_and (phi1 phi2 : Pattern) :
       well_formed phi1 ->
