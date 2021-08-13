@@ -177,7 +177,7 @@ Module MetaMath.
                 " $p "
                 (append
                    (append
-                      (TypeCode_toString t)
+                      (append (TypeCode_toString t) " ")
                       (foldr (appendWith " "%string) ""%string (map MathSymbol_toString lms))
                    )
                    (append " $= " (append (MMProof_toString p)  " $."))
@@ -300,10 +300,23 @@ Section gen.
     | _ => []
     end.
 
-  (*
-  Definition generateSymbolAxioms : Database :=
-    map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
-*)
+  Fixpoint proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
+    match pf as _ return list Label with
+    | P1 _ p q wfp wfq => pattern2proof p ++ pattern2proof q ++ [lbl "proof-rule-prop-1"]
+    | _ => []
+    end.
+
+  Definition proof2database (Γ : Theory) (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
+    [oss_inc (include_stmt "mm/matching-logic.mm")] ++
+    (dependenciesForPattern ϕ)
+      ++ [oss_s (stmt_assert_stmt (as_provable (ps
+                                                  (lbl "the-proof")
+                                                  (tc (constant (ms "|-")))
+                                                  (pattern2mm ϕ)
+                                                  (pf (proof2proof Γ ϕ proof))
+         )))].
+  
+  
 End gen.
 
 
@@ -338,27 +351,19 @@ Module MMTest.
     ML_proof_system (Ensembles.Empty_set _) ϕ₁.
   Proof.
     apply P1; auto.
-  Qed.
-
-  Print ML_proof_system.
-  Check P1.
-  Fixpoint ϕ₁_proof_string (pf : ML_proof_system (Ensembles.Empty_set _) ϕ₁) : string :=
-    match pf as _ return string with
-    | P1 _ p q wfp wfq => "P1"%string
-    | _ => ""%string
-    end.
+  Defined.
   
-  
-  
-  Definition P := (patt_and
-                     (patt_or (patt_sym a) (patt_not (patt_sym a)))
-                     (patt_or (patt_sym b) (patt_sym a))).
 
-  Compute (pattern2mm symbolPrinter (patt_imp (patt_sym a) (patt_sym b))).
-  Compute (pattern2proof symbolPrinter (patt_imp (patt_sym a) (patt_sym b))).
-
-  Compute (dependenciesForPattern symbolPrinter P).
-  Write MetaMath Proof Object File "myfile.mm" (Database_toString (dependenciesForPattern symbolPrinter P)).
+  Definition mm_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          P1_holds
+    )).
+  Compute mm_proof.
+  Write MetaMath Proof Object File "proof.mm" mm_proof.
 
   
 End MMTest.
