@@ -1314,10 +1314,10 @@ Qed. *)
   Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
 
 
-  Coercion of_MyGoal (MG : MyGoal) : Prop := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+  Coercion of_MyGoal (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
 
 
-  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) <-> (Γ ⊢ goal).
+  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
   Proof. reflexivity. Qed.
 
   Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
@@ -1342,7 +1342,7 @@ Qed. *)
     apply nested_const_middle; auto.
   Qed.  
   
-  Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
+  Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
   Ltac fromMyGoal := unfold of_MyGoal; simpl.
   Ltac mgIntro := apply MyGoal_intro; simpl.
   Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
@@ -1633,9 +1633,9 @@ Qed. *)
     mkMyGoal Γ (l ++ [h]) g ->
     mkMyGoal Γ l g.
   Proof.
-    intros.
-    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H2. all: auto.
-  Qed.  
+    intros wfl wfg wfh H1 H2.
+    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
+  Qed.
   
   Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
     match goal with
@@ -2238,6 +2238,7 @@ Qed.
     apply pf_conj_elim_r_meta in H1; auto.
   Qed.
 
+  (* TODO fix this *)
   Lemma pf_iff_iff Γ A B:
     well_formed A ->
     well_formed B ->
