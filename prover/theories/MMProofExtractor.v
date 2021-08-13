@@ -300,6 +300,29 @@ Section gen.
     | _ => []
     end.
 
+  Print Label.
+  Fixpoint proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
+    match pf as _ return list Label with
+    | P1 _ p q wfp wfq => pattern2proof p ++ pattern2proof q ++ [lbl "proof-rule-prop-1"]
+    | _ => []
+    end.
+
+  Print oss_inc.
+  Print IncludeStmt.
+  Print ProvableStmt.
+  Print MMProof.
+  
+  Definition proof2database (Γ : Theory) (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
+    [oss_inc (include_stmt "mm/matching-logic.mm")] ++
+    (dependenciesForPattern ϕ)
+      ++ [oss_s (stmt_assert_stmt (as_provable (ps
+                                                  (lbl "the-proof")
+                                                  (tc (constant (ms "|-")))
+                                                  (pattern2mm ϕ)
+                                                  (pf (proof2proof Γ ϕ proof))
+         )))].
+  
+  
   (*
   Definition generateSymbolAxioms : Database :=
     map (axiomForSymbol) (@enum symbols (@sym_eq signature) finiteSymbols).
@@ -358,7 +381,14 @@ Module MMTest.
   Compute (pattern2proof symbolPrinter (patt_imp (patt_sym a) (patt_sym b))).
 
   Compute (dependenciesForPattern symbolPrinter P).
-  Write MetaMath Proof Object File "myfile.mm" (Database_toString (dependenciesForPattern symbolPrinter P)).
+  Write MetaMath Proof Object File "myfile.mm"
+        (Database_toString
+           (proof2database
+              symbolPrinter
+              _
+              _
+              P1_holds
+        )).
 
   
 End MMTest.
