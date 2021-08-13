@@ -9,8 +9,8 @@ Require Import extralibrary.
 
 From stdpp Require Import countable strings.
 
-Inductive evar_name_kind : Type := evar_c {id_ev : string}.
-Inductive svar_name_kind : Type := svar_c {id_sv : string}.
+Inductive evar_name_kind : Set := evar_c {id_ev : string}.
+Inductive svar_name_kind : Set := svar_c {id_sv : string}.
 
 Definition evar_name : Set := (evar_name_kind * Z)%type.
 Definition svar_name : Set := (svar_name_kind * Z)%type.
@@ -312,12 +312,12 @@ Next Obligation.
   intros. simpl in H. inversion H. reflexivity.
 Qed.
 
-Class SymbolsH (SHSymbols : Type) :=
+Class SymbolsH (SHSymbols : Set) :=
   { SHSymbols_eqdec : EqDecision SHSymbols; }.
 
 Section helper.
   Context
-    {SHSymbols : Type}
+    {SHSymbols : Set}
     {SHSymbols_h : SymbolsH SHSymbols}.
 
   Instance SignatureFromSymbols : Signature :=

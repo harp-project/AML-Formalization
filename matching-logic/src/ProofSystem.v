@@ -128,10 +128,10 @@ Qed.
 
   
   (* Proof system for AML ref. snapshot: Section 3 *)
-
+Check Pattern.
   Reserved Notation "theory ⊢ pattern" (at level 1).
   Inductive ML_proof_system (theory : Theory) :
-    Pattern -> Prop :=
+    Pattern -> Set :=
 
   (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
@@ -254,9 +254,9 @@ Proof.
     apply Extensionality_Ensembles.
     constructor. constructor.
     assert (Ensembles.Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
+    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H; clear H.
     unfold Included; intros; apply Union_is_or.
-    inversion H1. left. assumption. right. apply Union_intror. assumption.
+    inversion H. left. assumption. right. apply Union_intror. assumption.
 
   (* FOL reasoning - P2 *)
   * intros Hv evar_val svar_val.
@@ -264,61 +264,80 @@ Proof.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (pattern_interpretation evar_val svar_val xi) as Xxi.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Union_Intes_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    epose proof Union_Transitive (Ensembles.Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
-          (Complement (Domain m) Xphi) Xxi.
-    apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi).
-    apply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite -> H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite -> H2; clear H2.
-    pose proof Union_Symmetric (Complement (Domain m) Xpsi) Xxi.
-    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
-    pose proof Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi).
-    apply Same_set_to_eq in H2; rewrite <- H2; clear H2.
-    pose proof Union_Symmetric (Complement (Domain m) Xphi) Xxi.
-    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles (Domain m) Xxi.
-    apply Same_set_to_eq in H2; rewrite <- H2 at 2; clear H2.
-    pose proof Intersection_Symmetric Xpsi (Complement (Domain m) Xxi).
-    apply Same_set_to_eq in H2; erewrite -> H2; clear H2.
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.    
-    epose proof Union_Transitive; eapply Same_set_to_eq in H2; erewrite <- H2; clear H2.
-    pose proof Intes_Union_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive (Ensembles.Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
+          (Complement (Domain m) Xphi) Xxi).
+    apply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
+    pose proof (Htmp := Intes_Union_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi)).
+    apply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive); eapply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive); eapply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
+    pose proof (Htmp := Intes_Union_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive);
+      eapply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive);
+      eapply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xpsi) Xxi).
+    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi)).
+    apply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
+    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xphi) Xxi).
+    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles (Domain m) Xxi).
+    apply Same_set_to_eq in Htmp; rewrite <- Htmp at 2; clear Htmp.
+    pose proof (Htmp := Intersection_Symmetric Xpsi (Complement (Domain m) Xxi)).
+    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Transitive);
+      eapply Same_set_to_eq in Htmp; erewrite <- Htmp; clear Htmp.    
+    epose proof (Htmp := Union_Transitive);
+      eapply Same_set_to_eq in Htmp; erewrite <- Htmp; clear Htmp.
+    pose proof (Htmp := Intes_Union_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
 
     apply Extensionality_Ensembles.
     constructor. constructor.
-    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
-    unfold Included; intros; unfold In. inversion H2.
+    assert (Htmp: Ensembles.Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
+    { apply Same_set_to_eq. apply Union_Compl_Fullset. }
+    unfold Full. rewrite <- Htmp; clear Htmp.
+    unfold Included; intros x H2; unfold In. inversion H2.
     apply Union_intror; assumption.
     apply Union_introl; apply Union_introl; apply Union_introl; assumption.
 
   (* FOL reasoning - P3 *)
   * intros Hv evar_val svar_val. 
     repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; rewrite -> H0; clear H0.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H0; rewrite -> H0; clear H0.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
     apply Extensionality_Ensembles.
     apply Union_Compl_Fullset.
 
   (* Modus ponens *)
   * intros Hv evar_val svar_val.
-    pose (IHHp2 H0 Hv evar_val svar_val) as e.
+    rename i into wfphi1. rename i0 into wfphi1impphi2.
+    pose (IHHp2 wfphi1impphi2 Hv evar_val svar_val) as e.
     rewrite -> pattern_interpretation_iff_subset in e.
     apply Extensionality_Ensembles.
-    constructor. constructor. rewrite <- (IHHp1 H Hv evar_val svar_val). apply e; assumption.
+    constructor. constructor. rewrite <- (IHHp1 wfphi1 Hv evar_val svar_val). apply e; assumption.
 
   (* Existential quantifier *)
   * intros Hv evar_val svar_val.
@@ -341,6 +360,7 @@ Proof.
 
   (* Existential generalization *)
   * intros Hv evar_val svar_val.
+    rename i into H. rename i0 into H0.
     rewrite pattern_interpretation_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
     { unfold well_formed. simpl. unfold well_formed in H, H0.
@@ -351,7 +371,7 @@ Proof.
       apply andb_true_iff; split; apply andb_true_iff; split; assumption.
     }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
-    assert (forall evar_val svar_val,
+    assert (H2: forall evar_val svar_val,
                Included (Domain m)
                         (pattern_interpretation evar_val svar_val phi1)
                         (pattern_interpretation evar_val svar_val phi2)
@@ -368,7 +388,7 @@ Proof.
                                  (λ e : Domain m, pattern_interpretation
                                                     (update_evar_val x e evar_val) svar_val phi1))).
        { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
-         apply FA_Union_included. unfold Included, Ensembles.In. intros.
+         apply FA_Union_included. unfold Included, Ensembles.In. intros c x1 H3.
          remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
          erewrite interpretation_fresh_evar_open with (y := x) in H3.
          3: { apply evar_is_fresh_in_evar_quantify. }
@@ -383,28 +403,32 @@ Proof.
        }
        unfold Included, Ensembles.In in Hinc. apply Hinc. apply Hphi1.
 
-    -- destruct H3 as [c Hphi2].
-       rewrite pattern_interpretation_free_evar_independent in Hphi2. apply H1.
-       apply Hphi2.
+    -- 
+       destruct H1 as [c Hphi2].
+       rewrite pattern_interpretation_free_evar_independent in Hphi2.
+       { auto. }
+       { apply Hphi2. }
 
   (* Propagation bottom - left *)
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_l; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
+    epose proof (Htmp := app_ext_bot_l); unfold Semantics.Empty in Htmp; rewrite -> Htmp; clear Htmp.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   (* Propagation bottom - right *)
   * intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H0; unfold Semantics.Empty; rewrite -> H0; clear H0.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
     apply Extensionality_Ensembles.
     constructor. constructor.
     unfold Included; intros.
-    epose proof app_ext_bot_r; unfold Semantics.Empty in H1; rewrite -> H1; clear H1.
+    epose proof (Htmp := app_ext_bot_r); unfold Semantics.Empty in Htmp; rewrite -> Htmp; clear Htmp.
     unfold Ensembles.In; unfold Complement; unfold not; contradiction.
 
   (* Propagation disjunction - left *)
@@ -412,23 +436,28 @@ Proof.
     unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
     repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite -> H2; clear H2.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (app_ext (Ensembles.Union (Domain m) Xphi1 Xphi2) Xpsi) as Xext_union.
     apply Extensionality_Ensembles.
     constructor. constructor.
-    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+    assert (Htmp: Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
-    unfold Included; unfold In; intros. inversion H2.
+    { apply Same_set_to_eq; apply Union_Compl_Fullset. }
+    unfold Full. rewrite <- Htmp; clear Htmp.
+    unfold Included; unfold In; intros x H2. inversion H2.
     - left; assumption.
-    - right; subst Xext_union; unfold In; unfold app_ext.
-      destruct H3 as [le [re [Hunion [Hre Happ]]]].
+    - right; subst; unfold In; unfold app_ext.
+      destruct H as [le [re [Hunion [Hre Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
@@ -439,36 +468,39 @@ Proof.
     repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
     simpl.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; unfold Semantics.Empty; rewrite -> H2; clear H2.
-    epose proof Union_Empty_l; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
-    pose proof Compl_Compl_Ensembles; eapply Same_set_to_eq in H2; rewrite -> H2; clear H2.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
+    epose proof (Htmp := Union_Empty_l);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
+    pose proof (Htmp := Compl_Compl_Ensembles);
+      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (app_ext Xpsi (Ensembles.Union (Domain m) Xphi1 Xphi2)) as Xext_union.
     apply Extensionality_Ensembles.
     constructor. constructor.
-    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
+    assert (Htmp: Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
             Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H2; clear H2.
-    unfold Included; unfold In; intros. inversion H2.
+    { apply Same_set_to_eq; apply Union_Compl_Fullset. }
+    unfold Full. rewrite <- Htmp; clear Htmp.
+    unfold Included; unfold In; intros x H2. inversion H2.
     - left; assumption.
-    - right; subst Xext_union; unfold In; unfold app_ext.
-      destruct H3 as [le [re [Hle [Hunion Happ]]]].
+    - right; subst; unfold In; unfold app_ext.
+      destruct H as [le [re [Hle [Hunion Happ]]]].
       inversion Hunion.
       left. unfold In; exists le; exists re; repeat split; assumption.
       right. unfold In; exists le; exists re; repeat split; assumption.
 
   (* Propagation exists - left *)
-  * intros Hv evar_val svar_val. 
-    apply (proof_rule_prop_ex_right_sound theory phi psi (evar_val)
-          (svar_val) Hwf H H0 Hv ).
+      * intros Hv evar_val svar_val.
+        eauto using proof_rule_prop_ex_right_sound.
 
   (* Propagation exists - right *)
-  * intros Hv evar_val svar_val. 
-    apply (proof_rule_prop_ex_left_sound theory phi psi (evar_val)
-          (svar_val) Hwf H H0 Hv).
+      * intros Hv evar_val svar_val.
+        eauto using proof_rule_prop_ex_left_sound.
 
   (* Framing - left *)
   * intros Hv evar_val svar_val. 
@@ -536,11 +568,10 @@ Proof.
     }
 
   (* Set Variable Substitution *)
-  * intros. epose proof (IHHp H Hv ) as IH.
-    unfold well_formed in H.
-    apply andb_true_iff in H. destruct H as [H1 H2].
-    eapply (proof_rule_set_var_subst_sound phi psi H2 H0 ) in IH.
-    exact IH.
+  * intros. epose proof (IHHp ltac:(auto) Hv ) as IH.
+    unfold well_formed in i.
+    apply andb_true_iff in i. destruct i as [H1 H2].
+    eauto using proof_rule_set_var_subst_sound.
 
   (* Pre-Fixpoint *)
   * intros Hv evar_val svar_val.

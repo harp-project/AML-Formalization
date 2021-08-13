@@ -33,4 +33,12 @@ let
       } ) { } ;
 
     metamath = pkgs.metamath;
-in { coq = ncoq; inherit equations; inherit metamath; inherit mllib; }
+    ocaml = coq.ocamlPackages.ocaml;
+    camlp5 = coq.ocamlPackages.camlp5;
+    findlib = ncoq.ocamlPackages.findlib;
+    zarith = ncoq.ocamlPackages.zarith;
+
+in { coq = ncoq; inherit equations; inherit metamath; inherit mllib;
+  inherit ocaml; inherit camlp5;
+  inherit findlib; inherit zarith;
+}

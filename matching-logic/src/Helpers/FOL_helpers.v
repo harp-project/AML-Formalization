@@ -1314,10 +1314,10 @@ Qed. *)
   Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
 
 
-  Coercion of_MyGoal (MG : MyGoal) : Prop := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+  Coercion of_MyGoal (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
 
 
-  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) <-> (Γ ⊢ goal).
+  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
   Proof. reflexivity. Qed.
 
   Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
@@ -1342,7 +1342,7 @@ Qed. *)
     apply nested_const_middle; auto.
   Qed.  
   
-  Ltac toMyGoal := rewrite -of_MyGoal_from_goal; unfold MyGoal_from_goal.
+  Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
   Ltac fromMyGoal := unfold of_MyGoal; simpl.
   Ltac mgIntro := apply MyGoal_intro; simpl.
   Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
@@ -1633,9 +1633,9 @@ Qed. *)
     mkMyGoal Γ (l ++ [h]) g ->
     mkMyGoal Γ l g.
   Proof.
-    intros.
-    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H2. all: auto.
-  Qed.  
+    intros wfl wfg wfh H1 H2.
+    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
+  Qed.
   
   Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
     match goal with
@@ -2241,11 +2241,11 @@ Qed.
   Lemma pf_iff_iff Γ A B:
     well_formed A ->
     well_formed B ->
-    (Γ ⊢ (A <---> B)) <-> ((Γ ⊢ (A ---> B)) /\ (Γ ⊢ (B ---> A))).
+    prod ((Γ ⊢ (A <---> B)) -> (prod (Γ ⊢ (A ---> B)) (Γ ⊢ (B ---> A))))
+    ( (prod (Γ ⊢ (A ---> B))  (Γ ⊢ (B ---> A))) -> (Γ ⊢ (A <---> B))).
   Proof.
     intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
   Qed.
-  
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
@@ -2262,8 +2262,11 @@ Qed.
     Γ ⊢ (B <---> A).
   Proof.
     intros wfA wfB H.
-    apply pf_iff_iff in H; auto. apply pf_iff_iff; auto.
-    exact (conj (proj2 H) (proj1 H)).
+    pose proof (H2 := H).
+    apply pf_iff_proj2 in H2; auto.
+    rename H into H1.
+    apply pf_iff_proj1 in H1; auto.
+    apply pf_iff_split; auto.
   Qed.
 
   Lemma pf_iff_equiv_trans Γ A B C :
@@ -2574,22 +2577,23 @@ Qed.
       auto 10.
   Qed.
 
-  Lemma MyGoal_applyMeta Γ l r r':
+  Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
+    forall l,
     wf l ->
     well_formed r ->
     well_formed r' ->
     mkMyGoal Γ l r' ->
     mkMyGoal Γ l r.
   Proof.
-    intros Himp wfl wfr wfr' H.
+    intros Himp l wfl wfr wfr' H.
     eapply prf_weaken_conclusion_iter_meta_meta.
     4: { apply Himp; auto. }
     all: auto.
   Qed.
 
   Tactic Notation "mgApplyMeta" uconstr(t) :=
-    eapply (MyGoal_applyMeta _ _ _ _ t).
+    unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
 
   Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
   Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).

@@ -1,0 +1,33 @@
+DECLARE PLUGIN "mmpf_plugin"
+
+{
+
+open Stdarg
+
+let mmpf_write fmt s =
+  Printf.fprintf fmt "%s" s
+
+let mmpf_writeFile fname s =
+  let oc = open_out fname in
+  mmpf_write oc s;
+  close_out oc
+
+let strip_quotes (s : string) : string =
+  if (String.length s < 9) then s else (String.sub s 1 (String.length s - 9))
+
+}
+
+VERNAC COMMAND EXTEND MmpfWriteProofObject CLASSIFIED AS SIDEFF
+| ["Write" "MetaMath" "Proof" "Object" "File" string(fname) constr(e)] -> {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let e1 : EConstr.constr = Reductionops.nf_all env sigma t in
+      let s = Printer.pr_leconstr_env env sigma e1 in
+
+    mmpf_writeFile fname  (strip_quotes (Pp.string_of_ppcmds s))
+  }
+END
+
+
+
