@@ -1,6 +1,9 @@
 all: Makefile.coq
 	@+$(MAKE) -f Makefile.coq all
 
+test: all
+	./check-generated-proof-objects.sh
+
 html: Makefile.coq
 	@+$(MAKE) -f Makefile.coq html COQDOCEXTRAFLAGS="--gallina --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp"
 
