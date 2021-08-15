@@ -57,7 +57,7 @@ Section FOL_helpers.
                    ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _).
         Unshelve.
         all: auto 10.
-  Qed.
+  Defined.
 
 
 
@@ -69,7 +69,7 @@ Section FOL_helpers.
     - eapply (P4m _ A A _ _).
       Unshelve.
       all: auto 10.
-  Qed.
+  Defined.
 
   Lemma reorder (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
@@ -106,7 +106,7 @@ Section FOL_helpers.
       + eapply(P2 _ ABC (B ---> A ---> B) (B ---> A ---> C) _ _ _).
         Unshelve.
         all: try unfold ABC; auto 10.
-  Qed.
+  Defined.
 
   Lemma reorder_meta (Γ : Theory) {A B C : Pattern} :
     well_formed A -> well_formed B -> well_formed C ->  
@@ -130,7 +130,7 @@ Section FOL_helpers.
           -- exact (P2 _ B (A ---> B) (A ---> C) H0 H3 H4).
              Unshelve.
              all:auto.
-  Qed.
+  Defined.
 
   Lemma syllogism (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C)).
@@ -146,7 +146,7 @@ Section FOL_helpers.
       + eapply (P2 _ (B ---> C) (A ---> B ---> C) ((A ---> B) ---> A ---> C) _ _ _).
         Unshelve.
         all: auto 10.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve syllogism : core.
   
@@ -161,7 +161,7 @@ Section FOL_helpers.
       + eapply (reorder_meta _ _ _ _). exact (syllogism _ A B C H H0 H1).
         Unshelve.
         all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve syllogism_intro : core.
   
@@ -179,7 +179,7 @@ Section FOL_helpers.
         * eapply (syllogism _ A ((A ---> B) ---> A) ((A ---> B) ---> B) _ _ _).
           Unshelve.
           all: auto 10.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve modus_ponens : core.
   
@@ -192,7 +192,7 @@ Section FOL_helpers.
     exact (modus_ponens _ A Bot H H0).
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve not_not_intro : core.
 
@@ -205,7 +205,7 @@ Section FOL_helpers.
     - eapply (P1 _ B A _ _).
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
@@ -226,7 +226,7 @@ Section FOL_helpers.
     Unshelve.
     all: auto.
     auto 10.
-  Qed.
+  Defined.
 
 
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
@@ -247,7 +247,7 @@ Section FOL_helpers.
     eapply (Modus_ponens Γ _ _ _ _ m8 m7).
     Unshelve.
     all: auto 10.
-  Qed.
+  Defined.
 
   Lemma conj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A and B)).
@@ -291,7 +291,7 @@ Section FOL_helpers.
     exact t7.
     Unshelve.
     all: auto 10.
-  Qed.
+  Defined.
 
 
   Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
@@ -305,7 +305,7 @@ Section FOL_helpers.
       + exact (conj_intro _ A B H H0).
         Unshelve.
         all: auto.
-  Qed.
+  Defined.
   
   (* Lemma conj_intro_meta_e (Γ : Theory) (A B : Pattern) : *) 
   Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
@@ -324,7 +324,7 @@ Section FOL_helpers.
     exact t3.
     Unshelve.
     all: auto 10.
-  Qed.
+  Defined.
 
   Lemma disj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A or B).
@@ -337,7 +337,7 @@ Section FOL_helpers.
       + exact (disj _ A B H H0).
         Unshelve.
         all: auto.
-  Qed.
+  Defined.
 
   Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
@@ -357,7 +357,7 @@ Section FOL_helpers.
       + eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
         Unshelve.
         all: auto.
-  Qed.
+  Defined.
 
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (Bot ---> A).
@@ -374,7 +374,7 @@ Section FOL_helpers.
     - eapply (P4 _ A Bot _ _).
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (¬B ---> ¬A) ---> B).
@@ -385,7 +385,7 @@ Section FOL_helpers.
     exact (reorder_meta Γ H1 H H0 (P4 _ B A H0 H)).
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
@@ -396,7 +396,7 @@ Section FOL_helpers.
     exact (P1 _ B (¬A) H0 H1).
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve disj_right_intro : core.
   
@@ -407,7 +407,7 @@ Section FOL_helpers.
     eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot _ _) (bot_elim _ B _)).
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve disj_left_intro : core.
 
@@ -423,7 +423,7 @@ Section FOL_helpers.
     eapply disj_right_intro; assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -437,7 +437,7 @@ Section FOL_helpers.
     eapply disj_left_intro; assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (¬(¬A) ---> A).
@@ -445,7 +445,7 @@ Section FOL_helpers.
     intros.
     unfold patt_not.
     exact (P3 Γ A H).
-  Qed.
+  Defined.
 
   #[local] Hint Resolve not_not_elim : core.
 
@@ -458,7 +458,7 @@ Section FOL_helpers.
     pose proof (H := not_not_elim Γ A wfA).
     eapply Modus_ponens. 4: apply H.
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve not_not_elim_meta : core.
 
@@ -471,7 +471,7 @@ Section FOL_helpers.
     - eapply (P4 _ B A _ _).
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> 
@@ -483,7 +483,7 @@ Section FOL_helpers.
     - exact (double_neg_elim _ A B H H0).
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (¬B ---> ¬A)).
@@ -500,7 +500,7 @@ Section FOL_helpers.
       + eapply (P4 _ (¬A) (¬B) _ _).
         Unshelve.
         all: auto.
-  Qed.
+  Defined.
 
   Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -513,7 +513,7 @@ Section FOL_helpers.
     eapply Modus_ponens.
     4: apply H.
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve P4_rev_meta' : core.
   
@@ -527,7 +527,7 @@ Section FOL_helpers.
     - eapply (P4m _ _ _ _ _).
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((¬¬A) ---> (¬¬B)).
@@ -542,7 +542,7 @@ Section FOL_helpers.
     exact S2.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((¬¬A) ---> (¬¬B))).
@@ -571,7 +571,7 @@ Section FOL_helpers.
     - assumption.
       Unshelve.
       all: auto 10.
-  Qed.
+  Defined.
 
 
   Lemma contraposition (Γ : Theory) (A B : Pattern) : 
@@ -588,7 +588,7 @@ Section FOL_helpers.
     - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma or_comm_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B ->
@@ -607,7 +607,7 @@ Section FOL_helpers.
     - exact P4.
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ A -> Γ ⊢ (¬( ¬A )).
@@ -619,7 +619,7 @@ Section FOL_helpers.
     assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma P5i (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (¬ A ---> (A ---> B)).
@@ -634,7 +634,7 @@ Section FOL_helpers.
     assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi -> Γ ⊢ (Bot ---> phi).
@@ -649,7 +649,7 @@ Section FOL_helpers.
     - assumption.
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
 
   (* Goal  forall (A B : Pattern) (Γ : Theory) , well_formed A -> well_formed B ->
@@ -663,7 +663,7 @@ Proof.
   exact m2.
   Unshelve.
   all: auto.
-Qed. *)
+Defined. *)
 
   (*Was an axiom in AML_definition.v*)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
@@ -679,7 +679,7 @@ Qed. *)
       
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   (*Was an axiom in AML_definition.v*)
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern):
@@ -691,7 +691,7 @@ Qed. *)
     - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
       Unshelve.
       all: auto.
-  Qed.
+  Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
     well_formed A -> Γ ⊢ A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))).
@@ -710,7 +710,7 @@ Qed. *)
     2,4:assert (@well_formed Σ (¬ A)).
     6,7:assert (@well_formed Σ (Bot)).
     all: auto.
-  Qed.
+  Defined.
 
 
   Lemma A_implies_not_not_A_alt_Γ (G : Theory) (A : Pattern) :
@@ -724,7 +724,7 @@ Qed. *)
     assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   (* Lemma equiv_implies_eq (Γ : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> Γ ⊢ (A <---> B) -> Γ ⊢ ()
@@ -747,7 +747,7 @@ Qed. *)
     Unshelve.
     4: assert (@well_formed Σ (Bot)).
     all: auto.
-  Qed.
+  Defined.
 
   Lemma not_not_A_ctx_implies_A (Γ : Theory) (C : Application_context) (A : Pattern):
     well_formed A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))) -> Γ ⊢ A.
@@ -777,7 +777,7 @@ Qed. *)
     assumption.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma modus_tollens Γ A B :
     well_formed A ->
@@ -789,7 +789,7 @@ Qed. *)
     eapply Modus_ponens.
     4: apply contraposition.
     all: auto.
-  Qed.
+  Defined.
   
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
@@ -801,7 +801,7 @@ Qed. *)
     assert (Γ ⊢ ((A ---> ¬¬B) ---> (¬¬B ---> B) ---> (A ---> B))) by auto.
     apply reorder_meta in H2; auto.
     eapply Modus_ponens. 4: apply H2. all: auto 10.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve A_impl_not_not_B : core.
 
@@ -818,7 +818,7 @@ Qed. *)
     - simpl. exact wfg.
     - simpl. unfold wf in wfxs. simpl in wfxs.
       apply andb_prop in wfxs. destruct wfxs. auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve well_formed_foldr : core.
   
@@ -829,7 +829,7 @@ Qed. *)
     unfold wf. intros H.
     rewrite map_take.
     rewrite foldr_andb_true_take; auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve wf_take : core.
 
@@ -840,7 +840,7 @@ Qed. *)
     unfold wf. intros H.
     rewrite map_drop.
     rewrite foldr_andb_true_drop; auto.
-  Qed.
+  Defined.
   
   #[local] Hint Resolve wf_drop : core.
 
@@ -862,7 +862,7 @@ Qed. *)
       unfold wf in IHn.
       rewrite wfp0.
       rewrite IHn; auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve wf_insert : core.
 
@@ -871,7 +871,7 @@ Qed. *)
     wf xs.
   Proof.
     unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve wf_tail' : core.
 
@@ -884,7 +884,7 @@ Qed. *)
     unfold wf. simpl. rewrite wfx.
     unfold wf in wfxs. rewrite wfxs.
     reflexivity.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve wf_cons : core.
   
@@ -900,7 +900,7 @@ Qed. *)
     rewrite wfys.
     rewrite wfxs.
     reflexivity.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve wf_app : core.
 
@@ -912,7 +912,7 @@ Qed. *)
   Proof.
     intros wfA wfB wfB'.
     apply reorder_meta; auto.
-  Qed.
+  Defined.
   
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
@@ -925,7 +925,7 @@ Qed. *)
     assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B'))) by auto.
     apply reorder_meta in H1; auto.
     eapply Modus_ponens. 4: apply H1. all: auto 10.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
@@ -942,7 +942,7 @@ Qed. *)
       all: auto.
       apply well_formed_imp.
       all: apply well_formed_foldr; auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_meta Γ l g g':
     wf l ->
@@ -955,7 +955,7 @@ Qed. *)
     eapply Modus_ponens.
     4: apply prf_weaken_conclusion_iter.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_meta_meta Γ l g g':
     wf l ->
@@ -968,7 +968,7 @@ Qed. *)
     intros wfl wfg wfg' gimpg' H.
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_meta. 3: apply H.
     all: auto.
-  Qed.
+  Defined.
     
   Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
     well_formed A ->
@@ -980,7 +980,7 @@ Qed. *)
   Proof.
     intros.
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H3. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_strenghten_premise Γ A A' B :
     well_formed A ->
@@ -989,7 +989,7 @@ Qed. *)
     Γ ⊢ ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))).
   Proof.
     intros wfA wfA' wfB. auto.
-  Qed.
+  Defined.
 
   Lemma prf_strenghten_premise_iter Γ l n h h' g :
     wf l ->
@@ -1039,7 +1039,7 @@ Qed. *)
       { apply prf_weaken_conclusion; subst; auto. }
 
       eapply syllogism_intro. 5: apply prf. all: subst; auto 10.
-  Qed.
+  Defined.
 
 
   
@@ -1053,7 +1053,7 @@ Qed. *)
     intros wfA wfA' wfB A'impA.
     assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B))) by auto.
     eapply Modus_ponens. 4: apply H1. all: auto 10.
-  Qed.
+  Defined.
 
   Lemma prf_strenghten_premise_meta_meta Γ A A' B :
     well_formed A ->
@@ -1065,7 +1065,7 @@ Qed. *)
   Proof.
     intros wfA wfA' wfB A'impA AimpB.
     eapply Modus_ponens. 4: apply prf_strenghten_premise_meta. 3: apply AimpB. all: auto.
-  Qed.
+  Defined.
   
   Lemma prf_strenghten_premise_iter_meta Γ l n h h' g :
     wf l ->
@@ -1081,7 +1081,7 @@ Qed. *)
     4: apply prf_strenghten_premise_iter.
     3: apply H4.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_strenghten_premise_iter_meta_meta Γ l n h h' g :
     wf l ->
@@ -1097,7 +1097,7 @@ Qed. *)
     eapply Modus_ponens.
     4: eapply prf_strenghten_premise_iter_meta.
     8: apply H3. all: auto.
-  Qed.
+  Defined.
 
   (* TODO rename *)
   Lemma rewrite_under_implication Γ g g':
@@ -1114,7 +1114,7 @@ Qed. *)
     assert (H3 : Γ ⊢ (((g ---> g') ---> g) ---> ((g ---> g') ---> g'))).
     { eapply Modus_ponens. 4: apply H2. all: auto. }
     eapply Modus_ponens. 4: apply H3. all: auto.
-  Qed.
+  Defined.
 
   Example example_nested_const Γ a b c:
     well_formed a ->
@@ -1128,7 +1128,7 @@ Qed. *)
     assert (H2: Γ ⊢ (a ---> (c ---> a))) by auto using P1.
     eapply (syllogism_intro _ _ _ _ _ _ _ H2 H1).
     Unshelve. all: auto.
-  Qed.
+  Defined.
 
   (* This will form a base for the tactic 'exact 0' *)
   Lemma nested_const Γ a l:
@@ -1145,7 +1145,7 @@ Qed. *)
       assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l)))) by auto using P1.
       eapply syllogism_intro.
       5: apply H1. all: auto.
-  Qed.
+  Defined.
 
   Lemma nested_const_middle Γ a l₁ l₂:
     well_formed a ->
@@ -1170,7 +1170,7 @@ Qed. *)
       unfold wf in H. apply andb_prop in H. destruct H as [wfx wfxs].
       apply reorder_meta; auto.
       eapply prf_strenghten_premise_meta_meta. 4: apply IHl₁. all: auto using P1.
-  Qed.
+  Defined.
   
   Lemma prf_reorder_iter Γ a b g l₁ l₂:
     well_formed a ->
@@ -1187,7 +1187,7 @@ Qed. *)
       unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁).
       eapply prf_weaken_conclusion_meta; auto.
-  Qed.
+  Defined.
 
   Lemma prf_reorder_iter_meta Γ a b g l₁ l₂:
     well_formed a ->
@@ -1203,7 +1203,7 @@ Qed. *)
     eapply Modus_ponens.
     4: { apply prf_reorder_iter; auto. }
     all: auto 10.
-  Qed.
+  Defined.
   
   
   (*
@@ -1225,7 +1225,7 @@ Qed. *)
     eapply Modus_ponens.
     4: { apply A_impl_not_not_B; auto. }
     all: auto.
-  Qed.
+  Defined.
 
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
@@ -1242,7 +1242,7 @@ Qed. *)
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
@@ -1259,7 +1259,7 @@ Qed. *)
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma pf_conj_elim_l_meta Γ A B :
     well_formed A ->
@@ -1272,7 +1272,7 @@ Qed. *)
     4: apply pf_conj_elim_l.
     3: apply H1.
     all: auto.
-  Qed.
+  Defined.
   
   Lemma pf_conj_elim_r_meta Γ A B :
     well_formed A ->
@@ -1285,7 +1285,7 @@ Qed. *)
     4: apply pf_conj_elim_r.
     3: apply H1.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma A_or_notA Γ A :
     well_formed A ->
@@ -1294,7 +1294,7 @@ Qed. *)
     intros wfA.
     unfold patt_or.
     auto.
-  Qed.
+  Defined.
 
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -1308,7 +1308,7 @@ Qed. *)
     assert (H2 : Γ ⊢ (A ---> ¬ B) ---> ¬ A).
     { eapply Modus_ponens. 4: apply H1. all: auto. }
     eapply Modus_ponens. 4: apply H2. all: auto.
-  Qed.
+  Defined.
 
   Record MyGoal : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
 
@@ -1321,7 +1321,7 @@ Qed. *)
 
 
   Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
-  Proof. reflexivity. Qed.
+  Proof. reflexivity. Defined.
 
   Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
     mkMyGoal Γ (l ++ [x]) g ->
@@ -1329,7 +1329,7 @@ Qed. *)
   Proof.
     intros H.
     unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
-  Qed.
+  Defined.
 
   Lemma MyGoal_exact Γ l g n:
     wf l ->
@@ -1343,7 +1343,7 @@ Qed. *)
     rewrite -Heq.
     unfold of_MyGoal. simpl.
     apply nested_const_middle; auto.
-  Qed.  
+  Defined.  
 
 End FOL_helpers.
 
@@ -1407,7 +1407,7 @@ Section FOL_helpers.
     intros wfg wfg' gimpg' H.
     unfold of_MyGoal in *. simpl in *.
     eauto using prf_weaken_conclusion_iter_meta_meta.
-  Qed.
+  Defined.
   
   Lemma prf_contraction Γ a b:
     well_formed a ->
@@ -1418,7 +1418,7 @@ Section FOL_helpers.
     assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
     assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b)))) by auto using P2.
     eapply Modus_ponens. 4: apply H2. all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve prf_contraction : core.
   
@@ -1442,7 +1442,7 @@ Section FOL_helpers.
     rewrite Hiter. 
     eapply prf_weaken_conclusion_iter_meta_meta.
     4: apply H4. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
     well_formed a ->
@@ -1455,7 +1455,7 @@ Section FOL_helpers.
     eapply Modus_ponens.
     4: apply prf_weaken_conclusion_under_implication.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c:
     well_formed a ->
@@ -1469,7 +1469,7 @@ Section FOL_helpers.
     eapply Modus_ponens.
     4: apply prf_weaken_conclusion_under_implication_meta. 3: apply H2.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
     wf l ->
@@ -1485,7 +1485,7 @@ Section FOL_helpers.
     pose proof (H2 := prf_weaken_conclusion_under_implication Γ a b c ltac:(subst;auto) ltac:(subst;auto) ltac:(subst; auto)).
     apply reorder_meta in H2. 2,3,4: subst;auto.
     eapply Modus_ponens. 4: apply H2. all: subst;auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g':
     wf l ->
@@ -1497,7 +1497,7 @@ Section FOL_helpers.
     intros wfl wfg wfg' H.
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_under_implication.
     all: auto.
-  Qed.
+  Defined.
   
   Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g':
     wf l ->
@@ -1507,7 +1507,7 @@ Section FOL_helpers.
     mkMyGoal Γ ((g ---> g') :: l) g'.
   Proof.
     apply prf_weaken_conclusion_iter_under_implication_meta.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
     wf l₁ ->
@@ -1522,7 +1522,7 @@ Section FOL_helpers.
     - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
       destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
       eapply prf_weaken_conclusion_meta. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g':
     wf l₁ ->
@@ -1536,7 +1536,7 @@ Section FOL_helpers.
     eapply Modus_ponens.
     4: apply prf_weaken_conclusion_iter_under_implication_iter.
     all: auto 10.
-  Qed.
+  Defined.
 
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
@@ -1548,7 +1548,7 @@ Section FOL_helpers.
     mkMyGoal Γ (l₁ ++ (g ---> g') :: l₂) g'.
   Proof.
     apply prf_weaken_conclusion_iter_under_implication_iter_meta.
-  Qed.
+  Defined.
 
   Lemma MyGoal_weakenConclusion_under_nth Γ l n g g':
     wf l ->
@@ -1561,7 +1561,7 @@ Section FOL_helpers.
     intros wfl wfg wfg' ln H.
     pose proof (Hmid := take_drop_middle l n (g ---> g') ln).
     rewrite -Hmid in H. rewrite -Hmid. apply MyGoal_weakenConclusion; auto.
-  Qed.
+  Defined.
 
   Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
     match goal with
@@ -1588,7 +1588,7 @@ Section FOL_helpers.
     mgApply' 0 7.
     mgExactn 4.
     auto 8.
-  Qed.
+  Defined.
 
   Lemma prf_add_assumption Γ a b :
     well_formed a ->
@@ -1599,7 +1599,7 @@ Section FOL_helpers.
     intros wfa wfb H.
     eapply Modus_ponens.
     4: apply P1. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_impl_distr_meta Γ a b c:
     well_formed a ->
@@ -1610,7 +1610,7 @@ Section FOL_helpers.
   Proof.
     intros wfa wfb wfc H.
     eapply Modus_ponens. 4: apply P2. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
     wf l ->
@@ -1634,7 +1634,7 @@ Section FOL_helpers.
 
       eapply prf_weaken_conclusion_meta_meta.
       4: apply H3. all: auto 10.
-  Qed.
+  Defined.
 
   Lemma prf_add_lemma_under_implication_meta Γ l g h:
     wf l ->
@@ -1644,7 +1644,7 @@ Section FOL_helpers.
     Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)).
   Proof.
     intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
-  Qed.
+  Defined.
 
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
     wf l ->
@@ -1656,7 +1656,7 @@ Section FOL_helpers.
   Proof.
     intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
     3: apply H3. all: auto 7.
-  Qed.
+  Defined.
 
   Lemma myGoal_assert Γ l g h:
     wf l ->
@@ -1668,7 +1668,7 @@ Section FOL_helpers.
   Proof.
     intros wfl wfg wfh H1 H2.
     eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
-  Qed.
+  Defined.
   
   Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
     match goal with
@@ -1690,7 +1690,7 @@ Section FOL_helpers.
     
     eapply prf_strenghten_premise_meta_meta. 4: apply H2. all: auto.
     eapply prf_weaken_conclusion_meta_meta. 4: apply not_not_elim. all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve P4i' : core.
 
@@ -1698,13 +1698,13 @@ Section FOL_helpers.
     p = fold_right patt_imp p [].
   Proof.
     reflexivity.
-  Qed.
+  Defined.
 
   Lemma consume p q l:
     fold_right patt_imp (p ---> q) l = fold_right patt_imp q (l ++ [p]).
   Proof.
     rewrite foldr_app. reflexivity.
-  Qed.
+  Defined.
   
   
   Lemma prf_disj_elim Γ p q r:
@@ -1719,7 +1719,7 @@ Section FOL_helpers.
     { unfold patt_or. apply P4i'; auto. }
     rewrite -> tofold in H1. rewrite 3!consume in H1.
     eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H. all: auto 10.
-  Qed.
+  Defined.
 
 
   Lemma prf_disj_elim_meta Γ p q r:
@@ -1731,7 +1731,7 @@ Section FOL_helpers.
   Proof.
     intros. eapply Modus_ponens. 4: apply prf_disj_elim.
     all: auto.
-  Qed.
+  Defined.
   
   
   Lemma prf_disj_elim_meta_meta Γ p q r:
@@ -1744,7 +1744,7 @@ Section FOL_helpers.
   Proof.
     intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta.
     all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_disj_elim_meta_meta_meta Γ p q r:
     well_formed p ->
@@ -1757,7 +1757,7 @@ Section FOL_helpers.
   Proof.
     intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
     all: auto.
-  Qed.
+  Defined.
   
 
   Lemma prf_add_proved_to_assumptions Γ l a g:
@@ -1791,7 +1791,7 @@ Section FOL_helpers.
       
       eapply prf_strenghten_premise_meta_meta. 5: apply H. all: auto.
       apply reorder; auto.
-  Qed.
+  Defined.
 
   Lemma prf_add_proved_to_assumptions_meta Γ l a g:
     wf l ->
@@ -1806,7 +1806,7 @@ Section FOL_helpers.
     4: eapply prf_add_proved_to_assumptions.
     3: apply H3.
     all: auto.
-  Qed.
+  Defined.
   
   Lemma MyGoal_add Γ l g h:
     Γ ⊢ h ->
@@ -1819,7 +1819,7 @@ Section FOL_helpers.
     intros.
     apply prf_add_proved_to_assumptions_meta with (a := h).
     all: auto.
-  Qed.
+  Defined.
 
   Tactic Notation "mgAdd" constr(n) :=
     match goal with
@@ -1839,7 +1839,7 @@ Section FOL_helpers.
     mgAdd H3; [auto|auto|auto|].
     mgAdd H2; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
-  Qed.
+  Defined.
     
   Lemma not_concl Γ p q:
     well_formed p ->
@@ -1854,7 +1854,7 @@ Section FOL_helpers.
     simpl.
     fold (¬ q).
     apply modus_ponens; auto.
-  Qed.
+  Defined.
 
   Lemma helper Γ p q r:
     well_formed p ->
@@ -1869,7 +1869,7 @@ Section FOL_helpers.
     apply prf_reorder_iter_meta; auto.
     simpl.
     apply modus_ponens; auto.
-  Qed.
+  Defined.
 
   Lemma reorder_last_to_head Γ g x l:
     wf l ->
@@ -1893,7 +1893,7 @@ Section FOL_helpers.
         with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
       apply prf_reorder_iter_meta; auto.
       simpl. auto.
-  Qed.
+  Defined.
 
   Lemma reorder_last_to_head_meta Γ g x l:
     wf l ->
@@ -1906,7 +1906,7 @@ Section FOL_helpers.
     eapply Modus_ponens.
     4: apply reorder_last_to_head.
     all: auto 10.
-  Qed.
+  Defined.
   
   (* Iterated modus ponens.
      For l = [x₁, ..., xₙ], it says that
@@ -1929,7 +1929,7 @@ Section FOL_helpers.
       4: { apply reorder_last_to_head; auto. }
       all: auto 10.
       simpl. apply modus_ponens; auto.
-  Qed.
+  Defined.
   
 
   
@@ -1957,7 +1957,7 @@ Section FOL_helpers.
     clear nq.
     mgApply' 5 10. mgExactn 2; auto 10.
     Unshelve. all: auto 10.
-  Qed.
+  Defined.
 
   
   Lemma and_impl' Γ p q r:
@@ -1988,7 +1988,7 @@ Section FOL_helpers.
     mgApply' 4 10. mgExactn 3; auto 10.
     Unshelve.
     all: auto 10.
-  Qed.
+  Defined.
   
 
   Lemma prf_disj_elim_iter Γ l p q r:
@@ -2024,7 +2024,7 @@ Section FOL_helpers.
       mgApply' 6 14.
       mgExactn 5; auto 15.
       Unshelve. all: auto 15.
-  Qed.
+  Defined.
 
   
   Lemma prf_disj_elim_iter_2 Γ l₁ l₂ p q r:
@@ -2092,7 +2092,7 @@ Section FOL_helpers.
       replace (l₁ ++ a :: q :: l₂) with ((l₁ ++ [a]) ++ [q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
       replace (l₁ ++ a :: (p or q) :: l₂) with ((l₁ ++ [a]) ++ [p or q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
       apply IHl₂; auto.
-Qed.
+Defined.
 
   Lemma prf_disj_elim_iter_2_meta Γ l₁ l₂ p q r:
     wf l₁ ->
@@ -2110,7 +2110,7 @@ Qed.
     eapply Modus_ponens.
     4: { apply prf_disj_elim_iter_2; auto. }
     all: auto 10.
-  Qed.
+  Defined.
   
   Lemma prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r:
     wf l₁ ->
@@ -2126,7 +2126,7 @@ Qed.
     eapply Modus_ponens.
     4: { apply prf_disj_elim_iter_2_meta; auto. }
     all: auto 10.
-  Qed.
+  Defined.
 
   Lemma MyGoal_disj_elim Γ l₁ l₂ p q r:
     wf l₁ ->
@@ -2140,7 +2140,7 @@ Qed.
   Proof.
     intros.
     apply prf_disj_elim_iter_2_meta_meta; auto.
-  Qed.
+  Defined.
 
   Tactic Notation "mgDestruct" constr(n) :=
     match goal with
@@ -2215,7 +2215,7 @@ Qed.
     { eapply Modus_ponens. 4: apply H5. all: auto. }
     auto.
     Unshelve. all: auto.
-  Qed.
+  Defined.
     
   Lemma pf_or_elim Γ A B C :
     well_formed A ->
@@ -2237,7 +2237,7 @@ Qed.
     assert (H3: Γ ⊢ (¬ A ---> C)).
     { eapply Modus_ponens. 4: apply H2. all: auto. }
     eapply conclusion_anyway_meta. 4: apply H3. all: auto.
-  Qed.
+  Defined.
   
   Lemma pf_iff_split Γ A B:
     well_formed A ->
@@ -2249,7 +2249,7 @@ Qed.
     intros wfA wfB AimplB BimplA.
     unfold patt_iff.
     apply conj_intro_meta; auto.
-  Qed.
+  Defined.
 
   Lemma pf_iff_proj1 Γ A B:
     well_formed A ->
@@ -2259,7 +2259,7 @@ Qed.
   Proof.
     intros. unfold patt_iff in H1.
     apply pf_conj_elim_l_meta in H1; auto.
-  Qed.
+  Defined.
 
   Lemma pf_iff_proj2 Γ A B:
     well_formed A ->
@@ -2269,7 +2269,7 @@ Qed.
   Proof.
     intros. unfold patt_iff in H1.
     apply pf_conj_elim_r_meta in H1; auto.
-  Qed.
+  Defined.
 
   Lemma pf_iff_iff Γ A B:
     well_formed A ->
@@ -2278,7 +2278,7 @@ Qed.
     ( (prod (Γ ⊢ (A ---> B))  (Γ ⊢ (B ---> A))) -> (Γ ⊢ (A <---> B))).
   Proof.
     intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
-  Qed.
+  Defined.
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
@@ -2286,7 +2286,7 @@ Qed.
   Proof.
     intros.
     apply pf_iff_split; auto.
-  Qed.
+  Defined.
 
   Lemma pf_iff_equiv_sym Γ A B :
     well_formed A ->
@@ -2300,7 +2300,7 @@ Qed.
     rename H into H1.
     apply pf_iff_proj1 in H1; auto.
     apply pf_iff_split; auto.
-  Qed.
+  Defined.
 
   Lemma pf_iff_equiv_trans Γ A B C :
     well_formed A ->
@@ -2315,7 +2315,7 @@ Qed.
     apply pf_iff_iff in BeqC; auto. destruct BeqC as [BimpC CimpB].
     apply pf_iff_iff; auto.
     split; eauto.
-  Qed.
+  Defined.
 
   Lemma prf_conclusion Γ a b:
     well_formed a ->
@@ -2324,7 +2324,7 @@ Qed.
     Γ ⊢ (a ---> b).
   Proof.
     intros. eapply Modus_ponens. 4: apply P1. all: auto.
-  Qed.
+  Defined.
   
 
   Lemma prf_equiv_congruence_implicative_ctx Γ p q C:
@@ -2424,7 +2424,7 @@ Qed.
           mgApply' 0 5. 1,2,3: subst; auto.
           mgApply' 1 5. 1,2: subst; auto.
           mgExactn 2; subst; auto.      
-  Qed.
+  Defined.
       
     
   Lemma prf_prop_bott_iff Γ AC:
@@ -2451,7 +2451,7 @@ Qed.
         eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3: auto.
       + apply bot_elim; auto.
         Unshelve. all: auto.
-  Qed.
+  Defined.
   
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
@@ -2491,7 +2491,7 @@ Qed.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
         * apply Framing_right.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-  Qed.
+  Defined.
 
   Lemma prf_prop_ex_iff Γ AC p:
     well_formed (patt_exists p) ->
@@ -2576,7 +2576,7 @@ Qed.
       mgAdd (not_not_elim Γ (¬ p1) ltac:(auto)); auto 10.
       mgApply' 0 10.
       mgExactn 4. auto 10.
-  Qed.
+  Defined.
 
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
@@ -2608,7 +2608,7 @@ Qed.
       mgApply' 0 10.
       mgExactn 4.
       auto 10.
-  Qed.
+  Defined.
 
   Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
@@ -2623,7 +2623,7 @@ Qed.
     eapply prf_weaken_conclusion_iter_meta_meta.
     4: { apply Himp; auto. }
     all: auto.
-  Qed.
+  Defined.
 
   Tactic Notation "mgApplyMeta" uconstr(t) :=
     unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
@@ -2676,7 +2676,7 @@ Qed.
         mgApply' 0 10.
         mgExactn 2; auto 10.
         Unshelve. all: auto.
-  Qed.
+  Defined.
   
 
   Lemma or_of_equiv_is_equiv Γ p q p' q':
@@ -2706,7 +2706,7 @@ Qed.
       + mgLeft; auto.
       + mgRight; auto.
         Unshelve. all: auto.
-  Qed.
+  Defined.
 
   Ltac mgSplit := apply conj_intro_meta; auto.
   
@@ -2730,7 +2730,7 @@ Qed.
       mgApplyMeta (not_not_intro _ _ _); auto.
       mgExactn 1; auto.
       Unshelve. all: auto.
-  Qed.
+  Defined.
 
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
@@ -2744,7 +2744,7 @@ Qed.
       mgApply' 0 10.
       mgAdd (A_or_notA Γ (¬ p) ltac:(auto)); auto 10.
       mgExactn 0; auto 10.
-  Qed.
+  Defined.
 
   Lemma weird_lemma Γ A B L R:
     well_formed A ->
@@ -2771,7 +2771,7 @@ Qed.
       mgApplyMeta (bot_elim _ _ _); auto 10.
       mgApply' 0 10. mgExactn 3; auto.
       Unshelve. all: auto 10.
-  Qed.
+  Defined.
 
   Lemma weird_lemma_meta Γ A B L R:
     well_formed A ->
@@ -2785,11 +2785,7 @@ Qed.
     eapply Modus_ponens.
     4: apply weird_lemma.
     all: auto.
-  Qed.
-      
-  
-(* Axiom extension : forall G A B,
-  G ⊢ A -> (Add Sigma_pattern G B) ⊢ A. *)
+  Defined.
 
 (* Lemma empty_Γ_implies_any A : forall G,
   empty_Γ ⊢ A -> G ⊢ A. *)
