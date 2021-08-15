@@ -3,10 +3,13 @@ From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem.
 From MatchingLogicProver Require Import MMProofExtractor.
 
-
+Open Scope ml_scope.
 Module MMTest.
-  Import MatchingLogic.Syntax.Notations.
-  Import MatchingLogic.DerivedOperators.Notations.
+  Import
+    MatchingLogic.Syntax.Notations
+    MatchingLogic.DerivedOperators.Notations
+    MatchingLogic.ProofSystem.Notations
+  .
 
   Import MetaMath.
 
@@ -29,10 +32,10 @@ Module MMTest.
     | c => "sym-c"
     end.
 
-  Definition ϕ₁ := patt_imp (patt_sym a) (patt_imp (patt_sym b) (patt_sym a)).
+  Definition ϕ₁ := (patt_sym a) ---> ((patt_sym b) ---> (patt_sym a)).
 
   Lemma P1_holds:
-    ML_proof_system (Ensembles.Empty_set _) ϕ₁.
+    (Ensembles.Empty_set _) ⊢ ϕ₁.
   Proof.
     apply P1; auto.
   Defined.
@@ -49,6 +52,7 @@ Module MMTest.
   Compute mm_proof.
   Write MetaMath Proof Object File "proof_1.mm" mm_proof.
 
+  (*Definition ϕ₂ :=*)
   
 End MMTest.
 
