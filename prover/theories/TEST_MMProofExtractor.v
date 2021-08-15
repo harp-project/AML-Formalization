@@ -49,25 +49,92 @@ Module MMTest.
           _
           ϕ₁_holds
     )).
-  (*Compute proof₁.*)
 
   Definition A := patt_sym a.
   Definition B := patt_sym b.
   Definition C := patt_sym c.
 
+  Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
+
+  Lemma ϕ₂_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₂.
+  Proof.
+    apply P2; auto.
+  Defined.
+
+  Definition proof₂ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₂_holds
+    )).
+  
+  Compute proof₂.
+
+  Definition ϕ₃ := ¬ ¬ A ---> A.
+  
+  Lemma ϕ₃_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₃.
+  Proof.
+    apply P3; auto.
+  Defined.
+
+  Definition proof₃ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₃_holds
+    )).
+  
+  Compute proof₃.
+
+
+  Check A_impl_A.
+  Print Modus_ponens.
+  Definition ϕ₄ := A ---> A.
+  
+  Lemma ϕ₄_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₄.
+  Proof.
+    apply A_impl_A. auto.
+  Defined.
+
+  Definition proof₄ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₄_holds
+    )).
+  
+  Compute proof₄.
+  
+  
+  (*
+  
   Definition ϕ₂ : Pattern := B or ¬ B.
 
   Lemma ϕ₂_holds:
     (Ensembles.Empty_set _) ⊢ ϕ₂.
   Proof.
     toMyGoal.
+  Abort.
   
+  *)
 
 
 
 
   (* We put these at the end so that we do not accidentally run it during an interactive session. *)
   Write MetaMath Proof Object File "proof_1.mm" proof₁.
+  Write MetaMath Proof Object File "proof_2.mm" proof₂.
+  Write MetaMath Proof Object File "proof_3.mm" proof₃.
+  Write MetaMath Proof Object File "proof_4.mm" proof₄.
 
 End MMTest.
 

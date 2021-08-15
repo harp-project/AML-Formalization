@@ -36,7 +36,7 @@ Section FOL_helpers.
     Unshelve.
 
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve A_impl_A : core.
   
