@@ -1,6 +1,6 @@
 From Coq Require Import Strings.String.
 From stdpp Require Export base.
-From MatchingLogic Require Import Syntax SignatureHelper ProofSystem.
+From MatchingLogic Require Import Syntax SignatureHelper ProofSystem Helpers.FOL_helpers.
 From MatchingLogicProver Require Import MMProofExtractor.
 
 Open Scope ml_scope.
@@ -34,25 +34,40 @@ Module MMTest.
 
   Definition ϕ₁ := (patt_sym a) ---> ((patt_sym b) ---> (patt_sym a)).
 
-  Lemma P1_holds:
+  Lemma ϕ₁_holds:
     (Ensembles.Empty_set _) ⊢ ϕ₁.
   Proof.
     apply P1; auto.
   Defined.
   
 
-  Definition mm_proof : string :=
+  Definition proof₁ : string :=
     (Database_toString
        (proof2database
           symbolPrinter
           _
           _
-          P1_holds
+          ϕ₁_holds
     )).
-  Compute mm_proof.
-  Write MetaMath Proof Object File "proof_1.mm" mm_proof.
+  (*Compute proof₁.*)
 
-  (*Definition ϕ₂ :=*)
+  Definition A := patt_sym a.
+  Definition B := patt_sym b.
+  Definition C := patt_sym c.
+
+  Definition ϕ₂ : Pattern := B or ¬ B.
+
+  Lemma ϕ₂_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₂.
+  Proof.
+    toMyGoal.
   
+
+
+
+
+  (* We put these at the end so that we do not accidentally run it during an interactive session. *)
+  Write MetaMath Proof Object File "proof_1.mm" proof₁.
+
 End MMTest.
 
