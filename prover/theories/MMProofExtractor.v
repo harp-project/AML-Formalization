@@ -1,7 +1,6 @@
 From Coq Require Import Strings.String.
 From stdpp Require Import base finite gmap mapset listset_nodup.
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
-Require Import MatchingLogic.SignatureHelper.
 
 From MatchingLogicProver Require Import MMProofExtractorLoader.
 
@@ -270,7 +269,6 @@ Section gen.
   Definition dependenciesForPattern (p : Pattern) : Database :=
     concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
 
-  Print MathSymbol.
   Fixpoint pattern2mm (p : Pattern) : list MathSymbol :=
     match p with
     | patt_sym s => [ms (symbolPrinter s)]
@@ -282,10 +280,10 @@ Section gen.
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\app")] ++ ms1 ++ ms2 ++ [ (ms ")")]
+    | patt_bott => [(ms "\bot")]
     | _ => []
     end.
 
-  Print Label.
   Fixpoint pattern2proof (p : Pattern) : list Label :=
     match p with
     | patt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
@@ -297,12 +295,22 @@ Section gen.
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "app-is-pattern")]
+    | patt_bott => [(lbl "bot-is-pattern")]
     | _ => []
     end.
 
   Fixpoint proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     match pf as _ return list Label with
     | P1 _ p q wfp wfq => pattern2proof p ++ pattern2proof q ++ [lbl "proof-rule-prop-1"]
+    | P2 _ p q r wfp wfq wfr =>
+      pattern2proof p ++ pattern2proof q ++ pattern2proof r ++ [lbl "proof-rule-prop-2"]
+    | P3 _ p wfp => pattern2proof p ++ [lbl "proof-rule-prop-3"]
+    | Modus_ponens _ p q wfp wfpiq pfp pfpiq =>
+      (pattern2proof p)
+        ++ (pattern2proof q)
+        ++ (proof2proof Γ _ pfpiq)
+        ++ (proof2proof Γ _ pfp)
+        ++ [lbl "proof-rule-mp"]
     | _ => []
     end.
 
@@ -318,52 +326,3 @@ Section gen.
   
   
 End gen.
-
-
-Module MMTest.
-  Import MatchingLogic.Syntax.Notations.
-  Import MatchingLogic.DerivedOperators.Notations.
-
-  Import MetaMath.
-
-  Inductive Symbol := a | b | c .
-
-
-  Instance Symbol_eqdec : EqDecision Symbol.
-  Proof.
-    intros s1 s2. unfold Decision. decide equality.
-  Defined.
-
-  Instance Symbol_h : SymbolsH Symbol := Build_SymbolsH Symbol Symbol_eqdec.
-  
-  Instance signature : Signature := @SignatureFromSymbols Symbol _.
-
-  Definition symbolPrinter (s : Symbol) : string :=
-    match s with
-    | a => "sym-a"
-    | b => "sym-b"
-    | c => "sym-c"
-    end.
-
-  Definition ϕ₁ := patt_imp (patt_sym a) (patt_imp (patt_sym b) (patt_sym a)).
-
-  Lemma P1_holds:
-    ML_proof_system (Ensembles.Empty_set _) ϕ₁.
-  Proof.
-    apply P1; auto.
-  Defined.
-  
-
-  Definition mm_proof : string :=
-    (Database_toString
-       (proof2database
-          symbolPrinter
-          _
-          _
-          P1_holds
-    )).
-  Compute mm_proof.
-  Write MetaMath Proof Object File "proof.mm" mm_proof.
-
-  
-End MMTest.

@@ -1,0 +1,1 @@
+( \imp ( \imp sym-a ( \imp sym-b sym-c ) ) ( \imp ( \imp sym-a sym-b ) ( \imp sym-a sym-c ) ) ) 

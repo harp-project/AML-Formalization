@@ -6,14 +6,19 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 From stdpp Require Import list.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
+
+Import
+  MatchingLogic.Syntax.Notations
+  MatchingLogic.DerivedOperators.Notations
+  MatchingLogic.ProofSystem.Notations
+.
 
 Open Scope ml_scope.
 Section FOL_helpers.
 
   Context {Σ : Signature}.
   
-  Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
+  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
 
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) -> Γ ⊢ (A ---> A).
@@ -31,7 +36,7 @@ Section FOL_helpers.
     Unshelve.
 
     all: auto.
-  Qed.
+  Defined.
 
   #[local] Hint Resolve A_impl_A : core.
   
@@ -780,7 +785,6 @@ Qed. *)
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (¬B ---> ¬A).
   Proof.
-    Check contraposition.
     intros.
     eapply Modus_ponens.
     4: apply contraposition.
@@ -1122,7 +1126,6 @@ Qed. *)
     intros wfa wfb wfc.
     assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a)))) by auto using P1.
     assert (H2: Γ ⊢ (a ---> (c ---> a))) by auto using P1.
-    (*Check prf_strenghten_premise_meta.*)
     eapply (syllogism_intro _ _ _ _ _ _ _ H2 H1).
     Unshelve. all: auto.
   Qed.
@@ -1341,11 +1344,41 @@ Qed. *)
     unfold of_MyGoal. simpl.
     apply nested_const_middle; auto.
   Qed.  
-  
-  Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
-  Ltac fromMyGoal := unfold of_MyGoal; simpl.
-  Ltac mgIntro := apply MyGoal_intro; simpl.
-  Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
+
+End FOL_helpers.
+
+#[export] Hint Resolve A_impl_A : core.
+#[export] Hint Resolve syllogism : core.
+#[export] Hint Resolve syllogism_intro : core.
+#[export] Hint Resolve modus_ponens : core.
+#[export] Hint Resolve not_not_intro : core.
+#[export] Hint Resolve disj_right_intro : core.
+#[export] Hint Resolve disj_left_intro : core.
+#[export] Hint Resolve not_not_elim : core.
+#[export] Hint Resolve not_not_elim_meta : core.
+#[export] Hint Resolve P4_rev_meta' : core.
+#[export] Hint Resolve A_impl_not_not_B : core.
+#[export] Hint Resolve well_formed_foldr : core.
+#[export] Hint Resolve wf_take : core.
+#[export] Hint Resolve wf_drop : core.
+#[export] Hint Resolve wf_insert : core.
+#[export] Hint Resolve wf_tail' : core.
+#[export] Hint Resolve wf_cons : core.
+#[export] Hint Resolve wf_app : core.
+
+#[global]
+Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
+#[global]
+Ltac fromMyGoal := unfold of_MyGoal; simpl.
+#[global]
+Ltac mgIntro := apply MyGoal_intro; simpl.
+#[global]
+Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
+
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
 
   (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
 
@@ -2734,7 +2767,7 @@ Qed.
       mgDestruct 3; auto 10.
       + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
       + mgRight; auto. mgExactn 3; auto.
-    - mgLeft; auto. mgIntro. Search ((⊥ ---> ?a)).
+    - mgLeft; auto. mgIntro.
       mgApplyMeta (bot_elim _ _ _); auto 10.
       mgApply' 0 10. mgExactn 3; auto.
       Unshelve. all: auto 10.

@@ -128,7 +128,7 @@ Qed.
 
   
   (* Proof system for AML ref. snapshot: Section 3 *)
-Check Pattern.
+
   Reserved Notation "theory ⊢ pattern" (at level 1).
   Inductive ML_proof_system (theory : Theory) :
     Pattern -> Set :=
@@ -758,3 +758,11 @@ Proof.
 Qed.
 
 End ml_proof_system.
+
+
+Module Notations.
+
+  Notation "theory ⊢ pattern" := (ML_proof_system theory pattern) (at level 95, no associativity).
+
+End Notations.
+
