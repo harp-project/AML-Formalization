@@ -6,14 +6,19 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 From stdpp Require Import list.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
+
+Import
+  MatchingLogic.Syntax.Notations
+  MatchingLogic.DerivedOperators.Notations
+  MatchingLogic.ProofSystem.Notations
+.
 
 Open Scope ml_scope.
 Section FOL_helpers.
 
   Context {Σ : Signature}.
   
-  Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
+  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
 
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) -> Γ ⊢ (A ---> A).
@@ -780,7 +785,6 @@ Qed. *)
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (¬B ---> ¬A).
   Proof.
-    Check contraposition.
     intros.
     eapply Modus_ponens.
     4: apply contraposition.
@@ -1122,7 +1126,6 @@ Qed. *)
     intros wfa wfb wfc.
     assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a)))) by auto using P1.
     assert (H2: Γ ⊢ (a ---> (c ---> a))) by auto using P1.
-    (*Check prf_strenghten_premise_meta.*)
     eapply (syllogism_intro _ _ _ _ _ _ _ H2 H1).
     Unshelve. all: auto.
   Qed.
@@ -2734,7 +2737,7 @@ Qed.
       mgDestruct 3; auto 10.
       + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
       + mgRight; auto. mgExactn 3; auto.
-    - mgLeft; auto. mgIntro. Search ((⊥ ---> ?a)).
+    - mgLeft; auto. mgIntro.
       mgApplyMeta (bot_elim _ _ _); auto 10.
       mgApply' 0 10. mgExactn 3; auto.
       Unshelve. all: auto 10.
