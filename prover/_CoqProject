@@ -4,6 +4,7 @@
 theories/MLTauto.v
 theories/MMProofExtractorLoader.v
 theories/MMProofExtractor.v
+theories/TEST_MMProofExtractor.v
 
 src/mmpf_main.ml
 src/mmpf_main.mli
