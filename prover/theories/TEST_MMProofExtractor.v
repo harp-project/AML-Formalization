@@ -32,7 +32,12 @@ Module MMTest.
     | c => "sym-c"
     end.
 
-  Definition ϕ₁ := (patt_sym a) ---> ((patt_sym b) ---> (patt_sym a)).
+  
+  Definition A := patt_sym a.
+  Definition B := patt_sym b.
+  Definition C := patt_sym c.
+  
+  Definition ϕ₁ := A ---> (B ---> A).
 
   Lemma ϕ₁_holds:
     (Ensembles.Empty_set _) ⊢ ϕ₁.
@@ -50,9 +55,6 @@ Module MMTest.
           ϕ₁_holds
     )).
 
-  Definition A := patt_sym a.
-  Definition B := patt_sym b.
-  Definition C := patt_sym c.
 
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
 
@@ -71,7 +73,7 @@ Module MMTest.
           ϕ₂_holds
     )).
   
-  Compute proof₂.
+  (*Compute proof₂.*)
 
   Definition ϕ₃ := ¬ ¬ A ---> A.
   
@@ -90,11 +92,8 @@ Module MMTest.
           ϕ₃_holds
     )).
   
-  Compute proof₃.
+  (*Compute proof₃.*)
 
-
-  Check A_impl_A.
-  Print Modus_ponens.
   Definition ϕ₄ := A ---> A.
   
   Lemma ϕ₄_holds:
@@ -112,29 +111,79 @@ Module MMTest.
           ϕ₄_holds
     )).
   
-  Compute proof₄.
-  
-  
-  (*
-  
-  Definition ϕ₂ : Pattern := B or ¬ B.
+  (*Compute proof₄.*)
 
-  Lemma ϕ₂_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₂.
+  Definition ϕ₅ := (A ---> B) <---> (¬ A or B).
+
+  Lemma ϕ₅_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₅.
   Proof.
-    toMyGoal.
-  Abort.
-  
+    apply impl_iff_notp_or_q; auto.
+  Defined.
+
+  (* Takes forever *)
+  (*Compute ϕ₅_holds.*)
+
+
+  Definition proof₅ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₅_holds
+    )).
+  (*
+  Print Opaque Dependencies proof₅.
+  Compute proof₅. (* Stack overflow *)
+   *)
+  (* Time Eval compute in proof₅. *) (* Stack overflow *)
+
+  Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
+  Lemma ϕ₆_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₆.
+  Proof.
+    apply A_impl_not_not_B; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
+
+
+  Definition proof₆ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₆_holds
+    )).
+
+  (*
+  Time Eval vm_compute in proof₆.
+  Time Eval lazy in proof₆.
+  Set NativeCompute Profiling.
+  Set NativeCompute Timing.
+  Time Eval native_compute in proof₆.
+
   *)
+  (* Lets crash now, but hopefully we will have a profile if we run coqc under perf.*)
+  (*Time Eval compute in proof₅.*)
+  
+  
 
 
-
-
+(*
   (* We put these at the end so that we do not accidentally run it during an interactive session. *)
   Write MetaMath Proof Object File "proof_1.mm" proof₁.
   Write MetaMath Proof Object File "proof_2.mm" proof₂.
   Write MetaMath Proof Object File "proof_3.mm" proof₃.
   Write MetaMath Proof Object File "proof_4.mm" proof₄.
 
+  (* Stack overflow *)
+  (*Write MetaMath Proof Object File "proof_5.mm" proof₅.*)
+
+  Write MetaMath Proof Object File "proof_6.mm" proof₆.
+*)
 End MMTest.
 

@@ -818,7 +818,7 @@ Defined. *)
     - simpl. exact wfg.
     - simpl. unfold wf in wfxs. simpl in wfxs.
       apply andb_prop in wfxs. destruct wfxs. auto.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve well_formed_foldr : core.
   
@@ -829,7 +829,7 @@ Defined. *)
     unfold wf. intros H.
     rewrite map_take.
     rewrite foldr_andb_true_take; auto.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve wf_take : core.
 
@@ -840,7 +840,7 @@ Defined. *)
     unfold wf. intros H.
     rewrite map_drop.
     rewrite foldr_andb_true_drop; auto.
-  Defined.
+  Qed.
   
   #[local] Hint Resolve wf_drop : core.
 
@@ -862,7 +862,7 @@ Defined. *)
       unfold wf in IHn.
       rewrite wfp0.
       rewrite IHn; auto.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve wf_insert : core.
 
@@ -871,7 +871,7 @@ Defined. *)
     wf xs.
   Proof.
     unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve wf_tail' : core.
 
@@ -884,7 +884,7 @@ Defined. *)
     unfold wf. simpl. rewrite wfx.
     unfold wf in wfxs. rewrite wfxs.
     reflexivity.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve wf_cons : core.
   
@@ -900,7 +900,7 @@ Defined. *)
     rewrite wfys.
     rewrite wfxs.
     reflexivity.
-  Defined.
+  Qed.
 
   #[local] Hint Resolve wf_app : core.
 
