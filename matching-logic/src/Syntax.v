@@ -908,8 +908,8 @@ Section syntax.
   Qed.
 
   Lemma well_formed_aux_increase φ: forall n m n' m', n' >= n -> m' >= m ->
-    is_true (well_formed_closed_aux φ n m) ->
-    is_true (well_formed_closed_aux φ n' m').
+    well_formed_closed_aux φ n m ->
+    well_formed_closed_aux φ n' m'.
   Proof.
     induction φ; intros; simpl; auto.
     * simpl in H1. apply NPeano.Nat.ltb_lt in H1. apply NPeano.Nat.ltb_lt. lia.
@@ -1368,7 +1368,7 @@ Section syntax.
   Qed.
 
   Lemma well_formed_bevar_subst φ : forall ψ n k m,
-    m >= n -> is_true (well_formed_closed_aux φ n k)
+    m >= n -> well_formed_closed_aux φ n k
   ->
     bevar_subst φ ψ m = φ.
   Proof.
@@ -1385,7 +1385,7 @@ Section syntax.
   Qed.
 
   Lemma double_bevar_subst φ : forall ψ n k,
-    is_true (well_formed_closed_aux ψ n k) ->
+    well_formed_closed_aux ψ n k ->
     bevar_subst (bevar_subst φ ψ n) ψ n = bevar_subst φ ψ n.
   Proof.
     induction φ; intros; simpl; auto.
@@ -1400,9 +1400,9 @@ Section syntax.
   Qed.
 
   Lemma bevar_subst_well_formedness φ : forall n m ψ,
-    is_true (well_formed_closed_aux φ (S n) m) -> is_true (well_formed_closed_aux ψ n m)
+    well_formed_closed_aux φ (S n) m -> well_formed_closed_aux ψ n m
   ->
-    is_true (well_formed_closed_aux (bevar_subst φ ψ n) n m).
+    well_formed_closed_aux (bevar_subst φ ψ n) n m.
   Proof.
     induction φ; intros; simpl; auto.
     * break_match_goal; auto. simpl in H. simpl. apply NPeano.Nat.ltb_lt. auto.
@@ -4305,9 +4305,9 @@ Section syntax.
 
   Lemma well_formed_positive_bevar_subst φ : forall n ψ,
     mu_free φ ->
-    is_true (well_formed_positive φ) -> is_true (well_formed_positive ψ)
+    well_formed_positive φ -> well_formed_positive ψ
   ->
-    is_true (well_formed_positive (bevar_subst φ ψ n)).
+    well_formed_positive (bevar_subst φ ψ n).
   Proof.
     induction φ; intros; simpl; auto.
     2-3: inversion H; subst;
