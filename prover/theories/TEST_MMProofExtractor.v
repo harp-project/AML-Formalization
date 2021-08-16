@@ -140,6 +140,7 @@ Module MMTest.
   (* Time Eval compute in proof₅. *) (* Stack overflow *)
 
   Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
+
   Lemma ϕ₆_holds:
     (Ensembles.Empty_set _) ⊢ ϕ₆.
   Proof.
@@ -159,7 +160,58 @@ Module MMTest.
           ϕ₆_holds
     )).
 
-  (*
+
+  Definition ϕ₇ := ((B ---> C) ---> ((A ---> B) ---> (A ---> C))).
+
+  Lemma ϕ₇_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₇.
+  Proof.
+    apply prf_weaken_conclusion; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
+
+
+  Definition proof₇ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₇_holds
+    )).
+
+  Compute proof₇.
+
+
+  
+  Definition ϕ₈ := (A and B) ---> A.
+
+  Lemma ϕ₈_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₈.
+  Proof.
+    apply pf_conj_elim_l; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
+
+
+  Definition proof₈ : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₈_holds
+    )).
+
+  (* Takes forever *)
+  (*Compute ϕ₈_holds. *)
+  Eval native_compute in proof₈.
+
+(*
   Time Eval vm_compute in proof₆.
   Time Eval lazy in proof₆.
   Set NativeCompute Profiling.
