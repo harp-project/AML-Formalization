@@ -299,6 +299,30 @@ Section gen.
     | _ => []
     end.
 
+  Fixpoint proof_size' (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
+    match pf with
+    | hypothesis _ _ _ _ => 1
+    | P1 _ _ _ _ _ => 1
+    | P2 _ _ _ _ _ _ _ => 1
+    | P3 _ _ _ => 1
+    | Modus_ponens _ _ _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
+    | Ex_quan _ _ _ => 1
+    | Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
+    | Prop_bott_left _ _ _ => 1
+    | Prop_bott_right _ _ _ => 1
+    | Prop_disj_left _ _ _ _ _ _ _ => 1
+    | Prop_disj_right _ _ _ _ _ _ _ => 1
+    | Prop_ex_left _ _ _ _ _ => 1
+    | Prop_ex_right _ _ _ _ _ => 1
+    | Framing_left _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Framing_right _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Pre_fixp _ _ => 1
+    | Knaster_tarski _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Existence _ => 1
+    | Singleton_ctx _ _ _ _ _ => 1
+    end.
+  
   Fixpoint proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     match pf as _ return list Label with
     | P1 _ p q wfp wfq => pattern2proof p ++ pattern2proof q ++ [lbl "proof-rule-prop-1"]
