@@ -786,6 +786,32 @@ Section definedness.
     apply pf_iff_proj1 in H3. all: auto.
   Qed.
 
+  Lemma equality_elimination_helper :
+    forall Γ φ1 φ2 ψ x, mu_free ψ ->
+    well_formed φ1 -> well_formed φ2 -> well_formed ψ ->
+    Γ ⊢ (patt_equal φ1 φ2) ---> 
+        (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x).
+  Proof.
+    intros. apply deduction_theorem.
+    remember (Ensembles.Union Pattern Γ (Ensembles.Singleton Pattern (φ1 <---> φ2))) 
+             as Γ'.
+    assert (Γ' ⊢ (φ1 <---> φ2)). {
+      apply hypothesis. now apply well_formed_iff.
+      rewrite HeqΓ'. apply Union_intror. constructor.
+    }
+    apply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H3.
+    apply pf_iff_proj1 in H3. all: auto.
+  Qed.
+
+  Corollary equality_elimination2 :
+    forall Γ φ1 φ2 ψ, mu_free ψ ->
+    well_formed φ1 -> well_formed φ2 -> wf_body_ex ψ ->
+    Γ ⊢ (patt_equal φ1 φ2) ---> 
+        (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0).
+  Proof.
+    (* TODO: consequence of equality_elimination_helper *)
+  Admitted.
+
   Lemma patt_eq_sym_meta : forall Γ φ1 φ2, 
      well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (patt_equal φ1 φ2) -> Γ ⊢  (patt_equal φ2 φ1).
@@ -805,11 +831,140 @@ Section definedness.
     all: simpl; auto.
   Qed.
 
+  Lemma patt_eq_sym: forall Γ φ1 φ2, 
+     well_formed φ1 -> well_formed φ2 ->
+     Γ ⊢ (patt_equal φ1 φ2) ---> (patt_equal φ2 φ1).
+  Proof.
+    intros. Search patt_imp ML_proof_system.
+    apply deduction_theorem.
+    remember (Ensembles.Union Pattern Γ (Ensembles.Singleton Pattern (φ1 <---> φ2)))
+             as Γ'.
+    assert (Γ' ⊢ (φ1 <---> φ2)). {
+      apply hypothesis. apply well_formed_iff; auto.
+      rewrite HeqΓ'. apply Union_intror. constructor.
+    }
+    apply pf_iff_equiv_sym in H1; auto.
+    now apply patt_iff_implies_equal.
+  Qed.
+
+  Lemma and_weaken :
+    forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+    Γ ⊢ (B ---> C)
+   ->
+    Γ ⊢ ((A and B) ---> (A and C)).
+  Proof.
+    intros. Search patt_and ML_proof_system.
+    epose proof (and_impl' Γ A B (A and C) _ _ _). eapply Modus_ponens. 4: exact H3.
+    1-2: shelve.
+    apply reorder_meta; auto.
+    Search patt_imp ML_proof_system.
+    epose proof (prf_strenghten_premise Γ C B (A ---> A and C) _ _ _).
+    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H4. all: auto.
+    apply conj_intro2.
+    Unshelve.
+    all: unfold patt_and, patt_or, patt_not; auto 10.
+  Qed.
+
+  Lemma and_drop :
+   forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+    Γ ⊢ ((A and B) ---> C)
+   ->
+    Γ ⊢ ((A and B) ---> (A and C)).
+  Proof.
+    intros. (* TODO *)
+  Admitted.
+
+  Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
+    evar_quantify x n (patt_equal φ1 φ2) = patt_equal (evar_quantify x n φ1) (evar_quantify x n φ2). Proof. auto. Qed.
+
+  Lemma evar_quantify_free_evar_subst :
+    forall φ x n, count_evar_occurrences x φ = 0 ->
+    evar_quantify x n φ = φ.
+  Proof.
+    induction φ; intros; simpl; auto.
+    - simpl in H.
+      destruct (evar_eqdec x x0).
+      + subst x0. destruct (evar_eqdec x x). simpl in H. inversion H. contradiction.
+      + simpl in H. destruct (evar_eqdec x0 x); cbn; auto. congruence.
+    - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
+    - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
+    - simpl in H. rewrite IHφ. lia. reflexivity.
+    - simpl in H. rewrite IHφ. lia. reflexivity.
+  Qed.
+
   Lemma exists_functional_subst :
-    forall φ φ' Γ, 
+    forall φ φ' Γ (MF : mu_free φ), well_formed (ex, φ) -> well_formed φ' -> wf_body_ex φ ->
       Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ).
   Proof.
-  
+    intros.
+    remember (fresh_evar (φ $ φ')) as Zvar.
+    remember (patt_free_evar Zvar) as Z.
+    assert (well_formed Z). { rewrite HeqZ. auto. }
+    assert (Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')). {
+      pose proof (@patt_eq_sym Γ φ' Z ltac:(auto) H2).
+      pose proof (@patt_eq_sym Γ Z φ' H2 ltac:(auto)).
+      apply pf_iff_split; auto. 1-2: now apply well_formed_equal.
+    }
+    assert (well_formed (instantiate (ex , φ) φ')) as WF1 by admit.
+    assert (well_formed (instantiate (ex , φ) Z)) as WF2 by admit.
+    pose proof (@equality_elimination2 Γ φ' Z φ MF H0 H2 H1).
+    apply pf_iff_iff in H3. destruct H3.
+    pose proof (Ex_quan Γ φ Zvar).
+    epose proof (prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ H6).
+    2-3: apply well_formed_equal;auto.
+    assert (Γ
+     ⊢ patt_equal φ' Z ---> instantiate (ex , φ) φ' ---> ex , φ). {
+       pose proof (@equality_elimination2 Γ φ' Z φ 
+                     ltac:(auto) ltac:(auto) ltac:(auto) H1).
+       unfold instantiate in H7.
+       Search patt_imp ML_proof_system.
+       epose proof (prf_weaken_conclusion).
+       epose proof (prf_strenghten_premise Γ ((patt_equal φ' Z) and (instantiate (ex , φ) Z))
+                                             ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
+                                             (ex , φ) _ _ _).
+       eapply Modus_ponens. 4: apply and_impl.
+       all: auto. 1, 2, 4: shelve.
+       eapply Modus_ponens. 4: eapply Modus_ponens.
+       7: exact H10. 1, 2, 4, 5: shelve.
+       * epose proof (and_impl' Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _).
+         unfold instantiate. eapply Modus_ponens. 1, 2: shelve. 2: exact H11. rewrite <- HeqZ in H7.
+         exact H7.
+       * apply and_drop. 1-3: shelve.
+         epose proof (and_impl' Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _).
+         eapply Modus_ponens. 4: exact H11. 1-2: shelve. exact H8.
+      Unshelve.
+      all: unfold patt_equal, patt_iff, patt_total, patt_defined, patt_and, patt_or, patt_not; auto 10.
+      all: repeat try apply well_formed_imp; auto.
+      all: repeat try apply well_formed_app; auto.
+      all: repeat try apply well_formed_imp; auto.
+      rewrite <- HeqZ. auto.
+    }
+    eapply Modus_ponens. 4: apply and_impl'; auto.
+    1,2,4: shelve.
+    apply reorder_meta; auto. shelve.
+    eapply (Ex_gen Γ _ _ Zvar) in H8. unfold exists_quantify in H8.
+    rewrite evar_quantify_equal_simpl in H8.
+    rewrite -> HeqZ, -> HeqZvar in H8. simpl evar_quantify in H8.
+    2-4: shelve.
+    destruct (evar_eqdec (fresh_evar (φ $ φ')) (fresh_evar (φ $ φ'))) in H8;
+    simpl in H8. 2: congruence.
+    rewrite evar_quantify_free_evar_subst in H8; auto.
+
+    apply count_evar_occurrences_0.
+    unfold fresh_evar. simpl.
+    epose (not_elem_of_union (evar_fresh (elements (free_evars φ ∪ free_evars φ'))) (free_evars φ) (free_evars φ')). destruct i.
+    epose (H8 _). destruct a. auto.
+  Unshelve.
+  1-6: unfold patt_equal, patt_iff, patt_total, patt_defined, patt_and, patt_or, patt_not; auto 10.
+  1-4: repeat try apply well_formed_imp; auto.
+  1-4: repeat try apply well_formed_app; auto.
+  1-4: repeat try apply well_formed_imp; auto.
+  1-5: unfold well_formed, well_formed_closed in *; simpl.
+  1-5: apply eq_sym, andb_true_eq in H0; destruct H0; rewrite <- H0.
+  1-5: apply eq_sym, well_formed_aux_increase with (n' := 1) (m' := 0) in H9.
+  all: try lia. 1-5: rewrite H9; simpl; auto.
+  admit. (* TECHNICAL *)
+  apply set_evar_fresh_is_fresh'.
   Admitted.
 
   Lemma forall_functional_subst :

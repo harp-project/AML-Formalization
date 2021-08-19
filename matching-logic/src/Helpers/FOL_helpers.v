@@ -2844,6 +2844,15 @@ Qed.
 (* Lemma universal_instantiation (Γ : Theory) (A : Pattern) (x y : evar):
   Γ ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
 
+(*   Lemma ex_elim :
+    forall φ x Γ,
+    Γ ⊢ ((ex , φ) ---> bevar_subst φ (patt_free_evar x) 0).
+  Proof.
+    intros.
+    pose proof (Ex_quan Γ φ x). unfold instantiate in H.
+    eapply Modus_ponens. 4: apply P1.
+  Qed. *)
+
   Import extralibrary.
   Theorem evar_open_bevar_subst_same :
     forall x phi n, evar_open n x phi = bevar_subst phi (patt_free_evar x) n.
@@ -2857,7 +2866,7 @@ Qed.
     * rewrite -> IHphi; auto.
     * rewrite -> IHphi; auto.
   Qed.
-  
+
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
@@ -2909,28 +2918,95 @@ Qed.
       unfold wf_body_ex in *. Check evar_open_evar_quantify.
       epose proof (H2 x _).
       epose proof (H3 x _).
-      Unshelve. 2-3: admit. (* TODO: technical *)
+      Unshelve. 2-3: shelve.
       erewrite evar_open_evar_quantify in H4.
-      erewrite evar_open_evar_quantify in H5. 2-3: admit. (* TODO: technical *)
+      erewrite evar_open_evar_quantify in H5. 2-3: shelve.
       specialize (IHC _ _ Γ H H0 H1 H4 H5).
       simpl. unfold exists_quantify.
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
       unfold instantiate in H6, H7.
       rewrite <- evar_open_bevar_subst_same in H6, H7.
-      erewrite -> evar_open_evar_quantify in H6, H7. 2-3: admit. (* TODO: same as before *)
+      erewrite -> evar_open_evar_quantify in H6, H7. 2-3: shelve.
       apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
       all: auto.
-      apply pf_iff_split. 1-2: admit. (* TODO: technical *)
-      - Search patt_imp. Search patt_exists ML_proof_system.
-        eapply syllogism_intro.
+      eapply syllogism_intro in H6. 5: exact IH2. all: auto. 2: shelve.
+      eapply syllogism_intro in H7. 5: exact IH1. all: auto. 2: shelve.
+      apply (Ex_gen _ _ _ x) in H6. apply (Ex_gen _ _ _ x) in H7.
+      all: auto. 2-5: shelve.
+      unfold exists_quantify in H6, H7.
+      apply pf_iff_iff; auto.
         (*
           Existential instantiation needed for this one.
           ∃x, P --> P[x/c], where c is a fresh constant symbol (not in Γ, P)
           Question: How to connect P and P[x/c], where x is a free variable of P?
         *)
+     Unshelve.
+     5-6, 9-10: exact 0.
+     all: admit. (* TODO: These are technical *)
   Admitted.
-  
+
+  Lemma imp_trans_mixed_meta : forall Γ A B C D,
+    well_formed A -> well_formed B -> well_formed C -> well_formed D ->
+    Γ ⊢ (C ---> A) -> Γ ⊢ (B ---> D)
+  ->
+    Γ ⊢ ((A ---> B) ---> C ---> D).
+  Proof.
+    intros. Search patt_imp ML_proof_system.
+    epose proof (prf_weaken_conclusion Γ A B D H H0 H2).
+    eapply Modus_ponens in H5; auto.
+    epose proof (prf_strenghten_premise Γ A C D H H1 H2).
+    eapply Modus_ponens in H6; auto.
+    epose proof (syllogism_intro Γ _ _ _ _ _ _ H5 H6). auto.
+    Unshelve. all: auto.
+  Qed.
+
+  Theorem congruence_iff_helper :
+    forall sz ψ, le (Syntax.size ψ) sz ->
+     forall φ1 φ2 x Γ (MF : mu_free ψ), well_formed φ1 -> well_formed φ2 ->
+     Γ ⊢ (φ1 <---> φ2)
+    ->
+     well_formed ψ ->
+     Γ ⊢ (free_evar_subst ψ φ1 x <---> free_evar_subst ψ φ2 x).
+  Proof.
+    induction sz; destruct ψ; intros.
+    6, 8, 9, 10: inversion H.
+    all: try apply pf_iff_equiv_refl; auto.
+    1-2: cbn; break_match_goal; auto; apply pf_iff_equiv_refl; auto.
+    * apply well_formed_app_1 in H3 as WF1.
+      apply well_formed_app_2 in H3 as WF2. inversion MF. subst.
+      simpl in H.
+      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x Γ H6 H0 H1 H2 WF1) as IHψ1.
+      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x Γ H7 H0 H1 H2 WF2) as IHψ2.
+      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
+      pose proof (Framing_left Γ (free_evar_subst ψ1 φ1 x) (free_evar_subst ψ1 φ2 x) (free_evar_subst ψ2 φ1 x) H4) as Trans1.
+      pose proof (Framing_right Γ (free_evar_subst ψ2 φ1 x) (free_evar_subst ψ2 φ2 x) (free_evar_subst ψ1 φ2 x) H8) as Trans2.
+      epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
+      clear Trans1 Trans2. 2-5: shelve.
+
+      pose proof (Framing_right Γ (free_evar_subst ψ2 φ2 x) (free_evar_subst ψ2 φ1 x) (free_evar_subst ψ1 φ2 x) H9) as Trans1.
+      pose proof (Framing_left Γ _ _ (free_evar_subst ψ2 φ1 x) H5) as Trans2.
+      epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
+      apply pf_iff_iff; auto.
+      Unshelve. all: admit. (* TODO: technical *)
+    * simpl. simpl in H.
+      apply well_formed_app_1 in H3 as WF1.
+      apply well_formed_app_2 in H3 as WF2. inversion MF. subst.
+      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x Γ H6 H0 H1 H2 WF1) as IHψ1.
+      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x Γ H7 H0 H1 H2 WF2) as IHψ2.
+      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
+      apply pf_iff_iff. 1, 2, 4-7: admit. (* TODO: technical *)
+      split.
+      - apply imp_trans_mixed_meta; auto.
+      - apply imp_trans_mixed_meta; auto.
+    * inversion MF; subst. apply wf_ex_to_wf_body in H3.
+      remember (fresh_evar (ψ $ φ1 $ φ2)) as fx.
+      epose proof (H3 fx _).
+      epose proof (IHsz (evar_open 0 fx ψ) _ φ1 φ2 x Γ _ H0 H1 H2 H4).
+      admit. (* TODO... *)
+    * inversion MF.
+  Admitted.
+
 End FOL_helpers.
 
 (* Hints *)
