@@ -6,6 +6,7 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 From stdpp Require Import list.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
+Import extralibrary.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 Open Scope ml_scope.
@@ -2853,20 +2854,6 @@ Qed.
     eapply Modus_ponens. 4: apply P1.
   Qed. *)
 
-  Import extralibrary.
-  Theorem evar_open_bevar_subst_same :
-    forall x phi n, evar_open n x phi = bevar_subst phi (patt_free_evar x) n.
-  Proof.
-    induction phi; intros; auto; simpl.
-    * break_match_goal.
-      - apply Nat.eqb_eq in Heqb. subst. break_match_goal; auto; lia.
-      - apply Nat.eqb_neq in Heqb. subst. break_match_goal; auto; lia.
-    * rewrite -> IHphi1, -> IHphi2; auto.
-    * rewrite -> IHphi1, -> IHphi2; auto.
-    * rewrite -> IHphi; auto.
-    * rewrite -> IHphi; auto.
-  Qed.
-
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
@@ -2988,24 +2975,72 @@ Qed.
       pose proof (Framing_left Γ _ _ (free_evar_subst ψ2 φ1 x) H5) as Trans2.
       epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
       apply pf_iff_iff; auto.
-      Unshelve. all: admit. (* TODO: technical *)
+      Unshelve.
+      1-3, 8-10: apply well_formed_app.
+      all: now apply well_formed_free_evar_subst.
     * simpl. simpl in H.
       apply well_formed_app_1 in H3 as WF1.
       apply well_formed_app_2 in H3 as WF2. inversion MF. subst.
       specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x Γ H6 H0 H1 H2 WF1) as IHψ1.
       specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x Γ H7 H0 H1 H2 WF2) as IHψ2.
       apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
-      apply pf_iff_iff. 1, 2, 4-7: admit. (* TODO: technical *)
+      apply pf_iff_iff. 1, 2, 4-7: shelve.
       split.
       - apply imp_trans_mixed_meta; auto.
       - apply imp_trans_mixed_meta; auto.
-    * inversion MF; subst. apply wf_ex_to_wf_body in H3.
-      remember (fresh_evar (ψ $ φ1 $ φ2)) as fx.
-      epose proof (H3 fx _).
+      Unshelve.
+      1, 2: apply well_formed_imp.
+      all: now apply well_formed_free_evar_subst.
+    * inversion MF; subst. apply wf_ex_to_wf_body in H3 as H3'.
+      remember (fresh_evar (ψ $ φ1 $ φ2 $ patt_free_evar x)) as fx.
+      unfold fresh_evar in Heqfx. simpl in Heqfx. Search evar_fresh.
+      pose (@set_evar_fresh_is_fresh' _ (free_evars ψ ∪ (free_evars φ1 ∪ (free_evars φ2 ∪ {[x]})))).
+      rewrite <- Heqfx in n.
+      apply sets.not_elem_of_union in n. destruct n as [n1 n2].
+      apply sets.not_elem_of_union in n2. destruct n2 as [n2 n3].
+      apply sets.not_elem_of_union in n3. destruct n3 as [n3 n4].
+      apply sets.not_elem_of_singleton_1 in n4.
+      epose proof (H3' fx _).
       epose proof (IHsz (evar_open 0 fx ψ) _ φ1 φ2 x Γ _ H0 H1 H2 H4).
-      admit. (* TODO... *)
-    * inversion MF.
-  Admitted.
+      cbn.
+      pose proof (Ex_quan Γ (free_evar_subst ψ φ1 x) fx).
+      pose proof (Ex_quan Γ (free_evar_subst ψ φ2 x) fx).
+      unfold instantiate in *.
+      rewrite <- evar_open_bevar_subst_same in H7, H8.
+      do 2 rewrite <- evar_open_free_evar_subst_swap in H6; auto.
+      apply pf_iff_iff in H6; auto. 2-3: shelve. destruct H6 as [IH1 IH2].
+      eapply syllogism_intro in H7. 5: exact IH2. 2-4: shelve.
+      eapply syllogism_intro in H8. 5: exact IH1. 2-4: shelve.
+      apply (Ex_gen _ _ _ fx) in H7. apply (Ex_gen _ _ _ fx) in H8.
+      2-7: shelve.
+      unfold exists_quantify in H8, H7. simpl in H7, H8.
+      erewrite -> evar_quantify_evar_open in H7, H8; auto.
+      2-5: shelve.
+      apply pf_iff_iff; auto.
+      Unshelve.
+      20,21: exact 0. all: auto.
+      all: try replace (ex , free_evar_subst ψ φ1 x) with (free_evar_subst (ex, ψ) φ1 x) by reflexivity.
+      all: try replace (ex , free_evar_subst ψ φ2 x) with (free_evar_subst (ex, ψ) φ2 x) by reflexivity.
+      all: try apply well_formed_free_evar_subst; auto.
+      rewrite <- evar_open_size. simpl in H. lia.
+      now apply mu_free_evar_open.
+      1, 4, 5, 7: apply well_formed_free_evar_subst with (x0 := x) (q := φ1) in H3 as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      5-7, 9: apply well_formed_free_evar_subst with (x0 := x) (q := φ2) in H3 as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      12: {
+         apply well_formed_free_evar_subst with (x0 := x) (q := φ1) in H3.
+         unfold well_formed, well_formed_closed in H3.
+         apply andb_true_iff in H3. destruct H3. now simpl in H6. auto. 
+      }
+      13: {
+         apply well_formed_free_evar_subst with (x0 := x) (q := φ2) in H3.
+         unfold well_formed, well_formed_closed in H3.
+         apply andb_true_iff in H3. destruct H3. now simpl in H6. auto. 
+      }
+      all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
+      all: try apply free_evars_free_evar_subst.
+   all: apply sets.not_elem_of_union; auto.
+   * inversion MF.
+Qed.
 
 End FOL_helpers.
 

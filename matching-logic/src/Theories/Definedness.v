@@ -905,7 +905,9 @@ Section definedness.
       pose proof (@patt_eq_sym Γ Z φ' H2 ltac:(auto)).
       apply pf_iff_split; auto. 1-2: now apply well_formed_equal.
     }
-    assert (well_formed (instantiate (ex , φ) φ')) as WF1 by admit.
+    assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
+      unfold instantiate. Search bevar_subst. admit.
+    }
     assert (well_formed (instantiate (ex , φ) Z)) as WF2 by admit.
     pose proof (@equality_elimination2 Γ φ' Z φ MF H0 H2 H1).
     apply pf_iff_iff in H3. destruct H3.

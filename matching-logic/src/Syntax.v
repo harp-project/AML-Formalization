@@ -1356,6 +1356,40 @@ Section syntax.
     - simpl in H. apply IHphi in H. rewrite H. reflexivity.
   Qed.
 
+  Lemma evar_quantify_evar_open x m n n' phi: n < m ->
+    x ∉ free_evars phi -> well_formed_closed_aux phi m n' ->
+    (evar_quantify x n (evar_open n x phi)) = phi.
+  Proof.
+    revert m n n'.
+    induction phi; intros m' n' n'' H H0 H1; simpl; auto.
+    - destruct (evar_eqdec x x0); simpl.
+      + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
+      + reflexivity.
+    - simpl in *. apply Nat.ltb_lt in H1.
+      destruct (n =? n') eqn:Heq.
+      + apply Nat.eqb_eq in Heq. subst. simpl. destruct (evar_eqdec x x); auto.
+        congruence.
+      + reflexivity.
+    - simpl in H.
+      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      erewrite -> IHphi1, IHphi2.
+      reflexivity.
+      all: eauto.
+    - simpl in H.
+      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      erewrite -> IHphi1, IHphi2.
+      reflexivity.
+      all: eauto.
+    - simpl in H0. simpl in H1.
+      erewrite -> IHphi. reflexivity. instantiate (1 := S m'). lia.
+      auto. apply H1.
+    - simpl in H0. simpl in H1.
+      erewrite -> IHphi. reflexivity. exact H.
+      auto. apply H1.
+  Qed.
+
   Lemma double_evar_quantify φ : forall x n,
     evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
   Proof.
@@ -4316,6 +4350,89 @@ Section syntax.
     * break_match_goal; auto.
     * inversion H. subst. rewrite IHφ; auto.
     * inversion H.
+  Qed.
+
+  Lemma mu_free_evar_open :
+    forall φ, mu_free φ -> forall x n, mu_free (evar_open n x φ).
+  Proof.
+    induction φ; intros; simpl; try now constructor.
+    * break_match_goal; constructor.
+    * inversion H. constructor. now apply IHφ1. now apply IHφ2.
+    * inversion H. constructor. now apply IHφ1. now apply IHφ2.
+    * inversion H. constructor. subst. now apply IHφ.
+    * inversion H.
+  Qed.
+
+  Theorem evar_open_bevar_subst_same :
+    forall x phi n, evar_open n x phi = bevar_subst phi (patt_free_evar x) n.
+  Proof.
+    induction phi; intros; auto; simpl.
+    * break_match_goal.
+      - apply Nat.eqb_eq in Heqb. subst. break_match_goal; auto; lia.
+      - apply Nat.eqb_neq in Heqb. subst. break_match_goal; auto; lia.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi; auto.
+    * rewrite -> IHphi; auto.
+  Qed.
+
+
+  Theorem evar_open_free_evar_subst_swap :
+    forall φ x n ψ y, x <> y -> well_formed ψ ->
+      evar_open n x (free_evar_subst φ ψ y) = free_evar_subst (evar_open n x φ) ψ y.
+  Proof.
+    induction φ; intros; cbn; auto.
+    * destruct (evar_eqdec y x); simpl.
+      - rewrite evar_open_wfc; auto. now apply andb_true_iff in H0.
+      - reflexivity.
+    * break_match_goal; simpl; auto. destruct (evar_eqdec y x); auto.
+      congruence.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Lemma free_evars_free_evar_subst : forall φ ψ x,
+    free_evars (free_evar_subst φ ψ x) ⊆ free_evars φ ∪ free_evars ψ.
+  Proof.
+    induction φ; intros; simpl.
+    2-5, 7: apply empty_subseteq.
+    * destruct (evar_eqdec x0 x); simpl.
+      - apply union_subseteq_r.
+      - apply union_subseteq_l.
+    * specialize (IHφ1 ψ x). specialize (IHφ2 ψ x).
+      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      Search union.
+      epose proof (union_idemp (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0.
+    * specialize (IHφ1 ψ x). specialize (IHφ2 ψ x).
+      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      Search union.
+      epose proof (union_idemp (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0.
+    * apply IHφ.
+    * apply IHφ.
   Qed.
 
 End syntax.
