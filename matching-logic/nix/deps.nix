@@ -1,9 +1,14 @@
+let
+  sources = import ../../nix/sources.nix;
+  pinned = import sources."nixpkgs" { config = {}; overlays = []; };
+in
+
 { coqVersion }:
 with import <nixpkgs> {};
 
 let
   coqVersion_ = builtins.replaceStrings ["."] ["_"] coqVersion;
-  pkgs = import <nixpkgs> { };
+  pkgs = pinned;
   ncoq = pkgs."coq_${coqVersion_}";
   ncoqPackages = pkgs."coqPackages_${coqVersion_}";
   stdpp = ncoqPackages.callPackage

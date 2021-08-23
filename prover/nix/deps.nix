@@ -1,5 +1,5 @@
 let
-  sources = import ./sources.nix;
+  sources = import ../../nix/sources.nix;
   pinned = import sources."nixpkgs" { config = {}; overlays = []; };
 in
 
