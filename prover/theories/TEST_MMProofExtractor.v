@@ -1,4 +1,9 @@
+From Coq Require Extraction extraction.ExtrHaskellString.
+
+
 From Coq Require Import Strings.String.
+From Equations Require Import Equations.
+
 From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem Helpers.FOL_helpers.
 From MatchingLogicProver Require Import MMProofExtractor.
@@ -32,7 +37,12 @@ Module MMTest.
     | c => "sym-c"
     end.
 
-  Definition ϕ₁ := (patt_sym a) ---> ((patt_sym b) ---> (patt_sym a)).
+  
+  Definition A := patt_sym a.
+  Definition B := patt_sym b.
+  Definition C := patt_sym c.
+  
+  Definition ϕ₁ := A ---> (B ---> A).
 
   Lemma ϕ₁_holds:
     (Ensembles.Empty_set _) ⊢ ϕ₁.
@@ -41,7 +51,7 @@ Module MMTest.
   Defined.
   
 
-  Definition proof₁ : string :=
+  Definition proof_1 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -50,9 +60,6 @@ Module MMTest.
           ϕ₁_holds
     )).
 
-  Definition A := patt_sym a.
-  Definition B := patt_sym b.
-  Definition C := patt_sym c.
 
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
 
@@ -62,7 +69,7 @@ Module MMTest.
     apply P2; auto.
   Defined.
 
-  Definition proof₂ : string :=
+  Definition proof_2 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -71,7 +78,7 @@ Module MMTest.
           ϕ₂_holds
     )).
   
-  Compute proof₂.
+  (*Compute proof₂.*)
 
   Definition ϕ₃ := ¬ ¬ A ---> A.
   
@@ -81,7 +88,7 @@ Module MMTest.
     apply P3; auto.
   Defined.
 
-  Definition proof₃ : string :=
+  Definition proof_3 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -90,11 +97,8 @@ Module MMTest.
           ϕ₃_holds
     )).
   
-  Compute proof₃.
+  (*Compute proof₃.*)
 
-
-  Check A_impl_A.
-  Print Modus_ponens.
   Definition ϕ₄ := A ---> A.
   
   Lemma ϕ₄_holds:
@@ -103,7 +107,7 @@ Module MMTest.
     apply A_impl_A. auto.
   Defined.
 
-  Definition proof₄ : string :=
+  Definition proof_4 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -111,30 +115,127 @@ Module MMTest.
           _
           ϕ₄_holds
     )).
-  
-  Compute proof₄.
-  
-  
-  (*
-  
-  Definition ϕ₂ : Pattern := B or ¬ B.
 
-  Lemma ϕ₂_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₂.
+  Goal (proof2database symbolPrinter _ _ ϕ₄_holds) = [].
   Proof.
-    toMyGoal.
+    unfold proof2database. simpl.
+    unfold proof2proof.
+    unfold ϕ₄_holds. unfold A_impl_A.
+    rewrite proof2proof'_equation_6. simpl.
   Abort.
   
+  
+  (*Compute proof₄.*)
+
+  Definition ϕ₅ := (A ---> B) <---> (¬ A or B).
+
+  Lemma ϕ₅_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₅.
+  Proof.
+    apply impl_iff_notp_or_q; auto.
+  Defined.
+
+  (* Takes forever *)
+  (*Compute ϕ₅_holds.*)
+
+
+  Definition proof_5 : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₅_holds
+    )).
+
+  (* Takes forever *)
+  (*
+  Compute (proof2database
+             symbolPrinter
+             _
+             _
+             ϕ₅_holds).
   *)
+  (*
+  Print Opaque Dependencies proof₅
+  Compute proof₅. (* No longer "Stack overflow", but takes forever *)
+   *)
+  (* Time Eval compute in proof₅. *) (* Stack overflow *)
+
+  Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
+
+  Lemma ϕ₆_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₆.
+  Proof.
+    apply A_impl_not_not_B; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
 
 
+  Definition proof_6 : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₆_holds
+    )).
 
 
-  (* We put these at the end so that we do not accidentally run it during an interactive session. *)
-  Write MetaMath Proof Object File "proof_1.mm" proof₁.
-  Write MetaMath Proof Object File "proof_2.mm" proof₂.
-  Write MetaMath Proof Object File "proof_3.mm" proof₃.
-  Write MetaMath Proof Object File "proof_4.mm" proof₄.
+  Definition ϕ₇ := ((B ---> C) ---> ((A ---> B) ---> (A ---> C))).
 
+  Lemma ϕ₇_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₇.
+  Proof.
+    apply prf_weaken_conclusion; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
+
+
+  Definition proof_7 : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₇_holds
+    )).
+
+  
+  Definition ϕ₈ := (A and B) ---> A.
+
+  Lemma ϕ₈_holds:
+    (Ensembles.Empty_set _) ⊢ ϕ₈.
+  Proof.
+    apply pf_conj_elim_l; auto.
+  Defined.
+
+  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
+  (* Time Eval vm_compute in ϕ₆_holds. *)
+
+
+  Definition proof_8 : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          _
+          _
+          ϕ₈_holds
+    )).
+  
 End MMTest.
 
+Extraction Language Haskell.
+
+Extraction "proof_1_mm.hs" MMTest.proof_1.
+Extraction "proof_2_mm.hs" MMTest.proof_2.
+Extraction "proof_3_mm.hs" MMTest.proof_3.
+Extraction "proof_4_mm.hs" MMTest.proof_4.
+Extraction "proof_5_mm.hs" MMTest.proof_5.
+Extraction "proof_6_mm.hs" MMTest.proof_6.
+Extraction "proof_7_mm.hs" MMTest.proof_7.
+Extraction "proof_8_mm.hs" MMTest.proof_8.

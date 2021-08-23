@@ -47,7 +47,7 @@ Next Obligation.
   enough ((Some (string_of_pos (encode id_ev0)) = Some id_ev0)).
   { apply (@inj _ _ (=) (=) Some _) in H. assumption. }
   pose proof (H := @decode_encode string _ _ id_ev0). unfold decode in H. simpl in H. assumption.
-Qed.
+Defined.
 
 Program Instance svar_name_kind_countable : Countable svar_name_kind :=
   {|
@@ -59,7 +59,7 @@ Next Obligation.
   enough ((Some (string_of_pos (encode id_sv0)) = Some id_sv0)).
   { apply (@inj _ _ (=) (=) Some _) in H. assumption. }
   pose proof (H := @decode_encode string _ _ id_sv0). unfold decode in H. simpl in H. assumption.
-Qed.
+Defined.
 
 
 Program Instance evar_name_eq_decidable : EqDecision evar_name.
@@ -307,10 +307,10 @@ Program Definition DefaultMLVariables : MLVariables :=
   |}.
 Next Obligation.
   intros. simpl in H. inversion H. reflexivity.
-Qed.
+Defined.
 Next Obligation.
   intros. simpl in H. inversion H. reflexivity.
-Qed.
+Defined.
 
 Class SymbolsH (SHSymbols : Set) :=
   { SHSymbols_eqdec : EqDecision SHSymbols; }.
