@@ -1,3 +1,6 @@
+From Coq Require Extraction extraction.ExtrHaskellString.
+
+
 From Coq Require Import Strings.String.
 From Equations Require Import Equations.
 
@@ -48,7 +51,7 @@ Module MMTest.
   Defined.
   
 
-  Definition proof₁ : string :=
+  Definition proof_1 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -66,7 +69,7 @@ Module MMTest.
     apply P2; auto.
   Defined.
 
-  Definition proof₂ : string :=
+  Definition proof_2 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -85,7 +88,7 @@ Module MMTest.
     apply P3; auto.
   Defined.
 
-  Definition proof₃ : string :=
+  Definition proof_3 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -104,7 +107,7 @@ Module MMTest.
     apply A_impl_A. auto.
   Defined.
 
-  Definition proof₄ : string :=
+  Definition proof_4 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -136,7 +139,7 @@ Module MMTest.
   (*Compute ϕ₅_holds.*)
 
 
-  Definition proof₅ : string :=
+  Definition proof_5 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -171,7 +174,7 @@ Module MMTest.
   (* Time Eval vm_compute in ϕ₆_holds. *)
 
 
-  Definition proof₆ : string :=
+  Definition proof_6 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -193,7 +196,7 @@ Module MMTest.
   (* Time Eval vm_compute in ϕ₆_holds. *)
 
 
-  Definition proof₇ : string :=
+  Definition proof_7 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -201,9 +204,6 @@ Module MMTest.
           _
           ϕ₇_holds
     )).
-
-  Compute proof₇.
-
 
   
   Definition ϕ₈ := (A and B) ---> A.
@@ -218,7 +218,7 @@ Module MMTest.
   (* Time Eval vm_compute in ϕ₆_holds. *)
 
 
-  Definition proof₈ : string :=
+  Definition proof_8 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
@@ -226,49 +226,16 @@ Module MMTest.
           _
           ϕ₈_holds
     )).
-
-
-  (* This works *)
-  (* 
-  Compute (proof2database
-             symbolPrinter
-             _
-             _
-             ϕ₈_holds). *)
   
-  (* But this results in a 'Stack overflow' error.
-     So now the problem is in the pretty printing.
-   *)
-  (* Compute proof₈. *)
-  (* Takes forever *)
-  (*Compute ϕ₈_holds. *)
-  (*Eval native_compute in proof₈.*)
-
-(*
-  Time Eval vm_compute in proof₆.
-  Time Eval lazy in proof₆.
-  Set NativeCompute Profiling.
-  Set NativeCompute Timing.
-  Time Eval native_compute in proof₆.
-
-  *)
-  (* Lets crash now, but hopefully we will have a profile if we run coqc under perf.*)
-  (*Time Eval compute in proof₅.*)
-  
-  
-
-
-  (* We put these at the end so that we do not accidentally run it during an interactive session. *)
-  Write MetaMath Proof Object File "proof_1.mm" proof₁.
-  Write MetaMath Proof Object File "proof_2.mm" proof₂.
-  Write MetaMath Proof Object File "proof_3.mm" proof₃.
-  Write MetaMath Proof Object File "proof_4.mm" proof₄.
-
-  (* Stack overflow *)
-  (*Write MetaMath Proof Object File "proof_5.mm" proof₅.*)
-
-(*
-  Write MetaMath Proof Object File "proof_6.mm" proof₆.
-*)
 End MMTest.
 
+Extraction Language Haskell.
+
+Extraction "proof_1_mm.hs" MMTest.proof_1.
+Extraction "proof_2_mm.hs" MMTest.proof_2.
+Extraction "proof_3_mm.hs" MMTest.proof_3.
+Extraction "proof_4_mm.hs" MMTest.proof_4.
+Extraction "proof_5_mm.hs" MMTest.proof_5.
+Extraction "proof_6_mm.hs" MMTest.proof_6.
+Extraction "proof_7_mm.hs" MMTest.proof_7.
+Extraction "proof_8_mm.hs" MMTest.proof_8.

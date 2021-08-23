@@ -9,6 +9,7 @@ let
     name="matching-logic-interactive-prover";
     buildInputs = [deps.coq deps.mllib deps.equations deps.findlib deps.zarith
       deps.ocaml deps.camlp5 deps.metamath
+      ghc
     ];
   };
 
