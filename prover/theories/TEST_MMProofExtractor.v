@@ -118,13 +118,9 @@ Module MMTest.
     unfold proof2database. simpl.
     unfold proof2proof.
     unfold ϕ₄_holds. unfold A_impl_A.
-    rewrite proof2proof'_equation_6. simpl
-    Print Rewrite HintDb proof2proof'.
-    autorewrite with proof2proof'.
-    simp proof2proof'.
-    funelim (proof2proof' _ _ _ _ _).
-    simp proof2proof'.
-    unfold proof2proof'.
+    rewrite proof2proof'_equation_6. simpl.
+  Abort.
+  
   
   (*Compute proof₄.*)
 
@@ -148,9 +144,18 @@ Module MMTest.
           _
           ϕ₅_holds
     )).
+
+  (* Takes forever *)
   (*
-  Print Opaque Dependencies proof₅.
-  Compute proof₅. (* Stack overflow *)
+  Compute (proof2database
+             symbolPrinter
+             _
+             _
+             ϕ₅_holds).
+  *)
+  (*
+  Print Opaque Dependencies proof₅
+  Compute proof₅. (* No longer "Stack overflow", but takes forever *)
    *)
   (* Time Eval compute in proof₅. *) (* Stack overflow *)
 
@@ -222,6 +227,19 @@ Module MMTest.
           ϕ₈_holds
     )).
 
+
+  (* This works *)
+  (* 
+  Compute (proof2database
+             symbolPrinter
+             _
+             _
+             ϕ₈_holds). *)
+  
+  (* But this results in a 'Stack overflow' error.
+     So now the problem is in the pretty printing.
+   *)
+  (* Compute proof₈. *)
   (* Takes forever *)
   (*Compute ϕ₈_holds. *)
   (*Eval native_compute in proof₈.*)
