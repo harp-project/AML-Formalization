@@ -347,43 +347,51 @@ Section gen.
           )
        ).
 
-  (*
-  Check Modus_ponens.
-  Print sum.*)
   Equations? proof2proof'
             (Γ : Theory)
-            (prefix : list Label)
+            (acc : list Label)
             (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
     : list Label
     by wf (proof2proof'_stack_size Γ pfs) lt :=
     
-    proof2proof' Γ prefix [] := prefix ;
+    proof2proof' Γ acc [] := reverse acc ;
     
-    proof2proof' Γ prefix ((inr l)::pfs')
-      := proof2proof' Γ (prefix ++ [l]) pfs' ;
+    proof2proof' Γ acc ((inr l)::pfs')
+      := proof2proof' Γ (l::acc) pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P1 _ p q _ _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (P1 _ p q _ _)))::pfs')
       := proof2proof'
            Γ
-           (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ [lbl "proof-rule-prop-1"])
+           ([lbl "proof-rule-prop-1"]
+              ++ (reverse (pattern2proof q))
+              ++ (reverse (pattern2proof p))
+              ++ acc)
            pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs')
       := proof2proof'
            Γ
-           (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ (pattern2proof r) ++ [lbl "proof-rule-prop-2"])
+           ([lbl "proof-rule-prop-2"]
+              ++ (reverse (pattern2proof r))
+              ++ (reverse (pattern2proof q))
+              ++ (reverse (pattern2proof p))
+              ++ acc)
            pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P3 _ p _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (P3 _ p _)))::pfs')
       := proof2proof'
            Γ
-           (prefix ++ (pattern2proof p) ++ [lbl "proof-rule-prop-3"])
+           ([lbl "proof-rule-prop-3"]
+              ++ (reverse (pattern2proof p))
+              ++ acc)
            pfs' ;
 
-    proof2proof' Γ prefix ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
+    proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
-           (prefix ++ (pattern2proof p) ++ (pattern2proof q))
+           ((reverse (pattern2proof q))
+              ++ (reverse (pattern2proof p))
+              ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
     proof2proof' Γ prefix ((inl _)::_) := []
