@@ -354,44 +354,39 @@ Section gen.
             (Γ : Theory)
             (prefix : list Label)
             (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
-            (suffix : list Label)
     : list Label
     by wf (proof2proof'_stack_size Γ pfs) lt :=
     
-    proof2proof' Γ prefix [] suffix := prefix ++ suffix; (* TODO suffix is not needed. remove it. *)
+    proof2proof' Γ prefix [] := prefix ;
     
-    proof2proof' Γ prefix ((inr l)::pfs') suffix
-      := proof2proof' Γ (prefix ++ [l]) pfs' suffix ;
+    proof2proof' Γ prefix ((inr l)::pfs')
+      := proof2proof' Γ (prefix ++ [l]) pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P1 _ p q _ _)))::pfs') suffix
+    proof2proof' Γ prefix ((inl (existT ϕ (P1 _ p q _ _)))::pfs')
       := proof2proof'
            Γ
            (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ [lbl "proof-rule-prop-1"])
-           pfs'
-           suffix ;
+           pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs') suffix
+    proof2proof' Γ prefix ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs')
       := proof2proof'
            Γ
            (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ (pattern2proof r) ++ [lbl "proof-rule-prop-2"])
-           pfs'
-           suffix ;
+           pfs' ;
     
-    proof2proof' Γ prefix ((inl (existT ϕ (P3 _ p _)))::pfs') suffix
+    proof2proof' Γ prefix ((inl (existT ϕ (P3 _ p _)))::pfs')
       := proof2proof'
            Γ
            (prefix ++ (pattern2proof p) ++ [lbl "proof-rule-prop-3"])
-           pfs'
-           suffix ;
+           pfs' ;
 
-    proof2proof' Γ prefix ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs') suffix
+    proof2proof' Γ prefix ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
            (prefix ++ (pattern2proof p) ++ (pattern2proof q))
-           ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs')
-           suffix ;
+           ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
-    proof2proof' Γ prefix ((inl _)::_) suffix := []
+    proof2proof' Γ prefix ((inl _)::_) := []
   .
   Proof.
     - unfold proof2proof'_stack_size. simpl. lia.
@@ -418,7 +413,7 @@ Section gen.
 
   Check proof2proof'.
   Definition proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
-    proof2proof' Γ [] [(inl (existT ϕ pf))] [].
+    proof2proof' Γ [] [(inl (existT ϕ pf))].
   
   
   (*
