@@ -1,5 +1,9 @@
 From Coq Require Import Strings.String.
+
+From Equations Require Import Equations.
+
 From stdpp Require Import base finite gmap mapset listset_nodup.
+
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
 From MatchingLogicProver Require Import MMProofExtractorLoader.
@@ -322,7 +326,65 @@ Section gen.
     | Existence _ => 1
     | Singleton_ctx _ _ _ _ _ => 1
     end.
+
+  Definition proof_size'' Γ (x : {ϕ : Pattern & ML_proof_system Γ ϕ}) :=
+    proof_size' Γ (projT1 x) (projT2 x).
+
+  Check Modus_ponens.
+  Equations? proof2proof'
+            (Γ : Theory)
+            (prefix : list Label)
+            (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ}))
+            (suffix : list Label)
+    : list Label
+    by wf (fold_right plus 0 (map (proof_size'' Γ) pfs)) lt :=
+    proof2proof' Γ prefix [] suffix := prefix ++ suffix ;
+    
+    proof2proof' Γ prefix ((existT ϕ (P1 _ p q _ _))::pfs') suffix
+      := proof2proof'
+           Γ
+           (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ [lbl "proof-rule-prop-1"])
+           pfs'
+           suffix ;
+    
+    proof2proof' Γ prefix ((existT ϕ (P2 _ p q r _ _ _))::pfs') suffix
+      := proof2proof'
+           Γ
+           (prefix ++ (pattern2proof p) ++ (pattern2proof q) ++ (pattern2proof r) ++ [lbl "proof-rule-prop-2"])
+           pfs'
+           suffix ;
+    
+    proof2proof' Γ prefix ((existT ϕ (P3 _ p _))::pfs') suffix
+      := proof2proof'
+           Γ
+           (prefix ++ (pattern2proof p) ++ [lbl "proof-rule-prop-3"])
+           pfs'
+           suffix ;
+
+    proof2proof' Γ prefix ((existT _ (Modus_ponens _ p q _ _ pfp pfpiq))::pfs') suffix
+      := proof2proof'
+           Γ
+           (prefix ++ (pattern2proof p) ++ (pattern2proof q))
+           ((existT (patt_imp p q) pfpiq)::(existT p pfp)::pfs')
+           ((lbl "proof-rule-mp")::suffix) ;
+
+    proof2proof' Γ prefix (_::_) suffix := []
+  .
+  Proof.
+    - simpl. lia.
+    - simpl. lia.
+    - simpl. lia.
+    - simpl.
+      unfold proof_size''. simpl. lia.
+  Defined.
+  Transparent proof2proof'.
+
+  Check proof2proof'.
+  Definition proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
+    proof2proof' Γ [] [(existT ϕ pf)] [].
   
+  
+  (*
   Fixpoint proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     match pf as _ return list Label with
     | P1 _ p q wfp wfq => pattern2proof p ++ pattern2proof q ++ [lbl "proof-rule-prop-1"]
@@ -337,7 +399,8 @@ Section gen.
         ++ [lbl "proof-rule-mp"]
     | _ => []
     end.
-
+   *)
+  
   Definition proof2database (Γ : Theory) (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
     (dependenciesForPattern ϕ)

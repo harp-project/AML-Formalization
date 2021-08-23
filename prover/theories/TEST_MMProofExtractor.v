@@ -1,4 +1,6 @@
 From Coq Require Import Strings.String.
+From Equations Require Import Equations.
+
 From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem Helpers.FOL_helpers.
 From MatchingLogicProver Require Import MMProofExtractor.
@@ -110,6 +112,19 @@ Module MMTest.
           _
           ϕ₄_holds
     )).
+
+  Goal (proof2database symbolPrinter _ _ ϕ₄_holds) = [].
+  Proof.
+    unfold proof2database. simpl.
+    unfold proof2proof.
+    unfold ϕ₄_holds. unfold A_impl_A.
+    rewrite proof2proof'_equation_6. simpl
+    Print Rewrite HintDb proof2proof'.
+    autorewrite with proof2proof'.
+    simp proof2proof'.
+    funelim (proof2proof' _ _ _ _ _).
+    simp proof2proof'.
+    unfold proof2proof'.
   
   (*Compute proof₄.*)
 
@@ -209,7 +224,7 @@ Module MMTest.
 
   (* Takes forever *)
   (*Compute ϕ₈_holds. *)
-  Eval native_compute in proof₈.
+  (*Eval native_compute in proof₈.*)
 
 (*
   Time Eval vm_compute in proof₆.
@@ -225,7 +240,6 @@ Module MMTest.
   
 
 
-(*
   (* We put these at the end so that we do not accidentally run it during an interactive session. *)
   Write MetaMath Proof Object File "proof_1.mm" proof₁.
   Write MetaMath Proof Object File "proof_2.mm" proof₂.
@@ -235,6 +249,7 @@ Module MMTest.
   (* Stack overflow *)
   (*Write MetaMath Proof Object File "proof_5.mm" proof₅.*)
 
+(*
   Write MetaMath Proof Object File "proof_6.mm" proof₆.
 *)
 End MMTest.
