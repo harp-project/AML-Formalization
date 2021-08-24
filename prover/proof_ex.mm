@@ -1,5 +1,6 @@
 $[ mm/matching-logic.mm $]
 $v var_x var_y $.
+$d var_x var_y $.
 var-x-is-element-var $f #ElementVariable var_x $.
 var-y-is-element-var $f #ElementVariable var_y $.
 the-proof-1 $p |- ( \exists var_x var_x )  $= var-x-is-element-var proof-rule-existence  $.
