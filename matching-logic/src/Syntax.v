@@ -1339,7 +1339,7 @@ Section syntax.
       + reflexivity.
     - simpl in *. apply Nat.ltb_lt in H.
       destruct (n =? n') eqn:Heq.
-      + apply Nat.eqb_eq in Heq. lia.
+      + apply Nat.eqb_eq in Heq. subst. lia.
       + reflexivity.
     - simpl in H.
       apply andb_true_iff in H.
@@ -4433,6 +4433,249 @@ Section syntax.
       apply leibniz_equiv in H0. rewrite H0 in H. now clear H0.
     * apply IHφ.
     * apply IHφ.
+  Qed.
+
+  Lemma bound_to_free_variable_subst :
+    forall φ x m n n' ψ, m > n ->
+      well_formed_closed_aux φ m n' -> x ∉ free_evars φ
+    ->
+      bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
+  Proof.
+    induction φ; intros; cbn; auto.
+    * destruct (evar_eqdec x0 x); simpl.
+      - simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
+      - reflexivity.
+    * destruct (extralibrary.compare_nat n n0).
+      - assert (n =? n0 = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
+      - subst. rewrite Nat.eqb_refl. simpl. destruct (evar_eqdec x x); auto. congruence.
+      - assert (n =? n0 = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
+    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    * simpl in H0, H1. erewrite IHφ. reflexivity. instantiate (1 := S m). 
+      all: try eassumption. lia.
+    * simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
+  Qed.
+
+  Lemma evar_open_no_negative_occurrence :
+    forall φ db1 db2 x,
+      (no_negative_occurrence_db_b db1 (evar_open db2 x φ) ->
+      no_negative_occurrence_db_b db1 φ) /\
+      (no_positive_occurrence_db_b db1 (evar_open db2 x φ) ->
+      no_positive_occurrence_db_b db1 φ).
+  Proof.
+    induction φ; intros; cbn; auto.
+    * split; intros.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+    * split; intros.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+  Qed.
+
+  Lemma evar_open_positive : forall φ n x,
+    well_formed_positive (evar_open n x φ) ->
+    well_formed_positive φ.
+  Proof.
+    induction φ; intros; cbn; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      erewrite -> IHφ1, -> IHφ2; eauto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      erewrite -> IHφ1, -> IHφ2; eauto.
+    * simpl in H. eapply IHφ; eauto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      apply andb_true_iff. split.
+      eapply evar_open_no_negative_occurrence. eassumption.
+      eapply IHφ; eauto.
+  Qed.
+
+  Lemma wf_body_ex_to_wf :
+    forall φ, wf_body_ex φ -> well_formed (patt_exists φ).
+  Proof.
+    intros. unfold well_formed, well_formed_closed. simpl.
+    remember (fresh_evar φ) as x.
+    assert (x ∉ free_evars φ) by now apply x_eq_fresh_impl_x_notin_free_evars.
+    specialize (H x H0).
+    apply andb_true_iff in H. destruct H.
+    Search well_formed_positive evar_open.
+    apply evar_open_positive in H.
+    apply wfc_aux_body_ex_imp2 in H1.
+    now rewrite -> H, -> H1.
+  Qed.
+
+  Lemma bevar_subst_closed :
+    forall φ ψ n m,
+    well_formed_closed_aux φ (S n) m ->
+    well_formed_closed_aux ψ n m
+    ->
+    well_formed_closed_aux (bevar_subst φ ψ n) n m.
+  Proof.
+    induction φ; intros; cbn; auto.
+    * break_match_goal; simpl in H0, H; simpl; auto.
+      all: apply Nat.ltb_lt. auto. apply Nat.ltb_lt in H. lia.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
+    * simpl in H. rewrite -> IHφ; auto. eapply well_formed_aux_increase.
+      3: eassumption. lia. lia.
+    * simpl in H. rewrite -> IHφ; auto. eapply well_formed_aux_increase.
+      3: eassumption. lia. lia.
+  Qed.
+
+  Lemma bevar_subst_positive :
+    forall φ ψ n, mu_free φ ->
+    well_formed_positive φ -> well_formed_positive ψ
+   ->
+    well_formed_positive (bevar_subst φ ψ n).
+  Proof.
+    induction φ; intros; cbn; auto.
+    * break_match_goal; auto.
+    * inversion H. subst. apply andb_true_iff in H0 as [E1 E2].
+      now rewrite -> IHφ1, -> IHφ2.
+    * inversion H. subst. apply andb_true_iff in H0 as [E1 E2].
+      now rewrite -> IHφ1, -> IHφ2.
+    * inversion H. simpl in H0. subst. now apply IHφ.
+    * inversion H.
+  Qed.
+
+  Lemma free_evars_bevar_subst :
+    forall φ ψ n,
+    free_evars (bevar_subst φ ψ n) ⊆ free_evars φ ∪ free_evars ψ.
+  Proof.
+    induction φ; intros; simpl; auto.
+    * apply union_subseteq_l.
+    * apply empty_subseteq.
+    * destruct (extralibrary.compare_nat n n0); simpl.
+      - apply empty_subseteq.
+      - apply union_subseteq_r.
+      - apply empty_subseteq.
+    * apply empty_subseteq.
+    * apply empty_subseteq.
+    * specialize (IHφ1 ψ n). specialize (IHφ2 ψ n).
+      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_idemp (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0. 
+    * apply empty_subseteq.
+    * specialize (IHφ1 ψ n). specialize (IHφ2 ψ n).
+      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_idemp (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
+      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
+      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
+      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0. 
+  Qed.
+
+  Theorem evar_quantify_closed :
+    forall φ x n m, well_formed_closed_aux φ n m ->
+    well_formed_closed_aux (evar_quantify x n φ) (S n) m.
+  Proof.
+    induction φ; intros; cbn; auto.
+    * destruct evar_eqdec; simpl; auto. apply Nat.ltb_lt. lia.
+    * simpl in H. apply Nat.leb_le. apply Nat.ltb_lt in H. lia.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
+  Qed.
+
+  Theorem no_occ_quantify : 
+    ∀ (φ : Pattern) (db1 db2 : db_index) (x : evar),
+    (no_negative_occurrence_db_b db1 φ
+     → no_negative_occurrence_db_b db1 (evar_quantify x db2 φ))
+    ∧ (no_positive_occurrence_db_b db1 φ
+       → no_positive_occurrence_db_b db1 (evar_quantify x db2 φ)).
+  Proof.
+    induction φ; split; intros; simpl; auto.
+    1-2: destruct evar_eqdec; simpl; auto.
+    1-4: simpl in H; apply andb_true_iff in H as [E1 E2];
+         specialize (IHφ1 db1 db2 x) as [IH1 IH2];
+         specialize (IHφ2 db1 db2 x) as [IH1' IH2'];
+         try rewrite -> IH1; try rewrite -> IH1'; 
+         try rewrite -> IH2; try rewrite -> IH2'; auto.
+    1-4: simpl in H; now apply IHφ.
+  Qed.
+
+  Theorem evar_quantify_positive :
+    forall φ x n, well_formed_positive φ ->
+    well_formed_positive (evar_quantify x n φ).
+  Proof.
+    induction φ; intros; cbn; auto.
+    * destruct evar_eqdec; simpl; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. apply andb_true_iff. split.
+      - now apply no_occ_quantify.
+      - now apply IHφ.
+  Qed.
+
+  Corollary evar_quantify_well_formed :
+    forall φ x, well_formed φ ->
+      well_formed (patt_exists (evar_quantify x 0 φ)).
+  Proof.
+    intros.
+    unfold well_formed, well_formed_closed.
+    apply andb_true_iff in H as [E1 E2]. simpl.
+    now erewrite -> evar_quantify_closed, -> evar_quantify_positive.
+  Qed.
+
+  Theorem evar_quantify_not_free :
+    forall φ x n, not (@elem_of (@evar (@variables signature)) _
+     (@gmap.gset_elem_of (@evar (@variables _)) (@evar_eqdec (@variables _))
+        (@evar_countable (@variables _))) x
+     (free_evars (evar_quantify x n φ))).
+  Proof.
+    induction φ; intros; simpl.
+    2-5, 7: apply not_elem_of_empty.
+    * destruct evar_eqdec; simpl.
+      - apply not_elem_of_empty.
+      - subst. now apply not_elem_of_singleton_2.
+    * apply not_elem_of_union. split. apply IHφ1. apply IHφ2.
+    * apply not_elem_of_union. split. apply IHφ1. apply IHφ2.
+    * apply IHφ.
+    * apply IHφ.
+  Qed.
+
+  Inductive wf_PatCtx : PatCtx -> Prop :=
+  | wf_box : wf_PatCtx pctx_box
+  | wf_app_l C r : well_formed r -> wf_PatCtx C -> wf_PatCtx (pctx_app_l C r)
+  | wf_app_r C l : well_formed l -> wf_PatCtx C -> wf_PatCtx (pctx_app_r l C)
+  | wf_imp_l C r : well_formed r -> wf_PatCtx C -> wf_PatCtx (pctx_imp_l C r)
+  | wf_imp_r C l : well_formed l -> wf_PatCtx C -> wf_PatCtx (pctx_imp_r l C)
+  | wf_exs C x : wf_PatCtx C -> wf_PatCtx (pctx_exists x C).
+
+  Theorem subst_patctx_wf :
+    forall C φ, wf_PatCtx C -> well_formed φ
+  ->
+    well_formed (subst_patctx C φ).
+  Proof.
+    induction C; intros; simpl; auto.
+    * inversion H. subst. apply well_formed_app; auto.
+    * inversion H. subst. apply well_formed_app; auto.
+    * inversion H. subst. apply well_formed_imp; auto.
+    * inversion H. subst. apply well_formed_imp; auto.
+    * inversion H. subst. apply IHC in H0; auto.
+      now apply evar_quantify_well_formed.
   Qed.
 
 End syntax.

@@ -2858,80 +2858,103 @@ Qed.
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
     ->
-     well_formed (subst_patctx C φ1) -> well_formed (subst_patctx C φ2) ->
+     (* well_formed (subst_patctx C φ1) -> well_formed (subst_patctx C φ2) -> *)
+     wf_PatCtx C ->
      Γ ⊢ (subst_patctx C φ1 <---> subst_patctx C φ2).
   Proof.
     induction C; intros.
     * apply H1.
-    * simpl. simpl in H2, H3. apply well_formed_app_1 in H2.
-      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3.
+    * simpl. inversion H2; subst. (* simpl in H2, H3. apply well_formed_app_1 in H2.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3. *)
       specialize (IHC φ1 φ2 Γ).
       apply pf_iff_iff in IHC. all: auto. destruct IHC.
-      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r H4).
-      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r H5).
+      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r H3).
+      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r H4).
       apply pf_iff_iff; auto.
-    * simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
-      apply well_formed_app_2 in H3 as H31. apply well_formed_app_1 in H3 as H3'.
+      all: auto. 1-2: apply well_formed_app; auto.
+      all: apply subst_patctx_wf; auto.
+    * simpl. inversion H2; subst. (* simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
+      apply well_formed_app_2 in H3 as H31. apply well_formed_app_1 in H3 as H3'. *)
       specialize (IHC φ1 φ2 Γ).
       apply pf_iff_iff in IHC. all: auto. destruct IHC.
-      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l H4).
-      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l H5).
+      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l H3).
+      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l H4).
       apply pf_iff_iff; auto.
-    * simpl in H2, H3. apply well_formed_app_1 in H2 as H2'.
-      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'.
+      all: auto. 1-2: apply well_formed_app; auto.
+      all: apply subst_patctx_wf; auto.
+    * simpl. inversion H2; subst. (* simpl in H2, H3. apply well_formed_app_1 in H2 as H2'.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'. *)
       specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      apply pf_iff_iff in IHC. all: auto. 2-3: now apply subst_patctx_wf.
+      destruct IHC.
       simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
-      apply pf_iff_iff; auto. split.
-      - pose proof (syllogism Γ B A r H31 H2' H3').
-        pose proof (Modus_ponens Γ (B ---> A) ((A ---> r) ---> B ---> r)
-                    ltac:(auto) ltac:(auto) H5 H6). auto.
-      - pose proof (syllogism Γ A B r H2' H31 H3').
-        pose proof (Modus_ponens Γ (A ---> B) ((B ---> r) ---> A ---> r)
-                    ltac:(auto) ltac:(auto) H4 H6). auto.
-    * simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
-      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'.
+      apply pf_iff_iff; auto.
+      1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
+           now apply subst_patctx_wf.
+      split.
+      - epose proof (syllogism Γ B A r _ _ _).
+        epose proof (Modus_ponens Γ (B ---> A) ((A ---> r) ---> B ---> r)
+                    ltac:(auto) ltac:(auto) _ _). auto.
+      - epose proof (syllogism Γ A B r _ _ _).
+        epose proof (Modus_ponens Γ (A ---> B) ((B ---> r) ---> A ---> r)
+                    ltac:(auto) ltac:(auto) _ _). auto.
+      Unshelve.
+       all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
+       all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
+       all: auto.
+    * simpl. inversion H2; subst. (* simpl in H2, H3. apply well_formed_app_2 in H2 as H2'.
+      apply well_formed_app_1 in H3 as H31. apply well_formed_app_2 in H3 as H3'. *)
       specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC.
+      apply pf_iff_iff in IHC. all: auto. all: auto. 2-3: now apply subst_patctx_wf.
+      destruct IHC.
       simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
-      apply pf_iff_iff; auto. split.
-      - pose proof (prf_weaken_conclusion Γ l A B H31 H2' H3').
-        pose proof (Modus_ponens Γ (A ---> B) ((l ---> A) ---> l ---> B)
-                    ltac:(auto) ltac:(auto) H4 H6). auto.
-      - pose proof (prf_weaken_conclusion Γ l B A H31 H3' H2').
-        pose proof (Modus_ponens Γ (B ---> A) ((l ---> B) ---> l ---> A)
-                    ltac:(auto) ltac:(auto) H5 H6). auto.
-    * simpl in H2, H3. apply wf_ex_to_wf_body in H2. apply wf_ex_to_wf_body in H3.
-      unfold wf_body_ex in *. Check evar_open_evar_quantify.
-      epose proof (H2 x _).
-      epose proof (H3 x _).
+      apply pf_iff_iff; auto.
+      1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
+           now apply subst_patctx_wf.
+      split.
+      - epose proof (prf_weaken_conclusion Γ l A B _ _ _).
+        epose proof (Modus_ponens Γ (A ---> B) ((l ---> A) ---> l ---> B)
+                    ltac:(auto) ltac:(auto) _ _). auto.
+      - epose proof (prf_weaken_conclusion Γ l B A _ _ _).
+        epose proof (Modus_ponens Γ (B ---> A) ((l ---> B) ---> l ---> A)
+                    ltac:(auto) ltac:(auto) _ _). auto.
+      Unshelve.
+       all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
+       all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
+       all: auto.
+    * inversion H2. subst. (* simpl in H2, H3. apply wf_ex_to_wf_body in H2 as H2'.
+      apply wf_ex_to_wf_body in H3 as H3'.
+      unfold wf_body_ex in *.
+      epose proof (H2' x _).
+      epose proof (H3' x _).
       Unshelve. 2-3: shelve.
       erewrite evar_open_evar_quantify in H4.
-      erewrite evar_open_evar_quantify in H5. 2-3: shelve.
-      specialize (IHC _ _ Γ H H0 H1 H4 H5).
+      erewrite evar_open_evar_quantify in H5. 2-3: shelve. *)
+      specialize (IHC _ _ Γ H H0 H1 H4).
       simpl. unfold exists_quantify.
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
-      unfold instantiate in H6, H7.
-      rewrite <- evar_open_bevar_subst_same in H6, H7.
-      erewrite -> evar_open_evar_quantify in H6, H7. 2-3: shelve.
+      unfold instantiate in H3, H5.
+      rewrite <- evar_open_bevar_subst_same in H3, H5.
+      erewrite -> evar_open_evar_quantify in H3, H5. 2-3: shelve.
       apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
       all: auto.
-      eapply syllogism_intro in H6. 5: exact IH2. all: auto. 2: shelve.
-      eapply syllogism_intro in H7. 5: exact IH1. all: auto. 2: shelve.
-      apply (Ex_gen _ _ _ x) in H6. apply (Ex_gen _ _ _ x) in H7.
-      all: auto. 2-5: shelve.
-      unfold exists_quantify in H6, H7.
+      eapply syllogism_intro in H3. 5: exact IH2. all: auto.
+      eapply syllogism_intro in H5. 5: exact IH1. all: auto.
+      apply (Ex_gen _ _ _ x) in H3. apply (Ex_gen _ _ _ x) in H5.
+      all: auto. 2-3: shelve.
+      unfold exists_quantify in H3, H5.
       apply pf_iff_iff; auto.
-        (*
-          Existential instantiation needed for this one.
-          ∃x, P --> P[x/c], where c is a fresh constant symbol (not in Γ, P)
-          Question: How to connect P and P[x/c], where x is a free variable of P?
-        *)
      Unshelve.
-     5-6, 9-10: exact 0.
-     all: admit. (* TODO: These are technical *)
-  Admitted.
+     17, 18: exact 0.
+     all: try apply evar_quantify_well_formed; auto.
+     all: try apply subst_patctx_wf; auto.
+     1-2: simpl; apply evar_quantify_not_free.
+     + eapply subst_patctx_wf in H4. 2: exact H0.
+       apply andb_true_iff in H4 as [E1 E2]. apply E2.
+     + eapply subst_patctx_wf in H4. 2: exact H.
+       apply andb_true_iff in H4 as [E1 E2]. apply E2.
+  Qed.
 
   Lemma imp_trans_mixed_meta : forall Γ A B C D,
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
@@ -2939,7 +2962,7 @@ Qed.
   ->
     Γ ⊢ ((A ---> B) ---> C ---> D).
   Proof.
-    intros. Search patt_imp ML_proof_system.
+    intros.
     epose proof (prf_weaken_conclusion Γ A B D H H0 H2).
     eapply Modus_ponens in H5; auto.
     epose proof (prf_strenghten_premise Γ A C D H H1 H2).
@@ -2993,7 +3016,7 @@ Qed.
       all: now apply well_formed_free_evar_subst.
     * inversion MF; subst. apply wf_ex_to_wf_body in H3 as H3'.
       remember (fresh_evar (ψ $ φ1 $ φ2 $ patt_free_evar x)) as fx.
-      unfold fresh_evar in Heqfx. simpl in Heqfx. Search evar_fresh.
+      unfold fresh_evar in Heqfx. simpl in Heqfx.
       pose (@set_evar_fresh_is_fresh' _ (free_evars ψ ∪ (free_evars φ1 ∪ (free_evars φ2 ∪ {[x]})))).
       rewrite <- Heqfx in n.
       apply sets.not_elem_of_union in n. destruct n as [n1 n2].
@@ -3040,7 +3063,63 @@ Qed.
       all: try apply free_evars_free_evar_subst.
    all: apply sets.not_elem_of_union; auto.
    * inversion MF.
-Qed.
+  Qed.
+
+  Lemma and_weaken :
+    forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+    Γ ⊢ (B ---> C)
+   ->
+    Γ ⊢ ((A and B) ---> (A and C)).
+  Proof.
+    intros.
+    epose proof (and_impl' Γ A B (A and C) _ _ _). eapply Modus_ponens. 4: exact H3.
+    1-2: shelve.
+    apply reorder_meta; auto.
+    epose proof (prf_strenghten_premise Γ C B (A ---> A and C) _ _ _).
+    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H4. all: auto.
+    apply conj_intro2.
+    Unshelve.
+    all: unfold patt_and, patt_or, patt_not; auto 10.
+  Qed.
+
+  Lemma impl_and :
+    forall Γ A B C D, well_formed A -> well_formed B -> well_formed C -> well_formed D
+   ->
+    Γ ⊢ (A ---> B) ->
+    Γ ⊢ (C ---> D) ->
+    Γ ⊢ (A and C) ---> (B and D).
+  Proof.
+    intros.
+    pose proof (conj_intro Γ B D H0 H2).
+    epose proof (prf_strenghten_premise Γ B A (D ---> B and D) H0 H _).
+    eapply Modus_ponens in H6; auto. 2: shelve.
+    eapply Modus_ponens in H6; auto.
+    apply reorder_meta in H6; auto.
+    epose proof (prf_strenghten_premise Γ D C (A ---> B and D) H2 H1 _).
+    eapply Modus_ponens in H7; auto. 2: shelve.
+    eapply Modus_ponens in H7; auto.
+    apply reorder_meta in H7; auto.
+    epose proof (and_impl' _ _ _ _ _ _ _).
+    eapply Modus_ponens in H8. 4: exact H7. all: auto.
+    Unshelve.
+    all: unfold patt_and, patt_or, patt_not; auto 10.
+  Qed.
+
+  Lemma and_drop :
+   forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+    Γ ⊢ ((A and B) ---> C)
+   ->
+    Γ ⊢ ((A and B) ---> (A and C)).
+  Proof.
+    intros.
+    pose proof (pf_conj_elim_l Γ A B H H0).
+    epose proof (@impl_and Γ (A and B) A (A and B) C _ _ _ _ H3 H2).
+    epose proof (and_impl _ _ _ _ _ _ _).
+    eapply Modus_ponens in H5. 4: exact H4. 2-3: shelve.
+    epose proof (prf_contraction _ _ _ _ _).
+    eapply Modus_ponens in H6. 4: exact H5. auto.
+    Unshelve. all: unfold patt_and, patt_or, patt_not; auto 20.
+  Qed.
 
 End FOL_helpers.
 
