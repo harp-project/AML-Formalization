@@ -79,6 +79,8 @@ Section named.
       (npatt_mu X nphi, evm', svm')
     end.
 
+  Definition to_NamedPattern (ϕ : Pattern) : NamedPattern :=
+    (to_NamedPattern' ϕ ∅ ∅).1.1.
   
   
 End named.
