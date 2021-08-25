@@ -1,6 +1,6 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect ssrfun ssrbool.
-From stdpp Require Import pmap gmap mapset fin_sets sets list.
+From stdpp Require Import pmap gmap mapset fin_sets sets list propset.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
@@ -789,3 +789,9 @@ Proof.
     + simpl. exact H.
     + simpl. apply IHl. apply H.
 Qed.
+
+Definition propset_fa_union {T C : Type} (f : C -> propset T) : propset T
+  := PropSet (fun (x : T) => exists (c : C), x ∈ f c).
+
+
+                                                                        
