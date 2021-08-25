@@ -1,0 +1,1 @@
+( \imp ( \imp sym-a ( \imp ( \imp sym-b \bot ) \bot ) ) ( \imp sym-a sym-b ) ) 

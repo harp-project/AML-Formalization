@@ -1,9 +1,14 @@
+let
+  sources = import ../../nix/sources.nix;
+  pinned = import sources."nixpkgs" { config = {}; overlays = []; };
+in
+
 { coqVersion }:
 with import <nixpkgs> {};
 
 let
   coqVersion_ = builtins.replaceStrings ["."] ["_"] coqVersion;
-  pkgs = import <nixpkgs> { };
+  pkgs = pinned; 
   ncoq = pkgs."coq_${coqVersion_}";
   ncoqPackages = pkgs."coqPackages_${coqVersion_}";
 
@@ -33,4 +38,12 @@ let
       } ) { } ;
 
     metamath = pkgs.metamath;
-in { coq = ncoq; inherit equations; inherit metamath; inherit mllib; }
+    ocaml = coq.ocamlPackages.ocaml;
+    camlp5 = coq.ocamlPackages.camlp5;
+    findlib = ncoq.ocamlPackages.findlib;
+    zarith = ncoq.ocamlPackages.zarith;
+
+in { coq = ncoq; inherit equations; inherit metamath; inherit mllib;
+  inherit ocaml; inherit camlp5;
+  inherit findlib; inherit zarith;
+}

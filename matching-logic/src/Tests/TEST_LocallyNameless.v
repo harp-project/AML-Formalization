@@ -27,9 +27,9 @@ Module test_1.
     
   (* Example patterns *)
   
-  Definition a_symbol := sym ctor.
+  Definition a_symbol : Pattern := sym ctor.
   
-  Definition more := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+  Definition more : Pattern := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
   Example e1 X: evar_open 0 X more = more.
   Proof. unfold more. autorewrite with ml_db. reflexivity. Qed.
@@ -84,7 +84,7 @@ Module test_2.
       * decide equality.
       * decide equality.
     Qed.
-    
+
     Instance symbols_H : SymbolsH Symbols := {| SHSymbols_eqdec := Symbols_eqdec; |}.
     Instance signature : Signature := @SignatureFromSymbols Symbols symbols_H.
     (* https://stackoverflow.com/a/44769124/6209703 *)
@@ -145,12 +145,12 @@ Module test_2.
       | _, _ => Empty_set domain
       end.
     
-    Let M1 : @Model signature :=
+    Let M1 : Model :=
       {| Domain := domain;
          nonempty_witness := dom_nat 0;
          Domain_eq_dec := domain_dec;
          (* for some reason, just using 'my_sym_interp' here results in a type error *)
-         sym_interp := fun s : @symbols signature => my_sym_interp s;
+         sym_interp := fun s : symbols => my_sym_interp s;
          (* But this works. interesting. *)
          app_interp := my_app_interp;
       |}.

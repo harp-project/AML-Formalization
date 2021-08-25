@@ -444,3 +444,4 @@ ${
     proof-rule-singleton.3 $e #Substitution ph4 ph1 ( \and x ( \not ph2 ) ) yY $.
     proof-rule-singleton $a |- ( \not ( \and ph3 ph4 ) ) $.    
 $}
+

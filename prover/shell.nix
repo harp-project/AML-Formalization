@@ -1,3 +1,8 @@
+let
+  sources = import ../nix/sources.nix;
+  pinned = import sources."nixpkgs" { config = {}; overlays = []; };
+in
+
 { coqVersion ? "8.13"}:
 with import <nixpkgs> {};
 
@@ -7,7 +12,10 @@ let
   
   self = mkShell {
     name="matching-logic-interactive-prover";
-    buildInputs = [deps.coq deps.mllib deps.equations];
+    buildInputs = [deps.coq deps.mllib deps.equations deps.findlib deps.zarith
+      deps.ocaml deps.camlp5 deps.metamath
+      pinned.ghc
+    ];
   };
 
 in
