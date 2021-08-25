@@ -25,7 +25,7 @@ Section FOL_helpers.
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) -> Γ ⊢ (A ---> A).
   Proof. 
-    intros.
+    intros WFA.
     epose proof (_1 := P2 Γ A (A ---> A) A _ _ _).
     epose proof (_2 := P1 Γ A (A ---> A) _ _).
 
@@ -45,7 +45,7 @@ Section FOL_helpers.
   Lemma P4m (Γ : Theory) (A B : Pattern) :
     (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> ¬B) ---> ¬A)).
   Proof.
-    intros. eapply (Modus_ponens Γ _ _ _ _).
+    intros WFA WFB. eapply (Modus_ponens Γ _ _ _ _).
     - eapply(P1 _ (A ---> B) (A ---> B ---> Bot) _ _).
     - eapply (Modus_ponens _ _ _ _ _).
       + eapply (Modus_ponens _ _ _ _ _).
@@ -66,7 +66,7 @@ Section FOL_helpers.
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ ((A ---> ¬A) ---> ¬A).
   Proof.
-    intros. eapply (Modus_ponens _ _ _ _ _).
+    intros WFA. eapply (Modus_ponens _ _ _ _ _).
     - eapply (A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
     - eapply (P4m _ A A _ _).
       Unshelve.
@@ -76,7 +76,7 @@ Section FOL_helpers.
   Lemma reorder (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
   Proof.
-    intros.
+    intros WFA WFB WFC.
     epose proof (t1 := (Modus_ponens Γ _ _ _ _
                                      (P1 Γ ((A ---> B) ---> A ---> C) B _ _)
                                      (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
@@ -114,7 +114,7 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> well_formed C ->  
     Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (B ---> A ---> C).
   Proof.
-    intros.
+    intros H H0 H1 H2.
     eapply (Modus_ponens _ _ _ _ _).
     - exact (P1 _ B A H0 H).
     - eapply (Modus_ponens _ _ _ _ _).
@@ -137,7 +137,7 @@ Section FOL_helpers.
   Lemma syllogism (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C)).
   Proof.
-    intros.
+    intros WFA WFB WFC.
     eapply (reorder_meta _ _ _ _).
     eapply (Modus_ponens _ _ _ _ _).
     - eapply(P1 _ (B ---> C) A _ _).
@@ -155,7 +155,7 @@ Section FOL_helpers.
   Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
   Proof.
-    intros.
+    intros H H0 H1 H2 H3.
     eapply (Modus_ponens _ _ _ _ _).
     - exact H2.
     - eapply (Modus_ponens _ _ _ _ _).
@@ -170,7 +170,7 @@ Section FOL_helpers.
   Lemma modus_ponens (Γ : Theory) ( A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (A ---> B) ---> B).
   Proof.
-    intros.
+    intros WFA WFB.
     eapply (Modus_ponens _ _ _ _ _).
     - eapply (P1 _ A (A ---> B) _ _).
     - eapply (Modus_ponens _ _ _ _ _).
@@ -188,10 +188,10 @@ Section FOL_helpers.
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (A ---> ¬(¬A)).
   Proof.
-    intros.
+    intros WFA.
     assert(@well_formed Σ Bot).
     shelve.
-    exact (modus_ponens _ A Bot H H0).
+    exact (modus_ponens _ A Bot WFA H).
     Unshelve.
     all: auto.
   Defined.
@@ -201,9 +201,9 @@ Section FOL_helpers.
   Lemma deduction (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
   Proof.
-    intros.
+    intros WFA WFB H H0.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H2.
+    - exact H0.
     - eapply (P1 _ B A _ _).
       Unshelve.
       all: auto.
@@ -213,7 +213,7 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> 
     Γ ⊢ ((¬ B) ---> (¬ A)) -> Γ ⊢ (A ---> B).
   Proof.
-    intros.
+    intros H H0 H1.
     epose (Modus_ponens Γ _ _ _ _ H1 (P4m Γ (¬ B) (¬ A) _ _)).
     epose (P1 Γ (¬ ¬A) (¬ B) _ _).
     epose (syllogism_intro Γ (¬ (¬ A)) (¬ B ---> ¬ (¬ A)) (¬ (¬ B)) _ _ _ m0 m).
@@ -235,7 +235,7 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> 
     Γ ⊢ (((¬ A) ---> (¬ B)) ---> (B ---> A)).
   Proof.
-    intros.
+    intros WFA WFB.
     epose (P3 Γ A _).
     epose (P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
     epose (P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
@@ -254,7 +254,7 @@ Section FOL_helpers.
   Lemma conj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A and B)).
   Proof.
-    intros.
+    intros WFA WFB.
     epose(tB := (A_impl_A Γ B _)).
     epose(t1 := Modus_ponens Γ _ _ _ _ (P2 _ (¬(¬A) ---> ¬B) A Bot _ _ _)
                              (P1 _ _ B _ _)).
@@ -299,12 +299,12 @@ Section FOL_helpers.
   Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A and B).
   Proof.
-    intros.
+    intros WFA WFB H H0.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H2.
+    - exact H0.
     - eapply (Modus_ponens _ _ _ _ _).
-      + exact H1.
-      + exact (conj_intro _ A B H H0).
+      + exact H.
+      + exact (conj_intro _ A B WFA WFB).
         Unshelve.
         all: auto.
   Defined.
@@ -315,7 +315,7 @@ Section FOL_helpers.
   Lemma disj (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A or B)).
   Proof.
-    intros. unfold patt_or.
+    intros WFA WFV. unfold patt_or.
     
     epose proof (t1 := (P1 Γ B (¬A) _ _)).
     
@@ -331,12 +331,12 @@ Section FOL_helpers.
   Lemma disj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A or B).
   Proof.
-    intros.
+    intros WFA WFB H H0.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H2.
+    - exact H0.
     - eapply (Modus_ponens _ _ _ _ _).
-      + exact H1.
-      + exact (disj _ A B H H0).
+      + exact H.
+      + exact (disj _ A B WFA WFB).
         Unshelve.
         all: auto.
   Defined.
@@ -345,14 +345,14 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (C ---> D) -> Γ ⊢ (A ---> B ---> D).
   Proof.
-    intros.
+    intros WFA WFB WFC WFD H H0.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H3.
+    - exact H.
     - eapply (Modus_ponens _ _ _ _ _).
       + eapply (Modus_ponens _ _ _ _ _).
         * eapply (Modus_ponens _ _ _ _ _).
           -- eapply (Modus_ponens _ _ _ _ _).
-             ++ exact H4.
+             ++ exact H0.
              ++ eapply (P1 _ (C ---> D) B _ _).
           -- eapply (P2 _ B C D _ _ _).
         * eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
@@ -364,7 +364,7 @@ Section FOL_helpers.
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (Bot ---> A).
   Proof.
-    intros.
+    intros WFA.
     eapply (Modus_ponens _ _ _ _ _).
     - eapply (Modus_ponens _ _ _ _ _).
       + eapply (Modus_ponens _ _ _ _ _).
@@ -381,10 +381,10 @@ Section FOL_helpers.
   Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (¬B ---> ¬A) ---> B).
   Proof.
-    intros.
+    intros WFA WFB.
     assert(well_formed (¬ B ---> ¬ A)).
     shelve.
-    exact (reorder_meta Γ H1 H H0 (P4 _ B A H0 H)).
+    exact (reorder_meta Γ H WFA WFB (P4 _ B A WFB WFA)).
     Unshelve.
     all: auto.
   Defined.
@@ -392,10 +392,10 @@ Section FOL_helpers.
   Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
   Proof.
-    intros.
+    intros WFA WFB.
     assert(well_formed (¬A)).
     shelve.
-    exact (P1 _ B (¬A) H0 H1).
+    exact (P1 _ B (¬A) WFB H).
     Unshelve.
     all: auto.
   Defined.
@@ -405,7 +405,7 @@ Section FOL_helpers.
   Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (A or B)).
   Proof.
-    intros.
+    intros WFA WFB.
     eapply (syllogism_4_meta _ _ _ _ _ _ _ _ _ (modus_ponens _ A Bot _ _) (bot_elim _ B _)).
     Unshelve.
     all: auto.
@@ -444,9 +444,9 @@ Section FOL_helpers.
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (¬(¬A) ---> A).
   Proof.
-    intros.
+    intros WFA.
     unfold patt_not.
-    exact (P3 Γ A H).
+    exact (P3 Γ A WFA).
   Defined.
 
   #[local] Hint Resolve not_not_elim : core.
@@ -467,7 +467,7 @@ Section FOL_helpers.
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
   Proof.
-    intros.
+    intros WFA WFB.
     eapply (syllogism_intro _ _ _ _ _ _ _).
     - eapply (P4 _ (¬A) (¬B) _ _).
     - eapply (P4 _ B A _ _).
@@ -479,10 +479,10 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> 
     Γ ⊢ ((¬(¬A)) ---> (¬(¬B))) -> Γ ⊢ (A ---> B).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H1.
-    - exact (double_neg_elim _ A B H H0).
+    - exact H.
+    - exact (double_neg_elim _ A B WFA WFB).
       Unshelve.
       all: auto.
   Defined.
@@ -490,14 +490,14 @@ Section FOL_helpers.
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (¬B ---> ¬A)).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply (deduction _ _ _ _ _).
-    - exact H1.
+    - exact H.
     - eapply (Modus_ponens _ _ _ _ _).
       + eapply (syllogism_intro _ _ _ _ _ _ _).
         * eapply (syllogism_intro _ _ _ _ _ _ _).
           -- eapply (not_not_elim _ A _).
-          -- exact H1.
+          -- exact H.
         * eapply (not_not_intro _ B _).
       + eapply (P4 _ (¬A) (¬B) _ _).
         Unshelve.
@@ -522,7 +522,7 @@ Section FOL_helpers.
   Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
   Proof.
-    intros.
+    intros WFA WFB.
     epose proof (PT := (P4 Γ B A _ _)).
     eapply (syllogism_intro _ _ _ _ _ _ _).
     - exact PT.
@@ -534,11 +534,11 @@ Section FOL_helpers.
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((¬¬A) ---> (¬¬B)).
   Proof.
-    intros.
+    intros WFA WFB H.
     epose proof (NN1 := not_not_elim Γ A _).
     epose proof (NN2 := not_not_intro Γ B _).
     
-    epose proof (S1 := syllogism_intro _ _ _ _ _ _ _ H1 NN2).
+    epose proof (S1 := syllogism_intro _ _ _ _ _ _ _ H NN2).
     
     epose proof (S2 := syllogism_intro _ _ _ _ _ _ _ NN1 S1).
     exact S2.
@@ -549,7 +549,7 @@ Section FOL_helpers.
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((¬¬A) ---> (¬¬B))).
   Proof.
-    intros.
+    intros WFA WFB.
     
     epose (S1 := syllogism Γ (¬¬A) A B _ _ _).
     
@@ -580,7 +580,7 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> 
     Γ ⊢ ((A ---> B) ---> ((¬ B) ---> (¬ A))).
   Proof.
-    intros.
+    intros WFA WFB.
     epose proof (P4 Γ (¬ A) (¬ B) _ _) as m.
     apply syllogism_intro with (B := (¬ (¬ A) ---> ¬ (¬ B))).
     - shelve.
@@ -596,13 +596,13 @@ Section FOL_helpers.
     well_formed A -> well_formed B ->
     Γ ⊢ (A or B) -> Γ ⊢ (B or A).
   Proof.
-    intros. unfold patt_or in *.
+    intros WFA WFB H. unfold patt_or in *.
     
     epose proof (P4 := (P4 Γ A (¬B) _ _)).
     
     epose proof (NNI := not_not_intro Γ B _).
     
-    epose proof (SI := syllogism_intro Γ _ _ _ _ _ _ H1 NNI).
+    epose proof (SI := syllogism_intro Γ _ _ _ _ _ _ H NNI).
     
     eapply (Modus_ponens _ _ _ _ _).
     - exact SI.
@@ -614,10 +614,10 @@ Section FOL_helpers.
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ A -> Γ ⊢ (¬( ¬A )).
   Proof.
-    intros. unfold patt_not.
+    intros WFA H. unfold patt_not.
     epose proof (NN := not_not_intro Γ A _).
     
-    epose proof (MP := Modus_ponens _ _ _ _ _ H0 NN).
+    epose proof (MP := Modus_ponens _ _ _ _ _ H NN).
     assumption.
     Unshelve.
     all: auto.
@@ -626,7 +626,7 @@ Section FOL_helpers.
   Lemma P5i (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (¬ A ---> (A ---> B)).
   Proof.
-    intros.
+    intros WFA WFB.
     
     epose proof (Ax1 := (P1 Γ (¬A) (¬B) _ _)).
     
@@ -641,7 +641,7 @@ Section FOL_helpers.
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi -> Γ ⊢ (Bot ---> phi).
   Proof.
-    intro.
+    intros WFA.
     
     epose proof (B_B := (A_impl_A Γ Bot _)).
     epose proof (P4 := P5i Γ Bot phi _ _).
@@ -687,10 +687,10 @@ Defined. *)
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern):
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)).
   Proof.
-    induction C; intros.
-    - simpl. exact H1.
-    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
-    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H1)). exact m.
+    induction C; intros WFA WFB H.
+    - simpl. exact H.
+    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H)). exact m.
+    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H)). exact m.
       Unshelve.
       all: auto.
   Defined.
@@ -698,8 +698,8 @@ Defined. *)
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
     well_formed A -> Γ ⊢ A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))).
   Proof.
-    intros.
-    epose proof (ANNA := A_implies_not_not_A_alt Γ _ _ H0).
+    intros WFA H.
+    epose proof (ANNA := A_implies_not_not_A_alt Γ _ _ H).
     replace (¬ (¬ A)) with ((¬ A) ---> Bot) in ANNA. 2: auto.
     epose proof (EF := Framing _ C (¬ A) Bot _ _ ANNA).
     epose proof (PB := Prop_bot Γ C).
@@ -718,10 +718,10 @@ Defined. *)
   Lemma A_implies_not_not_A_alt_Γ (G : Theory) (A : Pattern) :
     well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
   Proof.
-    intros. unfold patt_not.
+    intros WFA H. unfold patt_not.
     epose proof (NN := not_not_intro G A _).
     
-    epose proof (MP := Modus_ponens G _ _ _ _ H0 NN).
+    epose proof (MP := Modus_ponens G _ _ _ _ H NN).
     
     assumption.
     Unshelve.
@@ -739,8 +739,8 @@ Defined. *)
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) :
     well_formed A -> Γ ⊢ (A ---> Bot) -> Γ ⊢ (subst_ctx C A ---> Bot).
   Proof.
-    intros.
-    epose proof (FR := Framing Γ C A Bot _ _ H0).
+    intros WFA H.
+    epose proof (FR := Framing Γ C A Bot _ _ H).
     epose proof (BPR := Prop_bot Γ C).
     
     epose proof (TRANS := syllogism_intro _ _ _ _ _ _ _ FR BPR).
@@ -754,12 +754,12 @@ Defined. *)
   Lemma not_not_A_ctx_implies_A (Γ : Theory) (C : Application_context) (A : Pattern):
     well_formed A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))) -> Γ ⊢ A.
   Proof.
-    intros.
-    unfold patt_not in H0 at 1.
+    intros WFA H.
+    unfold patt_not in H at 1.
     
     epose (BIE := false_implies_everything Γ (subst_ctx C Bot) _).
     
-    epose (TRANS := syllogism_intro _ _ _ _ _ _ _ H0 BIE).
+    epose (TRANS := syllogism_intro _ _ _ _ _ _ _ H BIE).
     
     induction C.
     - simpl in TRANS.
@@ -774,8 +774,8 @@ Defined. *)
   Lemma exclusion (G : Theory) (A : Pattern) :
     well_formed A -> G ⊢ A -> G ⊢ (A ---> Bot) -> G ⊢ Bot.
   Proof.
-    intros.
-    epose(Modus_ponens G A Bot _ _ H0 H1).
+    intros WFA H H0.
+    epose(Modus_ponens G A Bot _ _ H H0).
     assumption.
     Unshelve.
     all: auto.
@@ -787,7 +787,7 @@ Defined. *)
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (¬B ---> ¬A).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply Modus_ponens.
     4: apply contraposition.
     all: auto.
@@ -798,11 +798,11 @@ Defined. *)
     well_formed B ->
     Γ ⊢ ((A ---> ¬¬B) ---> (A ---> B)).
   Proof.
-    intros.
+    intros WFA WFB.
     assert (Γ ⊢ (¬¬B ---> B)) by auto.
     assert (Γ ⊢ ((A ---> ¬¬B) ---> (¬¬B ---> B) ---> (A ---> B))) by auto.
-    apply reorder_meta in H2; auto.
-    eapply Modus_ponens. 4: apply H2. all: auto 10.
+    apply reorder_meta in H0; auto.
+    eapply Modus_ponens. 4: apply H0. all: auto 10.
   Defined.
 
   #[local] Hint Resolve A_impl_not_not_B : core.
@@ -980,8 +980,8 @@ Defined. *)
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (A ---> B').
   Proof.
-    intros.
-    eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H3. all: auto.
+    intros WFA WFB WFB' H H0.
+    eapply Modus_ponens. 4: apply prf_weaken_conclusion_meta. 3: apply H0. all: auto.
   Defined.
 
   Lemma prf_strenghten_premise Γ A A' B :
@@ -1078,10 +1078,10 @@ Defined. *)
     Γ ⊢ (h' ---> h) ->
     Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l))).
   Proof.
-    intros.
+    intros WFl WFh WFh' WFg H H0.
     eapply Modus_ponens.
     4: apply prf_strenghten_premise_iter.
-    3: apply H4.
+    3: apply H0.
     all: auto.
   Defined.
 
@@ -1095,10 +1095,10 @@ Defined. *)
     Γ ⊢ (fold_right patt_imp g l) ->
     Γ ⊢ (fold_right patt_imp g (<[n := h']> l)).
   Proof.
-    intros.
+    intros WFl WFh WFh' WFg H H0 H1.
     eapply Modus_ponens.
     4: eapply prf_strenghten_premise_iter_meta.
-    8: apply H3. all: auto.
+    8: apply H. all: auto.
   Defined.
 
   (* TODO rename *)
@@ -1201,7 +1201,7 @@ Defined. *)
     Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)).
   Proof.
     (* TODO we should have a function/lemma for creating these "meta" variants. *)
-    intros.
+    intros WFa WFb WFg Wfl1 Wfl2 H.
     eapply Modus_ponens.
     4: { apply prf_reorder_iter; auto. }
     all: auto 10.
@@ -1223,7 +1223,7 @@ Defined. *)
     Γ ⊢ (A ---> ¬¬B) ->
     Γ ⊢ (A ---> B).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply Modus_ponens.
     4: { apply A_impl_not_not_B; auto. }
     all: auto.
@@ -1234,13 +1234,13 @@ Defined. *)
     well_formed B ->
     Γ ⊢ (A and B ---> A).
   Proof.
-    intros. unfold patt_and. unfold patt_not at 1.
+    intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
     assert (Γ ⊢ (¬ A ---> (¬ A or ¬ B))) by auto.
     assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
     assert (Γ ⊢ (¬ A ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H2. 4: apply H1. all: auto. }
-    epose proof (reorder_meta _ _ _ _ H3).
+    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
+    epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
     all: auto.
@@ -1251,13 +1251,13 @@ Defined. *)
     well_formed B ->
     Γ ⊢ (A and B ---> B).
   Proof.
-    intros. unfold patt_and. unfold patt_not at 1.
+    intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
     assert (Γ ⊢ (¬ B ---> (¬ A or ¬ B))) by auto.
     assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
     assert (Γ ⊢ (¬ B ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H2. 4: apply H1. all: auto. }
-    epose proof (reorder_meta _ _ _ _ H3).
+    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
+    epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
     all: auto.
@@ -1269,10 +1269,10 @@ Defined. *)
     Γ ⊢ (A and B) ->
     Γ ⊢ A.
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply Modus_ponens.
     4: apply pf_conj_elim_l.
-    3: apply H1.
+    3: apply H.
     all: auto.
   Defined.
   
@@ -1282,10 +1282,10 @@ Defined. *)
     Γ ⊢ (A and B) ->
     Γ ⊢ B.
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply Modus_ponens.
     4: apply pf_conj_elim_r.
-    3: apply H1.
+    3: apply H.
     all: auto.
   Defined.
 
@@ -1645,7 +1645,7 @@ Section FOL_helpers.
     Γ ⊢ (foldr patt_imp h l) ->
     Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)).
   Proof.
-    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
+    intros WFl WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
   Defined.
 
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
@@ -1656,8 +1656,8 @@ Section FOL_helpers.
     Γ ⊢ (foldr patt_imp g (l ++ [h])) ->
     Γ ⊢ (foldr patt_imp g l).
   Proof.
-    intros. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
-    3: apply H3. all: auto 7.
+    intros WFl WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
+    3: apply H0. all: auto 7.
   Defined.
 
   Lemma myGoal_assert Γ l g h:
@@ -1731,7 +1731,7 @@ Section FOL_helpers.
     Γ ⊢ (p ---> r) ->
     Γ ⊢ ((q ---> r) ---> (p or q) ---> r).
   Proof.
-    intros. eapply Modus_ponens. 4: apply prf_disj_elim.
+    intros WFp WHq WFr H. eapply Modus_ponens. 4: apply prf_disj_elim.
     all: auto.
   Defined.
   
@@ -1744,7 +1744,7 @@ Section FOL_helpers.
     Γ ⊢ (q ---> r) ->
     Γ ⊢ ((p or q) ---> r).
   Proof.
-    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta.
+    intros WFp WHq WFr H H0. eapply Modus_ponens. 4: apply prf_disj_elim_meta.
     all: auto.
   Defined.
 
@@ -1757,7 +1757,7 @@ Section FOL_helpers.
     Γ ⊢ (p or q) ->
     Γ ⊢ r.
   Proof.
-    intros. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H4.
+    intros WFp WHq WFr H H0 H1. eapply Modus_ponens. 4: apply prf_disj_elim_meta_meta. 3: apply H1.
     all: auto.
   Defined.
   
@@ -1803,10 +1803,10 @@ Section FOL_helpers.
     Γ ⊢ (foldr patt_imp g (a::l)) ->
     Γ ⊢ (foldr patt_imp g l).
   Proof.
-    intros.
+    intros WFl WFa WFg H H0.
     eapply Modus_ponens.
     4: eapply prf_add_proved_to_assumptions.
-    3: apply H3.
+    3: apply H0.
     all: auto.
   Defined.
   
@@ -1818,7 +1818,7 @@ Section FOL_helpers.
     mkMyGoal Γ (h::l) g ->
     mkMyGoal Γ l g.
   Proof.
-    intros.
+    intros H WFl WFg WFh H0.
     apply prf_add_proved_to_assumptions_meta with (a := h).
     all: auto.
   Defined.
@@ -1837,9 +1837,9 @@ Section FOL_helpers.
     Γ ⊢ h ->
     Γ ⊢ g.
   Proof.
-    intros. toMyGoal.
-    mgAdd H3; [auto|auto|auto|].
-    mgAdd H2; [auto|auto|auto|].
+    intros WFl WFg WFh H H0. toMyGoal.
+    mgAdd H0; [auto|auto|auto|].
+    mgAdd H; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
   Defined.
     
@@ -1904,7 +1904,7 @@ Section FOL_helpers.
     Γ ⊢ (foldr patt_imp g (x::l)) ->
     Γ ⊢ (foldr patt_imp g (l ++ [x])).
   Proof.
-    intros.
+    intros WFl WFG WFx H.
     eapply Modus_ponens.
     4: apply reorder_last_to_head.
     all: auto 10.
@@ -2108,7 +2108,7 @@ Defined.
               (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))).
             
   Proof.
-    intros.
+    intros WFl1 WFl2 WFp WFq WFr H.
     eapply Modus_ponens.
     4: { apply prf_disj_elim_iter_2; auto. }
     all: auto 10.
@@ -2124,7 +2124,7 @@ Defined.
     Γ ⊢ (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) ->
     Γ ⊢ (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)).
   Proof.
-    intros.
+    intros WFl1 WFl2 WFp WFq WFr H H0.
     eapply Modus_ponens.
     4: { apply prf_disj_elim_iter_2_meta; auto. }
     all: auto 10.
@@ -2140,7 +2140,7 @@ Defined.
     mkMyGoal Γ (l₁ ++ [q] ++ l₂) r ->
     mkMyGoal Γ (l₁ ++ [p or q] ++ l₂) r.
   Proof.
-    intros.
+    intros WFl1 WFl2 WFp WFq WFr H H0.
     apply prf_disj_elim_iter_2_meta_meta; auto.
   Defined.
 
@@ -2171,7 +2171,7 @@ Defined.
     Γ ⊢ (a ---> q ---> b ---> c) ->
     Γ ⊢ (a ---> (p or q) ---> b ---> c).
   Proof.
-    intros.
+    intros WFa WFb WFp WFq WFc H H0.
     toMyGoal. repeat mgIntro.
 
     mgDestruct 1; auto 10.
@@ -2259,8 +2259,8 @@ Defined.
     Γ ⊢ (A <---> B) ->
     Γ ⊢ (A ---> B).
   Proof.
-    intros. unfold patt_iff in H1.
-    apply pf_conj_elim_l_meta in H1; auto.
+    intros WFA WFB H. unfold patt_iff in H.
+    apply pf_conj_elim_l_meta in H; auto.
   Defined.
 
   Lemma pf_iff_proj2 Γ A B:
@@ -2269,8 +2269,8 @@ Defined.
     Γ ⊢ (A <---> B) ->
     Γ ⊢ (B ---> A).
   Proof.
-    intros. unfold patt_iff in H1.
-    apply pf_conj_elim_r_meta in H1; auto.
+    intros WFA WFB H. unfold patt_iff in H.
+    apply pf_conj_elim_r_meta in H; auto.
   Defined.
 
   Lemma pf_iff_iff Γ A B:
@@ -2279,14 +2279,14 @@ Defined.
     prod ((Γ ⊢ (A <---> B)) -> (prod (Γ ⊢ (A ---> B)) (Γ ⊢ (B ---> A))))
     ( (prod (Γ ⊢ (A ---> B))  (Γ ⊢ (B ---> A))) -> (Γ ⊢ (A <---> B))).
   Proof.
-    intros. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
+    intros WFA WFB. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
   Defined.
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
     Γ ⊢ (A <---> A).
   Proof.
-    intros.
+    intros WFA.
     apply pf_iff_split; auto.
   Defined.
 
@@ -2325,7 +2325,7 @@ Defined.
     Γ ⊢ b ->
     Γ ⊢ (a ---> b).
   Proof.
-    intros. eapply Modus_ponens. 4: apply P1. all: auto.
+    intros WFa WFb H. eapply Modus_ponens. 4: apply P1. all: auto.
   Defined.
   
 
@@ -2612,63 +2612,61 @@ Defined.
       auto 10.
   Defined.
 
-  Lemma conj_intro_meta_partial :
-  ∀ (Γ : Theory) (A B : Pattern),
+  Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) :
     well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (A and B).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H1.
+    - exact H.
     - apply conj_intro; auto.
     Unshelve. all: auto.
-  Qed.
+  Defined.
 
-  Lemma and_impl_patt :
-    forall (A B C : Pattern) Γ, well_formed A → well_formed B → well_formed C →
+  Lemma and_impl_patt (A B C : Pattern) Γ:
+    well_formed A → well_formed B → well_formed C →
     Γ ⊢ A -> Γ ⊢ ((A and B) ---> C) -> Γ ⊢ (B ---> C).
   Proof.
-    intros.
+    intros WFA WFB WFC H H0.
     eapply syllogism_intro with (B0 := patt_and A B); auto.
     apply conj_intro_meta_partial; auto.
-  Qed.
+  Defined.
 
   Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (B ---> (B and A))).
   Proof.
-    intros. eapply reorder_meta; auto.
+    intros WFA WFB. eapply reorder_meta; auto.
     apply conj_intro; auto.
-  Qed.
+  Defined.
 
-  Lemma conj_intro_meta_partial2 :
-  ∀ (Γ : Theory) (A B : Pattern),
+  Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern):
     well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (B and A).
   Proof.
-    intros.
+    intros WFA WFB H.
     eapply (Modus_ponens _ _ _ _ _).
-    - exact H1.
+    - exact H.
     - apply conj_intro2; auto.
     Unshelve. all: auto.
-  Qed.
+  Defined.
 
-  Lemma and_impl_patt2 :
-    forall (A B C : Pattern) Γ, well_formed A → well_formed B → well_formed C →
+  Lemma and_impl_patt2  (A B C : Pattern) Γ:
+    well_formed A → well_formed B → well_formed C →
     Γ ⊢ A -> Γ ⊢ ((B and A) ---> C) -> Γ ⊢ (B ---> C).
   Proof.
-    intros.
+    intros WFA WFB WFC H H0.
     eapply syllogism_intro with (B0 := patt_and B A); auto.
     pose conj_intro_meta_partial2; auto.
-  Qed.
+  Defined.
 
-  Lemma patt_and_comm :
-    forall (A B : Pattern) Γ, well_formed A → well_formed B
+  Lemma patt_and_comm (A B : Pattern) Γ:
+    well_formed A → well_formed B
   ->
     Γ ⊢ A and B -> Γ ⊢ B and A.
   Proof.
-    intros.
-    apply pf_conj_elim_r_meta in H1 as P1.
-    apply pf_conj_elim_l_meta in H1 as P2. all: auto.
+    intros WFA WFB H.
+    apply pf_conj_elim_r_meta in H as P1.
+    apply pf_conj_elim_l_meta in H as P2. all: auto.
     apply conj_intro_meta; auto.
-  Qed.
+  Defined.
 
   Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
@@ -2841,7 +2839,7 @@ Defined.
     Γ ⊢ ((L and A) ---> (B or R)) ->
     Γ ⊢ (L ---> ((A ---> B) or R)).
   Proof.
-    intros.
+    intros WFA WFB WFL WFR H.
     eapply Modus_ponens.
     4: apply weird_lemma.
     all: auto.
@@ -2884,7 +2882,7 @@ Defined.
     forall φ x Γ,
     Γ ⊢ ((ex , φ) ---> bevar_subst φ (patt_free_evar x) 0).
   Proof.
-    intros.
+    .
     pose proof (Ex_quan Γ φ x). unfold instantiate in H.
     eapply Modus_ponens. 4: apply P1.
   Qed. *)
@@ -2897,28 +2895,28 @@ Defined.
      wf_PatCtx C ->
      Γ ⊢ (subst_patctx C φ1 <---> subst_patctx C φ2).
   Proof.
-    induction C; intros.
-    * apply H1.
-    * simpl. inversion H2; subst.
+    induction C; intros φ1 φ2 Γ WF1 WF2 H WFC.
+    * apply H.
+    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
       specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC.
-      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r H3).
-      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r H4).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC as [m m0].
+      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r m).
+      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r m0).
       apply pf_iff_iff; auto.
       all: auto. 1-2: apply well_formed_app; auto.
       all: apply subst_patctx_wf; auto.
-    * simpl. inversion H2; subst.
+    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
       specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC.
-      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l H3).
-      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l H4).
+      apply pf_iff_iff in IHC. all: auto. destruct IHC as [m m0].
+      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l m).
+      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l m0).
       apply pf_iff_iff; auto.
       all: auto. 1-2: apply well_formed_app; auto.
       all: apply subst_patctx_wf; auto.
-    * simpl. inversion H2; subst.
+    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
       specialize (IHC φ1 φ2 Γ).
       apply pf_iff_iff in IHC. all: auto. 2-3: now apply subst_patctx_wf.
-      destruct IHC.
+      destruct IHC as [m m0].
       simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
       apply pf_iff_iff; auto.
       1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
@@ -2934,10 +2932,10 @@ Defined.
        all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
        all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
        all: auto.
-    * simpl. inversion H2; subst.
+    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
       specialize (IHC φ1 φ2 Γ).
       apply pf_iff_iff in IHC. all: auto. all: auto. 2-3: now apply subst_patctx_wf.
-      destruct IHC.
+      destruct IHC as [m m0].
       simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
       apply pf_iff_iff; auto.
       1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
@@ -2953,47 +2951,47 @@ Defined.
        all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
        all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
        all: auto.
-    * inversion H2. subst.
-      specialize (IHC _ _ Γ H H0 H1 H4).
+    * simpl. simpl in WFC.
+      specialize (IHC _ _ Γ WF1 WF2 H).
       simpl. unfold exists_quantify.
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
-      unfold instantiate in H3, H5.
-      rewrite <- evar_open_bevar_subst_same in H3, H5.
-      erewrite -> evar_open_evar_quantify in H3, H5. 2-3: shelve.
+      unfold instantiate in H0, H1.
+      rewrite <- evar_open_bevar_subst_same in H0, H1.
+      erewrite -> evar_open_evar_quantify in H0, H1. 2-3: shelve.
       apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
       all: auto.
-      eapply syllogism_intro in H3. 5: exact IH2. all: auto.
-      eapply syllogism_intro in H5. 5: exact IH1. all: auto.
-      apply (Ex_gen _ _ _ x) in H3. apply (Ex_gen _ _ _ x) in H5.
+      eapply syllogism_intro in H0. 5: exact IH2. all: auto.
+      eapply syllogism_intro in H1. 5: exact IH1. all: auto.
+      apply (Ex_gen _ _ _ x) in H0. apply (Ex_gen _ _ _ x) in H1.
       all: auto. 2-3: shelve.
-      unfold exists_quantify in H3, H5.
+      unfold exists_quantify in H0, H1.
       apply pf_iff_iff; auto.
      Unshelve.
      17, 18: exact 0.
      all: try apply evar_quantify_well_formed; auto.
      all: try apply subst_patctx_wf; auto.
      1-2: simpl; apply evar_quantify_not_free.
-     + eapply subst_patctx_wf in H4. 2: exact H0.
-       apply andb_true_iff in H4 as [E1 E2]. apply E2.
-     + eapply subst_patctx_wf in H4. 2: exact H.
-       apply andb_true_iff in H4 as [E1 E2]. apply E2.
-  Qed.
+     + eapply subst_patctx_wf in WFC. 2: exact WF2.
+       apply andb_true_iff in WFC as [E1 E2]. apply E2.
+     + eapply subst_patctx_wf in WFC. 2: exact WF1.
+       apply andb_true_iff in WFC as [E1 E2]. apply E2.
+  Defined.
 
-  Lemma imp_trans_mixed_meta : forall Γ A B C D,
+  Lemma imp_trans_mixed_meta Γ A B C D :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (C ---> A) -> Γ ⊢ (B ---> D)
   ->
     Γ ⊢ ((A ---> B) ---> C ---> D).
   Proof.
-    intros.
-    epose proof (prf_weaken_conclusion Γ A B D H H0 H2).
-    eapply Modus_ponens in H5; auto.
-    epose proof (prf_strenghten_premise Γ A C D H H1 H2).
-    eapply Modus_ponens in H6; auto.
-    epose proof (syllogism_intro Γ _ _ _ _ _ _ H5 H6). auto.
+    intros WFA WFB WFC WFD H H0.
+    epose proof (prf_weaken_conclusion Γ A B D WFA WFB WFD).
+    eapply Modus_ponens in H1; auto.
+    epose proof (prf_strenghten_premise Γ A C D WFA WFC WFD).
+    eapply Modus_ponens in H2; auto.
+    epose proof (syllogism_intro Γ _ _ _ _ _ _ H1 H2). auto.
     Unshelve. all: auto.
-  Qed.
+  Defined.
 
   Theorem congruence_iff_helper :
     forall sz ψ, le (Syntax.size ψ) sz ->
@@ -3003,147 +3001,150 @@ Defined.
      well_formed ψ ->
      Γ ⊢ (free_evar_subst ψ φ1 x <---> free_evar_subst ψ φ2 x).
   Proof.
-    induction sz; destruct ψ; intros.
-    6, 8, 9, 10: inversion H.
+    induction sz; destruct ψ; intros Hsz φ1 φ2 x' Γ MF WF1 WF2 H WFψ.
+    6, 8, 9, 10: simpl in Hsz; lia.
     all: try apply pf_iff_equiv_refl; auto.
     1-2: cbn; break_match_goal; auto; apply pf_iff_equiv_refl; auto.
-    * apply well_formed_app_1 in H3 as WF1.
-      apply well_formed_app_2 in H3 as WF2. inversion MF. subst.
-      simpl in H.
-      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x Γ H6 H0 H1 H2 WF1) as IHψ1.
-      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x Γ H7 H0 H1 H2 WF2) as IHψ2.
-      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
-      pose proof (Framing_left Γ (free_evar_subst ψ1 φ1 x) (free_evar_subst ψ1 φ2 x) (free_evar_subst ψ2 φ1 x) H4) as Trans1.
-      pose proof (Framing_right Γ (free_evar_subst ψ2 φ1 x) (free_evar_subst ψ2 φ2 x) (free_evar_subst ψ1 φ2 x) H8) as Trans2.
+    * simpl in MF, Hsz.
+      apply well_formed_app_1 in WFψ as WF1'.
+      apply well_formed_app_2 in WFψ as WF2'.
+      apply andb_true_iff in MF as [MF1 MF2].
+      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
+      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
+      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2.
+      destruct IHψ1 as [H0 H1], IHψ2 as [H2 H3].
+      pose proof (Framing_left Γ (free_evar_subst ψ1 φ1 x') (free_evar_subst ψ1 φ2 x') (free_evar_subst ψ2 φ1 x') H0) as Trans1.
+      pose proof (Framing_right Γ (free_evar_subst ψ2 φ1 x') (free_evar_subst ψ2 φ2 x') (free_evar_subst ψ1 φ2 x') H2) as Trans2.
       epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
       clear Trans1 Trans2. 2-5: shelve.
 
-      pose proof (Framing_right Γ (free_evar_subst ψ2 φ2 x) (free_evar_subst ψ2 φ1 x) (free_evar_subst ψ1 φ2 x) H9) as Trans1.
-      pose proof (Framing_left Γ _ _ (free_evar_subst ψ2 φ1 x) H5) as Trans2.
+      pose proof (Framing_right Γ (free_evar_subst ψ2 φ2 x') (free_evar_subst ψ2 φ1 x') (free_evar_subst ψ1 φ2 x') H3) as Trans1.
+      pose proof (Framing_left Γ _ _ (free_evar_subst ψ2 φ1 x') H1) as Trans2.
       epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
       apply pf_iff_iff; auto.
       Unshelve.
       1-3, 8-10: apply well_formed_app.
       all: now apply well_formed_free_evar_subst.
-    * simpl. simpl in H.
-      apply well_formed_app_1 in H3 as WF1.
-      apply well_formed_app_2 in H3 as WF2. inversion MF. subst.
-      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x Γ H6 H0 H1 H2 WF1) as IHψ1.
-      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x Γ H7 H0 H1 H2 WF2) as IHψ2.
+    * simpl in MF, Hsz.
+      apply well_formed_app_1 in WFψ as WF1'.
+      apply well_formed_app_2 in WFψ as WF2'.
+      apply andb_true_iff in MF as [MF1 MF2].
+      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
+      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
       apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
       apply pf_iff_iff. 1, 2, 4-7: shelve.
       split.
-      - apply imp_trans_mixed_meta; auto.
-      - apply imp_trans_mixed_meta; auto.
+      - simpl. apply imp_trans_mixed_meta; auto.
+      - simpl. apply imp_trans_mixed_meta; auto.
       Unshelve.
       1, 2: apply well_formed_imp.
       all: now apply well_formed_free_evar_subst.
-    * inversion MF; subst. apply wf_ex_to_wf_body in H3 as H3'.
-      remember (fresh_evar (ψ $ φ1 $ φ2 $ patt_free_evar x)) as fx.
+    * simpl in MF, Hsz. apply wf_ex_to_wf_body in WFψ as H3'.
+      remember (fresh_evar (ψ $ φ1 $ φ2 $ patt_free_evar x')) as fx.
       unfold fresh_evar in Heqfx. simpl in Heqfx.
-      pose (@set_evar_fresh_is_fresh' _ (free_evars ψ ∪ (free_evars φ1 ∪ (free_evars φ2 ∪ {[x]})))).
+      pose (@set_evar_fresh_is_fresh' _ (free_evars ψ ∪ (free_evars φ1 ∪ (free_evars φ2 ∪ {[x']})))).
       rewrite <- Heqfx in n.
       apply sets.not_elem_of_union in n. destruct n as [n1 n2].
       apply sets.not_elem_of_union in n2. destruct n2 as [n2 n3].
       apply sets.not_elem_of_union in n3. destruct n3 as [n3 n4].
       apply sets.not_elem_of_singleton_1 in n4.
       epose proof (H3' fx _).
-      epose proof (IHsz (evar_open 0 fx ψ) _ φ1 φ2 x Γ _ H0 H1 H2 H4).
+      epose proof (IHsz (evar_open 0 fx ψ) _ φ1 φ2 x' Γ _ WF1 WF2 H H0).
       cbn.
-      pose proof (Ex_quan Γ (free_evar_subst ψ φ1 x) fx).
-      pose proof (Ex_quan Γ (free_evar_subst ψ φ2 x) fx).
+      pose proof (Ex_quan Γ (free_evar_subst ψ φ1 x') fx).
+      pose proof (Ex_quan Γ (free_evar_subst ψ φ2 x') fx).
       unfold instantiate in *.
-      rewrite <- evar_open_bevar_subst_same in H7, H8.
-      do 2 rewrite <- evar_open_free_evar_subst_swap in H6; auto.
-      apply pf_iff_iff in H6; auto. 2-3: shelve. destruct H6 as [IH1 IH2].
-      eapply syllogism_intro in H7. 5: exact IH2. 2-4: shelve.
-      eapply syllogism_intro in H8. 5: exact IH1. 2-4: shelve.
-      apply (Ex_gen _ _ _ fx) in H7. apply (Ex_gen _ _ _ fx) in H8.
+      rewrite <- evar_open_bevar_subst_same in H2, H3.
+      do 2 rewrite <- evar_open_free_evar_subst_swap in H1; auto.
+      apply pf_iff_iff in H1; auto. 2-3: shelve. destruct H1 as [IH1 IH2].
+      eapply syllogism_intro in H2. 5: exact IH2. 2-4: shelve.
+      eapply syllogism_intro in H3. 5: exact IH1. 2-4: shelve.
+      apply (Ex_gen _ _ _ fx) in H2. apply (Ex_gen _ _ _ fx) in H3.
       2-7: shelve.
-      unfold exists_quantify in H8, H7. simpl in H7, H8.
-      erewrite -> evar_quantify_evar_open in H7, H8; auto.
+      unfold exists_quantify in H3, H2. simpl in H2, H3.
+      erewrite -> evar_quantify_evar_open in H2, H3; auto.
       2-5: shelve.
       apply pf_iff_iff; auto.
       Unshelve.
       20,21: exact 0. all: auto.
-      all: try replace (ex , free_evar_subst ψ φ1 x) with (free_evar_subst (ex, ψ) φ1 x) by reflexivity.
-      all: try replace (ex , free_evar_subst ψ φ2 x) with (free_evar_subst (ex, ψ) φ2 x) by reflexivity.
+      all: try replace (ex , free_evar_subst ψ φ1 x') with (free_evar_subst (ex, ψ) φ1 x') by reflexivity.
+      all: try replace (ex , free_evar_subst ψ φ2 x') with (free_evar_subst (ex, ψ) φ2 x') by reflexivity.
       all: try apply well_formed_free_evar_subst; auto.
       rewrite <- evar_open_size. simpl in H. lia.
       now apply mu_free_evar_open.
-      1, 4, 5, 7: apply well_formed_free_evar_subst with (x0 := x) (q := φ1) in H3 as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
-      5-7, 9: apply well_formed_free_evar_subst with (x0 := x) (q := φ2) in H3 as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      1, 4, 5, 7: apply well_formed_free_evar_subst with (x := x') (q := φ1) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      5-7, 9: apply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
       12: {
-         apply well_formed_free_evar_subst with (x0 := x) (q := φ1) in H3.
-         unfold well_formed, well_formed_closed in H3.
-         apply andb_true_iff in H3. destruct H3. now simpl in H6. auto. 
+         apply well_formed_free_evar_subst with (x:= x') (q := φ1) in WFψ.
+         unfold well_formed, well_formed_closed in WFψ.
+         apply andb_true_iff in WFψ. destruct WFψ. now simpl in H4. auto. 
       }
       13: {
-         apply well_formed_free_evar_subst with (x0 := x) (q := φ2) in H3.
-         unfold well_formed, well_formed_closed in H3.
-         apply andb_true_iff in H3. destruct H3. now simpl in H6. auto. 
+         apply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ.
+         unfold well_formed, well_formed_closed in WFψ.
+         apply andb_true_iff in WFψ. destruct WFψ. now simpl in H4. auto. 
       }
       all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
       all: try apply free_evars_free_evar_subst.
    all: apply sets.not_elem_of_union; auto.
    * inversion MF.
-  Qed.
+  Defined.
 
-  Lemma and_weaken :
-    forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+  Lemma and_weaken A B C Γ:
+    well_formed A -> well_formed B -> well_formed C ->
     Γ ⊢ (B ---> C)
    ->
     Γ ⊢ ((A and B) ---> (A and C)).
   Proof.
-    intros.
-    epose proof (and_impl' Γ A B (A and C) _ _ _). eapply Modus_ponens. 4: exact H3.
+    intros WFA WFB WFC H.
+    epose proof (and_impl' Γ A B (A and C) _ _ _). eapply Modus_ponens. 4: exact H0.
     1-2: shelve.
     apply reorder_meta; auto.
     epose proof (prf_strenghten_premise Γ C B (A ---> A and C) _ _ _).
-    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H4. all: auto.
+    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H1. all: auto.
     apply conj_intro2.
     Unshelve.
     all: unfold patt_and, patt_or, patt_not; auto 10.
-  Qed.
+  Defined.
 
-  Lemma impl_and :
-    forall Γ A B C D, well_formed A -> well_formed B -> well_formed C -> well_formed D
+  Lemma impl_and Γ A B C D: 
+    well_formed A -> well_formed B -> well_formed C -> well_formed D
    ->
     Γ ⊢ (A ---> B) ->
     Γ ⊢ (C ---> D) ->
     Γ ⊢ (A and C) ---> (B and D).
   Proof.
-    intros.
-    pose proof (conj_intro Γ B D H0 H2).
-    epose proof (prf_strenghten_premise Γ B A (D ---> B and D) H0 H _).
-    eapply Modus_ponens in H6; auto. 2: shelve.
-    eapply Modus_ponens in H6; auto.
-    apply reorder_meta in H6; auto.
-    epose proof (prf_strenghten_premise Γ D C (A ---> B and D) H2 H1 _).
-    eapply Modus_ponens in H7; auto. 2: shelve.
-    eapply Modus_ponens in H7; auto.
-    apply reorder_meta in H7; auto.
+    intros WFA WFB WFC WFD H H0.
+    pose proof (conj_intro Γ B D WFB WFD).
+    epose proof (prf_strenghten_premise Γ B A (D ---> B and D) WFB WFA _).
+    eapply Modus_ponens in H2; auto. 2: shelve.
+    eapply Modus_ponens in H2; auto.
+    apply reorder_meta in H2; auto.
+    epose proof (prf_strenghten_premise Γ D C (A ---> B and D) WFD WFC _).
+    eapply Modus_ponens in H3; auto. 2: shelve.
+    eapply Modus_ponens in H3; auto.
+    apply reorder_meta in H3; auto.
     epose proof (and_impl' _ _ _ _ _ _ _).
-    eapply Modus_ponens in H8. 4: exact H7. all: auto.
+    eapply Modus_ponens in H4. 4: exact H3. all: auto.
     Unshelve.
     all: unfold patt_and, patt_or, patt_not; auto 10.
-  Qed.
+  Defined.
 
-  Lemma and_drop :
-   forall A B C Γ, well_formed A -> well_formed B -> well_formed C ->
+  Lemma and_drop A B C Γ:
+    well_formed A -> well_formed B -> well_formed C ->
     Γ ⊢ ((A and B) ---> C)
    ->
     Γ ⊢ ((A and B) ---> (A and C)).
   Proof.
-    intros.
-    pose proof (pf_conj_elim_l Γ A B H H0).
-    epose proof (@impl_and Γ (A and B) A (A and B) C _ _ _ _ H3 H2).
+    intros WFA WFB WFC H.
+    pose proof (pf_conj_elim_l Γ A B WFA WFB).
+    epose proof (@impl_and Γ (A and B) A (A and B) C _ _ _ _ H0 H).
     epose proof (and_impl _ _ _ _ _ _ _).
-    eapply Modus_ponens in H5. 4: exact H4. 2-3: shelve.
+    eapply Modus_ponens in H2. 4: exact H1. 2-3: shelve.
     epose proof (prf_contraction _ _ _ _ _).
-    eapply Modus_ponens in H6. 4: exact H5. auto.
+    eapply Modus_ponens in H3. 4: exact H2. auto.
     Unshelve. all: unfold patt_and, patt_or, patt_not; auto 20.
-  Qed.
+  Defined.
 
 End FOL_helpers.
 
