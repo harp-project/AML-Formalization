@@ -1792,7 +1792,7 @@ Print singleton.
         simpl in Hsz.
         unfold evar_is_fresh_in in H. simpl in H.
         repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
-        apply Same_set_to_eq. apply FA_Union_same. intros c.
+        apply propset_fa_union_same. intros c.
         remember (fresh_evar (bevar_subst phi (patt_free_evar y) (S dbi))) as x'.
         rewrite evar_open_bevar_subst.
         { auto. }
@@ -1874,7 +1874,7 @@ Print singleton.
           rewrite <- evar_open_bevar_subst.
           rewrite <- evar_open_bevar_subst.
           rewrite -> interpretation_fresh_evar_open with (y := yB).
-          apply Same_set_refl.
+          reflexivity.
 
           { rewrite Heqx'. apply set_evar_fresh_is_fresh. }
           { apply HyBfbevar_open. }
@@ -1904,12 +1904,12 @@ Print singleton.
            { apply Hbevar. }
            subst phi'.
            destruct (evar_eqdec x (fresh_evar phi)).
-           ++ rewrite <- e. rewrite update_evar_val_shadow. apply Same_set_refl.
+           ++ rewrite <- e. rewrite update_evar_val_shadow. reflexivity.
            ++ rewrite update_evar_val_comm.
               { apply not_eq_sym. assumption. }
               Check pattern_interpretation_free_evar_independent.
               erewrite <- pattern_interpretation_free_evar_independent.
-              { apply Same_set_refl. }
+              { reflexivity. }
               { apply evar_is_fresh_in_evar_open; assumption. }
               
       + rewrite 2!pattern_interpretation_mu_simpl. simpl.
@@ -2410,8 +2410,10 @@ Print singleton.
       apply wfc_ind_wfc. inversion Hwfc. assumption. lia. assumption.
       apply wfc_ind_wfc. inversion Hwfc. assumption.
     - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
-      apply Extensionality_Ensembles. apply FA_Union_same. intros.
-      unfold Same_set, Included, In. split.
+      apply propset_fa_union_same. intros.
+      rewrite -> set_eq_subseteq.
+      repeat rewrite -> elem_of_subseteq.
+      split.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
         remember (@evar_fresh (@variables signature) (elements B)) as fresh.
@@ -2505,8 +2507,10 @@ Print singleton.
         apply andb_true_iff in Hwf.
         destruct Hwf. assumption. assumption. assumption. assumption.
     - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
-      apply Extensionality_Ensembles. apply FA_Union_same. intros.
-      unfold Same_set, Included, In. split.
+      apply propset_fa_union_same. intros.
+      rewrite -> set_eq_subseteq.
+      repeat rewrite -> elem_of_subseteq.
+      split.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
         remember (@evar_fresh (@variables signature) (elements B)) as fresh.
@@ -2598,11 +2602,11 @@ Print singleton.
         unfold well_formed in Hwf. apply andb_true_iff in Hwf.
         destruct Hwf. assumption. assumption. assumption. assumption.
     - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
-      assert ((λ S : Ensemble (Domain m),
+      assert ((λ S : propset (Domain m),
                      pattern_interpretation evar_val
                                             (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
                                             (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
-              (λ S : Ensemble (Domain m),
+              (λ S : propset (Domain m),
                      pattern_interpretation evar_val
                                             (update_svar_val (fresh_svar phi) S
                                                              (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
@@ -2650,11 +2654,11 @@ Print singleton.
         }
       + rewrite H. reflexivity.
     - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
-      assert ((λ S : Ensemble (Domain m),
+      assert ((λ S : propset (Domain m),
                      pattern_interpretation evar_val
                                             (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
                                             (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
-              (λ S : Ensemble (Domain m),
+              (λ S : propset (Domain m),
                      pattern_interpretation evar_val
                                             (update_svar_val (fresh_svar phi) S
                                                              (update_svar_val X (pattern_interpretation evar_val svar_val psi) svar_val))
