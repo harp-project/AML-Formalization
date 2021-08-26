@@ -73,8 +73,6 @@ Section syntax.
     - apply nat_eq_dec.
     - apply sym_eq.
   Qed.     
-
-  Definition Theory := Ensemble Pattern.
   
   (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
 

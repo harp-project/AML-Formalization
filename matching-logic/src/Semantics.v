@@ -708,34 +708,34 @@ Print singleton.
 
   (* Theory,axiom ref. snapshot: Definition 5 *)
 
+  Definition Theory := propset Pattern.
+  
   Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
     forall (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)),
       pattern_interpretation (m := m) evar_val svar_val phi = Full.
 
   Definition satisfies_theory (m : Model) (theory : Theory)
-    : Prop := forall axiom : Pattern, Ensembles.In _ theory axiom -> (satisfies_model m axiom).
+    : Prop := forall axiom : Pattern, axiom ∈ theory -> (satisfies_model m axiom).
 
   (* TODO rename *)
   Definition satisfies (theory : Theory) (p: Pattern)
     : Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
-  Definition TheoryIncluded (Γ₁ Γ₂ : Theory) := Ensembles.Included _ Γ₁ Γ₂.
+  Definition TheoryIncluded (Γ₁ Γ₂ : Theory) :=  Γ₁ ⊆ Γ₂.
 
   Lemma satisfies_theory_subseteq M Γ₁ Γ₂:
     TheoryIncluded Γ₁ Γ₂ ->
     satisfies_theory M Γ₂ ->
     satisfies_theory M Γ₁.
   Proof.
-    unfold TheoryIncluded.
-    unfold Included.
-    unfold satisfies_theory.
-    auto.
+    unfold TheoryIncluded,satisfies_theory.
+    set_solver by fail.
   Qed.
 
   Record NamedAxioms := { NAName : Type; NAAxiom : NAName -> Pattern }.
 
   Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
-    fun p => exists (n : NAName NAs), p = NAAxiom n.
+    PropSet (fun p => exists (n : NAName NAs), p = NAAxiom n).
 
   Lemma satisfies_theory_iff_satisfies_named_axioms NAs M:
     satisfies_theory M (theory_of_NamedAxioms NAs) <->
@@ -766,14 +766,12 @@ Print singleton.
     TheoryIncluded (theory_of_NamedAxioms NA₁) (theory_of_NamedAxioms NA₂).
   Proof.
     intros [inj ax].
-    unfold TheoryIncluded.
-    unfold Included.
-    intros ϕ.
-    unfold In.
-    unfold theory_of_NamedAxioms.
-    intros [n Hn].
-    exists (inj n).
-    specialize (ax n). subst. auto.
+    unfold TheoryIncluded, theory_of_NamedAxioms.
+    rewrite -> elem_of_subseteq.
+    intros ϕ H.
+    rewrite -> elem_of_PropSet. rewrite -> elem_of_PropSet in H.
+    destruct H as [n Hn]. subst ϕ.
+    eexists. auto.
   Qed.
 
   Program Definition NamedAxiomsIncluded_refl NA : NamedAxiomsIncluded NA NA :=
