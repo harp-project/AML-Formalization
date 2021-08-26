@@ -914,3 +914,9 @@ Proof.
   set_unfold. intros x. split; intros H. exact I.
   destruct (classic (x ∈ X)). right. assumption. left. auto.
 Qed.
+
+Lemma elem_of_compl {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T) (x : T):
+  (x ∈ (⊤ ∖ X)) <-> (x ∉ X).
+Proof.
+  split; intros H; set_solver.
+Qed.

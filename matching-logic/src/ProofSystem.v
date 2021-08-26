@@ -460,49 +460,42 @@ Proof.
     1: { apply top_subseteq. }
     
     rewrite -> elem_of_subseteq.
-    
-    assert (Htmp: (⊤ ∖ Xext_union) ∪ Xext_union = ⊤).
-    {   }
-    unfold Full. rewrite <- Htmp; clear Htmp.
-    unfold Included; unfold In; intros x H2. inversion H2.
-    - left; assumption.
-    - right; subst; unfold In; unfold app_ext.
-      destruct H as [le [re [Hunion [Hre Happ]]]].
-      inversion Hunion.
-      left. unfold In; exists le; exists re; repeat split; assumption.
-      right. unfold In; exists le; exists re; repeat split; assumption.
+    intros x _.
+    destruct (classic (x ∈ Xext_union)).
+    + right. subst Xext_union.
+      destruct H as [le [re [Hunion [Hre Happ] ] ] ].
+      destruct Hunion.
+      * left. exists le, re. repeat split; assumption.
+      * right. exists le, re. repeat split; assumption.
+    + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation disjunction - right *)
-  * intros Hv evar_val svar_val. 
+  - intros Hv evar_val svar_val. 
     unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
     repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    simpl.
-    epose proof (Htmp := Union_Empty_l);
-      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Empty_l);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
     remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
     remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (app_ext Xpsi (Ensembles.Union (Domain m) Xphi1 Xphi2)) as Xext_union.
-    apply Extensionality_Ensembles.
-    constructor. constructor.
-    assert (Htmp: Ensembles.Union (Domain m) (Complement (Domain m) Xext_union) Xext_union =
-            Full_set (Domain m)).
-    { apply Same_set_to_eq; apply Union_Compl_Fullset. }
-    unfold Full. rewrite <- Htmp; clear Htmp.
-    unfold Included; unfold In; intros x H2. inversion H2.
-    - left; assumption.
-    - right; subst; unfold In; unfold app_ext.
-      destruct H as [le [re [Hle [Hunion Happ]]]].
-      inversion Hunion.
-      left. unfold In; exists le; exists re; repeat split; assumption.
-      right. unfold In; exists le; exists re; repeat split; assumption.
+    unfold Full.
+    rewrite [_ ∪ ∅]right_id_L.
+    rewrite [_ ∪ ∅]right_id_L.
+    repeat rewrite Compl_Compl_propset.
+
+    remember (app_ext Xpsi (Xphi1 ∪ Xphi2)) as Xext_union.
+    rewrite -> set_eq_subseteq.
+    split.
+    1: { apply top_subseteq. }
+    
+    rewrite -> elem_of_subseteq.
+    intros x _.
+    destruct (classic (x ∈ Xext_union)).
+    + right. subst Xext_union.
+      destruct H as [le [re [Hle [Hunion Happ] ] ] ].
+      destruct Hunion.
+      * left. exists le, re. repeat split; assumption.
+      * right. exists le, re. repeat split; assumption.
+    + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation exists - left *)
       * intros Hv evar_val svar_val.
