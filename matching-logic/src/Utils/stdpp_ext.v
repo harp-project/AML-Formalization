@@ -907,4 +907,10 @@ Proof.
   split; intros H; set_unfold; firstorder.
 Qed.
 
-    
+
+Lemma union_with_complement {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T):
+  (⊤ ∖ X) ∪ X = ⊤.
+Proof.
+  set_unfold. intros x. split; intros H. exact I.
+  destruct (classic (x ∈ X)). right. assumption. left. auto.
+Qed.
