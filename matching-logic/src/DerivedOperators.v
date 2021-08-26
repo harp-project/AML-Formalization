@@ -473,44 +473,36 @@ Module Semantics.
       Qed.
 
       Lemma pattern_interpretation_and_full ρₑ ρₛ ϕ₁ ϕ₂:
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = Full
-        <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = Full
-             /\ @pattern_interpretation Σ M ρₑ ρₛ ϕ₂ = Full).
+        @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = ⊤
+        <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = ⊤
+             /\ @pattern_interpretation Σ M ρₑ ρₛ ϕ₂ = ⊤).
       Proof.
         unfold Full.
         rewrite -> pattern_interpretation_and_simpl.
         split.
         - intros H.
-          apply Intersection_eq_Full_eq in H.
-          auto.
+          apply intersection_full_iff_both_full in H.
+          apply H.
         - intros [H1 H2].
-          rewrite -> H1. rewrite -> H2.
-          apply Same_set_to_eq.
-          apply Intersection_same.
+          rewrite H1. rewrite H2. set_solver.
       Qed.
 
       Lemma pattern_interpretation_predicate_not ρₑ ρₛ ϕ :
         M_predicate M ϕ ->
-        pattern_interpretation ρₑ ρₛ (patt_not ϕ) = Full
-        <-> @pattern_interpretation Σ M ρₑ ρₛ ϕ <> Full.
+        pattern_interpretation ρₑ ρₛ (patt_not ϕ) = ⊤
+        <-> @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤.
       Proof.
         intros Hpred.
         rewrite pattern_interpretation_not_simpl.
         split; intros H.
         - apply predicate_not_full_iff_empty.
           { apply Hpred. }
-          apply eq_iff_Same_set in H.
-          rewrite <- Compl_Compl_Ensembles_eq in H.
-          apply Same_set_Compl in H.
-          rewrite Complement_Full_is_Empty_eq in H.
-          apply eq_iff_Same_set in H.
-          unfold Empty.
-          apply H.
+          apply complement_full_iff_empty in H.
+          exact H.
         - apply predicate_not_full_iff_empty in H.
           2: { apply Hpred. }
           rewrite H.
-          unfold Empty. unfold Full.
-          apply Complement_Empty_is_Full_eq.
+          set_solver.
       Qed.
       
     End with_model.

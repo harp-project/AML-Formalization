@@ -900,3 +900,11 @@ Proof.
   assert (¬ (x ∉ A)) by firstorder.
   apply NNPP in H0. exact H0.
 Qed.
+
+Lemma intersection_full_iff_both_full {T : Type} {LE : LeibnizEquiv (propset T)} (L R : propset T):
+  (L ∩ R = ⊤) <-> (L = ⊤ /\ R = ⊤).
+Proof.
+  split; intros H; set_unfold; firstorder.
+Qed.
+
+    
