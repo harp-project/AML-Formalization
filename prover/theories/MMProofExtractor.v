@@ -303,7 +303,7 @@ Section gen.
     | _ => []
     end.
 
-  Fixpoint proof_size' (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
+  Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
     match pf with
     | hypothesis _ _ _ _ => 1
     | P1 _ _ _ _ _ => 1
@@ -348,7 +348,7 @@ Section gen.
        ).
 
   Equations? proof2proof'
-            (Γ : Theory)
+            Γ
             (acc : list Label)
             (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
     : list Label
@@ -420,7 +420,7 @@ Section gen.
   (*Transparent proof2proof'.*)
 
   Check proof2proof'.
-  Definition proof2proof (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
+  Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     proof2proof' Γ [] [(inl (existT ϕ pf))].
   
   
@@ -441,7 +441,7 @@ Section gen.
     end.
    *)
   
-  Definition proof2database (Γ : Theory) (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
+  Definition proof2database Γ (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
     (dependenciesForPattern ϕ)
       ++ [oss_s (stmt_assert_stmt (as_provable (ps
