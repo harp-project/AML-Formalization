@@ -28,8 +28,6 @@ Section ml_proof_system.
     intros Hwf H H0 Hv.
     rewrite -> pattern_interpretation_imp_simpl.
 
-    (*apply Extensionality_Ensembles.
-    constructor. constructor.*)
     remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
     { clear.
@@ -41,7 +39,7 @@ Section ml_proof_system.
     - rewrite <- Huxex.
       rewrite -> elem_of_subseteq. intros x H1.
       inversion H1.
-      + left. Search (?A ∖ ?B ∪ ?B). rewrite -> Huxex in H2. exact H2.
+      + left. rewrite -> Huxex in H2. exact H2.
       + rewrite Huxex. apply elem_of_top'.
     - rewrite -> pattern_interpretation_ex_simpl. simpl.
       rewrite -> elem_of_subseteq.
@@ -90,51 +88,70 @@ Section ml_proof_system.
   Qed.
 
 (* soundness for prop_ex_left *)
-Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)  
-      (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
-  (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
-  (well_formed (ex, phi)) -> (well_formed psi) ->
-  (∀ axiom : Pattern,
-       Ensembles.In Pattern theory axiom
-       → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
-           pattern_interpretation evar_val svar_val axiom = Full) ->
-  pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi) = Full.
-Proof.
-  intros Hwf H H0 Hv.
-  rewrite -> pattern_interpretation_imp_simpl. apply Extensionality_Ensembles.
-    constructor. constructor.
+  Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)
+        (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+    (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
+    (well_formed (ex, phi)) -> (@well_formed signature psi) ->
+    (∀ axiom : Pattern,
+        axiom ∈ theory
+        → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+          pattern_interpretation evar_val svar_val axiom = ⊤) ->
+    pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi) = ⊤.
+  Proof.
+    intros Hwf H H0 Hv.
+    rewrite -> pattern_interpretation_imp_simpl.
+
     remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
-    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xex) Xex = Full_set (Domain m)).
-    apply Same_set_to_eq; apply Union_Compl_Fullset. unfold Full. rewrite <- H1; clear H1.
-    unfold Included; intros. inversion H1; subst.
-    left. assumption.
-    right. rewrite -> pattern_interpretation_ex_simpl. simpl. constructor.
-    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H2.
-    destruct H2 as [le [re [Hext_le [Hunion Happ]]]]. inversion Hunion; subst.
-    destruct H2 as [c Hext_re].
-    exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
-    exists le, re.
+    assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
+    { clear.
+      set_unfold. intros x. split; intros H. exact I.
+      destruct (classic (x ∈ Xex)). right. assumption. left. auto.
+    }
+    rewrite -> set_eq_subseteq.
     split.
-  * erewrite -> evar_open_fresh.
-    erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
-    unfold well_formed in H0.
-    apply andb_true_iff in H0.
-    destruct H0. 
-    {
-      unfold fresh_evar. simpl. unfold evar_is_fresh_in.
-      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-      apply not_elem_of_union in n. destruct n. assumption.
-    }
-    apply andb_true_iff in H0.
-    destruct H0. assumption.
-  * split; try assumption.
-    erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
-    apply set_evar_fresh_is_fresh.
-    {
-      pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
-      apply not_elem_of_union in n. destruct n. assumption.
-    }
-Qed.
+    - rewrite <- Huxex.
+      rewrite -> elem_of_subseteq. intros x H1.
+      rewrite Huxex. apply elem_of_top'.
+    - rewrite -> pattern_interpretation_ex_simpl. simpl.
+      rewrite -> elem_of_subseteq.
+      intros x _.
+      destruct (classic (x ∈ Xex)).
+      2: { left. clear -H1. set_solver. }
+      right. unfold stdpp_ext.propset_fa_union.
+      rewrite -> elem_of_PropSet.
+      rewrite -> HeqXex in H1.
+      rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H1.
+      simpl in H1.
+      unfold stdpp_ext.propset_fa_union in H1.
+      unfold app_ext in H1.
+      rewrite -> elem_of_PropSet in H1.
+      destruct H1 as [le [re [Hext_le [Hunion Happ]]]].
+      rewrite -> elem_of_PropSet in Hunion.
+      destruct Hunion as [c Hext_re].
+
+      exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
+      exists le, re.
+      split.
+      + erewrite -> evar_open_fresh.        
+        erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
+        unfold well_formed in H0.
+        apply andb_true_iff in H0.
+        destruct H0. 
+        {
+          unfold fresh_evar. simpl. unfold evar_is_fresh_in.
+          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+        }
+        apply andb_true_iff in H0.
+        destruct H0. assumption.
+      + split; try assumption.
+        erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
+        apply set_evar_fresh_is_fresh.
+        {
+          pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
+          apply not_elem_of_union in n. destruct n. assumption.
+        }
+  Qed.
 
 (* free_svar_subst maintains soundness *)
 Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
