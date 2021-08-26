@@ -158,17 +158,17 @@ Section sorts.
     Context {M : Model}.
     Hypothesis M_satisfies_theory : M ⊨ᵀ Definedness.theory.
 
-    Definition Mpatt_inhabitant_set m := app_ext (sym_interp (inj inhabitant)) (Ensembles.Singleton (Domain M) m).
+    Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
-    Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).    
+    Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
     
     Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = Full
-      <-> (∀ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m ->
-                           pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
+      pattern_interpretation ρₑ ρₛ (patt_forall_of_sort s ϕ) = ⊤
+      <-> (∀ m : Domain M, m ∈ Minterp_inhabitant s ρₑ ρₛ ->
+                           pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤).
     Proof.
       intros x Hpred.
       unfold patt_forall_of_sort.
@@ -279,9 +279,9 @@ Section sorts.
     Lemma pattern_interpretation_exists_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ) = Full
-      <-> (∃ m : Domain M, Minterp_inhabitant s ρₑ ρₛ m /\
-                           pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full).
+      pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ) = ⊤
+      <-> (∃ m : Domain M, m ∈ Minterp_inhabitant s ρₑ ρₛ /\
+                           pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤).
     Proof.
       intros x Hpred.
       unfold patt_exists_of_sort.
@@ -429,7 +429,7 @@ Section sorts.
     Hint Resolve M_predicate_forall_of_sort : core.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = Full <->
+      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = ⊤ <->
       @is_total_function sig M f (Minterp_inhabitant s₁ ρₑ ρₛ) (Minterp_inhabitant s₂ ρₑ ρₛ) ρₑ ρₛ.
     Proof.
       unfold is_total_function.
@@ -532,14 +532,13 @@ Section sorts.
     Qed.
 
     Lemma interp_partial_function f s₁ s₂ ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function f s₁ s₂) = Full <->
+      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function f s₁ s₂) = ⊤ <->
       ∀ (m₁ : Domain M),
-        Minterp_inhabitant s₁ ρₑ ρₛ m₁ ->                 
+        m₁ ∈ Minterp_inhabitant s₁ ρₑ ρₛ ->
         ∃ (m₂ : Domain M),
-          Minterp_inhabitant s₂ ρₑ ρₛ m₂ /\
-          Ensembles.Included _
-            (app_ext (@pattern_interpretation sig M ρₑ ρₛ f) (Ensembles.Singleton (Domain M) m₁))
-            (Ensembles.Singleton (Domain M) m₂).
+          m₂ ∈ Minterp_inhabitant s₂ ρₑ ρₛ /\
+          (app_ext (@pattern_interpretation sig M ρₑ ρₛ f) {[m₁]})
+            ⊆ {[m₂]}.
     Proof.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto. }
 
@@ -638,25 +637,25 @@ Section sorts.
 
     Lemma Minterp_inhabitant_evar_open_update_evar_val ρₑ ρₛ x e s m:
       evar_is_fresh_in x s ->
-      Minterp_inhabitant (evar_open 0 x (nest_ex s)) (update_evar_val x e ρₑ) ρₛ m
-      = Minterp_inhabitant s ρₑ ρₛ m.
+      m ∈ Minterp_inhabitant (evar_open 0 x (nest_ex s)) (update_evar_val x e ρₑ) ρₛ
+      <-> m ∈ Minterp_inhabitant s ρₑ ρₛ.
     Proof.
       intros Hfr.
       unfold Minterp_inhabitant.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite 2!pattern_interpretation_sym_simpl.
-      rewrite pattern_interpretation_evar_open_nest_ex. { exact Hfr. }
-      reflexivity.
+      rewrite pattern_interpretation_evar_open_nest_ex.
+      { exact Hfr. }
+      auto.
    Qed.
-
     
     Lemma interp_partial_function_injective f s ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function_injective f s) = Full <->
+      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function_injective f s) = ⊤ <->
       ∀ (m₁ : Domain M),
-        Minterp_inhabitant s ρₑ ρₛ m₁ ->
+        m₁ ∈ Minterp_inhabitant s ρₑ ρₛ ->
         ∀ (m₂ : Domain M),          
-          Minterp_inhabitant s ρₑ ρₛ m₂ ->
-          (rel_of ρₑ ρₛ f) m₁ ≠ Empty ->
+          m₂ ∈ Minterp_inhabitant s ρₑ ρₛ ->
+          (rel_of ρₑ ρₛ f) m₁ ≠ ∅ ->
           (rel_of ρₑ ρₛ f) m₁ = (rel_of ρₑ ρₛ f) m₂ ->
           m₁ = m₂.
     Proof.
@@ -683,7 +682,7 @@ Section sorts.
         
       apply all_iff_morphism. intros m₂.
       rewrite Minterp_inhabitant_evar_open_update_evar_val.
-      {        
+      2: {
         eapply evar_is_fresh_in_richer.
         2: { subst. auto. }
         solve_free_evars_inclusion 5.
@@ -737,15 +736,12 @@ Section sorts.
       rewrite update_evar_val_same.
       unfold rel_of.
       apply all_iff_morphism. intros Hfm1eqfm2.
-      rewrite Ensembles_Ext.Singleton_eq_iff_eq.
-      
-      auto.
-      
+      clear.
+      set_solver.
     Qed.
 
-
     Lemma interp_total_function_injective f s ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function_injective f s) = Full <->
+      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function_injective f s) = ⊤ <->
       total_function_is_injective f (Minterp_inhabitant s ρₑ ρₛ) ρₑ ρₛ.
     Proof.
       unfold total_function_is_injective.
@@ -770,7 +766,7 @@ Section sorts.
         
       apply all_iff_morphism. intros m₂.
       rewrite Minterp_inhabitant_evar_open_update_evar_val.
-      {        
+      2: {        
         eapply evar_is_fresh_in_richer.
         2: { subst. auto. }
         solve_free_evars_inclusion 5.
@@ -809,16 +805,14 @@ Section sorts.
 
       rewrite equal_iff_interpr_same. 2: apply M_satisfies_theory.
       rewrite 2!pattern_interpretation_free_evar_simpl.
-      rewrite Ensembles_Ext.Singleton_eq_iff_eq.
       rewrite update_evar_val_same.
       rewrite update_evar_val_neq.
       { solve_fresh_neq. }
       rewrite update_evar_val_same.
-      auto.
+      clear. set_solver.
     Qed.
 
 
-    
   End with_model.
     
 End sorts.
