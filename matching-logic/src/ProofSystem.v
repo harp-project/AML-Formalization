@@ -498,20 +498,20 @@ Proof.
     + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation exists - left *)
-      * intros Hv evar_val svar_val.
-        eauto using proof_rule_prop_ex_right_sound.
+  - intros Hv evar_val svar_val.
+    eauto using proof_rule_prop_ex_right_sound.
 
   (* Propagation exists - right *)
-      * intros Hv evar_val svar_val.
-        eauto using proof_rule_prop_ex_left_sound.
+  - intros Hv evar_val svar_val.
+    eauto using proof_rule_prop_ex_left_sound.
 
   (* Framing - left *)
-  * intros Hv evar_val svar_val. 
+  - intros Hv evar_val svar_val. 
     rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
     rewrite -> pattern_interpretation_iff_subset in e.
     repeat rewrite -> pattern_interpretation_app_simpl.
-    unfold Included in *; intros; unfold In in *.
+    rewrite -> elem_of_subseteq. intros.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
     exists le, re.
@@ -539,12 +539,12 @@ Proof.
     }
 
   (* Framing - right *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
     rewrite -> pattern_interpretation_iff_subset in e.
     repeat rewrite -> pattern_interpretation_app_simpl.
-    unfold Included in *; intros; unfold In in *.
+    rewrite -> elem_of_subseteq. intros.
     destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
     unfold app_ext.
     exists le, re.
@@ -571,24 +571,24 @@ Proof.
     }
 
   (* Set Variable Substitution *)
-  * intros. epose proof (IHHp ltac:(auto) Hv ) as IH.
+  - intros. epose proof (IHHp ltac:(auto) Hv ) as IH.
     unfold well_formed in i.
     apply andb_true_iff in i. destruct i as [H1 H2].
     eauto using proof_rule_set_var_subst_sound.
 
   (* Pre-Fixpoint *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     apply pattern_interpretation_iff_subset. simpl.
     rewrite -> pattern_interpretation_mu_simpl.
     simpl.
-    remember (fun S : Ensemble (Domain m) =>
+    remember (fun S : propset (Domain m) =>
                 pattern_interpretation evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
-    pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
-    pose (L := Lattice.PowersetLattice (@Domain signature m)).
-    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+    pose (OS := PropsetLattice.PropsetOrderedSet (@Domain signature m)).
+    pose (L := PropsetLattice.PowersetLattice (@Domain signature m)).
+    assert (Ffix : Lattice.isFixpoint F (PropsetLattice.LeastFixpointOf F)).
+    { apply PropsetLattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
       unfold well_formed in Hwf.
       apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
@@ -599,11 +599,12 @@ Proof.
       reflexivity.
       apply set_svar_fresh_is_fresh.
     }
-    unfold Lattice.isFixpoint in Ffix.
-    assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
-    { rewrite -> Ffix. apply Same_set_refl. }
+    unfold PropsetLattice.isFixpoint in Ffix.
+    assert (Ffix_set : (F (PropsetLattice.LeastFixpointOf F)) = (PropsetLattice.LeastFixpointOf F)).
+    { rewrite -> Ffix. reflexivity. }
+    rewrite -> set_eq_subseteq in Ffix_set.
     destruct Ffix_set. clear H0.
-    eapply Included_transitive.
+    eapply transitivity.
     2: { apply H. }
     rewrite -> HeqF.
     epose proof (Hsimpl := pattern_interpretation_mu_simpl).
@@ -619,7 +620,7 @@ Proof.
          apply wfc_ind_wfc. assumption.
     }
     2: { apply set_svar_fresh_is_fresh. }
-    unfold Included. intros. auto.
+    apply reflexivity.
 
   (* Knaster-Tarski *)
   * intros Hv evar_val svar_val.
