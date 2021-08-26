@@ -361,7 +361,7 @@ Proof.
                                  svar_val
                                  (evar_open 0 (fresh_evar phi) phi))))).
     -- left. apply H.
-    -- right. unfold not in H. Search elem_of "∖".
+    -- right. unfold not in H.
        rewrite -> elem_of_difference in H.
        unfold stdpp_ext.propset_fa_union.
        rewrite -> elem_of_PropSet.
