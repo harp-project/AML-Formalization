@@ -536,7 +536,7 @@ Print singleton.
                             = ⊤)).
     destruct H'.
     - (* For some member, the subformula evaluates to full set. *)
-      left. Search eq subseteq.
+      left.
       apply set_eq_subseteq.
       split.
       { set_solver by fail. }
@@ -828,23 +828,24 @@ Print singleton.
 
   (* TODO: top iff exists forall *)
 
+
   (* If phi1 \subseteq phi2, then U_x phi1 \subseteq U_x phi2 *)
   Lemma pattern_interpretation_subset_union M x phi1 phi2 :
     (forall evar_val svar_val,
-        Included (Domain M) (pattern_interpretation evar_val svar_val phi1)
-                 (pattern_interpretation evar_val svar_val phi2)
+        (@pattern_interpretation M evar_val svar_val phi1)
+          ⊆ (pattern_interpretation evar_val svar_val phi2)
     )
     -> (forall evar_val svar_val,
-           Included (Domain M)
-                    (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
+                    (propset_fa_union (fun e => pattern_interpretation (update_evar_val x e evar_val)
                                                                svar_val
                                                                phi1))
-                    (FA_Union (fun e => pattern_interpretation (update_evar_val x e evar_val)
+                    ⊆
+                    (propset_fa_union (fun e => @pattern_interpretation M (update_evar_val x e evar_val)
                                                                svar_val
                                                                phi2))
        ).
   Proof.
-    intros H. induction phi1; intros; apply FA_Union_included; auto.
+    intros H. induction phi1; intros; apply propset_fa_union_included; auto.
   Qed.
 
   (* pattern_interpretation unchanged when using fresh element varaiable *)

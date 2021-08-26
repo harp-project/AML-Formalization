@@ -793,7 +793,21 @@ Qed.
 
 Definition propset_fa_union {T C : Type} (f : C -> propset T) : propset T
   := PropSet (fun (x : T) => exists (c : C), x ∈ f c).
-                                                                        
+
+Lemma propset_fa_union_included : forall T C : Type, forall f f' : C -> propset T,
+      (forall c, (f c) ⊆ (f' c)) ->
+      (propset_fa_union f) ⊆ (propset_fa_union f').
+Proof.
+  intros.
+  rewrite -> elem_of_subseteq. setoid_rewrite -> elem_of_subseteq in H.
+  setoid_rewrite -> elem_of_PropSet. (*setoid_rewrite -> elem_of_PropSet in H.*)
+  intros x H0.
+  destruct H0 as [c Hc].
+  apply H in Hc.
+  eauto.
+Qed.
+
+
 Lemma Not_Empty_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
   S <> ∅ -> exists x : T, x ∈ S.
 Proof.
