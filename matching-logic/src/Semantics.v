@@ -3,15 +3,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From Coq Require Import Ensembles.
-From Coq.Logic Require Import FunctionalExtensionality Classical_Pred_Type.
+(*From Coq Require Import Ensembles.*)
+From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
 From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets.
+From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
-From MatchingLogic.Utils Require Import Lattice Ensembles_Ext stdpp_ext extralibrary.
+From MatchingLogic.Utils Require Import PropsetLattice (*Ensembles_Ext*) stdpp_ext extralibrary.
 From MatchingLogic Require Import Syntax.
 
 Import MatchingLogic.Syntax.Notations.
@@ -21,6 +21,7 @@ Section semantics.
   Context {signature : Signature}.
   Existing Instance variables.
 
+  Definition Power (Sigma : Type) := propset Sigma.
 
   (* Model of AML ref. snapshot: Definition 2 *)
 
@@ -34,24 +35,24 @@ Section semantics.
     sym_interp (sigma : symbols) : Power Domain;
   }.
 
-  Definition Empty {M : Model} := Empty_set (Domain M).
-  Definition Full {M : Model} := Full_set (Domain M).
+  
+  Definition Empty {M : Model} : Power (Domain M) := @empty (Power (Domain M)) _.
+  Definition Full {M : Model} : Power (Domain M) := @top (Power (Domain M)) _.
 
   (* full set and empty set are distinct *)
   Lemma empty_impl_not_full : forall {M : Model} (S : Power (Domain M)),
       S = Empty -> S <> Full.
   Proof.
     intros M S H.
-    assert (H1: Same_set (Domain M) S Empty).
-    { subst. apply Same_set_refl. }
-    intros HContra. rewrite -> HContra in H1.
-    unfold Empty in H1. unfold Full in H1.
-    unfold Same_set in H1. unfold Included in H1.
-    assert (Hexin : Ensembles.In (Domain M) Full (nonempty_witness M)).
-    { unfold In. unfold Full. constructor. }
-    firstorder.
+    intros HContra. rewrite -> HContra in H.
+    assert (Hw1: (nonempty_witness M) ∈ Full).
+    { unfold Full. apply elem_of_top. exact I. }
+    rewrite H in Hw1.
+    unfold Empty in Hw1.
+    apply not_elem_of_empty in Hw1. exact Hw1.
   Qed.
 
+  (*
   Lemma Private_full_impl_not_empty : forall {M : Model} (S : Power (Domain M)),
       Same_set (Domain M) S Full ->
       ~ Same_set (Domain M) S Empty.
@@ -61,14 +62,17 @@ Section semantics.
     { unfold In. constructor. }
     firstorder.
   Qed.
-
+*)
   Lemma full_impl_not_empty : forall {M : Model} (S : Power (Domain M)),
       S = Full -> S <> Empty.
   Proof.
-    intros M S H Contra.
-    epose proof (P := @Private_full_impl_not_empty M S _).
-    apply P. rewrite -> Contra. apply Same_set_refl.
-    Unshelve. rewrite -> H. apply Same_set_refl.
+    intros M S H HContra.
+    rewrite -> HContra in H.
+    assert (Hw1: (nonempty_witness M) ∈ Full).
+    { unfold Full. apply elem_of_top. exact I. }
+    rewrite <- H in Hw1.
+    unfold Empty in Hw1.
+    apply not_elem_of_empty in Hw1. exact Hw1.
   Qed.
 
   (* element and set variable valuations *)
@@ -183,48 +187,72 @@ Section semantics.
     - reflexivity.
   Qed.
 
+
+  (* We use propositional extensionality here. *)
+  Global Instance propset_leibniz_equiv {m : Model} : LeibnizEquiv (Power (Domain m)).
+  Proof.
+    intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
+    unfold Power in x,y. destruct x,y.
+    apply f_equal. apply functional_extensionality.
+    intros x. apply propositional_extensionality.
+    specialize (H x). destruct H as [H1 H2].
+    split; auto.
+  Qed.
+  
   (* extending pointwise application *)
   Definition app_ext {m : Model}
              (l r : Power (Domain m)) :
     Power (Domain m) :=
-    fun e:Domain m => exists le re:Domain m, l le /\ r re /\ (@app_interp m) le re e.
+    PropSet (fun (e : (Domain m)) => exists (le re : (Domain m)), le ∈ l /\ re ∈ r /\ e ∈ (@app_interp m) le re).
 
   Lemma app_ext_bot_r : forall (m : Model),
       forall S : Power (Domain m),
-        app_ext S Empty = Empty.
+        app_ext S ∅ = ∅.
   Proof.
-    intros. unfold app_ext. apply Extensionality_Ensembles.  unfold Same_set. unfold Included. unfold In. split; intros.
-    * inversion H. inversion H0. inversion H1. inversion H3. contradiction.
-    * contradiction.
+    intros m S. unfold app_ext.
+    rewrite -> elem_of_equiv_empty_L.
+    intros x Hcontra. rewrite -> elem_of_PropSet in Hcontra.
+    destruct Hcontra as [le [re [H1 [H2 H3] ] ] ].
+    apply not_elem_of_empty in H2. exact H2.
   Qed.
 
   Lemma app_ext_bot_l : forall (m : Model),
       forall S : Power (Domain m),
-        app_ext Empty S = Empty.
+        app_ext ∅ S = ∅.
   Proof.
-    intros. unfold app_ext. apply Extensionality_Ensembles. unfold Same_set. unfold Included. unfold In. split; intros.
-    * inversion H. inversion H0. inversion H1. contradiction.
-    * contradiction.
+    intros m S. unfold app_ext.
+    rewrite -> elem_of_equiv_empty_L.
+    intros x Hcontra. rewrite -> elem_of_PropSet in Hcontra.
+    destruct Hcontra as [le [re [H1 [H2 H3] ] ] ].
+    apply not_elem_of_empty in H1. exact H1.
   Qed.
 
   Lemma app_ext_monotonic_l : forall (m : Model),
       forall (S1 S2 S : Power (Domain m)),
-        Included (Domain m) S1 S2 ->
-        Included (Domain m) (app_ext S1 S) (app_ext S2 S).
+        S1 ⊆ S2 -> (app_ext S1 S) ⊆ (app_ext S2 S).
   Proof.
-    intros. unfold app_ext. unfold Included. unfold Included in H.
-    intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
-    apply H in H1. exists le. exists re. firstorder.
+    intros m S1 S2 S H. rewrite -> elem_of_subseteq in H.
+    rewrite -> elem_of_subseteq. intros x H'.
+    unfold app_ext in H'.
+    rewrite -> elem_of_PropSet in H'.
+    destruct H' as [le [re [H1 [H2 H3] ] ] ].
+    unfold app_ext.
+    rewrite -> elem_of_PropSet.
+    exists le,re. firstorder.
   Qed.
 
   Lemma app_ext_monotonic_r : forall (m : Model),
       forall (S S1 S2 : Power (Domain m)),
-        Included (Domain m) S1 S2 ->
-        Included (Domain m) (app_ext S S1) (app_ext S S2).
+        S1 ⊆ S2 -> (app_ext S S1) ⊆ (app_ext S S2).
   Proof.
-    intros. unfold app_ext. unfold Included. unfold Included in H.
-    intros. unfold In in *. destruct H0 as [le [re [H1 [H2 H3]]]].
-    apply H in H2. exists le. exists re. firstorder.
+    intros m S1 S2 S H. rewrite -> elem_of_subseteq in H.
+    rewrite -> elem_of_subseteq. intros x H'.
+    unfold app_ext in H'.
+    rewrite -> elem_of_PropSet in H'.
+    destruct H' as [le [re [H1 [H2 H3] ] ] ].
+    unfold app_ext.
+    rewrite -> elem_of_PropSet.
+    exists le,re. firstorder.
   Qed.
 
 
