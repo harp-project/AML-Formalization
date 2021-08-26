@@ -2760,33 +2760,33 @@ Print singleton.
   Qed.
 
   (* application to a singleton *)
-  Definition rel_of M ρₑ ρ ϕ: Domain M -> Ensemble (Domain M) :=
+  Definition rel_of M ρₑ ρ ϕ: Domain M -> propset (Domain M) :=
     λ m₁,
-    (app_ext (@pattern_interpretation M ρₑ ρ ϕ) (Ensembles.Singleton (Domain M) m₁)).
+    (app_ext (@pattern_interpretation M ρₑ ρ ϕ) {[ m₁ ]}).
 
-  Definition is_total_function M f (d c : Ensemble (Domain M)) ρₑ ρ :=
+  Definition is_total_function M f (d c : propset (Domain M)) ρₑ ρ :=
     ∀ (m₁ : Domain M),
-      d m₁ ->
+      m₁ ∈ d ->
       ∃ (m₂ : Domain M),
-        c m₂ /\
-        app_ext (@pattern_interpretation M ρₑ ρ f) (Ensembles.Singleton (Domain M) m₁)
-        = Ensembles.Singleton (Domain M) m₂.
+        m₂ ∈ c /\
+        app_ext (@pattern_interpretation M ρₑ ρ f) {[ m₁ ]}
+        = {[ m₂ ]}.
 
-  Definition total_function_is_injective M f (d : Ensemble (Domain M)) ρₑ ρ :=
+  Definition total_function_is_injective M f (d : propset (Domain M)) ρₑ ρ :=
     ∀ (m₁ : Domain M),
-      d m₁ ->
+      m₁ ∈ d ->
       ∀ (m₂ : Domain M),
-        d m₂ ->
+        m₂ ∈ d ->
         (rel_of ρₑ ρ f) m₁ = (rel_of ρₑ ρ f) m₂ ->
         m₁ = m₂.
 
   Definition is_functional_pattern ϕ M ρₑ ρₛ :=
-    ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = Ensembles.Singleton (Domain M) m.
+    ∃ (m : Domain M), @pattern_interpretation M ρₑ ρₛ ϕ = {[ m ]}.
 
   Lemma functional_pattern_inj ϕ M ρₑ ρ m₁ m₂ :
     @is_functional_pattern ϕ M ρₑ ρ ->
-    @pattern_interpretation M ρₑ ρ ϕ m₁ ->
-    @pattern_interpretation M ρₑ ρ ϕ m₂ ->
+    m₁ ∈ @pattern_interpretation M ρₑ ρ ϕ ->
+    m₂ ∈ @pattern_interpretation M ρₑ ρ ϕ ->
     m₁ = m₂.
   Proof.
     intros [m Hm] Hm₁ Hm₂.
