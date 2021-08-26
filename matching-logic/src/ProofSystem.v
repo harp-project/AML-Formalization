@@ -623,19 +623,19 @@ Proof.
     apply reflexivity.
 
   (* Knaster-Tarski *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
     simpl.
-    remember (fun S : Ensemble (Domain m) =>
+    remember (fun S : propset (Domain m) =>
                 pattern_interpretation evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
 
-    pose (OS := Lattice.EnsembleOrderedSet (@Domain signature m)).
-    pose (L := Lattice.PowersetLattice (@Domain signature m)).
+    pose (OS := PropsetLattice.PropsetOrderedSet (@Domain signature m)).
+    pose (L := PropsetLattice.PowersetLattice (@Domain signature m)).
 
-    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+    assert (Ffix : PropsetLattice.isFixpoint F (PropsetLattice.LeastFixpointOf F)).
+    { apply PropsetLattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
       unfold well_formed in Hwf.
       apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
@@ -647,17 +647,28 @@ Proof.
       apply set_svar_fresh_is_fresh.
     }
     
-    unfold Lattice.isFixpoint in Ffix.
-    assert (Ffix_set : Same_set (Domain m) (F (Lattice.LeastFixpointOf F)) (Lattice.LeastFixpointOf F)).
-    { rewrite -> Ffix. apply Same_set_refl. }
+    unfold PropsetLattice.isFixpoint in Ffix.
+    assert (Ffix_set : (F (PropsetLattice.LeastFixpointOf F)) = (PropsetLattice.LeastFixpointOf F)).
+    { rewrite -> Ffix. reflexivity. }
+    rewrite -> set_eq_subseteq in Ffix_set.
     destruct Ffix_set. clear H0.
     unfold Full.
-    symmetry.
-    apply Same_set_to_eq.
-    apply Same_set_Full_set.
-    apply Full_subset_union_iff_subset.
-    pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint).
-    specialize (Htmp (Ensemble (Domain m)) OS L F). simpl in Htmp. apply Htmp.
+    rewrite -> set_eq_subseteq.
+    split.
+    { apply top_subseteq. }
+
+    (* TODO make it a lemma *)
+    assert (Hwannabe_lemma: forall (L R : propset (Domain m)),
+               (⊤ ⊆ ((⊤ ∖ L) ∪ R)) ↔ (L ⊆ R)).
+    { intros L0 R0. clear. split; intros H. set_solver. rewrite -> elem_of_subseteq. intros x _.
+      set_unfold in H.
+      destruct (classic (x ∈ R0)); set_solver.
+    }
+    rewrite -> Hwannabe_lemma. clear Hwannabe_lemma.
+
+    pose proof (Htmp := PropsetLattice.LeastFixpoint_LesserThanPrefixpoint).
+    specialize (Htmp (propset (Domain m)) OS L F). simpl in Htmp.
+    apply Htmp.
 
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
     { unfold well_formed in Hwf. apply andb_true_iff in Hwf.
@@ -682,6 +693,7 @@ Proof.
       apply wfc_aux_body_mu_imp_bsvar_subst; assumption.
     }
     specialize (IHHp Hwf').
+    
 
     simpl in IHHp.
     unfold well_formed in Hwf.
@@ -692,10 +704,11 @@ Proof.
     unfold instantiate in Hp.
     apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
     apply pattern_interpretation_iff_subset in Hv.
-
+    
     subst F.
     rewrite <- set_substitution_lemma.
     apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
+
 
   (* Existence *)
   * intros Hv evar_val svar_val.
