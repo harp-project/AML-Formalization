@@ -1,6 +1,7 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect ssrfun ssrbool.
-From stdpp Require Import pmap gmap mapset fin_sets sets list.
+From Coq.Logic Require Import Classical_Prop Classical_Pred_Type.
+From stdpp Require Import pmap gmap mapset fin_sets sets list propset.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
@@ -788,4 +789,134 @@ Proof.
     subst a. destruct n.
     + simpl. exact H.
     + simpl. apply IHl. apply H.
+Qed.
+
+Definition propset_fa_union {T C : Type} (f : C -> propset T) : propset T
+  := PropSet (fun (x : T) => exists (c : C), x ∈ f c).
+
+
+Lemma propset_fa_union_same {T C : Type} {LE : LeibnizEquiv (propset T)} (f f' : C -> propset T):
+      (forall c, (f c) = (f' c)) ->
+      (propset_fa_union f) = (propset_fa_union f').
+Proof.
+  intros H.
+  unfold propset_fa_union.
+  rewrite -> set_eq_subseteq.
+  repeat rewrite -> elem_of_subseteq.
+  split; intros x H'; rewrite -> elem_of_PropSet; rewrite -> elem_of_PropSet in H';
+    destruct H' as [c Hc]; exists c.
+  - rewrite <- H. exact Hc.
+  - rewrite -> H. exact Hc.
+Qed.
+
+Lemma propset_fa_union_included : forall T C : Type, forall f f' : C -> propset T,
+      (forall c, (f c) ⊆ (f' c)) ->
+      (propset_fa_union f) ⊆ (propset_fa_union f').
+Proof.
+  intros.
+  rewrite -> elem_of_subseteq. setoid_rewrite -> elem_of_subseteq in H.
+  setoid_rewrite -> elem_of_PropSet. (*setoid_rewrite -> elem_of_PropSet in H.*)
+  intros x H0.
+  destruct H0 as [c Hc].
+  apply H in Hc.
+  eauto.
+Qed.
+
+
+Lemma Not_Empty_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
+  S <> ∅ -> exists x : T, x ∈ S.
+Proof.
+  intros H.
+  unfold not in H.
+
+  rewrite -> set_eq_subseteq in H.
+  apply not_and_or in H.
+  inversion H.
+  * pose (e := not_all_ex_not T (fun x => x ∈ S -> x ∈ ∅) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    eexists. exact H2.
+  * pose (e := not_all_ex_not T (fun x => x ∈ ∅ -> x ∈ S) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    contradiction.
+Qed.
+
+Lemma Contains_Elements_Not_Empty {T : Type} (S : propset T):
+    (exists x : T, x ∈ S) -> S <> ∅.
+Proof.
+  set_solver by fail.
+Qed.
+
+Lemma Not_Empty_iff_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
+  S <> ∅ <->
+  exists x : T, x ∈ S.
+Proof.
+  intros. split.
+  - apply Not_Empty_Contains_Elements.
+  - apply Contains_Elements_Not_Empty.
+Qed.
+
+Lemma Compl_Compl_propset {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ (⊤ ∖ A)) = A.
+Proof.
+  apply set_eq_subseteq. rewrite !elem_of_subseteq.
+  split; intros x H.
+  * set_unfold.
+    assert (H0: ¬ (x ∉ A)) by firstorder.
+    now apply NNPP in H0.
+  * set_unfold. firstorder.
+Qed.
+
+
+Lemma Compl_Union_Compl_Inters_propset_alt {T : Type} {LE : LeibnizEquiv (propset T)} (L R : propset T):
+  (⊤ ∖ ((⊤ ∖ L) ∪ (⊤ ∖ R))) = (L ∩ R).
+Proof.
+  set_unfold.
+  intros x.
+  split.
+  - intros [_ H].
+    assert (H1: ¬ (x ∉ L)) by firstorder.
+    assert (H2: ¬ (x ∉ R)) by firstorder.
+    apply NNPP in H1. apply NNPP in H2. split; assumption.
+  - intros H.
+    split;[exact I|].
+    intros HContra.
+    destruct HContra; firstorder.
+Qed.
+
+Lemma complement_full_iff_empty {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ A = ⊤) <-> (A = ∅).
+Proof.
+  set_solver by fail.
+Qed.
+
+Lemma complement_empty_iff_full {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ A = ∅) <-> (A = ⊤).
+Proof.
+  split; intros H.
+  2:{ set_solver. }
+  set_unfold. intros x; split; intros H1; try exact I.
+  assert (¬ (x ∉ A)) by firstorder.
+  apply NNPP in H0. exact H0.
+Qed.
+
+Lemma intersection_full_iff_both_full {T : Type} {LE : LeibnizEquiv (propset T)} (L R : propset T):
+  (L ∩ R = ⊤) <-> (L = ⊤ /\ R = ⊤).
+Proof.
+  split; intros H; set_unfold; firstorder.
+Qed.
+
+
+Lemma union_with_complement {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T):
+  (⊤ ∖ X) ∪ X = ⊤.
+Proof.
+  set_unfold. intros x. split; intros H. exact I.
+  destruct (classic (x ∈ X)). right. assumption. left. auto.
+Qed.
+
+Lemma elem_of_compl {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T) (x : T):
+  (x ∈ (⊤ ∖ X)) <-> (x ∉ X).
+Proof.
+  split; intros H; set_solver.
 Qed.

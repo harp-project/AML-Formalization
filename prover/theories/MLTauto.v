@@ -76,13 +76,13 @@ Section ml_tauto.
 
   Fixpoint pp_toCoq (pp : PropPattern) : Set :=
     match pp with
-    | pp_atomic p _ => ((Empty_set _) ⊢ p)
-    | pp_natomic p _ => ((Empty_set _) ⊢ (patt_not p))
+    | pp_atomic p _ => (∅ ⊢ p)
+    | pp_natomic p _ => (∅ ⊢ (patt_not p))
     | pp_and p1 p2 => prod (pp_toCoq p1) (pp_toCoq p2)
     | pp_or p1 p2 => sum (pp_toCoq p1) (pp_toCoq p2)
     end.
 
-  Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> ((Empty_set _) ⊢ (pp_flatten pp)).
+  Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp -> (∅ ⊢ (pp_flatten pp)).
   Proof.
     induction pp; simpl; intros H.
     - exact H.

@@ -45,7 +45,7 @@ Module MMTest.
   Definition ϕ₁ := A ---> (B ---> A).
 
   Lemma ϕ₁_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₁.
+    ∅ ⊢ ϕ₁.
   Proof.
     apply P1; auto.
   Defined.
@@ -64,7 +64,7 @@ Module MMTest.
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
 
   Lemma ϕ₂_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₂.
+    ∅ ⊢ ϕ₂.
   Proof.
     apply P2; auto.
   Defined.
@@ -83,7 +83,7 @@ Module MMTest.
   Definition ϕ₃ := ¬ ¬ A ---> A.
   
   Lemma ϕ₃_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₃.
+    ∅ ⊢ ϕ₃.
   Proof.
     apply P3; auto.
   Defined.
@@ -102,7 +102,7 @@ Module MMTest.
   Definition ϕ₄ := A ---> A.
   
   Lemma ϕ₄_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₄.
+    ∅ ⊢ ϕ₄.
   Proof.
     apply A_impl_A. auto.
   Defined.
@@ -130,7 +130,7 @@ Module MMTest.
   Definition ϕ₅ := (A ---> B) <---> (¬ A or B).
 
   Lemma ϕ₅_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₅.
+    ∅ ⊢ ϕ₅.
   Proof.
     apply impl_iff_notp_or_q; auto.
   Defined.
@@ -165,7 +165,7 @@ Module MMTest.
   Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
 
   Lemma ϕ₆_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₆.
+    ∅ ⊢ ϕ₆.
   Proof.
     apply A_impl_not_not_B; auto.
   Defined.
@@ -187,7 +187,7 @@ Module MMTest.
   Definition ϕ₇ := ((B ---> C) ---> ((A ---> B) ---> (A ---> C))).
 
   Lemma ϕ₇_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₇.
+    ∅ ⊢ ϕ₇.
   Proof.
     apply prf_weaken_conclusion; auto.
   Defined.
@@ -209,7 +209,7 @@ Module MMTest.
   Definition ϕ₈ := (A and B) ---> A.
 
   Lemma ϕ₈_holds:
-    (Ensembles.Empty_set _) ⊢ ϕ₈.
+    ∅ ⊢ ϕ₈.
   Proof.
     apply pf_conj_elim_l; auto.
   Defined.

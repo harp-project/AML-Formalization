@@ -42,9 +42,6 @@ Class Signature := {
 (*  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};*)
 }.
 
-(* TODO move to some other file *)
-Definition Power (Sigma : Type) := Ensemble Sigma.
-
 (* TODO have different type for element variable and for set variable index *)
 Definition db_index := nat.
 
@@ -76,8 +73,6 @@ Section syntax.
     - apply nat_eq_dec.
     - apply sym_eq.
   Qed.     
-
-  Definition Theory := Ensemble Pattern.
   
   (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
 
