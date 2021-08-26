@@ -177,7 +177,7 @@ Qed.
   (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (Ensembles.In _ theory axiom) -> theory ⊢ axiom
+      (axiom ∈ theory) -> theory ⊢ axiom
                                               
   (* FOL reasoning *)
   (* Propositional tautology *)
@@ -285,103 +285,66 @@ Proof.
   induction Hp.
 
   (* hypothesis *)
-  * intros Hv evar_val svar_val. apply Hv. assumption.
+  - intros Hv evar_val svar_val. apply Hv. assumption.
 
   (* FOL reasoning - P1 *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    apply Extensionality_Ensembles.
-    constructor. constructor.
-    assert (Ensembles.Union (Domain m) (Complement (Domain m) Xphi) Xphi = Full_set (Domain m)).
-    apply Same_set_to_eq. apply Union_Compl_Fullset. unfold Full. rewrite <- H; clear H.
-    unfold Included; intros; apply Union_is_or.
-    inversion H. left. assumption. right. apply Union_intror. assumption.
+    rewrite -> set_eq_subseteq.
+    split.
+    { apply top_subseteq. }
+
+    assert (Huxphi: (⊤ ∖ Xphi) ∪ Xphi = ⊤).
+    { clear.
+      set_unfold. intros x. split; intros H. exact I.
+      destruct (classic (x ∈ Xphi)). right. assumption. left. auto.
+    }
+
+    rewrite <- Huxphi.
+    rewrite -> elem_of_subseteq. intros x H.
+    rewrite -> elem_of_union.
+    destruct (classic (x ∈ Xphi)).
+    + right. right. assumption.
+    + left. clear -H0. set_solver.
 
   (* FOL reasoning - P2 *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     repeat rewrite -> pattern_interpretation_imp_simpl.
     remember (pattern_interpretation evar_val svar_val phi) as Xphi.
     remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
     remember (pattern_interpretation evar_val svar_val xi) as Xxi.
-    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Union_Intes_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive (Ensembles.Intersection (Domain m) Xphi (Complement (Domain m) Xpsi))
-          (Complement (Domain m) Xphi) Xxi).
-    apply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
-    pose proof (Htmp := Intes_Union_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xpsi) (Complement (Domain m) Xphi)).
-    apply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive); eapply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive); eapply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
-    pose proof (Htmp := Intes_Union_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive);
-      eapply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive);
-      eapply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xpsi) Xxi).
-    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Union_Transitive (Complement (Domain m) Xphi) Xxi (Complement (Domain m) Xpsi)).
-    apply Same_set_to_eq in Htmp; rewrite <- Htmp; clear Htmp.
-    pose proof (Htmp := Union_Symmetric (Complement (Domain m) Xphi) Xxi).
-    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles (Domain m) Xxi).
-    apply Same_set_to_eq in Htmp; rewrite <- Htmp at 2; clear Htmp.
-    pose proof (Htmp := Intersection_Symmetric Xpsi (Complement (Domain m) Xxi)).
-    apply Same_set_to_eq in Htmp; erewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Transitive);
-      eapply Same_set_to_eq in Htmp; erewrite <- Htmp; clear Htmp.    
-    epose proof (Htmp := Union_Transitive);
-      eapply Same_set_to_eq in Htmp; erewrite <- Htmp; clear Htmp.
-    pose proof (Htmp := Intes_Union_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-
-    apply Extensionality_Ensembles.
-    constructor. constructor.
-    assert (Htmp: Ensembles.Union (Domain m) (Complement (Domain m) Xpsi) Xpsi = Full_set (Domain m)).
-    { apply Same_set_to_eq. apply Union_Compl_Fullset. }
-    unfold Full. rewrite <- Htmp; clear Htmp.
-    unfold Included; intros x H2; unfold In. inversion H2.
-    apply Union_intror; assumption.
-    apply Union_introl; apply Union_introl; apply Union_introl; assumption.
+    clear.
+    apply set_eq_subseteq. split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq. intros x _.
+    destruct (classic (x ∈ Xphi)), (classic (x ∈ Xpsi)), (classic (x ∈ Xxi));
+      set_solver.
 
   (* FOL reasoning - P3 *)
-  * intros Hv evar_val svar_val. 
+  - intros Hv evar_val svar_val. 
     repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
-    epose proof (Htmp := Union_Empty_l);
-      eapply Same_set_to_eq in Htmp; unfold Semantics.Empty; rewrite -> Htmp; clear Htmp.
-    epose proof (Htmp := Union_Empty_l);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    pose proof (Htmp := Compl_Compl_Ensembles);
-      eapply Same_set_to_eq in Htmp; rewrite -> Htmp; clear Htmp.
-    apply Extensionality_Ensembles.
-    apply Union_Compl_Fullset.
+    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
+    clear.
+    apply set_eq_subseteq. split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq. intros x _.
+    destruct (classic (x ∈ Xphi)); set_solver.
 
   (* Modus ponens *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     rename i into wfphi1. rename i0 into wfphi1impphi2.
     pose (IHHp2 wfphi1impphi2 Hv evar_val svar_val) as e.
     rewrite -> pattern_interpretation_iff_subset in e.
-    apply Extensionality_Ensembles.
-    constructor. constructor. rewrite <- (IHHp1 wfphi1 Hv evar_val svar_val). apply e; assumption.
+    unfold Full.
+    pose proof (H1 := (IHHp1 wfphi1 Hv evar_val svar_val)).
+    unfold Full in H1.
+    clear -e H1.
+    set_solver.
 
   (* Existential quantifier *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     simpl.
     rewrite -> pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_ex_simpl.
