@@ -203,25 +203,24 @@ Module Semantics.
       Context {M : Model}.
       
       Lemma pattern_interpretation_not_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal) (phi : Pattern),
-          @pattern_interpretation Σ M evar_val svar_val (patt_not phi) = Complement (Domain M) (pattern_interpretation evar_val svar_val phi).
+          @pattern_interpretation Σ M evar_val svar_val (patt_not phi) = ⊤ ∖ (pattern_interpretation evar_val svar_val phi).
       Proof.
         intros. unfold patt_not.
         rewrite -> pattern_interpretation_imp_simpl.
         rewrite -> pattern_interpretation_bott_simpl.
-        apply Extensionality_Ensembles.
-        apply Union_Empty_l.
+        set_solver by fail.
       Qed.
 
       Lemma pattern_interpretation_or_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                      (phi1 phi2 : Pattern),
           pattern_interpretation evar_val svar_val (patt_or phi1 phi2)
-          = Ensembles.Union (Domain M) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
+          = (pattern_interpretation evar_val svar_val phi1) ∪ (@pattern_interpretation _ M evar_val svar_val phi2).
       Proof.
         intros. unfold patt_or.
         rewrite -> pattern_interpretation_imp_simpl.
         rewrite -> pattern_interpretation_not_simpl.
-        assert (H: Complement (Domain M) (Complement (Domain M) (pattern_interpretation evar_val svar_val phi1)) = pattern_interpretation evar_val svar_val phi1).
-        { apply Extensionality_Ensembles. apply Compl_Compl_Ensembles. }
+        assert (H: ⊤ ∖ (⊤ ∖ (pattern_interpretation evar_val svar_val phi1)) = pattern_interpretation evar_val svar_val phi1).
+        { apply Compl_Compl_propset. }
         rewrite -> H. reflexivity.
       Qed.
 
@@ -232,21 +231,19 @@ Module Semantics.
       Proof.
         intros.
         repeat rewrite -> pattern_interpretation_or_simpl.
-        apply Extensionality_Ensembles.
-        apply Union_Symmetric.
+        set_solver by fail.
       Qed.
 
       Lemma pattern_interpretation_and_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                       (phi1 phi2 : Pattern),
           pattern_interpretation evar_val svar_val (patt_and phi1 phi2)
-          = Ensembles.Intersection (Domain M) (pattern_interpretation evar_val svar_val phi1) (pattern_interpretation evar_val svar_val phi2).
+          = (pattern_interpretation evar_val svar_val phi1) ∩ (@pattern_interpretation _ M evar_val svar_val phi2).
       Proof.
         intros. unfold patt_and.
         rewrite -> pattern_interpretation_not_simpl.
         rewrite -> pattern_interpretation_or_simpl.
         repeat rewrite -> pattern_interpretation_not_simpl.
-        apply Extensionality_Ensembles.
-        apply Compl_Union_Compl_Intes_Ensembles_alt.
+        apply Compl_Union_Compl_Inters_propset_alt.
       Qed.
 
       Lemma pattern_interpretation_and_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)

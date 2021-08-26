@@ -856,3 +856,31 @@ Proof.
   - apply Not_Empty_Contains_Elements.
   - apply Contains_Elements_Not_Empty.
 Qed.
+
+Lemma Compl_Compl_propset {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ (⊤ ∖ A)) = A.
+Proof.
+  apply set_eq_subseteq. rewrite !elem_of_subseteq.
+  split; intros x H.
+  * set_unfold.
+    assert (H0: ¬ (x ∉ A)) by firstorder.
+    now apply NNPP in H0.
+  * set_unfold. firstorder.
+Qed.
+
+
+Lemma Compl_Union_Compl_Inters_propset_alt {T : Type} {LE : LeibnizEquiv (propset T)} (L R : propset T):
+  (⊤ ∖ ((⊤ ∖ L) ∪ (⊤ ∖ R))) = (L ∩ R).
+Proof.
+  set_unfold.
+  intros x.
+  split.
+  - intros [_ H].
+    assert (H1: ¬ (x ∉ L)) by firstorder.
+    assert (H2: ¬ (x ∉ R)) by firstorder.
+    apply NNPP in H1. apply NNPP in H2. split; assumption.
+  - intros H.
+    split;[exact I|].
+    intros HContra.
+    destruct HContra; firstorder.
+Qed.
