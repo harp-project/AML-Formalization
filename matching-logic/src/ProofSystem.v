@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles.
 
-From MatchingLogic.Utils Require Import Ensembles_Ext.
+From MatchingLogic.Utils Require Import Ensembles_Ext stdpp_ext.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
@@ -349,21 +349,31 @@ Proof.
     rewrite -> pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_ex_simpl.
     simpl.
-    
-    unfold instantiate. apply Extensionality_Ensembles.
-    constructor. constructor.
-    unfold Included; unfold Ensembles.In; intros x _.
-    rewrite -> element_substitution_lemma with (x0 := fresh_evar phi).
-    2: apply set_evar_fresh_is_fresh.
-    destruct (classic (  Complement (Domain m)
-    (pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
-                            (evar_open 0 (fresh_evar phi) phi)) x)).
-    -- left. apply H.
-    -- right. unfold Complement in H. apply NNPP in H.
-       constructor. exists (evar_val y). apply H.
 
+    rewrite -> element_substitution_lemma with (x := fresh_evar phi).
+    2: { apply set_evar_fresh_is_fresh. }
+    apply set_eq_subseteq. split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq. intros x _.
+    destruct (classic (x ∈ (⊤ ∖
+                              (pattern_interpretation
+                                 (update_evar_val (fresh_evar phi) (evar_val y) evar_val)
+                                 svar_val
+                                 (evar_open 0 (fresh_evar phi) phi))))).
+    -- left. apply H.
+    -- right. unfold not in H. Search elem_of "∖".
+       rewrite -> elem_of_difference in H.
+       unfold stdpp_ext.propset_fa_union.
+       rewrite -> elem_of_PropSet.
+       exists (evar_val y).
+       assert (x
+                 ∉ pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
+                 (evar_open 0 (fresh_evar phi) phi) → False).
+       { intros Hcontra. apply H. split. apply elem_of_top'. apply Hcontra. }
+       apply NNPP in H0. exact H0.
+       
   (* Existential generalization *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     rename i into H. rename i0 into H0.
     rewrite pattern_interpretation_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
@@ -376,23 +386,26 @@ Proof.
     }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
     assert (H2: forall evar_val svar_val,
-               Included (Domain m)
-                        (pattern_interpretation evar_val svar_val phi1)
-                        (pattern_interpretation evar_val svar_val phi2)
+               (@pattern_interpretation _ m evar_val svar_val phi1)
+                 ⊆
+                 (pattern_interpretation evar_val svar_val phi2)
            ).
     { intros. apply pattern_interpretation_iff_subset. apply IHHp. }
     apply pattern_interpretation_subset_union
       with (evar_val0 := evar_val) (svar_val0 := svar_val) (x0 := x) in H2.
-    unfold Included, Ensembles.In. intros x0 Hphi1.
-    unfold Included, Ensembles.In in IHHp.
+    rewrite -> elem_of_subseteq. intros x0 Hphi1.
+    rewrite -> elem_of_subseteq in H2.
     destruct H2 with (x0 := x0).
-    -- assert (Hinc: Included (Domain m)
+    -- assert (Hinc:
                               (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
-                              (FA_Union
+                              ⊆
+                              (propset_fa_union
                                  (λ e : Domain m, pattern_interpretation
                                                     (update_evar_val x e evar_val) svar_val phi1))).
        { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
-         apply FA_Union_included. unfold Included, Ensembles.In. intros c x1 H3.
+         apply propset_fa_union_included.
+         setoid_rewrite -> elem_of_subseteq.
+         intros c x1 H3.
          remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
          erewrite interpretation_fresh_evar_open with (y := x) in H3.
          3: { apply evar_is_fresh_in_evar_quantify. }
@@ -405,13 +418,13 @@ Proof.
          assumption.
          rewrite Hwfc. auto.
        }
-       unfold Included, Ensembles.In in Hinc. apply Hinc. apply Hphi1.
+       rewrite -> elem_of_subseteq in Hinc.
+       apply Hinc. apply Hphi1.
 
-    -- 
-       destruct H1 as [c Hphi2].
-       rewrite pattern_interpretation_free_evar_independent in Hphi2.
+    -- simpl.
+       rewrite pattern_interpretation_free_evar_independent in H1.
        { auto. }
-       { apply Hphi2. }
+       apply H1.
 
   (* Propagation bottom - left *)
   * intros Hv evar_val svar_val. 
