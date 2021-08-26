@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (*From Coq Require Import Ensembles.*)
-From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type.
+From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
@@ -306,32 +306,33 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
   Section with_model.
     Context {m : Model}.
-    Let OS := EnsembleOrderedSet (@Domain m).
+    Let OS := PropsetOrderedSet (@Domain m).
     Let  L := PowersetLattice (@Domain m).
 
+Print singleton.
     Program Fixpoint pattern_interpretation
             (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
             (p : Pattern) {measure (size p)} :=
       match p with
-      | patt_free_evar x => Ensembles.Singleton _ (evar_val x)
+      | patt_free_evar x => {[evar_val x]}
       | patt_free_svar X => svar_val X
-      | patt_bound_evar x => Empty
-      | patt_bound_svar X => Empty
+      | patt_bound_evar x => ∅
+      | patt_bound_svar X => ∅
       | patt_sym s => (@sym_interp m) s
       | patt_app ls rs => app_ext (pattern_interpretation evar_val svar_val ls)
                                   (pattern_interpretation evar_val svar_val rs)
-      | patt_bott => Empty
-      | patt_imp ls rs => Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+      | patt_bott => ∅
+      | patt_imp ls rs => (difference ⊤ (pattern_interpretation evar_val svar_val ls)) ∪
                                           (pattern_interpretation evar_val svar_val rs)
       | patt_exists p' =>
         let x := fresh_evar p' in
-        FA_Union
+        propset_fa_union
           (fun e => pattern_interpretation (update_evar_val x e evar_val)
                                            svar_val
                                            (evar_open 0 x p'))
       | patt_mu p' =>
         let X := fresh_svar p' in
-        @LeastFixpointOf (Ensemble (@Domain m)) OS L
+        @LeastFixpointOf _ OS L
                          (fun S => pattern_interpretation evar_val
                                                           (update_svar_val X S svar_val)
                                                           (svar_open 0 X p'))
@@ -353,7 +354,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     Lemma pattern_interpretation_free_evar_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
           (x : evar) :
-      pattern_interpretation evar_val svar_val (patt_free_evar x) = Ensembles.Singleton _ (evar_val x).
+      pattern_interpretation evar_val svar_val (patt_free_evar x) = {[ evar_val x ]}.
     Proof.
       auto.
     Qed.
@@ -369,7 +370,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     Lemma pattern_interpretation_bound_evar_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
           (x : db_index) :
-      pattern_interpretation evar_val svar_val (patt_bound_evar x) = Empty.
+      pattern_interpretation evar_val svar_val (patt_bound_evar x) = ∅.
     Proof.
       auto.
     Qed.
@@ -377,7 +378,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     Lemma pattern_interpretation_bound_svar_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
           (X : db_index) :
-      pattern_interpretation evar_val svar_val (patt_bound_svar X) = Empty.
+      pattern_interpretation evar_val svar_val (patt_bound_svar X) = ∅.
     Proof.
       auto.
     Qed.
@@ -409,7 +410,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
     Lemma pattern_interpretation_bott_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)) :
-      pattern_interpretation evar_val svar_val patt_bott = Empty.
+      pattern_interpretation evar_val svar_val patt_bott = ∅.
     Proof.
       auto.
     Qed.
@@ -418,7 +419,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
           (ls rs : Pattern) :
       pattern_interpretation evar_val svar_val (patt_imp ls rs) =
-      Ensembles.Union _ (Complement _ (pattern_interpretation evar_val svar_val ls))
+      (difference ⊤ (pattern_interpretation evar_val svar_val ls)) ∪
                       (pattern_interpretation evar_val svar_val rs).
     Proof.
       unfold pattern_interpretation, pattern_interpretation_func.
@@ -436,7 +437,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           (p : Pattern) :
       pattern_interpretation evar_val svar_val (patt_exists p) =
       let x := fresh_evar p in
-      FA_Union 
+      propset_fa_union 
         (fun e => pattern_interpretation (update_evar_val x e evar_val)
                                          svar_val
                                          (evar_open 0 x p)).
@@ -456,7 +457,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           (p : Pattern) :
       pattern_interpretation evar_val svar_val (patt_mu p) =
       let X := fresh_svar p in
-      @LeastFixpointOf (Ensemble (@Domain m)) OS L
+      @LeastFixpointOf _ OS L
                        (fun S => pattern_interpretation evar_val
                                                         (update_svar_val X S svar_val)
                                                         (svar_open 0 X p)).
@@ -495,7 +496,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
   (* model predicate *)
   Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρ,
-      @pattern_interpretation M ρₑ ρ ϕ = Full \/ pattern_interpretation ρₑ ρ ϕ = Empty.
+      @pattern_interpretation M ρₑ ρ ϕ = ⊤ \/ pattern_interpretation ρₑ ρ ϕ = ∅.
 
   Lemma M_predicate_impl M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_imp ϕ₁ ϕ₂).
   Proof.
@@ -503,14 +504,10 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     specialize (Hp1 ρₑ ρ). specialize (Hp2 ρₑ ρ).
     rewrite -> pattern_interpretation_imp_simpl.
     destruct Hp1, Hp2; rewrite -> H; rewrite -> H0.
-    + left. apply Extensionality_Ensembles. apply Union_Compl_Fullset.
-    + right. apply Extensionality_Ensembles. unfold Full. unfold Empty.
-      rewrite -> (Same_set_to_eq (Complement_Full_is_Empty)).
-      apply Union_Empty_r.
-    + left. apply Extensionality_Ensembles. unfold Full. unfold Empty.
-      rewrite -> (Same_set_to_eq (Complement_Empty_is_Full)).
-      unfold Same_set. unfold Included. unfold In. split; intros; constructor; constructor.
-    + left. apply Extensionality_Ensembles. apply Union_Compl_Fullset.
+    + left. set_solver by fail.
+    + right. set_solver by fail.
+    + left. set_solver by fail.
+    + left. set_solver by fail.
   Qed.
 
   Hint Resolve M_predicate_impl : core.
@@ -530,35 +527,48 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     simpl. unfold M_predicate. intros.
     rewrite -> pattern_interpretation_ex_simpl.
     simpl.
-    pose proof (H' := classic (exists e : Domain M, Same_set (Domain M) (pattern_interpretation (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρₑ) ρ (evar_open 0 (evar_fresh (elements (free_evars ϕ))) ϕ)) Full)).
+    pose proof (H' := classic
+                        (exists e : Domain M,
+                            (pattern_interpretation
+                               (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρₑ)
+                               ρ
+                               (evar_open 0 (evar_fresh (elements (free_evars ϕ))) ϕ))
+                            = ⊤)).
     destruct H'.
     - (* For some member, the subformula evaluates to full set. *)
-      left. apply Extensionality_Ensembles. apply Same_set_symmetric. apply Same_set_Full_set.
-      unfold Included. intros. constructor.
-      destruct H0. unfold Same_set in H0. destruct H0. clear H0.
-      unfold Included in H2. specialize (H2 x H1).
-      exists x0. unfold In in H2. apply H2.
-    - (* The subformula does not evaluate to full set for any member. *)
-      right. apply Extensionality_Ensembles.
-      unfold Same_set.
+      left. Search eq subseteq.
+      apply set_eq_subseteq.
       split.
-      + unfold Included. intros.
-        unfold In in H1. inversion H1. subst. clear H1. destruct H2.
-        specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) x0 ρₑ) ρ).
-        destruct H.
-        * exfalso. apply H0. exists x0. rewrite -> H. apply Same_set_refl.
-        * apply eq_to_Same_set in H. unfold Same_set in H. destruct H. clear H2.
-          unfold Included in H. specialize (H x).
-          auto.
-      + unfold Included. intros. inversion H1.
+      { set_solver by fail. }
+      apply elem_of_subseteq.
+      intros x _.
+      destruct H0 as [x0 H0]. unfold fresh_evar.
+      unfold propset_fa_union. rewrite -> elem_of_PropSet.
+      exists x0. rewrite H0. apply elem_of_top'.
+    - (* The subformula does not evaluate to full set for any member. *)
+      right.
+      apply set_eq_subseteq.
+      split.
+      2: { apply empty_subseteq. }
+      apply elem_of_subseteq.
+      intros x H1.
+      unfold propset_fa_union in H1.
+      rewrite -> elem_of_PropSet in H1.
+      destruct H1 as [c H1].
+      unfold not in H0.
+      specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) c ρₑ) ρ).
+      destruct H.
+      + exfalso. apply H0. exists c. apply H.
+      + apply set_eq_subseteq in H. destruct H as [H _].
+        rewrite ->  elem_of_subseteq in H. auto.
   Qed.
 
   Hint Resolve M_predicate_exists : core.
 
   Lemma predicate_not_empty_iff_full M ϕ ρₑ ρ :
     M_predicate M ϕ ->
-    @pattern_interpretation M ρₑ ρ ϕ <> Empty <->
-    @pattern_interpretation M ρₑ ρ ϕ = Full.
+    @pattern_interpretation M ρₑ ρ ϕ <> ∅ <->
+    @pattern_interpretation M ρₑ ρ ϕ = ⊤.
   Proof.
     intros Hmp.
     split.
@@ -573,8 +583,8 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
 
   Lemma predicate_not_full_iff_empty M ϕ ρₑ ρ :
     M_predicate M ϕ ->
-    @pattern_interpretation M ρₑ ρ ϕ <> Full <->
-    @pattern_interpretation M ρₑ ρ ϕ = Empty.
+    @pattern_interpretation M ρₑ ρ ϕ <> ⊤ <->
+    @pattern_interpretation M ρₑ ρ ϕ = ∅.
   Proof.
     intros Hmp.
     split.
@@ -588,24 +598,22 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
   Qed.
 
   Lemma pattern_interpretation_impl_MP M ϕ₁ ϕ₂ ρₑ ρ :
-    @pattern_interpretation M ρₑ ρ (patt_imp ϕ₁ ϕ₂) = Full ->
-    @pattern_interpretation M ρₑ ρ ϕ₁ = Full ->
-    @pattern_interpretation M ρₑ ρ ϕ₂ = Full.
+    @pattern_interpretation M ρₑ ρ (patt_imp ϕ₁ ϕ₂) = ⊤ ->
+    @pattern_interpretation M ρₑ ρ ϕ₁ = ⊤ ->
+    @pattern_interpretation M ρₑ ρ ϕ₂ = ⊤.
   Proof.
     unfold Full.
     rewrite pattern_interpretation_imp_simpl.
     intros H1 H2.
     rewrite -> H2 in H1.
-    rewrite -> Complement_Full_is_Empty_eq in H1.
-    rewrite -> Union_Empty_r_eq in H1.
-    apply H1.
+    set_solver by auto.
   Qed.
 
   Lemma pattern_interpretation_predicate_impl M ϕ₁ ϕ₂ ρₑ ρ :
     M_predicate M ϕ₁ ->
-    pattern_interpretation ρₑ ρ (patt_imp ϕ₁ ϕ₂) = Full
-    <-> (pattern_interpretation ρₑ ρ ϕ₁ = Full
-         -> @pattern_interpretation M ρₑ ρ ϕ₂ = Full).
+    pattern_interpretation ρₑ ρ (patt_imp ϕ₁ ϕ₂) = ⊤
+    <-> (pattern_interpretation ρₑ ρ ϕ₁ = ⊤
+         -> @pattern_interpretation M ρₑ ρ ϕ₂ = ⊤).
   Proof.
     intros Hpred.
     split.
@@ -613,18 +621,13 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       apply (pattern_interpretation_impl_MP H H1).
     - intros H.
       rewrite -> pattern_interpretation_imp_simpl.
-      destruct (classic (pattern_interpretation ρₑ ρ ϕ₁ = Full)).
+      destruct (classic (pattern_interpretation ρₑ ρ ϕ₁ = ⊤)).
       + specialize (H H0).
         rewrite -> H. rewrite -> H0.
-        unfold Full.
-        apply Same_set_to_eq.
-        apply Union_Compl_Fullset.
+        set_solver by fail.
       + apply predicate_not_full_iff_empty in H0. 2: apply Hpred.
         rewrite -> H0.
-        unfold Empty.
-        rewrite -> Complement_Empty_is_Full_eq.
-        rewrite -> Union_Full_l_eq. unfold Full.
-        reflexivity.
+        set_solver by fail.
   Qed.
   
   (* ϕ is a well-formed body of ex *)
