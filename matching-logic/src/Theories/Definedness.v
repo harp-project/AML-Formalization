@@ -553,9 +553,9 @@ Section definedness.
 
   Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
     M ⊨ᵀ theory ->
-    @pattern_interpretation sig M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = Full
+    @pattern_interpretation sig M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
     <-> (forall m₁ m₂,
-            rel_of ρₑ ρₛ ϕ₁ m₁ m₂ <-> rel_of ρₑ ρₛ ϕ₂ m₂ m₁
+            m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁ <-> m₁ ∈ rel_of ρₑ ρₛ ϕ₂ m₂ (* TODO make rel_of take one more parameter. *)
         ).
   Proof.
     intros Htheory.
@@ -576,11 +576,10 @@ Section definedness.
 
     assert (Hpi: ∀ M ev sv phi rhs,
                @pattern_interpretation _ M ev sv phi = rhs
-               <-> (∀ m, @pattern_interpretation _ M ev sv phi m <-> rhs m)).
+               <-> (∀ m, m ∈ @pattern_interpretation _ M ev sv phi <-> m ∈ rhs)).
     { split; intros H.
       + rewrite H. auto.
-      + apply eq_iff_Same_set.
-        unfold Same_set. unfold Included. unfold In.
+      + rewrite -> set_eq_subseteq. repeat rewrite elem_of_subseteq.
         split.
         * intros x0. specialize (H x0). destruct H as [H1 H2].
           apply H1.
@@ -605,12 +604,12 @@ Section definedness.
     remember (fresh_evar (patt_in (patt_free_evar x) (evar_open 1 x (nest_ex (nest_ex ϕ₂)) $ b0))) as y.
     rewrite simpl_evar_open.
     rewrite [evar_open 0 y (patt_free_evar x)]/=.
-    rewrite -free_evar_in_patt.
+    repeat rewrite elem_of_PropSet.
+    rewrite <- free_evar_in_patt.
     2: { apply Htheory. }
     rewrite pattern_interpretation_free_evar_simpl.
     rewrite update_evar_val_same.
-    fold (rel_of ρₑ ρₛ ϕ₁ m₁ m₂).
-    unfold In.
+    fold (m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁).
 
     rewrite simpl_evar_open.
     rewrite pattern_interpretation_app_simpl.
@@ -662,15 +661,16 @@ Section definedness.
     { solve_fresh_neq. }
 
     rewrite update_evar_val_same.
-    unfold Ensembles.In.
+    unfold app_ext.
+    rewrite elem_of_PropSet.
     fold (rel_of ρₑ ρₛ ϕ₂ m₂).
     auto.
   Qed.
 
   Lemma single_element_definedness_impl_satisfies_definedness (M : @Model sig) :
     (exists (hashdef : Domain M),
-        sym_interp (inj definedness) = Ensembles.Singleton _ hashdef
-        /\ forall x, app_interp hashdef x = Ensembles.Full_set _
+        sym_interp M (inj definedness) = {[hashdef]}
+        /\ forall x, app_interp hashdef x = ⊤
     ) ->
         satisfies_model M (axiom AxDefinedness).
   Proof.
@@ -682,10 +682,11 @@ Section definedness.
     unfold evarn.
     rewrite -> pattern_interpretation_app_simpl.
     rewrite -> pattern_interpretation_sym_simpl.
-    simpl. apply Extensionality_Ensembles.
-    apply Same_set_symmetric. apply Same_set_Full_set.
-    unfold Included. intros x H.
-    clear H. (* useless *)
+    rewrite -> set_eq_subseteq.
+    split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq.
+    intros x _.
     intros.
     unfold Ensembles.In.
     unfold app_ext.
