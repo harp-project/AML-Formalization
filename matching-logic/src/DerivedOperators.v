@@ -436,99 +436,83 @@ Module Semantics.
             rewrite -> elem_of_subseteq in H2.
             specialize (H2 m). apply H2. apply elem_of_top'.
       Qed.
-
-
+      
       Lemma pattern_interpretation_forall_predicate ϕ ρₑ ρₛ :
         let x := fresh_evar ϕ in
-      M_predicate M (evar_open 0 x ϕ) ->
-      pattern_interpretation ρₑ ρₛ (patt_forall ϕ) = Full <->
-      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = Full.
-    Proof.
-      intros x H.
-      unfold patt_forall.
-      rewrite -> pattern_interpretation_not_simpl.
-      
-      rewrite eq_iff_Same_set.
-      unfold Full.
-      pose proof (Hcompl := @Compl_Compl_Ensembles (Domain M) (Full_set _)).
-      rewrite <- eq_iff_Same_set in Hcompl.
-      rewrite <- Hcompl at 1.
-      rewrite <- Same_set_Compl.
-      pose proof (Hscfie := @Complement_Full_is_Empty (Domain M)).
-      apply eq_iff_Same_set in Hscfie.
-      rewrite -> Hscfie at 1.
-      rewrite <- eq_iff_Same_set.
-      rewrite -> pattern_interpretation_exists_empty.
-
-      assert (Hfr: fresh_evar (¬ϕ)%ml = fresh_evar ϕ).
-      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
-        rewrite -> union_empty_r_L. reflexivity.
-      }
-
-      rewrite -> Hfr. subst x.
-      rewrite !simpl_evar_open.
-      pose proof (Hcfe := @Complement_Full_is_Empty (Domain M)).
-      apply eq_iff_Same_set in Hcfe.
-      split; intros H'.
-      - intros m.
-        specialize (H' m).
-        rewrite -> pattern_interpretation_not_simpl in H'.
-        unfold Empty in H'. rewrite <- Hcfe in H'.
-        apply eq_iff_Same_set in H'.
-        apply Same_set_Compl in H'.
-        apply eq_iff_Same_set. assumption.
-      - intros m.
-        specialize (H' m).
+        M_predicate M (evar_open 0 x ϕ) ->
+        pattern_interpretation ρₑ ρₛ (patt_forall ϕ) = ⊤ <->
+        ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤.
+      Proof.
+        intros x H.
+        unfold patt_forall.
         rewrite -> pattern_interpretation_not_simpl.
-        unfold Empty.
-        rewrite <- Hcfe.
-        apply eq_iff_Same_set.
-        apply eq_iff_Same_set in H'.
-        rewrite <- Same_set_Compl.
-        assumption.
-    Qed.
+        
+        assert (Hscfie : ⊤ ∖ ⊤ = @empty (propset (Domain M)) _) by apply difference_diag_L.
+        rewrite -> complement_full_iff_empty.
+        rewrite -> pattern_interpretation_exists_empty.
+        
+        assert (Hfr: fresh_evar (¬ϕ)%ml = fresh_evar ϕ).
+        { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
+          rewrite -> union_empty_r_L. reflexivity.
+        }
 
-    Lemma pattern_interpretation_and_full ρₑ ρₛ ϕ₁ ϕ₂:
-      @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = Full
-      <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = Full
-           /\ @pattern_interpretation Σ M ρₑ ρₛ ϕ₂ = Full).
-    Proof.
-      unfold Full.
-      rewrite -> pattern_interpretation_and_simpl.
-      split.
-      - intros H.
-        apply Intersection_eq_Full_eq in H.
-        auto.
-      - intros [H1 H2].
-        rewrite -> H1. rewrite -> H2.
-        apply Same_set_to_eq.
-        apply Intersection_same.
-    Qed.
+        rewrite -> Hfr. subst x.
+        rewrite !simpl_evar_open.
+        split; intros H'.
+        - intros m.
+          specialize (H' m).
+          rewrite -> pattern_interpretation_not_simpl in H'.
+          rewrite -> complement_empty_iff_full in H'.
+          exact H'.
+        - intros m.
+          specialize (H' m).
+          rewrite -> pattern_interpretation_not_simpl.
+          rewrite -> H'.
+          rewrite Hscfie.
+          reflexivity.
+      Qed.
 
-    Lemma pattern_interpretation_predicate_not ρₑ ρₛ ϕ :
-      M_predicate M ϕ ->
-      pattern_interpretation ρₑ ρₛ (patt_not ϕ) = Full
-      <-> @pattern_interpretation Σ M ρₑ ρₛ ϕ <> Full.
-    Proof.
-      intros Hpred.
-      rewrite pattern_interpretation_not_simpl.
-      split; intros H.
-      - apply predicate_not_full_iff_empty.
-        { apply Hpred. }
-        apply eq_iff_Same_set in H.
-        rewrite <- Compl_Compl_Ensembles_eq in H.
-        apply Same_set_Compl in H.
-        rewrite Complement_Full_is_Empty_eq in H.
-        apply eq_iff_Same_set in H.
-        unfold Empty.
-        apply H.
-      - apply predicate_not_full_iff_empty in H.
-        2: { apply Hpred. }
-        rewrite H.
-        unfold Empty. unfold Full.
-        apply Complement_Empty_is_Full_eq.
-    Qed.
-    
+      Lemma pattern_interpretation_and_full ρₑ ρₛ ϕ₁ ϕ₂:
+        @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = Full
+        <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = Full
+             /\ @pattern_interpretation Σ M ρₑ ρₛ ϕ₂ = Full).
+      Proof.
+        unfold Full.
+        rewrite -> pattern_interpretation_and_simpl.
+        split.
+        - intros H.
+          apply Intersection_eq_Full_eq in H.
+          auto.
+        - intros [H1 H2].
+          rewrite -> H1. rewrite -> H2.
+          apply Same_set_to_eq.
+          apply Intersection_same.
+      Qed.
+
+      Lemma pattern_interpretation_predicate_not ρₑ ρₛ ϕ :
+        M_predicate M ϕ ->
+        pattern_interpretation ρₑ ρₛ (patt_not ϕ) = Full
+        <-> @pattern_interpretation Σ M ρₑ ρₛ ϕ <> Full.
+      Proof.
+        intros Hpred.
+        rewrite pattern_interpretation_not_simpl.
+        split; intros H.
+        - apply predicate_not_full_iff_empty.
+          { apply Hpred. }
+          apply eq_iff_Same_set in H.
+          rewrite <- Compl_Compl_Ensembles_eq in H.
+          apply Same_set_Compl in H.
+          rewrite Complement_Full_is_Empty_eq in H.
+          apply eq_iff_Same_set in H.
+          unfold Empty.
+          apply H.
+        - apply predicate_not_full_iff_empty in H.
+          2: { apply Hpred. }
+          rewrite H.
+          unfold Empty. unfold Full.
+          apply Complement_Empty_is_Full_eq.
+      Qed.
+      
     End with_model.
 
     Lemma T_predicate_not Γ ϕ : T_predicate Γ ϕ -> T_predicate Γ (patt_not ϕ).

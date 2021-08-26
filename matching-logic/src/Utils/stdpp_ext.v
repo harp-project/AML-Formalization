@@ -884,3 +884,19 @@ Proof.
     intros HContra.
     destruct HContra; firstorder.
 Qed.
+
+Lemma complement_full_iff_empty {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ A = ⊤) <-> (A = ∅).
+Proof.
+  set_solver by fail.
+Qed.
+
+Lemma complement_empty_iff_full {T : Type} {LE : LeibnizEquiv (propset T)} (A : propset T):
+  (⊤ ∖ A = ∅) <-> (A = ⊤).
+Proof.
+  split; intros H.
+  2:{ set_solver. }
+  set_unfold. intros x; split; intros H1; try exact I.
+  assert (¬ (x ∉ A)) by firstorder.
+  apply NNPP in H0. exact H0.
+Qed.
