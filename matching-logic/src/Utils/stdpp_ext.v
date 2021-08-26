@@ -794,6 +794,21 @@ Qed.
 Definition propset_fa_union {T C : Type} (f : C -> propset T) : propset T
   := PropSet (fun (x : T) => exists (c : C), x ∈ f c).
 
+
+Lemma propset_fa_union_same {T C : Type} {LE : LeibnizEquiv (propset T)} (f f' : C -> propset T):
+      (forall c, (f c) = (f' c)) ->
+      (propset_fa_union f) = (propset_fa_union f').
+Proof.
+  intros H.
+  unfold propset_fa_union.
+  rewrite -> set_eq_subseteq.
+  repeat rewrite -> elem_of_subseteq.
+  split; intros x H'; rewrite -> elem_of_PropSet; rewrite -> elem_of_PropSet in H';
+    destruct H' as [c Hc]; exists c.
+  - rewrite <- H. exact Hc.
+  - rewrite -> H. exact Hc.
+Qed.
+
 Lemma propset_fa_union_included : forall T C : Type, forall f f' : C -> propset T,
       (forall c, (f c) ⊆ (f' c)) ->
       (propset_fa_union f) ⊆ (propset_fa_union f').

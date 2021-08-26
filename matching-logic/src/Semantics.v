@@ -1446,7 +1446,7 @@ Print singleton.
 
       + simpl in Hsz. simpl in H.
         repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
-        apply Same_set_to_eq. apply FA_Union_same. intros c.
+        apply propset_fa_union_same. intros c.
 
         (* x = fresh_evar phi1' *)
         (* y = evar_fresh (elements (free_evars phi1') U (free_evars phi2)) *)
@@ -1507,7 +1507,7 @@ Print singleton.
           { subst. auto. }
           rewrite <- He1e2.
           rewrite <- IHsz.
-        * apply Same_set_refl.
+        * reflexivity.
         * rewrite <- evar_open_size. lia. 
         * auto.
         * rewrite -> free_svars_evar_open. auto.
@@ -1527,7 +1527,7 @@ Print singleton.
             rewrite -> Hpi. subst phi1'. rewrite -> HeqHoc.
             subst evar_val1'. subst evar_val2'.
             rewrite -> interpretation_fresh_evar_open with (y := Xu).
-            apply Same_set_refl.
+            reflexivity.
             { subst Xfr1.
               symmetry in HeqHoc'.
               pose proof (Hsubst := @bsvar_subst_not_occur_is_noop _ phi1 phi2 dbi HeqHoc').
