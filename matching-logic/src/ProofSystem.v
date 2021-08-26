@@ -711,67 +711,73 @@ Proof.
 
 
   (* Existence *)
-  * intros Hv evar_val svar_val.
+  - intros Hv evar_val svar_val.
     assert (pattern_interpretation evar_val svar_val (ex , BoundVarSugar.b0)
             = pattern_interpretation evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
     { repeat rewrite pattern_interpretation_ex_simpl. simpl.
-      rewrite eq_iff_Same_set. apply FA_Union_same. intros.
+      apply propset_fa_union_same. intros.
       repeat rewrite pattern_interpretation_imp_simpl.
       repeat rewrite pattern_interpretation_bott_simpl.
-      repeat rewrite Union_Empty_l_eq.
-      repeat rewrite Compl_Compl_Ensembles_eq.
-      rewrite Union_Empty_l_eq.
-      rewrite Compl_Compl_Ensembles_eq.
-      apply Same_set_refl.
+      rewrite [_ ∪ ∅]right_id_L.
+      rewrite [_ ∪ ∅]right_id_L.
+      rewrite [_ ∪ ∅]right_id_L.
+      rewrite [_ ∪ ∅]right_id_L.
+      rewrite [_ ∪ ∅]right_id_L.
+      rewrite difference_empty_L.
+      rewrite difference_diag_L.
+      rewrite [_ ∪ ∅]right_id_L.
+      repeat rewrite Compl_Compl_propset.
+      simpl.
+      reflexivity.
     }
+    unfold Full.
     rewrite H.
     rewrite pattern_interpretation_set_builder.
     { unfold M_predicate. left. simpl. rewrite pattern_interpretation_imp_simpl.
       rewrite pattern_interpretation_bott_simpl.
-      rewrite Union_Empty_l_eq.
-      apply Complement_Empty_is_Full_eq.
+      clear. set_solver.
     }
     simpl.
-    rewrite eq_iff_Same_set. constructor. constructor.
-    unfold Included. intros. unfold Ensembles.In.
+    rewrite -> set_eq_subseteq.
+    split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq. intros x _.
+    rewrite -> elem_of_PropSet.
     rewrite pattern_interpretation_imp_simpl.
-    rewrite eq_iff_Same_set. apply Union_Compl_Fullset.
-
+    clear. set_solver.
+    
   (* Singleton *)
-  * assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
+  - assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
                pattern_interpretation
                  evar_val svar_val
                  (subst_ctx C1 (patt_free_evar x and phi)
                             and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
-               = Semantics.Empty).
+               = ∅).
     { intros evar_val svar_val.
       rewrite -> pattern_interpretation_and_simpl.
-      destruct (Ensembles_Ext.In_dec (pattern_interpretation evar_val svar_val phi) (evar_val x)).
+      destruct (classic (evar_val x ∈ pattern_interpretation evar_val svar_val phi)).
       - rewrite [(pattern_interpretation
                     evar_val svar_val
                     (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
                 propagate_context_empty.
-        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_l. }
+        2: { unfold Semantics.Empty. rewrite intersection_empty_r_L. reflexivity. }
         rewrite pattern_interpretation_and_simpl.
         rewrite pattern_interpretation_free_evar_simpl.
         rewrite pattern_interpretation_imp_simpl.
         rewrite pattern_interpretation_bott_simpl.
-        rewrite Union_Empty_l_eq.
-        rewrite eq_iff_Same_set.
-        rewrite Intersection_singleton_empty.
-        unfold not. intros. contradiction.
+        unfold Semantics.Empty.
+        rewrite right_id_L.
+        clear -H. set_solver.
       - rewrite propagate_context_empty.
-        2: { rewrite eq_iff_Same_set. apply Intersection_Empty_r. }
+        2: { unfold Semantics.Empty. rewrite intersection_empty_l_L. reflexivity. }
         rewrite pattern_interpretation_and_simpl.
         rewrite pattern_interpretation_free_evar_simpl.
-        rewrite eq_iff_Same_set.
-        rewrite <- Intersection_singleton in H.
-        apply NNPP. exact H.
+        clear -H. set_solver.
     }
     intros Hv evar_val svar_val.
     rewrite pattern_interpretation_predicate_not.
-    - apply empty_impl_not_full. rewrite Hemp. reflexivity.
-    - unfold M_predicate. right. apply Hemp.
+    + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
+    + unfold M_predicate. right. apply Hemp.
 Qed.
 
 End ml_proof_system.
