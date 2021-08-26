@@ -634,12 +634,12 @@ Print singleton.
   Lemma pattern_interpretation_exists_predicate_full M ϕ ρₑ ρ :
     let x := fresh_evar ϕ in
     M_predicate M (evar_open 0 x ϕ) ->
-    pattern_interpretation ρₑ ρ (patt_exists ϕ) = Full <->
-    ∃ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = Full.
+    pattern_interpretation ρₑ ρ (patt_exists ϕ) = ⊤ <->
+    ∃ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = ⊤.
   Proof.
     intros x Hpred.
     pose proof (Hpredex := M_predicate_exists Hpred).
-    rewrite -[pattern_interpretation _ _ _ = Full]predicate_not_empty_iff_full. 2: auto.
+    rewrite -[pattern_interpretation _ _ _ = ⊤]predicate_not_empty_iff_full. 2: auto.
     
     (*
         (* TODO: I would like to simplify the RHS, but cannot find a way. *)
@@ -650,51 +650,59 @@ Print singleton.
         over.
      *)
 
-    rewrite eq_iff_Same_set.
+
     rewrite -> Not_Empty_iff_Contains_Elements.
     split.
     - intros [x0 Hx0].
       rewrite -> pattern_interpretation_ex_simpl in Hx0.
-      simpl in Hx0. inversion Hx0. subst x1.
-      destruct H as [c Hc].
+      simpl in Hx0. unfold propset_fa_union in Hx0. rewrite -> elem_of_PropSet in Hx0.
+      destruct Hx0 as [c Hc].
       exists c.
       rewrite -predicate_not_empty_iff_full. 2: assumption.
-      rewrite eq_iff_Same_set.
       rewrite Not_Empty_iff_Contains_Elements.
       exists x0. apply Hc.
     - intros [m Hm].
       apply full_impl_not_empty in Hm.
-      rewrite -> eq_iff_Same_set in Hm.
-      unfold Empty in Hm.
       apply Not_Empty_iff_Contains_Elements in Hm.
       destruct Hm as [x0 Hx0].
       exists x0.
       rewrite pattern_interpretation_ex_simpl. simpl.
-      constructor. exists m. assumption.
+      unfold propset_fa_union. rewrite -> elem_of_PropSet.
+      exists m. assumption.
   Qed.
 
   Lemma pattern_interpretation_exists_empty M ϕ ρₑ ρ :
     let x := fresh_evar ϕ in
-    pattern_interpretation ρₑ ρ (patt_exists ϕ) = Empty <->
-    ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = Empty.
+    pattern_interpretation ρₑ ρ (patt_exists ϕ) = ∅ <->
+    ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = ∅.
   Proof.
     intros x.
     rewrite -> pattern_interpretation_ex_simpl. simpl.
-    rewrite eq_iff_Same_set.
+    rewrite -> set_eq_subseteq.
     split.
-    - intros [H1 _]. unfold Included in H1. unfold In in H1 at 1.
-      intros m.
-      rewrite eq_iff_Same_set. unfold Empty.
-      apply Same_set_Empty_set. unfold Included.
-      intros x0. unfold In in *.
+    - intros [H1 _] m.
+      rewrite -> elem_of_subseteq in H1.
+      unfold propset_fa_union in H1.
+      setoid_rewrite -> elem_of_PropSet in H1.
+      rewrite -> set_eq_subseteq.
+      split.
+      2: { apply empty_subseteq. }
+      rewrite -> elem_of_subseteq.
+      intros x0.
       intros Contra.
-      specialize (H1 x0). unfold Empty in H1. apply H1.
-      constructor. exists m. subst x. assumption.
+      specialize (H1 x0). apply H1.
+      exists m. assumption.
     - intros H.
-      apply Same_set_Empty_set. unfold Included.
-      intros x0. intros [m [m' Contra]]. unfold Empty in H.
-      specialize (H m'). subst x.
-      rewrite -> H in Contra. inversion Contra.
+      split.
+      2: { apply empty_subseteq. }
+      rewrite -> elem_of_subseteq.
+      intros x0.
+      intros Contra.
+      unfold propset_fa_union in Contra.
+      rewrite -> elem_of_PropSet in Contra.
+      destruct Contra as [m Contra].
+      rewrite H in Contra.
+      exact Contra.
   Qed.
 
 

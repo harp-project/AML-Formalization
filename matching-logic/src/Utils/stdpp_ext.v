@@ -1,5 +1,6 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq.Logic Require Import Classical_Prop Classical_Pred_Type.
 From stdpp Require Import pmap gmap mapset fin_sets sets list propset.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
@@ -792,6 +793,37 @@ Qed.
 
 Definition propset_fa_union {T C : Type} (f : C -> propset T) : propset T
   := PropSet (fun (x : T) => exists (c : C), x ∈ f c).
-
-
                                                                         
+Lemma Not_Empty_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
+  S <> ∅ -> exists x : T, x ∈ S.
+Proof.
+  intros H.
+  unfold not in H.
+
+  rewrite -> set_eq_subseteq in H.
+  apply not_and_or in H.
+  inversion H.
+  * pose (e := not_all_ex_not T (fun x => x ∈ S -> x ∈ ∅) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    eexists. exact H2.
+  * pose (e := not_all_ex_not T (fun x => x ∈ ∅ -> x ∈ S) H0).
+    inversion e.
+    apply imply_to_and in H1. inversion H1.
+    contradiction.
+Qed.
+
+Lemma Contains_Elements_Not_Empty {T : Type} (S : propset T):
+    (exists x : T, x ∈ S) -> S <> ∅.
+Proof.
+  set_solver by fail.
+Qed.
+
+Lemma Not_Empty_iff_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
+  S <> ∅ <->
+  exists x : T, x ∈ S.
+Proof.
+  intros. split.
+  - apply Not_Empty_Contains_Elements.
+  - apply Contains_Elements_Not_Empty.
+Qed.
