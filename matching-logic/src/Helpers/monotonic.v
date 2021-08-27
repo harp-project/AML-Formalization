@@ -1,8 +1,8 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Ensembles.
-From stdpp Require Import fin_sets.
-From MatchingLogic.Utils Require Import Lattice.
+From stdpp Require Import base fin_sets sets propset.
+From MatchingLogic.Utils Require Import PropsetLattice.
 From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.
@@ -248,8 +248,8 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
   Section with_model.
 
     Context {M : @Model sig}.
-    Let A := Ensemble (@Domain sig M).
-    Let OS := EnsembleOrderedSet (@Domain sig M).
+    Let A := propset (@Domain sig M).
+    Let OS := PropsetOrderedSet (@Domain sig M).
     Let L := PowersetLattice (@Domain sig M).
 
     Lemma respects_blacklist_implies_monotonic :
@@ -261,12 +261,12 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                  (svar_val : svar -> Power (Domain M))
                  (X : svar),
             (Bp X ->
-             @AntiMonotonicFunction A OS (fun S : Ensemble (Domain M) =>
+             @AntiMonotonicFunction A OS (fun (S : propset (Domain M)) =>
                                             (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi)
                                          )
             ) /\
             (Bn X ->
-             @MonotonicFunction A OS (fun S : Ensemble (Domain M) =>
+             @MonotonicFunction A OS (fun S : propset (Domain M) =>
                                         (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi))
             )
     .
@@ -275,11 +275,12 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       - (* n = 0 *)
         intros. destruct phi; simpl in H; try inversion H.
         + (* EVar free *)
-          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
+          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+          setoid_rewrite -> elem_of_subseteq.
           unfold In. split; intros; rewrite -> pattern_interpretation_free_evar_simpl in *; assumption.
         + (* SVar free *)
-          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl. unfold Included.
-          unfold In.
+          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+          setoid_rewrite -> elem_of_subseteq.
           split; intros; rewrite -> pattern_interpretation_free_svar_simpl in *;
             unfold update_svar_val in *; destruct (svar_eqdec X x); subst.
           * unfold respects_blacklist in H1.
@@ -293,19 +294,23 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             
         + (* EVar bound *)
           unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> pattern_interpretation_bound_evar_simpl; unfold Included;
+          split; intros; repeat rewrite -> pattern_interpretation_bound_evar_simpl;
+            setoid_rewrite -> elem_of_subseteq;
             unfold In; intros; assumption.
         + (* SVar bound *)
           unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> pattern_interpretation_bound_svar_simpl; unfold Included;
+          split; intros; repeat rewrite -> pattern_interpretation_bound_svar_simpl;
+            setoid_rewrite -> elem_of_subseteq;
             unfold In; intros; assumption.
         + (* Sym *)
           unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> pattern_interpretation_sym_simpl; unfold Included;
+          split; intros; repeat rewrite -> pattern_interpretation_sym_simpl;
+            setoid_rewrite -> elem_of_subseteq;
             unfold In; intros; assumption.
         + (* Bot *)
           unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; rewrite -> pattern_interpretation_bott_simpl; unfold Included; intros; inversion H4.
+          split; intros; rewrite -> pattern_interpretation_bott_simpl;
+            setoid_rewrite -> elem_of_subseteq; intros; inversion H4.
       - (* S n *)
         intros phi Hsz Hwfp Bp Bn Hrb evar_val svar_val V.
         destruct phi.
@@ -334,7 +339,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             intros.
             repeat rewrite -> pattern_interpretation_app_simpl.
             unfold app_ext. unfold leq in *. simpl in *.
-            unfold Included in *. intros. unfold In in *.
+            setoid_rewrite -> elem_of_subseteq.
+            rewrite -> elem_of_subseteq in H.
+            intros.
             destruct H0. destruct H0. destruct H0. destruct H1.
             
             exists x1. exists x2.
@@ -353,7 +360,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             intros.
             repeat rewrite -> pattern_interpretation_app_simpl.
             unfold app_ext. unfold leq in *. simpl in *.
-            unfold Included in *. intros. unfold In in *.
+            setoid_rewrite -> elem_of_subseteq.
+            rewrite -> elem_of_subseteq in H.
+            intros.
             destruct H0. destruct H0. destruct H0. destruct H1.
             
             exists x1. exists x2.
@@ -398,10 +407,19 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             intros HBp.
             intros.
             repeat rewrite -> pattern_interpretation_imp_simpl.
-            unfold leq in *. simpl in *. unfold Included in *. intros.
+            unfold leq in *. simpl in *.
+            setoid_rewrite -> elem_of_subseteq.
+            rewrite -> elem_of_subseteq in H.
+            intros.
             destruct H0.
-            + left. unfold Complement in *.
-              unfold not in *. unfold Ensembles.In in *. intros.
+            + left.
+              rewrite -> elem_of_difference in H0.
+              destruct H0 as [_ H0].
+              rewrite -> elem_of_difference.
+              split.
+              { apply elem_of_top'. }
+              
+              unfold not in *. intros.
               apply H0.
               
               destruct IHn1 as [IHn11 IHn12].
@@ -414,10 +432,19 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           {
             intros HBn.
             intros. repeat rewrite -> pattern_interpretation_imp_simpl.
-            unfold leq in *. simpl in *. unfold Included in *. intros.
+            unfold leq in *. simpl in *.
+            rewrite elem_of_subseteq. rewrite -> elem_of_subseteq in H.
+            intros.
             destruct H0.
-            + left. unfold Complement in *.
-              unfold not in *. unfold Ensembles.In in *. intros.
+            + left.
+
+              rewrite -> elem_of_difference in H0.
+              destruct H0 as [_ H0].
+              rewrite -> elem_of_difference.
+              split.
+              { apply elem_of_top'. }
+           
+              unfold not in *. intros.
               apply H0.
 
               destruct IHn1 as [IHn11 IHn12].
@@ -438,13 +465,15 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
           unfold leq. simpl.
-          unfold Included in *. unfold In in *.
-          (*rewrite -> pattern_interpretation_ex_simpl in *.*)
+          setoid_rewrite elem_of_subseteq.
+
           split; intros HBp S1 S2 Hincl; rewrite -> pattern_interpretation_ex_simpl; simpl;
-            intros m [x [c Hc]]; rewrite -> pattern_interpretation_ex_simpl; simpl; constructor; exists c;
+          unfold stdpp_ext.propset_fa_union; intros m; rewrite -> elem_of_PropSet;
+            intros [c Hc]; rewrite -> pattern_interpretation_ex_simpl; simpl;
+              unfold stdpp_ext.propset_fa_union; rewrite -> elem_of_PropSet; exists c;
               remember (update_evar_val fresh c evar_val) as evar_val';
               specialize (IHn Hrb'' evar_val' svar_val V);
-              destruct IHn as [IHn1 IHn2].        
+              destruct IHn as [IHn1 IHn2].
           {
             specialize (IHn1 HBp S1 S2 Hincl).
             remember (evar_open 0 fresh phi) as phi'.
@@ -621,7 +650,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         well_formed_positive (mu, phi) ->
         svar_is_fresh_in X phi ->
         @MonotonicFunction A OS
-                           (fun S : Ensemble (Domain M) =>
+                           (fun S : propset (Domain M) =>
                               (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
                                                        (svar_open 0 X phi))).
     Proof.

@@ -1384,14 +1384,14 @@ Section FOL_helpers.
 
   (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
 
-  Goal (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
+  Goal ∅ ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
   Proof.
     toMyGoal. mgIntro. mgIntro. mgIntro. mgExactn 1.
   Abort.
 
   Goal
-    (Empty_set _) ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2) ->
-    (Empty_set _) ⊢ (patt_bound_evar 2 ---> patt_bound_evar 3)
+    ∅ ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2) ->
+    ∅ ⊢ (patt_bound_evar 2 ---> patt_bound_evar 3)
   .
   Proof.
     intros H.

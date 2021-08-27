@@ -1,11 +1,11 @@
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-From stdpp Require Import base.
+From stdpp Require Import base fin_sets sets propset.
 
 From MatchingLogic Require Import Syntax Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
-From MatchingLogic.Utils Require Import Ensembles_Ext.
+From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
@@ -123,8 +123,9 @@ Module test_2.
     | dom_custom (c:CustomElements)
     .    
     
-    Lemma domain_dec : forall (m1 m2 : domain), {m1 = m2} + {m1 <> m2}.
+    Instance domain_dec : EqDecision domain.
     Proof.
+      unfold EqDecision. intros. unfold Decision.
       decide equality.
       * decide equality.
       * decide equality.
@@ -132,20 +133,20 @@ Module test_2.
 
     Definition my_sym_interp(s: Symbols) : Power domain :=
       match s with
-      | sym_import_definedness s_def => Singleton domain (dom_custom m_def)
-      | sym_zero => Singleton domain (dom_nat 0)
-      | sym_succ => Singleton domain (dom_custom m_succ)
-      | _ => Empty_set domain
+      | sym_import_definedness s_def => {[ (dom_custom m_def) ]}
+      | sym_zero => {[ (dom_nat 0) ]}
+      | sym_succ => {[ (dom_custom m_succ) ]}
+      | _ => ∅
       end.
 
     Definition my_app_interp(m1 m2 : domain) : Power domain :=
       match m1, m1 with
-      | dom_custom m_def, _ => Full_set domain (* definedness *)
-      | dom_custom m_succ, dom_nat n => Singleton domain (dom_nat (n+1))
-      | _, _ => Empty_set domain
+      | dom_custom m_def, _ => ⊤ (* definedness *)
+      | dom_custom m_succ, dom_nat n => {[ (dom_nat (n+1)) ]}
+      | _, _ => ∅
       end.
     
-    Let M1 : Model :=
+    Definition M1 : Model :=
       {| Domain := domain;
          nonempty_witness := dom_nat 0;
          Domain_eq_dec := domain_dec;
@@ -155,6 +156,11 @@ Module test_2.
          app_interp := my_app_interp;
       |}.
 
+    (* FIXME: Otherwise, when I do [simpl], Coq replaces [Domain M1] with [domain]
+       and that breaks typeclass search; namely, simple apply propset_leibniz_equiv.
+     *)
+    Arguments Domain : simpl never.
+    Existing Instance  propset_leibniz_equiv.
     (* TODO a tactic that solves this, or a parameterized lemma. *)
     Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
     Proof.
@@ -164,19 +170,18 @@ Module test_2.
       unfold patt_defined.
       rewrite -> pattern_interpretation_app_simpl.
       rewrite -> pattern_interpretation_sym_simpl.
-      simpl. apply Extensionality_Ensembles.
-      apply Same_set_symmetric. apply Same_set_Full_set.
-      unfold Included. intros.
-      clear H. (* useless *)
-      intros.
-      unfold In.
+      simpl.
+      rewrite -> set_eq_subseteq.
+      split.
+      { apply top_subseteq. }
+      rewrite -> elem_of_subseteq.
+      intros x _.
       unfold app_ext.
       exists (dom_custom m_def).
       unfold evar.
       rewrite -> pattern_interpretation_free_evar_simpl.
       exists (evar_val (find_fresh_evar_name {| id_ev := "x" |} nil)).
-      firstorder. (* some magic to get rid of the first two conjuncts *)
-      simpl. constructor.
+      firstorder.
     Qed.
     
   End test_2.
