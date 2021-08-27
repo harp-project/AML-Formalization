@@ -2,6 +2,7 @@
 -I src
 
 theories/MLTauto.v
+theories/Named.v
 theories/MMProofExtractorLoader.v
 theories/MMProofExtractor.v
 theories/TEST_MMProofExtractor.v
