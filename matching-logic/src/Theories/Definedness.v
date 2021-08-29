@@ -62,7 +62,7 @@ Section definedness.
   Let sym (s : Symbols) : Pattern :=
     @patt_sym sig (inj s).
 
-  Definition ev_x := (@evar_fresh variables []).
+  Definition ev_x := (evar_fresh []).
   Definition p_x := patt_free_evar ev_x.
   
   Inductive AxiomName := AxDefinedness.

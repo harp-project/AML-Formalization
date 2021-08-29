@@ -28,7 +28,8 @@ Module test_1.
   (* Example patterns *)
   
   Definition a_symbol : Pattern := sym ctor.
-  
+
+  Print MLVariables.
   Definition more : Pattern := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
 
   Example e1 X: evar_open 0 X more = more.

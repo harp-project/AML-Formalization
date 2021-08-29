@@ -10,7 +10,7 @@ Require Import Coq.Strings.String.
 Require Import extralibrary.
 
 From Coq Require Import Logic.Classical_Prop.
-From stdpp Require Import countable.
+From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
 
@@ -19,15 +19,10 @@ Class MLVariables := {
   svar : Set;
   evar_eqdec : EqDecision evar;
   evar_countable : Countable evar;
+  evar_infinite : Infinite evar;
   svar_eqdec : EqDecision svar;
   svar_countable : Countable svar;
-  (* TODO fresh generator *)
-  evar_fresh : list evar -> evar;
-  svar_fresh : list svar -> svar;
-  evar_fresh_is_fresh : forall l,
-      ~List.In (evar_fresh l) l;
-  svar_fresh_is_fresh : forall l,
-      ~List.In (svar_fresh l) l;
+  svar_infinite : Infinite svar;
 }.
 
 Class Signature := {
@@ -879,7 +874,10 @@ Section syntax.
   Qed.
 
   (* fresh variables *)
-
+  
+  Definition evar_fresh (l : list evar) : evar := @infinite_fresh _ evar_infinite l.
+  Definition svar_fresh (l : list svar) : svar := @infinite_fresh _ svar_infinite l.
+  
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
 
@@ -891,11 +889,11 @@ Section syntax.
   Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
   Proof.
     intros H.
-    pose proof (Hf := @evar_fresh_is_fresh _ (elements S)).
+    pose proof (Hf := @infinite_is_fresh _ evar_infinite (elements S)).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
-    apply elem_of_list_In in H. contradiction.
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
   Qed.
   
   Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
@@ -910,11 +908,11 @@ Section syntax.
   Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
   Proof.
     intros H.
-    pose proof (Hf := @svar_fresh_is_fresh _ (elements S)).
+    pose proof (Hf := @infinite_is_fresh _ svar_infinite (elements S)).
     unfold elements in H. unfold gset_elements in H.
     apply gset_to_list_elem_of in H.
     unfold elements in Hf. unfold gset_elements in Hf.
-    apply elem_of_list_In in H. contradiction.
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
   Qed.
   
   Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
@@ -4006,7 +4004,7 @@ Section syntax.
       simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
     - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
                                                                               (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
-      simpl. remember (@evar_fresh (@variables signature) (elements B)) as x.
+      simpl. remember (@evar_fresh (elements B)) as x.
       assert(x ∉ B).
       {
         subst. apply set_evar_fresh_is_fresh'.
@@ -4020,7 +4018,7 @@ Section syntax.
       apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
     - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
                             (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
-      simpl. remember (@svar_fresh (@variables signature) (elements B)) as X'.
+      simpl. remember (@svar_fresh (elements B)) as X'.
       assert(X' ∉ B).
       {
         subst. apply set_svar_fresh_is_fresh'.

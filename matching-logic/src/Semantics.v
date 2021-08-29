@@ -1158,7 +1158,7 @@ Print singleton.
                                      ∪ ((free_svars (svar_open (Datatypes.S dbi) X ϕ))
                                           ∪ (free_svars (svar_open (Datatypes.S dbi) Y ϕ)
                                                         ∪ (free_svars ϕ))))))) as B.
-          remember (@svar_fresh (@variables signature) (elements B)) as fresh3.
+          remember (svar_fresh (elements B)) as fresh3.
           assert(HB: fresh3 ∉ B).
           {
             subst. apply set_svar_fresh_is_fresh'.
@@ -1249,7 +1249,7 @@ Print singleton.
                                      ∪ ((free_evars (evar_open (Datatypes.S dbi) x ϕ))
                                           ∪ (free_evars (evar_open (Datatypes.S dbi) y ϕ)
                                                         ∪ (free_evars ϕ))))))) as B.
-          remember (@evar_fresh (@variables signature) (elements B)) as fresh3.
+          remember (evar_fresh (elements B)) as fresh3.
           assert(HB: fresh3 ∉ B).
           {
             subst. apply set_evar_fresh_is_fresh'.
@@ -2416,7 +2416,7 @@ Print singleton.
       split.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh  (elements B)) as fresh.
         assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
         {
           apply set_evar_fresh_is_fresh.
@@ -2428,7 +2428,7 @@ Print singleton.
         subst fresh. subst B. apply not_elem_of_union in H2. destruct H2.
         apply not_elem_of_union in H2. destruct H2.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2462,7 +2462,7 @@ Print singleton.
         assumption. assumption.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
         {
           apply set_evar_fresh_is_fresh.
@@ -2474,7 +2474,7 @@ Print singleton.
         subst fresh. subst B. apply not_elem_of_union in H2. destruct H2.
         apply not_elem_of_union in H2. destruct H2.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2513,7 +2513,7 @@ Print singleton.
       split.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
         {
           apply set_evar_fresh_is_fresh.
@@ -2525,7 +2525,7 @@ Print singleton.
         subst fresh. subst B. apply not_elem_of_union in H3. destruct H3.
         apply not_elem_of_union in H3. destruct H3.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2558,7 +2558,7 @@ Print singleton.
         destruct Hwf. assumption. assumption. assumption. assumption.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in (fresh_evar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)).
         {
           apply set_evar_fresh_is_fresh.
@@ -2570,7 +2570,7 @@ Print singleton.
         subst fresh. subst B. apply not_elem_of_union in H3. destruct H3.
         apply not_elem_of_union in H3. destruct H3.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
-        remember (@evar_fresh (@variables signature) (elements B)) as fresh.
+        remember (evar_fresh (elements B)) as fresh.
         assert(evar_is_fresh_in fresh (free_svar_subst phi psi X)).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2615,7 +2615,7 @@ Print singleton.
       + (*Create a common fresh var.*)
         remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X)) ∪ 
                                    (free_svars (patt_free_svar X))) as B.
-        remember (@svar_fresh (@variables signature) (elements B)) as MuZ.
+        remember (svar_fresh (elements B)) as MuZ.
         remember (fresh_svar phi) as MuX.
         remember (fresh_svar (free_svar_subst phi psi X)) as MuY.
         assert(MuZ ∉ B).
@@ -2667,7 +2667,7 @@ Print singleton.
       + (*Create a common fresh var.*)
         remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X)) ∪ 
                                    (free_svars (patt_free_svar X))) as B.
-        remember (@svar_fresh (@variables signature) (elements B)) as MuZ.
+        remember (svar_fresh (elements B)) as MuZ.
         remember (fresh_svar phi) as MuX.
         remember (fresh_svar (free_svar_subst phi psi X)) as MuY.
         assert(MuZ ∉ B).

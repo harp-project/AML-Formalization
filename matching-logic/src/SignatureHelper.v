@@ -295,13 +295,10 @@ Proof.
   congruence. auto.
 Qed.
 
-Program Definition DefaultMLVariables : MLVariables :=
-  {| evar := evar_name;
-     svar := svar_name;
-     evar_fresh := find_fresh_evar_name';
-     svar_fresh := find_fresh_svar_name';
-     evar_fresh_is_fresh := find_fresh_evar_name'_is_fresh;
-     svar_fresh_is_fresh := find_fresh_svar_name'_is_fresh;
+Print MLVariables.
+Definition DefaultMLVariables : MLVariables :=
+  {| evar := string;
+     svar := string;
   |}.
 
 Class SymbolsH (SHSymbols : Set) :=
@@ -321,10 +318,8 @@ Section helper.
     (* Helpers. *)
   Definition sym (s : SHSymbols) : @Pattern SignatureFromSymbols :=
     @patt_sym SignatureFromSymbols s.
-  Definition evar (sname : string) : @Pattern SignatureFromSymbols :=
-    @patt_free_evar SignatureFromSymbols (find_fresh_evar_name (evar_c sname) nil).
-  Definition svar (sname : string) : @Pattern SignatureFromSymbols :=
-    @patt_free_svar SignatureFromSymbols (find_fresh_svar_name (svar_c sname) nil).
+  Definition evar (sname : string) : @Pattern SignatureFromSymbols := patt_free_evar sname.
+  Definition svar (sname : string) : @Pattern SignatureFromSymbols := patt_free_svar sname.
 
   
   Lemma evar_open_sym db x s : evar_open db x (sym s) = sym s.
