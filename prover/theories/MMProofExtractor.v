@@ -118,7 +118,7 @@ Module MetaMath.
                       (append
                          " $f "
                          (append
-                            (append (TypeCode_toString t) (Variabl_toString var))
+                            (appendWith " " (TypeCode_toString t) (Variabl_toString var))
                             " $."
                          )
                       )
@@ -395,11 +395,11 @@ Section gen.
     | npatt_exists x p' =>
       let lsx := [(isElementVar x)] in
       let lsp' := pattern2proof p' in
-      lsx ++ lsp' ++ [(lbl "exists-is-pattern")]
+      lsp' ++ lsx ++ [(lbl "exists-is-pattern")]
     | npatt_mu X p' =>
       let lsX := [(isSetVar X)] in
       let lsp' := pattern2proof p' in
-      lsX ++ lsp' ++ [(lbl "mu-is-pattern")]
+      lsp' ++ lsX ++ [(lbl "mu-is-pattern")]
     end.
 
   Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=

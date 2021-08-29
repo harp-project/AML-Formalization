@@ -200,12 +200,33 @@ Module MMTest.
           ϕ₈_holds
     )).
 
-  Definition ϕ₉ := (¬ (patt_exists (patt_bound_evar 0))) ---> ((patt_exists (patt_bound_evar 0))).
+  (* Tests that existentials are printed correctly *)
+  Definition ϕ9 : Pattern
+    := ((patt_exists (patt_bound_evar 0)) ---> (B ---> ((patt_exists (patt_bound_evar 0))))).
+
+  Lemma ϕ9_holds:
+    ∅ ⊢ ϕ9.
+  Proof.
+    apply P1; auto.
+  Defined.
+  
+  Definition proof_9 : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          ϕ9_holds
+    )).
+  
+  Definition ϕ10 := (¬ (patt_exists (patt_bound_evar 0))) ---> ((patt_exists (patt_bound_evar 0))).
   Compute (to_NamedPattern
-             ϕ₉).
+             ϕ10).
 
   Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern
-             ϕ₉)).
+             ϕ10)).
 End MMTest.
 
 Extraction Language Haskell.
@@ -218,3 +239,4 @@ Extraction "proof_5_mm.hs" MMTest.proof_5.
 Extraction "proof_6_mm.hs" MMTest.proof_6.
 Extraction "proof_7_mm.hs" MMTest.proof_7.
 Extraction "proof_8_mm.hs" MMTest.proof_8.
+Extraction "proof_9_mm.hs" MMTest.proof_9.
