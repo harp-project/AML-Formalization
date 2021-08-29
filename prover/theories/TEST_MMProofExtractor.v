@@ -26,10 +26,11 @@ Module MMTest.
     intros s1 s2. unfold Decision. decide equality.
   Defined.
 
-  Instance Symbol_h : SymbolsH Symbol := Build_SymbolsH Symbol Symbol_eqdec.
+  Instance signature : Signature :=
+    {| variables := StringMLVariables ;
+       symbols := Symbol ;
+    |}.
   
-  Instance signature : Signature := @SignatureFromSymbols Symbol _.
-
   Definition symbolPrinter (s : Symbol) : string :=
     match s with
     | a => "sym-a"
