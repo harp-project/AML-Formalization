@@ -2,7 +2,7 @@ From Coq Require Import Strings.String Strings.Ascii.
 
 From Equations Require Import Equations.
 
-From stdpp Require Import base finite gmap mapset listset_nodup.
+From stdpp Require Import base finite gmap mapset listset_nodup numbers.
 
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
@@ -309,9 +309,19 @@ Section gen.
     | npatt_mu X p' => {[X]} ∪ nsvars_of p'
     end.
   
-
   Definition dependenciesForPattern (p : NamedPattern) : Database :=
-    concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
+    let sms := listset_nodup_car (symbols_of p) in
+    let nevs := listset_nodup_car (nevars_of p) in
+    let nsvs := listset_nodup_car (nsvars_of p) in
+    (concat (map constantAndAxiomForSymbol sms))
+      ++ (if decide (0 < length nevs) then
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ evarPrinter) nevs))))]
+          else []
+         )
+      ++ (if decide (0 < length nsvs) then
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ svarPrinter) nsvs))))]
+          else []
+         ).
 
   Fixpoint pattern2mm (p : NamedPattern) : list MathSymbol :=
     match p with
