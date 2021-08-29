@@ -310,26 +310,25 @@ Section gen.
     end.
 
   Definition printEvar (x : evar) : string := "evar-" ++ (evarPrinter x).
-  Definition isElementVar (x : evar) : string := (printEvar x) ++ "-is-element-var".
+  Definition isElementVar (x : evar) : Label := lbl ((printEvar x) ++ "-is-element-var").
 
   Definition printSvar (X : svar) : string := "svar-" ++ (svarPrinter X).
-  Definition isSetVar (X : svar) : string := (printSvar X) ++ "-is-set-var".
+  Definition isSetVar (X : svar) : Label := lbl ((printSvar X) ++ "-is-set-var").
   
   Definition frameAsElementVariable (x : evar) : OutermostScopeStmt :=
     oss_s (stmt_hyp_stmt (hs_floating
                             (fs
-                               (lbl (isElementVar x))
+                               (isElementVar x)
                                (tc (constant (ms "#ElementVariable")))
                                (variable (printEvar x))))).
 
   Definition frameAsSetVariable (X : svar) : OutermostScopeStmt :=
     oss_s (stmt_hyp_stmt (hs_floating
                             (fs
-                               (lbl (isSetVar X))
+                               (isSetVar X)
                                (tc (constant (ms "#SetVariable")))
                                (variable (printSvar X))))).
   
-  (* TODO: #ElementVariable and #SetVariable framing. *)
   Definition dependenciesForPattern (p : NamedPattern) : Database :=
     let sms := listset_nodup_car (symbols_of p) in
     let nevs := listset_nodup_car (nevars_of p) in
@@ -357,7 +356,9 @@ Section gen.
 
   Fixpoint pattern2mm (p : NamedPattern) : list MathSymbol :=
     match p with
-    | npatt_sym s => [ms (symbolPrinter s)]
+    | npatt_sym s => [ms (symbolPrinter s)] (* TODO: use printSymbol *)
+    | npatt_evar x => [ms (printEvar x)]
+    | npatt_svar X => [ms (printSvar X)]
     | npatt_imp p1 p2 =>
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
@@ -367,12 +368,21 @@ Section gen.
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\app")] ++ ms1 ++ ms2 ++ [ (ms ")")]
     | npatt_bott => [(ms "\bot")]
-    | _ => []
+    | npatt_exists x p' =>
+      let msx := [ms (printEvar x)] in
+      let msp' := pattern2mm p' in
+      [(ms "("); (ms "\exists")] ++ msx ++ msp' ++ [(ms ")")]
+    | npatt_mu X p' =>
+      let msX := [ms (printSvar X)] in
+      let msp' := pattern2mm p' in
+      [(ms "("); (ms "\exists")] ++ msX ++ msp' ++ [(ms ")")]
     end.
 
   Fixpoint pattern2proof (p : NamedPattern) : list Label :=
     match p with
     | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
+    | npatt_evar x => [(isElementVar x); (lbl "element-var-is-var"); (lbl "var-is-pattern")]
+    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (lbl "var-is-pattern")]                        
     | npatt_imp p1 p2 =>
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
@@ -382,7 +392,14 @@ Section gen.
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "app-is-pattern")]
     | npatt_bott => [(lbl "bot-is-pattern")]
-    | _ => []
+    | npatt_exists x p' =>
+      let lsx := [(isElementVar x)] in
+      let lsp' := pattern2proof p' in
+      lsx ++ lsp' ++ [(lbl "exists-is-pattern")]
+    | npatt_mu X p' =>
+      let lsX := [(isSetVar X)] in
+      let lsp' := pattern2proof p' in
+      lsX ++ lsp' ++ [(lbl "mu-is-pattern")]
     end.
 
   Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
