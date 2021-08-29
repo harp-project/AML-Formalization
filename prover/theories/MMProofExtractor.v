@@ -254,6 +254,11 @@ Section gen.
     (svarPrinter : @svar variables -> string)
   .
 
+  Existing Instance sym_eq.
+  Existing Instance variables.
+  Existing Instance evar_eqdec.
+  Existing Instance svar_eqdec.
+  
   Definition something (x : evar) := evarPrinter x.
   
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
@@ -270,8 +275,9 @@ Section gen.
     [constantForSymbol s; axiomForSymbol s].
 
   Definition SymSet := listset_nodup symbols.
+  Definition NEvarSet := listset_nodup evar.
+  Definition NSvarSet := listset_nodup svar.
 
-  Existing Instance sym_eq.
 
   Fixpoint symbols_of (p : NamedPattern) : SymSet :=
     match p with
@@ -282,6 +288,27 @@ Section gen.
     | npatt_exists _ p' => symbols_of p'
     | npatt_mu _ p' => symbols_of p'
     end.
+
+  Fixpoint nevars_of (p : NamedPattern) : NEvarSet :=
+    match p with
+    | npatt_bott | npatt_svar _ | npatt_sym _ => ∅
+    | npatt_evar x => {[x]}
+    | npatt_imp p1 p2 => nevars_of p1 ∪ nevars_of p2
+    | npatt_app p1 p2 => nevars_of p1 ∪ nevars_of p2
+    | npatt_exists x p' => {[x]} ∪ nevars_of p'
+    | npatt_mu _ p' => nevars_of p'
+    end.
+
+  Fixpoint nsvars_of (p : NamedPattern) : NSvarSet :=
+    match p with
+    | npatt_bott | npatt_evar _ | npatt_sym _ => ∅
+    | npatt_svar X => {[X]}
+    | npatt_imp p1 p2 => nsvars_of p1 ∪ nsvars_of p2
+    | npatt_app p1 p2 => nsvars_of p1 ∪ nsvars_of p2
+    | npatt_exists _ p' => nsvars_of p'
+    | npatt_mu X p' => {[X]} ∪ nsvars_of p'
+    end.
+  
 
   Definition dependenciesForPattern (p : NamedPattern) : Database :=
     concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
