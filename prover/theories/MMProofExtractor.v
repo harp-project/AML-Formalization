@@ -6,9 +6,7 @@ From stdpp Require Import base finite gmap mapset listset_nodup.
 
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
-From MatchingLogicProver Require Import MMProofExtractorLoader.
-
-
+From MatchingLogicProver Require Import MMProofExtractorLoader Named.
 
 Module MetaMath.
 
@@ -275,46 +273,46 @@ Section gen.
 
   Existing Instance sym_eq.
 
-  Fixpoint symbols_of (p : Pattern) : SymSet :=
+  Fixpoint symbols_of (p : NamedPattern) : SymSet :=
     match p with
-    | patt_bott | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_bound_svar _ => ∅
-    | patt_sym s => {[ s ]}
-    | patt_imp p1 p2 => symbols_of p1 ∪ symbols_of p2
-    | patt_app p1 p2 => symbols_of p1 ∪ symbols_of p2
-    | patt_exists p' => symbols_of p'
-    | patt_mu p' => symbols_of p'
+    | npatt_bott | npatt_evar _ | npatt_svar _ => ∅
+    | npatt_sym s => {[ s ]}
+    | npatt_imp p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | npatt_app p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | npatt_exists _ p' => symbols_of p'
+    | npatt_mu _ p' => symbols_of p'
     end.
 
-  Definition dependenciesForPattern (p : Pattern) : Database :=
+  Definition dependenciesForPattern (p : NamedPattern) : Database :=
     concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
 
-  Fixpoint pattern2mm (p : Pattern) : list MathSymbol :=
+  Fixpoint pattern2mm (p : NamedPattern) : list MathSymbol :=
     match p with
-    | patt_sym s => [ms (symbolPrinter s)]
-    | patt_imp p1 p2 =>
+    | npatt_sym s => [ms (symbolPrinter s)]
+    | npatt_imp p1 p2 =>
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\imp")] ++ ms1 ++ ms2 ++ [ (ms ")")]
-    | patt_app p1 p2 =>
+    | npatt_app p1 p2 =>
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\app")] ++ ms1 ++ ms2 ++ [ (ms ")")]
-    | patt_bott => [(ms "\bot")]
+    | npatt_bott => [(ms "\bot")]
     | _ => []
     end.
 
-  Fixpoint pattern2proof (p : Pattern) : list Label :=
+  Fixpoint pattern2proof (p : NamedPattern) : list Label :=
     match p with
-    | patt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
-    | patt_imp p1 p2 =>
+    | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
+    | npatt_imp p1 p2 =>
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "imp-is-pattern")]
-    | patt_app p1 p2 =>
+    | npatt_app p1 p2 =>
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "app-is-pattern")]
-    | patt_bott => [(lbl "bot-is-pattern")]
+    | npatt_bott => [(lbl "bot-is-pattern")]
     | _ => []
     end.
 
@@ -378,8 +376,8 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-1"]
-              ++ (reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
     
@@ -387,9 +385,9 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-2"]
-              ++ (reverse (pattern2proof r))
-              ++ (reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern r)))
+              ++ (reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
     
@@ -397,15 +395,15 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-3"]
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
 
     proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
-           ((reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+           ((reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
@@ -432,9 +430,7 @@ Section gen.
     - unfold proof2proof'_stack_size.
       simpl. lia.
   Defined.
-  (*Transparent proof2proof'.*)
 
-  Check proof2proof'.
   Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     proof2proof' Γ [] [(inl (existT ϕ pf))].
   
@@ -457,12 +453,13 @@ Section gen.
    *)
   
   Definition proof2database Γ (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
+    let named := to_NamedPattern ϕ in
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
-    (dependenciesForPattern ϕ)
+    (dependenciesForPattern named)
       ++ [oss_s (stmt_assert_stmt (as_provable (ps
                                                   (lbl "the-proof")
                                                   (tc (constant (ms "|-")))
-                                                  (pattern2mm ϕ)
+                                                  (pattern2mm named)
                                                   (pf (proof2proof Γ ϕ proof))
          )))].
   

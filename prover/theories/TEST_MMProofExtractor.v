@@ -227,11 +227,9 @@ Module MMTest.
           ϕ₈_holds
     )).
 
-  Check to_NamedPattern.
-  Print NamedPattern.
-  Print evar.
+  Definition ϕ₉ := (¬ (patt_exists (patt_bound_evar 0))) ---> ((patt_exists (patt_bound_evar 0))).
   Compute (to_NamedPattern
-             (patt_exists (patt_bound_evar 0) and (¬ (patt_exists (patt_bound_evar 0))))).
+             ϕ₉).
 End MMTest.
 
 Extraction Language Haskell.
