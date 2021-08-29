@@ -21,38 +21,47 @@ Module test_1.
     intros s1 s2. unfold Decision. decide equality.
   Defined.
 
-  Instance Symbols_h : SymbolsH Symbols := Build_SymbolsH Symbols Symbols_eqdec.
-  
-  Instance signature : Signature := @SignatureFromSymbols Symbols _.
+  Instance signature : Signature :=
+    {| variables := StringMLVariables ;
+       symbols := Symbols ;
+    |}.
     
   (* Example patterns *)
   
-  Definition a_symbol : Pattern := sym ctor.
+  Definition a_symbol : Pattern := patt_sym ctor.
 
-  Print MLVariables.
-  Definition more : Pattern := svar ("A") or ¬ (svar ("A") ). (* A \/ ~A *)
+  Open Scope string_scope.
+
+  Definition A : Pattern := (patt_free_svar "A").
+  Definition B : Pattern := (patt_free_svar "B").
+  Definition C : Pattern := (patt_free_svar "C").
+  Definition D : Pattern := (patt_free_svar "D").
+
+  Definition a : Pattern := (patt_free_evar "a").
+  Definition b : Pattern := (patt_free_evar "b").
+  Definition c : Pattern := (patt_free_evar "c").
+  Definition d : Pattern := (patt_free_evar "d").
+  
+  Definition more : Pattern := A or ¬ A.
 
   Example e1 X: evar_open 0 X more = more.
   Proof. unfold more. autorewrite with ml_db. reflexivity. Qed.
 
-  (* A -> (B -> ~C) (exists x. D (bot /\ top)) *)
+  Definition complex : Pattern :=
+    a ---> (b ---> ¬C) $ ex , D $ Bot and Top.
 
-  Definition complex :=
-    evar ("A") ---> (evar("B") ---> ¬(svar("C"))) $
-         ex , svar ("D") $ Bot and Top.
-
-  Definition custom_constructor := sym ctor.
+  Definition custom_constructor := patt_sym ctor.
 
   (* p x1 x2 *)
-  Definition predicate := sym (ctor) $ evar ("x1") $ evar ("x2").
+  Definition predicate : Pattern := patt_sym (ctor) $ (patt_free_evar "x1") $ (patt_free_evar "x2").
+  
   (* f x (mu y . y) *)
-
   Definition function :=
-    sym (f) $ (evar ("x")) $ (mu , (patt_bound_svar 0)).
+    (patt_sym f) $ (patt_free_evar "x") $ (mu , (patt_bound_svar 0)).
 
   (* forall x, x /\ y *)
   Definition free_and_bound :=
-    all , (patt_bound_evar 0) and evar ("y").
+    all , (patt_bound_evar 0) and (patt_free_evar "y").
   (* End of examples. *)
 
 End test_1.
@@ -78,7 +87,7 @@ Module test_2.
     (* If symbols are created as a sum type of various sets, we may want to have a tactic that does
        'decide equality' recursively.
      *)
-    Lemma Symbols_eqdec : EqDecision Symbols.
+    Instance Symbols_eqdec : EqDecision Symbols.
     Proof.
       intros x y. unfold Decision.
       decide equality.
@@ -86,11 +95,10 @@ Module test_2.
       * decide equality.
     Qed.
 
-    Instance symbols_H : SymbolsH Symbols := {| SHSymbols_eqdec := Symbols_eqdec; |}.
-    Instance signature : Signature := @SignatureFromSymbols Symbols symbols_H.
-    (* https://stackoverflow.com/a/44769124/6209703 *)
-    (*Hint Extern 4 => unfold signature : core.*)
-    
+    Instance signature : Signature :=
+      {| variables := StringMLVariables ;
+         symbols := Symbols ;
+      |}.
 
     Instance definedness_syntax : Definedness.Syntax :=
       {|
@@ -103,12 +111,12 @@ Module test_2.
       Sorts.imported_definedness := definedness_syntax;
       |}.
     
-    Example test_pattern_0 : Pattern := sym sym_c.
-    Example test_pattern_1 := @patt_defined signature definedness_syntax (sym sym_c).
-    Example test_pattern_2 := patt_defined (sym sym_c).
-    Example test_pattern_3 s : Pattern := patt_equal (sym s) (sym s).
+    Example test_pattern_0 : Pattern := patt_sym sym_c.
+    Example test_pattern_1 := @patt_defined signature definedness_syntax (patt_sym sym_c).
+    Example test_pattern_2 := patt_defined (patt_sym sym_c).
+    Example test_pattern_3 s : Pattern := patt_equal (patt_sym s) (patt_sym s).
     Example test_pattern_4 := patt_defined (patt_sym sym_c).
-    Example test_pattern_5 := patt_equal (patt_inhabitant_set (sym sym_SortNat)) (sym sym_zero).
+    Example test_pattern_5 := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
 
     Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
     Proof. unfold test_pattern_3. autorewrite with ml_db. reflexivity. Qed.
@@ -161,13 +169,12 @@ Module test_2.
        and that breaks typeclass search; namely, simple apply propset_leibniz_equiv.
      *)
     Arguments Domain : simpl never.
-    Existing Instance  propset_leibniz_equiv.
+
     (* TODO a tactic that solves this, or a parameterized lemma. *)
     Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
     Proof.
       unfold satisfies_model. intros.
       unfold axiom.
-      unfold sym.
       unfold patt_defined.
       rewrite -> pattern_interpretation_app_simpl.
       rewrite -> pattern_interpretation_sym_simpl.

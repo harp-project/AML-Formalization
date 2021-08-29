@@ -295,53 +295,7 @@ Proof.
   congruence. auto.
 Qed.
 
-Print MLVariables.
-Definition DefaultMLVariables : MLVariables :=
+Definition StringMLVariables : MLVariables :=
   {| evar := string;
      svar := string;
   |}.
-
-Class SymbolsH (SHSymbols : Set) :=
-  { SHSymbols_eqdec : EqDecision SHSymbols; }.
-
-Section helper.
-  Context
-    {SHSymbols : Set}
-    {SHSymbols_h : SymbolsH SHSymbols}.
-
-  Instance SignatureFromSymbols : Signature :=
-    {| symbols := SHSymbols;
-       sym_eq := SHSymbols_eqdec;
-       variables := DefaultMLVariables;
-    |}.
-
-    (* Helpers. *)
-  Definition sym (s : SHSymbols) : @Pattern SignatureFromSymbols :=
-    @patt_sym SignatureFromSymbols s.
-  Definition evar (sname : string) : @Pattern SignatureFromSymbols := patt_free_evar sname.
-  Definition svar (sname : string) : @Pattern SignatureFromSymbols := patt_free_svar sname.
-
-  
-  Lemma evar_open_sym db x s : evar_open db x (sym s) = sym s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_sym db X s : svar_open db X (sym s) = sym s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma evar_open_evar db x s : evar_open db x (evar s) = evar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_evar db X s : svar_open db X (evar s) = evar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma evar_open_svar db x s : evar_open db x (svar s) = svar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  Lemma svar_open_svar db X s : svar_open db X (svar s) = svar s.
-  Proof. cbn. unfold sym. auto. Qed.
-  
-End helper.
-
-Hint Rewrite ->
-@evar_open_sym
-  @svar_open_sym
-  @evar_open_evar
-  @svar_open_evar
-  @evar_open_svar
-  @svar_open_svar
-  : ml_db.
