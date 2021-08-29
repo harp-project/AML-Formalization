@@ -178,10 +178,9 @@ Module test_2.
       intros x _.
       unfold app_ext.
       exists (dom_custom m_def).
-      unfold evar.
+      unfold p_x.
       rewrite -> pattern_interpretation_free_evar_simpl.
-      exists (evar_val (find_fresh_evar_name {| id_ev := "x" |} nil)).
-      firstorder.
+      eexists. firstorder.
     Qed.
     
   End test_2.

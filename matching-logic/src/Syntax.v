@@ -28,11 +28,6 @@ Class MLVariables := {
       ~List.In (evar_fresh l) l;
   svar_fresh_is_fresh : forall l,
       ~List.In (svar_fresh l) l;
-  (* We need a way to build named variables from strings *)
-  nevar : string -> evar;
-  nsvar : string -> svar;
-  nevar_inj : forall (s1 s2 : string), nevar s1 = nevar s2 -> s1 = s2;
-  nsvar_inj : forall (s1 s2 : string), nsvar s1 = nsvar s2 -> s1 = s2;
 }.
 
 Class Signature := {
