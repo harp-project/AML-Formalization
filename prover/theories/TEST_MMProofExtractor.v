@@ -55,6 +55,8 @@ Module MMTest.
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₁_holds
@@ -73,6 +75,8 @@ Module MMTest.
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₂_holds
@@ -92,13 +96,13 @@ Module MMTest.
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₃_holds
     )).
   
-  (*Compute proof₃.*)
-
   Definition ϕ₄ := A ---> A.
   
   Lemma ϕ₄_holds:
@@ -111,22 +115,13 @@ Module MMTest.
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₄_holds
     )).
-
-  Goal (proof2database symbolPrinter _ _ ϕ₄_holds) = [].
-  Proof.
-    unfold proof2database. simpl.
-    unfold proof2proof.
-    unfold ϕ₄_holds. unfold A_impl_A.
-    rewrite proof2proof'_equation_6. simpl.
-  Abort.
   
-  
-  (*Compute proof₄.*)
-
   Definition ϕ₅ := (A ---> B) <---> (¬ A or B).
 
   Lemma ϕ₅_holds:
@@ -135,32 +130,16 @@ Module MMTest.
     apply impl_iff_notp_or_q; auto.
   Defined.
 
-  (* Takes forever *)
-  (*Compute ϕ₅_holds.*)
-
-
   Definition proof_5 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₅_holds
     )).
-
-  (* Takes forever *)
-  (*
-  Compute (proof2database
-             symbolPrinter
-             _
-             _
-             ϕ₅_holds).
-  *)
-  (*
-  Print Opaque Dependencies proof₅
-  Compute proof₅. (* No longer "Stack overflow", but takes forever *)
-   *)
-  (* Time Eval compute in proof₅. *) (* Stack overflow *)
 
   Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
 
@@ -170,14 +149,12 @@ Module MMTest.
     apply A_impl_not_not_B; auto.
   Defined.
 
-  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
-  (* Time Eval vm_compute in ϕ₆_holds. *)
-
-
   Definition proof_6 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₆_holds
@@ -192,14 +169,12 @@ Module MMTest.
     apply prf_weaken_conclusion; auto.
   Defined.
 
-  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
-  (* Time Eval vm_compute in ϕ₆_holds. *)
-
-
   Definition proof_7 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₇_holds
@@ -214,14 +189,12 @@ Module MMTest.
     apply pf_conj_elim_l; auto.
   Defined.
 
-  (* Finished transaction in 42.649 secs (42.411u,0.203s) (successful) *)
-  (* Time Eval vm_compute in ϕ₆_holds. *)
-
-
   Definition proof_8 : string :=
     (Database_toString
        (proof2database
           symbolPrinter
+          id
+          id
           _
           _
           ϕ₈_holds
@@ -230,6 +203,9 @@ Module MMTest.
   Definition ϕ₉ := (¬ (patt_exists (patt_bound_evar 0))) ---> ((patt_exists (patt_bound_evar 0))).
   Compute (to_NamedPattern
              ϕ₉).
+
+  Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern
+             ϕ₉)).
 End MMTest.
 
 Extraction Language Haskell.

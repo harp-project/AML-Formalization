@@ -308,20 +308,52 @@ Section gen.
     | npatt_exists _ p' => nsvars_of p'
     | npatt_mu X p' => {[X]} ∪ nsvars_of p'
     end.
+
+  Definition printEvar (x : evar) : string := "evar-" ++ (evarPrinter x).
+  Definition isElementVar (x : evar) : string := (printEvar x) ++ "-is-element-var".
+
+  Definition printSvar (X : svar) : string := "svar-" ++ (svarPrinter X).
+  Definition isSetVar (X : svar) : string := (printSvar X) ++ "-is-set-var".
   
+  Definition frameAsElementVariable (x : evar) : OutermostScopeStmt :=
+    oss_s (stmt_hyp_stmt (hs_floating
+                            (fs
+                               (lbl (isElementVar x))
+                               (tc (constant (ms "#ElementVariable")))
+                               (variable (printEvar x))))).
+
+  Definition frameAsSetVariable (X : svar) : OutermostScopeStmt :=
+    oss_s (stmt_hyp_stmt (hs_floating
+                            (fs
+                               (lbl (isSetVar X))
+                               (tc (constant (ms "#SetVariable")))
+                               (variable (printSvar X))))).
+  
+  (* TODO: #ElementVariable and #SetVariable framing. *)
   Definition dependenciesForPattern (p : NamedPattern) : Database :=
     let sms := listset_nodup_car (symbols_of p) in
     let nevs := listset_nodup_car (nevars_of p) in
     let nsvs := listset_nodup_car (nsvars_of p) in
     (concat (map constantAndAxiomForSymbol sms))
       ++ (if decide (0 < length nevs) then
-            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ evarPrinter) nevs))))]
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ printEvar) nevs))))]
           else []
          )
       ++ (if decide (0 < length nsvs) then
-            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ svarPrinter) nsvs))))]
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ printSvar) nsvs))))]
           else []
-         ).
+         )
+      ++ (if decide (1 < length nevs) then
+            [(oss_s (stmt_disj_stmt (ds (map (variable ∘ printEvar) nevs))))]
+          else []
+         )
+      ++ (if decide (1 < length nsvs) then
+            [(oss_s (stmt_disj_stmt (ds (map (variable ∘ printSvar) nsvs))))]
+          else []
+         )
+      ++ (map frameAsElementVariable nevs)
+      ++ (map frameAsSetVariable nsvs)
+  .
 
   Fixpoint pattern2mm (p : NamedPattern) : list MathSymbol :=
     match p with
