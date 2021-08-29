@@ -51,7 +51,6 @@ Module MMTest.
     apply P1; auto.
   Defined.
   
-
   Definition proof_1 : string :=
     (Database_toString
        (proof2database

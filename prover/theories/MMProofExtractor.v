@@ -1,4 +1,4 @@
-From Coq Require Import Strings.String.
+From Coq Require Import Strings.String Strings.Ascii.
 
 From Equations Require Import Equations.
 
@@ -219,6 +219,31 @@ Module MetaMath.
 "%string) "
 "%string (map OutermostScopeStmt_toString x).
 
+    Fixpoint Private_MathSymbol_from_string (s : string) : string :=
+      match s with
+      | EmptyString => ""
+      | String a s' =>
+        let n := nat_of_ascii a in
+        let rest := (Private_MathSymbol_from_string s') in
+        if decide (a = "$"%char) then
+          "\DLR" ++ rest
+        else
+          if (decide (a = "\"%char)) then
+            "\BSP" ++ rest
+          else
+            if (decide (a = " "%char)) then
+              "\SPC" ++ rest
+            else
+              if (n <? 33) || (126 <? n)
+              then "$$$GENERATE_SYNTAX_ERROR$$$" (* TODO metamath can't handle characters in this range *)
+              else
+                String a rest
+      end.
+
+    (*Compute (Private_MathSymbol_from_string "Ah$oj sve\te").*)
+    
+    Definition MathSymbol_from_string (s : string) : MathSymbol :=
+      ms (Private_MathSymbol_from_string s).
 
 End MetaMath.
 
@@ -226,9 +251,12 @@ Import MetaMath.
 Section gen.
   Context
     {signature : Signature}
-(*    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }*)
     (symbolPrinter : symbols -> string)
+    (evarPrinter : @evar variables -> string)
+    (svarPrinter : @svar variables -> string)
   .
+
+  Definition something (x : evar) := evarPrinter x.
   
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_cs (constant_stmt [constant (ms (symbolPrinter s))]).
@@ -243,19 +271,6 @@ Section gen.
   Definition constantAndAxiomForSymbol (s : symbols) : Database :=
     [constantForSymbol s; axiomForSymbol s].
 
-  (* For now, we will only use listSet. Later we may want to use gset,
-     for performance reasons; but then we will need to implement Countable
-     for symbols.
-   *)
-  (*
-  Context
-    {sym_countable : @Countable symbols sym_eq}
-  .
-
-  Definition SymSet := (@gset symbols sym_eq sym_countable).
-   *)
-
-  Check listset_nodup_union.
   Definition SymSet := listset_nodup symbols.
 
   Existing Instance sym_eq.
