@@ -1338,7 +1338,7 @@ Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypothe
 
 Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
 
-Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
+Notation "[ S , G ⊢ l ==> g ]" := (mkMyGoal S G l g).
 
 
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
