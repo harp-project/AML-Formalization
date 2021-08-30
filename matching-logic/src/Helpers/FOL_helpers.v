@@ -16,6 +16,7 @@ Import
 .
 
 Open Scope ml_scope.
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
@@ -1572,12 +1573,19 @@ Section FOL_helpers.
     rewrite -Hmid in H. rewrite -Hmid. apply MyGoal_weakenConclusion; auto.
   Defined.
 
-  Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-      eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
-    end.
-  Ltac mgApply n := mgApply' n 5.
+End FOL_helpers.
+  
+Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
+  end.
+Ltac mgApply n := mgApply' n 5.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   
   Lemma Constructive_dilemma Γ p q r s:
     well_formed p ->
@@ -1678,15 +1686,23 @@ Section FOL_helpers.
     intros wfl wfg wfh H1 H2.
     eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
   Defined.
-  
-  Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-      (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
-      assert (n : mkMyGoal Sgm Ctx l t);
-      [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
-    end.
 
+End FOL_helpers.
+
+(* TODO do not use the parameter [n]; generate a fresh one instead. *)
+Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
+    assert (n : mkMyGoal Sgm Ctx l t);
+    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
     Γ ⊢ ((¬A ---> A) ---> A).
@@ -1830,12 +1846,19 @@ Section FOL_helpers.
     all: auto.
   Defined.
 
-  Tactic Notation "mgAdd" constr(n) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-      apply (MyGoal_add Ctx l g _ n)
-    end.
+End FOL_helpers.
 
+
+Tactic Notation "mgAdd" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    apply (MyGoal_add Ctx l g _ n)
+  end.
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
+  
   Lemma test_mgAdd Γ l g h:
     wf l ->
     well_formed g ->
@@ -2151,23 +2174,29 @@ Defined.
     apply prf_disj_elim_iter_2_meta_meta; auto.
   Defined.
 
-  Tactic Notation "mgDestruct" constr(n) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-      let Htd := fresh "Htd" in
-      epose proof (Htd :=take_drop);
-      specialize (Htd n l);
-      rewrite [take _ _]/= in Htd;
-      rewrite [drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      epose proof (Htd :=take_drop);
-      specialize (Htd 1 (drop n l));
-      rewrite [take _ _]/= in Htd;
-      rewrite ![drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      apply MyGoal_disj_elim; simpl
-    end.
+End FOL_helpers.
 
+Tactic Notation "mgDestruct" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let Htd := fresh "Htd" in
+    epose proof (Htd :=take_drop);
+    specialize (Htd n l);
+    rewrite [take _ _]/= in Htd;
+    rewrite [drop _ _]/= in Htd;
+    rewrite -Htd; clear Htd;
+    epose proof (Htd :=take_drop);
+    specialize (Htd 1 (drop n l));
+    rewrite [take _ _]/= in Htd;
+    rewrite ![drop _ _]/= in Htd;
+    rewrite -Htd; clear Htd;
+    apply MyGoal_disj_elim; simpl
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+  
   Example exd Γ a b p q c:
     well_formed a ->
     well_formed b ->
@@ -2690,11 +2719,19 @@ Defined.
     all: auto.
   Defined.
 
-  Tactic Notation "mgApplyMeta" uconstr(t) :=
-    unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
+End FOL_helpers.
 
-  Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
-  Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
+
+Tactic Notation "mgApplyMeta" uconstr(t) :=
+  unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
+
+Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
+Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
+
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
   
   Lemma and_of_equiv_is_equiv Γ p q p' q':
     well_formed p ->
