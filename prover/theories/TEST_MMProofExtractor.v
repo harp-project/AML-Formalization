@@ -26,7 +26,7 @@ Module MMTest.
     intros s1 s2. unfold Decision. decide equality.
   Defined.
 
-  Instance signature : Signature :=
+  Instance Σ : Signature :=
     {| variables := StringMLVariables ;
        symbols := Symbol ;
     |}.
@@ -226,7 +226,17 @@ Module MMTest.
           ϕ9_holds
     )).
   
-  Definition ϕ10 := (¬ (patt_exists (patt_bound_evar 0))) ---> ((patt_exists (patt_bound_evar 0))).
+  Definition ϕ10 := ((patt_exists (patt_bound_evar 0))) or ((patt_exists (patt_bound_evar 0))).
+
+  Lemma ϕ10_holds:
+    ∅ ⊢ ϕ10.
+  Proof.
+    toMyGoal.
+    unfold ϕ10.
+    mgRight; auto.
+    apply Existence.
+  Defined.
+  
   Compute (to_NamedPattern
              ϕ10).
 
