@@ -75,16 +75,15 @@ Section definedness.
 
   Let sym (s : Symbols) : Pattern :=
     @patt_sym sig (inj s).
+
+  Definition ev_x := (evar_fresh []).
+  Definition p_x := patt_free_evar ev_x.
   
-  Let evarn (name : string) : Pattern :=
-    @patt_free_evar sig (nevar name).
-
-
   Inductive AxiomName := AxDefinedness.
 
   Definition axiom(name : AxiomName) : Pattern :=
     match name with
-    | AxDefinedness => patt_defined (evarn "x")
+    | AxDefinedness => patt_defined p_x
     end.
 
   Definition named_axioms : NamedAxioms := {| NAName := AxiomName; NAAxiom := axiom; |}.
@@ -110,7 +109,7 @@ Section definedness.
     simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
-    remember (update_evar_val (nevar "x") m evar_val) as evar_val'.
+    remember (update_evar_val ev_x m evar_val) as evar_val'.
     specialize (H evar_val' svar_val).
     rewrite -> set_eq_subseteq in H.
     destruct H as [_ H].
@@ -122,11 +121,11 @@ Section definedness.
     rewrite -> pattern_interpretation_app_simpl in H.
     rewrite -> pattern_interpretation_sym_simpl in H.
     unfold sym.
-    unfold evarn in H.
+    unfold p_x in H.
     rewrite -> pattern_interpretation_free_evar_simpl in H.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
-    destruct (evar_eqdec (nevar "x") (nevar "x") ).
+    destruct (evar_eqdec ev_x ev_x ).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
@@ -693,7 +692,7 @@ Section definedness.
     unfold axiom.
     unfold sym.
     unfold patt_defined.
-    unfold evarn.
+    unfold p_x.
     rewrite -> pattern_interpretation_app_simpl.
     rewrite -> pattern_interpretation_sym_simpl.
     rewrite -> set_eq_subseteq.
@@ -707,7 +706,7 @@ Section definedness.
     exists hashdef.
     rewrite Hhashdefsym.
     rewrite -> pattern_interpretation_free_evar_simpl.
-    exists (evar_val (nevar "x")).
+    exists (evar_val ev_x).
     split.
     { constructor. }
     split.

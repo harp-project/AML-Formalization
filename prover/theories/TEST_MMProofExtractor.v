@@ -6,7 +6,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem Helpers.FOL_helpers.
-From MatchingLogicProver Require Import MMProofExtractor.
+From MatchingLogicProver Require Import MMProofExtractor Named.
 
 Open Scope ml_scope.
 Module MMTest.
@@ -26,10 +26,11 @@ Module MMTest.
     intros s1 s2. unfold Decision. decide equality.
   Defined.
 
-  Instance Symbol_h : SymbolsH Symbol := Build_SymbolsH Symbol Symbol_eqdec.
+  Instance signature : Signature :=
+    {| variables := StringMLVariables ;
+       symbols := Symbol ;
+    |}.
   
-  Instance signature : Signature := @SignatureFromSymbols Symbol _.
-
   Definition symbolPrinter (s : Symbol) : string :=
     match s with
     | a => "sym-a"
@@ -226,7 +227,12 @@ Module MMTest.
           _
           ϕ₈_holds
     )).
-  
+
+  Check to_NamedPattern.
+  Print NamedPattern.
+  Print evar.
+  Compute (to_NamedPattern
+             (patt_exists (patt_bound_evar 0) and (¬ (patt_exists (patt_bound_evar 0))))).
 End MMTest.
 
 Extraction Language Haskell.
