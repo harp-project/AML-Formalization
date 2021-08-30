@@ -31,7 +31,6 @@ Section named.
     - apply svar_eqdec.
   Qed.
 
-  Check gmap.
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
 
@@ -71,12 +70,12 @@ Section named.
       let: x := evm_fresh evm phi in
       let: evm_ex := <[0:=x]>(evm_incr evm) in
       let: (nphi, evm', svm') := to_NamedPattern' phi evm_ex svm in
-      (npatt_exists x nphi, evm', svm')
+      (npatt_exists x nphi, evm, svm)
     | patt_mu phi =>
       let: X := svm_fresh svm phi in
       let: svm_ex := <[0:=X]>(svm_incr svm) in
       let: (nphi, evm', svm') := to_NamedPattern' phi evm svm_ex in
-      (npatt_mu X nphi, evm', svm')
+      (npatt_mu X nphi, evm, svm)
     end.
 
   Definition to_NamedPattern (ϕ : Pattern) : NamedPattern :=

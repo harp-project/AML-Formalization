@@ -204,6 +204,11 @@ Module MMTest.
   Definition ϕ9 : Pattern
     := ((patt_exists (patt_bound_evar 0)) ---> (B ---> ((patt_exists (patt_bound_evar 0))))).
 
+  Open Scope string.
+  
+  Compute (to_NamedPattern ϕ9).
+  Compute (to_NamedPattern ((ex, ex, patt_bound_evar 0) ---> (ex, patt_bound_evar 0))).
+  
   Lemma ϕ9_holds:
     ∅ ⊢ ϕ9.
   Proof.

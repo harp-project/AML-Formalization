@@ -1,1 +1,1 @@
-( \imp ( \exists evar-0 evar-0 ) ( \imp sym-b ( \exists evar-1 evar-1 ) ) )
+( \imp ( \exists evar-0 evar-0 ) ( \imp sym-b ( \exists evar-0 evar-0 ) ) )
