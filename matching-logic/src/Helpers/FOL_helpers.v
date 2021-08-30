@@ -2810,7 +2810,14 @@ Section FOL_helpers.
         Unshelve. all: auto.
   Defined.
 
-  Ltac mgSplit := apply conj_intro_meta; auto.
+End FOL_helpers.
+
+Ltac mgSplit := apply conj_intro_meta; auto.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->
