@@ -107,17 +107,17 @@ Module Syntax.
     Qed.
 
     Lemma well_formed_closed_all φ : forall n m,
-      is_true (well_formed_closed_aux (patt_forall φ) n m)
+      well_formed_closed_aux (patt_forall φ) n m
     <->
-      is_true (well_formed_closed_aux φ (S n) m).
+      well_formed_closed_aux φ (S n) m.
     Proof.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
   
     Lemma well_formed_positive_all φ : 
-      is_true (well_formed_positive (patt_forall φ))
+      well_formed_positive (patt_forall φ)
     <->
-      is_true (well_formed_positive φ).
+      well_formed_positive φ.
     Proof.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.

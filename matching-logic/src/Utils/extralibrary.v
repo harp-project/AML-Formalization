@@ -55,6 +55,14 @@ match goal with
     end
 end.
 
+(** Usage: 
+   Works similarly for `match` expressions too
+*)
+Goal forall x, x && true = x.
+Proof.
+  intro x. unfold andb. break_match_goal; reflexivity.
+Qed.
+
 (** ** Arithmetic *)
 
 Inductive comparison_nat (x y: nat) : Set :=

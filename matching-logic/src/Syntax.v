@@ -4367,33 +4367,9 @@ Section syntax.
       - apply union_subseteq_r.
       - apply union_subseteq_l.
     * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
-      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_idemp (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0.
+      set_solver.
     * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
-      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_idemp (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0.
+      set_solver.
     * apply IHφ.
     * apply IHφ.
   Qed.
@@ -4520,34 +4496,10 @@ Section syntax.
     * apply empty_subseteq.
     * apply empty_subseteq.
     * specialize (IHφ1 ψ n'). specialize (IHφ2 ψ n').
-      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_idemp (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0. 
+      set_solver.
     * apply empty_subseteq.
     * specialize (IHφ1 ψ n'). specialize (IHφ2 ψ n').
-      pose proof (union_mono _ _ _ _ IHφ1 IHφ2).
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars ψ) (free_evars ψ ∪ free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars ψ) (free_evars ψ) (free_evars φ2)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_idemp (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. clear H0.
-      epose proof (union_comm (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite <- H0 in H. clear H0.
-      epose proof (union_assoc (free_evars φ1) (free_evars φ2) (free_evars ψ)).
-      apply leibniz_equiv in H0. rewrite H0 in H. now clear H0. 
+      set_solver.
   Qed.
 
   Theorem evar_quantify_closed :
