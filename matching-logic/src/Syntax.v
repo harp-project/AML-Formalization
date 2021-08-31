@@ -56,7 +56,7 @@ Section syntax.
 
   Instance Pattern_eqdec : EqDecision Pattern.
   Proof.
-    unfold EqDecision. intros. unfold Decision. decide equality.
+    unfold EqDecision. intros x y. unfold Decision. decide equality.
     - apply evar_eqdec.
     - apply svar_eqdec.
     - apply nat_eq_dec.
@@ -238,9 +238,29 @@ Section syntax.
     | patt_mu p' => patt_mu (evar_quantify x level p')
     end.
 
+  Inductive PatCtx : Type :=
+  | pctx_box
+  | pctx_app_l (C : PatCtx) (r : Pattern)
+  | pctx_app_r (l : Pattern) (C : PatCtx)
+  | pctx_imp_l (C : PatCtx) (r : Pattern)
+  | pctx_imp_r (l : Pattern) (C : PatCtx)
+  | pctx_exists (x : evar) (C : PatCtx)
+  (* | ctx_mu (C : PatCtx) <--- restriction *).
+
   Definition exists_quantify (x : evar)
              (p : Pattern) : Pattern :=
     patt_exists (evar_quantify x 0 p).
+
+  Fixpoint subst_patctx (C : PatCtx) (p : Pattern) : Pattern :=
+  match C with
+   | pctx_box => p
+   | pctx_app_l C r => patt_app (subst_patctx C p) r
+   | pctx_app_r l C => patt_app l (subst_patctx C p)
+   | pctx_imp_l C r => patt_imp (subst_patctx C p) r
+   | pctx_imp_r l C => patt_imp l (subst_patctx C p)
+   | pctx_exists x C => exists_quantify x (subst_patctx C p)
+   (* | ctx_mu C => patt_mu (subst_patctx C p) *)
+  end.
 
   Fixpoint size (p : Pattern) : nat :=
     match p with
@@ -462,8 +482,8 @@ Section syntax.
     forall (k : db_index) (n : evar) (p : Pattern),
       size p = size (evar_open k n p).
   Proof.
-    intros. generalize dependent k.
-    induction p; intros; simpl; try reflexivity.
+    intros k n p. generalize dependent k.
+    induction p; intros k; simpl; try reflexivity.
     destruct (n0 =? k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
@@ -475,8 +495,8 @@ Section syntax.
     forall (k : db_index) (n : svar) (p : Pattern),
       size p = size (svar_open k n p).
   Proof.
-    intros. generalize dependent k.
-    induction p; intros; simpl; try reflexivity.
+    intros k n p. generalize dependent k.
+    induction p; intros k; simpl; try reflexivity.
     destruct (n0 =? k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
     rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
@@ -637,7 +657,7 @@ Section syntax.
       (positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi))
       /\ (negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi)).
   Proof.
-    induction phi; intros; simpl; split; intros; try constructor; try inversion H; subst; try firstorder.
+    induction phi; intros db1 db2 x'; simpl; split; try constructor; try inversion H; subst; try firstorder.
     * destruct (n =? db2); intros. constructor. assumption.
     * destruct (n =? db2); intros. constructor. assumption.
   Qed.
@@ -645,7 +665,7 @@ Section syntax.
   Lemma positive_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
       positive_occurrence_db db1 phi -> positive_occurrence_db db1 (evar_open db2 x phi).
   Proof.
-    intros.
+    intros phi db1 db2 x H.
     pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
     firstorder.
   Qed.
@@ -653,7 +673,7 @@ Section syntax.
   Lemma negative_occurrence_db_evar_open : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
       negative_occurrence_db db1 phi -> negative_occurrence_db db1 (evar_open db2 x phi).
   Proof.
-    intros.
+    intros phi db1 db2 x H.
     pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
     firstorder.
   Qed.
@@ -721,7 +741,7 @@ Section syntax.
     -> well_formed_closed_aux phi ind_evar1 ind_svar1 
     -> well_formed_closed_aux phi ind_evar2 ind_svar2.
   Proof.
-    intros.
+    intros H H0 H1.
     generalize dependent ind_evar1. generalize dependent ind_evar2.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
     induction phi; intros ind_svar_2 ind_svar_1 Hleqsvar ind_evar_2 ind_evar_1 Heqevar H;
@@ -757,8 +777,8 @@ Section syntax.
       ->
       well_formed_closed_aux (evar_open n x phi) n n'.
   Proof using .
-    - induction phi; intros; try lia; auto.
-      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n0) eqn:Heq.
+    - induction phi; intros n' n'' x' H; try lia; auto.
+      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n') eqn:Heq.
         -- reflexivity.
         -- simpl. apply Nat.ltb_lt. apply beq_nat_false in Heq. lia.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
@@ -808,9 +828,9 @@ Section syntax.
   Lemma wfc_ex_to_wfc_body:
     forall phi, well_formed_closed (patt_exists phi) -> wfc_body_ex phi.
   Proof.
-    intros.
-    unfold wfc_body_ex. intros.
-    unfold well_formed_closed in *. simpl in H.
+    intros phi WFE.
+    unfold wfc_body_ex. intros x H.
+    unfold well_formed_closed in *. simpl in WFE.
     apply wfc_aux_body_ex_imp1. auto.
   Qed.
 
@@ -999,10 +1019,10 @@ Section syntax.
   Lemma wfc_body_to_wfc_ex:
     forall phi, wfc_body_ex phi -> well_formed_closed (patt_exists phi).
   Proof.
-    intros. unfold wfc_body_ex in H. unfold well_formed_closed. simpl.
-    unfold well_formed_closed in H.
-    apply (@wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in H. exact H.
-    clear H.
+    intros phi WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
+    unfold well_formed_closed in WFE.
+    apply (@wfc_aux_body_ex_imp2 phi 0 0 (fresh_evar phi)) in WFE. exact WFE.
+    clear WFE.
     apply set_evar_fresh_is_fresh.
   Qed.
 
@@ -1028,8 +1048,8 @@ Section syntax.
       ->
       well_formed_closed_aux (svar_open n' X phi) n n'.
   Proof.
-    - induction phi; intros; try lia; auto.
-      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n') eqn:Heq.
+    - induction phi; intros n' n'' X H; try lia; auto.
+      * simpl. inversion H. apply Nat.ltb_lt in H1. destruct (n=?n'') eqn:Heq.
         -- reflexivity.
         -- simpl. apply Nat.ltb_lt. apply beq_nat_false in Heq. lia.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
@@ -1069,18 +1089,19 @@ Section syntax.
       -> n <= n' -> m <= m'
       -> well_formed_closed_aux phi n' m'.
   Proof.
-    intros.
+    intros phi n n' m m' H H0 H1.
     generalize dependent n. generalize dependent n'.
     generalize dependent m. generalize dependent m'.
-    induction phi; intros; try lia; auto.
-    * simpl. inversion H. apply Nat.ltb_lt. apply Nat.ltb_lt in H3. lia.
-    * simpl. inversion H. apply Nat.ltb_lt. apply Nat.ltb_lt in H3. lia.
-    * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H2 H3].
+    induction phi; intros m' m'' H n' n'' H0 H1; try lia; auto.
+    * simpl. apply Nat.ltb_lt. apply Nat.ltb_lt in H0. lia.
+    * simpl. apply Nat.ltb_lt. apply Nat.ltb_lt in H0. lia.
+    * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
       apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
-    * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H2 H3].
+    * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
       apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
-    * simpl. simpl in H. erewrite IHphi with (n := S n) (m := m); eauto. lia.
-    * simpl. simpl in H. erewrite IHphi with (n := n) (m := S m); eauto. lia.
+    * simpl. simpl in H0. erewrite IHphi with (n' := S n') (m' := m'); eauto. lia.
+    * simpl. simpl in H0. erewrite IHphi with (n' := n') (m' := S m').
+      3: exact H0. all: auto; lia.
   Qed.
 
   Lemma wfc_aux_body_mu_imp_bsvar_subst:
@@ -1089,8 +1110,9 @@ Section syntax.
       -> well_formed_closed_aux psi n n'
       -> well_formed_closed_aux (bsvar_subst phi psi n') n n'.
   Proof.
-    - intros. generalize dependent n. generalize dependent n'. generalize dependent psi.
-      induction phi; intros; try lia; auto.
+    intros phi psi n n' H H0. 
+    generalize dependent n. generalize dependent n'. generalize dependent psi.
+    induction phi; intros psi n' n'' H H0; try lia; auto.
       * simpl. inversion H. apply Nat.ltb_lt in H2. destruct (compare_nat n n').
         -- simpl. apply Nat.ltb_lt. assumption.
         -- assumption.
@@ -1112,7 +1134,7 @@ Section syntax.
   Lemma wfc_mu_to_wfc_body:
     forall phi, well_formed_closed (patt_mu phi) -> wfc_body_mu phi.
   Proof.
-    intros. 
+    intros phi H.
     unfold wfc_body_mu. intros.
     unfold well_formed_closed in *. simpl in H.
     apply wfc_aux_body_mu_imp1. auto.
@@ -1122,7 +1144,7 @@ Section syntax.
   Lemma wfc_body_to_wfc_mu:
     forall phi, wfc_body_mu phi -> well_formed_closed (patt_mu phi).
   Proof.
-    intros. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
+    intros phi H. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
     apply wfc_aux_body_mu_imp2 with (X := fresh_svar phi) in H. exact H.
     apply set_svar_fresh_is_fresh.
@@ -1148,7 +1170,7 @@ Section syntax.
       well_formed_positive (evar_open n x phi).
   Proof.
     induction phi; simpl in *; intros x' n' H; auto.
-    - intros. simpl. destruct (n =? n') eqn:P.
+    - simpl. destruct (n =? n') eqn:P.
       + simpl. trivial.
       + simpl. trivial.
     - apply andb_prop in H.
@@ -1180,7 +1202,8 @@ Section syntax.
       well_formed_positive (patt_exists phi) ->
       wfp_body_ex phi.
   Proof.
-    unfold wfp_body_ex. intros. apply wfp_evar_open. simpl in H. assumption.
+    unfold wfp_body_ex. intros phi H x H0.
+    apply wfp_evar_open. simpl in H. assumption.
   Qed.
 
   (* Connection between bodies and well-formedness *)
@@ -1192,7 +1215,7 @@ Section syntax.
       well_formed (patt_exists phi) ->
       wf_body_ex phi.
   Proof.
-    unfold wf_body_ex. intros. unfold well_formed in *.
+    unfold wf_body_ex. intros phi H x H0. unfold well_formed in *.
     apply andb_true_iff in H.
     destruct H as [H1 H2].
     rewrite (@wfp_ex_to_wfp_body phi H1). assumption.
@@ -1264,7 +1287,7 @@ Section syntax.
       ->
       well_formed_closed phi.
   Proof.
-    intros. induction H; simpl; auto.
+    intros phi H. induction H; simpl; auto.
     - unfold well_formed_closed. simpl. unfold well_formed_closed in *.
       rewrite IHwell_formed_closed_induc1.
       rewrite IHwell_formed_closed_induc2. reflexivity.
@@ -1291,7 +1314,7 @@ Section syntax.
       + reflexivity.
     - simpl in *. apply Nat.ltb_lt in H.
       destruct (n =? n') eqn:Heq.
-      + apply Nat.eqb_eq in Heq. lia.
+      + apply Nat.eqb_eq in Heq. subst. lia.
       + reflexivity.
     - simpl in H.
       apply andb_true_iff in H.
@@ -1306,6 +1329,99 @@ Section syntax.
     - simpl in H.
       erewrite -> IHphi by eassumption. reflexivity.
     - simpl in H. apply IHphi in H. rewrite H. reflexivity.
+  Qed.
+
+  Lemma evar_quantify_evar_open x m n n' phi: n < m ->
+    x ∉ free_evars phi -> well_formed_closed_aux phi m n' ->
+    (evar_quantify x n (evar_open n x phi)) = phi.
+  Proof.
+    revert m n n'.
+    induction phi; intros m' n' n'' H H0 H1; simpl; auto.
+    - destruct (evar_eqdec x x0); simpl.
+      + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
+      + reflexivity.
+    - simpl in *. apply Nat.ltb_lt in H1.
+      destruct (n =? n') eqn:Heq.
+      + apply Nat.eqb_eq in Heq. subst. simpl. destruct (evar_eqdec x x); auto.
+        congruence.
+      + reflexivity.
+    - simpl in H.
+      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      erewrite -> IHphi1, IHphi2.
+      reflexivity.
+      all: eauto.
+    - simpl in H.
+      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      erewrite -> IHphi1, IHphi2.
+      reflexivity.
+      all: eauto.
+    - simpl in H0. simpl in H1.
+      erewrite -> IHphi. reflexivity. instantiate (1 := S m'). lia.
+      auto. apply H1.
+    - simpl in H0. simpl in H1.
+      erewrite -> IHphi. reflexivity. exact H.
+      auto. apply H1.
+  Qed.
+
+  Lemma double_evar_quantify φ : forall x n,
+    evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
+  Proof.
+    induction φ; intros x' n'; simpl; auto.
+    * break_match_goal; simpl; auto. rewrite Heqb. auto.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Lemma well_formed_bevar_subst φ : forall ψ n k m,
+    m >= n -> well_formed_closed_aux φ n k
+  ->
+    bevar_subst φ ψ m = φ.
+  Proof.
+    induction φ; intros ψ n' k' m' H H0; simpl; auto.
+    * simpl in H0. break_match_goal; auto. apply NPeano.Nat.ltb_lt in H0. lia.
+    * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+      3: apply eq_sym, H1.
+      4: apply eq_sym, H0. all: auto.
+    * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+      3: apply eq_sym, H1.
+      4: apply eq_sym, H0. all: auto.
+    * simpl in H0. erewrite IHφ. 3: apply H0. auto. lia.
+    * simpl in H0. erewrite IHφ. 3: apply H0. all: auto.
+  Qed.
+
+  Lemma double_bevar_subst φ : forall ψ n k,
+    well_formed_closed_aux ψ n k ->
+    bevar_subst (bevar_subst φ ψ n) ψ n = bevar_subst φ ψ n.
+  Proof.
+    induction φ; intros ψ n' k' H; simpl; auto.
+    * break_match_goal; simpl; auto.
+      - rewrite Heqc. auto.
+      - erewrite well_formed_bevar_subst. 3: exact H. all: auto. 
+      - rewrite Heqc. auto.
+    * erewrite IHφ1, IHφ2; eauto.
+    * erewrite IHφ1, IHφ2; eauto.
+    * erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
+    * erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
+  Qed.
+
+  Lemma bevar_subst_well_formedness φ : forall n m ψ,
+    well_formed_closed_aux φ (S n) m -> well_formed_closed_aux ψ n m
+  ->
+    well_formed_closed_aux (bevar_subst φ ψ n) n m.
+  Proof.
+    induction φ; intros n' m' ψ H H0; simpl; auto.
+    * break_match_goal; auto. simpl in H. simpl. apply NPeano.Nat.ltb_lt. auto.
+      simpl in H. apply NPeano.Nat.ltb_lt in H. lia.
+    * simpl in H. apply eq_sym, andb_true_eq in H. destruct H. rewrite -> IHφ1, -> IHφ2; auto.
+    * simpl in H. apply eq_sym, andb_true_eq in H. destruct H. rewrite -> IHφ1, -> IHφ2; auto.
+    * simpl. rewrite IHφ; auto.
+      eapply wfc_aux_extend. exact H0. all: lia.
+    * simpl. simpl in H. rewrite IHφ; auto.
+      eapply wfc_aux_extend. exact H0. all: lia.
   Qed.
 
   Lemma evar_open_last: forall phi i u j v,
@@ -1461,9 +1577,9 @@ Section syntax.
     : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
       evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
   Proof.
-    induction phi; intros; simpl; try reflexivity.
-    * destruct (n =? dbi1); reflexivity.
-    * destruct (n =? dbi2); reflexivity.
+    induction phi; intros dbi1' x' dbi2' X'; simpl; try reflexivity.
+    * destruct (n =? dbi1'); reflexivity.
+    * destruct (n =? dbi2'); reflexivity.
     * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
     * rewrite -> IHphi1. rewrite -> IHphi2. reflexivity.
     * rewrite -> IHphi. reflexivity.
@@ -1600,7 +1716,7 @@ Section syntax.
   Lemma free_evars_svar_open : forall (psi : Pattern) (dbi :db_index) (X : svar),
       free_evars (svar_open dbi X psi) = free_evars psi.
   Proof.
-    induction psi; intros; simpl; try reflexivity.
+    induction psi; intros dbi X; simpl; try reflexivity.
     * destruct (n =? dbi); reflexivity.
     * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
     * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
@@ -1614,7 +1730,7 @@ Section syntax.
       positive_occurrence_named X phi /\ negative_occurrence_named X phi.
   Proof.
     induction phi; simpl; intros Y H; split; try constructor. (* try firstorder.*)
-    * unfold not. intros. apply H. apply elem_of_singleton_2. symmetry. assumption.
+    * unfold not. intros H0. apply H. apply elem_of_singleton_2. symmetry. assumption.
     * apply IHphi1. unfold not. intros H0.
       assert (H': Y ∈ (union (free_svars phi1) (free_svars phi2))).
       { apply elem_of_union_l. assumption. }
@@ -1660,7 +1776,7 @@ Section syntax.
   Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
       free_svars (evar_open dbi x ϕ) = free_svars ϕ.
   Proof.
-    induction ϕ; intros; simpl; try reflexivity.
+    induction ϕ; intros dbi x'; simpl; try reflexivity.
     * destruct (n =? dbi); reflexivity.
     * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
     * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
@@ -1681,7 +1797,7 @@ Section syntax.
           negative_occurrence_named X phi ->
           negative_occurrence_named X (svar_open dbi X phi)).
   Proof.
-    induction phi; intros; split; simpl; try firstorder.
+    induction phi; intros dbi X; split; simpl; try firstorder.
     + destruct ( n =? dbi). constructor. constructor.
     + destruct (eqb_reflect n dbi).
       { inversion H. subst. lia. }
@@ -1708,7 +1824,7 @@ Section syntax.
       (positive_occurrence_named X (evar_open dbi x ϕ) <-> positive_occurrence_named X ϕ)
       /\ (negative_occurrence_named X (evar_open dbi x ϕ) <-> negative_occurrence_named X ϕ).
   Proof.
-    induction ϕ; intros; simpl; split; try reflexivity.
+    induction ϕ; intros X dbi x'; simpl; split; try reflexivity.
     + destruct (n =? dbi).
       split; intros H; inversion H; constructor. reflexivity.
     + destruct (n =? dbi).
@@ -1726,7 +1842,7 @@ Section syntax.
   Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
       positive_occurrence_named X (evar_open dbi x ϕ) <-> positive_occurrence_named X ϕ.
   Proof.
-    intros.
+    intros ϕ X dbi x.
     pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
     destruct P as [P _]. exact P.
   Qed.
@@ -1734,7 +1850,7 @@ Section syntax.
   Lemma negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
       negative_occurrence_named X (evar_open dbi x ϕ) <-> negative_occurrence_named X ϕ.
   Proof.
-    intros.
+    intros ϕ X dbi x.
     pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
     destruct P as [_ P]. exact P.
   Qed.
@@ -1784,7 +1900,7 @@ Section syntax.
        positive_occurrence_db dbi (svar_open dbi X phi))
       /\ (negative_occurrence_db dbi phi -> negative_occurrence_db dbi (svar_open dbi X phi)).
   Proof.
-    induction phi; intros; simpl; split; intros; try constructor; try inversion H; try firstorder.
+    induction phi; intros dbi X; simpl; split; intros; try constructor; try inversion H; try firstorder.
     + destruct (n =? dbi); constructor.
     + destruct (n =? dbi).
       * constructor.
@@ -1799,7 +1915,7 @@ Section syntax.
       )
       /\ (negative_occurrence_db dbi1 phi -> negative_occurrence_db dbi1 (svar_open dbi2 X phi)).
   Proof.
-    induction phi; intros dbi1 dbi2 X Hneq; split; intros H; inversion H; subst; intros; simpl in *; auto.
+    induction phi; intros dbi1 dbi2 X Hneq; split; intros H; inversion H; subst; simpl in *; auto.
     + destruct (n =? dbi2); constructor.
     + destruct (n =? dbi2); constructor. auto.
     + constructor; firstorder.
@@ -1816,7 +1932,7 @@ Section syntax.
       well_formed_positive phi ->
       well_formed_positive (svar_open dbi X phi).
   Proof.
-    induction phi; simpl; intros.
+    induction phi; simpl; intros dbi X H.
     + constructor.
     + constructor.
     + constructor.
@@ -1850,8 +1966,8 @@ Section syntax.
     induction phi; intros X Y dbi XneY; split; intros Hneg; inversion Hneg; subst;
       simpl in *; try constructor; try firstorder.
     - destruct (n =? dbi); constructor. 
-      unfold not. intros. assert (X = Y). symmetry. assumption.
-      unfold not in XneY. destruct (XneY H0).
+      unfold not. intros H0. assert (X = Y). symmetry. assumption.
+      unfold not in XneY. destruct (XneY H).
     - destruct (n =? dbi); constructor.
   Qed.
 
@@ -1878,7 +1994,7 @@ Section syntax.
 
   Lemma evar_open_wfc m X phi : well_formed_closed phi -> evar_open m X phi = phi.
   Proof.
-    intros.
+    intros H.
     unfold well_formed_closed in H.
     apply evar_open_wfc_aux with (X := X)(db2 := m) in H.
     2: lia.
@@ -1908,7 +2024,7 @@ Section syntax.
 
   Lemma svar_open_wfc m X phi : well_formed_closed phi -> svar_open m X phi = phi.
   Proof.
-    intros.
+    intros H.
     unfold well_formed_closed in H.
     apply svar_open_wfc_aux with (X := X)(db2 := m) in H.
     2: lia.
@@ -2141,7 +2257,7 @@ Section syntax.
     count_evar_occurrences x p = 0 ->
     free_evar_subst p q x = p.
   Proof.
-    intros.
+    intros H.
     induction p; simpl; auto.
     - simpl in H.
       destruct (evar_eqdec x x0).
@@ -2207,7 +2323,7 @@ Section syntax.
   Lemma wf_sctx (C : Application_context) (A : Pattern) :
     well_formed A -> well_formed (subst_ctx C A).
   Proof.
-    intros.
+    intros H.
     unfold well_formed in H.
     apply andb_true_iff in H. destruct H as [Hwfp Hwfc].
     unfold well_formed_closed in Hwfc.
@@ -2235,7 +2351,7 @@ Section syntax.
   Lemma wp_sctx (C : Application_context) (A : Pattern) :
     well_formed_positive A -> well_formed_positive (subst_ctx C A).
   Proof.
-    intros.
+    intros H.
     induction C.
     - auto.
     - simpl. rewrite IHC. simpl.
@@ -2247,7 +2363,7 @@ Section syntax.
   Lemma wc_sctx (C : Application_context) (A : Pattern) idx1 idx2 :
     well_formed_closed_aux A idx1 idx2 -> well_formed_closed_aux (subst_ctx C A) idx1 idx2.
   Proof.
-    intros.
+    intros H.
     induction C.
     - auto.
     - simpl. rewrite IHC. simpl.
@@ -2305,7 +2421,7 @@ Section syntax.
     pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
   Next Obligation.
-    intros.
+    intros boxvar AC H.
     apply wf_sctx.
     reflexivity.
   Defined.
@@ -2966,7 +3082,7 @@ Section syntax.
     well_formed_closed phi ->
     ~ bsvar_occur phi n.
   Proof.
-    intros.
+    intros H.
     eapply wfc_aux_implies_not_bsvar_occur.
     unfold well_formed_closed in H.
     eapply well_formed_closed_aux_ind.
@@ -3847,26 +3963,23 @@ Section syntax.
       evar_open n x psi
       → phi = psi.
   Proof.
-    induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
-    - simpl in H1. destruct (n =? n0) eqn:P.
+    induction phi; destruct psi; intros x' n' H H0 H1; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n') eqn:P; congruence); auto.
+    - simpl in H1. destruct (n =? n') eqn:P.
       + inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
         congruence.
       + congruence.
-    - simpl in H1. destruct (n =? n0) eqn:P.
+    - simpl in H1. destruct (n =? n') eqn:P.
       + inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
         congruence.
       + congruence.
-    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+    - simpl in H1. destruct (n =? n') eqn:P; destruct (n0 =? n') eqn:P2.
       + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
       + congruence.
       + congruence.
       + inversion H1. reflexivity.
-    - simpl in H1. destruct (n =? n1) eqn:P.
+    - simpl in H1. destruct (n0 =? n') eqn:P.
       + inversion H1.
       + congruence.
-    - inversion H1. destruct (n0 =? n1) eqn:P.
-      + inversion H3.
-      + assumption.
     - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
       apply evar_is_fresh_in_app_r in H. assumption.
       apply evar_is_fresh_in_app_r in H0. assumption.
@@ -3891,24 +4004,19 @@ Section syntax.
       svar_open n X psi
       → phi = psi.
   Proof.
-    induction phi; destruct psi; intros; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n0) eqn:P; congruence); auto.
-    - simpl in H1. destruct (n =? n0) eqn:P.
+    induction phi; destruct psi; intros X' n' H H0 H1; try (simpl in H1; congruence); try (simpl in H1; destruct (n =? n') eqn:P; congruence); auto.
+    - simpl in H1. destruct (n =? n') eqn:P.
       + inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
         congruence.
       + congruence.
-    - inversion H1. destruct (n0 =? n1) eqn:P.
+    - inversion H1. destruct (n0 =? n') eqn:P.
       + inversion H3.
       + assumption.
-    - simpl in H1. destruct (n =? n0) eqn:P.
+    - simpl in H1. destruct (n =? n') eqn:P.
       + inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
         congruence.
       + congruence.
-    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
-      + inversion H1. 
-      + congruence.
-      + congruence.
-      + inversion H1.
-    - simpl in H1. destruct (n =? n1) eqn:P; destruct (n0 =? n1) eqn:P2.
+    - simpl in H1. destruct (n =? n') eqn:P; destruct (n0 =? n') eqn:P2.
       + apply Nat.eqb_eq in P. apply Nat.eqb_eq in P2. subst. reflexivity.
       + congruence.
       + congruence.
@@ -3966,7 +4074,7 @@ Section syntax.
       →
       (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
   Proof.
-    intros. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
+    intros phi psi fresh n X H H0 H1. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
   Qed.
 
   Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
@@ -4052,7 +4160,7 @@ Section syntax.
       (svar_open n fresh (free_svar_subst phi psi X)) = 
       (free_svar_subst (svar_open n fresh phi) psi X).
   Proof.
-    intros. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
+    intros phi psi fresh n X H H0 H1 H2. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
   Qed.
 
   Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
@@ -4173,7 +4281,327 @@ Section syntax.
     apply andb_prop in H. destruct H as [H H2]. rewrite H2. clear H2.
     apply andb_prop in H. destruct H as [H H2]. rewrite H2. reflexivity.
   Qed.
-  
+
+  Fixpoint mu_free (p : Pattern) : bool :=
+  match p with
+   | patt_free_evar x => true
+   | patt_free_svar x => true
+   | patt_bound_evar n => true
+   | patt_bound_svar n => true
+   | patt_sym sigma => true
+   | patt_app phi1 phi2 => mu_free phi1 && mu_free phi2
+   | patt_bott => true
+   | patt_imp phi1 phi2 => mu_free phi1 && mu_free phi2
+   | patt_exists phi => mu_free phi
+   | patt_mu phi => false
+  end.
+
+
+  Lemma well_formed_positive_bevar_subst φ : forall n ψ,
+    mu_free φ ->
+    well_formed_positive φ -> well_formed_positive ψ
+  ->
+    well_formed_positive (bevar_subst φ ψ n).
+  Proof.
+    induction φ; intros n' ψ H H0 H1; simpl; auto.
+    2-3: apply andb_true_iff in H as [E1 E2];
+         simpl in H0; apply eq_sym, andb_true_eq in H0; destruct H0; 
+         rewrite -> IHφ1, -> IHφ2; auto.
+    * break_match_goal; auto.
+  Qed.
+
+  Lemma mu_free_evar_open :
+    forall φ, mu_free φ -> forall x n, mu_free (evar_open n x φ).
+  Proof.
+    induction φ; intros H x' n'; simpl; try now constructor.
+    * break_match_goal; constructor.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. now apply IHφ.
+    * inversion H.
+  Qed.
+
+  Theorem evar_open_bevar_subst_same :
+    forall x phi n, evar_open n x phi = bevar_subst phi (patt_free_evar x) n.
+  Proof.
+    induction phi; intros n'; auto; simpl.
+    * break_match_goal.
+      - apply Nat.eqb_eq in Heqb. subst. break_match_goal; auto; lia.
+      - apply Nat.eqb_neq in Heqb. subst. break_match_goal; auto; lia.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi1, -> IHphi2; auto.
+    * rewrite -> IHphi; auto.
+    * rewrite -> IHphi; auto.
+  Qed.
+
+
+  Theorem evar_open_free_evar_subst_swap :
+    forall φ x n ψ y, x <> y -> well_formed ψ ->
+      evar_open n x (free_evar_subst φ ψ y) = free_evar_subst (evar_open n x φ) ψ y.
+  Proof.
+    induction φ; intros x' n' ψ y H H0; cbn; auto.
+    * destruct (evar_eqdec y x); simpl.
+      - rewrite evar_open_wfc; auto. now apply andb_true_iff in H0.
+      - reflexivity.
+    * break_match_goal; simpl; auto. destruct (evar_eqdec y x'); auto.
+      congruence.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite -> IHφ1, -> IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Lemma free_evars_free_evar_subst : forall φ ψ x,
+    free_evars (free_evar_subst φ ψ x) ⊆ free_evars φ ∪ free_evars ψ.
+  Proof.
+    induction φ; intros ψ x'; simpl.
+    2-5, 7: apply empty_subseteq.
+    * destruct (evar_eqdec x' x); simpl.
+      - apply union_subseteq_r.
+      - apply union_subseteq_l.
+    * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
+      set_solver.
+    * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
+      set_solver.
+    * apply IHφ.
+    * apply IHφ.
+  Qed.
+
+  Lemma bound_to_free_variable_subst :
+    forall φ x m n n' ψ, m > n ->
+      well_formed_closed_aux φ m n' -> x ∉ free_evars φ
+    ->
+      bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
+  Proof.
+    induction φ; intros x' m n' n'' ψ H H0 H1; cbn; auto.
+    * destruct (evar_eqdec x' x); simpl.
+      - simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
+      - reflexivity.
+    * destruct (extralibrary.compare_nat n n').
+      - assert (n =? n' = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
+      - subst. rewrite Nat.eqb_refl. simpl. destruct (evar_eqdec x' x'); auto. congruence.
+      - assert (n =? n' = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
+    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    * simpl in H0, H1. erewrite IHφ. reflexivity. instantiate (1 := S m). 
+      all: try eassumption. lia.
+    * simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
+  Qed.
+
+  Lemma evar_open_no_negative_occurrence :
+    forall φ db1 db2 x,
+      (no_negative_occurrence_db_b db1 (evar_open db2 x φ) ->
+      no_negative_occurrence_db_b db1 φ) /\
+      (no_positive_occurrence_db_b db1 (evar_open db2 x φ) ->
+      no_positive_occurrence_db_b db1 φ).
+  Proof.
+    induction φ; intros db1 db2 x'; cbn; auto.
+    * split; intros.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+    * split; intros.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+      - apply andb_true_iff in H as [E1 E2].
+        apply IHφ1 in E1. apply IHφ2 in E2. now rewrite -> E1, -> E2.
+  Qed.
+
+  Lemma evar_open_positive : forall φ n x,
+    well_formed_positive (evar_open n x φ) ->
+    well_formed_positive φ.
+  Proof.
+    induction φ; intros n' x' H; cbn; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      erewrite -> IHφ1, -> IHφ2; eauto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      erewrite -> IHφ1, -> IHφ2; eauto.
+    * simpl in H. eapply IHφ; eauto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      apply andb_true_iff. split.
+      eapply evar_open_no_negative_occurrence. eassumption.
+      eapply IHφ; eauto.
+  Qed.
+
+  Lemma wf_body_ex_to_wf :
+    forall φ, wf_body_ex φ -> well_formed (patt_exists φ).
+  Proof.
+    intros φ H. unfold well_formed, well_formed_closed. simpl.
+    remember (fresh_evar φ) as x.
+    assert (x ∉ free_evars φ) by now apply x_eq_fresh_impl_x_notin_free_evars.
+    specialize (H x H0).
+    apply andb_true_iff in H. destruct H.
+    apply evar_open_positive in H.
+    apply wfc_aux_body_ex_imp2 in H1.
+    now rewrite -> H, -> H1.
+  Qed.
+
+  Lemma bevar_subst_closed :
+    forall φ ψ n m,
+    well_formed_closed_aux φ (S n) m ->
+    well_formed_closed_aux ψ n m
+    ->
+    well_formed_closed_aux (bevar_subst φ ψ n) n m.
+  Proof.
+    induction φ; intros ψ n' m H H0; cbn; auto.
+    * break_match_goal; simpl in H0, H; simpl; auto.
+      all: apply Nat.ltb_lt. auto. apply Nat.ltb_lt in H. lia.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
+    * simpl in H. rewrite -> IHφ; auto. eapply wfc_aux_extend.
+      eassumption. lia. lia.
+    * simpl in H. rewrite -> IHφ; auto. eapply wfc_aux_extend.
+      eassumption. lia. lia.
+  Qed.
+
+  Lemma bevar_subst_positive :
+    forall φ ψ n, mu_free φ ->
+    well_formed_positive φ -> well_formed_positive ψ
+   ->
+    well_formed_positive (bevar_subst φ ψ n).
+  Proof.
+    induction φ; intros ψ n' H H0 H1; cbn; auto.
+    * break_match_goal; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      apply andb_true_iff in H0 as [E1' E2'].
+      rewrite -> IHφ1, -> IHφ2; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2].
+      apply andb_true_iff in H0 as [E1' E2'].
+      now rewrite -> IHφ1, -> IHφ2.
+  Qed.
+
+  Lemma free_evars_bevar_subst :
+    forall φ ψ n,
+    free_evars (bevar_subst φ ψ n) ⊆ free_evars φ ∪ free_evars ψ.
+  Proof.
+    induction φ; intros ψ n'; simpl; auto.
+    * apply union_subseteq_l.
+    * apply empty_subseteq.
+    * destruct (extralibrary.compare_nat n n'); simpl.
+      - apply empty_subseteq.
+      - apply union_subseteq_r.
+      - apply empty_subseteq.
+    * apply empty_subseteq.
+    * apply empty_subseteq.
+    * specialize (IHφ1 ψ n'). specialize (IHφ2 ψ n').
+      set_solver.
+    * apply empty_subseteq.
+    * specialize (IHφ1 ψ n'). specialize (IHφ2 ψ n').
+      set_solver.
+  Qed.
+
+  Theorem evar_quantify_closed :
+    forall φ x n m, well_formed_closed_aux φ n m ->
+    well_formed_closed_aux (evar_quantify x n φ) (S n) m.
+  Proof.
+    induction φ; intros x' n' m H; cbn; auto.
+    * destruct evar_eqdec; simpl; auto. apply Nat.ltb_lt. lia.
+    * simpl in H. apply Nat.leb_le. apply Nat.ltb_lt in H. lia.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
+  Qed.
+
+  Theorem no_occ_quantify : 
+    ∀ (φ : Pattern) (db1 db2 : db_index) (x : evar),
+    (no_negative_occurrence_db_b db1 φ
+     → no_negative_occurrence_db_b db1 (evar_quantify x db2 φ))
+    ∧ (no_positive_occurrence_db_b db1 φ
+       → no_positive_occurrence_db_b db1 (evar_quantify x db2 φ)).
+  Proof.
+    induction φ; split; intros H; simpl; auto.
+    1-2: destruct evar_eqdec; simpl; auto.
+    1-4: simpl in H; apply andb_true_iff in H as [E1 E2];
+         specialize (IHφ1 db1 db2 x) as [IH1 IH2];
+         specialize (IHφ2 db1 db2 x) as [IH1' IH2'];
+         try rewrite -> IH1; try rewrite -> IH1'; 
+         try rewrite -> IH2; try rewrite -> IH2'; auto.
+    1-4: simpl in H; now apply IHφ.
+  Qed.
+
+  Theorem evar_quantify_positive :
+    forall φ x n, well_formed_positive φ ->
+    well_formed_positive (evar_quantify x n φ).
+  Proof.
+    induction φ; intros x' n' H; cbn; auto.
+    * destruct evar_eqdec; simpl; auto.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+    * simpl in H. apply andb_true_iff in H as [E1 E2]. apply andb_true_iff. split.
+      - now apply no_occ_quantify.
+      - now apply IHφ.
+  Qed.
+
+  Corollary evar_quantify_well_formed :
+    forall φ x, well_formed φ ->
+      well_formed (patt_exists (evar_quantify x 0 φ)).
+  Proof.
+    intros φ x H.
+    unfold well_formed, well_formed_closed.
+    apply andb_true_iff in H as [E1 E2]. simpl.
+    now erewrite -> evar_quantify_closed, -> evar_quantify_positive.
+  Qed.
+
+  Theorem evar_quantify_not_free :
+    forall φ x n, not (@elem_of (@evar (@variables signature)) _
+     (@gmap.gset_elem_of (@evar (@variables _)) (@evar_eqdec (@variables _))
+        (@evar_countable (@variables _))) x
+     (free_evars (evar_quantify x n φ))).
+  Proof.
+    induction φ; intros x' n'; simpl.
+    2-5, 7: apply not_elem_of_empty.
+    * destruct evar_eqdec; simpl.
+      - apply not_elem_of_empty.
+      - subst. now apply not_elem_of_singleton_2.
+    * apply not_elem_of_union. split. apply IHφ1. apply IHφ2.
+    * apply not_elem_of_union. split. apply IHφ1. apply IHφ2.
+    * apply IHφ.
+    * apply IHφ.
+  Qed.
+
+  Fixpoint wf_PatCtx (C : PatCtx) : bool :=
+  match C with
+   | pctx_box => true
+   | pctx_app_l C r => well_formed r && wf_PatCtx C
+   | pctx_app_r l C => well_formed l && wf_PatCtx C
+   | pctx_imp_l C r => well_formed r && wf_PatCtx C
+   | pctx_imp_r l C => well_formed l && wf_PatCtx C
+   | pctx_exists x C => wf_PatCtx C
+  end.
+
+
+  Theorem subst_patctx_wf :
+    forall C φ, wf_PatCtx C -> well_formed φ
+  ->
+    well_formed (subst_patctx C φ).
+  Proof.
+    induction C; intros φ WFC WFφ; simpl; auto.
+    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
+    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
+    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
+    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
+    * simpl in WFC. eapply IHC in WFC; eauto.
+      now apply evar_quantify_well_formed.
+  Qed.
+
+    Lemma evar_quantify_free_evar_subst :
+    forall φ x n, count_evar_occurrences x φ = 0 ->
+    evar_quantify x n φ = φ.
+  Proof.
+    induction φ; intros x' n' H; simpl; auto.
+    - simpl in H.
+      destruct (evar_eqdec x x').
+      + subst x'. destruct (evar_eqdec x x). simpl in H. inversion H. contradiction.
+      + simpl in H. destruct (evar_eqdec x' x); cbn; auto. congruence.
+    - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
+    - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
+    - simpl in H. rewrite IHφ. lia. reflexivity.
+    - simpl in H. rewrite IHφ. lia. reflexivity.
+  Qed.
 
 End syntax.
 

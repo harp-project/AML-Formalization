@@ -77,6 +77,19 @@ Module Syntax.
       rewrite !(H11,H12,H21,H22).
       reflexivity.
     Qed.
+    
+    Lemma well_formed_iff (phi1 phi2 : Pattern) :
+      well_formed phi1 ->
+      well_formed phi2 ->
+      well_formed (patt_iff phi1 phi2).
+    Proof.
+      unfold patt_iff, patt_and, patt_or, patt_not. intros.
+      unfold well_formed in *. simpl.
+      unfold well_formed_closed in *. simpl.
+      apply andb_prop in H. destruct H as [H11 H12].
+      apply andb_prop in H0. destruct H0 as [H21 H22].
+      rewrite !(H11,H12,H21,H22). simpl. auto.
+    Qed.
 
     Lemma well_formed_and (phi1 phi2 : Pattern) :
       well_formed phi1 ->
@@ -91,6 +104,22 @@ Module Syntax.
       apply andb_prop in H2. destruct H2 as [H21 H22].
       rewrite !(H11,H12,H21,H22).
       reflexivity.
+    Qed.
+
+    Lemma well_formed_closed_all φ : forall n m,
+      well_formed_closed_aux (patt_forall φ) n m
+    <->
+      well_formed_closed_aux φ (S n) m.
+    Proof.
+      intros. simpl. do 2 rewrite andb_true_r. auto.
+    Qed.
+  
+    Lemma well_formed_positive_all φ : 
+      well_formed_positive (patt_forall φ)
+    <->
+      well_formed_positive φ.
+    Proof.
+      intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
     
     Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
