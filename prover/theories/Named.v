@@ -6,58 +6,6 @@ Unset Printing Implicit Defensive.
 From stdpp Require Import base pmap gmap.
 From MatchingLogic Require Import Syntax.
 
-Global Instance Pattern_countable {Σ : Signature} (sc : @Countable (@symbols Σ) (@sym_eq Σ)) : @Countable Pattern Pattern_eqdec.
-Proof.
-  set (enc :=
-         fix go p : gen_tree (unit
-                              + ((@symbols Σ)
-                                 + (((@evar variables) + db_index)
-                                    + ((@svar variables) + db_index))))%type :=
-           match p with
-           | patt_bott => GenLeaf (inl ())
-           | patt_sym s => GenLeaf (inr (inl s))
-           | patt_free_evar x => GenLeaf (inr (inr (inl (inl x))))
-           | patt_free_svar X => GenLeaf (inr (inr (inr (inl X))))
-           | patt_bound_evar n => GenLeaf (inr (inr (inl (inr n))))
-           | patt_bound_svar n => GenLeaf (inr (inr (inr (inr n))))
-           | patt_app p1 p2 => GenNode 0 [go p1; go p2]
-           | patt_imp p1 p2 => GenNode 1 [go p1; go p2]
-           | patt_exists p' => GenNode 2 [go p']
-           | patt_mu p' => GenNode 3 [go p']
-           end
-      ).
-
-  set (dec :=
-         fix go (p : gen_tree (unit
-                              + ((@symbols Σ)
-                                 + (((@evar variables) + db_index)
-                                    + ((@svar variables) + db_index))))%type) : Pattern :=
-           match p with
-           | GenLeaf (inl ()) => patt_bott
-           | GenLeaf (inr (inl s)) => patt_sym s
-           | GenLeaf (inr (inr (inl (inl x)))) => patt_free_evar x
-           | GenLeaf (inr (inr (inr (inl X)))) => patt_free_svar X
-           | GenLeaf (inr (inr (inl (inr n)))) => patt_bound_evar n
-           | GenLeaf (inr (inr (inr (inr n)))) => patt_bound_svar n
-           | GenNode 0 [p1; p2] => patt_app (go p1) (go p2)
-           | GenNode 1 [p1; p2] => patt_imp (go p1) (go p2)
-           | GenNode 2 [p'] => patt_exists (go p')
-           | GenNode 3 [p'] => patt_mu (go p')
-           | _ => patt_bott (* dummy *)
-           end
-      ).
-
-  refine (inj_countable' enc dec _).
-  { 
-    Existing Instance evar_countable.
-    Existing Instance svar_countable.
-    typeclasses eauto.
-  }
-  intros x.
-  induction x; simpl; congruence.
-Defined.
-
-
 
 Section named.
   Context {Σ : Signature}.
