@@ -14,7 +14,6 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.mono
 
 Section with_signature.
   Context {Σ : Signature}.
-  Existing Instance variables.
 
   Lemma pattern_interpretation_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
     well_formed_positive (patt_mu ϕ) ->

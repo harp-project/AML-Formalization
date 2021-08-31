@@ -19,7 +19,6 @@ Import MatchingLogic.Syntax.Notations.
 Section semantics.
   
   Context {signature : Signature}.
-  Existing Instance variables.
 
   Definition Power (Sigma : Type) := propset Sigma.
 
@@ -902,7 +901,7 @@ Print singleton.
       simpl.
       
       apply f_equal. apply functional_extensionality. intros e.
-      destruct (evar_eqdec (fresh_evar ϕ) x).
+      destruct (decide ((fresh_evar ϕ) = x)).
       + rewrite -> e0. rewrite -> update_evar_val_shadow. reflexivity.
       + rewrite -> update_evar_val_comm. 2: apply n.
         rewrite -> IHsz.

@@ -22,19 +22,17 @@ Section sorts.
 
   Inductive Symbols := inhabitant.
 
-  Context {sig : Signature}.
+  Context {Σ : Signature}.
 
   Class Syntax :=
-    { inj: Symbols -> symbols;
-      imported_definedness: @Definedness.Syntax sig;
+    { inj : Symbols -> symbols;
+      imported_definedness :> Definedness.Syntax;
     }.
 
   Context {self : Syntax}.
 
-  Existing Instance imported_definedness.
-
-  Local Definition sym (s : Symbols) : @Pattern sig :=
-    @patt_sym sig (inj s).
+  Local Definition sym (s : Symbols) : Pattern :=
+    patt_sym (inj s).
   
   Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
@@ -161,7 +159,7 @@ Section sorts.
     Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
-    Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation sig M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
+    Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation Σ M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
     
     Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
@@ -429,8 +427,8 @@ Section sorts.
     Hint Resolve M_predicate_forall_of_sort : core.
     
     Lemma interp_total_function f s₁ s₂ ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function f s₁ s₂) = ⊤ <->
-      @is_total_function sig M f (Minterp_inhabitant s₁ ρₑ ρₛ) (Minterp_inhabitant s₂ ρₑ ρₛ) ρₑ ρₛ.
+      @pattern_interpretation Σ M ρₑ ρₛ (patt_total_function f s₁ s₂) = ⊤ <->
+      @is_total_function Σ M f (Minterp_inhabitant s₁ ρₑ ρₛ) (Minterp_inhabitant s₂ ρₑ ρₛ) ρₑ ρₛ.
     Proof.
       unfold is_total_function.
       rewrite pattern_interpretation_forall_of_sort_predicate.
@@ -532,12 +530,12 @@ Section sorts.
     Qed.
 
     Lemma interp_partial_function f s₁ s₂ ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function f s₁ s₂) = ⊤ <->
+      @pattern_interpretation Σ M ρₑ ρₛ (patt_partial_function f s₁ s₂) = ⊤ <->
       ∀ (m₁ : Domain M),
         m₁ ∈ Minterp_inhabitant s₁ ρₑ ρₛ ->
         ∃ (m₂ : Domain M),
           m₂ ∈ Minterp_inhabitant s₂ ρₑ ρₛ /\
-          (app_ext (@pattern_interpretation sig M ρₑ ρₛ f) {[m₁]})
+          (app_ext (@pattern_interpretation Σ M ρₑ ρₛ f) {[m₁]})
             ⊆ {[m₂]}.
     Proof.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto. }
@@ -650,7 +648,7 @@ Section sorts.
    Qed.
     
     Lemma interp_partial_function_injective f s ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_partial_function_injective f s) = ⊤ <->
+      @pattern_interpretation Σ M ρₑ ρₛ (patt_partial_function_injective f s) = ⊤ <->
       ∀ (m₁ : Domain M),
         m₁ ∈ Minterp_inhabitant s ρₑ ρₛ ->
         ∀ (m₂ : Domain M),          
@@ -741,7 +739,7 @@ Section sorts.
     Qed.
 
     Lemma interp_total_function_injective f s ρₑ ρₛ :
-      @pattern_interpretation sig M ρₑ ρₛ (patt_total_function_injective f s) = ⊤ <->
+      @pattern_interpretation Σ M ρₑ ρₛ (patt_total_function_injective f s) = ⊤ <->
       total_function_is_injective f (Minterp_inhabitant s ρₑ ρₛ) ρₑ ρₛ.
     Proof.
       unfold total_function_is_injective.
