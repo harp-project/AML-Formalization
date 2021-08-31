@@ -81,6 +81,28 @@ Section named.
 
   Definition to_NamedPattern (ϕ : Pattern) : NamedPattern :=
     (to_NamedPattern' ϕ ∅ ∅).1.1.
+
+  Definition not_contain_bound_evar_0 ϕ : Prop := ~~ bevar_occur ϕ 0.
+  Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
+  
+
+  (* TODO Pattern must be countable. *)
+
+  Fixpoint to_NamedPattern2'
+           (ϕ : Pattern)
+           (cache : gmap Pattern NamedPattern)
+           (used_evars : EVarSet)
+           (used_svars : SVarSet)
+    : (NamedPattern * (gmap Pattern NamedPattern) * EVarSet * SVarSet)%type :=
+    if cache !! ϕ is Some ψ
+    then ψ
+    else
+      let: (ψ, used_evars', used_svars') :=
+         match ϕ return (NamedPattern * EVarSet * SVarSet)%type with
+         | _ => (npatt_bott, used_evars, used_svars)
+         end
+      in
+      (ψ, <[ϕ:=ψ]>cache, used_evars', used_svars).
   
   Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
@@ -106,6 +128,43 @@ Section named.
     forall dbi1 dbi2 X1 X2, svm !! dbi1 = Some X1 -> svm !! dbi2 = Some X2 ->
                             X1 = X2 -> dbi1 = dbi2.
 
+
+  (* This is very suspicious. *)
+  Lemma to_NamedPattern'_SVarMap_injective (evm : EVarMap) (svm : SVarMap) (ϕ : Pattern):
+    SVarMap_injective_prop svm ->
+    SVarMap_injective_prop (to_NamedPattern' ϕ evm svm).2.
+  Proof.
+    intros Hinj.
+    move: evm svm Hinj.
+    induction ϕ; intros evm svm Hinj; simpl; auto.
+    - remember (to_NamedPattern' ϕ1 evm svm) as tonϕ1.
+      destruct tonϕ1 as [[nphi1 evm'] svm'].
+      remember (to_NamedPattern' ϕ2 evm' svm') as tonϕ2.
+      destruct tonϕ2 as [[nphi2 evm''] svm''].
+      simpl.
+      apply (f_equal snd) in Heqtonϕ2. simpl in Heqtonϕ2. subst svm''. apply IHϕ2.
+      apply (f_equal snd) in Heqtonϕ1. simpl in Heqtonϕ1. subst svm'. apply IHϕ1.
+      exact Hinj.
+    - remember (to_NamedPattern' ϕ1 evm svm) as tonϕ1.
+      destruct tonϕ1 as [[nphi1 evm'] svm'].
+      remember (to_NamedPattern' ϕ2 evm' svm') as tonϕ2.
+      destruct tonϕ2 as [[nphi2 evm''] svm''].
+      simpl.
+      apply (f_equal snd) in Heqtonϕ2. simpl in Heqtonϕ2. subst svm''. apply IHϕ2.
+      apply (f_equal snd) in Heqtonϕ1. simpl in Heqtonϕ1. subst svm'. apply IHϕ1.
+      exact Hinj.
+    - remember (to_NamedPattern' ϕ (<[0:=evm_fresh evm ϕ]> (evm_incr evm)) svm) as tonϕ.
+      destruct tonϕ as [[nphi evm'] svm'].
+      simpl.
+      exact Hinj.
+    - remember (to_NamedPattern' ϕ evm (<[0:=svm_fresh svm ϕ]> (svm_incr svm))) as tonϕ.
+      destruct tonϕ as [[nphi evm'] svm'].
+      simpl.
+      apply Hinj.
+  Qed.
+  
+      
+  
   Lemma to_NamedPattern'_occurrence
         (evm : EVarMap) (svm : SVarMap) (X : svar) (dbi : db_index) (ϕ : Pattern):
     SVarMap_injective_prop svm ->
