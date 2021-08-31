@@ -29,7 +29,6 @@ Class Signature := {
   variables : MLVariables;
   symbols : Set;
   sym_eq : EqDecision symbols;
-(*  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};*)
 }.
 
 (* TODO have different type for element variable and for set variable index *)
