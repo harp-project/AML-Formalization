@@ -704,7 +704,6 @@ Section syntax.
     apply H.
   Qed.
 
-  (* TODO replace with a boolean version - that enables us to prove by computation. *)
   Fixpoint well_formed_positive (phi : Pattern) : bool :=
     match phi with
     | patt_free_evar _ => true
