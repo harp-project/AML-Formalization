@@ -8,8 +8,11 @@ From MatchingLogic Require Import Syntax.
 
 
 Section named.
-  Context {Σ : Signature}.
-  Existing Instance variables.
+  Context
+    {Σ : Signature}
+    {symbols_countable : Countable symbols}
+  .
+  
 
   Inductive NamedPattern : Set :=
   | npatt_evar (x : evar)
@@ -87,8 +90,6 @@ Section named.
   Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
   
 
-  (* TODO Pattern must be countable. *) 
-
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
            (cache : gmap Pattern NamedPattern)
@@ -96,14 +97,37 @@ Section named.
            (used_svars : SVarSet)
     : (NamedPattern * (gmap Pattern NamedPattern) * EVarSet * SVarSet)%type :=
     if cache !! ϕ is Some ψ
-    then ψ
+    then (ψ, cache, used_evars, used_svars)
     else
-      let: (ψ, used_evars', used_svars') :=
-         match ϕ return (NamedPattern * EVarSet * SVarSet)%type with
-         | _ => (npatt_bott, used_evars, used_svars)
+      let: (ψ, cache', used_evars', used_svars') :=
+         match ϕ return (NamedPattern * (gmap Pattern NamedPattern) * EVarSet * SVarSet)%type with
+         | patt_bott
+           => (npatt_bott, cache, used_evars, used_svars)
+         | patt_bound_evar n (* never happens - it is always in cache *)
+         | patt_bound_svar n (* the same *)
+           => (npatt_bott, cache, used_evars, used_svars)
+         | patt_free_evar x
+           => (npatt_evar x, cache, used_evars, used_svars)
+         | patt_free_svar X
+           => (npatt_svar X, cache, used_evars, used_svars)
+         | patt_sym s
+           => (npatt_sym s, cache, used_evars, used_svars)
+         | patt_imp ϕ₁ ϕ₂
+           => let: (nϕ₁, cache', used_evars', used_svars')
+                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars in
+              let: (nϕ₂, cache'', used_evars'', used_svars'')
+                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' in
+              ((npatt_imp nϕ₁ nϕ₂), cache'', used_evars'', used_svars'')
+         | patt_app ϕ₁ ϕ₂
+           => let: (nϕ₁, cache', used_evars', used_svars')
+                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars in
+              let: (nϕ₂, cache'', used_evars'', used_svars'')
+                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' in
+              ((npatt_app nϕ₁ nϕ₂), cache'', used_evars'', used_svars'')
+         | _ => (npatt_bott, cache, used_evars, used_svars)
          end
       in
-      (ψ, <[ϕ:=ψ]>cache, used_evars', used_svars).
+      (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
   
   Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with

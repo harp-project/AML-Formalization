@@ -446,6 +446,9 @@ Section gen.
           )
        ).
 
+  (* (exists x, x) -> exists x, (exists y, y)  *)
+  (* (exists, 0) -> (exists, exists, 0)  *)
+  (* (exists x, x) -> (phi -> (exists y, y)) *)
   Equations? proof2proof'
             Γ
             (acc : list Label)
