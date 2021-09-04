@@ -267,4 +267,4 @@ Extraction "proof_6_mm.hs" MMTest.proof_6.
 Extraction "proof_7_mm.hs" MMTest.proof_7.
 Extraction "proof_8_mm.hs" MMTest.proof_8.
 Extraction "proof_9_mm.hs" MMTest.proof_9.
-Extraction "proof_10_mm.hs" MMTest.proof_10.
+(*Extraction "proof_10_mm.hs" MMTest.proof_10.*)
