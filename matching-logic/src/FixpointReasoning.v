@@ -888,6 +888,7 @@ Section with_signature.
       Qed.
       
       Section injective.
+        Hypothesis (Domain_eq_dec : EqDecision (Domain M)).
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
         Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
 
@@ -910,7 +911,7 @@ Section with_signature.
           assert (Hmwit: m ∈ witnessed_elements).
           { exists l₁. apply Hw₁. }
 
-          assert (Hlcom:  ( @common_length _ (@Domain_eq_dec _ M) l₁ l₂ = length l₂)).
+          assert (Hlcom:  (common_length l₁ l₂ = length l₂)).
           {
             destruct Hw₁ as [[lst₁ [Hlst₁ Hbase₁]] [Hhd₁ Hfa₁]].
             destruct l₁ as [|m₁ l₁].
