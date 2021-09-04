@@ -6,7 +6,7 @@ From stdpp Require Import base finite gmap mapset listset_nodup numbers.
 
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
-From MatchingLogicProver Require Import MMProofExtractorLoader Named.
+From MatchingLogicProver Require Import Named.
 
 Module MetaMath.
 

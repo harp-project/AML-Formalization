@@ -1,13 +1,7 @@
 -R theories MatchingLogicProver
--I src
 
 theories/MLTauto.v
 theories/Named.v
-theories/MMProofExtractorLoader.v
 theories/MMProofExtractor.v
 theories/TEST_MMProofExtractor.v
 
-src/mmpf_main.ml
-src/mmpf_main.mli
-src/g_mmpf.mlg
-src/mmpf_plugin.mlpack
