@@ -929,8 +929,8 @@ Section syntax.
 
   (* fresh variables *)
   
-  Definition evar_fresh (l : list evar) : evar := @infinite_fresh _ evar_infinite l.
-  Definition svar_fresh (l : list svar) : svar := @infinite_fresh _ svar_infinite l.
+  Definition evar_fresh (l : list evar) : evar := fresh l.
+  Definition svar_fresh (l : list svar) : svar := fresh l.
   
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
