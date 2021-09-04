@@ -308,7 +308,6 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     Let OS := PropsetOrderedSet (@Domain m).
     Let  L := PowersetLattice (@Domain m).
 
-Print singleton.
     Program Fixpoint pattern_interpretation
             (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
             (p : Pattern) {measure (size p)} :=
