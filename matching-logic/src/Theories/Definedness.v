@@ -559,6 +559,10 @@ Section definedness.
     intros ϕ₁ ϕ₂ M Hm.
     unfold patt_eq_inversion_of.
     apply M_predicate_forall.
+    match goal with
+    | |- context G [fresh_evar ?t] => remember (fresh_evar t) as X
+    end.
+    
     rewrite simpl_evar_open.
     apply T_predicate_equals.
     apply Hm.

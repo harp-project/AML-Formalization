@@ -27,9 +27,9 @@ Section semantics.
   Record Model := {
     Domain : Type;
     (* TODO: think about whether or not to make it an existential formula. Because that would affect the equality,
-       due to proof irrelevance. *)
+       due to proof irrelevance. We can also replace it by stdpp's Inhabited typeclass *)
     nonempty_witness : Domain;
-    Domain_eq_dec : EqDecision Domain;
+    Domain_eq_dec :> EqDecision Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;
   }.
