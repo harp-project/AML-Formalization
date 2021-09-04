@@ -253,11 +253,6 @@ Section gen.
     (evarPrinter : @evar variables -> string)
     (svarPrinter : @svar variables -> string)
   .
-
-  Existing Instance sym_eq.
-  Existing Instance variables.
-  Existing Instance evar_eqdec.
-  Existing Instance svar_eqdec.
   
   Definition something (x : evar) := evarPrinter x.
   

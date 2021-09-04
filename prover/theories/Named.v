@@ -26,14 +26,7 @@ Section named.
   .
 
   Instance NamedPattern_eqdec : EqDecision NamedPattern.
-  Proof.
-    unfold EqDecision. intros. unfold Decision. decide equality.
-    - apply evar_eqdec.
-    - apply svar_eqdec.
-    - apply sym_eq.
-    - apply evar_eqdec.
-    - apply svar_eqdec.
-  Qed.
+  Proof. solve_decision. Defined.
 
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
@@ -142,7 +135,7 @@ Section named.
   named_no_positive_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
     | npatt_evar _ | npatt_sym _ | npatt_bott => true
-    | npatt_svar Y => negb (if svar_eqdec X Y then true else false)
+    | npatt_svar Y => negb (if decide (X = Y) then true else false)
     | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
@@ -206,14 +199,14 @@ Section named.
     - unfold no_negative_occurrence_db_b, no_positive_occurrence_db_b; simpl.
       split; [reflexivity|]. unfold svar_is_fresh_in in Hfresh. simpl in Hfresh.
       apply not_elem_of_singleton_1 in Hfresh.
-      destruct (svar_eqdec X x); [contradiction|].
+      destruct (decide (X = x)); [contradiction|].
       reflexivity.
     - unfold no_negative_occurrence_db_b, no_positive_occurrence_db_b; simpl.
       destruct (evm !! n); simpl; split; reflexivity.
     - unfold no_negative_occurrence_db_b, no_positive_occurrence_db_b; simpl.
       destruct (decide (n = dbi)).
       + subst. rewrite Hdbi. simpl. split; [reflexivity|].
-        destruct (svar_eqdec X X); [|contradiction].
+        destruct (decide (X = X)); [|contradiction].
         simpl.
         rewrite Nat.eqb_refl.
         reflexivity.
@@ -227,7 +220,7 @@ Section named.
         symmetry in Heqsvm_n.
         specialize (Hinj n dbi s X Heqsvm_n Hdbi).
         unfold not in Hneq.
-        destruct (svar_eqdec X s); auto.
+        destruct (decide (X = s)); auto.
     - unfold no_negative_occurrence_db_b, no_positive_occurrence_db_b; simpl.
       split; reflexivity.
     - feed specialize IHϕ1.

@@ -351,7 +351,7 @@ Section ml_tauto.
       assert (wfctx': well_formed ctx');          
       [unfold ctx'; unfold patt_iff; auto 15|];
       assert (countstar: count_evar_occurrences star ctx' = 1);
-      [unfold ctx'; simpl; destruct (evar_eqdec star star); [|contradiction];
+      [unfold ctx'; simpl; destruct (decide (star = star)); [|contradiction];
        simpl; rewrite ?negate_count_evar_occurrences;
        simpl_tactic;
        (*          rewrite ?Hcount_p1' Hcount_p2';*)
@@ -368,7 +368,7 @@ Section ml_tauto.
         cbn;
         simpl_tactic;
         (*rewrite Hcount_p1' Hcount_p2' Hcount_np1' Hcount_np2'.*)
-        destruct (evar_eqdec star star); [|contradiction];
+        destruct (decide (star = star)); [|contradiction];
         simpl;
         reflexivity
        |];
@@ -377,7 +377,7 @@ Section ml_tauto.
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
       unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
-      destruct (evar_eqdec star star); [|contradiction]; simpl in Hctx;
+      destruct (decide (star = star)); [|contradiction]; simpl in Hctx;
       repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption);
       simpl in Hctx;
       apply (Modus_ponens_alt _ _ _ Hctx); auto 20
