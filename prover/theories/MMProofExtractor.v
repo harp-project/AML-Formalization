@@ -1,14 +1,12 @@
-From Coq Require Import Strings.String.
+From Coq Require Import Strings.String Strings.Ascii.
 
 From Equations Require Import Equations.
 
-From stdpp Require Import base finite gmap mapset listset_nodup.
+From stdpp Require Import base finite gmap mapset listset_nodup numbers.
 
 From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
-From MatchingLogicProver Require Import MMProofExtractorLoader.
-
-
+From MatchingLogicProver Require Import MMProofExtractorLoader Named.
 
 Module MetaMath.
 
@@ -120,7 +118,7 @@ Module MetaMath.
                       (append
                          " $f "
                          (append
-                            (append (TypeCode_toString t) (Variabl_toString var))
+                            (appendWith " " (TypeCode_toString t) (Variabl_toString var))
                             " $."
                          )
                       )
@@ -219,6 +217,31 @@ Module MetaMath.
 "%string) "
 "%string (map OutermostScopeStmt_toString x).
 
+    Fixpoint Private_MathSymbol_from_string (s : string) : string :=
+      match s with
+      | EmptyString => ""
+      | String a s' =>
+        let n := nat_of_ascii a in
+        let rest := (Private_MathSymbol_from_string s') in
+        if decide (a = "$"%char) then
+          "\DLR" ++ rest
+        else
+          if (decide (a = "\"%char)) then
+            "\BSP" ++ rest
+          else
+            if (decide (a = " "%char)) then
+              "\SPC" ++ rest
+            else
+              if (n <? 33) || (126 <? n)
+              then "$$$GENERATE_SYNTAX_ERROR$$$" (* TODO metamath can't handle characters in this range *)
+              else
+                String a rest
+      end.
+
+    (*Compute (Private_MathSymbol_from_string "Ah$oj sve\te").*)
+    
+    Definition MathSymbol_from_string (s : string) : MathSymbol :=
+      ms (Private_MathSymbol_from_string s).
 
 End MetaMath.
 
@@ -226,9 +249,17 @@ Import MetaMath.
 Section gen.
   Context
     {signature : Signature}
-(*    {finiteSymbols : @Finite (@symbols signature) (@sym_eq signature) }*)
     (symbolPrinter : symbols -> string)
+    (evarPrinter : @evar variables -> string)
+    (svarPrinter : @svar variables -> string)
   .
+
+  Existing Instance sym_eq.
+  Existing Instance variables.
+  Existing Instance evar_eqdec.
+  Existing Instance svar_eqdec.
+  
+  Definition something (x : evar) := evarPrinter x.
   
   Definition constantForSymbol (s : symbols) : OutermostScopeStmt :=
     oss_cs (constant_stmt [constant (ms (symbolPrinter s))]).
@@ -243,64 +274,132 @@ Section gen.
   Definition constantAndAxiomForSymbol (s : symbols) : Database :=
     [constantForSymbol s; axiomForSymbol s].
 
-  (* For now, we will only use listSet. Later we may want to use gset,
-     for performance reasons; but then we will need to implement Countable
-     for symbols.
-   *)
-  (*
-  Context
-    {sym_countable : @Countable symbols sym_eq}
-  .
-
-  Definition SymSet := (@gset symbols sym_eq sym_countable).
-   *)
-
-  Check listset_nodup_union.
   Definition SymSet := listset_nodup symbols.
+  Definition NEvarSet := listset_nodup evar.
+  Definition NSvarSet := listset_nodup svar.
 
-  Existing Instance sym_eq.
 
-  Fixpoint symbols_of (p : Pattern) : SymSet :=
+  Fixpoint symbols_of (p : NamedPattern) : SymSet :=
     match p with
-    | patt_bott | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_bound_svar _ => ∅
-    | patt_sym s => {[ s ]}
-    | patt_imp p1 p2 => symbols_of p1 ∪ symbols_of p2
-    | patt_app p1 p2 => symbols_of p1 ∪ symbols_of p2
-    | patt_exists p' => symbols_of p'
-    | patt_mu p' => symbols_of p'
+    | npatt_bott | npatt_evar _ | npatt_svar _ => ∅
+    | npatt_sym s => {[ s ]}
+    | npatt_imp p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | npatt_app p1 p2 => symbols_of p1 ∪ symbols_of p2
+    | npatt_exists _ p' => symbols_of p'
+    | npatt_mu _ p' => symbols_of p'
     end.
 
-  Definition dependenciesForPattern (p : Pattern) : Database :=
-    concat (map constantAndAxiomForSymbol (listset_nodup_car (symbols_of p))).
-
-  Fixpoint pattern2mm (p : Pattern) : list MathSymbol :=
+  Fixpoint nevars_of (p : NamedPattern) : NEvarSet :=
     match p with
-    | patt_sym s => [ms (symbolPrinter s)]
-    | patt_imp p1 p2 =>
+    | npatt_bott | npatt_svar _ | npatt_sym _ => ∅
+    | npatt_evar x => {[x]}
+    | npatt_imp p1 p2 => nevars_of p1 ∪ nevars_of p2
+    | npatt_app p1 p2 => nevars_of p1 ∪ nevars_of p2
+    | npatt_exists x p' => {[x]} ∪ nevars_of p'
+    | npatt_mu _ p' => nevars_of p'
+    end.
+
+  Fixpoint nsvars_of (p : NamedPattern) : NSvarSet :=
+    match p with
+    | npatt_bott | npatt_evar _ | npatt_sym _ => ∅
+    | npatt_svar X => {[X]}
+    | npatt_imp p1 p2 => nsvars_of p1 ∪ nsvars_of p2
+    | npatt_app p1 p2 => nsvars_of p1 ∪ nsvars_of p2
+    | npatt_exists _ p' => nsvars_of p'
+    | npatt_mu X p' => {[X]} ∪ nsvars_of p'
+    end.
+
+  Definition printEvar (x : evar) : string := "evar-" ++ (evarPrinter x).
+  Definition isElementVar (x : evar) : Label := lbl ((printEvar x) ++ "-is-element-var").
+
+  Definition printSvar (X : svar) : string := "svar-" ++ (svarPrinter X).
+  Definition isSetVar (X : svar) : Label := lbl ((printSvar X) ++ "-is-set-var").
+  
+  Definition frameAsElementVariable (x : evar) : OutermostScopeStmt :=
+    oss_s (stmt_hyp_stmt (hs_floating
+                            (fs
+                               (isElementVar x)
+                               (tc (constant (ms "#ElementVariable")))
+                               (variable (printEvar x))))).
+
+  Definition frameAsSetVariable (X : svar) : OutermostScopeStmt :=
+    oss_s (stmt_hyp_stmt (hs_floating
+                            (fs
+                               (isSetVar X)
+                               (tc (constant (ms "#SetVariable")))
+                               (variable (printSvar X))))).
+  
+  Definition dependenciesForPattern (p : NamedPattern) : Database :=
+    let sms := listset_nodup_car (symbols_of p) in
+    let nevs := listset_nodup_car (nevars_of p) in
+    let nsvs := listset_nodup_car (nsvars_of p) in
+    (concat (map constantAndAxiomForSymbol sms))
+      ++ (if decide (0 < length nevs) then
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ printEvar) nevs))))]
+          else []
+         )
+      ++ (if decide (0 < length nsvs) then
+            [(oss_s (stmt_variable_stmt (vs (map (variable ∘ printSvar) nsvs))))]
+          else []
+         )
+      ++ (if decide (1 < length nevs) then
+            [(oss_s (stmt_disj_stmt (ds (map (variable ∘ printEvar) nevs))))]
+          else []
+         )
+      ++ (if decide (1 < length nsvs) then
+            [(oss_s (stmt_disj_stmt (ds (map (variable ∘ printSvar) nsvs))))]
+          else []
+         )
+      ++ (map frameAsElementVariable nevs)
+      ++ (map frameAsSetVariable nsvs)
+  .
+
+  Fixpoint pattern2mm (p : NamedPattern) : list MathSymbol :=
+    match p with
+    | npatt_sym s => [ms (symbolPrinter s)] (* TODO: use printSymbol *)
+    | npatt_evar x => [ms (printEvar x)]
+    | npatt_svar X => [ms (printSvar X)]
+    | npatt_imp p1 p2 =>
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\imp")] ++ ms1 ++ ms2 ++ [ (ms ")")]
-    | patt_app p1 p2 =>
+    | npatt_app p1 p2 =>
       let ms1 := pattern2mm p1 in
       let ms2 := pattern2mm p2 in
       [(ms "("); (ms "\app")] ++ ms1 ++ ms2 ++ [ (ms ")")]
-    | patt_bott => [(ms "\bot")]
-    | _ => []
+    | npatt_bott => [(ms "\bot")]
+    | npatt_exists x p' =>
+      let msx := [ms (printEvar x)] in
+      let msp' := pattern2mm p' in
+      [(ms "("); (ms "\exists")] ++ msx ++ msp' ++ [(ms ")")]
+    | npatt_mu X p' =>
+      let msX := [ms (printSvar X)] in
+      let msp' := pattern2mm p' in
+      [(ms "("); (ms "\exists")] ++ msX ++ msp' ++ [(ms ")")]
     end.
 
-  Fixpoint pattern2proof (p : Pattern) : list Label :=
+  Fixpoint pattern2proof (p : NamedPattern) : list Label :=
     match p with
-    | patt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
-    | patt_imp p1 p2 =>
+    | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
+    | npatt_evar x => [(isElementVar x); (lbl "element-var-is-var"); (lbl "var-is-pattern")]
+    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (lbl "var-is-pattern")]                        
+    | npatt_imp p1 p2 =>
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "imp-is-pattern")]
-    | patt_app p1 p2 =>
+    | npatt_app p1 p2 =>
       let ms1 := pattern2proof p1 in
       let ms2 := pattern2proof p2 in
       ms1 ++ ms2 ++ [(lbl "app-is-pattern")]
-    | patt_bott => [(lbl "bot-is-pattern")]
-    | _ => []
+    | npatt_bott => [(lbl "bot-is-pattern")]
+    | npatt_exists x p' =>
+      let lsx := [(isElementVar x)] in
+      let lsp' := pattern2proof p' in
+      lsp' ++ lsx ++ [(lbl "exists-is-pattern")]
+    | npatt_mu X p' =>
+      let lsX := [(isSetVar X)] in
+      let lsp' := pattern2proof p' in
+      lsp' ++ lsX ++ [(lbl "mu-is-pattern")]
     end.
 
   Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
@@ -347,6 +446,9 @@ Section gen.
           )
        ).
 
+  (* (exists x, x) -> exists x, (exists y, y)  *)
+  (* (exists, 0) -> (exists, exists, 0)  *)
+  (* (exists x, x) -> (phi -> (exists y, y)) *)
   Equations? proof2proof'
             Γ
             (acc : list Label)
@@ -363,8 +465,8 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-1"]
-              ++ (reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
     
@@ -372,9 +474,9 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-2"]
-              ++ (reverse (pattern2proof r))
-              ++ (reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern r)))
+              ++ (reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
     
@@ -382,15 +484,15 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-3"]
-              ++ (reverse (pattern2proof p))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            pfs' ;
 
     proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
-           ((reverse (pattern2proof q))
-              ++ (reverse (pattern2proof p))
+           ((reverse (pattern2proof (to_NamedPattern q)))
+              ++ (reverse (pattern2proof (to_NamedPattern p)))
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
@@ -417,9 +519,7 @@ Section gen.
     - unfold proof2proof'_stack_size.
       simpl. lia.
   Defined.
-  (*Transparent proof2proof'.*)
 
-  Check proof2proof'.
   Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
     proof2proof' Γ [] [(inl (existT ϕ pf))].
   
@@ -442,12 +542,13 @@ Section gen.
    *)
   
   Definition proof2database Γ (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
+    let named := to_NamedPattern ϕ in
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
-    (dependenciesForPattern ϕ)
+    (dependenciesForPattern named)
       ++ [oss_s (stmt_assert_stmt (as_provable (ps
                                                   (lbl "the-proof")
                                                   (tc (constant (ms "|-")))
-                                                  (pattern2mm ϕ)
+                                                  (pattern2mm named)
                                                   (pf (proof2proof Γ ϕ proof))
          )))].
   

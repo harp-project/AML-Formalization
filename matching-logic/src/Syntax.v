@@ -17,52 +17,94 @@ Require Import stdpp_ext.
 Class MLVariables := {
   evar : Set;
   svar : Set;
-  evar_eqdec : EqDecision evar;
-  evar_countable : Countable evar;
-  evar_infinite : Infinite evar;
-  svar_eqdec : EqDecision svar;
-  svar_countable : Countable svar;
-  svar_infinite : Infinite svar;
+  evar_eqdec :> EqDecision evar;
+  evar_countable :> Countable evar;
+  evar_infinite :> Infinite evar;
+  svar_eqdec :> EqDecision svar;
+  svar_countable :> Countable svar;
+  svar_infinite :> Infinite svar;
 }.
 
 Class Signature := {
-  variables : MLVariables;
+  variables :> MLVariables;
   symbols : Set;
-  sym_eq : EqDecision symbols;
-(*  sym_eq : forall (s1 s2 : symbols), {s1 = s2} + {s1 <> s2};*)
+  sym_eq :> EqDecision symbols;
 }.
 
 (* TODO have different type for element variable and for set variable index *)
 Definition db_index := nat.
 
+Inductive Pattern {Σ : Signature} : Set :=
+| patt_free_evar (x : evar)
+| patt_free_svar (x : svar)
+| patt_bound_evar (n : db_index)
+| patt_bound_svar (n : db_index)
+| patt_sym (sigma : symbols) :  Pattern
+| patt_app (phi1 phi2 : Pattern)
+| patt_bott
+| patt_imp (phi1 phi2 : Pattern)
+| patt_exists (phi : Pattern)
+| patt_mu (phi : Pattern)
+.
+
+Instance Pattern_eqdec {Σ : Signature} : EqDecision Pattern.
+Proof.
+  unfold EqDecision. intros. unfold Decision. decide equality.
+  - apply evar_eqdec.
+  - apply svar_eqdec.
+  - apply nat_eq_dec.
+  - apply nat_eq_dec.
+  - apply sym_eq.
+Qed.     
+
+Global Instance Pattern_countable {Σ : Signature} (sc : Countable symbols) : Countable Pattern.
+Proof.
+  set (enc :=
+         fix go p : gen_tree (unit
+                              + ((@symbols Σ)
+                                 + (((@evar variables) + db_index)
+                                    + ((@svar variables) + db_index))))%type :=
+           match p with
+           | patt_bott => GenLeaf (inl ())
+           | patt_sym s => GenLeaf (inr (inl s))
+           | patt_free_evar x => GenLeaf (inr (inr (inl (inl x))))
+           | patt_free_svar X => GenLeaf (inr (inr (inr (inl X))))
+           | patt_bound_evar n => GenLeaf (inr (inr (inl (inr n))))
+           | patt_bound_svar n => GenLeaf (inr (inr (inr (inr n))))
+           | patt_app p1 p2 => GenNode 0 [go p1; go p2]
+           | patt_imp p1 p2 => GenNode 1 [go p1; go p2]
+           | patt_exists p' => GenNode 2 [go p']
+           | patt_mu p' => GenNode 3 [go p']
+           end
+      ).
+
+  set (dec :=
+         fix go (p : gen_tree (unit
+                              + ((@symbols Σ)
+                                 + (((@evar variables) + db_index)
+                                    + ((@svar variables) + db_index))))%type) : Pattern :=
+           match p with
+           | GenLeaf (inl ()) => patt_bott
+           | GenLeaf (inr (inl s)) => patt_sym s
+           | GenLeaf (inr (inr (inl (inl x)))) => patt_free_evar x
+           | GenLeaf (inr (inr (inr (inl X)))) => patt_free_svar X
+           | GenLeaf (inr (inr (inl (inr n)))) => patt_bound_evar n
+           | GenLeaf (inr (inr (inr (inr n)))) => patt_bound_svar n
+           | GenNode 0 [p1; p2] => patt_app (go p1) (go p2)
+           | GenNode 1 [p1; p2] => patt_imp (go p1) (go p2)
+           | GenNode 2 [p'] => patt_exists (go p')
+           | GenNode 3 [p'] => patt_mu (go p')
+           | _ => patt_bott (* dummy *)
+           end
+      ).
+
+  refine (inj_countable' enc dec _).
+  intros x.
+  induction x; simpl; congruence.
+Defined.
 
 Section syntax.
-
-  Context {signature : Signature}.
-  Existing Instance variables.
-
-  Inductive Pattern : Set :=
-  | patt_free_evar (x : evar)
-  | patt_free_svar (x : svar)
-  | patt_bound_evar (n : db_index)
-  | patt_bound_svar (n : db_index)
-  | patt_sym (sigma : symbols) :  Pattern
-  | patt_app (phi1 phi2 : Pattern)
-  | patt_bott
-  | patt_imp (phi1 phi2 : Pattern)
-  | patt_exists (phi : Pattern)
-  | patt_mu (phi : Pattern)
-  .
-
-  Instance Pattern_eqdec : EqDecision Pattern.
-  Proof.
-    unfold EqDecision. intros x y. unfold Decision. decide equality.
-    - apply evar_eqdec.
-    - apply svar_eqdec.
-    - apply nat_eq_dec.
-    - apply nat_eq_dec.
-    - apply sym_eq.
-  Qed.     
+  Context {Σ : Signature}.
   
   (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
 
@@ -704,7 +746,6 @@ Section syntax.
     apply H.
   Qed.
 
-  (* TODO replace with a boolean version - that enables us to prove by computation. *)
   Fixpoint well_formed_positive (phi : Pattern) : bool :=
     match phi with
     | patt_free_evar _ => true
@@ -4547,10 +4588,7 @@ Section syntax.
   Qed.
 
   Theorem evar_quantify_not_free :
-    forall φ x n, not (@elem_of (@evar (@variables signature)) _
-     (@gmap.gset_elem_of (@evar (@variables _)) (@evar_eqdec (@variables _))
-        (@evar_countable (@variables _))) x
-     (free_evars (evar_quantify x n φ))).
+    forall φ x n, x ∉ (free_evars (evar_quantify x n φ)).
   Proof.
     induction φ; intros x' n'; simpl.
     2-5, 7: apply not_elem_of_empty.

@@ -10,8 +10,7 @@ Open Scope ml_scope.
 
 Section monotonic.
 
-  Context {sig : Signature}.
-  Existing Instance variables. 
+  Context {Σ : Signature}.
 
 
   (* Definitions and lemmas inside this section are useful for proving `is_monotonic`,
@@ -21,7 +20,7 @@ Section monotonic.
      Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
     Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar) : Prop :=
       forall (var : svar),
-        (Bp var -> negative_occurrence_named var phi) /\ (Bn var -> @positive_occurrence_named sig var phi).
+        (Bp var -> negative_occurrence_named var phi) /\ (Bn var -> @positive_occurrence_named Σ var phi).
 
     Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
         respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
@@ -161,7 +160,7 @@ Section monotonic.
         respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros phi dbi X Hpodb Hni.
-      pose proof (Hpno := @not_free_implies_positive_negative_occurrence sig phi X Hni).
+      pose proof (Hpno := @not_free_implies_positive_negative_occurrence Σ phi X Hni).
       unfold respects_blacklist. intros.
       split; intros.
       * firstorder using positive_negative_occurrence_db_named.
@@ -247,10 +246,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
    *)
   Section with_model.
 
-    Context {M : @Model sig}.
-    Let A := propset (@Domain sig M).
-    Let OS := PropsetOrderedSet (@Domain sig M).
-    Let L := PowersetLattice (@Domain sig M).
+    Context {M : Model}.
+    Let A := propset (Domain M).
+    Let OS := PropsetOrderedSet (Domain M).
+    Let L := PowersetLattice (Domain M).
 
     Lemma respects_blacklist_implies_monotonic :
       forall (n : nat) (phi : Pattern),
@@ -262,12 +261,12 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                  (X : svar),
             (Bp X ->
              @AntiMonotonicFunction A OS (fun (S : propset (Domain M)) =>
-                                            (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi)
+                                            (@pattern_interpretation Σ M evar_val (update_svar_val X S svar_val) phi)
                                          )
             ) /\
             (Bn X ->
              @MonotonicFunction A OS (fun S : propset (Domain M) =>
-                                        (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val) phi))
+                                        (@pattern_interpretation Σ M evar_val (update_svar_val X S svar_val) phi))
             )
     .
     Proof.
@@ -460,7 +459,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := @evar_open_wfp sig n phi Hsz' 0 fresh Hwfp).
+          pose proof (Hwfp' := @evar_open_wfp Σ n phi Hsz' 0 fresh Hwfp).
           specialize (IHn Hsz' Hwfp' Bp Bn).
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
@@ -537,9 +536,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm sig M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x svar_val n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm sig M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y svar_val n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar V) (Empty_set svar)).
@@ -610,9 +609,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm sig M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x svar_val n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm sig M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y svar_val n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar V)).
@@ -643,15 +642,15 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           }
     Qed.
 
-    Lemma is_monotonic : forall (phi : @Pattern sig)
+    Lemma is_monotonic : forall (phi : Pattern)
                                 (X : svar)
-                                (evar_val : @EVarVal sig M)
-                                (svar_val : @SVarVal sig M),
+                                (evar_val : EVarVal)
+                                (svar_val : SVarVal),
         well_formed_positive (mu, phi) ->
         svar_is_fresh_in X phi ->
         @MonotonicFunction A OS
                            (fun S : propset (Domain M) =>
-                              (@pattern_interpretation sig M evar_val (update_svar_val X S svar_val)
+                              (@pattern_interpretation Σ M evar_val (update_svar_val X S svar_val)
                                                        (svar_open 0 X phi))).
     Proof.
       simpl. intros phi X evar_val svar_val Hwfp Hfr.

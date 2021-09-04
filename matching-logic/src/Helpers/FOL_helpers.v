@@ -16,6 +16,7 @@ Import
 .
 
 Open Scope ml_scope.
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
@@ -1312,41 +1313,6 @@ Defined. *)
     eapply Modus_ponens. 4: apply H2. all: auto.
   Defined.
 
-  Record MyGoal : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
-
-  Definition MyGoal_from_goal (Γ : Theory) (goal : Pattern) : MyGoal := mkMyGoal Γ nil goal.
-
-  Notation "[ G ⊢ l ==> g ]" := (mkMyGoal G l g).
-
-
-  Coercion of_MyGoal (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
-
-
-  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
-  Proof. reflexivity. Defined.
-
-  Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
-    mkMyGoal Γ (l ++ [x]) g ->
-    mkMyGoal Γ l (x ---> g).
-  Proof.
-    intros H.
-    unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
-  Defined.
-
-  Lemma MyGoal_exact Γ l g n:
-    wf l ->
-    well_formed g ->
-    l !! n = Some g ->
-    mkMyGoal Γ l g.
-  Proof.
-    intros wfl wfg ln.
-    pose proof (Hn := lookup_lt_Some l n g ln).
-    pose proof (Heq := take_drop_middle l n g ln).
-    rewrite -Heq.
-    unfold of_MyGoal. simpl.
-    apply nested_const_middle; auto.
-  Defined.  
-
 End FOL_helpers.
 
 #[export] Hint Resolve A_impl_A : core.
@@ -1367,6 +1333,48 @@ End FOL_helpers.
 #[export] Hint Resolve wf_tail' : core.
 #[export] Hint Resolve wf_cons : core.
 #[export] Hint Resolve wf_app : core.
+
+
+Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
+
+Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
+
+Notation "[ S , G ⊢ l ==> g ]" := (mkMyGoal S G l g).
+
+
+Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
+  Proof. reflexivity. Defined.
+
+  Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
+    @mkMyGoal Σ Γ (l ++ [x]) g ->
+    @mkMyGoal Σ Γ l (x ---> g).
+  Proof.
+    intros H.
+    unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
+  Defined.
+
+  Lemma MyGoal_exact Γ l g n:
+    wf l ->
+    well_formed g ->
+    l !! n = Some g ->
+    @mkMyGoal Σ Γ l g.
+  Proof.
+    intros wfl wfg ln.
+    pose proof (Hn := lookup_lt_Some l n g ln).
+    pose proof (Heq := take_drop_middle l n g ln).
+    rewrite -Heq.
+    unfold of_MyGoal. simpl.
+    apply nested_const_middle; auto.
+  Defined.  
+
+End FOL_helpers.
 
 #[global]
 Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
@@ -1403,8 +1411,8 @@ Section FOL_helpers.
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (g ---> g') ->
-    mkMyGoal Γ l g ->
-    mkMyGoal Γ l g'.
+    mkMyGoal Σ Γ l g ->
+    mkMyGoal Σ Γ l g'.
   Proof.
     intros wfg wfg' gimpg' H.
     unfold of_MyGoal in *. simpl in *.
@@ -1505,8 +1513,8 @@ Section FOL_helpers.
     wf l ->
     well_formed g ->
     well_formed g' ->
-    mkMyGoal Γ ((g ---> g') :: l) g ->
-    mkMyGoal Γ ((g ---> g') :: l) g'.
+    mkMyGoal Σ Γ ((g ---> g') :: l) g ->
+    mkMyGoal Σ Γ ((g ---> g') :: l) g'.
   Proof.
     apply prf_weaken_conclusion_iter_under_implication_meta.
   Defined.
@@ -1546,8 +1554,8 @@ Section FOL_helpers.
     wf l₂ ->
     well_formed g ->
     well_formed g' ->
-    mkMyGoal Γ (l₁ ++ (g ---> g') :: l₂) g ->
-    mkMyGoal Γ (l₁ ++ (g ---> g') :: l₂) g'.
+    mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
+    mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g'.
   Proof.
     apply prf_weaken_conclusion_iter_under_implication_iter_meta.
   Defined.
@@ -1557,20 +1565,27 @@ Section FOL_helpers.
     well_formed g ->
     well_formed g' ->
     l !! n = Some (g ---> g') ->
-    mkMyGoal Γ l g ->
-    mkMyGoal Γ l g'.
+    mkMyGoal Σ Γ l g ->
+    mkMyGoal Σ Γ l g'.
   Proof.
     intros wfl wfg wfg' ln H.
     pose proof (Hmid := take_drop_middle l n (g ---> g') ln).
     rewrite -Hmid in H. rewrite -Hmid. apply MyGoal_weakenConclusion; auto.
   Defined.
 
-  Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
-      eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
-    end.
-  Ltac mgApply n := mgApply' n 5.
+End FOL_helpers.
+  
+Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
+  end.
+Ltac mgApply n := mgApply' n 5.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   
   Lemma Constructive_dilemma Γ p q r s:
     well_formed p ->
@@ -1664,22 +1679,30 @@ Section FOL_helpers.
     wf l ->
     well_formed g ->
     well_formed h ->
-    mkMyGoal Γ l h ->
-    mkMyGoal Γ (l ++ [h]) g ->
-    mkMyGoal Γ l g.
+    mkMyGoal Σ Γ l h ->
+    mkMyGoal Σ Γ (l ++ [h]) g ->
+    mkMyGoal Σ Γ l g.
   Proof.
     intros wfl wfg wfh H1 H2.
     eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
   Defined.
-  
-  Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
-      (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
-      assert (n : mkMyGoal Ctx l t);
-      [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
-    end.
 
+End FOL_helpers.
+
+(* TODO do not use the parameter [n]; generate a fresh one instead. *)
+Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
+    assert (n : mkMyGoal Sgm Ctx l t);
+    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
     Γ ⊢ ((¬A ---> A) ---> A).
@@ -1815,20 +1838,27 @@ Section FOL_helpers.
     wf l ->
     well_formed g ->
     well_formed h ->
-    mkMyGoal Γ (h::l) g ->
-    mkMyGoal Γ l g.
+    mkMyGoal Σ Γ (h::l) g ->
+    mkMyGoal Σ Γ l g.
   Proof.
     intros H WFl WFg WFh H0.
     apply prf_add_proved_to_assumptions_meta with (a := h).
     all: auto.
   Defined.
 
-  Tactic Notation "mgAdd" constr(n) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
-      apply (MyGoal_add Ctx l g _ n)
-    end.
+End FOL_helpers.
 
+
+Tactic Notation "mgAdd" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    apply (MyGoal_add Ctx l g _ n)
+  end.
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
+  
   Lemma test_mgAdd Γ l g h:
     wf l ->
     well_formed g ->
@@ -2136,31 +2166,37 @@ Defined.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    mkMyGoal Γ (l₁ ++ [p] ++ l₂) r ->
-    mkMyGoal Γ (l₁ ++ [q] ++ l₂) r ->
-    mkMyGoal Γ (l₁ ++ [p or q] ++ l₂) r.
+    mkMyGoal Σ Γ (l₁ ++ [p] ++ l₂) r ->
+    mkMyGoal Σ Γ (l₁ ++ [q] ++ l₂) r ->
+    mkMyGoal Σ Γ (l₁ ++ [p or q] ++ l₂) r.
   Proof.
     intros WFl1 WFl2 WFp WFq WFr H H0.
     apply prf_disj_elim_iter_2_meta_meta; auto.
   Defined.
 
-  Tactic Notation "mgDestruct" constr(n) :=
-    match goal with
-    | |- of_MyGoal (mkMyGoal ?Ctx ?l ?g) =>
-      let Htd := fresh "Htd" in
-      epose proof (Htd :=take_drop);
-      specialize (Htd n l);
-      rewrite [take _ _]/= in Htd;
-      rewrite [drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      epose proof (Htd :=take_drop);
-      specialize (Htd 1 (drop n l));
-      rewrite [take _ _]/= in Htd;
-      rewrite ![drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      apply MyGoal_disj_elim; simpl
-    end.
+End FOL_helpers.
 
+Tactic Notation "mgDestruct" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let Htd := fresh "Htd" in
+    epose proof (Htd :=take_drop);
+    specialize (Htd n l);
+    rewrite [take _ _]/= in Htd;
+    rewrite [drop _ _]/= in Htd;
+    rewrite -Htd; clear Htd;
+    epose proof (Htd :=take_drop);
+    specialize (Htd 1 (drop n l));
+    rewrite [take _ _]/= in Htd;
+    rewrite ![drop _ _]/= in Htd;
+    rewrite -Htd; clear Htd;
+    apply MyGoal_disj_elim; simpl
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+  
   Example exd Γ a b p q c:
     well_formed a ->
     well_formed b ->
@@ -2674,8 +2710,8 @@ Defined.
     wf l ->
     well_formed r ->
     well_formed r' ->
-    mkMyGoal Γ l r' ->
-    mkMyGoal Γ l r.
+    mkMyGoal Σ Γ l r' ->
+    mkMyGoal Σ Γ l r.
   Proof.
     intros Himp l wfl wfr wfr' H.
     eapply prf_weaken_conclusion_iter_meta_meta.
@@ -2683,11 +2719,19 @@ Defined.
     all: auto.
   Defined.
 
-  Tactic Notation "mgApplyMeta" uconstr(t) :=
-    unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
+End FOL_helpers.
 
-  Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
-  Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
+
+Tactic Notation "mgApplyMeta" uconstr(t) :=
+  unshelve (eapply (MyGoal_applyMeta _ _ _ t)).
+
+Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
+Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
+
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
   
   Lemma and_of_equiv_is_equiv Γ p q p' q':
     well_formed p ->
@@ -2766,7 +2810,14 @@ Defined.
         Unshelve. all: auto.
   Defined.
 
-  Ltac mgSplit := apply conj_intro_meta; auto.
+End FOL_helpers.
+
+Ltac mgSplit := apply conj_intro_meta; auto.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->

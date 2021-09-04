@@ -19,7 +19,6 @@ Import MatchingLogic.Syntax.Notations.
 Section semantics.
   
   Context {signature : Signature}.
-  Existing Instance variables.
 
   Definition Power (Sigma : Type) := propset Sigma.
 
@@ -28,9 +27,9 @@ Section semantics.
   Record Model := {
     Domain : Type;
     (* TODO: think about whether or not to make it an existential formula. Because that would affect the equality,
-       due to proof irrelevance. *)
+       due to proof irrelevance. We can also replace it by stdpp's Inhabited typeclass *)
     nonempty_witness : Domain;
-    Domain_eq_dec : EqDecision Domain;
+    Domain_eq_dec :> EqDecision Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;
   }.
@@ -309,7 +308,6 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     Let OS := PropsetOrderedSet (@Domain m).
     Let  L := PowersetLattice (@Domain m).
 
-Print singleton.
     Program Fixpoint pattern_interpretation
             (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
             (p : Pattern) {measure (size p)} :=
@@ -902,7 +900,7 @@ Print singleton.
       simpl.
       
       apply f_equal. apply functional_extensionality. intros e.
-      destruct (evar_eqdec (fresh_evar ϕ) x).
+      destruct (decide ((fresh_evar ϕ) = x)).
       + rewrite -> e0. rewrite -> update_evar_val_shadow. reflexivity.
       + rewrite -> update_evar_val_comm. 2: apply n.
         rewrite -> IHsz.

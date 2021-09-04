@@ -13,7 +13,6 @@ Import MatchingLogic.Syntax.Notations.
 Module Syntax.
   Section with_signature.
     Context {Σ : Signature}.
-    Existing Instance variables.
 
     
     Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
@@ -226,7 +225,6 @@ Module Semantics.
   
   Section with_signature.
     Context {Σ : Signature}.
-    Existing Instance variables.
 
     Section with_model.
       Context {M : Model}.
