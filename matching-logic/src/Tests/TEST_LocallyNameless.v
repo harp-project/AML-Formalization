@@ -17,9 +17,7 @@ Module test_1.
 
 
   Instance Symbols_eqdec : EqDecision Symbols.
-  Proof.
-    intros s1 s2. unfold Decision. decide equality.
-  Defined.
+  Proof. solve_decision. Defined.
 
   Instance signature : Signature :=
     {| variables := StringMLVariables ;
@@ -84,16 +82,8 @@ Module test_2.
     | sym_c (* some constant that we make functional *)
     .
 
-    (* If symbols are created as a sum type of various sets, we may want to have a tactic that does
-       'decide equality' recursively.
-     *)
     Instance Symbols_eqdec : EqDecision Symbols.
-    Proof.
-      intros x y. unfold Decision.
-      decide equality.
-      * decide equality.
-      * decide equality.
-    Qed.
+    Proof. solve_decision. Defined.
 
     Instance signature : Signature :=
       {| variables := StringMLVariables ;
@@ -127,18 +117,16 @@ Module test_2.
     | m_some_element (* just some element so that things do not get boring *)
     .
 
+    Instance CustomElements_eqdec : EqDecision CustomElements.
+    Proof. solve_decision. Defined.
+    
     Inductive domain : Type :=
     | dom_nat (n:nat)
     | dom_custom (c:CustomElements)
     .    
     
-    Instance domain_dec : EqDecision domain.
-    Proof.
-      unfold EqDecision. intros. unfold Decision.
-      decide equality.
-      * decide equality.
-      * decide equality.
-    Qed.
+    Instance domain_eqdec : EqDecision domain.
+    Proof. solve_decision. Defined.
 
     Definition my_sym_interp(s: Symbols) : Power domain :=
       match s with
@@ -158,7 +146,6 @@ Module test_2.
     Definition M1 : Model :=
       {| Domain := domain;
          nonempty_witness := dom_nat 0;
-         Domain_eq_dec := domain_dec;
          (* for some reason, just using 'my_sym_interp' here results in a type error *)
          sym_interp := fun s : symbols => my_sym_interp s;
          (* But this works. interesting. *)

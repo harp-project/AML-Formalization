@@ -2376,7 +2376,7 @@ Section FOL_helpers.
     destruct C.
     induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
       unfold emplace; simpl.
-    - destruct (evar_eqdec pcEvar x); simpl. exact Hiff. apply pf_iff_equiv_refl. auto.
+    - destruct (decide (pcEvar = x)); simpl. exact Hiff. apply pf_iff_equiv_refl. auto.
       (*
       + apply A_impl_A. unfold patt_iff. auto.
       + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)

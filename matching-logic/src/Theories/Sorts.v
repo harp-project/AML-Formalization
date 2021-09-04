@@ -18,9 +18,13 @@ Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
 
-Section sorts.
 
-  Inductive Symbols := inhabitant.
+Inductive Symbols := inhabitant.
+
+Instance Symbols_eqdec : EqDecision Symbols.
+Proof. solve_decision. Defined.
+
+Section sorts.
 
   Context {Σ : Signature}.
 

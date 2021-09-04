@@ -80,11 +80,11 @@ Section semantics.
 
   Definition update_evar_val {m : Model} 
              (v : evar) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
-    fun v' : evar => if evar_eqdec v v' then x else evar_val v'.
+    fun v' : evar => if decide (v = v') then x else evar_val v'.
 
   Definition update_svar_val {m : Model}
              (v : svar) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
-    fun v' : svar => if svar_eqdec v v' then X else svar_val v'.
+    fun v' : svar => if decide (v = v') then X else svar_val v'.
 
   Lemma update_svar_val_comm M :
     forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal M),
@@ -96,7 +96,7 @@ Section semantics.
     unfold update_svar_val.
     apply functional_extensionality.
     intros.
-    destruct (svar_eqdec X1 x),(svar_eqdec X2 x); subst.
+    destruct (decide (X1 = x)),(decide (X2 = x)); subst.
     * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
     * reflexivity.
     * reflexivity.
@@ -109,14 +109,14 @@ Section semantics.
       update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
   Proof.
     intros. unfold update_svar_val. apply functional_extensionality.
-    intros. destruct (svar_eqdec X x); reflexivity.
+    intros. destruct (decide (X = x)); reflexivity.
   Qed.
 
   Lemma update_svar_val_neq M (ρₛ : @SVarVal M) X1 S X2 :
     X1 <> X2 -> update_svar_val X1 S ρₛ X2 = ρₛ X2.
   Proof.
     unfold update_svar_val. intros.
-    destruct (svar_eqdec X1 X2); simpl.
+    destruct (decide (X1 = X2)); simpl.
     - contradiction.
     - auto.
   Qed.
@@ -131,7 +131,7 @@ Section semantics.
     unfold update_evar_val.
     apply functional_extensionality.
     intros.
-    destruct (evar_eqdec x1 x),(evar_eqdec x2 x); subst.
+    destruct (decide (x1 = x)),(decide (x2 = x)); subst.
     * unfold not in H. assert (x = x). reflexivity. apply H in H0. destruct H0.
     * reflexivity.
     * reflexivity.
@@ -144,12 +144,12 @@ Section semantics.
       update_evar_val x m1 (update_evar_val x m2 evar_val) = update_evar_val x m1 evar_val.
   Proof.
     intros. unfold update_evar_val. apply functional_extensionality.
-    intros. destruct (evar_eqdec x x0); reflexivity.
+    intros. destruct (decide (x = x0)); reflexivity.
   Qed.
 
   Lemma update_evar_val_same M x m ρₑ : @update_evar_val M x m ρₑ x = m.
   Proof.
-    unfold update_evar_val. destruct (evar_eqdec x x); simpl.
+    unfold update_evar_val. destruct (decide (x = x)); simpl.
     + reflexivity.
     + contradiction.
   Qed.
@@ -158,7 +158,7 @@ Section semantics.
     x1 <> x2 -> update_evar_val x1 e ρₑ x2 = ρₑ x2.
   Proof.
     unfold update_evar_val. intros.
-    destruct (evar_eqdec x1 x2); simpl.
+    destruct (decide (x1 = x2)); simpl.
     - contradiction.
     - auto.
   Qed.
@@ -166,14 +166,14 @@ Section semantics.
   Lemma update_evar_val_same_2 M x ρₑ : @update_evar_val M x (ρₑ x) ρₑ = ρₑ.
   Proof.
     apply functional_extensionality. intros x0.
-    unfold update_evar_val. destruct (evar_eqdec x x0); simpl.
+    unfold update_evar_val. destruct (decide (x = x0)); simpl.
     - subst. reflexivity.
     - reflexivity.
   Qed.
 
   Lemma update_svar_val_same M x m ρₑ : @update_svar_val M x m ρₑ x = m.
   Proof.
-    unfold update_svar_val. destruct (svar_eqdec x x); simpl.
+    unfold update_svar_val. destruct (decide (x = x)); simpl.
     + reflexivity.
     + contradiction.
   Qed.
@@ -181,7 +181,7 @@ Section semantics.
   Lemma update_svar_val_same_2 M x ρₑ : @update_svar_val M x (ρₑ x) ρₑ = ρₑ.
   Proof.
     apply functional_extensionality. intros x0.
-    unfold update_svar_val. destruct (svar_eqdec x x0); simpl.
+    unfold update_svar_val. destruct (decide (x = x0)); simpl.
     - subst. reflexivity.
     - reflexivity.
   Qed.
@@ -859,7 +859,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       simpl in Hnotin.
     - repeat rewrite -> pattern_interpretation_free_evar_simpl.
       apply f_equal. unfold update_evar_val.
-      destruct (evar_eqdec x x0); simpl.
+      destruct (decide (x = x0)); simpl.
       + subst.
         apply not_elem_of_singleton_1 in Hnotin.
         contradiction.
@@ -956,7 +956,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
       reflexivity.
     - repeat rewrite pattern_interpretation_free_svar_simpl.
       unfold update_svar_val.
-      destruct (svar_eqdec X x); simpl.
+      destruct (decide (X = x)); simpl.
       + subst.
         apply not_elem_of_singleton_1 in Hnotin.
         contradiction.
@@ -1001,7 +1001,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     - repeat rewrite pattern_interpretation_mu_simpl. simpl.
       apply f_equal. apply functional_extensionality.
       intros e.
-      destruct (svar_eqdec (fresh_svar ϕ) X).
+      destruct (decide ((fresh_svar ϕ) = X)).
       + rewrite e0. rewrite update_svar_val_shadow. reflexivity.
       + rewrite update_svar_val_comm.
         { apply n.  }
@@ -1064,7 +1064,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           apply not_elem_of_singleton_1 in HfrX.
           apply not_elem_of_singleton_1 in HfrY.
           unfold update_svar_val.
-          destruct (svar_eqdec X x),(svar_eqdec Y x); simpl; try contradiction.
+          destruct (decide (X = x)),(decide (Y = x)); simpl; try contradiction.
           reflexivity.
         + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
         + simpl. case (n =? dbi).
@@ -1086,7 +1086,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           apply not_elem_of_singleton_1 in Hfrx.
           apply not_elem_of_singleton_1 in Hfry.
           apply f_equal. unfold update_evar_val.
-          destruct (evar_eqdec x x0),(evar_eqdec y x0); simpl; try contradiction.
+          destruct (decide (x = x0)),(decide (y = x0)); simpl; try contradiction.
           reflexivity.
         + rewrite 2!pattern_interpretation_free_svar_simpl.
           reflexivity.
@@ -1361,7 +1361,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         repeat rewrite -> pattern_interpretation_free_evar_simpl. auto.
       + (* free_svar *)
         repeat rewrite -> pattern_interpretation_free_svar_simpl.
-        unfold update_svar_val. destruct (svar_eqdec X x).
+        unfold update_svar_val. destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1372,7 +1372,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-          destruct (svar_eqdec X X). auto. contradiction.
+          destruct (decide (X = X)). auto. contradiction.
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
         * apply beq_nat_false in Heq. lia.
@@ -1396,7 +1396,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         repeat rewrite pattern_interpretation_free_evar_simpl. auto.
       + (* free_svar *)
         repeat rewrite -> pattern_interpretation_free_svar_simpl.
-        unfold update_svar_val. destruct (svar_eqdec X x).
+        unfold update_svar_val. destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1406,7 +1406,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-          destruct (svar_eqdec X X). simpl. auto. contradiction.
+          destruct (decide (X = X)). simpl. auto. contradiction.
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
         * apply beq_nat_false in Heq. lia.
@@ -1658,7 +1658,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
           rewrite -> svar_open_not_occur_is_noop with (X0 := X)(dbi0 := S dbi).
           2: { symmetry. apply HeqHoc. }
 
-          destruct (svar_eqdec X (fresh_svar phi1)).
+          destruct (decide (X = (fresh_svar phi1))).
           ++ subst X. rewrite update_svar_val_shadow.
              apply interpretation_fresh_svar_open.
              { apply Hfreshy'. }
@@ -1705,7 +1705,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         unfold evar_is_fresh_in in H.
         repeat rewrite -> pattern_interpretation_free_evar_simpl.
         unfold update_evar_val.
-        destruct (evar_eqdec x x0).
+        destruct (decide (x = x0)).
         * simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1716,7 +1716,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-          destruct (evar_eqdec x x). auto. contradiction.
+          destruct (decide (x = x)). auto. contradiction.
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * auto.
         * apply beq_nat_false in Heq. lia.
@@ -1742,7 +1742,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         unfold evar_is_fresh_in in H.
         repeat rewrite -> pattern_interpretation_free_evar_simpl.
         unfold update_evar_val.
-        destruct (evar_eqdec x x0).
+        destruct (decide (x = x0)).
         * simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1753,7 +1753,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
         destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
-          destruct (evar_eqdec x x). auto. contradiction.
+          destruct (decide (x = x)). auto. contradiction.
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * auto.
         * apply beq_nat_false in Heq. lia.
@@ -1901,7 +1901,7 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
            rewrite evar_open_not_occur in Heqphi'.
            { apply Hbevar. }
            subst phi'.
-           destruct (evar_eqdec x (fresh_evar phi)).
+           destruct (decide (x = (fresh_evar phi))).
            ++ rewrite <- e. rewrite update_evar_val_shadow. reflexivity.
            ++ rewrite update_evar_val_comm.
               { apply not_eq_sym. assumption. }
@@ -2384,11 +2384,11 @@ Next Obligation. unfold pattern_lt. simpl. rewrite <- svar_open_size. lia. apply
     induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf Hwfc ; simpl in *; try inversion Hsz;
       apply wfc_wfc_ind in Hwfc; auto.
     - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-      destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+      destruct (decide (X = x)); simpl.
       + reflexivity.
       + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
     - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
-      destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+      destruct (decide (X = x)); simpl.
       + reflexivity.
       + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
     - repeat rewrite -> pattern_interpretation_app_simpl.
