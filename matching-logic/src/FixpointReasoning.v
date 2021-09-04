@@ -1127,7 +1127,6 @@ Section with_signature.
             destruct Hbase_step_no_confusion as [H1 _].
             rewrite -> elem_of_subseteq in H1.
             specialize (H1 d).
-            Search (?x ∈ ∅).
             apply not_elem_of_empty in H1.
             { exact H1. }
             clear H1.
