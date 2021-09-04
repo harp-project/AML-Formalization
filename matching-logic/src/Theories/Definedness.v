@@ -128,7 +128,7 @@ Section definedness.
     rewrite -> pattern_interpretation_free_evar_simpl in H.
     rewrite -> Heqevar_val' in H.
     unfold update_evar_val in H. simpl in H.
-    destruct (evar_eqdec ev_x ev_x ).
+    destruct (decide (ev_x = ev_x)).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
     destruct H as [m1 [m2 Hm1m2]].
@@ -921,7 +921,7 @@ Section definedness.
     rewrite evar_quantify_equal_simpl in HSUB.
     rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
     2-4: shelve.
-    destruct (evar_eqdec (fresh_evar (φ $ φ')) (fresh_evar (φ $ φ'))) in HSUB;
+    destruct (decide ((fresh_evar (φ $ φ')) = (fresh_evar (φ $ φ')))) in HSUB;
     simpl in HSUB. 2: congruence.
     rewrite evar_quantify_free_evar_subst in HSUB; auto.
 
@@ -947,8 +947,7 @@ Section definedness.
     rewrite (union_idemp_L (free_evars φ)).
     rewrite (union_comm_L (free_evars φ') (free_evars φ)).
     replace (@union (@EVarSet sig)
-        (@gmap.gset_union (@evar (@variables sig)) (@evar_eqdec (@variables sig))
-           (@evar_countable (@variables sig))) (@free_evars sig φ)
+        (@gmap.gset_union _ _ _) (@free_evars sig φ)
         (@free_evars sig φ')) with (free_evars (φ $ φ')) by reflexivity.
     now apply x_eq_fresh_impl_x_notin_free_evars.
     apply set_evar_fresh_is_fresh'.

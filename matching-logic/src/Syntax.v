@@ -28,7 +28,7 @@ Class MLVariables := {
 Class Signature := {
   variables :> MLVariables;
   symbols : Set;
-  sym_eq :> EqDecision symbols; (* TODO rename to `sym_eqdec` for consistency *)
+  sym_eqdec :> EqDecision symbols;
 }.
 
 (* TODO have different type for element variable and for set variable index *)
@@ -184,7 +184,7 @@ Section syntax.
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
-    | patt_free_evar x' => if evar_eqdec x x' then psi else patt_free_evar x'
+    | patt_free_evar x' => if decide (x = x') then psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -201,7 +201,7 @@ Section syntax.
   Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if svar_eqdec X X' then psi else patt_free_svar X'
+    | patt_free_svar X' => if decide (X = X') then psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
@@ -224,8 +224,8 @@ Section syntax.
   (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
 
-  Definition EVarSet := (@gset evar evar_eqdec evar_countable).
-  Definition SVarSet := (@gset svar svar_eqdec svar_countable).
+  Definition EVarSet := gset evar.
+  Definition SVarSet := gset svar.
 
   Fixpoint free_evars (phi : Pattern)
     : EVarSet :=
@@ -261,7 +261,7 @@ Section syntax.
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
-    | patt_free_evar x' => if evar_eqdec x x' then patt_bound_evar level else patt_free_evar x'
+    | patt_free_evar x' => if decide (x = x') then patt_bound_evar level else patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -1036,7 +1036,7 @@ Section syntax.
     move: n.
     unfold evar_is_fresh_in.
     induction phi; intros n'; simpl; try apply not_elem_of_empty.
-    - destruct (evar_eqdec x x0); simpl.
+    - destruct (decide (x = x0)); simpl.
       + apply not_elem_of_empty.
       + apply not_elem_of_singleton_2. assumption.
     - apply not_elem_of_union.
@@ -1343,7 +1343,7 @@ Section syntax.
     (*apply wfc_wfc_ind in H.*)
     move: n n' H.
     induction phi; intros n' n'' H; simpl; auto.
-    - destruct (evar_eqdec x x0); simpl.
+    - destruct (decide (x = x0)); simpl.
       + rewrite Nat.eqb_refl. subst. reflexivity.
       + reflexivity.
     - simpl in *. apply Nat.ltb_lt in H.
@@ -1371,12 +1371,12 @@ Section syntax.
   Proof.
     revert m n n'.
     induction phi; intros m' n' n'' H H0 H1; simpl; auto.
-    - destruct (evar_eqdec x x0); simpl.
+    - destruct (decide (x = x0)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
     - simpl in *. apply Nat.ltb_lt in H1.
       destruct (n =? n') eqn:Heq.
-      + apply Nat.eqb_eq in Heq. subst. simpl. destruct (evar_eqdec x x); auto.
+      + apply Nat.eqb_eq in Heq. subst. simpl. destruct (decide (x = x)); auto.
         congruence.
       + reflexivity.
     - simpl in H.
@@ -2257,7 +2257,7 @@ Section syntax.
 
   Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
     match p with
-    | patt_free_evar x' => if evar_eqdec x' x then 1 else 0 
+    | patt_free_evar x' => if decide (x' = x) then 1 else 0 
     | patt_free_svar _ => 0
     | patt_bound_evar _ => 0
     | patt_bound_svar _ => 0
@@ -2276,7 +2276,7 @@ Section syntax.
     intros H.
     induction p; simpl in H; simpl; auto.
     - apply not_elem_of_singleton_1 in H.
-      destruct (evar_eqdec x0 x). subst. contradiction. reflexivity.
+      destruct (decide (x0 = x)). subst. contradiction. reflexivity.
     - apply not_elem_of_union in H. destruct H as [H1 H2].
       rewrite IHp1; [assumption|].
       rewrite IHp2; [assumption|].
@@ -2294,8 +2294,8 @@ Section syntax.
     intros H.
     induction p; simpl; auto.
     - simpl in H.
-      destruct (evar_eqdec x x0).
-      + subst x0. destruct (evar_eqdec x x). simpl in H. inversion H. contradiction.
+      destruct (decide (x = x0)).
+      + subst x0. destruct (decide (x = x)). simpl in H. inversion H. contradiction.
       + reflexivity.
     - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
     - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
@@ -2429,7 +2429,7 @@ Section syntax.
   Proof.
     intros H.
     induction AC; simpl.
-    - destruct (evar_eqdec boxvar boxvar). reflexivity. contradiction.
+    - destruct (decide (boxvar = boxvar)). reflexivity. contradiction.
     - simpl in H. apply not_elem_of_union in H. 
       rewrite IHAC.
       { exact (proj1 H). }
@@ -2489,7 +2489,7 @@ Section syntax.
   Definition is_application_or_free_evar_x (x : evar) (p : Pattern)  : bool :=
     is_application p ||
                    (match p with
-                    | patt_free_evar x' => if evar_eqdec x' x then true else false
+                    | patt_free_evar x' => if decide (x' = x) then true else false
                     | _ => false
                     end).
 
@@ -2522,7 +2522,7 @@ Section syntax.
   Proof.
     intros H.
     induction AC; simpl.
-    - destruct (evar_eqdec x x); [reflexivity|contradiction].
+    - destruct (decide (x = x)); [reflexivity|contradiction].
     - simpl in H. apply not_elem_of_union in H.
       rewrite IHAC;[exact (proj1 H)|].
       rewrite count_evar_occurrences_0; [exact (proj2 H)|].
@@ -4080,7 +4080,7 @@ Section syntax.
       (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
   Proof.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
-    - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    - simpl. destruct (ssrbool.is_left (decide (X = x))) eqn:P.
       + rewrite -> evar_open_fresh. reflexivity. assumption.
       + simpl. reflexivity.
     - simpl. destruct (n =? n0) eqn:P.
@@ -4119,11 +4119,11 @@ Section syntax.
       (free_svar_subst (svar_open n fresh phi) psi X).
   Proof.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
-    - simpl. destruct (ssrbool.is_left (svar_eqdec X x)) eqn:P.
+    - simpl. destruct (ssrbool.is_left (decide (X = x))) eqn:P.
       + rewrite -> svar_open_fresh. reflexivity. assumption.
       + simpl. reflexivity.
     - (* simpl in Hwfc. *) simpl. destruct (n =? n0) eqn:P.
-      + simpl. destruct (svar_eqdec X fresh) eqn:D.
+      + simpl. destruct (decide (X = fresh)) eqn:D.
         * rewrite -> e in Hneq. assert (fresh = fresh). reflexivity. contradiction.
         * reflexivity.
       + simpl. reflexivity.
@@ -4210,7 +4210,7 @@ Section syntax.
   Proof.
     - intros wfq nno.
       induction p; simpl; auto.
-      + destruct (evar_eqdec x x0); simpl; auto.
+      + destruct (decide (x = x0)); simpl; auto.
         apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
         apply wfc_impl_no_neg_occ. apply wfcq.
       + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
@@ -4219,7 +4219,7 @@ Section syntax.
         rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_positive_occurrence; auto.
     - intros wfq npo.
       induction p; simpl; auto.
-      + destruct (evar_eqdec x x0); simpl; auto.
+      + destruct (decide (x = x0)); simpl; auto.
         apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
         apply wfc_impl_no_pos_occ. apply wfcq.
       + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
@@ -4238,7 +4238,7 @@ Section syntax.
     intros wfq wfp.
     move: n1 n2 wfp.
     induction p; intros n1 n2 wfp; simpl; auto.
-    - destruct (evar_eqdec x x0); simpl; auto.
+    - destruct (decide (x = x0)); simpl; auto.
       unfold well_formed in wfq. apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
       rewrite wfpq. simpl in *.
       pose proof (H1 := @well_formed_closed_aux_ind q 0 0 0 n2 ltac:(lia) ltac:(lia) wfcq).
@@ -4374,10 +4374,10 @@ Section syntax.
       evar_open n x (free_evar_subst φ ψ y) = free_evar_subst (evar_open n x φ) ψ y.
   Proof.
     induction φ; intros x' n' ψ y H H0; cbn; auto.
-    * destruct (evar_eqdec y x); simpl.
+    * destruct (decide (y = x)); simpl.
       - rewrite evar_open_wfc; auto. now apply andb_true_iff in H0.
       - reflexivity.
-    * break_match_goal; simpl; auto. destruct (evar_eqdec y x'); auto.
+    * break_match_goal; simpl; auto. destruct (decide (y = x')); auto.
       congruence.
     * now rewrite -> IHφ1, -> IHφ2.
     * now rewrite -> IHφ1, -> IHφ2.
@@ -4390,7 +4390,7 @@ Section syntax.
   Proof.
     induction φ; intros ψ x'; simpl.
     2-5, 7: apply empty_subseteq.
-    * destruct (evar_eqdec x' x); simpl.
+    * destruct (decide (x' = x)); simpl.
       - apply union_subseteq_r.
       - apply union_subseteq_l.
     * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
@@ -4408,12 +4408,12 @@ Section syntax.
       bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
   Proof.
     induction φ; intros x' m n' n'' ψ H H0 H1; cbn; auto.
-    * destruct (evar_eqdec x' x); simpl.
+    * destruct (decide (x' = x)); simpl.
       - simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
       - reflexivity.
     * destruct (extralibrary.compare_nat n n').
       - assert (n =? n' = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
-      - subst. rewrite Nat.eqb_refl. simpl. destruct (evar_eqdec x' x'); auto. congruence.
+      - subst. rewrite Nat.eqb_refl. simpl. destruct (decide (x' = x')); auto. congruence.
       - assert (n =? n' = false). { apply Nat.eqb_neq. lia. } now rewrite H2.
     * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
       apply andb_true_iff in H0. destruct H0.
@@ -4534,7 +4534,7 @@ Section syntax.
     well_formed_closed_aux (evar_quantify x n φ) (S n) m.
   Proof.
     induction φ; intros x' n' m H; cbn; auto.
-    * destruct evar_eqdec; simpl; auto. apply Nat.ltb_lt. lia.
+    * destruct (decide (x' = x)); simpl; auto. apply Nat.ltb_lt. lia.
     * simpl in H. apply Nat.leb_le. apply Nat.ltb_lt in H. lia.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
@@ -4548,7 +4548,7 @@ Section syntax.
        → no_positive_occurrence_db_b db1 (evar_quantify x db2 φ)).
   Proof.
     induction φ; split; intros H; simpl; auto.
-    1-2: destruct evar_eqdec; simpl; auto.
+    1-2: destruct (decide (x0 = x)); simpl; auto.
     1-4: simpl in H; apply andb_true_iff in H as [E1 E2];
          specialize (IHφ1 db1 db2 x) as [IH1 IH2];
          specialize (IHφ2 db1 db2 x) as [IH1' IH2'];
@@ -4562,7 +4562,7 @@ Section syntax.
     well_formed_positive (evar_quantify x n φ).
   Proof.
     induction φ; intros x' n' H; cbn; auto.
-    * destruct evar_eqdec; simpl; auto.
+    * destruct (decide (x' = x)); simpl; auto.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. apply andb_true_iff. split.
@@ -4585,7 +4585,7 @@ Section syntax.
   Proof.
     induction φ; intros x' n'; simpl.
     2-5, 7: apply not_elem_of_empty.
-    * destruct evar_eqdec; simpl.
+    * destruct (decide (x' = x)); simpl.
       - apply not_elem_of_empty.
       - subst. now apply not_elem_of_singleton_2.
     * apply not_elem_of_union. split. apply IHφ1. apply IHφ2.
@@ -4625,9 +4625,9 @@ Section syntax.
   Proof.
     induction φ; intros x' n' H; simpl; auto.
     - simpl in H.
-      destruct (evar_eqdec x x').
-      + subst x'. destruct (evar_eqdec x x). simpl in H. inversion H. contradiction.
-      + simpl in H. destruct (evar_eqdec x' x); cbn; auto. congruence.
+      destruct (decide (x = x')).
+      + subst x'. destruct (decide (x = x)). simpl in H. inversion H. contradiction.
+      + simpl in H. destruct (decide (x' = x)); cbn; auto. congruence.
     - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
     - simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
     - simpl in H. rewrite IHφ. lia. reflexivity.
