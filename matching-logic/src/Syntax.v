@@ -4588,10 +4588,7 @@ Section syntax.
   Qed.
 
   Theorem evar_quantify_not_free :
-    forall φ x n, not (@elem_of (@evar (@variables signature)) _
-     (@gmap.gset_elem_of (@evar (@variables _)) (@evar_eqdec (@variables _))
-        (@evar_countable (@variables _))) x
-     (free_evars (evar_quantify x n φ))).
+    forall φ x n, x ∉ (free_evars (evar_quantify x n φ)).
   Proof.
     induction φ; intros x' n'; simpl.
     2-5, 7: apply not_elem_of_empty.
