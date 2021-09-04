@@ -26,14 +26,11 @@ Section semantics.
 
   Record Model := {
     Domain : Type;
-    (* TODO: think about whether or not to make it an existential formula. Because that would affect the equality,
-       due to proof irrelevance. We can also replace it by stdpp's Inhabited typeclass *)
-    nonempty_witness : Domain;
+    Domain_inhabited : Inhabited Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;
   }.
 
-  
   Definition Empty {M : Model} : Power (Domain M) := @empty (Power (Domain M)) _.
   Definition Full {M : Model} : Power (Domain M) := @top (Power (Domain M)) _.
 
@@ -43,7 +40,7 @@ Section semantics.
   Proof.
     intros M S H.
     intros HContra. rewrite -> HContra in H.
-    assert (Hw1: (nonempty_witness M) ∈ Full).
+    assert (Hw1: (@inhabitant _ (Domain_inhabited M)) ∈ (@Full M)).
     { unfold Full. apply elem_of_top. exact I. }
     rewrite H in Hw1.
     unfold Empty in Hw1.
@@ -66,7 +63,7 @@ Section semantics.
   Proof.
     intros M S H HContra.
     rewrite -> HContra in H.
-    assert (Hw1: (nonempty_witness M) ∈ Full).
+    assert (Hw1: (@inhabitant _ (Domain_inhabited M)) ∈ Full).
     { unfold Full. apply elem_of_top. exact I. }
     rewrite <- H in Hw1.
     unfold Empty in Hw1.

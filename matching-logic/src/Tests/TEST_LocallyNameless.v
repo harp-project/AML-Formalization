@@ -124,6 +124,8 @@ Module test_2.
     | dom_nat (n:nat)
     | dom_custom (c:CustomElements)
     .    
+
+    Instance domain_inhabited : Inhabited domain := populate (dom_nat 0).
     
     Instance domain_eqdec : EqDecision domain.
     Proof. solve_decision. Defined.
@@ -145,10 +147,7 @@ Module test_2.
     
     Definition M1 : Model :=
       {| Domain := domain;
-         nonempty_witness := dom_nat 0;
-         (* for some reason, just using 'my_sym_interp' here results in a type error *)
-         sym_interp := fun s : symbols => my_sym_interp s;
-         (* But this works. interesting. *)
+         sym_interp := my_sym_interp;
          app_interp := my_app_interp;
       |}.
 
