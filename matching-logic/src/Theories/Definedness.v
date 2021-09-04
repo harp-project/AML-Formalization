@@ -30,6 +30,9 @@ Open Scope ml_scope.
 (* We have only one symbol *)
 Inductive Symbols := definedness.
 
+Instance Symbols_eqdec : EqDecision Symbols.
+Proof. solve_decision. Defined.
+
 Section definedness.
   Context {sig : Signature}.
 

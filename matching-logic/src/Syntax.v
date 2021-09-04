@@ -28,7 +28,7 @@ Class MLVariables := {
 Class Signature := {
   variables :> MLVariables;
   symbols : Set;
-  sym_eq :> EqDecision symbols;
+  sym_eq :> EqDecision symbols; (* TODO rename to `sym_eqdec` for consistency *)
 }.
 
 (* TODO have different type for element variable and for set variable index *)
@@ -48,14 +48,7 @@ Inductive Pattern {Σ : Signature} : Set :=
 .
 
 Instance Pattern_eqdec {Σ : Signature} : EqDecision Pattern.
-Proof.
-  unfold EqDecision. intros. unfold Decision. decide equality.
-  - apply evar_eqdec.
-  - apply svar_eqdec.
-  - apply nat_eq_dec.
-  - apply nat_eq_dec.
-  - apply sym_eq.
-Qed.     
+Proof. solve_decision. Defined.
 
 Global Instance Pattern_countable {Σ : Signature} (sc : Countable symbols) : Countable Pattern.
 Proof.
