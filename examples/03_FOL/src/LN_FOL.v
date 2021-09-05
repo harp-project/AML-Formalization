@@ -2,11 +2,11 @@ From MatchingLogic Require Export Logic
                                   Theories.Definedness
                                   DerivedOperators
                                   Theories.Sorts
-                                  Helpers.FOL_helpers.
+                                  Helpers.FOL_helpers
+                                  Utils.extralibrary.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 From Coq Require Import ssreflect ssrfun ssrbool.
-Require Export extralibrary 
-               Coq.Program.Wf 
+Require Export Coq.Program.Wf 
                Lia 
                FunctionalExtensionality
                Logic.PropExtensionality
@@ -92,9 +92,9 @@ Class preds_signature :=
 Class FOL_variables :=
   {
     vars : Set;
-    var_eqdec : EqDecision vars;
-    var_countable : Countable vars;
-    var_infinite : Infinite vars;
+    var_eqdec :> EqDecision vars;
+    var_countable :> Countable vars;
+    var_infinite :> Infinite vars;
   }.
 
 Coercion preds : preds_signature >-> Sortclass.
@@ -115,7 +115,7 @@ Section fix_signature.
 
   Fixpoint fsubst_term (t0 t : term) (n : vars) : term :=
   match t0 with
-  | fvar t' => if var_eqdec t' n then t else t0
+  | fvar t' => if decide (t' = n) then t else t0
   | bvar _ => t0
   | func f v => func f (map (fun x => fsubst_term x t n) v)
   end.
@@ -306,7 +306,7 @@ Section semantics.
     end.
 
     Definition update_env (ρ : env) (x : vars) (d : domain) : env :=
-      fun v => if var_eqdec v x then d else ρ v.
+      fun v => if decide (v = x) then d else ρ v.
 
     Import List.
     Import ListNotations.
@@ -423,7 +423,7 @@ Section proof_system.
   Fixpoint quantify_term (t : term) (v : vars) (n : nat) : term :=
   match t with
    | bvar x => bvar x
-   | fvar x => if var_eqdec v x then bvar n else fvar x
+   | fvar x => if decide (v = x) then bvar n else fvar x
    | func f x => func f (Vector.map (fun t => quantify_term t v n) x)
   end.
 
@@ -510,12 +510,13 @@ Section FOL_ML_correspondence.
   | sym_pred  (name : preds)
   | sym_import_definedness (d : Definedness.Symbols).
 
-  Lemma Symbols_dec : forall (s1 s2 : Symbols), {s1 = s2} + {s1 <> s2}.
+  Instance Symbols_dec : EqDecision Symbols.
   Proof.
+    unfold EqDecision. intros x y. unfold Decision.
     repeat decide equality.
     apply Σ_funcs.
     apply Σ_preds.
-  Qed.
+  Defined.
 
   Instance FOLVars : MLVariables := 
   {|
@@ -532,7 +533,6 @@ Section FOL_ML_correspondence.
   {|
     variables := FOLVars;
     symbols := Symbols;
-    sym_eq := Symbols_dec
   |}.
 
   Instance definedness_syntax : Definedness.Syntax :=
@@ -727,7 +727,7 @@ Section FOL_ML_correspondence.
                   evar_quantify x n (convert_term t).
   Proof.
     induction t; intros n x'; auto; cbn.
-    * now destruct (var_eqdec x' x).
+    * now destruct (decide (x' = x)).
     * remember (@patt_sym sig (sym_fun F)) as start.
       rewrite fold_left_map.
       assert (start = evar_quantify x' n start) by now rewrite Heqstart.
@@ -820,13 +820,19 @@ Section FOL_ML_correspondence.
       induction v; intros; simpl; auto.
       rewrite IHv. 
       - intros. apply IH. constructor 2; auto. (*  auto. *)
-      - simpl. erewrite (* <- H0,  *)IH, double_bevar_subst; auto.
-        apply closed_term_FOL_ML. auto. constructor.
+      - simpl. erewrite (* <- H0,  *)IH, double_bevar_subst.
+        3: { constructor. }
+        1: { rewrite -> H at 1. reflexivity. }
+        
+        (* apply closed_term_FOL_ML. Print wf_term.    auto. constructor.
       - do 2 rewrite bevar_subst_fold.
         simpl. erewrite IH, double_bevar_subst; auto.
         apply closed_term_FOL_ML. auto. constructor.
     Unshelve. all: exact 0.
   Qed.
+         *)
+  Admitted.
+  
 
   Theorem bevar_subst_corr_form :
     forall φ t n, wf_term t n ->
@@ -848,7 +854,7 @@ Section FOL_ML_correspondence.
       - auto.
       - do 2 rewrite bevar_subst_fold.
         simpl. erewrite bevar_subst_corr_term, double_bevar_subst. auto.
-        apply closed_term_FOL_ML; auto. auto.
+        apply closed_term_FOL_ML; auto.
     * simpl. now rewrite -> IHφ1, -> IHφ2.
     * simpl. rewrite IHφ. auto. eapply wf_increase_term. apply H. lia. auto.
     Unshelve. all: exact 0.
@@ -1174,10 +1180,10 @@ Section tests.
   | Plus : PA_funcs
   | Mult : PA_funcs.
 
-  Theorem pa_funs_eqdec : EqDecision PA_funcs.
+  Instance pa_funs_eqdec : EqDecision PA_funcs.
   Proof.
     unfold EqDecision, Decision; intros. decide equality.
-  Qed.
+  Defined.
 
   Definition PA_funcs_ar (f : PA_funcs ) :=
   match f with
@@ -1223,7 +1229,7 @@ Section tests.
   {|
     variables := FOLVars;
     symbols := Symbols;
-    sym_eq := Symbols_dec
+    sym_eqdec := Symbols_dec
   |}.
 
   Instance definedness_syntax2 : Definedness.Syntax :=
