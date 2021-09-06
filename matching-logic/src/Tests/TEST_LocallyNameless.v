@@ -1,9 +1,14 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset.
 
-From MatchingLogic Require Import Syntax Semantics SignatureHelper.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness Sorts.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -43,7 +48,7 @@ Module test_1.
   Definition more : Pattern := A or ¬ A.
 
   Example e1 X: evar_open 0 X more = more.
-  Proof. unfold more. autorewrite with ml_db. reflexivity. Qed.
+  Proof. unfold more. rewrite !simpl_evar_open. reflexivity. Qed.
 
   Definition complex : Pattern :=
     a ---> (b ---> ¬C) $ ex , D $ Bot and Top.
@@ -102,14 +107,14 @@ Module test_2.
       |}.
     
     Example test_pattern_0 : Pattern := patt_sym sym_c.
-    Example test_pattern_1 := @patt_defined signature definedness_syntax (patt_sym sym_c).
-    Example test_pattern_2 := patt_defined (patt_sym sym_c).
+    Example test_pattern_1 : Pattern := @patt_defined signature definedness_syntax (patt_sym sym_c).
+    Example test_pattern_2 : Pattern := patt_defined (patt_sym sym_c).
     Example test_pattern_3 s : Pattern := patt_equal (patt_sym s) (patt_sym s).
-    Example test_pattern_4 := patt_defined (patt_sym sym_c).
-    Example test_pattern_5 := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
+    Example test_pattern_4 : Pattern := patt_defined (patt_sym sym_c).
+    Example test_pattern_5 : Pattern := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
 
     Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
-    Proof. unfold test_pattern_3. autorewrite with ml_db. reflexivity. Qed.
+    Proof. unfold test_pattern_3. rewrite !simpl_evar_open. reflexivity. Qed.
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
@@ -179,6 +184,3 @@ Module test_2.
     
   End test_2.
 End test_2.
-
-
-  

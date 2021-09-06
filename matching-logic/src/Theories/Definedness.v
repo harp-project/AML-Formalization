@@ -47,8 +47,6 @@ Section definedness.
 
   Context {syntax : Syntax}.
 
-  (*Let Pattern : Set := @MatchingLogic.Syntax.Pattern Σ.*)
-
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.
   
@@ -1006,19 +1004,6 @@ Section definedness.
   End ProofSystemTheorems.
 
 End definedness.
-
-Hint Rewrite ->
-@evar_open_defined
-  @svar_open_defined
-  @evar_open_total
-  @svar_open_total
-  @evar_open_equal
-  @svar_open_equal
-  @evar_open_subseteq
-  @svar_open_subseteq
-  @evar_open_in
-  @svar_open_in
-  : ml_db.
 
   Hint Resolve T_predicate_defined : core.
   Hint Resolve T_predicate_total : core.

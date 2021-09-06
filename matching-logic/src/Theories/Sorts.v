@@ -178,8 +178,7 @@ Section sorts.
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite pattern_interpretation_forall_predicate.
       2: {
-        (*rewrite !simpl_evar_open.*)
-        autorewrite with ml_db.
+        rewrite !simpl_evar_open.
         simpl.
         apply M_predicate_impl.
         - apply T_predicate_in.
@@ -233,7 +232,7 @@ Section sorts.
         rewrite {3}HeqBigϕ in H.
         eapply pattern_interpretation_impl_MP.
         apply H.
-        autorewrite with ml_db. simpl. fold evar_open.
+        simpl. fold evar_open.
   
         unfold Minterp_inhabitant in H'.
         pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
@@ -291,7 +290,7 @@ Section sorts.
       { unfold patt_and. unfold patt_or.  apply sub_imp_l. apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity. }
       rewrite -> pattern_interpretation_exists_predicate_full.
       2: {
-        autorewrite with ml_db.
+        rewrite !simpl_evar_open.
         simpl.
         apply M_predicate_and.
         - apply T_predicate_in.
@@ -394,7 +393,8 @@ Section sorts.
       intros x Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
-      autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
+      rewrite !simpl_evar_open.
+      rewrite {1}[evar_open _ _]/=.
       apply M_predicate_and.
       - apply T_predicate_in.
         apply M_satisfies_theory.
@@ -417,7 +417,7 @@ Section sorts.
       intros x Hpred.
       unfold patt_forall_of_sort.
       apply M_predicate_forall.
-      autorewrite with ml_db. rewrite [if PeanoNat.Nat.eqb 0 0 then _ else _]/=.
+      rewrite !simpl_evar_open.
       apply M_predicate_impl.
       - apply T_predicate_in.
         apply M_satisfies_theory.

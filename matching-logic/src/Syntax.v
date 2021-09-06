@@ -346,7 +346,7 @@ Section syntax.
     - rewrite -> IHϕ by auto. auto.
   Qed.
   
-  (* The following lemmas are trivial but useful for autorewrite. *)
+  (* The following lemmas are trivial but useful for [!rewrite simpl_evar_open]. *)
   Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
   Proof. reflexivity. Qed.
   Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
@@ -452,7 +452,6 @@ Section syntax.
       forall k n ϕ₁ ϕ₂, svar_open k n (binary ϕ₁ ϕ₂) = binary (svar_open k n ϕ₁) (svar_open k n ϕ₂) ;
     }.
 
-  (* TODO the same for svar_open *)
   Definition simpl_evar_open :=
     (@ebinder_evar_open,
      @sbinder_evar_open,
@@ -4635,30 +4634,6 @@ Section syntax.
   Qed.
 
 End syntax.
-
-Hint Rewrite ->
-@evar_open_free_evar
-  @evar_open_free_svar
-  @evar_open_bound_evar
-  @evar_open_bound_svar
-  @evar_open_sym
-  @evar_open_bott
-  @evar_open_app
-  @evar_open_imp
-  @evar_open_exists
-  @evar_open_mu
-
-  @svar_open_free_evar
-  @svar_open_free_svar
-  @svar_open_bound_evar
-  @svar_open_bound_svar
-  @svar_open_sym
-  @svar_open_bott
-  @svar_open_app
-  @svar_open_imp
-  @svar_open_exists
-  @svar_open_mu
-  : ml_db.
 
 Module Notations.
   Declare Scope ml_scope.

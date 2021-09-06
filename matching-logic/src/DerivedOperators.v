@@ -596,20 +596,3 @@ Export Syntax Semantics.
  #[export]
        Hint Resolve T_predicate_or : core.
  (*End Hints.*)
-
-
- Hint Rewrite ->
-     @evar_open_not
-     @evar_open_or
-     @evar_open_and
-     @evar_open_iff
-     @evar_open_forall
-     @evar_open_top
-
-     @svar_open_not
-     @svar_open_or
-     @svar_open_and
-     @svar_open_iff
-     @svar_open_forall
-     @evar_open_top
-  : ml_db.
