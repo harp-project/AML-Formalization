@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import Ensembles.
 
-From MatchingLogic.Utils Require Import Ensembles_Ext stdpp_ext.
+From Coq Require Import Logic.Classical_Prop.
+From MatchingLogic.Utils Require Import stdpp_ext.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
