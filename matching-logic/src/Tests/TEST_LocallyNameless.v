@@ -102,11 +102,11 @@ Module test_2.
       |}.
     
     Example test_pattern_0 : Pattern := patt_sym sym_c.
-    Example test_pattern_1 := @patt_defined signature definedness_syntax (patt_sym sym_c).
-    Example test_pattern_2 := patt_defined (patt_sym sym_c).
+    Example test_pattern_1 : Pattern := @patt_defined signature definedness_syntax (patt_sym sym_c).
+    Example test_pattern_2 : Pattern := patt_defined (patt_sym sym_c).
     Example test_pattern_3 s : Pattern := patt_equal (patt_sym s) (patt_sym s).
-    Example test_pattern_4 := patt_defined (patt_sym sym_c).
-    Example test_pattern_5 := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
+    Example test_pattern_4 : Pattern := patt_defined (patt_sym sym_c).
+    Example test_pattern_5 : Pattern := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
 
     Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
     Proof. unfold test_pattern_3. autorewrite with ml_db. reflexivity. Qed.

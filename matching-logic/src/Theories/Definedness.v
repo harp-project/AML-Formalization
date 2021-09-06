@@ -47,8 +47,6 @@ Section definedness.
 
   Context {syntax : Syntax}.
 
-  (*Let Pattern : Set := @MatchingLogic.Syntax.Pattern Σ.*)
-
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.
   
