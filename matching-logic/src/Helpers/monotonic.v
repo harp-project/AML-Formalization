@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Ensembles.
 From stdpp Require Import base fin_sets sets propset.
-From MatchingLogic.Utils Require Import PropsetLattice.
+From MatchingLogic.Utils Require Import Lattice.
 From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.

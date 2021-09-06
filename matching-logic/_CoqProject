@@ -3,7 +3,6 @@
 src/Utils/extralibrary.v
 src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
-src/Utils/PropsetLattice.v
 src/Utils/wflexprod.v
 
 src/Syntax.v
