@@ -806,11 +806,11 @@ Section FOL_ML_correspondence.
   Qed.
 
   Theorem bevar_subst_corr_term :
-    forall b t n, (* wf_term t n -> *)
+    forall b t n, wf_term t n ->
                   convert_term (bsubst_term b t n) = 
                   bevar_subst (convert_term b) (convert_term t) n.
   Proof.
-    induction b; intros t n (* H *); auto.
+    induction b; intros t n H; auto.
     * simpl. now break_match_goal.
     * simpl. remember (@patt_sym sig (sym_fun F)) as start.
       rewrite fold_left_map.
@@ -819,20 +819,15 @@ Section FOL_ML_correspondence.
       generalize dependent start.
       induction v; intros; simpl; auto.
       rewrite IHv. 
-      - intros. apply IH. constructor 2; auto. (*  auto. *)
-      - simpl. erewrite (* <- H0,  *)IH, double_bevar_subst.
-        3: { constructor. }
-        1: { rewrite -> H at 1. reflexivity. }
-        
-        (* apply closed_term_FOL_ML. Print wf_term.    auto. constructor.
+      - intros. apply IH. constructor 2; auto. auto.
+      - simpl. erewrite <- H0, IH, double_bevar_subst; auto.
+        2: constructor.
+        now apply closed_term_FOL_ML.
       - do 2 rewrite bevar_subst_fold.
         simpl. erewrite IH, double_bevar_subst; auto.
         apply closed_term_FOL_ML. auto. constructor.
     Unshelve. all: exact 0.
   Qed.
-         *)
-  Admitted.
-  
 
   Theorem bevar_subst_corr_form :
     forall φ t n, wf_term t n ->
@@ -854,7 +849,7 @@ Section FOL_ML_correspondence.
       - auto.
       - do 2 rewrite bevar_subst_fold.
         simpl. erewrite bevar_subst_corr_term, double_bevar_subst. auto.
-        apply closed_term_FOL_ML; auto.
+        apply closed_term_FOL_ML; auto. assumption.
     * simpl. now rewrite -> IHφ1, -> IHφ2.
     * simpl. rewrite IHφ. auto. eapply wf_increase_term. apply H. lia. auto.
     Unshelve. all: exact 0.
