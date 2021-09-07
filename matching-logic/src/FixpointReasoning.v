@@ -10,7 +10,7 @@ From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
 From stdpp Require Import base list sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.PropsetLattice Utils.stdpp_ext.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.Lattice Utils.stdpp_ext.
 
 Section with_signature.
   Context {Σ : Signature}.
@@ -35,8 +35,8 @@ Section with_signature.
       rewrite HeqX. apply set_svar_fresh_is_fresh.
     }
 
-    assert (Ffix : Lattice.isFixpoint F (PropsetLattice.LeastFixpointOf F)).
-    { apply PropsetLattice.LeastFixpoint_fixpoint. apply HFmono.
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. apply HFmono.
     }
 
     unfold isFixpoint in Ffix.

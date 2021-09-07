@@ -1,6 +1,6 @@
-Require Import Coq.Sets.Ensembles.
-Require Import Coq.Relations.Relation_Definitions.
-Require Import Coq.Program.Tactics.
+From stdpp Require Import base sets propset.
+From MatchingLogic.Utils Require Import stdpp_ext.
+
 
 Class OrderedSet A : Type :=
   { leq : relation A;
@@ -27,38 +27,38 @@ Next Obligation. unfold antisymmetric. intros.
 Defined.
 
                  
-Definition upperBound {A : Type} {OS : OrderedSet A} (X: Ensemble A) (ub: A) : Prop :=
-  forall (x: A), In A X x -> leq x ub.
+Definition upperBound {A : Type} {OS : OrderedSet A} (X: propset A) (ub: A) : Prop :=
+  forall (x: A), x ∈ X -> leq x ub.
 
-Definition leastUpperBound {A : Type} {OS : OrderedSet A} (X: Ensemble A) (lub: A) : Prop :=
+Definition leastUpperBound {A : Type} {OS : OrderedSet A} (X: propset A) (lub: A) : Prop :=
   upperBound X lub /\
   forall (ub : A), upperBound X ub -> leq lub ub.
 
-Definition lowerBound {A : Type} {OS : OrderedSet A} (X: Ensemble A) (lb: A) : Prop :=
-  forall (x : A), In A X x ->  leq lb x.
+Definition lowerBound {A : Type} {OS : OrderedSet A} (X: propset A) (lb: A) : Prop :=
+  forall (x : A), x ∈ X -> leq lb x.
 
-Definition greatestLowerBound {A : Type} {OS : OrderedSet A} (X : Ensemble A) (glb : A) : Prop :=
+Definition greatestLowerBound {A : Type} {OS : OrderedSet A} (X : propset A) (glb : A) : Prop :=
   lowerBound X glb /\
   forall (lb : A), lowerBound X lb -> leq lb glb.
 
-Definition upperBoundsOf {A : Type} {OS : OrderedSet A} (X : Ensemble A) : Ensemble A :=
-  fun x => upperBound X x.
+Definition upperBoundsOf {A : Type} {OS : OrderedSet A} (X : propset A) : propset A :=
+  PropSet (fun x => upperBound X x).
 
-Definition lowerBoundsOf {A : Type} {OS : OrderedSet A} (X : Ensemble A) : Ensemble A :=
-  fun x => lowerBound X x.
+Definition lowerBoundsOf {A : Type} {OS : OrderedSet A} (X : propset A) : propset A :=
+  PropSet (fun x => lowerBound X x).
 
-Definition isMeet {A : Type} {OS : OrderedSet A} (meet : Ensemble A -> A) : Prop :=
-  forall (X : Ensemble A), greatestLowerBound X (meet X).
+Definition isMeet {A : Type} {OS : OrderedSet A} (meet : propset A -> A) : Prop :=
+  forall (X : propset A), greatestLowerBound X (meet X).
 
-Definition isJoin {A : Type} {OS : OrderedSet A} (join : Ensemble A -> A) : Prop :=
-  forall (X : Ensemble A), leastUpperBound X (join X).
+Definition isJoin {A : Type} {OS : OrderedSet A} (join : propset A -> A) : Prop :=
+  forall (X : propset A), leastUpperBound X (join X).
 
-Definition joinFromMeet {A : Type} {OS : OrderedSet A} (meet : Ensemble A -> A)
-  : Ensemble A -> A :=
+Definition joinFromMeet {A : Type} {OS : OrderedSet A} (meet : propset A -> A)
+  : propset A -> A :=
   fun X => meet (upperBoundsOf X).
 
 Lemma joinFromMeet_lub: forall (A : Type) (OS : OrderedSet A)
-                                (meet : Ensemble A -> A),
+                                (meet : propset A -> A),
      isMeet meet -> isJoin (joinFromMeet meet).
 Proof.
   intros. unfold isJoin. intros. unfold leastUpperBound.
@@ -67,25 +67,28 @@ Proof.
      unfold upperBound. intros.
      unfold joinFromMeet.
      assert (xlower: lowerBound (upperBoundsOf X) x).
-     unfold lowerBound. intros. unfold upperBoundsOf in H1. unfold In in H1.
-     unfold In in H0. unfold upperBound in H1. apply H1. unfold In. apply H0.
+     { unfold lowerBound. intros. unfold upperBoundsOf in H1. unfold In in H1.
+       unfold In in H0. unfold upperBound in H1. rewrite -> elem_of_PropSet in H1.
+       apply H1. apply H0.
+     }
      unfold isMeet in H.
      assert (meetX_glb: greatestLowerBound (upperBoundsOf X) (meet (upperBoundsOf X))).
      apply H. unfold greatestLowerBound in meetX_glb. destruct meetX_glb. apply H2. apply xlower.
    - (* least *)
      intros. unfold joinFromMeet. unfold isMeet in H.
      specialize (H (upperBoundsOf X)).
-     assert (ub_in : In A (upperBoundsOf X) ub). unfold In. apply H0.
+     assert (ub_in : ub ∈ (upperBoundsOf X)).
+     { apply H0. }
      destruct H. unfold lowerBound in H. apply H. apply ub_in.
 Qed.
 
-Definition meetFromJoin {A : Type} {OS : OrderedSet A} (join : Ensemble A -> A)
-   : Ensemble A -> A :=
+Definition meetFromJoin {A : Type} {OS : OrderedSet A} (join : propset A -> A)
+   : propset A -> A :=
   fun X => join (lowerBoundsOf X).
 
 (* Exactly a dual of joinFromMeet_lub. But there should be some way to avoid duplication. *)
 Lemma meetFromJoin_glb: forall (A : Type) (OS : OrderedSet A)
-                                (join : Ensemble A -> A),
+                                (join : propset A -> A),
      isJoin join -> isMeet (meetFromJoin join).
 Proof.
   intros. unfold isMeet. intros. unfold greatestLowerBound.
@@ -94,23 +97,26 @@ Proof.
      unfold lowerBound. intros.
      unfold meetFromJoin.
      assert (xupper: upperBound (lowerBoundsOf X) x).
-     unfold upperBound. intros. unfold lowerBoundsOf in H1. unfold In in H1.
-     unfold In in H0. unfold lowerBound in H1. apply H1. unfold In. apply H0.
+     { unfold upperBound. intros. unfold lowerBoundsOf in H1.
+       unfold In in H0. unfold lowerBound in H1. rewrite -> elem_of_PropSet in H1.
+       apply H1. apply H0.
+     }
      unfold isJoin in H.
      assert (meetX_lub: leastUpperBound (lowerBoundsOf X) (join (lowerBoundsOf X))).
      apply H. unfold leastUpperBound in meetX_lub. destruct meetX_lub. apply H2. apply xupper.
    - (* greatest *)
      intros. unfold meetFromJoin. unfold isJoin in H.
      specialize (H (lowerBoundsOf X)).
-     assert (lb_in : In A (lowerBoundsOf X) lb). unfold In. apply H0.
+     assert (lb_in : lb ∈ (lowerBoundsOf X)).
+     { apply H0. }
      destruct H. unfold upperBound in H. apply H. apply lb_in.
 Qed.
 
 
 Class CompleteLattice A `{OrderedSet A} :=
   {
-    meet : Ensemble A -> A;
-    join : Ensemble A -> A;
+    meet : propset A -> A;
+    join : propset A -> A;
     meet_isMeet : isMeet meet;
     join_isJoin : isJoin join;
   }.
@@ -154,8 +160,8 @@ Proof.
   auto.
 Qed.
 
-Definition PrefixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : Ensemble A :=
-  fun x => leq (f x) x.
+Definition PrefixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : propset A :=
+  PropSet (fun x => leq (f x) x).
 
 Definition LeastFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattice A}
            (f : A -> A) : A :=
@@ -164,8 +170,8 @@ Definition LeastFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattice A
 Arguments LeastFixpointOf : simpl never.
 
 
-Definition PostfixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : Ensemble A :=
-  fun x => leq x (f x).
+Definition PostfixpointsOf {A : Type} {OS : OrderedSet A} (f : A -> A) : propset A :=
+  PropSet (fun x => leq x (f x)).
 
 Definition GreatestFixpointOf {A : Type} {OS : OrderedSet A} {L : CompleteLattice A}
            (f : A -> A) : A :=
@@ -237,7 +243,7 @@ Proof.
   (* Wikipedia's proof: https://en.wikipedia.org/wiki/Knaster%E2%80%93Tarski_theorem *)
   intros. rename H into f_monotonic. unfold MonotonicFunction in f_monotonic.
   remember (PostfixpointsOf f) as D. remember (join D) as u.
-  assert (f_x_in_D : forall x:A, In A D x -> In A D (f x)).
+  assert (f_x_in_D : forall x:A, x ∈ D -> (f x) ∈ D).
   intros.
   assert (f_x_leq_f_f_x : leq (f x) (f (f x))).
   apply f_monotonic. unfold In in H.
@@ -266,13 +272,13 @@ Proof.
   assert (u_le_fu : leq u (f u)). apply u_least. assumption.
 
   (* u \in D *)
-  assert (u_in_D : In A D u). rewrite -> HeqD. unfold In. unfold PostfixpointsOf. assumption.
+  assert (u_in_D : u ∈ D). rewrite -> HeqD. unfold In. unfold PostfixpointsOf. assumption.
 
   (* f(u) <= f(f(u)) *)
   assert (f_u_le_f_f_u : leq (f u) (f (f u)) ). apply f_monotonic. assumption.
   
   (* f(u) \in D *)
-  assert (f_u_in_D : In A D (f u)). rewrite -> HeqD. unfold In. unfold PostfixpointsOf. assumption.
+  assert (f_u_in_D : (f u) ∈ D). rewrite -> HeqD. unfold In. unfold PostfixpointsOf. assumption.
 
   (* f(u) <= u *)
   assert (f_u_le_u : leq (f u) u). apply u_upper. assumption.
@@ -334,7 +340,7 @@ Proof.
   intros A OS L f Sfix.
   intros Hprefix Hleast.
 
-  assert (H2: In _ (PrefixpointsOf f) Sfix).
+  assert (H2: Sfix ∈ (PrefixpointsOf f)).
   { unfold PrefixpointsOf. unfold In. apply Hprefix. }
 
   pose proof (H3 := meet_isMeet).
@@ -373,47 +379,60 @@ Proof.
   unfold Relation_Definitions.reflexive in r. apply r.
 Qed.
 
-Section powerset_lattice.
+From Coq Require Import Logic.FunctionalExtensionality Logic.PropExtensionality.
+
+Section propset_lattice.
   Variable U : Type.
 
-  Program Definition EnsembleOrderedSet : OrderedSet (Ensemble U) :=
-  {| leq := Ensembles.Included U;
+  Locate "⊆".
+  Program Definition PropsetOrderedSet : OrderedSet (propset U) :=
+  {| leq := subseteq;
   |}.
 
   Next Obligation.
     constructor.
-    * unfold reflexive. unfold Included. auto.
-    * unfold transitive. unfold Included. auto.
-    * unfold antisymmetric. intros.
-      apply Extensionality_Ensembles. split; auto.
+    * unfold reflexive.  auto.
+    * unfold transitive. apply transitivity.
+    * unfold antisymmetric.
+      intros.
+      destruct x,y. apply f_equal. apply functional_extensionality.
+      intros x.
+      rewrite -> elem_of_subseteq in H.
+      rewrite -> elem_of_subseteq in H0.
+      specialize (H x). specialize (H0 x).
+      apply propositional_extensionality.
+      split; auto.
   Qed.
 
 
-  Definition Meet (ee : Ensemble (Ensemble U)) : Ensemble U :=
-    fun m => forall e : Ensemble U,
-        Ensembles.In (Ensemble U) ee e -> Ensembles.In U e m.
+  Definition propset_Meet (ee : propset (propset U)) : propset U :=
+    PropSet (fun m => forall e : propset U,
+        e ∈ ee -> m ∈ e).
 
-
-  Lemma Meet_is_meet : @isMeet (Ensemble U) EnsembleOrderedSet Meet.
+  Lemma propset_Meet_is_meet : @isMeet (propset U) PropsetOrderedSet propset_Meet.
   Proof.
     unfold isMeet. unfold greatestLowerBound. unfold lowerBound.
     intro X. split.
-    - intros. simpl. unfold Included. intros. unfold In in H0. unfold Meet in H0.
-      auto.
-    - intros. simpl. unfold Included. intros. unfold leq in H. simpl in H.
-      unfold In. unfold Meet. intros. unfold Included in H.
-      unfold In in *.
-      apply H. assumption. assumption.
+    - intros. simpl. rewrite -> elem_of_subseteq.
+      intros x0 H0. unfold propset_Meet in H0.
+      rewrite -> elem_of_PropSet in H0.
+      apply H0. apply H.
+    - intros lb H. simpl.
+      rewrite -> elem_of_subseteq.
+      intros x H0. unfold leq in H. simpl in H.
+      unfold propset_Meet. apply elem_of_PropSet. intros e.
+      specialize (H e). intros H1. specialize (H H1).
+      rewrite -> elem_of_subseteq in H. auto.
   Qed.
 
-  Definition PowersetLattice : CompleteLattice (Ensemble U) :=
-    {| meet := Meet;
-       join := joinFromMeet Meet;
-       meet_isMeet := Meet_is_meet;
-       join_isJoin := joinFromMeet_lub (Ensemble U) EnsembleOrderedSet Meet Meet_is_meet;
+  Definition PowersetLattice : CompleteLattice (propset U) :=
+    {| meet := propset_Meet;
+       join := joinFromMeet propset_Meet;
+       meet_isMeet := propset_Meet_is_meet;
+       join_isJoin := joinFromMeet_lub (propset U) PropsetOrderedSet propset_Meet propset_Meet_is_meet;
     |}.
-End powerset_lattice.
 
+End propset_lattice.
 
 
 

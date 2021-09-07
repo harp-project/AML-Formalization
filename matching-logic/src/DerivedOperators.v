@@ -4,8 +4,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From stdpp Require Import base sets propset.
-
-From MatchingLogic.Utils Require Import Lattice Ensembles_Ext stdpp_ext extralibrary.
+From Coq Require Import Logic.Classical_Prop.
+From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.

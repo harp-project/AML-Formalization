@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import Ensembles.
 
-From MatchingLogic.Utils Require Import Ensembles_Ext stdpp_ext.
+From Coq Require Import Logic.Classical_Prop.
+From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
@@ -585,10 +585,10 @@ Proof.
                 pattern_interpretation evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
-    pose (OS := PropsetLattice.PropsetOrderedSet (@Domain signature m)).
-    pose (L := PropsetLattice.PowersetLattice (@Domain signature m)).
-    assert (Ffix : Lattice.isFixpoint F (PropsetLattice.LeastFixpointOf F)).
-    { apply PropsetLattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+    pose (OS := Lattice.PropsetOrderedSet (@Domain signature m)).
+    pose (L := Lattice.PowersetLattice (@Domain signature m)).
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
       unfold well_formed in Hwf.
       apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
@@ -599,8 +599,8 @@ Proof.
       reflexivity.
       apply set_svar_fresh_is_fresh.
     }
-    unfold PropsetLattice.isFixpoint in Ffix.
-    assert (Ffix_set : (F (PropsetLattice.LeastFixpointOf F)) = (PropsetLattice.LeastFixpointOf F)).
+    unfold Lattice.isFixpoint in Ffix.
+    assert (Ffix_set : (F (Lattice.LeastFixpointOf F)) = (Lattice.LeastFixpointOf F)).
     { rewrite -> Ffix. reflexivity. }
     rewrite -> set_eq_subseteq in Ffix_set.
     destruct Ffix_set. clear H0.
@@ -631,11 +631,11 @@ Proof.
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
 
-    pose (OS := PropsetLattice.PropsetOrderedSet (@Domain signature m)).
-    pose (L := PropsetLattice.PowersetLattice (@Domain signature m)).
+    pose (OS := Lattice.PropsetOrderedSet (@Domain signature m)).
+    pose (L := Lattice.PowersetLattice (@Domain signature m)).
 
-    assert (Ffix : PropsetLattice.isFixpoint F (PropsetLattice.LeastFixpointOf F)).
-    { apply PropsetLattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+    assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
+    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
       unfold well_formed in Hwf.
       apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
@@ -647,8 +647,8 @@ Proof.
       apply set_svar_fresh_is_fresh.
     }
     
-    unfold PropsetLattice.isFixpoint in Ffix.
-    assert (Ffix_set : (F (PropsetLattice.LeastFixpointOf F)) = (PropsetLattice.LeastFixpointOf F)).
+    unfold Lattice.isFixpoint in Ffix.
+    assert (Ffix_set : (F (Lattice.LeastFixpointOf F)) = (Lattice.LeastFixpointOf F)).
     { rewrite -> Ffix. reflexivity. }
     rewrite -> set_eq_subseteq in Ffix_set.
     destruct Ffix_set. clear H0.
@@ -666,7 +666,7 @@ Proof.
     }
     rewrite -> Hwannabe_lemma. clear Hwannabe_lemma.
 
-    pose proof (Htmp := PropsetLattice.LeastFixpoint_LesserThanPrefixpoint).
+    pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint).
     specialize (Htmp (propset (Domain m)) OS L F). simpl in Htmp.
     apply Htmp.
 
