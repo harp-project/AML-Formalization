@@ -594,8 +594,6 @@ Section with_signature.
             apply IHlen.
             simpl in Hlen. lia.
       Qed.
-      
-      
 
       Definition witnessed_elements_old : propset (Domain M) :=
         PropSet (λ m, ∃ l, is_witnessing_sequence_old m l).
@@ -603,8 +601,10 @@ Section with_signature.
       Lemma witnessed_elements_old_prefixpoint : (F witnessed_elements_old) ⊆ witnessed_elements_old.
       Proof.
         rewrite elem_of_subseteq. intros x Hx.
-        unfold F in Hx. unfold Fassoc in Hx.
-        rewrite pattern_interpretation_or_simpl in Hx. fold svar_open in Hx. simpl in Hx.
+        unfold F in Hx. unfold Fassoc in Hx. unfold svar_open in Hx. simpl in Hx.
+        rewrite pattern_interpretation_or_simpl in Hx.
+        fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu base)) in Hx.
+        fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu step)) in Hx.
         destruct Hx.
         - unfold Ensembles.In in H.
           unfold witnessed_elements_old.

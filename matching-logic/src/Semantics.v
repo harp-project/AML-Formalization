@@ -1005,7 +1005,8 @@ Section semantics.
           destruct (decide (X = x)),(decide (Y = x)); simpl; try contradiction.
           reflexivity.
         + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-        + simpl. case (n =? dbi).
+        + unfold svar_open. simpl. case (compare_nat n dbi); intro H.
+          * now rewrite 2!pattern_interpretation_bound_svar_simpl.
           * rewrite 2!pattern_interpretation_free_svar_simpl.
             rewrite 2!update_svar_val_same. reflexivity.
           * rewrite 2!pattern_interpretation_bound_svar_simpl.
@@ -1028,7 +1029,8 @@ Section semantics.
           reflexivity.
         + rewrite 2!pattern_interpretation_free_svar_simpl.
           reflexivity.
-        + simpl. case (n =? dbi).
+        + unfold evar_open. simpl. case (compare_nat n dbi); intro H.
+          * now rewrite 2!pattern_interpretation_bound_evar_simpl.
           * rewrite 2!pattern_interpretation_free_evar_simpl.
             rewrite 2!update_evar_val_same. reflexivity.
           * rewrite 2!pattern_interpretation_bound_evar_simpl.
@@ -1081,7 +1083,8 @@ Section semantics.
           apply evar_fresh_svar_open. apply set_evar_fresh_is_fresh.
           apply set_evar_fresh_is_fresh.
           reflexivity.
-        + rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
+        + rewrite 2!svar_open_mu.
+          rewrite 2!pattern_interpretation_mu_simpl. fold svar_open. simpl.
           apply f_equal. apply functional_extensionality.
           intros S'.
 
@@ -1142,9 +1145,9 @@ Section semantics.
           apply svar_is_fresh_in_exists in HfrY.
           rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -svar_open_size. lia.
           unfold svar_is_fresh_in.
-          apply (@svar_fresh_notin _ (size (svar_open 0 fresh3 ϕ))). rewrite -svar_open_size. lia.
+          apply svar_open_fresh_notin.
           apply HfrX. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
-          apply (@svar_fresh_notin _ (size (svar_open 0 fresh3 ϕ))). rewrite -svar_open_size. lia.
+          apply svar_open_fresh_notin.
           apply HfrY. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
           reflexivity.
       }
@@ -1174,7 +1177,8 @@ Section semantics.
           eapply evar_is_fresh_in_app_r. apply Hfrx.
           eapply evar_is_fresh_in_app_r. apply Hfry.
           reflexivity.
-        + rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
+        + do 2 rewrite evar_open_exists.
+          rewrite 2!pattern_interpretation_ex_simpl. fold evar_open. simpl.
           apply f_equal. apply functional_extensionality. intros e.
           remember (fresh_evar (evar_open (Datatypes.S dbi) x ϕ)) as x'.
           remember (fresh_evar (evar_open (Datatypes.S dbi) y ϕ)) as y'.
@@ -1232,9 +1236,9 @@ Section semantics.
           apply evar_is_fresh_in_exists in Hfry.
           rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -evar_open_size. lia.
           unfold evar_is_fresh_in.
-          apply (@fresh_notin _ (size (evar_open 0 fresh3 ϕ))). rewrite -evar_open_size. lia.
+          apply evar_open_fresh_notin.
           apply Hfrx. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
-          apply (@fresh_notin _ (size (evar_open 0 fresh3 ϕ))). rewrite -evar_open_size. lia.
+          apply evar_open_fresh_notin.
           apply Hfry. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
           reflexivity.
         + rewrite 2!pattern_interpretation_mu_simpl. fold evar_open. simpl.
@@ -1298,7 +1302,8 @@ Section semantics.
       + (* free_evar *)
         repeat rewrite -> pattern_interpretation_free_evar_simpl. auto.
       + (* free_svar *)
-        repeat rewrite -> pattern_interpretation_free_svar_simpl.
+        unfold svar_open. simpl.
+        do 2 rewrite -> pattern_interpretation_free_svar_simpl.
         unfold update_svar_val. destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
@@ -1307,13 +1312,10 @@ Section semantics.
         rewrite 2!pattern_interpretation_bound_evar_simpl.
         reflexivity.
       + (* bound_svar *)
-        simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+        unfold svar_open. simpl. destruct (compare_nat n dbi) eqn:Heq; simpl.
+        * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
         * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
           destruct (decide (X = X)). auto. contradiction.
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
-        * apply beq_nat_false in Heq. lia.
         * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
       + (* sym *)
         simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
@@ -1333,7 +1335,8 @@ Section semantics.
       + (* free_evar *)
         repeat rewrite pattern_interpretation_free_evar_simpl. auto.
       + (* free_svar *)
-        repeat rewrite -> pattern_interpretation_free_svar_simpl.
+        unfold svar_open. simpl.
+        do 2 rewrite -> pattern_interpretation_free_svar_simpl.
         unfold update_svar_val. destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
@@ -1341,23 +1344,20 @@ Section semantics.
       + (* bound_evar *)
         rewrite !pattern_interpretation_bound_evar_simpl. reflexivity.
       + (* bound_svar *)
-        simpl. destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
+        unfold svar_open. simpl. destruct (compare_nat n dbi).
+        * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
         * rewrite pattern_interpretation_free_svar_simpl. unfold update_svar_val.
           destruct (decide (X = X)). simpl. auto. contradiction.
-        * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
-        * apply beq_nat_false in Heq. lia.
         * repeat rewrite -> pattern_interpretation_bound_svar_simpl; auto.
       + (* sym *)
         simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
       (* HERE the duplication ends *)
-      + (* app *)
+      + (* app *) unfold svar_open in *.
         simpl.
         simpl in H. apply not_elem_of_union in H. destruct H.
-        repeat rewrite -> pattern_interpretation_app_simpl.
+        do 2 rewrite -> pattern_interpretation_app_simpl.
         simpl in Hsz.
-        repeat rewrite <- IHsz.
+        rewrite <- (IHsz _ _ phi1_1), <- (IHsz _ _ phi1_2).
         * reflexivity.
         * lia.
         * assumption.
@@ -1368,10 +1368,11 @@ Section semantics.
       + (* Bot. Again, a duplication of the sz=0 case *)
         simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
       + (* imp *)
-        simpl in Hsz. simpl in H.
+        unfold svar_open in *.
+        simpl in Hsz. simpl in H. simpl.
         apply not_elem_of_union in H. destruct H.
-        repeat rewrite -> pattern_interpretation_imp_simpl.
-        repeat rewrite <- IHsz.
+        do 2 rewrite -> pattern_interpretation_imp_simpl.
+        rewrite <- IHsz, <- IHsz.
         * reflexivity.
         * lia.
         * assumption.
@@ -1380,14 +1381,14 @@ Section semantics.
         * assumption.
         * auto.
 
-      + simpl in Hsz. simpl in H.
-        repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
+      + simpl in Hsz. simpl in H. unfold svar_open in *. simpl.
+        do 2 rewrite -> pattern_interpretation_ex_simpl. simpl.
         apply propset_fa_union_same. intros c.
 
         (* x = fresh_evar phi1' *)
         (* y = evar_fresh (elements (free_evars phi1') U (free_evars phi2)) *)
         
-        remember (svar_open dbi X phi1) as phi1'.
+        remember (bsvar_subst phi1 (patt_free_svar X) dbi) as phi1'.
         remember (fresh_evar phi1') as Xfr2'.
         remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
         remember (update_svar_val X (pattern_interpretation evar_val svar_val phi2) svar_val) as svar_val2'.
@@ -1431,11 +1432,13 @@ Section semantics.
           subst svar_val2'.
           rewrite <- He1e1'.
           subst phi1'.
-          rewrite -> svar_open_evar_open_comm.
+          rewrite -> evar_open_bsvar_subst.
 
           assert (HXu: (Xfr1 = Xu)).
           { subst Xfr1. subst Xu. unfold fresh_evar.
             rewrite -> free_evars_bsvar_subst_eq.
+            replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
+                    (svar_open dbi X phi1) by reflexivity.
             rewrite -> free_evars_svar_open. auto. auto.
           }
           rewrite -> HXu in *.
@@ -1447,6 +1450,7 @@ Section semantics.
         * rewrite <- evar_open_size. lia. 
         * auto.
         * rewrite -> free_svars_evar_open. auto.
+        * auto.
           -- (* dbi does not occur in phi1 *)
             pose proof (HeqHoc' := HeqHoc).
             rewrite -> bsvar_subst_not_occur_is_noop.
@@ -1458,9 +1462,11 @@ Section semantics.
                          = pattern_interpretation evar_val2' svar_val (evar_open 0 Xu phi1')).
             { subst svar_val2'. apply pattern_interpretation_free_svar_independent.
               unfold svar_is_fresh_in. rewrite -> free_svars_evar_open. subst phi1'.
+              replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
+                      (svar_open dbi X phi1) by reflexivity.
               rewrite -> HeqHoc. auto.
             }
-            rewrite -> Hpi. subst phi1'. rewrite -> HeqHoc.
+            rewrite -> Hpi. subst phi1'. unfold svar_open in HeqHoc. rewrite -> HeqHoc.
             subst evar_val1'. subst evar_val2'.
             rewrite -> interpretation_fresh_evar_open with (y := Xu).
             reflexivity.
@@ -1481,6 +1487,7 @@ Section semantics.
             }
 
       + (* Mu case *)
+        rewrite svar_open_mu.
         rewrite 2!pattern_interpretation_mu_simpl. simpl.
         apply f_equal. apply functional_extensionality. intros E.
 
@@ -1641,6 +1648,7 @@ Section semantics.
       destruct phi; simpl in Hsz; simpl.
       + (* free_evar *)
         unfold evar_is_fresh_in in H.
+        rewrite evar_open_free_evar.
         repeat rewrite -> pattern_interpretation_free_evar_simpl.
         unfold update_evar_val.
         destruct (decide (x = x0)).
@@ -1651,9 +1659,11 @@ Section semantics.
         repeat rewrite -> pattern_interpretation_free_svar_simpl.
         auto.
       + (* bound_evar *)
+        rewrite evar_open_bound_evar.
         destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
-        * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
+        * do 2 rewrite pattern_interpretation_free_evar_simpl.
+          unfold update_evar_val.
           destruct (decide (x = x)). auto. contradiction.
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * auto.
@@ -1677,8 +1687,8 @@ Section semantics.
       destruct phi; simpl.
       (* HERE we duplicate some of the effort. I do not like it. *)
       + (* free_evar *)
-        unfold evar_is_fresh_in in H.
-        repeat rewrite -> pattern_interpretation_free_evar_simpl.
+        unfold evar_is_fresh_in in H. rewrite evar_open_free_evar.
+        do 2 rewrite -> pattern_interpretation_free_evar_simpl.
         unfold update_evar_val.
         destruct (decide (x = x0)).
         * simpl. unfold not in H. exfalso. apply H.
@@ -1688,6 +1698,7 @@ Section semantics.
         repeat rewrite -> pattern_interpretation_free_svar_simpl.
         auto.
       + (* bound_evar *)
+        rewrite evar_open_bound_evar.
         destruct (n =? dbi) eqn:Heq, (compare_nat n dbi).
         * symmetry in Heq; apply beq_nat_eq in Heq. lia.
         * repeat rewrite pattern_interpretation_free_evar_simpl. unfold update_evar_val.
@@ -1702,6 +1713,7 @@ Section semantics.
         simpl. repeat rewrite -> pattern_interpretation_sym_simpl; auto.
       (* HERE the duplication ends *)
       + (* app *)
+        rewrite evar_open_app.
         unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
         repeat rewrite -> pattern_interpretation_app_simpl.
         simpl in Hsz.
@@ -1714,6 +1726,7 @@ Section semantics.
       + (* Bot. Again, a duplication of the sz=0 case *)
         simpl. repeat rewrite pattern_interpretation_bott_simpl; auto.
       + (* imp *)
+        rewrite evar_open_imp.
         simpl in Hsz.
         unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_union in H. destruct H.
         repeat rewrite -> pattern_interpretation_imp_simpl.
@@ -1725,6 +1738,7 @@ Section semantics.
         * auto.
 
       + (* ex *)
+        rewrite evar_open_exists.
         simpl in Hsz.
         unfold evar_is_fresh_in in H. simpl in H.
         repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
@@ -1848,7 +1862,8 @@ Section semantics.
               { reflexivity. }
               { apply evar_is_fresh_in_evar_open; assumption. }
               
-      + rewrite 2!pattern_interpretation_mu_simpl. simpl.
+      + rewrite evar_open_mu.
+        rewrite 2!pattern_interpretation_mu_simpl. simpl.
         apply f_equal. apply functional_extensionality. intros x0.
         remember (evar_open dbi x phi) as phi'.
         remember (fresh_svar phi') as Xfr'.
@@ -1998,6 +2013,7 @@ Section semantics.
     - destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity; try lia.
       apply pattern_interpretation_free_evar_independent.
       unfold evar_is_fresh_in in Hfr. apply Hfr.
+      rewrite evar_open_bound_evar.
       destruct (Nat.leb_spec0 dbi n).
       + destruct (eqb_reflect (S n) dbi); try lia.
         rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
@@ -2005,10 +2021,12 @@ Section semantics.
         rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
     - pose proof (Hnot0 := not_bevar_occur_0_nest_ex ϕ).
       destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
+      rewrite evar_open_free_evar.
       + (* duplicate *)
         apply pattern_interpretation_free_evar_independent.
         unfold evar_is_fresh_in in Hfr. apply Hfr.
-      + destruct (Nat.leb_spec0 dbi n).
+      + rewrite evar_open_bound_evar.
+        destruct (Nat.leb_spec0 dbi n).
         * destruct (eqb_reflect (S n) dbi); try lia.
           rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
         * destruct (eqb_reflect n dbi); try lia.
@@ -2116,19 +2134,23 @@ Section semantics.
     move: ϕ X dbi S ρₑ ρ.
     induction sz; move=> ϕ X dbi S ρₑ ρ.
     - destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity; try lia.
+      rewrite svar_open_free_svar.
       apply pattern_interpretation_free_svar_independent.
       unfold evar_is_fresh_in in Hfr. apply Hfr.
       destruct (Nat.leb_spec0 dbi n).
-      + destruct (eqb_reflect (Datatypes.S n) dbi); try lia. simpl.
+      + rewrite svar_open_bound_svar.
+        destruct (eqb_reflect (Datatypes.S n) dbi); try lia. simpl.
         rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
-      + destruct (eqb_reflect n dbi); try lia.
+      + rewrite svar_open_bound_svar.
+        destruct (eqb_reflect n dbi); try lia.
         rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
     - pose proof (Hnot0 := not_bsvar_occur_0_nest_mu ϕ).
       destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
       + (* duplicate *)
         apply pattern_interpretation_free_svar_independent.
         unfold evar_is_fresh_in in Hfr. apply Hfr.
-      + destruct (Nat.leb_spec0 dbi n).
+      + rewrite svar_open_bound_svar.
+        destruct (Nat.leb_spec0 dbi n).
         * destruct (eqb_reflect (Datatypes.S n) dbi); try lia.
           rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
         * destruct (eqb_reflect n dbi); try lia.
@@ -2159,7 +2181,7 @@ Section semantics.
         1,2: apply set_evar_fresh_is_fresh.
         reflexivity.      
         
-      + simpl in Hnot0.
+      + simpl in Hnot0. rewrite svar_open_mu.
         rewrite 2!pattern_interpretation_mu_simpl. simpl.
         apply f_equal. apply functional_extensionality.
         intros S'.

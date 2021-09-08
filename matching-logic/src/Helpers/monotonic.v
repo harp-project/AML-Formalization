@@ -202,7 +202,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
     Proof.
       induction phi; try auto.
       - (* EVar bound *)
-        intros. simpl.
+        intros. simpl. rewrite evar_open_bound_evar.
         destruct (n =? n0).
         * unfold respects_blacklist. intros.
           split; intros; constructor.
@@ -226,13 +226,13 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         apply respects_blacklist_impl; assumption.
       - (* Ex *)
         intros.
-        simpl.
+        rewrite evar_open_exists.
         apply respects_blacklist_ex'.
         apply respects_blacklist_ex in H.
         auto.
       - (* Mu *)
         intros.
-        simpl.
+        rewrite evar_open_mu.
         apply respects_blacklist_mu in H.
         specialize (IHphi Bp Bn x n H).
         auto using respects_blacklist_mu'.

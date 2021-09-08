@@ -616,13 +616,13 @@ Section definedness.
       2: { apply set_evar_fresh_is_fresh. }
       solve_free_evars_inclusion 5.
     }
-    rewrite [evar_open 0 x b0]/=.
-    rewrite [evar_open 1 x b1]/=.
-    rewrite [evar_open 1 x b0]/=.
+    do 3 rewrite evar_open_bound_evar.
+    repeat rewrite Nat.eqb_refl.
+    rewrite [(if 0 =? 1 then patt_free_evar x else b0)]/=.
 
     remember (fresh_evar (patt_in (patt_free_evar x) (evar_open 1 x (nest_ex (nest_ex ϕ₂)) $ b0))) as y.
     rewrite simpl_evar_open.
-    rewrite [evar_open 0 y (patt_free_evar x)]/=.
+    rewrite evar_open_free_evar.
     repeat rewrite elem_of_PropSet.
     rewrite <- free_evar_in_patt.
     2: { apply Htheory. }
@@ -939,7 +939,7 @@ Section definedness.
     apply well_formed_equal; auto.
     unfold instantiate. simpl. eapply stdpp_ext.not_elem_of_larger_impl_not_elem_of.
     eapply union_mono_r. apply free_evars_bevar_subst.
-    rewrite HeqZvar.
+    rewrite HeqZvar. unfold fresh_evar. simpl.
     rewrite (union_comm_L (free_evars φ) (free_evars φ')).
     rewrite <- (union_assoc_L (free_evars φ') (free_evars φ) (free_evars φ)).
     rewrite (union_idemp_L (free_evars φ)).
@@ -958,7 +958,7 @@ Section definedness.
     intros MF WF WFB. unfold patt_forall.
     assert (well_formed (bevar_subst φ φ' 0)) as BWF. {
       unfold well_formed, well_formed_closed.
-      rewrite -> well_formed_positive_bevar_subst, -> bevar_subst_well_formedness; auto.
+      rewrite -> well_formed_positive_bevar_subst, -> wfc_aux_bevar_subst; auto.
       2, 4: apply andb_true_iff in WF as [E1 E2]; auto.
       all: apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2]; 
         unfold well_formed_closed in E2; simpl in E1, E2; auto.

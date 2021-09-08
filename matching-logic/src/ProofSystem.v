@@ -57,7 +57,7 @@ Section ml_proof_system.
       destruct H1 as [le [re [Hunion [Hext_le Happ]]]].
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
-      exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
+      exists c. rewrite -> evar_open_app, -> pattern_interpretation_app_simpl. unfold app_ext.
       rewrite -> elem_of_PropSet.
       exists le, re.
       split.
@@ -69,14 +69,14 @@ Section ml_proof_system.
           apply not_elem_of_union in n. destruct n. assumption.
         }
       + erewrite -> pattern_interpretation_free_evar_independent.
-        erewrite -> evar_open_fresh.
+        erewrite -> evar_open_closed.
         split.
         2: { exact Happ. }
         exact Hext_le.
         unfold well_formed in H0.
         apply andb_true_iff in H0.
         destruct H0. assumption.
-        rewrite -> evar_open_fresh.
+        rewrite -> evar_open_closed.
         {
           unfold fresh_evar. simpl. 
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
@@ -129,10 +129,10 @@ Section ml_proof_system.
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
 
-      exists c. rewrite -> pattern_interpretation_app_simpl. unfold app_ext.
+      exists c. rewrite -> evar_open_app, -> pattern_interpretation_app_simpl. unfold app_ext.
       exists le, re.
       split.
-      + erewrite -> evar_open_fresh.        
+      + erewrite -> evar_open_closed.
         erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
         unfold well_formed in H0.
         apply andb_true_iff in H0.
@@ -690,7 +690,7 @@ Proof.
       2: { assumption. }
       unfold well_formed_closed in H2.
       simpl in H2.
-      apply wfc_aux_body_mu_imp_bsvar_subst; assumption.
+      apply wfc_aux_bsvar_subst; assumption.
     }
     specialize (IHHp Hwf').
     

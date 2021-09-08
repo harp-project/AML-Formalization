@@ -140,7 +140,9 @@ Module Syntax.
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
     Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
-    Proof. simpl. unfold patt_nu. unfold patt_not. rewrite -> evar_open_bsvar_subst. Abort.
+    Proof. simpl. unfold patt_nu. unfold patt_not. unfold evar_open. simpl.
+      rewrite -> bevar_subst_bsvar_subst; auto.
+    Abort.
 
     Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
     Proof. simpl. unfold patt_not. reflexivity. Qed.
@@ -440,7 +442,7 @@ Module Semantics.
           assert (Heqmm' : m = m').
           { 
             simpl in Hbound.
-            rewrite -> pattern_interpretation_free_evar_simpl in Hbound.
+            rewrite -> evar_open_bound_evar, -> Nat.eqb_refl, -> pattern_interpretation_free_evar_simpl in Hbound.
             apply elem_of_singleton in Hbound. subst m.
             rewrite update_evar_val_same. reflexivity.
           }
@@ -456,7 +458,8 @@ Module Semantics.
           apply elem_of_PropSet.
           exists m.
           rewrite -> pattern_interpretation_and_simpl. constructor.
-          + simpl. rewrite -> pattern_interpretation_free_evar_simpl.
+          +
+            rewrite -> evar_open_bound_evar, -> Nat.eqb_refl, -> pattern_interpretation_free_evar_simpl.
             rewrite -> update_evar_val_same. constructor.
           + rewrite -> elem_of_PropSet in H.
             rewrite -> set_eq_subseteq in H. destruct H as [H1 H2].
