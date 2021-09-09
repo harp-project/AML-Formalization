@@ -1220,8 +1220,8 @@ Defined. *)
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> ! !B) ->
-    Γ ⊢ (A ---> B).
+    Γ ⊢ A ---> ! !B ->
+    Γ ⊢ A ---> B.
   Proof.
     intros WFA WFB H.
     eapply Modus_ponens.
@@ -1232,7 +1232,7 @@ Defined. *)
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B ---> A).
+    Γ ⊢ A and B ---> A.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
@@ -1249,7 +1249,7 @@ Defined. *)
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B ---> B).
+    Γ ⊢ A and B ---> B.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
@@ -1266,7 +1266,7 @@ Defined. *)
   Lemma pf_conj_elim_l_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B) ->
+    Γ ⊢ A and B ->
     Γ ⊢ A.
   Proof.
     intros WFA WFB H.
@@ -1279,7 +1279,7 @@ Defined. *)
   Lemma pf_conj_elim_r_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B) ->
+    Γ ⊢ A and B ->
     Γ ⊢ B.
   Proof.
     intros WFA WFB H.
@@ -1291,7 +1291,7 @@ Defined. *)
 
   Lemma A_or_notA Γ A :
     well_formed A ->
-    Γ ⊢ (A or ! A).
+    Γ ⊢ A or ! A.
   Proof.
     intros wfA.
     unfold patt_or.
@@ -1302,7 +1302,7 @@ Defined. *)
     well_formed A ->
     well_formed B ->
     Γ ⊢ A ---> B ->
-    Γ ⊢ (A ---> !B) ->
+    Γ ⊢ A ---> !B ->
     Γ ⊢ !A.
   Proof.
     intros wfA wfB AimpB AimpnB.
@@ -1409,7 +1409,7 @@ Section FOL_helpers.
     wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (g ---> g') ->
+    Γ ⊢ g ---> g' ->
     mkMyGoal Σ Γ l g ->
     mkMyGoal Σ Γ l g'.
   Proof.
@@ -1421,7 +1421,7 @@ Section FOL_helpers.
   Lemma prf_contraction Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ((a ---> (a ---> b)) ---> (a ---> b)).
+    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)).
   Proof.
     intros wfa wfb.
     assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
@@ -1470,9 +1470,9 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> b) ->
-    Γ ⊢ (a ---> (b ---> c)) ->
-    Γ ⊢ (a ---> c).
+    Γ ⊢ a ---> b ->
+    Γ ⊢ a ---> b ---> c ->
+    Γ ⊢ a ---> c.
   Proof.
     intros wfa wfb wfc H1 H2.
     eapply Modus_ponens.
@@ -1968,7 +1968,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (((p and q) ---> r) ---> (p ---> (q ---> r))).
+    Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))).
   Proof.
     intros wfp wfq wfr.
     toMyGoal. repeat mgIntro.
@@ -2258,9 +2258,9 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ (A ---> C) ->
-    Γ ⊢ (B ---> C) ->
-    Γ ⊢ (A or B) ->
+    Γ ⊢ A ---> C ->
+    Γ ⊢ B ---> C ->
+    Γ ⊢ A or B ->
     Γ ⊢ C.
   Proof.
     intros wfA wfB wfC AimpC BimpC AorB.
@@ -2279,9 +2279,9 @@ Section FOL_helpers.
   Lemma pf_iff_split Γ A B:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (B ---> A) ->
-    Γ ⊢ (A <---> B).
+    Γ ⊢ A ---> B ->
+    Γ ⊢ B ---> A ->
+    Γ ⊢ A <---> B.
   Proof.
     intros wfA wfB AimplB BimplA.
     unfold patt_iff.
@@ -2291,8 +2291,8 @@ Section FOL_helpers.
   Lemma pf_iff_proj1 Γ A B:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) ->
-    Γ ⊢ (A ---> B).
+    Γ ⊢ A <---> B ->
+    Γ ⊢ A ---> B.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
     apply pf_conj_elim_l_meta in H; auto.
