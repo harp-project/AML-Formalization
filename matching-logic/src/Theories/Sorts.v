@@ -675,7 +675,7 @@ Section sorts.
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
-                  (¬ patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
+                  (! patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
                      patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) ---> patt_equal b1 b0)))
       as x₁.
       apply all_iff_morphism. intros m₁.
@@ -687,7 +687,7 @@ Section sorts.
       remember
       (fresh_evar
                (evar_open 1 x₁
-                  (¬ patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
+                  (! patt_equal (nest_ex (nest_ex f) $ b1) Bot --->
                      patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) ---> patt_equal b1 b0)))
       as x₂.
         
@@ -716,7 +716,7 @@ Section sorts.
         fold (evar_open 1 
              (fresh_evar
                 (patt_forall_of_sort (nest_ex s)
-                   (¬ patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
+                   (! patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
                     patt_equal (nest_ex (nest_ex f) $ b1)
                       (nest_ex (nest_ex f) $ b0) ---> 
                     patt_equal b1 b0))) (nest_ex (nest_ex f))).
@@ -746,7 +746,7 @@ Section sorts.
         fold (evar_open 1 
              (fresh_evar
                 (patt_forall_of_sort (nest_ex s)
-                   (¬ patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
+                   (! patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
                     patt_equal (nest_ex (nest_ex f) $ b1)
                       (nest_ex (nest_ex f) $ b0) ---> 
                     patt_equal b1 b0))) (nest_ex (nest_ex f))).

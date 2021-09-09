@@ -45,13 +45,13 @@ Module test_1.
   Definition c : Pattern := (patt_free_evar "c").
   Definition d : Pattern := (patt_free_evar "d").
   
-  Definition more : Pattern := A or ¬ A.
+  Definition more : Pattern := A or ! A.
 
   Example e1 X: evar_open 0 X more = more.
   Proof. unfold more. rewrite !simpl_evar_open. reflexivity. Qed.
 
   Definition complex : Pattern :=
-    a ---> (b ---> ¬C) $ ex , D $ Bot and Top.
+    a ---> (b ---> !C) $ ex , D $ Bot and Top.
 
   Definition custom_constructor := patt_sym ctor.
 

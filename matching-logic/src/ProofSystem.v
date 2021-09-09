@@ -267,8 +267,8 @@ Qed.
 
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
-      theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
-                   (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
+      theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
+                   (subst_ctx C2 (patt_free_evar x and (! phi)))))
 
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
