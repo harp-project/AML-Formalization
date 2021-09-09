@@ -84,7 +84,7 @@ Module MMTest.
   
   (*Compute proof₂.*)
 
-  Definition ϕ₃ := ¬ ¬ A ---> A.
+  Definition ϕ₃ := ! ! A ---> A.
   
   Lemma ϕ₃_holds:
     ∅ ⊢ ϕ₃.
@@ -122,7 +122,7 @@ Module MMTest.
           ϕ₄_holds
     )).
   
-  Definition ϕ₅ := (A ---> B) <---> (¬ A or B).
+  Definition ϕ₅ := (A ---> B) <---> (! A or B).
 
   Lemma ϕ₅_holds:
     ∅ ⊢ ϕ₅.
@@ -141,7 +141,7 @@ Module MMTest.
           ϕ₅_holds
     )).
 
-  Definition ϕ₆ := (A ---> ¬ ¬ B) ---> (A ---> B).
+  Definition ϕ₆ := (A ---> ! ! B) ---> (A ---> B).
 
   Lemma ϕ₆_holds:
     ∅ ⊢ ϕ₆.
