@@ -21,8 +21,6 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
-
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) -> Γ ⊢ (A ---> A).
   Proof. 
@@ -1302,7 +1300,7 @@ Defined. *)
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> B) ->
+    Γ ⊢ A ---> B ->
     Γ ⊢ (A ---> ¬B) ->
     Γ ⊢ ¬A.
   Proof.
