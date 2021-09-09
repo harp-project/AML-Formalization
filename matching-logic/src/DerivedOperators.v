@@ -212,11 +212,11 @@ End Syntax.
 
 Module Notations.
   Import Syntax.
-  
-  Notation "¬ a"     := (patt_not   a  ) (at level 75, right associativity) : ml_scope.
-  Notation "a 'or' b" := (patt_or    a b) (at level 85, right associativity) : ml_scope.
-  Notation "a 'and' b" := (patt_and   a b) (at level 80, right associativity) : ml_scope.
-  Notation "a <---> b" := (patt_iff a b) (at level 95, no associativity) : ml_scope.
+
+  Notation "! a"     := (patt_not   a  ) (at level 71, right associativity) : ml_scope.
+  Notation "a 'or' b" := (patt_or    a b) (at level 73, right associativity) : ml_scope.
+  Notation "a 'and' b" := (patt_and   a b) (at level 72, right associativity) : ml_scope.
+  Notation "a <---> b" := (patt_iff a b) (at level 74, no associativity) : ml_scope.
   Notation "'Top'" := patt_top : ml_scope.
   Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
@@ -481,7 +481,7 @@ Module Semantics.
         rewrite -> complement_full_iff_empty.
         rewrite -> pattern_interpretation_exists_empty.
         
-        assert (Hfr: fresh_evar (¬ϕ)%ml = fresh_evar ϕ).
+        assert (Hfr: fresh_evar (! ϕ)%ml = fresh_evar ϕ).
         { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
           rewrite -> union_empty_r_L. reflexivity.
         }

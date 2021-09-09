@@ -412,7 +412,7 @@ Section ml_tauto.
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
 
-      remember (fresh_evar (¬ ((¬ p1' or ¬ p2') ---> ⊥) <---> negate p1' or negate p2')) as star.
+      remember (fresh_evar (! ((! p1' or ! p2') ---> ⊥) <---> negate p1' or negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
@@ -443,11 +443,11 @@ Section ml_tauto.
       unfold patt_iff. unfold patt_iff in Heqstar.
       
       assert (Step1: (Γ ⊢
-                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or negate p2')
-                                   and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or negate p2')
+                                   and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
                      ->
-                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> negate p1' or negate p2')
-                                             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                     (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> negate p1' or negate p2')
+                                             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -456,21 +456,21 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p1')
+          (! p1')
           (negate p1')
-          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (patt_free_evar star) or negate p2')
-             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          ((! (! p1' or ! p2' ---> ⊥) ---> (patt_free_evar star) or negate p2')
+             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
       apply Step1. clear Step1.
 
       assert (Step2: (Γ ⊢
-                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
-                                   and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
+                                   and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
                      ->
-                     (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or negate p2')
-                                             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                     (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or negate p2')
+                                             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -478,21 +478,21 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2')
+          (! p2')
           (negate p2')
-          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or (patt_free_evar star))
-             and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or (patt_free_evar star))
+             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
       apply Step2. clear Step2.
 
       assert (Step3: (Γ ⊢
-                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
-                                   and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
+                                   and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
                       ->
-                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-                                              and (negate p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                      (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
+                                              and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -500,10 +500,10 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p1')
+          (! p1')
           (negate p1')
-          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-             and ((patt_free_evar star) or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
+             and ((patt_free_evar star) or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .          
       }
@@ -511,11 +511,11 @@ Section ml_tauto.
 
 
       assert (Step4: (Γ ⊢
-                                ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> (¬ p1') or ¬ p2')
-                                   and (¬ p1' or ¬ p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+                                ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
+                                   and (! p1' or ! p2' ---> ! (! p1' or ! p2' ---> ⊥)))
                       ->
-                      (Γ ⊢ ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-                                              and (¬ p1' or negate p2' ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))))
+                      (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
+                                              and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))))
              ).
       {
         intros BigH.
@@ -523,10 +523,10 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2')
+          (! p2')
           (negate p2')
-          ((¬ (¬ p1' or ¬ p2' ---> ⊥) ---> ¬ p1' or ¬ p2')
-             and (¬ p1' or (patt_free_evar star) ---> ¬ (¬ p1' or ¬ p2' ---> ⊥)))
+          ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
+             and (! p1' or (patt_free_evar star) ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .          
       }
@@ -535,7 +535,7 @@ Section ml_tauto.
       apply conj_intro_meta; auto.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
-    - (*(¬ (¬ p1' ---> p2') <---> negate p1' and negate p2') *)
+    - (*(! (! p1' ---> p2') <---> negate p1' and negate p2') *)
 
       unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
@@ -561,7 +561,7 @@ Section ml_tauto.
       assert(Hwfnp2': well_formed (patt_not p2')).
       { auto. }
 
-      remember (fresh_evar (¬ (¬ p1' ---> p2') <---> negate p1' and negate p2')) as star.
+      remember (fresh_evar (! (! p1' ---> p2') <---> negate p1' and negate p2')) as star.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
@@ -592,12 +592,12 @@ Section ml_tauto.
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
                      ->
                       (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> negate p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> negate p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
                                 
              ).
       {
@@ -606,22 +606,22 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p1')
+          (! p1')
           (negate p1')
-          ((¬ (¬ p1' ---> p2') ---> (patt_free_evar star) and negate p2')
-             and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2')))
+          ((! (! p1' ---> p2') ---> (patt_free_evar star) and negate p2')
+             and (negate p1' and negate p2' ---> ! (! p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
       apply Step1. clear Step1.
 
       assert (Step2: (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
                      ->
                       (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and negate p2')
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
                                 
              ).
       {
@@ -630,22 +630,22 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2')
+          (! p2')
           (negate p2')
-          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and (patt_free_evar star))
-             and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2')))
+          ((! (! p1' ---> p2') ---> ! p1' and (patt_free_evar star))
+             and (negate p1' and negate p2' ---> ! (! p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
       apply Step2. clear Step2.
 
       assert (Step3: (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))))
                      ->
                       (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (negate p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
                                 
              ).
       {
@@ -654,22 +654,22 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p1')
+          (! p1')
           (negate p1')
-          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-             and ((patt_free_evar star) and negate p2' ---> ¬ (¬ p1' ---> p2')))
+          ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+             and ((patt_free_evar star) and negate p2' ---> ! (! p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
       apply Step3. clear Step3.
 
       assert (Step4: (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (¬ p1' and ¬ p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+                                   and (! p1' and ! p2' ---> ! (! p1' ---> p2'))))
                      ->
                       (Γ ⊢
-                                ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-                                   and (¬ p1' and negate p2' ---> ¬ (¬ p1' ---> p2'))))
+                                ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))))
                                 
              ).
       {
@@ -678,10 +678,10 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2')
+          (! p2')
           (negate p2')
-          ((¬ (¬ p1' ---> p2') ---> ¬ p1' and ¬ p2')
-             and ( ¬ p1' and (patt_free_evar star) ---> ¬ (¬ p1' ---> p2')))
+          ((! (! p1' ---> p2') ---> ! p1' and ! p2')
+             and ( ! p1' and (patt_free_evar star) ---> ! (! p1' ---> p2')))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
         .
       }
@@ -695,7 +695,7 @@ Section ml_tauto.
       apply conj_intro_meta; auto.
       + apply not_not_elim; auto.
       + apply not_not_intro; auto.
-    - (* (¬ (p1 ---> p2) <---> p1 and negate p2) *)
+    - (* (! (p1 ---> p2) <---> p1 and negate p2) *)
       unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
       apply andb_prop in Hwfp. destruct Hwfp as [Hwf1 Hwf2].
@@ -714,7 +714,7 @@ Section ml_tauto.
       assert(Hwfnp2: well_formed (patt_not p2)).
       { auto. }
 
-      remember (fresh_evar (¬ (p1 ---> p2) <---> p1 and negate p2)) as star.
+      remember (fresh_evar (! (p1 ---> p2) <---> p1 and negate p2)) as star.
 
       assert (Hcount_p1: count_evar_occurrences star p1 = 0).
       {
@@ -741,11 +741,11 @@ Section ml_tauto.
       
       unfold patt_iff. unfold patt_iff in Heqstar.
 
-      assert (Step1: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-                                and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
+      assert (Step1: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
+                                and (p1 and negate p2 ---> ! (p1 ---> p2))))
                      ->
-                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and negate p2)
-                                and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
+                     (Γ ⊢ ((! (p1 ---> p2) ---> p1 and negate p2)
+                                and (p1 and negate p2 ---> ! (p1 ---> p2))))
                        
              ).
       {
@@ -754,20 +754,20 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2)
+          (! p2)
           (negate p2)
-          ((¬ (p1 ---> p2) ---> p1 and (patt_free_evar star))
-             and (p1 and negate p2 ---> ¬ (p1 ---> p2)))
+          ((! (p1 ---> p2) ---> p1 and (patt_free_evar star))
+             and (p1 and negate p2 ---> ! (p1 ---> p2)))
           (rewrite ?Hcount_p1 ?Hcount_p2 ?Hcount_np2)
         .
       }
       apply Step1. clear Step1.
 
-      assert (Step2: (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-                                             and (p1 and ¬ p2 ---> ¬ (p1 ---> p2))))
+      assert (Step2: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
+                                             and (p1 and ! p2 ---> ! (p1 ---> p2))))
                      ->
-                     (Γ ⊢ ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-                                             and (p1 and negate p2 ---> ¬ (p1 ---> p2))))
+                     (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
+                                             and (p1 and negate p2 ---> ! (p1 ---> p2))))
                        
              ).
       {
@@ -776,10 +776,10 @@ Section ml_tauto.
         make_step
           Γ
           star
-          (¬ p2)
+          (! p2)
           (negate p2)
-          ((¬ (p1 ---> p2) ---> p1 and ¬ p2)
-             and (p1 and (patt_free_evar star) ---> ¬ (p1 ---> p2)))
+          ((! (p1 ---> p2) ---> p1 and ! p2)
+             and (p1 and (patt_free_evar star) ---> ! (p1 ---> p2)))
           (rewrite ?Hcount_p1 ?Hcount_p2 ?Hcount_np2)
         .
       }
@@ -789,7 +789,7 @@ Section ml_tauto.
 
   Lemma negate_is_bot p:
     negate p = patt_bott ->
-    p = ¬ ⊥.
+    p = (! patt_bott)%ml.
   Proof.
     intros H.
     funelim (negate p); try inversion e; subst; try discriminate.
@@ -868,7 +868,7 @@ Section ml_tauto.
 
   Lemma negate_other_than_imp p neq:
     match_imp p = inr neq ->
-    negate p = ¬ p.
+    negate p = (! p)%ml.
   Proof.
     intros H.
     funelim (negate p); try inversion e; subst;
@@ -876,10 +876,10 @@ Section ml_tauto.
         solve_match_impossibilities.
     reflexivity.
   Qed.
-  
+
   Lemma negate_not_imp_is_not p:
     (forall p1 p2, p <> (p1 ---> p2)) ->
-    negate p = ¬ p.
+    negate p = (! p)%ml.
   Proof.
     intro H.
     funelim (negate p); try inversion e; subst; solve_match_impossibilities.
@@ -891,12 +891,12 @@ Section ml_tauto.
       pose proof (Htmp := H p1' ⊥). contradiction.
     }
     2: {
-      pose proof (Htmp := H1 (¬ p1') p2'). contradiction.
+      pose proof (Htmp := H1 (! p1') p2'). contradiction.
     }
     1: {
       unfold patt_and, patt_or in H1.
       unfold patt_not in H1 at 1.
-      pose proof (Htmp := H1 (¬ ¬ p1' ---> ¬ p2') ⊥). contradiction.
+      pose proof (Htmp := H1 (! ! p1' ---> ! p2') ⊥). contradiction.
     }
   Qed.
   
@@ -914,7 +914,7 @@ Section ml_tauto.
     move: p Hsz.
     induction sz; intros p Hsz; destruct p; simpl in Hsz; try lia;
       funelim (and_or_imp_size _); try inversion e; subst; auto; solve_match_impossibilities.
-    - funelim (and_or_imp_size (¬ ¬ p1' ---> ¬ p2')); try inversion e; subst.
+    - funelim (and_or_imp_size (! ! p1' ---> ! p2')); try inversion e; subst.
       + simpl in Hsz. repeat rewrite IHsz. lia. lia. reflexivity.
       + simpl in Hsz. repeat rewrite IHsz. simpl. lia. lia. lia. reflexivity.
       + solve_match_impossibilities.
@@ -939,22 +939,22 @@ Section ml_tauto.
       (* here we need the [patt_or] at the LHS to *not* be interpreted as [patt_not],
          because if it is interpreted as patt_not, then the lhs is equal to 
          [aoisz (negate p1')] and the lhs to [1 + aoisz p1' + aoisz p2'].
-         For example, if [p1 = ¬ s₁] and [p2 = ¬ ⊥], then
-         and_or_imp_size (negate (¬ s1 or ¬ ⊥))
-         = and_or_imp_size (negate (¬ s1) or negate (¬ ⊥))
+         For example, if [p1 = ! s₁] and [p2 = ! ⊥], then
+         and_or_imp_size (negate (! s1 or ! ⊥))
+         = and_or_imp_size (negate (! s1) or negate (! ⊥))
          =(1) and_or_imp_size (s₁ or ⊥)
-         = and_or_imp_size (¬ ¬ s₁)
-         = and_or_imp_size (¬ s₁)
+         = and_or_imp_size (! ! s₁)
+         = and_or_imp_size (! s₁)
          = and_or_imp_size s₁
-         < 1 + and_or_imp_size (¬ s₁) + and_or_imp_size ⊥
-         = and_or_imp_size (¬ s₁ or ¬ ⊥).
+         < 1 + and_or_imp_size (! s₁) + and_or_imp_size ⊥
+         = and_or_imp_size (! s₁ or ! ⊥).
        *)
 
       funelim (and_or_imp_size _); try inversion e; subst; solve_match_impossibilities.
       clear e n H Heq H0 Heq0.
       simpl in Hsz.
       repeat (rewrite IHsz; [lia|]).
-      replace (¬ p1'0 or ¬ p2'0 ---> ⊥) with (p1'0 and p2'0) by reflexivity.
+      replace (! p1'0 or ! p2'0 ---> ⊥) with (p1'0 and p2'0) by reflexivity.
       funelim (and_or_imp_size (_ and _)); try inversion e; subst; solve_match_impossibilities.
       clear e H H0 Heq.
       reflexivity.
@@ -963,13 +963,13 @@ Section ml_tauto.
       clear e H Heq H0.
       simpl in Hsz.
       repeat (rewrite IHsz; [lia|]).
-      replace (¬ p1'0 ---> p2'0) with (p1'0 or p2'0) by reflexivity.
+      replace (! p1'0 ---> p2'0) with (p1'0 or p2'0) by reflexivity.
       funelim (and_or_imp_size (_ or _)); try inversion e; subst; solve_match_impossibilities.
       reflexivity.
-    - replace (p1' ---> ⊥) with (¬ p1') by reflexivity.
-      funelim (and_or_imp_size (¬ p1')); try inversion e; subst; solve_match_impossibilities.
+    - replace (p1' ---> ⊥) with (! p1') by reflexivity.
+      funelim (and_or_imp_size (! p1')); try inversion e; subst; solve_match_impossibilities.
       + clear e H H0 n0 Heq Heq0 Heq1.
-        fold (¬ (¬ p1' or ¬ p2')) in Heq2. fold (p1' and p2') in Heq2.
+        fold (! (! p1' or ! p2')) in Heq2. fold (p1' and p2') in Heq2.
         solve_match_impossibilities.
       + fold (p1' or ⊥) in Heq2. solve_match_impossibilities.
       + reflexivity.
@@ -979,9 +979,9 @@ Section ml_tauto.
       clear e H Heq H0.
       rewrite IHsz; [lia|].
       funelim (and_or_imp_size (p1' ---> p2)); try inversion e; subst; solve_match_impossibilities.
-      + fold (¬ (¬ p1' or ¬ p2')) in Heq0. solve_match_impossibilities.
+      + fold (! (! p1' or ! p2')) in Heq0. solve_match_impossibilities.
       + fold (p1' or p2') in Heq1. solve_match_impossibilities.
-      + fold (¬ p1') in Heq4. solve_match_impossibilities.
+      + fold (! p1') in Heq4. solve_match_impossibilities.
       + reflexivity.
     - pose proof (n2 p1 p2). contradiction.
   Qed.
@@ -1030,9 +1030,9 @@ Section ml_tauto.
   Qed.
   
   Lemma max_negation_size_not p:
-    max_negation_size (¬ p) <= size' p.
+    max_negation_size (! p) <= size' p.
   Proof.
-    funelim (max_negation_size (¬ p)); try inversion e; subst; solve_match_impossibilities.
+    funelim (max_negation_size (! p)); try inversion e; subst; solve_match_impossibilities.
     3: { lia. }
     2: {
       clear.
@@ -1184,14 +1184,14 @@ Section ml_tauto.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
       rewrite and_or_imp_size_negate.
-      funelim (and_or_imp_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+      funelim (and_or_imp_size (! (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
       + pose proof (Htmp := n p1' p2').
         rewrite e in Htmp. contradiction.
       + pose proof (Htmp := n0 p1' ⊥).
         rewrite e in Htmp. contradiction.
       + apply right_lex'.
         clear e n0 n Heq H Heq0 Heq1.
-        funelim (max_negation_size (¬ (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
+        funelim (max_negation_size (! (p1 ---> p2))); try inversion e; subst; solve_match_impossibilities.
         { pose proof (Htmp := n2 p1 p2). contradiction. }
         { pose proof (Htmp := n1 p1 ⊥). contradiction. }
         clear.
@@ -1250,7 +1250,7 @@ Section ml_tauto.
              apply negate_not_imp_is_not in n0.
              rewrite n n0.
              clear n n0.
-             funelim (max_negation_size (¬ p1' or ¬ p2')); try inversion e; subst;
+             funelim (max_negation_size (! p1' or ! p2')); try inversion e; subst;
                solve_match_impossibilities.
              
              clear.
@@ -1297,7 +1297,7 @@ Section ml_tauto.
              apply negate_not_imp_is_not in n0.
              apply negate_not_imp_is_not in n1.
              rewrite n0 n1. clear n0 n1.
-             funelim (max_negation_size (¬ p1' and ¬ p2')); try inversion e; subst;
+             funelim (max_negation_size (! p1' and ! p2')); try inversion e; subst;
                solve_match_impossibilities.
              
              clear.
@@ -1322,7 +1322,7 @@ Section ml_tauto.
           -- simpl in *. clear -n2.
              apply negate_not_imp_is_not in n2.
              rewrite n2. clear n2.
-             funelim (max_negation_size (p1 and ¬ p2));
+             funelim (max_negation_size (p1 and ! p2));
                try inversion e; subst; solve_match_impossibilities.
              clear.
              pose proof (max_negation_size_lt p1).
@@ -1452,7 +1452,7 @@ Section ml_tauto.
   Qed.
 
   Lemma wf_not_proj p:
-    well_formed (¬ p) ->
+    well_formed (! p) ->
     well_formed p.
   Proof.
     intros wfp.

@@ -170,7 +170,7 @@ Qed.
   
   (* Proof system for AML ref. snapshot: Section 3 *)
 
-  Reserved Notation "theory ⊢ pattern" (at level 1).
+  Reserved Notation "theory ⊢ pattern" (at level 76).
   Inductive ML_proof_system (theory : Theory) :
     Pattern -> Set :=
 
@@ -267,12 +267,12 @@ Qed.
 
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
-      theory ⊢ (¬ ((subst_ctx C1 (patt_free_evar x and phi)) and
-                   (subst_ctx C2 (patt_free_evar x and (¬ phi)))))
+      theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
+                   (subst_ctx C2 (patt_free_evar x and (! phi)))))
 
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
-  Notation "G |= phi" := (@satisfies signature G phi) (left associativity, at level 50).
+  Notation "G |= phi" := (@satisfies signature G phi) (no associativity, at level 50).
 
 (* Soundness theorem *)
 Theorem Soundness :

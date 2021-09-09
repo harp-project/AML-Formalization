@@ -21,8 +21,6 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
-
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) -> Γ ⊢ (A ---> A).
   Proof. 
@@ -44,7 +42,7 @@ Section FOL_helpers.
   #[local] Hint Resolve A_impl_A : core.
   
   Lemma P4m (Γ : Theory) (A B : Pattern) :
-    (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> ¬B) ---> ¬A)).
+    (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A)).
   Proof.
     intros WFA WFB. eapply (Modus_ponens Γ _ _ _ _).
     - eapply(P1 _ (A ---> B) (A ---> B ---> Bot) _ _).
@@ -65,7 +63,7 @@ Section FOL_helpers.
 
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ ((A ---> ¬A) ---> ¬A).
+    well_formed A -> Γ ⊢ ((A ---> !A) ---> !A).
   Proof.
     intros WFA. eapply (Modus_ponens _ _ _ _ _).
     - eapply (A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
@@ -187,7 +185,7 @@ Section FOL_helpers.
   #[local] Hint Resolve modus_ponens : core.
   
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ (A ---> ¬(¬A)).
+    well_formed A -> Γ ⊢ (A ---> !(!A)).
   Proof.
     intros WFA.
     assert(@well_formed Σ Bot).
@@ -212,15 +210,15 @@ Section FOL_helpers.
 
   Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
-    Γ ⊢ ((¬ B) ---> (¬ A)) -> Γ ⊢ (A ---> B).
+    Γ ⊢ ((! B) ---> (! A)) -> Γ ⊢ (A ---> B).
   Proof.
     intros H H0 H1.
-    epose (Modus_ponens Γ _ _ _ _ H1 (P4m Γ (¬ B) (¬ A) _ _)).
-    epose (P1 Γ (¬ ¬A) (¬ B) _ _).
-    epose (syllogism_intro Γ (¬ (¬ A)) (¬ B ---> ¬ (¬ A)) (¬ (¬ B)) _ _ _ m0 m).
+    epose (Modus_ponens Γ _ _ _ _ H1 (P4m Γ (! B) (! A) _ _)).
+    epose (P1 Γ (! !A) (! B) _ _).
+    epose (syllogism_intro Γ (! (! A)) (! B ---> ! (! A)) (! (! B)) _ _ _ m0 m).
     epose (not_not_intro Γ A _).
     epose (not_not_intro Γ B _).
-    epose (syllogism_intro Γ A (¬ (¬ A)) (¬ (¬ B)) _ _ _ m2 m1).
+    epose (syllogism_intro Γ A (! (! A)) (! (! B)) _ _ _ m2 m1).
     unfold patt_not in m4.
     epose (P3 Γ B _).
     epose (syllogism_intro Γ A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
@@ -234,7 +232,7 @@ Section FOL_helpers.
 
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
-    Γ ⊢ (((¬ A) ---> (¬ B)) ---> (B ---> A)).
+    Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A)).
   Proof.
     intros WFA WFB.
     epose (P3 Γ A _).
@@ -257,11 +255,11 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB.
     epose(tB := (A_impl_A Γ B _)).
-    epose(t1 := Modus_ponens Γ _ _ _ _ (P2 _ (¬(¬A) ---> ¬B) A Bot _ _ _)
+    epose(t1 := Modus_ponens Γ _ _ _ _ (P2 _ (!(!A) ---> !B) A Bot _ _ _)
                              (P1 _ _ B _ _)).
-    epose(t2 := Modus_ponens Γ _ _ _ _  (reorder_meta _ _ _ _ (P4 _ (¬A) B _ _))
+    epose(t2 := Modus_ponens Γ _ _ _ _  (reorder_meta _ _ _ _ (P4 _ (!A) B _ _))
                              (P1 _ _ B _ _)).
-    epose(t3'' := Modus_ponens Γ _ _ _ _ (P1 _ A (¬(¬A) ---> ¬B) _ _)
+    epose(t3'' := Modus_ponens Γ _ _ _ _ (P1 _ A (!(!A) ---> !B) _ _)
                                (P1 _ _ B _ _)).
     epose(t4 := Modus_ponens Γ _ _ _ _ tB
                              (Modus_ponens Γ _ _ _ _ t2
@@ -269,27 +267,27 @@ Section FOL_helpers.
     epose(t5'' := 
             Modus_ponens Γ _ _ _ _ t4
                          (Modus_ponens Γ _ _ _ _ t1
-                                       (P2 _ B ((¬(¬A) ---> ¬B) ---> ¬A)
-                                           (((¬(¬A) ---> ¬B) ---> A) ---> ¬(¬(¬A) ---> ¬B)) _ _ _))).
+                                       (P2 _ B ((!(!A) ---> !B) ---> !A)
+                                           (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _))).
     
     epose(tA := (P1 Γ A B) _ _).
     epose(tB' := Modus_ponens Γ _ _ _ _ tB
                               (P1 _ (B ---> B) A _ _)).
     epose(t3' := Modus_ponens Γ _ _ _ _ t3''
-                              (P2 _ B A ((¬(¬A) ---> ¬B) ---> A) _ _ _)).
+                              (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _)).
     epose(t3 := Modus_ponens Γ _ _ _ _ t3'
-                             (P1 _ ((B ---> A) ---> B ---> (¬ (¬ A) ---> ¬ B) ---> A) A _ _)).
+                             (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _)).
     epose(t5' := Modus_ponens Γ _ _ _ _ t5''
-                              (P2 _ B ((¬(¬A) ---> ¬B) ---> A) (¬(¬(¬A) ---> ¬B)) _ _ _)).
+                              (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _)).
     epose(t5 := Modus_ponens Γ _ _ _ _ t5' 
-                             (P1 _ ((B ---> (¬ (¬ A) ---> ¬ B) ---> A) ---> B ---> ¬ (¬ (¬ A) ---> ¬ B))
+                             (P1 _ ((B ---> (! (! A) ---> ! B) ---> A) ---> B ---> ! (! (! A) ---> ! B))
                                  A _ _)).
     epose(t6 := Modus_ponens Γ _ _ _ _ tA
                              (Modus_ponens Γ _ _ _ _ t3
-                                           (P2 _ A (B ---> A) (B ---> (¬(¬A) ---> ¬B) ---> A) _ _ _))).
+                                           (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _))).
     epose(t7 := Modus_ponens Γ _ _ _ _ t6 
                              (Modus_ponens Γ _ _ _ _ t5 
-                                           (P2 _ A (B ---> (¬(¬A) ---> ¬B) ---> A) (B ---> ¬(¬(¬A) ---> ¬B)) _ _ _))).
+                                           (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
     unfold patt_and.  unfold patt_or.
     exact t7.
     Unshelve.
@@ -318,9 +316,9 @@ Section FOL_helpers.
   Proof.
     intros WFA WFV. unfold patt_or.
     
-    epose proof (t1 := (P1 Γ B (¬A) _ _)).
+    epose proof (t1 := (P1 Γ B (!A) _ _)).
     
-    epose proof (t2 := (P1 Γ (B ---> (¬A ---> B)) A _ _)).
+    epose proof (t2 := (P1 Γ (B ---> (!A ---> B)) A _ _)).
     
     epose proof (t3 := Modus_ponens Γ _ _ _ _ t1 t2).
     
@@ -380,10 +378,10 @@ Section FOL_helpers.
   Defined.
 
   Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> (¬B ---> ¬A) ---> B).
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> (!B ---> !A) ---> B).
   Proof.
     intros WFA WFB.
-    assert(well_formed (¬ B ---> ¬ A)).
+    assert(well_formed (! B ---> ! A)).
     shelve.
     exact (reorder_meta Γ H WFA WFB (P4 _ B A WFB WFA)).
     Unshelve.
@@ -394,9 +392,9 @@ Section FOL_helpers.
     well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
   Proof.
     intros WFA WFB.
-    assert(well_formed (¬A)).
+    assert(well_formed (!A)).
     shelve.
-    exact (P1 _ B (¬A) WFB H).
+    exact (P1 _ B (!A) WFB H).
     Unshelve.
     all: auto.
   Defined.
@@ -443,7 +441,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ (¬(¬A) ---> A).
+    well_formed A -> Γ ⊢ (!(!A) ---> A).
   Proof.
     intros WFA.
     unfold patt_not.
@@ -454,7 +452,7 @@ Section FOL_helpers.
 
   Lemma not_not_elim_meta Γ A :
     well_formed A ->
-    Γ ⊢ (¬ ¬ A) ->
+    Γ ⊢ (! ! A) ->
     Γ ⊢ A.
   Proof.
     intros wfA nnA.
@@ -466,11 +464,11 @@ Section FOL_helpers.
   #[local] Hint Resolve not_not_elim_meta : core.
 
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (((¬(¬A)) ---> (¬(¬B))) ---> (A ---> B)).
+    well_formed A -> well_formed B -> Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
   Proof.
     intros WFA WFB.
     eapply (syllogism_intro _ _ _ _ _ _ _).
-    - eapply (P4 _ (¬A) (¬B) _ _).
+    - eapply (P4 _ (!A) (!B) _ _).
     - eapply (P4 _ B A _ _).
       Unshelve.
       all: auto.
@@ -478,7 +476,7 @@ Section FOL_helpers.
 
   Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> 
-    Γ ⊢ ((¬(¬A)) ---> (¬(¬B))) -> Γ ⊢ (A ---> B).
+    Γ ⊢ ((!(!A)) ---> (!(!B))) -> Γ ⊢ (A ---> B).
   Proof.
     intros WFA WFB H.
     eapply (Modus_ponens _ _ _ _ _).
@@ -489,7 +487,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (¬B ---> ¬A)).
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (!B ---> !A)).
   Proof.
     intros WFA WFB H.
     eapply (deduction _ _ _ _ _).
@@ -500,7 +498,7 @@ Section FOL_helpers.
           -- eapply (not_not_elim _ A _).
           -- exact H.
         * eapply (not_not_intro _ B _).
-      + eapply (P4 _ (¬A) (¬B) _ _).
+      + eapply (P4 _ (!A) (!B) _ _).
         Unshelve.
         all: auto.
   Defined.
@@ -509,7 +507,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> B) ->
-    Γ ⊢ (¬B ---> ¬A).
+    Γ ⊢ (!B ---> !A).
   Proof.
     intros wfA wfB AimpB.
     pose proof (H := P4_rev_meta Γ A B wfA wfB AimpB).
@@ -521,7 +519,7 @@ Section FOL_helpers.
   #[local] Hint Resolve P4_rev_meta' : core.
   
   Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ ((¬B ---> ¬A) ---> (A ---> ¬B) --->  ¬A).
+    well_formed A -> well_formed B -> Γ ⊢ ((!B ---> !A) ---> (A ---> !B) --->  !A).
   Proof.
     intros WFA WFB.
     epose proof (PT := (P4 Γ B A _ _)).
@@ -532,8 +530,9 @@ Section FOL_helpers.
       all: auto.
   Defined.
 
+  Locate "¬".
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((¬¬A) ---> (¬¬B)).
+    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
   Proof.
     intros WFA WFB H.
     epose proof (NN1 := not_not_elim Γ A _).
@@ -548,25 +547,25 @@ Section FOL_helpers.
   Defined.
 
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((¬¬A) ---> (¬¬B))).
+    well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B))).
   Proof.
     intros WFA WFB.
     
-    epose (S1 := syllogism Γ (¬¬A) A B _ _ _).
+    epose (S1 := syllogism Γ (! ! A) A B _ _ _).
     
-    epose (MP1 := Modus_ponens _ (¬ (¬ A) ---> A) ((A ---> B) ---> ¬ (¬ A) ---> B) _ _ (not_not_elim _ A _) S1).
+    epose (MP1 := Modus_ponens _ (! (! A) ---> A) ((A ---> B) ---> ! (! A) ---> B) _ _ (not_not_elim _ A _) S1).
     
     epose(NNB := not_not_intro Γ B _).
 
-    epose(P1 := (P1 Γ (B ---> ¬ (¬ B)) (¬¬A) _ _)).
+    epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
     
     epose(MP2 := Modus_ponens _ _ _ _ _ NNB P1).
     
-    epose(P2 := (P2 Γ (¬¬A) B (¬¬B) _ _ _)).
+    epose(P2 := (P2 Γ (! ! A) B (! !B) _ _ _)).
     
     epose(MP3 := Modus_ponens _ _ _ _ _ MP2 P2).
     
-    eapply syllogism_intro with (B := (¬ (¬ A) ---> B)).
+    eapply syllogism_intro with (B := (! (! A) ---> B)).
     - shelve.
     - shelve.
     - shelve.
@@ -579,11 +578,11 @@ Section FOL_helpers.
 
   Lemma contraposition (Γ : Theory) (A B : Pattern) : 
     well_formed A -> well_formed B -> 
-    Γ ⊢ ((A ---> B) ---> ((¬ B) ---> (¬ A))).
+    Γ ⊢ ((A ---> B) ---> ((! B) ---> (! A))).
   Proof.
     intros WFA WFB.
-    epose proof (P4 Γ (¬ A) (¬ B) _ _) as m.
-    apply syllogism_intro with (B := (¬ (¬ A) ---> ¬ (¬ B))).
+    epose proof (P4 Γ (! A) (! B) _ _) as m.
+    apply syllogism_intro with (B := (! (! A) ---> ! (! B))).
     - shelve.
     - shelve.
     - shelve.
@@ -599,7 +598,7 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB H. unfold patt_or in *.
     
-    epose proof (P4 := (P4 Γ A (¬B) _ _)).
+    epose proof (P4 := (P4 Γ A (!B) _ _)).
     
     epose proof (NNI := not_not_intro Γ B _).
     
@@ -613,7 +612,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ A -> Γ ⊢ (¬( ¬A )).
+    well_formed A -> Γ ⊢ A -> Γ ⊢ (!( !A )).
   Proof.
     intros WFA H. unfold patt_not.
     epose proof (NN := not_not_intro Γ A _).
@@ -625,11 +624,11 @@ Section FOL_helpers.
   Defined.
 
   Lemma P5i (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (¬ A ---> (A ---> B)).
+    well_formed A -> well_formed B -> Γ ⊢ (! A ---> (A ---> B)).
   Proof.
     intros WFA WFB.
     
-    epose proof (Ax1 := (P1 Γ (¬A) (¬B) _ _)).
+    epose proof (Ax1 := (P1 Γ (!A) (!B) _ _)).
     
     epose proof (Ax2 := (P4 Γ B A _ _)).
     
@@ -697,12 +696,12 @@ Defined. *)
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
-    well_formed A -> Γ ⊢ A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))).
+    well_formed A -> Γ ⊢ A -> Γ ⊢ (! (subst_ctx C ( !A ))).
   Proof.
     intros WFA H.
     epose proof (ANNA := A_implies_not_not_A_alt Γ _ _ H).
-    replace (¬ (¬ A)) with ((¬ A) ---> Bot) in ANNA. 2: auto.
-    epose proof (EF := Framing _ C (¬ A) Bot _ _ ANNA).
+    replace (! (! A)) with ((! A) ---> Bot) in ANNA. 2: auto.
+    epose proof (EF := Framing _ C (! A) Bot _ _ ANNA).
     epose proof (PB := Prop_bot Γ C).
     
     epose (TRANS := syllogism_intro _ _ _ _ _ _ _ EF PB).
@@ -710,14 +709,14 @@ Defined. *)
     unfold patt_not.
     assumption.
     Unshelve.
-    2,4:assert (@well_formed Σ (¬ A)).
+    2,4:assert (@well_formed Σ (! A)).
     6,7:assert (@well_formed Σ (Bot)).
     all: auto.
   Defined.
 
 
   Lemma A_implies_not_not_A_alt_Γ (G : Theory) (A : Pattern) :
-    well_formed A -> G ⊢ A -> G ⊢ (¬( ¬A )).
+    well_formed A -> G ⊢ A -> G ⊢ (!( !A )).
   Proof.
     intros WFA H. unfold patt_not.
     epose proof (NN := not_not_intro G A _).
@@ -753,7 +752,7 @@ Defined. *)
   Defined.
 
   Lemma not_not_A_ctx_implies_A (Γ : Theory) (C : Application_context) (A : Pattern):
-    well_formed A -> Γ ⊢ (¬ (subst_ctx C ( ¬A ))) -> Γ ⊢ A.
+    well_formed A -> Γ ⊢ (! (subst_ctx C ( !A ))) -> Γ ⊢ A.
   Proof.
     intros WFA H.
     unfold patt_not in H at 1.
@@ -786,7 +785,7 @@ Defined. *)
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> B) ->
-    Γ ⊢ (¬B ---> ¬A).
+    Γ ⊢ (!B ---> !A).
   Proof.
     intros WFA WFB H.
     eapply Modus_ponens.
@@ -797,11 +796,11 @@ Defined. *)
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> ¬¬B) ---> (A ---> B)).
+    Γ ⊢ ((A ---> ! !B) ---> (A ---> B)).
   Proof.
     intros WFA WFB.
-    assert (Γ ⊢ (¬¬B ---> B)) by auto.
-    assert (Γ ⊢ ((A ---> ¬¬B) ---> (¬¬B ---> B) ---> (A ---> B))) by auto.
+    assert (Γ ⊢ (! !B ---> B)) by auto.
+    assert (Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B))) by auto.
     apply reorder_meta in H0; auto.
     eapply Modus_ponens. 4: apply H0. all: auto 10.
   Defined.
@@ -1221,8 +1220,8 @@ Defined. *)
   Lemma A_impl_not_not_B_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> ¬¬B) ->
-    Γ ⊢ (A ---> B).
+    Γ ⊢ A ---> ! !B ->
+    Γ ⊢ A ---> B.
   Proof.
     intros WFA WFB H.
     eapply Modus_ponens.
@@ -1233,13 +1232,13 @@ Defined. *)
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B ---> A).
+    Γ ⊢ A and B ---> A.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (¬ A ---> (¬ A or ¬ B))) by auto.
-    assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
-    assert (Γ ⊢ (¬ A ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
+    assert (Γ ⊢ (! A ---> (! A or ! B))) by auto.
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
+    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥))).
     { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
     epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
@@ -1250,13 +1249,13 @@ Defined. *)
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B ---> B).
+    Γ ⊢ A and B ---> B.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (¬ B ---> (¬ A or ¬ B))) by auto.
-    assert (Γ ⊢ ((¬ A or ¬ B) ---> (¬ A or ¬ B ---> ⊥) ---> ⊥)) by auto.
-    assert (Γ ⊢ (¬ B ---> ((¬ A or ¬ B ---> ⊥) ---> ⊥))).
+    assert (Γ ⊢ (! B ---> (! A or ! B))) by auto.
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
+    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥))).
     { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
     epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
@@ -1267,7 +1266,7 @@ Defined. *)
   Lemma pf_conj_elim_l_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B) ->
+    Γ ⊢ A and B ->
     Γ ⊢ A.
   Proof.
     intros WFA WFB H.
@@ -1280,7 +1279,7 @@ Defined. *)
   Lemma pf_conj_elim_r_meta Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A and B) ->
+    Γ ⊢ A and B ->
     Γ ⊢ B.
   Proof.
     intros WFA WFB H.
@@ -1292,7 +1291,7 @@ Defined. *)
 
   Lemma A_or_notA Γ A :
     well_formed A ->
-    Γ ⊢ (A or ¬ A).
+    Γ ⊢ A or ! A.
   Proof.
     intros wfA.
     unfold patt_or.
@@ -1302,13 +1301,13 @@ Defined. *)
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (A ---> ¬B) ->
-    Γ ⊢ ¬A.
+    Γ ⊢ A ---> B ->
+    Γ ⊢ A ---> !B ->
+    Γ ⊢ !A.
   Proof.
     intros wfA wfB AimpB AimpnB.
     pose proof (H1 := P4m Γ A B wfA wfB).
-    assert (H2 : Γ ⊢ (A ---> ¬ B) ---> ¬ A).
+    assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A).
     { eapply Modus_ponens. 4: apply H1. all: auto. }
     eapply Modus_ponens. 4: apply H2. all: auto.
   Defined.
@@ -1410,7 +1409,7 @@ Section FOL_helpers.
     wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (g ---> g') ->
+    Γ ⊢ g ---> g' ->
     mkMyGoal Σ Γ l g ->
     mkMyGoal Σ Γ l g'.
   Proof.
@@ -1422,7 +1421,7 @@ Section FOL_helpers.
   Lemma prf_contraction Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ((a ---> (a ---> b)) ---> (a ---> b)).
+    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)).
   Proof.
     intros wfa wfb.
     assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
@@ -1471,9 +1470,9 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> b) ->
-    Γ ⊢ (a ---> (b ---> c)) ->
-    Γ ⊢ (a ---> c).
+    Γ ⊢ a ---> b ->
+    Γ ⊢ a ---> b ---> c ->
+    Γ ⊢ a ---> c.
   Proof.
     intros wfa wfb wfc H1 H2.
     eapply Modus_ponens.
@@ -1705,12 +1704,12 @@ Section FOL_helpers.
   
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
-    Γ ⊢ ((¬A ---> A) ---> A).
+    Γ ⊢ ((!A ---> A) ---> A).
   Proof.
     intros wfA.
-    assert (H1: Γ ⊢ ((¬ A ---> ¬ ¬ A) ---> ¬ ¬ A)).
+    assert (H1: Γ ⊢ ((! A ---> ! ! A) ---> ! ! A)).
     { apply P4i. auto. }
-    assert (H2: Γ ⊢ ((¬ A ---> A) ---> (¬ A ---> ¬ ¬ A))).
+    assert (H2: Γ ⊢ ((! A ---> A) ---> (! A ---> ! ! A))).
     { eapply prf_weaken_conclusion_meta; auto. }
     
     eapply prf_strenghten_premise_meta_meta. 4: apply H2. all: auto.
@@ -1876,15 +1875,15 @@ Section FOL_helpers.
   Lemma not_concl Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ (p ---> (q ---> ((p ---> ¬ q) ---> ⊥))).
+    Γ ⊢ (p ---> (q ---> ((p ---> ! q) ---> ⊥))).
   Proof.
     intros wfp wfq.
     rewrite -> tofold. repeat rewrite consume.
-    replace ((([] ++ [p]) ++ [q]) ++ [p ---> ¬ q]) with ([p;q;p--->¬q]) by reflexivity.
-    replace ([p;q;p--->¬q]) with ([p] ++ [q; p ---> ¬q] ++ []) by reflexivity.
+    replace ((([] ++ [p]) ++ [q]) ++ [p ---> ! q]) with ([p;q;p--->!q]) by reflexivity.
+    replace ([p;q;p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
     apply prf_reorder_iter_meta; auto.
     simpl.
-    fold (¬ q).
+    fold (! q).
     apply modus_ponens; auto.
   Defined.
 
@@ -1969,20 +1968,20 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (((p and q) ---> r) ---> (p ---> (q ---> r))).
+    Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))).
   Proof.
     intros wfp wfq wfr.
     toMyGoal. repeat mgIntro.
     unfold patt_and. mgApply' 0 10.
     mgIntro. unfold patt_or at 2.
-    mgAssert (nnp: (¬ ¬ p)).
+    mgAssert (nnp: (! ! p)).
     {
       mgAdd (not_not_intro Γ p wfp); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
     clear nnp.
-    mgAssert (nq: (¬ q)).
+    mgAssert (nq: (! q)).
     {
       mgApply' 3 10. mgExactn 4; auto 10.
     }
@@ -2218,16 +2217,16 @@ Section FOL_helpers.
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> B) ---> (¬ A ---> B) ---> B).
+    Γ ⊢ ((A ---> B) ---> (! A ---> B) ---> B).
   Proof.
     intros wfA wfB.
-    assert (H1: Γ ⊢ (B ---> ¬ ¬ B)) by auto.
+    assert (H1: Γ ⊢ (B ---> ! ! B)) by auto.
 
-    epose proof (H10 := P4m_neg Γ (¬B) A _ _). Unshelve. all: auto.
+    epose proof (H10 := P4m_neg Γ (!B) A _ _). Unshelve. all: auto.
     
-    assert (H2: Γ ⊢ ((A ---> B) ---> (¬ A ---> B) ---> ¬¬B)) by admit.
-    assert (H3: Γ ⊢ (((¬ A ---> B) ---> ¬ ¬ B) ---> ((¬ A ---> B) ---> B))) by auto.
-    assert (H4: Γ ⊢ (((A ---> B) ---> ((¬ A ---> B) ---> ¬ ¬ B)) ---> ((A ---> B) ---> ((¬ A ---> B) ---> B)))).
+    assert (H2: Γ ⊢ ((A ---> B) ---> (! A ---> B) ---> ! !B)) by admit.
+    assert (H3: Γ ⊢ (((! A ---> B) ---> ! ! B) ---> ((! A ---> B) ---> B))) by auto.
+    assert (H4: Γ ⊢ (((A ---> B) ---> ((! A ---> B) ---> ! ! B)) ---> ((A ---> B) ---> ((! A ---> B) ---> B)))).
     { apply prf_weaken_conclusion_meta; auto. }
     eapply Modus_ponens. 4: apply H4. all: auto 10.
     (* Give up *)
@@ -2237,19 +2236,19 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> B) ->
-    Γ ⊢ (¬ A ---> B) ->
+    Γ ⊢ (! A ---> B) ->
     Γ ⊢ B.
   Proof.
     intros wfA wfB AimpB nAimpB.
-    assert (H1: Γ ⊢ (B ---> ¬ ¬ B)) by auto.
-    assert (H2: Γ ⊢ (¬ A ---> ¬ ¬ B)).
+    assert (H1: Γ ⊢ (B ---> ! ! B)) by auto.
+    assert (H2: Γ ⊢ (! A ---> ! ! B)).
     { eapply syllogism_intro. 5: apply H1. all: auto. }
     clear H1.
-    assert (H3: Γ ⊢ (¬ B ---> ¬ A)) by auto.
-    epose proof (H4 := P4m_neg Γ (¬B) A _ _).
-    assert (H5: Γ ⊢ ((¬ B ---> ¬ A) ---> ¬ ¬ B)).
+    assert (H3: Γ ⊢ (! B ---> ! A)) by auto.
+    epose proof (H4 := P4m_neg Γ (!B) A _ _).
+    assert (H5: Γ ⊢ ((! B ---> ! A) ---> ! ! B)).
     { eapply Modus_ponens. 4: apply H4. all: auto. }
-    assert (H6: Γ ⊢ (¬ ¬ B)).
+    assert (H6: Γ ⊢ (! ! B)).
     { eapply Modus_ponens. 4: apply H5. all: auto. }
     auto.
     Unshelve. all: auto.
@@ -2259,20 +2258,20 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ (A ---> C) ->
-    Γ ⊢ (B ---> C) ->
-    Γ ⊢ (A or B) ->
+    Γ ⊢ A ---> C ->
+    Γ ⊢ B ---> C ->
+    Γ ⊢ A or B ->
     Γ ⊢ C.
   Proof.
     intros wfA wfB wfC AimpC BimpC AorB.
     unfold patt_or.
-    assert (H1: Γ ⊢ ((¬ A ---> B) ---> (B ---> C) ---> (¬ A ---> C))).
+    assert (H1: Γ ⊢ ((! A ---> B) ---> (B ---> C) ---> (! A ---> C))).
     { eapply syllogism; auto. }
     apply reorder_meta in H1; auto.
-    assert (H2: Γ ⊢ ((¬ A ---> B) ---> (¬ A ---> C))).
+    assert (H2: Γ ⊢ ((! A ---> B) ---> (! A ---> C))).
     { eapply Modus_ponens. 4: apply H1. all: auto. }
     unfold patt_or in AorB.
-    assert (H3: Γ ⊢ (¬ A ---> C)).
+    assert (H3: Γ ⊢ (! A ---> C)).
     { eapply Modus_ponens. 4: apply H2. all: auto. }
     eapply conclusion_anyway_meta. 4: apply H3. all: auto.
   Defined.
@@ -2280,9 +2279,9 @@ Section FOL_helpers.
   Lemma pf_iff_split Γ A B:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (B ---> A) ->
-    Γ ⊢ (A <---> B).
+    Γ ⊢ A ---> B ->
+    Γ ⊢ B ---> A ->
+    Γ ⊢ A <---> B.
   Proof.
     intros wfA wfB AimplB BimplA.
     unfold patt_iff.
@@ -2292,8 +2291,8 @@ Section FOL_helpers.
   Lemma pf_iff_proj1 Γ A B:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) ->
-    Γ ⊢ (A ---> B).
+    Γ ⊢ A <---> B ->
+    Γ ⊢ A ---> B.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
     apply pf_conj_elim_l_meta in H; auto.
@@ -2587,7 +2586,7 @@ Section FOL_helpers.
   Lemma and_of_negated_iff_not_impl Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (¬ (¬ p1 ---> p2) <---> ¬ p1 and ¬ p2).
+    Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2).
   Proof.
     intros wfp1 wfp2.
     apply conj_intro_meta; auto.
@@ -2599,7 +2598,7 @@ Section FOL_helpers.
       mgAdd (not_not_elim Γ p2 ltac:(auto)); auto 10.
       mgApply' 0 10.
       mgApply' 2 10.
-      mgAdd (not_not_intro Γ (¬ p1) ltac:(auto)); auto 10.
+      mgAdd (not_not_intro Γ (! p1) ltac:(auto)); auto 10.
       mgApply' 0 10.
       mgExactn 4. auto 10.
     - toMyGoal.
@@ -2611,7 +2610,7 @@ Section FOL_helpers.
       mgAdd (not_not_intro Γ p2 ltac:(auto)); auto 10.
       mgApply' 0 10.
       mgApply' 2 10.
-      mgAdd (not_not_elim Γ (¬ p1) ltac:(auto)); auto 10.
+      mgAdd (not_not_elim Γ (! p1) ltac:(auto)); auto 10.
       mgApply' 0 10.
       mgExactn 4. auto 10.
   Defined.
@@ -2619,7 +2618,7 @@ Section FOL_helpers.
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (¬ (p1 ---> p2) <---> p1 and ¬ p2).
+    Γ ⊢ (! (p1 ---> p2) <---> p1 and ! p2).
   Proof.
     intros wfp1 wfp2.
     apply conj_intro_meta; auto.
@@ -2822,7 +2821,7 @@ Section FOL_helpers.
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((p ---> q) <---> (¬ p or q)).
+    Γ ⊢ ((p ---> q) <---> (! p or q)).
   Proof.
     intros wfp wfq.
     mgSplit.
@@ -2843,7 +2842,7 @@ Section FOL_helpers.
 
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
-    Γ ⊢ (⊥ <---> p and ¬ p).
+    Γ ⊢ (⊥ <---> p and ! p).
   Proof.
     intros wfp.
     mgSplit.
@@ -2851,7 +2850,7 @@ Section FOL_helpers.
     - unfold patt_and. toMyGoal.
       mgIntro.
       mgApply' 0 10.
-      mgAdd (A_or_notA Γ (¬ p) ltac:(auto)); auto 10.
+      mgAdd (A_or_notA Γ (! p) ltac:(auto)); auto 10.
       mgExactn 0; auto 10.
   Defined.
 

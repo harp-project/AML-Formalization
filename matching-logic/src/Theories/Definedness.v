@@ -975,7 +975,7 @@ Section definedness.
       apply andb_true_iff in WFB as [E1 E2]. simpl in *.
       now rewrite -> E1, -> E2.
     }
-    epose proof (H := @exists_functional_subst (¬ φ) φ' Γ _ WF _).
+    epose proof (H := @exists_functional_subst (! φ) φ' Γ _ WF _).
     simpl in H.
     epose proof (H0 := and_impl _ _ _ _ _ _ _).
     eapply Modus_ponens in H0. 4: exact H. 2-3: shelve.
@@ -984,13 +984,13 @@ Section definedness.
     epose proof (H1 := and_impl' _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
     1-2: shelve.
     apply reorder_meta. 1-3: shelve.
-    epose proof (H2 := P4 Γ (bevar_subst φ φ' 0) (¬ ex , ¬ φ) _ _).
+    epose proof (H2 := P4 Γ (bevar_subst φ φ' 0) (! ex , ! φ) _ _).
     clear H H1.
-    epose proof (H := prf_weaken_conclusion Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (¬ φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ¬ ¬ ex , (¬ φ)) _ _ _).
+    epose proof (H := prf_weaken_conclusion Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
     eapply Modus_ponens in H. eapply Modus_ponens in H; auto.
     2-4: shelve.
     2: {
-      epose proof (H1 := prf_weaken_conclusion Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (¬ φ)) (¬ ¬ ex , (¬ φ)) _ _ _). eapply Modus_ponens. 4: exact H1. 1-2: shelve.
+      epose proof (H1 := prf_weaken_conclusion Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (! φ)) (! ! ex , (! φ)) _ _ _). eapply Modus_ponens. 4: exact H1. 1-2: shelve.
       apply not_not_intro. shelve.
     }
     eapply syllogism_intro in H2. exact H2. all: auto.
