@@ -3008,7 +3008,8 @@ Section FOL_helpers.
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
       pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
       unfold instantiate in H0, H1.
-      rewrite <- evar_open_bevar_subst_same in H0, H1.
+      fold (evar_open 0 x (evar_quantify x 0 (subst_patctx C φ1))) in H0.
+      fold (evar_open 0 x (evar_quantify x 0 (subst_patctx C φ2))) in H1.
       erewrite -> evar_open_evar_quantify in H0, H1. 2-3: shelve.
       apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
       all: auto.
@@ -3105,7 +3106,8 @@ Section FOL_helpers.
       pose proof (Ex_quan Γ (free_evar_subst ψ φ1 x') fx).
       pose proof (Ex_quan Γ (free_evar_subst ψ φ2 x') fx).
       unfold instantiate in *.
-      rewrite <- evar_open_bevar_subst_same in H2, H3.
+      fold (evar_open 0 fx (free_evar_subst ψ φ1 x')) in H2.
+      fold (evar_open 0 fx (free_evar_subst ψ φ2 x')) in H3.
       do 2 rewrite <- evar_open_free_evar_subst_swap in H1; auto.
       apply pf_iff_iff in H1; auto. 2-3: shelve. destruct H1 as [IH1 IH2].
       eapply syllogism_intro in H2. 5: exact IH2. 2-4: shelve.

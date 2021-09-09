@@ -1152,7 +1152,7 @@ Section FOL_ML_correspondence.
       all: try rewrite -> closed_term_FOL_ML, -> positive_term_FOL_ML; auto.
       apply wf_increase_term with (n := 0); auto.
       2: try rewrite -> closed_form_FOL_ML, -> positive_form_FOL_ML; auto.
-      rewrite -> bevar_subst_well_formedness, -> well_formed_positive_bevar_subst.
+      rewrite -> wfc_aux_bevar_subst, -> well_formed_positive_bevar_subst.
       auto.
       1, 6: apply form_mu_free.
       apply positive_form_FOL_ML.

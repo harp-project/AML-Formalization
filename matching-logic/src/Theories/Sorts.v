@@ -252,11 +252,11 @@ Section sorts.
       - intros H m.
         pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
-        rewrite {3}HeqBigϕ.
+        rewrite {3}HeqBigϕ. rewrite -> evar_open_imp, -> evar_open_in.
         apply pattern_interpretation_predicate_impl.
         2: fold evar_open.
         fold evar_open.
-        rewrite evar_open_in. apply T_predicate_in. apply M_satisfies_theory.
+        apply T_predicate_in. apply M_satisfies_theory.
         intros H1.
         specialize (Hfeip2 H1). clear H1.
         specialize (H m).
@@ -519,7 +519,10 @@ Section sorts.
       apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [Hx'fr _].
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
       
-      rewrite {2}update_evar_val_comm. apply Hx''neqx'.
+      rewrite {2}update_evar_val_comm.
+      do 2 rewrite -> evar_open_bound_evar. rewrite Nat.eqb_refl.
+      rewrite [(if 0 =? 1 then patt_free_evar x' else b0)]/=.
+      rewrite <- Heqx''. apply Hx''neqx'.
       rewrite update_evar_val_same.
       unfold nest_ex.
       rewrite evar_open_nest_ex_aux_comm. simpl.
@@ -528,9 +531,12 @@ Section sorts.
       unfold nest_ex.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
+      rewrite pattern_interpretation_free_evar_independent.
+      do 2 rewrite evar_open_bound_evar. rewrite Nat.eqb_refl.
+      rewrite [(if 0 =? 1 then patt_free_evar x' else b0)]/=. unfold nest_ex in Heqx''.
+      rewrite <- Heqx''. assumption.
       rewrite pattern_interpretation_free_evar_independent. assumption.
-      rewrite pattern_interpretation_free_evar_independent. assumption.
-      auto.      
+      auto.
     Qed.
 
     Lemma interp_partial_function f s₁ s₂ ρₑ ρₛ :
@@ -623,7 +629,8 @@ Section sorts.
       apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [_ Hx'fr].
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
       
-      rewrite {2}update_evar_val_comm. apply Hx''neqx'.
+      rewrite {2}update_evar_val_comm.
+      do 2 rewrite evar_open_bound_evar. cbn. rewrite <- Heqx''. apply Hx''neqx'.
       rewrite update_evar_val_same.
       unfold nest_ex.
       rewrite evar_open_nest_ex_aux_comm. simpl.
@@ -632,9 +639,11 @@ Section sorts.
       unfold nest_ex.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
+      rewrite pattern_interpretation_free_evar_independent.
+      do 2 rewrite evar_open_bound_evar. cbn. unfold nest_ex in Heqx''.
+      rewrite <- Heqx''. assumption.
       rewrite pattern_interpretation_free_evar_independent. assumption.
-      rewrite pattern_interpretation_free_evar_independent. assumption.
-      auto.      
+      auto.
     Qed.
 
     Lemma Minterp_inhabitant_evar_open_update_evar_val ρₑ ρₛ x e s m:
@@ -703,6 +712,15 @@ Section sorts.
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
         eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        unfold evar_open. simpl.
+        fold (evar_open 1 
+             (fresh_evar
+                (patt_forall_of_sort (nest_ex s)
+                   (¬ patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
+                    patt_equal (nest_ex (nest_ex f) $ b1)
+                      (nest_ex (nest_ex f) $ b0) ---> 
+                    patt_equal b1 b0))) (nest_ex (nest_ex f))).
+        fold (evar_open 0 x₁ (nest_ex f)).
         solve_free_evars_inclusion 5.
       }
       rewrite pattern_interpretation_evar_open_nest_ex.
@@ -724,6 +742,15 @@ Section sorts.
       rewrite !pattern_interpretation_evar_open_nest_ex.
       {
         eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        unfold evar_open. simpl.
+        fold (evar_open 1 
+             (fresh_evar
+                (patt_forall_of_sort (nest_ex s)
+                   (¬ patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
+                    patt_equal (nest_ex (nest_ex f) $ b1)
+                      (nest_ex (nest_ex f) $ b0) ---> 
+                    patt_equal b1 b0))) (nest_ex (nest_ex f))).
+        fold (evar_open 0 x₁ (nest_ex f)).
         solve_free_evars_inclusion 4.
       }
       {
@@ -787,6 +814,13 @@ Section sorts.
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
         eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        unfold evar_open. simpl.
+        fold (evar_open 1 
+             (fresh_evar
+             (patt_forall_of_sort (nest_ex s)
+                (patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) --->
+                 patt_equal b1 b0))) (nest_ex (nest_ex f))).
+        fold (evar_open 0 x₁ (nest_ex f)).
         solve_free_evars_inclusion 5.
       }
       rewrite pattern_interpretation_evar_open_nest_ex.
