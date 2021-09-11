@@ -811,69 +811,6 @@ Section definedness.
     apply patt_iff_implies_equal in IFF; auto.
   Qed.
 
-  
-
-
-  Fixpoint uses_existential_generalization Γ ϕ (pf : Γ ⊢ ϕ) :=
-    match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
-      => uses_existential_generalization m0
-         || uses_existential_generalization m1
-    | Ex_quan _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ _ _ => true
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_existential_generalization m0
-    | Framing_right _ _ _ _ m0 => uses_existential_generalization m0
-    | Svar_subst _ _ _ _ _ _ m0 => uses_existential_generalization m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_existential_generalization m0
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
-    end.
-
-  Fixpoint uses_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) :=
-    match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
-      => uses_svar_subst m0
-         || uses_svar_subst m1
-    | Ex_quan _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst pf'
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_svar_subst m0
-    | Framing_right _ _ _ _ m0 => uses_svar_subst m0
-    | Svar_subst _ _ _ _ _ _ m0 => true
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_svar_subst m0
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
-    end.
-
-  
-
-  Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
-      Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
-  Proof.
-  
-  Abort.
-  
   Theorem deduction_theorem :
     forall φ ψ Γ, (* psi closed *)
       Γ ∪ {[ ψ ]} ⊢ φ ->
