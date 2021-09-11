@@ -204,7 +204,7 @@ Qed.
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
-      well_formed phi1 -> well_formed phi2 ->
+      well_formed (patt_exists phi1) -> well_formed phi2 ->
       theory ⊢ (phi1 ---> phi2) ->
       x ∉ (free_evars phi2) ->
       theory ⊢ (exists_quantify x phi1 ---> phi2)
@@ -274,24 +274,95 @@ Qed.
 
   Notation "G |= phi" := (@satisfies signature G phi) (no associativity, at level 50).
 
+  Definition Closure := list (db_index * evar).
+  
+  Definition evar_open_iter (c : Closure) (ϕ : Pattern) : Pattern :=
+    foldr (fun x p => evar_open x.1 x.2 p) ϕ c.
+
+  Lemma wfc_evar_open_iter_wfc c ϕ:
+    well_formed_closed ϕ = true ->
+    well_formed_closed (evar_open_iter c ϕ) = true.
+  Proof.
+    intros Hwfc.
+    induction c.
+    - simpl. exact Hwfc.
+    - simpl. Search evar_open well_formed_closed.
+      rewrite evar_open_wfc; assumption.
+  Qed.
+  
+  Lemma evar_open_iter_wfc c ϕ:
+    well_formed_closed ϕ ->
+    evar_open_iter c ϕ = ϕ.
+  Proof.
+    intros Hwfc.
+    induction c.
+    - reflexivity.
+    - simpl. rewrite IHc. by apply evar_open_wfc.
+  Qed.
+
+  Lemma evar_open_iter_impl c ϕ₁ ϕ₂:
+    evar_open_iter c (ϕ₁ ---> ϕ₂) = ((evar_open_iter c ϕ₁) ---> (evar_open_iter c ϕ₂)).
+  Proof.
+    induction c.
+    - reflexivity.
+    - simpl. rewrite IHc. reflexivity.
+  Qed.
+
+  Lemma evar_open_iter_bot c:
+    evar_open_iter c ⊥ = ⊥.
+  Proof.
+    induction c.
+    - reflexivity.
+    - simpl. rewrite IHc. reflexivity.
+  Qed.
+
+  Lemma evar_open_iter_free_evar c x:
+    evar_open_iter c (patt_free_evar x) = patt_free_evar x.
+  Proof.
+    induction c.
+    - reflexivity.
+    - simpl. rewrite IHc. reflexivity.
+  Qed.
+
+  (*
+  Check bevar_subst.
+  Print bevar_subst.
+  Lemma evar_open_iter_bevar_subst c ϕ₁ ϕ₂ n:
+    if ϕ₂ is patt_bound_evar _ then True else
+      evar_open_iter c (bevar_subst ϕ₁ ϕ₂ n)
+*)
+  (*
+  Lemma evar_open_iter_ex c ϕ:
+    evar_open_iter c (ex, ϕ) = ex, (evar_open_iter c ϕ)*)
+  
+Check bevar_occur.
 (* Soundness theorem *)
-Theorem Soundness :
-  forall phi : Pattern, forall theory : Theory,
-  well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
+Theorem Private_Soundness_gen :
+  forall phi : Pattern, forall theory : Theory, forall (closure : Closure),
+        (phi = phi) ->
+(*        (forall n, n ∈ map fst closure -> bevar_occur phi n = true) ->*)
+(*        0 ∈ (map fst closure) ->*)
+        well_formed_closed (evar_open_iter closure phi) = true -> (theory ⊢ phi) ->
+        (theory |= (evar_open_iter closure phi)).
 Proof.
-  intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
+  intros phi theory closure Hphi Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
   intros m Hv evar_val svar_val. 
   generalize dependent svar_val. generalize dependent evar_val. generalize dependent Hv.
-  induction Hp.
+  generalize dependent Hphi. generalize dependent Hwf. generalize dependent closure.
+  induction Hp; intros closure Hwf Hphi.
 
   (* hypothesis *)
-  - intros Hv evar_val svar_val. apply Hv. assumption.
+  - intros Hv evar_val svar_val.
+    unfold well_formed in i. apply andb_prop in i. destruct i as [Hwfp Hwfc].
+    rewrite (evar_open_iter_wfc _ _ Hwfc).
+    apply Hv. assumption.
 
   (* FOL reasoning - P1 *)
   - intros Hv evar_val svar_val.
+    rewrite 2!evar_open_iter_impl.
     repeat rewrite -> pattern_interpretation_imp_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure phi)) as Xphi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure psi)) as Xpsi.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -311,10 +382,11 @@ Proof.
 
   (* FOL reasoning - P2 *)
   - intros Hv evar_val svar_val.
+    rewrite !evar_open_iter_impl.
     repeat rewrite -> pattern_interpretation_imp_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (pattern_interpretation evar_val svar_val xi) as Xxi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure phi)) as Xphi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure psi)) as Xpsi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure xi)) as Xxi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -323,9 +395,11 @@ Proof.
       set_solver.
 
   (* FOL reasoning - P3 *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv evar_val svar_val.
+    rewrite !evar_open_iter_impl.
+    rewrite evar_open_iter_bot.
     repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure phi)) as Xphi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -335,21 +409,42 @@ Proof.
   (* Modus ponens *)
   - intros Hv evar_val svar_val.
     rename i into wfphi1. rename i0 into wfphi1impphi2.
-    pose (IHHp2 wfphi1impphi2 Hv evar_val svar_val) as e.
+
+    specialize (IHHp1 closure).
+    feed specialize IHHp1.
+    { apply wfc_evar_open_iter_wfc. unfold well_formed in wfphi1. apply andb_prop in wfphi1.
+      destruct wfphi1 as [wfpphi1 wfcphi1]. exact wfcphi1. }
+    { apply Hv. }
+
+    feed specialize IHHp2.
+    { reflexivity. }
+    { apply wfc_evar_open_iter_wfc. unfold well_formed in wfphi1impphi2. apply andb_prop in wfphi1impphi2.
+      destruct wfphi1impphi2 as [wfpphi1impphi2 wfcphi1impphi2]. exact wfcphi1impphi2. }
+    { apply Hv. }
+    
+    pose proof (IHHp2 evar_val svar_val) as e.
+    rewrite evar_open_iter_impl in e.
     rewrite -> pattern_interpretation_iff_subset in e.
     unfold Full.
-    pose proof (H1 := (IHHp1 wfphi1 Hv evar_val svar_val)).
+    pose proof (H1 := (IHHp1 evar_val svar_val)).
     unfold Full in H1.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure phi1)) as Xphi1.
+    remember (pattern_interpretation evar_val svar_val (evar_open_iter closure phi2)) as Xphi2.
     clear -e H1.
     set_solver.
 
   (* Existential quantifier *)
   - intros Hv evar_val svar_val.
-    simpl.
+    rewrite evar_open_iter_impl.
+    simpl. simpl in Hwf.
     rewrite -> pattern_interpretation_imp_simpl.
+    Search evar_open bevar_subst.
+    (*
     rewrite -> pattern_interpretation_ex_simpl.
     simpl.
+    *)
 
+    (*     rewrite evar_open_iter_free_evar. *)
     rewrite -> element_substitution_lemma with (x := fresh_evar phi).
     2: { apply set_evar_fresh_is_fresh. }
     apply set_eq_subseteq. split.
@@ -376,6 +471,7 @@ Proof.
   - intros Hv evar_val svar_val.
     rename i into H. rename i0 into H0.
     rewrite pattern_interpretation_iff_subset.
+    (*
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
     { unfold well_formed. simpl. unfold well_formed in H, H0.
       unfold well_formed_closed. unfold well_formed_closed in H, H0.
@@ -384,6 +480,7 @@ Proof.
       destruct H0 as [Hwfp_phi2 Hwfc_phi2].
       apply andb_true_iff; split; apply andb_true_iff; split; assumption.
     }
+    *)
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
     assert (H2: forall evar_val svar_val,
                (@pattern_interpretation _ m evar_val svar_val phi1)
@@ -779,6 +876,13 @@ Proof.
     + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
     + unfold M_predicate. right. apply Hemp.
 Qed.
+
+
+Theorem Soundness :
+  forall phi : Pattern, forall theory : Theory,
+  well_formed phi -> (theory ⊢ phi) -> (theory |= phi).
+Proof. Abort.
+
 
 End ml_proof_system.
 

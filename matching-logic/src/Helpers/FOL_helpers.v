@@ -2558,7 +2558,54 @@ Section FOL_helpers.
         all:auto.
         remember (subst_ctx AC p) as p'.
         apply Prop_ex_left. all: subst; auto.
-      + admit.
+      + clear IH1.
+        remember (fresh_evar (subst_ctx AC p $ p0)) as fr.
+        Check Ex_gen.
+        epose proof (Heg := Ex_gen Γ (subst_ctx AC p $ p0) (subst_ctx AC (ex , p) $ p0) fr).
+        unfold exists_quantify in Heg.
+        rewrite evar_quantify_free_evar_subst in Heg.
+        { apply count_evar_occurrences_0. subst fr. apply set_evar_fresh_is_fresh. }
+        apply Heg; auto.
+        { apply well_formed_app; auto. apply wf_sctx.
+        
+        simpl in Heg.
+        Print evar_quantify.
+        
+        apply Ex_gen.
+        eapply Framing_left in IH2.
+        eapply syllogism_intro.
+        5: apply IH2. all: auto.
+        remember (fresh_evar (subst_ctx AC (ex , p) $ p0)) as fr.
+        epose proof (Heg := Ex_gen _ _ _ fr _ _ IH2).
+        feed specialize Heg.
+        { subst. apply set_evar_fresh_is_fresh. }
+        simpl in Heg.
+        eapply syllogism_intro.
+        5: apply Heg.
+        Search evar_quantify.
+        Print exists_quantify.
+        Print evar_quantify.
+        Check Ex_gen.
+        eapply Ex_gen.
+        Print ML_proof_system.
+        Check Prop_ex_left.
+
+
+        assert (Hwfs: well_formed (subst_ctx AC (ex , p))) by auto.
+        Check Prop_ex_left.
+        eapply Framing_left in IH2
+        pose proof (H := syllogism_intro _ _ _ _ Hwfs Hwfex Hwfs IH1 IH2).
+        eapply Framing_left in H.
+        eapply syllogism_intro. 1,3: auto.
+
+        5: apply H. all: auto.
+        Check Prop_ex_left.
+        Search (?G ⊢ ((?A $ ?B) ---> (?A' $ ?B))).
+        eapply Framing_left.
+        
+        Search (?G ⊢ (?A ---> ?B) -> ?G ⊢ (?B ---> ?C) -> ?G ⊢ (?A -> ?C)).
+
+        admit.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
