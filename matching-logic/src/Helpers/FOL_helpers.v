@@ -2604,7 +2604,10 @@ Section FOL_helpers.
         eapply Framing_left in IH1.
         eapply syllogism_intro. 4: apply IH1.
         all:auto.
-        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC (evar_open 0 x p)) as p'.
+        unfold exists_quantify. Check Prop_ex_left.
+        simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
+        { eapply evar_is_fresh_in_app_r. apply Hx. }
         apply Prop_ex_left. all: subst; auto.
       + clear IH1.
         Check Ex_gen.

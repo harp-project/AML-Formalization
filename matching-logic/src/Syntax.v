@@ -1381,7 +1381,7 @@ Section syntax.
       erewrite -> IHphi by eassumption. reflexivity.
     - simpl in H. apply IHphi in H. unfold evar_open in H. rewrite H. reflexivity.
   Qed.
-
+  
   Lemma evar_quantify_evar_open x m n n' phi: n < m ->
     x ∉ free_evars phi -> well_formed_closed_aux phi m n' ->
     (evar_quantify x n (evar_open n x phi)) = phi.
@@ -4785,5 +4785,28 @@ Section with_signature.
       apply wfc_aux_body_ex_imp1.
       apply Hwfc.
   Qed.
-              
+
+  Lemma evar_quantify_fresh x n phi:
+    evar_is_fresh_in x phi ->
+    (evar_quantify x n phi) = phi.
+  Proof.
+    intros H.
+    move: n H.
+    induction phi; intros n' H; cbn; auto.
+    - destruct (decide (x = x0)); subst; simpl.
+      + unfold evar_is_fresh_in in H. simpl in H. set_solver.
+      + reflexivity.
+    - apply evar_is_fresh_in_app in H. destruct H as [H1 H2].
+      rewrite IHphi1; auto.
+      rewrite IHphi2; auto.
+    - apply evar_is_fresh_in_imp in H. destruct H as [H1 H2].
+      rewrite IHphi1; auto.
+      rewrite IHphi2; auto.
+    - apply evar_is_fresh_in_exists in H.
+      rewrite IHphi; auto.
+    - apply evar_is_fresh_in_mu in H.
+      rewrite IHphi; auto.
+  Qed.
+  
+    
 End with_signature.
