@@ -3,7 +3,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Ensembles Bool.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
-From stdpp Require Import list.
+From stdpp Require Import list tactics fin_sets.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -2531,7 +2531,6 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_prop_ex_iff Γ AC p x:
-(*    x ∉ AC_free_evars AC ->*)
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
     Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
@@ -2540,7 +2539,7 @@ Section FOL_helpers.
 
     induction AC; simpl.
     - simpl in Hx.
-      unfold exists_quantify. Search evar_quantify evar_open.
+      unfold exists_quantify.
       erewrite evar_quantify_evar_open.
       { apply pf_iff_equiv_refl; auto. }
       2: { apply Hx. }
@@ -2581,19 +2580,29 @@ Section FOL_helpers.
       }
 
       (* TODO automate this *)
-      assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (evar_open 0 x p) $ p0))).
+      assert (Hwfeo: well_formed (evar_open 0 x p)).
       {
-        unfold exists_quantify.
-        apply wf_ex_evar_quantify.
-        apply well_formed_app.
-        2: { apply Prf. }
-        apply wf_sctx.
         unfold well_formed.
         unfold well_formed,well_formed_closed in Hwf. apply andb_prop in Hwf. simpl in Hwf.
         rewrite wfp_evar_open.
         { apply Hwf. }
         unfold well_formed_closed.
         rewrite wfc_aux_body_ex_imp1. apply Hwf. reflexivity.
+      }
+      
+      
+      (* TODO automate this. The problem is that [well_formed_app] and others do not have [= true];
+         that is why [auto] does not work. But [auto] is not suitable for this anyway.
+         A better way would be to create some `simpl_well_formed` tuple, that might use the type class
+         mechanism for extension...
+       *)
+      assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (evar_open 0 x p) $ p0))).
+      {
+        unfold exists_quantify.
+        apply wf_ex_evar_quantify.
+        apply well_formed_app.
+        2: { apply Prf. }
+        auto.
       }
       
       apply pf_iff_iff in IHAC; auto.
@@ -2605,68 +2614,34 @@ Section FOL_helpers.
         eapply syllogism_intro. 4: apply IH1.
         all:auto.
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
-        unfold exists_quantify. Check Prop_ex_left.
+        unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
         { eapply evar_is_fresh_in_app_r. apply Hx. }
         apply Prop_ex_left. all: subst; auto.
       + clear IH1.
-        Check Ex_gen.
-        assert (Γ ⊢ (ex, subst_ctx AC p $ p0) ---> ((ex, subst_ctx AC p) $ p0)).
-        {
-          Check Ex_gen.
-          Check Ex_quan. Print instantiate.
-          epose proof (Htmp := Ex_gen Γ (subst_ctx AC p $ p0) ((ex, subst_ctx AC p) $ p0)).
-          unfold exists_quantify in Htmp.
-          Check Ex_quan.
+
+        eapply Framing_left in IH2.
+        eapply syllogism_intro. 5: eapply IH2. all: auto.
+
+        apply Ex_gen; auto.
+        2: {
+          unfold exists_quantify.
+          simpl.
+          rewrite free_evars_evar_quantify.
+          unfold evar_is_fresh_in in Hx. simpl in Hx. clear -Hx.
+          set_solver.
         }
-        eapply Framing_left in IH2.
-        eapply syllogism_intro. 4
-        remember (fresh_evar (subst_ctx AC p $ p0)) as fr.
-        epose proof (Heg := Ex_gen Γ (subst_ctx AC p $ p0) (subst_ctx AC (ex , p) $ p0) fr).
-        unfold exists_quantify in Heg.
-        rewrite evar_quantify_free_evar_subst in Heg.
-        { apply count_evar_occurrences_0. subst fr. apply set_evar_fresh_is_fresh. }
-        apply Heg; auto.
-        { apply well_formed_app; auto. apply wf_sctx.
         
-        simpl in Heg.
-        Print evar_quantify.
-        
-        apply Ex_gen.
-        eapply Framing_left in IH2.
-        eapply syllogism_intro.
-        5: apply IH2. all: auto.
-        remember (fresh_evar (subst_ctx AC (ex , p) $ p0)) as fr.
-        epose proof (Heg := Ex_gen _ _ _ fr _ _ IH2).
-        feed specialize Heg.
-        { subst. apply set_evar_fresh_is_fresh. }
-        simpl in Heg.
-        eapply syllogism_intro.
-        5: apply Heg.
-        Search evar_quantify.
-        Print exists_quantify.
-        Print evar_quantify.
-        Check Ex_gen.
-        eapply Ex_gen.
-        Print ML_proof_system.
-        Check Prop_ex_left.
-
-
-        assert (Hwfs: well_formed (subst_ctx AC (ex , p))) by auto.
-        Check Prop_ex_left.
-        eapply Framing_left in IH2
-        pose proof (H := syllogism_intro _ _ _ _ Hwfs Hwfex Hwfs IH1 IH2).
-        eapply Framing_left in H.
-        eapply syllogism_intro. 1,3: auto.
-
-        5: apply H. all: auto.
-        Check Prop_ex_left.
-        Search (?G ⊢ ((?A $ ?B) ---> (?A' $ ?B))).
-        eapply Framing_left.
-        
-        Search (?G ⊢ (?A ---> ?B) -> ?G ⊢ (?B ---> ?C) -> ?G ⊢ (?A -> ?C)).
-
-        admit.
+        apply Framing_left.
+        unfold evar_open.
+        rewrite subst_ctx_bevar_subst.
+        unfold exists_quantify. simpl.
+        fold (evar_open 0 x (subst_ctx AC p)).
+        erewrite evar_quantify_evar_open.
+        3: { apply Hxfr1. }
+        3: { apply wf_imp_wfc in Hwfex. apply Hwfex. }
+        2: { lia. }
+        apply Ex_quan.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
@@ -2677,18 +2652,90 @@ Section FOL_helpers.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
         apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
+
+      assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
+      { simpl in Hx.
+        eapply evar_is_fresh_in_richer.
+        2: { apply Hx. }
+        solve_free_evars_inclusion 5.
+      }
+
+      simpl in Hx.
+      pose proof (Hxfr1' := Hxfr1).
+      rewrite -> evar_is_fresh_in_subst_ctx in Hxfr1'.
+      destruct Hxfr1' as [Hxfrp HxAC].
+      
+      assert(Hwf': well_formed (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
+      {
+        unfold exists_quantify.
+        clear -HxAC Hwf.
+        apply wf_ex_eq_sctx_eo.
+        apply Hwf.
+      }
+
+      (* TODO automate this *)
+      assert (Hwfeo: well_formed (evar_open 0 x p)).
+      {
+        unfold well_formed.
+        unfold well_formed,well_formed_closed in Hwf. apply andb_prop in Hwf. simpl in Hwf.
+        rewrite wfp_evar_open.
+        { apply Hwf. }
+        unfold well_formed_closed.
+        rewrite wfc_aux_body_ex_imp1. apply Hwf. reflexivity.
+      }
+      
+      
+      (* TODO automate this. The problem is that [well_formed_app] and others do not have [= true];
+         that is why [auto] does not work. But [auto] is not suitable for this anyway.
+         A better way would be to create some `simpl_well_formed` tuple, that might use the type class
+         mechanism for extension...
+       *)
+      assert(Hwf'p0: well_formed (exists_quantify x (p0 $ subst_ctx AC (evar_open 0 x p)))).
+      {
+        unfold exists_quantify.
+        apply wf_ex_evar_quantify.
+        apply well_formed_app; auto.
+      }
       
       apply pf_iff_iff in IHAC; auto.
+           
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
         eapply Framing_right in IH1.
         eapply syllogism_intro. 4: apply IH1.
         all:auto.
-        remember (subst_ctx AC p) as p'.
+        remember (subst_ctx AC (evar_open 0 x p)) as p'.
+        unfold exists_quantify.
+        simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
+        { eapply evar_is_fresh_in_app_l. apply Hx. }
         apply Prop_ex_right. all: subst; auto.
-      + admit.
-  Abort.
+      + clear IH1.
+
+        eapply Framing_right in IH2.
+        eapply syllogism_intro. 5: eapply IH2. all: auto.
+
+        apply Ex_gen; auto.
+        2: {
+          unfold exists_quantify.
+          simpl.
+          rewrite free_evars_evar_quantify.
+          unfold evar_is_fresh_in in Hx. simpl in Hx. clear -Hx.
+          set_solver.
+        }
+        
+        apply Framing_right.
+        unfold evar_open.
+        rewrite subst_ctx_bevar_subst.
+        unfold exists_quantify. simpl.
+        fold (evar_open 0 x (subst_ctx AC p)).
+        erewrite evar_quantify_evar_open.
+        3: { apply Hxfr1. }
+        3: { apply wf_imp_wfc in Hwfex. apply Hwfex. }
+        2: { lia. }
+        apply Ex_quan.
+  Qed.
+  
 
 
   Lemma and_of_negated_iff_not_impl Γ p1 p2:

@@ -4619,9 +4619,6 @@ End BoundVarSugar.
 #[export]
  Hint Resolve <- evar_is_fresh_in_exists : core.
 
-Check evar_is_fresh_in_exists.
-Print HintDb core.
-
 #[export]
  Hint Resolve evar_is_fresh_in_evar_quantify : core.
 
@@ -4878,3 +4875,12 @@ Proof.
     auto.
 Qed.
 
+Lemma free_evars_evar_quantify {Σ : Signature} x n p:
+  free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.
+Proof.
+  move: n.
+  induction p; intros n'; simpl; try set_solver.
+  destruct (decide (x = x0)).
+    + subst. simpl. set_solver.
+    + simpl. set_solver.
+Qed.
