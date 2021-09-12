@@ -2530,14 +2530,25 @@ Section FOL_helpers.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
   Defined.
 
-  Lemma prf_prop_ex_iff Γ AC p:
-    well_formed (patt_exists p) ->
-    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (patt_exists (subst_ctx AC p))).
+  Lemma prf_prop_ex_iff Γ AC p x:
+(*    x ∉ AC_free_evars AC ->*)
+    evar_is_fresh_in x (subst_ctx AC p) ->
+    well_formed (patt_exists p) = true ->
+    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
   Proof.
-    intros Hwf.
+    intros Hx Hwf.
 
     induction AC; simpl.
-    - apply pf_iff_equiv_refl; auto.
+    - simpl in Hx.
+      unfold exists_quantify. Search evar_quantify evar_open.
+      erewrite evar_quantify_evar_open.
+      { apply pf_iff_equiv_refl; auto. }
+      2: { apply Hx. }
+      2: { unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
+           apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
+           apply Hwfc.
+      }
+      lia. 
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
@@ -2548,8 +2559,45 @@ Section FOL_helpers.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
         apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
       }
+
+      assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
+      { simpl in Hx.
+        eapply evar_is_fresh_in_richer.
+        2: { apply Hx. }
+        solve_free_evars_inclusion 5.
+      }
+
+      simpl in Hx.
+      pose proof (Hxfr1' := Hxfr1).
+      rewrite -> evar_is_fresh_in_subst_ctx in Hxfr1'.
+      destruct Hxfr1' as [Hxfrp HxAC].
+      
+      assert(Hwf': well_formed (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
+      {
+        unfold exists_quantify.
+        clear -HxAC Hwf.
+        apply wf_ex_eq_sctx_eo.
+        apply Hwf.
+      }
+
+      (* TODO automate this *)
+      assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (evar_open 0 x p) $ p0))).
+      {
+        unfold exists_quantify.
+        apply wf_ex_evar_quantify.
+        apply well_formed_app.
+        2: { apply Prf. }
+        apply wf_sctx.
+        unfold well_formed.
+        unfold well_formed,well_formed_closed in Hwf. apply andb_prop in Hwf. simpl in Hwf.
+        rewrite wfp_evar_open.
+        { apply Hwf. }
+        unfold well_formed_closed.
+        rewrite wfc_aux_body_ex_imp1. apply Hwf. reflexivity.
+      }
       
       apply pf_iff_iff in IHAC; auto.
+           
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
