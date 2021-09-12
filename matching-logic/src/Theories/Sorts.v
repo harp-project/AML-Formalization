@@ -695,7 +695,9 @@ Section sorts.
       rewrite Minterp_inhabitant_evar_open_update_evar_val.
       2: {
         eapply evar_is_fresh_in_richer.
-        2: { subst. auto. }
+        2: { subst x₁.
+             apply set_evar_fresh_is_fresh.
+        }
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
@@ -711,7 +713,7 @@ Section sorts.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         unfold evar_open. simpl.
         fold (evar_open 1 
              (fresh_evar
@@ -725,7 +727,7 @@ Section sorts.
       }
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         solve_free_evars_inclusion 4.
       }
       rewrite pattern_interpretation_free_evar_simpl.
@@ -741,7 +743,7 @@ Section sorts.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite !pattern_interpretation_evar_open_nest_ex.
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         unfold evar_open. simpl.
         fold (evar_open 1 
              (fresh_evar
@@ -754,7 +756,7 @@ Section sorts.
         solve_free_evars_inclusion 4.
       }
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         solve_free_evars_inclusion 4.
       }
       rewrite equal_iff_interpr_same. 2: { apply M_satisfies_theory. }
@@ -797,7 +799,7 @@ Section sorts.
       rewrite Minterp_inhabitant_evar_open_update_evar_val.
       2: {        
         eapply evar_is_fresh_in_richer.
-        2: { subst. auto. }
+        2: { subst. apply set_evar_fresh_is_fresh. }
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
@@ -813,7 +815,7 @@ Section sorts.
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         unfold evar_open. simpl.
         fold (evar_open 1 
              (fresh_evar
@@ -825,7 +827,7 @@ Section sorts.
       }
       rewrite pattern_interpretation_evar_open_nest_ex.
       {
-        eapply evar_is_fresh_in_richer. 2: { subst. auto. }
+        eapply evar_is_fresh_in_richer. 2: { subst. apply set_evar_fresh_is_fresh. }
         solve_free_evars_inclusion 4.
       }
       rewrite pattern_interpretation_free_evar_simpl.
