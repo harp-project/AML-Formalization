@@ -580,6 +580,9 @@ Export Syntax Semantics.
 #[export]
  Hint Resolve well_formed_and : core.
 
+#[export]
+ Hint Resolve well_formed_iff : core.
+
  #[export]
        Hint Resolve M_predicate_not : core.
  #[export]

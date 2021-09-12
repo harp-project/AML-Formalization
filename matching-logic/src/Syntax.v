@@ -1381,7 +1381,7 @@ Section syntax.
       erewrite -> IHphi by eassumption. reflexivity.
     - simpl in H. apply IHphi in H. unfold evar_open in H. rewrite H. reflexivity.
   Qed.
-
+  
   Lemma evar_quantify_evar_open x m n n' phi: n < m ->
     x ∉ free_evars phi -> well_formed_closed_aux phi m n' ->
     (evar_quantify x n (evar_open n x phi)) = phi.
@@ -2240,12 +2240,19 @@ Section syntax.
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
     free_evar_subst (pcPattern ctx) p (pcEvar ctx).
 
-  
+  (* TODO make Set ? *)
   Inductive Application_context : Type :=
   | box
   | ctx_app_l (cc : Application_context) (p : Pattern) (Prf : well_formed p)
   | ctx_app_r (p : Pattern) (cc : Application_context) (Prf : well_formed p)
   .
+
+  Fixpoint AC_free_evars (AC : Application_context) : EVarSet :=
+    match AC with
+    | box => ∅
+    | @ctx_app_l cc p _ => free_evars p ∪ AC_free_evars cc
+    | @ctx_app_r p cc _ => free_evars p ∪ AC_free_evars cc
+    end.
 
   Fixpoint subst_ctx (C : Application_context) (p : Pattern)
     : Pattern :=
@@ -2255,6 +2262,7 @@ Section syntax.
     | @ctx_app_r p' C' prf => patt_app p' (subst_ctx C' p)
     end.
 
+  (* TODO rewrite using wc_sctx *)
   Lemma wf_sctx (C : Application_context) (A : Pattern) :
     well_formed A -> well_formed (subst_ctx C A).
   Proof.
@@ -2994,6 +3002,23 @@ Section syntax.
     - eapply IHphi. apply Hwfc.
     - eapply IHphi. apply Hwfc.
   Qed.
+
+  Lemma wfc_aux_implies_not_bevar_occur phi ne ns :
+    well_formed_closed_aux phi ne ns ->
+    bevar_occur phi ne = false.
+  Proof.
+    move: ne ns.
+    induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
+    - apply bool_decide_eq_false. apply Nat.ltb_lt in Hwfc. lia.
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
+      erewrite IHphi1; eauto.
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
+      erewrite IHphi1, IHphi2; eauto.
+    - erewrite IHphi; eauto.
+    - erewrite IHphi; eauto.
+  Qed.
   
   Lemma wfc_implies_not_bsvar_occur phi n :
     well_formed_closed phi ->
@@ -3008,6 +3033,21 @@ Section syntax.
     constructor.
   Qed.
 
+  Lemma wfc_implies_not_bevar_occur phi n :
+    well_formed_closed phi ->
+    bevar_occur phi n = false.
+  Proof.
+    intros H.
+    erewrite wfc_aux_implies_not_bevar_occur.
+    { reflexivity. }
+    unfold well_formed_closed in H.
+    eapply well_formed_closed_aux_ind.
+    3: apply H.
+    2: { instantiate (1 := 0). lia. }
+    lia.
+  Qed.
+
+  
   Lemma not_bsvar_occur_bsvar_subst phi psi n:
     well_formed_closed psi ->
     ~ bsvar_occur (bsvar_subst phi psi n) n.
@@ -3662,6 +3702,19 @@ Section syntax.
     done.
   Qed.
 
+  Lemma evar_is_fresh_in_app x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂)
+    <-> (evar_is_fresh_in x ϕ₁ /\ evar_is_fresh_in x ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply evar_is_fresh_in_app_l. apply H.
+      + eapply evar_is_fresh_in_app_r. apply H.
+    - unfold evar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.    
+
   (*Hint Resolve evar_is_fresh_in_app_r : core.*)
 
   Corollary evar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
@@ -3682,10 +3735,23 @@ Section syntax.
     done.
   Qed.
 
+  Lemma evar_is_fresh_in_imp x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂)
+    <-> (evar_is_fresh_in x ϕ₁ /\ evar_is_fresh_in x ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply evar_is_fresh_in_imp_l. apply H.
+      + eapply evar_is_fresh_in_imp_r. apply H.
+    - unfold evar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.
+  
   (*Hint Resolve evar_is_fresh_in_imp_r : core.*)
 
   Corollary evar_is_fresh_in_exists x ϕ :
-    evar_is_fresh_in x (patt_exists ϕ) -> evar_is_fresh_in x ϕ.
+    evar_is_fresh_in x (patt_exists ϕ) <-> evar_is_fresh_in x ϕ.
   Proof.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
@@ -3693,7 +3759,7 @@ Section syntax.
   (*Hint Resolve evar_is_fresh_in_exists : core.*)
 
   Corollary evar_is_fresh_in_mu x ϕ :
-    evar_is_fresh_in x (patt_mu ϕ) -> evar_is_fresh_in x ϕ.
+    evar_is_fresh_in x (patt_mu ϕ) <-> evar_is_fresh_in x ϕ.
   Proof.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
@@ -3734,13 +3800,13 @@ Section syntax.
   Qed.
 
   Corollary svar_is_fresh_in_exists x ϕ :
-    svar_is_fresh_in x (patt_exists ϕ) -> svar_is_fresh_in x ϕ.
+    svar_is_fresh_in x (patt_exists ϕ) <-> svar_is_fresh_in x ϕ.
   Proof.
     unfold svar_is_fresh_in. simpl. done.
   Qed.
 
   Corollary svar_is_fresh_in_mu x ϕ :
-    svar_is_fresh_in x (patt_mu ϕ) -> svar_is_fresh_in x ϕ.
+    svar_is_fresh_in x (patt_mu ϕ) <-> svar_is_fresh_in x ϕ.
   Proof.
     unfold svar_is_fresh_in. simpl. done.
   Qed.
@@ -4550,6 +4616,12 @@ End BoundVarSugar.
 #[export]
  Hint Resolve well_formed_free_evar_subst : core.
 
+#[export]
+ Hint Resolve <- evar_is_fresh_in_exists : core.
+
+#[export]
+ Hint Resolve evar_is_fresh_in_evar_quantify : core.
+
 (* Tactics for resolving goals involving sets *)
 
 Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
@@ -4666,3 +4738,149 @@ Ltac solve_fresh_svar_neq :=
       );
     fail
   end.
+
+Section with_signature.
+  Context {Σ : Signature}.
+
+  Lemma evar_is_fresh_in_subst_ctx x AC p:
+    evar_is_fresh_in x (subst_ctx AC p)
+    <-> (evar_is_fresh_in x p /\ x ∉ AC_free_evars AC).
+  Proof.
+    induction AC.
+    - simpl. split; set_solver.
+    - simpl. split; intros H.
+      + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
+        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        assert (Hfr2: evar_is_fresh_in x p0).
+        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        rewrite -> IHAC in Hfr1.
+        split; [apply Hfr1|].
+        clear -Hfr1 Hfr2.
+        unfold evar_is_fresh_in in Hfr2.
+        set_solver.
+      + destruct H as [H1 H2].
+        rewrite -> evar_is_fresh_in_app.
+        split.
+        * rewrite -> IHAC. set_solver.
+        * unfold evar_is_fresh_in. set_solver.
+    - simpl. split; intros H.
+      + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
+        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        assert (Hfr2: evar_is_fresh_in x p0).
+        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        rewrite -> IHAC in Hfr1.
+        split; [apply Hfr1|].
+        clear -Hfr1 Hfr2.
+        unfold evar_is_fresh_in in Hfr2.
+        set_solver.
+      + destruct H as [H1 H2].
+        rewrite -> evar_is_fresh_in_app.
+        split.
+        * unfold evar_is_fresh_in. set_solver.
+        * rewrite -> IHAC. set_solver.
+  Qed.
+
+  Lemma wf_ex_evar_quantify x p:
+    well_formed p = true ->
+    well_formed (patt_exists (evar_quantify x 0 p)) = true.
+  Proof.
+    intros Hwf.
+    unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
+    apply andb_prop in Hwf.
+    destruct Hwf as [Hwfp Hwfc].
+    simpl in Hwfp.
+    unfold well_formed,well_formed_closed. simpl.
+    apply andb_true_intro.
+    split.
+    - simpl. apply evar_quantify_positive. apply Hwfp.
+    - unfold well_formed_closed.
+      simpl.
+      apply evar_quantify_closed.
+      simpl in Hwfc.
+      apply Hwfc.
+  Qed.
+
+  Lemma wf_ex_eq_sctx_eo AC x p:
+    well_formed (patt_exists p) = true ->
+    well_formed (patt_exists (evar_quantify x 0 (subst_ctx AC (evar_open 0 x p)))) = true.
+  Proof.
+    intros Hwf.
+    unfold well_formed in Hwf.
+    apply andb_prop in Hwf.
+    destruct Hwf as [Hwfp Hwfc].
+    simpl in Hwfp.
+    unfold well_formed.
+    apply andb_true_intro.
+    split.
+    - simpl. apply evar_quantify_positive.
+      apply wp_sctx.
+      apply wfp_evar_open.
+      apply Hwfp.
+    - unfold well_formed_closed.
+      simpl.
+      apply evar_quantify_closed.
+      apply wc_sctx.
+      apply wfc_aux_body_ex_imp1.
+      apply Hwfc.
+  Qed.
+
+  Lemma evar_quantify_fresh x n phi:
+    evar_is_fresh_in x phi ->
+    (evar_quantify x n phi) = phi.
+  Proof.
+    intros H.
+    move: n H.
+    induction phi; intros n' H; cbn; auto.
+    - destruct (decide (x = x0)); subst; simpl.
+      + unfold evar_is_fresh_in in H. simpl in H. set_solver.
+      + reflexivity.
+    - apply evar_is_fresh_in_app in H. destruct H as [H1 H2].
+      rewrite IHphi1; auto.
+      rewrite IHphi2; auto.
+    - apply evar_is_fresh_in_imp in H. destruct H as [H1 H2].
+      rewrite IHphi1; auto.
+      rewrite IHphi2; auto.
+    - apply evar_is_fresh_in_exists in H.
+      rewrite IHphi; auto.
+    - apply evar_is_fresh_in_mu in H.
+      rewrite IHphi; auto.
+  Qed.
+
+End with_signature.
+
+Lemma wf_imp_wfc {Σ : Signature} ϕ:
+  well_formed ϕ -> well_formed_closed ϕ.
+Proof.
+  intros H. apply andb_prop in H. tauto.
+Qed.
+
+#[export]
+ Hint Resolve wf_imp_wfc : core.
+
+#[export]
+ Hint Resolve wfc_implies_not_bevar_occur : core.
+
+Lemma subst_ctx_bevar_subst {Σ : Signature} AC p q n:
+  subst_ctx AC (bevar_subst p q n) = bevar_subst (subst_ctx AC p) q n.
+Proof.
+  induction AC.
+  - reflexivity.
+  - simpl. rewrite IHAC. clear IHAC.
+    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    2: { reflexivity. }
+    auto.
+  - simpl. rewrite IHAC. clear IHAC.
+    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    2: { reflexivity. }
+    auto.
+Qed.
+
+Lemma free_evars_evar_quantify {Σ : Signature} x n p:
+  free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.
+Proof.
+  move: n.
+  induction p; intros n'; simpl; try set_solver.
+  destruct (decide (x = x0)).
+    + subst. simpl. set_solver.
+    + simpl. set_solver.
+Qed.

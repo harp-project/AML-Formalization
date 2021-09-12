@@ -59,22 +59,88 @@ Section definedness.
   Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
     patt_total (phi1 <---> phi2).
 
+  Definition patt_in (phi1 phi2 : Pattern) : Pattern :=
+    patt_defined (patt_and phi1 phi2).
+  
+End definedness.
+
+Module Notations.
+  Import Syntax.
+
+  Notation "⌈ p ⌉" := (patt_defined p) : ml_scope.
+  Notation "⌊ p ⌋" := (patt_total p) : ml_scope.
+  Notation "p =ml q" := (patt_equal p q) (at level 67) : ml_scope.
+  Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
+  Notation "p ∈ml q" := (patt_in p q) (at level 67) : ml_scope.
+  
+End Notations.
+
+Import Notations.
+
+Section definedness.
+  Context
+    {Σ : Signature}
+    {syntax : Syntax}
+  .
+
+  Lemma well_formed_defined ϕ:
+    well_formed ϕ ->
+    well_formed ⌈ ϕ ⌉.
+  Proof.
+    intros Hwfϕ.
+    unfold patt_defined.
+    auto.
+  Qed.
+
+  #[local]
+   Hint Resolve well_formed_defined : core.
+
+  Lemma well_formed_total ϕ:
+    well_formed ϕ ->
+    well_formed ⌊ ϕ ⌋.
+  Proof.
+    intros Hwfϕ.
+    unfold patt_total.
+    auto.
+  Qed.
+
+  #[local]
+   Hint Resolve well_formed_total : core.
+  
   Lemma well_formed_equal (phi1 phi2 : Pattern) :
     well_formed phi1 ->
     well_formed phi2 ->
-    well_formed (patt_equal phi1 phi2).
+    well_formed (phi1 =ml phi2).
   Proof.
-    unfold patt_equal, patt_iff, patt_and, patt_or, patt_not. intros H H0.
-    unfold well_formed in *. simpl.
-    unfold well_formed_closed in *. simpl.
-    apply andb_prop in H. destruct H as [H11 H12].
-    apply andb_prop in H0. destruct H0 as [H21 H22].
-    rewrite !(H11,H12,H21,H22). simpl. auto.
+    intros wfphi1 wfphi2. unfold "=ml". auto.
   Qed.
 
-  Definition patt_in (phi1 phi2 : Pattern) : Pattern :=
-    patt_defined (patt_and phi1 phi2).
+  #[local]
+   Hint Resolve well_formed_equal : core.
+  
+  Lemma well_formed_subseteq (phi1 phi2 : Pattern) :
+    well_formed phi1 ->
+    well_formed phi2 ->
+    well_formed (phi1 ⊆ml phi2).
+  Proof.
+    intros wfphi1 wfphi2. unfold "⊆ml". auto.
+  Qed.
 
+  #[local]
+   Hint Resolve well_formed_subseteq : core.
+
+  Lemma well_formed_in (phi1 phi2 : Pattern) :
+    well_formed phi1 ->
+    well_formed phi2 ->
+    well_formed (phi1 ∈ml phi2).
+  Proof.
+    intros wfphi1 wfphi2. unfold "∈ml". auto.
+  Qed.
+
+  #[local]
+   Hint Resolve well_formed_in : core.
+
+  
   Let sym (s : Symbols) : Pattern :=
     @patt_sym Σ (inj s).
 
@@ -728,21 +794,18 @@ Section definedness.
 
     Lemma patt_iff_implies_equal :
     forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
-    Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ (patt_equal φ1 φ2).
+    Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ φ1 =ml φ2.
   Proof.
     intros φ1 φ2 Γ WF1 WF2 H.
     epose proof (ANNA := A_implies_not_not_A_ctx Γ (φ1 <---> φ2) (ctx_app_r box _)). 
-    apply ANNA; auto. unfold patt_iff, patt_and, patt_or, patt_not.
-    unfold well_formed, well_formed_closed in *.
-    apply andb_true_iff in WF1 as [H0 H1]. apply andb_true_iff in WF2 as [H2 H3]. cbn.
-    now rewrite -> H1, -> H2, -> H3, -> H0.
+    apply ANNA; auto.
     Unshelve.
     auto.
   Qed.
 
   Lemma patt_equal_refl :
     forall φ Γ, well_formed φ ->
-    Γ ⊢ patt_equal φ φ.
+    Γ ⊢ φ =ml φ.
   Proof.
     intros φ Γ WF. pose proof (IFF := pf_iff_equiv_refl Γ φ WF).
     apply patt_iff_implies_equal in IFF; auto.
@@ -751,14 +814,14 @@ Section definedness.
   Theorem deduction_theorem :
     forall φ ψ Γ, (* psi closed *)
       Γ ∪ {[ ψ ]} ⊢ φ ->
-      Γ ⊢ patt_total (ψ) ---> φ.
+      Γ ⊢ ⌊ ψ ⌋ ---> φ.
   Proof.
   
   Admitted.
 
   Theorem reverse_deduction_theorem :
     forall φ ψ Γ,
-      Γ ⊢ ((patt_total ψ) ---> φ) ->
+      Γ ⊢ ⌊ ψ ⌋ ---> φ ->
       Γ ∪ {[ ψ ]} ⊢ φ.
   Proof.
   
@@ -767,7 +830,7 @@ Section definedness.
   Lemma equality_elimination Γ φ1 φ2 C :
     well_formed φ1 -> well_formed φ2 ->
     wf_PatCtx C ->
-    Γ ⊢ (patt_equal φ1 φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
+    Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
        (subst_patctx C φ1) ---> (subst_patctx C φ2).
   Proof.
     intros WF1 WF2 WFC. apply deduction_theorem.
@@ -784,7 +847,7 @@ Section definedness.
   Lemma equality_elimination_helper Γ φ1 φ2 ψ x :
     mu_free ψ ->
     well_formed φ1 -> well_formed φ2 -> well_formed ψ ->
-    Γ ⊢ (patt_equal φ1 φ2) ---> 
+    Γ ⊢ (φ1 =ml φ2) ---> 
         (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x).
   Proof.
     intros MF WF1 WF2 WFψ. apply deduction_theorem.
@@ -800,7 +863,7 @@ Section definedness.
   Corollary equality_elimination2 Γ φ1 φ2 ψ:
     mu_free ψ ->
     well_formed φ1 -> well_formed φ2 -> wf_body_ex ψ ->
-    Γ ⊢ (patt_equal φ1 φ2) ---> 
+    Γ ⊢ (φ1 =ml φ2) ---> 
         (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0).
   Proof.
     intros MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
@@ -815,15 +878,14 @@ Section definedness.
 
   Lemma patt_eq_sym_meta Γ φ1 φ2 :
      well_formed φ1 -> well_formed φ2 ->
-     Γ ⊢ (patt_equal φ1 φ2) -> Γ ⊢ (patt_equal φ2 φ1).
+     Γ ⊢ φ1 =ml φ2 -> Γ ⊢ φ2 =ml φ1.
   Proof.
     intros WF1 WF2 H.
     epose proof (P2 := @equality_elimination Γ φ1 φ2 pctx_box WF1 WF2 ltac:(constructor)). simpl in P2.
     eapply Modus_ponens in P2; auto.
-    3: apply well_formed_imp; auto. 2-3: apply well_formed_equal; auto.
     epose proof (P1 := @equality_elimination Γ φ1 φ2 (pctx_imp_l pctx_box φ1) WF1 WF2 _).
     simpl in P1.
-    apply Modus_ponens in P1; auto. 3: apply well_formed_imp; auto. 2-3: apply well_formed_equal; auto.
+    apply Modus_ponens in P1; auto.
     apply Modus_ponens in P1. 2-3: auto. 2: apply A_impl_A; auto.
     apply pf_iff_split in P2; auto.
     apply patt_iff_implies_equal in P2; auto.
@@ -833,7 +895,7 @@ Section definedness.
 
   Lemma patt_eq_sym Γ φ1 φ2:
      well_formed φ1 -> well_formed φ2 ->
-     Γ ⊢ (patt_equal φ1 φ2) ---> (patt_equal φ2 φ1).
+     Γ ⊢ φ1 =ml φ2 ---> φ2 =ml φ1.
   Proof.
     intros WF1 WF2.
     apply deduction_theorem.
@@ -847,7 +909,8 @@ Section definedness.
   Qed.
 
   Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
-    evar_quantify x n (patt_equal φ1 φ2) = patt_equal (evar_quantify x n φ1) (evar_quantify x n φ2). Proof. auto. Qed.
+      evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
+  Proof. auto. Qed.
 
   Lemma exists_functional_subst φ φ' Γ :
     mu_free φ -> well_formed φ' -> wf_body_ex φ ->
@@ -860,7 +923,7 @@ Section definedness.
     assert (Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')). {
       pose proof (SYM1 := @patt_eq_sym Γ φ' Z ltac:(auto) WFZ).
       pose proof (SYM2 := @patt_eq_sym Γ Z φ' WFZ ltac:(auto)).
-      apply pf_iff_split; auto. 1-2: now apply well_formed_equal.
+      apply pf_iff_split; auto. 
     }
     assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
       unfold instantiate.
@@ -910,7 +973,6 @@ Section definedness.
       all: repeat try apply well_formed_imp; auto.
       rewrite <- HeqZ. auto.
       all: now apply wf_body_ex_to_wf.
-      * now apply wf_body_ex_to_wf.
     }
     eapply Modus_ponens. 4: apply and_impl'; auto.
     1,2,4,5: shelve.
@@ -936,7 +998,6 @@ Section definedness.
     1-5: apply andb_true_iff in WF as [E1 E2];
       apply wfc_aux_extend with (n' := 1) (m' := 0) in E2.
     all: try lia. 1-5: rewrite -> E1, -> E2; simpl; auto.
-    apply well_formed_equal; auto.
     unfold instantiate. simpl. eapply stdpp_ext.not_elem_of_larger_impl_not_elem_of.
     eapply union_mono_r. apply free_evars_bevar_subst.
     rewrite HeqZvar. unfold fresh_evar. simpl.
@@ -1005,8 +1066,25 @@ Section definedness.
 
 End definedness.
 
-  Hint Resolve T_predicate_defined : core.
-  Hint Resolve T_predicate_total : core.
-  Hint Resolve T_predicate_subseteq : core.
-  Hint Resolve T_predicate_equals : core.
-  Hint Resolve T_predicate_in : core.
+
+#[export]
+ Hint Resolve T_predicate_defined : core.
+#[export]
+ Hint Resolve T_predicate_total : core.
+#[export]
+ Hint Resolve T_predicate_subseteq : core.
+#[export]
+ Hint Resolve T_predicate_equals : core.
+#[export]
+ Hint Resolve T_predicate_in : core.
+
+#[export]
+ Hint Resolve well_formed_defined : core.
+#[export]
+ Hint Resolve well_formed_total : core.
+#[export]
+ Hint Resolve well_formed_equal : core.
+#[export]
+ Hint Resolve well_formed_subseteq : core.
+#[export]
+ Hint Resolve well_formed_in : core.
