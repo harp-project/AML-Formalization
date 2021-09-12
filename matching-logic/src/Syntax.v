@@ -3002,6 +3002,23 @@ Section syntax.
     - eapply IHphi. apply Hwfc.
     - eapply IHphi. apply Hwfc.
   Qed.
+
+  Lemma wfc_aux_implies_not_bevar_occur phi ne ns :
+    well_formed_closed_aux phi ne ns ->
+    bevar_occur phi ne = false.
+  Proof.
+    move: ne ns.
+    induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
+    - apply bool_decide_eq_false. apply Nat.ltb_lt in Hwfc. lia.
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
+      erewrite IHphi1; eauto.
+    - apply andb_true_iff in Hwfc.
+      destruct Hwfc as [Hwfc1 Hwfc2].
+      erewrite IHphi1, IHphi2; eauto.
+    - erewrite IHphi; eauto.
+    - erewrite IHphi; eauto.
+  Qed.
   
   Lemma wfc_implies_not_bsvar_occur phi n :
     well_formed_closed phi ->
@@ -3016,6 +3033,21 @@ Section syntax.
     constructor.
   Qed.
 
+  Lemma wfc_implies_not_bevar_occur phi n :
+    well_formed_closed phi ->
+    bevar_occur phi n = false.
+  Proof.
+    intros H.
+    erewrite wfc_aux_implies_not_bevar_occur.
+    { reflexivity. }
+    unfold well_formed_closed in H.
+    eapply well_formed_closed_aux_ind.
+    3: apply H.
+    2: { instantiate (1 := 0). lia. }
+    lia.
+  Qed.
+
+  
   Lemma not_bsvar_occur_bsvar_subst phi psi n:
     well_formed_closed psi ->
     ~ bsvar_occur (bsvar_subst phi psi n) n.
@@ -3719,7 +3751,7 @@ Section syntax.
   (*Hint Resolve evar_is_fresh_in_imp_r : core.*)
 
   Corollary evar_is_fresh_in_exists x ϕ :
-    evar_is_fresh_in x (patt_exists ϕ) -> evar_is_fresh_in x ϕ.
+    evar_is_fresh_in x (patt_exists ϕ) <-> evar_is_fresh_in x ϕ.
   Proof.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
@@ -3727,7 +3759,7 @@ Section syntax.
   (*Hint Resolve evar_is_fresh_in_exists : core.*)
 
   Corollary evar_is_fresh_in_mu x ϕ :
-    evar_is_fresh_in x (patt_mu ϕ) -> evar_is_fresh_in x ϕ.
+    evar_is_fresh_in x (patt_mu ϕ) <-> evar_is_fresh_in x ϕ.
   Proof.
     unfold evar_is_fresh_in. simpl. done.
   Qed.
@@ -3768,13 +3800,13 @@ Section syntax.
   Qed.
 
   Corollary svar_is_fresh_in_exists x ϕ :
-    svar_is_fresh_in x (patt_exists ϕ) -> svar_is_fresh_in x ϕ.
+    svar_is_fresh_in x (patt_exists ϕ) <-> svar_is_fresh_in x ϕ.
   Proof.
     unfold svar_is_fresh_in. simpl. done.
   Qed.
 
   Corollary svar_is_fresh_in_mu x ϕ :
-    svar_is_fresh_in x (patt_mu ϕ) -> svar_is_fresh_in x ϕ.
+    svar_is_fresh_in x (patt_mu ϕ) <-> svar_is_fresh_in x ϕ.
   Proof.
     unfold svar_is_fresh_in. simpl. done.
   Qed.
@@ -4584,6 +4616,15 @@ End BoundVarSugar.
 #[export]
  Hint Resolve well_formed_free_evar_subst : core.
 
+#[export]
+ Hint Resolve <- evar_is_fresh_in_exists : core.
+
+Check evar_is_fresh_in_exists.
+Print HintDb core.
+
+#[export]
+ Hint Resolve evar_is_fresh_in_evar_quantify : core.
+
 (* Tactics for resolving goals involving sets *)
 
 Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
@@ -4807,6 +4848,33 @@ Section with_signature.
     - apply evar_is_fresh_in_mu in H.
       rewrite IHphi; auto.
   Qed.
-  
-    
+
 End with_signature.
+
+Lemma wf_imp_wfc {Σ : Signature} ϕ:
+  well_formed ϕ -> well_formed_closed ϕ.
+Proof.
+  intros H. apply andb_prop in H. tauto.
+Qed.
+
+#[export]
+ Hint Resolve wf_imp_wfc : core.
+
+#[export]
+ Hint Resolve wfc_implies_not_bevar_occur : core.
+
+Lemma subst_ctx_bevar_subst {Σ : Signature} AC p q n:
+  subst_ctx AC (bevar_subst p q n) = bevar_subst (subst_ctx AC p) q n.
+Proof.
+  induction AC.
+  - reflexivity.
+  - simpl. rewrite IHAC. clear IHAC.
+    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    2: { reflexivity. }
+    auto.
+  - simpl. rewrite IHAC. clear IHAC.
+    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    2: { reflexivity. }
+    auto.
+Qed.
+
