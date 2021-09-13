@@ -2966,6 +2966,8 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
+(* TODO this should have a different name, and we should give the name [mgSplit] to a tactic
+  that works with our goals *)
 Ltac mgSplit := apply conj_intro_meta; auto.
 
 Section FOL_helpers.
