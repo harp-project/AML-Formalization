@@ -2367,11 +2367,12 @@ Section FOL_helpers.
   Lemma prf_equiv_congruence_implicative_ctx Γ p q C:
     well_formed p ->
     well_formed q ->
+    PC_wf C ->
     is_implicative_context C ->
     Γ ⊢ (p <---> q) ->
     Γ ⊢ (((emplace C p) <---> (emplace C q))).
   Proof.
-    intros wfp wfq impC Hiff.
+    intros wfp wfq wfC impC Hiff.
     destruct C.
     induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
       unfold emplace; simpl.
@@ -2381,7 +2382,8 @@ Section FOL_helpers.
       + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
     - apply pf_iff_equiv_refl. auto.  (*apply prf_conclusion; auto unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
     - unfold emplace in *. simpl in *.
-      pose proof (pwf := pcPattern_wf).
+      pose proof (pwf := wfC).
+      unfold PC_wf in pwf.
       unfold well_formed,well_formed_closed in pwf. simpl in pwf.
       apply andb_prop in pwf. destruct pwf as [pwf1 pwf2].
       apply andb_prop in pwf1. destruct pwf1 as [pwfp1 pwfp2].
@@ -2399,7 +2401,7 @@ Section FOL_helpers.
         remember (free_evar_subst pcPattern2 q pcEvar) as q2.
         assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
         { lia. }
-        specialize (IHpcPattern1 ltac:(auto) ltac:(lia)).
+        specialize (IHpcPattern1 ltac:(auto) ltac:(auto)).
         unfold is_implicative_context in IHpcPattern1.
         simpl in IHpcPattern1.
         simpl in impC. rewrite andbT in impC.
@@ -2434,7 +2436,7 @@ Section FOL_helpers.
         remember (free_evar_subst pcPattern2 q pcEvar) as q2.
         assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
         { lia. }
-        specialize (IHpcPattern2 ltac:(auto) ltac:(lia)).
+        specialize (IHpcPattern2 ltac:(auto) ltac:(auto)).
         unfold is_implicative_context in IHpcPattern1.
         simpl in IHpcPattern1.
         simpl in impC. (*rewrite andbT in impC.*)
