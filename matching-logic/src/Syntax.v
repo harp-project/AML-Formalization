@@ -2232,10 +2232,11 @@ Section syntax.
   Record PatternCtx : Type :=
     { pcEvar : evar ;
       pcPattern : Pattern;
-      pcPattern_wf : well_formed pcPattern ;
+(*      pcPattern_wf : well_formed pcPattern ;*)
       pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  ;
     }.
 
+  Definition PC_wf C := well_formed (pcPattern C).
 
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
     free_evar_subst (pcPattern ctx) p (pcEvar ctx).
@@ -2363,16 +2364,22 @@ Section syntax.
     pcPattern := ApplicationContext2Pattern boxvar AC;
     pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
-  Next Obligation.
-    intros boxvar AC H.
-    apply wf_sctx.
-    reflexivity.
-  Defined.
+
+  Lemma AC2PC'_wf boxvar AC pf: PC_wf (@ApplicationContext2PatternCtx' boxvar AC pf).
+  Proof.
+    unfold PC_wf. apply wf_sctx. reflexivity.
+  Qed.
 
   Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
     let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
     @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' _).
 
+  Lemma AC2PC_wf AC: PC_wf (ApplicationContext2PatternCtx AC).
+  Proof.
+    apply AC2PC'_wf.
+  Defined.
+  
+  
   Definition is_application (p : Pattern) : bool :=
     match p with
     | patt_app _ _ => true
@@ -2422,8 +2429,8 @@ Section syntax.
   .
   
 
-  Definition PatternCtx2ApplicationContext (C : PatternCtx) : Application_context :=
-    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) (pcPattern_wf C).
+  Definition PatternCtx2ApplicationContext (C : PatternCtx) (pf: PC_wf C) : Application_context :=
+    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) pf.
 
   Lemma count_evar_occurrences_subst_ctx AC x:
     x ∉ free_evars_ctx AC ->
@@ -2447,10 +2454,11 @@ Section syntax.
         (AC : Application_context)
         (Hnotin: boxvar ∉ free_evars_ctx AC) :
     let C : PatternCtx := @ApplicationContext2PatternCtx' boxvar AC Hnotin in
-    PatternCtx2ApplicationContext' boxvar (pcPattern_wf C) = AC.
+    let pf := AC2PC'_wf Hnotin in
+    PatternCtx2ApplicationContext' boxvar pf = AC.
   Proof.
     simpl.
-    move: (ApplicationContext2PatternCtx'_obligation_1 boxvar AC).
+    move: (AC2PC'_wf Hnotin).
     move: boxvar Hnotin.
     
     induction AC; intros boxvar Hnotin pf.
@@ -2501,11 +2509,12 @@ Section syntax.
       2: { apply proof_irrelevance. }
       rewrite IHAC;[assumption|reflexivity].
   Qed.
-  
+
   Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
-    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) = AC.
+    PatternCtx2ApplicationContext (AC2PC_wf AC) = AC.
   Proof.
     unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
+    unfold AC2PC_wf.
     apply ApplicationContext2PatternCtx2ApplicationContext'.
   Qed.
 
@@ -4883,4 +4892,25 @@ Proof.
   destruct (decide (x = x0)).
     + subst. simpl. set_solver.
     + simpl. set_solver.
+Qed.
+
+Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
+  x ∉ AC_free_evars AC ->
+  evar_quantify x n (subst_ctx AC ϕ) = subst_ctx AC (evar_quantify x n ϕ).
+Proof.
+  intros Hx.
+  induction AC.
+  - reflexivity.
+  - simpl. simpl in Hx.
+    rewrite IHAC.
+    { set_solver. }
+    rewrite [evar_quantify x n p]evar_quantify_fresh.
+    unfold evar_is_fresh_in. set_solver.
+    reflexivity.
+  - simpl. simpl in Hx.
+    rewrite IHAC.
+    { set_solver. }
+    rewrite [evar_quantify x n p]evar_quantify_fresh.
+    unfold evar_is_fresh_in. set_solver.
+    reflexivity.
 Qed.
