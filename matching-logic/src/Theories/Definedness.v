@@ -932,8 +932,6 @@ Section ProofSystemTheorems.
       5: apply S7.
       all: auto.
     }
-  Abort.
-  (*
     assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
     {
       Search subst_ctx emplace.
@@ -941,8 +939,13 @@ Section ProofSystemTheorems.
       replace (subst_ctx AC (patt_bound_evar 0 and ϕ))
         with (evar_quantify ev_x 0 (subst_ctx AC (p_x and ϕ))).
       {
+        rewrite -emplace_subst_ctx.
+  Abort.
+  (*
+        unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+        Search emplace subst_ctx.
         Search evar_quantify subst_ctx.
-        rewrite evar_quantify_subst_ctx.
+        rewrite evar_quantify_subst_ctx
       }
       
       apply universal_generalization.

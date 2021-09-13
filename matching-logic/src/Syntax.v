@@ -4537,6 +4537,7 @@ Section syntax.
       now apply evar_quantify_well_formed.
   Qed.
 
+  (* FIXME: rename! *)
     Lemma evar_quantify_free_evar_subst :
     forall φ x n, count_evar_occurrences x φ = 0 ->
     evar_quantify x n φ = φ.
@@ -4995,6 +4996,87 @@ Proof.
     }
 Qed.
 
+
+
+Program Definition evar_quantify_ctx {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+  match decide (x = pcEvar C)  with
+  | left _ => C
+  | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C)) _
+  end.
+Next Obligation.
+  intros Σ x n C.
+  destruct (decide (x = pcEvar C)); simpl.
+  - intros pf cpf. contradiction.
+  - intros pf _. destruct C. simpl in *.
+
+    assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
+            = count_evar_occurrences pcEvar0 pcPattern0).
+    {
+      clear pcOneOcc0.
+      move: n.
+      induction pcPattern0; intros n'; simpl in *; try lia.
+      + destruct (decide (x0 = pcEvar0)); subst; simpl in *.
+        * destruct (decide (x = pcEvar0)); try contradiction; simpl in *.
+          destruct (decide (pcEvar0 = pcEvar0)); try contradiction. reflexivity.
+        * destruct (decide (x = x0)); simpl; try reflexivity.
+          destruct (decide (x0 = pcEvar0)); try contradiction.
+          reflexivity.
+      + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+      + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+      + rewrite IHpcPattern0. reflexivity.
+      + rewrite IHpcPattern0. reflexivity.
+    }
+    congruence.
+Defined.
+
+Print free_evar_subst.
+Search free_evar_subst.
+
+Lemma evar_quantify_free_evar_subst' {Σ : Signature} ψ ϕ x n:
+  evar_quantify x n (free_evar_subst ψ ϕ x) =
+  free_evar_subst ψ (evar_quantify x n ϕ) x.
+Proof.
+  move: n.
+  induction ψ; intros n'; simpl; auto.
+  - destruct (decide (x = x0)); simpl.
+    { reflexivity. }
+    destruct (decide (x = x0)); try contradiction.
+    reflexivity.
+  - congruence.
+  - congruence.
+  - rewrite IHψ.
+Abort. (* OOPS *)
+
+  
+
+Lemma evar_quantify_emplace {Σ : Signature} x n C ϕ:
+  evar_quantify x n (emplace C ϕ) = emplace (evar_quantify_ctx x n C) (evar_quantify x n ϕ).
+Proof.
+  destruct C.
+  unfold evar_quantify_ctx. simpl.
+  unfold decide,decide_rel.
+  move: erefl.
+
+  move: {1 3}(evar_eqdec x pcEvar0).
+  case => //.
+  { intros Heq _. subst x.
+    unfold emplace. simpl.
+    Search evar_quantify free_evar_subst.
+    Search evar_quantify.
+    rewrite evar_quantify_free_evar_subst.
+    2: { reflexivity. }
+    apply count_evar_occurrences_0.
+    Search free_evar_subst.
+    induction pcPattern0; simpl; auto; try set_solver.
+    - destruct (decide (pcEvar0 = x)).
+      + subst x. simpl.
+  
+  case: {2 3 4}(evar_eqdec x pcEvar0) => //.
+  destruct (decide (x = pcEvar0)).
+  induction pcPattern0; unfold emplace,evar_quantify_ctx; simpl;
+    destruct (decide (x = pcEvar0))
+  3: {
+  
 
 Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
   x ∉ AC_free_evars AC ->
