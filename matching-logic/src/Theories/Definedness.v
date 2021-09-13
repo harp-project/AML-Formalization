@@ -872,7 +872,7 @@ Section ProofSystemTheorems.
       all: auto.
     }
 
-    assert(S4: Γ ⊢ ⌈ (p_x and (! ϕ)) or ϕ  ⌉).
+    assert(S4: Γ ⊢ ⌈ (p_x and (! ϕ)) or ϕ ⌉).
     {
       assert(Htmp1: Γ ⊢ (p_x or ϕ) ---> (p_x and ! ϕ or ϕ)).
       {
@@ -900,6 +900,41 @@ Section ProofSystemTheorems.
       4: apply Htmp2.
       all: auto 10.
     }
+
+    assert(S5: Γ ⊢ ⌈ (p_x and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
+    {
+      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (p_x and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
+      simpl in Htmp.
+      apply pf_conj_elim_l_meta in Htmp; auto 10.
+      eapply Modus_ponens. 4: apply Htmp.
+      all: auto 10.
+    }
+
+    assert(S6: Γ ⊢ subst_ctx AC (p_x and ϕ) ---> ! ⌈ p_x and ! ϕ ⌉).
+    {
+      pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ ev_x).
+      simpl in Htmp.
+      unfold patt_and in Htmp at 1.
+      apply not_not_elim_meta in Htmp; auto 10.
+      replace (patt_sym (inj definedness) $ (patt_free_evar ev_x and ! ϕ))
+        with (patt_defined (p_x and ! ϕ)) in Htmp by reflexivity.
+      
+      toMyGoal. mgIntro. mgAdd Htmp; auto 10.
+      mgApply' 0 10. mgIntro. mgApply' 2 10.
+      mgExactn 1; auto 10.
+    }
+
+    pose proof (S7 := S5). unfold patt_or in S7.
+
+    assert(S8: Γ ⊢ subst_ctx AC (p_x and ϕ) ---> ⌈ ϕ ⌉).
+    {
+      eapply syllogism_intro.
+      5: apply S7.
+      all: auto.
+    }
+
+    
+    
     
     
   Abort.
