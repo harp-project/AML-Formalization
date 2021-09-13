@@ -812,8 +812,8 @@ Section ProofSystemTheorems.
   .
 
   
-  Import ProofSystem Helpers.FOL_helpers.
-  Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).
+  Import ProofSystem ProofSystem.Notations Helpers.FOL_helpers.
+  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
 
   Lemma patt_iff_implies_equal :
     forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
@@ -932,9 +932,6 @@ Section ProofSystemTheorems.
       5: apply S7.
       all: auto.
     }
-
-    
-    
     
     
   Abort.

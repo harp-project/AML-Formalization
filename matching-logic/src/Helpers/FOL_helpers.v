@@ -3355,6 +3355,26 @@ Section FOL_helpers.
     Unshelve. all: unfold patt_and, patt_or, patt_not; auto 20.
   Defined.
 
+
+  Lemma universal_generalization Γ ϕ x:
+    well_formed ϕ ->
+    Γ ⊢ ϕ ->
+    Γ ⊢ patt_forall (evar_quantify x 0 ϕ).
+  Proof.
+    intros wfϕ Hϕ.
+    unfold patt_forall.
+    unfold patt_not at 1.
+    replace (! evar_quantify x 0 ϕ)
+      with (evar_quantify x 0 (! ϕ))
+      by reflexivity.
+    apply Ex_gen; auto.
+    2: { simpl. set_solver. }
+    toMyGoal. mgIntro. mgAdd Hϕ; auto.
+    mgApply' 1 10. mgExactn 0; auto.
+  Qed.
+  
+  
+  
 End FOL_helpers.
 
 (* Hints *)
