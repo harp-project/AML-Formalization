@@ -209,16 +209,22 @@ Tactic Notation "naive_bsolver" tactic(tac) :=
      destruct H as [x Hx]; try clear H
   | H : ?P → ?Q, H2 : ?P |- _ => specialize (H H2)
   | H : is_true (bool_decide _) |- _ => apply bool_decide_eq_true in H
+  | H : (bool_decide _) = true |- _ => apply bool_decide_eq_true in H
   | H : is_true (_ && _) |- _ => apply andb_true_iff in H; destruct H
+  | H : (_ && _) = true |- _ => apply andb_true_iff in H; destruct H
   (**i simplify and solve equalities *)
   | |- _ => progress simplify_eq/=
   (**i operations that generate more subgoals *)
   | |- _ ∧ _ => split
   | |- is_true (bool_decide _) => apply bool_decide_eq_true
+  | |- (bool_decide _) = true => apply bool_decide_eq_true
   | |- is_true (_ && _) => apply andb_true_iff; split
+  | |- (_ && _) = true => apply andb_true_iff; split
   | H : _ ∨ _ |- _ =>
      let H1 := fresh in destruct H as [H1|H1]; try clear H
   | H : is_true (_ || _) |- _ =>
+    apply orb_true_iff in H; let H1 := fresh in destruct H as [H1|H1]; try clear H
+  | H : (_ || _) = true |- _ =>
      apply orb_true_iff in H; let H1 := fresh in destruct H as [H1|H1]; try clear H
   (**i solve the goal using the user supplied tactic *)
   | |- _ => solve [tac]
@@ -229,6 +235,7 @@ Tactic Notation "naive_bsolver" tactic(tac) :=
   | |- ∃ x, _ => no_new_unsolved_evars ltac:(eexists; go n)
   | |- _ ∨ _ => first [left; go n | right; go n]
   | |- is_true (_ || _) => apply orb_true_iff; first [left; go n | right; go n]
+  | |- (_ || _) = true => apply orb_true_iff; first [left; go n | right; go n]
   | _ =>
     (**i instantiations of assumptions. *)
     lazymatch n with
@@ -245,3 +252,44 @@ Tactic Notation "naive_bsolver" tactic(tac) :=
   in iter (fun n' => go n') (eval compute in (seq 1 6)).
 Tactic Notation "naive_bsolver" := naive_bsolver eauto.
 
+Tactic Notation "split_and" :=
+  match goal with
+  | |- _ /\ _ => split
+  | |- Is_true (_ && _) => apply andb_True; split
+  | |- is_true (_ && _) => apply andb_true_iff; split
+  | |- (_ && _) = true => apply andb_true_iff; split                                                  
+  end.
+Tactic Notation "split_and" "?" := repeat split_and.
+Tactic Notation "split_and" "!" := hnf; split_and; split_and?.
+
+Ltac destruct_and_go H :=
+  try lazymatch type of H with
+  | True => clear H
+  | _ ∧ _ =>
+    let H1 := fresh in
+    let H2 := fresh in
+    destruct H as [ H1 H2 ];
+    destruct_and_go H1; destruct_and_go H2
+  | Is_true (bool_decide _) =>
+    apply (bool_decide_unpack _) in H;
+    destruct_and_go H
+  | Is_true (_ && _) =>
+    apply andb_True in H;
+    destruct_and_go H
+  | is_true (_ && _) =>
+    apply andb_true_iff in H;
+    destruct_and_go H
+  | (_ && _) = true =>
+    apply andb_true_iff in H;
+    destruct_and_go H
+  end.
+
+Tactic Notation "destruct_and" "?" ident(H) :=
+  destruct_and_go H.
+Tactic Notation "destruct_and" "!" ident(H) :=
+  hnf in H; progress (destruct_and? H).
+
+Tactic Notation "destruct_and" "?" :=
+  repeat match goal with H : _ |- _ => progress (destruct_and? H) end.
+Tactic Notation "destruct_and" "!" :=
+  progress destruct_and?.
