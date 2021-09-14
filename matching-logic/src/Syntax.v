@@ -3602,6 +3602,11 @@ Section syntax.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
 
+  (*
+  Print well_formed_closed_aux.
+  Lemma l:
+    well_formed_closed_aux *)
+
   Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
     svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
   Proof.
@@ -3962,14 +3967,14 @@ Section syntax.
   Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
 
   Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-    (no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+    (no_negative_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
      = match (compare_nat dbi level) with
        | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
        | Nat_equal _ _ _ => true
        | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
        end
     ) /\ (
-      no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
+      no_positive_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
       = match (compare_nat dbi level) with
         | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
         | Nat_equal _ _ _ => true
@@ -3989,13 +3994,13 @@ Section syntax.
           try rewrite (proj2 (IHϕ _ _));
           simpl;
           repeat case_match; simpl; try lia; auto.
-    assert (Harith1: dbi - 0 = dbi). lia. rewrite !Harith1.
+    assert (Harith1: dbi - 0 = dbi). lia.  rewrite !Harith1.
     assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
     auto.
   Qed.
 
   Lemma no_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-    no_negative_occurrence_db_b dbi (nest_mu_aux level ϕ)
+    no_negative_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
     = match (compare_nat dbi level) with
       | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
       | Nat_equal _ _ _ => true
@@ -4006,7 +4011,7 @@ Section syntax.
   Qed.
 
   Lemma no_positive_occurrence_db_nest_mu_aux dbi level ϕ:
-    no_positive_occurrence_db_b dbi (nest_mu_aux level ϕ)
+    no_positive_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
     = match (compare_nat dbi level) with
       | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
       | Nat_equal _ _ _ => true
@@ -4017,7 +4022,7 @@ Section syntax.
   Qed.
 
   Lemma well_formed_positive_nest_mu_aux level ϕ:
-    well_formed_positive (nest_mu_aux level ϕ) = well_formed_positive ϕ.
+    well_formed_positive (nest_mu_aux level 1 ϕ) = well_formed_positive ϕ.
   Proof.
     move: level.
     induction ϕ; intros level; simpl; auto.
@@ -4097,15 +4102,30 @@ Section syntax.
       apply svar_is_fresh_in_mu in H0. assumption.
   Qed.
 
+  Lemma nest_mu_aux_0 level p:
+    nest_mu_aux level 0 p = p.
+  Proof.
+    move: level.
+    induction p; intros level; simpl; auto.
+    - case_match; auto.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp.
+    - by rewrite IHp.
+  Qed.
+  
   Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
       ((size phi) <= sz) → (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
       evar_is_fresh_in fresh (free_svar_subst phi psi X)
       →
       (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
   Proof.
+    unfold free_svar_subst.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
     - simpl. case_match.
-      + rewrite -> evar_open_closed. reflexivity. assumption.
+      + rewrite -> evar_open_closed. reflexivity.
+        rewrite nest_mu_aux_0.
+        assumption.
       + simpl. reflexivity.
     - cbn. case_match; done.
     - simpl. rewrite -> evar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
@@ -4119,9 +4139,15 @@ Section syntax.
     - simpl. rewrite -> evar_open_exists, -> IHsz. reflexivity. lia. assumption.
       apply evar_is_fresh_in_exists in Hfresh1. assumption.
       simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
-    - simpl. rewrite -> evar_open_mu, -> IHsz. reflexivity.
+    - simpl. rewrite -> evar_open_mu.
+      f_equal. rewrite evar_open_nest_mu_comm. f_equal.
+      rewrite -> IHsz. reflexivity.
       lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
-      simpl in Hfresh2. apply evar_is_fresh_in_mu in Hfresh2. assumption.
+      simpl in Hfresh2. apply -> evar_is_fresh_in_mu in Hfresh2. apply -> evar_is_fresh_in_mu in Hfresh2.
+      eapply evar_is_fresh_in_richer.
+      2: { apply Hfresh2. }
+      unfold nest_mu.
+      rewrite free_evars_nest_mu_aux. apply reflexivity.
   Qed.
 
   Corollary evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
@@ -4133,6 +4159,87 @@ Section syntax.
     intros phi psi fresh n X H H0 H1. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
   Qed.
 
+  Lemma nest_ex_aux_plus1 level more phi:
+    more > 0 ->
+    bevar_occur phi level = false ->
+    nest_ex_aux level more phi = nest_ex_aux (S level) more phi.
+  Proof.
+    intros Hmore Hlevel.
+    move: level Hlevel.
+    induction phi; intros level Hlevel; simpl; auto.
+    - unfold bevar_occur in Hlevel.
+      repeat case_match; auto; lia.
+    - simpl in Hlevel. apply orb_false_iff in Hlevel. destruct Hlevel as [Hlevel1 Hlevel2].
+      rewrite IHphi1;[auto|]. rewrite IHphi2;[auto|]. reflexivity.
+    - simpl in Hlevel. apply orb_false_iff in Hlevel. destruct Hlevel as [Hlevel1 Hlevel2].
+      rewrite IHphi1;[auto|]. rewrite IHphi2;[auto|]. reflexivity.
+    - simpl in Hlevel.
+      rewrite IHphi;[assumption|]. reflexivity.
+    - simpl in Hlevel.
+      rewrite IHphi;[assumption|]. reflexivity.
+  Qed.
+
+  Lemma nest_mu_aux_plus1 level more phi:
+    more > 0 ->
+    bsvar_occur phi level = false ->
+    nest_mu_aux level more phi = nest_mu_aux (S level) more phi.
+  Proof.
+    intros Hmore Hlevel.
+    move: level Hlevel.
+    induction phi; intros level Hlevel; simpl; auto.
+    - unfold bsvar_occur in Hlevel.
+      repeat case_match; auto; lia.
+    - simpl in Hlevel. apply orb_false_iff in Hlevel. destruct Hlevel as [Hlevel1 Hlevel2].
+      rewrite IHphi1;[auto|]. rewrite IHphi2;[auto|]. reflexivity.
+    - simpl in Hlevel. apply orb_false_iff in Hlevel. destruct Hlevel as [Hlevel1 Hlevel2].
+      rewrite IHphi1;[auto|]. rewrite IHphi2;[auto|]. reflexivity.
+    - simpl in Hlevel.
+      rewrite IHphi;[assumption|]. reflexivity.
+    - simpl in Hlevel.
+      rewrite IHphi;[assumption|]. reflexivity.
+  Qed.
+
+
+  Lemma nest_mu_aux_twice level more more' phi:
+    nest_mu_aux level more (nest_mu_aux level more' phi) = nest_mu_aux level (more + more') phi.
+  Proof.
+    simpl.
+    destruct (decide (more' = 0)).
+    { subst. rewrite nest_mu_aux_0. f_equal. lia. }
+    (* This is not enough for induction. *)
+    Check not_bsvar_occur_level_nest_mu_aux.
+  Abort.
+  
+    
+    
+  Lemma free_svar_subst_nest_mu_1 phi psi X level more more':
+    free_svar_subst' more phi (nest_mu_aux level more' psi) X
+    = free_svar_subst' (more+more') phi psi X.
+  Proof.
+    induction phi; simpl; auto.
+    - case_match; auto.
+      Search nest_mu_aux.
+  Abort.
+  
+      
+      (*
+  Check free_svar_subst'. Print nest_mu_aux.
+  Lemma free_svar_subst_nest_mu phi psi X more more':
+    nest_mu_aux 0 more' (free_svar_subst' more phi psi X)
+    = free_svar_subst' more (nest_mu_aux 0 more' phi) (nest_mu_aux 0  more' psi) X.
+  Proof.
+    move: more more'.
+    induction phi; intros more more'; simpl; auto.
+    - case_match;[|auto].
+      Check nest_mu_aux_comm.
+      replace more with (0 + more) at 1 by lia
+      rewrite -> nest_mu_aux_comm.
+      Check nest_mu_aux_comm.
+      
+      rewrite -> nest_mu_aux_comm.
+       *)
+      
+
   Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
       ((size phi) <= sz) → (well_formed_closed_mu_aux psi 0) →  
       svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
@@ -4140,9 +4247,11 @@ Section syntax.
       (svar_open n fresh (free_svar_subst phi psi X)) = 
       (free_svar_subst (svar_open n fresh phi) psi X).
   Proof.
+    unfold free_svar_subst.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
     - simpl. case_match; auto.
       rewrite -> svar_open_closed; auto.
+       rewrite nest_mu_aux_0; assumption.
     - cbn. case_match; auto. simpl.
       + case_match.
         * congruence.
@@ -4170,7 +4279,7 @@ Section syntax.
       }
       subst B.  apply not_elem_of_union in H. destruct H.
       (*magic happens*)
-      erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open n0 fresh phi) psi X) x 0 _ _ ).
+      erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst' 0 phi psi X)) (free_svar_subst' 0 (svar_open n0 fresh phi) psi X) x 0 _ _ ).
       reflexivity.
       (*x needs to be fresh in ...*)
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
@@ -4185,8 +4294,10 @@ Section syntax.
       subst B.  apply not_elem_of_union in H. destruct H.
       simpl. rewrite svar_open_mu.
       (*magic happens*)
-      erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
-      reflexivity.
+      f_equal. Search free_svar_subst' nest_mu_aux.
+      erewrite (@svar_open_inj (svar_open (S n0) fresh (nest_mu (free_svar_subst' 0 phi psi X))) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
+      { f_equal. Search   }
+      (*reflexivity.*)
       (*x needs to be fresh in ...*)
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.
       Unshelve.
