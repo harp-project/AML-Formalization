@@ -904,6 +904,25 @@ Section syntax.
       erewrite IHphi2. 2: apply H2.
       reflexivity.
   Qed.
+
+  Lemma wfc_ex_aux_body_mu_imp2:
+    forall phi n n' X,
+      well_formed_closed_ex_aux (svar_open n X phi) n' = true
+      ->
+      well_formed_closed_ex_aux phi n' = true.
+  Proof using .
+    induction phi; firstorder.
+    - simpl in H. simpl.
+      destruct_and!.
+      erewrite IHphi1. 2: eassumption.
+      erewrite IHphi2. 2: eassumption.
+      reflexivity.
+    - simpl in H. simpl.
+      destruct_and!.
+      erewrite IHphi1. 2: eassumption.
+      erewrite IHphi2. 2: eassumption.
+      reflexivity.
+  Qed.
   
   Lemma wfc_mu_aux_body_mu_imp2:
     forall phi n X,
@@ -1273,27 +1292,46 @@ Section syntax.
   Qed.
 
 
-  Lemma wfc_aux_bsvar_subst :
+  Lemma wfc_ex_aux_bsvar_subst :
     forall phi psi n n',
-      well_formed_closed_aux phi n (S n')
-      -> well_formed_closed_aux psi n n'
-      -> well_formed_closed_aux (bsvar_subst phi psi n') n n'.
+      well_formed_closed_ex_aux phi n
+      -> well_formed_closed_ex_aux psi n = true
+      -> well_formed_closed_ex_aux (bsvar_subst phi psi n') n = true.
   Proof.
     intros phi psi n n' H H0. 
     generalize dependent n. generalize dependent n'. generalize dependent psi.
     induction phi; intros psi n' n'' H H0; try lia; auto.
-    - simpl in *. unfold well_formed_closed_aux. repeat case_match; simpl; auto. lia.
-    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+    - simpl in *. unfold well_formed_closed_ex_aux. repeat case_match; simpl; auto.
+    - simpl. simpl in H. destruct_and!. split_and; auto.
+    - simpl. simpl in H. destruct_and!. split_and; auto.
+    - simpl. simpl in H. rewrite IHphi. assumption.
+      eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. reflexivity.
+    - simpl. simpl in H.
+      rewrite IHphi. apply H.
+      eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. reflexivity.
+  Qed.
+  
+  Lemma wfc_mu_aux_bsvar_subst :
+    forall phi psi n',
+      well_formed_closed_mu_aux phi (S n')
+      -> well_formed_closed_mu_aux psi n'
+      -> well_formed_closed_mu_aux (bsvar_subst phi psi n') n'.
+  Proof.
+    intros phi psi n' H H0. 
+    generalize dependent n'. generalize dependent psi.
+    induction phi; intros psi n' H H0; try lia; auto.
+    - simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto. lia.
+    - simpl. simpl in H. destruct_and!.
       rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
       reflexivity.
-    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+    - simpl. simpl in H. destruct_and!.
       rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
       reflexivity.
     - simpl. simpl in H. rewrite IHphi. assumption.
-      eapply wfc_aux_extend; eauto. auto.
+      assumption. reflexivity.
     - simpl. simpl in H.
       rewrite IHphi. apply H.
-      eapply wfc_aux_extend; eauto. reflexivity.
+      eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. reflexivity.
   Qed.
 
   (*If (mu, phi) is closed, then its body is closed too*)
@@ -1303,7 +1341,8 @@ Section syntax.
     intros phi H.
     unfold wfc_body_mu. intros X H0.
     unfold well_formed_closed in *. simpl in H.
-    apply wfc_aux_body_mu_imp1. auto.
+    destruct_and!.
+    split_and!; auto using wfc_ex_aux_body_mu_imp1,wfc_mu_aux_body_mu_imp1.
   Qed.
 
   (*If phi is a closed body, then (mu, phi) is closed too*)
@@ -1312,8 +1351,10 @@ Section syntax.
   Proof.
     intros phi H. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
-    apply wfc_aux_body_mu_imp2 with (X := fresh_svar phi) in H. exact H.
-    apply set_svar_fresh_is_fresh.
+    pose proof (Htmp := H (fresh_svar phi) ltac:(apply set_svar_fresh_is_fresh)).
+    destruct_and!. split_and.
+    eauto using wfc_mu_aux_body_mu_imp2.
+    eapply wfc_ex_aux_body_mu_imp2. eassumption.
   Qed.
 
   (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
