@@ -203,7 +203,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       induction phi; try auto.
       - (* EVar bound *)
         intros. simpl. rewrite evar_open_bound_evar.
-        destruct (n =? n0).
+        case_match.
         * unfold respects_blacklist. intros.
           split; intros; constructor.
         * assumption.  
