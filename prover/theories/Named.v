@@ -135,7 +135,7 @@ Section named.
   named_no_positive_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
     | npatt_evar _ | npatt_sym _ | npatt_bott => true
-    | npatt_svar Y => negb (if decide (X = Y) then true else false)
+    | npatt_svar Y => negb (if decide (X = Y) is left _ then true else false)
     | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
@@ -208,12 +208,9 @@ Section named.
       + subst. rewrite Hdbi. simpl. split; [reflexivity|].
         destruct (decide (X = X)); [|contradiction].
         simpl.
-        rewrite Nat.eqb_refl.
         reflexivity.
       + pose proof (Hneq := n0).
         apply Nat.eqb_neq in n0.
-        rewrite n0. simpl.
-        clear n0.
         remember (svm !! n) as svm_n.
         destruct svm_n; split; try reflexivity.
         simpl.
