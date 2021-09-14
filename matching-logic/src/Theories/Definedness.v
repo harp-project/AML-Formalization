@@ -686,8 +686,7 @@ Section definedness.
       solve_free_evars_inclusion 5.
     }
     do 3 rewrite evar_open_bound_evar.
-    repeat rewrite Nat.eqb_refl.
-    rewrite [(if 0 =? 1 then patt_free_evar x else b0)]/=.
+    repeat case_match; try lia.
 
     remember (fresh_evar (patt_in (patt_free_evar x) (evar_open 1 x (nest_ex (nest_ex ϕ₂)) $ b0))) as y.
     rewrite simpl_evar_open.
