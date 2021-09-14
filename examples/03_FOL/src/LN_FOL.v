@@ -115,18 +115,14 @@ Section fix_signature.
 
   Fixpoint fsubst_term (t0 t : term) (n : vars) : term :=
   match t0 with
-  | fvar t' => if decide (t' = n) then t else t0
+  | fvar t' => if decide (t' = n) is left _ then t else t0
   | bvar _ => t0
   | func f v => func f (map (fun x => fsubst_term x t n) v)
   end.
 
   Fixpoint bsubst_term (t0 t : term) (n : nat) : term :=
   match t0 with
-  | bvar t' => match compare_nat t' n with
-               | Nat_less _ _ _ => bvar t'
-               | Nat_equal _ _ _ => t
-               | Nat_greater _ _ _ => bvar t' (* (pred t') ? According to Leroy *)
-               end
+  | bvar t' => if decide (t' = n) is left _ then t else bvar t'
   | fvar _ => t0
   | func f v => func f (map (fun x => bsubst_term x t n) v)
   end.
@@ -199,7 +195,7 @@ Section fix_signature.
 
   Fixpoint wf_term (t : term) (n : nat) : bool :=
   match t with
-   | bvar x => x <? n
+   | bvar x => if decide (x < n) is left _ then true else false
    | fvar x => true
    | func f x => fold_right (fun t Acc => andb Acc (wf_term t n)) x true
   end.
@@ -216,7 +212,7 @@ Section fix_signature.
     forall t n, wf_term t n -> forall n', n' >= n -> wf_term t n'.
   Proof.
     induction t; intros n H n' H0; auto.
-    * simpl in *. apply Nat.leb_le in H. apply Nat.leb_le. lia.
+    * simpl in *. repeat case_match; auto. lia.
     * simpl in *. induction v; auto; simpl.
       simpl in H. do 2 separate.
       erewrite IH. split; auto. apply IHv; auto.
@@ -246,10 +242,7 @@ Section fix_signature.
   Proof.
     induction b; intros t n H H0; inversion H; subst.
     * constructor.
-    * simpl. break_match_goal.
-      - simpl. now apply Nat.ltb_lt.
-      - auto.
-      - simpl. apply Nat.ltb_lt in H2. lia.
+    * simpl. repeat case_match; auto; simpl; case_match; auto; lia.
     * simpl in *; induction v; simpl in *; auto.
       do 2 separate. rewrite IH; auto. constructor. split; auto.
       apply IHv; auto. intros t0 H. apply IH. now constructor 2.
@@ -811,7 +804,7 @@ Section FOL_ML_correspondence.
                   bevar_subst (convert_term b) (convert_term t) n.
   Proof.
     induction b; intros t n H; auto.
-    * simpl. now break_match_goal.
+    * simpl. now repeat (case_match; simpl).
     * simpl. remember (@patt_sym sig (sym_fun F)) as start.
       rewrite fold_left_map.
       assert (start = bevar_subst start (convert_term t) n) by now rewrite Heqstart.
@@ -885,10 +878,7 @@ Section FOL_ML_correspondence.
           (make_list1 n) (bevar_subst start ψ m)).
   Proof.
     induction n; intros; cbn; auto.
-    rewrite IHn. lia. cbn. break_match_goal.
-    * congruence.
-    * lia.
-    * auto.
+    rewrite IHn. lia. cbn. break_match_goal; auto. lia.
   Qed.
 
   Lemma term_mu_free :
@@ -943,7 +933,8 @@ Section FOL_ML_correspondence.
      m k).
   Proof.
     induction n; intros start m k H H0; simpl; auto.
-    apply (IHn). lia. simpl. rewrite H0. simpl. apply NPeano.Nat.ltb_lt. lia.
+    apply (IHn). lia. simpl. rewrite H0. simpl.
+    case_match; auto.
   Qed.
 
   Lemma well_formed_positive_list n : forall start,
@@ -966,7 +957,8 @@ Section FOL_ML_correspondence.
      m k).
   Proof.
     induction n; intros start m k H H0; simpl; auto.
-    apply (IHn). lia. simpl. rewrite H0. simpl. apply NPeano.Nat.ltb_lt. lia.
+    apply (IHn). lia. simpl. rewrite H0. simpl.
+    case_match; auto.
   Qed.
 
   Lemma well_formed_positive_list0 n : forall start,
@@ -1009,7 +1001,7 @@ Section FOL_ML_correspondence.
       all: auto.
       epose proof (@patt_equal_refl _ _ (patt_free_evar x) (from_FOL_theory Γ) _).
       exact H1.
-    * simpl in H. apply Nat.ltb_lt in H. lia.
+    * simpl in H. inversion H.
     * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F)). {
         apply hypothesis. apply ax_wf. apply ax_in.
       } simpl in H1, H0.
@@ -1055,7 +1047,7 @@ Section FOL_ML_correspondence.
             lia. simpl. apply andb_true_intro.
             split.
             - eapply wfc_aux_extend. apply eq_sym, H0. all: lia.
-            - apply NPeano.Nat.ltb_lt. lia.
+            - case_match; lia.
         }
         assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 )). {
           apply conj_intro_meta; auto.
@@ -1106,7 +1098,6 @@ Section FOL_ML_correspondence.
         simpl in H0.
         rewrite subst_make_list in H0. lia.
         simpl in H0. rewrite HIND in H0. break_match_hyp.
-        + lia.
         + exact H0.
         + lia.
 

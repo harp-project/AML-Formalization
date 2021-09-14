@@ -96,6 +96,8 @@ Proof.
   induction x; simpl; congruence.
 Defined.
 
+Close Scope boolean_if_scope.
+
 Section syntax.
   Context {Σ : Signature}.
   
@@ -106,11 +108,7 @@ Section syntax.
     match phi with
     | patt_free_evar x' => patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
-    | patt_bound_evar n => match compare_nat n x with
-                           | Nat_less _ _ _ => patt_bound_evar n
-                           | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_evar n (* (pred n) in Leroy's paper *)
-                           end
+    | patt_bound_evar n => if decide (n = x) is left _ then psi else patt_bound_evar n
     | patt_bound_svar n => patt_bound_svar n
     | patt_sym sigma => patt_sym sigma
     | patt_app phi1 phi2 => patt_app (bevar_subst phi1 psi x)
@@ -137,11 +135,7 @@ Section syntax.
     | patt_free_evar x' => patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar n => patt_bound_evar n
-    | patt_bound_svar n => match compare_nat n x with (* TODO simplify - use nat_eqdec or however it is called. We need only two cases *)
-                           | Nat_less _ _ _ => patt_bound_svar n
-                           | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_svar n (* (pred n) in Leroy's paper *)
-                           end
+    | patt_bound_svar n => if decide (n = x) is left _ then psi else patt_bound_svar n
     | patt_sym sigma => patt_sym sigma
     | patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
                                      (bsvar_subst phi2 psi x)
@@ -155,7 +149,7 @@ Section syntax.
     match phi with
     | patt_free_evar x' => false
     | patt_free_svar x' => false
-    | patt_bound_evar n => (bool_decide (n = x))
+    | patt_bound_evar n => if decide (n = x) is left _ then true else false
     | patt_bound_svar n => false
     | patt_sym sigma => false
     | patt_app phi1 phi2 => orb (bevar_occur phi1 x)
@@ -171,7 +165,7 @@ Section syntax.
     | patt_free_evar x' => false
     | patt_free_svar x' => false
     | patt_bound_evar n => false
-    | patt_bound_svar n => (bool_decide (n = x))
+    | patt_bound_svar n => if (decide (n = x)) is left _ then true else false
     | patt_sym sigma => false
     | patt_app phi1 phi2 => orb (bsvar_occur phi1 x)
                                 (bsvar_occur phi2 x)
@@ -184,7 +178,7 @@ Section syntax.
   (* substitute free element variable x for psi in phi *)
   Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
     match phi with
-    | patt_free_evar x' => if decide (x = x') then psi else patt_free_evar x'
+    | patt_free_evar x' => if decide (x = x') is left _ then psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -201,7 +195,7 @@ Section syntax.
   Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if decide (X = X') then psi else patt_free_svar X'
+    | patt_free_svar X' => if decide (X = X') is left _ then psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
@@ -261,7 +255,7 @@ Section syntax.
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
-    | patt_free_evar x' => if decide (x = x') then patt_bound_evar level else patt_free_evar x'
+    | patt_free_evar x' => if decide (x = x') is left _ then patt_bound_evar level else patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
@@ -317,11 +311,7 @@ Section syntax.
   Proof.
     generalize dependent n.
     induction ϕ; simpl; intros dbi H; auto.
-    - case_bool_decide; case: (eqb_reflect n dbi); move => H'.
-      + congruence.
-      + contradiction.
-      + contradiction.
-      + destruct compare_nat; auto. congruence.
+    - case_match; done.
     - apply orb_false_iff in H. destruct H as [H1 H2].
       rewrite -> IHϕ1 by auto.
       rewrite -> IHϕ2 by auto.
@@ -347,12 +337,9 @@ Section syntax.
   Proof. reflexivity. Qed.
   Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
   Proof. reflexivity. Qed.
-  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = if beq_nat x k then patt_free_evar n else patt_bound_evar x.
+  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = if decide (x = k) is left _ then patt_free_evar n else patt_bound_evar x.
   Proof.
-    cbn. destruct (Nat.eq_dec x k) eqn:P; subst.
-    * rewrite Nat.eqb_refl. break_match_goal; auto; lia.
-    * clear P. apply Nat.eqb_neq in n0 as n1. rewrite n1.
-      break_match_goal; auto; try lia.
+    cbn. case_match; done.
   Qed.
   Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
   Proof. reflexivity. Qed.
@@ -380,12 +367,9 @@ Section syntax.
   Proof. reflexivity. Qed.
   Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
   Proof. reflexivity. Qed.
-  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = if beq_nat X k then patt_free_svar n else patt_bound_svar X.
+  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = if decide (X = k) is left _ then patt_free_svar n else patt_bound_svar X.
   Proof.
-    cbn. destruct (Nat.eq_dec X k) eqn:P; subst.
-    * rewrite Nat.eqb_refl. break_match_goal; auto; lia.
-    * clear P. apply Nat.eqb_neq in n0 as n1. rewrite n1.
-      break_match_goal; auto; try lia.
+    reflexivity.
   Qed.
   Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
   Proof. reflexivity. Qed.
@@ -632,7 +616,7 @@ Section syntax.
   no_positive_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
     match ϕ with
     | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_sym _ | patt_bott => true
-    | patt_bound_svar n => negb (n =? dbi)
+    | patt_bound_svar n => if decide (n = dbi) is left _ then false else true
     | patt_app ϕ₁ ϕ₂ => no_positive_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
     | patt_imp ϕ₁ ϕ₂ => no_negative_occurrence_db_b dbi ϕ₁ && no_positive_occurrence_db_b dbi ϕ₂
     | patt_exists ϕ' => no_positive_occurrence_db_b dbi ϕ'
@@ -651,7 +635,7 @@ Section syntax.
           try (apply ReflectT; subst; constructor; auto);
           try (apply ReflectF; intros Contra; inversion Contra; subst; contradiction)
         ).
-    1: {  destruct (Nat.eqb_spec n dbi); simpl.
+    1: { case_match; simpl.
           + apply ReflectF. intros Contra. inversion Contra. subst. contradiction.
           + apply ReflectT. constructor. apply nesym.  assumption.  }
     1,2: (
@@ -707,8 +691,8 @@ Section syntax.
   Qed.
 
   Lemma no_negative_occurrence_evar_open phi db1 db2 x:
-    no_negative_occurrence_db_b db1 phi ->
-    no_negative_occurrence_db_b db1 (evar_open db2 x phi).
+    no_negative_occurrence_db_b db1 phi = true ->
+    no_negative_occurrence_db_b db1 (evar_open db2 x phi) = true.
   Proof.
     intros H.
     eapply elimT in H.
@@ -720,8 +704,8 @@ Section syntax.
   Qed.
 
   Lemma no_positive_occurrence_evar_open phi db1 db2 x:
-    no_positive_occurrence_db_b db1 phi ->
-    no_positive_occurrence_db_b db1 (evar_open db2 x phi).
+    no_positive_occurrence_db_b db1 phi = true ->
+    no_positive_occurrence_db_b db1 (evar_open db2 x phi) = true.
   Proof.
     intros H.
     eapply elimT in H.
@@ -750,8 +734,8 @@ Section syntax.
     match phi with
     | patt_free_evar _ => true
     | patt_free_svar _ => true
-    | patt_bound_evar n => n <? max_ind_evar
-    | patt_bound_svar n => n <? max_ind_svar
+    | patt_bound_evar n => if decide (n < max_ind_evar) is left _ then true else false
+    | patt_bound_svar n => if decide (n < max_ind_svar) is left _ then true else false
     | patt_sym _ => true
     | patt_app psi1 psi2 => well_formed_closed_aux psi1 max_ind_evar max_ind_svar &&
                             well_formed_closed_aux psi2 max_ind_evar max_ind_svar
@@ -772,15 +756,7 @@ Section syntax.
     generalize dependent ind_evar1. generalize dependent ind_evar2.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
     induction phi; intros ind_svar_2 ind_svar_1 Hleqsvar ind_evar_2 ind_evar_1 Heqevar H;
-      simpl in *; try lia; auto.
-    - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
-    - apply Nat.ltb_lt in H. apply Nat.ltb_lt. lia.
-    - apply andb_true_iff in H. destruct H as [H1 H2].
-      erewrite IHphi1. erewrite IHphi2. reflexivity. eassumption. eassumption. rewrite H2. reflexivity.
-      eassumption. eassumption. rewrite H1. reflexivity.
-    - apply andb_true_iff in H. destruct H as [H1 H2].
-      erewrite IHphi1. 2,3: eassumption. erewrite IHphi2. 2,3: eassumption.
-      2,3: assumption. reflexivity.
+      simpl in *; repeat case_match; try (naive_bsolver lia); auto.
     - eapply (IHphi ind_svar_2 ind_svar_1 _  (S ind_evar_2) (S ind_evar_1)).
       + lia.
       + assumption.
@@ -800,14 +776,12 @@ Section syntax.
   (*Helper lemma for wf_ex_to_wf_body *)
   Lemma wfc_aux_body_ex_imp1:
     forall phi n n' x,
-      well_formed_closed_aux phi (S n) n'
+      well_formed_closed_aux phi (S n) n' = true
       ->
-      well_formed_closed_aux (evar_open n x phi) n n'.
+      well_formed_closed_aux (evar_open n x phi) n n' = true.
   Proof using .
     - induction phi; intros n' n'' x' H; try lia; auto.
-      * cbn. inversion H. apply Nat.ltb_lt in H1. break_match_goal; auto.
-        -- simpl. now apply Nat.ltb_lt.
-        -- lia.
+      * cbn. inversion H. unfold well_formed_closed_aux. repeat case_match; simpl; auto; lia.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
         rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
@@ -824,10 +798,9 @@ Section syntax.
       well_formed_closed_aux phi (S n) n'.
   Proof using .
     induction phi; firstorder.
-    - simpl. cbn in H. destruct (compare_nat) as [P | P | P].
-      + apply Nat.ltb_lt. lia.
-      + simpl in H. apply Nat.ltb_lt. lia.
-      + simpl in H. apply Nat.ltb_lt in H. lia.
+    - simpl. cbn in H. unfold well_formed_closed_aux.
+      repeat case_match; simpl; auto; try lia.
+      unfold well_formed_closed_aux in H. case_match; auto. lia.
     - simpl in H. simpl.
       apply andb_true_iff in H. destruct H as [H1 H2].
       erewrite IHphi1. 2: apply H1.
@@ -1076,9 +1049,8 @@ Section syntax.
       well_formed_closed_aux (svar_open n' X phi) n n'.
   Proof.
     - induction phi; intros n' n'' X H; try lia; auto.
-      * simpl. cbn in H. apply Nat.leb_le in H. cbn. break_match_goal; simpl; auto.
-        -- apply Nat.ltb_lt. lia.
-        -- apply Nat.ltb_lt. lia.
+      * simpl. cbn in H. unfold well_formed_closed_aux, svar_open, bsvar_subst.
+        repeat case_match; auto. lia.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
         rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
       * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
@@ -1095,10 +1067,9 @@ Section syntax.
       well_formed_closed_aux phi n (S n').
   Proof.
     induction phi; firstorder.
-    - simpl. cbn in H. destruct (compare_nat) eqn:P; simpl in H.
-      + apply Nat.ltb_lt. lia.
-      + apply Nat.ltb_lt. lia.
-      + apply Nat.ltb_lt. apply Nat.ltb_lt in H. lia.
+    - simpl. cbn in H.
+      unfold well_formed_closed_aux in H.
+      repeat case_match; auto; try lia.
     - simpl in H. simpl.
       apply andb_true_iff in H. destruct H as [H1 H2].
       erewrite IHphi1. 2: apply H1.
@@ -1121,8 +1092,8 @@ Section syntax.
     generalize dependent n. generalize dependent n'.
     generalize dependent m. generalize dependent m'.
     induction phi; intros m' m'' H n' n'' H0 H1; try lia; auto.
-    * simpl. apply Nat.ltb_lt. apply Nat.ltb_lt in H0. lia.
-    * simpl. apply Nat.ltb_lt. apply Nat.ltb_lt in H0. lia.
+    * simpl in *. repeat case_match; auto. lia.
+    * simpl in *. repeat case_match; auto. lia.
     * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
       apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
     * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
@@ -1141,21 +1112,18 @@ Section syntax.
     intros phi psi n n' H H0. 
     generalize dependent n. generalize dependent n'. generalize dependent psi.
     induction phi; intros psi n' n'' H H0; try lia; auto.
-      * simpl. simpl in H. apply Nat.ltb_lt in H. destruct (compare_nat n n'').
-        -- simpl. apply Nat.ltb_lt. lia.
-        -- assumption.
-        -- simpl. apply Nat.ltb_lt. lia.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
-        reflexivity.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
-        reflexivity.
-      * simpl. simpl in H. rewrite IHphi. assumption.
-        eapply wfc_aux_extend; eauto. auto.
-      * simpl. simpl in H.
-        rewrite IHphi. apply H.
-        eapply wfc_aux_extend; eauto. reflexivity.
+    - simpl in *. unfold well_formed_closed_aux. repeat case_match; simpl; auto. lia.
+    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+      reflexivity.
+    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+      reflexivity.
+    - simpl. simpl in H. rewrite IHphi. assumption.
+      eapply wfc_aux_extend; eauto. auto.
+    - simpl. simpl in H.
+      rewrite IHphi. apply H.
+      eapply wfc_aux_extend; eauto. reflexivity.
   Qed.
 
   Lemma wfc_aux_bsvar_subst :
@@ -1167,21 +1135,18 @@ Section syntax.
     intros phi psi n n' H H0. 
     generalize dependent n. generalize dependent n'. generalize dependent psi.
     induction phi; intros psi n' n'' H H0; try lia; auto.
-      * simpl. inversion H. apply Nat.ltb_lt in H2. destruct (compare_nat n n').
-        -- simpl. apply Nat.ltb_lt. assumption.
-        -- assumption.
-        -- simpl. apply Nat.ltb_lt. lia.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
-        reflexivity.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
-        reflexivity.
-      * simpl. simpl in H. rewrite IHphi. assumption.
-        eapply wfc_aux_extend; eauto. auto.
-      * simpl. simpl in H.
-        rewrite IHphi. apply H.
-        eapply wfc_aux_extend; eauto. reflexivity.
+    - simpl in *. unfold well_formed_closed_aux. repeat case_match; simpl; auto. lia.
+    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+      reflexivity.
+    - simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+      reflexivity.
+    - simpl. simpl in H. rewrite IHphi. assumption.
+      eapply wfc_aux_extend; eauto. auto.
+    - simpl. simpl in H.
+      rewrite IHphi. apply H.
+      eapply wfc_aux_extend; eauto. reflexivity.
   Qed.
 
   (*If (mu, phi) is closed, then its body is closed too*)
@@ -1224,7 +1189,7 @@ Section syntax.
       well_formed_positive (evar_open n x phi).
   Proof.
     induction phi; simpl in *; intros x' n' H; auto.
-    - cbn. destruct compare_nat eqn:P; trivial.
+    - cbn. case_match; reflexivity.
     - apply andb_prop in H.
       destruct H as [H1 H2].
       apply andb_true_iff.
@@ -1365,8 +1330,7 @@ Section syntax.
     - destruct (decide (x = x0)); subst; simpl.
       + break_match_goal; auto; lia.
       + reflexivity.
-    - simpl in *. apply Nat.ltb_lt in H.
-      break_match_goal; auto. lia.
+    - simpl in *. repeat case_match; simpl; auto; try lia. inversion H.
     - cbn in H. simpl. unfold evar_open in IHphi1, IHphi2.
       apply andb_true_iff in H.
       destruct H as [H1 H2].
@@ -1391,11 +1355,8 @@ Section syntax.
     - destruct (decide (x = x0)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
-    - simpl in *. apply Nat.ltb_lt in H1.
-      destruct (n =? n') eqn:Heq.
-      + apply Nat.eqb_eq in Heq. subst. cbn. break_match_goal; auto. cbn.
-        destruct (decide (x = x)); auto. congruence.
-      + cbn. break_match_goal; auto. apply Nat.eqb_neq in Heq. lia.
+    - simpl in *. unfold evar_quantify,evar_open,bevar_subst.
+      repeat case_match; auto; congruence.
     - simpl in H. unfold evar_open in IHphi1, IHphi2.
       apply andb_true_iff in H1. destruct H1 as [F1 F2].
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
@@ -1420,7 +1381,7 @@ Section syntax.
     evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
   Proof.
     induction φ; intros x' n'; simpl; auto.
-    * break_match_goal; simpl; auto. rewrite Heqb. auto.
+    * unfold evar_quantify. repeat case_match; auto. contradiction.
     * now rewrite -> IHφ1, -> IHφ2.
     * now rewrite -> IHφ1, -> IHφ2.
     * now rewrite IHφ.
@@ -1433,7 +1394,7 @@ Section syntax.
     bevar_subst φ ψ m = φ.
   Proof.
     induction φ; intros ψ n' k' m' H H0; simpl; auto.
-    * simpl in H0. break_match_goal; auto. apply NPeano.Nat.ltb_lt in H0. lia.
+    * simpl in H0. repeat case_match; auto; try lia. congruence.
     * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
       3: apply eq_sym, H1.
       4: apply eq_sym, H0. all: auto.
@@ -1450,7 +1411,7 @@ Section syntax.
     bsvar_subst φ ψ m = φ.
   Proof.
     induction φ; intros ψ n' k' m' H H0; simpl; auto.
-    * simpl in H0. break_match_goal; auto. apply NPeano.Nat.ltb_lt in H0. lia.
+    * simpl in H0. repeat case_match; auto; try lia; congruence.
     * simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
       3: apply eq_sym, H1.
       4: apply eq_sym, H0. all: auto.
@@ -1466,14 +1427,13 @@ Section syntax.
     bevar_subst (bevar_subst φ ψ n) ψ n = bevar_subst φ ψ n.
   Proof.
     induction φ; intros ψ n' k' H; simpl; auto.
-    * break_match_goal; simpl; auto.
-      - rewrite Heqc. auto.
-      - erewrite well_formed_bevar_subst. 3: exact H. all: auto. 
-      - rewrite Heqc. auto.
-    * erewrite IHφ1, IHφ2; eauto.
-    * erewrite IHφ1, IHφ2; eauto.
-    * erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
-    * erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
+    - repeat case_match; simpl.
+      + erewrite well_formed_bevar_subst. 3: exact H. all: auto.
+      + case_match; auto; contradiction.
+    - erewrite IHφ1, IHφ2; eauto.
+    - erewrite IHφ1, IHφ2; eauto.
+    - erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
+    - erewrite IHφ. auto. eapply wfc_aux_extend. exact H. lia. auto.
   Qed.
 
   Lemma evar_open_last: forall phi i u j v,
@@ -1482,8 +1442,8 @@ Section syntax.
       (evar_open i u phi) = phi.
   Proof.
     induction phi; firstorder.
-    - cbn in H0. cbn. destruct compare_nat eqn:D; auto.
-      destruct (compare_nat n i) eqn:D0; auto. lia.
+    - cbn in H0. cbn. repeat case_match; auto; try lia.
+      simpl in H0. case_match; congruence.
     - rewrite evar_open_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - rewrite evar_open_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - simpl in H0. inversion H0. rewrite evar_open_exists. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
@@ -1520,8 +1480,7 @@ Section syntax.
       (svar_open i u phi) = phi.
   Proof.
     induction phi; firstorder.
-    - cbn in H0. destruct compare_nat eqn:D; auto.
-      cbn. destruct (compare_nat n i); auto. lia.
+    - cbn in *. unfold bsvar_subst in H0. repeat case_match; congruence.
     - rewrite svar_open_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - rewrite svar_open_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
     - simpl in H0. inversion H0. rewrite svar_open_exists. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
@@ -1556,16 +1515,14 @@ Section syntax.
     bevar_subst (bevar_subst phi psi2 m) psi1 n.
   Proof.
     induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
-    * destruct (compare_nat n n0) eqn:P, (compare_nat n m0) eqn:P0; simpl;
-        try rewrite -> P, -> P0; auto; subst.
-      1, 2, 4, 5: destruct (compare_nat _ _) at 1; auto; try lia.
-      1-4: erewrite well_formed_bevar_subst;
-        [ try reflexivity | try lia | try eassumption ]. 1-4: lia.
-      congruence.
-    * rewrite -> IHphi1, -> IHphi2; auto.
-    * rewrite -> IHphi1, -> IHphi2; auto.
-    * rewrite -> IHphi; auto.
-    * rewrite -> IHphi; auto.
+    - repeat case_match; simpl.
+      { congruence. }
+      1-3: repeat case_match; try congruence.
+      1-2: subst; erewrite well_formed_bevar_subst; try eassumption; auto; lia.
+    - rewrite -> IHphi1, -> IHphi2; auto.
+    - rewrite -> IHphi1, -> IHphi2; auto.
+    - rewrite -> IHphi; auto.
+    - rewrite -> IHphi; auto.
   Qed.
 
   Lemma bsvar_subst_comm :
@@ -1575,12 +1532,10 @@ Section syntax.
     bsvar_subst (bsvar_subst phi psi2 m) psi1 n.
   Proof.
     induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
-    * destruct (compare_nat n n0) eqn:P, (compare_nat n m0) eqn:P0; simpl;
-        try rewrite -> P, -> P0; auto; subst.
-      1, 2, 4, 5: destruct (compare_nat _ _) at 1; auto; try lia.
-      1-4: erewrite well_formed_bsvar_subst;
-        [ try reflexivity | try lia | try eassumption ]. 1-4: lia.
-      congruence.
+    * repeat case_match; simpl.
+      { congruence. }
+      1-3: repeat case_match; try congruence.
+      1-2: subst; erewrite well_formed_bsvar_subst; try eassumption; auto; lia.
     * rewrite -> IHphi1, -> IHphi2; auto.
     * rewrite -> IHphi1, -> IHphi2; auto.
     * rewrite -> IHphi; auto.
@@ -1642,8 +1597,8 @@ Section syntax.
         v ∉ (free_evars (bevar_subst phi psi n)).
   Proof.
     induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
-    - destruct compare_nat eqn:P; set_solver.
-    - destruct compare_nat eqn:P; set_solver.
+    - case_match; set_solver.
+    - case_match; set_solver.
     - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
       specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
@@ -1671,8 +1626,8 @@ Section syntax.
         v ∉ (free_svars (bsvar_subst phi psi n)).
   Proof.
     induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
-    - destruct compare_nat eqn:P; set_solver.
-    - destruct compare_nat eqn:P; set_solver.
+    - case_match; set_solver.
+    - case_match; set_solver.
     - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
       specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
@@ -1726,7 +1681,7 @@ Section syntax.
   Proof.
     unfold svar_open.
     induction psi; intros dbi X; simpl; try reflexivity.
-    * destruct compare_nat; reflexivity.
+    * case_match; reflexivity.
     * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
     * rewrite -> IHpsi1. rewrite -> IHpsi2. reflexivity.
     * rewrite -> IHpsi. reflexivity.
@@ -1787,7 +1742,7 @@ Section syntax.
   Proof.
     unfold evar_open.
     induction ϕ; intros dbi x'; simpl; try reflexivity.
-    * destruct compare_nat; reflexivity.
+    * case_match; reflexivity.
     * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
     * rewrite -> IHϕ1. rewrite -> IHϕ2. reflexivity.
     * rewrite -> IHϕ. reflexivity.
@@ -1809,8 +1764,8 @@ Section syntax.
   Proof.
     unfold svar_open.
     induction phi; intros dbi X; split; simpl; try firstorder.
-    + destruct compare_nat; constructor.
-    + destruct compare_nat; try constructor.
+    + case_match; constructor.
+    + case_match; try constructor.
       inversion H; subst; congruence.
     + inversion H; subst. inversion H0; subst.
       constructor. firstorder. firstorder.
@@ -1836,9 +1791,9 @@ Section syntax.
   Proof.
     unfold evar_open.
     induction ϕ; intros X dbi x'; simpl; split; try reflexivity.
-    + destruct compare_nat; auto.
+    + case_match; auto.
       split; intros H; inversion H; constructor.
-    + destruct compare_nat; auto.
+    + case_match; auto.
       split; intros H; inversion H; constructor.
     + split; intros H; inversion H; subst; constructor; firstorder.
     + split; intros H; inversion H; subst; constructor; firstorder.
@@ -1873,8 +1828,8 @@ Section syntax.
   Proof.
     unfold evar_open.
     induction sz; destruct phi; intros Hsz dbi e Hwfp; simpl in *; auto; try inversion Hsz; subst.
-    + destruct compare_nat; constructor.
-    + destruct compare_nat; constructor.
+    + case_match; constructor.
+    + case_match; constructor.
     + apply andb_true_iff in Hwfp.
       destruct Hwfp as [Hwfp1 Hwfp2].
       apply andb_true_iff.
@@ -1914,8 +1869,8 @@ Section syntax.
   Proof.
     unfold svar_open.
     induction phi; intros dbi X; simpl; split; intros; try constructor; try inversion H; try firstorder.
-    + destruct compare_nat; constructor.
-    + destruct compare_nat; auto.
+    + case_match; constructor.
+    + case_match; auto.
       lia.
   Qed.
 
@@ -1929,8 +1884,8 @@ Section syntax.
   Proof.
     unfold svar_open.
     induction phi; intros dbi1 dbi2 X Hneq; split; intros H; inversion H; subst; simpl in *; auto.
-    + destruct compare_nat; constructor.
-    + destruct compare_nat; constructor; auto. 
+    + case_match; constructor.
+    + case_match; constructor; auto. 
     + constructor; firstorder.
     + constructor; firstorder.
     + constructor; firstorder.
@@ -1950,7 +1905,7 @@ Section syntax.
     + constructor.
     + constructor.
     + constructor.
-    + simpl. destruct compare_nat; constructor.
+    + simpl. case_match; constructor.
     + constructor.
     + inversion H. apply andb_true_iff in H1. destruct H1 as [H1 H2].
       rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
@@ -1980,10 +1935,10 @@ Section syntax.
     unfold svar_open.
     induction phi; intros X Y dbi XneY; split; intros Hneg; inversion Hneg; subst;
       simpl in *; try constructor; try firstorder.
-    - destruct compare_nat; constructor. 
+    - case_match; constructor. 
       unfold not. intros H0. assert (X = Y). symmetry. assumption.
       unfold not in XneY. destruct (XneY H).
-    - destruct compare_nat; constructor.
+    - case_match; constructor.
   Qed.
 
   Lemma evar_open_wfc_aux db1 db2 dbs X phi :
@@ -2077,7 +2032,7 @@ Section syntax.
     free_svars (bsvar_subst φ ψ dbi) ⊆ union (free_svars ψ) (free_svars φ).
   Proof.
     induction φ; intros ψ dbi Hwf; simpl; try set_solver.
-    destruct compare_nat; simpl; set_solver.
+    case_match; simpl; set_solver.
   Qed.
 
   Lemma free_evars_bevar_subst :
@@ -2085,7 +2040,7 @@ Section syntax.
     free_evars (bevar_subst φ ψ dbi) ⊆ union (free_evars ψ) (free_evars φ).
   Proof.
     induction φ; intros ψ dbi Hwf; simpl; try set_solver.
-    destruct compare_nat; simpl; set_solver.
+    case_match; simpl; set_solver.
   Qed.
 
   Corollary free_svars_svar_open ϕ X dbi :
@@ -2158,7 +2113,7 @@ Section syntax.
 
   Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
     match p with
-    | patt_free_evar x' => if decide (x' = x) then 1 else 0 
+    | patt_free_evar x' => if decide (x' = x) is left _ then 1 else 0 
     | patt_free_svar _ => 0
     | patt_bound_evar _ => 0
     | patt_bound_svar _ => 0
@@ -2212,8 +2167,7 @@ Section syntax.
     intros H.
     move: n m H.
     induction p; intros n' m H; simpl; simpl in H; auto.
-    - apply negb_true_iff. apply PeanoNat.Nat.eqb_neq.
-      apply Nat.ltb_lt in H. lia.
+    - repeat case_match; try reflexivity; try lia. congruence.
     - apply andb_prop in H. destruct H as [H1 H2].
       specialize (IHp1 n' m H1). specialize (IHp2 n' m H2).
       apply andb_prop in IHp1. destruct IHp1 as [IHp11 IHp12].
@@ -2232,10 +2186,10 @@ Section syntax.
   Record PatternCtx : Type :=
     { pcEvar : evar ;
       pcPattern : Pattern;
-      pcPattern_wf : well_formed pcPattern ;
       pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  ;
     }.
 
+  Definition PC_wf C := well_formed (pcPattern C).
 
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
     free_evar_subst (pcPattern ctx) p (pcEvar ctx).
@@ -2363,16 +2317,22 @@ Section syntax.
     pcPattern := ApplicationContext2Pattern boxvar AC;
     pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
-  Next Obligation.
-    intros boxvar AC H.
-    apply wf_sctx.
-    reflexivity.
-  Defined.
+
+  Lemma AC2PC'_wf boxvar AC pf: PC_wf (@ApplicationContext2PatternCtx' boxvar AC pf).
+  Proof.
+    unfold PC_wf. apply wf_sctx. reflexivity.
+  Qed.
 
   Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
     let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
     @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' _).
 
+  Lemma AC2PC_wf AC: PC_wf (ApplicationContext2PatternCtx AC).
+  Proof.
+    apply AC2PC'_wf.
+  Defined.
+  
+  
   Definition is_application (p : Pattern) : bool :=
     match p with
     | patt_app _ _ => true
@@ -2398,7 +2358,7 @@ Section syntax.
   Definition is_application_or_free_evar_x (x : evar) (p : Pattern)  : bool :=
     is_application p ||
                    (match p with
-                    | patt_free_evar x' => if decide (x' = x) then true else false
+                    | patt_free_evar x' => if decide (x' = x) is left _ then true else false
                     | _ => false
                     end).
 
@@ -2410,9 +2370,9 @@ Section syntax.
     (match p as q return well_formed q -> Application_context with
      | patt_app p1 p2 =>
        fun wf =>
-      if decide (count_evar_occurrences box_evar p1 = 0) then
+      if decide (count_evar_occurrences box_evar p1 = 0) is left _ then
         @ctx_app_r p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 wf)) (well_formed_app_1 wf)
-      else if decide (count_evar_occurrences box_evar p2 = 0) then
+      else if decide (count_evar_occurrences box_evar p2 = 0) is left _ then
              @ctx_app_l (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 wf)) p2 (well_formed_app_2 wf)
            else
              box
@@ -2422,8 +2382,8 @@ Section syntax.
   .
   
 
-  Definition PatternCtx2ApplicationContext (C : PatternCtx) : Application_context :=
-    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) (pcPattern_wf C).
+  Definition PatternCtx2ApplicationContext (C : PatternCtx) (pf: PC_wf C) : Application_context :=
+    @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) pf.
 
   Lemma count_evar_occurrences_subst_ctx AC x:
     x ∉ free_evars_ctx AC ->
@@ -2447,10 +2407,11 @@ Section syntax.
         (AC : Application_context)
         (Hnotin: boxvar ∉ free_evars_ctx AC) :
     let C : PatternCtx := @ApplicationContext2PatternCtx' boxvar AC Hnotin in
-    PatternCtx2ApplicationContext' boxvar (pcPattern_wf C) = AC.
+    let pf := AC2PC'_wf Hnotin in
+    PatternCtx2ApplicationContext' boxvar pf = AC.
   Proof.
     simpl.
-    move: (ApplicationContext2PatternCtx'_obligation_1 boxvar AC).
+    move: (AC2PC'_wf Hnotin).
     move: boxvar Hnotin.
     
     induction AC; intros boxvar Hnotin pf.
@@ -2501,11 +2462,12 @@ Section syntax.
       2: { apply proof_irrelevance. }
       rewrite IHAC;[assumption|reflexivity].
   Qed.
-  
+
   Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
-    PatternCtx2ApplicationContext (ApplicationContext2PatternCtx AC) = AC.
+    PatternCtx2ApplicationContext (AC2PC_wf AC) = AC.
   Proof.
     unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
+    unfold AC2PC_wf.
     apply ApplicationContext2PatternCtx2ApplicationContext'.
   Qed.
 
@@ -2514,9 +2476,9 @@ Section syntax.
     | patt_bott => true
     | patt_free_evar _ => true
     | patt_imp phi1 phi2 =>
-      (if decide(count_evar_occurrences box_evar phi1 <> 0)
+      (if decide(count_evar_occurrences box_evar phi1 <> 0) is left _
        then is_implicative_context' box_evar phi1 else true) &&
-      (if decide(count_evar_occurrences box_evar phi2 <> 0)
+      (if decide(count_evar_occurrences box_evar phi2 <> 0) is left _
        then is_implicative_context' box_evar phi2 else true)
     | _ => false
     end.
@@ -2587,10 +2549,9 @@ Section syntax.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
-    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
-      + lia.
+    - case_match.
       + constructor. reflexivity.
-      + lia.
+      + congruence.
     - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
       move: H H1 IHϕ₁1 IHϕ₁2.
       case: (bsvar_occur ϕ₁1 dbi); case: (bsvar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
@@ -2615,10 +2576,9 @@ Section syntax.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
-    - case_bool_decide; destruct (compare_nat n dbi); try inversion H1.
-      + lia.
+    - case_match.
       + constructor. reflexivity.
-      + lia.
+      + congruence.
     - specialize (IHϕ₁1 dbi). specialize (IHϕ₁2 dbi).
       move: H H1 IHϕ₁1 IHϕ₁2.
       case: (bevar_occur ϕ₁1 dbi); case: (bevar_occur ϕ₁2 dbi); move=> H H1 IHϕ₁₁ IHϕ₁₂.
@@ -2644,7 +2604,8 @@ Section syntax.
   Proof.
     move: phi dbi1 dbi2.
     induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
-    cbn. destruct compare_nat; reflexivity. simpl. lia.
+    2: { simpl. lia. }
+    cbn. case_match; reflexivity.
   Qed.
 
   Lemma bsvar_occur_evar_open dbi1 dbi2 X phi:
@@ -2661,7 +2622,8 @@ Section syntax.
   Proof.
     move: phi dbi1 dbi2.
     induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
-    cbn. destruct compare_nat; reflexivity. simpl. lia.
+    { cbn. case_match; reflexivity. }
+    simpl. lia.
   Qed.
 
   Lemma bevar_occur_svar_open dbi1 dbi2 X phi:
@@ -2678,8 +2640,9 @@ Section syntax.
   Proof.
     move: phi dbi1 dbi2.
     induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
-    cbn. destruct compare_nat; simpl; auto. simpl. lia.
-  Qed.
+    { cbn. unfold bevar_occur. repeat case_match; simpl; auto. congruence. }
+    simpl. lia.
+ Qed.
 
   Lemma bevar_occur_evar_open dbi1 dbi2 X phi:
     bevar_occur phi dbi1 = false ->
@@ -2786,10 +2749,7 @@ Section syntax.
     - apply union_subseteq_l.
     - apply empty_subseteq.
     - apply empty_subseteq.
-    - destruct (compare_nat n db); simpl.
-      + apply empty_subseteq.
-      + apply union_subseteq_r.
-      +  apply empty_subseteq.
+    - case_match; set_solver.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
       specialize (IHϕ₁2 db).
@@ -2831,10 +2791,7 @@ Section syntax.
     induction ϕ₁; intros db; simpl.
     - apply empty_subseteq.
     - apply union_subseteq_l.
-    - destruct (compare_nat n db); simpl.
-      + apply empty_subseteq.
-      + apply union_subseteq_r.
-      +  apply empty_subseteq.
+    - case_match; set_solver.
     - apply empty_subseteq.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
@@ -2926,13 +2883,7 @@ Section syntax.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
-    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
-      + inversion H.
-      + inversion H.
-      + inversion H.
-      + auto.
-      + contradiction.
-      + auto.
+    - case_match; [congruence|reflexivity].
     - apply orb_false_iff in H. destruct H as [H1 H2].
       rewrite -> IHϕ₁1. 2: auto.
       rewrite -> IHϕ₁2. 2: auto.
@@ -2951,13 +2902,7 @@ Section syntax.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; auto.
-    - case_bool_decide; case: (compare_nat n dbi); move=> H'.
-      + inversion H.
-      + inversion H.
-      + inversion H.
-      + auto.
-      + contradiction.
-      + auto.
+    - case_match; congruence.
     - apply orb_false_iff in H. destruct H as [H1 H2].
       rewrite -> IHϕ₁1. 2: auto.
       rewrite -> IHϕ₁2. 2: auto.
@@ -2984,7 +2929,8 @@ Section syntax.
     move: ne ns.
     induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
     - intros Hcontra.
-      apply bool_decide_eq_true in Hcontra. apply Nat.ltb_lt in Hwfc. lia.
+      apply bool_decide_eq_true in Hcontra.
+      case_match; try lia. congruence.
     - apply andb_true_iff in Hwfc.
       destruct Hwfc as [Hwfc1 Hwfc2].
       destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
@@ -3009,7 +2955,8 @@ Section syntax.
   Proof.
     move: ne ns.
     induction phi; intros ne ns Hwfc; simpl; simpl in Hwfc; auto.
-    - apply bool_decide_eq_false. apply Nat.ltb_lt in Hwfc. lia.
+    - apply bool_decide_eq_false.
+      case_match;[lia|congruence].
     - apply andb_true_iff in Hwfc.
       destruct Hwfc as [Hwfc1 Hwfc2].
       erewrite IHphi1; eauto.
@@ -3054,14 +3001,13 @@ Section syntax.
   Proof.
     move: n.
     induction phi; intros n' H; simpl; auto.
-    - destruct (compare_nat n n') eqn:Heq.
-      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
-        apply bool_decide_eq_true in Heq'.
-        lia. unfold not. apply ssrbool.not_false_is_true.
-      + subst. apply wfc_implies_not_bsvar_occur. apply H.
-      + simpl. destruct (bool_decide (n=n')) eqn:Heq'.
-        apply bool_decide_eq_true in Heq'.
-        lia. unfold not. apply ssrbool.not_false_is_true.
+    - intros Hcontra.
+      case_match.
+      + subst. apply wfc_implies_not_bsvar_occur in Hcontra.
+        * exact Hcontra.
+        * exact H.
+      + inversion Hcontra.
+        case_match;congruence.
     - intros Hcontra.
       destruct (bsvar_occur (bsvar_subst phi1 psi n') n') eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
       + eapply IHphi2. apply H. apply Heq2.
@@ -3084,9 +3030,7 @@ Section syntax.
     move: n.
     induction phi; intros n' H; simpl; simpl in H; auto.
     - unfold not in H.
-      destruct (n =? n') eqn:Heq1, (bool_decide (n = n')) eqn:Heq2; simpl; auto.
-      + apply beq_nat_true in Heq1. subst. rewrite -Heq2.
-        apply bool_decide_eq_true. reflexivity.
+      case_match; auto.
     - destruct (bsvar_occur phi1 n') eqn: Heq3;
         destruct (bsvar_occur phi2 n') eqn:Heq4;
         simpl; auto.
@@ -3152,13 +3096,8 @@ Section syntax.
     - split.
       { auto. }
       simpl in Hwfc.
-      eapply introT.
-      apply negP.
-      intros Hcontra.
-      eapply elimT in Hwfc.
-      2: apply Nat.ltb_spec0.
-      eapply elimT in Hcontra.
-      2: apply Nat.eqb_spec.
+      repeat case_match; auto.
+      subst. 
       eapply elimT in Hleq.
       2: apply Nat.leb_spec0.
       lia.
@@ -3257,7 +3196,8 @@ Section syntax.
     move: dbi1 dbi2.
 
     induction phi; intros dbi1 dbi2; simpl; auto.
-    - destruct (compare_nat n dbi2); auto.
+    - 
+      destruct (decide (n = dbi2)); auto.
       split; intros H.
       + apply wfc_impl_no_neg_occ. apply Hwfcpsi.
       + apply wfc_impl_no_pos_occ. apply Hwfcpsi.
@@ -3316,10 +3256,9 @@ Section syntax.
     move: n.
     induction phi; intros n' Hwfpphi; simpl in *; auto.
     - split.
-      + intros _. destruct (compare_nat n n'); auto.
+      + intros _. destruct (decide (n = n')); auto.
       + intros H phi' Hwfphi'.
-        destruct (compare_nat n n'); auto. rewrite Hwfppsi. rewrite Hwfphi'.
-        auto.
+        destruct (decide (n = n')); auto.
     - split.
       + intros Hnoneg.
         apply andb_prop in Hnoneg. destruct Hnoneg as [Hnoneg1 Hnoneg2].
@@ -3426,7 +3365,7 @@ Section syntax.
     match ϕ with
     | patt_free_evar _ => ϕ
     | patt_free_svar _ => ϕ
-    | patt_bound_evar n => patt_bound_evar (if (level <=? n) then (S n) else n)
+    | patt_bound_evar n => patt_bound_evar (if decide (n < level) is left _ then n else S n)
     | patt_bound_svar _ => ϕ
     | patt_sym _ => ϕ
     | patt_bott => ϕ
@@ -3441,7 +3380,7 @@ Section syntax.
     | patt_free_evar _ => ϕ
     | patt_free_svar _ => ϕ
     | patt_bound_evar _ => ϕ
-    | patt_bound_svar n => patt_bound_svar (if (level <=? n) then (S n) else n)
+    | patt_bound_svar n => patt_bound_svar (if decide (n < level) is left _ then n else S n)
     | patt_sym _ => ϕ
     | patt_bott => ϕ
     | patt_app ϕ₁ ϕ₂ => patt_app (nest_mu_aux level ϕ₁) (nest_mu_aux level ϕ₂)
@@ -3449,14 +3388,16 @@ Section syntax.
     | patt_exists ϕ' => patt_exists (nest_mu_aux level ϕ')
     | patt_mu ϕ' => patt_mu (nest_mu_aux (S level) ϕ')
     end.
-
+  
+  Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
+  Definition nest_mu ϕ := nest_mu_aux 0 ϕ.
+  
   Lemma not_bevar_occur_level_nest_ex_aux level ϕ :
     bevar_occur (nest_ex_aux level ϕ) level = false.
   Proof.
     move: ϕ level.
     induction ϕ; move=> level; simpl; auto.
-    - case_bool_decide. 2: reflexivity.
-      destruct (PeanoNat.Nat.leb_spec0 level n); lia.
+    - repeat case_match; simpl; lia.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
@@ -3466,8 +3407,7 @@ Section syntax.
   Proof.
     move: ϕ level.
     induction ϕ; move=> level; simpl; auto.
-    - case_bool_decide. 2: reflexivity.
-      destruct (PeanoNat.Nat.leb_spec0 level n); lia.
+    - repeat case_match; simpl; lia.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
@@ -3477,7 +3417,7 @@ Section syntax.
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi; simpl; auto.
-    - case (compare_nat n dbi); reflexivity.
+    - case_match; reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
     - rewrite IHϕ. reflexivity.
@@ -3488,12 +3428,8 @@ Section syntax.
     evar_open dbi X (nest_mu_aux level ϕ) = nest_mu_aux level (evar_open dbi X ϕ).
   Proof.
     move: level dbi. unfold evar_open.
-    induction ϕ; move=> level dbi; simpl; auto.
-    - case compare_nat; reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
-    - rewrite IHϕ. reflexivity.
-    - rewrite IHϕ. reflexivity.
+    induction ϕ; move=> level dbi; simpl; auto; try congruence.
+    - case_match; reflexivity.
   Qed.
 
   Lemma evar_open_nest_ex_aux_comm level ϕ dbi X:
@@ -3506,31 +3442,15 @@ Section syntax.
   Proof.
     move: level dbi. unfold evar_open.
     induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
-    1: {destruct (Nat.leb_spec0 level n); simpl;
-        destruct dbi; simpl;
-        destruct (Nat.leb_spec0 level n); simpl;
-        try destruct (compare_nat n dbi),(compare_nat n (S dbi)); simpl;
-        try reflexivity; try lia;
-        destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
-        1,3: destruct (compare_nat n 0); simpl; try lia; try reflexivity.
-        apply leb_le in l0; now rewrite l0.
-        assert (level <=? n = false) as HH by (apply Nat.leb_nle;lia); now rewrite HH.
-        break_match_goal; try lia; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
-    1: {destruct (Nat.leb_spec level n); simpl.
-        + destruct dbi.
-          * reflexivity.
-          * destruct (eqb_reflect n dbi); try lia. break_match_goal; try lia; auto.
-        + destruct (eqb_reflect n dbi); try lia. break_match_goal; try lia; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
     
-    1: {destruct (Nat.leb_spec0 level n); simpl;
-        destruct (compare_nat n (dbi - 1)).
-        1,2,3: destruct dbi; try lia.
-        1,2,3: destruct (compare_nat (S n) (S dbi)); simpl; try reflexivity; try lia.
-        1-2: apply leb_le in l; now rewrite l.
-        all: destruct (compare_nat n dbi); simpl; try reflexivity; try lia.
-        assert (level <=? n = false) as HH by (apply Nat.leb_nle;lia); now rewrite HH.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
     1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
@@ -3552,31 +3472,15 @@ Section syntax.
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
-    1: {destruct (Nat.leb_spec0 level n); simpl;
-        destruct dbi; simpl;
-        destruct (Nat.leb_spec0 level n); simpl;
-        try destruct (compare_nat n dbi),(compare_nat n (S dbi)); simpl;
-        try reflexivity; try lia;
-        destruct (Nat.leb_spec0 level n); simpl; try reflexivity; try lia.
-        1,3: destruct (compare_nat n 0); simpl; try lia; try reflexivity.
-        apply leb_le in l0; now rewrite l0.
-        assert (level <=? n = false) as HH by (apply Nat.leb_nle;lia); now rewrite HH.
-        break_match_goal; try lia; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
-    1: {destruct (Nat.leb_spec level n); simpl.
-        + destruct dbi.
-          * reflexivity.
-          * destruct (eqb_reflect n dbi); try lia. break_match_goal; try lia; auto.
-        + destruct (eqb_reflect n dbi); try lia. break_match_goal; try lia; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
     
-    1: {destruct (Nat.leb_spec0 level n); simpl;
-        destruct (compare_nat n (dbi - 1)).
-        1,2,3: destruct dbi; try lia.
-        1,2,3: destruct (compare_nat (S n) (S dbi)); simpl; try reflexivity; try lia.
-        1-2: apply leb_le in l; now rewrite l.
-        all: destruct (compare_nat n dbi); simpl; try reflexivity; try lia.
-        assert (level <=? n = false) as HH by (apply Nat.leb_nle;lia); now rewrite HH.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
     }
     1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
@@ -3655,10 +3559,6 @@ Section syntax.
     unfold fresh_svar.
       by rewrite free_svars_nest_mu_aux.
   Qed.
-  
-
-  Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
-  Definition nest_mu ϕ := nest_mu_aux 0 ϕ.
 
   Corollary not_bevar_occur_0_nest_ex ϕ :
     bevar_occur (nest_ex ϕ) 0 = false.
@@ -3890,12 +3790,7 @@ Section syntax.
     move: dbi level.
     induction ϕ; intros dbi level; simpl;
       destruct (compare_nat dbi level); auto;
-        repeat (
-            match goal with
-            | |- context G [?x <=? ?y] => destruct (Nat.leb_spec0 x y)
-            | |- context G [?x =? ?y] => destruct (Nat.eqb_spec x y)
-            end
-          ); simpl; try lia; auto;
+        repeat case_match; simpl; try lia; auto;
           try rewrite (proj1 (IHϕ1 _ _));
           try rewrite (proj2 (IHϕ1 _ _));
           try rewrite (proj1 (IHϕ2 _ _));
@@ -3903,7 +3798,7 @@ Section syntax.
           try rewrite (proj1 (IHϕ _ _));
           try rewrite (proj2 (IHϕ _ _));
           simpl;
-          destruct (compare_nat dbi level),(compare_nat (S dbi) (S level)); simpl; try lia; auto.
+          repeat case_match; simpl; try lia; auto.
     assert (Harith1: dbi - 0 = dbi). lia. rewrite !Harith1.
     assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
     auto.
@@ -3949,19 +3844,18 @@ Section syntax.
       evar_open n x psi
       → phi = psi.
   Proof.
-    induction phi; destruct psi; intros x' n' H H0 H1; try (cbn in H1; congruence); try (cbn in H1; destruct (compare_nat n n') eqn:P; congruence); auto.
-    - cbn in H1. destruct compare_nat eqn:P.
-      + congruence.
-      + inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
-        congruence.
-      + congruence.
-    - cbn in H1. destruct compare_nat eqn:P.
-      + congruence.
-      + inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
-        congruence.
-      + congruence.
-    - cbn in H1. destruct (compare_nat n n') eqn:P; destruct (compare_nat n0 n') eqn:P2; try congruence; auto.
-    - cbn in H1. destruct compare_nat eqn:P; auto. congruence.
+    induction phi; destruct psi;
+      intros x' n' H H0 H1;
+      try (cbn in H1; congruence);
+      try (cbn in H1; case_match; congruence); auto.
+    - cbn in H1. case_match; try congruence.
+      inversion H1. subst. unfold evar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
+      contradiction.
+    - cbn in H1. case_match; try congruence.
+      inversion H1. subst. unfold evar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
+      contradiction.
+    - cbn in H1.
+      repeat case_match; auto; congruence.
     - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
       apply evar_is_fresh_in_app_r in H. assumption.
       apply evar_is_fresh_in_app_r in H0. assumption.
@@ -3986,17 +3880,15 @@ Section syntax.
       svar_open n X psi
       → phi = psi.
   Proof.
-    induction phi; destruct psi; intros X' n' H H0 H1; try (cbn in H1; congruence); try (cbn in H1; destruct (compare_nat n n') eqn:P; congruence); auto.
-    - cbn in H1. destruct compare_nat eqn:P.
-      + congruence.
-      + inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. apply not_elem_of_singleton_1 in H.
-        congruence.
-      + congruence.
-    - cbn in H1. destruct compare_nat eqn:P; congruence.
-    - cbn in H1. destruct compare_nat eqn:P; try congruence.
-      + inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. apply not_elem_of_singleton_1 in H0.
-        congruence.
-    - cbn in H1. destruct (compare_nat n n') eqn:P; destruct (compare_nat n0 n') eqn:P2; try congruence; auto.
+    induction phi; destruct psi;
+      intros X' n' H H0 H1;
+      try (cbn in H1; congruence);
+      try (cbn in H1; case_match; congruence); auto.
+    - cbn in H1. case_match; try congruence.
+      inversion H1. subst. unfold svar_is_fresh_in in H. simpl in H. set_solver.
+    - cbn in H1. case_match; try congruence.
+      inversion H1. subst. unfold svar_is_fresh_in in H0. simpl in H0. set_solver.
+    - cbn in H1. repeat case_match; auto; congruence.
     - inversion H1. apply IHphi1 in H3. apply IHphi2 in H4. subst. reflexivity.
       apply svar_is_fresh_in_app_r in H. assumption.
       apply svar_is_fresh_in_app_r in H0. assumption.
@@ -4016,16 +3908,16 @@ Section syntax.
   Qed.
 
   Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
-      (le (size phi) sz) → (well_formed_closed psi) → evar_is_fresh_in fresh phi →
+      ((size phi) <= sz) → (well_formed_closed psi) → evar_is_fresh_in fresh phi →
       evar_is_fresh_in fresh (free_svar_subst phi psi X)
       →
       (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
   Proof.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
-    - simpl. destruct (ssrbool.is_left (decide (X = x))) eqn:P.
+    - simpl. case_match.
       + rewrite -> evar_open_closed. reflexivity. assumption.
       + simpl. reflexivity.
-    - cbn. now destruct compare_nat eqn:P.
+    - cbn. case_match; done.
     - simpl. rewrite -> evar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
       apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
       apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
@@ -4052,34 +3944,31 @@ Section syntax.
   Qed.
 
   Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
-      (le (size phi) sz) → (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
+      ((size phi) <= sz) → (well_formed_closed psi) (* → well_formed_closed (svar_open n fresh phi)  *)→  
       svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
       →
       (svar_open n fresh (free_svar_subst phi psi X)) = 
       (free_svar_subst (svar_open n fresh phi) psi X).
   Proof.
     induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
-    - simpl. destruct (ssrbool.is_left (decide (X = x))) eqn:P.
-      + rewrite -> svar_open_closed. reflexivity. assumption.
-      + simpl. reflexivity.
-    - (* simpl in Hwfc. *) cbn. destruct compare_nat eqn:P; simpl; auto.
-      + destruct (decide (X = fresh)) eqn:D.
+    - simpl. case_match; auto.
+      rewrite -> svar_open_closed; auto.
+    - cbn. case_match; auto. simpl.
+      + case_match.
         * congruence.
         * reflexivity.
-    - simpl. (* simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+    - simpl.
       rewrite -> svar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
-      reflexivity. (* apply wfc_ind_wfc. assumption. *)
+      reflexivity.
       simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
-      (*apply wfc_ind_wfc. assumption. *)
       simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
-    - simpl. (* simpl in Hwfc. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+    - simpl.
       rewrite -> svar_open_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
-      reflexivity. (* apply wfc_ind_wfc. assumption. *)
+      reflexivity.
       simpl in Hfresh1. apply svar_is_fresh_in_imp_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_imp_r in Hfresh2. assumption.
-      (*apply wfc_ind_wfc. assumption. *)
       simpl in Hfresh1. apply svar_is_fresh_in_imp_l in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_imp_l in Hfresh2. assumption.
     - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
@@ -4185,8 +4074,7 @@ Section syntax.
       3: apply wfcq. all: lia.
     - simpl in *. rewrite wfp.
       rewrite !andbT.
-      apply negb_true_iff. apply PeanoNat.Nat.eqb_neq.
-      apply Nat.ltb_lt in wfp. lia.
+      repeat case_match; try lia. congruence.
     - unfold well_formed, well_formed_closed in *. simpl in *.
       apply andb_prop in wfp. destruct wfp as [wfpp wfcp].
       apply andb_prop in wfpp. destruct wfpp as [wfpp1 wfpp2].
@@ -4337,20 +4225,19 @@ Section syntax.
       bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
   Proof.
     induction φ; intros x' m n' n'' ψ H H0 H1; cbn; auto.
-    * destruct (decide (x' = x)); simpl.
-      - simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
-      - reflexivity.
-    * destruct (compare_nat n n'); simpl; auto.
-      - subst. destruct (decide (x' = x')); auto. congruence.
-    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+    - destruct (decide (x' = x)); simpl.
+      + simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
+      + reflexivity.
+    - case_match; auto. simpl. case_match; auto. congruence.
+    - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
       apply andb_true_iff in H0. destruct H0.
       erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
-    * simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+    - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
       apply andb_true_iff in H0. destruct H0.
       erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
-    * simpl in H0, H1. erewrite IHφ. reflexivity. instantiate (1 := S m). 
+    - simpl in H0, H1. erewrite IHφ. reflexivity. instantiate (1 := S m). 
       all: try eassumption. lia.
-    * simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
+    - simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
   Qed.
 
   Lemma evar_open_no_negative_occurrence :
@@ -4413,7 +4300,7 @@ Section syntax.
   Proof.
     induction φ; intros ψ n' m H H0; cbn; auto.
     * break_match_goal; simpl in H0, H; simpl; auto.
-      all: apply Nat.ltb_lt. auto. apply Nat.ltb_lt in H. lia.
+      repeat case_match; auto. lia.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. erewrite IHφ1, IHφ2; auto.
     * simpl in H. rewrite -> IHφ; auto. eapply wfc_aux_extend.
@@ -4443,8 +4330,9 @@ Section syntax.
     well_formed_closed_aux (evar_quantify x n φ) (S n) m.
   Proof.
     induction φ; intros x' n' m H; cbn; auto.
-    * destruct (decide (x' = x)); simpl; auto. apply Nat.ltb_lt. lia.
-    * simpl in H. apply Nat.leb_le. apply Nat.ltb_lt in H. lia.
+    * destruct (decide (x' = x)); simpl; auto.
+      case_match; try lia. auto.
+    * simpl in H. repeat case_match; auto; lia.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
   Qed.
@@ -4528,6 +4416,7 @@ Section syntax.
       now apply evar_quantify_well_formed.
   Qed.
 
+  (* FIXME: rename! *)
     Lemma evar_quantify_free_evar_subst :
     forall φ x n, count_evar_occurrences x φ = 0 ->
     evar_quantify x n φ = φ.
@@ -4883,4 +4772,195 @@ Proof.
   destruct (decide (x = x0)).
     + subst. simpl. set_solver.
     + simpl. set_solver.
+Qed.
+
+Lemma free_evar_subst_subst_ctx_independent {Σ : Signature} AC ϕ Xfr1 Xfr2:
+  Xfr1 ∉ free_evars_ctx AC ->
+  Xfr2 ∉ free_evars_ctx AC ->
+  free_evar_subst (subst_ctx AC (patt_free_evar Xfr1)) ϕ Xfr1 =
+  free_evar_subst (subst_ctx AC (patt_free_evar Xfr2)) ϕ Xfr2.
+Proof.
+  intros HXfr1 HXfr2.
+  induction AC.
+  - simpl.
+    destruct (decide (Xfr1 = Xfr1)), (decide (Xfr2 = Xfr2)); simpl; try contradiction.
+    reflexivity.
+  - simpl in HXfr1. simpl in HXfr2.
+    feed specialize IHAC.
+    { set_solver. }
+    { set_solver. }
+    simpl. rewrite IHAC.
+    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    { apply count_evar_occurrences_0. set_solver. }
+    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    { apply count_evar_occurrences_0. set_solver. }
+    reflexivity.
+  - simpl in HXfr1. simpl in HXfr2.
+    feed specialize IHAC.
+    { set_solver. }
+    { set_solver. }
+    simpl. rewrite IHAC.
+    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    { apply count_evar_occurrences_0. set_solver. }
+    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    { apply count_evar_occurrences_0. set_solver. }
+    reflexivity.
+Qed.
+
+
+Lemma emplace_subst_ctx {Σ : Signature} AC ϕ:
+  emplace (ApplicationContext2PatternCtx AC) ϕ = subst_ctx AC ϕ.
+Proof.
+  induction AC.
+  - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    unfold emplace. simpl.
+    destruct (decide (_ = _)); simpl.
+    + reflexivity.
+    + contradiction.
+  - simpl.
+    rewrite -IHAC.
+    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    simpl.
+    unfold emplace. simpl.
+    unfold ApplicationContext2Pattern.
+    f_equal.
+    2: {
+      rewrite free_evar_subst_no_occurrence.
+      2: { reflexivity. }
+      apply count_evar_occurrences_0.
+      eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
+    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
+    apply free_evar_subst_subst_ctx_independent.
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }    
+  - simpl.
+    rewrite -IHAC.
+    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    simpl.
+    unfold emplace. simpl.
+    unfold ApplicationContext2Pattern.
+    f_equal.
+    {
+      rewrite free_evar_subst_no_occurrence.
+      2: { reflexivity. }
+      apply count_evar_occurrences_0.
+      eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
+    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
+    apply free_evar_subst_subst_ctx_independent.
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+Qed.
+
+
+
+Program Definition evar_quantify_ctx {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+  match decide (x = pcEvar C)  with
+  | left _ => C
+  | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C)) _
+  end.
+Next Obligation.
+  intros Σ x n C.
+  destruct (decide (x = pcEvar C)); simpl.
+  - intros pf cpf. contradiction.
+  - intros pf _. destruct C. simpl in *.
+
+    assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
+            = count_evar_occurrences pcEvar0 pcPattern0).
+    {
+      clear pcOneOcc0.
+      move: n.
+      induction pcPattern0; intros n'; simpl in *; try lia.
+      + destruct (decide (x0 = pcEvar0)); subst; simpl in *.
+        * destruct (decide (x = pcEvar0)); try contradiction; simpl in *.
+          destruct (decide (pcEvar0 = pcEvar0)); try contradiction. reflexivity.
+        * destruct (decide (x = x0)); simpl; try reflexivity.
+          destruct (decide (x0 = pcEvar0)); try contradiction.
+          reflexivity.
+      + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+      + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+      + rewrite IHpcPattern0. reflexivity.
+      + rewrite IHpcPattern0. reflexivity.
+    }
+    congruence.
+Defined.
+
+Print free_evar_subst.
+Search free_evar_subst.
+Search nest_ex.
+
+Lemma evar_quantify_free_evar_subst' {Σ : Signature} ψ ϕ x n:
+  evar_quantify x n (free_evar_subst ψ ϕ x) =
+  free_evar_subst ψ (evar_quantify x n ϕ) x.
+Proof.
+  move: n.
+  induction ψ; intros n'; simpl; auto.
+  - destruct (decide (x = x0)); simpl.
+    { reflexivity. }
+    destruct (decide (x = x0)); try contradiction.
+    reflexivity.
+  - congruence.
+  - congruence.
+  - rewrite IHψ.
+Abort. (* OOPS *)
+
+  
+
+Lemma evar_quantify_emplace {Σ : Signature} x n C ϕ:
+  evar_quantify x n (emplace C ϕ) = emplace (evar_quantify_ctx x n C) (evar_quantify x n ϕ).
+Proof.
+  destruct C.
+  unfold evar_quantify_ctx. simpl.
+  unfold decide,decide_rel.
+  move: erefl.
+
+  move: {1 3}(evar_eqdec x pcEvar0).
+  case => //.
+  { intros Heq _. subst x.
+    unfold emplace. simpl.
+Abort.
+  
+
+Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
+  x ∉ AC_free_evars AC ->
+  evar_quantify x n (subst_ctx AC ϕ) = subst_ctx AC (evar_quantify x n ϕ).
+Proof.
+  intros Hx.
+  induction AC.
+  - reflexivity.
+  - simpl. simpl in Hx.
+    rewrite IHAC.
+    { set_solver. }
+    rewrite [evar_quantify x n p]evar_quantify_fresh.
+    unfold evar_is_fresh_in. set_solver.
+    reflexivity.
+  - simpl. simpl in Hx.
+    rewrite IHAC.
+    { set_solver. }
+    rewrite [evar_quantify x n p]evar_quantify_fresh.
+    unfold evar_is_fresh_in. set_solver.
+    reflexivity.
 Qed.

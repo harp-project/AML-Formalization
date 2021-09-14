@@ -520,8 +520,8 @@ Section sorts.
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
       
       rewrite {2}update_evar_val_comm.
-      do 2 rewrite -> evar_open_bound_evar. rewrite Nat.eqb_refl.
-      rewrite [(if 0 =? 1 then patt_free_evar x' else b0)]/=.
+      do 2 rewrite -> evar_open_bound_evar.
+      repeat case_match; try lia.
       rewrite <- Heqx''. apply Hx''neqx'.
       rewrite update_evar_val_same.
       unfold nest_ex.
@@ -532,8 +532,9 @@ Section sorts.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
       rewrite pattern_interpretation_free_evar_independent.
-      do 2 rewrite evar_open_bound_evar. rewrite Nat.eqb_refl.
-      rewrite [(if 0 =? 1 then patt_free_evar x' else b0)]/=. unfold nest_ex in Heqx''.
+      do 2 rewrite evar_open_bound_evar.
+      repeat case_match; try lia.
+      unfold nest_ex in Heqx''.
       rewrite <- Heqx''. assumption.
       rewrite pattern_interpretation_free_evar_independent. assumption.
       auto.
@@ -630,7 +631,9 @@ Section sorts.
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
       
       rewrite {2}update_evar_val_comm.
-      do 2 rewrite evar_open_bound_evar. cbn. rewrite <- Heqx''. apply Hx''neqx'.
+      do 2 rewrite evar_open_bound_evar. cbn.
+      repeat case_match; try lia.
+      rewrite <- Heqx''. apply Hx''neqx'.
       rewrite update_evar_val_same.
       unfold nest_ex.
       rewrite evar_open_nest_ex_aux_comm. simpl.
@@ -641,6 +644,7 @@ Section sorts.
 
       rewrite pattern_interpretation_free_evar_independent.
       do 2 rewrite evar_open_bound_evar. cbn. unfold nest_ex in Heqx''.
+      repeat case_match; try lia.
       rewrite <- Heqx''. assumption.
       rewrite pattern_interpretation_free_evar_independent. assumption.
       auto.

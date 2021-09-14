@@ -357,7 +357,7 @@ Section ml_tauto.
        (*          rewrite ?Hcount_p1' Hcount_p2';*)
        lia|
       ];
-      set (ctx := (@Build_PatternCtx _ star ctx' wfctx' countstar));
+      set (ctx := (@Build_PatternCtx _ star ctx' countstar));
       assert (Himpl: is_implicative_context ctx);
       [ unfold ctx; unfold is_implicative_context;
         rewrite [pcEvar _]/=; rewrite [pcPattern _]/=;

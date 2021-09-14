@@ -442,7 +442,9 @@ Module Semantics.
           assert (Heqmm' : m = m').
           { 
             simpl in Hbound.
-            rewrite -> evar_open_bound_evar, -> Nat.eqb_refl, -> pattern_interpretation_free_evar_simpl in Hbound.
+            rewrite -> evar_open_bound_evar in Hbound.
+            case_match; try lia.
+            rewrite -> pattern_interpretation_free_evar_simpl in Hbound.
             apply elem_of_singleton in Hbound. subst m.
             rewrite update_evar_val_same. reflexivity.
           }
@@ -459,7 +461,9 @@ Module Semantics.
           exists m.
           rewrite -> pattern_interpretation_and_simpl. constructor.
           +
-            rewrite -> evar_open_bound_evar, -> Nat.eqb_refl, -> pattern_interpretation_free_evar_simpl.
+            rewrite -> evar_open_bound_evar.
+            case_match; try lia.
+            rewrite -> pattern_interpretation_free_evar_simpl.
             rewrite -> update_evar_val_same. constructor.
           + rewrite -> elem_of_PropSet in H.
             rewrite -> set_eq_subseteq in H. destruct H as [H1 H2].

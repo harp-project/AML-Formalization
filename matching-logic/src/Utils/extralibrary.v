@@ -1,6 +1,7 @@
 (** * Module [extralibrary]: library functions, theorems, and tactics *)
-
+From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Bool.Bool.
+From stdpp Require Import base tactics.
 Require Import Arith.
 Require Import ZArith.
 Require Import List.
@@ -179,3 +180,68 @@ Proof.
   intros x y. apply iff_reflect. symmetry.
   apply Nat.eqb_eq.
 Qed.
+
+(* Taken from
+   https://gitlab.mpi-sws.org/iris/stdpp/-/blob/c5ee00e4ba9e0122ddfbd0de97847d8e96154595/theories/tactics.v
+   and modified so that it works with [= true] instead of `is_True`
+ *)
+
+Tactic Notation "naive_bsolver" tactic(tac) :=
+  unfold iff, not in *;
+  repeat match goal with
+  | H : context [∀ _, _ ∧ _ ] |- _ =>
+    repeat setoid_rewrite forall_and_distr in H; revert H
+  end;
+  let rec go n :=
+  repeat match goal with
+  (**i solve the goal *)
+  | |- _ => fast_done
+  (**i intros *)
+  | |- ∀ _, _ => intro
+  (**i simplification of assumptions *)
+  | H : False |- _ => destruct H
+  | H : _ ∧ _ |- _ =>
+     (* Work around bug https://coq.inria.fr/bugs/show_bug.cgi?id=2901 *)
+     let H1 := fresh in let H2 := fresh in
+     destruct H as [H1 H2]; try clear H
+  | H : ∃ _, _  |- _ =>
+     let x := fresh in let Hx := fresh in
+     destruct H as [x Hx]; try clear H
+  | H : ?P → ?Q, H2 : ?P |- _ => specialize (H H2)
+  | H : is_true (bool_decide _) |- _ => apply bool_decide_eq_true in H
+  | H : is_true (_ && _) |- _ => apply andb_true_iff in H; destruct H
+  (**i simplify and solve equalities *)
+  | |- _ => progress simplify_eq/=
+  (**i operations that generate more subgoals *)
+  | |- _ ∧ _ => split
+  | |- is_true (bool_decide _) => apply bool_decide_eq_true
+  | |- is_true (_ && _) => apply andb_true_iff; split
+  | H : _ ∨ _ |- _ =>
+     let H1 := fresh in destruct H as [H1|H1]; try clear H
+  | H : is_true (_ || _) |- _ =>
+     apply orb_true_iff in H; let H1 := fresh in destruct H as [H1|H1]; try clear H
+  (**i solve the goal using the user supplied tactic *)
+  | |- _ => solve [tac]
+  end;
+  (**i use recursion to enable backtracking on the following clauses. *)
+  match goal with
+  (**i instantiation of the conclusion *)
+  | |- ∃ x, _ => no_new_unsolved_evars ltac:(eexists; go n)
+  | |- _ ∨ _ => first [left; go n | right; go n]
+  | |- is_true (_ || _) => apply orb_true_iff; first [left; go n | right; go n]
+  | _ =>
+    (**i instantiations of assumptions. *)
+    lazymatch n with
+    | S ?n' =>
+      (**i we give priority to assumptions that fit on the conclusion. *)
+      match goal with
+      | H : _ → _ |- _ =>
+        is_non_dependent H;
+        no_new_unsolved_evars
+          ltac:(first [eapply H | efeed pose proof H]; clear H; go n')
+      end
+    end
+  end
+  in iter (fun n' => go n') (eval compute in (seq 1 6)).
+Tactic Notation "naive_bsolver" := naive_bsolver eauto.
+
