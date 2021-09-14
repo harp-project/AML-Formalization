@@ -176,38 +176,74 @@ Section syntax.
     | patt_exists phi' => bsvar_occur phi' x
     | patt_mu phi' => bsvar_occur phi' (S x)
     end.
+
+
+  Fixpoint nest_ex_aux level more ϕ {struct ϕ} : Pattern :=
+    match ϕ with
+    | patt_free_evar _ => ϕ
+    | patt_free_svar _ => ϕ
+    | patt_bound_evar n => patt_bound_evar (if decide (n < level) is left _ then n else n + more)
+    | patt_bound_svar _ => ϕ
+    | patt_sym _ => ϕ
+    | patt_bott => ϕ
+    | patt_app ϕ₁ ϕ₂ => patt_app (nest_ex_aux level more ϕ₁) (nest_ex_aux level more ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_ex_aux level more ϕ₁) (nest_ex_aux level more ϕ₂)
+    | patt_exists ϕ' => patt_exists (nest_ex_aux (S level) more ϕ')
+    | patt_mu ϕ' => patt_mu (nest_ex_aux level more ϕ')
+    end.
+
+  Fixpoint nest_mu_aux level more ϕ {struct ϕ} : Pattern :=
+    match ϕ with
+    | patt_free_evar _ => ϕ
+    | patt_free_svar _ => ϕ
+    | patt_bound_evar _ => ϕ
+    | patt_bound_svar n => patt_bound_svar (if decide (n < level) is left _ then n else n + more)
+    | patt_sym _ => ϕ
+    | patt_bott => ϕ
+    | patt_app ϕ₁ ϕ₂ => patt_app (nest_mu_aux level more ϕ₁) (nest_mu_aux level more ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_mu_aux level more ϕ₁) (nest_mu_aux level more ϕ₂)
+    | patt_exists ϕ' => patt_exists (nest_mu_aux level more ϕ')
+    | patt_mu ϕ' => patt_mu (nest_mu_aux (S level) more ϕ')
+    end.
+  
+  Definition nest_ex ϕ := nest_ex_aux 0 1 ϕ.
+  Definition nest_mu ϕ := nest_mu_aux 0 1 ϕ.
   
   (* substitute free element variable x for psi in phi *)
-  Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
+  Fixpoint free_evar_subst' (more : nat) (phi psi : Pattern) (x : evar) :=
     match phi with
-    | patt_free_evar x' => if decide (x = x') is left _ then psi else patt_free_evar x'
+    | patt_free_evar x' => if decide (x = x') is left _ then nest_ex_aux 0 more psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
-                                     (free_evar_subst phi2 psi x)
+    | patt_app phi1 phi2 => patt_app (free_evar_subst' more phi1 psi x)
+                                     (free_evar_subst' more phi2 psi x)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
-    | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
+    | patt_imp phi1 phi2 => patt_imp (free_evar_subst' more phi1 psi x) (free_evar_subst' more phi2 psi x)
+    | patt_exists phi' => patt_exists (free_evar_subst' (S more) phi' psi x)
+    | patt_mu phi' => patt_mu (free_evar_subst' more phi' psi x)
     end.
 
+  Definition free_evar_subst phi psi x := free_evar_subst' 0 phi psi x.
+
   (* substitute free set variable X for psi in phi *)
-  Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) :=
+  Fixpoint free_svar_subst' (more : nat) (phi psi : Pattern) (X : svar) :=
     match phi with
     | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if decide (X = X') is left _ then psi else patt_free_svar X'
+    | patt_free_svar X' => if decide (X = X') is left _ then nest_mu_aux 0 more psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
-                                     (free_svar_subst phi2 psi X)
+    | patt_app phi1 phi2 => patt_app (free_svar_subst' more phi1 psi X)
+                                     (free_svar_subst' more phi2 psi X)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
-    | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
-    | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
-    end.    
+    | patt_imp phi1 phi2 => patt_imp (free_svar_subst' more phi1 psi X) (free_svar_subst' more phi2 psi X)
+    | patt_exists phi' => patt_exists (free_svar_subst' more phi' psi X)
+    | patt_mu phi' => patt_mu (nest_mu (free_svar_subst' more phi' psi X))
+    end.
+
+  Definition free_svar_subst phi psi X := free_svar_subst' 0 phi psi X.
   
   (* instantiate exists x. p or mu x. p with psi for p *)
   Definition instantiate (phi psi : Pattern) :=
@@ -302,6 +338,16 @@ Section syntax.
     | _ => 0
     end.
 
+
+  Fixpoint size' (p : Pattern) : nat :=
+    match p with
+    | patt_app ls rs => 1 + (size' ls) + (size' rs)
+    | patt_imp ls rs => 1 + (size' ls) + (size' rs)
+    | patt_exists p' => 1 + size' p'
+    | patt_mu p' => 1 + size' p'
+    | _ => 1
+    end.
+  
   (* replace de Bruijn index k with element variable n *)
   Definition evar_open (k : db_index) (x : evar) (p : Pattern) : Pattern :=
     bevar_subst p (patt_free_evar x) k.
@@ -2329,20 +2375,55 @@ Section syntax.
       reflexivity.
   Qed.
 
+  Lemma nest_ex_aux_comm n more more' p:
+    nest_ex_aux (n + more) more' (nest_ex_aux n more p) = nest_ex_aux n (more + more') p.
+  Proof.
+    move: n more more'.
+    induction p; intros n' more more'; simpl; auto.
+    - f_equal.
+      repeat case_match; auto; try lia.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - replace (S (n' + more)) with ((S n') + more) by lia.
+        by rewrite IHp.
+    - by rewrite IHp.
+  Qed.
+
+  Lemma nest_mu_aux_comm n more more' p:
+    nest_mu_aux (n + more) more' (nest_mu_aux n more p) = nest_mu_aux n (more + more') p.
+  Proof.
+    move: n more more'.
+    induction p; intros n' more more'; simpl; auto.
+    - f_equal.
+      repeat case_match; auto; try lia.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp.
+    - replace (S (n' + more)) with ((S n') + more) by lia.
+        by rewrite IHp.
+  Qed.
+
   Lemma free_evar_subst_no_occurrence x p q:
     count_evar_occurrences x p = 0 ->
     free_evar_subst p q x = p.
   Proof.
     intros H.
-    induction p; simpl; auto.
-    - simpl in H.
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+
+    unfold free_evar_subst in *.
+    move: 0 => more.
+    move: more p Hsz H.
+    induction sz; intros more p Hsz H; destruct p; simpl in *; try lia; auto.
+    - simpl in H. simpl.
       destruct (decide (x = x0)).
       + subst x0. destruct (decide (x = x)). simpl in H. inversion H. contradiction.
       + reflexivity.
-    - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
-    - simpl in H. rewrite IHp1. lia. rewrite IHp2. lia. reflexivity.
-    - simpl in H. rewrite IHp. lia. reflexivity.
-    - simpl in H. rewrite IHp. lia. reflexivity.
+    - rewrite IHsz. lia. lia. rewrite IHsz. lia. lia. reflexivity.
+    - rewrite IHsz. lia. lia. rewrite IHsz. lia. lia. reflexivity.
+    - f_equal. rewrite IHsz. lia. exact H. reflexivity.
+    - rewrite IHsz; auto. lia.
   Qed.
 
 
@@ -3496,44 +3577,24 @@ Section syntax.
     apply H41.
     apply Hnonegphi.
   Qed.
-
-
-  (* Section: nest_ex, nest_mu *)
-
-  Fixpoint nest_ex_aux level ϕ {struct ϕ} : Pattern :=
-    match ϕ with
-    | patt_free_evar _ => ϕ
-    | patt_free_svar _ => ϕ
-    | patt_bound_evar n => patt_bound_evar (if decide (n < level) is left _ then n else S n)
-    | patt_bound_svar _ => ϕ
-    | patt_sym _ => ϕ
-    | patt_bott => ϕ
-    | patt_app ϕ₁ ϕ₂ => patt_app (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
-    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_ex_aux level ϕ₁) (nest_ex_aux level ϕ₂)
-    | patt_exists ϕ' => patt_exists (nest_ex_aux (S level) ϕ')
-    | patt_mu ϕ' => patt_mu (nest_ex_aux level ϕ')
-    end.
-
-  Fixpoint nest_mu_aux level ϕ {struct ϕ} : Pattern :=
-    match ϕ with
-    | patt_free_evar _ => ϕ
-    | patt_free_svar _ => ϕ
-    | patt_bound_evar _ => ϕ
-    | patt_bound_svar n => patt_bound_svar (if decide (n < level) is left _ then n else S n)
-    | patt_sym _ => ϕ
-    | patt_bott => ϕ
-    | patt_app ϕ₁ ϕ₂ => patt_app (nest_mu_aux level ϕ₁) (nest_mu_aux level ϕ₂)
-    | patt_imp ϕ₁ ϕ₂ => patt_imp (nest_mu_aux level ϕ₁) (nest_mu_aux level ϕ₂)
-    | patt_exists ϕ' => patt_exists (nest_mu_aux level ϕ')
-    | patt_mu ϕ' => patt_mu (nest_mu_aux (S level) ϕ')
-    end.
   
-  Definition nest_ex ϕ := nest_ex_aux 0 ϕ.
-  Definition nest_mu ϕ := nest_mu_aux 0 ϕ.
-  
-  Lemma not_bevar_occur_level_nest_ex_aux level ϕ :
-    bevar_occur (nest_ex_aux level ϕ) level = false.
+  Lemma not_bevar_occur_level_nest_ex_aux level more ϕ :
+    more > 0 ->
+    bevar_occur (nest_ex_aux level more ϕ) level = false.
   Proof.
+    intros Hmore.
+    move: ϕ level.
+    induction ϕ; move=> level; simpl; auto.
+    - repeat case_match; simpl; auto; lia.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+  Qed.
+
+  Lemma not_bsvar_occur_level_nest_mu_aux level more ϕ :
+    more > 0 ->
+    bsvar_occur (nest_mu_aux level more ϕ) level = false.
+  Proof.
+    intros Hmore.
     move: ϕ level.
     induction ϕ; move=> level; simpl; auto.
     - repeat case_match; simpl; lia.
@@ -3541,18 +3602,8 @@ Section syntax.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
 
-  Lemma not_bsvar_occur_level_nest_mu_aux level ϕ :
-    bsvar_occur (nest_mu_aux level ϕ) level = false.
-  Proof.
-    move: ϕ level.
-    induction ϕ; move=> level; simpl; auto.
-    - repeat case_match; simpl; lia.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
-  Qed.
-
-  Lemma svar_open_nest_ex_aux_comm level ϕ dbi X:
-    svar_open dbi X (nest_ex_aux level ϕ) = nest_ex_aux level (svar_open dbi X ϕ).
+  Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
+    svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi; simpl; auto.
@@ -3563,8 +3614,8 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
   Qed.
 
-  Lemma evar_open_nest_mu_aux_comm level ϕ dbi X:
-    evar_open dbi X (nest_mu_aux level ϕ) = nest_mu_aux level (evar_open dbi X ϕ).
+  Lemma evar_open_nest_mu_aux_comm level more ϕ dbi X:
+    evar_open dbi X (nest_mu_aux level more ϕ) = nest_mu_aux level more (evar_open dbi X ϕ).
   Proof.
     move: level dbi. unfold evar_open.
     induction ϕ; move=> level dbi; simpl; auto; try congruence.
@@ -3572,11 +3623,11 @@ Section syntax.
   Qed.
 
   Lemma evar_open_nest_ex_aux_comm level ϕ dbi X:
-    evar_open dbi X (nest_ex_aux level ϕ)
+    evar_open dbi X (nest_ex_aux level 1 ϕ)
     = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => nest_ex_aux level (evar_open dbi X ϕ)
-      | Nat_equal _ _ _ => nest_ex_aux level ϕ
-      | Nat_greater _ _ _ => nest_ex_aux level (evar_open (dbi-1) X ϕ)
+      | Nat_less _ _ _ => nest_ex_aux level 1 (evar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_ex_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_ex_aux level 1 (evar_open (dbi-1) X ϕ)
       end.
   Proof.
     move: level dbi. unfold evar_open.
@@ -3602,11 +3653,11 @@ Section syntax.
   Qed.
 
   Lemma svar_open_nest_mu_aux_comm level ϕ dbi X:
-    svar_open dbi X (nest_mu_aux level ϕ)
+    svar_open dbi X (nest_mu_aux level 1 ϕ)
     = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => nest_mu_aux level (svar_open dbi X ϕ)
-      | Nat_equal _ _ _ => nest_mu_aux level ϕ
-      | Nat_greater _ _ _ => nest_mu_aux level (svar_open (dbi-1) X ϕ)
+      | Nat_less _ _ _ => nest_mu_aux level 1 (svar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_mu_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_mu_aux level 1 (svar_open (dbi-1) X ϕ)
       end.
   Proof.
     move: level dbi. unfold svar_open.
@@ -3631,8 +3682,8 @@ Section syntax.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
 
-  Lemma free_svars_nest_ex_aux dbi ϕ:
-    free_svars (nest_ex_aux dbi ϕ) = free_svars ϕ.
+  Lemma free_svars_nest_ex_aux dbi more ϕ:
+    free_svars (nest_ex_aux dbi more ϕ) = free_svars ϕ.
   Proof.
     move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
@@ -3641,8 +3692,8 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
   Qed.
 
-  Lemma free_evars_nest_mu_aux dbi ϕ:
-    free_evars (nest_mu_aux dbi ϕ) = free_evars ϕ.
+  Lemma free_evars_nest_mu_aux dbi more ϕ:
+    free_evars (nest_mu_aux dbi more ϕ) = free_evars ϕ.
   Proof.
     move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
@@ -3651,8 +3702,8 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
   Qed.
   
-  Lemma free_evars_nest_ex_aux dbi ϕ:
-    free_evars (nest_ex_aux dbi ϕ) = free_evars ϕ.
+  Lemma free_evars_nest_ex_aux dbi more ϕ:
+    free_evars (nest_ex_aux dbi more ϕ) = free_evars ϕ.
   Proof.
     move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
@@ -3661,8 +3712,8 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
   Qed.
 
-  Lemma free_svars_nest_mu_aux dbi ϕ:
-    free_svars (nest_mu_aux dbi ϕ) = free_svars ϕ.
+  Lemma free_svars_nest_mu_aux dbi more ϕ:
+    free_svars (nest_mu_aux dbi more ϕ) = free_svars ϕ.
   Proof.
     move: dbi. induction ϕ; move=> dbi; simpl; try reflexivity.
     - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
@@ -3671,29 +3722,29 @@ Section syntax.
     - rewrite IHϕ. reflexivity.
   Qed.
 
-  Corollary fresh_svar_nest_ex_aux dbi ϕ:
-    fresh_svar (nest_ex_aux dbi ϕ) = fresh_svar ϕ.
+  Corollary fresh_svar_nest_ex_aux dbi more ϕ:
+    fresh_svar (nest_ex_aux dbi more ϕ) = fresh_svar ϕ.
   Proof.
     unfold fresh_svar.
       by rewrite free_svars_nest_ex_aux.
   Qed.
 
-  Corollary fresh_evar_nest_mu_aux dbi ϕ:
-    fresh_evar (nest_mu_aux dbi ϕ) = fresh_evar ϕ.
+  Corollary fresh_evar_nest_mu_aux dbi more ϕ:
+    fresh_evar (nest_mu_aux dbi more ϕ) = fresh_evar ϕ.
   Proof.
     unfold fresh_evar.
       by rewrite free_evars_nest_mu_aux.
   Qed.
 
-  Corollary fresh_evar_nest_ex_aux dbi ϕ:
-    fresh_evar (nest_ex_aux dbi ϕ) = fresh_evar ϕ.
+  Corollary fresh_evar_nest_ex_aux dbi more ϕ:
+    fresh_evar (nest_ex_aux dbi more ϕ) = fresh_evar ϕ.
   Proof.
     unfold fresh_evar.
       by rewrite free_evars_nest_ex_aux.
   Qed.
 
-  Corollary fresh_svar_nest_mu_aux dbi ϕ:
-    fresh_svar (nest_mu_aux dbi ϕ) = fresh_svar ϕ.
+  Corollary fresh_svar_nest_mu_aux dbi more ϕ:
+    fresh_svar (nest_mu_aux dbi more ϕ) = fresh_svar ϕ.
   Proof.
     unfold fresh_svar.
       by rewrite free_svars_nest_mu_aux.
@@ -3702,25 +3753,25 @@ Section syntax.
   Corollary not_bevar_occur_0_nest_ex ϕ :
     bevar_occur (nest_ex ϕ) 0 = false.
   Proof.
-    exact (not_bevar_occur_level_nest_ex_aux 0 ϕ).
+    apply not_bevar_occur_level_nest_ex_aux. lia.
   Qed.
 
   Corollary not_bsvar_occur_0_nest_mu ϕ :
     bsvar_occur (nest_mu ϕ) 0 = false.
   Proof.
-    exact (not_bsvar_occur_level_nest_mu_aux 0 ϕ).
+    apply not_bsvar_occur_level_nest_mu_aux. lia.
   Qed.
 
   Corollary svar_open_nest_ex_comm ϕ dbi X:
     svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
   Proof.
-    exact (svar_open_nest_ex_aux_comm 0 ϕ dbi X).
+    exact (svar_open_nest_ex_aux_comm 0 1 ϕ dbi X).
   Qed.
 
   Corollary evar_open_nest_mu_comm ϕ dbi X:
     evar_open dbi X (nest_mu ϕ) = nest_mu (evar_open dbi X ϕ).
   Proof.
-    exact (evar_open_nest_mu_aux_comm 0 ϕ dbi X).
+    exact (evar_open_nest_mu_aux_comm 0 1 ϕ dbi X).
   Qed.
 
   Corollary evar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
