@@ -2396,10 +2396,8 @@ Section semantics.
         rewrite -> (@evar_open_free_svar_subst_comm) in H.
         rewrite -> e in H.
         exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
-        unfold evar_is_fresh_in in H6. assumption. unfold well_formed in Hwf.
-        apply andb_true_iff in Hwf.
-        destruct Hwf. assumption. assumption.
-        assumption. assumption.
+        unfold evar_is_fresh_in in H6. assumption. unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: assumption.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
         remember (evar_fresh (elements B)) as fresh.
@@ -2443,9 +2441,8 @@ Section semantics.
         rewrite -> e.
         exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
-        unfold well_formed in Hwf.
-        apply andb_true_iff in Hwf.
-        destruct Hwf. assumption. assumption. assumption. assumption.
+        unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: assumption.
     - repeat rewrite -> pattern_interpretation_ex_simpl. simpl.
       apply propset_fa_union_same. intros.
       rewrite -> set_eq_subseteq.
@@ -2494,8 +2491,8 @@ Section semantics.
         rewrite -> e in H1.
         exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
-        unfold well_formed in Hwf. apply andb_true_iff in Hwf.
-        destruct Hwf. assumption. assumption. assumption. assumption.
+        unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: assumption.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
         remember (evar_fresh (elements B)) as fresh.
@@ -2539,8 +2536,8 @@ Section semantics.
         rewrite -> e.
         exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
-        unfold well_formed in Hwf. apply andb_true_iff in Hwf.
-        destruct Hwf. assumption. assumption. assumption. assumption.
+        unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: assumption.
     - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
       assert ((λ S : propset (Domain m),
                      pattern_interpretation evar_val
@@ -2580,9 +2577,8 @@ Section semantics.
         {
           inversion Hwfc. pose (H5 MuZ H). apply wfc_ind_wfc in w. assumption.
         }
-        unfold well_formed in Hwf.
-        apply andb_true_iff in Hwf.
-        destruct Hwf. assumption.
+        unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: try assumption.
         {
           simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
         }
@@ -2633,9 +2629,8 @@ Section semantics.
         }
         erewrite (@pattern_interpretation_free_svar_independent m _ _ MuZ x psi); try assumption.
         reflexivity.
-        unfold well_formed in Hwf.
-        apply andb_true_iff in Hwf.
-        destruct Hwf. assumption.
+        unfold well_formed,well_formed_closed in Hwf.
+        destruct_and!. all: try assumption.
         {
           simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
         }
