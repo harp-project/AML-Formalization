@@ -2384,17 +2384,21 @@ Section FOL_helpers.
     - unfold emplace in *. simpl in *.
       pose proof (pwf := wfC).
       unfold PC_wf in pwf.
-      unfold well_formed,well_formed_closed in pwf. simpl in pwf.
-      apply andb_prop in pwf. destruct pwf as [pwf1 pwf2].
-      apply andb_prop in pwf1. destruct pwf1 as [pwfp1 pwfp2].
-      apply andb_prop in pwf2. destruct pwf2 as [pwfc1 pwfc2].
+      
+      
       assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed. rewrite pwfp1 pwfc1. reflexivity. }
+      { unfold well_formed,well_formed_closed in *. simpl in *.
+        destruct_and!.
+        unfold well_formed,well_formed_closed. split_and!; assumption.
+      }
       assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed. rewrite pwfp2 pwfc2. reflexivity. }
+      { unfold well_formed,well_formed_closed in *. simpl in *.
+        destruct_and!.
+        unfold well_formed,well_formed_closed. split_and!; assumption.
+      }
       
       destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
-      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in H0; try lia.
+      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in *; try lia.
       + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
         remember (free_evar_subst pcPattern2 p pcEvar) as p2.
         remember (free_evar_subst pcPattern1 q pcEvar) as q1.
@@ -2403,9 +2407,8 @@ Section FOL_helpers.
         { lia. }
         specialize (IHpcPattern1 ltac:(auto) ltac:(auto)).
         unfold is_implicative_context in IHpcPattern1.
-        simpl in IHpcPattern1.
-        simpl in impC. rewrite andbT in impC.
-        specialize (IHpcPattern1 impC).
+        simpl in IHpcPattern1. rewrite andbT in impC.
+        specialize (IHpcPattern1 ltac:(assumption)).
         clear IHpcPattern2. (* Can't specialize. *)
         (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
            Therefore, p2 = q2. We need a lemma for that. *)
@@ -2414,21 +2417,21 @@ Section FOL_helpers.
         subst p2 q2. rewrite Hnoocp Hnoocq.
         unfold patt_iff.
 
-        epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
-        epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
+        epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
+        epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
         Unshelve. 2,3,4,5: subst; auto.
         
-        apply conj_intro_meta. 1,2: subst; auto.
+        apply conj_intro_meta; subst; auto.
         unfold patt_iff in IHpcPattern1.
 
-        * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
-          mgApply' 1 5. 1,2: subst; auto.
-          mgApply' 0 5. 1,2,3: subst; auto.
+        * toMyGoal. mgIntro. mgIntro. mgAdd H'2. 1,2,3: subst; auto.
+          mgApply' 1 5.
+          mgApply' 0 5.
           mgExactn 2; subst; auto.
 
-        * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
-          mgApply' 1 5. 1,2: subst; auto.
-          mgApply' 0 5. 1,2,3: subst; auto.
+        * toMyGoal. mgIntro. mgIntro. mgAdd H'1. 1,2,3: subst; auto.
+          mgApply' 1 5.
+          mgApply' 0 5.
           mgExactn 2; subst; auto.
       + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
         remember (free_evar_subst pcPattern2 p pcEvar) as p2.
@@ -2546,8 +2549,7 @@ Section FOL_helpers.
       { apply pf_iff_equiv_refl; auto. }
       2: { apply Hx. }
       2: { unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
-           apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-           apply Hwfc.
+           destruct_and!. eassumption.
       }
       lia. 
     -
@@ -2558,7 +2560,9 @@ Section FOL_helpers.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
         apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
+        split_and!.
+        + apply wcmu_sctx. destruct_and!. assumption.
+        + apply wcex_sctx. destruct_and!. assumption.
       }
 
       assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
@@ -2589,7 +2593,10 @@ Section FOL_helpers.
         rewrite wfp_evar_open.
         { apply Hwf. }
         unfold well_formed_closed.
-        rewrite wfc_aux_body_ex_imp1. apply Hwf. reflexivity.
+        destruct_and!.
+        split_and!; auto.
+        + apply wfc_mu_aux_body_ex_imp1. assumption.
+        + apply wfc_ex_aux_body_ex_imp1. assumption.
       }
       
       
@@ -2641,7 +2648,10 @@ Section FOL_helpers.
         fold (evar_open 0 x (subst_ctx AC p)).
         erewrite evar_quantify_evar_open.
         3: { apply Hxfr1. }
-        3: { apply wf_imp_wfc in Hwfex. apply Hwfex. }
+        3: { apply wf_imp_wfc in Hwfex.
+             unfold well_formed,well_formed_closed in *. simpl in *.
+             destruct_and!. eassumption.
+        }
         2: { lia. }
         apply Ex_quan.
     -
@@ -2652,7 +2662,9 @@ Section FOL_helpers.
         apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
         apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
         unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-        apply (@wc_sctx _ AC p 1 0). rewrite Hwfc. reflexivity.
+        split_and!.
+        + apply wcmu_sctx. destruct_and!. assumption.
+        + apply wcex_sctx. destruct_and!. assumption.          
       }
 
       assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
@@ -2683,7 +2695,10 @@ Section FOL_helpers.
         rewrite wfp_evar_open.
         { apply Hwf. }
         unfold well_formed_closed.
-        rewrite wfc_aux_body_ex_imp1. apply Hwf. reflexivity.
+        destruct_and!.
+        split_and!; auto.
+        + apply wfc_mu_aux_body_ex_imp1. assumption.
+        + apply wfc_ex_aux_body_ex_imp1. assumption.
       }
       
       
@@ -2733,7 +2748,10 @@ Section FOL_helpers.
         fold (evar_open 0 x (subst_ctx AC p)).
         erewrite evar_quantify_evar_open.
         3: { apply Hxfr1. }
-        3: { apply wf_imp_wfc in Hwfex. apply Hwfex. }
+        3: { apply wf_imp_wfc in Hwfex.
+             unfold well_formed,well_formed_closed in *. simpl in *.
+             destruct_and!. eassumption.
+        }
         2: { lia. }
         apply Ex_quan.
   Qed.
@@ -3178,14 +3196,15 @@ Section FOL_helpers.
       unfold exists_quantify in H0, H1.
       apply pf_iff_iff; auto.
      Unshelve.
-     17, 18: exact 0.
      all: try apply evar_quantify_well_formed; auto.
      all: try apply subst_patctx_wf; auto.
      1-2: simpl; apply evar_quantify_not_free.
      + eapply subst_patctx_wf in WFC. 2: exact WF2.
-       apply andb_true_iff in WFC as [E1 E2]. apply E2.
+       apply andb_true_iff in WFC as [E1 E2].
+       unfold well_formed_closed in *. destruct_and!. assumption.
      + eapply subst_patctx_wf in WFC. 2: exact WF1.
-       apply andb_true_iff in WFC as [E1 E2]. apply E2.
+       apply andb_true_iff in WFC as [E1 E2].
+       unfold well_formed_closed in *. destruct_and!. assumption.
   Defined.
 
   Lemma imp_trans_mixed_meta Γ A B C D :
@@ -3277,7 +3296,8 @@ Section FOL_helpers.
       2-5: shelve.
       apply pf_iff_iff; auto.
       Unshelve.
-      20,21: exact 0. all: auto.
+
+      all: auto.
       all: try replace (ex , free_evar_subst ψ φ1 x') with (free_evar_subst (ex, ψ) φ1 x') by reflexivity.
       all: try replace (ex , free_evar_subst ψ φ2 x') with (free_evar_subst (ex, ψ) φ2 x') by reflexivity.
       all: try apply well_formed_free_evar_subst; auto.
@@ -3288,12 +3308,14 @@ Section FOL_helpers.
       12: {
          apply well_formed_free_evar_subst with (x:= x') (q := φ1) in WFψ.
          unfold well_formed, well_formed_closed in WFψ.
-         apply andb_true_iff in WFψ. destruct WFψ. now simpl in H4. auto. 
+         apply andb_true_iff in WFψ. destruct WFψ.
+         destruct_and!. simpl in *. assumption. assumption.
       }
       13: {
          apply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ.
          unfold well_formed, well_formed_closed in WFψ.
-         apply andb_true_iff in WFψ. destruct WFψ. now simpl in H4. auto. 
+         apply andb_true_iff in WFψ. destruct WFψ.
+         destruct_and!. simpl in *. assumption. assumption.
       }
       all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
       all: try apply free_evars_free_evar_subst.

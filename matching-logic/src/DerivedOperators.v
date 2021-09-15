@@ -55,11 +55,9 @@ Module Syntax.
       well_formed phi ->
       well_formed (patt_not phi).
     Proof.
-      unfold well_formed. simpl.
-      unfold well_formed_closed. simpl.
+      unfold well_formed, well_formed_closed. simpl.
       intros H.
-      apply andb_prop in H. destruct H as [H1 H2].
-      rewrite H1. rewrite H2. reflexivity.
+      destruct_and!. split_and!; auto.
     Qed.
 
     Lemma well_formed_or (phi1 phi2 : Pattern) :
@@ -68,13 +66,9 @@ Module Syntax.
       well_formed (patt_or phi1 phi2).
     Proof.
       unfold patt_or.
-      unfold well_formed. simpl.
-      unfold well_formed_closed. simpl.
+      unfold well_formed, well_formed_closed. simpl.
       intros H1 H2.
-      apply andb_prop in H1. destruct H1 as [H11 H12].
-      apply andb_prop in H2. destruct H2 as [H21 H22].
-      rewrite !(H11,H12,H21,H22).
-      reflexivity.
+      destruct_and!. split_and!; auto.
     Qed.
     
     Lemma well_formed_iff (phi1 phi2 : Pattern) :
@@ -85,9 +79,7 @@ Module Syntax.
       unfold patt_iff, patt_and, patt_or, patt_not. intros.
       unfold well_formed in *. simpl.
       unfold well_formed_closed in *. simpl.
-      apply andb_prop in H. destruct H as [H11 H12].
-      apply andb_prop in H0. destruct H0 as [H21 H22].
-      rewrite !(H11,H12,H21,H22). simpl. auto.
+      destruct_and!. split_and!; auto.
     Qed.
 
     Lemma well_formed_and (phi1 phi2 : Pattern) :
@@ -99,20 +91,25 @@ Module Syntax.
       unfold well_formed. simpl.
       unfold well_formed_closed. simpl.
       intros H1 H2.
-      apply andb_prop in H1. destruct H1 as [H11 H12].
-      apply andb_prop in H2. destruct H2 as [H21 H22].
-      rewrite !(H11,H12,H21,H22).
-      reflexivity.
+      destruct_and!. split_and!; auto.
     Qed.
 
-    Lemma well_formed_closed_all φ : forall n m,
-      well_formed_closed_aux (patt_forall φ) n m
+    Lemma well_formed_closed_ex_all φ : forall n,
+      well_formed_closed_ex_aux (patt_forall φ) n
     <->
-      well_formed_closed_aux φ (S n) m.
+      well_formed_closed_ex_aux φ (S n).
     Proof.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
-  
+
+    Lemma well_formed_closed_mu_all φ : forall m,
+      well_formed_closed_mu_aux (patt_forall φ) m
+    <->
+      well_formed_closed_mu_aux φ m.
+    Proof.
+      intros. simpl. do 2 rewrite andb_true_r. auto.
+    Qed.
+    
     Lemma well_formed_positive_all φ : 
       well_formed_positive (patt_forall φ)
     <->

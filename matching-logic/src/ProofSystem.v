@@ -5,6 +5,8 @@ From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
+From MatchingLogic.Utils Require Import extralibrary.
+
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
@@ -68,23 +70,21 @@ Section ml_proof_system.
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }
-      + erewrite -> pattern_interpretation_free_evar_independent.
+      + unfold well_formed,well_formed_closed in *. simpl in *.
+        destruct_and!.
+        erewrite -> pattern_interpretation_free_evar_independent.
         erewrite -> evar_open_closed.
         split.
         2: { exact Happ. }
         exact Hext_le.
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
+        assumption.
         rewrite -> evar_open_closed.
         {
           unfold fresh_evar. simpl. 
           pose(@set_evar_fresh_is_fresh' signature (free_evars phi ∪ free_evars psi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }
-        unfold well_formed in H0.
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
+        assumption.
   Qed.
 
 (* soundness for prop_ex_left *)
@@ -142,8 +142,9 @@ Section ml_proof_system.
           pose(@set_evar_fresh_is_fresh' signature (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }
-        apply andb_true_iff in H0.
-        destruct H0. assumption.
+        unfold well_formed,well_formed_closed in *. simpl in *.
+        destruct_and!.
+        assumption.
       + split; try assumption.
         erewrite -> (@interpretation_fresh_evar_open signature m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
@@ -382,7 +383,9 @@ Proof.
       simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
       destruct H as [Hwfp_phi1 Hwfc_phi1].
       destruct H0 as [Hwfp_phi2 Hwfc_phi2].
-      apply andb_true_iff; split; apply andb_true_iff; split; assumption.
+      unfold well_formed,well_formed_closed in *. simpl in *.
+      destruct_and!.
+      split_and!; assumption.
     }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
     assert (H2: forall evar_val svar_val,
@@ -414,9 +417,11 @@ Proof.
          apply andb_true_iff in H.
          destruct H as [Hwfp Hwfc].
          unfold well_formed_closed in Hwfc.
-         rewrite -> evar_open_evar_quantify with (n' := 0) in H3.
+         rewrite -> evar_open_evar_quantify in H3.
          assumption.
-         rewrite Hwfc. auto.
+         unfold well_formed,well_formed_closed in *. simpl in *.
+         destruct_and!.
+         assumption.
        }
        rewrite -> elem_of_subseteq in Hinc.
        apply Hinc. apply Hphi1.
@@ -534,8 +539,8 @@ Proof.
       apply andb_true_iff in H01. destruct H01 as [H011 H012].
       apply andb_true_iff in H02. destruct H02 as [H021 H022].
       simpl.
-      rewrite H011. rewrite H021.
-      reflexivity.
+      destruct_and!.
+      split_and!; assumption.
     }
 
   (* Framing - right *)
@@ -566,8 +571,7 @@ Proof.
       apply andb_true_iff in Hwfc1. destruct Hwfc1 as [Hwfc3 Hwfc4].
       apply andb_true_iff in Hwfc2. destruct Hwfc2 as [H2fc5 Hwfc6].
       unfold well_formed_closed. simpl.
-      rewrite Hwfc4. rewrite Hwfc6.
-      reflexivity.
+      destruct_and!. split_and!; assumption.
     }
 
   (* Set Variable Substitution *)
@@ -685,12 +689,14 @@ Proof.
       rewrite wfp_bsvar_subst; auto.
       simpl.
 
-      unfold well_formed_closed. simpl.
-      apply andb_true_iff. split.
-      2: { assumption. }
-      unfold well_formed_closed in H2.
-      simpl in H2.
-      apply wfc_aux_bsvar_subst; assumption.
+      unfold well_formed,well_formed_closed in *. simpl in *.
+      destruct_and!. assumption.
+      split_and!; auto.
+      unfold well_formed_closed in *. simpl in *.
+      destruct_and!.
+      split_and!; auto.
+      + apply wfc_mu_aux_bsvar_subst; auto.
+      + apply wfc_ex_aux_bsvar_subst; auto.
     }
     specialize (IHHp Hwf').
     

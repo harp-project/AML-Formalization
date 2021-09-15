@@ -20,6 +20,9 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset.
 
+Import extralibrary.
+
+
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
@@ -1075,10 +1078,13 @@ Section ProofSystemTheorems.
     Proof.
       intros MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
       assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
-      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 0 φ1).
-      4: rewrite (@bound_to_free_variable_subst _ ψ x 1 0 0 φ2).
+      Check bound_to_free_variable_subst.
+      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1).
+      4: rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ2).
       1, 4: lia. all: auto.
-      1, 2: apply wf_body_ex_to_wf in WFB; apply andb_true_iff in WFB as [E1 E2]; auto.
+      1, 2: apply wf_body_ex_to_wf in WFB; apply andb_true_iff in WFB as [E1 E2];
+        unfold well_formed_closed in *; simpl in *;
+        destruct_and!; auto.
       apply equality_elimination_helper; auto.
       now apply mu_free_evar_open.
     Qed.
@@ -1138,7 +1144,8 @@ Section ProofSystemTheorems.
         apply andb_true_iff in WF as [E1 E2]. simpl in E1, E2.
         apply wf_body_ex_to_wf in WFB.
         apply andb_true_iff in WFB as [E3 E4]. simpl in E3, E4.
-        erewrite bevar_subst_closed, bevar_subst_positive; auto.
+        unfold well_formed_closed in *. destruct_and!.
+        erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
       }
       assert (well_formed (instantiate (ex , φ) Z)) as WF2. {
         unfold instantiate.
@@ -1146,7 +1153,8 @@ Section ProofSystemTheorems.
         apply andb_true_iff in WF as [E1 E2]. simpl in E1, E2.
         apply wf_body_ex_to_wf in WFB.
         apply andb_true_iff in WFB as [E3 E4]. simpl in E3, E4.
-        erewrite bevar_subst_closed, bevar_subst_positive; auto.
+        unfold well_formed_closed in *. destruct_and!.
+        erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
         all: rewrite HeqZ; auto.
       }
       pose proof (@equality_elimination2 Γ φ' Z φ MF WF WFZ WFB).
@@ -1202,21 +1210,26 @@ Section ProofSystemTheorems.
       1-9: unfold well_formed, well_formed_closed in *; simpl.
       all: apply wf_body_ex_to_wf in WFB; auto; apply eq_sym, andb_true_eq in WFB; unfold well_formed_closed in WFB; simpl in WFB; destruct WFB;
         try rewrite <- WFB, <- H4; auto.
-      1-5: apply andb_true_iff in WF as [E1 E2];
-        apply wfc_aux_extend with (n' := 1) (m' := 0) in E2.
-      all: try lia. 1-5: rewrite -> E1, -> E2; simpl; auto.
-      unfold instantiate. simpl. eapply stdpp_ext.not_elem_of_larger_impl_not_elem_of.
-      eapply union_mono_r. apply free_evars_bevar_subst.
-      rewrite HeqZvar. unfold fresh_evar. simpl.
-      rewrite (union_comm_L (free_evars φ) (free_evars φ')).
-      rewrite <- (union_assoc_L (free_evars φ') (free_evars φ) (free_evars φ)).
-      rewrite (union_idemp_L (free_evars φ)).
-      rewrite (union_comm_L (free_evars φ') (free_evars φ)).
-      replace (@union (@EVarSet Σ)
-                      (@gmap.gset_union _ _ _) (@free_evars Σ φ)
-                      (@free_evars Σ φ')) with (free_evars (φ $ φ')) by reflexivity.
-      now apply x_eq_fresh_impl_x_notin_free_evars.
-      apply set_evar_fresh_is_fresh'.
+      7: { unfold instantiate. simpl.
+           apply set_evar_fresh_is_fresh'.
+      }
+      6: {
+        rewrite HeqZvar. unfold fresh_evar. simpl.
+        Search not elem_of "∪".
+        apply not_elem_of_union.
+        split.
+        - Search free_evars bevar_subst.
+          eapply stdpp_ext.not_elem_of_larger_impl_not_elem_of.
+          2: { apply set_evar_fresh_is_fresh'. }
+          rewrite comm.
+          apply free_evars_bevar_subst.
+        - eapply stdpp_ext.not_elem_of_larger_impl_not_elem_of.
+          2: { apply set_evar_fresh_is_fresh'. }
+          clear. set_solver.
+      }
+
+      all: destruct_and!; simpl in *; split_and!; auto;
+        eapply well_formed_closed_ex_aux_ind;try eassumption; lia.
     Qed.
 
     Corollary forall_functional_subst φ φ' Γ : 
@@ -1225,23 +1238,35 @@ Section ProofSystemTheorems.
     Proof.
       intros MF WF WFB. unfold patt_forall.
       assert (well_formed (bevar_subst φ φ' 0)) as BWF. {
-        unfold well_formed, well_formed_closed.
-        rewrite -> well_formed_positive_bevar_subst, -> wfc_aux_bevar_subst; auto.
-        2, 4: apply andb_true_iff in WF as [E1 E2]; auto.
-        all: apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2]; 
-          unfold well_formed_closed in E2; simpl in E1, E2; auto.
+        unfold well_formed, well_formed_closed in *.
+        destruct_and!.
+        split_and!.
+        - apply well_formed_positive_bevar_subst; auto.
+          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
+          simpl in *. assumption.
+        - apply wfc_mu_aux_bevar_subst; auto.
+          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
+          unfold well_formed_closed in *. simpl in *.
+          destruct_and!; auto.
+        - apply wfc_ex_aux_bevar_subst; auto.
+          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
+          unfold well_formed_closed in *. simpl in *.
+          destruct_and!; auto.
       }
       assert (well_formed (ex , patt_equal φ' b0)) as SWF. {
         unfold well_formed, well_formed_closed.
         apply andb_true_iff in WF as [E1 E2]. unfold well_formed_closed in E2.
-        simpl. rewrite E1. apply wfc_aux_extend with (n' := 1) (m' := 0) in E2.
-        rewrite E2. auto. all: lia.
+        simpl. rewrite E1.
+        unfold well_formed,well_formed_closed in *. destruct_and!.
+        split_and!; auto.
+        - eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+        - eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
       }
       assert (well_formed (ex , (φ ---> ⊥))) as NWF. {
         apply wf_body_ex_to_wf in WFB. unfold well_formed, well_formed_closed in *.
         clear BWF SWF.
         apply andb_true_iff in WFB as [E1 E2]. simpl in *.
-        now rewrite -> E1, -> E2.
+        destruct_and!. split_and!; auto.
       }
       epose proof (H := @exists_functional_subst (! φ) φ' Γ _ WF _).
       simpl in H.

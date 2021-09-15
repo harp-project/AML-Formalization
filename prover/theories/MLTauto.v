@@ -8,7 +8,12 @@ From Equations Require Import Equations.
 
 From stdpp Require Import base option.
 
-From MatchingLogic Require Import Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers.
+From MatchingLogic Require Import
+     Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers
+     Utils.extralibrary
+.
+
+
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 
 (*
@@ -265,9 +270,13 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1').
-      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       assert (well_formed p2').
-      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       pose proof (IHsz p1' ltac:(lia) H1).
       pose proof (IHsz p2' ltac:(lia) H2).
       auto.
@@ -279,9 +288,9 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1').
-      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      { unfold well_formed, well_formed_closed. destruct_and!. split_and!; assumption. }
       assert (well_formed p2').
-      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      { unfold well_formed, well_formed_closed. destruct_and!. split_and!; assumption. }
       pose proof (IHsz p1' ltac:(lia) H1).
       pose proof (IHsz p2' ltac:(lia) H2).
       auto.
@@ -298,9 +307,13 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1).
-      { unfold well_formed, well_formed_closed. rewrite wfp11 wfp21. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       assert (well_formed p2).
-      { unfold well_formed, well_formed_closed. rewrite wfp12 wfp22. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       pose proof (IHsz p2 ltac:(lia) H1).
       auto.
   Qed.
@@ -395,9 +408,13 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1': well_formed p1').
-      { unfold well_formed, well_formed_closed. rewrite Hwf11 Hwf21. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       assert (wfp2': well_formed p2').
-      { unfold well_formed, well_formed_closed. rewrite Hwf12 Hwf22. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
 
       simpl in Hsz.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
@@ -544,9 +561,13 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1': well_formed p1').
-      { unfold well_formed, well_formed_closed. rewrite Hwf11 Hwf21. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       assert (wfp2': well_formed p2').
-      { unfold well_formed, well_formed_closed. rewrite Hwf12 Hwf22. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
 
       simpl in Hsz.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
@@ -702,9 +723,13 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1: well_formed p1).
-      { unfold well_formed, well_formed_closed. rewrite Hwf11 Hwf21. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
       assert (wfp2: well_formed p2).
-      { unfold well_formed, well_formed_closed. rewrite Hwf12 Hwf22. reflexivity. }
+      { unfold well_formed, well_formed_closed.
+        destruct_and!. split_and!; assumption.
+      }
 
       simpl in Hsz.
       pose proof (IHp2 := IHsz p2 ltac:(auto) ltac:(lia)).
@@ -1118,7 +1143,7 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf11 wf21. reflexivity.
+      destruct_and!. split_and!; assumption.
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1133,7 +1158,8 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf12 wf22. reflexivity.
+      destruct_and!. split_and!; assumption.
+      
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1148,7 +1174,8 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf11 wf21. reflexivity.
+      destruct_and!. split_and!; assumption.
+      
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1163,7 +1190,8 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf12 wf22. reflexivity.
+      destruct_and!. split_and!; assumption.
+      
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1346,7 +1374,8 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf11 wf21. reflexivity.
+      destruct_and!. split_and!; assumption.
+      
     - subst.
       clear abstract'.
       unfold aoisz_mns_lexprod,aoisz_mns_lexprod'.
@@ -1368,7 +1397,8 @@ Section ml_tauto.
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
-      rewrite wf12 wf22. reflexivity.
+      destruct_and!. split_and!; assumption.
+      
     - subst.
       clear abstract'.
       apply left_lex'.
@@ -1395,8 +1425,8 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p1 wf'c1.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
+    
   Qed.
 
   Lemma wf_and_proj2 p q:
@@ -1412,8 +1442,8 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p2 wf'c2.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
+    
   Qed.
 
 
@@ -1430,8 +1460,7 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p1 wf'c1.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
   Qed.
 
   Lemma wf_or_proj2 p q:
@@ -1447,8 +1476,7 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p2 wf'c2.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
   Qed.
 
   Lemma wf_not_proj p:
@@ -1474,8 +1502,7 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p1 wf'c1.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
   Qed.
 
   Lemma wf_imp_proj2 p q:
@@ -1490,8 +1517,7 @@ Section ml_tauto.
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
-    rewrite wf'p2 wf'c2.
-    reflexivity.
+    destruct_and!. split_and!; assumption.
   Qed.
 
   
