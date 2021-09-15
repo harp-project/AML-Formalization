@@ -4310,8 +4310,19 @@ Section syntax.
     - rewrite IHphi1. rewrite IHphi2. reflexivity.
     - rewrite IHphi. reflexivity.
     - rewrite IHphi. reflexivity.
-  Qed.    
-    
+  Qed.
+
+
+  Lemma nest_mu_aux_comm' level1 level2 more1 more2 phi:
+    nest_mu_aux level1 more1 (nest_mu_aux level2 more2 phi)
+    = nest_mu_aux level2 more2 (nest_mu_aux level1 more1 phi).
+  Proof.
+    move: level1 level2 more1 more2.
+    induction phi; intros level1 level2 more1 more2; simpl; auto.
+    - repeat case_match; auto; try lia.
+      f_equal.
+  Abort.
+  
   Lemma free_svar_subst_nest_mu_1 phi psi X more more':
     free_svar_subst' more phi (nest_mu_aux 0 more' psi) X
     = free_svar_subst' (more+more') phi psi X.
@@ -4323,23 +4334,91 @@ Section syntax.
     - rewrite IHphi. reflexivity.
     - rewrite IHphi. reflexivity.
   Qed.
-      
-      (*
-  Check free_svar_subst'. Print nest_mu_aux.
-  Lemma free_svar_subst_nest_mu phi psi X more more':
-    nest_mu_aux 0 more' (free_svar_subst' more phi psi X)
-    = free_svar_subst' more (nest_mu_aux 0 more' phi) (nest_mu_aux 0  more' psi) X.
+
+  Lemma nest_mu_aux_wfc_mu level more psi:
+    well_formed_closed_mu_aux psi level ->
+    nest_mu_aux level more psi = psi.
   Proof.
-    move: more more'.
-    induction phi; intros more more'; simpl; auto.
-    - case_match;[|auto].
-      Check nest_mu_aux_comm.
-      replace more with (0 + more) at 1 by lia
-      rewrite -> nest_mu_aux_comm.
-      Check nest_mu_aux_comm.
+    move: level.
+    induction psi; intros level Hlevel; simpl in *; auto.
+    - repeat case_match; auto; congruence.
+    - destruct_and!.
+      rewrite IHpsi1; auto.
+      rewrite IHpsi2; auto.
+    - destruct_and!.
+      rewrite IHpsi1; auto.
+      rewrite IHpsi2; auto.
+    - rewrite IHpsi; auto.
+    - rewrite IHpsi; auto.
+  Qed.
+  
+
+  Lemma size'_nest_mu_aux level more phi:
+    size' (nest_mu_aux level more phi) = size' phi.
+  Proof.
+    move: level.
+    induction phi; intros level; simpl; auto.
+  Qed.
       
-      rewrite -> nest_mu_aux_comm.
-       *)
+  (* Example:
+  phi = (mu, patt_bound_svar 1)
+  level = 0
+
+  nest_mu_aux 0 more' (free_svar_subst' more (mu, patt_bound_svar 1) psi X)
+= nest_mu_aux 0 more' (mu, patt_bound_svar 1)
+    =? OK
+  (mu, patt_bound_svar (1+more')
+=  free_svar_subst' more ((mu, patt_bound_svar (1+more')) (nest_mu_aux 0 more' psi) X.
+= free_svar_subst' more (nest_mu_aux 0 more' (mu, patt_bound_svar 1)) (nest_mu_aux 0 more' psi) X.
+
+
+If X does not occur free in phi:
+
+    nest_mu_aux level more' (free_svar_subst' more phi psi X)
+    
+=?
+    free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
+
+*)
+  Lemma free_svar_subst_nest_mu phi psi X more more' level:
+    well_formed_closed_mu_aux psi 0 ->
+    nest_mu_aux level more' (free_svar_subst' more phi psi X)
+    = free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
+  Proof.
+    intros Hpsi.
+
+    remember (size' phi) as sz.
+    assert (Hsz: size' phi <= sz) by lia.
+    clear Heqsz.
+    
+    move: phi Hsz more more' level.
+    induction sz; intros phi Hsz; destruct phi; simpl in *; try lia;
+      intros more more' level; simpl; auto.
+    - case_match;[|auto]. subst.
+      rewrite !nest_mu_aux_wfc_mu; auto.
+      all: eapply well_formed_closed_mu_aux_ind; try eassumption; lia.
+    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    - rewrite IHsz. lia. reflexivity.
+    - f_equal. unfold nest_mu at 1.
+      rewrite IHsz. lia. rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
+      rewrite [nest_mu_aux level more' psi]nest_mu_aux_wfc_mu.
+      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
+      unfold nest_mu at 1.
+      rewrite IHsz.
+      { rewrite size'_nest_mu_aux. lia. }
+      rewrite IHsz.
+      { rewrite size'_nest_mu_aux. lia. }
+      rewrite [nest_mu_aux (S level) more' psi]nest_mu_aux_wfc_mu.
+      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
+      rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
+      f_equal. Check pred.
+      
+  (*
+      rewrite nest_mu_aux_twice. rewrite nest_mu_aux_twice.
+      f_equal. lia.*)
+  Abort.
+  
       
 
   Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
@@ -4396,6 +4475,9 @@ Section syntax.
       subst B.  apply not_elem_of_union in H. destruct H.
       simpl. rewrite svar_open_mu.
       (*magic happens*)
+      Check free_svar_subst_nest_mu_1.
+      (* (nest_mu (free_svar_subst' 0 phi psi X)) == ?*)
+      (* nest_mu (free_svar_subst' 0 (patt_free_svar X) psi X) = nest_mu psi*)
       f_equal. Search free_svar_subst' nest_mu_aux.
       erewrite (@svar_open_inj (svar_open (S n0) fresh (nest_mu (free_svar_subst' 0 phi psi X))) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
       { f_equal. Search   }
