@@ -4200,27 +4200,129 @@ Section syntax.
   Qed.
 
 
+  Fixpoint no_bsvar_in_range (phi : Pattern) (min_ind_svar max_ind_svar : db_index) : bool :=
+    match phi with
+    | patt_free_evar _ => true
+    | patt_free_svar _ => true
+    | patt_bound_evar n => true
+    | patt_bound_svar n => if decide (n < max_ind_svar /\ ~ (n < min_ind_svar)) is left _ then false else true
+    | patt_sym _ => true
+    | patt_app psi1 psi2 => no_bsvar_in_range psi1 min_ind_svar max_ind_svar &&
+                            no_bsvar_in_range psi2 min_ind_svar max_ind_svar
+    | patt_bott => true
+    | patt_imp psi1 psi2 => no_bsvar_in_range psi1 min_ind_svar max_ind_svar &&
+                            no_bsvar_in_range psi2 min_ind_svar max_ind_svar
+    | patt_exists psi => no_bsvar_in_range psi min_ind_svar max_ind_svar
+    | patt_mu psi => no_bsvar_in_range psi (S min_ind_svar) (S max_ind_svar)
+    end.
+
+  Fixpoint no_bevar_in_range (phi : Pattern) (min_ind_evar max_ind_evar : db_index) : bool :=
+    match phi with
+    | patt_free_evar _ => true
+    | patt_free_svar _ => true
+    | patt_bound_evar n => if decide (n < max_ind_evar /\ ~ (n < min_ind_evar)) is left _ then false else true
+    | patt_bound_svar n => true
+    | patt_sym _ => true
+    | patt_app psi1 psi2 => no_bevar_in_range psi1 min_ind_evar max_ind_evar &&
+                            no_bevar_in_range psi2 min_ind_evar max_ind_evar
+    | patt_bott => true
+    | patt_imp psi1 psi2 => no_bevar_in_range psi1 min_ind_evar max_ind_evar &&
+                            no_bevar_in_range psi2 min_ind_evar max_ind_evar
+    | patt_exists psi => no_bevar_in_range psi (S min_ind_evar) (S max_ind_evar)
+    | patt_mu psi => no_bevar_in_range psi min_ind_evar max_ind_evar
+    end.
+
+  Lemma no_bsvar_in_range_nest_mu_aux level more phi:
+    no_bsvar_in_range (nest_mu_aux level more phi) level (level + more).
+  Proof.
+    move: level more.
+    induction phi; intros level more; simpl; auto.
+    - repeat case_match; auto; lia.
+    - split_and!. apply IHphi1. apply IHphi2.
+    - split_and!. apply IHphi1. apply IHphi2.
+    - apply IHphi.
+  Qed.
+
+  Lemma no_bevar_in_range_nest_ex_aux level more phi:
+    no_bevar_in_range (nest_ex_aux level more phi) level (level + more).
+  Proof.
+    move: level more.
+    induction phi; intros level more; simpl; auto.
+    - repeat case_match; auto; lia.
+    - split_and!. apply IHphi1. apply IHphi2.
+    - split_and!. apply IHphi1. apply IHphi2.
+    - apply IHphi.
+  Qed.
+
+  Lemma nest_mu_aux_no_bsvar_in_range level more min_svar max_svar d phi:
+    no_bsvar_in_range phi min_svar max_svar ->
+    level >= min_svar ->
+    level + d <= max_svar ->
+    nest_mu_aux level more phi = nest_mu_aux (level + d) more phi.
+  Proof.
+    intros Hrange Hlevel Hd.
+    move: min_svar max_svar Hrange level Hlevel Hd.
+    induction phi; intros min_svar max_svar Hrange level Hlevel Hd; simpl; auto.
+    - simpl in Hrange. repeat case_match; auto; try lia. congruence.
+    - simpl in Hrange. destruct_and!.
+      erewrite IHphi1. 2: eassumption. all: auto.
+      erewrite IHphi2. 2: eassumption. all: auto.
+    - simpl in Hrange. destruct_and!.
+      erewrite IHphi1. 2: eassumption. all: auto.
+      erewrite IHphi2. 2: eassumption. all: auto.
+    - simpl in Hrange.
+      erewrite IHphi. 2: eassumption. all: auto.
+    - simpl in Hrange.
+      erewrite IHphi. 2: eassumption. reflexivity. lia. lia.
+  Qed.
+
+
+  Lemma nest_ex_aux_no_bevar_in_range level more min_evar max_evar d phi:
+    no_bevar_in_range phi min_evar max_evar ->
+    level >= min_evar ->
+    level + d <= max_evar ->
+    nest_ex_aux level more phi = nest_ex_aux (level + d) more phi.
+  Proof.
+    intros Hrange Hlevel Hd.
+    move: min_evar max_evar Hrange level Hlevel Hd.
+    induction phi; intros min_evar max_evar Hrange level Hlevel Hd; simpl; auto.
+    - simpl in Hrange. repeat case_match; auto; try lia. congruence.
+    - simpl in Hrange. destruct_and!.
+      erewrite IHphi1. 2: eassumption. all: auto.
+      erewrite IHphi2. 2: eassumption. all: auto.
+    - simpl in Hrange. destruct_and!.
+      erewrite IHphi1. 2: eassumption. all: auto.
+      erewrite IHphi2. 2: eassumption. all: auto.
+    - simpl in Hrange.
+      erewrite IHphi. 2: eassumption. all: auto. lia. lia.
+    - simpl in Hrange.
+      erewrite IHphi. 2: eassumption. all: auto.
+  Qed.
+  
   Lemma nest_mu_aux_twice level more more' phi:
     nest_mu_aux level more (nest_mu_aux level more' phi) = nest_mu_aux level (more + more') phi.
   Proof.
-    simpl.
-    destruct (decide (more' = 0)).
-    { subst. rewrite nest_mu_aux_0. f_equal. lia. }
-    (* This is not enough for induction. *)
-    Check not_bsvar_occur_level_nest_mu_aux.
-  Abort.
-  
+    move: level more more'.
+    induction phi; intros level more more'; simpl; auto.
+    - repeat case_match; auto; try lia.
+      f_equal. lia.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi. reflexivity.
+    - rewrite IHphi. reflexivity.
+  Qed.    
     
-    
-  Lemma free_svar_subst_nest_mu_1 phi psi X level more more':
-    free_svar_subst' more phi (nest_mu_aux level more' psi) X
+  Lemma free_svar_subst_nest_mu_1 phi psi X more more':
+    free_svar_subst' more phi (nest_mu_aux 0 more' psi) X
     = free_svar_subst' (more+more') phi psi X.
   Proof.
     induction phi; simpl; auto.
-    - case_match; auto.
-      Search nest_mu_aux.
-  Abort.
-  
+    - case_match; auto. apply nest_mu_aux_twice.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi. reflexivity.
+    - rewrite IHphi. reflexivity.
+  Qed.
       
       (*
   Check free_svar_subst'. Print nest_mu_aux.
