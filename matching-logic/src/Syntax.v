@@ -2259,11 +2259,103 @@ Section syntax.
     apply free_svars_evar_open.
   Qed.
 
+  Lemma free_svars_bsvar_subst' :
+    forall φ ψ dbi X,
+      (X ∈ free_svars (bsvar_subst φ ψ dbi)) <->
+      ((X ∈ (free_svars ψ) /\ bsvar_occur φ dbi) \/ (X ∈ (free_svars φ))).
+  Proof.
+    induction φ; intros ψ dbi X; simpl.
+    - split; intros H; auto.
+      destruct H.
+      destruct H. congruence. assumption.
+    - split; intros H; auto.
+      destruct H; auto.
+      destruct H; congruence.
+    - split; intros H; auto.
+      destruct H; auto.
+      destruct H; congruence.
+    - case_match; split; intros H.
+      + left. split; auto.
+      + destruct H.
+        * destruct H; auto.
+        * set_solver.
+      + simpl in H. set_solver.
+      + destruct H.
+        * destruct H. congruence.
+        * set_solver.
+    - split; intros H; auto.
+      destruct H.
+      + destruct H. congruence.
+      + set_solver.
+    - rewrite elem_of_union.
+      rewrite elem_of_union.
+      rewrite IHφ1.
+      rewrite IHφ2.
+      split; intros H.
+      + destruct H.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. auto.
+          -- right. left. assumption.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. apply orbT.
+          -- right. right. assumption.
+      + destruct H.
+        * destruct H as [H1 H2].
+          destruct (decide (bsvar_occur φ1 dbi)).
+          -- left. left. split; assumption.
+          -- destruct (decide (bsvar_occur φ2 dbi)).
+             2: { apply orb_prop in H2. destruct H2.
+                  rewrite H in n. congruence.
+                  rewrite H in n0. congruence.
+             }
+             right.
+             left. split; assumption.
+        * destruct H.
+          -- left. right. assumption.
+          -- right. right. assumption.
+    - split; intros H; auto.
+      destruct H.
+      + destruct H. congruence.
+      + set_solver.
+    - rewrite elem_of_union.
+      rewrite elem_of_union.
+      rewrite IHφ1.
+      rewrite IHφ2.
+      split; intros H.
+      + destruct H.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. auto.
+          -- right. left. assumption.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. apply orbT.
+          -- right. right. assumption.
+      + destruct H.
+        * destruct H as [H1 H2].
+          destruct (decide (bsvar_occur φ1 dbi)).
+          -- left. left. split; assumption.
+          -- destruct (decide (bsvar_occur φ2 dbi)).
+             2: { apply orb_prop in H2. destruct H2.
+                  rewrite H in n. congruence.
+                  rewrite H in n0. congruence.
+             }
+             right.
+             left. split; assumption.
+        * destruct H.
+          -- left. right. assumption.
+          -- right. right. assumption.
+    - rewrite IHφ. auto.
+    - rewrite IHφ. auto.
+  Qed.
+  
   Lemma free_svars_bsvar_subst :
-    forall φ ψ dbi, well_formed_closed ψ ->
+    forall φ ψ dbi,
     free_svars (bsvar_subst φ ψ dbi) ⊆ union (free_svars ψ) (free_svars φ).
   Proof.
-    induction φ; intros ψ dbi Hwf; simpl; try set_solver.
+    induction φ; intros ψ dbi; simpl; try set_solver.
     case_match; simpl; set_solver.
   Qed.
 
