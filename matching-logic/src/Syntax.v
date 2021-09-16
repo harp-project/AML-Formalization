@@ -240,7 +240,7 @@ Section syntax.
     | patt_bott => patt_bott
     | patt_imp phi1 phi2 => patt_imp (free_svar_subst' more phi1 psi X) (free_svar_subst' more phi2 psi X)
     | patt_exists phi' => patt_exists (free_svar_subst' more phi' psi X)
-    | patt_mu phi' => patt_mu (nest_mu (free_svar_subst' more phi' psi X))
+    | patt_mu phi' => patt_mu (free_svar_subst' (S more) phi' psi X)
     end.
 
   Definition free_svar_subst phi psi X := free_svar_subst' 0 phi psi X.
@@ -4113,19 +4113,96 @@ Section syntax.
     - by rewrite IHp.
     - by rewrite IHp.
   Qed.
-  
-  Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
-      ((size phi) <= sz) → (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
-      evar_is_fresh_in fresh (free_svar_subst phi psi X)
-      →
-      (evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+
+  (* Example:
+  phi = (mu, patt_bound_svar 1)
+  level = 0
+
+  nest_mu_aux 0 more' (free_svar_subst' more (mu, patt_bound_svar 1) psi X)
+= nest_mu_aux 0 more' (mu, patt_bound_svar 1)
+    =? OK
+  (mu, patt_bound_svar (1+more')
+=  free_svar_subst' more ((mu, patt_bound_svar (1+more')) (nest_mu_aux 0 more' psi) X.
+= free_svar_subst' more (nest_mu_aux 0 more' (mu, patt_bound_svar 1)) (nest_mu_aux 0 more' psi) X.
+
+
+If X does not occur free in phi:
+
+    nest_mu_aux level more' (free_svar_subst' more phi psi X)
+    
+=?
+    free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
+
+   *)
+  (*
+  Lemma free_svar_subst_nest_mu phi psi X more more' level:
+    well_formed_closed_mu_aux psi 0 ->
+    nest_mu_aux level more' (free_svar_subst' more phi psi X)
+    = free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
   Proof.
-    unfold free_svar_subst.
-    induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
+    intros Hpsi.
+
+    remember (size' phi) as sz.
+    assert (Hsz: size' phi <= sz) by lia.
+    clear Heqsz.
+    
+    move: phi Hsz more more' level.
+    induction sz; intros phi Hsz; destruct phi; simpl in *; try lia;
+      intros more more' level; simpl; auto.
+    - case_match;[|auto]. subst. Print free_svar_subst'.  auto.
+      rewrite !nest_mu_aux_wfc_mu; auto.
+      all: eapply well_formed_closed_mu_aux_ind; try eassumption; lia.
+    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
+    - rewrite IHsz. lia. reflexivity.
+    - f_equal. unfold nest_mu at 1.
+      rewrite IHsz. lia. rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
+      rewrite [nest_mu_aux level more' psi]nest_mu_aux_wfc_mu.
+      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
+      unfold nest_mu at 1.
+      rewrite IHsz.
+      { rewrite size'_nest_mu_aux. lia. }
+      rewrite IHsz.
+      { rewrite size'_nest_mu_aux. lia. }
+      rewrite [nest_mu_aux (S level) more' psi]nest_mu_aux_wfc_mu.
+      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
+      rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
+      f_equal. Check pred.
+      
+  (*
+      rewrite nest_mu_aux_twice. rewrite nest_mu_aux_twice.
+      f_equal. lia.*)
+  Abort.
+   *)
+
+  Lemma wfcex_nest_mu psi more level1 level2:
+    well_formed_closed_ex_aux psi level2 ->
+    well_formed_closed_ex_aux (nest_mu_aux level1 more psi) level2.
+  Proof.
+    intros H. move: level1 level2 H.
+    induction psi; intros level1 level2 H; simpl; auto.
+    - simpl in H. destruct_and!.
+      specialize (IHpsi1 level1 level2 ltac:(assumption)).
+      specialize (IHpsi2 level1 level2 ltac:(assumption)).
+      split_and!; auto.
+    - simpl in H. destruct_and!.
+      specialize (IHpsi1 level1 level2 ltac:(assumption)).
+      specialize (IHpsi2 level1 level2 ltac:(assumption)).
+      split_and!; auto.
+  Qed.
+  
+      
+  
+  Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X more,
+      ((size phi) <= sz) → (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
+      evar_is_fresh_in fresh (free_svar_subst' more phi psi X)
+      →
+      (evar_open n fresh (free_svar_subst' more phi psi X)) = (free_svar_subst' more (evar_open n fresh phi) psi X).
+  Proof.
+    induction sz; destruct phi; intros psi fresh n0 X more Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
     - simpl. case_match.
       + rewrite -> evar_open_closed. reflexivity.
-        rewrite nest_mu_aux_0.
-        assumption.
+        apply wfcex_nest_mu. assumption.
       + simpl. reflexivity.
     - cbn. case_match; done.
     - simpl. rewrite -> evar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
@@ -4140,14 +4217,8 @@ Section syntax.
       apply evar_is_fresh_in_exists in Hfresh1. assumption.
       simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
     - simpl. rewrite -> evar_open_mu.
-      f_equal. rewrite evar_open_nest_mu_comm. f_equal.
-      rewrite -> IHsz. reflexivity.
-      lia. assumption. apply evar_is_fresh_in_mu in Hfresh1. assumption.
-      simpl in Hfresh2. apply -> evar_is_fresh_in_mu in Hfresh2. apply -> evar_is_fresh_in_mu in Hfresh2.
-      eapply evar_is_fresh_in_richer.
-      2: { apply Hfresh2. }
-      unfold nest_mu.
-      rewrite free_evars_nest_mu_aux. apply reflexivity.
+      f_equal.
+      rewrite -> IHsz; auto. lia.
   Qed.
 
   Corollary evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
@@ -4327,7 +4398,8 @@ Section syntax.
     free_svar_subst' more phi (nest_mu_aux 0 more' psi) X
     = free_svar_subst' (more+more') phi psi X.
   Proof.
-    induction phi; simpl; auto.
+    move: more.
+    induction phi; intros more; simpl; auto.
     - case_match; auto. apply nest_mu_aux_twice.
     - rewrite IHphi1. rewrite IHphi2. reflexivity.
     - rewrite IHphi1. rewrite IHphi2. reflexivity.
@@ -4358,81 +4430,87 @@ Section syntax.
   Proof.
     move: level.
     induction phi; intros level; simpl; auto.
-  Qed.
-      
-  (* Example:
-  phi = (mu, patt_bound_svar 1)
-  level = 0
+  Qed.  
 
-  nest_mu_aux 0 more' (free_svar_subst' more (mu, patt_bound_svar 1) psi X)
-= nest_mu_aux 0 more' (mu, patt_bound_svar 1)
-    =? OK
-  (mu, patt_bound_svar (1+more')
-=  free_svar_subst' more ((mu, patt_bound_svar (1+more')) (nest_mu_aux 0 more' psi) X.
-= free_svar_subst' more (nest_mu_aux 0 more' (mu, patt_bound_svar 1)) (nest_mu_aux 0 more' psi) X.
-
-
-If X does not occur free in phi:
-
-    nest_mu_aux level more' (free_svar_subst' more phi psi X)
-    
-=?
-    free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
-
-*)
-  Lemma free_svar_subst_nest_mu phi psi X more more' level:
-    well_formed_closed_mu_aux psi 0 ->
-    nest_mu_aux level more' (free_svar_subst' more phi psi X)
-    = free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
+  Lemma wfc_mu_nest_mu psi level level' more:
+    well_formed_closed_mu_aux psi level ->
+    well_formed_closed_mu_aux (nest_mu_aux level' more psi) (level+more).
   Proof.
-    intros Hpsi.
-
-    remember (size' phi) as sz.
-    assert (Hsz: size' phi <= sz) by lia.
-    clear Heqsz.
-    
-    move: phi Hsz more more' level.
-    induction sz; intros phi Hsz; destruct phi; simpl in *; try lia;
-      intros more more' level; simpl; auto.
-    - case_match;[|auto]. subst.
-      rewrite !nest_mu_aux_wfc_mu; auto.
-      all: eapply well_formed_closed_mu_aux_ind; try eassumption; lia.
-    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
-    - rewrite IHsz. lia. rewrite IHsz. lia. reflexivity.
-    - rewrite IHsz. lia. reflexivity.
-    - f_equal. unfold nest_mu at 1.
-      rewrite IHsz. lia. rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
-      rewrite [nest_mu_aux level more' psi]nest_mu_aux_wfc_mu.
-      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
-      unfold nest_mu at 1.
-      rewrite IHsz.
-      { rewrite size'_nest_mu_aux. lia. }
-      rewrite IHsz.
-      { rewrite size'_nest_mu_aux. lia. }
-      rewrite [nest_mu_aux (S level) more' psi]nest_mu_aux_wfc_mu.
-      { eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. }
-      rewrite [nest_mu_aux 0 1 psi]nest_mu_aux_wfc_mu. assumption.
-      f_equal. Check pred.
-      
-  (*
-      rewrite nest_mu_aux_twice. rewrite nest_mu_aux_twice.
-      f_equal. lia.*)
-  Abort.
+    intros H.
+    move: level level' H.
+    induction psi; intros level level' H; simpl in *; auto.
+    - repeat case_match; auto; lia.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - specialize (IHpsi (S level) (S level') ltac:(assumption)).
+      simpl in IHpsi. auto.
+  Qed.
   
-      
 
-  Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
+  Lemma free_svars_free_svar_subst_more phi psi X more more':
+    free_svars (free_svar_subst' more phi psi X)
+    = free_svars (free_svar_subst' more' phi psi X).
+  Proof.
+    move: more more'.
+    induction phi; intros more more'; simpl; auto.
+    - case_match; auto.
+      rewrite ! free_svars_nest_mu_aux.
+      reflexivity.
+    - erewrite IHphi1. erewrite IHphi2. reflexivity.
+    - erewrite IHphi1. erewrite IHphi2. reflexivity.
+  Qed.
+
+  
+  Lemma free_evars_free_svar_subst_more phi psi X more more':
+    free_evars (free_svar_subst' more phi psi X)
+    = free_evars (free_svar_subst' more' phi psi X).
+  Proof.
+    move: more more'.
+    induction phi; intros more more'; simpl; auto.
+    - case_match; auto.
+      rewrite ! free_evars_nest_mu_aux.
+      reflexivity.
+    - erewrite IHphi1. erewrite IHphi2. reflexivity.
+    - erewrite IHphi1. erewrite IHphi2. reflexivity.
+  Qed.
+  
+  Lemma svar_is_fresh_in_free_svar_subst_more phi psi X Y more more':
+    svar_is_fresh_in Y (free_svar_subst' more phi psi X)
+    = svar_is_fresh_in Y (free_svar_subst' more' phi psi X).
+  Proof.
+    unfold svar_is_fresh_in.
+    erewrite free_svars_free_svar_subst_more.
+    reflexivity.
+  Qed.
+
+
+  Lemma evar_is_fresh_in_free_svar_subst_more phi psi X Y more more':
+    evar_is_fresh_in Y (free_svar_subst' more phi psi X)
+    = evar_is_fresh_in Y (free_svar_subst' more' phi psi X).
+  Proof.
+    unfold evar_is_fresh_in.
+    erewrite free_evars_free_svar_subst_more.
+    reflexivity.
+  Qed.
+  
+  Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X more,
       ((size phi) <= sz) → (well_formed_closed_mu_aux psi 0) →  
       svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
       →
-      (svar_open n fresh (free_svar_subst phi psi X)) = 
-      (free_svar_subst (svar_open n fresh phi) psi X).
+      (svar_open n fresh (free_svar_subst' more phi psi X)) = 
+      (free_svar_subst' more (svar_open n fresh phi) psi X).
   Proof.
     unfold free_svar_subst.
-    induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
+    induction sz; destruct phi; intros psi fresh n0 X more Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
     - simpl. case_match; auto.
       rewrite -> svar_open_closed; auto.
-       rewrite nest_mu_aux_0; assumption.
+      rewrite nest_mu_aux_wfc_mu; assumption.
     - cbn. case_match; auto. simpl.
       + case_match.
         * congruence.
@@ -4460,7 +4538,7 @@ If X does not occur free in phi:
       }
       subst B.  apply not_elem_of_union in H. destruct H.
       (*magic happens*)
-      erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst' 0 phi psi X)) (free_svar_subst' 0 (svar_open n0 fresh phi) psi X) x 0 _ _ ).
+      erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst' more phi psi X)) (free_svar_subst' more (svar_open n0 fresh phi) psi X) x 0 _ _ ).
       reflexivity.
       (*x needs to be fresh in ...*)
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
@@ -4475,26 +4553,39 @@ If X does not occur free in phi:
       subst B.  apply not_elem_of_union in H. destruct H.
       simpl. rewrite svar_open_mu.
       (*magic happens*)
-      Check free_svar_subst_nest_mu_1.
-      (* (nest_mu (free_svar_subst' 0 phi psi X)) == ?*)
-      (* nest_mu (free_svar_subst' 0 (patt_free_svar X) psi X) = nest_mu psi*)
       f_equal. Search free_svar_subst' nest_mu_aux.
-      erewrite (@svar_open_inj (svar_open (S n0) fresh (nest_mu (free_svar_subst' 0 phi psi X))) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
-      { f_equal. Search   }
-      (*reflexivity.*)
+      erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst' (S more) phi psi X)) (free_svar_subst' (S more) (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
+      { reflexivity. }
       (*x needs to be fresh in ...*)
-      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption. assumption. assumption.
+      rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption.
+      Search svar_is_fresh_in free_svar_subst'. simpl in Hfresh2.
+      Search svar_is_fresh_in patt_mu.
+      apply -> svar_is_fresh_in_mu in Hfresh2.
+      erewrite svar_is_fresh_in_free_svar_subst_more. eassumption.
       Unshelve.
       {
         unfold evar_is_fresh_in. assumption.
       }
       {
-        unfold evar_is_fresh_in. assumption.
+        rewrite free_evars_svar_open in H.
+        unfold evar_is_fresh_in.
+        rewrite free_evars_svar_open.
+        erewrite free_evars_free_svar_subst_more.
+        eassumption.
       }
       {
-        unfold evar_is_fresh_in. assumption.
+        erewrite evar_is_fresh_in_free_svar_subst_more.
+        eassumption.
       }
       {
+        unfold svar_is_fresh_in.
+        
+        eapply not_elem_of_larger_impl_not_elem_of.
+        { apply free_svars_svar_open. }
+        Search free_svars svar_open.
+        3: { apply nesym. assumption.
+        Check free_svars_svar_open.
+        rewrite -> free_svars_svar_open.
         unfold evar_is_fresh_in. assumption.
       }
   Qed.
