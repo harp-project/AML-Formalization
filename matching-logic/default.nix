@@ -10,7 +10,7 @@ let
 
     src = ./.;
 
-    buildInputs = [git];
+    buildInputs = [git deps.quickchick];
     propagatedBuildInputs = [deps.coq deps.stdpp];
 
     buildPhase = ''

@@ -1,3 +1,5 @@
+(*From QuickChick Require Import QuickChick.*)
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -14,7 +16,6 @@ From stdpp Require Import pmap gmap mapset fin_sets.
 Require Import stdpp_ext.
 
 Require Import extralibrary.
-
 
 Class MLVariables := {
   evar : Set;
@@ -4359,7 +4360,79 @@ Section syntax.
     move: level.
     induction phi; intros level; simpl; auto.
   Qed.
-      
+
+End syntax.
+
+From QuickChick Require Import QuickChick.
+From stdpp Require Import countable infinite strings.
+
+Definition StringMLVariables : MLVariables :=
+  {| evar := string;
+     svar := string;
+  |}.
+
+
+Check liftM3. Check bindGen.
+Fixpoint genPattern {Σ : Signature} (sz : nat) (gs : G symbols) : G (Pattern) :=
+  match sz with
+  | O => ret (patt_bott)
+  | S sz' => ret patt_bott
+  end.
+
+(*
+    
+    | S sz' =>
+        freq [ (1, ret patt_bott) ;
+             (sz, liftM3 Node g (genTreeSized' sz' g)
+                         (genTreeSized' sz' g))
+             ]
+    end.
+ *)
+Inductive Symbol := sym_a | sym_b | sym_c.
+Instance Symbol_eqdec : EqDecision Symbol.
+Proof.
+  solve_decision.
+Defined.
+
+Instance Symbol_show : Show Symbol :=
+  {| show s := match s with
+               | sym_a => "a"
+               | sym_b => "b"
+               | sym_c => "c"
+               end
+  |}.
+
+
+Instance signature : Signature := {| variables := StringMLVariables; symbols := Symbol; |}.
+
+Check choose.
+Locate choose.
+Sample (GenLow.choose (0,10)).
+Check elems_.
+Definition genSymbol : G Symbol := elems_ sym_a [sym_a; sym_b; sym_c].
+           
+Sample (genSymbol).
+
+Print Instances Show.
+Print free_evar_subst'.
+Definition genVa
+
+
+Definition my_prop phi psi X more more' level :=
+  well_formed_closed_mu_aux psi 0 ->
+  nest_mu_aux level more' (free_svar_subst' more phi psi X)
+  = free_svar_subst' more (nest_mu_aux level more' phi) (nest_mu_aux level more' psi) X.
+
+
+
+Print ChoosableFromInterval.
+QuickChick my_prop.
+
+Section syntax.
+  
+
+  Context {Σ : Signature}.
+  
   (* Example:
   phi = (mu, patt_bound_svar 1)
   level = 0
