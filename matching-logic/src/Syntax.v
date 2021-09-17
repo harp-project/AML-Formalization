@@ -2350,6 +2350,99 @@ Section syntax.
     - rewrite IHφ. auto.
     - rewrite IHφ. auto.
   Qed.
+
+  Lemma free_evars_bevar_subst' :
+    forall φ ψ dbi X,
+      (X ∈ free_evars (bevar_subst φ ψ dbi)) <->
+      ((X ∈ (free_evars ψ) /\ bevar_occur φ dbi) \/ (X ∈ (free_evars φ))).
+  Proof.
+    induction φ; intros ψ dbi X; simpl.
+    - split; intros H; auto.
+      destruct H.
+      destruct H. congruence. assumption.
+    - split; intros H; auto.
+      destruct H; auto.
+      destruct H; congruence.
+    - case_match; split; intros H.
+      + left. split; auto.
+      + destruct H.
+        * destruct H; auto.
+        * set_solver.
+      + simpl in H. set_solver.
+      + destruct H.
+        * destruct H. congruence.
+        * set_solver.
+    - split; intros H; auto.
+      destruct H; auto.
+      destruct H; congruence.
+    - split; intros H; auto.
+      destruct H.
+      + destruct H. congruence.
+      + set_solver.
+    - rewrite elem_of_union.
+      rewrite elem_of_union.
+      rewrite IHφ1.
+      rewrite IHφ2.
+      split; intros H.
+      + destruct H.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. auto.
+          -- right. left. assumption.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. apply orbT.
+          -- right. right. assumption.
+      + destruct H.
+        * destruct H as [H1 H2].
+          destruct (decide (bevar_occur φ1 dbi)).
+          -- left. left. split; assumption.
+          -- destruct (decide (bevar_occur φ2 dbi)).
+             2: { apply orb_prop in H2. destruct H2.
+                  rewrite H in n. congruence.
+                  rewrite H in n0. congruence.
+             }
+             right.
+             left. split; assumption.
+        * destruct H.
+          -- left. right. assumption.
+          -- right. right. assumption.
+    - split; intros H; auto.
+      destruct H.
+      + destruct H. congruence.
+      + set_solver.
+    - rewrite elem_of_union.
+      rewrite elem_of_union.
+      rewrite IHφ1.
+      rewrite IHφ2.
+      split; intros H.
+      + destruct H.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. auto.
+          -- right. left. assumption.
+        * destruct H.
+          -- left. destruct H.
+             split; auto. rewrite H0. apply orbT.
+          -- right. right. assumption.
+      + destruct H.
+        * destruct H as [H1 H2].
+          destruct (decide (bevar_occur φ1 dbi)).
+          -- left. left. split; assumption.
+          -- destruct (decide (bevar_occur φ2 dbi)).
+             2: { apply orb_prop in H2. destruct H2.
+                  rewrite H in n. congruence.
+                  rewrite H in n0. congruence.
+             }
+             right.
+             left. split; assumption.
+        * destruct H.
+          -- left. right. assumption.
+          -- right. right. assumption.
+    - rewrite IHφ. auto.
+    - rewrite IHφ. auto.
+  Qed.
+
   
   Lemma free_svars_bsvar_subst :
     forall φ ψ dbi,
@@ -2367,12 +2460,38 @@ Section syntax.
     case_match; simpl; set_solver.
   Qed.
 
+  Lemma free_svars_svar_open'' :
+    forall φ dbi X Y,
+      (X ∈ free_svars (svar_open dbi Y φ)) <->
+      (((X = Y) /\ (bsvar_occur φ dbi)) \/ (X ∈ (free_svars φ))).
+  Proof.
+    intros φ dbi X Y.
+    unfold svar_open.
+    pose proof (Htmp := free_svars_bsvar_subst' φ (patt_free_svar Y) dbi X).
+    simpl in Htmp.
+    assert (X ∈ @singleton _ SVarSet _ Y <-> X = Y) by set_solver.
+    tauto.
+  Qed.
+  
   Corollary free_svars_svar_open ϕ X dbi :
     free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
   Proof.
     apply free_svars_bsvar_subst; auto.
   Qed.
 
+  Lemma free_evars_evar_open'' :
+    forall φ dbi x y,
+      (x ∈ free_evars (evar_open dbi y φ)) <->
+      ((x = y /\ bevar_occur φ dbi) \/ (x ∈ (free_evars φ))).
+  Proof.
+    intros φ dbi x y.
+    unfold evar_open.
+    pose proof (Htmp := free_evars_bevar_subst' φ (patt_free_evar y) dbi x).
+    simpl in Htmp.
+    assert (x ∈ @singleton _ EVarSet _ y <-> x = y) by set_solver;
+    tauto.
+  Qed.
+  
   Corollary free_evars_evar_open ϕ x dbi :
     free_evars (evar_open dbi x ϕ) ⊆ union (singleton x) (free_evars ϕ).
   Proof.
@@ -3283,27 +3402,25 @@ Section syntax.
 
   Lemma wfc_mu_aux_implies_not_bsvar_occur phi ns :
     well_formed_closed_mu_aux phi ns ->
-    ~ bsvar_occur phi ns.
+    bsvar_occur phi ns = false.
   Proof.
     move: ns.
     induction phi; intros ns Hwfc; simpl; simpl in Hwfc; auto.
-    - intros Hcontra.
-      apply bool_decide_eq_true in Hcontra.
-      case_match; try lia. congruence.
+    - repeat case_match; try lia. congruence.
     - apply andb_true_iff in Hwfc.
       destruct Hwfc as [Hwfc1 Hwfc2].
-      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
-      + eapply IHphi1. apply Hwfc1. apply Heq1.
-      + eapply IHphi1. apply Hwfc1. apply Heq1.
-      + eapply IHphi2. apply Hwfc2. apply Heq2.
-      + auto.
+      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl.
+      rewrite IHphi1 in Heq1. assumption. congruence.
+      rewrite IHphi1 in Heq1. assumption. congruence.
+      rewrite IHphi2 in Heq2. assumption. congruence.
+      rewrite IHphi2 in Heq2. assumption. congruence.
     - apply andb_true_iff in Hwfc.
       destruct Hwfc as [Hwfc1 Hwfc2].
-      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl; intros Hcontra.
-      + eapply IHphi1. apply Hwfc1. apply Heq1.
-      + eapply IHphi1. apply Hwfc1. apply Heq1.
-      + eapply IHphi2. apply Hwfc2. apply Heq2.
-      + auto.
+      destruct (bsvar_occur phi1 ns) eqn:Heq1, (bsvar_occur phi2 ns) eqn:Heq2; simpl.
+      rewrite IHphi1 in Heq1. assumption. congruence.
+      rewrite IHphi1 in Heq1. assumption. congruence.
+      rewrite IHphi2 in Heq2. assumption. congruence.
+      rewrite IHphi2 in Heq2. assumption. congruence.
   Qed.
 
   Lemma wfc_ex_aux_implies_not_bevar_occur phi ne :
@@ -3327,7 +3444,7 @@ Section syntax.
     ~ bsvar_occur phi n.
   Proof.
     intros H.
-    eapply wfc_mu_aux_implies_not_bsvar_occur.
+    erewrite wfc_mu_aux_implies_not_bsvar_occur. exact notF.
     unfold well_formed_closed in H.
     eapply well_formed_closed_mu_aux_ind.
     2: eassumption. lia.
@@ -4590,7 +4707,144 @@ If X does not occur free in phi:
     erewrite free_evars_free_svar_subst_more.
     reflexivity.
   Qed.
+
+  Lemma bsvar_occur_nest_mu_aux level more more' psi dbi:
+    bsvar_occur (nest_mu_aux level more psi) dbi = bsvar_occur (nest_mu_aux level more' psi) dbi.
+  Proof.
+    move: level.
+    induction psi; intros level; simpl; auto.
+    - repeat case_match; auto; try lia.
+  Abort. (* OOPS *)
   
+
+  Lemma bsvar_occur_free_svar_subst_more phi psi X dbi more:
+    well_formed_closed_mu_aux psi 0 ->
+    bsvar_occur (free_svar_subst' more phi psi X) dbi
+    = bsvar_occur phi dbi.
+  Proof.
+    intros Hwf.
+    move: more dbi.
+    induction phi; intros more dbi; simpl; auto.
+    - case_match; auto.
+      Search well_formed_closed_mu_aux bsvar_occur.
+      apply wfc_mu_aux_implies_not_bsvar_occur in Hwf.
+      Search bsvar_occur nest_mu_aux.
+  Abort. (* OOPS *)
+  
+
+  Lemma bsvar_occur_nest_mu_aux psi level more dbi:
+    dbi >= level ->
+    bsvar_occur (nest_mu_aux level more psi) (dbi+more) = bsvar_occur psi dbi.
+  Proof.
+    intros Hlevel.
+    move: dbi more level Hlevel.
+    induction psi; intros dbi more level Hlevel; simpl; auto.
+    - repeat case_match; auto; try lia.
+    - rewrite IHpsi1. lia. rewrite IHpsi2. lia. reflexivity.
+    - rewrite IHpsi1. lia. rewrite IHpsi2. lia. reflexivity.
+    - simpl. erewrite <- IHpsi. simpl. reflexivity. lia.
+  Qed.
+
+  
+  Lemma bevar_occur_nest_ex_aux psi level more dbi:
+    dbi >= level ->
+    bevar_occur (nest_ex_aux level more psi) (dbi+more) = bevar_occur psi dbi.
+  Proof.
+    intros Hlevel.
+    move: dbi more level Hlevel.
+    induction psi; intros dbi more level Hlevel; simpl; auto.
+    - repeat case_match; auto; try lia.
+    - rewrite IHpsi1. lia. rewrite IHpsi2. lia. reflexivity.
+    - rewrite IHpsi1. lia. rewrite IHpsi2. lia. reflexivity.
+    - simpl. erewrite <- IHpsi. simpl. reflexivity. lia.
+  Qed.
+
+  Lemma bsvar_occur_free_svar_subst phi psi X more dbi:
+    dbi >= more ->
+    bsvar_occur (free_svar_subst' more phi psi X) dbi
+    <-> bsvar_occur phi dbi \/ ( X ∈ free_svars phi /\  bsvar_occur psi (dbi-more)).
+  Proof.
+    intros Hdbi.
+    move: dbi more Hdbi.
+    induction phi; intros dbi more Hdbi; simpl; auto.
+    - set_solver.
+    - case_match.
+      + subst.
+        pose proof (Htmp := @bsvar_occur_nest_mu_aux psi 0 more (dbi - more) ltac:(lia)).
+        replace (dbi - more + more) with dbi in Htmp by lia.
+        rewrite -Htmp.
+        assert (Hx: x ∈ @singleton _ SVarSet _ x) by set_solver.
+        split; intros H.
+        * right. split; assumption.
+        * destruct H. congruence. destruct H. assumption.
+      + simpl. set_solver.
+    - set_solver.
+    - case_match.
+      + firstorder.
+      + set_solver.
+    - set_solver.
+    - simpl.
+      unfold is_true in *.
+      repeat rewrite orb_true_iff.
+      rewrite IHphi1;[|lia].
+      rewrite IHphi2;[|lia].
+      clear. set_solver.
+    - set_solver.
+    - simpl.
+      unfold is_true in *.
+      repeat rewrite orb_true_iff.
+      rewrite IHphi1;[|lia].
+      rewrite IHphi2;[|lia].
+      clear. set_solver.
+    - rewrite IHphi;[|lia].
+      replace (S dbi - S more) with (dbi - more) by lia.
+      tauto.
+  Qed.
+  
+
+  Lemma bevar_occur_free_evar_subst phi psi x more dbi:
+    dbi >= more ->
+    bevar_occur (free_evar_subst' more phi psi x) dbi
+    <-> bevar_occur phi dbi \/ ( x ∈ free_evars phi /\  bevar_occur psi (dbi-more)).
+  Proof.
+    intros Hdbi.
+    move: dbi more Hdbi.
+    induction phi; intros dbi more Hdbi; simpl; auto.
+    - case_match.
+      + subst.
+        pose proof (Htmp := @bevar_occur_nest_ex_aux psi 0 more (dbi - more) ltac:(lia)).
+        replace (dbi - more + more) with dbi in Htmp by lia.
+        rewrite -Htmp.
+        assert (Hx: x0 ∈ @singleton _ EVarSet _ x0) by set_solver.
+        split; intros H.
+        * right. split; assumption.
+        * destruct H. congruence. destruct H. assumption.
+      + simpl. set_solver.
+    - set_solver.
+    - case_match.
+      + firstorder.
+      + set_solver.
+    - set_solver.
+    - set_solver.
+    - simpl.
+      unfold is_true in *.
+      repeat rewrite orb_true_iff.
+      rewrite IHphi1;[|lia].
+      rewrite IHphi2;[|lia].
+      clear. set_solver.
+    - set_solver.
+    - simpl.
+      unfold is_true in *.
+      repeat rewrite orb_true_iff.
+      rewrite IHphi1;[|lia].
+      rewrite IHphi2;[|lia].
+      clear. set_solver.
+    - rewrite IHphi;[|lia].
+      replace (S dbi - S more) with (dbi - more) by lia.
+      tauto.
+  Qed.
+  
+        
   Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X more,
       ((size phi) <= sz) → (well_formed_closed_mu_aux psi 0) →  
       svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
@@ -4671,6 +4925,19 @@ If X does not occur free in phi:
       }
       {
         unfold svar_is_fresh_in.
+        rewrite -> free_svars_svar_open'' in H.
+        rewrite -> free_svars_svar_open''.
+        intros HContra. apply H. clear H.
+        destruct HContra as [HContra|HContra].
+        - left. destruct HContra as [HContra1 HContra2].
+          split;[assumption|].
+          subst fresh.
+          simpl in *.
+          unfold svar_is_fresh_in in Hfresh1,Hfresh2.
+          simpl in *.
+          Search bsvar_occur free_svar_subst'.
+        - right. unfold free_svar_subst.
+          erewrite -> free_svars_free_svar_subst_more. eassumption.
         
         eapply not_elem_of_larger_impl_not_elem_of.
         { apply free_svars_svar_open. }
