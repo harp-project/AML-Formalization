@@ -4615,6 +4615,33 @@ If X does not occur free in phi:
     - rewrite IHphi. reflexivity.
   Qed.
 
+  Lemma nest_ex_aux_twice level more more' phi:
+    nest_ex_aux level more (nest_ex_aux level more' phi) = nest_ex_aux level (more + more') phi.
+  Proof.
+    move: level more more'.
+    induction phi; intros level more more'; simpl; auto.
+    - repeat case_match; auto; try lia.
+      f_equal. lia.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi. reflexivity.
+    - rewrite IHphi. reflexivity.
+  Qed.
+  
+  Lemma free_evar_subst_nest_ex_1 phi psi x more more':
+    free_evar_subst' more phi (nest_ex_aux 0 more' psi) x
+    = free_evar_subst' (more+more') phi psi x.
+  Proof.
+    move: more.
+    induction phi; intros more; simpl; auto.
+    - case_match; auto. apply nest_ex_aux_twice.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi1. rewrite IHphi2. reflexivity.
+    - rewrite IHphi. reflexivity.
+    - rewrite IHphi. reflexivity.
+  Qed.
+
+  
   Lemma nest_mu_aux_wfc_mu level more psi:
     well_formed_closed_mu_aux psi level ->
     nest_mu_aux level more psi = psi.
@@ -5157,13 +5184,13 @@ If X does not occur free in phi:
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   Qed.
 
-  Lemma well_formed_free_evar_subst x p q:
+  Lemma well_formed_free_evar_subst more x p q:
     well_formed q ->
     well_formed p ->
-    well_formed (free_evar_subst p q x).
+    well_formed (free_evar_subst' more p q x).
   Proof.
     intros wfq wfp.
-    pose proof (H := @Private_well_formed_free_evar_subst' 0 x p q 0 0 wfq).
+    pose proof (H := @Private_well_formed_free_evar_subst' more x p q 0 0 wfq).
     unfold well_formed,well_formed_closed in *.
     destruct_and!.
     feed specialize H.
@@ -5171,6 +5198,14 @@ If X does not occur free in phi:
     destruct_and!. split_and!; auto.
   Qed.
 
+  Lemma well_formed_free_evar_subst_0 x p q:
+    well_formed q ->
+    well_formed p ->
+    well_formed (free_evar_subst p q x).
+  Proof.
+    intros. apply well_formed_free_evar_subst; assumption.
+  Qed.
+  
   Fixpoint mu_free (p : Pattern) : bool :=
   match p with
    | patt_free_evar x => true
@@ -5571,6 +5606,9 @@ End BoundVarSugar.
 
 #[export]
  Hint Resolve well_formed_free_evar_subst : core.
+
+#[export]
+ Hint Resolve well_formed_free_evar_subst_0 : core.
 
 #[export]
  Hint Resolve <- evar_is_fresh_in_exists : core.
