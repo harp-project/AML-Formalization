@@ -2614,17 +2614,15 @@ Section syntax.
         by rewrite IHp.
   Qed.
 
-  Lemma free_evar_subst_no_occurrence x p q:
+  Lemma free_evar_subst_no_occurrence more x p q:
     count_evar_occurrences x p = 0 ->
-    free_evar_subst p q x = p.
+    free_evar_subst' more p q x = p.
   Proof.
     intros H.
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz) by lia.
     clear Heqsz.
 
-    unfold free_evar_subst in *.
-    move: 0 => more.
     move: more p Hsz H.
     induction sz; intros more p Hsz H; destruct p; simpl in *; try lia; auto.
     - simpl in H. simpl.
@@ -4323,6 +4321,18 @@ Section syntax.
     - by rewrite IHp.
   Qed.
 
+  Lemma nest_ex_aux_0 level p:
+    nest_ex_aux level 0 p = p.
+  Proof.
+    move: level.
+    induction p; intros level; simpl; auto.
+    - case_match; auto.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp.
+    - by rewrite IHp.
+  Qed.
+  
   (* Example:
   phi = (mu, patt_bound_svar 1)
   level = 0
@@ -5120,7 +5130,7 @@ If X does not occur free in phi:
       repeat case_match; lia.
     - unfold well_formed, well_formed_closed in *. simpl in *.
       destruct_and!.
-      specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
+      specialize (IHp1 n1 n2 more). specialize (IHp2 n1 n2 more).
       feed specialize IHp1.
       { split_and!; auto. }
       feed specialize IHp2.
@@ -5129,7 +5139,7 @@ If X does not occur free in phi:
       split_and!; auto.
     - unfold well_formed, well_formed_closed in *. simpl in *.
       destruct_and!.
-      specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
+      specialize (IHp1 n1 n2 more). specialize (IHp2 n1 n2 more).
       feed specialize IHp1.
       { split_and!; auto. }
       feed specialize IHp2.
@@ -5139,7 +5149,7 @@ If X does not occur free in phi:
     - unfold well_formed, well_formed_closed in *. simpl in *.
       destruct_and!.
       pose proof (IHp' := IHp).
-      specialize (IHp n1 (S n2)).
+      specialize (IHp n1 (S n2) more).
       feed specialize IHp.
       { split_and!; auto. }
       destruct_and!.
@@ -5153,7 +5163,7 @@ If X does not occur free in phi:
     well_formed (free_evar_subst p q x).
   Proof.
     intros wfq wfp.
-    pose proof (H := @Private_well_formed_free_evar_subst' x p q 0 0 wfq).
+    pose proof (H := @Private_well_formed_free_evar_subst' 0 x p q 0 0 wfq).
     unfold well_formed,well_formed_closed in *.
     destruct_and!.
     feed specialize H.
@@ -5207,13 +5217,14 @@ If X does not occur free in phi:
   Qed.
 
   Theorem evar_open_free_evar_subst_swap :
-    forall φ x n ψ y, x <> y -> well_formed ψ ->
-      evar_open n x (free_evar_subst φ ψ y) = free_evar_subst (evar_open n x φ) ψ y.
+    forall φ x n ψ y more, x <> y -> well_formed ψ ->
+      evar_open n x (free_evar_subst' more φ ψ y) = free_evar_subst' more (evar_open n x φ) ψ y.
   Proof.
-    induction φ; intros x' n' ψ y H H0; simpl; auto.
+    induction φ; intros x' n' ψ y more H H0; simpl; auto.
     * destruct (decide (y = x)); simpl.
-      - rewrite evar_open_wfc; auto. unfold well_formed,well_formed_closed in H0. destruct_and!. assumption.
-      - reflexivity.
+      ** rewrite evar_open_wfc; auto. unfold well_formed,well_formed_closed in H0. destruct_and!.
+         rewrite nest_ex_aux_wfc_ex; assumption.
+      ** reflexivity.
     * cbn. break_match_goal; simpl; auto. destruct (decide (y = x')); auto.
       congruence.
     * now rewrite -> evar_open_app, -> IHφ1, -> IHφ2.
@@ -5222,14 +5233,14 @@ If X does not occur free in phi:
     * now rewrite -> evar_open_mu, -> IHφ.
   Qed.
 
-  Lemma free_evars_free_evar_subst : forall φ ψ x,
-    free_evars (free_evar_subst φ ψ x) ⊆ free_evars φ ∪ free_evars ψ.
+  Lemma free_evars_free_evar_subst : forall φ ψ x more,
+    free_evars (free_evar_subst' more φ ψ x) ⊆ free_evars φ ∪ free_evars ψ.
   Proof.
-    induction φ; intros ψ x'; simpl.
+    induction φ; intros ψ x' more; simpl.
     2-5, 7: apply empty_subseteq.
     * destruct (decide (x' = x)); simpl.
-      - apply union_subseteq_r.
-      - apply union_subseteq_l.
+      ** rewrite free_evars_nest_ex_aux. apply union_subseteq_r.
+      ** apply union_subseteq_l.
     * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
       set_solver.
     * specialize (IHφ1 ψ x'). specialize (IHφ2 ψ x').
@@ -5238,17 +5249,20 @@ If X does not occur free in phi:
     * apply IHφ.
   Qed.
 
+  (* TODO: this does not hold in general, but is only used in Definedness.v.
+           We have to check the exact use-case and adapt this lemma. *)
+  (*
   Lemma bound_to_free_variable_subst :
-    forall φ x m n ψ, m > n ->
+    forall φ x m n ψ more, m > n ->
       well_formed_closed_ex_aux φ m -> x ∉ free_evars φ
     ->
-      bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
+      bevar_subst φ ψ n = free_evar_subst' more (evar_open n x φ) ψ x.
   Proof.
-    induction φ; intros x' m n' ψ H H0 H1; cbn; auto.
+    induction φ; intros x' m n' ψ more H H0 H1; cbn; auto.
     - destruct (decide (x' = x)); simpl.
       + simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
       + reflexivity.
-    - case_match; auto. simpl. case_match; auto. congruence.
+    - case_match; auto. simpl. case_match; auto; simpl in H0; case_match; auto. lia. congruence.
     - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
       apply andb_true_iff in H0. destruct H0.
       erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
@@ -5259,7 +5273,8 @@ If X does not occur free in phi:
       all: try eassumption. lia.
     - simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
   Qed.
-
+   *)
+  
   Lemma evar_open_no_negative_occurrence :
     forall φ db1 db2 x,
       (no_negative_occurrence_db_b db1 (evar_open db2 x φ) ->
@@ -5834,11 +5849,11 @@ Proof.
     + simpl. set_solver.
 Qed.
 
-Lemma free_evar_subst_subst_ctx_independent {Σ : Signature} AC ϕ Xfr1 Xfr2:
+Lemma free_evar_subst_subst_ctx_independent {Σ : Signature} AC ϕ Xfr1 Xfr2 more:
   Xfr1 ∉ free_evars_ctx AC ->
   Xfr2 ∉ free_evars_ctx AC ->
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr1)) ϕ Xfr1 =
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr2)) ϕ Xfr2.
+  free_evar_subst' more (subst_ctx AC (patt_free_evar Xfr1)) ϕ Xfr1 =
+  free_evar_subst' more (subst_ctx AC (patt_free_evar Xfr2)) ϕ Xfr2.
 Proof.
   intros HXfr1 HXfr2.
   induction AC.
@@ -5850,9 +5865,10 @@ Proof.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    Check free_evar_subst_no_occurrence.
+    rewrite [free_evar_subst' more p ϕ Xfr1]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    rewrite [free_evar_subst' more p ϕ Xfr2]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
     reflexivity.
   - simpl in HXfr1. simpl in HXfr2.
@@ -5860,9 +5876,9 @@ Proof.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    rewrite [free_evar_subst' more p ϕ Xfr1]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    rewrite [free_evar_subst' more p ϕ Xfr2]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
     reflexivity.
 Qed.
@@ -5873,15 +5889,15 @@ Lemma emplace_subst_ctx {Σ : Signature} AC ϕ:
 Proof.
   induction AC.
   - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-    unfold emplace. simpl.
+    unfold emplace. simpl. unfold free_evar_subst. simpl.
     destruct (decide (_ = _)); simpl.
-    + reflexivity.
+    + rewrite nest_ex_aux_0. reflexivity.
     + contradiction.
   - simpl.
     rewrite -IHAC.
     unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
     simpl.
-    unfold emplace. simpl.
+    unfold emplace. unfold free_evar_subst. simpl.
     unfold ApplicationContext2Pattern.
     f_equal.
     2: {
@@ -5909,7 +5925,7 @@ Proof.
     rewrite -IHAC.
     unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
     simpl.
-    unfold emplace. simpl.
+    unfold emplace. unfold free_evar_subst. simpl.
     unfold ApplicationContext2Pattern.
     f_equal.
     {
@@ -5971,14 +5987,15 @@ Defined.
 Print free_evar_subst.
 Search free_evar_subst.
 Search nest_ex.
-
-Lemma evar_quantify_free_evar_subst' {Σ : Signature} ψ ϕ x n:
-  evar_quantify x n (free_evar_subst ψ ϕ x) =
-  free_evar_subst ψ (evar_quantify x n ϕ) x.
+(*
+Lemma evar_quantify_free_evar_subst' {Σ : Signature} ψ ϕ x n more:
+  evar_quantify x n (free_evar_subst' more ψ ϕ x) =
+  free_evar_subst' more ψ (evar_quantify x n ϕ) x.
 Proof.
-  move: n.
-  induction ψ; intros n'; simpl; auto.
-  - destruct (decide (x = x0)); simpl.
+  move: n more.
+  induction ψ; intros n' more; simpl; auto.
+  - case_match; auto.
+    destruct (decide (x = x0)); simpl.
     { reflexivity. }
     destruct (decide (x = x0)); try contradiction.
     reflexivity.
@@ -6002,7 +6019,7 @@ Proof.
   { intros Heq _. subst x.
     unfold emplace. simpl.
 Abort.
-  
+*)  
 
 Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
   x ∉ AC_free_evars AC ->
