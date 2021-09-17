@@ -4591,17 +4591,6 @@ If X does not occur free in phi:
     - rewrite IHphi. reflexivity.
     - rewrite IHphi. reflexivity.
   Qed.
-
-
-  Lemma nest_mu_aux_comm' level1 level2 more1 more2 phi:
-    nest_mu_aux level1 more1 (nest_mu_aux level2 more2 phi)
-    = nest_mu_aux level2 more2 (nest_mu_aux level1 more1 phi).
-  Proof.
-    move: level1 level2 more1 more2.
-    induction phi; intros level1 level2 more1 more2; simpl; auto.
-    - repeat case_match; auto; try lia.
-      f_equal.
-  Abort.
   
   Lemma free_svar_subst_nest_mu_1 phi psi X more more':
     free_svar_subst' more phi (nest_mu_aux 0 more' psi) X
@@ -4708,29 +4697,6 @@ If X does not occur free in phi:
     reflexivity.
   Qed.
 
-  Lemma bsvar_occur_nest_mu_aux level more more' psi dbi:
-    bsvar_occur (nest_mu_aux level more psi) dbi = bsvar_occur (nest_mu_aux level more' psi) dbi.
-  Proof.
-    move: level.
-    induction psi; intros level; simpl; auto.
-    - repeat case_match; auto; try lia.
-  Abort. (* OOPS *)
-  
-
-  Lemma bsvar_occur_free_svar_subst_more phi psi X dbi more:
-    well_formed_closed_mu_aux psi 0 ->
-    bsvar_occur (free_svar_subst' more phi psi X) dbi
-    = bsvar_occur phi dbi.
-  Proof.
-    intros Hwf.
-    move: more dbi.
-    induction phi; intros more dbi; simpl; auto.
-    - case_match; auto.
-      Search well_formed_closed_mu_aux bsvar_occur.
-      apply wfc_mu_aux_implies_not_bsvar_occur in Hwf.
-      Search bsvar_occur nest_mu_aux.
-  Abort. (* OOPS *)
-  
 
   Lemma bsvar_occur_nest_mu_aux psi level more dbi:
     dbi >= level ->
@@ -4988,27 +4954,27 @@ If X does not occur free in phi:
           split;[assumption|].
           subst fresh.
           simpl in *.
-          unfold svar_is_fresh_in in Hfresh1,Hfresh2.
-          simpl in *.
           unfold free_svar_subst.
           rewrite -> bsvar_occur_free_svar_subst. 2: { lia. }
           destruct (decide (n0 < more)).
           + rewrite bsvar_occur_free_svar_subst_1 in HContra2. lia.
-            left. assumption.
+            left. apply HContra2.
           + rewrite -> bsvar_occur_free_svar_subst in HContra2. 2: lia.
             destruct HContra2.
             * left. assumption.
             * destruct H.
-              eapply well_formed_closed_mu_aux_ind in Hwf.
-              apply wfc_mu_aux_implies_not_bsvar_occur in Hwf.
-              unfold is_true in H2. rewrite Hwf in H2. congruence.
-              instantiate (1 := 0). lia.
+              pose proof (Hwf' := Hwf).
+              apply well_formed_closed_mu_aux_ind with (ind_svar2 := (n0 - more)) in Hwf'.
+              apply wfc_mu_aux_implies_not_bsvar_occur in Hwf'.
+              unfold is_true in H2. simpl in H2. rewrite Hwf' in H2. inversion H2.
+              lia.
         - right. unfold free_svar_subst.
           erewrite -> free_svars_free_svar_subst_more. eassumption.
       }
       unfold svar_is_fresh_in.
       erewrite -> free_svars_free_svar_subst_more. eassumption.
   Qed.
+  
 
   Corollary svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
       (well_formed_closed_mu_aux psi 0) →  
