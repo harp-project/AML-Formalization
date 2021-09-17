@@ -4759,6 +4759,48 @@ If X does not occur free in phi:
     - simpl. erewrite <- IHpsi. simpl. reflexivity. lia.
   Qed.
 
+  Lemma bsvar_occur_nest_mu_aux_2 dbi more psi level:
+    dbi < more + level ->
+    dbi >= level ->
+    bsvar_occur (nest_mu_aux level more psi) dbi = false.
+  Proof.
+    intros Hdbi Hlevel.
+    move: dbi more level Hdbi Hlevel.
+    induction psi; intros dbi more level Hdbi Hlevel; simpl; auto.
+    - repeat case_match; auto. lia. lia.
+    - rewrite IHpsi1. lia. lia. rewrite IHpsi2. lia. lia. reflexivity.
+    - rewrite IHpsi1. lia. lia. rewrite IHpsi2. lia. lia. reflexivity.
+    - rewrite IHpsi. lia. lia. reflexivity.
+  Qed.
+  
+  Lemma bevar_occur_nest_ex_aux_2 dbi more psi level:
+    dbi < more + level ->
+    dbi >= level ->
+    bevar_occur (nest_ex_aux level more psi) dbi = false.
+  Proof.
+    intros Hdbi Hlevel.
+    move: dbi more level Hdbi Hlevel.
+    induction psi; intros dbi more level Hdbi Hlevel; simpl; auto.
+    - repeat case_match; auto. lia. lia.
+    - rewrite IHpsi1. lia. lia. rewrite IHpsi2. lia. lia. reflexivity.
+    - rewrite IHpsi1. lia. lia. rewrite IHpsi2. lia. lia. reflexivity.
+    - rewrite IHpsi. lia. lia. reflexivity.
+  Qed.
+
+  
+  Lemma bsvar_occur_free_svar_subst_1 phi psi X more dbi:
+    well_formed_closed_mu_aux psi 0 ->
+    dbi < more ->
+    bsvar_occur (free_svar_subst' more phi psi X) dbi = bsvar_occur phi dbi.
+  Proof.
+    intros Hwfcpsi Hdbi.
+    move: more dbi Hdbi.
+    induction phi; intros more dbi Hdbi; simpl; auto.
+    - case_match; auto. simpl. Search bsvar_occur nest_mu_aux.
+      pose proof (Htmp := @bsvar_occur_nest_mu_aux psi 0).
+  Abort.
+  
+  
   Lemma bsvar_occur_free_svar_subst phi psi X more dbi:
     dbi >= more ->
     bsvar_occur (free_svar_subst' more phi psi X) dbi
@@ -4904,8 +4946,7 @@ If X does not occur free in phi:
       { reflexivity. }
       (*x needs to be fresh in ...*)
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption.
-      Search svar_is_fresh_in free_svar_subst'. simpl in Hfresh2.
-      Search svar_is_fresh_in patt_mu.
+      simpl in Hfresh2.
       apply -> svar_is_fresh_in_mu in Hfresh2.
       erewrite svar_is_fresh_in_free_svar_subst_more. eassumption.
       Unshelve.
@@ -4936,6 +4977,18 @@ If X does not occur free in phi:
           unfold svar_is_fresh_in in Hfresh1,Hfresh2.
           simpl in *.
           Search bsvar_occur free_svar_subst'.
+          unfold free_svar_subst.
+          rewrite -> bsvar_occur_free_svar_subst. 2: { lia. }
+          destruct (decide (n0 < more)).
+          +  Search bsvar_occur free_svar_subst'.
+          + rewrite -> bsvar_occur_free_svar_subst in HContra2. 2: lia.
+            destruct HContra2.
+            * left. assumption.
+            * destruct H. Search well_formed_closed_mu_aux bsvar_occur.
+              eapply well_formed_closed_mu_aux_ind in Hwf.
+              apply wfc_mu_aux_implies_not_bsvar_occur in Hwf.
+              unfold is_true in H2. rewrite Hwf in H2. congruence. lia.
+              Unshelve. exact 0.
         - right. unfold free_svar_subst.
           erewrite -> free_svars_free_svar_subst_more. eassumption.
         
