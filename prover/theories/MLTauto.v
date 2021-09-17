@@ -390,8 +390,11 @@ Section ml_tauto.
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
       unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
+      unfold free_evar_subst in Hctx; simpl in Hctx;
       destruct (decide (star = star)); [|contradiction]; simpl in Hctx;
       repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption);
+      simpl in Hctx;
+      rewrite !nest_ex_aux_0 in Hctx;
       simpl in Hctx;
       apply (Modus_ponens_alt _ _ _ Hctx); auto 20
     .

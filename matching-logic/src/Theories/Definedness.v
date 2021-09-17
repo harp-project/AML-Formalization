@@ -1066,8 +1066,8 @@ Section ProofSystemTheorems.
         apply hypothesis. now apply well_formed_iff.
         rewrite HeqΓ'. apply elem_of_union_r. constructor.
       }
-      apply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H; auto.
-      apply pf_iff_proj1 in H; auto.
+      eapply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H; auto.
+      apply pf_iff_proj1 in H; auto. eassumption.
     Qed.
 
     Corollary equality_elimination2 Γ φ1 φ2 ψ:
@@ -1078,13 +1078,18 @@ Section ProofSystemTheorems.
     Proof.
       intros MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
       assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
+      Print bevar_subst.
       Check bound_to_free_variable_subst.
-      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1).
-      4: rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ2).
-      1, 4: lia. all: auto.
-      1, 2: apply wf_body_ex_to_wf in WFB; apply andb_true_iff in WFB as [E1 E2];
-        unfold well_formed_closed in *; simpl in *;
-        destruct_and!; auto.
+      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1 0).
+      { lia. }
+      { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+      { apply wf_body_ex_to_wf in WFB. unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+      { assumption. }
+      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ2 0).
+      { lia. }
+      { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+      { apply wf_body_ex_to_wf in WFB. unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+      { assumption. }
       apply equality_elimination_helper; auto.
       now apply mu_free_evar_open.
     Qed.

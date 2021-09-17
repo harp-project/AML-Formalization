@@ -1987,13 +1987,14 @@ Section semantics.
     apply M_predicate_evar_open_fresh_evar_1 with (x₁ := fresh_evar ϕ); auto.
   Qed.
 
+  Print nest_ex_aux.
   (* TODO similar for svar_open_nest_mu *)
   (* interpretation of a formula is the same as the interpretation of opening the 
      inside of an existential formula *)
   Lemma Private_pattern_interpretation_evar_open_nest_ex M sz ϕ x dbi e ρₑ ρ :
     size ϕ <= sz ->
     evar_is_fresh_in x ϕ ->
-    @pattern_interpretation M (update_evar_val x e ρₑ) ρ (evar_open dbi x (nest_ex_aux dbi ϕ))
+    @pattern_interpretation M (update_evar_val x e ρₑ) ρ (evar_open dbi x (nest_ex_aux dbi 1 ϕ))
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     move: ϕ x dbi e ρₑ ρ.
@@ -2030,16 +2031,18 @@ Section semantics.
       + simpl in Hnot0.
         rewrite 2!pattern_interpretation_ex_simpl. simpl.
         apply f_equal. apply functional_extensionality.
-        intros c.
-        remember (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)) as ϕ' in |-.
-        remember (fresh_evar (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) as x'.
+        intros c. fold bevar_subst.
+        replace (bevar_subst (nest_ex_aux (S dbi) 1 ϕ) (patt_free_evar x) (S dbi))
+                with (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)) by reflexivity.
+        remember (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)) as ϕ' in |-.
+        remember (fresh_evar (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ))) as x'.
 
         (*assert (Hplus1: dbi+1 = S dbi). lia. rewrite Hplus1. clear Hplus1.*)
 
         (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
 
         remember ((@singleton evar (@EVarSet signature) _ x)
-                    ∪ ((free_evars (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ)))
+                    ∪ ((free_evars (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)))
                          ∪ (free_evars ϕ))) as B.
         remember (evar_fresh (elements B)) as x''.
         assert(HB: x'' ∉ B).
@@ -2051,7 +2054,7 @@ Section semantics.
         apply not_elem_of_union in HB.
         destruct HB as [Hfree1 Hfree2].
         
-        fold (evar_is_fresh_in x'' (evar_open (S dbi) x (nest_ex_aux (S dbi) ϕ))) in Hfree1.
+        fold (evar_is_fresh_in x'' (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ))) in Hfree1.
         rewrite (@interpretation_fresh_evar_open _ _ _ x'').
         { subst. apply set_evar_fresh_is_fresh. }
         { subst. apply Hfree1. }
@@ -2112,7 +2115,7 @@ Section semantics.
   Lemma Private_pattern_interpretation_svar_open_nest_mu_aux M sz ϕ X dbi S ρₑ ρ :
     size ϕ <= sz ->
     svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi ϕ))
+    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi 1 ϕ))
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     move: ϕ X dbi S ρₑ ρ.
@@ -2168,13 +2171,13 @@ Section semantics.
         apply f_equal. apply functional_extensionality.
         intros S'.
         
-        remember (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) ϕ)) as ϕ'.
+        remember (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ)) as ϕ'.
         remember (fresh_svar ϕ') as X'.
 
         (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
 
         remember ((@singleton svar (@SVarSet signature) _ X)
-                    ∪ ((free_svars (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) ϕ)))
+                    ∪ ((free_svars (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ)))
                          ∪ (free_svars ϕ))) as B.
         remember (svar_fresh (elements B)) as X''.
         assert(HB: X'' ∉ B).
@@ -2186,7 +2189,7 @@ Section semantics.
         apply not_elem_of_union in HB.
         destruct HB as [Hfree1 Hfree2].
         
-        fold (svar_is_fresh_in X'' (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) ϕ))) in Hfree1.
+        fold (svar_is_fresh_in X'' (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ))) in Hfree1.
         rewrite (@interpretation_fresh_svar_open _ _ _ X'').
         { subst. apply set_svar_fresh_is_fresh. }
         { subst. apply Hfree1. }
@@ -2213,7 +2216,7 @@ Section semantics.
 
   Lemma pattern_interpretation_svar_open_nest_mu_aux M ϕ X dbi S ρₑ ρ :
     svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi ϕ))
+    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi 1 ϕ))
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     apply Private_pattern_interpretation_svar_open_nest_mu_aux with (sz := size ϕ).
@@ -2241,7 +2244,7 @@ Section semantics.
 
   Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρ :
     size ϕ <= sz ->
-    @pattern_interpretation M ρₑ ρ (nest_ex_aux level ϕ)
+    @pattern_interpretation M ρₑ ρ (nest_ex_aux level 1 ϕ)
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     move: ϕ level ρₑ ρ.
@@ -2269,7 +2272,7 @@ Section semantics.
   Qed.
 
   Lemma pattern_interpretation_nest_ex_aux M ϕ level ρₑ ρ :
-    @pattern_interpretation M ρₑ ρ (nest_ex_aux level ϕ)
+    @pattern_interpretation M ρₑ ρ (nest_ex_aux level 1 ϕ)
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     apply Private_pattern_interpretation_nest_ex_aux with (sz := size ϕ).
@@ -2278,7 +2281,7 @@ Section semantics.
 
   Lemma Private_pattern_interpretation_nest_mu_aux M sz ϕ level ρₑ ρ :
     size ϕ <= sz ->
-    @pattern_interpretation M ρₑ ρ (nest_mu_aux level ϕ)
+    @pattern_interpretation M ρₑ ρ (nest_mu_aux level 1 ϕ)
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     move: ϕ level ρₑ ρ.
@@ -2306,7 +2309,7 @@ Section semantics.
   Qed.
 
   Lemma pattern_interpretation_nest_mu_aux M ϕ level ρₑ ρ :
-    @pattern_interpretation M ρₑ ρ (nest_mu_aux level ϕ)
+    @pattern_interpretation M ρₑ ρ (nest_mu_aux level 1 ϕ)
     = @pattern_interpretation M ρₑ ρ ϕ.
   Proof.
     apply Private_pattern_interpretation_nest_mu_aux with (sz := size ϕ).
@@ -2315,6 +2318,8 @@ Section semantics.
   
   (* Similar to plugging_patterns: using free svar substitution instead of 
      bound svar substitution.
+     TODO: we may be able to gneeralize this lemma to non-closed psi,
+           if we deal with nest_mu properly
    *)
   Lemma Private_free_svar_subst_update_exchange {m : Model}: ∀ sz phi psi X svar_val evar_val,
       le (Syntax.size phi) sz → well_formed psi → well_formed_closed phi → 
@@ -2322,16 +2327,18 @@ Section semantics.
       pattern_interpretation evar_val
                              (@update_svar_val m X (pattern_interpretation evar_val svar_val psi) svar_val)
                              phi.
-  Proof. 
+  Proof.
+    unfold free_svar_subst.
     induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf Hwfc ; simpl in *; try inversion Hsz;
       apply wfc_wfc_ind in Hwfc; auto.
     - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
+      simpl.
       destruct (decide (X = x)); simpl.
-      + reflexivity.
+      + rewrite nest_mu_aux_0. reflexivity.
       + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
-    - rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
+    -  rewrite -> pattern_interpretation_free_svar_simpl. unfold update_svar_val.
       destruct (decide (X = x)); simpl.
-      + reflexivity.
+      + rewrite nest_mu_aux_0. reflexivity.
       + rewrite -> pattern_interpretation_free_svar_simpl. reflexivity.
     - repeat rewrite -> pattern_interpretation_app_simpl.
       erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
@@ -2373,10 +2380,10 @@ Section semantics.
         {
           unfold evar_is_fresh_in. assumption.
         }
-        epose (interpretation_fresh_evar_open c 0 evar_val svar_val
-                                              H1 H2) as HFresh.
-        rewrite -> HFresh in H.
-        clear HFresh.
+        erewrite interpretation_fresh_evar_open in H.
+        3: { eassumption. }
+        2: { assumption. }
+
         assert(evar_is_fresh_in fresh phi).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2393,7 +2400,11 @@ Section semantics.
                     (update_evar_val fresh c evar_val) _ _ ).
         pose (@pattern_interpretation_free_evar_independent m evar_val svar_val fresh c psi).
         rewrite -> e0 in e. clear e0.
+        unfold free_svar_subst in *.
+        replace (free_svar_subst' 0 phi psi X)
+                with (free_svar_subst phi psi X) in H by reflexivity.
         rewrite -> (@evar_open_free_svar_subst_comm) in H.
+        unfold free_svar_subst in *.
         rewrite -> e in H.
         exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
         unfold evar_is_fresh_in in H6. assumption. unfold well_formed,well_formed_closed in Hwf.
@@ -2417,10 +2428,9 @@ Section semantics.
         {
           unfold evar_is_fresh_in. assumption.
         }
-        epose (interpretation_fresh_evar_open c 0 evar_val svar_val
-                                              H1 H2) as HFresh.
-        rewrite -> HFresh.
-        clear HFresh.
+        erewrite -> interpretation_fresh_evar_open.
+        3: { eassumption. }
+        2: { assumption. }
         assert(evar_is_fresh_in fresh phi).
         {
           unfold evar_is_fresh_in. assumption.
@@ -2437,7 +2447,11 @@ Section semantics.
                     (update_evar_val fresh c evar_val) _ _ ).
         pose (@pattern_interpretation_free_evar_independent m evar_val svar_val fresh c psi).
         rewrite -> e0 in e. clear e0.
+        replace (free_svar_subst' 0 phi psi X)
+          with (free_svar_subst phi psi X) by reflexivity.
+        
         rewrite -> (evar_open_free_svar_subst_comm).
+        unfold free_svar_subst.
         rewrite -> e.
         exact H. inversion Hwfc. apply wfc_ind_wfc. eapply (H9 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
@@ -2467,8 +2481,10 @@ Section semantics.
         {
           unfold evar_is_fresh_in. assumption.
         }
-        epose (interpretation_fresh_evar_open c 0 evar_val svar_val
-                                              H2 H3) as HFresh.
+        
+        epose proof (interpretation_fresh_evar_open c 0 evar_val svar_val
+                                                    H2 H3) as HFresh.
+        unfold free_svar_subst in HFresh.
         rewrite -> HFresh in H1.
         clear HFresh.
         assert(evar_is_fresh_in fresh phi).
@@ -2487,7 +2503,11 @@ Section semantics.
                     (update_evar_val fresh c evar_val) _ _ ).
         pose (@pattern_interpretation_free_evar_independent m evar_val svar_val fresh c psi).
         rewrite -> e0 in e. clear e0.
+        replace (free_svar_subst' 0 phi psi X)
+          with (free_svar_subst phi psi X) in H1 by reflexivity.
+        
         rewrite -> (evar_open_free_svar_subst_comm) in H1.
+        unfold free_svar_subst in H1.
         rewrite -> e in H1.
         exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
@@ -2514,6 +2534,8 @@ Section semantics.
         }
         epose (interpretation_fresh_evar_open c 0 evar_val svar_val
                                               H2 H3) as HFresh.
+        replace (free_svar_subst' 0 phi psi X)
+          with (free_svar_subst phi psi X) by reflexivity.
         rewrite -> HFresh.
         clear HFresh.
         assert(evar_is_fresh_in fresh phi).
@@ -2533,6 +2555,7 @@ Section semantics.
         pose (@pattern_interpretation_free_evar_independent m evar_val svar_val fresh c psi).
         rewrite -> e0 in e. clear e0.
         rewrite -> (evar_open_free_svar_subst_comm).
+        unfold free_svar_subst.
         rewrite -> e.
         exact H1. inversion Hwfc. apply wfc_ind_wfc. eapply (H10 fresh). 
         unfold evar_is_fresh_in in H6. assumption.
@@ -2588,7 +2611,11 @@ Section semantics.
         {
           subst MuX. apply set_svar_fresh_is_fresh.
         }
-      + rewrite H. reflexivity.
+      + replace 1 with (0 + 1) by lia.
+        rewrite -free_svar_subst_nest_mu_1.
+        rewrite nest_mu_aux_wfc_mu.
+        { unfold well_formed,well_formed_closed in Hwf. destruct_and!. assumption. }
+        rewrite H. reflexivity.
     - repeat rewrite -> pattern_interpretation_mu_simpl. simpl.
       assert ((λ S : propset (Domain m),
                      pattern_interpretation evar_val
@@ -2640,7 +2667,12 @@ Section semantics.
         {
           subst MuX. apply set_svar_fresh_is_fresh.
         }
-      + rewrite H1. reflexivity.
+      + simpl.
+        replace 1 with (0 + 1) by lia.
+        rewrite -free_svar_subst_nest_mu_1.
+        rewrite nest_mu_aux_wfc_mu.
+        { unfold well_formed,well_formed_closed in Hwf. destruct_and!. assumption. }
+        rewrite H1. reflexivity.
         Unshelve. 
         apply set_evar_fresh_is_fresh.
         assumption.

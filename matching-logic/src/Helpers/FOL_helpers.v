@@ -2375,8 +2375,10 @@ Section FOL_helpers.
     intros wfp wfq wfC impC Hiff.
     destruct C.
     induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
-      unfold emplace; simpl.
-    - destruct (decide (pcEvar = x)); simpl. exact Hiff. apply pf_iff_equiv_refl. auto.
+      unfold emplace; unfold free_evar_subst; simpl.
+    - destruct (decide (pcEvar = x)); simpl.
+      { rewrite !nest_ex_aux_0. exact Hiff. }
+      apply pf_iff_equiv_refl. auto.
       (*
       + apply A_impl_A. unfold patt_iff. auto.
       + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
@@ -2410,20 +2412,23 @@ Section FOL_helpers.
         simpl in IHpcPattern1. rewrite andbT in impC.
         specialize (IHpcPattern1 ltac:(assumption)).
         clear IHpcPattern2. (* Can't specialize. *)
+
+        Check @free_evar_subst_no_occurrence.
         (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
            Therefore, p2 = q2. We need a lemma for that. *)
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ pcEvar pcPattern2 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ pcEvar pcPattern2 q ltac:(lia)).
+        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 p ltac:(lia)).
+        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 q ltac:(lia)).
         subst p2 q2. rewrite Hnoocp Hnoocq.
         unfold patt_iff.
 
         epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
         epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
-        Unshelve. 2,3,4,5: subst; auto.
-        
-        apply conj_intro_meta; subst; auto.
-        unfold patt_iff in IHpcPattern1.
 
+        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
+
+        apply conj_intro_meta; subst; auto 10.
+        unfold patt_iff in IHpcPattern1.
+                             
         * toMyGoal. mgIntro. mgIntro. mgAdd H'2. 1,2,3: subst; auto.
           mgApply' 1 5.
           mgApply' 0 5.
@@ -2445,8 +2450,8 @@ Section FOL_helpers.
         simpl in impC. (*rewrite andbT in impC.*)
         specialize (IHpcPattern2 impC).
         clear IHpcPattern1. (* Can't specialize. *)
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ pcEvar pcPattern1 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ pcEvar pcPattern1 q ltac:(lia)).
+        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 p ltac:(lia)).
+        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 q ltac:(lia)).
         subst p1 q1. rewrite Hnoocp Hnoocq.
         unfold patt_iff.
 
@@ -2458,13 +2463,15 @@ Section FOL_helpers.
         unfold patt_iff in IHpcPattern2.
         
         * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
-          mgApply' 0 5. 1,2,3: subst; auto.
-          mgApply' 1 5. 1,2: subst; auto.
+          subst.
+          mgApply' 0 5.
+          mgApply' 1 5.
           mgExactn 2; subst; auto.
 
         * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
-          mgApply' 0 5. 1,2,3: subst; auto.
-          mgApply' 1 5. 1,2: subst; auto.
+          subst.
+          mgApply' 0 5.
+          mgApply' 1 5.
           mgExactn 2; subst; auto.      
   Defined.
       
@@ -3223,32 +3230,50 @@ Section FOL_helpers.
   Defined.
 
   Theorem congruence_iff_helper :
-    forall sz ψ, le (Syntax.size ψ) sz ->
+    forall sz ψ more, le (Syntax.size ψ) sz ->
      forall φ1 φ2 x Γ (MF : mu_free ψ), well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
     ->
      well_formed ψ ->
-     Γ ⊢ (free_evar_subst ψ φ1 x <---> free_evar_subst ψ φ2 x).
+     Γ ⊢ (free_evar_subst' more ψ φ1 x <---> free_evar_subst' more ψ φ2 x).
   Proof.
-    induction sz; destruct ψ; intros Hsz φ1 φ2 x' Γ MF WF1 WF2 H WFψ.
+    unfold free_evar_subst.
+    induction sz; destruct ψ; intros more Hsz φ1 φ2 x' Γ MF WF1 WF2 H WFψ.
     6, 8, 9, 10: simpl in Hsz; lia.
     all: try apply pf_iff_equiv_refl; auto.
-    1-2: cbn; break_match_goal; auto; apply pf_iff_equiv_refl; auto.
+    1-2: cbn; break_match_goal; auto.
+    * rewrite nest_ex_aux_wfc_ex.
+      { unfold well_formed, well_formed_closed in WF1.
+        destruct_and!. assumption. }
+      rewrite nest_ex_aux_wfc_ex.
+      { unfold well_formed, well_formed_closed in WF2.
+        destruct_and!. assumption. }
+      assumption.
+
+    * apply pf_iff_equiv_refl; auto.
+    * rewrite nest_ex_aux_wfc_ex.
+      { unfold well_formed, well_formed_closed in WF1.
+        destruct_and!. assumption. }
+      rewrite nest_ex_aux_wfc_ex.
+      { unfold well_formed, well_formed_closed in WF2.
+        destruct_and!. assumption. }
+      assumption.
+    * apply pf_iff_equiv_refl; auto.
     * simpl in MF, Hsz.
       apply well_formed_app_1 in WFψ as WF1'.
       apply well_formed_app_2 in WFψ as WF2'.
       apply andb_true_iff in MF as [MF1 MF2].
-      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
-      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
+      specialize (IHsz ψ1 more ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
+      specialize (IHsz ψ2 more ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
       apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2.
       destruct IHψ1 as [H0 H1], IHψ2 as [H2 H3].
-      pose proof (Framing_left Γ (free_evar_subst ψ1 φ1 x') (free_evar_subst ψ1 φ2 x') (free_evar_subst ψ2 φ1 x') H0) as Trans1.
-      pose proof (Framing_right Γ (free_evar_subst ψ2 φ1 x') (free_evar_subst ψ2 φ2 x') (free_evar_subst ψ1 φ2 x') H2) as Trans2.
+      pose proof (Framing_left Γ (free_evar_subst' more ψ1 φ1 x') (free_evar_subst' more ψ1 φ2 x') (free_evar_subst' more ψ2 φ1 x') H0) as Trans1.
+      pose proof (Framing_right Γ (free_evar_subst' more ψ2 φ1 x') (free_evar_subst' more ψ2 φ2 x') (free_evar_subst' more ψ1 φ2 x') H2) as Trans2.
       epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
       clear Trans1 Trans2. 2-5: shelve.
 
-      pose proof (Framing_right Γ (free_evar_subst ψ2 φ2 x') (free_evar_subst ψ2 φ1 x') (free_evar_subst ψ1 φ2 x') H3) as Trans1.
-      pose proof (Framing_left Γ _ _ (free_evar_subst ψ2 φ1 x') H1) as Trans2.
+      pose proof (Framing_right Γ (free_evar_subst' more ψ2 φ2 x') (free_evar_subst' more ψ2 φ1 x') (free_evar_subst' more ψ1 φ2 x') H3) as Trans1.
+      pose proof (Framing_left Γ _ _ (free_evar_subst' more ψ2 φ1 x') H1) as Trans2.
       epose proof (syllogism_intro Γ _ _ _ _ _ _ Trans1 Trans2).
       apply pf_iff_iff; auto.
       Unshelve.
@@ -3258,8 +3283,8 @@ Section FOL_helpers.
       apply well_formed_app_1 in WFψ as WF1'.
       apply well_formed_app_2 in WFψ as WF2'.
       apply andb_true_iff in MF as [MF1 MF2].
-      specialize (IHsz ψ1 ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
-      specialize (IHsz ψ2 ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
+      specialize (IHsz ψ1 more ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
+      specialize (IHsz ψ2 more ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
       apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
       apply pf_iff_iff. 1, 2, 4-7: shelve.
       split.
@@ -3278,10 +3303,10 @@ Section FOL_helpers.
       apply sets.not_elem_of_union in n3. destruct n3 as [n3 n4].
       apply sets.not_elem_of_singleton_1 in n4.
       epose proof (H3' fx _).
-      epose proof (IHsz (evar_open 0 fx ψ) _ φ1 φ2 x' Γ _ WF1 WF2 H H0).
       cbn.
-      pose proof (Ex_quan Γ (free_evar_subst ψ φ1 x') fx).
-      pose proof (Ex_quan Γ (free_evar_subst ψ φ2 x') fx).
+      epose proof (IHsz (evar_open 0 fx ψ) (S more) _ φ1 φ2 x' Γ _ WF1 WF2 H H0).
+      pose proof (Ex_quan Γ (free_evar_subst' (S more) ψ φ1 x') fx) as H2.
+      pose proof (Ex_quan Γ (free_evar_subst' (S more) ψ φ2 x') fx) as H3.
       unfold instantiate in *.
       fold (evar_open 0 fx (free_evar_subst ψ φ1 x')) in H2.
       fold (evar_open 0 fx (free_evar_subst ψ φ2 x')) in H3.
@@ -3298,24 +3323,27 @@ Section FOL_helpers.
       Unshelve.
 
       all: auto.
-      all: try replace (ex , free_evar_subst ψ φ1 x') with (free_evar_subst (ex, ψ) φ1 x') by reflexivity.
-      all: try replace (ex , free_evar_subst ψ φ2 x') with (free_evar_subst (ex, ψ) φ2 x') by reflexivity.
+      simpl in WFψ.
+      Search free_svar_subst' nest_mu_aux.
+      all: try replace (ex , free_evar_subst' (S more) ψ φ1 x') with (free_evar_subst' more (ex, ψ) φ1 x') by reflexivity.
+      all: try replace (ex , free_evar_subst' (S more) ψ φ2 x') with (free_evar_subst' more (ex, ψ) φ2 x') by reflexivity.
       all: try apply well_formed_free_evar_subst; auto.
-      rewrite <- evar_open_size. simpl in H. lia.
-      now apply mu_free_evar_open.
-      1, 4, 5, 7: apply well_formed_free_evar_subst with (x := x') (q := φ1) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
-      5-7, 9: apply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      
+      { rewrite <- evar_open_size. simpl in H. lia. }
+      { now apply mu_free_evar_open. }
+      1, 4, 5, 7: eapply well_formed_free_evar_subst with (x := x') (q := φ1) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
+      5-7, 9: eapply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
       12: {
-         apply well_formed_free_evar_subst with (x:= x') (q := φ1) in WFψ.
+         eapply well_formed_free_evar_subst with (x:= x') (q := φ1) in WFψ.
          unfold well_formed, well_formed_closed in WFψ.
          apply andb_true_iff in WFψ. destruct WFψ.
-         destruct_and!. simpl in *. assumption. assumption.
+         destruct_and!. simpl in *. eassumption. assumption.
       }
       13: {
-         apply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ.
+         eapply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ.
          unfold well_formed, well_formed_closed in WFψ.
          apply andb_true_iff in WFψ. destruct WFψ.
-         destruct_and!. simpl in *. assumption. assumption.
+         destruct_and!. simpl in *. eassumption. assumption.
       }
       all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
       all: try apply free_evars_free_evar_subst.
