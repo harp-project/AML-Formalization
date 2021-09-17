@@ -6021,27 +6021,59 @@ Next Obligation.
     congruence.
 Defined.
 
-Print free_evar_subst.
-Search free_evar_subst.
-Search nest_ex.
-(*
+Lemma evar_quantify_nest_ex_aux {Σ : Signature} more level x n' ϕ:
+  n' >= level ->
+  evar_quantify x (n' + more) (nest_ex_aux level more ϕ) = nest_ex_aux level more (evar_quantify x n' ϕ).
+Proof.
+  intros Hlevel.
+  move: more n' level Hlevel.
+  induction ϕ; intros more n' level Hlevel; simpl; auto.
+  - repeat case_match; simpl. 2: reflexivity. case_match. lia. reflexivity.
+  - rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+  - rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+  - replace (S (n' + more)) with ((S n') + more) by lia.
+    rewrite IHϕ. lia. reflexivity.
+  - rewrite IHϕ. lia. reflexivity.
+Qed.
+
+
 Lemma evar_quantify_free_evar_subst' {Σ : Signature} ψ ϕ x n more:
-  evar_quantify x n (free_evar_subst' more ψ ϕ x) =
+  evar_quantify x (n+more) (free_evar_subst' more ψ ϕ x) =
   free_evar_subst' more ψ (evar_quantify x n ϕ) x.
 Proof.
   move: n more.
   induction ψ; intros n' more; simpl; auto.
   - case_match; auto.
-    destruct (decide (x = x0)); simpl.
-    { reflexivity. }
-    destruct (decide (x = x0)); try contradiction.
-    reflexivity.
+    2: { simpl. case_match; try contradiction. reflexivity. }
+    rewrite evar_quantify_nest_ex_aux. lia. reflexivity.
   - congruence.
   - congruence.
-  - rewrite IHψ.
-Abort. (* OOPS *)
+  - replace (S (n' + more)) with (n' + (S more)) by lia.
+    rewrite IHψ. reflexivity.
+  - rewrite IHψ. reflexivity.
+Qed.
 
-  
+Lemma evar_quantify_free_evar_subst'_2 {Σ : Signature} n more ψ ϕ x y:
+  x <> y ->
+  evar_quantify x (n+more) (free_evar_subst' more ψ ϕ y)
+  = free_evar_subst' more (evar_quantify x (n+more) ψ) (evar_quantify x n ϕ) y.
+Proof.
+  intros Hxy.
+  move: n more.
+  induction ψ; intros n' more; simpl; auto.
+  - repeat case_match; simpl; auto.
+    + congruence.
+    + case_match; try congruence.
+      apply evar_quantify_nest_ex_aux. lia.
+    + case_match; congruence.
+    + repeat case_match; auto; congruence.
+  - rewrite IHψ1. rewrite IHψ2. reflexivity.
+  - rewrite IHψ1. rewrite IHψ2. reflexivity.
+  - replace (S (n' + more)) with (n' + (S more)) by lia.
+    rewrite IHψ. reflexivity.
+  - rewrite IHψ. reflexivity.
+Qed.
+
 
 Lemma evar_quantify_emplace {Σ : Signature} x n C ϕ:
   evar_quantify x n (emplace C ϕ) = emplace (evar_quantify_ctx x n C) (evar_quantify x n ϕ).
@@ -6054,9 +6086,16 @@ Proof.
   move: {1 3}(evar_eqdec x pcEvar0).
   case => //.
   { intros Heq _. subst x.
-    unfold emplace. simpl.
-Abort.
-*)  
+    unfold emplace. simpl. unfold free_evar_subst.
+    replace n with (n+0) at 1 by lia.
+    apply evar_quantify_free_evar_subst'.
+  }
+  intros Hneq e. unfold emplace. simpl. clear e.
+  unfold free_evar_subst.
+  replace n with (n+0) at 1 by lia.
+  rewrite -> evar_quantify_free_evar_subst'_2. 2: assumption.
+  replace (n + 0) with n by lia. reflexivity.
+Qed.
 
 Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
   x ∉ AC_free_evars AC ->
