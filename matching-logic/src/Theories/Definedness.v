@@ -1066,8 +1066,8 @@ Section ProofSystemTheorems.
         apply hypothesis. now apply well_formed_iff.
         rewrite HeqΓ'. apply elem_of_union_r. constructor.
       }
-      apply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H; auto.
-      apply pf_iff_proj1 in H; auto.
+      eapply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H; auto.
+      apply pf_iff_proj1 in H; auto. eassumption.
     Qed.
 
     Corollary equality_elimination2 Γ φ1 φ2 ψ:

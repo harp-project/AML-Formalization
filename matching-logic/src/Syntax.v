@@ -5284,20 +5284,20 @@ If X does not occur free in phi:
     * apply IHφ.
   Qed.
 
-  (* TODO: this does not hold in general, but is only used in Definedness.v.
-           We have to check the exact use-case and adapt this lemma. *)
-  (*
+
   Lemma bound_to_free_variable_subst :
-    forall φ x m n ψ more, m > n ->
-      well_formed_closed_ex_aux φ m -> x ∉ free_evars φ
-    ->
+    forall φ x m n ψ more,
+      m > n ->
+      well_formed_closed_ex_aux ψ 0 ->
+      well_formed_closed_ex_aux φ m -> x ∉ free_evars φ ->
       bevar_subst φ ψ n = free_evar_subst' more (evar_open n x φ) ψ x.
   Proof.
-    induction φ; intros x' m n' ψ more H H0 H1; cbn; auto.
+    induction φ; intros x' m n' ψ more H WFψ H0 H1; cbn; auto.
     - destruct (decide (x' = x)); simpl.
       + simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
       + reflexivity.
-    - case_match; auto. simpl. case_match; auto; simpl in H0; case_match; auto. lia. congruence.
+    - case_match; auto. simpl. case_match; auto; simpl in H0; case_match; auto.
+      1,2: rewrite nest_ex_aux_wfc_ex; auto. contradiction. lia.
     - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
       apply andb_true_iff in H0. destruct H0.
       erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
@@ -5308,7 +5308,6 @@ If X does not occur free in phi:
       all: try eassumption. lia.
     - simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
   Qed.
-   *)
   
   Lemma evar_open_no_negative_occurrence :
     forall φ db1 db2 x,
