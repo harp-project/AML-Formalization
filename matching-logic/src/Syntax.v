@@ -4621,7 +4621,23 @@ If X does not occur free in phi:
     - rewrite IHpsi; auto.
     - rewrite IHpsi; auto.
   Qed.
-  
+
+  Lemma nest_ex_aux_wfc_ex level more psi:
+    well_formed_closed_ex_aux psi level ->
+    nest_ex_aux level more psi = psi.
+  Proof.
+    move: level.
+    induction psi; intros level Hlevel; simpl in *; auto.
+    - repeat case_match; auto; congruence.
+    - destruct_and!.
+      rewrite IHpsi1; auto.
+      rewrite IHpsi2; auto.
+    - destruct_and!.
+      rewrite IHpsi1; auto.
+      rewrite IHpsi2; auto.
+    - rewrite IHpsi; auto.
+    - rewrite IHpsi; auto.
+  Qed.
 
   Lemma size'_nest_mu_aux level more phi:
     size' (nest_mu_aux level more phi) = size' phi.
@@ -4986,56 +5002,114 @@ If X does not occur free in phi:
     intros phi psi fresh n X H H0 H1 H2. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
   Qed.
 
-  Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
+  Lemma wfc_mu_nest_ex level level' more q:
+    well_formed_closed_mu_aux (nest_ex_aux level' more q) level =
+    well_formed_closed_mu_aux q level.
+  Proof.
+    move: level level' more.
+    induction q; intros level level' more; simpl; auto.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+  Qed.
+
+  Lemma wfc_ex_nest_mu level level' more q:
+    well_formed_closed_ex_aux (nest_mu_aux level' more q) level =
+    well_formed_closed_ex_aux q level.
+  Proof.
+    move: level level' more.
+    induction q; intros level level' more; simpl; auto.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+  Qed.
+  
+  Lemma free_evar_subst_preserves_no_negative_occurrence more x p q n:
     well_formed_closed_mu_aux q 0 ->
     no_negative_occurrence_db_b n p ->
-    no_negative_occurrence_db_b n (free_evar_subst p q x)
+    no_negative_occurrence_db_b n (free_evar_subst' more p q x)
   with
-  free_evar_subst_preserves_no_positive_occurrence x p q n:
+  free_evar_subst_preserves_no_positive_occurrence more x p q n:
     well_formed_closed_mu_aux q 0 ->
     no_positive_occurrence_db_b n p ->
-    no_positive_occurrence_db_b n (free_evar_subst p q x)
+    no_positive_occurrence_db_b n (free_evar_subst' more p q x)
   .
   Proof.
     - intros wfq nno.
+      unfold free_evar_subst.
       induction p; simpl; auto.
       + destruct (decide (x = x0)); simpl; auto.
-        apply wfc_impl_no_neg_occ. unfold well_formed_closed in wfq. assumption.
+        apply wfc_impl_no_neg_occ. unfold well_formed_closed in wfq.
+        rewrite wfc_mu_nest_ex. assumption.
       + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
         rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
       + simpl in nno. apply andb_prop in nno. destruct nno as [nnop1 nnop2].
-        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_positive_occurrence; auto.
+        rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_positive_occurrence; auto. 
     - intros wfq npo.
       induction p; simpl; auto.
       + destruct (decide (x = x0)); simpl; auto.
-        apply wfc_impl_no_pos_occ. unfold well_formed_closed in wfq. assumption.
+        apply wfc_impl_no_pos_occ. unfold well_formed_closed in wfq.
+        rewrite wfc_mu_nest_ex. assumption.
       + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
         rewrite IHp1. auto. rewrite IHp2. auto. reflexivity.
       + simpl in npo. apply andb_prop in npo. destruct npo as [npop1 npop2].
         rewrite IHp2. assumption. rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   Qed.
 
-  Lemma Private_well_formed_free_evar_subst' x p q n1 n2:
+  Lemma nno_nest_ex_aux level more q db:
+    no_negative_occurrence_db_b db (nest_ex_aux level more q)
+    = no_negative_occurrence_db_b db q
+  with npo_nest_ex_aux level more q db:
+    no_positive_occurrence_db_b db (nest_ex_aux level more q)
+    = no_positive_occurrence_db_b db q.
+  Proof.
+    - move: level more db.
+      induction q; intros level more db; simpl; auto.
+      + rewrite IHq1. rewrite IHq2. reflexivity.
+      + rewrite npo_nest_ex_aux. rewrite IHq2. reflexivity.
+    - move: level more db.
+      induction q; intros level more db; simpl; auto.
+      + rewrite IHq1. rewrite IHq2. reflexivity.
+      + rewrite nno_nest_ex_aux. rewrite IHq2. reflexivity.
+  Qed.
+  
+        
+
+  Lemma wfp_nest_ex_aux level more q:
+    well_formed_positive (nest_ex_aux level more q)
+    = well_formed_positive q.
+  Proof.
+    move: level more.
+    induction q; intros level more; simpl; auto.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+    - rewrite IHq1. rewrite IHq2. reflexivity.
+    - rewrite IHq. rewrite nno_nest_ex_aux. reflexivity.
+  Qed.
+  
+  Lemma Private_well_formed_free_evar_subst' more x p q n1 n2:
     well_formed q ->
     well_formed_positive p && well_formed_closed_mu_aux p n2 && well_formed_closed_ex_aux p n1 ->
-    no_negative_occurrence_db_b n2 (free_evar_subst p q x)
-    && no_positive_occurrence_db_b n2 (free_evar_subst p q x)
-    && well_formed_positive (free_evar_subst p q x)
-    && well_formed_closed_mu_aux (free_evar_subst p q x) n2
-    && well_formed_closed_ex_aux (free_evar_subst p q x) n1
+    no_negative_occurrence_db_b n2 (free_evar_subst' more p q x)
+    && no_positive_occurrence_db_b n2 (free_evar_subst' more p q x)
+    && well_formed_positive (free_evar_subst' more p q x)
+    && well_formed_closed_mu_aux (free_evar_subst' more p q x) n2
+    && well_formed_closed_ex_aux (free_evar_subst' more p q x) n1
     = true.
   Proof.
     intros wfq wfp.
-    move: n1 n2 wfp.
-    induction p; intros n1 n2 wfp; simpl; auto.
+    move: n1 n2 more wfp.
+    induction p; intros n1 n2 more wfp; simpl; auto.
     - destruct (decide (x = x0)); simpl; auto.
       unfold well_formed in wfq. apply andb_prop in wfq. destruct wfq as [wfpq wfcq].
+      rewrite wfp_nest_ex_aux.
       rewrite wfpq. simpl in *.
       unfold well_formed_closed in wfcq. destruct_and!.
       pose proof (H1 := @well_formed_closed_mu_aux_ind q 0 n2 ltac:(lia) ltac:(assumption)).
       pose proof (H2 := wfc_impl_no_neg_pos_occ H1).
-      rewrite H2. simpl.
       destruct_and!.
+      rewrite npo_nest_ex_aux. rewrite nno_nest_ex_aux.
+      rewrite H3. rewrite H4. simpl.
+      rewrite wfc_mu_nest_ex.
+      rewrite nest_ex_aux_wfc_ex. assumption.
+      
       split_and!.
       + eapply well_formed_closed_mu_aux_ind.
         2: eassumption. lia.
