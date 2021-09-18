@@ -36,17 +36,17 @@ Inductive Symbols := definedness.
 Instance Symbols_eqdec : EqDecision Symbols.
 Proof. solve_decision. Defined.
 
-Section definedness.
-  
-  Context {Σ : Signature}.
-
-  Class Syntax :=
+  Class Syntax {Σ : Signature} :=
     {
     (* 'Symbols' are a 'subset' of all the symbols from the Σnature *)
     inj: Symbols -> symbols;
     (* TODO make it injective? *)
     (* for convenience *)
-    }.  
+    }.
+
+Section definedness.
+  
+  Context {Σ : Signature}.
 
   Context {syntax : Syntax}.
 
@@ -861,28 +861,40 @@ Section ProofSystemTheorems.
 
     pose proof (S1' := S1).
     apply universal_generalization with (x := ev_x) in S1'; auto.
+    Print fresh_evar. Check AC_free_evars.
+    remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
+    assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
+    {
+      (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
+      replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
+        with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉) in S1'.
+      2: { simpl. repeat case_match; auto; contradiction. }
+          
+      eapply Modus_ponens.
+      4: apply forall_variable_substitution.
+      3: apply S1'.
+      all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
+    }
     
-    assert(S2: Γ ⊢ ⌈ p_x ⌉ or ⌈ ϕ ⌉).
+    assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉).
     {
       toMyGoal. mgLeft; auto.
     }
 
-    assert(S3: Γ ⊢ ⌈ p_x or ϕ ⌉).
+    assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉).
     {
-      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) p_x ϕ ltac:(auto) ltac:(auto)).
+      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x') ϕ ltac:(auto) ltac:(auto)).
       simpl in Htmp.
-      (*Search (?G ⊢ ?L and ?R). (* Why this does not find pf_conj_elim_r_meta ? *) *)
       apply pf_conj_elim_r_meta in Htmp; auto.
       eapply Modus_ponens. 4: apply Htmp.
       all: auto.
     }
 
-    assert(S4: Γ ⊢ ⌈ (p_x and (! ϕ)) or ϕ ⌉).
+    assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉).
     {
-      assert(Htmp1: Γ ⊢ (p_x or ϕ) ---> (p_x and ! ϕ or ϕ)).
+      assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
       {
         toMyGoal. mgIntro.
-        (* Search (?G ⊢ ?q). (* Maybe Search does not work because we use a separate notation... *)*)
         mgAdd (A_or_notA Γ ϕ Hwfϕ); auto.
         mgDestruct 0; auto.
         - mgRight; auto. mgExactn 0.
@@ -895,8 +907,7 @@ Section ProofSystemTheorems.
             mgExactn 1; auto 10.
       }
       
-      
-      assert(Htmp2: Γ ⊢ (⌈ p_x or ϕ ⌉) ---> (⌈ p_x and ! ϕ or ϕ ⌉)).
+      assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉)).
       {
         apply Framing_right. apply Htmp1.
       }
@@ -906,23 +917,23 @@ Section ProofSystemTheorems.
       all: auto 10.
     }
 
-    assert(S5: Γ ⊢ ⌈ (p_x and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
+    assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
     {
-      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (p_x and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
+      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x' and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
       simpl in Htmp.
       apply pf_conj_elim_l_meta in Htmp; auto 10.
       eapply Modus_ponens. 4: apply Htmp.
       all: auto 10.
     }
 
-    assert(S6: Γ ⊢ subst_ctx AC (p_x and ϕ) ---> ! ⌈ p_x and ! ϕ ⌉).
+    assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉).
     {
-      pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ ev_x).
+      pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x').
       simpl in Htmp.
       unfold patt_and in Htmp at 1.
       apply not_not_elim_meta in Htmp; auto 10.
-      replace (patt_sym (inj definedness) $ (patt_free_evar ev_x and ! ϕ))
-        with (patt_defined (p_x and ! ϕ)) in Htmp by reflexivity.
+      replace (patt_sym (inj definedness) $ (patt_free_evar x' and ! ϕ))
+        with (patt_defined (patt_free_evar x' and ! ϕ)) in Htmp by reflexivity.
       
       toMyGoal. mgIntro. mgAdd Htmp; auto 10.
       mgApply' 0 10. mgIntro. mgApply' 2 10.
@@ -931,7 +942,7 @@ Section ProofSystemTheorems.
 
     pose proof (S7 := S5). unfold patt_or in S7.
 
-    assert(S8: Γ ⊢ subst_ctx AC (p_x and ϕ) ---> ⌈ ϕ ⌉).
+    assert(S8: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉).
     {
       eapply syllogism_intro.
       5: apply S7.
@@ -939,45 +950,29 @@ Section ProofSystemTheorems.
     }
     assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
     {
-      eapply universal_generalization with (x := ev_x) in S8; auto.
-      Search evar_quantify subst_ctx.
+      eapply universal_generalization with (x := x') in S8; auto.
       simpl in S8.
       rewrite evar_quantify_subst_ctx in S8.
-      (* now e_x cannot occur in ϕ, otherwise *)
-      rewrite -emplace_subst_ctx in S8.
-      rewrite -emplace_subst_ctx.
-      (*
-      replace (subst_ctx AC (patt_bound_evar 0 and ϕ))
-        with (evar_quantify ev_x 0 (subst_ctx AC (p_x and ϕ))).
-      2: {
-        Search evar_quantify subst_ctx.
-        rewrite evar_quantify_subst_ctx
-        admit. admit.
+      { rewrite Heqx'.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: apply set_evar_fresh_is_fresh'.
+        clear.
+        set_solver.
       }
-      *)
-        rewrite -emplace_subst_ctx.
-        rewrite evar_quantify_emplace.
-        rewrite [evar_quantify ev_x 0 (p_x and ϕ)]/=.
-        case_match; try congruence.
-        replace ((((b0 ---> ⊥) ---> ⊥) ---> evar_quantify ev_x 0 ϕ ---> ⊥) ---> ⊥)
-          with (b0 and (evar_quantify ev_x 0 ϕ))
-          by reflexivity.
-        unfold evar_quantify_ctx
-        Search evar_quantify emplace.
-  Abort.
-  (*
-        unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-        Search emplace subst_ctx.
-        Search evar_quantify subst_ctx.
-        rewrite evar_quantify_subst_ctx
+      assert (evar_is_fresh_in x' ϕ).
+      { rewrite Heqx'.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
       }
-      
-      apply universal_generalization.
+
+      simpl in S8.
+      case_match; try contradiction.
+      rewrite evar_quantify_fresh in S8; [assumption|].
+      apply S8.
     }
     
-  '  
-  Qed.
-  *)
+  Abort.
     
     
     
