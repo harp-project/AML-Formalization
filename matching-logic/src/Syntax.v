@@ -6117,3 +6117,29 @@ Proof.
     unfold evar_is_fresh_in. set_solver.
     reflexivity.
 Qed.
+
+
+Check bevar_occur.
+Lemma bevar_subst_evar_quantify_free_evar {Σ : Signature} x dbi ϕ:
+  bevar_occur ϕ dbi = false ->
+  bevar_subst (evar_quantify x dbi ϕ) (patt_free_evar x) dbi  = ϕ.
+Proof.
+  move: dbi.
+  induction ϕ; intros dbi Hbo; simpl in *; auto.
+  - case_match; simpl;[|reflexivity].
+    case_match; simpl;[congruence|].
+    contradiction.
+  - case_match;[congruence|reflexivity].
+  - apply orb_false_iff in Hbo.
+    destruct_and!.
+    rewrite IHϕ1;[assumption|].
+    rewrite IHϕ2;[assumption|].
+    reflexivity.
+  - apply orb_false_iff in Hbo.
+    destruct_and!.
+    rewrite IHϕ1;[assumption|].
+    rewrite IHϕ2;[assumption|].
+    reflexivity.
+  - rewrite IHϕ;[assumption|reflexivity].
+  - rewrite IHϕ;[assumption|reflexivity].
+Qed.

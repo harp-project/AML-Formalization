@@ -859,6 +859,9 @@ Section ProofSystemTheorems.
     intros HΓ Hwfϕ.
     assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
 
+    pose proof (S1' := S1).
+    apply universal_generalization with (x := ev_x) in S1'; auto.
+    
     assert(S2: Γ ⊢ ⌈ p_x ⌉ or ⌈ ϕ ⌉).
     {
       toMyGoal. mgLeft; auto.
@@ -936,12 +939,31 @@ Section ProofSystemTheorems.
     }
     assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
     {
-      Search subst_ctx emplace.
-      Check evar_quantify.
+      eapply universal_generalization with (x := ev_x) in S8; auto.
+      Search evar_quantify subst_ctx.
+      simpl in S8.
+      rewrite evar_quantify_subst_ctx in S8.
+      (* now e_x cannot occur in ϕ, otherwise *)
+      rewrite -emplace_subst_ctx in S8.
+      rewrite -emplace_subst_ctx.
+      (*
       replace (subst_ctx AC (patt_bound_evar 0 and ϕ))
         with (evar_quantify ev_x 0 (subst_ctx AC (p_x and ϕ))).
-      {
+      2: {
+        Search evar_quantify subst_ctx.
+        rewrite evar_quantify_subst_ctx
+        admit. admit.
+      }
+      *)
         rewrite -emplace_subst_ctx.
+        rewrite evar_quantify_emplace.
+        rewrite [evar_quantify ev_x 0 (p_x and ϕ)]/=.
+        case_match; try congruence.
+        replace ((((b0 ---> ⊥) ---> ⊥) ---> evar_quantify ev_x 0 ϕ ---> ⊥) ---> ⊥)
+          with (b0 and (evar_quantify ev_x 0 ϕ))
+          by reflexivity.
+        unfold evar_quantify_ctx
+        Search evar_quantify emplace.
   Abort.
   (*
         unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.

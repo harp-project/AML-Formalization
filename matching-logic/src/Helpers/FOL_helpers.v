@@ -1376,13 +1376,21 @@ Section FOL_helpers.
 End FOL_helpers.
 
 #[global]
-Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
+ Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
+
 #[global]
-Ltac fromMyGoal := unfold of_MyGoal; simpl.
+ Ltac fromMyGoal := unfold of_MyGoal; simpl.
+
+Ltac simplLocalContext :=
+  match goal with
+    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) => rewrite {1}[l]/app
+  end.
+
 #[global]
-Ltac mgIntro := apply MyGoal_intro; simpl.
+ Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
+
 #[global]
-Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
+ Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
 
 
 Section FOL_helpers.
@@ -1573,7 +1581,7 @@ Section FOL_helpers.
   Defined.
 
 End FOL_helpers.
-  
+
 Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -1596,7 +1604,9 @@ Section FOL_helpers.
     intros wfp wfq wfr wfs.
     unfold patt_or.
 
-    toMyGoal. mgIntro. mgIntro. mgIntro. mgIntro.
+    toMyGoal. mgIntro.
+    
+    mgIntro. mgIntro. mgIntro.
     mgApply' 1 7.
     mgApply' 2 7.
     mgIntro.
@@ -3424,8 +3434,36 @@ Section FOL_helpers.
     toMyGoal. mgIntro. mgAdd Hϕ; auto.
     mgApply' 1 10. mgExactn 0; auto.
   Qed.
-  
-  
+
+  Hint Resolve evar_quantify_well_formed.
+
+  Lemma forall_variable_substitution Γ ϕ x:
+    well_formed ϕ ->
+    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ.
+  Proof.
+    intros wfϕ.
+   
+    unfold patt_forall.
+    replace (! evar_quantify x 0 ϕ)
+      with (evar_quantify x 0 (! ϕ))
+      by reflexivity.
+    apply double_neg_elim_meta; auto.
+    toMyGoal. mgIntro. mgIntro. mgApply' 0 5.
+    1,2: replace (evar_quantify x 0 ϕ ---> ⊥) with (evar_quantify x 0 (! ϕ)) by reflexivity.
+    1,2: auto 10.
+    mgIntro. mgApply' 2 10.
+    pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
+    rewrite /instantiate in Htmp.
+    rewrite bevar_subst_evar_quantify_free_evar in Htmp.
+    {
+      apply wfc_ex_implies_not_bevar_occur.
+      unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
+      split_and; auto.
+    }
+    mgAdd Htmp; auto 10. clear Htmp.
+    mgApply' 0 10. mgIntro. mgApply' 2 10.
+    mgExactn 4. auto 10.
+  Qed.
   
 End FOL_helpers.
 
