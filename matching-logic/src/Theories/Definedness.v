@@ -861,8 +861,23 @@ Section ProofSystemTheorems.
 
     pose proof (S1' := S1).
     apply universal_generalization with (x := ev_x) in S1'; auto.
-    Print fresh_evar. Check AC_free_evars.
     remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
+
+    assert (Hx1': evar_is_fresh_in x' ϕ).
+    { rewrite Heqx'.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+
+    assert (Hx'2: x' ∉ AC_free_evars AC).
+    { rewrite Heqx'.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: apply set_evar_fresh_is_fresh'.
+      clear.
+      set_solver.
+    }
+    
     assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
     {
       (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
@@ -952,25 +967,105 @@ Section ProofSystemTheorems.
     {
       eapply universal_generalization with (x := x') in S8; auto.
       simpl in S8.
-      rewrite evar_quantify_subst_ctx in S8.
-      { rewrite Heqx'.
-        eapply not_elem_of_larger_impl_not_elem_of.
-        2: apply set_evar_fresh_is_fresh'.
-        clear.
-        set_solver.
-      }
-      assert (evar_is_fresh_in x' ϕ).
-      { rewrite Heqx'.
-        eapply not_elem_of_larger_impl_not_elem_of.
-        2: { apply set_evar_fresh_is_fresh'. }
-        clear. set_solver.
-      }
+      
+      rewrite evar_quantify_subst_ctx in S8;[assumption|].
 
       simpl in S8.
       case_match; try contradiction.
       rewrite evar_quantify_fresh in S8; [assumption|].
       apply S8.
     }
+
+    assert(S10: Γ ⊢ (ex, subst_ctx AC (b0 and ϕ)) ---> ⌈ ϕ ⌉).
+    {
+      unfold patt_forall in S9.
+      unfold patt_not in S9 at 1.
+
+      assert (Heq: evar_quantify x' 0 (subst_ctx AC (patt_free_evar x' and ϕ)) = subst_ctx AC (b0 and ϕ)).
+      {
+        rewrite evar_quantify_subst_ctx;[assumption|].
+        f_equal.
+        simpl.
+        case_match; [|congruence].
+        rewrite evar_quantify_fresh; [assumption|].
+        reflexivity.
+      }
+      rewrite <- Heq.
+      apply Ex_gen.
+      4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+      1,2: auto.
+      assumption.
+    }
+
+    assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ)).
+    {
+      toMyGoal. mgIntro.
+      mgAdd (conj_intro Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)); auto.
+      
+      mgAssert ((ϕ ---> ex , b0 and ϕ)); auto 10.
+      {  mgApply' 0 10.  mgAdd (Existence Γ); auto.
+         mgExactn 0; auto 10.
+      }
+      mgApply' 2 10. mgExactn 1. auto 10.
+    }
+
+    assert (well_formed (ex , (b0 and ϕ))).
+    {
+      unfold well_formed,well_formed_closed in *.
+      destruct_and!.
+      simpl; split_and!; auto.
+      eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    }
+    
+    assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ)).
+    {
+
+      assert(well_formed (ex , (evar_quantify x' 0 (patt_free_evar x') and ϕ))).
+      {
+        unfold well_formed,well_formed_closed in *. simpl in *.
+        destruct_and!. split_and!; auto.
+        all: repeat case_match; auto.
+      }
+      
+      assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ)))).
+      {
+        toMyGoal. mgIntro. mgDestructAnd 0; auto. fromMyGoal.
+        replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
+        2: { simpl. case_match;[reflexivity|congruence]. }
+        apply Ex_gen; auto.
+        2: { simpl. case_match;[|congruence]. simpl.
+             unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
+        }
+        toMyGoal. do 2 mgIntro.
+        mgAssert ((patt_free_evar x' and ϕ)) using first 2.
+        { unfold patt_and. unfold patt_not at 1. mgIntro.
+          mgDestruct 2; auto.
+          - mgApply' 2 10. mgExactn 0; auto.
+          - mgApply' 2 10. mgExactn 1; auto.
+        }
+        mgClear 1; auto. mgClear 0; auto.
+        fromMyGoal.
+        case_match;[|congruence].
+
+        replace (patt_free_evar x' and ϕ)
+          with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x')).
+        2: {
+          simpl. rewrite bevar_subst_not_occur.
+          { apply wfc_ex_aux_implies_not_bevar_occur. unfold well_formed, well_formed_closed in *.
+            destruct_and!. auto.
+          }
+          reflexivity.
+        }
+        apply Ex_quan.
+      }
+      eapply syllogism_intro.
+      5: { apply Htmp. }
+      all: auto.
+    }
+    
+
+    (* TODO: locate where they are put on shelf, and fix that. *)
+    Unshelve. all: auto.
     
   Abort.
     
