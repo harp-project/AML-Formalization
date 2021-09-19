@@ -1696,16 +1696,108 @@ Section FOL_helpers.
     eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
   Defined.
 
+  Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2)))).
+  Proof.
+    intros wfl1 wfl2 wfg wfh.
+    induction l1; simpl.
+    - apply modus_ponens; auto.
+    - pose proof (wfal1 := wfl1).
+      unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+      specialize (IHl1 wfl1).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)).
+      { apply prf_add_assumption; auto 10. }
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))).
+      { apply prf_impl_distr_meta; auto 10. }
+      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
+                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2))))).
+      { auto 10 using P2. }
+
+      eapply prf_weaken_conclusion_meta_meta.
+      4: apply H3. all: auto 10.
+  Defined.
+  
+  Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l1) ->
+    Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))).
+  Proof.
+    intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 7.
+  Defined.
+  
+  Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l1) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)).
+  Proof.
+    intros WFl1 WFl2 WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized_meta.
+    3: apply H0. all: auto 7.
+  Defined.
+
+  Lemma myGoal_assert_generalized Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Σ Γ l1 h ->
+    mkMyGoal Σ Γ (l1 ++ [h] ++ l2) g ->
+    mkMyGoal Σ Γ (l1 ++ l2) g.
+  Proof.
+    intros wfl1 wfl2 wfg wfh H1 H2.
+    eapply prf_add_lemma_under_implication_generalized_meta_meta. 5: apply H1. all: auto.
+  Defined.
+  
 End FOL_helpers.
 
 (* TODO do not use the parameter [n]; generate a fresh one instead. *)
 Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    let n := fresh "H" in
-    assert (n : mkMyGoal Sgm Ctx l t);
-    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=; clear n)]
+    let H := fresh "H" in
+    assert (H : mkMyGoal Sgm Ctx l t);
+    [ | (eapply (myGoal_assert Ctx l g t _ _ _ H); rewrite [_ ++ _]/=; clear H)]
   end.
+
+(* TODO do not use the parameter [n]; generate a fresh one instead. *)
+Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let l1 := fresh "l1" in
+    let l2 := fresh "l2" in
+    let Heql1 := fresh "Heql1" in
+    let Heql2 := fresh "Heql2" in
+    rewrite -[l](take_drop n);
+    remember (take n l) as l1 eqn:Heql1;
+    remember (drop n l) as l2 eqn:Heql2;
+    simpl in Heql1; simpl in Heql2;
+    let H := fresh "H" in
+    assert (H : mkMyGoal Sgm Ctx l1 t) ; subst l1 l2;
+    [ | (eapply (myGoal_assert_generalized Ctx (take n l) (drop n l) g t _ _ _ _ H);
+         rewrite [_ ++ _]/=; clear H)] 
+  end.
+
+Local Example ex_assert_using {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ p and q ---> ! ! q.
+Proof.
+  intros wfp wfq.
+  toMyGoal.
+  mgIntro.
+  mgAssert (p) using first 0.
+Abort.
+
 
 Section FOL_helpers.
 
