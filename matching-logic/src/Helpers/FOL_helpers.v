@@ -1699,12 +1699,12 @@ Section FOL_helpers.
 End FOL_helpers.
 
 (* TODO do not use the parameter [n]; generate a fresh one instead. *)
-Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
+    let n := fresh "H" in
     assert (n : mkMyGoal Sgm Ctx l t);
-    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=; clear n)]
   end.
 
 Section FOL_helpers.
@@ -1984,18 +1984,16 @@ Section FOL_helpers.
     toMyGoal. repeat mgIntro.
     unfold patt_and. mgApply' 0 10.
     mgIntro. unfold patt_or at 2.
-    mgAssert (nnp: (! ! p)).
+    mgAssert ((! ! p)).
     {
       mgAdd (not_not_intro Γ p wfp); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    clear nnp.
-    mgAssert (nq: (! q)).
+    mgAssert ((! q)).
     {
       mgApply' 3 10. mgExactn 4; auto 10.
     }
-    clear nq.
     mgApply' 5 10. mgExactn 2; auto 10.
     Unshelve. all: auto 10.
   Defined.
@@ -2009,23 +2007,21 @@ Section FOL_helpers.
   Proof.
     intros wfp wfq wfr.
     toMyGoal. repeat mgIntro.
-    mgAssert (Hp: p).
+    mgAssert (p).
     {
       mgAdd (pf_conj_elim_l Γ p q wfp wfq); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    mgAssert (Hq: q).
+    mgAssert (q).
     {
       mgAdd (pf_conj_elim_r Γ p q wfp wfq); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    clear Hp Hq.
     (* This pattern is basically an "apply ... in" *)
-    mgAssert (Hqir: (q ---> r)).
+    mgAssert ((q ---> r)).
     { mgApply' 0 10. mgExactn 2; auto 10. }
-    clear Hqir.
     mgApply' 4 10. mgExactn 3; auto 10.
     Unshelve.
     all: auto 10.
@@ -2053,15 +2049,12 @@ Section FOL_helpers.
       simpl in *.
       toMyGoal. repeat mgIntro.
       mgAdd IHl; auto 10.
-      mgAssert (Hfp: (foldr patt_imp r (l ++ [p]))).
+      mgAssert ((foldr patt_imp r (l ++ [p]))).
       { mgApply' 1 10. mgExactn 3; auto 10. }
-      clear Hfp.
-      mgAssert (Hfq: (foldr patt_imp r (l ++ [q]))).
+      mgAssert ((foldr patt_imp r (l ++ [q]))).
       { mgApply' 2 10. mgExactn 3; auto 10. }
-      clear Hfq.
-      mgAssert (Hfqifpoq: (foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
+      mgAssert ((foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
       { mgApply' 0 10. mgExactn 4; auto 10. }
-      clear Hfqifpoq.
       mgApply' 6 14.
       mgExactn 5; auto 15.
       Unshelve. all: auto 15.
@@ -2218,11 +2211,21 @@ Section FOL_helpers.
   Proof.
     intros WFa WFb WFp WFq WFc H H0.
     toMyGoal. repeat mgIntro.
-
-    mgDestruct 1; auto 10.
+    mgDestruct 1; auto 10. (* TODO rename mgDestruct to mgDestructOr *)
   Abort.
   
-    
+  Example exd2 Γ a b c p:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    well_formed p ->
+    Γ ⊢ a ---> (b ---> p) ->
+    Γ ⊢ (a and b ---> c ---> p).
+  Proof.
+    intros WFa WFb WFc WFp H.
+    toMyGoal. repeat mgIntro.
+  Abort.
+  
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
@@ -3059,13 +3062,12 @@ Section FOL_helpers.
     toMyGoal. mgIntro. mgIntro.
     mgAdd (A_or_notA Γ A wfA); auto 10.
     mgDestruct 0; auto 10.
-    - mgAssert (Htmp: (B or R)); auto 10.
+    - mgAssert ((B or R)); auto 10.
       { mgApply' 1 10. unfold patt_and at 2. mgIntro.
         mgDestruct 3; auto 10.
         + mgApply' 3 10. mgExactn 2; auto 10.
         + mgApply' 3 10. mgExactn 0; auto 10.
       }
-      clear Htmp.
       mgDestruct 3; auto 10.
       + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
       + mgRight; auto. mgExactn 3; auto.
