@@ -1760,7 +1760,6 @@ Section FOL_helpers.
   
 End FOL_helpers.
 
-(* TODO do not use the parameter [n]; generate a fresh one instead. *)
 Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -1769,7 +1768,6 @@ Tactic Notation "mgAssert" "(" constr(t) ")" :=
     [ | (eapply (myGoal_assert Ctx l g t _ _ _ H); rewrite [_ ++ _]/=; clear H)]
   end.
 
-(* TODO do not use the parameter [n]; generate a fresh one instead. *)
 Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -1802,7 +1800,6 @@ Abort.
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
   
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
@@ -1973,7 +1970,93 @@ Section FOL_helpers.
     mgAdd H; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
   Defined.
-    
+
+
+  Lemma prf_clear_hyp Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2)).
+  Proof.
+    intros wfl1 wfl2 wfg wfh.
+    induction l1; simpl.
+    - apply P1; auto.
+    - unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+      specialize (IHl1 wfl1).
+
+      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2)).
+      {
+        toMyGoal. mgAdd IHl1; auto 10.
+        mgIntro. mgExactn 0; auto 10.
+      }
+      apply prf_impl_distr_meta; auto.
+  Defined.
+
+  Lemma prf_clear_hyp_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)).
+  Proof.
+    intros. eapply Modus_ponens.
+    4: { apply prf_clear_hyp; auto. }
+    all: auto 10.
+  Defined.  
+
+  Lemma myGoal_clear_hyp Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Σ Γ (l1 ++ l2) g ->
+    mkMyGoal Σ Γ (l1 ++ h::l2) g.
+  Proof.
+    intros wfl1 wfl2 wfg wfh H1.
+    apply prf_clear_hyp_meta; auto 10.
+  Defined.
+
+  
+End FOL_helpers.
+
+Search app cons.
+
+Tactic Notation "mgClear" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let l1 := fresh "l1" in
+    let l2 := fresh "l2" in
+    let Heql1 := fresh "Heql1" in
+    let Heql2 := fresh "Heql2" in
+    rewrite -[l](take_drop n);
+    remember (take n l) as l1 eqn:Heql1;
+    remember (drop n l) as l2 eqn:Heql2;
+    simpl in Heql1; simpl in Heql2;
+    let a := fresh "a" in
+    destruct l2 as [|a l2];[congruence|];
+    inversion Heql2; subst l1 a l2; clear Heql2;
+    apply myGoal_clear_hyp;[idtac|idtac|idtac|idtac|rewrite {1}[_ ++ _]/=]
+  end.
+
+Local Example ex_mgClear {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ a ---> (b ---> (c ---> b)).
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal. repeat mgIntro.
+  mgClear 2; auto.
+  mgClear 0; auto.
+  mgExactn 0; auto.
+Qed.
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
+  
   Lemma not_concl Γ p q:
     well_formed p ->
     well_formed q ->
@@ -2866,7 +2949,7 @@ Section FOL_helpers.
         }
         2: { lia. }
         apply Ex_quan.
-  Qed.
+  Defined.
   
 
 
@@ -3014,6 +3097,39 @@ Tactic Notation "mgApplyMeta" uconstr(t) :=
 Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
 Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
 
+
+Check lookup.
+Tactic Notation "mgDestructAnd" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let found := fresh "found" in
+    let Heqfound := fresh "Heqfound" in
+    remember (l !! n) as found eqn:Heqfound;
+    simpl in Heqfound;
+    match type of Heqfound with
+    | found = Some (?x and ?y) =>
+      unshelve(
+          mgAssert (y) using first (S n);
+          [mgApplyMeta (pf_conj_elim_r Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          mgAssert (x) using first (S n);
+          [mgApplyMeta (pf_conj_elim_l Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          mgClear n
+        )      
+    | _ => idtac "Not a conjunction"
+    end; clear found Heqfound
+  end.
+
+Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
+  well_formed a ->
+  well_formed b ->
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ p ---> a and b ---> q ---> a.
+Proof.
+  intros. toMyGoal. do 3 mgIntro.
+  mgDestructAnd 1; auto 10.
+  mgExactn 1; auto.
+Qed.
 
 Section FOL_helpers.
   
