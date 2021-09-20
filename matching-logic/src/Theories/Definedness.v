@@ -1144,69 +1144,71 @@ Section ProofSystemTheorems.
     
     
 
-    
-    Fixpoint uses_existential_generalization Γ ϕ (pf : Γ ⊢ ϕ) :=
-      match pf with
-      | hypothesis _ _ _ _ => false
-      | P1 _ _ _ _ _ => false
-      | P2 _ _ _ _ _ _ _ => false
-      | P3 _ _ _ => false
-      | Modus_ponens _ _ _ _ _ m0 m1
-        => uses_existential_generalization m0
-           || uses_existential_generalization m1
-      | Ex_quan _ _ _ => false
-      | Ex_gen _ _ _ _ _ _ _ _ => true
-      | Prop_bott_left _ _ _ => false
-      | Prop_bott_right _ _ _ => false
-      | Prop_disj_left _ _ _ _ _ _ _ => false
-      | Prop_disj_right _ _ _ _ _ _ _ => false
-      | Prop_ex_left _ _ _ _ _ => false
-      | Prop_ex_right _ _ _ _ _ => false
-      | Framing_left _ _ _ _ m0 => uses_existential_generalization m0
-      | Framing_right _ _ _ _ m0 => uses_existential_generalization m0
-      | Svar_subst _ _ _ _ _ _ m0 => uses_existential_generalization m0
-      | Pre_fixp _ _ => false
-      | Knaster_tarski _ phi psi m0 => uses_existential_generalization m0
-      | Existence _ => false
-      | Singleton_ctx _ _ _ _ _ => false
-      end.
+  
+  Fixpoint uses_existential_generalization Γ ϕ (pf : Γ ⊢ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_existential_generalization m0
+         || uses_existential_generalization m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ _ _ => true
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_existential_generalization m0
+    | Framing_right _ _ _ _ m0 => uses_existential_generalization m0
+    | Svar_subst _ _ _ _ _ _ m0 => uses_existential_generalization m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_existential_generalization m0
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
 
-    Fixpoint uses_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) :=
-      match pf with
-      | hypothesis _ _ _ _ => false
-      | P1 _ _ _ _ _ => false
-      | P2 _ _ _ _ _ _ _ => false
-      | P3 _ _ _ => false
-      | Modus_ponens _ _ _ _ _ m0 m1
-        => uses_svar_subst m0
-           || uses_svar_subst m1
-      | Ex_quan _ _ _ => false
-      | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst pf'
-      | Prop_bott_left _ _ _ => false
-      | Prop_bott_right _ _ _ => false
-      | Prop_disj_left _ _ _ _ _ _ _ => false
-      | Prop_disj_right _ _ _ _ _ _ _ => false
-      | Prop_ex_left _ _ _ _ _ => false
-      | Prop_ex_right _ _ _ _ _ => false
-      | Framing_left _ _ _ _ m0 => uses_svar_subst m0
-      | Framing_right _ _ _ _ m0 => uses_svar_subst m0
-      | Svar_subst _ _ _ _ _ _ m0 => true
-      | Pre_fixp _ _ => false
-      | Knaster_tarski _ phi psi m0 => uses_svar_subst m0
-      | Existence _ => false
-      | Singleton_ctx _ _ _ _ _ => false
-      end.
+  Check Svar_subst.
+  Fixpoint uses_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) (S : SVarSet) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_svar_subst m0 S
+         || uses_svar_subst m1 S
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst pf' S
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_svar_subst m0 S
+    | Framing_right _ _ _ _ m0 => uses_svar_subst m0 S
+    | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst m0 S
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_svar_subst m0 S
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
 
 
-
+Check free_svars.
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
       well_formed ψ ->
       theory ⊆ Γ ->
       uses_existential_generalization pf = false ->
+      uses_svar_subst pf (free_svars ψ) = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
     Proof.
-      intros wfϕ wfψ HΓ HnoExGen.
+      intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst.
       induction pf.
       - (* hypothesis *)
         (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
@@ -1232,8 +1234,10 @@ Section ProofSystemTheorems.
         }
         simpl in HnoExGen. apply orb_false_iff in HnoExGen.
         destruct HnoExGen as [HnoExGen1 HnoExGen2].
-        specialize (IHpf1 ltac:(assumption) ltac:(assumption)).
-        specialize (IHpf2 ltac:(assumption) ltac:(assumption)).
+        simpl in HnoSvarSubst. apply orb_false_iff in HnoSvarSubst.
+        destruct HnoSvarSubst as [HnoSvarSubst1 HnoSvarSubst2].
+        specialize (IHpf1 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        specialize (IHpf2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         
         toMyGoal. mgIntro.
         mgAdd IHpf2; auto.
@@ -1282,8 +1286,8 @@ Section ProofSystemTheorems.
         assert (well_formed (phi1 ---> phi2)).
         { unfold well_formed,well_formed_closed in *. simpl in *.
           destruct_and!. split_and!; auto. }
-        simpl in HnoExGen.
-        specialize (IHpf ltac:(assumption) ltac:(assumption)).
+        simpl in HnoExGen. simpl in HnoSvarSubst.
+        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
           mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto.
@@ -1368,8 +1372,8 @@ Section ProofSystemTheorems.
         assert (well_formed (phi1 ---> phi2)).
         { unfold well_formed,well_formed_closed in *. simpl in *.
           destruct_and!. split_and!; auto. }
-        simpl in HnoExGen.
-        specialize (IHpf ltac:(assumption) ltac:(assumption)).
+        simpl in HnoExGen. simpl in HnoSvarSubst.
+        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
           mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto.
@@ -1438,7 +1442,21 @@ Section ProofSystemTheorems.
             mgApply' 0 15.
             mgApply' 3 15.
             mgExactn 5; auto 15.
-       
+      - (* Set variable substitution *)
+        simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
+        case_match.
+        { congruence. }
+        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
+          with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
+        2: { unfold free_svar_subst. simpl.
+             rewrite [free_svar_subst' 0 ψ psi X]free_svar_subst_fresh.
+             { assumption. }
+             reflexivity.
+        }
+        apply Svar_subst; auto.
+      - 
+        
     Abort.
     
     Theorem deduction_theorem :

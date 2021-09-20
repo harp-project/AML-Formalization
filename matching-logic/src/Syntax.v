@@ -6150,3 +6150,30 @@ Proof.
   - rewrite IHAC. clear. set_solver.
   - rewrite IHAC. clear. set_solver.
 Qed.
+
+Lemma free_svar_subst_fresh {Σ : Signature} more phi psi X:
+  svar_is_fresh_in X phi ->
+  free_svar_subst' more phi psi X = phi.
+Proof.
+  intros Hfresh.
+  unfold svar_is_fresh_in in Hfresh.
+  move: more.
+  induction phi; intros more; simpl in *; auto.
+  - case_match.
+    + subst. set_solver.
+    + reflexivity.
+  - specialize (IHphi1 ltac:(set_solver)).
+    specialize (IHphi2 ltac:(set_solver)).
+    rewrite IHphi1. rewrite IHphi2.
+    reflexivity.
+  - specialize (IHphi1 ltac:(set_solver)).
+    specialize (IHphi2 ltac:(set_solver)).
+    rewrite IHphi1. rewrite IHphi2.
+    reflexivity.
+  - specialize (IHphi ltac:(assumption)).
+    rewrite IHphi.
+    reflexivity.
+  - specialize (IHphi ltac:(assumption)).
+    rewrite IHphi.
+    reflexivity.
+Qed.
