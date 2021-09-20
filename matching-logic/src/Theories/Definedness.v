@@ -1266,6 +1266,64 @@ Section ProofSystemTheorems.
       - (* Propagation of 'exists', right *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Prop_ex_right; assumption.
+      - (* Framing left *)
+        assert (well_formed (phi1)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+
+        assert (well_formed (phi2)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+
+        assert (well_formed (psi)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+        
+        assert (well_formed (phi1 ---> phi2)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+        simpl in HnoExGen.
+        specialize (IHpf ltac:(assumption) ltac:(assumption)).
+        assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+        { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
+          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto.
+          mgDestruct 0; auto.
+          - mgRight; auto. mgExactn 0.
+          - mgLeft; auto.
+            mgAssert((phi1 ---> phi2)).
+            { mgApply' 1 10. mgExactn 0. }
+            mgApply' 3 10. mgExactn 2.
+        }
+
+        assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+        {
+          replace (⌈ ! ψ ⌉ $ psi)
+            with (subst_ctx (@ctx_app_l _ AC_patt_defined psi ltac:(assumption)) (! ψ))
+            by reflexivity.
+          apply in_context_impl_defined; auto.
+        }
+
+        assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
+        { apply Framing_left. exact S2. }
+
+        assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+        {
+          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          feed specialize Htmp.
+          { auto. }
+          { auto. }
+          simpl in Htmp.
+          apply pf_iff_proj1 in Htmp; auto.
+          eapply syllogism_intro.
+          5: apply Htmp.
+          all: auto.
+        }
+        
+        
+        
+        
+        }
+        
     Abort.
     
     Theorem deduction_theorem :
