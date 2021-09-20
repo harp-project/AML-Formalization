@@ -1120,7 +1120,27 @@ Section ProofSystemTheorems.
     Unshelve. all: auto.
     
   Qed.
-    
+
+  Lemma phi_impl_defined_phi Γ ϕ:
+    theory ⊆ Γ ->
+    well_formed ϕ ->
+    Γ ⊢ ϕ ---> ⌈ ϕ ⌉.
+  Proof.
+    intros HΓ wfϕ.
+    replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
+    apply in_context_impl_defined; assumption.
+  Qed.
+
+  Lemma total_phi_impl_phi Γ ϕ:
+    theory ⊆ Γ ->
+    well_formed ϕ ->
+    Γ ⊢ ⌊ ϕ ⌋ ---> ϕ.
+  Proof.
+    intros HΓ wfϕ.
+    unfold patt_total.
+    pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(auto)).
+    apply A_impl_not_not_B_meta; auto.
+  Qed.
     
     
 
@@ -1180,9 +1200,72 @@ Section ProofSystemTheorems.
 
 
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
+      well_formed ϕ ->
+      well_formed ψ ->
+      theory ⊆ Γ ->
+      uses_existential_generalization pf = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
     Proof.
-
+      intros wfϕ wfψ HΓ HnoExGen.
+      induction pf.
+      - (* hypothesis *)
+        (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
+           when building Set, which is prohibited. *)
+        destruct (decide (axiom0 = ψ)).
+        + subst. apply total_phi_impl_phi; auto.
+        + assert (axiom0 ∈ Γ).
+          { set_solver. }
+          toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+          apply (hypothesis Γ axiom0 i H).
+      - (* P1 *)
+        toMyGoal. do 3 mgIntro. mgExactn 1.
+      - (* P2 *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply P2; auto.
+      - (* P3 *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply P3; auto.
+      - (* Modus Ponens *)
+        assert (well_formed phi2).
+        { unfold well_formed, well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto.
+        }
+        simpl in HnoExGen. apply orb_false_iff in HnoExGen.
+        destruct HnoExGen as [HnoExGen1 HnoExGen2].
+        specialize (IHpf1 ltac:(assumption) ltac:(assumption)).
+        specialize (IHpf2 ltac:(assumption) ltac:(assumption)).
+        
+        toMyGoal. mgIntro.
+        mgAdd IHpf2; auto.
+        mgAssert ((phi1 ---> phi2)).
+        { mgApply' 0 10. mgExactn 1. }
+        mgApply' 2 10.
+        mgAdd IHpf1; auto.
+        mgApply' 0 10.
+        mgExactn 2.
+      - (* Existential Quantifier *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Ex_quan.
+      - (* Existential Generalization *)
+        simpl in HnoExGen. congruence.
+      - (* Propagation of ⊥, left *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_bott_left; assumption.
+      - (* Propagation of ⊥, right *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_bott_right; assumption.
+      - (* Propagation of 'or', left *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_disj_left; assumption.
+      - (* Propagation of 'or', right *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_disj_right; assumption.
+      - (* Propagation of 'exists', left *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_ex_left; assumption.
+      - (* Propagation of 'exists', right *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Prop_ex_right; assumption.
     Abort.
     
     Theorem deduction_theorem :
