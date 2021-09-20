@@ -1319,11 +1319,126 @@ Section ProofSystemTheorems.
           all: auto.
         }
         
+        assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+        {
+          toMyGoal. mgIntro. mgAdd S3; auto 10.
+          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          - mgLeft; auto 10. mgExactn 0; auto 10.
+          - mgRight; auto 10. mgApply' 1 10. mgApply' 2 10. mgExactn 0; auto 10.
+        }
+
+        assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+        {
+          toMyGoal. mgAdd S5; auto 10. mgAdd S6; auto 10. mgIntro.
+          mgAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+          { mgApply' 1 10. mgExactn 2; auto 10. }
+          mgDestruct 3; auto 10.
+          - mgLeft; auto 10. mgExactn 3; auto 10.
+          - mgApply' 0 10. mgRight; auto 10. mgExactn 3; auto 15.
+        }
+
+        toMyGoal. do 2 mgIntro. mgAdd S7; auto 10.
+        mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
+        { mgApply' 0 10. mgExactn 2; auto 10. }
+        mgDestruct 3; auto 10.
+        + mgExactn 3; auto 10.
+        + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
+          { mgApply' 0 10. mgExactn 2; auto 10. }
+          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          * mgExactn 0; auto 10.
+          * mgAdd (bot_elim Γ (phi2 $ psi) ltac:(auto)); auto 10.
+            mgApply' 0 15.
+            mgApply' 3 15.
+            mgExactn 5; auto 15.
+      - (* Framing right *)
+        assert (well_formed (phi1)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+
+        assert (well_formed (phi2)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+
+        assert (well_formed (psi)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
         
-        
-        
+        assert (well_formed (phi1 ---> phi2)).
+        { unfold well_formed,well_formed_closed in *. simpl in *.
+          destruct_and!. split_and!; auto. }
+        simpl in HnoExGen.
+        specialize (IHpf ltac:(assumption) ltac:(assumption)).
+        assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+        { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
+          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto.
+          mgDestruct 0; auto.
+          - mgRight; auto. mgExactn 0.
+          - mgLeft; auto.
+            mgAssert((phi1 ---> phi2)).
+            { mgApply' 1 10. mgExactn 0. }
+            mgApply' 3 10. mgExactn 2.
+        }
+
+        assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+        {
+          replace (psi $ ⌈ ! ψ ⌉)
+            with (subst_ctx (@ctx_app_r _ psi AC_patt_defined ltac:(assumption)) (! ψ))
+            by reflexivity.
+          apply in_context_impl_defined; auto.
+        }
+
+        assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
+        { apply Framing_right. exact S2. }
+
+        assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+        {
+          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          feed specialize Htmp.
+          { auto. }
+          { auto. }
+          simpl in Htmp.
+          apply pf_iff_proj1 in Htmp; auto.
+          eapply syllogism_intro.
+          5: apply Htmp.
+          all: auto.
         }
         
+        assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+        {
+          toMyGoal. mgIntro. mgAdd S3; auto 10.
+          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          - mgLeft; auto 10. mgExactn 0; auto 10.
+          - mgRight; auto 10. mgApply' 1 10. mgApply' 2 10. mgExactn 0; auto 10.
+        }
+
+        assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+        {
+          toMyGoal. mgAdd S5; auto 10. mgAdd S6; auto 10. mgIntro.
+          mgAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+          { mgApply' 1 10. mgExactn 2; auto 10. }
+          mgDestruct 3; auto 10.
+          - mgLeft; auto 10. mgExactn 3; auto 10.
+          - mgApply' 0 10. mgRight; auto 10. mgExactn 3; auto 15.
+        }
+
+        toMyGoal. do 2 mgIntro. mgAdd S7; auto 10.
+        mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
+        { mgApply' 0 10. mgExactn 2; auto 10. }
+        mgDestruct 3; auto 10.
+        + mgExactn 3; auto 10.
+        + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
+          { mgApply' 0 10. mgExactn 2; auto 10. }
+          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          * mgExactn 0; auto 10.
+          * mgAdd (bot_elim Γ (psi $ phi2) ltac:(auto)); auto 10.
+            mgApply' 0 15.
+            mgApply' 3 15.
+            mgExactn 5; auto 15.
+       
     Abort.
     
     Theorem deduction_theorem :
