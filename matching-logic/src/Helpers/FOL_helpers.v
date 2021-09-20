@@ -1376,13 +1376,21 @@ Section FOL_helpers.
 End FOL_helpers.
 
 #[global]
-Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
+ Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
+
 #[global]
-Ltac fromMyGoal := unfold of_MyGoal; simpl.
+ Ltac fromMyGoal := unfold of_MyGoal; simpl.
+
+Ltac simplLocalContext :=
+  match goal with
+    | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) => rewrite {1}[l]/app
+  end.
+
 #[global]
-Ltac mgIntro := apply MyGoal_intro; simpl.
+ Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
+
 #[global]
-Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
+ Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
 
 
 Section FOL_helpers.
@@ -1573,7 +1581,7 @@ Section FOL_helpers.
   Defined.
 
 End FOL_helpers.
-  
+
 Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -1596,7 +1604,9 @@ Section FOL_helpers.
     intros wfp wfq wfr wfs.
     unfold patt_or.
 
-    toMyGoal. mgIntro. mgIntro. mgIntro. mgIntro.
+    toMyGoal. mgIntro.
+    
+    mgIntro. mgIntro. mgIntro.
     mgApply' 1 7.
     mgApply' 2 7.
     mgIntro.
@@ -1686,21 +1696,110 @@ Section FOL_helpers.
     eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
   Defined.
 
+  Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2)))).
+  Proof.
+    intros wfl1 wfl2 wfg wfh.
+    induction l1; simpl.
+    - apply modus_ponens; auto.
+    - pose proof (wfal1 := wfl1).
+      unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+      specialize (IHl1 wfl1).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)).
+      { apply prf_add_assumption; auto 10. }
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))).
+      { apply prf_impl_distr_meta; auto 10. }
+      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
+                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2))))).
+      { auto 10 using P2. }
+
+      eapply prf_weaken_conclusion_meta_meta.
+      4: apply H3. all: auto 10.
+  Defined.
+  
+  Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l1) ->
+    Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))).
+  Proof.
+    intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 7.
+  Defined.
+  
+  Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp h l1) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)).
+  Proof.
+    intros WFl1 WFl2 WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized_meta.
+    3: apply H0. all: auto 7.
+  Defined.
+
+  Lemma myGoal_assert_generalized Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Σ Γ l1 h ->
+    mkMyGoal Σ Γ (l1 ++ [h] ++ l2) g ->
+    mkMyGoal Σ Γ (l1 ++ l2) g.
+  Proof.
+    intros wfl1 wfl2 wfg wfh H1 H2.
+    eapply prf_add_lemma_under_implication_generalized_meta_meta. 5: apply H1. all: auto.
+  Defined.
+  
 End FOL_helpers.
 
-(* TODO do not use the parameter [n]; generate a fresh one instead. *)
-Tactic Notation "mgAssert" "(" ident(n) ":" constr(t) ")" :=
+Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    (*assert (n : Ctx ⊢ (foldr patt_imp t l));*)
-    assert (n : mkMyGoal Sgm Ctx l t);
-    [ | (eapply (myGoal_assert Ctx l g t _ _ _ n); rewrite [_ ++ _]/=)]
+    let H := fresh "H" in
+    assert (H : mkMyGoal Sgm Ctx l t);
+    [ | (eapply (myGoal_assert Ctx l g t _ _ _ H); rewrite [_ ++ _]/=; clear H)]
   end.
+
+Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let l1 := fresh "l1" in
+    let l2 := fresh "l2" in
+    let Heql1 := fresh "Heql1" in
+    let Heql2 := fresh "Heql2" in
+    rewrite -[l](take_drop n);
+    remember (take n l) as l1 eqn:Heql1;
+    remember (drop n l) as l2 eqn:Heql2;
+    simpl in Heql1; simpl in Heql2;
+    let H := fresh "H" in
+    assert (H : mkMyGoal Sgm Ctx l1 t) ; subst l1 l2;
+    [ | (eapply (myGoal_assert_generalized Ctx (take n l) (drop n l) g t _ _ _ _ H);
+         rewrite [_ ++ _]/=; clear H)] 
+  end.
+
+Local Example ex_assert_using {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ p and q ---> ! ! q.
+Proof.
+  intros wfp wfq.
+  toMyGoal.
+  mgIntro.
+  mgAssert (p) using first 0.
+Abort.
+
 
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
   
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
@@ -1871,7 +1970,93 @@ Section FOL_helpers.
     mgAdd H; [auto|auto|auto|].
     mgApply' 0 5. mgExactn 1.
   Defined.
-    
+
+
+  Lemma prf_clear_hyp Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2)).
+  Proof.
+    intros wfl1 wfl2 wfg wfh.
+    induction l1; simpl.
+    - apply P1; auto.
+    - unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+      specialize (IHl1 wfl1).
+
+      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2)).
+      {
+        toMyGoal. mgAdd IHl1; auto 10.
+        mgIntro. mgExactn 0; auto 10.
+      }
+      apply prf_impl_distr_meta; auto.
+  Defined.
+
+  Lemma prf_clear_hyp_meta Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)).
+  Proof.
+    intros. eapply Modus_ponens.
+    4: { apply prf_clear_hyp; auto. }
+    all: auto 10.
+  Defined.  
+
+  Lemma myGoal_clear_hyp Γ l1 l2 g h:
+    wf l1 ->
+    wf l2 ->
+    well_formed g ->
+    well_formed h ->
+    mkMyGoal Σ Γ (l1 ++ l2) g ->
+    mkMyGoal Σ Γ (l1 ++ h::l2) g.
+  Proof.
+    intros wfl1 wfl2 wfg wfh H1.
+    apply prf_clear_hyp_meta; auto 10.
+  Defined.
+
+  
+End FOL_helpers.
+
+Search app cons.
+
+Tactic Notation "mgClear" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let l1 := fresh "l1" in
+    let l2 := fresh "l2" in
+    let Heql1 := fresh "Heql1" in
+    let Heql2 := fresh "Heql2" in
+    rewrite -[l](take_drop n);
+    remember (take n l) as l1 eqn:Heql1;
+    remember (drop n l) as l2 eqn:Heql2;
+    simpl in Heql1; simpl in Heql2;
+    let a := fresh "a" in
+    destruct l2 as [|a l2];[congruence|];
+    inversion Heql2; subst l1 a l2; clear Heql2;
+    apply myGoal_clear_hyp;[idtac|idtac|idtac|idtac|rewrite {1}[_ ++ _]/=]
+  end.
+
+Local Example ex_mgClear {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ a ---> (b ---> (c ---> b)).
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal. repeat mgIntro.
+  mgClear 2; auto.
+  mgClear 0; auto.
+  mgExactn 0; auto.
+Qed.
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
+  
   Lemma not_concl Γ p q:
     well_formed p ->
     well_formed q ->
@@ -1974,18 +2159,16 @@ Section FOL_helpers.
     toMyGoal. repeat mgIntro.
     unfold patt_and. mgApply' 0 10.
     mgIntro. unfold patt_or at 2.
-    mgAssert (nnp: (! ! p)).
+    mgAssert ((! ! p)).
     {
       mgAdd (not_not_intro Γ p wfp); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    clear nnp.
-    mgAssert (nq: (! q)).
+    mgAssert ((! q)).
     {
       mgApply' 3 10. mgExactn 4; auto 10.
     }
-    clear nq.
     mgApply' 5 10. mgExactn 2; auto 10.
     Unshelve. all: auto 10.
   Defined.
@@ -1999,23 +2182,21 @@ Section FOL_helpers.
   Proof.
     intros wfp wfq wfr.
     toMyGoal. repeat mgIntro.
-    mgAssert (Hp: p).
+    mgAssert (p).
     {
       mgAdd (pf_conj_elim_l Γ p q wfp wfq); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    mgAssert (Hq: q).
+    mgAssert (q).
     {
       mgAdd (pf_conj_elim_r Γ p q wfp wfq); auto 10.
       mgApply' 0 10.
       mgExactn 2; auto 10.
     }
-    clear Hp Hq.
     (* This pattern is basically an "apply ... in" *)
-    mgAssert (Hqir: (q ---> r)).
+    mgAssert ((q ---> r)).
     { mgApply' 0 10. mgExactn 2; auto 10. }
-    clear Hqir.
     mgApply' 4 10. mgExactn 3; auto 10.
     Unshelve.
     all: auto 10.
@@ -2043,15 +2224,12 @@ Section FOL_helpers.
       simpl in *.
       toMyGoal. repeat mgIntro.
       mgAdd IHl; auto 10.
-      mgAssert (Hfp: (foldr patt_imp r (l ++ [p]))).
+      mgAssert ((foldr patt_imp r (l ++ [p]))).
       { mgApply' 1 10. mgExactn 3; auto 10. }
-      clear Hfp.
-      mgAssert (Hfq: (foldr patt_imp r (l ++ [q]))).
+      mgAssert ((foldr patt_imp r (l ++ [q]))).
       { mgApply' 2 10. mgExactn 3; auto 10. }
-      clear Hfq.
-      mgAssert (Hfqifpoq: (foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
+      mgAssert ((foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
       { mgApply' 0 10. mgExactn 4; auto 10. }
-      clear Hfqifpoq.
       mgApply' 6 14.
       mgExactn 5; auto 15.
       Unshelve. all: auto 15.
@@ -2208,11 +2386,21 @@ Section FOL_helpers.
   Proof.
     intros WFa WFb WFp WFq WFc H H0.
     toMyGoal. repeat mgIntro.
-
-    mgDestruct 1; auto 10.
+    mgDestruct 1; auto 10. (* TODO rename mgDestruct to mgDestructOr *)
   Abort.
   
-    
+  Example exd2 Γ a b c p:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    well_formed p ->
+    Γ ⊢ a ---> (b ---> p) ->
+    Γ ⊢ (a and b ---> c ---> p).
+  Proof.
+    intros WFa WFb WFc WFp H.
+    toMyGoal. repeat mgIntro.
+  Abort.
+  
   
   Lemma conclusion_anyway Γ A B:
     well_formed A ->
@@ -2761,7 +2949,7 @@ Section FOL_helpers.
         }
         2: { lia. }
         apply Ex_quan.
-  Qed.
+  Defined.
   
 
 
@@ -2910,6 +3098,39 @@ Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
 Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
 
 
+Check lookup.
+Tactic Notation "mgDestructAnd" constr(n) :=
+  match goal with
+  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+    let found := fresh "found" in
+    let Heqfound := fresh "Heqfound" in
+    remember (l !! n) as found eqn:Heqfound;
+    simpl in Heqfound;
+    match type of Heqfound with
+    | found = Some (?x and ?y) =>
+      unshelve(
+          mgAssert (y) using first (S n);
+          [mgApplyMeta (pf_conj_elim_r Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          mgAssert (x) using first (S n);
+          [mgApplyMeta (pf_conj_elim_l Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          mgClear n
+        )      
+    | _ => idtac "Not a conjunction"
+    end; clear found Heqfound
+  end.
+
+Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
+  well_formed a ->
+  well_formed b ->
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ p ---> a and b ---> q ---> a.
+Proof.
+  intros. toMyGoal. do 3 mgIntro.
+  mgDestructAnd 1; auto 10.
+  mgExactn 1; auto.
+Qed.
+
 Section FOL_helpers.
   
   Context {Σ : Signature}.
@@ -3049,13 +3270,12 @@ Section FOL_helpers.
     toMyGoal. mgIntro. mgIntro.
     mgAdd (A_or_notA Γ A wfA); auto 10.
     mgDestruct 0; auto 10.
-    - mgAssert (Htmp: (B or R)); auto 10.
+    - mgAssert ((B or R)); auto 10.
       { mgApply' 1 10. unfold patt_and at 2. mgIntro.
         mgDestruct 3; auto 10.
         + mgApply' 3 10. mgExactn 2; auto 10.
         + mgApply' 3 10. mgExactn 0; auto 10.
       }
-      clear Htmp.
       mgDestruct 3; auto 10.
       + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
       + mgRight; auto. mgExactn 3; auto.
@@ -3424,8 +3644,36 @@ Section FOL_helpers.
     toMyGoal. mgIntro. mgAdd Hϕ; auto.
     mgApply' 1 10. mgExactn 0; auto.
   Qed.
-  
-  
+
+  Hint Resolve evar_quantify_well_formed.
+
+  Lemma forall_variable_substitution Γ ϕ x:
+    well_formed ϕ ->
+    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ.
+  Proof.
+    intros wfϕ.
+   
+    unfold patt_forall.
+    replace (! evar_quantify x 0 ϕ)
+      with (evar_quantify x 0 (! ϕ))
+      by reflexivity.
+    apply double_neg_elim_meta; auto.
+    toMyGoal. mgIntro. mgIntro. mgApply' 0 5.
+    1,2: replace (evar_quantify x 0 ϕ ---> ⊥) with (evar_quantify x 0 (! ϕ)) by reflexivity.
+    1,2: auto 10.
+    mgIntro. mgApply' 2 10.
+    pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
+    rewrite /instantiate in Htmp.
+    rewrite bevar_subst_evar_quantify_free_evar in Htmp.
+    {
+      apply wfc_ex_implies_not_bevar_occur.
+      unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
+      split_and; auto.
+    }
+    mgAdd Htmp; auto 10. clear Htmp.
+    mgApply' 0 10. mgIntro. mgApply' 2 10.
+    mgExactn 4. auto 10.
+  Qed.
   
 End FOL_helpers.
 
