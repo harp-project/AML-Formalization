@@ -1062,12 +1062,64 @@ Section ProofSystemTheorems.
       5: { apply Htmp. }
       all: auto.
     }
-    
 
-    (* TODO: locate where they are put on shelf, and fix that. *)
+    assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ)))).
+    {
+      apply Framing; auto.
+    }
+
+    assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉)).
+    {
+      Check prf_prop_ex_iff.
+      pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and ϕ) x').
+      feed specialize Htmp.
+      { unfold evar_is_fresh_in in *.
+        rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
+      }
+      { auto. }
+      unfold exists_quantify in Htmp.
+      rewrite evar_quantify_subst_ctx in Htmp.
+      { assumption. }
+
+      assert (well_formed (ex , subst_ctx AC (b0 and ϕ))).
+      {
+        unfold well_formed,well_formed_closed in *. destruct_and!.
+        split_and!; simpl; auto.
+        3: { apply wcex_sctx.
+             simpl. split_and!; auto.
+             eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+        }
+        2: {
+          apply wcmu_sctx.
+          simpl. split_and!; auto.
+        }
+        1: {
+          apply wp_sctx. simpl. split_and!; auto.
+        }
+      }
+      
+      
+      erewrite evar_quantify_evar_open with (m := ?[mym]) in Htmp.
+      4: { simpl. unfold well_formed,well_formed_closed in *. destruct_and!.
+           split_and!. 4: { eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. }
+           only [mym]: refine (S ?[mym']).
+           case_match. reflexivity.  lia.
+           all: auto.
+      }
+      3: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+      2: { instantiate (mym' := 0).  lia. }
+      apply pf_iff_proj1 in Htmp; auto.
+      eapply syllogism_intro.
+      5: apply S10.
+      all: auto.
+    }
+
+    eapply syllogism_intro.
+    5: apply S14.
+    all: auto.
     Unshelve. all: auto.
     
-  Abort.
+  Qed.
     
     
     

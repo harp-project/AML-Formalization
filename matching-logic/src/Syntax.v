@@ -6118,8 +6118,6 @@ Proof.
     reflexivity.
 Qed.
 
-
-Check bevar_occur.
 Lemma bevar_subst_evar_quantify_free_evar {Σ : Signature} x dbi ϕ:
   bevar_occur ϕ dbi = false ->
   bevar_subst (evar_quantify x dbi ϕ) (patt_free_evar x) dbi  = ϕ.
@@ -6142,4 +6140,13 @@ Proof.
     reflexivity.
   - rewrite IHϕ;[assumption|reflexivity].
   - rewrite IHϕ;[assumption|reflexivity].
+Qed.
+
+Lemma free_evars_subst_ctx {Σ : Signature} AC ϕ:
+  free_evars (subst_ctx AC ϕ) = AC_free_evars AC ∪ free_evars ϕ.
+Proof.
+  induction AC; simpl.
+  - set_solver.
+  - rewrite IHAC. clear. set_solver.
+  - rewrite IHAC. clear. set_solver.
 Qed.
