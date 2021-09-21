@@ -6648,3 +6648,70 @@ Proof.
   destruct Htmp as [Htmp1 Htmp2].
   auto.
 Qed.
+
+#[export]
+ Hint Resolve no_positive_occurrence_svar_quantify : core.
+
+#[export]
+ Hint Resolve no_negative_occurrence_svar_quantify : core.
+
+#[export]
+ Hint Resolve wfc_impl_no_neg_occ : core.
+
+
+Lemma no_negative_occurrence_svar_quantify_2 {Σ : Signature} X dbi1 dbi2 ϕ:
+  dbi1 <> dbi2 ->
+  no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_negative_occurrence_db_b dbi1 ϕ
+with no_positive_occurrence_svar_quantify_2  {Σ : Signature} X dbi1 dbi2 ϕ:
+  dbi1 <> dbi2 ->
+  no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_positive_occurrence_db_b dbi1 ϕ.
+Proof.
+  - move: dbi1 dbi2.
+    induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
+    + case_match; reflexivity.
+    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+    + unfold no_negative_occurrence_db_b at 1.
+      fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
+      fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+      rewrite no_positive_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
+    + cbn. rewrite IHϕ. lia. reflexivity.
+    + cbn. rewrite IHϕ. lia. reflexivity.
+  - move: dbi1 dbi2.
+    induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
+    + case_match; cbn. 2: reflexivity. case_match; congruence.
+    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+    + unfold no_positive_occurrence_db_b at 1.
+      fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
+      fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+      rewrite no_negative_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
+    + cbn. rewrite IHϕ. lia. reflexivity.
+    + cbn. rewrite IHϕ. lia. reflexivity.
+Qed.
+
+Lemma well_formed_positive_svar_quantify {Σ : Signature} X dbi ϕ:
+  well_formed_positive ϕ ->
+  well_formed_positive (svar_quantify X dbi ϕ) = true.
+Proof.
+  intros Hϕ.
+  move: dbi.
+  induction ϕ; intros dbi; simpl; auto.
+  - case_match; reflexivity.
+  - simpl in Hϕ.
+    destruct_and!.
+    specialize (IHϕ1 ltac:(assumption)).
+    specialize (IHϕ2 ltac:(assumption)).
+    rewrite IHϕ1. rewrite IHϕ2.
+    reflexivity.
+  - simpl in Hϕ.
+    destruct_and!.
+    specialize (IHϕ1 ltac:(assumption)).
+    specialize (IHϕ2 ltac:(assumption)).
+    rewrite IHϕ1. rewrite IHϕ2.
+    reflexivity.
+  - simpl in Hϕ.
+    destruct_and!.
+    specialize (IHϕ ltac:(assumption)).
+    rewrite IHϕ.
+    rewrite no_negative_occurrence_svar_quantify_2. lia.
+    split_and!; auto.
+Qed.
