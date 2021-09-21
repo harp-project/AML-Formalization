@@ -3674,6 +3674,16 @@ Section FOL_helpers.
     mgApply' 0 10. mgIntro. mgApply' 2 10.
     mgExactn 4. auto 10.
   Qed.
+
+  Print ML_proof_system.
+
+  Lemma mu_monotone Γ ϕ₁ ϕ₂:
+    well_formed ϕ₁ ->
+    well_formed ϕ₂ ->
+    Γ ⊢ ϕ₁ ---> ϕ₂ ->
+    False.
+  Proof. Abort.
+  
   
 End FOL_helpers.
 

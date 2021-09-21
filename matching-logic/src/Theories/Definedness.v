@@ -1455,8 +1455,21 @@ Check free_svars.
              reflexivity.
         }
         apply Svar_subst; auto.
-      - 
-        
+      - (* Prefixpoint *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Pre_fixp.
+      - (* Knaster-Tarski *)
+        Print ML_proof_system.
+        admit.
+      - (* Existence *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        apply Existence.
+      - (* Singleton *)
+        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
+        Print ML_proof_system.
+        apply Singleton_ctx.
+
+        Unshelve. all: auto 10.
     Abort.
     
     Theorem deduction_theorem :
