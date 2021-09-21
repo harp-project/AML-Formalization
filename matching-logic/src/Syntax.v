@@ -710,6 +710,26 @@ Section syntax.
     | patt_exists ϕ' => evar_has_negative_occurrence x ϕ'
     | patt_mu ϕ' => evar_has_negative_occurrence x ϕ'
     end.
+
+  (* for free set variables *)
+  Fixpoint svar_has_positive_occurrence (X : svar) (ϕ : Pattern) : bool :=
+    match ϕ with
+    | patt_free_svar X' => if decide (X = X') is left _ then true else false
+    | patt_free_evar _ | patt_bound_evar _ | patt_bound_svar _ | patt_sym _ | patt_bott => false
+    | patt_app ϕ₁ ϕ₂ => svar_has_positive_occurrence X ϕ₁ || svar_has_positive_occurrence X ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => svar_has_negative_occurrence X ϕ₁ || svar_has_positive_occurrence X ϕ₂
+    | patt_exists ϕ' => svar_has_positive_occurrence X ϕ'
+    | patt_mu ϕ' => svar_has_positive_occurrence X ϕ'
+    end
+  with
+  svar_has_negative_occurrence (X : svar) (ϕ : Pattern) : bool :=
+    match ϕ with
+    | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_bound_svar _ | patt_sym _ | patt_bott => false
+    | patt_app ϕ₁ ϕ₂ => svar_has_negative_occurrence X ϕ₁ || svar_has_negative_occurrence X ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => svar_has_positive_occurrence X ϕ₁ || svar_has_negative_occurrence X ϕ₂
+    | patt_exists ϕ' => svar_has_negative_occurrence X ϕ'
+    | patt_mu ϕ' => svar_has_negative_occurrence X ϕ'
+    end.
   
   Lemma Private_no_negative_positive_occurrence_P dbi ϕ :
     prod (reflect (positive_occurrence_db dbi ϕ) (no_negative_occurrence_db_b dbi ϕ))
@@ -5458,6 +5478,30 @@ If X does not occur free in phi:
       all: try eassumption. lia.
     - simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
   Qed.
+
+  Lemma bound_to_free_set_variable_subst :
+    forall φ X m n ψ more,
+      m > n ->
+      well_formed_closed_mu_aux ψ 0 ->
+      well_formed_closed_mu_aux φ m -> X ∉ free_svars φ ->
+      bsvar_subst φ ψ n = free_svar_subst' more (svar_open n X φ) ψ X.
+  Proof.
+    induction φ; intros x' m n' ψ more H WFψ H0 H1; cbn; auto.
+    - destruct (decide (x' = x)); simpl.
+      + simpl in H1. apply not_elem_of_singleton_1 in H1. congruence.
+      + reflexivity.
+    - case_match; auto. simpl. case_match; auto; simpl in H0; case_match; auto.
+      1,2: rewrite nest_mu_aux_wfc_mu; auto. contradiction. lia.
+    - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    - simpl in H1. apply not_elem_of_union in H1. destruct H1. simpl in H0.
+      apply andb_true_iff in H0. destruct H0.
+      erewrite -> IHφ1, -> IHφ2. reflexivity. all: eassumption.
+    - simpl in H0, H1. erewrite IHφ. reflexivity. all: eassumption.
+    - simpl in H0, H1. erewrite IHφ. reflexivity. instantiate (1 := S m). 
+      all: try eassumption. lia.
+  Qed.
   
   Lemma evar_open_no_negative_occurrence :
     forall φ db1 db2 x,
@@ -6411,7 +6455,7 @@ Proof.
   - rewrite IHψ1. rewrite IHψ2. reflexivity.
   - rewrite IHψ1. rewrite IHψ2. reflexivity.
   - rewrite IHψ. reflexivity.
-  - rewrite IHψ. reflexivity.  
+  - rewrite IHψ. Fail reflexivity.
 Abort. (* OOPS, does not hold. The problem is that [free_evar_subst'] does not wrap the target
           in nest_mu. *)
 
@@ -6468,6 +6512,30 @@ Proof.
   - rewrite IHϕ;[assumption|reflexivity].
 Qed.
 
+Lemma bsvar_subst_svar_quantify_free_svar {Σ : Signature} X dbi ϕ:
+  bsvar_occur ϕ dbi = false ->
+  bsvar_subst (svar_quantify X dbi ϕ) (patt_free_svar X) dbi  = ϕ.
+Proof.
+  move: dbi.
+  induction ϕ; intros dbi Hbo; simpl in *; auto.
+  - case_match; simpl;[|reflexivity].
+    case_match; simpl;[congruence|].
+    contradiction.
+  - case_match;[congruence|reflexivity].
+  - apply orb_false_iff in Hbo.
+    destruct_and!.
+    rewrite IHϕ1;[assumption|].
+    rewrite IHϕ2;[assumption|].
+    reflexivity.
+  - apply orb_false_iff in Hbo.
+    destruct_and!.
+    rewrite IHϕ1;[assumption|].
+    rewrite IHϕ2;[assumption|].
+    reflexivity.
+  - rewrite IHϕ;[assumption|reflexivity].
+  - rewrite IHϕ;[assumption|reflexivity].
+Qed.
+
 Lemma free_evars_subst_ctx {Σ : Signature} AC ϕ:
   free_evars (subst_ctx AC ϕ) = AC_free_evars AC ∪ free_evars ϕ.
 Proof.
@@ -6502,4 +6570,81 @@ Proof.
   - specialize (IHphi ltac:(assumption)).
     rewrite IHphi.
     reflexivity.
+Qed.
+
+Lemma Private_no_negative_occurrence_svar_quantify {Σ : Signature} ϕ level X:
+  (
+    no_negative_occurrence_db_b level ϕ = true ->
+    svar_has_negative_occurrence X ϕ = false ->
+    no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true
+  )
+  /\
+  (
+    no_positive_occurrence_db_b level ϕ = true ->
+    svar_has_positive_occurrence X ϕ = false ->
+    no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true
+  ).
+Proof.  
+  move: level.
+  induction ϕ; intros level; split; intros HnoX Hnolevel; cbn in *; auto.
+  - case_match; reflexivity.
+  - case_match; cbn. 2: reflexivity. congruence.
+  - apply orb_false_iff in Hnolevel. destruct_and!.
+    pose proof (IH1 := IHϕ1 level).
+    destruct IH1 as [IH11 _].
+    specialize (IH11 ltac:(assumption) ltac:(assumption)).
+    pose proof (IH2 := IHϕ2 level).
+    destruct IH2 as [IH21 _].
+    specialize (IH21 ltac:(assumption) ltac:(assumption)).
+    split_and!; assumption.
+  - apply orb_false_iff in Hnolevel. destruct_and!.
+    pose proof (IH1 := IHϕ1 level).
+    destruct IH1 as [_ IH12].
+    specialize (IH12 ltac:(assumption) ltac:(assumption)).
+    pose proof (IH2 := IHϕ2 level).
+    destruct IH2 as [_ IH22].
+    specialize (IH22 ltac:(assumption) ltac:(assumption)).
+    split_and!; assumption.
+  - apply orb_false_iff in Hnolevel. destruct_and!.
+    pose proof (IH1 := IHϕ1 level).
+    destruct IH1 as [_ IH12].
+    specialize (IH12 ltac:(assumption) ltac:(assumption)).
+    pose proof (IH2 := IHϕ2 level).
+    destruct IH2 as [IH21 _].
+    specialize (IH21 ltac:(assumption) ltac:(assumption)).
+    split_and!; assumption.
+  - apply orb_false_iff in Hnolevel. destruct_and!.
+    pose proof (IH1 := IHϕ1 level).
+    destruct IH1 as [IH11 _].
+    specialize (IH11 ltac:(assumption) ltac:(assumption)).
+    pose proof (IH2 := IHϕ2 level).
+    destruct IH2 as [_ IH22].
+    specialize (IH22 ltac:(assumption) ltac:(assumption)).
+    split_and!; assumption.
+  - firstorder.
+  - firstorder.
+  - firstorder.
+  - firstorder.
+Qed.                                                           
+
+Lemma no_negative_occurrence_svar_quantify {Σ : Signature} ϕ level X:
+  no_negative_occurrence_db_b level ϕ = true ->
+  svar_has_negative_occurrence X ϕ = false ->
+  no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true.
+Proof.
+  intros H1 H2.
+  pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
+  destruct Htmp as [Htmp1 Htmp2].
+  auto.
+Qed.
+
+Lemma no_positive_occurrence_svar_quantify {Σ : Signature} ϕ level X:
+    no_positive_occurrence_db_b level ϕ = true ->
+    svar_has_positive_occurrence X ϕ = false ->
+    no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true.
+Proof.
+  intros H1 H2.
+  pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
+  destruct Htmp as [Htmp1 Htmp2].
+  auto.
 Qed.
