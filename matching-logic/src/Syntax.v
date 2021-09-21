@@ -6823,6 +6823,12 @@ Proof.
       assumption.
 Qed.
 
+#[export]
+ Hint Resolve wfp_free_svar_subst : core.
+
+#[export]
+ Hint Resolve wfp_neg_free_svar_subst : core.
+
 Lemma wfc_mu_free_svar_subst {Σ : Signature} level more ϕ ψ X:
   well_formed_closed_mu_aux ϕ (level+more) ->  
   well_formed_closed_mu_aux ψ level ->      
@@ -6843,6 +6849,8 @@ Proof.
     rewrite IHϕ; auto.
 Qed.
 
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst : core.
     
 Lemma wfc_ex_free_svar_subst {Σ : Signature} level more ϕ ψ X:
   well_formed_closed_ex_aux ϕ level ->  
@@ -6865,4 +6873,13 @@ Proof.
     2: eassumption.
     lia.
 Qed.
+
+#[export]
+ Hint Resolve wfc_ex_free_svar_subst : core.
+
+#[export]
+ Hint Resolve svar_quantify_closed_ex : core.
+
+#[export]
+ Hint Resolve svar_quantify_closed_mu : core.
     
