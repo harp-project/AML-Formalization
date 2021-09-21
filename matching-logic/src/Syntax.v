@@ -4343,69 +4343,62 @@ Section syntax.
 
   Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
 
-  Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-    (no_negative_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
-     = match (compare_nat dbi level) with
-       | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
-       | Nat_equal _ _ _ => true
-       | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
-       end
+  Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level more ϕ:
+    (no_negative_occurrence_db_b dbi (nest_mu_aux level more ϕ)
+     = if decide (dbi < level) is left _ then no_negative_occurrence_db_b dbi ϕ
+       else if decide (dbi < level + more) is left _ then true
+            else no_negative_occurrence_db_b (dbi-more) ϕ
     ) /\ (
-      no_positive_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
-      = match (compare_nat dbi level) with
-        | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
-        | Nat_equal _ _ _ => true
-        | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
-        end
+      no_positive_occurrence_db_b dbi (nest_mu_aux level more ϕ)
+     = if decide (dbi < level) is left _ then no_positive_occurrence_db_b dbi ϕ
+       else if decide (dbi < level + more) is left _ then true
+            else no_positive_occurrence_db_b (dbi-more) ϕ
     ).
   Proof.
-    move: dbi level.
-    induction ϕ; intros dbi level; simpl;
+    move: dbi level more.
+    induction ϕ; intros dbi level more; simpl;
       destruct (compare_nat dbi level); auto;
         repeat case_match; simpl; try lia; auto;
-          try rewrite (proj1 (IHϕ1 _ _));
-          try rewrite (proj2 (IHϕ1 _ _));
-          try rewrite (proj1 (IHϕ2 _ _));
-          try rewrite (proj2 (IHϕ2 _ _));
-          try rewrite (proj1 (IHϕ _ _));
-          try rewrite (proj2 (IHϕ _ _));
+          try rewrite (proj1 (IHϕ1 _ _ _));
+          try rewrite (proj2 (IHϕ1 _ _ _));
+          try rewrite (proj1 (IHϕ2 _ _ _));
+          try rewrite (proj2 (IHϕ2 _ _ _));
+          try rewrite (proj1 (IHϕ _ _ _));
+          try rewrite (proj2 (IHϕ _ _ _));
           simpl;
           repeat case_match; simpl; try lia; auto.
-    assert (Harith1: dbi - 0 = dbi). lia.  rewrite !Harith1.
-    assert (Harith2: S (dbi - 1) = dbi). lia. rewrite !Harith2.
-    auto.
+
+    replace (S dbi - more) with (S (dbi - more)) by lia. split; reflexivity.
+    replace (S dbi - more) with (S (dbi - more)) by lia. split; reflexivity.
   Qed.
 
-  Lemma no_negative_occurrence_db_nest_mu_aux dbi level ϕ:
-    no_negative_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
-    = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => no_negative_occurrence_db_b dbi ϕ
-      | Nat_equal _ _ _ => true
-      | Nat_greater _ _ _ => no_negative_occurrence_db_b (dbi-1) ϕ
-      end.
+  Lemma no_negative_occurrence_db_nest_mu_aux dbi level more ϕ:
+    no_negative_occurrence_db_b dbi (nest_mu_aux level more ϕ)
+     = if decide (dbi < level) is left _ then no_negative_occurrence_db_b dbi ϕ
+       else if decide (dbi < level + more) is left _ then true
+            else no_negative_occurrence_db_b (dbi-more) ϕ.
   Proof.
     apply Private_positive_negative_occurrence_db_nest_mu_aux.
   Qed.
 
-  Lemma no_positive_occurrence_db_nest_mu_aux dbi level ϕ:
-    no_positive_occurrence_db_b dbi (nest_mu_aux level 1 ϕ)
-    = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => no_positive_occurrence_db_b dbi ϕ
-      | Nat_equal _ _ _ => true
-      | Nat_greater _ _ _ => no_positive_occurrence_db_b (dbi-1) ϕ
-      end.
+  Lemma no_positive_occurrence_db_nest_mu_aux dbi level more ϕ:
+    no_positive_occurrence_db_b dbi (nest_mu_aux level more ϕ)
+     = if decide (dbi < level) is left _ then no_positive_occurrence_db_b dbi ϕ
+       else if decide (dbi < level + more) is left _ then true
+            else no_positive_occurrence_db_b (dbi-more) ϕ.
   Proof.
     apply Private_positive_negative_occurrence_db_nest_mu_aux.
   Qed.
 
-  Lemma well_formed_positive_nest_mu_aux level ϕ:
-    well_formed_positive (nest_mu_aux level 1 ϕ) = well_formed_positive ϕ.
+  Lemma well_formed_positive_nest_mu_aux level more ϕ:
+    well_formed_positive (nest_mu_aux level more ϕ) = well_formed_positive ϕ.
   Proof.
     move: level.
     induction ϕ; intros level; simpl; auto.
     - rewrite IHϕ1. rewrite IHϕ2. auto.
     - rewrite IHϕ1. rewrite IHϕ2. auto.
     - rewrite IHϕ.
+      Check no_negative_occurrence_db_nest_mu_aux.
       rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
       reflexivity.
   Qed.
@@ -6715,3 +6708,119 @@ Proof.
     rewrite no_negative_occurrence_svar_quantify_2. lia.
     split_and!; auto.
 Qed.
+
+#[export]
+ Hint Resolve well_formed_positive_svar_quantify : core.
+
+
+Lemma nno_free_svar_subst {Σ : Signature} dbi more ϕ ψ X:
+  dbi < more ->
+  no_negative_occurrence_db_b dbi (free_svar_subst' more ϕ ψ X)
+  = no_negative_occurrence_db_b dbi ϕ
+with npo_free_svar_subst {Σ : Signature} dbi more ϕ ψ X:
+  dbi < more ->
+  no_positive_occurrence_db_b dbi (free_svar_subst' more ϕ ψ X)
+  = no_positive_occurrence_db_b dbi ϕ.
+Proof.
+  - move: dbi more.
+    induction ϕ; intros dbi more Hdbimore; simpl; auto.
+    + case_match; cbn; [|reflexivity].
+      rewrite no_negative_occurrence_db_nest_mu_aux.
+      repeat case_match; auto; lia.
+    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+    + cbn.
+      fold (no_positive_occurrence_db_b dbi (free_svar_subst' more ϕ1 ψ X)).
+      rewrite npo_free_svar_subst. lia.
+      fold (no_positive_occurrence_db_b dbi ϕ1).
+      rewrite IHϕ2. lia. reflexivity.
+    + cbn.
+      rewrite IHϕ. lia. reflexivity.
+    + cbn.
+      rewrite IHϕ. lia. reflexivity.                                                                         
+  - move: dbi more.
+    induction ϕ; intros dbi more Hdbimore; simpl; auto.
+    + case_match; cbn; [|reflexivity].
+      rewrite no_positive_occurrence_db_nest_mu_aux.
+      repeat case_match; auto; lia.
+    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+    + cbn.
+      fold (no_negative_occurrence_db_b dbi (free_svar_subst' more ϕ1 ψ X)).
+      rewrite nno_free_svar_subst. lia.
+      fold (no_negative_occurrence_db_b dbi ϕ1).
+      rewrite IHϕ2. lia. reflexivity.
+    + cbn.
+      rewrite IHϕ. lia. reflexivity.
+    + cbn.
+      rewrite IHϕ. lia. reflexivity.
+Qed.
+
+Lemma wfp_free_svar_subst {Σ : Signature} more ϕ ψ X:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->
+  svar_has_negative_occurrence X ϕ = false ->
+  well_formed_positive (free_svar_subst' more ϕ ψ X) = true
+with wfp_neg_free_svar_subst {Σ : Signature} more ϕ ψ X:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->       
+  svar_has_positive_occurrence X ϕ = false ->
+  well_formed_positive (free_svar_subst' more ϕ ψ X) = true.
+Proof.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
+    move: more.
+    induction ϕ; intros more; simpl; auto.
+    + case_match; [|reflexivity].
+      rewrite well_formed_positive_nest_mu_aux.
+      assumption.
+    + cbn in Hnoneg. cbn in Hwfpϕ.
+      apply orb_false_iff in Hnoneg.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hnoneg. cbn in Hwfpϕ.
+      apply orb_false_iff in Hnoneg.
+      destruct_and!.
+      pose proof (IH1 := wfp_neg_free_svar_subst Σ more ϕ1 ψ X ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. assumption. split_and!; auto.
+      rewrite nno_free_svar_subst. lia.
+      assumption.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
+    move: more.
+    induction ϕ; intros more; simpl; auto.
+    + case_match; [|reflexivity].
+      rewrite well_formed_positive_nest_mu_aux.
+      assumption.
+    + cbn in Hnoneg. cbn in Hwfpϕ.
+      apply orb_false_iff in Hnoneg.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hnoneg. cbn in Hwfpϕ.
+      apply orb_false_iff in Hnoneg.
+      destruct_and!.
+      pose proof (IH1 := wfp_free_svar_subst Σ more ϕ1 ψ X ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. assumption. split_and!; auto.
+      rewrite nno_free_svar_subst. lia.
+      assumption.
+Qed.
+
+    
