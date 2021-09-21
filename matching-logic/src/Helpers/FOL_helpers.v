@@ -3676,13 +3676,97 @@ Section FOL_helpers.
   Qed.
 
   Print ML_proof_system.
+  Print exists_quantify. Check svar_quantify.
 
-  Lemma mu_monotone Γ ϕ₁ ϕ₂:
+  Lemma mu_monotone Γ ϕ₁ ϕ₂ X:
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
+    svar_has_negative_occurrence X ϕ₁ = false ->
+    svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢ ϕ₁ ---> ϕ₂ ->
-    False.
-  Proof. Abort.
+    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂)).
+  Proof.
+    intros wfϕ₁ wfϕ₂ nonegϕ₁ nonegϕ₂ Himp.
+    apply Knaster_tarski.
+    Check Svar_subst.
+    pose proof (Htmp := Svar_subst Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X).
+    feed specialize Htmp.
+    { auto. }
+    { unfold well_formed, well_formed_closed in *. destruct_and!.
+      simpl. split_and!; auto.
+      - apply svar_quantify_closed_mu. assumption.
+      - apply svar_quantify_closed_ex. assumption.
+    }
+    { assumption. }
+    unfold free_svar_subst in Htmp.
+    simpl in Htmp.
+    Check Pre_fixp.
+    pose proof (Hpf := Pre_fixp Γ (svar_quantify X 0 ϕ₂)).
+    simpl in Hpf.
+    erewrite bound_to_free_set_variable_subst in Hpf.
+    5: { apply svar_quantify_not_free. }
+    4: {
+     apply svar_quantify_closed_mu.
+     unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+    }
+    3: {
+         apply svar_quantify_closed_mu.
+         unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+    }
+    2: lia.
+    rewrite svar_open_svar_quantify in Hpf.
+    { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
+    
+    Check syllogism_intro.
+    epose proof (Hsi := syllogism_intro _ _ _ _ _ _ _ Htmp Hpf).
+    Unshelve.
+    4: {
+      unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and!; auto.
+      - apply svar_quantify_closed_mu. assumption.
+      - apply svar_quantify_closed_ex. assumption.
+    }
+    3: {
+      unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and!; auto.
+      Search well_formed_positive free_svar_subst'.
+    }
+    
+    
+    
+    simpl.
+    
+    ltac:(auto) ltac:(auto) Himp).
+    apply Pre_fixp.
+    Check bound_to_free_set_variable_subst.
+    erewrite bound_to_free_set_variable_subst with (X0 := X)(more := ?[more]).
+    5: { apply svar_quantify_not_free. }
+    4: {
+         apply svar_quantify_closed_mu.
+         unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+    }
+    3: {
+         apply svar_quantify_closed_mu.
+         unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+    }
+    2: lia.
+    rewrite svar_open_svar_quantify.
+    { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
+    instantiate (more := 0).
+    Print ML_proof_system.
+    Check Pre_fixp. Print instantiate.
+    replace (free_svar_subst' 0 ϕ₁ (mu , svar_quantify X 0 ϕ₂) X ---> mu , svar_quantify X 0 ϕ₂)
+      with (free_svar_subst' 0 (ϕ₁ ---> patt_free_svar) ())
+        
+    Check Svar_subst.
+    Search svar_open svar_quantify.
+    
+    
+    
+    Search free_evar_subst' bevar_subst.
+    Check Svar_subst.
+    (*rewrite bsvar_subst_svar_quantify_free_svar.*)
+    Print ML_proof_system.
+  Abort.
+  
   
   
 End FOL_helpers.
