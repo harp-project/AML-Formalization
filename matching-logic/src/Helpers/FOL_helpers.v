@@ -2021,7 +2021,6 @@ Section FOL_helpers.
   
 End FOL_helpers.
 
-Search app cons.
 
 Tactic Notation "mgClear" constr(n) :=
   match goal with
@@ -2601,7 +2600,6 @@ Section FOL_helpers.
         specialize (IHpcPattern1 ltac:(assumption)).
         clear IHpcPattern2. (* Can't specialize. *)
 
-        Check @free_evar_subst_no_occurrence.
         (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
            Therefore, p2 = q2. We need a lemma for that. *)
         pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 p ltac:(lia)).
@@ -3098,7 +3096,6 @@ Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
 Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
 
 
-Check lookup.
 Tactic Notation "mgDestructAnd" constr(n) :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -3544,7 +3541,7 @@ Section FOL_helpers.
 
       all: auto.
       simpl in WFψ.
-      Search free_svar_subst' nest_mu_aux.
+
       all: try replace (ex , free_evar_subst' (S more) ψ φ1 x') with (free_evar_subst' more (ex, ψ) φ1 x') by reflexivity.
       all: try replace (ex , free_evar_subst' (S more) ψ φ2 x') with (free_evar_subst' more (ex, ψ) φ2 x') by reflexivity.
       all: try apply well_formed_free_evar_subst; auto.
@@ -3674,9 +3671,6 @@ Section FOL_helpers.
     mgApply' 0 10. mgIntro. mgApply' 2 10.
     mgExactn 4. auto 10.
   Qed.
-
-  Print ML_proof_system.
-  Print exists_quantify. Check svar_quantify.
 
   Ltac wf_auto := unfold well_formed, well_formed_closed in *; destruct_and?; simpl; split_and!; auto.
   
