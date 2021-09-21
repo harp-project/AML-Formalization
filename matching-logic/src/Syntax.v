@@ -6823,4 +6823,46 @@ Proof.
       assumption.
 Qed.
 
+Lemma wfc_mu_free_svar_subst {Σ : Signature} level more ϕ ψ X:
+  well_formed_closed_mu_aux ϕ (level+more) ->  
+  well_formed_closed_mu_aux ψ level ->      
+  well_formed_closed_mu_aux (free_svar_subst' more ϕ ψ X) (level+more) = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level more Hϕ Hψ.
+  induction ϕ; intros level more Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    apply wfc_mu_nest_mu. assumption.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - replace (S (level + more)) with (level + (S more)) in * by lia.
+    rewrite IHϕ; auto.
+Qed.
+
+    
+Lemma wfc_ex_free_svar_subst {Σ : Signature} level more ϕ ψ X:
+  well_formed_closed_ex_aux ϕ level ->  
+  well_formed_closed_ex_aux ψ level ->      
+  well_formed_closed_ex_aux (free_svar_subst' more ϕ ψ X) level = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level more Hϕ Hψ.
+  induction ϕ; intros level more Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    apply wfcex_nest_mu. assumption.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - rewrite IHϕ; auto.
+    eapply well_formed_closed_ex_aux_ind.
+    2: eassumption.
+    lia.
+Qed.
     
