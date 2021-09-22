@@ -38,11 +38,6 @@ $ nix-shell
 $ make
 ```
 
-Alternatively, it is possible to build the project in Docker:
-```sh
-./build-in-docker.sh
-```
-
 ### IDE setup
 If you have ProofGeneral or CoqIde installed, just run them inside the `nix-shell`.
 It will detect the nix-provided coq and libraries automatically.
