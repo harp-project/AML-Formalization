@@ -1599,8 +1599,46 @@ Section ProofSystemTheorems.
       {
         eapply Modus_ponens. 4: apply S2. all: auto.
       }
-      
-      
+
+      pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x).
+      simpl in S5.
+
+      assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) ).
+      {
+        toMyGoal. mgIntro. mgIntro.
+        mgAdd S5; auto. unfold patt_and at 1. unfold patt_or at 1.
+        mgAssert((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+        using first 1.
+        {
+          remember ((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+            as A.
+          fromMyGoal. apply not_not_elim; subst; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        
+        
+        mgAssert((! (patt_free_evar x and ! ϕ))) using first 2.
+        {
+          mgApply' 0 10. mgClear 0; auto 10.
+          fromMyGoal. apply not_not_intro; auto 10.
+        }
+        mgClear 0; auto 10. mgClear 0; auto 10.
+
+        unfold patt_and.
+        mgAssert ((! patt_free_evar x or ! ! ϕ)) using first 1.
+        {
+          fromMyGoal. apply not_not_elim; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        unfold patt_or.
+        mgApplyMeta (not_not_elim _ _ _); auto 10.
+        mgApply' 0 10.
+        mgApplyMeta (not_not_intro _ _ _); auto 10.
+        mgExactn 1.
+        Unshelve. all: auto 10.
+      }
       
     Abort.
     
