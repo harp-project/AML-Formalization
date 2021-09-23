@@ -1678,7 +1678,55 @@ Section ProofSystemTheorems.
       4: apply S9.
       3: apply Existence.
       all: auto.
-    Qed.    
+    Qed.
+
+    Lemma membership_not_1 Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ).
+    Proof.
+      intros Hwf HΓ.
+      
+      pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x).
+      simpl in S1.
+
+      assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
+      {
+
+        replace (patt_sym (inj definedness) $ (patt_free_evar x and ϕ))
+          with (⌈ patt_free_evar x and ϕ ⌉) in S1 by reflexivity.
+
+        replace (patt_sym (inj definedness) $ (patt_free_evar x and ! ϕ))
+          with (⌈ patt_free_evar x and ! ϕ ⌉) in S1 by reflexivity.
+        
+        toMyGoal. mgIntro. mgAdd S1; auto 10.
+        unfold patt_and at 1.
+        mgAssert ((! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x and ! ϕ ⌉))
+                 using first 1.
+        
+        {
+          fromMyGoal.
+          apply not_not_elim; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        (* Symmetry of Or *)
+        mgAssert ((! ⌈ patt_free_evar x and ! ϕ ⌉ or ! ⌈ patt_free_evar x and ϕ ⌉))
+                 using first 1.
+        {
+          mgAdd (A_or_notA Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          - mgRight; auto 10. mgExactn 0; auto 10.
+          - mgLeft; auto 10. mgApply' 1 10. mgExactn 0; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        mgApply' 0 10. mgClear 0; auto 10. fromMyGoal.
+        apply not_not_intro; auto 10.
+      }
+      apply S2.
+      Unshelve. all: auto 10.
+    Qed.
     
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
