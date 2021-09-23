@@ -1516,14 +1516,23 @@ Section ProofSystemTheorems.
         Unshelve. all: auto 10.
     Qed.
 
-    Lemma membership_introduction Γ ϕ x:
+    Lemma membership_introduction Γ ϕ:
       well_formed ϕ ->
       theory ⊆ Γ ->
       Γ ⊢ ϕ ->
-      Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)).
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ).
     Proof.
       intros wfϕ HΓ Hϕ.
 
+      remember (fresh_evar ϕ) as x.
+
+      replace ϕ with (evar_quantify x 0 ϕ).
+      2: {
+        rewrite evar_quantify_fresh.
+        subst; auto. reflexivity.
+      }
+      
+      
       assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ))).
       {
         apply P1; auto.
@@ -1563,20 +1572,27 @@ Section ProofSystemTheorems.
         eapply Modus_ponens. 4: apply S6. all: auto.
       }
 
-      Check universal_generalization.
       eapply universal_generalization with (x0 := x) in S9; auto.
       simpl in S9. case_match;[|congruence]. exact S9.
       Unshelve. all: auto.
     Qed.
 
-    Lemma membership_elimination Γ ϕ x:
+    Lemma membership_elimination Γ ϕ:
       well_formed ϕ ->
       theory ⊆ Γ ->
-      Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)) ->
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ) ->
       Γ ⊢ ϕ.
     Proof.
       intros wfϕ HΓ H.
 
+      remember (fresh_evar ϕ) as x.
+      assert(S1: Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))).
+      {
+        rewrite evar_quantify_fresh.
+        { subst x.  apply set_evar_fresh_is_fresh'. }
+        assumption.
+      }
+      
       assert(S2: Γ ⊢ (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ)).
       {
         replace (b0 ∈ml evar_quantify x 0 ϕ)
@@ -1616,8 +1632,6 @@ Section ProofSystemTheorems.
         }
         mgClear 0; auto 10.
 
-        
-        
         mgAssert((! (patt_free_evar x and ! ϕ))) using first 2.
         {
           mgApply' 0 10. mgClear 0; auto 10.
@@ -1639,9 +1653,32 @@ Section ProofSystemTheorems.
         mgExactn 1.
         Unshelve. all: auto 10.
       }
-      
-    Abort.
-    
+
+      assert (S7: Γ ⊢ patt_free_evar x ---> ϕ).
+      {
+        eapply Modus_ponens. 4: apply S6. all: auto.
+      }
+
+      pose proof (S8 := S7).
+      apply universal_generalization with (x0 := x) in S8; auto.
+
+      assert (S9: Γ ⊢ (ex, patt_bound_evar 0) ---> ϕ).
+      {
+        unfold patt_forall in S8.
+        simpl in S8.
+        case_match; [|congruence].
+        
+        replace b0 with (evar_quantify x 0 (patt_free_evar x)).
+        2: { simpl. case_match; [|congruence]. reflexivity. }
+        
+        apply Ex_gen; auto.
+      }
+
+      eapply Modus_ponens.
+      4: apply S9.
+      3: apply Existence.
+      all: auto.
+    Qed.    
     
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
