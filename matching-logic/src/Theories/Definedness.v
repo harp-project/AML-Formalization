@@ -1727,6 +1727,46 @@ Section ProofSystemTheorems.
       apply S2.
       Unshelve. all: auto 10.
     Qed.
+
+    Lemma membership_not_2 Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml !ϕ).
+    Proof.
+      intros wfϕ HΓ.
+      pose proof (S1 := @defined_evar Γ x HΓ).
+      assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉).
+      {
+        assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
+        {
+          toMyGoal. mgIntro. mgAdd (A_or_notA Γ ϕ ltac:(auto)); auto.
+          mgDestruct 0; auto.
+          - mgLeft; auto 10. unfold patt_and. mgIntro. unfold patt_or.
+            mgAssert ((! ϕ)).
+            {
+              mgApply' 2 10. mgClear 0; auto. mgClear 1; auto. fromMyGoal.
+              apply not_not_intro; auto.
+            }
+            mgApply' 3 10. mgExactn 0; auto 10.
+          - mgRight; auto 10. unfold patt_and. mgIntro. unfold patt_or.
+            mgApply' 0 10. mgApplyMeta (not_not_elim Γ ϕ ltac:(auto)); auto 10.
+            mgApply' 2 10. mgIntro. mgApply' 3 10. mgExactn 1; auto 10.
+        }
+        eapply Framing_right in H.
+        eapply Modus_ponens. 4: apply H. all: auto 10.
+      }
+
+      pose proof (Htmp := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
+                                          ltac:(auto) ltac:(auto)).
+      simpl in Htmp.
+      apply pf_iff_proj1 in Htmp; auto 10.
+      eapply Modus_ponens.
+      4: apply Htmp.
+      all: auto 10.
+      Unshelve. all: auto 10.
+    Qed.
+    
+         
     
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
