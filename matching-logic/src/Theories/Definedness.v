@@ -1568,7 +1568,43 @@ Section ProofSystemTheorems.
       simpl in S9. case_match;[|congruence]. exact S9.
       Unshelve. all: auto.
     Qed.
+
+    Lemma membership_elimination Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)) ->
+      Γ ⊢ ϕ.
+    Proof.
+      intros wfϕ HΓ H.
+
+      assert(S2: Γ ⊢ (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ)).
+      {
+        replace (b0 ∈ml evar_quantify x 0 ϕ)
+          with (evar_quantify x 0 (patt_free_evar x ∈ml ϕ))
+        .
+        2: {
+          simpl. case_match;[|congruence]. reflexivity.
+        }
+        apply forall_variable_substitution; auto.
+      }
+
+      assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)).
+      {
+        unfold well_formed,well_formed_closed in *. simpl.
+        destruct_and!. split_and!; auto.
+      }
       
+      
+      assert(S3: Γ ⊢ patt_free_evar x ∈ml ϕ).
+      {
+        eapply Modus_ponens. 4: apply S2. all: auto.
+      }
+      
+      
+      
+    Abort.
+    
+    
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->

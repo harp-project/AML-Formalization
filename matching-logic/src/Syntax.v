@@ -5540,8 +5540,8 @@ If X does not occur free in phi:
   Qed.
 
   Lemma evar_open_positive : forall φ n x,
-    well_formed_positive (evar_open n x φ) ->
-    well_formed_positive φ.
+    well_formed_positive (evar_open n x φ) = true ->
+    well_formed_positive φ = true.
   Proof.
     induction φ; intros n' x' H; cbn; auto.
     * simpl in H. apply andb_true_iff in H as [E1 E2].
@@ -5556,7 +5556,7 @@ If X does not occur free in phi:
   Qed.
 
   Lemma wf_body_ex_to_wf :
-    forall φ, wf_body_ex φ -> well_formed (patt_exists φ).
+    forall φ, wf_body_ex φ -> well_formed (patt_exists φ) = true.
   Proof.
     intros φ H. unfold well_formed, well_formed_closed. simpl.
     remember (fresh_evar φ) as x.
@@ -5573,10 +5573,10 @@ If X does not occur free in phi:
 
   Lemma bevar_subst_closed_mu :
     forall φ ψ n m,
-    well_formed_closed_mu_aux φ m ->
-    well_formed_closed_mu_aux ψ m
+    well_formed_closed_mu_aux φ m = true ->
+    well_formed_closed_mu_aux ψ m = true
     ->
-    well_formed_closed_mu_aux (bevar_subst φ ψ n) m.
+    well_formed_closed_mu_aux (bevar_subst φ ψ n) m = true.
   Proof.
     induction φ; intros ψ n' m H H0; cbn; auto.
     * break_match_goal; simpl in H0, H; simpl; auto.
@@ -5588,10 +5588,10 @@ If X does not occur free in phi:
 
   Lemma bevar_subst_closed_ex :
     forall φ ψ n,
-    well_formed_closed_ex_aux φ (S n) ->
-    well_formed_closed_ex_aux ψ n
+    well_formed_closed_ex_aux φ (S n) = true ->
+    well_formed_closed_ex_aux ψ n = true
     ->
-    well_formed_closed_ex_aux (bevar_subst φ ψ n) n.
+    well_formed_closed_ex_aux (bevar_subst φ ψ n) n = true.
   Proof.
     induction φ; intros ψ n' H H0; cbn; auto.
     * break_match_goal; simpl in H0, H; simpl; auto.
@@ -5604,9 +5604,9 @@ If X does not occur free in phi:
   
   Lemma bevar_subst_positive :
     forall φ ψ n, mu_free φ ->
-    well_formed_positive φ -> well_formed_positive ψ
+    well_formed_positive φ = true -> well_formed_positive ψ = true
    ->
-    well_formed_positive (bevar_subst φ ψ n).
+    well_formed_positive (bevar_subst φ ψ n) = true.
   Proof.
     induction φ; intros ψ n' H H0 H1; cbn; auto.
     * break_match_goal; auto.
@@ -5620,11 +5620,11 @@ If X does not occur free in phi:
 
   Theorem evar_quantify_closed_ex :
     forall φ x n, well_formed_closed_ex_aux φ n ->
-    well_formed_closed_ex_aux (evar_quantify x n φ) (S n).
+    well_formed_closed_ex_aux (evar_quantify x n φ) (S n) = true.
   Proof.
     induction φ; intros x' n' H; cbn; auto.
     * destruct (decide (x' = x)); simpl; auto.
-      case_match; try lia. auto.
+      case_match; try lia.
     * simpl in H. repeat case_match; auto; lia.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
@@ -5632,11 +5632,11 @@ If X does not occur free in phi:
 
   Theorem svar_quantify_closed_mu :
     forall φ X n, well_formed_closed_mu_aux φ n ->
-    well_formed_closed_mu_aux (svar_quantify X n φ) (S n).
+    well_formed_closed_mu_aux (svar_quantify X n φ) (S n) = true.
   Proof.
     induction φ; intros x' n' H; cbn; auto.
     * destruct (decide (x' = x)); simpl; auto.
-      case_match; try lia. auto.
+      case_match; try lia.
     * simpl in H. repeat case_match; auto; lia.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
     * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2. 
@@ -5644,7 +5644,7 @@ If X does not occur free in phi:
   
   Theorem evar_quantify_closed_mu :
     forall φ x n m, well_formed_closed_mu_aux φ m ->
-    well_formed_closed_mu_aux (evar_quantify x n φ) m.
+    well_formed_closed_mu_aux (evar_quantify x n φ) m = true.
   Proof.
     induction φ; intros x' n' m H; cbn; auto.
     - destruct (decide (x' = x)); simpl; auto.
@@ -5657,7 +5657,7 @@ If X does not occur free in phi:
 
   Theorem svar_quantify_closed_ex :
     forall φ X n m, well_formed_closed_ex_aux φ m ->
-    well_formed_closed_ex_aux (svar_quantify X n φ) m.
+    well_formed_closed_ex_aux (svar_quantify X n φ) m = true.
   Proof.
     induction φ; intros x' n' m H; cbn; auto.
     - destruct (decide (x' = x)); simpl; auto.
@@ -5687,7 +5687,7 @@ If X does not occur free in phi:
   
   Theorem evar_quantify_positive :
     forall φ x n, well_formed_positive φ ->
-    well_formed_positive (evar_quantify x n φ).
+    well_formed_positive (evar_quantify x n φ) = true.
   Proof.
     induction φ; intros x' n' H; cbn; auto.
     * destruct (decide (x' = x)); simpl; auto.
@@ -5700,7 +5700,7 @@ If X does not occur free in phi:
 
   Corollary evar_quantify_well_formed :
     forall φ x, well_formed φ ->
-      well_formed (patt_exists (evar_quantify x 0 φ)).
+      well_formed (patt_exists (evar_quantify x 0 φ)) = true.
   Proof.
     intros φ x H.
     unfold well_formed, well_formed_closed in *.
@@ -5746,7 +5746,7 @@ If X does not occur free in phi:
   Theorem subst_patctx_wf :
     forall C φ, wf_PatCtx C -> well_formed φ
   ->
-    well_formed (subst_patctx C φ).
+    well_formed (subst_patctx C φ) = true.
   Proof.
     induction C; intros φ WFC WFφ; simpl; auto.
     * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
@@ -6904,3 +6904,11 @@ Qed.
 #[export]
  Hint Resolve svar_quantify_closed_mu : core.
     
+#[export]
+ Hint Resolve evar_quantify_positive : core.
+
+#[export]
+ Hint Resolve evar_quantify_closed_mu : core.
+
+#[export]
+ Hint Resolve evar_quantify_closed_ex : core.

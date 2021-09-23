@@ -3690,8 +3690,6 @@ Section FOL_helpers.
     { auto. }
     { unfold well_formed, well_formed_closed in *. destruct_and!.
       simpl. split_and!; auto.
-      - apply svar_quantify_closed_mu. assumption.
-      - apply svar_quantify_closed_ex. assumption.
     }
     { assumption. }
     unfold free_svar_subst in Htmp.
@@ -3776,8 +3774,6 @@ Section FOL_helpers.
     Unshelve.
     4: {
       wf_auto.
-      - apply svar_quantify_closed_mu. assumption.
-      - apply svar_quantify_closed_ex. assumption.
     }
     3: {
       wf_auto.
