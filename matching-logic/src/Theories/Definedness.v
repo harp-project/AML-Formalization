@@ -849,6 +849,25 @@ Section ProofSystemTheorems.
     exists AxDefinedness.
     reflexivity.
   Qed.
+
+  Lemma defined_evar Γ x:
+    theory ⊆ Γ ->
+    Γ ⊢ ⌈ patt_free_evar x ⌉.
+  Proof.
+    intros HΓ.
+    assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+
+    pose proof (S1' := S1).
+    apply universal_generalization with (x0 := ev_x) in S1'; auto.
+    replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
+      with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
+    2: { simpl. repeat case_match; auto; contradiction. }
+    
+    eapply Modus_ponens.
+    4: apply forall_variable_substitution.
+    3: apply S1'.
+    all: auto; simpl; case_match; auto.
+  Qed.
   
     
   Lemma in_context_impl_defined Γ AC ϕ:
@@ -1496,6 +1515,60 @@ Section ProofSystemTheorems.
 
         Unshelve. all: auto 10.
     Qed.
+
+    Lemma membership_introduction Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ϕ ->
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)).
+    Proof.
+      intros wfϕ HΓ Hϕ.
+
+      assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ))).
+      {
+        apply P1; auto.
+      }
+
+      assert(S3: Γ ⊢ patt_free_evar x ---> ϕ).
+      {
+        eapply Modus_ponens. 4: apply S2. all: auto.
+      }
+
+      assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x).
+      {
+        apply A_impl_A; auto.
+      }
+
+      assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ)).
+      {
+        toMyGoal. mgIntro. unfold patt_and. mgIntro.
+        mgAssert ((! ϕ)).
+        { mgApply' 1 10. mgIntro. mgApply' 2 10. mgExactn 0; auto.  }
+        mgApply' 2 10.
+        mgAdd Hϕ; auto. mgExactn 0; auto 10.
+      }
+
+      assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉).
+      {
+        apply Framing_right. assumption.
+      }
+      
+      assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉).
+      {
+        apply defined_evar; assumption.
+      }
+
+      assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ).
+      {
+        eapply Modus_ponens. 4: apply S6. all: auto.
+      }
+
+      Check universal_generalization.
+      eapply universal_generalization with (x0 := x) in S9; auto.
+      simpl in S9. case_match;[|congruence]. exact S9.
+      Unshelve. all: auto.
+    Qed.
+      
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
