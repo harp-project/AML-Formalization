@@ -4920,7 +4920,7 @@ If X does not occur free in phi:
       2: eassumption.
       lia.
   Qed.
-
+  
   Lemma free_svars_free_svar_subst_more phi psi X more more':
     free_svars (free_svar_subst' more phi psi X)
     = free_svars (free_svar_subst' more' phi psi X).
@@ -6950,6 +6950,53 @@ Qed.
 #[export]
  Hint Resolve wfc_mu_free_svar_subst_2 : core.
 
+Lemma wfc_ex_free_evar_subst_2 {Σ : Signature} level more ϕ ψ X:
+  well_formed_closed_ex_aux ϕ level ->  
+  well_formed_closed_ex_aux ψ (level-more) ->      
+  well_formed_closed_ex_aux (free_evar_subst' more ϕ ψ X) level = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level more Hϕ Hψ.
+  induction ϕ; intros level more Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    apply wfc_ex_nest_ex_2.
+    repeat case_match; auto. lia.
+    eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+Qed.
+
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst_2 : core.
+
+Lemma wfc_mu_free_evar_subst {Σ : Signature} level more ϕ ψ x:
+  well_formed_closed_mu_aux ϕ level ->  
+  well_formed_closed_mu_aux ψ level ->      
+  well_formed_closed_mu_aux (free_evar_subst' more ϕ ψ x) level = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level more Hϕ Hψ.
+  induction ϕ; intros level more Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    rewrite wfc_mu_nest_ex. assumption.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - apply IHϕ; auto.
+    eapply well_formed_closed_mu_aux_ind.
+    2: eassumption. lia.
+Qed.
+
+#[export]
+ Hint Resolve wfc_mu_free_evar_subst : core.
+
 Lemma wfc_ex_free_svar_subst {Σ : Signature} level more ϕ ψ X:
   well_formed_closed_ex_aux ϕ level ->  
   well_formed_closed_ex_aux ψ level ->      
@@ -7102,3 +7149,5 @@ Proof.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
 Qed.
 
+#[export]
+ Hint Resolve wfp_free_evar_subst : core.
