@@ -705,8 +705,8 @@ Section syntax.
   evar_has_negative_occurrence (x : evar) (ϕ : Pattern) : bool :=
     match ϕ with
     | patt_free_evar _ | patt_free_svar _ | patt_bound_evar _ | patt_bound_svar _ | patt_sym _ | patt_bott => false
-    | patt_app ϕ₁ ϕ₂ => evar_has_negative_occurrence x ϕ₁ || evar_has_negative_occurrence x ϕ₁
-    | patt_imp ϕ₁ ϕ₂ => evar_has_positive_occurrence x ϕ₁ || evar_has_negative_occurrence x ϕ₁
+    | patt_app ϕ₁ ϕ₂ => evar_has_negative_occurrence x ϕ₁ || evar_has_negative_occurrence x ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => evar_has_positive_occurrence x ϕ₁ || evar_has_negative_occurrence x ϕ₂
     | patt_exists ϕ' => evar_has_negative_occurrence x ϕ'
     | patt_mu ϕ' => evar_has_negative_occurrence x ϕ'
     end.
@@ -1496,8 +1496,8 @@ Section syntax.
       x ∉ (free_evars phi) -> well_formed_positive (evar_open 0 x phi).
 
   Lemma wfp_evar_open : forall phi x n,
-      well_formed_positive phi ->
-      well_formed_positive (evar_open n x phi).
+      well_formed_positive phi = true ->
+      well_formed_positive (evar_open n x phi) = true.
   Proof.
     induction phi; simpl in *; intros x' n' H; auto.
     - cbn. case_match; reflexivity.
@@ -1528,7 +1528,7 @@ Section syntax.
   Qed.
 
   Lemma wfp_ex_to_wfp_body: forall phi,
-      well_formed_positive (patt_exists phi) ->
+      well_formed_positive (patt_exists phi) = true ->
       wfp_body_ex phi.
   Proof.
     unfold wfp_body_ex. intros phi H x H0.
@@ -1541,7 +1541,7 @@ Section syntax.
 
   (* This might be useful in soundness cases prop_ex_left/right *)
   Lemma wf_ex_to_wf_body: forall phi,
-      well_formed (patt_exists phi) ->
+      well_formed (patt_exists phi) = true ->
       wf_body_ex phi.
   Proof.
     unfold wf_body_ex. intros phi H x H0. unfold well_formed in *.
@@ -1578,7 +1578,7 @@ Section syntax.
       -> well_formed_closed_induc (patt_mu phi).
 
   Lemma wfc_wfc_ind_helper : forall sz phi, 
-      well_formed_closed phi ->
+      well_formed_closed phi = true ->
       le (size phi) sz
       ->
       well_formed_closed_induc phi.
@@ -1614,7 +1614,7 @@ Section syntax.
   Lemma wfc_ind_wfc: forall phi, 
       well_formed_closed_induc phi 
       ->
-      well_formed_closed phi.
+      well_formed_closed phi = true.
   Proof.
     intros phi H. induction H; simpl; auto.
     - unfold well_formed_closed. simpl. unfold well_formed_closed in *.
@@ -4398,7 +4398,6 @@ Section syntax.
     - rewrite IHϕ1. rewrite IHϕ2. auto.
     - rewrite IHϕ1. rewrite IHϕ2. auto.
     - rewrite IHϕ.
-      Check no_negative_occurrence_db_nest_mu_aux.
       rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
       reflexivity.
   Qed.
@@ -4865,7 +4864,62 @@ If X does not occur free in phi:
     - specialize (IHpsi (S level) (S level') ltac:(assumption)).
       simpl in IHpsi. auto.
   Qed.
-  
+
+  Lemma wfc_mu_nest_mu_2 psi level level' more:
+    well_formed_closed_mu_aux
+      psi
+      (if decide (level < level') is left _ then level
+       else if decide (level < level' + more) is left _ then level' else level - more)
+    ->
+    well_formed_closed_mu_aux (nest_mu_aux level' more psi) level.
+  Proof.
+    intros H.
+    move: level level' more H.
+    induction psi; intros level level' more H; simpl in *; auto.
+    - repeat case_match; auto; lia.
+    - destruct_and!.
+      specialize (IHpsi1 level level' more ltac:(assumption)).
+      specialize (IHpsi2 level level' more ltac:(assumption)).
+      split_and!; auto.
+    - destruct_and!.
+      specialize (IHpsi1 level level' more ltac:(assumption)).
+      specialize (IHpsi2 level level' more ltac:(assumption)).
+      split_and!; auto.
+    - simpl.
+      apply IHpsi.
+      repeat case_match; auto; try lia.      
+      eapply well_formed_closed_mu_aux_ind.
+      2: eassumption.
+      lia.
+  Qed.
+
+  Lemma wfc_ex_nest_ex_2 psi level level' more:
+    well_formed_closed_ex_aux
+      psi
+      (if decide (level < level') is left _ then level
+       else if decide (level < level' + more) is left _ then level' else level - more)
+    ->
+    well_formed_closed_ex_aux (nest_ex_aux level' more psi) level.
+  Proof.
+    intros H.
+    move: level level' more H.
+    induction psi; intros level level' more H; simpl in *; auto.
+    - repeat case_match; auto; lia.
+    - destruct_and!.
+      specialize (IHpsi1 level level' more ltac:(assumption)).
+      specialize (IHpsi2 level level' more ltac:(assumption)).
+      split_and!; auto.
+    - destruct_and!.
+      specialize (IHpsi1 level level' more ltac:(assumption)).
+      specialize (IHpsi2 level level' more ltac:(assumption)).
+      split_and!; auto.
+    - simpl.
+      apply IHpsi.
+      repeat case_match; auto; try lia.      
+      eapply well_formed_closed_ex_aux_ind.
+      2: eassumption.
+      lia.
+  Qed.
 
   Lemma free_svars_free_svar_subst_more phi psi X more more':
     free_svars (free_svar_subst' more phi psi X)
@@ -6872,7 +6926,30 @@ Qed.
 
 #[export]
  Hint Resolve wfc_mu_free_svar_subst : core.
-    
+
+Lemma wfc_mu_free_svar_subst_2 {Σ : Signature} level more ϕ ψ X:
+  well_formed_closed_mu_aux ϕ level ->  
+  well_formed_closed_mu_aux ψ (level-more) ->      
+  well_formed_closed_mu_aux (free_svar_subst' more ϕ ψ X) level = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level more Hϕ Hψ.
+  induction ϕ; intros level more Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    apply wfc_mu_nest_mu_2.
+    repeat case_match; auto. lia.
+    eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+Qed.
+
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst_2 : core.
+
 Lemma wfc_ex_free_svar_subst {Σ : Signature} level more ϕ ψ X:
   well_formed_closed_ex_aux ϕ level ->  
   well_formed_closed_ex_aux ψ level ->      
@@ -6912,3 +6989,116 @@ Qed.
 
 #[export]
  Hint Resolve evar_quantify_closed_ex : core.
+
+Lemma count_evar_occurrences_bevar_subst {Σ : Signature} pcEvar ϕ ψ k:
+  count_evar_occurrences pcEvar ψ = 0 ->
+  count_evar_occurrences pcEvar (bevar_subst ϕ ψ k) = count_evar_occurrences pcEvar ϕ.
+Proof.
+  intros H.
+  move: k.
+  induction ϕ; intros k; simpl; auto.
+  - case_match; auto.
+Qed.
+
+Lemma count_evar_occurrences_evar_open {Σ : Signature} pcEvar ϕ x:
+  pcEvar <> x ->
+  count_evar_occurrences pcEvar (evar_open 0 x ϕ) = count_evar_occurrences pcEvar ϕ.
+Proof.
+  intros H. apply count_evar_occurrences_bevar_subst. simpl. case_match; congruence.
+Qed.
+
+
+      
+#[export]
+ Hint Resolve wfp_evar_open : core.
+
+#[export]
+ Hint Resolve wfc_mu_aux_body_ex_imp1 : core.
+
+#[export]
+ Hint Resolve wfc_ex_aux_body_ex_imp1 : core.
+
+
+Lemma evar_open_size' {Σ : Signature} :
+  forall (k : db_index) (n : evar) (p : Pattern),
+    size' (evar_open k n p) = size' p.
+Proof.
+  intros k n p. generalize dependent k.
+  induction p; intros k; cbn; try reflexivity.
+  break_match_goal; reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp (S k)); reflexivity.
+  rewrite (IHp k); reflexivity.
+Qed.
+
+Lemma well_formed_positive_nest_ex_aux {Σ : Signature} level more ϕ:
+  well_formed_positive (nest_ex_aux level more ϕ) = well_formed_positive ϕ.
+Proof.
+  move: level.
+  induction ϕ; intros level; simpl; auto.
+  - rewrite IHϕ1. rewrite IHϕ2. auto.
+  - rewrite IHϕ1. rewrite IHϕ2. auto.
+  - rewrite IHϕ. rewrite nno_nest_ex_aux. reflexivity.
+Qed.
+
+(* TODO remove the no-negative-ocurrence assumption from the svar version *)
+Lemma wfp_free_evar_subst {Σ : Signature} more ϕ ψ x:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->
+  well_formed_positive (free_evar_subst' more ϕ ψ x) = true
+with wfp_neg_free_evar_subst {Σ : Signature} more ϕ ψ x:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->       
+  well_formed_positive (free_evar_subst' more ϕ ψ x) = true.
+Proof.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ. (* Hnoneg.*)
+    move: more.
+    induction ϕ; intros more; simpl; auto.
+    + case_match; [|reflexivity].
+      rewrite well_formed_positive_nest_ex_aux.
+      assumption.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
+      split_and!; auto.
+    +  cbn in Hwfpϕ.
+      destruct_and!.
+      pose proof (IH1 := wfp_neg_free_evar_subst Σ more ϕ1 ψ x ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. split_and!; auto.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ.
+    move: more.
+    induction ϕ; intros more; simpl; auto.
+    + case_match; [|reflexivity].
+      rewrite well_formed_positive_nest_ex_aux.
+      assumption.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      pose proof (IH1 := wfp_free_evar_subst Σ more ϕ1 ψ x ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. split_and!; auto.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+Qed.
+
