@@ -67,7 +67,9 @@ Section definedness.
 
   Definition AC_patt_defined : Application_context :=
     @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
-  
+
+  Definition is_predicate_pattern ψ : Pattern :=
+    (patt_equal ψ patt_bott) or (patt_equal ψ patt_top).
 End definedness.
 
 Module Notations.
@@ -815,7 +817,6 @@ Section ProofSystemTheorems.
 
   
   Import ProofSystem ProofSystem.Notations Helpers.FOL_helpers.
-  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
 
   Lemma patt_iff_implies_equal :
     forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
@@ -826,7 +827,7 @@ Section ProofSystemTheorems.
     apply ANNA; auto.
     Unshelve.
     auto.
-  Qed.
+  Defined.
 
   Lemma patt_equal_refl :
     forall φ Γ, well_formed φ ->
@@ -848,7 +849,7 @@ Section ProofSystemTheorems.
     apply elem_of_PropSet.
     exists AxDefinedness.
     reflexivity.
-  Qed.
+  Defined.
 
   Lemma defined_evar Γ x:
     theory ⊆ Γ ->
@@ -867,7 +868,7 @@ Section ProofSystemTheorems.
     4: apply forall_variable_substitution.
     3: apply S1'.
     all: auto; simpl; case_match; auto.
-  Qed.
+  Defined.
   
     
   Lemma in_context_impl_defined Γ AC ϕ:
@@ -1138,7 +1139,7 @@ Section ProofSystemTheorems.
     all: auto.
     Unshelve. all: auto.
     
-  Qed.
+  Defined.
 
   Lemma phi_impl_defined_phi Γ ϕ:
     theory ⊆ Γ ->
@@ -1148,7 +1149,7 @@ Section ProofSystemTheorems.
     intros HΓ wfϕ.
     replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
     apply in_context_impl_defined; assumption.
-  Qed.
+  Defined.
 
   Lemma total_phi_impl_phi Γ ϕ:
     theory ⊆ Γ ->
@@ -1159,7 +1160,7 @@ Section ProofSystemTheorems.
     unfold patt_total.
     pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(auto)).
     apply A_impl_not_not_B_meta; auto.
-  Qed.
+  Defined.
     
     
 
@@ -1514,7 +1515,7 @@ Section ProofSystemTheorems.
         apply Singleton_ctx.
 
         Unshelve. all: auto 10.
-    Qed.
+    Defined.
 
     Lemma membership_introduction Γ ϕ:
       well_formed ϕ ->
@@ -1575,7 +1576,7 @@ Section ProofSystemTheorems.
       eapply universal_generalization with (x0 := x) in S9; auto.
       simpl in S9. case_match;[|congruence]. exact S9.
       Unshelve. all: auto.
-    Qed.
+    Defined.
 
     Lemma membership_elimination Γ ϕ:
       well_formed ϕ ->
@@ -1678,7 +1679,7 @@ Section ProofSystemTheorems.
       4: apply S9.
       3: apply Existence.
       all: auto.
-    Qed.
+    Defined.
 
     Lemma membership_not_1 Γ ϕ x:
       well_formed ϕ ->
@@ -1764,10 +1765,80 @@ Section ProofSystemTheorems.
       4: apply Htmp.
       all: auto 10.
       Unshelve. all: auto 10.
-    Qed.
+    Defined.
+
+    Lemma membership_not_iff Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ).
+    Proof.
+      intros Hwf HΓ.
+      apply pf_iff_split; auto 10.
+      - apply membership_not_1; auto 10.
+      - apply membership_not_2; auto 10.
+    Defined.
     
-         
-    
+    Lemma membership_or_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_in.
+      eapply syllogism_intro.
+      5: apply Prop_disj_right; auto 10.
+      all: auto 10.
+      apply Framing_right.
+      toMyGoal. mgIntro. mgDestructAnd 0; auto 10.
+      mgDestruct 1; auto 10.
+      - mgLeft; auto 10. unfold patt_and. mgIntro.
+        mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgExactn 1; auto 10.
+      - mgRight; auto 10. unfold patt_and. mgIntro.
+        mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_or_2 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_in.
+      pose proof (H1 := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
+                                        ltac:(auto) ltac:(auto)).
+      apply pf_iff_proj2 in H1; auto 10.
+      eapply syllogism_intro.
+      4: apply H1.
+      all: auto.
+      simpl.
+      apply Framing_right.
+
+      toMyGoal. mgIntro. mgDestruct 0; auto 10; mgDestructAnd 0; auto 10.
+      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgLeft; auto 10. mgExactn 1; auto 10.
+      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgRight; auto 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_or_iff Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      apply pf_iff_split; auto.
+      + apply membership_or_1; auto 10.
+      + apply membership_or_2; auto 10.
+    Defined.
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
