@@ -1839,6 +1839,59 @@ Section ProofSystemTheorems.
       + apply membership_or_1; auto 10.
       + apply membership_or_2; auto 10.
     Defined.
+
+    Lemma membership_and_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_and.
+      toMyGoal. mgIntro.
+      mgApplyMeta (membership_not_1 _ _ _) in 0; auto 10.
+      mgIntro. mgApply' 0 10. mgClear 0; auto 10.
+      mgApplyMeta (membership_or_2 _ _ _ _); auto 10.
+      mgDestruct 0; auto 10.
+      - mgLeft; auto 10.
+        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
+        mgExactn 0.
+      - mgRight; auto 10.
+        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
+        mgExactn 0.
+    Defined.
+    
+    Lemma membership_and_2 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      toMyGoal. mgIntro.
+      mgDestructAnd 0; auto 10.
+      unfold patt_and.
+      mgApplyMeta (@membership_not_2 _ _ _ _ _); auto 10.
+      mgIntro.
+      mgApplyMeta (membership_or_1 _ _ _ _) in 2; auto 10.
+      mgDestruct 2; auto 10.
+      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
+        mgApply' 2 10. mgExactn 0; auto 10.
+      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
+        mgApply' 2 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_and_iff Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      apply pf_iff_split; auto.
+      + apply membership_and_1; auto 10.
+      + apply membership_and_2; auto 10.
+    Defined.
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
