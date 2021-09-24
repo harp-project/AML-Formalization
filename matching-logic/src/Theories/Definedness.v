@@ -1892,6 +1892,16 @@ Section ProofSystemTheorems.
       + apply membership_and_1; auto 10.
       + apply membership_and_2; auto 10.
     Defined.
+
+    Lemma membership_imp_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+    Abort.
+         
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
