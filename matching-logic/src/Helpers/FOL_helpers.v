@@ -3095,7 +3095,39 @@ Tactic Notation "mgApplyMeta" uconstr(t) :=
 Ltac mgLeft := mgApplyMeta (disj_left_intro _ _ _ _ _).
 Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
 
+Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r':
+  Γ ⊢ (r ---> r') ->
+  forall l n g,
+    wf l ->
+    well_formed g ->
+    well_formed r ->
+    well_formed r' ->
+    l !! n = Some r' ->
+    mkMyGoal Σ Γ l g ->
+    mkMyGoal Σ Γ (<[n:=r]>l) g.
+Proof.
+  intros Himp l n g wfl wfg wfr wfr' Hn H.
+  pose proof (Htmp := prf_strenghten_premise_iter_meta_meta Γ l n r' r g ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) Himp).
+  apply Htmp. apply H.
+Defined.
 
+Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
+  unshelve(
+      erewrite <- (list_insert_id _ n _);[|reflexivity];
+      erewrite <- (list_insert_insert _ n _ _);
+      eapply (@MyGoal_applyMetaIn _ _ _ _ t);[idtac|idtac|idtac|idtac|reflexivity|rewrite {1}[<[_:=_]>_]/=]).
+
+Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ p ---> (p or q).
+Proof.
+  intros wfp wfq.
+  toMyGoal. mgIntro.
+  mgApplyMeta (disj_left_intro Γ p q _ _) in 0; auto.
+  mgExactn 0.
+Qed.
+  
 Tactic Notation "mgDestructAnd" constr(n) :=
   match goal with
   | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
