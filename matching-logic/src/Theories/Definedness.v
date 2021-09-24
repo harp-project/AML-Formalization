@@ -67,7 +67,9 @@ Section definedness.
 
   Definition AC_patt_defined : Application_context :=
     @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
-  
+
+  Definition is_predicate_pattern ψ : Pattern :=
+    (patt_equal ψ patt_bott) or (patt_equal ψ patt_top).
 End definedness.
 
 Module Notations.
@@ -815,7 +817,6 @@ Section ProofSystemTheorems.
 
   
   Import ProofSystem ProofSystem.Notations Helpers.FOL_helpers.
-  (*Notation "theory ⊢ pattern" := (@ML_proof_system Σ theory pattern) (at level 95, no associativity).*)
 
   Lemma patt_iff_implies_equal :
     forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
@@ -826,7 +827,7 @@ Section ProofSystemTheorems.
     apply ANNA; auto.
     Unshelve.
     auto.
-  Qed.
+  Defined.
 
   Lemma patt_equal_refl :
     forall φ Γ, well_formed φ ->
@@ -848,7 +849,26 @@ Section ProofSystemTheorems.
     apply elem_of_PropSet.
     exists AxDefinedness.
     reflexivity.
-  Qed.
+  Defined.
+
+  Lemma defined_evar Γ x:
+    theory ⊆ Γ ->
+    Γ ⊢ ⌈ patt_free_evar x ⌉.
+  Proof.
+    intros HΓ.
+    assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+
+    pose proof (S1' := S1).
+    apply universal_generalization with (x0 := ev_x) in S1'; auto.
+    replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
+      with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
+    2: { simpl. repeat case_match; auto; contradiction. }
+    
+    eapply Modus_ponens.
+    4: apply forall_variable_substitution.
+    3: apply S1'.
+    all: auto; simpl; case_match; auto.
+  Defined.
   
     
   Lemma in_context_impl_defined Γ AC ϕ:
@@ -1119,7 +1139,7 @@ Section ProofSystemTheorems.
     all: auto.
     Unshelve. all: auto.
     
-  Qed.
+  Defined.
 
   Lemma phi_impl_defined_phi Γ ϕ:
     theory ⊆ Γ ->
@@ -1129,7 +1149,7 @@ Section ProofSystemTheorems.
     intros HΓ wfϕ.
     replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
     apply in_context_impl_defined; assumption.
-  Qed.
+  Defined.
 
   Lemma total_phi_impl_phi Γ ϕ:
     theory ⊆ Γ ->
@@ -1140,7 +1160,7 @@ Section ProofSystemTheorems.
     unfold patt_total.
     pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(auto)).
     apply A_impl_not_not_B_meta; auto.
-  Qed.
+  Defined.
     
     
 
@@ -1495,7 +1515,393 @@ Section ProofSystemTheorems.
         apply Singleton_ctx.
 
         Unshelve. all: auto 10.
+    Defined.
+
+    Lemma membership_introduction Γ ϕ:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ϕ ->
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ).
+    Proof.
+      intros wfϕ HΓ Hϕ.
+
+      remember (fresh_evar ϕ) as x.
+
+      replace ϕ with (evar_quantify x 0 ϕ).
+      2: {
+        rewrite evar_quantify_fresh.
+        subst; auto. reflexivity.
+      }
+      
+      
+      assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ))).
+      {
+        apply P1; auto.
+      }
+
+      assert(S3: Γ ⊢ patt_free_evar x ---> ϕ).
+      {
+        eapply Modus_ponens. 4: apply S2. all: auto.
+      }
+
+      assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x).
+      {
+        apply A_impl_A; auto.
+      }
+
+      assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ)).
+      {
+        toMyGoal. mgIntro. unfold patt_and. mgIntro.
+        mgAssert ((! ϕ)).
+        { mgApply' 1 10. mgIntro. mgApply' 2 10. mgExactn 0; auto.  }
+        mgApply' 2 10.
+        mgAdd Hϕ; auto. mgExactn 0; auto 10.
+      }
+
+      assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉).
+      {
+        apply Framing_right. assumption.
+      }
+      
+      assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉).
+      {
+        apply defined_evar; assumption.
+      }
+
+      assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ).
+      {
+        eapply Modus_ponens. 4: apply S6. all: auto.
+      }
+
+      eapply universal_generalization with (x0 := x) in S9; auto.
+      simpl in S9. case_match;[|congruence]. exact S9.
+      Unshelve. all: auto.
+    Defined.
+
+    Lemma membership_elimination Γ ϕ:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ) ->
+      Γ ⊢ ϕ.
+    Proof.
+      intros wfϕ HΓ H.
+
+      remember (fresh_evar ϕ) as x.
+      assert(S1: Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))).
+      {
+        rewrite evar_quantify_fresh.
+        { subst x.  apply set_evar_fresh_is_fresh'. }
+        assumption.
+      }
+      
+      assert(S2: Γ ⊢ (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ)).
+      {
+        replace (b0 ∈ml evar_quantify x 0 ϕ)
+          with (evar_quantify x 0 (patt_free_evar x ∈ml ϕ))
+        .
+        2: {
+          simpl. case_match;[|congruence]. reflexivity.
+        }
+        apply forall_variable_substitution; auto.
+      }
+
+      assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)).
+      {
+        unfold well_formed,well_formed_closed in *. simpl.
+        destruct_and!. split_and!; auto.
+      }
+      
+      
+      assert(S3: Γ ⊢ patt_free_evar x ∈ml ϕ).
+      {
+        eapply Modus_ponens. 4: apply S2. all: auto.
+      }
+
+      pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x).
+      simpl in S5.
+
+      assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) ).
+      {
+        toMyGoal. mgIntro. mgIntro.
+        mgAdd S5; auto. unfold patt_and at 1. unfold patt_or at 1.
+        mgAssert((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+        using first 1.
+        {
+          remember ((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+            as A.
+          fromMyGoal. apply not_not_elim; subst; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        mgAssert((! (patt_free_evar x and ! ϕ))) using first 2.
+        {
+          mgApply' 0 10. mgClear 0; auto 10.
+          fromMyGoal. apply not_not_intro; auto 10.
+        }
+        mgClear 0; auto 10. mgClear 0; auto 10.
+
+        unfold patt_and.
+        mgAssert ((! patt_free_evar x or ! ! ϕ)) using first 1.
+        {
+          fromMyGoal. apply not_not_elim; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        unfold patt_or.
+        mgApplyMeta (not_not_elim _ _ _); auto 10.
+        mgApply' 0 10.
+        mgApplyMeta (not_not_intro _ _ _); auto 10.
+        mgExactn 1.
+        Unshelve. all: auto 10.
+      }
+
+      assert (S7: Γ ⊢ patt_free_evar x ---> ϕ).
+      {
+        eapply Modus_ponens. 4: apply S6. all: auto.
+      }
+
+      pose proof (S8 := S7).
+      apply universal_generalization with (x0 := x) in S8; auto.
+
+      assert (S9: Γ ⊢ (ex, patt_bound_evar 0) ---> ϕ).
+      {
+        unfold patt_forall in S8.
+        simpl in S8.
+        case_match; [|congruence].
+        
+        replace b0 with (evar_quantify x 0 (patt_free_evar x)).
+        2: { simpl. case_match; [|congruence]. reflexivity. }
+        
+        apply Ex_gen; auto.
+      }
+
+      eapply Modus_ponens.
+      4: apply S9.
+      3: apply Existence.
+      all: auto.
+    Defined.
+
+    Lemma membership_not_1 Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ).
+    Proof.
+      intros Hwf HΓ.
+      
+      pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x).
+      simpl in S1.
+
+      assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
+      {
+
+        replace (patt_sym (inj definedness) $ (patt_free_evar x and ϕ))
+          with (⌈ patt_free_evar x and ϕ ⌉) in S1 by reflexivity.
+
+        replace (patt_sym (inj definedness) $ (patt_free_evar x and ! ϕ))
+          with (⌈ patt_free_evar x and ! ϕ ⌉) in S1 by reflexivity.
+        
+        toMyGoal. mgIntro. mgAdd S1; auto 10.
+        unfold patt_and at 1.
+        mgAssert ((! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x and ! ϕ ⌉))
+                 using first 1.
+        
+        {
+          fromMyGoal.
+          apply not_not_elim; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        (* Symmetry of Or *)
+        mgAssert ((! ⌈ patt_free_evar x and ! ϕ ⌉ or ! ⌈ patt_free_evar x and ϕ ⌉))
+                 using first 1.
+        {
+          mgAdd (A_or_notA Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)); auto 10.
+          mgDestruct 0; auto 10.
+          - mgRight; auto 10. mgExactn 0; auto 10.
+          - mgLeft; auto 10. mgApply' 1 10. mgExactn 0; auto 10.
+        }
+        mgClear 0; auto 10.
+
+        mgApply' 0 10. mgClear 0; auto 10. fromMyGoal.
+        apply not_not_intro; auto 10.
+      }
+      apply S2.
+      Unshelve. all: auto 10.
     Qed.
+
+    Lemma membership_not_2 Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml !ϕ).
+    Proof.
+      intros wfϕ HΓ.
+      pose proof (S1 := @defined_evar Γ x HΓ).
+      assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉).
+      {
+        assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
+        {
+          toMyGoal. mgIntro. mgAdd (A_or_notA Γ ϕ ltac:(auto)); auto.
+          mgDestruct 0; auto.
+          - mgLeft; auto 10. unfold patt_and. mgIntro. unfold patt_or.
+            mgAssert ((! ϕ)).
+            {
+              mgApply' 2 10. mgClear 0; auto. mgClear 1; auto. fromMyGoal.
+              apply not_not_intro; auto.
+            }
+            mgApply' 3 10. mgExactn 0; auto 10.
+          - mgRight; auto 10. unfold patt_and. mgIntro. unfold patt_or.
+            mgApply' 0 10. mgApplyMeta (not_not_elim Γ ϕ ltac:(auto)); auto 10.
+            mgApply' 2 10. mgIntro. mgApply' 3 10. mgExactn 1; auto 10.
+        }
+        eapply Framing_right in H.
+        eapply Modus_ponens. 4: apply H. all: auto 10.
+      }
+
+      pose proof (Htmp := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
+                                          ltac:(auto) ltac:(auto)).
+      simpl in Htmp.
+      apply pf_iff_proj1 in Htmp; auto 10.
+      eapply Modus_ponens.
+      4: apply Htmp.
+      all: auto 10.
+      Unshelve. all: auto 10.
+    Defined.
+
+    Lemma membership_not_iff Γ ϕ x:
+      well_formed ϕ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ).
+    Proof.
+      intros Hwf HΓ.
+      apply pf_iff_split; auto 10.
+      - apply membership_not_1; auto 10.
+      - apply membership_not_2; auto 10.
+    Defined.
+    
+    Lemma membership_or_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_in.
+      eapply syllogism_intro.
+      5: apply Prop_disj_right; auto 10.
+      all: auto 10.
+      apply Framing_right.
+      toMyGoal. mgIntro. mgDestructAnd 0; auto 10.
+      mgDestruct 1; auto 10.
+      - mgLeft; auto 10. unfold patt_and. mgIntro.
+        mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgExactn 1; auto 10.
+      - mgRight; auto 10. unfold patt_and. mgIntro.
+        mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_or_2 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_in.
+      pose proof (H1 := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
+                                        ltac:(auto) ltac:(auto)).
+      apply pf_iff_proj2 in H1; auto 10.
+      eapply syllogism_intro.
+      4: apply H1.
+      all: auto.
+      simpl.
+      apply Framing_right.
+
+      toMyGoal. mgIntro. mgDestruct 0; auto 10; mgDestructAnd 0; auto 10.
+      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgLeft; auto 10. mgExactn 1; auto 10.
+      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
+        + mgApply' 2 10. mgExactn 0; auto 10.
+        + mgApply' 2 10. mgRight; auto 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_or_iff Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      apply pf_iff_split; auto.
+      + apply membership_or_1; auto 10.
+      + apply membership_or_2; auto 10.
+    Defined.
+
+    Lemma membership_and_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      unfold patt_and.
+      toMyGoal. mgIntro.
+      mgApplyMeta (membership_not_1 _ _ _) in 0; auto 10.
+      mgIntro. mgApply' 0 10. mgClear 0; auto 10.
+      mgApplyMeta (membership_or_2 _ _ _ _); auto 10.
+      mgDestruct 0; auto 10.
+      - mgLeft; auto 10.
+        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
+        mgExactn 0.
+      - mgRight; auto 10.
+        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
+        mgExactn 0.
+    Defined.
+    
+    Lemma membership_and_2 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      toMyGoal. mgIntro.
+      mgDestructAnd 0; auto 10.
+      unfold patt_and.
+      mgApplyMeta (@membership_not_2 _ _ _ _ _); auto 10.
+      mgIntro.
+      mgApplyMeta (membership_or_1 _ _ _ _) in 2; auto 10.
+      mgDestruct 2; auto 10.
+      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
+        mgApply' 2 10. mgExactn 0; auto 10.
+      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
+        mgApply' 2 10. mgExactn 1; auto 10.
+    Defined.
+
+    Lemma membership_and_iff Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+      apply pf_iff_split; auto.
+      + apply membership_and_1; auto 10.
+      + apply membership_and_2; auto 10.
+    Defined.
+
+    Lemma membership_imp_1 Γ x ϕ₁ ϕ₂:
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      theory ⊆ Γ ->
+      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Proof.
+      intros wfϕ₁ wfϕ₂ HΓ.
+    Abort.
+         
     
     Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
