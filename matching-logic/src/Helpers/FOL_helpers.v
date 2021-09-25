@@ -4257,45 +4257,34 @@ Section FOL_helpers.
       assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)) = false).
       {
         unfold svar_open.
-        Search svar_has_negative_occurrence bsvar_subst.
+        apply svar_hno_bsvar_subst.
+        { intro H'. inversion H'. }
+        { intro H'.
+          apply free_evar_subst_preserves_no_negative_occurrence; wf_auto.
+          wf_auto.
+        }
+
+        apply svar_hno_false_if_fresh. assumption.
+      }
+
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)) = false).
+      {
+        unfold svar_open.
+        apply svar_hno_bsvar_subst.
+        { intro H'. inversion H'. }
+        { intro H'.
+          apply free_evar_subst_preserves_no_negative_occurrence; wf_auto.
+          wf_auto.
+        }
+
+        apply svar_hno_false_if_fresh. assumption.
       }
       
-      
       apply pf_iff_split; auto.
-      + Check  mu_monotone.
-        apply mu_monotone; auto.
-        
-      
-      Search evar_quantify evar_open.
-      
-      apply (mu_monotone _ _ _ X) in IHpcPattern; auto.
-      3: { simpl. unfold patt_or. simpl. cbn.
-           fold (svar_has_positive_occurrence
-                   X
-                   (bsvar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_svar X) 0)).
-           fold (svar_has_negative_occurrence
-                   X
-                   (bsvar_subst (free_evar_subst' 0 pcPattern q pcEvar) (patt_free_svar X) 0)).
-           fold (svar_has_positive_occurrence
-                   X
-                   (bsvar_subst (free_evar_subst' 0 pcPattern q pcEvar) (patt_free_svar X) 0)).
-           fold (svar_has_negative_occurrence
-                   X
-                   (bsvar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_svar X) 0)).
-           rewrite !orbF.
-           wf_auto.
-           repeat (apply orb_false_iff; split_and).
-                      Search svar_has_negative_occurrence.
-           Search orb false.
-           
-           unfold svar_has_negative_occurrence
-      Print svar_quantify.
-      Search free_evar_subst' svar_quantify.
-      
-      
-      
-      
-  Abort.
+      + apply mu_monotone; auto.
+      + apply mu_monotone; auto.
+  Qed.
+  
   
 
   
