@@ -3701,7 +3701,9 @@ Section FOL_helpers.
     mgExactn 4. auto 10.
   Defined.
 
-  Ltac wf_auto := unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto.
+  Tactic Notation "wf_auto" int_or_var(n)
+    := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
+  Tactic Notation "wf_auto" := wf_auto 5.
   
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X:
     well_formed ϕ₁ ->
@@ -4014,7 +4016,12 @@ Section FOL_helpers.
           mgApply' 1 5.
           mgExactn 2; subst; auto.
     - simpl in *.
-      remember (evar_fresh (elements (free_evars pcPattern ∪ {[ pcEvar ]}))) as x.
+      remember (evar_fresh (elements (
+                                (free_evars pcPattern)
+                                  ∪ {[ pcEvar ]}
+                                  ∪ (free_evars p)
+                                  ∪ (free_evars q)
+               ))) as x.
       assert (x <> pcEvar).
       { solve_fresh_neq. }
       
@@ -4026,24 +4033,12 @@ Section FOL_helpers.
       feed specialize IHpcPattern.
       { wf_auto. }
       { rewrite evar_open_size'. lia. }
-
-      Check Ex_quan.
-      Check Ex_gen.
-
       
       assert (well_formed (ex , free_evar_subst' 1 pcPattern p pcEvar)).
-      {
-        wf_auto.
-        (* [auto] cannot do the simplification of 1 - 1 = 0 *)
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
+      { wf_auto. }
 
       assert (well_formed (ex , free_evar_subst' 1 pcPattern q pcEvar)).
-      {
-        wf_auto.
-        (* [auto] cannot do the simplification of 1 - 1 = 0 *)
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
+      { wf_auto. }
 
       
       unfold emplace in IHpcPattern. simpl in IHpcPattern.
@@ -4059,59 +4054,247 @@ Section FOL_helpers.
       
       
       unshelve(epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ IHpcPattern)).
-      { wf_auto.
-        apply wfc_ex_aux_body_ex_imp1.
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
-      { wf_auto.
-        apply wfc_ex_aux_body_ex_imp1.
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
+      { wf_auto. }
+      { wf_auto. }
       unshelve(epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ IHpcPattern)).
-      { wf_auto.
-        apply wfc_ex_aux_body_ex_imp1.
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
-      { wf_auto.
-        apply wfc_ex_aux_body_ex_imp1.
-        apply wfc_ex_free_evar_subst_2; simpl; auto.
-      }
+      { wf_auto. }
+      { wf_auto. }
       unfold evar_open in IH1, IH2.
-      
-      unshelve(epose proof (IH3 := syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x))); auto 10.
-      { wf_auto.
-        - apply wfc_mu_aux_bevar_subst; auto.
-        - apply wfc_ex_aux_bevar_subst; auto. apply wfc_ex_free_evar_subst_2; auto.
-        Search well_formed_closed_ex_aux free_evar_subst'.
-        - Search well_formed_positive bevar_subst.
-          apply well_formed_positive_bevar_subst; auto.
-        - apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_free_evar_subst; auto.
-        - apply wfc_ex_aux_body_ex_imp1. apply wfc_ex_free_evar_subst_2; auto.
-      }
-      
-      epose proof (IH4 := syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x)).      
-      
-      apply Ex_quan in IH1.
 
-      apply pf_iff_split; auto 10.
+      unshelve(epose proof (IH3 := syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x))).
+      { wf_auto. }
+      { wf_auto. }
+      { wf_auto. }
       
-        Search well_formed_closed_ex_aux free_evar_subst'.
-      apply pf_iff_split in IHpcPattern; auto 15
-      Check Ex_quan.
+      
+      unshelve(epose proof (IH4 := syllogism_intro Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))).
+      { wf_auto. }
+      { wf_auto. }
+      { wf_auto. }
 
-      apply Ex_quan in IHpcPattern.
-      
-      
-      unfold PC_wf in wfC.
-      feed specialize IHpcPattern.
+      fold (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)) in IH3.
+      fold (evar_open 0 x (free_evar_subst' 0 pcPattern q pcEvar)) in IH4.
+
+
+      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern q pcEvar)).
       {
-        unfold PC_wf.
-        unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; auto.
-        admit.
+        simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        { apply free_evars_free_evar_subst. }
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
       }
 
+      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern p pcEvar)).
+      {
+        simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        { apply free_evars_free_evar_subst. }
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+
+      
+      apply (Ex_gen _ _ _ x) in IH3.
+      4: { assumption. }
+      3: { wf_auto. }
+      2: { wf_auto. }
+      unfold exists_quantify in IH3.
+
+      erewrite evar_quantify_evar_open in IH3.
+      4: { wf_auto.
+           apply wfc_ex_free_evar_subst_2; auto.
+           eassumption. simpl. auto.
+      }
+      3: { assumption. }
+      2: { lia. }
+
+      apply (Ex_gen _ _ _ x) in IH4.
+      4: { assumption. }
+      3: { wf_auto. }
+      2: { wf_auto. }
+      unfold exists_quantify in IH4.
+
+      erewrite evar_quantify_evar_open in IH4.
+      4: { wf_auto.
+           apply wfc_ex_free_evar_subst_2; auto.
+           eassumption. simpl. auto.
+      }
+      3: { assumption. }
+      2: { lia. }
+
+      replace 1 with (0 + 1) by lia.      
+      repeat rewrite <- free_evar_subst_nest_ex_1.
+      rewrite nest_ex_aux_wfc_ex.
+      { wf_auto. }
+      rewrite nest_ex_aux_wfc_ex.
+      { wf_auto. }
+      
+      apply pf_iff_split; auto; wf_auto.
+      
+    - remember (svar_fresh (elements (
+                                (free_svars pcPattern)
+                                  ∪ (free_svars p)
+                                  ∪ (free_svars q)
+                                  ∪ (free_svars (free_evar_subst' 0 pcPattern p pcEvar))
+                                  ∪ (free_svars (free_evar_subst' 0 pcPattern q pcEvar))
+               ))) as X.
+
+      pose proof (IHpcPattern := IHsz (svar_open 0 X pcPattern)).
+
+      unfold svar_open in IHpcPattern at 1.
+
+      assert (Hpcoo: count_evar_occurrences pcEvar (bsvar_subst pcPattern (patt_free_svar X) 0) = 1).
+      { rewrite count_evar_occurrences_svar_open; auto. }
+      specialize (IHpcPattern Hpcoo).
+      feed specialize IHpcPattern.
+      { wf_auto; destruct_and?.
+        - apply wfp_svar_open. auto.
+        - apply wfc_mu_aux_body_mu_imp1. assumption.
+        - apply wfc_ex_aux_body_mu_imp1. assumption.
+      }
+      { rewrite svar_open_size'. lia. }
+      unfold emplace in IHpcPattern.
+      simpl in IHpcPattern. unfold free_evar_subst in IHpcPattern.
+
+      unfold svar_open in IHpcPattern.
+
+      rewrite free_evar_subst_bsvar_subst in IHpcPattern.
+      { wf_auto. }
+      { unfold evar_is_fresh_in. simpl. clear. set_solver. }
+      rewrite free_evar_subst_bsvar_subst in IHpcPattern.
+      { wf_auto. }
+      { unfold evar_is_fresh_in. simpl. clear. set_solver. }
+
+
+      assert (well_formed_closed_mu_aux (free_evar_subst' 0 pcPattern p pcEvar) 1).
+      {
+        wf_auto.
+        all: apply wfc_mu_free_evar_subst.
+        all: eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia.
+      }
+
+      assert (well_formed_closed_mu_aux (free_evar_subst' 0 pcPattern q pcEvar) 1).
+      {
+        wf_auto.
+        all: apply wfc_mu_free_evar_subst.
+        all: eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia.
+      }
+
+      assert (X ∉ free_svars (free_evar_subst' 0 pcPattern p pcEvar)).
+      {
+        simpl. subst X.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { eapply set_svar_fresh_is_fresh'. }
+        clear.
+        set_solver.
+      }
+
+      assert (X ∉ free_svars (free_evar_subst' 0 pcPattern q pcEvar)).
+      {
+        simpl. subst X.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { eapply set_svar_fresh_is_fresh'. }
+        clear.
+        set_solver.
+      }
+      
+      rewrite -[free_evar_subst' 0 pcPattern p pcEvar](@svar_quantify_svar_open _ X 1 0).
+      3: { assumption. }
+      2: { assumption. }
+      1: { lia. }
+
+      rewrite -[free_evar_subst' 0 pcPattern q pcEvar](@svar_quantify_svar_open _ X 1 0).
+      3: { assumption. }
+      2: { assumption. }
+      1: { lia. }
+
+      assert (well_formed (mu , free_evar_subst' 0 pcPattern p pcEvar)).
+      {
+        wf_auto; destruct_and?.
+        - apply free_evar_subst_preserves_no_negative_occurrence; auto.
+        - apply wfp_free_evar_subst; auto.
+      }
+
+      assert (well_formed (mu , free_evar_subst' 0 pcPattern q pcEvar)).
+      {
+        wf_auto; destruct_and?.
+        - apply free_evar_subst_preserves_no_negative_occurrence; auto.
+        - apply wfp_free_evar_subst; auto.
+      }
+      
+      assert (well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)))).
+      {
+        erewrite svar_quantify_svar_open; auto.
+      }
+
+      assert (well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)))).
+      {
+        erewrite svar_quantify_svar_open; auto.
+      }
+
+      assert (well_formed (bsvar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_svar X) 0)).
+      {
+        wf_auto.
+        + apply wfp_bsvar_subst; auto.
+        + apply wfc_mu_aux_bsvar_subst; auto.
+        + apply wfc_ex_aux_bsvar_subst; auto.
+      }
+
+      assert (well_formed (bsvar_subst (free_evar_subst' 0 pcPattern q pcEvar) (patt_free_svar X) 0)).
+      {
+        wf_auto.
+        + apply wfp_bsvar_subst; auto.
+        + apply wfc_mu_aux_bsvar_subst; auto.
+        + apply wfc_ex_aux_bsvar_subst; auto.
+      }
+      
+      unshelve (epose proof (pf_iff_proj1 _ _ _ _ _ IHpcPattern)); auto.
+      unshelve (epose proof (pf_iff_proj2 _ _ _ _ _ IHpcPattern)); auto.
+
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)) = false).
+      {
+        unfold svar_open.
+        Search svar_has_negative_occurrence bsvar_subst.
+      }
+      
+      
+      apply pf_iff_split; auto.
+      + Check  mu_monotone.
+        apply mu_monotone; auto.
+        
+      
+      Search evar_quantify evar_open.
+      
+      apply (mu_monotone _ _ _ X) in IHpcPattern; auto.
+      3: { simpl. unfold patt_or. simpl. cbn.
+           fold (svar_has_positive_occurrence
+                   X
+                   (bsvar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_svar X) 0)).
+           fold (svar_has_negative_occurrence
+                   X
+                   (bsvar_subst (free_evar_subst' 0 pcPattern q pcEvar) (patt_free_svar X) 0)).
+           fold (svar_has_positive_occurrence
+                   X
+                   (bsvar_subst (free_evar_subst' 0 pcPattern q pcEvar) (patt_free_svar X) 0)).
+           fold (svar_has_negative_occurrence
+                   X
+                   (bsvar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_svar X) 0)).
+           rewrite !orbF.
+           wf_auto.
+           repeat (apply orb_false_iff; split_and).
+                      Search svar_has_negative_occurrence.
+           Search orb false.
+           
+           unfold svar_has_negative_occurrence
+      Print svar_quantify.
+      Search free_evar_subst' svar_quantify.
+      
+      
+      
+      
   Abort.
   
 
