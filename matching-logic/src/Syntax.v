@@ -7185,3 +7185,67 @@ Proof.
   - rewrite IHϕ; auto.
   - rewrite IHϕ; auto.
 Qed.
+
+Lemma svar_hno_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+  (svar_has_negative_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
+  (svar_has_positive_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
+  svar_has_negative_occurrence X ϕ = false ->
+  svar_has_negative_occurrence X (bsvar_subst ϕ ψ dbi) = false
+with svar_hpo_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+       (svar_has_negative_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
+       (svar_has_positive_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
+       svar_has_positive_occurrence X ϕ = false ->
+       svar_has_positive_occurrence X (bsvar_subst ϕ ψ dbi) = false.
+Proof.
+  -
+    move: dbi.
+    induction ϕ; intros dbi H1 H2 H3; cbn in *; auto.
+    + case_match; auto.
+      destruct (decide (svar_has_negative_occurrence X ψ = false)); auto.
+      apply not_false_is_true in n0. specialize (H1 n0). congruence.
+    + apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite IHϕ1; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+    + fold svar_has_positive_occurrence in *.
+      fold no_positive_occurrence_db_b in *.
+      fold no_negative_occurrence_db_b in *.
+      apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite svar_hpo_bsvar_subst; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+  -
+    move: dbi.
+    induction ϕ; intros dbi H1 H2 H3; cbn in *; auto.
+    + case_match; auto.
+      destruct (decide (svar_has_positive_occurrence X ψ = false)); auto.
+      apply not_false_is_true in n0. specialize (H2 n0). congruence.
+    + apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite IHϕ1; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+    + fold svar_has_positive_occurrence in *.
+      fold svar_has_negative_occurrence in *.
+      fold no_positive_occurrence_db_b in *.
+      fold no_negative_occurrence_db_b in *.
+      apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite svar_hno_bsvar_subst; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+Qed.
