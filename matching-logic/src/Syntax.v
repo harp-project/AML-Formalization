@@ -7151,3 +7151,49 @@ Qed.
 
 #[export]
  Hint Resolve wfp_free_evar_subst : core.
+
+Lemma no_neg_occ_db_bevar_subst {Σ : Signature} phi psi dbi1 dbi2:
+  well_formed_closed_mu_aux psi 0 = true ->
+  no_negative_occurrence_db_b dbi1 phi = true ->
+  no_negative_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true
+with no_pos_occ_db_bevar_subst {Σ : Signature} phi psi dbi1 dbi2:
+       well_formed_closed_mu_aux psi 0 = true ->                                                                    
+       no_positive_occurrence_db_b dbi1 phi = true ->
+       no_positive_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true.
+Proof.
+  - move: dbi1 dbi2.
+    induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
+    + case_match; auto.
+    + destruct_and!.
+      rewrite -> IHphi1, -> IHphi2; auto.
+    + destruct_and!.
+      fold (no_positive_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+      rewrite no_pos_occ_db_bevar_subst; auto.
+      rewrite -> IHphi2; auto.
+  - move: dbi1 dbi2.
+    induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
+    + repeat case_match; auto.
+      apply wfc_impl_no_pos_occ. assumption.
+    + destruct_and!.
+      rewrite -> IHphi1, -> IHphi2; auto.
+    + destruct_and!.
+      fold (no_negative_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+      rewrite no_neg_occ_db_bevar_subst; auto.
+      rewrite -> IHphi2; auto.
+Qed.
+
+Lemma bevar_subst_positive_2 {Σ : Signature} :
+  forall φ ψ n,
+    well_formed_closed_mu_aux ψ 0 = true ->
+    well_formed_positive φ = true ->
+    well_formed_positive ψ = true ->
+    well_formed_positive (bevar_subst φ ψ n) = true.
+Proof.
+  induction φ; intros ψ n' H0 H1 H2; cbn in *; auto.
+  * break_match_goal; auto.
+  * destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
+  * destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
+  * destruct_and!.
+    rewrite IHφ; auto.
+    rewrite no_neg_occ_db_bevar_subst; auto.
+Qed.
