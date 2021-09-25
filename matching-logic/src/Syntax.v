@@ -7249,3 +7249,29 @@ Proof.
       { naive_bsolver. }
       { naive_bsolver. }
 Qed.
+
+Lemma svar_hno_false_if_fresh {Σ : Signature} X ϕ:
+  svar_is_fresh_in X ϕ ->
+  svar_has_negative_occurrence X ϕ = false
+with svar_hpo_false_if_fresh {Σ : Signature} X ϕ:
+       svar_is_fresh_in X ϕ ->
+       svar_has_positive_occurrence X ϕ = false.
+Proof.
+  - unfold svar_is_fresh_in.
+    induction ϕ; intros H; cbn in *; auto.
+    + rewrite -> IHϕ1, -> IHϕ2; try reflexivity; set_solver.
+    + fold svar_has_positive_occurrence.
+      rewrite -> svar_hpo_false_if_fresh, -> IHϕ2; try reflexivity.
+      * set_solver.
+      * unfold svar_is_fresh_in. set_solver.
+  - unfold svar_is_fresh_in.
+    induction ϕ; intros H; cbn in *; auto.
+    + case_match; auto. set_solver.
+    + rewrite -> IHϕ1, -> IHϕ2; try reflexivity; set_solver.
+    + fold svar_has_negative_occurrence.
+      rewrite -> svar_hno_false_if_fresh, -> IHϕ2; try reflexivity.
+      * set_solver.
+      * unfold svar_is_fresh_in. set_solver.
+Qed.
+
+    
