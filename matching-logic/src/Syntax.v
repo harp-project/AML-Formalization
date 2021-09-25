@@ -1302,78 +1302,11 @@ Section syntax.
   Definition wfc_body_mu phi := forall X, 
       X ∉ (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
 
-(*
-  (* Helper for wfc_mu_to_wfc_body *)
-  Lemma wfc_aux_body_mu_imp1:
-    forall phi n n' X,
-      well_formed_closed_aux phi n (S n')
-      ->
-      well_formed_closed_aux (svar_open n' X phi) n n'.
-  Proof.
-    - induction phi; intros n' n'' X H; try lia; auto.
-      * simpl. cbn in H. unfold well_formed_closed_aux, svar_open, bsvar_subst.
-        repeat case_match; auto. lia.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
-      * simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
-        rewrite IHphi1. apply H1. rewrite IHphi2. apply H2. reflexivity.
-      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
-      * simpl. simpl in H. rewrite IHphi. apply H. reflexivity.
-  Qed.
-
-  (* Helper for wfc_body_to_wfc_mu *)
-  Lemma wfc_aux_body_mu_imp2:
-    forall phi n n' X,
-      well_formed_closed_aux (svar_open n' X phi) n n'
-      ->
-      well_formed_closed_aux phi n (S n').
-  Proof.
-    induction phi; firstorder.
-    - simpl. cbn in H.
-      unfold well_formed_closed_aux in H.
-      repeat case_match; auto; try lia.
-    - simpl in H. simpl.
-      apply andb_true_iff in H. destruct H as [H1 H2].
-      erewrite IHphi1. 2: apply H1.
-      erewrite IHphi2. 2: apply H2.
-      reflexivity.
-    -  simpl in H. simpl.
-       apply andb_true_iff in H. destruct H as [H1 H2].
-       erewrite IHphi1. 2: apply H1.
-       erewrite IHphi2. 2: apply H2.
-       reflexivity.
-  Qed.
- *)
-  Search well_formed_closed_ex_aux.
-  (* well_formed_closed_ex_aux_ind should be used *)
-  (*
-  Lemma wfc_aux_extend:
-    forall phi n n' m m',
-      well_formed_closed_aux phi n m
-      -> n <= n' -> m <= m'
-      -> well_formed_closed_aux phi n' m'.
-  Proof.
-    intros phi n n' m m' H H0 H1.
-    generalize dependent n. generalize dependent n'.
-    generalize dependent m. generalize dependent m'.
-    induction phi; intros m' m'' H n' n'' H0 H1; try lia; auto.
-    * simpl in *. repeat case_match; auto. lia.
-    * simpl in *. repeat case_match; auto. lia.
-    * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
-      apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
-    * simpl. simpl in H0. apply andb_true_iff in H0. destruct H0 as [H2 H3].
-      apply andb_true_iff. split. erewrite IHphi1; eauto. erewrite IHphi2; eauto.
-    * simpl. simpl in H0. erewrite IHphi with (n' := S n') (m' := m'); eauto. lia.
-    * simpl. simpl in H0. erewrite IHphi with (n' := n') (m' := S m').
-      3: exact H0. all: auto; lia.
-  Qed.
-*)
-
   Lemma wfc_ex_aux_bevar_subst :
     forall phi psi n,
-      well_formed_closed_ex_aux phi (S n)
-      -> well_formed_closed_ex_aux psi n
-      -> well_formed_closed_ex_aux (bevar_subst phi psi n) n.
+      well_formed_closed_ex_aux phi (S n) = true
+      -> well_formed_closed_ex_aux psi n = true
+      -> well_formed_closed_ex_aux (bevar_subst phi psi n) n = true.
   Proof.
     intros phi psi n H H0. 
     generalize dependent n. generalize dependent psi.
@@ -1395,9 +1328,9 @@ Section syntax.
 
   Lemma wfc_mu_aux_bevar_subst :
     forall phi psi n n',
-      well_formed_closed_mu_aux phi n'
-      -> well_formed_closed_mu_aux psi n'
-      -> well_formed_closed_mu_aux (bevar_subst phi psi n) n'.
+      well_formed_closed_mu_aux phi n' = true
+      -> well_formed_closed_mu_aux psi n' = true
+      -> well_formed_closed_mu_aux (bevar_subst phi psi n) n' = true.
   Proof.
     intros phi psi n n' H H0. 
     generalize dependent n. generalize dependent n'. generalize dependent psi.
@@ -1411,13 +1344,14 @@ Section syntax.
       eauto using well_formed_closed_ex_aux_ind.
     - simpl. simpl in H.
       rewrite IHphi. apply H. 2: reflexivity.
-      eauto using well_formed_closed_mu_aux_ind.
+      eapply well_formed_closed_mu_aux_ind.
+      2: eassumption. lia.
   Qed.
 
 
   Lemma wfc_ex_aux_bsvar_subst :
     forall phi psi n n',
-      well_formed_closed_ex_aux phi n
+      well_formed_closed_ex_aux phi n = true
       -> well_formed_closed_ex_aux psi n = true
       -> well_formed_closed_ex_aux (bsvar_subst phi psi n') n = true.
   Proof.
@@ -1436,9 +1370,9 @@ Section syntax.
   
   Lemma wfc_mu_aux_bsvar_subst :
     forall phi psi n',
-      well_formed_closed_mu_aux phi (S n')
-      -> well_formed_closed_mu_aux psi n'
-      -> well_formed_closed_mu_aux (bsvar_subst phi psi n') n'.
+      well_formed_closed_mu_aux phi (S n') = true
+      -> well_formed_closed_mu_aux psi n' = true
+      -> well_formed_closed_mu_aux (bsvar_subst phi psi n') n' = true.
   Proof.
     intros phi psi n' H H0. 
     generalize dependent n'. generalize dependent psi.
@@ -1459,7 +1393,7 @@ Section syntax.
 
   (*If (mu, phi) is closed, then its body is closed too*)
   Lemma wfc_mu_to_wfc_body:
-    forall phi, well_formed_closed (patt_mu phi) -> wfc_body_mu phi.
+    forall phi, well_formed_closed (patt_mu phi) = true -> wfc_body_mu phi.
   Proof.
     intros phi H.
     unfold wfc_body_mu. intros X H0.
@@ -1470,7 +1404,7 @@ Section syntax.
 
   (*If phi is a closed body, then (mu, phi) is closed too*)
   Lemma wfc_body_to_wfc_mu:
-    forall phi, wfc_body_mu phi -> well_formed_closed (patt_mu phi).
+    forall phi, wfc_body_mu phi -> well_formed_closed (patt_mu phi) = true.
   Proof.
     intros phi H. unfold wfc_body_mu in H. unfold well_formed_closed. simpl.
     unfold well_formed_closed in H.
@@ -1484,7 +1418,7 @@ Section syntax.
   (*Conclusion*)
   Lemma wfc_body_wfc_mu_iff: 
     forall phi (X : svar),
-      well_formed_closed (patt_mu phi) <-> wfc_body_mu phi.
+      well_formed_closed (patt_mu phi) = true <-> wfc_body_mu phi.
   Proof.
     split.
     - apply wfc_mu_to_wfc_body.
@@ -1493,7 +1427,7 @@ Section syntax.
 
   (* Similarly with positiveness *)
   Definition wfp_body_ex phi := forall x,
-      x ∉ (free_evars phi) -> well_formed_positive (evar_open 0 x phi).
+      x ∉ (free_evars phi) -> well_formed_positive (evar_open 0 x phi) = true.
 
   Lemma wfp_evar_open : forall phi x n,
       well_formed_positive phi = true ->
@@ -2272,8 +2206,8 @@ Section syntax.
   Qed.
 
   Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar),
-      well_formed_positive phi ->
-      well_formed_positive (svar_open dbi X phi).
+      well_formed_positive phi = true ->
+      well_formed_positive (svar_open dbi X phi) = true.
   Proof.
     unfold svar_open.
     induction phi; simpl; intros dbi X H.
@@ -2283,7 +2217,8 @@ Section syntax.
     + simpl. case_match; constructor.
     + constructor.
     + inversion H. apply andb_true_iff in H1. destruct H1 as [H1 H2].
-      rewrite IHphi1. assumption. rewrite IHphi2. assumption. reflexivity.
+      rewrite IHphi1. assumption. rewrite IHphi2. assumption.
+      destruct_and!. symmetry. simpl. split_and!; auto.
     + constructor.
     + apply andb_true_iff in H. destruct H as [H1 H2]. rewrite IHphi1. apply H1. rewrite IHphi2. apply H2.
       reflexivity.
@@ -7079,6 +7014,19 @@ Proof.
   rewrite (IHp k); reflexivity.
 Qed.
 
+Lemma svar_open_size' {Σ : Signature} :
+  forall (k : db_index) (n : svar) (p : Pattern),
+    size' (svar_open k n p) = size' p.
+Proof.
+  intros k n p. generalize dependent k.
+  induction p; intros k; cbn; try reflexivity.
+  break_match_goal; reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
+  rewrite (IHp k); reflexivity.
+  rewrite (IHp (S k)); reflexivity.
+Qed.
+
 Lemma well_formed_positive_nest_ex_aux {Σ : Signature} level more ϕ:
   well_formed_positive (nest_ex_aux level more ϕ) = well_formed_positive ϕ.
 Proof.
@@ -7201,3 +7149,39 @@ Qed.
 Hint Resolve bevar_subst_positive_2 : core.
 
 Hint Resolve wfc_mu_aux_bevar_subst : core.
+
+Hint Resolve wfc_ex_aux_bevar_subst : core.
+
+Lemma count_evar_occurrences_svar_open {Σ : Signature} x dbi ϕ ψ:
+  count_evar_occurrences x ψ = 0 ->
+  count_evar_occurrences x (bsvar_subst ϕ ψ dbi) = count_evar_occurrences x ϕ.
+Proof.
+  move: dbi.
+  induction ϕ; intros dbi H; simpl; auto.
+  case_match; auto.
+Qed.
+
+
+Hint Resolve wfp_svar_open : core.
+
+Lemma free_evar_subst_bsvar_subst {Σ : Signature} emore ϕ ψ ξ x dbi:
+  well_formed_closed_mu_aux ξ 0 ->
+  evar_is_fresh_in x ψ ->
+  free_evar_subst' emore (bsvar_subst ϕ ψ dbi) ξ x
+  = bsvar_subst (free_evar_subst' emore ϕ ξ x) ψ dbi.
+Proof.
+  move: emore dbi.
+  induction ϕ; intros emore dbi H1 H2; simpl; auto.
+  - repeat case_match; auto.
+    Search bsvar_subst well_formed_closed_mu_aux.
+    erewrite well_formed_bsvar_subst. reflexivity.
+    2: { rewrite wfc_mu_nest_ex. eassumption. }
+    lia.
+  - repeat case_match; auto.
+    apply free_evar_subst_no_occurrence.
+    apply count_evar_occurrences_0. assumption.
+  - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+  - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+  - rewrite IHϕ; auto.
+  - rewrite IHϕ; auto.
+Qed.
