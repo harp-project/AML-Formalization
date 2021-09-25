@@ -6971,7 +6971,7 @@ Proof.
 Qed.
 
 #[export]
- Hint Resolve wfc_mu_free_svar_subst_2 : core.
+ Hint Resolve wfc_ex_free_evar_subst_2 : core.
 
 Lemma wfc_mu_free_evar_subst {Σ : Signature} level more ϕ ψ x:
   well_formed_closed_mu_aux ϕ level ->  
@@ -7197,3 +7197,7 @@ Proof.
     rewrite IHφ; auto.
     rewrite no_neg_occ_db_bevar_subst; auto.
 Qed.
+
+Hint Resolve bevar_subst_positive_2 : core.
+
+Hint Resolve wfc_mu_aux_bevar_subst : core.
