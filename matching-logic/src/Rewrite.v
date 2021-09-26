@@ -21,31 +21,6 @@ Import
 
 Open Scope ml_scope.
 
-
-(*
-Ltac2 pf_rewrite (h : constr) :=
-  try(
-  match! goal with
-    | [ |- @ML_proof_system ?sigma ?gamma ?pat]
-    =>
-    match! (Constr.type h), pat with
-    | ((@ML_proof_system ?sigma ?gamma (?l <---> ?r)), (context ctx [?l]))
-        =>
-        msg "got something"
-  end
-end).
-      => print (of_constr l);
-      match! pat with
-      | context ctx [?my] =>
-        msg "matched"; print (of_constr r);
-        ltac1:(pat |- replace pat with patt_bott) (Ltac1.of_constr (goal ()));
-        msg "after ltac1"
-      end
-    end
-  end).
-*)
-
-Check emplace. Print PatternCtx.
 Ltac2 pf_rewrite (h : constr) :=
   try(
   match! (Constr.type h) with
@@ -70,7 +45,7 @@ Ltac2 pf_rewrite (h : constr) :=
         print (of_constr ctxpat);
         let alternative := (constr:(@emplace $sigma (@Build_PatternCtx $sigma $star $ctxpat) $l)) in
         print (of_constr alternative);
-        ltac1:(sigma gamma pat new_pat |- cut (@ML_proof_system sigma gamma new_pat))
+        ltac1:(sigma gamma pat new_pat |- replace pat with new_pat)
                (Ltac1.of_constr sigma)
                (Ltac1.of_constr gamma)
                (Ltac1.of_constr pat)
@@ -80,17 +55,45 @@ Ltac2 pf_rewrite (h : constr) :=
     end
   end).
 
+Search free_evar_subst'.
+Check @well_formed_free_evar_subst.
+Check @free_evar_subst_no_occurrence.
+
+
+Ltac2 reduce_free_evar_subst_step () :=
+      match! goal with
+      | [ |- context ctx [free_evar_subst' ?more ?p ?q ?x]]
+        =>  rewrite (@free_evar_subst_no_occurrence _ $more $x $p $q) >
+           [|(rewrite count_evar_occurrences_0 >
+              [reflexivity|(
+                 eapply evar_is_fresh_in_richer' >
+                 [|apply set_evar_fresh_is_fresh'];
+               simpl; clear; ltac1:(set_solver)
+           )])]
+      end.
+
+Ltac2 reduce_free_evar_subst () :=
+  unfold free_evar_subst;
+  repeat (reduce_free_evar_subst_step ()).
+
 
 Set Default Proof Mode "Classic".
-Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b c:
+Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ b ---> c) <---> (a' $ b ---> c).
+  Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
 Proof.
-  intros Himp.
+  intros wfa wfa' wfb Himp.
   ltac2:(pf_rewrite constr:(Himp)).
   
   2: {
-    
+    unfold emplace. simpl.
+    unfold free_evar_subst. simpl.
+    repeat case_match; try congruence. 2: 
+    rewrite ?nest_ex_aux_0. cbn.
+    ltac2:(reduce_free_evar_subst ()). reflexivity.
   }
 Abort.
 
