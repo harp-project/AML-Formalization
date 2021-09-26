@@ -2734,9 +2734,10 @@ Section syntax.
   Record PatternCtx : Type :=
     { pcEvar : evar ;
       pcPattern : Pattern;
-      pcOneOcc : count_evar_occurrences pcEvar pcPattern = 1  ;
     }.
 
+  Definition is_linear_context (C : PatternCtx) := count_evar_occurrences (pcEvar C) (pcPattern C) = 1.
+  
   Definition PC_wf C := well_formed (pcPattern C).
 
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
@@ -2870,7 +2871,6 @@ Section syntax.
     {|
     pcEvar := boxvar;
     pcPattern := ApplicationContext2Pattern boxvar AC;
-    pcOneOcc := ApplicationContext2Pattern_one_occ pf
     |}.
 
   Lemma AC2PC'_wf boxvar AC pf: PC_wf (@ApplicationContext2PatternCtx' boxvar AC pf).
@@ -6251,21 +6251,26 @@ Qed.
 
 
 
-Program Definition evar_quantify_ctx {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+Definition evar_quantify_ctx {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
   match decide (x = pcEvar C)  with
   | left _ => C
-  | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C)) _
+  | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C))
   end.
-Next Obligation.
-  intros Σ x n C.
+
+Lemma is_linear_context_evar_quantify {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) :
+  is_linear_context C ->
+  is_linear_context (evar_quantify_ctx x n C).
+Proof.
+  intros Hlin. unfold evar_quantify_ctx.
+  unfold is_linear_context in *.
   destruct (decide (x = pcEvar C)); simpl.
-  - intros pf cpf. contradiction.
-  - intros pf _. destruct C. simpl in *.
+  - assumption.
+  - destruct C. simpl in *.
 
     assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
             = count_evar_occurrences pcEvar0 pcPattern0).
     {
-      clear pcOneOcc0.
+      clear Hlin.
       move: n.
       induction pcPattern0; intros n'; simpl in *; try lia.
       + destruct (decide (x0 = pcEvar0)); subst; simpl in *.
@@ -6280,19 +6285,22 @@ Next Obligation.
       + rewrite IHpcPattern0. reflexivity.
     }
     congruence.
-Defined.
+Qed.
 
-Program Definition svar_quantify_ctx {Σ : Signature} (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
-  @Build_PatternCtx Σ (pcEvar C) (svar_quantify X n (pcPattern C)) _.
-Next Obligation.
-  intros Σ X n C.
+Definition svar_quantify_ctx {Σ : Signature} (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+  @Build_PatternCtx Σ (pcEvar C) (svar_quantify X n (pcPattern C)).
+
+Lemma is_linear_context_svar_quantify {Σ : Signature} (X : svar) (n : db_index) (C : PatternCtx) :
+  is_linear_context C ->
+  is_linear_context (svar_quantify_ctx X n C).
+Proof.
+  intros Hlin. unfold svar_quantify_ctx. unfold is_linear_context in *.
   destruct C. simpl in *.
-
 
   assert (count_evar_occurrences pcEvar0 (svar_quantify X n pcPattern0)
           = count_evar_occurrences pcEvar0 pcPattern0).
   {
-    clear pcOneOcc0.
+    clear Hlin.
     move: n.
     induction pcPattern0; intros n'; simpl in *; try lia.
     + case_match; subst; simpl in *; reflexivity.
@@ -6302,8 +6310,7 @@ Next Obligation.
     + rewrite IHpcPattern0. reflexivity.
   }
   congruence.
-Defined.
-
+Qed.
 
 Lemma evar_quantify_nest_ex_aux {Σ : Signature} more level x n' ϕ:
   n' >= level ->
@@ -6416,17 +6423,13 @@ Lemma evar_quantify_emplace {Σ : Signature} x n C ϕ:
 Proof.
   destruct C.
   unfold evar_quantify_ctx. simpl.
-  unfold decide,decide_rel.
-  move: erefl.
-
-  move: {1 3}(evar_eqdec x pcEvar0).
-  case => //.
-  { intros Heq _. subst x.
+  case_match.
+  { subst x.
     unfold emplace. simpl. unfold free_evar_subst.
     replace n with (n+0) at 1 by lia.
     apply evar_quantify_free_evar_subst'.
   }
-  intros Hneq e. unfold emplace. simpl. clear e.
+  unfold emplace. simpl.
   unfold free_evar_subst.
   replace n with (n+0) at 1 by lia.
   rewrite -> evar_quantify_free_evar_subst'_2. 2: assumption.

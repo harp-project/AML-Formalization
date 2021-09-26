@@ -2556,12 +2556,15 @@ Section FOL_helpers.
     well_formed q ->
     PC_wf C ->
     is_implicative_context C ->
+    is_linear_context C ->
     Γ ⊢ (p <---> q) ->
     Γ ⊢ (((emplace C p) <---> (emplace C q))).
   Proof.
-    intros wfp wfq wfC impC Hiff.
+    unfold is_linear_context.
+    intros wfp wfq wfC impC Hlin Hiff.
     destruct C.
-    induction pcPattern; simpl; unfold is_implicative_context in impC; simpl in impC; inversion impC;
+    move: Hlin.
+    induction pcPattern; simpl; intros Hlin; unfold is_implicative_context in impC; simpl in impC; inversion impC;
       unfold emplace; unfold free_evar_subst; simpl.
     - destruct (decide (pcEvar = x)); simpl.
       { rewrite !nest_ex_aux_0. exact Hiff. }
@@ -2594,10 +2597,10 @@ Section FOL_helpers.
         remember (free_evar_subst pcPattern2 q pcEvar) as q2.
         assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
         { lia. }
-        specialize (IHpcPattern1 ltac:(auto) ltac:(auto)).
+        specialize (IHpcPattern1 ltac:(auto)).
         unfold is_implicative_context in IHpcPattern1.
         simpl in IHpcPattern1. rewrite andbT in impC.
-        specialize (IHpcPattern1 ltac:(assumption)).
+        specialize (IHpcPattern1 ltac:(assumption) ltac:(auto)).
         clear IHpcPattern2. (* Can't specialize. *)
 
         (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
@@ -2630,12 +2633,7 @@ Section FOL_helpers.
         remember (free_evar_subst pcPattern2 q pcEvar) as q2.
         assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
         { lia. }
-        specialize (IHpcPattern2 ltac:(auto) ltac:(auto)).
-        unfold is_implicative_context in IHpcPattern1.
-        simpl in IHpcPattern1.
-        simpl in impC. (*rewrite andbT in impC.*)
-        specialize (IHpcPattern2 impC).
-        clear IHpcPattern1. (* Can't specialize. *)
+        specialize (IHpcPattern2 ltac:(auto) ltac:(auto) ltac:(lia)).
         pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 p ltac:(lia)).
         pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 q ltac:(lia)).
         subst p1 q1. rewrite Hnoocp Hnoocq.
@@ -3834,7 +3832,7 @@ Section FOL_helpers.
   
 
 
-  (* TODO this should hold even without the linearity assumption on the context *)
+  (* How to prove this without the linearity assumption on the context? *)
   Lemma prf_equiv_congruence Γ p q C:
     well_formed p ->
     well_formed q ->
@@ -3850,18 +3848,21 @@ Section FOL_helpers.
     assert (Hsz: size' pcPattern <= sz) by lia.
     clear Heqsz.
 
-    move: pcPattern pcOneOcc wfC Hsz.
-    induction sz; intros pcPattern pcOneOcc wfC Hsz;
+    move: pcPattern wfC Hsz.
+    induction sz; intros pcPattern wfC Hsz;
       destruct pcPattern; simpl in *; try lia;
         unfold emplace; unfold free_evar_subst; simpl.
     
     - repeat case_match; auto; try lia.
       { rewrite !nest_ex_aux_0. exact Hiff. }
       apply pf_iff_equiv_refl. auto.
+    - apply pf_iff_equiv_refl; auto.
+    - apply pf_iff_equiv_refl; auto.
+    - apply pf_iff_equiv_refl; auto.
+    - apply pf_iff_equiv_refl; auto.
     - unfold emplace in *. simpl in *.
       pose proof (pwf := wfC).
       unfold PC_wf in pwf.
-      
       
       assert (Hwf1 : well_formed pcPattern1).
       { unfold well_formed,well_formed_closed in *. simpl in *.
@@ -3873,63 +3874,31 @@ Section FOL_helpers.
         destruct_and!.
         unfold well_formed,well_formed_closed. split_and!; assumption.
       }
+      
+      pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
+      pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
 
-      destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
-      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in *; try lia.
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
-        { lia. }
-        pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(auto) ltac:(lia)).
-        simpl in IHpcPattern1.
+      epose proof (H'11 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
+      epose proof (H'12 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
+      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.        
+      epose proof (H'21 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
+      epose proof (H'22 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
+      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
 
-        unfold patt_iff.
+      
+      apply pf_iff_equiv_trans
+        with (B := free_evar_subst' 0 pcPattern1 q pcEvar $ free_evar_subst' 0 pcPattern2 p pcEvar); auto.
 
-        epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
-        epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
-        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.        
-
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 q ltac:(lia)).
-
-        rewrite Hnoocp. rewrite Hnoocq.
-        remember (free_evar_subst' 0 pcPattern1 p pcEvar) as P1.
-        remember (free_evar_subst' 0 pcPattern1 q pcEvar) as Q1.
-        
-        apply conj_intro_meta; subst; auto 10.
+      + apply conj_intro_meta; subst; auto 10.
         * apply Framing_left. assumption.
         * apply Framing_left. assumption.
           
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
-        { lia. }
-        
-        pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(auto) ltac:(lia)).
-        simpl in IHpcPattern2.
-
-        unfold patt_iff.
-
-        epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
-        epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
-        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto. 
-
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 q ltac:(lia)).
-
-        rewrite Hnoocp. rewrite Hnoocq.
-        remember (free_evar_subst' 0 pcPattern2 p pcEvar) as P1.
-        remember (free_evar_subst' 0 pcPattern2 q pcEvar) as Q1.
-        
-
-        apply conj_intro_meta; subst; auto 10.
+      + apply conj_intro_meta; subst; auto 10.
         * apply Framing_right. assumption.
         * apply Framing_right. assumption.
 
+    - apply pf_iff_equiv_refl; auto.
+      
     - unfold emplace in *. simpl in *.
       pose proof (pwf := wfC).
       unfold PC_wf in pwf.
@@ -3945,65 +3914,28 @@ Section FOL_helpers.
         destruct_and!.
         unfold well_formed,well_formed_closed. split_and!; assumption.
       }
+
+      pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
+      pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
+      epose proof (H'11 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
+      epose proof (H'12 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
+      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
+      epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
+      epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
+      Unshelve. 2,3,4,5: subst; auto.
       
-      destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
-      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in *; try lia.
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
-        { lia. }
-        
-        pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(auto) ltac:(lia)).
-        simpl in IHpcPattern1.
-
-        (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
-           Therefore, p2 = q2. We need a lemma for that. *)
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 q ltac:(lia)).
-        subst p2 q2. rewrite Hnoocp Hnoocq.
-        unfold patt_iff.
-
-        epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
-        epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
-
-        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
-
-        apply conj_intro_meta; subst; auto 10.
-        unfold patt_iff in IHpcPattern1.
-                             
-        * toMyGoal. mgIntro. mgIntro. mgAdd H'2. 1,2,3: subst; auto.
+      apply pf_iff_equiv_trans
+        with (B := (free_evar_subst' 0 pcPattern1 q pcEvar ---> free_evar_subst' 0 pcPattern2 p pcEvar)); auto.
+      + apply conj_intro_meta; subst; auto 10.
+        * toMyGoal. mgIntro. mgIntro. mgAdd H'12. 1,2,3: subst; auto.
           mgApply' 1 5.
           mgApply' 0 5.
           mgExactn 2; subst; auto.
-
-        * toMyGoal. mgIntro. mgIntro. mgAdd H'1. 1,2,3: subst; auto.
+        * toMyGoal. mgIntro. mgIntro. mgAdd H'11. 1,2,3: subst; auto.
           mgApply' 1 5.
           mgApply' 0 5.
           mgExactn 2; subst; auto.
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
-        { lia. }
-
-        pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(auto) ltac:(lia)).
-        simpl in IHpcPattern2.
-
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 q ltac:(lia)).
-        subst p1 q1. rewrite Hnoocp Hnoocq.
-        unfold patt_iff.
-
-        epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
-        epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
-        Unshelve. 2,3,4,5: subst; auto.
-        
-        apply conj_intro_meta. 1,2: subst; auto.
-        unfold patt_iff in IHpcPattern2.
-        
+      + apply conj_intro_meta. 1,2: subst; auto.
         * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
           subst.
           mgApply' 0 5.
@@ -4015,6 +3947,7 @@ Section FOL_helpers.
           mgApply' 0 5.
           mgApply' 1 5.
           mgExactn 2; subst; auto.
+
     - simpl in *.
       remember (evar_fresh (elements (
                                 (free_evars pcPattern)
@@ -4026,10 +3959,7 @@ Section FOL_helpers.
       { solve_fresh_neq. }
       
       pose proof (IHpcPattern := IHsz (evar_open 0 x pcPattern)).
-      assert (count_evar_occurrences pcEvar (evar_open 0 x pcPattern) = 1).
-      { rewrite count_evar_occurrences_evar_open; auto. }
       
-      specialize (IHpcPattern ltac:(assumption)).
       feed specialize IHpcPattern.
       { wf_auto. }
       { rewrite evar_open_size'. lia. }
@@ -4146,9 +4076,6 @@ Section FOL_helpers.
 
       unfold svar_open in IHpcPattern at 1.
 
-      assert (Hpcoo: count_evar_occurrences pcEvar (bsvar_subst pcPattern (patt_free_svar X) 0) = 1).
-      { rewrite count_evar_occurrences_svar_open; auto. }
-      specialize (IHpcPattern Hpcoo).
       feed specialize IHpcPattern.
       { wf_auto; destruct_and?.
         - apply wfp_svar_open. auto.

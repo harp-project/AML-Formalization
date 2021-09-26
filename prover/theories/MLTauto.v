@@ -363,14 +363,7 @@ Section ml_tauto.
       set (ctx' := ctx_expr);
       assert (wfctx': well_formed ctx');          
       [unfold ctx'; unfold patt_iff; auto 15|];
-      assert (countstar: count_evar_occurrences star ctx' = 1);
-      [unfold ctx'; simpl; destruct (decide (star = star)); [|contradiction];
-       simpl; rewrite ?negate_count_evar_occurrences;
-       simpl_tactic;
-       (*          rewrite ?Hcount_p1' Hcount_p2';*)
-       lia|
-      ];
-      set (ctx := (@Build_PatternCtx _ star ctx' countstar));
+      set (ctx := (@Build_PatternCtx _ star ctx'));
       assert (Himpl: is_implicative_context ctx);
       [ unfold ctx; unfold is_implicative_context;
         rewrite [pcEvar _]/=; rewrite [pcPattern _]/=;
@@ -386,7 +379,7 @@ Section ml_tauto.
         reflexivity
        |];
       assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)));
-      [apply prf_equiv_congruence_implicative_ctx;auto|];
+      [apply prf_equiv_congruence;auto|];
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
       unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
