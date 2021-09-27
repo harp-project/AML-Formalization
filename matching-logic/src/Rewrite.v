@@ -102,7 +102,7 @@ Ltac2 pf_rewrite_shelved (h : constr) :=
                (Ltac1.of_constr gamma)
                (Ltac1.of_constr pat)
                (Ltac1.of_constr alternative) >
-        [|( simplify_emplace; try reflexivity; shelve ()
+        [|( simplify_emplace (); try reflexivity; shelve ()
         )];
         (* Use the congruence lemma and $h *)
         eapply Modus_ponens >
@@ -117,16 +117,28 @@ Ltac2 pf_rewrite_shelved (h : constr) :=
         ])])];
         (* replace the emplaced version with the original pattern but with the new value *)
         let alternative' := (constr:(@emplace $sigma (@Build_PatternCtx $sigma $star $ctxpat) $r)) in
-        print (of_constr alternative')
+        print (of_constr alternative');
+        ltac1:(sigma gamma pat new_pat |- replace pat with new_pat)
+               (Ltac1.of_constr sigma)
+               (Ltac1.of_constr gamma)
+               (Ltac1.of_constr alternative')
+               (Ltac1.of_constr (Pattern.instantiate ctx r)) >
+        [|( simplify_emplace (); try reflexivity; shelve ()
+        )]
       end
     end
   end.
+Set Default Proof Mode "Classic".
+
+Ltac2 unshelve_wrapper tac := (ltac1:(unshelve ltac2:(Ltac1.lambda tac) )).
 
 (* TODO: how to pass the parameter? *)
-Ltac pf_rewrite_unshelved := unshelve (ltac2:(x |- pf_rewrite_shelved (Option.get (Ltac1.to_constr x)))).
+(*Ltac pf_rewrite_unshelved x := unshelve (ltac2:(x |- pf_rewrite_shelved (Option.get (Ltac1.to_constr x)))).*)
+
+(*Ltac2 pf_rewrite_unshelved x := ltac1:(unshelve (ltac2:(x |- pf_rewrite_shelved (Option.get (Ltac1.to_constr x))))).*)
     
 
-Set Default Proof Mode "Classic".
+
 Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
@@ -135,26 +147,8 @@ Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
   Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Himp.
+  (*pf_rewrite_unshelved Himp.*)
   ltac2:(pf_rewrite_shelved constr:(Himp)).
-    ])])].
-      
-  4: { apply pf_iff_proj1;
-       [shelve|shelve|(apply prf_equiv_congruence;
-                       [shelve|shelve|shelve|(apply pf_iff_equiv_sym;[shelve|shelve|apply Himp])])].
-  }
-       
-  2: {
-    repeat rewrite nest_ex_aux_0.
-    ltac2:(reduce_free_evar_subst ()).
-    reflexivity.
-    
-    }
-    
-    2: {
-    repeat rewrite nest_ex_aux_0. cbn.
-    ltac2:(reduce_free_evar_subst ()). reflexivity.
-    }
-    
-  }
+  
 Abort.
 
