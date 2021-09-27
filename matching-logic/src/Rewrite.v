@@ -10,7 +10,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import extralibrary.
 
-From Ltac2 Require Import Message Control Fresh.
+From Ltac2 Require Import Message Control Fresh Option.
 Ltac2 msg x := print (of_string x).
 
 Import
@@ -74,8 +74,15 @@ Ltac solve_fresh_contradictions :=
        contradiction
   end.
 
-Ltac2 pf_rewrite (h : constr) :=
-  try(
+Ltac2 simplify_emplace () := unfold emplace; simpl;
+           unfold free_evar_subst; simpl;
+           repeat ltac1:(case_match);
+           try ltac1:(congruence);
+           try (ltac1:(solve_fresh_contradictions));
+           repeat (rewrite nest_ex_aux_0);
+           reduce_free_evar_subst ().
+
+Ltac2 pf_rewrite_shelved (h : constr) :=
   match! (Constr.type h) with
   | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
     =>
@@ -95,15 +102,28 @@ Ltac2 pf_rewrite (h : constr) :=
                (Ltac1.of_constr gamma)
                (Ltac1.of_constr pat)
                (Ltac1.of_constr alternative) >
-        [|(unfold emplace; simpl;
-           unfold free_evar_subst; simpl;
-           repeat ltac1:(case_match);
-           try ltac1:(congruence);
-           try (ltac1:(solve_fresh_contradictions))
-        )]
+        [|( simplify_emplace; try reflexivity; shelve ()
+        )];
+        (* Use the congruence lemma and $h *)
+        eapply Modus_ponens >
+        [(shelve ())|(shelve ())|()|
+          (apply pf_iff_proj1 >
+           [shelve () |shelve ()|
+             (apply prf_equiv_congruence >
+              [shelve ()|shelve ()|shelve ()|
+                (apply pf_iff_equiv_sym >
+                 [shelve ()|shelve ()|
+                   apply $h])
+        ])])];
+        (* replace the emplaced version with the original pattern but with the new value *)
+        let alternative' := (constr:(@emplace $sigma (@Build_PatternCtx $sigma $star $ctxpat) $r)) in
+        print (of_constr alternative')
       end
     end
-  end).
+  end.
+
+(* TODO: how to pass the parameter? *)
+Ltac pf_rewrite_unshelved := unshelve (ltac2:(x |- pf_rewrite_shelved (Option.get (Ltac1.to_constr x)))).
     
 
 Set Default Proof Mode "Classic".
@@ -115,24 +135,18 @@ Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
   Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Himp.
-  ltac2:(pf_rewrite constr:(Himp)).
-
+  ltac2:(pf_rewrite_shelved constr:(Himp)).
+    ])])].
+      
+  4: { apply pf_iff_proj1;
+       [shelve|shelve|(apply prf_equiv_congruence;
+                       [shelve|shelve|shelve|(apply pf_iff_equiv_sym;[shelve|shelve|apply Himp])])].
+  }
+       
   2: {
-    ltac2:(solve_fresh_contradictions ()).
-    ltac2:(rewrite -> e0 in hcontra25). rewrite e0 in hcontra. contradiction.
- 
-  2: {
-    ltac2:(solve_fresh_contradictions ()).
-    solve_fresh_neq.
-    3: {
-    repeat rewrite nest_ex_aux_0. cbn.
+    repeat rewrite nest_ex_aux_0.
     ltac2:(reduce_free_evar_subst ()).
-    assert (x <> fresh_evar
-                   ((a $ b ---> patt_free_evar x) <---> (a' $ b ---> patt_free_evar x)) ).
-    {
-      solve_fresh_neq.
-    }
-    contradiction.
+    reflexivity.
     
     }
     
