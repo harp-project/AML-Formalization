@@ -15,7 +15,6 @@ src/SignatureHelper.v
 src/Logic.v
 
 src/Helpers/FOL_helpers.v
-src/Rewrite.v
 
 src/Theories/Definedness.v
 src/Theories/Sorts.v
