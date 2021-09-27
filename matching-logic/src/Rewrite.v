@@ -21,21 +21,21 @@ Import
 
 Open Scope ml_scope.
 
-Ltac2 reduce_free_evar_subst_step () :=
-      match! goal with
+Ltac reduce_free_evar_subst_step :=
+      match goal with
       | [ |- context ctx [free_evar_subst' ?more ?p ?q ?x]]
-        =>  rewrite (@free_evar_subst_no_occurrence _ $more $x $p $q) >
-           [|(rewrite count_evar_occurrences_0 >
+        =>  rewrite (@free_evar_subst_no_occurrence _ more x p q);
+           [|(rewrite count_evar_occurrences_0;
               [reflexivity|(
-                 eapply evar_is_fresh_in_richer' >
+                 eapply evar_is_fresh_in_richer';
                  [|apply set_evar_fresh_is_fresh'];
-               simpl; clear; ltac1:(set_solver)
+               simpl; clear; set_solver
            )])]
       end.
 
-Ltac2 reduce_free_evar_subst () :=
+Ltac reduce_free_evar_subst :=
   unfold free_evar_subst;
-  repeat (reduce_free_evar_subst_step ()).
+  repeat (reduce_free_evar_subst_step).
 
 (*
 Ltac2 solve_fresh_contradictions () :=
@@ -74,14 +74,14 @@ Ltac solve_fresh_contradictions :=
        contradiction
   end.
 
-Ltac2 simplify_emplace () := unfold emplace; simpl;
+Ltac simplify_emplace := unfold emplace; simpl;
            unfold free_evar_subst; simpl;
-           repeat ltac1:(case_match);
-           try ltac1:(congruence);
-           try (ltac1:(solve_fresh_contradictions));
+           repeat case_match;
+           try congruence;
+           try (solve_fresh_contradictions);
            repeat (rewrite nest_ex_aux_0);
-           reduce_free_evar_subst ().
-
+           reduce_free_evar_subst.
+(*
 Ltac2 pf_rewrite_shelved (h : constr) :=
   match! (Constr.type h) with
   | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
@@ -128,9 +128,30 @@ Ltac2 pf_rewrite_shelved (h : constr) :=
       end
     end
   end.
-Set Default Proof Mode "Classic".
+ *)
+Ltac pf_rewrite_shelved h :=
+  match type of h with
+  | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
+    =>
+    match goal with
+    | [ |- @ML_proof_system ?sigma ?gamma ?pat]
+      => idtac "pat: " pat;
+      match pat with
+      | context ctx [l] =>
+          let l' := context ctx [l] in
+          idtac "have" l';
+          let star := eval red in (@fresh_evar sigma pat) in
+          (* Replace the original pattern with its emplace-ed version *)
+          let ctxpat := context ctx [(@patt_free_evar sigma star)] in
+          let alternative := eval red in (@emplace sigma (@Build_PatternCtx sigma star ctxpat) l) in
+          (*  (replace pat with alternative);*)
+          idtac "g";
+          [|( simplify_emplace; try reflexivity; shelve)]
+      end
+    end
+  end.
 
-Ltac2 unshelve_wrapper tac := (ltac1:(unshelve ltac2:(Ltac1.lambda tac) )).
+Set Default Proof Mode "Classic".
 
 (* TODO: how to pass the parameter? *)
 (*Ltac pf_rewrite_unshelved x := unshelve (ltac2:(x |- pf_rewrite_shelved (Option.get (Ltac1.to_constr x)))).*)
@@ -147,6 +168,7 @@ Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
   Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Himp.
+  pf_rewrite_shelved Himp.
   (*pf_rewrite_unshelved Himp.*)
   ltac2:(pf_rewrite_shelved constr:(Himp)).
   
