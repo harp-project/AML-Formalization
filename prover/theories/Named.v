@@ -460,3 +460,5 @@ Section named_test.
   Definition phi_mu := (patt_imp phi_mu1 phi_mu2).
   Compute to_NamedPattern phi_mu.
   Compute to_NamedPattern2 phi_mu.
+
+End named_test.
