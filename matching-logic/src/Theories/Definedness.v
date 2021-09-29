@@ -2192,7 +2192,7 @@ Section ProofSystemTheorems.
     Admitted.
    *)
 
-  Lemma decide_eq_refl {A : Type} {dec : EqDecision A} {x : A}:
+  Lemma decide_eq_refl {A : Type} {dec : EqDecision A} (x : A):
     decide (x = x) = left (erefl x).
   Proof.
     destruct (decide (x = x)).
@@ -2200,8 +2200,13 @@ Section ProofSystemTheorems.
     - contradiction.
   Qed.
 
-   
-
+  Program Definition decide_eq_neq {A : Type} {dec : EqDecision A} (x y : A) (pf: x <> y):
+    decide (x = y) = right pf.
+  Proof.
+    destruct (decide (x = y)).
+    - contradiction.
+    - (* This wont work *)
+  Abort.
 
   Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
     @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
@@ -2216,12 +2221,13 @@ Section ProofSystemTheorems.
     Lemma uses_svar_subst_congruence
       Γ p q C SvS
       (wfp: well_formed p) (wfq: well_formed q) (wfc: PC_wf C) (pf : Γ ⊢ (p <---> q)):
-      uses_svar_subst (prf_equiv_congruence Γ p q C wfp wfq wfc pf) SvS = uses_svar_subst pf SvS.
+      uses_svar_subst pf SvS = false ->
+      uses_svar_subst (prf_equiv_congruence Γ p q C wfp wfq wfc pf) SvS = false.
     Proof.
       destruct C.
       unfold PC_wf in wfc. simpl in wfc.
       induction pcPattern.
-      - 
+      - intro Huse.
         rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
 
         move: erefl.
@@ -2250,16 +2256,17 @@ Section ProofSystemTheorems.
           intros pfq0.
           replace pfq0 with (@erefl Pattern q).
           2: { apply UIP_dec. apply Pattern_eqdec. }
-          reflexivity.
-        +
-          Set Printing Implicit.
+          apply Huse.
+        + Set Printing Implicit.
           unfold emplace. simpl.
           unfold free_evar_subst. simpl.
-          rewrite decide_eq_refl.
+          destruct (decide (pcEvar = x)).
           Unset Printing Implicit.
-
+          { contradiction. }
+          intros.
+          simpl.
+          reflexivity.
     Abort.
-
   
     Lemma equality_elimination Γ φ1 φ2 C :
       theory ⊆ Γ ->
