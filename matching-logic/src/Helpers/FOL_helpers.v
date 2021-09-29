@@ -3367,7 +3367,6 @@ Section FOL_helpers.
     eapply Modus_ponens. 4: apply P1.
   Qed. *)
 
-  Print wf_PatCtx.
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
@@ -4210,7 +4209,7 @@ Section FOL_helpers.
       apply pf_iff_split; auto.
       + apply mu_monotone; auto.
       + apply mu_monotone; auto.
-  Qed.
+  Defined.
 
 End FOL_helpers.
 

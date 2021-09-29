@@ -8,8 +8,9 @@ Unset Printing Implicit Defensive.
 
 
 From Coq Require Import String Ensembles.
+Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality.
+From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
@@ -18,10 +19,9 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-From stdpp Require Import base fin_sets sets propset.
+From stdpp Require Import base fin_sets sets propset proof_irrel.
 
 Import extralibrary.
-
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
@@ -2162,19 +2162,19 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Pre_fixp.
       - (* Knaster-Tarski *)
-        Print ML_proof_system.
+        (*Print ML_proof_system.*)
         admit.
       - (* Existence *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Existence.
       - (* Singleton *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        Print ML_proof_system.
         apply Singleton_ctx.
 
         Unshelve. all: auto 10.
     Abort.
-    
+
+  (*
     Theorem deduction_theorem :
       forall φ ψ Γ, (* psi closed *)
         Γ ∪ {[ ψ ]} ⊢ φ ->
@@ -2190,7 +2190,108 @@ Section ProofSystemTheorems.
     Proof.
       
     Admitted.
+   *)
 
+  Lemma decide_eq_refl {A : Type} {dec : EqDecision A} {x : A}:
+    decide (x = x) = left (erefl x).
+  Proof.
+    destruct (decide (x = x)).
+    - apply f_equal. apply eq_pi. intros z. apply dec.
+    - contradiction.
+  Qed.
+
+   
+
+
+  Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
+    @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
+    = @uses_svar_subst Γ B pfB SvS.
+  Proof.
+    unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. destruct AeqB.
+    reflexivity.
+  Qed.
+
+  
+  Check uses_svar_subst.
+    Lemma uses_svar_subst_congruence
+      Γ p q C SvS
+      (wfp: well_formed p) (wfq: well_formed q) (wfc: PC_wf C) (pf : Γ ⊢ (p <---> q)):
+      uses_svar_subst (prf_equiv_congruence Γ p q C wfp wfq wfc pf) SvS = uses_svar_subst pf SvS.
+    Proof.
+      destruct C.
+      unfold PC_wf in wfc. simpl in wfc.
+      induction pcPattern.
+      - 
+        rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+
+        move: erefl.
+        move: {1 4 5 6} (decide (pcEvar = x)).
+        case=> d.
+        + subst pcEvar.
+          Set Printing Implicit.
+          unfold emplace. simpl.
+          unfold free_evar_subst. simpl.
+          rewrite decide_eq_refl.
+          Unset Printing Implicit.
+          intros. clear e.
+          unfold eq_rec_r.
+          unfold eq_rec.
+          unfold eq_rect.
+          unfold eq_sym.
+          move: ((@nest_ex_aux_0 Σ O p)).
+          rewrite nest_ex_aux_0.
+          intros pfp0.
+          replace pfp0 with (@erefl Pattern p).
+          2: {
+            apply UIP_dec. apply Pattern_eqdec.
+          }
+          move: (nest_ex_aux_0 0 q).
+          rewrite nest_ex_aux_0.
+          intros pfq0.
+          replace pfq0 with (@erefl Pattern q).
+          2: { apply UIP_dec. apply Pattern_eqdec. }
+          reflexivity.
+        +
+          Set Printing Implicit.
+          unfold emplace. simpl.
+          unfold free_evar_subst. simpl.
+          rewrite decide_eq_refl.
+          Unset Printing Implicit.
+
+    Abort.
+
+  
+    Lemma equality_elimination Γ φ1 φ2 C :
+      theory ⊆ Γ ->
+      well_formed φ1 -> well_formed φ2 ->
+      PC_wf C ->
+      Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
+        (emplace C φ1) <---> (emplace C φ2).
+    Proof.
+      intros HΓ WF1 WF2 WFC.
+
+      unshelve(eapply deduction_theorem_noKT).
+      remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
+      assert (Γ' ⊢ (φ1 <---> φ2)). {
+        apply hypothesis. now apply well_formed_iff.
+        rewrite HeqΓ'. apply elem_of_union_r. constructor.
+      }
+      eapply prf_equiv_congruence.
+      all: auto.
+      3: { simpl. cbn. unfold uses_svar_subst.
+           destruct C.
+           rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+           Print nat_rec. unfold nat_rect.
+           Print prf_equiv_congruence.
+           unfold prf_equiv_congruence. unfold uses_svar_subst. }
+      
+      apply congruence_iff with (C0 := C) in H; auto.
+      apply pf_iff_proj1 in H; auto.
+      1-2: now apply subst_patctx_wf.
+      all: auto.
+      4: { simpl. cbn. unfold congruence_iff. simpl.
+    Defined.
+  
     Lemma equality_elimination Γ φ1 φ2 C :
       well_formed φ1 -> well_formed φ2 ->
       wf_PatCtx C ->
