@@ -996,30 +996,18 @@ Defined. *)
     intros wfA wfA' wfB. auto.
   Defined.
 
-  Lemma prf_strenghten_premise_iter Γ l n h h' g :
+  Lemma Private_prf_strenghten_premise_iter Γ l n h h' g :
     wf l ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    l !! n = Some h ->
-    Γ ⊢ ((h' ---> h) ---> ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l)))).
+    n < length l ->
+    drop n l !! (n - length (take n l)) = Some h ->
+    Γ ⊢ (h' ---> h) --->
+        foldr patt_imp (foldr patt_imp g (drop n l)) (take n l) --->
+        foldr patt_imp (foldr patt_imp g (<[0:=h']> (drop n l))) (take n l).
   Proof.
-    intros wfl wfh wfh' wfg ln.
-    pose proof (Hn := lookup_lt_Some _ _ _ ln).
-
-    rewrite <- (take_drop n l).
-    rewrite <- (take_drop n l) in ln.
-    rewrite lookup_app_r in ln.
-    { apply firstn_le_length.  }
-    assert (Hlentake: length (take n l) + 0 = n).
-    { rewrite firstn_length. lia. }
-    rewrite <- Hlentake at 3.
-    clear Hlentake.
-
-    simpl.
-    rewrite insert_app_r.
-    repeat rewrite foldr_app.
-
+    intros wfl wfh wfh' wfg Hn ln.
     move: n Hn ln.
     induction l; intros n Hn ln.
     - rewrite take_nil. simpl.
@@ -1046,7 +1034,32 @@ Defined. *)
       eapply syllogism_intro. 5: apply prf. all: subst; auto 10.
   Defined.
 
+  Lemma prf_strenghten_premise_iter Γ l n h h' g :
+    wf l ->
+    well_formed h ->
+    well_formed h' ->
+    well_formed g ->
+    l !! n = Some h ->
+    Γ ⊢ ((h' ---> h) ---> ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l)))).
+  Proof.
+    intros wfl wfh wfh' wfg ln.
+    pose proof (Hn := lookup_lt_Some _ _ _ ln).
 
+    rewrite <- (take_drop n l).
+    rewrite <- (take_drop n l) in ln.
+    rewrite lookup_app_r in ln.
+    { apply firstn_le_length.  }
+    assert (Hlentake: length (take n l) + 0 = n).
+    { rewrite firstn_length. lia. }
+    rewrite <- Hlentake at 3.
+    clear Hlentake.
+
+    simpl.
+    rewrite insert_app_r.
+    repeat rewrite foldr_app.
+
+    apply Private_prf_strenghten_premise_iter; auto.
+  Defined.
   
   Lemma prf_strenghten_premise_meta Γ A A' B :
     well_formed A ->
