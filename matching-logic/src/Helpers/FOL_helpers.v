@@ -3832,26 +3832,19 @@ Section FOL_helpers.
     assumption.
   Defined.
   
-  Lemma prf_equiv_congruence Γ p q C:
+  Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
+    size' pcPattern <= sz ->
     well_formed p ->
     well_formed q ->
-    PC_wf C ->
+    well_formed pcPattern ->
     Γ ⊢ (p <---> q) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+    Γ ⊢ (((free_evar_subst pcPattern p pcEvar) <---> (free_evar_subst pcPattern q pcEvar))).
   Proof.
-    intros wfp wfq wfC Hiff.
-    destruct C.
-    unfold PC_wf in wfC. simpl in wfC.
-
-    remember (size' pcPattern) as sz.
-    assert (Hsz: size' pcPattern <= sz) by lia.
-    clear Heqsz.
-
+    intros Hsz wfp wfq wfC Hiff.
     move: pcPattern wfC Hsz.
     induction sz; intros pcPattern wfC Hsz;
       destruct pcPattern; simpl in *; try lia;
         unfold emplace; unfold free_evar_subst; simpl.
-    
     - repeat case_match; auto; try lia.
       { rewrite !nest_ex_aux_0. exact Hiff. }
       apply pf_iff_equiv_refl. auto.
@@ -4209,6 +4202,19 @@ Section FOL_helpers.
       apply pf_iff_split; auto.
       + apply mu_monotone; auto.
       + apply mu_monotone; auto.
+  Defined.
+
+  Lemma prf_equiv_congruence Γ p q C:
+    well_formed p ->
+    well_formed q ->
+    PC_wf C ->
+    Γ ⊢ (p <---> q) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+  Proof.
+    intros wfp wfq wfC Hiff.
+    destruct C.
+    unfold PC_wf in wfC. simpl in wfC.
+    eapply Private_prf_equiv_congruence with (sz := size' pcPattern); auto.
   Defined.
 
 End FOL_helpers.
