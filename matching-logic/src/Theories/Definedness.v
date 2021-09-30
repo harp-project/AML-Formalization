@@ -2252,7 +2252,7 @@ Section ProofSystemTheorems.
     intros H. unfold MyGoal_intro. simpl.
     unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
     move: (foldr_app Pattern Pattern patt_imp l [x] g).
-    Set Printing Implicit. Set Printing Coercions. unfold of_MyGoal in pf. simpl in pf.
+    unfold of_MyGoal in pf. simpl in pf.
     simpl. unfold of_MyGoal. simpl.
     move: pf H.
     rewrite list.foldr_app. simpl.
@@ -2261,7 +2261,93 @@ Section ProofSystemTheorems.
     simpl. exact H.
   Qed.
 
-  
+  Check uses_svar_subst.
+  Check prf_strenghten_premise_iter_meta_meta.
+
+  Lemma uses_svar_subst_prf_strenghten_premise_iter
+        Γ l n h h' g SvS
+        (wfl : wf l)
+        (wfh : well_formed h)
+        (wfh' : well_formed h')
+        (wfg : well_formed g)
+        (lnh : l !! n = Some h):
+  uses_svar_subst (prf_strenghten_premise_iter Γ l n h h' g wfl wfh wfh' wfg lnh) SvS = false.
+  Proof.
+    unfold prf_strenghten_premise_iter.
+  Abort.
+
+  Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
+        Γ l n h h' g SvS
+        (wfl : wf l)
+        (wfh : well_formed h)
+        (wfh' : well_formed h')
+        (wfg : well_formed g)
+        (lnh : l !! n = Some h)
+        (himph' : Γ ⊢ h' ---> h)
+        (pf': Γ ⊢ foldr patt_imp g l):
+       uses_svar_subst himph' SvS = false ->
+       uses_svar_subst pf' SvS = false ->
+       uses_svar_subst (prf_strenghten_premise_iter_meta_meta Γ l n h h' g wfl wfh wfh' wfg lnh himph' pf') SvS = false.
+  Proof.
+    intros H1 H2. simpl.
+    rewrite H1. rewrite H2. simpl.
+  Abort.
+
+
+  Lemma uses_svar_subst_prf_add_proved_to_assumptions
+    Γ l h g SvS
+    (wfl : wf l)
+    (wfg : well_formed g)
+    (wfh : well_formed h)
+    (pfh : Γ ⊢ h):
+    uses_svar_subst pfh SvS = false ->
+    uses_svar_subst (prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) SvS = false.
+  Proof.
+    intros H.
+    induction l.
+    - simpl. rewrite H. reflexivity.
+    - simpl.
+      Set Printing Implicit. Set Printing Coercions. unfold is_true in *.
+      pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'.
+      apply andb_prop in wfl'. destruct wfl' as [wfa wfl'].
+      move: (andb_prop (@well_formed Σ a) (foldr andb true (@map (@Pattern Σ) bool (@well_formed Σ) l)) wfl).
+      intros mp. destruct mp as [mp1 mp2].
+      unfold eq_rect_r. unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
+      move: (@tofold Σ
+          ((h ---> a ---> foldr (@patt_imp Σ) g l) --->
+           a ---> foldr (@patt_imp Σ) g l)).
+      simpl.
+      intros tf. replace tf with (@erefl Pattern ((h ---> a ---> foldr (@patt_imp Σ) g l) --->
+        a ---> foldr (@patt_imp Σ) g l)) by (apply UIP_dec; apply Pattern_eqdec).
+      clear tf.
+
+      move: (@consume Σ (h ---> a ---> foldr (@patt_imp Σ) g l)
+          (a ---> foldr (@patt_imp Σ) g l) []).
+      simpl.
+      intros co. replace co with (@erefl Pattern (((h ---> a ---> foldr (@patt_imp Σ) g l) --->
+        a ---> foldr (@patt_imp Σ) g l))) by (apply UIP_dec; apply Pattern_eqdec).
+  Abort.
+
+
+  Check MyGoal_add. Print MyGoal_add.
+  Lemma uses_svar_subst_MyGoal_add
+    Γ l g h SvS
+    (pfh: Γ ⊢ h)
+    (wfl : wf l)
+    (wfg : well_formed g)
+    (wfh : well_formed h)
+    (pf : Γ ⊢ foldr patt_imp g (h::l)):
+    uses_svar_subst pfh SvS = false ->
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (MyGoal_add Γ l g h pfh wfl wfg wfh pf) SvS = false.
+  Proof.
+    intros H1 H2. simpl in *. rewrite H2. simpl.
+
+unfold prf_add_proved_to_assumptions.
+(*
+   uses_svar_subst
+    (MyGoal_add Γ
+  *)
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS
         (Hsz: size' pcPattern <= sz)
