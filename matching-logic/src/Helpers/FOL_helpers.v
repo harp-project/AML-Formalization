@@ -3831,6 +3831,46 @@ Section FOL_helpers.
     instantiate (more := 0).
     assumption.
   Defined.
+
+  Lemma well_formed_app_proj1 p q:
+    well_formed (p $ q) ->
+    well_formed p.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+  
+  Lemma well_formed_app_proj2 p q:
+    well_formed (p $ q) ->
+    well_formed q.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+
+  Lemma well_formed_imp_proj1 p q:
+    well_formed (p ---> q) ->
+    well_formed p.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+  
+  Lemma well_formed_imp_proj2 p q:
+    well_formed (p ---> q) ->
+    well_formed q.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
   
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
     size' pcPattern <= sz ->
@@ -3857,15 +3897,9 @@ Section FOL_helpers.
       unfold PC_wf in pwf.
       
       assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_app_proj1. eassumption. }
       assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_app_proj2. eassumption. }
       
       pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
       pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
@@ -3897,15 +3931,9 @@ Section FOL_helpers.
       
       
       assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_imp_proj1. eassumption. }
       assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_imp_proj2. eassumption. }
 
       pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
       pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
