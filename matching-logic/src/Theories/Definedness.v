@@ -2225,10 +2225,9 @@ Section ProofSystemTheorems.
       uses_svar_subst (prf_equiv_congruence Γ p q C wfp wfq wfc pf) SvS = false.
     Proof.
       destruct C.
-      unfold PC_wf in wfc. simpl in wfc.
+      unfold PC_wf in wfc. simpl in wfc. intro Huse.
       induction pcPattern.
-      - intro Huse.
-        rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
 
         move: erefl.
         move: {1 4 5 6} (decide (pcEvar = x)).
@@ -2266,6 +2265,15 @@ Section ProofSystemTheorems.
           intros.
           simpl.
           reflexivity.
+      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+        reflexivity.
+      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+        reflexivity.
+      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+        reflexivity.
+      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+        reflexivity.
+      - unfold prf_equiv_congruence.
     Abort.
   
     Lemma equality_elimination Γ φ1 φ2 C :
