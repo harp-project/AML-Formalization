@@ -19,7 +19,7 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel.
+From stdpp Require Import base fin_sets sets propset proof_irrel option.
 
 Import extralibrary.
 
@@ -2274,6 +2274,58 @@ Section ProofSystemTheorems.
   uses_svar_subst (prf_strenghten_premise_iter Γ l n h h' g wfl wfh wfh' wfg lnh) SvS = false.
   Proof.
     unfold prf_strenghten_premise_iter.
+    unfold eq_rect.
+    remember (take_drop n l) as tdnl.
+    clear Heqtdnl.
+    move: (eq_ind_r (λ l0 : list Pattern, l0 !! n = Some h) lnh tdnl).
+    intros lnh'.
+    move: (foldr_app Pattern Pattern patt_imp (take n l) (drop n l) g).
+    intros fpi.
+    move: tdnl. move: fpi.
+    Set Printing Implicit.
+
+    move: (lookup_app_r (take n l) (drop n l) n (firstn_le_length n l)).
+    intros atn fpi tndl.
+    destruct tndl.
+    unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. simpl.
+    move: atn.
+
+    move: (@insert_app_r (@Pattern Σ) (take n l) (drop n l) 0 h').
+    intros iar atn. remember ((take n l ++ drop n l) !! n) as ln1.
+    destruct ln1; inversion lnh'. subst p.
+
+    remember (match atn in (_ = y) return (y = @Some (@Pattern Σ) h) with
+         | erefl => erefl (@Some (@Pattern Σ) h)
+         end).
+    clear Heqe. move: e.
+    replace lnh' with (@erefl (option Pattern) (Some h)).
+    2: { apply UIP_dec. intros x y. apply option_eq_dec. }
+    symmetry in atn.
+    remember (@Private_prf_strenghten_premise_iter Σ Γ l n h h'
+                             g wfl wfh wfh' wfg
+                             (@lookup_lt_Some (@Pattern Σ) l n h lnh)) as prv.
+    move: prv Heqprv.
+    remember ((@lookup_lt_Some (@Pattern Σ) l n h lnh))as lls.
+    Check (@Private_prf_strenghten_premise_iter).
+    (*Unset Printing Notations.*)
+    (* There is one 'hidden' lookup in the type of eq *)
+    (*rewrite {3} atn.*)
+    move: (erefl (@Some (@Pattern Σ) h)).
+
+    intros e prv Heqprv.
+    replace prv with (fun ignored : drop n l !! (n - length (take n l)) = Some h
+      => @Private_prf_strenghten_premise_iter Σ Γ l n h h' g wfl wfh wfh' wfg lls atn).
+    2: {
+      subst. apply functional_extensionality. intros x.
+      replace atn with x.
+      2: { apply UIP_dec. intros x0 y0. apply option_eq_dec. }
+      reflexivity.
+    }
+    move: prv Heqprv e.
+    rewrite -{3 4 5 6 7}atn.
+    intros prv Heqprv e e0.
+    replace e0 with (@erefl (option Pattern) (drop n l !! (n - length (take n l)))).
+    2: { apply UIP_dec. intros x y. apply option_eq_dec. }
   Abort.
 
   Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
