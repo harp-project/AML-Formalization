@@ -996,56 +996,32 @@ Defined. *)
     intros wfA wfA' wfB. auto.
   Defined.
 
-  Lemma prf_strenghten_premise_iter Γ l n h h' g :
-    wf l ->
+  Lemma prf_strenghten_premise_iter Γ l₁ l₂ h h' g :
+    wf l₁ -> wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    l !! n = Some h ->
-    Γ ⊢ ((h' ---> h) ---> ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l)))).
+    Γ ⊢ (h' ---> h) --->
+        foldr patt_imp g (l₁ ++ h::l₂) --->
+        foldr patt_imp g (l₁ ++ h'::l₂).
   Proof.
-    intros wfl wfh wfh' wfg ln.
-    pose proof (Hn := lookup_lt_Some _ _ _ ln).
-
-    rewrite <- (take_drop n l).
-    rewrite <- (take_drop n l) in ln.
-    rewrite lookup_app_r in ln.
-    { apply firstn_le_length.  }
-    assert (Hlentake: length (take n l) + 0 = n).
-    { rewrite firstn_length. lia. }
-    rewrite <- Hlentake at 3.
-    clear Hlentake.
-
-    simpl.
-    rewrite insert_app_r.
-    repeat rewrite foldr_app.
-
-    move: n Hn ln.
-    induction l; intros n Hn ln.
-    - rewrite take_nil. simpl.
-      rewrite drop_nil. simpl. apply reorder_meta. 4: apply P1. all: auto.
-    - pose proof (wfal := wfl).
-      remember (foldr patt_imp g (drop n l)) as g1.
-      remember (foldr patt_imp g (<[0:=h']> (drop n l))) as g2.
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl.
-      destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      simpl in Hn.
-      destruct n.
-      { subst. inversion ln. subst a. simpl. apply prf_strenghten_premise; auto. }
-      assert (Hn': n < length l) by lia.
-      simpl.
-      specialize (IHl n ltac:(lia)).
-      simpl in ln. specialize (IHl ln).
-      remember (foldr patt_imp (foldr patt_imp g (drop n l)) (take n l)) as b.
-      remember (foldr patt_imp (foldr patt_imp g (<[0:=h']> (drop n l))) (take n l)) as b'.
+    intros wfl₁ wfl₂ wfh wfh' wfg.
+    induction l₁.
+    - simpl. apply prf_strenghten_premise. all: auto.
+    - pose proof (wfal₁ := wfl₁).
+      remember (foldr patt_imp g (h::l₂)) as g1.
+      remember (foldr patt_imp g (h'::l₂)) as g2.
+      unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+      destruct wfl₁ as [wfa wfl₁].
+      specialize (IHl₁ wfl₁).
+      remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
+      remember (foldr patt_imp g (l₁ ++ h'::l₂)) as b'.
 
       assert (prf: Γ ⊢ ((b ---> b') ---> ((a ---> b) ---> (a ---> b')))).
       { apply prf_weaken_conclusion; subst; auto. }
 
-      eapply syllogism_intro. 5: apply prf. all: subst; auto 10.
+      eapply syllogism_intro. 5: subst; apply prf. all: subst; auto 10.
   Defined.
-
 
   
   Lemma prf_strenghten_premise_meta Γ A A' B :
@@ -1071,37 +1047,36 @@ Defined. *)
     intros wfA wfA' wfB A'impA AimpB.
     eapply Modus_ponens. 4: apply prf_strenghten_premise_meta. 3: apply AimpB. all: auto.
   Defined.
-  
-  Lemma prf_strenghten_premise_iter_meta Γ l n h h' g :
-    wf l ->
+
+
+  Lemma prf_strenghten_premise_iter_meta Γ l₁ l₂ h h' g :
+    wf l₁ -> wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    l !! n = Some h ->
     Γ ⊢ (h' ---> h) ->
-    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g (<[n := h']> l))).
+    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) --->
+         foldr patt_imp g (l₁ ++ h'::l₂).  
   Proof.
-    intros WFl WFh WFh' WFg H H0.
+    intros WFl₁ WFl₂ WFh WFh' WFg H.
     eapply Modus_ponens.
     4: apply prf_strenghten_premise_iter.
-    3: apply H0.
-    all: auto.
+    all: auto 10.
   Defined.
 
-  Lemma prf_strenghten_premise_iter_meta_meta Γ l n h h' g :
-    wf l ->
+  Lemma prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g :
+    wf l₁ -> wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    l !! n = Some h ->
     Γ ⊢ (h' ---> h) ->
-    Γ ⊢ (fold_right patt_imp g l) ->
-    Γ ⊢ (fold_right patt_imp g (<[n := h']> l)).
+    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) ->
+    Γ ⊢ foldr patt_imp g (l₁ ++ h'::l₂).  
   Proof.
-    intros WFl WFh WFh' WFg H H0 H1.
+    intros WFl₁ WFl₂ WFh WFh' WFg H H0.
     eapply Modus_ponens.
     4: eapply prf_strenghten_premise_iter_meta.
-    8: apply H. all: auto.
+    9: eassumption. all: auto.
   Defined.
 
   (* TODO rename *)
@@ -1905,11 +1880,12 @@ Section FOL_helpers.
       (* < change a0 and a in the LHS > *)
       assert (H : Γ ⊢ (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l)).
       { apply reorder; auto. }
+
       rewrite -> tofold. rewrite consume.
-      pose proof (H0 := prf_strenghten_premise_iter_meta_meta Γ ([] ++ [a0 ---> a ---> foldr patt_imp g l]) 0).
-      simpl in H0.
+      pose proof (H0 := prf_strenghten_premise_iter_meta_meta Γ [] []).
+      simpl in H0. simpl.
       specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
-      specialize (H0 (a0 ---> foldr patt_imp g l)).
+      specialize (H0 (a0 ---> foldr patt_imp g l)). simpl in H0. simpl.
       simpl. apply H0. all: auto. clear H0 H.
       (* </change a0 and a > *)
       assert (Γ ⊢ ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l))).
@@ -2274,28 +2250,35 @@ Section FOL_helpers.
       simpl.
       rewrite -> tofold. repeat rewrite consume. rewrite [_ ++ [_]]/=.
       
+
+
       replace
         ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ q :: a :: l₂)])
         with
-          (<[1 := foldr patt_imp r (l₁ ++ q :: a :: l₂)]>
-           ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
-          by reflexivity.
-      
-      eapply prf_strenghten_premise_iter_meta_meta with (n := 1).
-      5: { reflexivity. }
-      5: {  apply prf_reorder_iter; auto. }
+          ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ (foldr patt_imp r (l₁ ++ q :: a :: l₂))::[])
+        by reflexivity.
+
+      eapply prf_strenghten_premise_iter_meta_meta with (h := foldr patt_imp r (l₁ ++ a :: q :: l₂)).
+      6: { apply prf_reorder_iter; auto. }
       all: auto 10.
 
+      replace
+        ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ [foldr patt_imp r (l₁ ++ a :: q :: l₂)])
+        with
+          ([] ++ ((foldr patt_imp r (l₁ ++ p :: a :: l₂))::[foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
+        by reflexivity.
+
+(*
       replace
         ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)])
         with
           (<[0 := foldr patt_imp r (l₁ ++ p :: a :: l₂)  ]>(
              [foldr patt_imp r (l₁ ++ a :: p :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)]
           ))
-        by reflexivity.
-      eapply prf_strenghten_premise_iter_meta_meta with (n := 0).
-      5: { reflexivity. }
-      5: {  apply prf_reorder_iter; auto. }
+        by reflexivity.*)
+
+      eapply prf_strenghten_premise_iter_meta_meta with (h := (foldr patt_imp r (l₁ ++ a :: p :: l₂))).
+      6: {  apply prf_reorder_iter; auto. }
       all: auto 10.
 
       simpl.
@@ -3094,25 +3077,26 @@ Ltac mgRight := mgApplyMeta (disj_right_intro _ _ _ _ _).
 
 Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r':
   Γ ⊢ (r ---> r') ->
-  forall l n g,
-    wf l ->
+  forall l₁ l₂ g,
+    wf l₁ -> wf l₂ ->
     well_formed g ->
     well_formed r ->
     well_formed r' ->
-    l !! n = Some r' ->
-    mkMyGoal Σ Γ l g ->
-    mkMyGoal Σ Γ (<[n:=r]>l) g.
+    mkMyGoal Σ Γ (l₁ ++ r'::l₂) g ->
+    mkMyGoal Σ Γ (l₁ ++ r::l₂ ) g.
 Proof.
-  intros Himp l n g wfl wfg wfr wfr' Hn H.
-  pose proof (Htmp := prf_strenghten_premise_iter_meta_meta Γ l n r' r g ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) Himp).
+  intros Himp l₁ l₂ g wfl₁ wfl₂ wfg wfr wfr' H.
+  pose proof (Htmp := prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ r' r g ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) Himp).
   apply Htmp. apply H.
 Defined.
 
 Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
-  unshelve(
-      erewrite <- (list_insert_id _ n _);[|reflexivity];
-      erewrite <- (list_insert_insert _ n _ _);
-      eapply (@MyGoal_applyMetaIn _ _ _ _ t);[idtac|idtac|idtac|idtac|reflexivity|rewrite {1}[<[_:=_]>_]/=]).
+  let hyps := fresh "hyps" in
+  rewrite -[hyps in mkMyGoal _ _ hyps _](firstn_skipn n);
+  rewrite [hyps in mkMyGoal _ _ (hyps ++ _) _]/=;
+  rewrite [hyps in mkMyGoal _ _ (_ ++ hyps) _]/=;
+  unshelve (eapply (@MyGoal_applyMetaIn _ _ _ _ t);
+            [idtac|idtac|idtac|idtac|idtac|rewrite [hyps in mkMyGoal _ _ hyps _]/app]).
 
 Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
@@ -3367,7 +3351,6 @@ Section FOL_helpers.
     eapply Modus_ponens. 4: apply P1.
   Qed. *)
 
-  Print wf_PatCtx.
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
@@ -3832,27 +3815,60 @@ Section FOL_helpers.
     instantiate (more := 0).
     assumption.
   Defined.
+
+  Lemma well_formed_app_proj1 p q:
+    well_formed (p $ q) ->
+    well_formed p.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
   
-  Lemma prf_equiv_congruence Γ p q C:
+  Lemma well_formed_app_proj2 p q:
+    well_formed (p $ q) ->
+    well_formed q.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+
+  Lemma well_formed_imp_proj1 p q:
+    well_formed (p ---> q) ->
+    well_formed p.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+  
+  Lemma well_formed_imp_proj2 p q:
+    well_formed (p ---> q) ->
+    well_formed q.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *. simpl in *.
+    destruct_and!.
+    unfold well_formed,well_formed_closed. split_and!; assumption.
+  Qed.
+  
+  Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
+    size' pcPattern <= sz ->
     well_formed p ->
     well_formed q ->
-    PC_wf C ->
+    well_formed pcPattern ->
     Γ ⊢ (p <---> q) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+    Γ ⊢ (((free_evar_subst pcPattern p pcEvar) <---> (free_evar_subst pcPattern q pcEvar))).
   Proof.
-    intros wfp wfq wfC Hiff.
-    destruct C.
-    unfold PC_wf in wfC. simpl in wfC.
-
-    remember (size' pcPattern) as sz.
-    assert (Hsz: size' pcPattern <= sz) by lia.
-    clear Heqsz.
-
+    intros Hsz wfp wfq wfC Hiff.
     move: pcPattern wfC Hsz.
     induction sz; intros pcPattern wfC Hsz;
       destruct pcPattern; simpl in *; try lia;
         unfold emplace; unfold free_evar_subst; simpl.
-    
     - repeat case_match; auto; try lia.
       { rewrite !nest_ex_aux_0. exact Hiff. }
       apply pf_iff_equiv_refl. auto.
@@ -3865,15 +3881,9 @@ Section FOL_helpers.
       unfold PC_wf in pwf.
       
       assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_app_proj1. eassumption. }
       assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_app_proj2. eassumption. }
       
       pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
       pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
@@ -3905,15 +3915,9 @@ Section FOL_helpers.
       
       
       assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_imp_proj1. eassumption. }
       assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
+      { eapply well_formed_imp_proj2. eassumption. }
 
       pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
       pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
@@ -4210,7 +4214,20 @@ Section FOL_helpers.
       apply pf_iff_split; auto.
       + apply mu_monotone; auto.
       + apply mu_monotone; auto.
-  Qed.
+  Defined.
+
+  Lemma prf_equiv_congruence Γ p q C:
+    well_formed p ->
+    well_formed q ->
+    PC_wf C ->
+    Γ ⊢ (p <---> q) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+  Proof.
+    intros wfp wfq wfC Hiff.
+    destruct C.
+    unfold PC_wf in wfC. simpl in wfC.
+    eapply Private_prf_equiv_congruence with (sz := size' pcPattern); auto.
+  Defined.
 
 End FOL_helpers.
 

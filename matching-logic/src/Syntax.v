@@ -4416,7 +4416,7 @@ Section syntax.
     - by rewrite IHp1 IHp2.
     - by rewrite IHp.
     - by rewrite IHp.
-  Qed.
+  Defined.
 
   Lemma nest_ex_aux_0 level p:
     nest_ex_aux level 0 p = p.
@@ -4428,7 +4428,7 @@ Section syntax.
     - by rewrite IHp1 IHp2.
     - by rewrite IHp.
     - by rewrite IHp.
-  Qed.
+  Defined.
   
   (* Example:
   phi = (mu, patt_bound_svar 1)

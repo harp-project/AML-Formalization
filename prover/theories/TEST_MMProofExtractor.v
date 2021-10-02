@@ -1,3 +1,4 @@
+From Coq Require Import ssreflect.
 From Coq Require Extraction extraction.ExtrHaskellString.
 
 
@@ -253,6 +254,30 @@ Module MMTest.
           _
           ϕ10_holds
     )).
+
+  Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
+  Lemma ϕtest_holds: ∅ ⊢ ϕtest.
+  Proof.
+    unfold ϕtest.
+    replace (A ---> B) with (fold_right patt_imp B ([]++[A])) by reflexivity.
+    apply prf_strenghten_premise_iter.
+    all: auto.
+  Defined.
+
+  Definition proof_test : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          ϕtest_holds
+    )).
+
+  
+  (*Compute proof_test.*)
+
   
 End MMTest.
 

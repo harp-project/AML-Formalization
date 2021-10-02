@@ -7,9 +7,10 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
-From Coq Require Import String Ensembles.
+From Coq Require Import String Ensembles Setoid.
+Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality.
+From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
@@ -18,10 +19,9 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-From stdpp Require Import base fin_sets sets propset.
+From stdpp Require Import base fin_sets sets propset proof_irrel option.
 
 Import extralibrary.
-
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
@@ -2162,19 +2162,19 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Pre_fixp.
       - (* Knaster-Tarski *)
-        Print ML_proof_system.
+        (*Print ML_proof_system.*)
         admit.
       - (* Existence *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Existence.
       - (* Singleton *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        Print ML_proof_system.
         apply Singleton_ctx.
 
         Unshelve. all: auto 10.
     Abort.
-    
+
+  
     Theorem deduction_theorem :
       forall φ ψ Γ, (* psi closed *)
         Γ ∪ {[ ψ ]} ⊢ φ ->
@@ -2190,7 +2190,272 @@ Section ProofSystemTheorems.
     Proof.
       
     Admitted.
+   
 
+  Lemma decide_eq_refl {A : Type} {dec : EqDecision A} (x : A):
+    decide (x = x) = left (erefl x).
+  Proof.
+    destruct (decide (x = x)).
+    - apply f_equal. apply eq_pi. intros z. apply dec.
+    - contradiction.
+  Qed.
+
+  Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
+    @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
+    = @uses_svar_subst Γ B pfB SvS.
+  Proof.
+    unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. destruct AeqB.
+    reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_pf_iff_equiv_trans
+        Γ A B C SvS
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfC : well_formed C)
+        (AiffB : Γ ⊢ A <---> B)
+        (BiffC : Γ ⊢ B <---> C):
+    uses_svar_subst AiffB SvS = false ->
+    uses_svar_subst BiffC SvS = false ->
+    uses_svar_subst (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) SvS = false.
+  Proof.
+    intros H1 H2. simpl. rewrite H1. rewrite H2. reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_conj_intro_meta
+        Γ A B SvS
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (HA : Γ ⊢ A)
+        (HB : Γ ⊢ B):
+    uses_svar_subst HA SvS = false ->
+    uses_svar_subst HB SvS = false ->
+    uses_svar_subst (conj_intro_meta Γ A B wfA wfB HA HB) SvS = false.
+  Proof.
+    intros H1 H2. simpl. rewrite H1. rewrite H2. reflexivity.
+  Qed.
+
+
+  Lemma uses_svar_subst_MyGoal_intro Γ l x g SvS
+    (pf : Γ ⊢ foldr patt_imp g (l ++ [x])):
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (MyGoal_intro Γ l x g pf) SvS = false.
+  Proof.
+    intros H. unfold MyGoal_intro. simpl.
+    unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
+    move: (foldr_app Pattern Pattern patt_imp l [x] g).
+    unfold of_MyGoal in pf. simpl in pf.
+    simpl. unfold of_MyGoal. simpl.
+    move: pf H.
+    rewrite list.foldr_app. simpl.
+    intros pf H fapf.
+    replace fapf with (@erefl Pattern (foldr patt_imp (x ---> g) l)) by (apply UIP_dec; apply Pattern_eqdec).
+    simpl. exact H.
+  Qed.
+
+  Lemma uses_svar_subst_prf_strenghten_premise_iter
+        Γ l₁ l₂ h h' g SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
+        (wfh : well_formed h)
+        (wfh' : well_formed h')
+        (wfg : well_formed g):
+  uses_svar_subst (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) SvS = false.
+  Proof.
+    induction l₁.
+    - reflexivity.
+    - simpl.
+      case_match. simpl.
+      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
+      rewrite IHl₁. reflexivity.
+  Qed.
+ 
+  Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
+        Γ l₁ l₂ h h' g SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
+        (wfh : well_formed h)
+        (wfh' : well_formed h')
+        (wfg : well_formed g)
+        (himph' : Γ ⊢ h' ---> h)
+        (pf': Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂)):
+       uses_svar_subst himph' SvS = false ->
+       uses_svar_subst pf' SvS = false ->
+       uses_svar_subst (prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg himph' pf') SvS = false.
+  Proof.
+    intros H1 H2. simpl.
+    rewrite H1. rewrite H2. simpl.
+    rewrite uses_svar_subst_prf_strenghten_premise_iter.
+    reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_prf_add_proved_to_assumptions
+    Γ l h g SvS
+    (wfl : wf l)
+    (wfg : well_formed g)
+    (wfh : well_formed h)
+    (pfh : Γ ⊢ h):
+    uses_svar_subst pfh SvS = false ->
+    uses_svar_subst (prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) SvS = false.
+  Proof.
+    intros H.
+    induction l.
+    - simpl. rewrite H. reflexivity.
+    - simpl.
+      case_match.
+      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. unfold tofold. unfold consume.
+      unfold eq_ind_r. unfold eq_ind. unfold eq_sym.
+      remember (foldr_app Pattern Pattern patt_imp []
+              [h ---> a ---> foldr patt_imp g l] (a ---> foldr patt_imp g l)) as fa.
+      simpl in fa.
+      clear Heqfa.
+      replace fa with (@erefl Pattern (((h ---> a ---> foldr patt_imp g l) ---> a ---> foldr patt_imp g l))).
+      2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
+      simpl. rewrite H. reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_MyGoal_add
+    Γ l g h SvS
+    (pfh: Γ ⊢ h)
+    (wfl : wf l)
+    (wfg : well_formed g)
+    (wfh : well_formed h)
+    (pf : Γ ⊢ foldr patt_imp g (h::l)):
+    uses_svar_subst pfh SvS = false ->
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (MyGoal_add Γ l g h pfh wfl wfg wfh pf) SvS = false.
+  Proof.
+    intros H1 H2. simpl in *. rewrite H2. simpl.
+    rewrite uses_svar_subst_prf_add_proved_to_assumptions.
+    assumption. reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_Private_prf_equiv_congruence
+        sz Γ p q pcEvar pcPattern SvS
+        (Hsz: size' pcPattern <= sz)
+        (wfp: well_formed p)
+        (wfq: well_formed q)
+        (wfc: well_formed pcPattern)
+        (pf : Γ ⊢ (p <---> q)):
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern Hsz wfp wfq wfc pf) SvS = false.
+  Proof.
+    intro Huse.
+    move: pcPattern Hsz wfc.
+    induction sz; intros pcPattern Hsz wfc;
+      destruct pcPattern; simpl in Hsz; try lia.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+
+      move: erefl.
+      move: {1 4 5 6} (decide (pcEvar = x)).
+      case=> d.
+      + subst pcEvar.
+        Set Printing Implicit.
+        unfold emplace. simpl.
+        unfold free_evar_subst. simpl.
+        rewrite decide_eq_refl.
+        Unset Printing Implicit.
+        intros. clear e.
+        unfold eq_rec_r.
+        unfold eq_rec.
+        unfold eq_rect.
+        unfold eq_sym.
+        move: ((@nest_ex_aux_0 Σ O p)).
+        rewrite nest_ex_aux_0.
+        intros pfp0.
+        replace pfp0 with (@erefl Pattern p).
+        2: {
+          apply UIP_dec. apply Pattern_eqdec.
+        }
+        move: (nest_ex_aux_0 0 q).
+        rewrite nest_ex_aux_0.
+        intros pfq0.
+        replace pfq0 with (@erefl Pattern q).
+        2: { apply UIP_dec. apply Pattern_eqdec. }
+        apply Huse.
+      + Set Printing Implicit.
+        unfold emplace. simpl.
+        unfold free_evar_subst. simpl.
+        destruct (decide (pcEvar = x)).
+        Unset Printing Implicit.
+        { contradiction. }
+        intros.
+        simpl.
+        reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      apply uses_svar_subst_pf_iff_equiv_trans.
+      + apply uses_svar_subst_conj_intro_meta.
+        simpl. rewrite IHsz. reflexivity. simpl. rewrite IHsz. reflexivity.
+      + apply uses_svar_subst_conj_intro_meta.
+        simpl. rewrite IHsz. reflexivity. simpl. rewrite IHsz. reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      reflexivity.
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      apply uses_svar_subst_pf_iff_equiv_trans.
+      + apply uses_svar_subst_conj_intro_meta.
+        * simpl. Set Printing Coercions. Check uses_svar_subst_MyGoal_intro.
+          match goal with
+          | [ |- uses_svar_subst (MyGoal_intro ?Gamma ?l ?x ?g ?pf) ?SvS = false] => remember pf
+          end.
+          unfold of_MyGoal in *.
+          move: o Heqo.
+          rewrite [mgConclusion _]/=.
+          rewrite [mgTheory _]/=.
+          rewrite [mgHypotheses _]/=.
+          intros o Ho. 
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ []).
+          simpl in Htmp.
+          apply Htmp. clear Htmp. subst o.
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ [free_evar_subst' 0 pcPattern1 p pcEvar --->
+                               free_evar_subst' 0 pcPattern2 p pcEvar]).
+          simpl in Htmp.
+          apply Htmp. clear Htmp.
+          apply uses_svar_subst_MyGoal_add.
+          simpl. rewrite orbF.
+          apply IHsz. (* TBD *)
+  Abort.
+
+
+  (*
+    Lemma equality_elimination Γ φ1 φ2 C :
+      theory ⊆ Γ ->
+      well_formed φ1 -> well_formed φ2 ->
+      PC_wf C ->
+      Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
+        (emplace C φ1) <---> (emplace C φ2).
+    Proof.
+      intros HΓ WF1 WF2 WFC.
+
+      unshelve(eapply deduction_theorem_noKT).
+      remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
+      assert (Γ' ⊢ (φ1 <---> φ2)). {
+        apply hypothesis. now apply well_formed_iff.
+        rewrite HeqΓ'. apply elem_of_union_r. constructor.
+      }
+      eapply prf_equiv_congruence.
+      all: auto.
+      3: { simpl. cbn. unfold uses_svar_subst.
+           destruct C.
+           rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
+           Print nat_rec. unfold nat_rect.
+           Print prf_equiv_congruence.
+           unfold prf_equiv_congruence. unfold uses_svar_subst. }
+      
+      apply congruence_iff with (C0 := C) in H; auto.
+      apply pf_iff_proj1 in H; auto.
+      1-2: now apply subst_patctx_wf.
+      all: auto.
+      4: { simpl. cbn. unfold congruence_iff. simpl.
+    Defined.*)
+  
     Lemma equality_elimination Γ φ1 φ2 C :
       well_formed φ1 -> well_formed φ2 ->
       wf_PatCtx C ->

@@ -275,6 +275,11 @@ Qed.
 
   Notation "G |= phi" := (@satisfies signature G phi) (no associativity, at level 50).
 
+  Instance ML_proof_system_eqdec: forall gamma phi, EqDecision (ML_proof_system gamma phi).
+  Proof. intros. intros x y. 
+         unfold Decision. Fail decide equality.
+  Abort.
+
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
