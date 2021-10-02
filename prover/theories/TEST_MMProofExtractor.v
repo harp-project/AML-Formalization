@@ -259,14 +259,24 @@ Module MMTest.
   Lemma ϕtest_holds: ∅ ⊢ ϕtest.
   Proof.
     unfold ϕtest.
-    replace (A ---> B) with (fold_right patt_imp B [A]) by reflexivity.
-    rewrite {2}[fold_right patt_imp B [A]]/=.
-    replace (A ---> B) with (fold_right patt_imp B (<[0:=A]>[A])) by reflexivity.
-    Check prf_strenghten_premise_iter.
-    apply prf_strenghten_premise_iter; simpl; reflexivity.
+    replace (A ---> B) with (fold_right patt_imp B ([]++[A])) by reflexivity.
+    apply prf_strenghten_premise_iter.
+    all: auto.
   Defined.
 
-  Compute ϕtest_holds.
+  Definition proof_test : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          ϕtest_holds
+    )).
+
+  
+  (*Compute proof_test.*)
 
   
 End MMTest.
