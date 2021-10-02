@@ -2200,14 +2200,6 @@ Section ProofSystemTheorems.
     - contradiction.
   Qed.
 
-  Program Definition decide_eq_neq {A : Type} {dec : EqDecision A} (x y : A) (pf: x <> y):
-    decide (x = y) = right pf.
-  Proof.
-    destruct (decide (x = y)).
-    - contradiction.
-    - (* This wont work *)
-  Abort.
-
   Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
     @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
     = @uses_svar_subst Γ B pfB SvS.
@@ -2432,65 +2424,6 @@ Section ProofSystemTheorems.
   Abort.
 
 
-  (*
-  Check uses_svar_subst.
-    Lemma uses_svar_subst_congruence
-      Γ p q C SvS
-      (wfp: well_formed p) (wfq: well_formed q) (wfc: PC_wf C) (pf : Γ ⊢ (p <---> q)):
-      uses_svar_subst pf SvS = false ->
-      uses_svar_subst (prf_equiv_congruence Γ p q C wfp wfq wfc pf) SvS = false.
-    Proof.
-      destruct C.
-      unfold PC_wf in wfc. simpl in wfc. intro Huse.
-      induction pcPattern.
-      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-
-        move: erefl.
-        move: {1 4 5 6} (decide (pcEvar = x)).
-        case=> d.
-        + subst pcEvar.
-          Set Printing Implicit.
-          unfold emplace. simpl.
-          unfold free_evar_subst. simpl.
-          rewrite decide_eq_refl.
-          Unset Printing Implicit.
-          intros. clear e.
-          unfold eq_rec_r.
-          unfold eq_rec.
-          unfold eq_rect.
-          unfold eq_sym.
-          move: ((@nest_ex_aux_0 Σ O p)).
-          rewrite nest_ex_aux_0.
-          intros pfp0.
-          replace pfp0 with (@erefl Pattern p).
-          2: {
-            apply UIP_dec. apply Pattern_eqdec.
-          }
-          move: (nest_ex_aux_0 0 q).
-          rewrite nest_ex_aux_0.
-          intros pfq0.
-          replace pfq0 with (@erefl Pattern q).
-          2: { apply UIP_dec. apply Pattern_eqdec. }
-          apply Huse.
-        + Set Printing Implicit.
-          unfold emplace. simpl.
-          unfold free_evar_subst. simpl.
-          destruct (decide (pcEvar = x)).
-          Unset Printing Implicit.
-          { contradiction. }
-          intros.
-          simpl.
-          reflexivity.
-      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-        reflexivity.
-      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-        reflexivity.
-      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-        reflexivity.
-      - rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-        reflexivity.
-      - unfold prf_equiv_congruence.
-    Abort. *)
   (*
     Lemma equality_elimination Γ φ1 φ2 C :
       theory ⊆ Γ ->
