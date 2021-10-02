@@ -2261,107 +2261,41 @@ Section ProofSystemTheorems.
     simpl. exact H.
   Qed.
 
-  Check uses_svar_subst.
-  Check prf_strenghten_premise_iter_meta_meta.
-
   Lemma uses_svar_subst_prf_strenghten_premise_iter
-        Γ l n h h' g SvS
-        (wfl : wf l)
+        Γ l₁ l₂ h h' g SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
         (wfh : well_formed h)
         (wfh' : well_formed h')
-        (wfg : well_formed g)
-        (lnh : l !! n = Some h):
-  uses_svar_subst (prf_strenghten_premise_iter Γ l n h h' g wfl wfh wfh' wfg lnh) SvS = false.
+        (wfg : well_formed g):
+  uses_svar_subst (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) SvS = false.
   Proof.
-    unfold prf_strenghten_premise_iter.
-    unfold eq_rect.
-    remember (take_drop n l) as tdnl.
-    clear Heqtdnl.
-    move: (eq_ind_r (λ l0 : list Pattern, l0 !! n = Some h) lnh tdnl).
-    intros lnh'.
-    move: (foldr_app Pattern Pattern patt_imp (take n l) (drop n l) g).
-    intros fpi.
-    move: tdnl. move: fpi.
-    Set Printing Implicit.
-
-    move: (lookup_app_r (take n l) (drop n l) n (firstn_le_length n l)).
-    intros atn fpi tndl.
-    destruct tndl.
-    unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. simpl.
-    move: atn.
-
-    move: (@insert_app_r (@Pattern Σ) (take n l) (drop n l) 0 h').
-    intros iar atn. remember ((take n l ++ drop n l) !! n) as ln1.
-    destruct ln1; inversion lnh'. subst p.
-
-    remember (match atn in (_ = y) return (y = @Some (@Pattern Σ) h) with
-         | erefl => erefl (@Some (@Pattern Σ) h)
-         end).
-    clear Heqe. move: e.
-    replace lnh' with (@erefl (option Pattern) (Some h)).
-    2: { apply UIP_dec. intros x y. apply option_eq_dec. }
-    symmetry in atn.
-    remember (@Private_prf_strenghten_premise_iter Σ Γ l n h h'
-                             g wfl wfh wfh' wfg
-                             (@lookup_lt_Some (@Pattern Σ) l n h lnh)) as prv.
-    move: prv Heqprv.
-    remember ((@lookup_lt_Some (@Pattern Σ) l n h lnh))as lls.
-    (*Unset Printing Notations.*)
-    (* There is one 'hidden' lookup in the type of eq *)
-    (*rewrite {3} atn.*)
-    move: (erefl (@Some (@Pattern Σ) h)).
-
-    intros e prv Heqprv.
-    replace prv with (fun ignored : drop n l !! (n - length (take n l)) = Some h
-      => @Private_prf_strenghten_premise_iter Σ Γ l n h h' g wfl wfh wfh' wfg lls atn).
-    2: {
-      subst. apply functional_extensionality. intros x.
-      replace atn with x.
-      2: { apply UIP_dec. intros x0 y0. apply option_eq_dec. }
-      reflexivity.
-    }
-    move: prv Heqprv e.
-    rewrite -{3 4 5 6 7}atn.
-    intros prv Heqprv e e0.
-    replace e0 with (@erefl (option Pattern) (drop n l !! (n - length (take n l)))).
-    2: { apply UIP_dec. intros x y. apply option_eq_dec. }
-
-
-    Check CMorphisms.Reflexive_partial_app_morphism.
-    Locate CMorphisms.Reflexive_partial_app_morphism.
-    Search CMorphisms.Reflexive_partial_app_morphism.
-
-    Check iar.
-(* iar
-     : <[length (take n l) + 0:=h']> (take n l ++ drop n l) =
-       take n l ++ <[0:=h']> (drop n l)
-*)
-    Check insert_app_r.
-(*
-@insert_app_r ?A
-     : ∀ (l1 l2 : list ?A) (i : nat) (x : ?A),
-         <[length l1 + i:=x]> (l1 ++ l2) = l1 ++ <[i:=x]> l2
-where
-*)
-  Abort.
-
+    induction l₁.
+    - reflexivity.
+    - simpl.
+      case_match. simpl.
+      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
+      rewrite IHl₁. reflexivity.
+  Qed.
+ 
   Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
-        Γ l n h h' g SvS
-        (wfl : wf l)
+        Γ l₁ l₂ h h' g SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
         (wfh : well_formed h)
         (wfh' : well_formed h')
         (wfg : well_formed g)
-        (lnh : l !! n = Some h)
         (himph' : Γ ⊢ h' ---> h)
-        (pf': Γ ⊢ foldr patt_imp g l):
+        (pf': Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂)):
        uses_svar_subst himph' SvS = false ->
        uses_svar_subst pf' SvS = false ->
-       uses_svar_subst (prf_strenghten_premise_iter_meta_meta Γ l n h h' g wfl wfh wfh' wfg lnh himph' pf') SvS = false.
+       uses_svar_subst (prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg himph' pf') SvS = false.
   Proof.
     intros H1 H2. simpl.
     rewrite H1. rewrite H2. simpl.
-  Abort.
-
+    rewrite uses_svar_subst_prf_strenghten_premise_iter.
+    reflexivity.
+  Qed.
 
   Lemma uses_svar_subst_prf_add_proved_to_assumptions
     Γ l h g SvS
@@ -2376,29 +2310,18 @@ where
     induction l.
     - simpl. rewrite H. reflexivity.
     - simpl.
-      Set Printing Implicit. Set Printing Coercions. unfold is_true in *.
-      pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'.
-      apply andb_prop in wfl'. destruct wfl' as [wfa wfl'].
-      move: (andb_prop (@well_formed Σ a) (foldr andb true (@map (@Pattern Σ) bool (@well_formed Σ) l)) wfl).
-      intros mp. destruct mp as [mp1 mp2].
-      unfold eq_rect_r. unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
-      move: (@tofold Σ
-          ((h ---> a ---> foldr (@patt_imp Σ) g l) --->
-           a ---> foldr (@patt_imp Σ) g l)).
-      simpl.
-      intros tf. replace tf with (@erefl Pattern ((h ---> a ---> foldr (@patt_imp Σ) g l) --->
-        a ---> foldr (@patt_imp Σ) g l)) by (apply UIP_dec; apply Pattern_eqdec).
-      clear tf.
+      case_match.
+      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. unfold tofold. unfold consume.
+      unfold eq_ind_r. unfold eq_ind. unfold eq_sym.
+      remember (foldr_app Pattern Pattern patt_imp []
+              [h ---> a ---> foldr patt_imp g l] (a ---> foldr patt_imp g l)) as fa.
+      simpl in fa.
+      clear Heqfa.
+      replace fa with (@erefl Pattern (((h ---> a ---> foldr patt_imp g l) ---> a ---> foldr patt_imp g l))).
+      2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
+      simpl. rewrite H. reflexivity.
+  Qed.
 
-      move: (@consume Σ (h ---> a ---> foldr (@patt_imp Σ) g l)
-          (a ---> foldr (@patt_imp Σ) g l) []).
-      simpl.
-      intros co. replace co with (@erefl Pattern (((h ---> a ---> foldr (@patt_imp Σ) g l) --->
-        a ---> foldr (@patt_imp Σ) g l))) by (apply UIP_dec; apply Pattern_eqdec).
-  Abort.
-
-
-  Check MyGoal_add. Print MyGoal_add.
   Lemma uses_svar_subst_MyGoal_add
     Γ l g h SvS
     (pfh: Γ ⊢ h)
@@ -2411,11 +2334,10 @@ where
     uses_svar_subst (MyGoal_add Γ l g h pfh wfl wfg wfh pf) SvS = false.
   Proof.
     intros H1 H2. simpl in *. rewrite H2. simpl.
-  Abort.
-(*
-   uses_svar_subst
-    (MyGoal_add Γ
-  *)
+    rewrite uses_svar_subst_prf_add_proved_to_assumptions.
+    assumption. reflexivity.
+  Qed.
+
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS
         (Hsz: size' pcPattern <= sz)
@@ -2504,9 +2426,9 @@ where
                                free_evar_subst' 0 pcPattern2 p pcEvar]).
           simpl in Htmp.
           apply Htmp. clear Htmp.
-(*
-apply uses_svar_subst_MyGoal_intro.
-simpl.*)
+          apply uses_svar_subst_MyGoal_add.
+          simpl. rewrite orbF.
+          apply IHsz. (* TBD *)
   Abort.
 
 
