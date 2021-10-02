@@ -7,7 +7,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
-From Coq Require Import String Ensembles.
+From Coq Require Import String Ensembles Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -2174,7 +2174,7 @@ Section ProofSystemTheorems.
         Unshelve. all: auto 10.
     Abort.
 
-  (*
+  
     Theorem deduction_theorem :
       forall φ ψ Γ, (* psi closed *)
         Γ ∪ {[ ψ ]} ⊢ φ ->
@@ -2190,7 +2190,7 @@ Section ProofSystemTheorems.
     Proof.
       
     Admitted.
-   *)
+   
 
   Lemma decide_eq_refl {A : Type} {dec : EqDecision A} (x : A):
     decide (x = x) = left (erefl x).
@@ -2306,7 +2306,6 @@ Section ProofSystemTheorems.
                              (@lookup_lt_Some (@Pattern Σ) l n h lnh)) as prv.
     move: prv Heqprv.
     remember ((@lookup_lt_Some (@Pattern Σ) l n h lnh))as lls.
-    Check (@Private_prf_strenghten_premise_iter).
     (*Unset Printing Notations.*)
     (* There is one 'hidden' lookup in the type of eq *)
     (*rewrite {3} atn.*)
@@ -2326,6 +2325,24 @@ Section ProofSystemTheorems.
     intros prv Heqprv e e0.
     replace e0 with (@erefl (option Pattern) (drop n l !! (n - length (take n l)))).
     2: { apply UIP_dec. intros x y. apply option_eq_dec. }
+
+
+    Check CMorphisms.Reflexive_partial_app_morphism.
+    Locate CMorphisms.Reflexive_partial_app_morphism.
+    Search CMorphisms.Reflexive_partial_app_morphism.
+
+    Check iar.
+(* iar
+     : <[length (take n l) + 0:=h']> (take n l ++ drop n l) =
+       take n l ++ <[0:=h']> (drop n l)
+*)
+    Check insert_app_r.
+(*
+@insert_app_r ?A
+     : ∀ (l1 l2 : list ?A) (i : nat) (x : ?A),
+         <[length l1 + i:=x]> (l1 ++ l2) = l1 ++ <[i:=x]> l2
+where
+*)
   Abort.
 
   Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
@@ -2394,8 +2411,7 @@ Section ProofSystemTheorems.
     uses_svar_subst (MyGoal_add Γ l g h pfh wfl wfg wfh pf) SvS = false.
   Proof.
     intros H1 H2. simpl in *. rewrite H2. simpl.
-
-unfold prf_add_proved_to_assumptions.
+  Abort.
 (*
    uses_svar_subst
     (MyGoal_add Γ
@@ -2488,9 +2504,9 @@ unfold prf_add_proved_to_assumptions.
                                free_evar_subst' 0 pcPattern2 p pcEvar]).
           simpl in Htmp.
           apply Htmp. clear Htmp.
-
+(*
 apply uses_svar_subst_MyGoal_intro.
-simpl.
+simpl.*)
   Abort.
 
 
@@ -2553,7 +2569,7 @@ simpl.
         reflexivity.
       - unfold prf_equiv_congruence.
     Abort. *)
-  
+  (*
     Lemma equality_elimination Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2583,7 +2599,7 @@ simpl.
       1-2: now apply subst_patctx_wf.
       all: auto.
       4: { simpl. cbn. unfold congruence_iff. simpl.
-    Defined.
+    Defined.*)
   
     Lemma equality_elimination Γ φ1 φ2 C :
       well_formed φ1 -> well_formed φ2 ->
