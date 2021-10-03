@@ -92,8 +92,8 @@ Section definedness.
   .
 
   Lemma well_formed_defined ϕ:
-    well_formed ϕ ->
-    well_formed ⌈ ϕ ⌉.
+    well_formed ϕ = true ->
+    well_formed ⌈ ϕ ⌉ = true.
   Proof.
     intros Hwfϕ.
     unfold patt_defined.
@@ -104,8 +104,8 @@ Section definedness.
    Hint Resolve well_formed_defined : core.
 
   Lemma well_formed_total ϕ:
-    well_formed ϕ ->
-    well_formed ⌊ ϕ ⌋.
+    well_formed ϕ = true ->
+    well_formed ⌊ ϕ ⌋ = true.
   Proof.
     intros Hwfϕ.
     unfold patt_total.
@@ -2329,6 +2329,26 @@ Section ProofSystemTheorems.
     rewrite uses_svar_subst_prf_add_proved_to_assumptions.
     assumption. reflexivity.
   Qed.
+
+
+  Check MyGoal_weakenConclusion_under_nth.
+  Lemma uses_svar_subst_MyGoal_weakenConclusion_under_nth
+        Γ l n g g' SvS
+        (wfl : wf l)
+        (wfg : well_formed g)
+        (wfg' : well_formed g')
+        (ln : l !! n = Some (g ---> g'))
+        (pf : Γ ⊢ foldr patt_imp g l):
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (MyGoal_weakenConclusion_under_nth Γ l n g g' wfl wfg wfg' ln pf) SvS = false.
+  Proof.
+    intros Hpf.
+    unfold MyGoal_weakenConclusion_under_nth.
+    unfold eq_rect.
+    remember (take_drop_middle l n (g ---> g') ln) as tdm.
+    clear Heqtdm.
+    move: tdm.
+  Abort.
 
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS

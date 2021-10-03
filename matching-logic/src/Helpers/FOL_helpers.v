@@ -39,7 +39,7 @@ Section FOL_helpers.
     exact _5.
     Unshelve.
 
-    all: auto.
+    all: auto 10.
   Defined.
 
   #[local] Hint Resolve A_impl_A : core.
@@ -133,7 +133,7 @@ Section FOL_helpers.
           -- shelve.
           -- exact (P2 _ B (A ---> B) (A ---> C) H0 H3 H4).
              Unshelve.
-             all:auto.
+             all:auto 10.
   Defined.
 
   Lemma syllogism (Γ : Theory) (A B C : Pattern) :
@@ -360,7 +360,7 @@ Section FOL_helpers.
         * eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
       + eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
         Unshelve.
-        all: auto.
+        all: auto 10.
   Defined.
 
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
@@ -486,7 +486,7 @@ Section FOL_helpers.
     - exact H.
     - exact (double_neg_elim _ A B WFA WFB).
       Unshelve.
-      all: auto.
+      all: auto 10.
   Defined.
 
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
@@ -503,7 +503,7 @@ Section FOL_helpers.
         * eapply (not_not_intro _ B _).
       + eapply (P4 _ (!A) (!B) _ _).
         Unshelve.
-        all: auto.
+        all: auto 10.
   Defined.
 
   Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
@@ -611,7 +611,7 @@ Section FOL_helpers.
     - exact SI.
     - exact P4.
       Unshelve.
-      all: auto.
+      all: auto 10.
   Defined.
 
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
@@ -683,7 +683,7 @@ Defined. *)
       epose proof (m3 := syllogism_intro Γ _ _ _ _ _ _ (m2) (Prop_bott_right Γ p Prf)). exact m3.
       
       Unshelve.
-      all: auto.
+      all: auto 10.
   Defined.
 
   (*Was an axiom in AML_definition.v*)
@@ -814,9 +814,9 @@ Defined. *)
 
   (* TODO: maybe generalize to any connective? *)
   Lemma well_formed_foldr g xs :
-    well_formed g ->
-    wf xs ->
-    well_formed (foldr patt_imp g xs).
+    well_formed g = true ->
+    wf xs = true ->
+    well_formed (foldr patt_imp g xs) = true.
   Proof.
     intros wfg wfxs.
     induction xs.
@@ -828,8 +828,8 @@ Defined. *)
   #[local] Hint Resolve well_formed_foldr : core.
   
   Lemma wf_take n xs :
-    wf xs ->
-    wf (take n xs).
+    wf xs = true ->
+    wf (take n xs) = true.
   Proof.
     unfold wf. intros H.
     rewrite map_take.
@@ -839,8 +839,8 @@ Defined. *)
   #[local] Hint Resolve wf_take : core.
 
   Lemma wf_drop n xs:
-    wf xs ->
-    wf (drop n xs).
+    wf xs = true ->
+    wf (drop n xs) = true.
   Proof.
     unfold wf. intros H.
     rewrite map_drop.
@@ -850,9 +850,9 @@ Defined. *)
   #[local] Hint Resolve wf_drop : core.
 
   Lemma wf_insert n p xs:
-    wf xs ->
-    well_formed p ->
-    wf (<[n := p]> xs).
+    wf xs = true ->
+    well_formed p = true ->
+    wf (<[n := p]> xs) = true.
   Proof.
     intros wfxs wfp.
     move: xs wfxs.
@@ -872,8 +872,8 @@ Defined. *)
   #[local] Hint Resolve wf_insert : core.
 
   Lemma wf_tail' p xs:
-    wf (p :: xs) ->
-    wf xs.
+    wf (p :: xs) = true ->
+    wf xs = true.
   Proof.
     unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
   Qed.
@@ -881,9 +881,9 @@ Defined. *)
   #[local] Hint Resolve wf_tail' : core.
 
   Lemma wf_cons x xs:
-    well_formed x ->
-    wf xs ->
-    wf (x :: xs).
+    well_formed x = true ->
+    wf xs = true ->
+    wf (x :: xs) = true.
   Proof.
     intros wfx wfxs.
     unfold wf. simpl. rewrite wfx.
@@ -894,9 +894,9 @@ Defined. *)
   #[local] Hint Resolve wf_cons : core.
   
   Lemma wf_app xs ys:
-    wf xs ->
-    wf ys ->
-    wf (xs ++ ys).
+    wf xs = true ->
+    wf ys = true ->
+    wf (xs ++ ys) = true.
   Proof.
     intros wfxs wfys.
     unfold wf in *.
@@ -1076,7 +1076,7 @@ Defined. *)
     intros WFl₁ WFl₂ WFh WFh' WFg H H0.
     eapply Modus_ponens.
     4: eapply prf_strenghten_premise_iter_meta.
-    9: eassumption. all: auto.
+    9: eassumption. all: auto 10.
   Defined.
 
   (* TODO rename *)
@@ -1092,7 +1092,7 @@ Defined. *)
                         --->
                         (((g ---> g') ---> g) ---> ((g ---> g') ---> g')))) by auto using P2.
     assert (H3 : Γ ⊢ (((g ---> g') ---> g) ---> ((g ---> g') ---> g'))).
-    { eapply Modus_ponens. 4: apply H2. all: auto. }
+    { eapply Modus_ponens. 4: apply H2. all: auto 10. }
     eapply Modus_ponens. 4: apply H3. all: auto.
   Defined.
 
@@ -1166,7 +1166,7 @@ Defined. *)
     - pose proof (wfa0l₁ := wfl₁).
       unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁).
-      eapply prf_weaken_conclusion_meta; auto.
+      eapply prf_weaken_conclusion_meta; auto 10.
   Defined.
 
   Lemma prf_reorder_iter_meta Γ a b g l₁ l₂:
@@ -1204,7 +1204,7 @@ Defined. *)
     intros WFA WFB H.
     eapply Modus_ponens.
     4: { apply A_impl_not_not_B; auto. }
-    all: auto.
+    all: auto 10.
   Defined.
 
   Lemma pf_conj_elim_l Γ A B :
@@ -1217,7 +1217,7 @@ Defined. *)
     assert (Γ ⊢ (! A ---> (! A or ! B))) by auto.
     assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
     assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
+    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto 10. }
     epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
@@ -1234,7 +1234,7 @@ Defined. *)
     assert (Γ ⊢ (! B ---> (! A or ! B))) by auto.
     assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
     assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto. }
+    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto 10. }
     epose proof (reorder_meta _ _ _ _ H1).
     apply A_impl_not_not_B_meta; auto.
     Unshelve.
@@ -1286,7 +1286,7 @@ Defined. *)
     intros wfA wfB AimpB AimpnB.
     pose proof (H1 := P4m Γ A B wfA wfB).
     assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A).
-    { eapply Modus_ponens. 4: apply H1. all: auto. }
+    { eapply Modus_ponens. 4: apply H1. all: auto 10. }
     eapply Modus_ponens. 4: apply H2. all: auto.
   Defined.
 
@@ -1412,7 +1412,7 @@ Section FOL_helpers.
     intros wfa wfb.
     assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
     assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b)))) by auto using P2.
-    eapply Modus_ponens. 4: apply H2. all: auto.
+    eapply Modus_ponens. 4: apply H2. all: auto 10.
   Defined.
 
   #[local] Hint Resolve prf_contraction : core.
@@ -1436,7 +1436,7 @@ Section FOL_helpers.
                    = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
     rewrite Hiter. 
     eapply prf_weaken_conclusion_iter_meta_meta.
-    4: apply H4. all: auto.
+    4: apply H4. all: auto 10.
   Defined.
 
   Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
@@ -1449,7 +1449,7 @@ Section FOL_helpers.
     intros wfa wfb wfc H.
     eapply Modus_ponens.
     4: apply prf_weaken_conclusion_under_implication.
-    all: auto.
+    all: auto 10.
   Defined.
 
   Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c:
@@ -1479,7 +1479,7 @@ Section FOL_helpers.
     remember (foldr patt_imp g' l) as c.
     pose proof (H2 := prf_weaken_conclusion_under_implication Γ a b c ltac:(subst;auto) ltac:(subst;auto) ltac:(subst; auto)).
     apply reorder_meta in H2. 2,3,4: subst;auto.
-    eapply Modus_ponens. 4: apply H2. all: subst;auto.
+    eapply Modus_ponens. 4: apply H2. all: subst;auto 10.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g':
@@ -1516,7 +1516,7 @@ Section FOL_helpers.
     - apply prf_weaken_conclusion_iter_under_implication; auto.
     - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
       destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
-      eapply prf_weaken_conclusion_meta. all: auto.
+      eapply prf_weaken_conclusion_meta. all: auto 10.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g':
@@ -1545,27 +1545,27 @@ Section FOL_helpers.
     apply prf_weaken_conclusion_iter_under_implication_iter_meta.
   Defined.
 
-  Lemma MyGoal_weakenConclusion_under_nth Γ l n g g':
-    wf l ->
-    well_formed g ->
-    well_formed g' ->
-    l !! n = Some (g ---> g') ->
-    mkMyGoal Σ Γ l g ->
-    mkMyGoal Σ Γ l g'.
-  Proof.
-    intros wfl wfg wfg' ln H.
-    pose proof (Hmid := take_drop_middle l n (g ---> g') ln).
-    rewrite -Hmid in H. rewrite -Hmid. apply MyGoal_weakenConclusion; auto.
-  Defined.
-
 End FOL_helpers.
 
-Tactic Notation "mgApply'" constr(n) int_or_var(depth) :=
-  match goal with
-  | |- of_MyGoal (mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    eapply (MyGoal_weakenConclusion_under_nth Ctx l n _ g);[idtac|idtac|idtac|reflexivity|idtac];auto depth
-  end.
-Ltac mgApply n := mgApply' n 5.
+
+Tactic Notation "mgApply" constr(n) :=
+  let hyps := fresh "hyps" in
+  rewrite -[hyps in mkMyGoal _ _ hyps _](firstn_skipn n);
+  rewrite [hyps in mkMyGoal _ _ (hyps ++ _) _]/firstn;
+  rewrite [hyps in mkMyGoal _ _ (_ ++ hyps) _]/skipn;
+  apply MyGoal_weakenConclusion;
+  [idtac|idtac|idtac|idtac|rewrite [hyps in mkMyGoal _ _ hyps _]/app].
+
+Local Example ex_mgApply {Σ : Signature} Γ a b:
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢ a ---> (a ---> b) ---> b.
+Proof.
+  intros wfa wfb.
+  toMyGoal. mgIntro. mgIntro.
+  mgApply 1; auto.
+  fromMyGoal. apply P1; auto.
+Qed.
 
 Section FOL_helpers.
 
@@ -1585,11 +1585,11 @@ Section FOL_helpers.
     toMyGoal. mgIntro.
     
     mgIntro. mgIntro. mgIntro.
-    mgApply' 1 7.
-    mgApply' 2 7.
+    mgApply 1; auto 7.
+    mgApply 2; auto 7.
     mgIntro.
-    mgApply' 3 7.
-    mgApply' 0 7.
+    mgApply 3; auto 7.
+    mgApply 0; auto 7.
     mgExactn 4.
     auto 8.
   Defined.
@@ -1631,10 +1631,10 @@ Section FOL_helpers.
       assert (H1: Γ ⊢ a ---> foldr patt_imp h l ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l).
       { apply prf_add_assumption; auto 10. }
       assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) ---> (a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)).
-      { apply prf_impl_distr_meta; auto. }
+      { apply prf_impl_distr_meta; auto 10. }
       assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
                           ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))).
-      { auto using P2. }
+      { auto 10 using P2. }
 
       eapply prf_weaken_conclusion_meta_meta.
       4: apply H3. all: auto 10.
@@ -1707,7 +1707,7 @@ Section FOL_helpers.
     Γ ⊢ (foldr patt_imp h l1) ->
     Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))).
   Proof.
-    intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 7.
+    intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 10.
   Defined.
   
   Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
@@ -1831,7 +1831,7 @@ Section FOL_helpers.
     Γ ⊢ ((q ---> r) ---> (p or q) ---> r).
   Proof.
     intros WFp WHq WFr H. eapply Modus_ponens. 4: apply prf_disj_elim.
-    all: auto.
+    all: auto 10.
   Defined.
   
   
@@ -1947,7 +1947,7 @@ Section FOL_helpers.
     intros WFl WFg WFh H H0. toMyGoal.
     mgAdd H0; [auto|auto|auto|].
     mgAdd H; [auto|auto|auto|].
-    mgApply' 0 5. mgExactn 1.
+    mgApply 0; auto 5. mgExactn 1.
   Defined.
 
 
@@ -2085,8 +2085,8 @@ Section FOL_helpers.
       rewrite consume.
       replace ((([] ++ [x ---> a ---> foldr patt_imp g l]) ++ [a]) ++ [x])
         with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
-      apply prf_reorder_iter_meta; auto.
-      simpl. auto.
+      apply prf_reorder_iter_meta; auto 10.
+      simpl. auto 10.
   Defined.
 
   Lemma reorder_last_to_head_meta Γ g x l:
@@ -2135,19 +2135,19 @@ Section FOL_helpers.
   Proof.
     intros wfp wfq wfr.
     toMyGoal. repeat mgIntro.
-    unfold patt_and. mgApply' 0 10.
+    unfold patt_and. mgApply 0; auto 10.
     mgIntro. unfold patt_or at 2.
     mgAssert ((! ! p)).
     {
       mgAdd (not_not_intro Γ p wfp); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 2; auto 10.
     }
     mgAssert ((! q)).
     {
-      mgApply' 3 10. mgExactn 4; auto 10.
+      mgApply 3; auto 10. mgExactn 4; auto 10.
     }
-    mgApply' 5 10. mgExactn 2; auto 10.
+    mgApply 5; auto 10. mgExactn 2; auto 10.
     Unshelve. all: auto 10.
   Defined.
 
@@ -2163,19 +2163,19 @@ Section FOL_helpers.
     mgAssert (p).
     {
       mgAdd (pf_conj_elim_l Γ p q wfp wfq); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 2; auto 10.
     }
     mgAssert (q).
     {
       mgAdd (pf_conj_elim_r Γ p q wfp wfq); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 2; auto 10.
     }
     (* This pattern is basically an "apply ... in" *)
     mgAssert ((q ---> r)).
-    { mgApply' 0 10. mgExactn 2; auto 10. }
-    mgApply' 4 10. mgExactn 3; auto 10.
+    { mgApply 0; auto 10. mgExactn 2; auto 10. }
+    mgApply 4; auto 10. mgExactn 3; auto 10.
     Unshelve.
     all: auto 10.
   Defined.
@@ -2203,12 +2203,12 @@ Section FOL_helpers.
       toMyGoal. repeat mgIntro.
       mgAdd IHl; auto 10.
       mgAssert ((foldr patt_imp r (l ++ [p]))).
-      { mgApply' 1 10. mgExactn 3; auto 10. }
+      { mgApply 1; auto 10. mgExactn 3; auto 10. }
       mgAssert ((foldr patt_imp r (l ++ [q]))).
-      { mgApply' 2 10. mgExactn 3; auto 10. }
+      { mgApply 2; auto 10. mgExactn 3; auto 10. }
       mgAssert ((foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
-      { mgApply' 0 10. mgExactn 4; auto 10. }
-      mgApply' 6 14.
+      { mgApply 0; auto 10. mgExactn 4; auto 15. }
+      mgApply 6; auto 14.
       mgExactn 5; auto 15.
       Unshelve. all: auto 15.
   Defined.
@@ -2420,7 +2420,7 @@ Section FOL_helpers.
     assert (H3: Γ ⊢ (! B ---> ! A)) by auto.
     epose proof (H4 := P4m_neg Γ (!B) A _ _).
     assert (H5: Γ ⊢ ((! B ---> ! A) ---> ! ! B)).
-    { eapply Modus_ponens. 4: apply H4. all: auto. }
+    { eapply Modus_ponens. 4: apply H4. all: auto 10. }
     assert (H6: Γ ⊢ (! ! B)).
     { eapply Modus_ponens. 4: apply H5. all: auto. }
     auto.
@@ -2442,7 +2442,7 @@ Section FOL_helpers.
     { eapply syllogism; auto. }
     apply reorder_meta in H1; auto.
     assert (H2: Γ ⊢ ((! A ---> B) ---> (! A ---> C))).
-    { eapply Modus_ponens. 4: apply H1. all: auto. }
+    { eapply Modus_ponens. 4: apply H1. all: auto 10. }
     unfold patt_or in AorB.
     assert (H3: Γ ⊢ (! A ---> C)).
     { eapply Modus_ponens. 4: apply H2. all: auto. }
@@ -2599,20 +2599,20 @@ Section FOL_helpers.
         epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
         epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
 
-        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
+        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto 10.
 
-        apply conj_intro_meta; subst; auto 10.
+        apply conj_intro_meta; subst; auto 15.
         unfold patt_iff in IHpcPattern1.
                              
         * toMyGoal. mgIntro. mgIntro. mgAdd H'2. 1,2,3: subst; auto.
-          mgApply' 1 5.
-          mgApply' 0 5.
-          mgExactn 2; subst; auto.
+          mgApply 1; auto 5.
+          mgApply 0; auto 5.
+          mgExactn 2; subst; auto 10.
 
         * toMyGoal. mgIntro. mgIntro. mgAdd H'1. 1,2,3: subst; auto.
-          mgApply' 1 5.
-          mgApply' 0 5.
-          mgExactn 2; subst; auto.
+          mgApply 1; auto 5.
+          mgApply 0; auto 5.
+          mgExactn 2; subst; auto 10.
       + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
         remember (free_evar_subst pcPattern2 p pcEvar) as p2.
         remember (free_evar_subst pcPattern1 q pcEvar) as q1.
@@ -2634,15 +2634,15 @@ Section FOL_helpers.
         
         * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
           subst.
-          mgApply' 0 5.
-          mgApply' 1 5.
-          mgExactn 2; subst; auto.
+          mgApply 0; auto 5.
+          mgApply 1; auto 5.
+          mgExactn 2; subst; auto 10.
 
         * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
           subst.
-          mgApply' 0 5.
-          mgApply' 1 5.
-          mgExactn 2; subst; auto.      
+          mgApply 0; auto 5.
+          mgApply 1; auto 5.
+          mgExactn 2; subst; auto 10.      
   Defined.
       
     
@@ -2937,29 +2937,29 @@ Section FOL_helpers.
     Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2).
   Proof.
     intros wfp1 wfp2.
-    apply conj_intro_meta; auto.
+    apply conj_intro_meta; auto 10.
     - toMyGoal.
       mgIntro. mgIntro.
-      mgApply' 0 7.
+      mgApply 0; auto 7.
       mgIntro.
       unfold patt_or.
       mgAdd (not_not_elim Γ p2 ltac:(auto)); auto 10.
-      mgApply' 0 10.
-      mgApply' 2 10.
+      mgApply 0; auto 10.
+      mgApply 2; auto 10.
       mgAdd (not_not_intro Γ (! p1) ltac:(auto)); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 4. auto 10.
     - toMyGoal.
       mgIntro. mgIntro.
       unfold patt_and.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       unfold patt_or.
       mgIntro.
       mgAdd (not_not_intro Γ p2 ltac:(auto)); auto 10.
-      mgApply' 0 10.
-      mgApply' 2 10.
+      mgApply 0; auto 10.
+      mgApply 2; auto 10.
       mgAdd (not_not_elim Γ (! p1) ltac:(auto)); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 4. auto 10.
   Defined.
 
@@ -2972,25 +2972,25 @@ Section FOL_helpers.
     apply conj_intro_meta; auto.
     - toMyGoal.
       mgIntro. mgIntro.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgIntro.
       unfold patt_or.
       mgAdd (not_not_elim Γ p2 ltac:(auto)); auto 10.
-      mgApply' 0 10.
-      mgApply' 2 10.
+      mgApply 0; auto 10.
+      mgApply 2; auto 10.
       mgAdd (not_not_intro Γ p1 ltac:(auto)); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 4. auto 10.
     - toMyGoal.
       mgIntro. mgIntro.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       unfold patt_or.
       mgIntro.
       mgAdd (not_not_intro Γ p2 ltac:(auto)); auto 10.
-      mgApply' 0 10.
-      mgApply' 2 10.
+      mgApply 0; auto 10.
+      mgApply 2; auto 10.
       mgAdd (not_not_elim Γ p1 ltac:(auto)); auto 10.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgExactn 4.
       auto 10.
   Defined.
@@ -3138,7 +3138,7 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
 Proof.
   intros. toMyGoal. do 3 mgIntro.
   mgDestructAnd 1; auto 10.
-  mgExactn 1; auto.
+  mgExactn 1; auto 10.
 Qed.
 
 Section FOL_helpers.
@@ -3163,31 +3163,31 @@ Section FOL_helpers.
     apply conj_intro_meta; auto.
     - toMyGoal.
       mgIntro. unfold patt_and.
-      mgIntro. mgApply' 0 10.
-      mgDestruct 1; auto.
-      + apply modus_tollens in pip'; auto.
-        mgAdd pip'; auto.
+      mgIntro. mgApply 0; auto 10.
+      mgDestruct 1; auto 10.
+      + apply modus_tollens in pip'; auto 10.
+        mgAdd pip'; auto 10.
         mgLeft; auto 10.
-        mgApply' 0 10.
+        mgApply 0; auto 10.
         mgExactn 2; auto 10.
-      + apply modus_tollens in qiq'; auto.
-        mgAdd qiq'; auto.
+      + apply modus_tollens in qiq'; auto 10.
+        mgAdd qiq'; auto 10.
         mgRight; auto 10.
-        mgApply' 0 10.
+        mgApply 0; auto 10.
         mgExactn 2; auto 10.
     - toMyGoal.
       mgIntro. unfold patt_and.
-      mgIntro. mgApply' 0 10.
-      mgDestruct 1; auto.
+      mgIntro. mgApply 0; auto 10.
+      mgDestruct 1; auto 10.
       + mgLeft; auto 10.
         apply modus_tollens in p'ip; auto.
-        mgAdd p'ip; auto.
-        mgApply' 0 10.
+        mgAdd p'ip; auto 10.
+        mgApply 0; auto 10.
         mgExactn 2; auto 10.
       + mgRight; auto 10.
         apply modus_tollens in q'iq; auto.
-        mgAdd q'iq; auto.
-        mgApply' 0 10.
+        mgAdd q'iq; auto 10.
+        mgApply 0; auto 10.
         mgExactn 2; auto 10.
         Unshelve. all: auto.
   Defined.
@@ -3244,15 +3244,15 @@ Section FOL_helpers.
       mgAdd (A_or_notA Γ p wfp); auto.
       mgDestruct 0; auto.
       + mgRight; auto.
-        mgApply' 1 10.
+        mgApply 1; auto 10.
         mgExactn 0; auto.
       + mgLeft; auto.
         mgExactn 0; auto.
     - toMyGoal. mgIntro. mgIntro. unfold patt_or.
-      mgApply' 0 10.
-      mgApplyMeta (not_not_intro _ _ _); auto.
+      mgApply 0; auto 10.
+      mgApplyMeta (not_not_intro _ _ _); auto 10.
       mgExactn 1; auto.
-      Unshelve. all: auto.
+      Unshelve. all: auto 10.
   Defined.
 
   Lemma p_and_notp_is_bot Γ p:
@@ -3264,7 +3264,7 @@ Section FOL_helpers.
     - apply bot_elim; auto.
     - unfold patt_and. toMyGoal.
       mgIntro.
-      mgApply' 0 10.
+      mgApply 0; auto 10.
       mgAdd (A_or_notA Γ (! p) ltac:(auto)); auto 10.
       mgExactn 0; auto 10.
   Defined.
@@ -3281,17 +3281,17 @@ Section FOL_helpers.
     mgAdd (A_or_notA Γ A wfA); auto 10.
     mgDestruct 0; auto 10.
     - mgAssert ((B or R)); auto 10.
-      { mgApply' 1 10. unfold patt_and at 2. mgIntro.
+      { mgApply 1; auto 10. unfold patt_and at 2. mgIntro.
         mgDestruct 3; auto 10.
-        + mgApply' 3 10. mgExactn 2; auto 10.
-        + mgApply' 3 10. mgExactn 0; auto 10.
+        + mgApply 3; auto 10. mgExactn 2; auto 10.
+        + mgApply 3; auto 10. mgExactn 0; auto 10.
       }
       mgDestruct 3; auto 10.
-      + mgLeft; auto. mgIntro. mgExactn 3; auto 10.
-      + mgRight; auto. mgExactn 3; auto.
-    - mgLeft; auto. mgIntro.
+      + mgLeft; auto 10. mgIntro. mgExactn 3; auto 10.
+      + mgRight; auto 10. mgExactn 3; auto 10.
+    - mgLeft; auto 10. mgIntro.
       mgApplyMeta (bot_elim _ _ _); auto 10.
-      mgApply' 0 10. mgExactn 3; auto.
+      mgApply 0; auto 10. mgExactn 3; auto 10.
       Unshelve. all: auto 10.
   Defined.
 
@@ -3306,7 +3306,7 @@ Section FOL_helpers.
     intros WFA WFB WFL WFR H.
     eapply Modus_ponens.
     4: apply weird_lemma.
-    all: auto.
+    all: auto 10.
   Defined.
 
 (* Lemma empty_Γ_implies_any A : forall G,
@@ -3592,7 +3592,7 @@ Section FOL_helpers.
     1-2: shelve.
     apply reorder_meta; auto.
     epose proof (prf_strenghten_premise Γ C B (A ---> A and C) _ _ _).
-    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H1. all: auto.
+    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H1. all: auto 10.
     apply conj_intro2.
     Unshelve.
     all: unfold patt_and, patt_or, patt_not; auto 10.
@@ -3652,7 +3652,7 @@ Section FOL_helpers.
     apply Ex_gen; auto.
     2: { simpl. set_solver. }
     toMyGoal. mgIntro. mgAdd Hϕ; auto.
-    mgApply' 1 10. mgExactn 0; auto.
+    mgApply 1; auto 10. mgExactn 0; auto.
   Defined.
 
   Hint Resolve evar_quantify_well_formed.
@@ -3667,11 +3667,11 @@ Section FOL_helpers.
     replace (! evar_quantify x 0 ϕ)
       with (evar_quantify x 0 (! ϕ))
       by reflexivity.
-    apply double_neg_elim_meta; auto.
-    toMyGoal. mgIntro. mgIntro. mgApply' 0 5.
+    apply double_neg_elim_meta; auto 10.
+    toMyGoal. mgIntro. mgIntro. mgApply 0; auto 5.
     1,2: replace (evar_quantify x 0 ϕ ---> ⊥) with (evar_quantify x 0 (! ϕ)) by reflexivity.
     1,2: auto 10.
-    mgIntro. mgApply' 2 10.
+    mgIntro. mgApply 2 ; auto 20.
     pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
     rewrite /instantiate in Htmp.
     rewrite bevar_subst_evar_quantify_free_evar in Htmp.
@@ -3681,7 +3681,7 @@ Section FOL_helpers.
       split_and; auto.
     }
     mgAdd Htmp; auto 10. clear Htmp.
-    mgApply' 0 10. mgIntro. mgApply' 2 10.
+    mgApply 0; auto 10. mgIntro. mgApply 2; auto 10.
     mgExactn 4. auto 10.
   Defined.
 
@@ -3932,25 +3932,25 @@ Section FOL_helpers.
         with (B := (free_evar_subst' 0 pcPattern1 q pcEvar ---> free_evar_subst' 0 pcPattern2 p pcEvar)); auto.
       + apply conj_intro_meta; subst; auto 10.
         * toMyGoal. mgIntro. mgIntro. mgAdd H'12. 1,2,3: subst; auto.
-          mgApply' 1 5.
-          mgApply' 0 5.
-          mgExactn 2; subst; auto.
+          mgApply 1; auto 5.
+          mgApply 0; auto 5.
+          mgExactn 2; subst; auto 10.
         * toMyGoal. mgIntro. mgIntro. mgAdd H'11. 1,2,3: subst; auto.
-          mgApply' 1 5.
-          mgApply' 0 5.
-          mgExactn 2; subst; auto.
+          mgApply 1; auto 5.
+          mgApply 0; auto 5.
+          mgExactn 2; subst; auto 10.
       + apply conj_intro_meta. 1,2: subst; auto.
         * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
           subst.
-          mgApply' 0 5.
-          mgApply' 1 5.
-          mgExactn 2; subst; auto.
+          mgApply 0; auto 5.
+          mgApply 1; auto 5.
+          mgExactn 2; subst; auto 10.
 
         * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
           subst.
-          mgApply' 0 5.
-          mgApply' 1 5.
-          mgExactn 2; subst; auto.
+          mgApply 0; auto 5.
+          mgApply 1; auto 5.
+          mgExactn 2; subst; auto 10.
 
     - simpl in *.
       remember (evar_fresh (elements (

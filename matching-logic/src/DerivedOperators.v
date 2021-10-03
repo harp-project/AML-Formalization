@@ -52,8 +52,8 @@ Module Syntax.
     Qed.
     
     Lemma well_formed_not (phi : Pattern) :
-      well_formed phi ->
-      well_formed (patt_not phi).
+      well_formed phi = true ->
+      well_formed (patt_not phi) = true.
     Proof.
       unfold well_formed, well_formed_closed. simpl.
       intros H.
@@ -61,9 +61,9 @@ Module Syntax.
     Qed.
 
     Lemma well_formed_or (phi1 phi2 : Pattern) :
-      well_formed phi1 ->
-      well_formed phi2 ->
-      well_formed (patt_or phi1 phi2).
+      well_formed phi1 = true ->
+      well_formed phi2 = true ->
+      well_formed (patt_or phi1 phi2) = true.
     Proof.
       unfold patt_or.
       unfold well_formed, well_formed_closed. simpl.
@@ -72,9 +72,9 @@ Module Syntax.
     Qed.
     
     Lemma well_formed_iff (phi1 phi2 : Pattern) :
-      well_formed phi1 ->
-      well_formed phi2 ->
-      well_formed (patt_iff phi1 phi2).
+      well_formed phi1 = true ->
+      well_formed phi2 = true ->
+      well_formed (patt_iff phi1 phi2) = true.
     Proof.
       unfold patt_iff, patt_and, patt_or, patt_not. intros.
       unfold well_formed in *. simpl.
@@ -83,9 +83,9 @@ Module Syntax.
     Qed.
 
     Lemma well_formed_and (phi1 phi2 : Pattern) :
-      well_formed phi1 ->
-      well_formed phi2 ->
-      well_formed (patt_and phi1 phi2).
+      well_formed phi1 = true ->
+      well_formed phi2 = true ->
+      well_formed (patt_and phi1 phi2) = true.
     Proof.
       unfold patt_or.
       unfold well_formed. simpl.
