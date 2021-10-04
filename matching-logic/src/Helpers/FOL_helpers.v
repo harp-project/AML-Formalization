@@ -3860,7 +3860,90 @@ Section FOL_helpers.
     destruct_and!.
     unfold well_formed,well_formed_closed. split_and!; assumption.
   Qed.
-  
+
+  (* These [Local Private_*] lemmas are not generally useful, but we use them to keep the body
+     of [Private_prf_equiv_congruence] reasonably small. Because we want to reason about the body, too.
+     The lemmas are mostly placeholders for `wf_auto`.
+   *)
+
+  Local Lemma Private_well_formed_ex_free_evar_subst pcPattern pcEvar p:
+    well_formed p = true ->
+    well_formed (ex , pcPattern) = true ->
+    well_formed (ex , free_evar_subst' 1 pcPattern p pcEvar).
+  Proof.
+    intros. wf_auto.
+  Qed.
+
+  Local Lemma Private_wf_to_wfcexn p n:
+    well_formed p = true ->
+    well_formed_closed_ex_aux p n = true.
+  Proof.
+    intros. eapply well_formed_closed_ex_aux_ind. 2: wf_auto; eassumption. lia.
+  Qed.
+
+  Local Lemma Private_wf_eo_fes pcPattern p pcEvar x:
+    well_formed p ->
+    well_formed (ex , free_evar_subst' 1 pcPattern p pcEvar) ->
+    well_formed (ex , pcPattern) ->
+    well_formed_closed_ex_aux p 1 ->
+    well_formed (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)).
+  Proof. intros. wf_auto. Qed.
+
+  Local Lemma Private_wf_bevar_subst_free_evar_subst pcPattern p pcEvar x:
+    well_formed p ->
+    well_formed_closed_ex_aux p 1 ->
+    well_formed (ex , pcPattern) ->
+    well_formed (bevar_subst (free_evar_subst' 0 pcPattern p pcEvar) (patt_free_evar x) 0).
+  Proof. intros. wf_auto. Qed.
+
+  Local Lemma Private_well_formed_ex_free_evar_subst_0 pcPattern pcEvar p:
+    well_formed p = true ->
+    well_formed (ex , pcPattern) = true ->
+    well_formed_closed_ex_aux p 1 = true ->
+    well_formed (ex , free_evar_subst' 0 pcPattern p pcEvar).
+  Proof. intros. wf_auto. Qed.
+
+  Local Lemma Private_x_notin_free_ex_free_evar_subst_q x pcPattern pcEvar p q:
+    x = evar_fresh
+           (elements
+              (free_evars pcPattern ∪ {[pcEvar]} ∪ free_evars p
+               ∪ free_evars q)) ->
+    x ≠ pcEvar ->
+    x ∉ free_evars (ex , free_evar_subst' 0 pcPattern q pcEvar).
+  Proof.
+    intros.
+    simpl.
+    eapply not_elem_of_larger_impl_not_elem_of.
+    { apply free_evars_free_evar_subst. }
+    eapply not_elem_of_larger_impl_not_elem_of.
+    2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
+    clear. set_solver.
+  Qed.
+
+  Local Lemma Private_x_notin_free_ex_free_evar_subst_p x pcPattern pcEvar p q:
+    x = evar_fresh
+           (elements
+              (free_evars pcPattern ∪ {[pcEvar]} ∪ free_evars p
+               ∪ free_evars q)) ->
+    x ≠ pcEvar ->
+    x ∉ free_evars (ex , free_evar_subst' 0 pcPattern p pcEvar).
+  Proof.
+    intros.
+    simpl.
+    eapply not_elem_of_larger_impl_not_elem_of.
+    { apply free_evars_free_evar_subst. }
+    eapply not_elem_of_larger_impl_not_elem_of.
+    2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
+    clear. set_solver.
+  Qed.
+
+  Local Lemma Private_well_formed_evar_open_free_evar_subst_0 pcPattern pcEvar p x:
+    well_formed p = true ->
+    well_formed (ex , pcPattern) = true ->
+    well_formed_closed_ex_aux p 1 = true ->
+    well_formed (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)) = true.
+  Proof. intros. wf_auto. Qed.
+
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
     size' pcPattern <= sz ->
     well_formed p ->
@@ -3974,10 +4057,10 @@ Section FOL_helpers.
       { rewrite evar_open_size'. lia. }
       
       assert (well_formed (ex , free_evar_subst' 1 pcPattern p pcEvar)).
-      { wf_auto. }
+      { apply Private_well_formed_ex_free_evar_subst; assumption. }
 
       assert (well_formed (ex , free_evar_subst' 1 pcPattern q pcEvar)).
-      { wf_auto. }
+      { apply Private_well_formed_ex_free_evar_subst; assumption. }
 
       
       unfold emplace in IHpcPattern. simpl in IHpcPattern.
@@ -3986,60 +4069,44 @@ Section FOL_helpers.
       rewrite -evar_open_free_evar_subst_swap in IHpcPattern; auto.
 
       assert (well_formed_closed_ex_aux p 1).
-      { eapply well_formed_closed_ex_aux_ind. 2: wf_auto; eassumption. lia. }
+      { apply Private_wf_to_wfcexn; assumption. }
 
       assert (well_formed_closed_ex_aux q 1).
-      { eapply well_formed_closed_ex_aux_ind. 2: wf_auto; eassumption. lia. }
+      { apply Private_wf_to_wfcexn; assumption. }
       
       
       unshelve(epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ IHpcPattern)).
-      { wf_auto. }
-      { wf_auto. }
+      { apply Private_wf_eo_fes; assumption. }
+      { apply Private_wf_eo_fes; assumption. }
       unshelve(epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ IHpcPattern)).
-      { wf_auto. }
-      { wf_auto. }
+      { apply Private_wf_eo_fes; assumption. }
+      { apply Private_wf_eo_fes; assumption. }
       unfold evar_open in IH1, IH2.
 
       unshelve(epose proof (IH3 := syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x))).
-      { wf_auto. }
-      { wf_auto. }
-      { wf_auto. }
-      
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
       
       unshelve(epose proof (IH4 := syllogism_intro Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))).
-      { wf_auto. }
-      { wf_auto. }
-      { wf_auto. }
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
 
       fold (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)) in IH3.
       fold (evar_open 0 x (free_evar_subst' 0 pcPattern q pcEvar)) in IH4.
 
 
       assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern q pcEvar)).
-      {
-        simpl.
-        eapply not_elem_of_larger_impl_not_elem_of.
-        { apply free_evars_free_evar_subst. }
-        eapply not_elem_of_larger_impl_not_elem_of.
-        2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
-        clear. set_solver.
-      }
+      { eapply Private_x_notin_free_ex_free_evar_subst_q; eassumption. }
 
       assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern p pcEvar)).
-      {
-        simpl.
-        eapply not_elem_of_larger_impl_not_elem_of.
-        { apply free_evars_free_evar_subst. }
-        eapply not_elem_of_larger_impl_not_elem_of.
-        2: { simpl. subst; apply set_evar_fresh_is_fresh'. }
-        clear. set_solver.
-      }
-
+      { eapply Private_x_notin_free_ex_free_evar_subst_p; eassumption. }
       
       apply (Ex_gen _ _ _ x) in IH3.
       4: { assumption. }
-      3: { wf_auto. }
-      2: { wf_auto. }
+      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
       unfold exists_quantify in IH3.
 
       erewrite evar_quantify_evar_open in IH3.
@@ -4052,8 +4119,8 @@ Section FOL_helpers.
 
       apply (Ex_gen _ _ _ x) in IH4.
       4: { assumption. }
-      3: { wf_auto. }
-      2: { wf_auto. }
+      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
       unfold exists_quantify in IH4.
 
       erewrite evar_quantify_evar_open in IH4.
