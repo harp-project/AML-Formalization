@@ -188,7 +188,7 @@ Module MetaMath.
 
     Definition AssertStmt_toString (x : AssertStmt) : string :=
       match x with
-      | as_axiom a => AxiomStmt_toString a
+      | as_axiom astmt => AxiomStmt_toString astmt
       | as_provable p => ProvableStmt_toString p
       end.
 
@@ -202,7 +202,7 @@ Module MetaMath.
       | stmt_variable_stmt v => VariableStmt_toString v
       | stmt_disj_stmt d => DisjointStmt_toString d
       | stmt_hyp_stmt h => HypothesisStmt_toString h
-      | stmt_assert_stmt a => AssertStmt_toString a
+      | stmt_assert_stmt astmt => AssertStmt_toString astmt
       end.
 
     Definition OutermostScopeStmt_toString (x : OutermostScopeStmt) : string :=
@@ -220,22 +220,22 @@ Module MetaMath.
     Fixpoint Private_MathSymbol_from_string (s : string) : string :=
       match s with
       | EmptyString => ""
-      | String a s' =>
-        let n := nat_of_ascii a in
+      | String v s' =>
+        let n := nat_of_ascii v in
         let rest := (Private_MathSymbol_from_string s') in
-        if decide (a = "$"%char) then
+        if decide (v = "$"%char) then
           "\DLR" ++ rest
         else
-          if (decide (a = "\"%char)) then
+          if (decide (v = "\"%char)) then
             "\BSP" ++ rest
           else
-            if (decide (a = " "%char)) then
+            if (decide (v = " "%char)) then
               "\SPC" ++ rest
             else
               if (n <? 33) || (126 <? n)
               then "$$$GENERATE_SYNTAX_ERROR$$$" (* TODO metamath can't handle characters in this range *)
               else
-                String a rest
+                String v rest
       end.
 
     (*Compute (Private_MathSymbol_from_string "Ah$oj sve\te").*)

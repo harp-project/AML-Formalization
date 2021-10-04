@@ -6,6 +6,7 @@ Unset Printing Implicit Defensive.
 From stdpp Require Import base pmap gmap.
 From MatchingLogic Require Import Syntax.
 
+Require Import String.
 
 Section named.
   Context
@@ -39,12 +40,28 @@ Section named.
   Definition svm_incr (svm : SVarMap) : SVarMap :=
     kmap S svm.
 
+  Definition incr_one (phi : Pattern) : Pattern :=
+    match phi with
+    | patt_bound_evar n => patt_bound_evar (S n)
+    | patt_bound_svar n => patt_bound_svar (S n)
+    | x => x
+    end.
+
+  Definition cache_incr (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
+    kmap incr_one cache.
+
   Definition evm_fresh (evm : EVarMap) (ϕ : Pattern) : evar
     := evar_fresh (elements (free_evars ϕ ∪ (list_to_set (map snd (map_to_list evm))))).
 
+  Definition evs_fresh (evs : EVarSet) (ϕ : Pattern) : evar
+    := evar_fresh (elements (free_evars ϕ ∪ evs)).
+
   Definition svm_fresh (svm : SVarMap) (ϕ : Pattern) : svar
     := svar_fresh (elements (free_svars ϕ ∪ (list_to_set (map snd (map_to_list svm))))).
-  
+
+  Definition svs_fresh (svs : SVarSet) (ϕ : Pattern) : svar
+    := svar_fresh (elements (free_svars ϕ ∪ svs)).
+
   Fixpoint to_NamedPattern' (ϕ : Pattern) (evm : EVarMap) (svm : SVarMap)
     : NamedPattern * EVarMap * SVarMap :=
     match ϕ with
@@ -81,7 +98,6 @@ Section named.
 
   Definition not_contain_bound_evar_0 ϕ : Prop := ~~ bevar_occur ϕ 0.
   Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
-  
 
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
@@ -117,10 +133,26 @@ Section named.
               let: (nϕ₂, cache'', used_evars'', used_svars'')
                  := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' in
               ((npatt_app nϕ₁ nϕ₂), cache'', used_evars'', used_svars'')
-         | _ => (npatt_bott, cache, used_evars, used_svars)
+         | patt_exists phi
+           => let: x := evs_fresh used_evars phi in
+              let: used_evars_ex := used_evars ∪ {[x]} in
+              let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr cache) in
+              let: (nphi, cache', used_evars', used_svars')
+                 := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
+              (npatt_exists x nphi, cache', used_evars', used_svars)
+         | patt_mu phi
+           => let: X := svs_fresh used_svars phi in
+              let: used_svars_ex := used_svars ∪ {[X]} in
+              let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr cache) in
+              let: (nphi, cache', used_evars', used_svars')
+                 := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
+              (npatt_mu X nphi, cache', used_evars', used_svars)
          end
       in
       (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
+
+  Definition to_NamedPattern2 (ϕ : Pattern) : NamedPattern :=
+    (to_NamedPattern2' ϕ gmap_empty ∅ ∅).1.1.1.
   
   Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
@@ -382,3 +414,51 @@ Section named.
 *)
   
 End named.
+
+Section named_test.
+
+  Definition StringMLVariables : MLVariables :=
+    {| evar := string;
+       svar := string;
+    |}.
+
+  Inductive Symbols : Set := a.
+  Instance Symbols_dec : EqDecision Symbols.
+  Proof.
+    unfold EqDecision. intros x y. unfold Decision.
+    repeat decide equality.
+  Defined.
+
+  Definition sig : Signature :=
+    {| variables := StringMLVariables;
+       symbols := Symbols;
+       sym_eqdec := Symbols_dec;
+    |}.
+
+  (* Consider the following pattern in locally nameless representation:
+       ex, ex, 0 ---> ex, 0
+     When we convert this to a named pattern, we want to maintain the invariant
+     that identical subterms are equivalent using normal equalty. Specifically,
+     the `ex, 0` terms appearing on both sides of the implication should be
+     converted to identical named patterns. However, when we convert the above
+     pattern using `to_NamedPattern`, we get
+       ex x0, ex x1, x1 ---> ex x0, x0
+     Now, we have no identical subterms on both sides of the implication.
+     However, using `to_Named_Pattern2` on the same initial pattern, we get
+       ex x0, ex x1, x1 ---> ex x1, x1
+     This time, we maintain the identical subterm invariant.
+     This example is shown below, along with an analogous version for mu patterns.
+  *)
+  Definition phi_ex1 := (@patt_exists sig (patt_exists (patt_bound_evar 0))).
+  Definition phi_ex2 := (@patt_exists sig (patt_bound_evar 0)).
+  Definition phi_ex := (patt_imp phi_ex1 phi_ex2).
+  Compute to_NamedPattern phi_ex.
+  Compute to_NamedPattern2 phi_ex.
+
+  Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
+  Definition phi_mu2 := (@patt_mu sig (patt_bound_svar 0)).
+  Definition phi_mu := (patt_imp phi_mu1 phi_mu2).
+  Compute to_NamedPattern phi_mu.
+  Compute to_NamedPattern2 phi_mu.
+
+End named_test.
