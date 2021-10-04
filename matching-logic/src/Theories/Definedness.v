@@ -19,7 +19,7 @@ From MatchingLogic Require Import Syntax Semantics DerivedOperators.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
 Import extralibrary.
 
@@ -2330,6 +2330,101 @@ Section ProofSystemTheorems.
     assumption. reflexivity.
   Qed.
 
+  Lemma uses_svar_subst_prf_weaken_conclusion_iter
+        Γ l g g' SvS
+        (wfl : wf l)
+        (wfg : well_formed g)
+        (wfg' : well_formed g')
+    : uses_svar_subst (prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg') SvS = false.
+  Proof.
+    move: wfl.
+    induction l; intros wfl.
+    - reflexivity.
+    - simpl.
+      case_match.
+      simpl. rewrite IHl.
+      reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_prf_weaken_conclusion_iter_under_implication
+        Γ l g g' SvS
+        (wfl : wf l)
+        (wfg : well_formed g)
+        (wfg' : well_formed g'):
+  uses_svar_subst (prf_weaken_conclusion_iter_under_implication Γ l g g' wfl wfg wfg') SvS = false.
+  Proof.
+    simpl. rewrite !orbF.
+    unfold eq_rec_r. unfold eq_rec. unfold eq_rect.
+    remember (eq_sym (erefl (g ---> g'))) as eqs.
+    clear Heqeqs.
+    move: (well_formed_imp wfg wfg').
+    replace eqs with (@erefl Pattern (g ---> g')).
+    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
+
+    remember (eq_sym (erefl (foldr patt_imp g l))) as eqs2.
+    clear Heqeqs2.
+    replace eqs2 with (@erefl Pattern (foldr patt_imp g l)).
+    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
+
+    remember (eq_sym (erefl (foldr patt_imp g' l))) as eqs3.
+    clear Heqeqs3.
+    replace eqs3 with (@erefl Pattern (foldr patt_imp g' l)).
+    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
+
+    intros wfi.
+    rewrite uses_svar_subst_prf_weaken_conclusion_iter. simpl.
+    case_match. simpl. clear Heqa.
+    case_match. simpl. reflexivity.
+  Qed.
+
+  Lemma uses_svar_subst_prf_weaken_conclusion_meta
+        Γ A B B' SvS
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfB' : well_formed B')
+        (pf : Γ ⊢ B ---> B')
+        :
+        uses_svar_subst pf SvS = false ->
+        uses_svar_subst (prf_weaken_conclusion_meta Γ A B B' wfA wfB wfB' pf) SvS = false.
+  Proof.
+    intros Hpf.
+    simpl. rewrite Hpf. reflexivity.
+  Qed.
+
+
+  Lemma uses_svar_subst_prf_weaken_conclusion_iter_under_implication_iter
+        Γ l₁ l₂ g g' SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
+        (wfg : well_formed g)
+        (wfg' : well_formed g') :
+  uses_svar_subst (prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg') SvS = false.
+  Proof.
+    induction l₁.
+    - unfold prf_weaken_conclusion_iter_under_implication_iter.
+      unfold list_rect. unfold list_rec. unfold list_rect.
+      apply uses_svar_subst_prf_weaken_conclusion_iter_under_implication.
+    - simpl. case_match.
+      apply uses_svar_subst_prf_weaken_conclusion_meta.
+      apply IHl₁.
+  Qed.
+
+  Lemma uses_svar_subst_MyGoal_weakenConclusion
+        Γ l₁ l₂ g g' SvS
+        (wfl₁ : wf l₁)
+        (wfl₂ : wf l₂)
+        (wfg : well_formed g)
+        (wfg' : well_formed g')
+        (pf : Γ ⊢ foldr patt_imp g (l₁ ++ (g ---> g') :: l₂))
+        :
+  uses_svar_subst pf SvS = false ->
+  uses_svar_subst (MyGoal_weakenConclusion Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg' pf) SvS = false.
+  Proof.
+    intros Huse. simpl. rewrite Huse. simpl.
+    unfold MyGoal_weakenConclusion.
+    apply uses_svar_subst_prf_weaken_conclusion_iter_under_implication_iter.
+  Qed.
+
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS
         (Hsz: size' pcPattern <= sz)
@@ -2401,7 +2496,7 @@ Section ProofSystemTheorems.
     - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
       apply uses_svar_subst_pf_iff_equiv_trans.
       + apply uses_svar_subst_conj_intro_meta.
-        * simpl. Set Printing Coercions. Check uses_svar_subst_MyGoal_intro.
+        * simpl. Set Printing Coercions.
           match goal with
           | [ |- uses_svar_subst (MyGoal_intro ?Gamma ?l ?x ?g ?pf) ?SvS = false] => remember pf
           end.
@@ -2421,6 +2516,27 @@ Section ProofSystemTheorems.
           apply uses_svar_subst_MyGoal_add.
           simpl. rewrite orbF.
           apply IHsz. (* TBD *)
+          unfold eq_rect.
+          remember (firstn_skipn 1) as fs1.
+          clear Heqfs1. destruct fs1.
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          remember (firstn_skipn 0
+                                 [free_evar_subst pcPattern1 q pcEvar --->
+                                                  free_evar_subst' 0 pcPattern1 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 p pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fnsn.
+          clear Heqfnsn. simpl in fnsn.
+          replace fnsn with (erefl [free_evar_subst pcPattern1 q pcEvar --->
+            free_evar_subst' 0 pcPattern1 p pcEvar;
+            free_evar_subst' 0 pcPattern1 p pcEvar --->
+            free_evar_subst' 0 pcPattern2 p pcEvar;
+            free_evar_subst' 0 pcPattern1 q pcEvar]).
+          2: { eapply UIP_dec. intros x y. apply list_eq_dec. }
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          Search uses_svar_subst MyGoal_exact.
+          
+          case_match.
   Abort.
 
 
