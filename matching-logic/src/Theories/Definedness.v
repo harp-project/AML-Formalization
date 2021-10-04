@@ -932,7 +932,7 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro.
         mgAdd (A_or_notA Γ ϕ Hwfϕ); auto.
         mgDestruct 0; auto.
-        - mgRight; auto. mgExactn 0.
+        - mgRight; auto. mgExactn 0; auto.
         - mgLeft; auto. mgIntro.
           mgDestruct 1; auto 10.
           + mgDestruct 2; auto.
@@ -1026,7 +1026,7 @@ Section ProofSystemTheorems.
       {  mgApply 0; auto 10.  mgAdd (Existence Γ); auto 10.
          mgExactn 0; auto 10.
       }
-      mgApply 2; auto 10. mgExactn 1. auto 10.
+      mgApply 2; auto 10. mgExactn 1; auto 10.
     }
 
     assert (well_formed (ex , (b0 and ϕ))).
@@ -1264,7 +1264,7 @@ Section ProofSystemTheorems.
           toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
           apply (hypothesis Γ axiom0 i H).
       - (* P1 *)
-        toMyGoal. do 3 mgIntro. mgExactn 1.
+        toMyGoal. do 3 mgIntro. mgExactn 1; auto 10.
       - (* P2 *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply P2; auto.
@@ -1288,7 +1288,7 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro.
         mgAdd IHpf2; auto.
         mgAssert ((phi1 ---> phi2)).
-        { mgApply 0; auto 10. mgExactn 1. }
+        { mgApply 0; auto 10. mgExactn 1; auto 10. }
         mgApply 2; auto 10.
         mgAdd IHpf1; auto.
         mgApply 0; auto 10.
@@ -1855,10 +1855,10 @@ Section ProofSystemTheorems.
       mgDestruct 0; auto 10.
       - mgLeft; auto 10.
         mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
-        mgExactn 0.
+        mgExactn 0; auto.
       - mgRight; auto 10.
         mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
-        mgExactn 0.
+        mgExactn 0; auto.
     Defined.
     
     Lemma membership_and_2 Γ x ϕ₁ ϕ₂:
@@ -1923,7 +1923,7 @@ Section ProofSystemTheorems.
           toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
           apply (hypothesis Γ axiom0 i H).
       - (* P1 *)
-        toMyGoal. do 3 mgIntro. mgExactn 1.
+        toMyGoal. do 3 mgIntro. mgExactn 1; auto.
       - (* P2 *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply P2; auto.
@@ -1945,7 +1945,7 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro.
         mgAdd IHpf2; auto.
         mgAssert ((phi1 ---> phi2)).
-        { mgApply 0; auto 10. mgExactn 1. }
+        { mgApply 0; auto 10. mgExactn 1; auto. }
         mgApply 2; auto 10.
         mgAdd IHpf1; auto.
         mgApply 0; auto 10.
@@ -2425,6 +2425,14 @@ Section ProofSystemTheorems.
     apply uses_svar_subst_prf_weaken_conclusion_iter_under_implication_iter.
   Qed.
 
+  (*
+  Check MyGoal_exact.
+  Lemma uses_svar_subst_MyGoal_exact
+        Γ l g n
+  uses_svar_subst
+    (MyGoal_exact
+  *)
+
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS
         (Hsz: size' pcPattern <= sz)
@@ -2534,9 +2542,185 @@ Section ProofSystemTheorems.
             free_evar_subst' 0 pcPattern1 q pcEvar]).
           2: { eapply UIP_dec. intros x y. apply list_eq_dec. }
           apply uses_svar_subst_MyGoal_weakenConclusion.
-          Search uses_svar_subst MyGoal_exact.
-          
-          case_match.
+          repeat case_match.
+          remember (firstn_skipn 2
+                                 [free_evar_subst pcPattern1 q pcEvar --->
+                                                  free_evar_subst' 0 pcPattern1 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 p pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fs2.
+          clear Heqfs2. simpl in fs2.
+          replace fs2 with (erefl [free_evar_subst pcPattern1 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern1 p pcEvar;
+                                   free_evar_subst' 0 pcPattern1 p pcEvar --->
+                                                    free_evar_subst' 0 pcPattern2 p pcEvar;
+                                   free_evar_subst' 0 pcPattern1 q pcEvar]).
+          2: { apply UIP_dec. intros x y. apply list_eq_dec. }
+          simpl. reflexivity.
+        * simpl. Set Printing Coercions.
+          match goal with
+          | [ |- uses_svar_subst (MyGoal_intro ?Gamma ?l ?x ?g ?pf) ?SvS = false] => remember pf
+          end.
+          unfold of_MyGoal in *.
+          move: o Heqo.
+          rewrite [mgConclusion _]/=.
+          rewrite [mgTheory _]/=.
+          rewrite [mgHypotheses _]/=.
+          intros o Ho. 
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ []).
+          simpl in Htmp.
+          apply Htmp. clear Htmp. subst o.
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ [free_evar_subst' 0 pcPattern1 q pcEvar --->
+                               free_evar_subst' 0 pcPattern2 p pcEvar]).
+          simpl in Htmp.
+          apply Htmp. clear Htmp.
+          apply uses_svar_subst_MyGoal_add.
+          simpl. rewrite orbF.
+          apply IHsz. (* TBD *)
+          unfold eq_rect.
+          remember (firstn_skipn 1) as fs1.
+          clear Heqfs1. destruct fs1.
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          remember (firstn_skipn 0
+                                 [free_evar_subst pcPattern1 p pcEvar --->
+                                                  free_evar_subst' 0 pcPattern1 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 p pcEvar]) as fnsn.
+          clear Heqfnsn. simpl in fnsn.
+          replace fnsn with (erefl [free_evar_subst pcPattern1 p pcEvar --->
+            free_evar_subst' 0 pcPattern1 q pcEvar;
+            free_evar_subst' 0 pcPattern1 q pcEvar --->
+            free_evar_subst' 0 pcPattern2 p pcEvar;
+            free_evar_subst' 0 pcPattern1 p pcEvar]).
+          2: { eapply UIP_dec. intros x y. apply list_eq_dec. }
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          repeat case_match.
+          remember (firstn_skipn 2
+                                 [free_evar_subst pcPattern1 p pcEvar --->
+                                                  free_evar_subst' 0 pcPattern1 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 p pcEvar]) as fs2.
+          clear Heqfs2. simpl in fs2.
+          replace fs2 with (erefl [free_evar_subst pcPattern1 p pcEvar --->
+                                                   free_evar_subst' 0 pcPattern1 q pcEvar;
+                                   free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                    free_evar_subst' 0 pcPattern2 p pcEvar;
+                                   free_evar_subst' 0 pcPattern1 p pcEvar]).
+          2: { apply UIP_dec. intros x y. apply list_eq_dec. }
+          simpl. reflexivity.
+      + apply uses_svar_subst_conj_intro_meta.
+        * simpl.
+          match goal with
+          | [ |- uses_svar_subst (MyGoal_intro ?Gamma ?l ?x ?g ?pf) ?SvS = false] => remember pf
+          end.
+          unfold of_MyGoal in *.
+          move: o Heqo.
+          rewrite [mgConclusion _]/=.
+          rewrite [mgTheory _]/=.
+          rewrite [mgHypotheses _]/=.
+          intros o Ho. 
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ []).
+          simpl in Htmp.
+          apply Htmp. clear Htmp. subst o.
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ [free_evar_subst' 0 pcPattern1 q pcEvar --->
+                               free_evar_subst' 0 pcPattern2 p pcEvar]).
+          simpl in Htmp.
+          apply Htmp. clear Htmp.
+          apply uses_svar_subst_MyGoal_add.
+          simpl. rewrite orbF.
+          apply IHsz.
+          unfold eq_rect.
+          remember (firstn_skipn 0) as fs1.
+          clear Heqfs1. destruct fs1.
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          remember (firstn_skipn 1
+                                 [free_evar_subst pcPattern2 p pcEvar --->
+                                                  free_evar_subst' 0 pcPattern2 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fnsn.
+          clear Heqfnsn. simpl in fnsn.
+          replace fnsn with (erefl [free_evar_subst pcPattern2 p pcEvar --->
+            free_evar_subst' 0 pcPattern2 q pcEvar;
+            free_evar_subst' 0 pcPattern1 q pcEvar --->
+            free_evar_subst' 0 pcPattern2 p pcEvar;
+            free_evar_subst' 0 pcPattern1 q pcEvar]).
+          2: { eapply UIP_dec. intros x y. apply list_eq_dec. }
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          repeat case_match.
+          remember (firstn_skipn 2
+                                 [free_evar_subst pcPattern2 p pcEvar --->
+                                                  free_evar_subst' 0 pcPattern2 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fnsn2.
+          clear Heqfnsn2. simpl in fnsn2.
+          replace fnsn2 with (erefl [free_evar_subst pcPattern2 p pcEvar --->
+                                                     free_evar_subst' 0 pcPattern2 q pcEvar;
+                                     free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                      free_evar_subst pcPattern2 p pcEvar;
+                                     free_evar_subst' 0 pcPattern1 q pcEvar] ).
+          2: { apply UIP_dec. intros x y. apply list_eq_dec. }
+          simpl. reflexivity.
+        * simpl.
+          match goal with
+          | [ |- uses_svar_subst (MyGoal_intro ?Gamma ?l ?x ?g ?pf) ?SvS = false] => remember pf
+          end.
+          unfold of_MyGoal in *.
+          move: o Heqo.
+          rewrite [mgConclusion _]/=.
+          rewrite [mgTheory _]/=.
+          rewrite [mgHypotheses _]/=.
+          intros o Ho. 
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ []).
+          simpl in Htmp.
+          apply Htmp. clear Htmp. subst o.
+          pose proof (Htmp := @uses_svar_subst_MyGoal_intro Γ [free_evar_subst' 0 pcPattern1 q pcEvar --->
+                               free_evar_subst' 0 pcPattern2 q pcEvar]).
+          simpl in Htmp.
+          apply Htmp. clear Htmp.
+          apply uses_svar_subst_MyGoal_add.
+          simpl. rewrite orbF.
+          apply IHsz.
+          unfold eq_rect.
+          remember (firstn_skipn 0) as fs0.
+          clear Heqfs0. destruct fs0.
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          remember (firstn_skipn 1
+                                 [free_evar_subst pcPattern2 q pcEvar --->
+                                                  free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fnsn.
+          clear Heqfnsn. simpl in fnsn.
+          replace fnsn with (erefl [free_evar_subst pcPattern2 q pcEvar --->
+                                                    free_evar_subst' 0 pcPattern2 p pcEvar;
+                                    free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                     free_evar_subst' 0 pcPattern2 q pcEvar;
+                                    free_evar_subst' 0 pcPattern1 q pcEvar]).
+          2: { eapply UIP_dec. intros x y. apply list_eq_dec. }
+          apply uses_svar_subst_MyGoal_weakenConclusion.
+          repeat case_match.
+          remember (firstn_skipn 2
+                                 [free_evar_subst pcPattern2 q pcEvar --->
+                                                  free_evar_subst' 0 pcPattern2 p pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                   free_evar_subst pcPattern2 q pcEvar;
+                                  free_evar_subst' 0 pcPattern1 q pcEvar]) as fs2.
+          clear Heqfs2. simpl in fs2.
+          replace fs2 with (erefl [free_evar_subst pcPattern2 q pcEvar --->
+                                                   free_evar_subst' 0 pcPattern2 p pcEvar;
+                                   free_evar_subst' 0 pcPattern1 q pcEvar --->
+                                                    free_evar_subst pcPattern2 q pcEvar;
+                                   free_evar_subst' 0 pcPattern1 q pcEvar]).
+          2: { apply UIP_dec. intros x y. apply list_eq_dec. }
+          simpl. reflexivity.
+    -
+
+
+
   Abort.
 
 

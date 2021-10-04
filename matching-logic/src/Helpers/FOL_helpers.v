@@ -3118,7 +3118,7 @@ Tactic Notation "mgDestructAnd" constr(n) :=
     remember (l !! n) as found eqn:Heqfound;
     simpl in Heqfound;
     match type of Heqfound with
-    | found = Some (?x and ?y) => idtac "Here";
+    | found = Some (?x and ?y) =>
       unshelve(
           mgAssert (y) using first (S n);
           [mgApplyMeta (pf_conj_elim_r Ctx x y _ _);
