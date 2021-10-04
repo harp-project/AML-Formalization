@@ -1337,20 +1337,6 @@ Section FOL_helpers.
     unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
   Defined.
 
-  Lemma MyGoal_exact Γ l g n:
-    wf l ->
-    well_formed g ->
-    l !! n = Some g ->
-    @mkMyGoal Σ Γ l g.
-  Proof.
-    intros wfl wfg ln.
-    pose proof (Hn := lookup_lt_Some l n g ln).
-    pose proof (Heq := take_drop_middle l n g ln).
-    rewrite -Heq.
-    unfold of_MyGoal. simpl.
-    apply nested_const_middle; auto.
-  Defined.  
-
 End FOL_helpers.
 
 #[global]
@@ -1367,9 +1353,23 @@ Ltac simplLocalContext :=
 #[global]
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
 
-#[global]
- Ltac mgExactn n := apply (MyGoal_exact _ _ _ n); auto.
+Tactic Notation "mgExactn" constr(n) :=
+  let hyps := fresh "hyps" in
+  rewrite -[hyps in mkMyGoal _ _ hyps _](firstn_skipn n);
+  rewrite [hyps in mkMyGoal _ _ (hyps ++ _) _]/firstn;
+  rewrite [hyps in mkMyGoal _ _ (_ ++ hyps) _]/skipn;
+  apply nested_const_middle.
 
+Local Example ex_mgExactn {Σ : Signature} Γ a b c:
+  well_formed a = true ->
+  well_formed b = true ->
+  well_formed c = true ->
+  Γ ⊢ a ---> b ---> c ---> b.
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal. mgIntro. mgIntro. mgIntro.
+  mgExactn 1; auto.
+Qed.
 
 Section FOL_helpers.
 
@@ -1590,8 +1590,7 @@ Section FOL_helpers.
     mgIntro.
     mgApply 3; auto 7.
     mgApply 0; auto 7.
-    mgExactn 4.
-    auto 8.
+    mgExactn 4; auto 8.
   Defined.
 
   Lemma prf_add_assumption Γ a b :
@@ -1763,15 +1762,17 @@ Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
          rewrite [_ ++ _]/=; clear H)] 
   end.
 
-Local Example ex_assert_using {Σ : Signature} Γ p q:
-  well_formed p ->
-  well_formed q ->
-  Γ ⊢ p and q ---> ! ! q.
+Local Example ex_assert_using {Σ : Signature} Γ p q a b:
+  well_formed a = true ->
+  well_formed b = true ->
+  well_formed p = true ->
+  well_formed q = true ->
+  Γ ⊢ a ---> p and q ---> b ---> ! ! q.
 Proof.
-  intros wfp wfq.
+  intros wfa wfb wfp wfq.
   toMyGoal.
-  mgIntro.
-  mgAssert (p) using first 0.
+  do 3 mgIntro.
+  mgAssert (p) using first 2.
 Abort.
 
 
@@ -1947,7 +1948,7 @@ Section FOL_helpers.
     intros WFl WFg WFh H H0. toMyGoal.
     mgAdd H0; [auto|auto|auto|].
     mgAdd H; [auto|auto|auto|].
-    mgApply 0; auto 5. mgExactn 1.
+    mgApply 0; auto 5. mgExactn 1; auto.
   Defined.
 
 
@@ -2948,7 +2949,7 @@ Section FOL_helpers.
       mgApply 2; auto 10.
       mgAdd (not_not_intro Γ (! p1) ltac:(auto)); auto 10.
       mgApply 0; auto 10.
-      mgExactn 4. auto 10.
+      mgExactn 4; auto 10.
     - toMyGoal.
       mgIntro. mgIntro.
       unfold patt_and.
@@ -2960,7 +2961,7 @@ Section FOL_helpers.
       mgApply 2; auto 10.
       mgAdd (not_not_elim Γ (! p1) ltac:(auto)); auto 10.
       mgApply 0; auto 10.
-      mgExactn 4. auto 10.
+      mgExactn 4; auto 10.
   Defined.
 
   Lemma and_impl_2 Γ p1 p2:
@@ -2980,7 +2981,7 @@ Section FOL_helpers.
       mgApply 2; auto 10.
       mgAdd (not_not_intro Γ p1 ltac:(auto)); auto 10.
       mgApply 0; auto 10.
-      mgExactn 4. auto 10.
+      mgExactn 4; auto 10.
     - toMyGoal.
       mgIntro. mgIntro.
       mgApply 0; auto 10.
@@ -2991,8 +2992,7 @@ Section FOL_helpers.
       mgApply 2; auto 10.
       mgAdd (not_not_elim Γ p1 ltac:(auto)); auto 10.
       mgApply 0; auto 10.
-      mgExactn 4.
-      auto 10.
+      mgExactn 4; auto 10.
   Defined.
 
   Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) :
@@ -3106,8 +3106,9 @@ Proof.
   intros wfp wfq.
   toMyGoal. mgIntro.
   mgApplyMeta (disj_left_intro Γ p q _ _) in 0; auto.
-  mgExactn 0.
+  mgExactn 0; auto 10.
 Qed.
+
   
 Tactic Notation "mgDestructAnd" constr(n) :=
   match goal with
@@ -3117,16 +3118,20 @@ Tactic Notation "mgDestructAnd" constr(n) :=
     remember (l !! n) as found eqn:Heqfound;
     simpl in Heqfound;
     match type of Heqfound with
-    | found = Some (?x and ?y) =>
+    | found = Some (?x and ?y) => idtac "Here";
       unshelve(
           mgAssert (y) using first (S n);
-          [mgApplyMeta (pf_conj_elim_r Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          [mgApplyMeta (pf_conj_elim_r Ctx x y _ _);
+           [shelve|shelve|shelve|shelve|shelve|(mgExactn n; shelve)]
+          |idtac];
           mgAssert (x) using first (S n);
-          [mgApplyMeta (pf_conj_elim_l Ctx x y _ _);[shelve|shelve|shelve|shelve|shelve|mgExactn n]|idtac];
+          [mgApplyMeta (pf_conj_elim_l Ctx x y _ _);
+           [shelve|shelve|shelve|shelve|shelve|(mgExactn n; shelve)]
+          |idtac];
           mgClear n
         )      
     | _ => idtac "Not a conjunction"
-    end; clear found Heqfound
+    end ; clear found Heqfound
   end.
 
 Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
@@ -3682,7 +3687,7 @@ Section FOL_helpers.
     }
     mgAdd Htmp; auto 10. clear Htmp.
     mgApply 0; auto 10. mgIntro. mgApply 2; auto 10.
-    mgExactn 4. auto 10.
+    mgExactn 4; auto 10.
   Defined.
 
   Tactic Notation "wf_auto" int_or_var(n)
