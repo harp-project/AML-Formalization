@@ -4023,7 +4023,19 @@ Section FOL_helpers.
     exact H.
   Defined.
 
-Check Ex_gen.
+  Lemma strip_exists_quantify Γ x P Q :
+    x ∉ free_evars P ->
+    well_formed_closed_ex_aux P 1 ->
+    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> ex , Q) ->
+    Γ ⊢ ex , P ---> ex , Q.
+  Proof.
+    intros Hx HwfcP H.
+    unfold exists_quantify in H.
+    rewrite -> evar_quantify_evar_open with (m := 1) in H;
+    [idtac|lia|assumption|assumption].
+    exact H.
+  Defined.
+
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
@@ -4085,8 +4097,12 @@ Check Ex_gen.
             | (IH3', IH4')
                :=
                 pf_iff_split Γ (ex, free_evar_subst' 1 ϕ' p E) (ex, free_evar_subst' 1 ϕ' q E) _ _
-                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' p q E wfψ wfp wfq _)
-                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' q p E wfψ wfq wfp _)
+                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' p q E wfψ wfp wfq
+                    (strip_exists_quantify Γ x _ _ _ _ IH3')
+                  )
+                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' q p E wfψ wfq wfp
+                    (strip_exists_quantify Γ x _ _ _ _ IH4')
+                  )
             }
           }
         }
@@ -4172,46 +4188,25 @@ Check Ex_gen.
       ).
     - abstract (wf_auto).
     - abstract (wf_auto).
+    - abstract (simpl;
+        eapply not_elem_of_larger_impl_not_elem_of;
+        [apply free_evars_free_evar_subst|];
+        clear -frx; set_solver
+      ).
+    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
+        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
+        [lia|assumption]
+      ).
+    - abstract (simpl;
+        eapply not_elem_of_larger_impl_not_elem_of;
+        [apply free_evars_free_evar_subst|];
+        clear -frx; set_solver
+      ).
+    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
+        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
+        [lia|assumption]
+      ).
     - 
-
-
-      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern q pcEvar)).
-      { eapply Private_x_notin_free_ex_free_evar_subst_q; eassumption. }
-
-      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern p pcEvar)).
-      { eapply Private_x_notin_free_ex_free_evar_subst_p; eassumption. }
-      
-      apply (Ex_gen _ _ _ x) in IH3.
-      4: { assumption. }
-      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
-      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
-      unfold exists_quantify in IH3.
-
-      rewrite -> evar_quantify_evar_open with (m := 1) in IH3.
-      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
-      3: { assumption. }
-      2: { lia. }
-
-      apply (Ex_gen _ _ _ x) in IH4.
-      4: { assumption. }
-      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
-      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
-      unfold exists_quantify in IH4.
-
-      rewrite -> evar_quantify_evar_open with (m := 1) in IH4.
-      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
-      3: { assumption. }
-      2: { abstract lia. }
-
-      replace 1 with (0 + 1) by (abstract lia).
-      repeat rewrite <- free_evar_subst_nest_ex_1.
-      rewrite nest_ex_aux_wfc_ex.
-      { abstract wf_auto. }
-      rewrite nest_ex_aux_wfc_ex.
-      { abstract wf_auto. }
-      
-      apply pf_iff_split; auto; abstract (wf_auto).
-
   Defined.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
