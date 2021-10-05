@@ -1,7 +1,9 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Ltac2 Require Import Ltac2.
 From Coq Require Import Ensembles Bool.
+
+From Equations Require Import Equations.
+
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
 From stdpp Require Import list tactics fin_sets.
@@ -9,8 +11,6 @@ From stdpp Require Import list tactics fin_sets.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import extralibrary.
-
-Set Default Proof Mode "Classic".
 
 Import
   MatchingLogic.Syntax.Notations
@@ -2537,7 +2537,7 @@ Section FOL_helpers.
     intros WFa WFb H. eapply Modus_ponens. 4: apply P1. all: auto.
   Defined.
   
-
+(*
   Lemma prf_equiv_congruence_implicative_ctx Γ p q C:
     well_formed p ->
     well_formed q ->
@@ -2645,7 +2645,7 @@ Section FOL_helpers.
           mgApply 1; auto 5.
           mgExactn 2; subst; auto 10.      
   Defined.
-      
+  *)    
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
@@ -3943,6 +3943,85 @@ Section FOL_helpers.
     well_formed_closed_ex_aux p 1 = true ->
     well_formed (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)) = true.
   Proof. intros. wf_auto. Qed.
+
+
+  Locate "{ _ | _ }". Check sig. Print sig.
+  Equations? eq_test1 (x y : nat) : {z : nat | z >= y} :=
+    eq_test1 x y := exist _ (x+y) pfxy
+    where pfxy : (x+y >= y) := 
+      pfxy := _.
+  Proof. lia. Defined.
+
+  Check pf_iff_equiv_refl.
+  Equations? eq_prf_equiv_congruence
+               Γ p q
+               (wfp : well_formed p)
+               (wfq : well_formed q)
+               E ψ
+               (wfψ : well_formed ψ)
+               (pf : Γ ⊢ (p <---> q)) :
+                   Γ ⊢ (((free_evar_subst' 0 ψ p E) <---> (free_evar_subst' 0 ψ q E))) :=
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_evar n) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_bound_evar n) _) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_svar n) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_bound_svar n) _) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
+  with (decide (E = x)) => {
+    | left e := _
+    | right e := (pf_iff_equiv_refl Γ (patt_free_evar x) _)
+  } ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_svar X) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_free_svar X) _) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bott) wfψ pf
+  := (pf_iff_equiv_refl Γ patt_bott _) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_sym s) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_sym s) _) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ ---> ϕ₂) wfψ pf
+  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ _ _ _) => {
+    | pf₁ := _
+  } ;
+  .
+  Proof.
+    - simpl. rewrite !nest_ex_aux_0. exact pf.
+    - exact wfψ.
+    - exact wfψ.
+    - exact wfψ.
+    - exact wfψ.
+    - simpl.
+      
+      assert (Hwf1 : well_formed pcPattern1).
+      { eapply well_formed_app_proj1. eassumption. }
+      assert (Hwf2 : well_formed pcPattern2).
+      { eapply well_formed_app_proj2. eassumption. }
+      
+      pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
+      pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
+
+      epose proof (H'11 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
+      epose proof (H'12 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
+      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.        
+      epose proof (H'21 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
+      epose proof (H'22 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
+      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
+
+      
+      apply pf_iff_equiv_trans
+        with (B := free_evar_subst' 0 pcPattern1 q pcEvar $ free_evar_subst' 0 pcPattern2 p pcEvar); auto.
+
+      + apply conj_intro_meta; subst; auto 10.
+        * apply Framing_left. assumption.
+        * apply Framing_left. assumption.
+          
+      + apply conj_intro_meta; subst; auto 10.
+        * apply Framing_right. assumption.
+        * apply Framing_right. assumption.
+  Defined.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
     size' pcPattern <= sz ->
