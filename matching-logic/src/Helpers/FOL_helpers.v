@@ -3989,8 +3989,26 @@ Section FOL_helpers.
           mgExactn 2; auto 5.
   Defined.
 
-  Check prf_equiv_of_impl_of_equiv.
-  Check well_formed_free_evar_subst.
+  Lemma wf_evar_open_from_wf_ex x ϕ:
+    well_formed (ex, ϕ) ->
+    well_formed (evar_open 0 x ϕ).
+  Proof.
+    intros H. wf_auto.
+  Qed.
+
+  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
+    x <> E ->
+    well_formed p = true ->
+    well_formed q = true ->
+    Γ ⊢ free_evar_subst' n (evar_open n x ϕ) p E <---> free_evar_subst' n (evar_open n x ϕ) q E ->
+    Γ ⊢ evar_open n x (free_evar_subst' n ϕ p E) <---> evar_open n x (free_evar_subst' n ϕ q E).
+  Proof.
+    intros Hx wfp wfq H.
+    rewrite -> evar_open_free_evar_subst_swap by assumption.
+    rewrite -> evar_open_free_evar_subst_swap by assumption.
+    exact H.
+  Defined.
+
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
@@ -4043,7 +4061,13 @@ Section FOL_helpers.
   := _ ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (ex, ϕ') wfψ pf
-  := _ ;
+  with (evar_fresh (elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
+  | x with (eq_prf_equiv_congruence Γ p q wfp wfq E (evar_open 0 x ϕ') (wf_evar_open_from_wf_ex x ϕ' wfψ) pf) => {
+    | IH with (pf_evar_open_free_evar_subst_equiv_sides Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
+      | IH':= _
+      }
+    }
+  } ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (mu, ϕ') wfψ pf
   := _
@@ -4053,36 +4077,96 @@ Section FOL_helpers.
     - admit.
     - abstract (simpl; lia).
     - abstract (simpl; lia).
-    - 
-      Search well_formed free_evar_subst'.
-      Check well_formed_imp_proj1.
+    - abstract (rewrite evar_open_size'; simpl; lia).
+    - (* Well, I probably have to generate a proof of everything that is not equal to x *)
+Check pf_evar_open_free_evar_subst_equiv_sides.
+      assert (x <> pcEvar).
+      { abstract (solve_fresh_neq). }
       
-      assert (Hwf1 : well_formed pcPattern1).
-      { eapply well_formed_app_proj1. eassumption. }
-      assert (Hwf2 : well_formed pcPattern2).
-      { eapply well_formed_app_proj2. eassumption. }
+      pose proof (IHpcPattern := IHsz (evar_open 0 x pcPattern)).
       
-      pose proof (IHpcPattern1 := IHsz pcPattern1 ltac:(auto) ltac:(lia)).
-      pose proof (IHpcPattern2 := IHsz pcPattern2 ltac:(auto) ltac:(lia)).
+      feed specialize IHpcPattern.
+      { abstract (wf_auto). }
+      { abstract (rewrite evar_open_size'; lia). }
+      
+      assert (well_formed (ex , free_evar_subst' 1 pcPattern p pcEvar)).
+      { apply Private_well_formed_ex_free_evar_subst; assumption. }
 
-      epose proof (H'11 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
-      epose proof (H'12 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
-      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.        
-      epose proof (H'21 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
-      epose proof (H'22 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
-      Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto.
+      assert (well_formed (ex , free_evar_subst' 1 pcPattern q pcEvar)).
+      { apply Private_well_formed_ex_free_evar_subst; assumption. }
 
       
-      apply pf_iff_equiv_trans
-        with (B := free_evar_subst' 0 pcPattern1 q pcEvar $ free_evar_subst' 0 pcPattern2 p pcEvar); auto.
+      unfold emplace in IHpcPattern. simpl in IHpcPattern.
+      unfold free_evar_subst in IHpcPattern.
+      rewrite -evar_open_free_evar_subst_swap in IHpcPattern; auto.
+      rewrite -evar_open_free_evar_subst_swap in IHpcPattern; auto.
 
-      + apply conj_intro_meta; subst; auto 10.
-        * apply Framing_left. assumption.
-        * apply Framing_left. assumption.
-          
-      + apply conj_intro_meta; subst; auto 10.
-        * apply Framing_right. assumption.
-        * apply Framing_right. assumption.
+      assert (well_formed_closed_ex_aux p 1).
+      { apply Private_wf_to_wfcexn; assumption. }
+
+      assert (well_formed_closed_ex_aux q 1).
+      { apply Private_wf_to_wfcexn; assumption. }
+      
+      
+      unshelve(epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ IHpcPattern)).
+      { apply Private_wf_eo_fes; assumption. }
+      { apply Private_wf_eo_fes; assumption. }
+      unshelve(epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ IHpcPattern)).
+      { apply Private_wf_eo_fes; assumption. }
+      { apply Private_wf_eo_fes; assumption. }
+      unfold evar_open in IH1, IH2.
+
+      unshelve(epose proof (IH3 := syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x))).
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+      
+      unshelve(epose proof (IH4 := syllogism_intro Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))).
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_wf_bevar_subst_free_evar_subst; assumption. }
+      { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+
+      fold (evar_open 0 x (free_evar_subst' 0 pcPattern p pcEvar)) in IH3.
+      fold (evar_open 0 x (free_evar_subst' 0 pcPattern q pcEvar)) in IH4.
+
+
+      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern q pcEvar)).
+      { eapply Private_x_notin_free_ex_free_evar_subst_q; eassumption. }
+
+      assert (x ∉ free_evars (ex , free_evar_subst' 0 pcPattern p pcEvar)).
+      { eapply Private_x_notin_free_ex_free_evar_subst_p; eassumption. }
+      
+      apply (Ex_gen _ _ _ x) in IH3.
+      4: { assumption. }
+      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
+      unfold exists_quantify in IH3.
+
+      rewrite -> evar_quantify_evar_open with (m := 1) in IH3.
+      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
+      3: { assumption. }
+      2: { lia. }
+
+      apply (Ex_gen _ _ _ x) in IH4.
+      4: { assumption. }
+      3: { apply Private_well_formed_ex_free_evar_subst_0; assumption. }
+      2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
+      unfold exists_quantify in IH4.
+
+      rewrite -> evar_quantify_evar_open with (m := 1) in IH4.
+      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
+      3: { assumption. }
+      2: { abstract lia. }
+
+      replace 1 with (0 + 1) by (abstract lia).
+      repeat rewrite <- free_evar_subst_nest_ex_1.
+      rewrite nest_ex_aux_wfc_ex.
+      { abstract wf_auto. }
+      rewrite nest_ex_aux_wfc_ex.
+      { abstract wf_auto. }
+      
+      apply pf_iff_split; auto; abstract (wf_auto).
+
   Defined.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
