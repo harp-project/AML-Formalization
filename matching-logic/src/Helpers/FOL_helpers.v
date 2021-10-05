@@ -3989,7 +3989,8 @@ Section FOL_helpers.
           mgExactn 2; auto 5.
   Defined.
 
-  Check pf_iff_equiv_refl.
+  Check prf_equiv_of_impl_of_equiv.
+  Check well_formed_free_evar_subst.
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
@@ -4024,7 +4025,17 @@ Section FOL_helpers.
   eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ ---> ϕ₂) wfψ pf
   with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
     | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
-      | pf₂ := _
+      | pf₂ := prf_equiv_of_impl_of_equiv
+                 Γ
+                 (free_evar_subst' 0 ϕ₁ p E)
+                 (free_evar_subst' 0 ϕ₂ p E)
+                 (free_evar_subst' 0 ϕ₁ q E)
+                 (free_evar_subst' 0 ϕ₂ q E)
+                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj1 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj2 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj1 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj2 _ _ wfψ))
+                 pf₁ pf₂
       }
   } ;
 
@@ -4043,6 +4054,7 @@ Section FOL_helpers.
     - abstract (simpl; lia).
     - abstract (simpl; lia).
     - 
+      Search well_formed free_evar_subst'.
       Check well_formed_imp_proj1.
       
       assert (Hwf1 : well_formed pcPattern1).
