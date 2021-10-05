@@ -2717,9 +2717,169 @@ Section ProofSystemTheorems.
                                    free_evar_subst' 0 pcPattern1 q pcEvar]).
           2: { apply UIP_dec. intros x y. apply list_eq_dec. }
           simpl. reflexivity.
-    -
+    - rewrite [Private_prf_equiv_congruence _ _ _ _ _ _ _ _ _ _ _]/=.
+      unfold eq_rect.
+      remember (evar_open_free_evar_subst_swap _ _ _ _ _) as e.
+      pose proof (eqpf := e).
+      clear Heqe.
+      move: e.
 
 
+      remember (FOL_helpers.Private_wf_eo_fes _ _ _ _ _ _ _ _) as wfeofes.
+      clear Heqwfeofes.
+      move: wfeofes.
+
+      remember (FOL_helpers.Private_well_formed_ex_free_evar_subst pcPattern pcEvar q wfq wfc) as wfefes.
+      clear Heqwfefes.
+      move: wfefes.
+
+      remember (FOL_helpers.Private_wf_to_wfcexn q 1 wfq) as wftwfcexnq.
+      clear Heqwftwfcexnq.
+      move: wftwfcexnq.
+
+      (*intros wfeofes wfefes wftwfcexnq.*)
+
+
+
+      Check evar_open_free_evar_subst_swap.
+
+      (*
+      remember ((evar_open 0
+                       (evar_fresh
+                          (elements
+                             (free_evars pcPattern ∪ {[pcEvar]}
+                              ∪ free_evars p ∪ free_evars q)))
+                       (free_evar_subst' 0 pcPattern p pcEvar))) as eo. *)
+
+      intros wftwfcexnq wfefes wfeofes.
+      remember (FOL_helpers.Private_wf_eo_fes pcPattern q pcEvar _ wfq wfefes wfc wftwfcexnq) as wfoefesq.
+      clear Heqwfoefesq.
+
+
+      remember (Private_prf_equiv_congruence_subproof0 p q wfp wfq pcPattern wfc
+               (evar_fresh
+                  (elements
+                     (free_evars pcPattern ∪ {[pcEvar]} ∪ free_evars p
+                      ∪ free_evars q)))) as SP0.
+      remember (Private_prf_equiv_congruence_subproof1 sz pcPattern Hsz
+               (evar_fresh
+                  (elements
+                     (free_evars pcPattern ∪ {[pcEvar]} ∪ free_evars p
+                      ∪ free_evars q)))) as SP1.
+      clear HeqSP0 HeqSP1.
+
+      remember (nest_ex_aux_wfc_ex 1
+                                   (Private_prf_equiv_congruence_subproof7
+                                      p q pcEvar wfp wfq pcPattern wfc
+                                      (FOL_helpers.Private_well_formed_ex_free_evar_subst
+                                         pcPattern pcEvar p wfp wfc)
+                                      wfefes)) as NE1.
+      clear HeqNE1.
+
+      remember ((nest_ex_aux_wfc_ex 1
+                                    (Private_prf_equiv_congruence_subproof6
+                                       p q pcEvar wfp wfq pcPattern wfc
+                                       (FOL_helpers.Private_well_formed_ex_free_evar_subst
+                                          pcPattern pcEvar p wfp wfc)
+                                       wfefes))) as NE2.
+      clear HeqNE2.
+
+      set (EF := (evar_fresh
+                  (elements
+                     (free_evars pcPattern ∪ {[pcEvar]} ∪ free_evars p
+                      ∪ free_evars q)))) in *.
+      set (EOP := evar_open 0 EF
+                            (free_evar_subst' 0 pcPattern p
+                                              pcEvar)) in *.
+      set (EOQ := evar_open 0 EF
+                            (free_evar_subst' 0 pcPattern q
+                                              pcEvar)) in *.
+      set (EOQ' := free_evar_subst' 0 (evar_open 0 EF pcPattern) q pcEvar) in *.
+      set (EOP' := free_evar_subst' 0 (evar_open 0 EF pcPattern) p pcEvar) in *.
+
+      move: wftwfcexnq wfefes wfeofes wfoefesq.
+
+      remember (Private_prf_equiv_congruence sz Γ p q pcEvar
+          (evar_open 0 EF pcPattern) SP1 wfp wfq SP0 pf) as CONG.
+      
+      unfold free_evar_subst in CONG. fold EOP' in CONG. fold EOQ' in CONG.
+      symmetry in eqpf.
+
+      Check @eq_rect.
+
+      remember (erefl EOP') as eEOP'.
+      clear HeqeEOP'.
+
+
+      remember (@eq_rect
+                  Pattern
+                  EOP'
+                  (fun x : Pattern => Γ ⊢ x <---> EOQ')
+                  CONG
+                  EOP'
+                  eEOP'
+               ) as CONG_cast.
+      replace CONG with CONG_cast.
+      2: {
+        subst. unfold eq_rect.
+           replace eEOP' with (erefl (free_evar_subst' 0 (evar_open 0 EF pcPattern) p pcEvar)).
+           2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
+           reflexivity.
+      }
+      subst CONG_cast.
+      move: eEOP'.
+
+      unfold EOP' at 2 3 5.
+      rewrite -evar_open_free_evar_subst_swap.
+      { unfold EF. solve_fresh_neq. }
+      { assumption. }
+      unfold EOP.
+      intros eEOP' wftwfcexnq wfefes wfeofes wfoefesq e.
+      replace e with (erefl (evar_open 0 EF (free_evar_subst' 0 pcPattern p pcEvar))).
+      2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
+      clear e.
+      subst CONG.
+
+      
+      remember (evar_open_free_evar_subst_swap pcPattern 0 0
+         (Private_prf_equiv_congruence_subproof p q pcEvar pcPattern EF
+            (erefl EF)) wfq) as e.
+
+      match goal with
+      | [ |- uses_svar_subst (match _ with _ => _ end ?arg0) _ = _]
+        => remember arg0 as arg
+      end.
+      clear Heqe.
+      Check evar_open_free_evar_subst_swap.
+      simpl in arg.
+      fold EOP in arg.
+      remember (erefl EOQ') as eEOQ'.
+      remember (@eq_rect
+                  Pattern
+                  EOQ'
+                  (fun x : Pattern => Γ ⊢ EOP <---> x)
+                  arg
+                  EOQ'
+                  eEOQ'
+               ) as ARG_cast.
+      replace arg with ARG_cast.
+      2: { subst ARG_cast. unfold eq_rect. subst eEOQ'. reflexivity. }
+      subst ARG_cast.
+
+      move: e.
+      clear HeqeEOQ'.
+      move: eEOQ'.
+      unfold EOQ' at 2 4.
+      rewrite -evar_open_free_evar_subst_swap.
+      { subst EF. solve_fresh_neq. }
+      { assumption. }
+      intros eEOQ' e.
+      replace e with (erefl (evar_open 0 EF (free_evar_subst' 0 pcPattern q pcEvar))).
+      2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
+      
+      clear e.
+      remember (Private_prf_equiv_congruence_subproof5 sz pcPattern Hsz) as e.
+      
 
   Abort.
 

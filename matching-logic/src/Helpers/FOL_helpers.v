@@ -4048,7 +4048,7 @@ Section FOL_helpers.
                                   ∪ (free_evars q)
                ))) as x.
       assert (x <> pcEvar).
-      { solve_fresh_neq. }
+      { abstract (solve_fresh_neq). }
       
       pose proof (IHpcPattern := IHsz (evar_open 0 x pcPattern)).
       
@@ -4132,7 +4132,7 @@ Section FOL_helpers.
       rewrite nest_ex_aux_wfc_ex.
       { abstract wf_auto. }
       
-      apply pf_iff_split; auto; wf_auto.
+      apply pf_iff_split; auto; abstract (wf_auto).
       
     - remember (svar_fresh (elements (
                                 (free_svars pcPattern)
