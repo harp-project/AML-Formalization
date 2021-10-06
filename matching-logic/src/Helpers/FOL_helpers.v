@@ -4186,17 +4186,26 @@ Section FOL_helpers.
       | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
         | (IH1, IH2) :=
             (pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ' p q E X _ _ _ _
-              (_)
+              (pf_iff_split Γ _ _ _ _
+                (_)
+                (_)
+              )
             )
         }
       }
     }
   }
   .
-  Proof. 
-    - simpl. rewrite !nest_ex_aux_0. exact pf.
-    - abstract (simpl; lia).
-    - abstract (simpl; lia).
+  Proof.
+    1: simpl; rewrite !nest_ex_aux_0; exact pf.
+    all: try (
+      match goal with
+      | [ |- size' _ < size' (_ $ _) ]
+        => abstract (simpl; lia)
+      | [ |- _ ]
+        => idtac
+      end
+    ).
     - abstract (assert (Hwf1 : well_formed ϕ₁);
         [eapply well_formed_app_proj1; eassumption|];
         assert (Hwf2 : well_formed ϕ₂);
@@ -4416,11 +4425,11 @@ Section FOL_helpers.
           apply wfc_mu_free_evar_subst;
           (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
         ).
+    - (* X ∉ free_svars (free_evar_subst' 0 ϕ' p E) *)
+      abstract (clear -frX; set_solver).
     - abstract (clear -frX; set_solver).
-    - abstract (clear -frX; set_solver).
-    - 
-
-      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)) = false).
+    - (* well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ' p E))) *)
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 ϕ' p E)) = false).
       { abstract(
           unfold svar_open;
           apply svar_hno_bsvar_subst;
@@ -4430,9 +4439,12 @@ Section FOL_helpers.
             wf_auto)
           | wf_auto
           ];
-          apply svar_hno_false_if_fresh; assumption
+          apply svar_hno_false_if_fresh; unfold svar_is_fresh_in; clear -frX; set_solver
         ).
       }
+      erewrite svar_quantify_svar_open.
+  ; wf_auto.
+      wf_auto. (*
 
       assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)) = false).
       {
@@ -4447,11 +4459,14 @@ Section FOL_helpers.
         ).
       }
       
+rewrite -> svar_quantify_svar_open with (m := 1).
+      { wf_auto.
+
       apply pf_iff_split; auto.
       + apply mu_monotone; auto.
       + apply mu_monotone; auto.
-
-  Defined.
+*)
+  Abort.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
     size' pcPattern <= sz ->
@@ -4738,6 +4753,7 @@ Section FOL_helpers.
       
       assert (well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)))).
       {
+        erewrite svar_quantify_svar_open.
         abstract (erewrite svar_quantify_svar_open; auto).
       }
 
