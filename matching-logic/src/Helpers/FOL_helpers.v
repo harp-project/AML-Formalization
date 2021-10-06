@@ -3988,6 +3988,18 @@ Section FOL_helpers.
     intros H. wf_auto.
   Qed.
 
+  Lemma wf_svar_open_from_wf_mu X ϕ:
+    well_formed (mu, ϕ) ->
+    well_formed (svar_open 0 X ϕ).
+  Proof.
+    intros H. wf_auto;
+    destruct_and!;
+        [ (apply wfp_svar_open; auto)
+        | (apply wfc_mu_aux_body_mu_imp1; assumption)
+        | (apply wfc_ex_aux_body_mu_imp1; assumption)
+        ].
+  Qed.
+
   Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
     x <> E ->
     well_formed p = true ->
@@ -4034,6 +4046,47 @@ Section FOL_helpers.
     unfold exists_quantify in H.
     rewrite -> evar_quantify_evar_open with (m := 1) in H;
     [idtac|lia|assumption|assumption].
+    exact H.
+  Defined.
+
+
+  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X:
+    well_formed_closed_mu_aux p 0 = true ->
+    well_formed_closed_mu_aux q 0 = true ->
+    Γ ⊢ free_evar_subst' 0 (svar_open 0 X ϕ) p E <---> free_evar_subst' 0 (svar_open 0 X ϕ) q E ->
+    Γ ⊢ bsvar_subst (free_evar_subst' 0 ϕ p E) (patt_free_svar X) 0 <--->
+        bsvar_subst (free_evar_subst' 0 ϕ q E) (patt_free_svar X) 0.
+  Proof.
+    intros wfp wfq H.
+    unfold svar_open in H.
+
+    rewrite free_evar_subst_bsvar_subst in H.
+    { wf_auto. }
+    { unfold evar_is_fresh_in. simpl. clear. set_solver. }
+    rewrite free_evar_subst_bsvar_subst in H.
+    { wf_auto. }
+    { unfold evar_is_fresh_in. simpl. clear. set_solver. }
+    apply H.
+  Defined.
+
+  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X:
+    well_formed_closed_mu_aux (free_evar_subst' 0 ϕ p E) 1 ->
+    well_formed_closed_mu_aux (free_evar_subst' 0 ϕ q E) 1 ->
+    X ∉ free_svars (free_evar_subst' 0 ϕ p E) ->
+    X ∉ free_svars (free_evar_subst' 0 ϕ q E) ->
+    Γ ⊢ mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ p E)) <--->
+        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ q E)) ->
+    Γ ⊢ mu , free_evar_subst' 0 ϕ p E <---> mu , free_evar_subst' 0 ϕ q E.
+  Proof.
+    intros wfp' wfq' Xfrp Xfrq H.   
+    rewrite -[free_evar_subst' 0 ϕ p E](@svar_quantify_svar_open _ X 1 0).
+    { lia. }
+    { assumption. }
+    { assumption. }
+    rewrite -[free_evar_subst' 0 ϕ q E](@svar_quantify_svar_open _ X 1 0).
+    { lia. }
+    { assumption. }
+    { assumption. }
     exact H.
   Defined.
 
@@ -4128,10 +4181,19 @@ Section FOL_helpers.
   with (svar_fresh_dep ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
                       ∪ (free_svars (free_evar_subst' 0 ϕ' p E))
                       ∪ (free_svars (free_evar_subst' 0 ϕ' q E)))) => {
-  | (existT X frX ):= _
+  | (existT X frX ) with (eq_prf_equiv_congruence Γ p q wfp wfq E (svar_open 0 X ϕ') (wf_svar_open_from_wf_mu X ϕ' wfψ) pf) => {
+    | IH with (pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ' p q E X _ _ IH) => {
+      | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
+        | (IH1, IH2) :=
+            (pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ' p q E X _ _ _ _
+              (_)
+            )
+        }
+      }
+    }
   }
   .
-  Proof.
+  Proof. 
     - simpl. rewrite !nest_ex_aux_0. exact pf.
     - abstract (simpl; lia).
     - abstract (simpl; lia).
@@ -4315,7 +4377,80 @@ Section FOL_helpers.
         apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
         [lia|assumption]
       ).
+    - abstract (rewrite svar_open_size'; simpl; lia).
+    - abstract (wf_auto).
+    - abstract (wf_auto).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+          wf_auto; apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
+      ).
+    - abstract (
+          wf_auto;
+          apply wfc_mu_free_evar_subst;
+          (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
+        ).
+    - abstract (clear -frX; set_solver).
+    - abstract (clear -frX; set_solver).
     - 
+
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)) = false).
+      { abstract(
+          unfold svar_open;
+          apply svar_hno_bsvar_subst;
+          [(intro H'; inversion H')
+          |(intro H';
+            apply free_evar_subst_preserves_no_negative_occurrence; wf_auto;
+            wf_auto)
+          | wf_auto
+          ];
+          apply svar_hno_false_if_fresh; assumption
+        ).
+      }
+
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)) = false).
+      {
+        abstract(
+        unfold svar_open;
+        apply svar_hno_bsvar_subst;
+        [(intro H'; inversion H')
+        |(intro H'; apply free_evar_subst_preserves_no_negative_occurrence; wf_auto)
+        | wf_auto
+        ]; try wf_auto;
+        apply svar_hno_false_if_fresh; assumption
+        ).
+      }
+      
+      apply pf_iff_split; auto.
+      + apply mu_monotone; auto.
+      + apply mu_monotone; auto.
+
   Defined.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
