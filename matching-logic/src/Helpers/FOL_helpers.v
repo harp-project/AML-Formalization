@@ -4004,7 +4004,8 @@ Section FOL_helpers.
   Definition evar_fresh_dep (S : EVarSet) : {x : evar & x ∉ S} :=
     existT (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' _ S).
 
-  Check pf_iff_split.
+  Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
+    existT (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
 
   Lemma pf_impl_ex_free_evar_subst_twice Γ n ϕ p q E:
     well_formed (ex, ϕ) = true ->
@@ -4124,7 +4125,11 @@ Section FOL_helpers.
   } ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (mu, ϕ') wfψ pf
-  := _
+  with (svar_fresh_dep ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
+                      ∪ (free_svars (free_evar_subst' 0 ϕ' p E))
+                      ∪ (free_svars (free_evar_subst' 0 ϕ' q E)))) => {
+  | (existT X frX ):= _
+  }
   .
   Proof.
     - simpl. rewrite !nest_ex_aux_0. exact pf.
