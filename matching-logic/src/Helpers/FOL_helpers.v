@@ -4198,169 +4198,77 @@ Section FOL_helpers.
   .
   Proof.
     1: simpl; rewrite !nest_ex_aux_0; exact pf.
-    all: try (
+    all: unfold is_true in *.
+    all: repeat (try (solve [wf_auto]);
       match goal with
+      | [ |- size' (evar_open _ _ _) < _ ]
+        => rewrite evar_open_size'
+      | [ |- size' (svar_open _ _ _) < _ ]
+        => rewrite svar_open_size'
       | [ |- size' _ < size' (_ $ _) ]
-        => abstract (simpl; lia)
-      | [ |- _ ]
-        => idtac
-      end
+        => simpl; lia
+      | [ |- size' _ < size' (_ ---> _) ]
+        => simpl; lia
+      | [ |- size' _ < size' (ex, _) ]
+        => simpl; lia
+      | [ |- well_formed (?p ---> ?q) = true]
+        => apply well_formed_imp
+      | [ |- well_formed (?p $ ?q) = true]
+        => apply well_formed_app
+      | [ H : well_formed (?p $ ?q) = true |- _]
+        => assert (well_formed p = true);
+          [eapply well_formed_app_proj1; eassumption|];
+          assert ( well_formed q = true);
+          [eapply well_formed_app_proj2; eassumption|];
+          clear H
+      | [ H : well_formed (?p ---> ?q) = true |- _]
+        => assert (well_formed p = true);
+          [eapply well_formed_imp_proj1; eassumption|];
+          assert ( well_formed q = true);
+          [eapply well_formed_imp_proj2; eassumption|];
+          clear H
+      | [ |- well_formed (free_evar_subst' ?n ?phi ?p ?E) = true ]
+        => apply well_formed_free_evar_subst
+      | [ |- ?x ∉ ?E ]
+        => progress simpl
+      | [ |- ?x ∉ free_evars (free_evar_subst' _ _ _ _) ]
+        => eapply not_elem_of_larger_impl_not_elem_of;
+           [apply free_evars_free_evar_subst|]
+      | [frx: ?x ∉ _ |- ?x <> ?E ]
+        => clear -frx; set_solver
+      | [frx: ?x ∉ _ |- ?x ∉ ?E ]
+        => clear -frx; set_solver
+      | [ |- well_formed (evar_open _ _ _) = true]
+        => apply wf_evar_open_from_wf_ex
+      (* Last, fallback rule for [well_formed _]. From now on, we will solve only separate
+         well-formedness subgoals - closed_ex, closed_mu, and positive. *)
+      | [ |- well_formed _ = true]
+        => unfold well_formed, well_formed_closed in *; simpl in *;
+           destruct_and?; split_and?
+      | [ |- well_formed_positive (free_evar_subst' _ _ _ _) = true ]
+        => apply wfp_free_evar_subst
+      | [H: well_formed_positive (ex, _) = true |- _]
+        => simpl in H
+      | [H: well_formed_closed_mu_aux (ex, _) _ = true |- _]
+        => simpl in H
+      | [H: well_formed_closed_ex_aux (ex, _) _ = true |- _]
+        => simpl in H
+      | [ |- well_formed_closed_mu_aux (free_evar_subst' _ _ _ _) _ = true]
+        => apply wfc_mu_free_evar_subst
+      | [ |- well_formed_closed_ex_aux (free_evar_subst' _ _ _ _) _ = true]
+        => apply wfc_ex_free_evar_subst_2; simpl
+      | [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
+        => idtac "wfcex " p " down to " n;
+           eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
+      | [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
+        => apply wfp_bsvar_subst
+      | [ |- well_formed_positive _ = true ]
+        => progress (simpl; split_and?)
+      | [ |- no_negative_occurrence_db_b _ (free_evar_subst' _ _ _ _) = true ]
+        => apply free_evar_subst_preserves_no_negative_occurrence
+      end; unfold is_true in *
     ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (assert (Hwf1 : well_formed ϕ₁);
-        [eapply well_formed_app_proj1; eassumption|];
-        assert (Hwf2 : well_formed ϕ₂);
-        [eapply well_formed_app_proj2; eassumption|];
-        wf_auto
-      ).
-    - abstract (simpl; lia).
-    - abstract (simpl; lia).
-    - abstract (rewrite evar_open_size'; simpl; lia).
-    - abstract (clear -frx; set_solver).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (simpl;
-        eapply not_elem_of_larger_impl_not_elem_of;
-        [apply free_evars_free_evar_subst|];
-        clear -frx; set_solver
-      ).
-    - abstract( apply Private_wf_eo_fes; wf_auto;
-        eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
+    { simpl.  Search no_negative_occurrence_db_b free_evar_subst'.
     - abstract (simpl;
         eapply not_elem_of_larger_impl_not_elem_of;
         [apply free_evars_free_evar_subst|];
