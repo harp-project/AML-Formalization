@@ -4085,7 +4085,20 @@ Section FOL_helpers.
   } ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ $ ϕ₂) wfψ pf
-  := _ ;
+  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
+  | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
+    | pf₂ := (pf_iff_equiv_trans Γ _ (free_evar_subst' 0 ϕ₁ q E $ free_evar_subst' 0 ϕ₂ p E) _ _ _ _
+               (conj_intro_meta Γ _ _ _ _
+                 (Framing_left Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₁))
+                 (Framing_left Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₁))
+               )
+               (conj_intro_meta Γ _ _ _ _
+                 (Framing_right Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₂))
+                 (Framing_right Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₂))
+               )
+             )
+    }
+  } ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (ex, ϕ') wfψ pf
   with (evar_fresh_dep (((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
@@ -4113,9 +4126,100 @@ Section FOL_helpers.
   eq_prf_equiv_congruence Γ p q wfp wfq E (mu, ϕ') wfψ pf
   := _
   .
-  Proof. Check pf_impl_ex_free_evar_subst_twice.
+  Proof.
     - simpl. rewrite !nest_ex_aux_0. exact pf.
-    - admit.
+    - abstract (simpl; lia).
+    - abstract (simpl; lia).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
+    - abstract (assert (Hwf1 : well_formed ϕ₁);
+        [eapply well_formed_app_proj1; eassumption|];
+        assert (Hwf2 : well_formed ϕ₂);
+        [eapply well_formed_app_proj2; eassumption|];
+        wf_auto
+      ).
     - abstract (simpl; lia).
     - abstract (simpl; lia).
     - abstract (rewrite evar_open_size'; simpl; lia).
