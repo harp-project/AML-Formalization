@@ -1616,64 +1616,54 @@ Section syntax.
     - simpl in H. apply IHphi in H. unfold svar_open in H. rewrite H. reflexivity.
   Qed.
   
-  Lemma evar_quantify_evar_open x m n phi: n < m ->
-    x ∉ free_evars phi -> well_formed_closed_ex_aux phi m ->
+  Lemma evar_quantify_evar_open x n phi:
+    x ∉ free_evars phi ->
     (evar_quantify x n (evar_open n x phi)) = phi.
   Proof.
-    revert m n.
-    induction phi; intros m' n' H H0 H1; simpl; auto.
+    revert n.
+    induction phi; intros n' H0; simpl; auto.
     - destruct (decide (x = x0)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
     - simpl in *. unfold evar_quantify,evar_open,bevar_subst.
       repeat case_match; auto; congruence.
-    - simpl in H. unfold evar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold evar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H. unfold evar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold evar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H0. simpl in H1. unfold evar_open in IHphi.
-      erewrite -> IHphi. reflexivity. instantiate (1 := S m'). lia.
-      auto. apply H1.
-    - simpl in H0. simpl in H1. unfold evar_open in IHphi.
-      erewrite -> IHphi. reflexivity. exact H.
-      auto. apply H1.
+    - simpl in H0. unfold evar_open in IHphi.
+      rewrite -> IHphi by assumption. reflexivity.
+    - simpl in H0. unfold evar_open in IHphi.
+      rewrite -> IHphi by assumption. reflexivity.
   Qed.
 
-  Lemma svar_quantify_svar_open X m n phi: n < m ->
-    X ∉ free_svars phi -> well_formed_closed_mu_aux phi m ->
+  Lemma svar_quantify_svar_open X n phi:
+    X ∉ free_svars phi ->
     (svar_quantify X n (svar_open n X phi)) = phi.
   Proof.
-    revert m n.
-    induction phi; intros m' n' H H0 H1; simpl; auto.
+    revert n.
+    induction phi; intros n' H0; simpl; auto.
     - destruct (decide (X = x)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
     - simpl in *. unfold svar_quantify,svar_open,bsvar_subst.
       repeat case_match; auto; congruence.
-    - simpl in H. unfold svar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold svar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H. unfold svar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold svar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H0. simpl in H1. unfold svar_open in IHphi.
-      erewrite -> IHphi. reflexivity. 3: exact H1. 1,2: assumption.
-    - simpl in H0. simpl in H1. unfold svar_open in IHphi.
-      erewrite -> IHphi. 4: exact H1. 3: assumption. 2: lia. reflexivity.
+    - simpl in H0. unfold svar_open in IHphi.
+      erewrite -> IHphi by assumption. reflexivity.
+    - simpl in H0. unfold svar_open in IHphi.
+      erewrite -> IHphi by assumption. reflexivity.
   Qed.
   
   Lemma double_evar_quantify φ : forall x n,

@@ -4257,17 +4257,30 @@ Section FOL_helpers.
         => apply wfc_mu_free_evar_subst
       | [ |- well_formed_closed_ex_aux (free_evar_subst' _ _ _ _) _ = true]
         => apply wfc_ex_free_evar_subst_2; simpl
-      | [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
-        => idtac "wfcex " p " down to " n;
-           eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
       | [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
         => apply wfp_bsvar_subst
       | [ |- well_formed_positive _ = true ]
         => progress (simpl; split_and?)
       | [ |- no_negative_occurrence_db_b _ (free_evar_subst' _ _ _ _) = true ]
         => apply free_evar_subst_preserves_no_negative_occurrence
+      | [ |- well_formed_closed_mu_aux (bsvar_subst _ _ _) _ = true ]
+        => apply wfc_mu_aux_bsvar_subst
+      | [ |- well_formed_closed_ex_aux (bsvar_subst _ _ _) _ = true ]
+        => apply wfc_ex_aux_bsvar_subst
+      |[ |- context C [ svar_quantify ?X ?n (svar_open ?n ?X _) ] ]
+        => rewrite svar_quantify_svar_open
+        (* last option: try decreasing n *)
+      | [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
+        => eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
+        (* last option: try decreasing n *)
+      | [ |- well_formed_closed_mu_aux ?p (S ?n) = true ]
+        => eapply well_formed_closed_mu_aux_ind with (ind_svar1 := n);[lia|]
       end; unfold is_true in *
     ).
+    
+    Check wfp_bsvar_subst.
+    Check wfc_mu_aux_bsvar_subst.
+(*
     { simpl.  Search no_negative_occurrence_db_b free_evar_subst'.
     - abstract (simpl;
         eapply not_elem_of_larger_impl_not_elem_of;
@@ -4352,27 +4365,8 @@ Section FOL_helpers.
       }
       erewrite svar_quantify_svar_open.
   ; wf_auto.
-      wf_auto. (*
-
-      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)) = false).
-      {
-        abstract(
-        unfold svar_open;
-        apply svar_hno_bsvar_subst;
-        [(intro H'; inversion H')
-        |(intro H'; apply free_evar_subst_preserves_no_negative_occurrence; wf_auto)
-        | wf_auto
-        ]; try wf_auto;
-        apply svar_hno_false_if_fresh; assumption
-        ).
-      }
-      
-rewrite -> svar_quantify_svar_open with (m := 1).
-      { wf_auto.
-
-      apply pf_iff_split; auto.
-      + apply mu_monotone; auto.
-      + apply mu_monotone; auto.
+}
+      wf_auto.
 *)
   Abort.
 
