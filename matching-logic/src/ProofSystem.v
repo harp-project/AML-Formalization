@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Coq Require Import Logic.Classical_Prop.
+From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
@@ -790,6 +790,123 @@ Proof.
     + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
     + unfold M_predicate. right. apply Hemp.
 Qed.
+
+Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
+Proof. intros H. rewrite <- e in H. exact H. Defined.
+
+
+  
+  Fixpoint uses_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_ex_gen _ _ m0
+         || uses_ex_gen _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ _ _ => true
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_ex_gen _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_ex_gen _ _ m0
+    | Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_ex_gen _ _ m0
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+  Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_svar_subst S _ _ m0
+         || uses_svar_subst S _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst S _ _ pf'
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_svar_subst S _ _ m0
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+
+  Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_kt _ _ m0 || uses_kt _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_kt _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_kt _ _ m0
+    | Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => true
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+  Lemma uses_svar_subst_cast_proof SvS Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
+    uses_svar_subst SvS Γ ψ (cast_proof e pf) = uses_svar_subst SvS Γ ϕ pf.
+  Proof.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+  Lemma uses_kt_cast_proof Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
+    uses_kt Γ ψ (cast_proof e pf) = uses_kt Γ ϕ pf.
+  Proof.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+
+  Lemma uses_ex_gen_cast_proof Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
+    uses_ex_gen Γ ψ (cast_proof e pf) = uses_ex_gen Γ ϕ pf.
+  Proof.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
 
 End ml_proof_system.
 
