@@ -2723,13 +2723,8 @@ Section FOL_helpers.
     induction AC; simpl.
     - simpl in Hx.
       unfold exists_quantify.
-      erewrite evar_quantify_evar_open.
-      { apply pf_iff_equiv_refl; auto. }
-      2: { apply Hx. }
-      2: { unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
-           destruct_and!. eassumption.
-      }
-      lia. 
+      erewrite evar_quantify_evar_open by assumption.
+      apply pf_iff_equiv_refl; auto.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
@@ -2822,13 +2817,7 @@ Section FOL_helpers.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
-        erewrite evar_quantify_evar_open.
-        3: { apply Hxfr1. }
-        3: { apply wf_imp_wfc in Hwfex.
-             unfold well_formed,well_formed_closed in *. simpl in *.
-             destruct_and!. eassumption.
-        }
-        2: { lia. }
+        rewrite -> evar_quantify_evar_open by assumption.
         apply Ex_quan.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
@@ -2920,13 +2909,7 @@ Section FOL_helpers.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
-        erewrite evar_quantify_evar_open.
-        3: { apply Hxfr1. }
-        3: { apply wf_imp_wfc in Hwfex.
-             unfold well_formed,well_formed_closed in *. simpl in *.
-             destruct_and!. eassumption.
-        }
-        2: { lia. }
+        erewrite evar_quantify_evar_open by assumption.
         apply Ex_quan.
   Defined.
   
@@ -3553,7 +3536,7 @@ Section FOL_helpers.
       2-7: shelve.
       unfold exists_quantify in H3, H2. simpl in H2, H3.
       erewrite -> evar_quantify_evar_open in H2, H3; auto.
-      2-5: shelve.
+      2-3: shelve.
       apply pf_iff_iff; auto.
       Unshelve.
 
@@ -3568,18 +3551,6 @@ Section FOL_helpers.
       { now apply mu_free_evar_open. }
       1, 4, 5, 7: eapply well_formed_free_evar_subst with (x := x') (q := φ1) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
       5-7, 9: eapply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
-      12: {
-         eapply well_formed_free_evar_subst with (x:= x') (q := φ1) in WFψ.
-         unfold well_formed, well_formed_closed in WFψ.
-         apply andb_true_iff in WFψ. destruct WFψ.
-         destruct_and!. simpl in *. eassumption. assumption.
-      }
-      13: {
-         eapply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ.
-         unfold well_formed, well_formed_closed in WFψ.
-         apply andb_true_iff in WFψ. destruct WFψ.
-         destruct_and!. simpl in *. eassumption. assumption.
-      }
       all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
       all: try apply free_evars_free_evar_subst.
    all: apply sets.not_elem_of_union; auto.
@@ -4044,8 +4015,7 @@ Section FOL_helpers.
   Proof.
     intros Hx HwfcP H.
     unfold exists_quantify in H.
-    rewrite -> evar_quantify_evar_open with (m := 1) in H;
-    [idtac|lia|assumption|assumption].
+    rewrite -> evar_quantify_evar_open in H by assumption.
     exact H.
   Defined.
 
@@ -4079,13 +4049,9 @@ Section FOL_helpers.
     Γ ⊢ mu , free_evar_subst' 0 ϕ p E <---> mu , free_evar_subst' 0 ϕ q E.
   Proof.
     intros wfp' wfq' Xfrp Xfrq H.   
-    rewrite -[free_evar_subst' 0 ϕ p E](@svar_quantify_svar_open _ X 1 0).
-    { lia. }
+    rewrite -[free_evar_subst' 0 ϕ p E](@svar_quantify_svar_open _ X 0).
     { assumption. }
-    { assumption. }
-    rewrite -[free_evar_subst' 0 ϕ q E](@svar_quantify_svar_open _ X 1 0).
-    { lia. }
-    { assumption. }
+    rewrite -[free_evar_subst' 0 ϕ q E](@svar_quantify_svar_open _ X 0).
     { assumption. }
     exact H.
   Defined.
@@ -4278,96 +4244,6 @@ Section FOL_helpers.
       end; unfold is_true in *
     ).
     
-    Check wfp_bsvar_subst.
-    Check wfc_mu_aux_bsvar_subst.
-(*
-    { simpl.  Search no_negative_occurrence_db_b free_evar_subst'.
-    - abstract (simpl;
-        eapply not_elem_of_larger_impl_not_elem_of;
-        [apply free_evars_free_evar_subst|];
-        clear -frx; set_solver
-      ).
-    - abstract (wf_auto).
-    - abstract (wf_auto).
-    - abstract (simpl;
-        eapply not_elem_of_larger_impl_not_elem_of;
-        [apply free_evars_free_evar_subst|];
-        clear -frx; set_solver
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (simpl;
-        eapply not_elem_of_larger_impl_not_elem_of;
-        [apply free_evars_free_evar_subst|];
-        clear -frx; set_solver
-      ).
-    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
-        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
-        [lia|assumption]
-      ).
-    - abstract (rewrite svar_open_size'; simpl; lia).
-    - abstract (wf_auto).
-    - abstract (wf_auto).
-    - abstract (
-        wf_auto; destruct_and!;
-        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
-        | (apply wfc_mu_aux_bsvar_subst; auto;
-           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
-        | (apply wfc_ex_aux_bsvar_subst; auto)
-        ]).
-    - abstract (
-        wf_auto; destruct_and!;
-        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
-        | (apply wfc_mu_aux_bsvar_subst; auto;
-           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
-        | (apply wfc_ex_aux_bsvar_subst; auto)
-        ]).
-    - abstract (
-        wf_auto; destruct_and!;
-        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
-        | (apply wfc_mu_aux_bsvar_subst; auto;
-           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
-        | (apply wfc_ex_aux_bsvar_subst; auto)
-        ]).
-    - abstract (
-        wf_auto; destruct_and!;
-        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
-        | (apply wfc_mu_aux_bsvar_subst; auto;
-           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
-        | (apply wfc_ex_aux_bsvar_subst; auto)
-        ]).
-    - abstract (
-          wf_auto; apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
-      ).
-    - abstract (
-          wf_auto;
-          apply wfc_mu_free_evar_subst;
-          (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
-        ).
-    - (* X ∉ free_svars (free_evar_subst' 0 ϕ' p E) *)
-      abstract (clear -frX; set_solver).
-    - abstract (clear -frX; set_solver).
-    - (* well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ' p E))) *)
-      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 ϕ' p E)) = false).
-      { abstract(
-          unfold svar_open;
-          apply svar_hno_bsvar_subst;
-          [(intro H'; inversion H')
-          |(intro H';
-            apply free_evar_subst_preserves_no_negative_occurrence; wf_auto;
-            wf_auto)
-          | wf_auto
-          ];
-          apply svar_hno_false_if_fresh; unfold svar_is_fresh_in; clear -frX; set_solver
-        ).
-      }
-      erewrite svar_quantify_svar_open.
-  ; wf_auto.
-}
-      wf_auto.
-*)
   Abort.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
@@ -4535,10 +4411,7 @@ Section FOL_helpers.
       2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
       unfold exists_quantify in IH3.
 
-      rewrite -> evar_quantify_evar_open with (m := 1) in IH3.
-      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
-      3: { assumption. }
-      2: { lia. }
+      rewrite -> evar_quantify_evar_open in IH3 by assumption.
 
       apply (Ex_gen _ _ _ x) in IH4.
       4: { assumption. }
@@ -4546,10 +4419,7 @@ Section FOL_helpers.
       2: { apply Private_well_formed_evar_open_free_evar_subst_0; assumption. }
       unfold exists_quantify in IH4.
 
-      rewrite -> evar_quantify_evar_open with (m := 1) in IH4.
-      4: { abstract (wf_auto; apply wfc_ex_free_evar_subst_2; auto). }
-      3: { assumption. }
-      2: { abstract lia. }
+      rewrite -> evar_quantify_evar_open in IH4 by assumption.
 
       replace 1 with (0 + 1) by (abstract lia).
       repeat rewrite <- free_evar_subst_nest_ex_1.
@@ -4628,15 +4498,11 @@ Section FOL_helpers.
         ).
       }
       
-      rewrite -[free_evar_subst' 0 pcPattern p pcEvar](@svar_quantify_svar_open _ X 1 0).
-      3: { assumption. }
-      2: { assumption. }
-      1: { abstract lia. }
+      rewrite -[free_evar_subst' 0 pcPattern p pcEvar](@svar_quantify_svar_open _ X 0).
+      { assumption. }
 
-      rewrite -[free_evar_subst' 0 pcPattern q pcEvar](@svar_quantify_svar_open _ X 1 0).
-      3: { assumption. }
-      2: { assumption. }
-      1: { abstract lia. }
+      rewrite -[free_evar_subst' 0 pcPattern q pcEvar](@svar_quantify_svar_open _ X 0).
+      { assumption. }
 
       assert (well_formed (mu , free_evar_subst' 0 pcPattern p pcEvar)).
       {
@@ -4655,8 +4521,7 @@ Section FOL_helpers.
       
       assert (well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 pcPattern p pcEvar)))).
       {
-        erewrite svar_quantify_svar_open.
-        abstract (erewrite svar_quantify_svar_open; auto).
+        rewrite -> svar_quantify_svar_open by assumption. assumption.
       }
 
       assert (well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 pcPattern q pcEvar)))).

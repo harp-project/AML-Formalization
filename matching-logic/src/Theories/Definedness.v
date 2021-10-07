@@ -34,7 +34,7 @@ Open Scope ml_scope.
 Inductive Symbols := definedness.
 
 Instance Symbols_eqdec : EqDecision Symbols.
-Proof. solve_decision. Defined.
+Proof. unfold EqDecision. intros x y. unfold Decision. decide equality. solve_decision. Defined.
 
   Class Syntax {Σ : Signature} :=
     {
