@@ -3883,13 +3883,14 @@ Section FOL_helpers.
     Γ ⊢ ex , free_evar_subst' n ϕ p E ---> ex , free_evar_subst' n ϕ q E.
   Proof.
     intros wfϕ wfp wfq H.
-    replace n with (0 + n) by (abstract lia).
-    repeat rewrite -free_evar_subst_nest_ex_1.
-    rewrite nest_ex_aux_wfc_ex.
-    { abstract wf_auto. }
-    rewrite nest_ex_aux_wfc_ex.
-    { abstract wf_auto. }
-    exact H.
+    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    abstract (
+      replace n with (0 + n) by reflexivity;
+      repeat rewrite -free_evar_subst_nest_ex_1;
+      rewrite -> nest_ex_aux_wfc_ex by wf_auto;
+      rewrite -> nest_ex_aux_wfc_ex by wf_auto;
+      reflexivity
+    ).
   Defined.
 
   Lemma strip_exists_quantify Γ x P Q :
@@ -3899,9 +3900,12 @@ Section FOL_helpers.
     Γ ⊢ ex , P ---> ex , Q.
   Proof.
     intros Hx HwfcP H.
-    unfold exists_quantify in H.
-    rewrite -> evar_quantify_evar_open in H by assumption.
-    exact H.
+    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    abstract (
+      unfold exists_quantify;
+      rewrite -> evar_quantify_evar_open by assumption;
+      reflexivity
+    ).
   Defined.
 
 
@@ -3913,15 +3917,16 @@ Section FOL_helpers.
         bsvar_subst (free_evar_subst' 0 ϕ q E) (patt_free_svar X) 0.
   Proof.
     intros wfp wfq H.
-    unfold svar_open in H.
+    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
 
-    rewrite free_evar_subst_bsvar_subst in H.
-    { wf_auto. }
-    { unfold evar_is_fresh_in. simpl. clear. set_solver. }
-    rewrite free_evar_subst_bsvar_subst in H.
-    { wf_auto. }
-    { unfold evar_is_fresh_in. simpl. clear. set_solver. }
-    apply H.
+    abstract (
+      unfold svar_open in H;
+      rewrite <- free_evar_subst_bsvar_subst;
+      [idtac|wf_auto| unfold evar_is_fresh_in; simpl; clear; set_solver];
+      rewrite <- free_evar_subst_bsvar_subst;
+      [idtac|wf_auto|unfold evar_is_fresh_in; simpl; clear; set_solver];
+      reflexivity
+   ).
   Defined.
 
   Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X:
@@ -3933,12 +3938,13 @@ Section FOL_helpers.
         mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ q E)) ->
     Γ ⊢ mu , free_evar_subst' 0 ϕ p E <---> mu , free_evar_subst' 0 ϕ q E.
   Proof.
-    intros wfp' wfq' Xfrp Xfrq H.   
-    rewrite -[free_evar_subst' 0 ϕ p E](@svar_quantify_svar_open _ X 0).
-    { assumption. }
-    rewrite -[free_evar_subst' 0 ϕ q E](@svar_quantify_svar_open _ X 0).
-    { assumption. }
-    exact H.
+    intros wfp' wfq' Xfrp Xfrq H.
+    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
+    abstract (
+      rewrite -{1}[free_evar_subst' 0 ϕ p E](@svar_quantify_svar_open _ X 0); [assumption|];
+      rewrite -{1}[free_evar_subst' 0 ϕ q E](@svar_quantify_svar_open _ X 0); [assumption|];
+      reflexivity
+    ).
   Defined.
 
 (* Try here *)

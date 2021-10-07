@@ -1156,86 +1156,6 @@ Section ProofSystemTheorems.
     apply A_impl_not_not_B_meta; auto.
   Defined.
     
-    
-
-  
-  Fixpoint uses_existential_generalization Γ ϕ (pf : Γ ⊢ ϕ) :=
-    match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
-      => uses_existential_generalization m0
-         || uses_existential_generalization m1
-    | Ex_quan _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ _ _ => true
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_existential_generalization m0
-    | Framing_right _ _ _ _ m0 => uses_existential_generalization m0
-    | Svar_subst _ _ _ _ _ _ m0 => uses_existential_generalization m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_existential_generalization m0
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
-    end.
-
-  Fixpoint uses_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) (S : SVarSet) :=
-    match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
-      => uses_svar_subst m0 S
-         || uses_svar_subst m1 S
-    | Ex_quan _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst pf' S
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_svar_subst m0 S
-    | Framing_right _ _ _ _ m0 => uses_svar_subst m0 S
-    | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst m0 S
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_svar_subst m0 S
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
-    end.
-
-
-  Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
-    match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
-      => uses_kt m0 || uses_kt m1
-    | Ex_quan _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt pf'
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_kt m0
-    | Framing_right _ _ _ _ m0 => uses_kt m0
-    | Svar_subst _ _ _ X _ _ m0 => uses_kt m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => true
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
-    end.
   
     Theorem deduction_theorem_noKT Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
       well_formed ϕ ->
@@ -2458,7 +2378,33 @@ Section ProofSystemTheorems.
     - clear. intros Γ p q wfp wfq E wfψ pf Hpf.
       reflexivity.
     - clear. clear. intros Γ p q wfp wfq E x e wfψ pf He Hpf.
+      unfold eq_prf_equiv_congruence_obligation_1.
       Locate Logic.transport_r.
+      unfold Logic.transport_r. unfold Logic.transport.
+      unfold eq_sym.
+      simpl in He. unfold decide in He. unfold decide_rel in He.
+      move: He. pose proof (e' := e).
+      move: e. rewrite -e'. clear e'. intro e. replace e with (@erefl _ E).
+      2: { apply UIP_dec. intros x' y'. apply evar_eqdec. }
+      clear e.
+      intros He.
+      destruct (evar_eqdec E E) eqn:He' in |-.
+      2: { contradiction. }
+      move: He.
+      replace e with (@erefl _ E) in He'.
+      2: { apply UIP_dec. intros x' y'. apply evar_eqdec. }
+      Set Printing Implicit. clear e.
+      unfold eq_rec_r. unfold eq_rec. unfold decide. unfold decide_rel.
+      intros He.
+      remember (match He in (_ = y) return (y = @evar_eqdec (@variables Σ) E E) with
+        | erefl => erefl
+        end).
+      clear Heqe.
+      move: e.
+      rewrite -He'.
+      rewrite {1}He'.
+      rewrite -{1}He'.
+      intros He.
   Abort.
 
   
