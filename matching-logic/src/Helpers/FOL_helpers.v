@@ -3128,7 +3128,7 @@ Proof.
   mgDestructAnd 1; auto 10.
   mgExactn 1; auto 10.
 Qed.
-
+(* Good until there *)
 Section FOL_helpers.
   
   Context {Σ : Signature}.
@@ -3211,6 +3211,8 @@ Section FOL_helpers.
   Defined.
 
 End FOL_helpers.
+
+
 
 (* TODO this should have a different name, and we should give the name [mgSplit] to a tactic
   that works with our goals *)
@@ -3297,47 +3299,7 @@ Section FOL_helpers.
     all: auto 10.
   Defined.
 
-(* Lemma empty_Γ_implies_any A : forall G,
-  empty_Γ ⊢ A -> G ⊢ A. *)
-
-(* Lemma equiv_cong G phi1 phi2 C x :
-  (G ⊢ (phi1 <~> phi2)) -> G ⊢ ((e_subst_var C phi1 x) <~> (e_subst_var C phi2 x)). *)
-
-(* Lemma eq_refl
-  (phi : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
-    Γ ⊢ (phi ~=~ phi). *)
-
-(* Lemma eq_trans
-  (phi1 phi2 phi3 : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
-    Γ ⊢ (phi1 ~=~ phi2) -> Γ ⊢ (phi2 ~=~ phi3) ->
-    Γ ⊢ (phi1 ~=~ phi3). *)
-
-(* Lemma eq_symm
-  (phi1 phi2 : Sigma_pattern)  (Γ : Ensemble Sigma_pattern) :
-    Γ ⊢ (phi1 ~=~ phi2) -> Γ ⊢ (phi2 ~=~ phi1). *)
-
-(* Lemma eq_evar_subst
-  (x : EVar) (phi1 phi2 psi : Sigma_pattern) (Γ : Ensemble Sigma_pattern) :
-    Γ ⊢ (phi1 ~=~ phi2) ->
-    Γ ⊢ ((e_subst_var psi phi1 x) ~=~ (e_subst_var psi phi2 x)). *)
-
-(* Lemma A_implies_A_totality A:
-  A proved -> |_ A _| proved. *)
-
-(* Lemma A_totality_implies_A A:
-  |_ A _| proved -> A proved. *)
-
-(* Lemma universal_instantiation (Γ : Theory) (A : Pattern) (x y : evar):
-  Γ ⊢ ((all' x, A) ---> (e_subst_var A y x)). *)
-
-(*   Lemma ex_elim :
-    forall φ x Γ,
-    Γ ⊢ ((ex , φ) ---> bevar_subst φ (patt_free_evar x) 0).
-  Proof.
-    .
-    pose proof (Ex_quan Γ φ x). unfold instantiate in H.
-    eapply Modus_ponens. 4: apply P1.
-  Qed. *)
+(* Try here *)
 
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
@@ -4056,6 +4018,7 @@ Section FOL_helpers.
     exact H.
   Defined.
 
+(* Try here *)
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
@@ -4206,8 +4169,7 @@ Section FOL_helpers.
         => clear -frx; set_solver
       | [ |- well_formed (evar_open _ _ _) = true]
         => apply wf_evar_open_from_wf_ex
-      (* Last, fallback rule for [well_formed _]. From now on, we will solve only separate
-         well-formedness subgoals - closed_ex, closed_mu, and positive. *)
+        (* fallback *)
       | [ |- well_formed _ = true]
         => unfold well_formed, well_formed_closed in *; simpl in *;
            destruct_and?; split_and?
@@ -4244,6 +4206,96 @@ Section FOL_helpers.
       end; unfold is_true in *
     ).
     
+    Check wfp_bsvar_subst.
+    Check wfc_mu_aux_bsvar_subst.
+(*
+    { simpl.  Search no_negative_occurrence_db_b free_evar_subst'.
+    - abstract (simpl;
+        eapply not_elem_of_larger_impl_not_elem_of;
+        [apply free_evars_free_evar_subst|];
+        clear -frx; set_solver
+      ).
+    - abstract (wf_auto).
+    - abstract (wf_auto).
+    - abstract (simpl;
+        eapply not_elem_of_larger_impl_not_elem_of;
+        [apply free_evars_free_evar_subst|];
+        clear -frx; set_solver
+      ).
+    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
+        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
+        [lia|assumption]
+      ).
+    - abstract (simpl;
+        eapply not_elem_of_larger_impl_not_elem_of;
+        [apply free_evars_free_evar_subst|];
+        clear -frx; set_solver
+      ).
+    - abstract (wf_auto; apply wfc_ex_free_evar_subst_2; simpl; auto;
+        apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0);
+        [lia|assumption]
+      ).
+    - abstract (rewrite svar_open_size'; simpl; lia).
+    - abstract (wf_auto).
+    - abstract (wf_auto).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+        wf_auto; destruct_and!;
+        [ (apply wfp_bsvar_subst; wf_auto; apply free_evar_subst_preserves_no_negative_occurrence; auto)
+        | (apply wfc_mu_aux_bsvar_subst; auto;
+           apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia))
+        | (apply wfc_ex_aux_bsvar_subst; auto)
+        ]).
+    - abstract (
+          wf_auto; apply wfc_mu_free_evar_subst; (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
+      ).
+    - abstract (
+          wf_auto;
+          apply wfc_mu_free_evar_subst;
+          (eapply well_formed_closed_mu_aux_ind;[|eassumption]; lia)
+        ).
+    - (* X ∉ free_svars (free_evar_subst' 0 ϕ' p E) *)
+      abstract (clear -frX; set_solver).
+    - abstract (clear -frX; set_solver).
+    - (* well_formed (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst' 0 ϕ' p E))) *)
+      assert (svar_has_negative_occurrence X (svar_open 0 X (free_evar_subst' 0 ϕ' p E)) = false).
+      { abstract(
+          unfold svar_open;
+          apply svar_hno_bsvar_subst;
+          [(intro H'; inversion H')
+          |(intro H';
+            apply free_evar_subst_preserves_no_negative_occurrence; wf_auto;
+            wf_auto)
+          | wf_auto
+          ];
+          apply svar_hno_false_if_fresh; unfold svar_is_fresh_in; clear -frX; set_solver
+        ).
+      }
+      erewrite svar_quantify_svar_open.
+  ; wf_auto.
+}
+      wf_auto.
+*)
   Abort.
 
   Lemma Private_prf_equiv_congruence sz Γ p q pcEvar pcPattern:
@@ -4597,7 +4649,7 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-
+(* Here is not enough *)
 
 Local Ltac reduce_free_evar_subst_step star :=
       match goal with
