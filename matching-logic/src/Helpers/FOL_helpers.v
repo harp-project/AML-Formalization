@@ -4649,8 +4649,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-(* Here is not enough *)
-
 Local Ltac reduce_free_evar_subst_step star :=
       match goal with
       | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
