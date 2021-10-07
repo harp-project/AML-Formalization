@@ -1161,8 +1161,8 @@ Section ProofSystemTheorems.
       well_formed ϕ ->
       well_formed ψ ->
       theory ⊆ Γ ->
-      uses_existential_generalization pf = false ->
-      uses_svar_subst pf (free_svars ψ) = false ->
+      uses_ex_gen pf = false ->
+      uses_svar_subst (free_svars ψ) pf = false ->
       uses_kt pf = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
     Proof.
@@ -1821,8 +1821,8 @@ Section ProofSystemTheorems.
       well_formed ϕ ->
       well_formed ψ ->
       theory ⊆ Γ ->
-      uses_existential_generalization pf = false ->
-      uses_svar_subst pf (free_svars ψ) = false ->
+      uses_ex_gen pf = false ->
+      uses_svar_subst (free_svars ψ) pf = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
     Proof.
       intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst.
@@ -2113,7 +2113,7 @@ Section ProofSystemTheorems.
     - apply f_equal. apply eq_pi. intros z. apply dec.
     - contradiction.
   Qed.
-
+(*
   Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
     @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
     = @uses_svar_subst Γ B pfB SvS.
@@ -2121,6 +2121,7 @@ Section ProofSystemTheorems.
     unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. destruct AeqB.
     reflexivity.
   Qed.
+*)
 
   Lemma uses_svar_subst_pf_iff_equiv_trans
         Γ A B C SvS
@@ -2129,9 +2130,9 @@ Section ProofSystemTheorems.
         (wfC : well_formed C)
         (AiffB : Γ ⊢ A <---> B)
         (BiffC : Γ ⊢ B <---> C):
-    uses_svar_subst AiffB SvS = false ->
-    uses_svar_subst BiffC SvS = false ->
-    uses_svar_subst (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) SvS = false.
+    uses_svar_subst SvS AiffB = false ->
+    uses_svar_subst SvS BiffC = false ->
+    uses_svar_subst SvS (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) = false.
   Proof.
     intros H1 H2. simpl. rewrite H1. rewrite H2. reflexivity.
   Qed.
@@ -2142,9 +2143,9 @@ Section ProofSystemTheorems.
         (wfB : well_formed B)
         (HA : Γ ⊢ A)
         (HB : Γ ⊢ B):
-    uses_svar_subst HA SvS = false ->
-    uses_svar_subst HB SvS = false ->
-    uses_svar_subst (conj_intro_meta Γ A B wfA wfB HA HB) SvS = false.
+    uses_svar_subst SvS HA = false ->
+    uses_svar_subst SvS HB = false ->
+    uses_svar_subst SvS (conj_intro_meta Γ A B wfA wfB HA HB) = false.
   Proof.
     intros H1 H2. simpl. rewrite H1. rewrite H2. reflexivity.
   Qed.
@@ -2152,8 +2153,8 @@ Section ProofSystemTheorems.
 
   Lemma uses_svar_subst_MyGoal_intro Γ l x g SvS
     (pf : Γ ⊢ foldr patt_imp g (l ++ [x])):
-    uses_svar_subst pf SvS = false ->
-    uses_svar_subst (MyGoal_intro Γ l x g pf) SvS = false.
+    uses_svar_subst SvS pf = false ->
+    uses_svar_subst SvS (MyGoal_intro Γ l x g pf) = false.
   Proof.
     intros H. unfold MyGoal_intro. simpl.
     unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
@@ -2174,7 +2175,7 @@ Section ProofSystemTheorems.
         (wfh : well_formed h)
         (wfh' : well_formed h')
         (wfg : well_formed g):
-  uses_svar_subst (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) SvS = false.
+  uses_svar_subst SvS (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) = false.
   Proof.
     induction l₁.
     - reflexivity.
@@ -2193,9 +2194,9 @@ Section ProofSystemTheorems.
         (wfg : well_formed g)
         (himph' : Γ ⊢ h' ---> h)
         (pf': Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂)):
-       uses_svar_subst himph' SvS = false ->
-       uses_svar_subst pf' SvS = false ->
-       uses_svar_subst (prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg himph' pf') SvS = false.
+       uses_svar_subst SvS himph' = false ->
+       uses_svar_subst SvS pf' = false ->
+       uses_svar_subst SvS (prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg himph' pf') = false.
   Proof.
     intros H1 H2. simpl.
     rewrite H1. rewrite H2. simpl.
@@ -2209,8 +2210,8 @@ Section ProofSystemTheorems.
     (wfg : well_formed g)
     (wfh : well_formed h)
     (pfh : Γ ⊢ h):
-    uses_svar_subst pfh SvS = false ->
-    uses_svar_subst (prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) SvS = false.
+    uses_svar_subst SvS pfh = false ->
+    uses_svar_subst SvS (prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) = false.
   Proof.
     intros H.
     induction l.
@@ -2235,9 +2236,9 @@ Section ProofSystemTheorems.
     (wfg : well_formed g)
     (wfh : well_formed h)
     (pf : Γ ⊢ foldr patt_imp g (h::l)):
-    uses_svar_subst pfh SvS = false ->
-    uses_svar_subst pf SvS = false ->
-    uses_svar_subst (MyGoal_add Γ l g h pfh wfl wfg wfh pf) SvS = false.
+    uses_svar_subst SvS pfh = false ->
+    uses_svar_subst SvS pf = false ->
+    uses_svar_subst SvS (MyGoal_add Γ l g h pfh wfl wfg wfh pf) = false.
   Proof.
     intros H1 H2. simpl in *. rewrite H2. simpl.
     rewrite uses_svar_subst_prf_add_proved_to_assumptions.
@@ -2249,7 +2250,7 @@ Section ProofSystemTheorems.
         (wfl : wf l)
         (wfg : well_formed g)
         (wfg' : well_formed g')
-    : uses_svar_subst (prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg') SvS = false.
+    : uses_svar_subst SvS (prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg') = false.
   Proof.
     move: wfl.
     induction l; intros wfl.
@@ -2265,7 +2266,7 @@ Section ProofSystemTheorems.
         (wfl : wf l)
         (wfg : well_formed g)
         (wfg' : well_formed g'):
-  uses_svar_subst (prf_weaken_conclusion_iter_under_implication Γ l g g' wfl wfg wfg') SvS = false.
+  uses_svar_subst SvS (prf_weaken_conclusion_iter_under_implication Γ l g g' wfl wfg wfg') = false.
   Proof.
     simpl. rewrite !orbF.
     unfold eq_rec_r. unfold eq_rec. unfold eq_rect.
@@ -2298,8 +2299,8 @@ Section ProofSystemTheorems.
         (wfB' : well_formed B')
         (pf : Γ ⊢ B ---> B')
         :
-        uses_svar_subst pf SvS = false ->
-        uses_svar_subst (prf_weaken_conclusion_meta Γ A B B' wfA wfB wfB' pf) SvS = false.
+        uses_svar_subst SvS pf = false ->
+        uses_svar_subst SvS (prf_weaken_conclusion_meta Γ A B B' wfA wfB wfB' pf) = false.
   Proof.
     intros Hpf.
     simpl. rewrite Hpf. reflexivity.
@@ -2312,7 +2313,7 @@ Section ProofSystemTheorems.
         (wfl₂ : wf l₂)
         (wfg : well_formed g)
         (wfg' : well_formed g') :
-  uses_svar_subst (prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg') SvS = false.
+  uses_svar_subst SvS (prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg') = false.
   Proof.
     induction l₁.
     - unfold prf_weaken_conclusion_iter_under_implication_iter.
@@ -2331,8 +2332,8 @@ Section ProofSystemTheorems.
         (wfg' : well_formed g')
         (pf : Γ ⊢ foldr patt_imp g (l₁ ++ (g ---> g') :: l₂))
         :
-  uses_svar_subst pf SvS = false ->
-  uses_svar_subst (MyGoal_weakenConclusion Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg' pf) SvS = false.
+  uses_svar_subst SvS pf = false ->
+  uses_svar_subst SvS (MyGoal_weakenConclusion Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg' pf) = false.
   Proof.
     intros Huse. simpl. rewrite Huse. simpl.
     unfold MyGoal_weakenConclusion.

@@ -910,6 +910,9 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
 
 End ml_proof_system.
 
+Arguments uses_svar_subst {Σ} S {Γ} {ϕ} pf : rename.
+Arguments uses_kt {Σ} {Γ} {ϕ} pf : rename.
+Arguments uses_ex_gen {Σ} {Γ} {ϕ} pf : rename.
 
 Module Notations.
 
