@@ -6,6 +6,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Equations.Prop.Equations.
 
 From Coq Require Import String Ensembles Setoid.
 Require Import Coq.Program.Equality.
@@ -28,6 +29,7 @@ Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 
+Close Scope equations_scope. (* Because of [!] *)
 Open Scope ml_scope.
 
 (* We have only one symbol *)
@@ -1118,16 +1120,8 @@ Section ProofSystemTheorems.
         }
       }
       
-      
-      erewrite evar_quantify_evar_open with (m := ?[mym]) in Htmp.
-      4: { simpl. unfold well_formed,well_formed_closed in *. destruct_and!.
-           split_and!. 4: { eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. }
-           only [mym]: refine (S ?[mym']).
-           case_match. reflexivity.  lia.
-           all: auto.
-      }
-      3: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-      2: { instantiate (mym' := 0).  lia. }
+      rewrite -> evar_quantify_evar_open in Htmp.
+      2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
       apply pf_iff_proj1 in Htmp; auto.
       eapply syllogism_intro.
       5: apply S10.
@@ -1729,10 +1723,10 @@ Section ProofSystemTheorems.
       Unshelve. all: auto 15.
     Qed.
 
-    Lemma membership_not_2 Γ ϕ x:
-      well_formed ϕ ->
+    Lemma membership_not_2 Γ (ϕ : Pattern) x:
+      well_formed ϕ = true ->
       theory ⊆ Γ ->
-      Γ ⊢ (!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml !ϕ).
+      Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml.
     Proof.
       intros wfϕ HΓ.
       pose proof (S1 := @defined_evar Γ x HΓ).
@@ -2193,7 +2187,7 @@ Section ProofSystemTheorems.
    
 
   Lemma decide_eq_refl {A : Type} {dec : EqDecision A} (x : A):
-    decide (x = x) = left (erefl x).
+    decide (x = x) = left (@erefl _ x).
   Proof.
     destruct (decide (x = x)).
     - apply f_equal. apply eq_pi. intros z. apply dec.
@@ -2355,18 +2349,18 @@ Section ProofSystemTheorems.
   Proof.
     simpl. rewrite !orbF.
     unfold eq_rec_r. unfold eq_rec. unfold eq_rect.
-    remember (eq_sym (erefl (g ---> g'))) as eqs.
+    remember (eq_sym (@erefl _ (g ---> g'))) as eqs.
     clear Heqeqs.
     move: (well_formed_imp wfg wfg').
     replace eqs with (@erefl Pattern (g ---> g')).
     2: { apply UIP_dec. intros. apply Pattern_eqdec. }
 
-    remember (eq_sym (erefl (foldr patt_imp g l))) as eqs2.
+    remember (eq_sym (@erefl _ (foldr patt_imp g l))) as eqs2.
     clear Heqeqs2.
     replace eqs2 with (@erefl Pattern (foldr patt_imp g l)).
     2: { apply UIP_dec. intros. apply Pattern_eqdec. }
 
-    remember (eq_sym (erefl (foldr patt_imp g' l))) as eqs3.
+    remember (eq_sym (@erefl _ (foldr patt_imp g' l))) as eqs3.
     clear Heqeqs3.
     replace eqs3 with (@erefl Pattern (foldr patt_imp g' l)).
     2: { apply UIP_dec. intros. apply Pattern_eqdec. }
@@ -2433,6 +2427,41 @@ Section ProofSystemTheorems.
     (MyGoal_exact
   *)
 
+  Check eq_prf_equiv_congruence.
+  Lemma uses_svar_subst_eq_prf_equiv_congruence
+        Γ p q E ψ SvS
+        (wfp: well_formed p)
+        (wfq: well_formed q)
+        (wfψ: well_formed ψ)
+        (pf : Γ ⊢ (p <---> q)):
+    uses_svar_subst pf SvS = false ->
+    uses_svar_subst (@eq_prf_equiv_congruence _ Γ p q wfp wfq E ψ wfψ pf) SvS = false.
+  Proof.
+    intros H.
+    Check eq_prf_equiv_congruence_elim.
+    Check (eq_prf_equiv_congruence_elim
+     (fun Γ p q wfp wfq E ψ wfψ pf result
+      => uses_svar_subst pf SvS = false -> uses_svar_subst result SvS = false)
+    ).
+    apply  (eq_prf_equiv_congruence_elim
+     (fun Γ p q wfp wfq E ψ wfψ pf result
+      => uses_svar_subst pf SvS = false -> uses_svar_subst result SvS = false)
+    ).
+    - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq E wfψ pf Hpf.
+      reflexivity.
+    - clear. clear. intros Γ p q wfp wfq E x e wfψ pf He Hpf.
+      Locate Logic.transport_r.
+  Abort.
+
+  
   Lemma uses_svar_subst_Private_prf_equiv_congruence
         sz Γ p q pcEvar pcPattern SvS
         (Hsz: size' pcPattern <= sz)
