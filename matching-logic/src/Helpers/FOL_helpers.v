@@ -4055,7 +4055,10 @@ Section FOL_helpers.
   }
   .
   Proof.
-    1: simpl; rewrite !nest_ex_aux_0; exact pf.
+    1: {
+      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
+      abstract (simpl; rewrite !nest_ex_aux_0; reflexivity).
+    }
     all: unfold is_true in *.
     all: abstract (repeat (try assumption; try (solve [wf_auto]);
       match goal with
