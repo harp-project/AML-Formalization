@@ -2865,6 +2865,25 @@ Section ProofSystemTheorems.
       { simpl. intros. simpl in H. apply H. }
     Defined.
 
+    Check prf_equiv_of_impl_of_equiv.
+    Lemma prf_equiv_of_impl_of_equiv_indifferent
+          P Γ a b a' b'
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfa' : well_formed a')
+          (wfb' : well_formed b')
+          (aiffa' : Γ ⊢ a <---> a')
+          (biffb' : Γ ⊢ b <---> b'):
+      indifferent_to_prop P ->
+      P _ _ aiffa' = false ->
+      P _ _ biffb' = false ->
+      P _ _ (prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
+    Proof.
+      intros Hp H1 H2.
+      unfold prf_equiv_of_impl_of_equiv.
+    Qed.
+      
+
     Lemma patt_eq_sym_meta Γ φ1 φ2 :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2872,7 +2891,7 @@ Section ProofSystemTheorems.
     Proof.
       intros HΓ WF1 WF2 H.
       remember (fresh_evar φ1) as star.
-      Check Build_PatternCtx.
+
       epose proof (P2 := @equality_elimination_basic Γ φ1 φ2
                            (Build_PatternCtx star (patt_free_evar star))
                            HΓ WF1 WF2 ltac:(constructor) _).
@@ -2891,7 +2910,31 @@ Section ProofSystemTheorems.
 
       apply pf_iff_equiv_sym in P2; auto.
       apply patt_iff_implies_equal in P2; auto.
-      Unshelve. all: simpl.
+      Unshelve. 
+      { simpl. intros. rewrite eq_prf_equiv_congruence_equation_1.
+        unfold eq_prf_equiv_congruence_unfold_clause_3.
+        case_match; [|congruence].
+        unfold eq_prf_equiv_congruence_obligation_1.
+        rewrite indifferent_to_cast_uses_kt.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite indifferent_to_cast_uses_ex_gen.
+        simpl.
+        repeat split; reflexivity.
+      }
+      { simpl. intros. rewrite eq_prf_equiv_congruence_equation_8.
+        rewrite eq_prf_equiv_congruence_equation_1.
+        unfold eq_prf_equiv_congruence_unfold_clause_7.
+        unfold eq_prf_equiv_congruence_unfold_clause_7_clause_1.
+        Search prf_equiv_of_impl_of_equiv.
+        unfold eq_prf_equiv_congruence_unfold_clause_3
+        case_match; [|congruence].
+        unfold eq_prf_equiv_congruence_obligation_1.
+        rewrite indifferent_to_cast_uses_kt.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite indifferent_to_cast_uses_ex_gen.
+        simpl.
+        repeat split; reflexivity.
+      }
       simpl. now rewrite WF1.
     Qed.
 
