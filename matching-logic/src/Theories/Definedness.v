@@ -2122,6 +2122,22 @@ Section ProofSystemTheorems.
   Qed.
 *)
 
+  Check syllogism.
+
+  Lemma syllogism_indifferent
+        P Γ A B C
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfC : well_formed C):
+    indifferent_to_prop P ->
+    P _ _ (syllogism Γ A B C wfA wfB wfC) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hp4]]].
+    unfold syllogism_intro.
+    rewrite !(Hp1,Hp2,Hp3,Hp4).
+    reflexivity.
+  Qed.
+
   Lemma syllogism_intro_indifferent
         P Γ A B C
         (wfA : well_formed A)
@@ -2251,12 +2267,13 @@ Section ProofSystemTheorems.
   Qed.
 
 
-  Lemma uses_svar_subst_MyGoal_intro Γ l x g SvS
+  Lemma MyGoal_intro_indifferent (P : proofbpred) Γ l x g
     (pf : Γ ⊢ foldr patt_imp g (l ++ [x])):
-    uses_svar_subst SvS pf = false ->
-    uses_svar_subst SvS (MyGoal_intro Γ l x g pf) = false.
+    P _ _ pf = false ->
+    P _ _ (MyGoal_intro Γ l x g pf) = false.
   Proof.
-    intros H. unfold MyGoal_intro. simpl.
+    intros H.
+    unfold MyGoal_intro. simpl.
     unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
     move: (foldr_app Pattern Pattern patt_imp l [x] g).
     unfold of_MyGoal in pf. simpl in pf.
@@ -2268,21 +2285,67 @@ Section ProofSystemTheorems.
     simpl. exact H.
   Qed.
 
-  Lemma uses_svar_subst_prf_strenghten_premise_iter
-        Γ l₁ l₂ h h' g SvS
+  Lemma reorder_indifferent
+        P Γ A B C
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfC : well_formed C):
+    indifferent_to_prop P ->
+    P _ _ (reorder Γ A B C wfA wfB wfC) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold reorder. rewrite !(Hp1,Hp2,Hp3,Hmp).
+    reflexivity.
+  Qed.
+
+  Lemma reorder_meta_indifferent
+        P Γ A B C
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfC : well_formed C)
+        (AimpBimpC : Γ ⊢ A ---> B ---> C):
+    indifferent_to_prop P ->
+    P _ _ AimpBimpC = false ->
+    P _ _ (@reorder_meta _ Γ A B C wfA wfB wfC AimpBimpC) = false.
+  Proof.
+    intros Hp H. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold reorder_meta. rewrite !(Hp1,Hp2,Hp3,Hmp). rewrite H.
+    reflexivity.
+  Qed.
+
+  Lemma prf_weaken_conclusion_indifferent
+        P Γ A B B'
+        (wfA : well_formed A)
+        (wfB : well_formed B)
+        (wfB' : well_formed B'):
+    indifferent_to_prop P ->
+    P _ _ (prf_weaken_conclusion Γ A B B' wfA wfB wfB') = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold prf_weaken_conclusion.
+    rewrite reorder_meta_indifferent; auto.
+    rewrite syllogism_indifferent; auto.
+  Qed.
+
+  Lemma prf_strenghten_premise_iter_indifferent
+        P Γ l₁ l₂ h h' g
         (wfl₁ : wf l₁)
         (wfl₂ : wf l₂)
         (wfh : well_formed h)
         (wfh' : well_formed h')
         (wfg : well_formed g):
-  uses_svar_subst SvS (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) = false.
+    indifferent_to_cast P ->
+    indifferent_to_prop P ->
+    P _ _ (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) = false.
   Proof.
+    intros Hc Hp.
     induction l₁.
-    - reflexivity.
+    - simpl. unfold prf_strenghten_premise. apply syllogism_indifferent; assumption.
     - simpl.
       case_match. simpl.
       unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
-      rewrite IHl₁. reflexivity.
+      rewrite syllogism_intro_indifferent; auto.
+      apply prf_weaken_conclusion_indifferent; auto.
   Qed.
  
   Lemma uses_svar_subst_prf_strenghten_premise_iter_meta_meta
