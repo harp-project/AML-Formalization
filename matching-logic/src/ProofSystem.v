@@ -874,9 +874,16 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ => false
     end.
 
-  Lemma uses_svar_subst_cast_proof SvS Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
-    uses_svar_subst SvS Γ ψ (cast_proof e pf) = uses_svar_subst SvS Γ ϕ pf.
+  Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
+
+  Definition indifferent_to_cast (P : proofbpred)
+    := forall (Γ : Theory) (ϕ ψ : Pattern) (e: ψ = ϕ) (pf : Γ ⊢ ϕ),
+         P Γ ψ (cast_proof e pf) = P Γ ϕ pf.
+
+  Lemma indifferent_to_cast_uses_svar_subst SvS:
+    indifferent_to_cast (uses_svar_subst SvS).
   Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
    induction pf; unfold cast_proof; unfold eq_rec_r;
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
@@ -885,9 +892,10 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
      end; simpl; try reflexivity.
   Qed.
 
-  Lemma uses_kt_cast_proof Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
-    uses_kt Γ ψ (cast_proof e pf) = uses_kt Γ ϕ pf.
+  Lemma uses_kt_cast_proof:
+    indifferent_to_cast uses_kt.
   Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
    induction pf; unfold cast_proof; unfold eq_rec_r;
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
@@ -897,9 +905,10 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
   Qed.
 
 
-  Lemma uses_ex_gen_cast_proof Γ ϕ ψ (e : ψ = ϕ) (pf : Γ ⊢ ϕ) :
-    uses_ex_gen Γ ψ (cast_proof e pf) = uses_ex_gen Γ ϕ pf.
+  Lemma uses_ex_gen_cast_proof:
+    indifferent_to_cast uses_ex_gen.
   Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
    induction pf; unfold cast_proof; unfold eq_rec_r;
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
@@ -907,6 +916,44 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
      | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
      end; simpl; try reflexivity.
   Qed.
+
+  Definition indifferent_to_prop (P : proofbpred) :=
+      (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
+   /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
+   /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
+   /\ (forall Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2,
+        P Γ _ (Modus_ponens Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2)
+        = P Γ _ pf1 || P Γ _ pf2
+      ).
+
+  Lemma indifferent_to_prop_uses_svar_subst SvS:
+    indifferent_to_prop (uses_svar_subst SvS).
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
+  Lemma indifferent_to_prop_uses_kt:
+    indifferent_to_prop uses_kt.
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
+
+  Lemma indifferent_to_prop_uses_ex_gen:
+    indifferent_to_prop uses_ex_gen.
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
 
 End ml_proof_system.
 

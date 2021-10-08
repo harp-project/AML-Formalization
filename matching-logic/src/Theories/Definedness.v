@@ -1425,7 +1425,6 @@ Section ProofSystemTheorems.
         apply Existence.
       - (* Singleton *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        Print ML_proof_system.
         apply Singleton_ctx.
 
         Unshelve. all: auto 10.
@@ -2123,18 +2122,19 @@ Section ProofSystemTheorems.
   Qed.
 *)
 
-  Lemma uses_svar_subst_pf_iff_equiv_trans
-        Γ A B C SvS
+  Lemma pf_iff_equiv_trans_indifferent
+        P Γ A B C
         (wfA : well_formed A)
         (wfB : well_formed B)
         (wfC : well_formed C)
         (AiffB : Γ ⊢ A <---> B)
         (BiffC : Γ ⊢ B <---> C):
-    uses_svar_subst SvS AiffB = false ->
-    uses_svar_subst SvS BiffC = false ->
-    uses_svar_subst SvS (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) = false.
+    indifferent P ->
+    P _ _ AiffB = false ->
+    P _ _ BiffC = false ->
+    P _ _ (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) = false.
   Proof.
-    intros H1 H2. simpl. rewrite H1. rewrite H2. reflexivity.
+    intros H0 H1 H2. unfold pf_iff_equiv_trans. simpl. rewrite H1. rewrite H2. reflexivity.
   Qed.
 
   Lemma uses_svar_subst_conj_intro_meta
@@ -2472,8 +2472,6 @@ Section ProofSystemTheorems.
     Proof.
       intros MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
       assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
-      Print bevar_subst.
-      Check bound_to_free_variable_subst.
       rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1 0).
       { lia. }
       { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
