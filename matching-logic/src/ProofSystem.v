@@ -892,7 +892,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
      end; simpl; try reflexivity.
   Qed.
 
-  Lemma uses_kt_cast_proof:
+  Lemma indifferent_to_cast_uses_kt:
     indifferent_to_cast uses_kt.
   Proof.
    unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
@@ -905,7 +905,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
   Qed.
 
 
-  Lemma uses_ex_gen_cast_proof:
+  Lemma indifferent_to_cast_uses_ex_gen:
     indifferent_to_cast uses_ex_gen.
   Proof.
    unfold indifferent_to_cast. intros Γ ϕ ψ e pf.

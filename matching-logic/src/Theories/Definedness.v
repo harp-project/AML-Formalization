@@ -2866,19 +2866,32 @@ Section ProofSystemTheorems.
     Defined.
 
     Lemma patt_eq_sym_meta Γ φ1 φ2 :
+      theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
       Γ ⊢ φ1 =ml φ2 -> Γ ⊢ φ2 =ml φ1.
     Proof.
-      intros WF1 WF2 H.
-      epose proof (P2 := @equality_elimination Γ φ1 φ2 pctx_box WF1 WF2 ltac:(constructor)). simpl in P2.
-      eapply Modus_ponens in P2; auto.
-      epose proof (P1 := @equality_elimination Γ φ1 φ2 (pctx_imp_l pctx_box φ1) WF1 WF2 _).
+      intros HΓ WF1 WF2 H.
+      remember (fresh_evar φ1) as star.
+      Check Build_PatternCtx.
+      epose proof (P2 := @equality_elimination_basic Γ φ1 φ2
+                           (Build_PatternCtx star (patt_free_evar star))
+                           HΓ WF1 WF2 ltac:(constructor) _).
+      simpl in P2.
+      apply Modus_ponens in P2; unfold emplace; auto.
+      unshelve(epose proof (P1 := @equality_elimination_basic Γ φ1 φ2
+                           (Build_PatternCtx star ((patt_free_evar star) ---> φ1)) 
+                            HΓ WF1 WF2 _ _)).
+      { unfold PC_wf. simpl. auto. }
+      { shelve. }
+      
       simpl in P1.
-      apply Modus_ponens in P1; auto.
-      apply Modus_ponens in P1. 2-3: auto. 2: apply A_impl_A; auto.
-      apply pf_iff_split in P2; auto.
+      apply Modus_ponens in P1; unfold emplace; auto.
+      unfold emplace in P2. unfold free_evar_subst in P2. simpl in P2.
+      case_match;[|congruence]. rewrite 2!nest_ex_aux_0 in P2.
+
+      apply pf_iff_equiv_sym in P2; auto.
       apply patt_iff_implies_equal in P2; auto.
-      Unshelve.
+      Unshelve. all: simpl.
       simpl. now rewrite WF1.
     Qed.
 
