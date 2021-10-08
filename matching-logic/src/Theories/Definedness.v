@@ -2763,6 +2763,7 @@ Section ProofSystemTheorems.
      
     Defined.
   
+(*
     Lemma equality_elimination Γ φ1 φ2 C :
       well_formed φ1 -> well_formed φ2 ->
       wf_PatCtx C ->
@@ -2779,22 +2780,59 @@ Section ProofSystemTheorems.
       apply pf_iff_proj1 in H; auto.
       1-2: now apply subst_patctx_wf.
     Qed.
+*)
+    Check equality_elimination_basic.
 
     Lemma equality_elimination_helper Γ φ1 φ2 ψ x :
+      theory ⊆ Γ ->
       mu_free ψ ->
-      well_formed φ1 -> well_formed φ2 -> well_formed ψ ->
+      well_formed φ1 -> well_formed φ2 -> well_formed ψ ->     
+      ( forall WF1 WF2 WFψ pf1 pf2,
+        let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 x ψ WFψ
+                  (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) pf1 pf2)) in
+        uses_kt pf = false
+        /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false
+        /\ uses_ex_gen pf = false
+      ) ->
       Γ ⊢ (φ1 =ml φ2) ---> 
         (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x).
     Proof.
-      intros MF WF1 WF2 WFψ. apply deduction_theorem.
+      intros HΓ MF WF1 WF2 WFψ H.
+      unshelve (eapply (deduction_theorem_noKT)); try assumption.
+      2,3: abstract(auto).
+
       remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
       assert (Γ' ⊢ (φ1 <---> φ2)). {
-        apply hypothesis. now apply well_formed_iff.
-        rewrite HeqΓ'. apply elem_of_union_r. constructor.
+        apply hypothesis.
+        - abstract (now apply well_formed_iff).
+        - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
       }
-      eapply congruence_iff_helper with (ψ0 := ψ) (sz := Syntax.size ψ) (x0 := x) in H; auto.
-      apply pf_iff_proj1 in H; auto. eassumption.
-    Qed.
+      apply pf_iff_proj1; auto.
+      apply eq_prf_equiv_congruence; auto.
+      3: {
+        abstract (
+          simpl; rewrite orbF;
+          simpl in H; apply H
+        ).
+      }
+      2: {
+        abstract (
+          simpl; rewrite orbF;
+          match goal with
+          | [ |- uses_svar_subst ?S _ = false ]
+            => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
+          end;
+          simpl in H; apply H
+       ).
+      }
+      1: {
+        abstract (
+          simpl; rewrite orbF;
+          simpl in H; apply H
+        ).
+      }
+    Defined.
+
 
     Corollary equality_elimination2 Γ φ1 φ2 ψ:
       mu_free ψ ->
