@@ -2835,12 +2835,20 @@ Section ProofSystemTheorems.
 
 
     Corollary equality_elimination2 Γ φ1 φ2 ψ:
+      ( forall WF1 WF2 x WFψ pf1 pf2,
+        let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 x (evar_open 0 x ψ) WFψ
+                  (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) pf1 pf2)) in
+        uses_kt pf = false
+        /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false
+        /\ uses_ex_gen pf = false
+      ) ->
+      theory ⊆ Γ ->
       mu_free ψ ->
       well_formed φ1 -> well_formed φ2 -> wf_body_ex ψ ->
       Γ ⊢ (φ1 =ml φ2) ---> 
         (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0).
     Proof.
-      intros MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
+      intros H HΓ MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
       assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
       rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1 0).
       { lia. }
@@ -2853,8 +2861,9 @@ Section ProofSystemTheorems.
       { apply wf_body_ex_to_wf in WFB. unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
       { assumption. }
       apply equality_elimination_helper; auto.
-      now apply mu_free_evar_open.
-    Qed.
+      { now apply mu_free_evar_open. }
+      { simpl. intros. simpl in H. apply H. }
+    Defined.
 
     Lemma patt_eq_sym_meta Γ φ1 φ2 :
       well_formed φ1 -> well_formed φ2 ->
