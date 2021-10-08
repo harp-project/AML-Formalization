@@ -2705,37 +2705,63 @@ Section ProofSystemTheorems.
 
   
 
-  (*
-    Lemma equality_elimination Γ φ1 φ2 C :
+    Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
       PC_wf C ->
+      ( forall WF1 WF2 WFC wfpf1 inpf1,
+       let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 (pcEvar C) (pcPattern C) WFC
+                   (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) wfpf1 inpf1)) in
+       uses_kt pf = false /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false /\ uses_ex_gen pf = false
+       
+      ) ->
       Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
         (emplace C φ1) <---> (emplace C φ2).
     Proof.
-      intros HΓ WF1 WF2 WFC.
+      intros HΓ WF1 WF2 WFC H.
 
       unshelve(eapply deduction_theorem_noKT).
       remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
       assert (Γ' ⊢ (φ1 <---> φ2)). {
-        apply hypothesis. now apply well_formed_iff.
-        rewrite HeqΓ'. apply elem_of_union_r. constructor.
+        apply hypothesis.
+        - abstract (now apply well_formed_iff).
+        - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
       }
       eapply prf_equiv_congruence.
-      all: auto.
-      3: { simpl. cbn. unfold uses_svar_subst.
-           destruct C.
-           rewrite [prf_equiv_congruence _ _ _ _ _ _ _ _]/=.
-           Print nat_rec. unfold nat_rect.
-           Print prf_equiv_congruence.
-           unfold prf_equiv_congruence. unfold uses_svar_subst. }
-      
-      apply congruence_iff with (C0 := C) in H; auto.
-      apply pf_iff_proj1 in H; auto.
-      1-2: now apply subst_patctx_wf.
-      all: auto.
-      4: { simpl. cbn. unfold congruence_iff. simpl.
-    Defined.*)
+      all: try assumption.
+      all: try (abstract auto).
+      { 
+        abstract (
+          apply well_formed_and; apply well_formed_imp; unfold emplace;
+          apply well_formed_free_evar_subst_0; auto
+        ).
+      }
+      3: { abstract (simpl;
+             unfold prf_equiv_congruence; destruct C as [ψ E];
+             simpl; simpl in H; apply H
+           ).
+      }
+      2: {
+        abstract (
+          simpl;
+          unfold prf_equiv_congruence; destruct C as [ψ E];
+          simpl;
+          match goal with
+          | [ |- uses_svar_subst ?S _ = false ]
+            => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
+          end;
+          apply H
+        ).
+      }
+      1: {
+        abstract (
+          simpl;
+          unfold prf_equiv_congruence; destruct C as [ψ E];
+          simpl; apply H
+        ).
+      }
+     
+    Defined.
   
     Lemma equality_elimination Γ φ1 φ2 C :
       well_formed φ1 -> well_formed φ2 ->
