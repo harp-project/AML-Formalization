@@ -3967,7 +3967,7 @@ Section FOL_helpers.
   eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
   with (decide (E = x)) => {
     | left e := _
-    | right e := (pf_iff_equiv_refl Γ (patt_free_evar x) wfψ)
+    | right _ := (pf_iff_equiv_refl Γ (patt_free_evar x) wfψ)
   } ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_svar X) wfψ pf
