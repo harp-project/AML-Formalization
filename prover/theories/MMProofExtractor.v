@@ -446,7 +446,9 @@ Section gen.
   (* (exists, 0) -> (exists, exists, 0)  *)
   (* (exists x, x) -> (phi -> (exists y, y)) *)
 
-  Equations? proof2proof'
+  Print Ex_quan.
+
+ Equations? proof2proof'
             Γ
             (acc : list Label)
             (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
@@ -493,13 +495,14 @@ Section gen.
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
-    (* proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y)))::pfs') *)
-    (*   := proof2proof' *)
-    (*        Γ *)
-    (*        ([lbl "proof-rule-prop-3"] *)
-    (*           ++ (reverse (pattern2proof (to_NamedPattern2 p))) *)
-    (*           ++ acc) *)
-    (*        pfs' ; *)
+    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y)))::pfs')
+      := proof2proof'
+           Γ
+           ([lbl "proof-rule-exists"]
+              ++ (reverse (pattern2proof (to_NamedPattern2 (instantiate p (patt_free_evar y)))))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ acc)
+           pfs' ;
 
     proof2proof' Γ prefix ((inl _)::_) := []
   .
@@ -521,8 +524,8 @@ Section gen.
                                   | inr _ => 1
                                   end) pfs'))) as C.
       lia.
-    - unfold proof2proof'_stack_size.
-      simpl. lia.
+    - unfold proof2proof'_stack_size. simpl. lia.
+    - unfold proof2proof'_stack_size. simpl. lia.
   Defined.
 
   Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
