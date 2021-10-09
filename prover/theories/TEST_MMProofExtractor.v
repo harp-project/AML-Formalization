@@ -252,9 +252,6 @@ Module MMTest.
 
   Open Scope string.
   
-  Compute (to_NamedPattern ϕ9).
-  Compute (to_NamedPattern ((ex, ex, patt_bound_evar 0) ---> (ex, patt_bound_evar 0))).
-  
   Lemma ϕ9_holds:
     ∅ ⊢ ϕ9.
   Proof.
@@ -285,10 +282,7 @@ Module MMTest.
     apply Existence.
   Defined.
   
-  Compute (to_NamedPattern
-             ϕ10).
-
-  Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern
+  Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern2
                                                          ϕ10)).
 
   Definition proof_10 : string :=
@@ -301,6 +295,13 @@ Module MMTest.
           _
           ϕ10_holds
     )).
+
+  Definition ϕ11 := instantiate (ex , patt_bound_evar 0) (patt_free_evar "y") ---> ex , patt_bound_evar 0.
+  Lemma ϕ11_holds:
+    ∅ ⊢ ϕ11.
+  Proof.
+    apply Ex_quan.
+  Qed.
 
   Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
   Lemma ϕtest_holds: ∅ ⊢ ϕtest.
