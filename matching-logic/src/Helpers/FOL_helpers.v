@@ -1339,6 +1339,45 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
+
+Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
+  @mkMyGoal Σ Γ hyps goal ->
+  @mkMyGoal Σ Γ hyps' goal.
+Proof.
+  unfold of_MyGoal. simpl. intros H.
+  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+  rewrite e.
+  reflexivity.
+Defined.
+
+Lemma cast_proof_mg_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal'):
+  @mkMyGoal Σ Γ hyps goal ->
+  @mkMyGoal Σ Γ hyps goal'.
+Proof.
+  unfold of_MyGoal. simpl. intros H.
+  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+  rewrite e.
+  reflexivity.
+Defined.
+
+Lemma cast_proof_mg_hyps_indifferent
+      Σ P Γ hyps hyps' (e : hyps = hyps') goal (pf : @mkMyGoal Σ Γ hyps goal):
+  indifferent_to_cast P ->
+  P _ _ (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal pf) = P _ _ pf.
+Proof.
+  intros Hp. simpl. unfold cast_proof_mg_hyps.
+  rewrite Hp. reflexivity.
+Qed.
+
+Lemma cast_proof_mg_goal_indifferent
+      Σ P Γ hyps goal goal' (e : goal = goal') (pf : @mkMyGoal Σ Γ hyps goal):
+  indifferent_to_cast P ->
+  P _ _ (@cast_proof_mg_goal Σ Γ hyps goal goal' e pf) = P _ _ pf.
+Proof.
+  intros Hp. simpl. unfold cast_proof_mg_goal.
+  rewrite Hp. reflexivity.
+Qed.
+
 #[global]
  Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
 
@@ -1364,12 +1403,9 @@ Proof.
 Defined.
 (*Print ex_mgIntro.*)
 
-
 Tactic Notation "mgExactn" constr(n) :=
-  let hyps := fresh "hyps" in
-  rewrite -[hyps in mkMyGoal _ _ hyps _](firstn_skipn n);
-  rewrite [hyps in mkMyGoal _ _ (hyps ++ _) _]/firstn;
-  rewrite [hyps in mkMyGoal _ _ (_ ++ hyps) _]/skipn;
+  unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
+  [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
   apply nested_const_middle.
 
 Local Example ex_mgExactn {Σ : Signature} Γ a b c:
@@ -1381,7 +1417,7 @@ Proof.
   intros wfa wfb wfc.
   toMyGoal. mgIntro. mgIntro. mgIntro.
   mgExactn 1; auto.
-Qed.
+Defined.
 
 Section FOL_helpers.
 
@@ -1559,44 +1595,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
-  @mkMyGoal Σ Γ hyps goal ->
-  @mkMyGoal Σ Γ hyps' goal.
-Proof.
-  unfold of_MyGoal. simpl. intros H.
-  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
-  rewrite e.
-  reflexivity.
-Defined.
-
-Lemma cast_proof_mg_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal'):
-  @mkMyGoal Σ Γ hyps goal ->
-  @mkMyGoal Σ Γ hyps goal'.
-Proof.
-  unfold of_MyGoal. simpl. intros H.
-  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
-  rewrite e.
-  reflexivity.
-Defined.
-
-Lemma cast_proof_mg_hyps_indifferent
-      Σ P Γ hyps hyps' (e : hyps = hyps') goal (pf : of_MyGoal (@mkMyGoal Σ Γ hyps goal)):
-  indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal pf) = P _ _ pf.
-Proof.
-  intros Hp. simpl. unfold cast_proof_mg_hyps.
-  rewrite Hp. reflexivity.
-Qed.
-
-Lemma cast_proof_mg_goal_indifferent
-      Σ P Γ hyps goal goal' (e : goal = goal') (pf : of_MyGoal (@mkMyGoal Σ Γ hyps goal)):
-  indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_goal Σ Γ hyps goal goal' e pf) = P _ _ pf.
-Proof.
-  intros Hp. simpl. unfold cast_proof_mg_goal.
-  rewrite Hp. reflexivity.
-Qed.
-
 Tactic Notation "mgApply" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
@@ -1613,6 +1611,8 @@ Proof.
   mgApply 1; auto.
   fromMyGoal. apply P1; auto.
 Defined.
+
+Print ex_mgApply.
 
 Section FOL_helpers.
 
