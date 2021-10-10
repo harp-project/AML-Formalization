@@ -2993,6 +2993,7 @@ Section ProofSystemTheorems.
           (wfb' : well_formed b')
           (aiffa' : Γ ⊢ a <---> a')
           (biffb' : Γ ⊢ b <---> b'):
+      indifferent_to_cast P ->
       indifferent_to_prop P ->
       P _ _ aiffa' = false ->
       P _ _ biffb' = false ->
@@ -3003,7 +3004,7 @@ Section ProofSystemTheorems.
       Add Search Blacklist "_graph_mut".
       Add Search Blacklist "FunctionalElimination_".
 
-      intros Hp H1 H2.
+      intros Hc Hp H1 H2.
       pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
       unfold prf_equiv_of_impl_of_equiv.
       rewrite pf_iff_equiv_trans_indifferent;auto;
@@ -3017,9 +3018,103 @@ Section ProofSystemTheorems.
         simpl in Htmp;
         rewrite Htmp; auto; clear Htmp.
         pose proof (Htmp := @MyGoal_add_indifferent P Γ [a ---> b; a]).
-        simpl in Htmp. rewrite Htmp; auto. clear Htmp.
+        simpl in Htmp. rewrite Htmp; auto; clear Htmp.
         + unfold pf_conj_elim_l_meta. rewrite Hmp. rewrite H2. rewrite pf_conj_elim_l_indifferent; auto.
-        + 
+        + simpl.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b ---> b'; a ---> b; a] [(b--->b');(a--->b);a]). simpl in Htmp.
+          rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [] [a ---> b; a]).
+          simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b ---> b'; a ---> b; a]  [b ---> b'; a ---> b; a] ).
+          simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [b ---> b'] [a]). simpl in Htmp.
+          rewrite Htmp; clear Htmp; auto. repeat case_match.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b ---> b'; a ---> b; a] [b ---> b'; a ---> b; a]).
+          rewrite Htmp; auto; clear Htmp.
+          simpl.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite A_impl_A_indifferent; auto.
+      - pose proof (Htmp := @MyGoal_intro_indifferent P Γ [] (a ---> b'));
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_intro_indifferent P Γ [(a ---> b')] a);
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_add_indifferent P Γ [a ---> b'; a]).
+        simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+        + unfold pf_conj_elim_r_meta. rewrite Hmp. rewrite H2. rewrite pf_conj_elim_r_indifferent; auto.
+        + simpl.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b' ---> b; a ---> b'; a] [(b'--->b);(a--->b');a]). simpl in Htmp.
+          rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [] [a ---> b'; a]).
+          simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b' ---> b; a ---> b'; a]  [b' ---> b; a ---> b'; a] ).
+          simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [b' ---> b] [a]). simpl in Htmp.
+          rewrite Htmp; clear Htmp; auto. repeat case_match.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [b' ---> b; a ---> b'; a] [b' ---> b; a ---> b'; a]).
+          rewrite Htmp; auto; clear Htmp.
+          simpl.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite A_impl_A_indifferent; auto.
+      - pose proof (Htmp := @MyGoal_intro_indifferent P Γ [] (a ---> b'));
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_intro_indifferent P Γ [(a ---> b')] a');
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_add_indifferent P Γ [a ---> b'; a']).
+        simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+        + unfold pf_conj_elim_r_meta. rewrite Hmp. rewrite H1. rewrite pf_conj_elim_r_indifferent; auto.
+        + simpl.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a' ---> a; a ---> b'; a'] [(a'--->a);(a--->b');a']). simpl in Htmp.
+          rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [a' ---> a] [a']).
+          simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a' ---> a; a ---> b'; a']  [a' ---> a; a ---> b'; a'] ).
+          simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [] [a ---> b'; a']). simpl in Htmp.
+          rewrite Htmp; clear Htmp; auto. repeat case_match.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a' ---> a; a ---> b'; a'] [a' ---> a; a ---> b'; a']).
+          rewrite Htmp; auto; clear Htmp.
+          simpl.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite A_impl_A_indifferent; auto.
+      - pose proof (Htmp := @MyGoal_intro_indifferent P Γ [] (a' ---> b'));
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_intro_indifferent P Γ [(a' ---> b')] a);
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_add_indifferent P Γ [a' ---> b'; a]).
+        simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+        + unfold pf_conj_elim_l_meta. rewrite Hmp. rewrite H1. rewrite pf_conj_elim_l_indifferent; auto.
+        + simpl.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a ---> a'; a' ---> b'; a] [(a--->a');(a'--->b');a]). simpl in Htmp.
+          rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [a ---> a'] [a]).
+          simpl in Htmp. rewrite Htmp; auto; clear Htmp.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a ---> a'; a' ---> b'; a]  [a ---> a'; a' ---> b'; a] ).
+          simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+          pose proof (Htmp := @MyGoal_weakenConclusion_indifferent P Γ [] [a' ---> b'; a]). simpl in Htmp.
+          rewrite Htmp; clear Htmp; auto. repeat case_match.
+          pose proof (Htmp := cast_proof_mg_hyps_indifferent Σ P Γ [a ---> a'; a' ---> b'; a] [a ---> a'; a' ---> b'; a]).
+          rewrite Htmp; auto; clear Htmp.
+          simpl.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite reorder_meta_indifferent; auto.
+          rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
+          rewrite A_impl_A_indifferent; auto.
     Qed.
       
 
