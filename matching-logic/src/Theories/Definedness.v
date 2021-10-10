@@ -3116,14 +3116,33 @@ Section ProofSystemTheorems.
           rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
           rewrite A_impl_A_indifferent; auto.
     Qed.
-      
-
+  
+(*    
+    Check eq_prf_equiv_congruence.
+    Lemma eq_prf_equiv_congruence_fresh
+          Γ p q
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+          E ψ
+          (wfψ : well_formed ψ)
+          (pimpq : Γ ⊢ p <---> q):
+      evar_is_fresh_in E ψ ->
+      SOME_PROPERTY_OF (eq_prf_equiv_congruence Γ p q wfp wfq E ψ wfψ pimpq)
+*)
     Lemma patt_eq_sym_meta Γ φ1 φ2 :
+      ( forall WF0 WF1 WF2 WF3 IN star,
+          evar_is_fresh_in star φ1 ->
+           let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF0 WF1 star φ1 WF2
+                   (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) WF3 IN)) in
+          uses_kt pf = false
+          /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false
+          /\ uses_ex_gen pf = false
+      ) ->
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
       Γ ⊢ φ1 =ml φ2 -> Γ ⊢ φ2 =ml φ1.
     Proof.
-      intros HΓ WF1 WF2 H.
+      intros Hside HΓ WF1 WF2 H.
       remember (fresh_evar φ1) as star.
 
       epose proof (P2 := @equality_elimination_basic Γ φ1 φ2
@@ -3169,7 +3188,7 @@ Section ProofSystemTheorems.
           rewrite indifferent_to_cast_uses_kt.
           reflexivity.
         }
-        { admit. }
+        { apply Hside. subst star. apply set_evar_fresh_is_fresh. }
         split;[reflexivity|].
         rewrite prf_equiv_of_impl_of_equiv_indifferent.
         { apply indifferent_to_cast_uses_svar_subst. }
@@ -3180,7 +3199,7 @@ Section ProofSystemTheorems.
           rewrite indifferent_to_cast_uses_svar_subst.
           reflexivity.
         }
-        { admit. }
+        { apply Hside. subst star. apply set_evar_fresh_is_fresh. }
         split;[reflexivity|].
         rewrite prf_equiv_of_impl_of_equiv_indifferent.
         { apply indifferent_to_cast_uses_ex_gen. }
@@ -3191,7 +3210,7 @@ Section ProofSystemTheorems.
           rewrite indifferent_to_cast_uses_ex_gen.
           reflexivity.
         }
-        {  admit. }
+        { apply Hside. subst star. apply set_evar_fresh_is_fresh. }
         reflexivity.
       }
     Qed.
