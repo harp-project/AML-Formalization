@@ -1353,6 +1353,18 @@ Ltac simplLocalContext :=
 #[global]
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
 
+Local Example ex_mgIntro {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ a ---> a.
+Proof.
+  intros wfa.
+  (*   (unshelve (eapply (@cast_proof Σ Γ _ _ _ H))). *)
+  (*Check of_MyGoal_from_goal.*)
+  toMyGoal. mgIntro. fromMyGoal. apply A_impl_A; assumption.
+Defined.
+(*Print ex_mgIntro.*)
+
+
 Tactic Notation "mgExactn" constr(n) :=
   let hyps := fresh "hyps" in
   rewrite -[hyps in mkMyGoal _ _ hyps _](firstn_skipn n);
@@ -3946,6 +3958,11 @@ Section FOL_helpers.
       reflexivity
     ).
   Defined.
+
+  Add Search Blacklist "_elim".
+  Add Search Blacklist "_graph_rect".
+  Add Search Blacklist "_graph_mut".
+  Add Search Blacklist "FunctionalElimination_".
 
 (* Try here *)
   Equations? eq_prf_equiv_congruence

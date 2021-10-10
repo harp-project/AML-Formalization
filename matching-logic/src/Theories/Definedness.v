@@ -2230,13 +2230,12 @@ Section ProofSystemTheorems.
         (wfC : well_formed C)
         (AiffB : Γ ⊢ A <---> B)
         (BiffC : Γ ⊢ B <---> C):
-    indifferent_to_cast P ->
     indifferent_to_prop P ->
     P _ _ AiffB = false ->
     P _ _ BiffC = false ->
     P _ _ (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) = false.
   Proof.
-    intros Hc Hp H1 H2. unfold pf_iff_equiv_trans. simpl.
+    intros Hp H1 H2. unfold pf_iff_equiv_trans. simpl.
     pose proof (Hp' := Hp). unfold indifferent_to_prop in Hp'.
     destruct Hp' as [Hp1 [Hp2 [Hp3 Hp4]]].
     rewrite pf_iff_split_indifferent; auto;
@@ -2254,13 +2253,12 @@ Section ProofSystemTheorems.
         (wfB : well_formed B)
         (HA : Γ ⊢ A)
         (HB : Γ ⊢ B):
-    indifferent_to_cast P ->
     indifferent_to_prop P ->
     P _ _ HA = false ->
     P _ _ HB = false ->
     P _ _ (conj_intro_meta Γ A B wfA wfB HA HB) = false.
   Proof.
-    intros Hc Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     unfold conj_intro_meta. unfold conj_intro.
     rewrite !(Hp1,Hp2,Hp3,Hmp). rewrite H1. rewrite H2.
     reflexivity.
@@ -2865,7 +2863,29 @@ Section ProofSystemTheorems.
       { simpl. intros. simpl in H. apply H. }
     Defined.
 
-    Check prf_equiv_of_impl_of_equiv.
+    Check A_impl_not_not_B.
+    Lemma A_impl_not_not_B_indifferent
+        P a b
+        (wfa : well_formed a)
+        (wfb : well_formed b):
+        indifferent_to_prop P ->
+        P _ _ (A_impl_not_not_B a b wfa wfb) = false.
+          
+
+    Check pf_conj_elim_l.
+    Lemma pf_conj_elim_l_indifferent
+          P Γ a b
+          (wfa : well_formed a)
+          (wfb : well_formed b):
+      indifferent_to_prop P ->
+      P _ _ (pf_conj_elim_l Γ a b wfa wfb) = false.
+    Proof.
+      intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+      unfold pf_conj_elim_l.
+      Search A_impl_not_not_B_meta.
+    Qed.
+
+
     Lemma prf_equiv_of_impl_of_equiv_indifferent
           P Γ a b a' b'
           (wfa : well_formed a)
@@ -2879,8 +2899,41 @@ Section ProofSystemTheorems.
       P _ _ biffb' = false ->
       P _ _ (prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
     Proof.
+      Add Search Blacklist "_elim".
+      Add Search Blacklist "_graph_rect".
+      Add Search Blacklist "_graph_mut".
+      Add Search Blacklist "FunctionalElimination_".
+
       intros Hp H1 H2.
       unfold prf_equiv_of_impl_of_equiv.
+      rewrite pf_iff_equiv_trans_indifferent;auto;
+        rewrite conj_intro_meta_indifferent; auto;
+        unfold MyGoal_from_goal;
+        simpl.
+      - pose proof (Htmp := @MyGoal_intro_indifferent P Γ [] (a ---> b));
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_intro_indifferent P Γ [(a ---> b)] a);
+        simpl in Htmp;
+        rewrite Htmp; auto; clear Htmp.
+        pose proof (Htmp := @MyGoal_add_indifferent P Γ [a ---> b; a]).
+        simpl in Htmp. rewrite Htmp; auto. clear Htmp.
+        + Check pf_conj_elim_l_meta.
+        rewrite MyGoal_add_indifferent.
+        
+      Check MyGoal_intro_indifferent.
+      rewrite MyGoal_intro_indifferent.
+      Search MyGoal_intro.
+      match goal with
+      | [ |- (_ _ _ (eq_rect _ _ ?mgi _ _)) = false ] => remember mgi
+      end. unfold MyGoal_from_goal. Unset Printing Notations. simpl.
+      Set Printing Implicit. Check eq_rect.
+      Print eq_rect.
+ Search eq_rect.
+        unfold eq_rect.
+      Print Table Search Blacklist.
+      Search conj_intro_meta.
+      Search pf_iff_equiv_trans.
     Qed.
       
 
