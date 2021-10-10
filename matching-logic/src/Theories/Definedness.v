@@ -3159,17 +3159,41 @@ Section ProofSystemTheorems.
         rewrite eq_prf_equiv_congruence_equation_1.
         unfold eq_prf_equiv_congruence_unfold_clause_7.
         unfold eq_prf_equiv_congruence_unfold_clause_7_clause_1.
-        Search prf_equiv_of_impl_of_equiv.
-        unfold eq_prf_equiv_congruence_unfold_clause_3
-        case_match; [|congruence].
-        unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_kt.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl.
-        repeat split; reflexivity.
+        
+        rewrite prf_equiv_of_impl_of_equiv_indifferent.
+        { apply indifferent_to_cast_uses_kt. }
+        { apply indifferent_to_prop_uses_kt. }
+        { unfold eq_prf_equiv_congruence_unfold_clause_3.
+          case_match; [|congruence].
+          unfold eq_prf_equiv_congruence_obligation_1.
+          rewrite indifferent_to_cast_uses_kt.
+          reflexivity.
+        }
+        { admit. }
+        split;[reflexivity|].
+        rewrite prf_equiv_of_impl_of_equiv_indifferent.
+        { apply indifferent_to_cast_uses_svar_subst. }
+        { apply indifferent_to_prop_uses_svar_subst. }
+        { unfold eq_prf_equiv_congruence_unfold_clause_3.
+          case_match; [|congruence].
+          unfold eq_prf_equiv_congruence_obligation_1.
+          rewrite indifferent_to_cast_uses_svar_subst.
+          reflexivity.
+        }
+        { admit. }
+        split;[reflexivity|].
+        rewrite prf_equiv_of_impl_of_equiv_indifferent.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        { apply indifferent_to_prop_uses_ex_gen. }
+        { unfold eq_prf_equiv_congruence_unfold_clause_3.
+          case_match; [|congruence].
+          unfold eq_prf_equiv_congruence_obligation_1.
+          rewrite indifferent_to_cast_uses_ex_gen.
+          reflexivity.
+        }
+        {  admit. }
+        reflexivity.
       }
-      simpl. now rewrite WF1.
     Qed.
 
     Lemma patt_eq_sym Γ φ1 φ2:
