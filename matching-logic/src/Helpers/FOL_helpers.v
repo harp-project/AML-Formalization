@@ -3670,10 +3670,16 @@ Section FOL_helpers.
     mgExactn 4; auto 10.
   Defined.
 
+End FOL_helpers.
+
   Tactic Notation "wf_auto" int_or_var(n)
     := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
   Tactic Notation "wf_auto" := wf_auto 5.
   
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X:
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
@@ -3999,120 +4005,10 @@ Section FOL_helpers.
   Add Search Blacklist "_graph_mut".
   Add Search Blacklist "FunctionalElimination_".
 
-(* Try here *)
-  Equations? eq_prf_equiv_congruence
-               Γ p q
-               (wfp : well_formed p)
-               (wfq : well_formed q)
-               E ψ
-               (wfψ : well_formed ψ)
-               (pf : Γ ⊢ (p <---> q)) :
-                   Γ ⊢ (((free_evar_subst' 0 ψ p E) <---> (free_evar_subst' 0 ψ q E)))
-               by wf (size' ψ) lt
-  :=
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_evar n) wfψ pf
-  := (pf_iff_equiv_refl Γ (patt_bound_evar n) wfψ) ;
+End FOL_helpers.
 
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_svar n) wfψ pf
-  := (pf_iff_equiv_refl Γ (patt_bound_svar n) wfψ) ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
-  with (decide (E = x)) => {
-    | left e := _
-    | right _ := (pf_iff_equiv_refl Γ (patt_free_evar x) wfψ)
-  } ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_svar X) wfψ pf
-  := (pf_iff_equiv_refl Γ (patt_free_svar X) wfψ) ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bott) wfψ pf
-  := (pf_iff_equiv_refl Γ patt_bott wfψ) ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_sym s) wfψ pf
-  := (pf_iff_equiv_refl Γ (patt_sym s) wfψ) ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ ---> ϕ₂) wfψ pf
-  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
-    | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
-      | pf₂ := prf_equiv_of_impl_of_equiv
-                 Γ
-                 (free_evar_subst' 0 ϕ₁ p E)
-                 (free_evar_subst' 0 ϕ₂ p E)
-                 (free_evar_subst' 0 ϕ₁ q E)
-                 (free_evar_subst' 0 ϕ₂ q E)
-                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj1 _ _ wfψ))
-                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj2 _ _ wfψ))
-                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj1 _ _ wfψ))
-                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj2 _ _ wfψ))
-                 pf₁ pf₂
-      }
-  } ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ $ ϕ₂) wfψ pf
-  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
-  | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
-    | pf₂ := (pf_iff_equiv_trans Γ _ (free_evar_subst' 0 ϕ₁ q E $ free_evar_subst' 0 ϕ₂ p E) _ _ _ _
-               (conj_intro_meta Γ _ _ _ _
-                 (Framing_left Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₁))
-                 (Framing_left Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₁))
-               )
-               (conj_intro_meta Γ _ _ _ _
-                 (Framing_right Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₂))
-                 (Framing_right Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₂))
-               )
-             )
-    }
-  } ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (ex, ϕ') wfψ pf
-  with (evar_fresh_dep (((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
-  | (existT x frx) with (eq_prf_equiv_congruence Γ p q wfp wfq E (evar_open 0 x ϕ') (wf_evar_open_from_wf_ex x ϕ' wfψ) pf) => {
-    | IH with (pf_evar_open_free_evar_subst_equiv_sides Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
-      | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
-        | (IH1, IH2) with ((syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x)),(syllogism_intro Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))) => {
-          | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
-            | (IH3', IH4')
-               :=
-                pf_iff_split Γ (ex, free_evar_subst' 1 ϕ' p E) (ex, free_evar_subst' 1 ϕ' q E) _ _
-                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' p q E wfψ wfp wfq
-                    (strip_exists_quantify Γ x _ _ _ _ IH3')
-                  )
-                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' q p E wfψ wfq wfp
-                    (strip_exists_quantify Γ x _ _ _ _ IH4')
-                  )
-            }
-          }
-        }
-      }
-    }
-  } ;
-
-  eq_prf_equiv_congruence Γ p q wfp wfq E (mu, ϕ') wfψ pf
-  with (svar_fresh_dep ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
-                      ∪ (free_svars (free_evar_subst' 0 ϕ' p E))
-                      ∪ (free_svars (free_evar_subst' 0 ϕ' q E)))) => {
-  | (existT X frX ) with (eq_prf_equiv_congruence Γ p q wfp wfq E (svar_open 0 X ϕ') (wf_svar_open_from_wf_mu X ϕ' wfψ) pf) => {
-    | IH with (pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ' p q E X _ _ IH) => {
-      | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
-        | (IH1, IH2) :=
-            (pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ' p q E X _ _ _ _
-              (pf_iff_split Γ _ _ _ _
-                (mu_monotone Γ _ _ X _ _ _ _ _)
-                (mu_monotone Γ _ _ X _ _ _ _ _)
-              )
-            )
-        }
-      }
-    }
-  }
-  .
-  Proof.
-    1: {
-      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
-      abstract (simpl; rewrite !nest_ex_aux_0; reflexivity).
-    }
-    all: unfold is_true in *.
-    all: abstract (repeat (try assumption; try (solve [wf_auto]);
+  Ltac wf_auto2 := unfold is_true in *;
+      repeat (try assumption; try (solve [wf_auto]);
       match goal with
       | [ |- ?H -> ?G ]
         => intro
@@ -4243,8 +4139,127 @@ Section FOL_helpers.
         => eapply well_formed_closed_mu_aux_ind with (ind_svar1 := n);[lia|]
 
       end; unfold is_true in *
-    )).
+    ).
 
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+
+
+  Equations? eq_prf_equiv_congruence
+               Γ p q
+               (wfp : well_formed p)
+               (wfq : well_formed q)
+               E ψ
+               (wfψ : well_formed ψ)
+               (pf : Γ ⊢ (p <---> q)) :
+                   Γ ⊢ (((free_evar_subst' 0 ψ p E) <---> (free_evar_subst' 0 ψ q E)))
+               by wf (size' ψ) lt
+  :=
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_evar n) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_bound_evar n) wfψ) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bound_svar n) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_bound_svar n) wfψ) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
+  with (decide (E = x)) => {
+    | left e := _
+    | right _ := (pf_iff_equiv_refl Γ (patt_free_evar x) wfψ)
+  } ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_svar X) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_free_svar X) wfψ) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_bott) wfψ pf
+  := (pf_iff_equiv_refl Γ patt_bott wfψ) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_sym s) wfψ pf
+  := (pf_iff_equiv_refl Γ (patt_sym s) wfψ) ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ ---> ϕ₂) wfψ pf
+  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
+    | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
+      | pf₂ := prf_equiv_of_impl_of_equiv
+                 Γ
+                 (free_evar_subst' 0 ϕ₁ p E)
+                 (free_evar_subst' 0 ϕ₂ p E)
+                 (free_evar_subst' 0 ϕ₁ q E)
+                 (free_evar_subst' 0 ϕ₂ q E)
+                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj1 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfp (well_formed_imp_proj2 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj1 _ _ wfψ))
+                 (well_formed_free_evar_subst _ _ wfq (well_formed_imp_proj2 _ _ wfψ))
+                 pf₁ pf₂
+      }
+  } ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (ϕ₁ $ ϕ₂) wfψ pf
+  with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₁ (well_formed_imp_proj1 _ _ wfψ) pf) => {
+  | pf₁ with (eq_prf_equiv_congruence Γ p q wfp wfq E ϕ₂ (well_formed_imp_proj2 _ _ wfψ) pf) => {
+    | pf₂ := (pf_iff_equiv_trans Γ _ (free_evar_subst' 0 ϕ₁ q E $ free_evar_subst' 0 ϕ₂ p E) _ _ _ _
+               (conj_intro_meta Γ _ _ _ _
+                 (Framing_left Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₁))
+                 (Framing_left Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₁))
+               )
+               (conj_intro_meta Γ _ _ _ _
+                 (Framing_right Γ _ _ _ (pf_conj_elim_l_meta _ _ _ _ _ pf₂))
+                 (Framing_right Γ _ _ _ (pf_conj_elim_r_meta _ _ _ _ _ pf₂))
+               )
+             )
+    }
+  } ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (ex, ϕ') wfψ pf
+  with (evar_fresh_dep (((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
+  | (existT x frx) with (eq_prf_equiv_congruence Γ p q wfp wfq E (evar_open 0 x ϕ') (wf_evar_open_from_wf_ex x ϕ' wfψ) pf) => {
+    | IH with (pf_evar_open_free_evar_subst_equiv_sides Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
+      | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
+        | (IH1, IH2) with ((syllogism_intro Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x)),(syllogism_intro Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))) => {
+          | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
+            | (IH3', IH4')
+               :=
+                pf_iff_split Γ (ex, free_evar_subst' 1 ϕ' p E) (ex, free_evar_subst' 1 ϕ' q E) _ _
+                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' p q E wfψ wfp wfq
+                    (strip_exists_quantify Γ x _ _ _ _ IH3')
+                  )
+                  (pf_impl_ex_free_evar_subst_twice Γ 1 ϕ' q p E wfψ wfq wfp
+                    (strip_exists_quantify Γ x _ _ _ _ IH4')
+                  )
+            }
+          }
+        }
+      }
+    }
+  } ;
+
+  eq_prf_equiv_congruence Γ p q wfp wfq E (mu, ϕ') wfψ pf
+  with (svar_fresh_dep ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
+                      ∪ (free_svars (free_evar_subst' 0 ϕ' p E))
+                      ∪ (free_svars (free_evar_subst' 0 ϕ' q E)))) => {
+  | (existT X frX ) with (eq_prf_equiv_congruence Γ p q wfp wfq E (svar_open 0 X ϕ') (wf_svar_open_from_wf_mu X ϕ' wfψ) pf) => {
+    | IH with (pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ' p q E X _ _ IH) => {
+      | IH' with ((pf_iff_proj1 _ _ _ _ _ IH'),(pf_iff_proj2 _ _ _ _ _ IH')) => {
+        | (IH1, IH2) :=
+            (pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ' p q E X _ _ _ _
+              (pf_iff_split Γ _ _ _ _
+                (mu_monotone Γ _ _ X _ _ _ _ _)
+                (mu_monotone Γ _ _ X _ _ _ _ _)
+              )
+            )
+        }
+      }
+    }
+  }
+  .
+  Proof.
+    1: {
+      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
+      abstract (simpl; rewrite !nest_ex_aux_0; reflexivity).
+    }
+    all: unfold is_true in *.
+    all: abstract (wf_auto2).
   Defined.
 
   Lemma prf_equiv_congruence Γ p q C:
