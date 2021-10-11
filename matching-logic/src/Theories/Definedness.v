@@ -2834,6 +2834,7 @@ Section ProofSystemTheorems.
 
     Corollary equality_elimination2 Γ φ1 φ2 ψ:
       ( forall WF1 WF2 x WFψ pf1 pf2,
+          evar_is_fresh_in x ψ ->
         let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 x (evar_open 0 x ψ) WFψ
                   (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) pf1 pf2)) in
         uses_kt pf = false
@@ -2860,7 +2861,7 @@ Section ProofSystemTheorems.
       { assumption. }
       apply equality_elimination_helper; auto.
       { now apply mu_free_evar_open. }
-      { simpl. intros. simpl in H. apply H. }
+      { simpl. intros. simpl in H. apply H. assumption. }
     Defined.
 
     Lemma not_not_elim_indifferent
@@ -3238,12 +3239,20 @@ Section ProofSystemTheorems.
     Proof. auto. Qed.
 
     Lemma exists_functional_subst φ φ' Γ :
+    ( forall x Z WF0 WF3 WFψ pf1 pf2,
+        evar_is_fresh_in x φ ->
+        let pf :=
+          eq_prf_equiv_congruence (Γ ∪ {[φ' <---> Z]}) φ' Z WF0 WF3 x (evar_open 0 x φ) WFψ
+            (hypothesis (Γ ∪ {[φ' <---> Z]}) (φ' <---> Z) pf1 pf2) in
+         uses_kt pf = false
+         /\ uses_svar_subst (free_svars φ' ∪ free_svars Z) pf = false
+         /\ uses_ex_gen pf = false
+      ) ->
       theory ⊆ Γ ->
       mu_free φ -> well_formed φ' -> wf_body_ex φ ->
       Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ).
     Proof.
-      intros HΓ MF WF WFB.
-      Search wf_body_ex.
+      intros Hpf HΓ MF WF WFB.
       pose proof (WFϕ := wf_body_ex_to_wf WFB).
       remember (fresh_evar (φ $ φ')) as Zvar.
       remember (patt_free_evar Zvar) as Z.
@@ -3338,15 +3347,26 @@ Section ProofSystemTheorems.
       2,4-6: wf_auto2.
 
       (* side conditions on proofs *)
-      { intros WF0 WF3 x WFψ pf1 pf2. simpl.
-        
+      { intros WF0 WF3 x WFψ pf1 pf2. simpl. intros Hfr. apply Hpf. exact Hfr. }
+      { intros WF0 WF3 x WFψ pf1 pf2. simpl. intros Hfr. apply Hpf. exact Hfr. }
     Qed.
 
-    Corollary forall_functional_subst φ φ' Γ : 
+    Corollary forall_functional_subst φ φ' Γ :
+      ( forall x Z WF0 WF3 WFψ pf1 pf2,
+          evar_is_fresh_in x φ ->
+          let pf :=
+            eq_prf_equiv_congruence (Γ ∪ {[φ' <---> Z]}) φ' Z WF0 WF3 x
+              (evar_open 0 x (! φ)) WFψ
+              (hypothesis (Γ ∪ {[φ' <---> Z]}) (φ' <---> Z) pf1 pf2) in
+          uses_kt pf = false
+          /\ uses_svar_subst (free_svars φ' ∪ free_svars Z) pf = false
+          /\ uses_ex_gen pf = false
+      ) ->
+      theory ⊆ Γ ->
       mu_free φ -> well_formed φ' -> wf_body_ex φ -> 
       Γ ⊢ ((patt_forall φ) and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (bevar_subst φ φ' 0).
     Proof.
-      intros MF WF WFB. unfold patt_forall.
+      intros Hpf HΓ MF WF WFB. unfold patt_forall.
       assert (well_formed (bevar_subst φ φ' 0)) as BWF. {
         unfold well_formed, well_formed_closed in *.
         destruct_and!.
@@ -3378,16 +3398,21 @@ Section ProofSystemTheorems.
         apply andb_true_iff in WFB as [E1 E2]. simpl in *.
         destruct_and!. split_and!; auto.
       }
-      epose proof (H := @exists_functional_subst (! φ) φ' Γ _ WF _).
+      unshelve (epose proof (H := @exists_functional_subst (! φ) φ' Γ _ HΓ _ WF _)).
+      { intros. apply Hpf. unfold evar_is_fresh_in in H. simpl in H. clear -H.
+       unfold evar_is_fresh_in. set_solver.
+      }
+      { simpl. rewrite andbT. exact MF. }
+      { apply wf_body_ex_to_wf in WFB; apply wf_ex_to_wf_body; auto. }
       simpl in H.
       epose proof (H0 := and_impl _ _ _ _ _ _ _).
-      eapply Modus_ponens in H0. 4: exact H. 2-3: shelve.
-      apply reorder_meta in H0. 2-4: shelve.
+      eapply Modus_ponens in H0. 4: exact H. 2-3: unfold patt_equal,patt_total,patt_defined;wf_auto2.
+      apply reorder_meta in H0. 2-4: auto.
       
       epose proof (H1 := and_impl' _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
       1-2: shelve.
       apply reorder_meta. 1-3: shelve.
-      epose proof (H2 := P4 Γ (bevar_subst φ φ' 0) (! ex , ! φ) _ _).
+      epose proof (H2 := P4 Γ (bevar_subst φ φ' 0) (! ex , patt_not (φ)) _ _).
       clear H H1.
       epose proof (H := prf_weaken_conclusion Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
       eapply Modus_ponens in H. eapply Modus_ponens in H; auto.
@@ -3399,8 +3424,6 @@ Section ProofSystemTheorems.
       eapply syllogism_intro in H2. exact H2. all: auto.
       Unshelve.
       all: unfold patt_not; auto.
-      simpl. now rewrite MF.
-      apply wf_body_ex_to_wf in WFB; apply wf_ex_to_wf_body; auto.
       all: repeat apply well_formed_imp; auto.
     Qed.
 
