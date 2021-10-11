@@ -4000,10 +4000,6 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Add Search Blacklist "_elim".
-  Add Search Blacklist "_graph_rect".
-  Add Search Blacklist "_graph_mut".
-  Add Search Blacklist "FunctionalElimination_".
 
 End FOL_helpers.
 
@@ -4140,6 +4136,12 @@ End FOL_helpers.
 
       end; unfold is_true in *
     ).
+
+  Add Search Blacklist "_elim".
+  Add Search Blacklist "_graph_rect".
+  Add Search Blacklist "_graph_mut".
+  Add Search Blacklist "FunctionalElimination_".
+
 
 Section FOL_helpers.
 
@@ -4376,7 +4378,52 @@ Proof.
   apply pf_iff_equiv_refl; auto.
 Qed.
 
+Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂ H.
+  apply Ex_gen.
+  { assumption. }
+  { unfold exists_quantify. apply wf_ex_evar_quantify. assumption. }
+  2: { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
 
+  unfold exists_quantify.
+  eapply syllogism_intro. 4: apply H.
+  { auto. }
+  { auto. }
+  { apply wf_ex_evar_quantify. assumption. }
+  clear H wfϕ₁ ϕ₁.
+
+  replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
+  2: { unfold instantiate. Search bevar_subst evar_quantify.
+       rewrite bevar_subst_evar_quantify_free_evar.
+       apply wfc_ex_implies_not_bevar_occur. wf_auto. reflexivity.
+  }
+  apply Ex_quan.
+Defined.
+
+Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  apply ex_quan_monotone; auto.
+  toMyGoal. mgIntro. mgDestructAnd 0; auto. mgExactn 0; auto.
+Defined.
+
+Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  apply ex_quan_monotone; auto.
+  toMyGoal. mgIntro. mgDestructAnd 0; auto. mgExactn 1; auto.
+Defined.
 
 (* Hints *)
 #[export]

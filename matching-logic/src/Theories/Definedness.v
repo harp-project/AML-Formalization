@@ -1161,7 +1161,7 @@ Section ProofSystemTheorems.
       well_formed ϕ ->
       well_formed ψ ->
       theory ⊆ Γ ->
-      uses_ex_gen pf = false ->
+      uses_ex_gen (free_evars ψ) pf = false ->
       uses_svar_subst (free_svars ψ) pf = false ->
       uses_kt pf = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
@@ -1211,7 +1211,17 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Ex_quan.
       - (* Existential Generalization *)
-        simpl in HnoExGen. congruence.
+        simpl in HnoExGen.
+        case_match;[congruence|].
+        feed specialize IHpf.
+        { auto. }
+        { exact HnoExGen. }
+        { simpl in HnoSvarSubst. exact HnoSvarSubst. }
+        { simpl in HnoKT. exact HnoKT. }
+        Print ML_proof_system.
+        assert (Heq: Γ ⊢ (phi1 ---> phi2) ---> (exists_quantify x phi1 ---> phi2)).
+        {    }
+        congruence.
       - (* Propagation of ⊥, left *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Prop_bott_left; assumption.
