@@ -3130,6 +3130,7 @@ Section ProofSystemTheorems.
       evar_is_fresh_in E ψ ->
       SOME_PROPERTY_OF (eq_prf_equiv_congruence Γ p q wfp wfq E ψ wfψ pimpq)
 *)
+(*
     Lemma patt_eq_sym_meta Γ φ1 φ2 :
       ( forall WF0 WF1 WF2 WF3 IN star,
           evar_is_fresh_in star φ1 ->
@@ -3215,7 +3216,7 @@ Section ProofSystemTheorems.
         reflexivity.
       }
     Qed.
-
+*)
     Lemma patt_eq_sym Γ φ1 φ2:
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
