@@ -4425,6 +4425,39 @@ Proof.
   toMyGoal. mgIntro. mgDestructAnd 0; auto. mgExactn 1; auto.
 Defined.
 
+Lemma lhs_to_and {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ (a and b) ---> c ->
+  Γ ⊢ a ---> b ---> c.
+Proof.
+  intros wfa wfb wfc H.
+  toMyGoal. do 2 mgIntro. mgApplyMeta H; auto.
+  fromMyGoal. apply conj_intro; auto.
+Defined.
+
+Lemma lhs_from_and {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ a ---> b ---> c ->
+  Γ ⊢ (a and b) ---> c.
+Proof.
+  intros wfa wfb wfc H.
+  toMyGoal. mgIntro.
+  mgAssert (b).
+  { fromMyGoal. apply pf_conj_elim_r; auto. }
+  mgAssert (a) using first 1.
+  { fromMyGoal. apply pf_conj_elim_l; auto. }
+  mgAdd H; auto.
+  mgAssert ((b ---> c)).
+  { mgApply 0; auto. mgExactn 2; auto. }
+  mgApply 4; auto 10.
+  mgExactn 3; auto 10.
+  Unshelve. all: auto 10.
+Defined.
+
 (* Hints *)
 #[export]
  Hint Resolve A_impl_A : core.
