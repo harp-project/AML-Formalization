@@ -1218,7 +1218,26 @@ Section ProofSystemTheorems.
         { exact HnoExGen. }
         { simpl in HnoSvarSubst. exact HnoSvarSubst. }
         { simpl in HnoKT. exact HnoKT. }
+        apply lhs_from_and in IHpf; auto.
+        apply lhs_to_and; auto.
+        { wf_auto2. }
+        apply Ex_gen with (x0 := x) in IHpf; auto.
+        eapply syllogism_intro. 5: apply IHpf. 1-3: wf_auto2.
+        unfold exists_quantify.
+        eapply syllogism_intro. 5: apply Ex_quan. 1-3: wf_auto2.
+        unfold instantiate. Search evar_quantify bevar_subst.
+        rewrite -> bevar_subst_evar_quantify_free_evar.
+        2: { apply wfc_ex_aux_implies_not_bevar_occur.
+             simpl. rewrite !andbT. split_and!.
+             { wf_auto2. }
+             { wf_auto2. pose proof (i' := i). wf_auto2. }
+        }
+        
+        eapply syllogism_intro. 5: apply conj_intro.
+        Check conj_intro.
+        Search (?A and ?B).
         Print ML_proof_system.
+
         assert (Heq: Γ ⊢ (phi1 ---> phi2) ---> (exists_quantify x phi1 ---> phi2)).
         {    }
         congruence.
