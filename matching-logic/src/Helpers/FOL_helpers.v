@@ -3259,42 +3259,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Lemma prf_conj_split {Σ : Signature} Γ a b l:
-  well_formed a ->
-  well_formed b ->
-  wf l ->
-  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
-Proof.
-  intros wfa wfb wfl.
-
-  unfold patt_and. unfold patt_not at 1.
-  replace (foldr patt_imp (!a or !b ---> ⊥) l)
-          with (foldr patt_imp ⊥ (l ++ [!a or !b])).
-  2: { rewrite foldr_app. simpl. reflexivity. }
-
-  replace (foldr patt_imp a l ---> foldr patt_imp b l ---> foldr patt_imp ⊥ (l ++ [! a or ! b]))
-    with (foldr patt_imp ⊥ ((foldr patt_imp a l)::(foldr patt_imp b l)::l ++ [!a or !b] ++ []))
-    by reflexivity.
-  Check prf_disj_elim_iter_2_meta_meta.
-  apply (prf_disj_elim_iter_2_meta_meta Γ (foldr patt_imp a l :: foldr patt_imp b l :: l) []); auto.
-  - rewrite [l in foldr patt_imp _ l]/=.
-    Check prf_weaken_conclusion_iter_meta_meta.
-    toMyGoal. do 2 mgIntro. fold (fold_right patt_imp ⊥ (l ++ [!a])).
-    
-simpl. (*toMyGoal. do 2 mgIntro.*) rewrite foldr_app. simpl. rewrite consume.
-
-  Search foldr cons.
-  rewrite -> tofold. do 2 rewrite consume. rewrite [l in foldr patt_imp _ l]/=.
-  Check prf_disj_elim_iter_2_meta_meta.
-  rewrite foldr_app
-
-  induction l.
-  - simpl. apply conj_intro; auto.
-  - simpl. toMyGoal. do 3 mgIntro. unfold patt_and. unfold patt_not at 1.
-    replace (foldr patt_imp (!a or !b ---> ⊥) l)
-            with (foldr patt_imp ⊥)
-
-Check conj_intro_meta.
 
 (* TODO this should have a different name, and we should give the name [mgSplit] to a tactic
   that works with our goals *)
@@ -4491,6 +4455,27 @@ Proof.
   mgApply 4; auto 10.
   mgExactn 3; auto 10.
   Unshelve. all: auto 10.
+Defined.
+
+Lemma prf_conj_split {Σ : Signature} Γ a b l:
+  well_formed a ->
+  well_formed b ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+Proof.
+  intros wfa wfb wfl.
+  induction l.
+  - simpl. apply conj_intro; auto.
+  - simpl. pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
+    specialize (IHl wfl').
+    toMyGoal. do 3 mgIntro.
+    mgAssert ((foldr patt_imp a l)).
+    { mgApply 0; auto. mgExactn 2; auto 10. }
+    mgAssert ((foldr patt_imp b l)).
+    { mgApply 1; auto. mgExactn 2; auto 10. }
+    mgClear 2; auto 10. mgClear 1; auto 10. mgClear 0; auto 10.
+
+Unshelve. all: auto 10.
 Defined.
 
 (* Hints *)
