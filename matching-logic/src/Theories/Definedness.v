@@ -1218,29 +1218,12 @@ Section ProofSystemTheorems.
         { exact HnoExGen. }
         { simpl in HnoSvarSubst. exact HnoSvarSubst. }
         { simpl in HnoKT. exact HnoKT. }
-        apply lhs_from_and in IHpf; auto.
-        apply lhs_to_and; auto.
+
+        apply reorder_meta in IHpf; auto.
+        apply reorder_meta; auto.
         { wf_auto2. }
         apply Ex_gen with (x0 := x) in IHpf; auto.
-        eapply syllogism_intro. 5: apply IHpf. 1-3: wf_auto2.
-        unfold exists_quantify.
-        eapply syllogism_intro. 5: apply Ex_quan. 1-3: wf_auto2.
-        unfold instantiate. Search evar_quantify bevar_subst.
-        rewrite -> bevar_subst_evar_quantify_free_evar.
-        2: { apply wfc_ex_aux_implies_not_bevar_occur.
-             simpl. rewrite !andbT. split_and!.
-             { wf_auto2. }
-             { wf_auto2. pose proof (i' := i). wf_auto2. }
-        }
-        
-        eapply syllogism_intro. 5: apply conj_intro.
-        Check conj_intro.
-        Search (?A and ?B).
-        Print ML_proof_system.
-
-        assert (Heq: Γ ⊢ (phi1 ---> phi2) ---> (exists_quantify x phi1 ---> phi2)).
-        {    }
-        congruence.
+        { simpl. clear -n n0. set_solver. }
       - (* Propagation of ⊥, left *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Prop_bott_left; assumption.
@@ -1849,7 +1832,7 @@ Section ProofSystemTheorems.
       well_formed ϕ ->
       well_formed ψ ->
       theory ⊆ Γ ->
-      uses_ex_gen pf = false ->
+      uses_ex_gen (free_evars ψ) pf = false ->
       uses_svar_subst (free_svars ψ) pf = false ->
       Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
     Proof.
@@ -1896,7 +1879,18 @@ Section ProofSystemTheorems.
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Ex_quan.
       - (* Existential Generalization *)
-        simpl in HnoExGen. congruence.
+        simpl in HnoExGen.
+        case_match;[congruence|].
+        feed specialize IHpf.
+        { auto. }
+        { exact HnoExGen. }
+        { simpl in HnoSvarSubst. exact HnoSvarSubst. }
+
+        apply reorder_meta in IHpf; auto.
+        apply reorder_meta; auto.
+        { wf_auto2. }
+        apply Ex_gen with (x0 := x) in IHpf; auto.
+        { simpl. clear -n n0. set_solver. }
       - (* Propagation of ⊥, left *)
         toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
         apply Prop_bott_left; assumption.

@@ -4478,6 +4478,53 @@ Proof.
 Unshelve. all: auto 10.
 Defined.
 
+Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
+  well_formed a ->
+  well_formed b ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp a l) -> 
+  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+Proof.
+  intros. eapply Modus_ponens. 4: apply prf_conj_split. all: auto 10.
+Defined.
+
+Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l:
+  well_formed a ->
+  well_formed b ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp a l) -> 
+  Γ ⊢ (foldr patt_imp b l) ->
+  Γ ⊢ (foldr patt_imp (a and b) l).
+Proof.
+  intros. eapply Modus_ponens. 4: apply prf_conj_split_meta. all: auto 10.
+Defined.
+
+Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l:
+  well_formed a ->
+  well_formed b ->
+  wf l ->
+  mkMyGoal Σ Γ l a ->
+  mkMyGoal Σ Γ l b ->
+  mkMyGoal Σ Γ l (a and b).
+Proof.
+  intros. apply prf_conj_split_meta_meta; auto.
+Defined.
+
+Ltac mgSplitAnd := apply MyGoal_splitAnd.
+
+Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ a ---> b ---> c ---> (a and b).
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal. mgIntro. mgIntro. mgIntro.
+  mgSplitAnd; auto.
+  - mgExactn 0; auto.
+  - mgExactn 1; auto.
+Qed.
+
 (* Hints *)
 #[export]
  Hint Resolve A_impl_A : core.
