@@ -2798,6 +2798,22 @@ Section ProofSystemTheorems.
     + rewrite modus_ponens_indifferent; auto.
   Qed.
 
+  Lemma pf_conj_elim_l_meta_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+        (pf : Γ ⊢ a and b)
+    :
+    indifferent_to_prop P ->
+    P _ _ pf = false ->
+    P _ _ (pf_conj_elim_l_meta Γ a b wfa wfb pf) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros Hpf.
+    unfold pf_conj_elim_l_meta. rewrite Hmp. rewrite pf_conj_elim_l_indifferent; auto.
+    rewrite Hpf. reflexivity.
+  Qed.
+
   Lemma pf_conj_elim_r_indifferent
         P Γ a b
         (wfa : well_formed a = true)
@@ -2814,6 +2830,25 @@ Section ProofSystemTheorems.
     + rewrite modus_ponens_indifferent; auto.
   Qed.
 
+  Lemma pf_conj_elim_r_meta_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+        (pf : Γ ⊢ a and b)
+    :
+    indifferent_to_prop P ->
+    P _ _ pf = false ->
+    P _ _ (pf_conj_elim_r_meta Γ a b wfa wfb pf) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros Hpf.
+    unfold pf_conj_elim_r_meta. rewrite Hmp. rewrite pf_conj_elim_r_indifferent; auto.
+    rewrite Hpf. reflexivity.
+  Qed.
+
+  Check nested_const_middle.
+  (*Lemma nested_const_middle_indifferent*)
+
   Lemma prf_equiv_of_impl_of_equiv_indifferent
         P Γ a b a' b'
         (wfa : well_formed a = true)
@@ -2823,12 +2858,13 @@ Section ProofSystemTheorems.
         (aiffa' : Γ ⊢ a <---> a')
         (biffb' : Γ ⊢ b <---> b'):
     indifferent_to_prop P ->
+    indifferent_to_cast P ->
     P _ _ aiffa' = false ->
     P _ _ biffb' = false ->
     P _ _ (prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
   Proof.
     intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros H1 H2.
+    intros Hc H1 H2.
     unfold prf_equiv_of_impl_of_equiv.
     rewrite pf_iff_equiv_trans_indifferent; auto.
     - rewrite conj_intro_meta_indifferent; auto.
@@ -2837,11 +2873,15 @@ Section ProofSystemTheorems.
         specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
         pose proof (Htmp := MyGoal_intro_indifferent).
         specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        Check MyGoal_add_indifferent.
         rewrite (@MyGoal_add_indifferent P Γ [a ---> b; a]); auto.
-        { Search pf_conj_elim_l.
-        
-      
+        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
+        Search cast_proof_mg_hyps.
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        Search nested_const_middle.
 
   Lemma uses_svar_subst_eq_prf_equiv_congruence
         Γ p q E ψ SvS
