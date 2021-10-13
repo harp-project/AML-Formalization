@@ -1139,11 +1139,22 @@ Defined. *)
     - pose proof (wfa0l₁ := wfl₁).
       unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁). simpl in IHl₁.
-      remember (l₁ ++ a :: l₂) as xs.
+
+      remember (l₁ ++ a :: l₂) as xs in |-.
       assert (wf xs).
-      { subst. auto. }
+      { abstract (subst; auto). }
+
+      apply (@cast_proof Σ Γ (a0 ---> foldr patt_imp a xs)).
+      { abstract (subst xs; reflexivity). }
+
+      apply (@cast_proof Σ Γ _ (foldr patt_imp a xs)) in IHl₁.
+      2: { abstract (subst xs; reflexivity). }
+
+      
+
       destruct xs as [|x xs].
-      { assert (@length Pattern nil = length (l₁ ++ a :: l₂)). rewrite Heqxs. reflexivity.
+      { assert (@length Pattern nil = length (l₁ ++ a :: l₂)).
+        { rewrite Heqxs. reflexivity. }
         simpl in H0. rewrite app_length in H0. simpl in H0. lia.
       }
       simpl. simpl in IHl₁.
