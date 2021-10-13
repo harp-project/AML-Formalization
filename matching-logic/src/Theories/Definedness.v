@@ -2713,15 +2713,75 @@ Section ProofSystemTheorems.
    rewrite Hmp. rewrite Hpf. rewrite A_impl_not_not_B_indifferent; auto.
   Qed.
 
+  Check syllogism_4_meta.
+  Lemma syllogism_4_meta_indifferent
+        P Γ a b c d
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+        (wfc : well_formed c = true)
+        (wfd : well_formed d = true)
+        (pf1 : Γ ⊢ a ---> b ---> c)
+        (pf2 : Γ ⊢ c ---> d):
+    indifferent_to_prop P ->
+    P _ _ pf1 = false ->
+    P _ _ pf2 = false ->
+    P _ _ (syllogism_4_meta Γ a b c d wfa wfb wfc wfd pf1 pf2) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros Hpf1 Hpf2.
+    unfold syllogism_4_meta.
+    rewrite !(Hp1,Hp2,Hp3,Hmp).
+    rewrite Hpf1. rewrite Hpf2.
+    reflexivity.
+  Qed.
+
+  Lemma P4_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true):
+    indifferent_to_prop P ->
+    P _ _ (P4 Γ a b wfa wfb) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold P4. rewrite !(Hp1,Hp2,Hp3,Hmp). reflexivity.
+  Qed.
+
+  Lemma bot_elim_indifferent
+        P Γ a (wfa : well_formed a = true):
+    indifferent_to_prop P ->
+    P _ _ (bot_elim Γ a wfa) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    { unfold bot_elim. do 4 rewrite Hmp. rewrite Hp1. simpl.
+      rewrite Hp2. simpl. rewrite P4_indifferent; auto. simpl.
+      rewrite Hp1. simpl. rewrite P4_indifferent; auto. }
+  Qed.
+
   Lemma disj_left_intro_indifferent
         P Γ a b
         (wfa : well_formed a = true)
         (wfb : well_formed b = true) :
     indifferent_to_prop P ->
-    P _ _ (disj_left_intro Γ a b wfa wfb).
+    P _ _ (disj_left_intro Γ a b wfa wfb) = false.
   Proof.
     intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     unfold disj_left_intro.
+    rewrite syllogism_4_meta_indifferent; auto.
+    { rewrite modus_ponens_indifferent; auto. }
+    rewrite bot_elim_indifferent.
+    assumption. reflexivity.
+  Qed.
+
+  Lemma disj_right_intro_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true) :
+    indifferent_to_prop P ->
+    P _ _ (disj_right_intro Γ a b wfa wfb) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold disj_right_intro. rewrite Hp1. reflexivity.
+  Qed.
 
   Lemma pf_conj_elim_l_indifferent
         P Γ a b
@@ -2734,8 +2794,25 @@ Section ProofSystemTheorems.
     unfold pf_conj_elim_l. rewrite A_impl_not_not_B_meta_indifferent; auto.
     rewrite reorder_meta_indifferent; auto.
     rewrite syllogism_intro_indifferent; auto.
-    +
-    Search A_impl_not_not_B_meta.
+    + rewrite disj_left_intro_indifferent; auto.
+    + rewrite modus_ponens_indifferent; auto.
+  Qed.
+
+  Lemma pf_conj_elim_r_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true):
+    indifferent_to_prop P ->
+    P _ _ (pf_conj_elim_r Γ a b wfa wfb) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold pf_conj_elim_r.
+    rewrite A_impl_not_not_B_meta_indifferent; auto.
+    rewrite reorder_meta_indifferent; auto.
+    rewrite syllogism_intro_indifferent; auto.
+    + rewrite disj_right_intro_indifferent; auto.
+    + rewrite modus_ponens_indifferent; auto.
+  Qed.
 
   Lemma prf_equiv_of_impl_of_equiv_indifferent
         P Γ a b a' b'
