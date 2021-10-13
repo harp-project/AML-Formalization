@@ -32,6 +32,69 @@ Section named.
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
 
+  Fixpoint named_free_evars (phi : NamedPattern) : EVarSet :=
+    match phi with
+    | npatt_evar x => singleton x
+    | npatt_svar X => empty
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_free_evars phi1) (named_free_evars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_free_evars phi1) (named_free_evars phi2)
+    | npatt_exists x phi => difference (named_free_evars phi) (singleton x)
+    | npatt_mu X phi => named_free_evars phi
+    end.
+
+  Fixpoint named_free_svars (phi : NamedPattern) : SVarSet :=
+    match phi with
+    | npatt_evar x => empty
+    | npatt_svar X => singleton X
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_free_svars phi1) (named_free_svars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_free_svars phi1) (named_free_svars phi2)
+    | npatt_exists x phi => named_free_svars phi
+    | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
+    end.
+
+  Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
+  Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
+
+  (* substitute variable x for psi in phi *)
+  Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
+    match phi with
+    | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
+    | npatt_svar X => npatt_svar X
+    | npatt_sym sigma => npatt_sym sigma
+    | npatt_app phi1 phi2 => npatt_app (named_evar_subst phi1 psi x)
+                                       (named_evar_subst phi2 psi x)
+    | npatt_bott => npatt_bott
+    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst phi1 psi x)
+                                       (named_evar_subst phi2 psi x)
+    | npatt_exists x' phi' => if decide (x = x') is left _
+                              then let fx := named_fresh_evar phi' in
+                                   npatt_exists fx (named_evar_subst phi' (npatt_evar fx) x)
+                              else npatt_exists x' (named_evar_subst phi' psi x)
+    | npatt_mu X phi' => npatt_mu X (named_evar_subst phi' psi x)
+    end.
+
+  (* substitute variable X for psi in phi *)
+  Fixpoint named_svar_subst (phi psi : NamedPattern) (X : svar) :=
+    match phi with
+    | npatt_evar x => npatt_evar x
+    | npatt_svar X' => if decide (X = X') is left _ then psi else npatt_svar X'
+    | npatt_sym sigma => npatt_sym sigma
+    | npatt_app phi1 phi2 => npatt_app (named_svar_subst phi1 psi X)
+                                       (named_svar_subst phi2 psi X)
+    | npatt_bott => npatt_bott
+    | npatt_imp phi1 phi2 => npatt_imp (named_svar_subst phi1 psi X)
+                                       (named_svar_subst phi2 psi X)
+    | npatt_exists x phi' => npatt_exists x (named_svar_subst phi' psi X)
+    | npatt_mu X' phi' => if decide (X = X') is left _
+                          then let fX := named_fresh_svar phi' in
+                               npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
+                          else npatt_mu X' (named_svar_subst phi' psi X)
+    end.
+
   Check @kmap.
   (* TODO: use kmap. Check kmap. *)
   Definition evm_incr (evm : EVarMap) : EVarMap :=
@@ -305,6 +368,8 @@ Section named.
     | npatt_exists _ psi => named_well_formed_positive psi
     | npatt_mu X psi => named_no_negative_occurrence X psi && named_well_formed_positive psi
     end.
+
+  Definition named_well_formed := named_well_formed_positive.
 
 (*  
   Print well_formed_positive.
