@@ -2725,7 +2725,7 @@ Section ProofSystemTheorems.
   Abort.
 
   
-
+    (*    *)
     Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2733,7 +2733,8 @@ Section ProofSystemTheorems.
       ( forall WF1 WF2 WFC wfpf1 inpf1,
        let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 (pcEvar C) (pcPattern C) WFC
                    (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) wfpf1 inpf1)) in
-       uses_kt pf = false /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false /\ uses_ex_gen pf = false
+       uses_kt pf = false /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false
+                          /\ uses_ex_gen (free_evars φ1 ∪ free_evars φ2) pf = false
        
       ) ->
       Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
@@ -2778,6 +2779,10 @@ Section ProofSystemTheorems.
         abstract (
           simpl;
           unfold prf_equiv_congruence; destruct C as [ψ E];
+          match goal with
+          | [ |- uses_ex_gen ?e _ = false ]
+            => replace e with (free_evars φ1 ∪ free_evars φ2) by (clear; set_solver)
+          end;
           simpl; apply H
         ).
       }

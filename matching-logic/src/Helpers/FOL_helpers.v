@@ -4146,6 +4146,14 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
+  Definition pf_ite {P : Prop} (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
+    (pf1: P -> Γ ⊢ ϕ)
+    (pf2: (~P) -> Γ ⊢ ϕ) :
+    Γ ⊢ ϕ :=
+    match dec with
+    | left pf => pf1 pf
+    | right pf => pf2 pf
+    end.
 
 
   Equations? eq_prf_equiv_congruence
@@ -4165,11 +4173,17 @@ Section FOL_helpers.
   := (pf_iff_equiv_refl Γ (patt_bound_svar n) wfψ) ;
 
   eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
+  := pf_ite (decide (E = x)) Γ
+      ((free_evar_subst' 0 (patt_free_evar x) p E) <---> (free_evar_subst' 0 (patt_free_evar x) q E))
+      (fun e => _)
+      (fun (_ : E <> x) => _ ) ;
+(*
+  eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_evar x) wfψ pf
   with (decide (E = x)) => {
     | left e := _
     | right _ := (pf_iff_equiv_refl Γ (patt_free_evar x) wfψ)
   } ;
-
+*)
   eq_prf_equiv_congruence Γ p q wfp wfq E (patt_free_svar X) wfψ pf
   := (pf_iff_equiv_refl Γ (patt_free_svar X) wfψ) ;
 
@@ -4255,10 +4269,23 @@ Section FOL_helpers.
   }
   .
   Proof.
+    2: {
+      unshelve (eapply (@cast_proof _ _ _ _ _ (pf_iff_equiv_refl Γ (patt_free_evar x) ltac:(auto)))).
+      abstract (
+        unfold free_evar_subst'; case_match; [congruence|]; reflexivity
+      ).
+    }
+    1: {
+      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
+      abstract (
+        unfold free_evar_subst'; case_match; [|congruence];
+        rewrite !nest_ex_aux_0; reflexivity
+      ).
+    } (*
     1: {
       unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
       abstract (simpl; rewrite !nest_ex_aux_0; reflexivity).
-    }
+    }*)
     all: unfold is_true in *.
     all: abstract (wf_auto2).
   Defined.
