@@ -3195,6 +3195,97 @@ Section ProofSystemTheorems.
     - exact H.
   Qed.
 
+  Lemma uses_kt_nomu_eq_prf_equiv_congruence
+        Γ p q E ψ EvS SvS
+        (wfp: well_formed p)
+        (wfq: well_formed q)
+        (wfψ: well_formed ψ)
+        (pf : Γ ⊢ (p <---> q)):
+    mu_free ψ ->
+    uses_kt pf = false ->
+    uses_kt (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS SvS E ψ wfψ pf) = false.
+  Proof.
+    intros Hmfψ H.
+    apply  (eq_prf_equiv_congruence_elim
+     (fun Γ p q wfp wfq EvS SvS E ψ wfψ pf result
+      => mu_free ψ -> uses_kt pf = false -> uses_kt result = false)
+    ).
+    - clear. intros Γ p q wfp wfq EvS SvS E x wfψ pf Hmfψ Hpf.
+      unfold pf_ite.
+      destruct (decide (E = x)).
+      + unfold eq_prf_equiv_congruence_obligation_1.
+        rewrite indifferent_to_cast_uses_kt.
+        exact Hpf.
+      + unfold eq_prf_equiv_congruence_obligation_2.
+        rewrite indifferent_to_cast_uses_kt.
+        reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E wfψ pf Hmfψ Hpf.
+      reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hmfψ Hpf.
+      simpl in Hmfψ. apply andb_prop in Hmfψ. destruct Hmfψ as [Hmfϕ₁ Hmfϕ₂].
+      subst pf₁. subst pf₂.
+      specialize (Hind1 Hmfϕ₂ Hpf). specialize (Hind2 Hmfϕ₁ Hpf).
+      pose proof (indifferent_to_prop_uses_kt).
+      rewrite pf_iff_equiv_trans_indifferent; auto.
+      + rewrite conj_intro_meta_indifferent; auto.
+        { simpl. rewrite Hind2. reflexivity. }
+        { simpl. rewrite Hind2. reflexivity. }
+      + rewrite conj_intro_meta_indifferent; auto.
+        { simpl. rewrite Hind1. reflexivity. }
+        { simpl. rewrite Hind1. reflexivity. }
+    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hmf Hpf.
+      simpl in Hmf. apply andb_prop in Hmf as [Hmf1 Hmf2].
+      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
+      { apply indifferent_to_prop_uses_kt. }
+      { apply indifferent_to_cast_uses_kt. }
+    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
+      intros.
+      inversion Heq; subst; clear Heq.
+      inversion Heq0; subst; clear Heq0.
+      inversion Heq1; subst; clear Heq1.
+      simpl in H.
+
+      feed specialize Hind.
+      { apply mu_free_evar_open. assumption. }
+      { assumption. }
+
+      rewrite pf_iff_split_indifferent.
+      { apply indifferent_to_prop_uses_kt. }
+      + unfold pf_impl_ex_free_evar_subst_twice.
+        rewrite indifferent_to_cast_uses_kt.
+        unfold strip_exists_quantify.
+        rewrite indifferent_to_cast_uses_kt.
+        simpl.
+        unfold pf_evar_open_free_evar_subst_equiv_sides.
+        rewrite indifferent_to_cast_uses_kt.
+        rewrite Hind.
+        reflexivity.
+      + unfold pf_impl_ex_free_evar_subst_twice.
+        rewrite indifferent_to_cast_uses_kt.
+        unfold strip_exists_quantify.
+        rewrite indifferent_to_cast_uses_kt.
+        simpl.
+        unfold pf_evar_open_free_evar_subst_equiv_sides.
+        rewrite indifferent_to_cast_uses_kt.
+        rewrite Hind.
+        reflexivity.
+      + reflexivity.
+    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
+      intros. simpl in H. congruence.
+    - assumption.
+    - assumption.
+  Qed.
+
   
     (*    *)
     Lemma equality_elimination_basic Γ φ1 φ2 C :
