@@ -2671,6 +2671,100 @@ Section ProofSystemTheorems.
     rewrite Hmp. simpl. rewrite Huse. simpl.
     rewrite prf_weaken_conclusion_iter_under_implication_iter_indifferent; auto.
   Qed.
+  
+  Check not_not_elim.
+
+  Lemma not_not_elim_indifferent
+        P Γ a (wfa : well_formed a = true):
+    indifferent_to_prop P ->
+    P _ _ (not_not_elim Γ a wfa) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold not_not_elim. rewrite Hp3. reflexivity.
+  Qed.
+
+  Lemma A_impl_not_not_B_indifferent
+        P Γ a b
+        (wfa : well_formed a)
+        (wfb : well_formed b) :
+    indifferent_to_prop P ->
+    P _ _ (A_impl_not_not_B Γ a b wfa wfb) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold A_impl_not_not_B.
+    rewrite Hmp. rewrite not_not_elim_indifferent; [assumption|]. simpl.
+    rewrite reorder_meta_indifferent;[assumption|idtac|reflexivity].
+    rewrite syllogism_indifferent; auto.
+  Qed.
+
+  Lemma A_impl_not_not_B_meta_indifferent
+        P Γ a b
+        (wfa : well_formed a)
+        (wfb : well_formed b) 
+        (pf : Γ ⊢ a ---> ! ! b)
+    :
+    indifferent_to_prop P ->
+    P _ _ pf = false ->
+    P _ _ (A_impl_not_not_B_meta Γ a b wfa wfb pf) = false.
+  Proof.
+   intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+   intros Hpf.
+   unfold A_impl_not_not_B_meta.
+   rewrite Hmp. rewrite Hpf. rewrite A_impl_not_not_B_indifferent; auto.
+  Qed.
+
+  Lemma disj_left_intro_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true) :
+    indifferent_to_prop P ->
+    P _ _ (disj_left_intro Γ a b wfa wfb).
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold disj_left_intro.
+
+  Lemma pf_conj_elim_l_indifferent
+        P Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true):
+    indifferent_to_prop P ->
+    P _ _ (pf_conj_elim_l Γ a b wfa wfb) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    unfold pf_conj_elim_l. rewrite A_impl_not_not_B_meta_indifferent; auto.
+    rewrite reorder_meta_indifferent; auto.
+    rewrite syllogism_intro_indifferent; auto.
+    +
+    Search A_impl_not_not_B_meta.
+
+  Lemma prf_equiv_of_impl_of_equiv_indifferent
+        P Γ a b a' b'
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+        (wfa' : well_formed a' = true)
+        (wfb' : well_formed b' = true)
+        (aiffa' : Γ ⊢ a <---> a')
+        (biffb' : Γ ⊢ b <---> b'):
+    indifferent_to_prop P ->
+    P _ _ aiffa' = false ->
+    P _ _ biffb' = false ->
+    P _ _ (prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros H1 H2.
+    unfold prf_equiv_of_impl_of_equiv.
+    rewrite pf_iff_equiv_trans_indifferent; auto.
+    - rewrite conj_intro_meta_indifferent; auto.
+      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        Check MyGoal_add_indifferent.
+        rewrite (@MyGoal_add_indifferent P Γ [a ---> b; a]); auto.
+        { Search pf_conj_elim_l.
+        
+      
 
   Lemma uses_svar_subst_eq_prf_equiv_congruence
         Γ p q E ψ SvS
@@ -2686,6 +2780,15 @@ Section ProofSystemTheorems.
      (fun Γ p q wfp wfq E ψ wfψ pf result
       => uses_svar_subst SvS pf = false -> uses_svar_subst SvS result = false)
     ).
+    - clear. intros Γ p q wfp wfq E x wfψ pf Hpf.
+      unfold pf_ite.
+      destruct (decide (E = x)).
+      + unfold eq_prf_equiv_congruence_obligation_1.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        exact Hpf.
+      + unfold eq_prf_equiv_congruence_obligation_2.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        reflexivity.
     - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
       reflexivity.
     - clear. intros Γ p q wfp wfq E X wfψ pf Hpf.
@@ -2696,33 +2799,24 @@ Section ProofSystemTheorems.
       reflexivity.
     - clear. intros Γ p q wfp wfq E wfψ pf Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq E x e wfψ pf He Hpf.
-      unfold eq_prf_equiv_congruence_obligation_1.
-      unfold Logic.transport_r. unfold Logic.transport.
-      unfold eq_sym.
-      Set Printing Implicit.
-      simpl.
-      pose proof (e' := e).
-      move: e He.
-      rewrite e'. intros e He.
-      unfold decide,decide_rel in *.
-      pose proof (He' := He).
-      move: He. move: {1}erefl.
-      rewrite He'.
-      intros e0 He.
-      replace He with (@erefl _ (@left (x=x)(x<>x) e)).
-      2: { apply UIP_dec. intros x0 y. decide equality. left. apply UIP_dec. intros x1 y1. apply evar_eqdec. }
-      replace e0 with  (@erefl _ (@left (x=x)(x<>x) e)).
-      2: { apply UIP_dec. intros x0 y. decide equality. left. apply UIP_dec. intros x1 y1. apply evar_eqdec. }
-      Unset Printing Implicit.
-      Search cast_proof.
-      rewrite indifferent_to_cast_uses_svar_subst.
-      exact Hpf.
-   - clear. intros Γ p q wfp wfq E x e wfψ pf He Hpf.
-     unfold decide,decide_rel in *.  unfold free_evar_subst'.
-     pose proof (He' := He).
-     move: He.
-  Abort.
+    - clear. intros Γ p q wfp wfq E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hpf.
+      subst pf₁. subst pf₂.
+      specialize (Hind1 Hpf). specialize (Hind2 Hpf).
+      pose proof (indifferent_to_prop_uses_svar_subst).
+      rewrite pf_iff_equiv_trans_indifferent; auto.
+      + rewrite conj_intro_meta_indifferent; auto.
+        { simpl. rewrite Hind2. reflexivity. }
+        { simpl. rewrite Hind2. reflexivity. }
+      + rewrite conj_intro_meta_indifferent; auto.
+        { simpl. rewrite Hind1. reflexivity. }
+        { simpl. rewrite Hind1. reflexivity. }
+    - clear. intros Γ p q wfp wfq E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hpf.
+      
+        
+      
+  Qed.
 
   
     (*    *)
