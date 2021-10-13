@@ -3034,6 +3034,13 @@ Section ProofSystemTheorems.
       { apply indifferent_to_prop_uses_svar_subst. }
       3: { reflexivity. }
       + unfold mu_monotone.
+        simpl.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite syllogism_intro_indifferent.
+        { apply indifferent_to_prop_uses_svar_subst. }
+        simpl.
+        {
   Qed.
 
   
