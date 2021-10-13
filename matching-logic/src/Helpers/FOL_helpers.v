@@ -4305,7 +4305,11 @@ Section FOL_helpers.
   Proof.
     intros wfp wfq wfC Hiff.
     destruct C as [pcEvar pcPattern].
-    apply (eq_prf_equiv_congruence Γ p q wfp wfq (free_evars pcPattern) (free_svars pcPattern)); simpl;  assumption.
+    apply (
+        eq_prf_equiv_congruence Γ p q wfp wfq
+          (free_evars pcPattern ∪ free_evars p ∪ free_evars q)
+          (free_svars pcPattern ∪ free_svars p ∪ free_svars q)
+      ); simpl;  assumption.
   Defined.
 
 End FOL_helpers.

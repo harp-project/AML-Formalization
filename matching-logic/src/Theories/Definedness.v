@@ -2949,20 +2949,24 @@ Section ProofSystemTheorems.
   Qed.
 
   Lemma uses_svar_subst_eq_prf_equiv_congruence
-        Γ p q E ψ EvS SvS
+        Γ p q E ψ EvS SvS SvS'
         (wfp: well_formed p)
         (wfq: well_formed q)
         (wfψ: well_formed ψ)
         (pf : Γ ⊢ (p <---> q)):
+    SvS ⊆ SvS' ->
     uses_svar_subst SvS pf = false ->
-    uses_svar_subst SvS (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS SvS E ψ wfψ pf) = false.
+    uses_svar_subst SvS (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS SvS' E ψ wfψ pf) = false.
   Proof.
-    intros H.
-    apply  (eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS SvS E ψ wfψ pf result
-      => uses_svar_subst SvS pf = false -> uses_svar_subst SvS result = false)
+    intros Hsub H.
+    Check eq_prf_equiv_congruence_elim.
+    apply (eq_prf_equiv_congruence_elim
+     (fun Γ p q wfp wfq EvS SvS' E ψ wfψ pf result
+      => SvS ⊆ SvS' ->
+         uses_svar_subst SvS pf = false ->
+         uses_svar_subst SvS result = false)
     ).
-    - clear. intros Γ p q wfp wfq EvS SvS E x wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E x wfψ pf Hsub Hpf.
       unfold pf_ite.
       destruct (decide (E = x)).
       + unfold eq_prf_equiv_congruence_obligation_1.
@@ -2971,20 +2975,20 @@ Section ProofSystemTheorems.
       + unfold eq_prf_equiv_congruence_obligation_2.
         rewrite indifferent_to_cast_uses_svar_subst.
         reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E wfψ pf Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E wfψ pf Hsub Hpf.
       reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
       subst pf₁. subst pf₂.
-      specialize (Hind1 Hpf). specialize (Hind2 Hpf).
+      specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
       pose proof (indifferent_to_prop_uses_svar_subst).
       rewrite pf_iff_equiv_trans_indifferent; auto.
       + rewrite conj_intro_meta_indifferent; auto.
@@ -2993,18 +2997,18 @@ Section ProofSystemTheorems.
       + rewrite conj_intro_meta_indifferent; auto.
         { simpl. rewrite Hind1. reflexivity. }
         { simpl. rewrite Hind1. reflexivity. }
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hpf.
+    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
+      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
       rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
       { apply indifferent_to_prop_uses_svar_subst. }
       { apply indifferent_to_cast_uses_svar_subst. }
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
+    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
       intros.
       inversion Heq; subst; clear Heq.
       inversion Heq0; subst; clear Heq0.
       inversion Heq1; subst; clear Heq1.
 
-      specialize (Hind H).
+      specialize (Hind ltac:(assumption) ltac:(assumption)).
       rewrite pf_iff_split_indifferent.
       { apply indifferent_to_prop_uses_svar_subst. }
       + unfold pf_impl_ex_free_evar_subst_twice.
@@ -3026,12 +3030,12 @@ Section ProofSystemTheorems.
         rewrite Hind.
         reflexivity.
       + reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
+    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
       intros.
       unfold pf_iff_mu_remove_svar_quantify_svar_open.
       rewrite indifferent_to_cast_uses_svar_subst.
       inversion Heq; subst; clear Heq.
-      specialize (Hind H).
+      specialize (Hind ltac:(assumption) ltac:(assumption)).
       rewrite pf_iff_split_indifferent.
       { apply indifferent_to_prop_uses_svar_subst. }
       3: { reflexivity. }
@@ -3042,7 +3046,7 @@ Section ProofSystemTheorems.
         rewrite syllogism_intro_indifferent.
         { apply indifferent_to_prop_uses_svar_subst. }
         simpl.
-        { case_match. clear -frX e. set_solver.
+        { case_match. clear -frX e H. set_solver.
           unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
           rewrite indifferent_to_cast_uses_svar_subst.
           rewrite Hind. reflexivity.
@@ -3058,7 +3062,7 @@ Section ProofSystemTheorems.
         rewrite syllogism_intro_indifferent.
         { apply indifferent_to_prop_uses_svar_subst. }
         simpl.
-        { case_match. clear -frX e. set_solver.
+        { case_match. clear -frX e H. set_solver.
           unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
           rewrite indifferent_to_cast_uses_svar_subst.
           rewrite Hind. reflexivity.
@@ -3067,7 +3071,8 @@ Section ProofSystemTheorems.
         rewrite indifferent_to_cast_uses_svar_subst.
         rewrite indifferent_to_cast_uses_svar_subst.
         simpl. reflexivity.
-    - exact H.
+    - assumption.
+    - assumption.
   Qed.
 
 
@@ -3292,17 +3297,11 @@ Section ProofSystemTheorems.
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
       PC_wf C ->
-      ( forall WF1 WF2 WFC wfpf1 inpf1,
-       let pf := (eq_prf_equiv_congruence (Γ ∪ {[φ1 <---> φ2]}) φ1 φ2 WF1 WF2 (pcEvar C) (pcPattern C) WFC
-                   (hypothesis (Γ ∪ {[φ1 <---> φ2]}) (φ1 <---> φ2) wfpf1 inpf1)) in
-       uses_kt pf = false /\ uses_svar_subst (free_svars φ1 ∪ free_svars φ2) pf = false
-                          /\ uses_ex_gen (free_evars φ1 ∪ free_evars φ2) pf = false
-       
-      ) ->
+      mu_free (pcPattern C) ->
       Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
         (emplace C φ1) <---> (emplace C φ2).
     Proof.
-      intros HΓ WF1 WF2 WFC H.
+      intros HΓ WF1 WF2 WFC Hmf.
 
       unshelve(eapply deduction_theorem_noKT).
       remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
@@ -3320,10 +3319,11 @@ Section ProofSystemTheorems.
           apply well_formed_free_evar_subst_0; auto
         ).
       }
-      3: { abstract (simpl;
-             unfold prf_equiv_congruence; destruct C as [ψ E];
-             simpl; simpl in H; apply H
-           ).
+      3: {
+        abstract(
+          simpl; unfold prf_equiv_congruence; destruct C as [ψ E]; simpl;
+          rewrite uses_kt_nomu_eq_prf_equiv_congruence;[apply Hmf|reflexivity|reflexivity]
+        ).
       }
       2: {
         abstract (
@@ -3334,7 +3334,8 @@ Section ProofSystemTheorems.
           | [ |- uses_svar_subst ?S _ = false ]
             => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
           end;
-          apply H
+          rewrite uses_svar_subst_eq_prf_equiv_congruence;
+          [(clear;set_solver)|reflexivity|reflexivity]
         ).
       }
       1: {
