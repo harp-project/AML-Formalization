@@ -2900,13 +2900,53 @@ Section ProofSystemTheorems.
         specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
         rewrite (@MyGoal_add_indifferent P Γ [a ---> b; a]); auto.
         { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        Search cast_proof_mg_hyps.
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].
         rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
         rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        Search nested_const_middle.
+        rewrite nested_const_middle_indifferent; auto.
+      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        rewrite (@MyGoal_add_indifferent P Γ [a ---> b'; a]); auto.
+        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite nested_const_middle_indifferent; auto.
+    - rewrite conj_intro_meta_indifferent; auto.
+      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        rewrite (@MyGoal_add_indifferent P Γ [a ---> b'; a']); auto.
+        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite nested_const_middle_indifferent; auto.
+      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        pose proof (Htmp := MyGoal_intro_indifferent).
+        specialize (Htmp P Γ [a' ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        rewrite (@MyGoal_add_indifferent P Γ [a' ---> b'; a]); auto.
+        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
+        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite nested_const_middle_indifferent; auto.
+  Qed.
 
   Lemma uses_svar_subst_eq_prf_equiv_congruence
         Γ p q E ψ SvS
