@@ -3362,7 +3362,7 @@ Section ProofSystemTheorems.
       Γ ⊢ (φ1 =ml φ2) ---> 
         (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x).
     Proof.
-      intros HΓ MF WF1 WF2 WFψ H.
+      intros HΓ MF WF1 WF2 WFψ.
       unshelve (eapply (deduction_theorem_noKT)); try assumption.
       2,3: abstract(auto).
 
@@ -3373,11 +3373,14 @@ Section ProofSystemTheorems.
         - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
       }
       apply pf_iff_proj1; auto.
-      apply eq_prf_equiv_congruence; auto.
+
+      apply (eq_prf_equiv_congruence Γ' φ1 φ2 WF1 WF2 (free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
+          (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)); auto.
       3: {
         abstract (
           simpl; rewrite orbF;
-          simpl in H; apply H
+          rewrite uses_kt_nomu_eq_prf_equiv_congruence;
+          [apply MF|reflexivity|reflexivity]
         ).
       }
       2: {
@@ -3387,13 +3390,20 @@ Section ProofSystemTheorems.
           | [ |- uses_svar_subst ?S _ = false ]
             => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
           end;
-          simpl in H; apply H
+          rewrite uses_svar_subst_eq_prf_equiv_congruence;
+          [(clear;set_solver)|reflexivity|reflexivity]
        ).
       }
       1: {
         abstract (
           simpl; rewrite orbF;
-          simpl in H; apply H
+          match goal with
+          | [ |- uses_ex_gen ?e _ = false ]
+            => replace e with (free_evars φ1 ∪ free_evars φ2) by (clear; set_solver)
+          end;
+          simpl;
+          rewrite uses_ex_gen_eq_prf_equiv_congruence;
+            [(clear; set_solver)|reflexivity|reflexivity]
         ).
       }
     Defined.
