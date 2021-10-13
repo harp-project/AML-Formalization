@@ -2846,8 +2846,33 @@ Section ProofSystemTheorems.
     rewrite Hpf. reflexivity.
   Qed.
 
-  Check nested_const_middle.
-  (*Lemma nested_const_middle_indifferent*)
+  Check nested_const.
+  Lemma nested_const_indifferent
+        P Γ a l
+        (wfa : well_formed a = true)
+        (wfl : wf l = true) :
+    indifferent_to_prop P ->
+    P _ _ (nested_const Γ a l wfa wfl) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    induction l; simpl.
+    - rewrite A_impl_A_indifferent; auto.
+    - case_match. rewrite syllogism_intro_indifferent; auto.
+  Qed.
+
+  Lemma nested_const_middle_indifferent
+        P Γ a l₁ l₂
+        (wfa : well_formed a = true)
+        (wfl₁ : wf l₁ = true)
+        (wfl₂ : wf l₂ = true):
+    indifferent_to_prop P ->
+    P _ _ (nested_const_middle Γ a l₁ l₂ wfa wfl₁ wfl₂) = false.
+  Proof.
+    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    induction l₁; simpl.
+    - apply nested_const_indifferent; assumption.
+    - case_match. rewrite Hmp. rewrite IHl₁. simpl. rewrite Hp1. reflexivity.
+  Qed.
 
   Lemma prf_equiv_of_impl_of_equiv_indifferent
         P Γ a b a' b'
