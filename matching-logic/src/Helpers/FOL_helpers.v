@@ -3693,19 +3693,28 @@ Section FOL_helpers.
 
     pose proof (Hpf := Pre_fixp Γ (svar_quantify X 0 ϕ₂)).
     simpl in Hpf.
-    erewrite bound_to_free_set_variable_subst in Hpf.
-    5: { apply svar_quantify_not_free. }
-    4: {
-     apply svar_quantify_closed_mu.
-     unfold well_formed, well_formed_closed in *. destruct_and!. auto.
-    }
-    3: {
+
+    unshelve (eapply (@cast_proof Σ Γ _ _) in Hpf).
+    3: { 
+    erewrite bound_to_free_set_variable_subst.
+      5: { apply svar_quantify_not_free. }
+      4: {
+       apply svar_quantify_closed_mu.
+       unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+      }
+      3: {
          apply svar_quantify_closed_mu.
          unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+      }
+      2: lia.
+      reflexivity.
     }
-    2: lia.
-    rewrite svar_open_svar_quantify in Hpf.
-    { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
+    eapply (@cast_proof Σ Γ) in Hpf.
+    2: {
+      rewrite svar_open_svar_quantify.
+      { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
+      reflexivity.
+    }
 
 
     assert(well_formed_positive (free_svar_subst' 0 ϕ₂ (mu , svar_quantify X 0 ϕ₂) X) = true).
@@ -3769,30 +3778,39 @@ Section FOL_helpers.
     epose proof (Hsi := syllogism_intro _ _ _ _ _ _ _ Htmp Hpf).
     Unshelve.
     4: {
-      wf_auto.
+      abstract (wf_auto).
     }
     3: {
-      wf_auto.
+      abstract (wf_auto).
     }
     2: {
-      wf_auto.
+      abstract (wf_auto).
     }
 
     simpl.
 
-    erewrite bound_to_free_set_variable_subst with (X0 := X)(more := ?[more]).
-    5: { apply svar_quantify_not_free. }
-    4: {
-         apply svar_quantify_closed_mu.
-         unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+    eapply (@cast_proof Σ Γ).
+    1: {
+      erewrite bound_to_free_set_variable_subst with (X0 := X)(more := ?[more]).
+      5: { apply svar_quantify_not_free. }
+      4: {
+           apply svar_quantify_closed_mu.
+           unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+      }
+      3: {
+           apply svar_quantify_closed_mu.
+           unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+      }
+      2: lia.
+      reflexivity.
     }
-    3: {
-         apply svar_quantify_closed_mu.
-         unfold well_formed, well_formed_closed in *. destruct_and!. auto.
+
+    eapply (@cast_proof Σ Γ).
+    1: {
+      rewrite svar_open_svar_quantify.
+      { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
+      reflexivity.
     }
-    2: lia.
-    rewrite svar_open_svar_quantify.
-    { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
     instantiate (more := 0).
     assumption.
   Defined.
@@ -3907,10 +3925,13 @@ Section FOL_helpers.
     Γ ⊢ evar_open n x (free_evar_subst' n ϕ p E) <---> evar_open n x (free_evar_subst' n ϕ q E).
   Proof.
     intros Hx wfp wfq H.
+    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
     rewrite -> evar_open_free_evar_subst_swap by assumption.
     rewrite -> evar_open_free_evar_subst_swap by assumption.
-    exact H.
+    reflexivity.
   Defined.
+
+  Print pf_evar_open_free_evar_subst_equiv_sides.
 
   Definition evar_fresh_dep (S : EVarSet) : {x : evar & x ∉ S} :=
     existT (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' _ S).

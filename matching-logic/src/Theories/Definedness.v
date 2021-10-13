@@ -2995,9 +2995,45 @@ Section ProofSystemTheorems.
         { simpl. rewrite Hind1. reflexivity. }
     - clear. intros Γ p q wfp wfq E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
       intros Heq1 Hind1 Heq2 Hind2 Hpf.
-      
-        
-      
+      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
+      { apply indifferent_to_prop_uses_svar_subst. }
+      { apply indifferent_to_cast_uses_svar_subst. }
+    - clear. intros Γ p q wfp wfq E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
+      intros.
+      inversion Heq; subst; clear Heq.
+      inversion Heq0; subst; clear Heq0.
+      inversion Heq1; subst; clear Heq1.
+
+      specialize (Hind H).
+      rewrite pf_iff_split_indifferent.
+      { apply indifferent_to_prop_uses_svar_subst. }
+      + unfold pf_impl_ex_free_evar_subst_twice.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        unfold strip_exists_quantify.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        simpl.
+        unfold pf_evar_open_free_evar_subst_equiv_sides.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite Hind.
+        reflexivity.
+      + unfold pf_impl_ex_free_evar_subst_twice.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        unfold strip_exists_quantify.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        simpl.
+        unfold pf_evar_open_free_evar_subst_equiv_sides.
+        rewrite indifferent_to_cast_uses_svar_subst.
+        rewrite Hind.
+        reflexivity.
+      + reflexivity.
+    - clear. intros Γ p q wfp wfq E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
+      intros.
+      unfold pf_iff_mu_remove_svar_quantify_svar_open.
+      rewrite indifferent_to_cast_uses_svar_subst.
+      rewrite pf_iff_split_indifferent.
+      { apply indifferent_to_prop_uses_svar_subst. }
+      3: { reflexivity. }
+      + unfold mu_monotone.
   Qed.
 
   
