@@ -22,7 +22,7 @@ Import MatchingLogic.DerivedOperators.Notations.
 Inductive Symbols := inhabitant.
 
 Instance Symbols_eqdec : EqDecision Symbols.
-Proof. solve_decision. Defined.
+Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
 Section sorts.
 
