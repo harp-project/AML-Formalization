@@ -20,7 +20,7 @@ let
     findlib = ncoq.ocamlPackages.findlib;
     zarith = ncoq.ocamlPackages.zarith;
 
-in { coq = ncoq; inherit equations; inherit metamath; inherit mllib;
+in { coq = ncoq; inherit metamath; inherit mllib;
   inherit ocaml; inherit camlp5;
   inherit findlib; inherit zarith;
 }
