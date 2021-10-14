@@ -10,7 +10,7 @@ Require Export Coq.Program.Wf
                FunctionalExtensionality
                Logic.PropExtensionality
                Program.Equality.
-From stdpp Require Import countable.
+From stdpp Require Import countable sets.
 From MatchingLogic Require Export Utils.extralibrary.
 Require Export Vector PeanoNat String Arith.Lt.
 
@@ -180,7 +180,7 @@ Section fix_signature.
     - apply f1.
     - apply f2.
     - intros F v H. apply f3. intros t. induction 1; inversion H; subst; eauto.
-      apply Eqdep_dec.inj_pair2_eq_dec in H3; subst; eauto. decide equality.
+      apply Eqdep_dec.inj_pair2_eq_dec in H4; subst; eauto. decide equality.
   Qed.
 
   Lemma term_ind (p : term -> Prop) :
@@ -190,7 +190,7 @@ Section fix_signature.
     - apply f1.
     - apply f2.
     - intros F v H. apply f3. intros t. induction 1; inversion H; subst; eauto.
-      apply Eqdep_dec.inj_pair2_eq_dec in H3; subst; eauto. decide equality.
+      apply Eqdep_dec.inj_pair2_eq_dec in H4; subst; eauto. decide equality.
   Qed.
 
   Fixpoint wf_term (t : term) (n : nat) : bool :=
@@ -509,6 +509,7 @@ Section FOL_ML_correspondence.
     repeat decide equality.
     apply Σ_funcs.
     apply Σ_preds.
+    apply Definedness.Symbols_eqdec.
   Defined.
 
   Instance FOLVars : MLVariables := 
@@ -595,6 +596,35 @@ Section FOL_ML_correspondence.
   Definition from_FOL_theory (Γ : list form) : Theory :=
     List.fold_right (fun x Acc => {[ convert_form x ]} ∪ Acc) base_FOL_theory Γ.
 
+  Lemma have_base_FOL_theory Γ:
+    base_FOL_theory ⊆ from_FOL_theory Γ.
+  Proof.
+    unfold from_FOL_theory.
+    induction Γ.
+    - simpl. set_solver.
+    - simpl. set_solver.
+  Qed.
+
+  Lemma have_definedness Γ:
+    Definedness.theory ⊆ from_FOL_theory Γ.
+  Proof.
+    simpl.
+    assert (Definedness.theory ⊆ base_FOL_theory).
+    { 
+      unfold theory.
+      unfold base_FOL_theory.
+      unfold theory_of_NamedAxioms.
+      apply elem_of_subseteq. intros ax Hax.
+      inversion Hax. subst. clear Hax.
+      unfold elem_of.
+      apply propset.elem_of_PropSet. simpl. simpl in x.
+      exists (AxDefinedness x). simpl. reflexivity.
+    }
+    pose proof (have_base_FOL_theory Γ).
+    set_solver.
+  Qed.
+  
+  
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
   Notation "Γ ⊢_ML form" := (ML_proof_system Γ form) (at level 50).
 
@@ -1192,7 +1222,7 @@ Section FOL_ML_correspondence.
         simpl in H0. rewrite HIND in H0. break_match_hyp.
         + exact H0.
         + lia.
-
+        + apply have_definedness.
         (** asserted hypotheses *)
         + apply wf_ex_to_wf_body. unfold well_formed, well_formed_closed in *.
           do 2 separate. simpl in E0, E3.
@@ -1227,8 +1257,8 @@ Section FOL_ML_correspondence.
     * apply P2; auto.
     * apply P3; auto.
     * eapply Modus_ponens. 3: exact IHIH1. 3: exact IHIH2. all: auto.
-      simpl in i0. separate. auto.
-    * simpl.
+      simpl in i0. separate. apply well_formed_imp; apply wf_form_FOL_ML;  auto.
+    * simpl. unfold is_true in *.
       epose proof (term_functionality t Γ i0).
       pose proof (@exists_functional_subst _ _ (convert_form φ) (convert_term t) (from_FOL_theory Γ)).
       simpl in H0. rewrite bevar_subst_corr_form; auto.
@@ -1238,6 +1268,7 @@ Section FOL_ML_correspondence.
       all: try rewrite -> closed_mu_term_FOL_ML.
       all: try eassumption.
       all: split_and?; auto; simpl in *.
+      10: apply have_definedness.
       12: apply wf_ex_to_wf_body; unfold well_formed,well_formed_closed; simpl; split_and!; simpl.
       all: try apply closed_ex_form_FOL_ML; try assumption.
       all: try apply form_mu_free.
