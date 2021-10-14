@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Coq Require Import Logic.Classical_Prop.
+From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
@@ -791,8 +791,174 @@ Proof.
     + unfold M_predicate. right. apply Hemp.
 Qed.
 
+Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
+Proof. intros H. rewrite <- e in H. exact H. Defined.
+
+
+  Fixpoint uses_ex_gen (EvS : EVarSet) Γ ϕ (pf : ML_proof_system Γ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_ex_gen EvS _ _ m0
+         || uses_ex_gen EvS _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ x _ _ pf _ => if decide (x ∈ EvS) is left _ then true else uses_ex_gen EvS _ _ pf
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+    | Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_ex_gen EvS _ _ m0
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+  Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_svar_subst S _ _ m0
+         || uses_svar_subst S _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst S _ _ pf'
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => uses_svar_subst S _ _ m0
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+
+  Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
+    match pf with
+    | hypothesis _ _ _ _ => false
+    | P1 _ _ _ _ _ => false
+    | P2 _ _ _ _ _ _ _ => false
+    | P3 _ _ _ => false
+    | Modus_ponens _ _ _ _ _ m0 m1
+      => uses_kt _ _ m0 || uses_kt _ _ m1
+    | Ex_quan _ _ _ => false
+    | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
+    | Prop_bott_left _ _ _ => false
+    | Prop_bott_right _ _ _ => false
+    | Prop_disj_left _ _ _ _ _ _ _ => false
+    | Prop_disj_right _ _ _ _ _ _ _ => false
+    | Prop_ex_left _ _ _ _ _ => false
+    | Prop_ex_right _ _ _ _ _ => false
+    | Framing_left _ _ _ _ m0 => uses_kt _ _ m0
+    | Framing_right _ _ _ _ m0 => uses_kt _ _ m0
+    | Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
+    | Pre_fixp _ _ => false
+    | Knaster_tarski _ phi psi m0 => true
+    | Existence _ => false
+    | Singleton_ctx _ _ _ _ _ => false
+    end.
+
+  Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
+
+  Definition indifferent_to_cast (P : proofbpred)
+    := forall (Γ : Theory) (ϕ ψ : Pattern) (e: ψ = ϕ) (pf : Γ ⊢ ϕ),
+         P Γ ψ (cast_proof e pf) = P Γ ϕ pf.
+
+  Lemma indifferent_to_cast_uses_svar_subst SvS:
+    indifferent_to_cast (uses_svar_subst SvS).
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+  Lemma indifferent_to_cast_uses_kt:
+    indifferent_to_cast uses_kt.
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+
+  Lemma indifferent_to_cast_uses_ex_gen EvS:
+    indifferent_to_cast (uses_ex_gen EvS).
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+  Definition indifferent_to_prop (P : proofbpred) :=
+      (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
+   /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
+   /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
+   /\ (forall Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2,
+        P Γ _ (Modus_ponens Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2)
+        = P Γ _ pf1 || P Γ _ pf2
+      ).
+
+  Lemma indifferent_to_prop_uses_svar_subst SvS:
+    indifferent_to_prop (uses_svar_subst SvS).
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
+  Lemma indifferent_to_prop_uses_kt:
+    indifferent_to_prop uses_kt.
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
+
+  Lemma indifferent_to_prop_uses_ex_gen EvS:
+    indifferent_to_prop (uses_ex_gen EvS).
+  Proof.
+    split;[auto|].
+    split;[auto|].
+    split;[auto|].
+    intros. simpl. reflexivity.
+  Qed.
+
+
 End ml_proof_system.
 
+Arguments uses_svar_subst {Σ} S {Γ} {ϕ} pf : rename.
+Arguments uses_kt {Σ} {Γ} {ϕ} pf : rename.
+Arguments uses_ex_gen {Σ} E {Γ} {ϕ} pf : rename.
 
 Module Notations.
 

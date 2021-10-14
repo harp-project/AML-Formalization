@@ -74,7 +74,7 @@ Section ml_tauto.
     end.
 
   Lemma pp_flatten_well_formed (pp : PropPattern) :
-    well_formed (pp_flatten pp).
+    well_formed (pp_flatten pp) = true.
   Proof.
     induction pp; simpl; auto.
   Qed.
@@ -250,8 +250,8 @@ Section ml_tauto.
   Qed.
 
   Lemma wf_negate p:
-    well_formed p ->
-    well_formed (negate p).
+    well_formed p = true ->
+    well_formed (negate p) = true.
   Proof.
     intros wfp.
     remember (size' p) as sz.
@@ -545,7 +545,7 @@ Section ml_tauto.
       }
       apply Step4. clear Step4.
 
-      apply conj_intro_meta; auto.
+      apply conj_intro_meta; auto 10.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
     - (*(! (! p1' ---> p2') <---> negate p1' and negate p2') *)
@@ -1560,8 +1560,8 @@ Section ml_tauto.
       5: {
         apply or_of_equiv_is_equiv. 6: auto. 5: auto. all: subst; auto.
       }
-      all: auto.
-      { subst; auto. }
+      all: auto 10.
+      { subst; auto 10. }
       eapply pf_iff_equiv_trans.
       5: {
         apply or_of_equiv_is_equiv. 6: apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.

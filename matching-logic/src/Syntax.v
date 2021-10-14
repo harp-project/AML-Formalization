@@ -875,8 +875,8 @@ Section syntax.
 
   Lemma well_formed_closed_ex_aux_ind (phi : Pattern) (ind_evar1 ind_evar2 : db_index) :
     ind_evar1 <= ind_evar2 ->
-    well_formed_closed_ex_aux phi ind_evar1 ->
-    well_formed_closed_ex_aux phi ind_evar2.
+    well_formed_closed_ex_aux phi ind_evar1 = true->
+    well_formed_closed_ex_aux phi ind_evar2 = true.
   Proof.
     intros H H0.
     generalize dependent ind_evar1. generalize dependent ind_evar2.
@@ -887,8 +887,8 @@ Section syntax.
 
   Lemma well_formed_closed_mu_aux_ind (phi : Pattern) (ind_svar1 ind_svar2 : db_index) :
     ind_svar1 <= ind_svar2  ->
-    well_formed_closed_mu_aux phi ind_svar1 ->
-    well_formed_closed_mu_aux phi ind_svar2.
+    well_formed_closed_mu_aux phi ind_svar1 = true ->
+    well_formed_closed_mu_aux phi ind_svar2 = true.
   Proof.
     intros H H1.
     generalize dependent ind_svar1. generalize dependent ind_svar2.
@@ -1097,9 +1097,9 @@ Section syntax.
   Qed.
 
   Lemma well_formed_imp ϕ₁ ϕ₂:
-    well_formed ϕ₁ ->
-    well_formed ϕ₂ ->
-    well_formed (patt_imp ϕ₁ ϕ₂).
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed (patt_imp ϕ₁ ϕ₂) = true.
   Proof.
     unfold well_formed. unfold well_formed_closed. simpl.
     intros H1 H2.
@@ -1108,9 +1108,9 @@ Section syntax.
   Qed.
 
   Lemma well_formed_app ϕ₁ ϕ₂:
-    well_formed ϕ₁ ->
-    well_formed ϕ₂ ->
-    well_formed (patt_app ϕ₁ ϕ₂).
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed (patt_app ϕ₁ ϕ₂) = true.
   Proof.
     unfold well_formed,well_formed_closed.
     naive_bsolver.
@@ -1126,8 +1126,8 @@ Section syntax.
   Qed.
 
   Lemma well_formed_impl_well_formed_ex ϕ:
-    well_formed ϕ ->
-    well_formed (patt_exists ϕ).
+    well_formed ϕ = true ->
+    well_formed (patt_exists ϕ) = true.
   Proof.
     unfold well_formed,well_formed_closed.
     intros. destruct_and!. split_and!; auto.
@@ -1291,7 +1291,7 @@ Section syntax.
   (*Conclusion*)
   Lemma wfc_body_wfc_ex_iff: 
     forall phi,
-      well_formed_closed (patt_exists phi) <-> wfc_body_ex phi.
+      well_formed_closed (patt_exists phi) = true <-> wfc_body_ex phi.
   Proof.
     split.
     - apply wfc_ex_to_wfc_body.
@@ -1300,7 +1300,7 @@ Section syntax.
 
   (*Similarly to the section above but with mu*)
   Definition wfc_body_mu phi := forall X, 
-      X ∉ (free_svars phi) -> well_formed_closed (svar_open 0 X phi).
+      X ∉ (free_svars phi) -> well_formed_closed (svar_open 0 X phi) = true.
 
   Lemma wfc_ex_aux_bevar_subst :
     forall phi psi n,
@@ -1471,7 +1471,7 @@ Section syntax.
 
   (* Connection between bodies and well-formedness *)
   Definition wf_body_ex phi := forall x, 
-      x ∉ (free_evars phi) -> well_formed (evar_open 0 x phi).
+      x ∉ (free_evars phi) -> well_formed (evar_open 0 x phi) = true.
 
   (* This might be useful in soundness cases prop_ex_left/right *)
   Lemma wf_ex_to_wf_body: forall phi,
@@ -1616,64 +1616,54 @@ Section syntax.
     - simpl in H. apply IHphi in H. unfold svar_open in H. rewrite H. reflexivity.
   Qed.
   
-  Lemma evar_quantify_evar_open x m n phi: n < m ->
-    x ∉ free_evars phi -> well_formed_closed_ex_aux phi m ->
+  Lemma evar_quantify_evar_open x n phi:
+    x ∉ free_evars phi ->
     (evar_quantify x n (evar_open n x phi)) = phi.
   Proof.
-    revert m n.
-    induction phi; intros m' n' H H0 H1; simpl; auto.
+    revert n.
+    induction phi; intros n' H0; simpl; auto.
     - destruct (decide (x = x0)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
     - simpl in *. unfold evar_quantify,evar_open,bevar_subst.
       repeat case_match; auto; congruence.
-    - simpl in H. unfold evar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold evar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H. unfold evar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold evar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H0. simpl in H1. unfold evar_open in IHphi.
-      erewrite -> IHphi. reflexivity. instantiate (1 := S m'). lia.
-      auto. apply H1.
-    - simpl in H0. simpl in H1. unfold evar_open in IHphi.
-      erewrite -> IHphi. reflexivity. exact H.
-      auto. apply H1.
+    - simpl in H0. unfold evar_open in IHphi.
+      rewrite -> IHphi by assumption. reflexivity.
+    - simpl in H0. unfold evar_open in IHphi.
+      rewrite -> IHphi by assumption. reflexivity.
   Qed.
 
-  Lemma svar_quantify_svar_open X m n phi: n < m ->
-    X ∉ free_svars phi -> well_formed_closed_mu_aux phi m ->
+  Lemma svar_quantify_svar_open X n phi:
+    X ∉ free_svars phi ->
     (svar_quantify X n (svar_open n X phi)) = phi.
   Proof.
-    revert m n.
-    induction phi; intros m' n' H H0 H1; simpl; auto.
+    revert n.
+    induction phi; intros n' H0; simpl; auto.
     - destruct (decide (X = x)); simpl.
       + subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
       + reflexivity.
     - simpl in *. unfold svar_quantify,svar_open,bsvar_subst.
       repeat case_match; auto; congruence.
-    - simpl in H. unfold svar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold svar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H. unfold svar_open in IHphi1, IHphi2.
-      apply andb_true_iff in H1. destruct H1 as [F1 F2].
+    - unfold svar_open in IHphi1, IHphi2.
       apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
-      erewrite -> IHphi1, IHphi2.
+      rewrite -> IHphi1, IHphi2 by assumption.
       reflexivity.
-      all: eauto.
-    - simpl in H0. simpl in H1. unfold svar_open in IHphi.
-      erewrite -> IHphi. reflexivity. 3: exact H1. 1,2: assumption.
-    - simpl in H0. simpl in H1. unfold svar_open in IHphi.
-      erewrite -> IHphi. 4: exact H1. 3: assumption. 2: lia. reflexivity.
+    - simpl in H0. unfold svar_open in IHphi.
+      erewrite -> IHphi by assumption. reflexivity.
+    - simpl in H0. unfold svar_open in IHphi.
+      erewrite -> IHphi by assumption. reflexivity.
   Qed.
   
   Lemma double_evar_quantify φ : forall x n,
@@ -2767,7 +2757,7 @@ Section syntax.
 
   (* TODO rewrite using wc_sctx *)
   Lemma wf_sctx (C : Application_context) (A : Pattern) :
-    well_formed A -> well_formed (subst_ctx C A).
+    well_formed A = true -> well_formed (subst_ctx C A) = true.
   Proof.
     intros H.
     unfold well_formed in H.
@@ -2787,7 +2777,7 @@ Section syntax.
   Qed.
 
   Lemma wp_sctx (C : Application_context) (A : Pattern) :
-    well_formed_positive A -> well_formed_positive (subst_ctx C A).
+    well_formed_positive A = true -> well_formed_positive (subst_ctx C A) = true.
   Proof.
     intros H.
     induction C.
@@ -2799,7 +2789,7 @@ Section syntax.
   Qed.
 
   Lemma wcex_sctx (C : Application_context) (A : Pattern) idx1 :
-    well_formed_closed_ex_aux A idx1 -> well_formed_closed_ex_aux (subst_ctx C A) idx1.
+    well_formed_closed_ex_aux A idx1 = true -> well_formed_closed_ex_aux (subst_ctx C A) idx1 = true.
   Proof.
     intros H.
     induction C.
@@ -2815,7 +2805,7 @@ Section syntax.
   Qed.
 
   Lemma wcmu_sctx (C : Application_context) (A : Pattern) idx1 :
-    well_formed_closed_mu_aux A idx1 -> well_formed_closed_mu_aux (subst_ctx C A) idx1.
+    well_formed_closed_mu_aux A idx1 = true -> well_formed_closed_mu_aux (subst_ctx C A) idx1 = true.
   Proof.
     intros H.
     induction C.
@@ -5337,9 +5327,9 @@ If X does not occur free in phi:
   Qed.
 
   Lemma well_formed_free_evar_subst more x p q:
-    well_formed q ->
-    well_formed p ->
-    well_formed (free_evar_subst' more p q x).
+    well_formed q = true ->
+    well_formed p = true ->
+    well_formed (free_evar_subst' more p q x) = true.
   Proof.
     intros wfq wfp.
     pose proof (H := @Private_well_formed_free_evar_subst' more x p q 0 0 wfq).
@@ -5351,9 +5341,9 @@ If X does not occur free in phi:
   Qed.
 
   Lemma well_formed_free_evar_subst_0 x p q:
-    well_formed q ->
-    well_formed p ->
-    well_formed (free_evar_subst p q x).
+    well_formed q = true ->
+    well_formed p = true ->
+    well_formed (free_evar_subst p q x) = true.
   Proof.
     intros. apply well_formed_free_evar_subst; assumption.
   Qed.
@@ -5396,9 +5386,9 @@ If X does not occur free in phi:
 
   Lemma well_formed_positive_bevar_subst φ : forall n ψ,
     mu_free φ ->
-    well_formed_positive φ -> well_formed_positive ψ
+    well_formed_positive φ = true -> well_formed_positive ψ = true
   ->
-    well_formed_positive (bevar_subst φ ψ n).
+    well_formed_positive (bevar_subst φ ψ n) = true.
   Proof.
     induction φ; intros n' ψ H H0 H1; simpl; auto.
     2-3: apply andb_true_iff in H as [E1 E2];
@@ -5813,6 +5803,9 @@ End BoundVarSugar.
  set_svar_fresh_is_fresh
  x_eq_fresh_impl_x_notin_free_evars
   : core.
+
+#[export]
+ Hint Extern 0 (is_true (@well_formed _ _)) => unfold is_true : core.
 
 #[export]
  Hint Resolve well_formed_bott : core.
@@ -6936,8 +6929,8 @@ Qed.
  Hint Resolve wfc_mu_free_evar_subst : core.
 
 Lemma wfc_ex_free_svar_subst {Σ : Signature} level more ϕ ψ X:
-  well_formed_closed_ex_aux ϕ level ->  
-  well_formed_closed_ex_aux ψ level ->      
+  well_formed_closed_ex_aux ϕ level = true ->  
+  well_formed_closed_ex_aux ψ level = true ->      
   well_formed_closed_ex_aux (free_svar_subst' more ϕ ψ X) level = true.
 Proof.
   intros Hϕ Hψ.
