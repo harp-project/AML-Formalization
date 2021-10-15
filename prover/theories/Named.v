@@ -59,7 +59,7 @@ Section named.
   Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
   Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
 
-  (* substitute variable x for psi in phi *)
+  (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
     match phi with
     | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
@@ -77,7 +77,7 @@ Section named.
     | npatt_mu X phi' => npatt_mu X (named_evar_subst phi' psi x)
     end.
 
-  (* substitute variable X for psi in phi *)
+  (* substitute variable X for psi in phi: phi[psi/X] *)
   Fixpoint named_svar_subst (phi psi : NamedPattern) (X : svar) :=
     match phi with
     | npatt_evar x => npatt_evar x
@@ -94,6 +94,19 @@ Section named.
                                npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
                           else npatt_mu X' (named_svar_subst phi' psi X)
     end.
+
+  (* Derived named operators *)
+  Definition npatt_not (phi : NamedPattern) := npatt_imp phi npatt_bott.
+  Definition npatt_or  (l r : NamedPattern) := npatt_imp (npatt_not l) r.
+  Definition npatt_and (l r : NamedPattern) :=
+    npatt_not (npatt_or (npatt_not l) (npatt_not r)).
+  Definition npatt_top := (npatt_not npatt_bott).
+  Definition npatt_iff (l r : NamedPattern) :=
+    npatt_and (npatt_imp l r) (npatt_imp r l).
+  Definition npatt_forall (phi : NamedPattern) (x : evar) :=
+    npatt_not (npatt_exists x (npatt_not phi)).
+  Definition npatt_nu (phi : NamedPattern) (X : svar) :=
+    npatt_not (npatt_mu X (npatt_not (named_svar_subst phi (npatt_not (npatt_svar X)) X))).
 
   Check @kmap.
   (* TODO: use kmap. Check kmap. *)
@@ -370,6 +383,20 @@ Section named.
     end.
 
   Definition named_well_formed := named_well_formed_positive.
+
+  Inductive Named_Application_context : Type :=
+  | nbox
+  | nctx_app_l (cc : Named_Application_context) (p : NamedPattern) (Prf : named_well_formed p)
+  | nctx_app_r (p : NamedPattern) (cc : Named_Application_context) (Prf : named_well_formed p)
+  .
+
+  Fixpoint named_subst_ctx (C : Named_Application_context) (p : NamedPattern)
+    : NamedPattern :=
+    match C with
+    | nbox => p
+    | @nctx_app_l C' p' prf => npatt_app (named_subst_ctx C' p) p'
+    | @nctx_app_r p' C' prf => npatt_app p' (named_subst_ctx C' p)
+    end.  
 
 (*  
   Print well_formed_positive.

@@ -2,6 +2,7 @@
 
 theories/MLTauto.v
 theories/Named.v
+theories/NamedProofSystem.v
 theories/MMProofExtractor.v
 theories/TEST_MMProofExtractor.v
 
