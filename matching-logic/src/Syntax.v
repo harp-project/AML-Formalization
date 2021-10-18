@@ -400,28 +400,41 @@ Section syntax.
     apply bevar_subst_not_occur.
   Qed.
 
-  (* The following lemmas are trivial but useful for [!rewrite simpl_evar_open]. *)
-  Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
+  Print evar_open. Print bevar_subst.
+  (* The following lemmas are trivial but useful for [rewrite !simpl_evar_open]. *)
+
+  Lemma bevar_subst_free_evar ψ n x: bevar_subst (patt_free_evar x) ψ n = patt_free_evar x.
   Proof. reflexivity. Qed.
-  Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
+
+  Lemma bevar_subst_free_svar ψ n X: bevar_subst (patt_free_svar X) ψ n = patt_free_svar X.
   Proof. reflexivity. Qed.
-  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = if decide (x = k) is left _ then patt_free_evar n else patt_bound_evar x.
+
+  Lemma bevar_subst_bound_evar ψ n x: bevar_subst (patt_bound_evar x) ψ n = if decide (x = n) is left _ then ψ else patt_bound_evar x.
   Proof.
     cbn. case_match; done.
   Qed.
-  Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
+
+  Lemma bevar_subst_bound_svar ψ n X: bevar_subst (patt_bound_svar X) ψ n = patt_bound_svar X.
   Proof. reflexivity. Qed.
-  Lemma evar_open_sym k n s: evar_open k n (patt_sym s) = patt_sym s.
+
+  Lemma bevar_subst_sym ψ n s: bevar_subst (patt_sym s) ψ n = patt_sym s.
   Proof. reflexivity. Qed.
-  Lemma evar_open_app k n ls rs: evar_open k n (patt_app ls rs) = patt_app (evar_open k n ls) (evar_open k n rs).
+
+  Lemma bevar_subst_app ψ n ls rs:
+    bevar_subst (patt_app ls rs) ψ n = patt_app (bevar_subst ls ψ n) (bevar_subst rs ψ n).
   Proof. reflexivity. Qed.
-  Lemma evar_open_bott k n: evar_open k n patt_bott = patt_bott.
+
+  Lemma bevar_subst_bott ψ n: bevar_subst patt_bott ψ n = patt_bott.
   Proof. reflexivity. Qed.
-  Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
+
+  Lemma bevar_subst_imp ψ n ls rs:
+    bevar_subst (patt_imp ls rs) ψ n = patt_imp (bevar_subst ls ψ n) (bevar_subst rs ψ n).
   Proof. reflexivity. Qed.
-  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (S k) n p').
+
+  Lemma bevar_subst_exists ψ n ϕ: bevar_subst (patt_exists ϕ) ψ n = patt_exists (bevar_subst ϕ ψ (S n)).
   Proof. reflexivity. Qed.
-  Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
+
+  Lemma bevar_subst_mu ψ n ϕ: bevar_subst (patt_mu ϕ) ψ n = patt_mu (bevar_subst ϕ ψ n).
   Proof. reflexivity. Qed.
 
   (* replace de Bruijn index k with set variable n *)
@@ -429,133 +442,142 @@ Section syntax.
     bsvar_subst p (patt_free_svar X) k.
 
   (* More trivial but useful lemmas *)
-  Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
+  Lemma bsvar_subst_free_evar ψ n x: bsvar_subst (patt_free_evar x) ψ n = patt_free_evar x.
   Proof. reflexivity. Qed.
-  Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
+
+  Lemma bsvar_subst_free_svar ψ n X: bsvar_subst (patt_free_svar X) ψ n = patt_free_svar X.
   Proof. reflexivity. Qed.
-  Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
+
+  Lemma bsvar_subst_bound_evar ψ n x: bsvar_subst (patt_bound_evar x) ψ n = patt_bound_evar x.
   Proof. reflexivity. Qed.
-  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = if decide (X = k) is left _ then patt_free_svar n else patt_bound_svar X.
+
+  Lemma bsvar_subst_bound_svar ψ n X:
+    bsvar_subst (patt_bound_svar X) ψ n = if decide (X = n) is left _ then ψ else patt_bound_svar X.
   Proof.
     reflexivity.
   Qed.
-  Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
+
+  Lemma bsvar_subst_sym ψ n s: bsvar_subst (patt_sym s) ψ n = patt_sym s.
   Proof. reflexivity. Qed.
-  Lemma svar_open_app k n ls rs: svar_open k n (patt_app ls rs) = patt_app (svar_open k n ls) (svar_open k n rs).
+
+  Lemma bsvar_subst_app ψ n ls rs:
+    bsvar_subst (patt_app ls rs) ψ n = patt_app (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
   Proof. reflexivity. Qed.
-  Lemma svar_open_bott k n: svar_open k n patt_bott = patt_bott.
+
+  Lemma bsvar_subst_bott ψ n: bsvar_subst patt_bott ψ n = patt_bott.
   Proof. reflexivity. Qed.
-  Lemma svar_open_imp k n ls rs: svar_open k n (patt_imp ls rs) = patt_imp (svar_open k n ls) (svar_open k n rs).
+
+  Lemma bsvar_subst_imp ψ n ls rs:
+    bsvar_subst (patt_imp ls rs) ψ n = patt_imp (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
   Proof. reflexivity. Qed.
-  Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
+
+  Lemma bsvar_subst_exists ψ n ϕ: bsvar_subst (patt_exists ϕ) ψ n = patt_exists (bsvar_subst ϕ ψ n).
   Proof. reflexivity. Qed.
-  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (S k) n p').
+
+  Lemma bsvar_subst_mu ψ n ϕ: bsvar_subst (patt_mu ϕ) ψ n = patt_mu (bsvar_subst ϕ ψ (S n)).
   Proof. reflexivity. Qed.
 
 
-  (* TODO free_evars, free_svars *)
   Class EBinder (ebinder : Pattern -> Pattern)
-        (fevo: db_index -> evar -> Pattern -> Pattern )
-        (fsvo: db_index -> svar -> Pattern -> Pattern ) :=
+        (fevo: db_index -> Pattern -> Pattern -> Pattern )
+        (fsvo: db_index -> Pattern -> Pattern -> Pattern ) :=
     {
-    ebinder_evar_open :
-      forall k n ϕ, evar_open k n (ebinder ϕ) = fevo k n ϕ ;
-    (*ebinder (evar_open (k + 1) n ϕ) ;*)
-    ebinder_svar_open :
-      forall k n ϕ, svar_open k n (ebinder ϕ) = fsvo k n ϕ ; (*ebinder (svo a) (svar_open k n ϕ) ;*)
+    ebinder_bevar_subst :
+      forall ψ n ϕ, bevar_subst (ebinder ϕ) ψ n = fevo n ψ ϕ ;
+    ebinder_bsvar_subst :
+      forall ψ n ϕ, bsvar_subst (ebinder ϕ) ψ n = fsvo n ψ ϕ ;
     }.
 
   Class SBinder (sbinder : Pattern -> Pattern) :=
     {
-    sbinder_evar_open :
-      forall k n ϕ, evar_open k n (sbinder ϕ) = sbinder (evar_open k n ϕ) ;
-    sbinder_svar_open :
-      forall k n ϕ, svar_open k n (sbinder ϕ) = sbinder (svar_open (S k) n ϕ) ;
+    sbinder_bevar_subst :
+      forall ψ n ϕ, bevar_subst (sbinder ϕ) ψ n = sbinder (bevar_subst ϕ ψ n) ;
+    sbinder_bsvar_subst :
+      forall ψ n ϕ, bsvar_subst (sbinder ϕ) ψ n = sbinder (bsvar_subst ϕ ψ (S n)) ;
     }.
 
   (* Non-variable nullary operation *)
   Class NVNullary (nvnullary : Pattern) :=
     {
-    nvnullary_evar_open :
-      forall k n, evar_open k n nvnullary = nvnullary ;
-    nvnullary_svar_open :
-      forall k n, svar_open k n nvnullary = nvnullary ;
+    nvnullary_bevar_subst :
+      forall ψ n, bevar_subst nvnullary ψ n = nvnullary ;
+    nvnullary_bsvar_subst :
+      forall ψ n, bevar_subst nvnullary ψ n = nvnullary ;
     }.
 
   Class Unary (patt : Pattern -> Pattern) :=
     {
-    unary_evar_open :
-      forall k n ϕ, evar_open k n (patt ϕ) = patt (evar_open k n ϕ) ;
-    unary_svar_open :
-      forall k n ϕ, svar_open k n (patt ϕ) = patt (svar_open k n ϕ) ;
+    unary_bevar_subst :
+      forall ψ n ϕ, bevar_subst (patt ϕ) ψ n = patt (bevar_subst ϕ ψ n) ;
+    unary_bsvar_subst :
+      forall ψ n ϕ, bsvar_subst (patt ϕ) ψ n = patt (bsvar_subst ϕ ψ n) ;
     }.
 
   Class Binary (binary : Pattern -> Pattern -> Pattern) :=
     {
-    binary_evar_open :
-      forall k n ϕ₁ ϕ₂, evar_open k n (binary ϕ₁ ϕ₂) = binary (evar_open k n ϕ₁) (evar_open k n ϕ₂) ;
-    binary_svar_open :
-      forall k n ϕ₁ ϕ₂, svar_open k n (binary ϕ₁ ϕ₂) = binary (svar_open k n ϕ₁) (svar_open k n ϕ₂) ;
+    binary_bevar_subst :
+      forall ψ n ϕ₁ ϕ₂, bevar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bevar_subst ϕ₁ ψ n) (bevar_subst ϕ₂ ψ n) ;
+    binary_bsvar_subst :
+      forall ψ n ϕ₁ ϕ₂, bsvar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bsvar_subst ϕ₁ ψ n) (bsvar_subst ϕ₂ ψ n) ;
     }.
 
-  Definition simpl_evar_open :=
-    (@ebinder_evar_open,
-     @sbinder_evar_open,
-     @nvnullary_evar_open,
-     @unary_evar_open,
-     @binary_evar_open
+  Definition simpl_bevar_subst :=
+    (@ebinder_bevar_subst,
+     @sbinder_bevar_subst,
+     @nvnullary_bevar_subst,
+     @unary_bevar_subst,
+     @binary_bevar_subst
     ).
 
-  Definition simpl_svar_open :=
-    (@ebinder_svar_open,
-     @sbinder_svar_open,
-     @nvnullary_svar_open,
-     @unary_svar_open,
-     @binary_svar_open
+  Definition simpl_bsvar_subst :=
+    (@ebinder_bsvar_subst,
+     @sbinder_bsvar_subst,
+     @nvnullary_bsvar_subst,
+     @unary_bsvar_subst,
+     @binary_bsvar_subst
     ).
-  
 
   #[global]
    Instance EBinder_exists : EBinder patt_exists _ _ :=
     {|
-    ebinder_evar_open := evar_open_exists ;
-    ebinder_svar_open := svar_open_exists ;
+    ebinder_bevar_subst := bevar_subst_exists ;
+    ebinder_bsvar_subst := bsvar_subst_exists ;
     |}.
 
   #[global]
    Instance SBinder_mu : SBinder patt_mu :=
     {|
-    sbinder_evar_open := evar_open_mu ;
-    sbinder_svar_open := svar_open_mu ;
+    sbinder_bevar_subst := bevar_subst_mu ;
+    sbinder_bsvar_subst := bsvar_subst_mu ;
     |}.
 
 
   #[global]
    Instance NVNullary_bott : NVNullary patt_bott :=
     {|
-    nvnullary_evar_open := evar_open_bott ;
-    nvnullary_svar_open := svar_open_bott ;
+    nvnullary_bevar_subst := bevar_subst_bott ;
+    nvnullary_bsvar_subst := bsvar_subst_bott ;
     |}.
 
   #[global]
    Instance NVNullary_sym s : NVNullary (patt_sym s) :=
     {|
-    nvnullary_evar_open := λ k n, @evar_open_sym k n s ;
-    nvnullary_svar_open := λ k n, @svar_open_sym k n s ;
+    nvnullary_bevar_subst := λ ψ n, @bevar_subst_sym ψ n s ;
+    nvnullary_bsvar_subst := λ ψ n, @bsvar_subst_sym ψ n s;
     |}.
 
   #[global]
    Instance Binary_app : Binary patt_app :=
     {|
-    binary_evar_open := evar_open_app ;
-    binary_svar_open := svar_open_app ;
+    binary_bevar_subst := bevar_subst_app ;
+    binary_bsvar_subst := bsvar_subst_app ;
     |}.
 
   #[global]
    Instance Binary_imp : Binary patt_imp :=
     {|
-    binary_evar_open := evar_open_imp ;
-    binary_svar_open := svar_open_imp ;
+    binary_bevar_subst := bevar_subst_imp ;
+    binary_bsvar_subst := bsvar_subst_imp ;
     |}.
   
   Lemma evar_open_size :
@@ -1742,10 +1764,10 @@ Section syntax.
     induction phi; firstorder.
     - cbn in H0. cbn. repeat case_match; auto; try lia.
       simpl in H0. case_match; congruence.
-    - rewrite evar_open_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
-    - rewrite evar_open_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
-    - simpl in H0. inversion H0. rewrite evar_open_exists. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
-    - simpl in H0. inversion H0. rewrite evar_open_mu. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+    - unfold evar_open in *. rewrite bevar_subst_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - unfold evar_open in *. rewrite bevar_subst_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl in H0. inversion H0. unfold evar_open in *. rewrite bevar_subst_exists. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. unfold evar_open in *. rewrite bevar_subst_mu. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
   Qed.
 
   Lemma svar_open_last: forall phi i u j v,
@@ -1754,10 +1776,10 @@ Section syntax.
       (evar_open i u phi) = phi.
   Proof.
     induction phi; firstorder.
-    - rewrite evar_open_app. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - rewrite evar_open_imp. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - simpl in H. inversion H. rewrite evar_open_exists. erewrite (IHphi (S i) _ (j)). reflexivity. exact H1.
-    - simpl in H. inversion H. rewrite evar_open_mu. erewrite (IHphi (i) _ (S j)). reflexivity. exact H1.
+    - unfold evar_open in *. rewrite bevar_subst_app. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - unfold evar_open in *. rewrite bevar_subst_imp. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl in H. inversion H. unfold evar_open in *. rewrite bevar_subst_exists. erewrite (IHphi (S i) _ (j)). reflexivity. exact H1.
+    - simpl in H. inversion H. unfold evar_open in *. rewrite bevar_subst_mu. erewrite (IHphi (i) _ (S j)). reflexivity. exact H1.
   Qed.
   
   Lemma svar_open_last2: forall phi i u j v,
@@ -1766,10 +1788,10 @@ Section syntax.
       (svar_open i u phi) = phi.
   Proof.
     induction phi; firstorder.
-    - rewrite svar_open_app. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - rewrite svar_open_imp. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
-    - simpl in H. inversion H. rewrite svar_open_exists. erewrite (IHphi (i) _ (S j)). reflexivity. exact H1.
-    - simpl in H. inversion H. rewrite svar_open_mu. erewrite (IHphi (S i) _ (j)). reflexivity. exact H1.
+    - unfold svar_open in *. rewrite bsvar_subst_app. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - unfold svar_open in *. rewrite bsvar_subst_imp. erewrite IHphi1, IHphi2. reflexivity. inversion H. exact H2. inversion H. exact H1.
+    - simpl in H. inversion H. unfold svar_open in *. rewrite bsvar_subst_exists. erewrite (IHphi (i) _ (S j)). reflexivity. exact H1.
+    - simpl in H. inversion H. unfold svar_open in *. rewrite bsvar_subst_mu. erewrite (IHphi (S i) _ (j)). reflexivity. exact H1.
   Qed.
   
   Lemma svar_open_last3: forall phi i u j v,
@@ -1779,10 +1801,10 @@ Section syntax.
   Proof.
     induction phi; firstorder.
     - cbn in *. unfold bsvar_subst in H0. repeat case_match; congruence.
-    - rewrite svar_open_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
-    - rewrite svar_open_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
-    - simpl in H0. inversion H0. rewrite svar_open_exists. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
-    - simpl in H0. inversion H0. rewrite svar_open_mu. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
+    - unfold svar_open in *. rewrite bsvar_subst_app. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - unfold svar_open in *. rewrite bsvar_subst_imp. erewrite IHphi1, IHphi2. reflexivity. exact H. inversion H0. exact H3. exact H.  inversion H0. exact H2.
+    - simpl in H0. inversion H0. unfold svar_open in *. rewrite bsvar_subst_exists. erewrite (IHphi (i) _ (j)). reflexivity. lia. exact H2.
+    - simpl in H0. inversion H0. unfold svar_open in *. rewrite bsvar_subst_mu. erewrite (IHphi (S i) _ (S j)). reflexivity. lia. exact H2.
   Qed.
 
   (* opening on closed patterns is identity *)
@@ -4511,18 +4533,18 @@ If X does not occur free in phi:
         apply wfcex_nest_mu. assumption.
       + simpl. reflexivity.
     - cbn. case_match; done.
-    - simpl. rewrite -> evar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+    - simpl. unfold evar_open in *. rewrite -> bevar_subst_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
       apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
       apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
       apply (evar_is_fresh_in_app_l Hfresh2).
-    - simpl. rewrite -> evar_open_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+    - simpl. unfold evar_open in *. rewrite -> bevar_subst_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
       apply (evar_is_fresh_in_imp_r Hfresh1). simpl in Hfresh2.
       apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
       apply (evar_is_fresh_in_imp_l Hfresh2).
-    - simpl. rewrite -> evar_open_exists, -> IHsz. reflexivity. lia. assumption.
+    - simpl. unfold evar_open in *. rewrite -> bevar_subst_exists, -> IHsz. reflexivity. lia. assumption.
       apply evar_is_fresh_in_exists in Hfresh1. assumption.
       simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
-    - simpl. rewrite -> evar_open_mu.
+    - simpl. unfold evar_open in *. rewrite -> bevar_subst_mu.
       f_equal.
       rewrite -> IHsz; auto. lia.
   Qed.
@@ -5079,14 +5101,14 @@ If X does not occur free in phi:
         * congruence.
         * reflexivity.
     - simpl.
-      rewrite -> svar_open_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
+      unfold svar_open in *. rewrite -> bsvar_subst_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
       reflexivity.
       simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
       simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
     - simpl.
-      rewrite -> svar_open_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
+      unfold svar_open in *. rewrite -> bsvar_subst_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
       reflexivity.
       simpl in Hfresh1. apply svar_is_fresh_in_imp_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_imp_r in Hfresh2. assumption.
@@ -5094,16 +5116,18 @@ If X does not occur free in phi:
       simpl in Hfresh2. apply svar_is_fresh_in_imp_l in Hfresh2. assumption.
     - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
                                                                               (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
-      simpl. rewrite svar_open_exists. remember (@evar_fresh (elements B)) as x.
+      simpl. unfold svar_open in *. rewrite bsvar_subst_exists. remember (@evar_fresh (elements B)) as x.
       assert(x ∉ B).
       {
         subst. apply set_evar_fresh_is_fresh'.
       }
       subst B.  apply not_elem_of_union in H. destruct H.
       (*magic happens*)
+      fold (svar_open n0 fresh (free_svar_subst' more phi psi X)).
       erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst' more phi psi X)) (free_svar_subst' more (svar_open n0 fresh phi) psi X) x 0 _ _ ).
       reflexivity.
       (*x needs to be fresh in ...*)
+      unfold svar_open in *.
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
       apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
     - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
@@ -5114,12 +5138,14 @@ If X does not occur free in phi:
         subst. apply set_svar_fresh_is_fresh'.
       }
       subst B.  apply not_elem_of_union in H. destruct H.
-      simpl. rewrite svar_open_mu.
+      simpl. unfold svar_open in *. rewrite bsvar_subst_mu.
       (*magic happens*)
       f_equal.
+      fold (svar_open (S n0) fresh (free_svar_subst' (S more) phi psi X)).
       erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst' (S more) phi psi X)) (free_svar_subst' (S more) (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
       { reflexivity. }
       (*x needs to be fresh in ...*)
+      unfold svar_open in *.
       rewrite -> IHsz. reflexivity. lia. assumption. simpl in Hfresh2. assumption.
       simpl in Hfresh2.
       apply -> svar_is_fresh_in_mu in Hfresh2.
@@ -5140,7 +5166,8 @@ If X does not occur free in phi:
         eassumption.
       }
       {
-        unfold svar_is_fresh_in.
+        unfold svar_is_fresh_in. Check svar_open.
+        fold (svar_open (S n0) fresh (free_svar_subst phi psi X)) in H.
         rewrite -> free_svars_svar_open'' in H.
         rewrite -> free_svars_svar_open''.
         intros HContra. apply H. clear H.
@@ -5425,10 +5452,10 @@ If X does not occur free in phi:
       ** reflexivity.
     * cbn. break_match_goal; simpl; auto. destruct (decide (y = x')); auto.
       congruence.
-    * now rewrite -> evar_open_app, -> IHφ1, -> IHφ2.
-    * now rewrite -> evar_open_imp, -> IHφ1, -> IHφ2.
-    * now rewrite -> evar_open_exists, -> IHφ.
-    * now rewrite -> evar_open_mu, -> IHφ.
+    * unfold evar_open in *. now rewrite -> bevar_subst_app, -> IHφ1, -> IHφ2.
+    * unfold evar_open in *. now rewrite -> bevar_subst_imp, -> IHφ1, -> IHφ2.
+    * unfold evar_open in *. now rewrite -> bevar_subst_exists, -> IHφ.
+    * unfold evar_open in *. now rewrite -> bevar_subst_mu, -> IHφ.
   Qed.
 
   Lemma free_evars_free_evar_subst : forall φ ψ x more,
