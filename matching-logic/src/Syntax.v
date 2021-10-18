@@ -400,7 +400,6 @@ Section syntax.
     apply bevar_subst_not_occur.
   Qed.
 
-  Print evar_open. Print bevar_subst.
   (* The following lemmas are trivial but useful for [rewrite !simpl_evar_open]. *)
 
   Lemma bevar_subst_free_evar ψ n x: bevar_subst (patt_free_evar x) ψ n = patt_free_evar x.
@@ -475,6 +474,53 @@ Section syntax.
   Proof. reflexivity. Qed.
 
   Lemma bsvar_subst_mu ψ n ϕ: bsvar_subst (patt_mu ϕ) ψ n = patt_mu (bsvar_subst ϕ ψ (S n)).
+  Proof. reflexivity. Qed.
+
+  Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = if decide (x = k) is left _ then patt_free_evar n else patt_bound_evar x.
+  Proof.
+    cbn. case_match; done.
+  Qed.
+  Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_sym k n s: evar_open k n (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_app k n ls rs: evar_open k n (patt_app ls rs) = patt_app (evar_open k n ls) (evar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma evar_open_bott k n: evar_open k n patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+  Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (S k) n p').
+  Proof. reflexivity. Qed.
+  Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
+  Proof. reflexivity. Qed.
+
+  (* More trivial but useful lemmas *)
+  Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = if decide (X = k) is left _ then patt_free_svar n else patt_bound_svar X.
+  Proof.
+    reflexivity.
+  Qed.
+  Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_app k n ls rs: svar_open k n (patt_app ls rs) = patt_app (svar_open k n ls) (svar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma svar_open_bott k n: svar_open k n patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+  Lemma svar_open_imp k n ls rs: svar_open k n (patt_imp ls rs) = patt_imp (svar_open k n ls) (svar_open k n rs).
+  Proof. reflexivity. Qed.
+  Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
+  Proof. reflexivity. Qed.
+  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (S k) n p').
   Proof. reflexivity. Qed.
 
 
