@@ -118,6 +118,50 @@ Module Syntax.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
     
+    Lemma bevar_subst_not ψ x ϕ : bevar_subst (patt_not ϕ) ψ x = patt_not (bevar_subst ϕ ψ x).
+    Proof. simpl. unfold patt_not. reflexivity. Qed.
+
+    Lemma bevar_subst_or ψ x ϕ₁ ϕ₂ :
+      bevar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
+
+    Lemma bevar_subst_and ψ x ϕ₁ ϕ₂ :
+      bevar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma bevar_subst_iff ψ x ϕ₁ ϕ₂ :
+      bevar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma bevar_subst_top ψ x : bevar_subst patt_top ψ x = patt_top.
+    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+    Lemma bevar_subst_forall ψ x ϕ :
+      bevar_subst (patt_forall ϕ) ψ x = patt_forall (bevar_subst ϕ ψ (S x)).
+    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+
+    (* TODO: bevar_subst_nu *)
+
+    Lemma bsvar_subst_not ψ x ϕ : bsvar_subst (patt_not ϕ) ψ x = patt_not (bsvar_subst ϕ ψ x).
+    Proof. simpl. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
+    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
+    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
+
+    Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
+    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+
+    (* ******* *)
+
     Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
     Proof. simpl. unfold patt_not. reflexivity. Qed.
 
