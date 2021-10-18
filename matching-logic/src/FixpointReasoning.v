@@ -167,7 +167,8 @@ Section with_signature.
       destruct Hfr as [Hfr1 Hfr2].
 
       rewrite /patt_ind_gen_body.
-      rewrite !simpl_svar_open. simpl.
+      unfold svar_open.
+      rewrite !simpl_bsvar_subst. simpl.
       rewrite 2!pattern_interpretation_or_simpl.
       rewrite pattern_interpretation_svar_open_nest_mu'.
       { assumption.  }
