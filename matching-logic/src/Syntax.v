@@ -4001,6 +4001,36 @@ Section syntax.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
 
+  Lemma evar_open_nest_ex_aux_comm' level ϕ dbi X:
+    bevar_subst (nest_ex_aux level 1 ϕ) (patt_free_evar X) dbi
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_ex_aux level 1 (evar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_ex_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_ex_aux level 1 (evar_open (dbi-1) X ϕ)
+      end.
+  Proof.
+    move: level dbi. unfold evar_open.
+    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
+                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    
+    4,5,6: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi - 0 = dbi). lia.
+    assert (Hdbi2: S (dbi - 1) = dbi). lia.
+    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+  Qed.
+
   Lemma svar_open_nest_mu_aux_comm level ϕ dbi X:
     svar_open dbi X (nest_mu_aux level 1 ϕ)
     = match (compare_nat dbi level) with
@@ -4030,6 +4060,37 @@ Section syntax.
     assert (Hdbi2: S (dbi - 1) = dbi). lia.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
+
+  Lemma svar_open_nest_mu_aux_comm' level ϕ dbi X:
+    bsvar_subst (nest_mu_aux level 1 ϕ) (patt_free_svar X) dbi
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_mu_aux level 1 (svar_open dbi X ϕ)
+      | Nat_equal _ _ _ => nest_mu_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_mu_aux level 1 (svar_open (dbi-1) X ϕ)
+      end.
+  Proof.
+    move: level dbi. unfold svar_open.
+    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
+                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    
+    1,2,3: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    assert (Hdbi1: dbi - 0 = dbi). lia.
+    assert (Hdbi2: S (dbi - 1) = dbi). lia.
+    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+  Qed.
+
 
   Lemma free_svars_nest_ex_aux dbi more ϕ:
     free_svars (nest_ex_aux dbi more ϕ) = free_svars ϕ.
@@ -4282,6 +4343,7 @@ Section syntax.
       (@right_id_L EVarSet ∅ (@union _ _)),
       @free_evars_nest_ex_aux,
       @evar_open_nest_ex_aux_comm,
+      @evar_open_nest_ex_aux_comm',
       @free_evars_nest_ex_aux
     ).
 
@@ -4303,6 +4365,7 @@ Section syntax.
       (@right_id_L SVarSet ∅ (@union _ _)),
       @free_svars_nest_mu_aux,
       @svar_open_nest_mu_aux_comm,
+      @svar_open_nest_mu_aux_comm',
       @free_svars_nest_mu_aux
     ).
   
