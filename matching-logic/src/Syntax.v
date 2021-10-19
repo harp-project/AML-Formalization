@@ -3971,6 +3971,68 @@ Section syntax.
     - case_match; reflexivity.
   Qed.
 
+  Lemma nest_ex_aux_wfcex level more ϕ:
+    well_formed_closed_ex_aux ϕ level ->
+    nest_ex_aux level more ϕ = ϕ.
+  Proof.
+    move: level.
+    induction ϕ; simpl; intros level H; auto.
+    - case_match;[reflexivity|congruence].
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - by rewrite IHϕ.
+    - by rewrite IHϕ.
+  Qed.
+
+  Lemma nest_mu_aux_wfcmu level more ϕ:
+    well_formed_closed_mu_aux ϕ level ->
+    nest_mu_aux level more ϕ = ϕ.
+  Proof.
+    move: level.
+    induction ϕ; simpl; intros level H; auto.
+    - case_match;[reflexivity|congruence].
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - by rewrite IHϕ.
+    - by rewrite IHϕ.
+  Qed.
+
+  Lemma bevar_subst_nest_ex_aux level ϕ dbi ψ:
+    well_formed_closed_ex_aux ψ level ->
+    bevar_subst (nest_ex_aux level 1 ϕ) ψ dbi
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_ex_aux level 1 (bevar_subst ϕ ψ dbi)
+      | Nat_equal _ _ _ => nest_ex_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_ex_aux level 1 (bevar_subst ϕ ψ (dbi-1))
+      end.
+  Proof.
+    intros Hwfc.
+    move: level Hwfc dbi. unfold evar_open.
+    induction ϕ; move=> level Hwfc dbi; destruct (compare_nat dbi level); simpl; auto.
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+      by rewrite nest_ex_aux_wfcex.
+    }
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+    }
+    
+    1: {
+      repeat (case_match; simpl; try lia; try reflexivity).
+      by rewrite nest_ex_aux_wfcex.
+    }
+    1,2,3,4,5,6: (rewrite -> IHϕ1 by assumption; rewrite -> IHϕ2 by assumption;
+                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    
+    4,5,6: (rewrite -> IHϕ by assumption; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    1,2,3: (eapply well_formed_closed_ex_aux_ind;[|eassumption];lia).
+    assert (Hdbi1: dbi - 0 = dbi). lia.
+    assert (Hdbi2: S (dbi - 1) = dbi). lia.
+    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+  Qed.
+
+
   Lemma evar_open_nest_ex_aux_comm level ϕ dbi X:
     evar_open dbi X (nest_ex_aux level 1 ϕ)
     = match (compare_nat dbi level) with
@@ -3979,10 +4041,27 @@ Section syntax.
       | Nat_greater _ _ _ => nest_ex_aux level 1 (evar_open (dbi-1) X ϕ)
       end.
   Proof.
-    move: level dbi. unfold evar_open.
-    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
+    unfold evar_open.
+    apply bevar_subst_nest_ex_aux.
+    reflexivity.
+  Qed.
+
+
+  Lemma bsvar_subst_nest_mu_aux level ϕ dbi ψ:
+    well_formed_closed_mu_aux ψ level ->
+    bsvar_subst (nest_mu_aux level 1 ϕ) ψ dbi
+    = match (compare_nat dbi level) with
+      | Nat_less _ _ _ => nest_mu_aux level 1 (bsvar_subst ϕ ψ dbi)
+      | Nat_equal _ _ _ => nest_mu_aux level 1 ϕ
+      | Nat_greater _ _ _ => nest_mu_aux level 1 (bsvar_subst ϕ ψ(dbi-1))
+      end.
+  Proof.
+    intros Hwfc.
+    move: level Hwfc dbi. unfold svar_open.
+    induction ϕ; move=> level Hwfc dbi; destruct (compare_nat dbi level); simpl; auto.
     1: {
       repeat (case_match; simpl; try lia; try reflexivity).
+      by rewrite nest_mu_aux_wfcmu.
     }
     1: {
       repeat (case_match; simpl; try lia; try reflexivity).
@@ -3990,46 +4069,19 @@ Section syntax.
     
     1: {
       repeat (case_match; simpl; try lia; try reflexivity).
+      by rewrite nest_mu_aux_wfcmu.
     }
-    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
+    1,2,3,4,5,6: (rewrite -> IHϕ1, -> IHϕ2 by assumption;
                   destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
     
-    4,5,6: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite -> IHϕ by assumption; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
+    1,2,3: (rewrite -> IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
+    1,2,4: (eapply well_formed_closed_mu_aux_ind;[|eassumption];lia).
     assert (Hdbi1: dbi - 0 = dbi). lia.
     assert (Hdbi2: S (dbi - 1) = dbi). lia.
     rewrite Hdbi1. rewrite Hdbi2. reflexivity.
   Qed.
 
-  Lemma evar_open_nest_ex_aux_comm' level ϕ dbi X:
-    bevar_subst (nest_ex_aux level 1 ϕ) (patt_free_evar X) dbi
-    = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => nest_ex_aux level 1 (evar_open dbi X ϕ)
-      | Nat_equal _ _ _ => nest_ex_aux level 1 ϕ
-      | Nat_greater _ _ _ => nest_ex_aux level 1 (evar_open (dbi-1) X ϕ)
-      end.
-  Proof.
-    move: level dbi. unfold evar_open.
-    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
-                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    
-    4,5,6: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
-    assert (Hdbi1: dbi - 0 = dbi). lia.
-    assert (Hdbi2: S (dbi - 1) = dbi). lia.
-    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
-  Qed.
 
   Lemma svar_open_nest_mu_aux_comm level ϕ dbi X:
     svar_open dbi X (nest_mu_aux level 1 ϕ)
@@ -4039,56 +4091,9 @@ Section syntax.
       | Nat_greater _ _ _ => nest_mu_aux level 1 (svar_open (dbi-1) X ϕ)
       end.
   Proof.
-    move: level dbi. unfold svar_open.
-    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
-                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    
-    1,2,3: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
-    assert (Hdbi1: dbi - 0 = dbi). lia.
-    assert (Hdbi2: S (dbi - 1) = dbi). lia.
-    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
-  Qed.
-
-  Lemma svar_open_nest_mu_aux_comm' level ϕ dbi X:
-    bsvar_subst (nest_mu_aux level 1 ϕ) (patt_free_svar X) dbi
-    = match (compare_nat dbi level) with
-      | Nat_less _ _ _ => nest_mu_aux level 1 (svar_open dbi X ϕ)
-      | Nat_equal _ _ _ => nest_mu_aux level 1 ϕ
-      | Nat_greater _ _ _ => nest_mu_aux level 1 (svar_open (dbi-1) X ϕ)
-      end.
-  Proof.
-    move: level dbi. unfold svar_open.
-    induction ϕ; move=> level dbi; destruct (compare_nat dbi level); simpl; auto.
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    
-    1: {
-      repeat (case_match; simpl; try lia; try reflexivity).
-    }
-    1,2,3,4,5,6: (rewrite IHϕ1; rewrite IHϕ2;
-                  destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    
-    1,2,3: (rewrite IHϕ; destruct (compare_nat dbi level); simpl; try reflexivity; try lia).
-    1,2,3: (rewrite IHϕ; destruct (compare_nat (S dbi) (S level)); simpl; try reflexivity; try lia).
-    assert (Hdbi1: dbi - 0 = dbi). lia.
-    assert (Hdbi2: S (dbi - 1) = dbi). lia.
-    rewrite Hdbi1. rewrite Hdbi2. reflexivity.
+    unfold svar_open.
+    apply bsvar_subst_nest_mu_aux.
+    reflexivity.
   Qed.
 
 

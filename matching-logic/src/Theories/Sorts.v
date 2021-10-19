@@ -42,43 +42,35 @@ Section sorts.
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
 
-  Lemma evar_open_inhabitant_set db x ϕ :
-    evar_open db x (patt_inhabitant_set ϕ) = patt_inhabitant_set (evar_open db x ϕ).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_evar_open. reflexivity. Qed.
+  Lemma bevar_subst_inhabitant_set ψ x ϕ :
+    bevar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bevar_subst ϕ ψ x).
+  Proof. unfold patt_inhabitant_set. rewrite !simpl_bevar_subst. reflexivity. Qed.
   
-  Lemma svar_open_inhabitant_set db x ϕ :
-    svar_open db x (patt_inhabitant_set ϕ) = patt_inhabitant_set (svar_open db x ϕ).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bsvar_subst_inhabitant_set ψ x ϕ :
+    bsvar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bsvar_subst ϕ ψ x).
+  Proof. unfold patt_inhabitant_set. rewrite !simpl_bsvar_subst. reflexivity. Qed.
   
   #[global]
    Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
-    {| unary_evar_open := evar_open_inhabitant_set ;
-       unary_svar_open := svar_open_inhabitant_set ;
+    {| unary_bevar_subst := bevar_subst_inhabitant_set ;
+       unary_bsvar_subst := bsvar_subst_inhabitant_set ;
     |}.
 
-  (* BV : nat -> sort *)
-  (* BV_inc : \forall n, BV n -> BV n *)
-  (* forall n:nat, forall x: BV n, exists y:BV n, BV_inc x = y *)
-  (* forall n:nat, forall x : BV n, P *)
-  (* forall n, n \in [[nat]] -> forall x, x \in [[BV n]], P *)
-  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV b1]], P  *)
-  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV (nest_ex b0)]], P  *)
-  (* forall, b0 \in [[nat]] -> Q(b0)*)
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
 
-  Lemma evar_open_forall_of_sort s db x ϕ :
-    evar_open db x (patt_forall_of_sort s ϕ) = patt_forall_of_sort (evar_open db x s) (evar_open (db+1) x ϕ).
+  Lemma bevar_subst_forall_of_sort s ψ db ϕ :
+    bevar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (db+1)).
   Proof.
     unfold patt_forall_of_sort.
-    rewrite !simpl_evar_open.
+    rewrite !simpl_bevar_subst.
     (* TODO rewrite all _+1 to 1+_ *)
     rewrite PeanoNat.Nat.add_comm. simpl.
     unfold nest_ex.
-    rewrite evar_open_nest_ex_aux_comm.
+    rewrite evar_open_nest_ex_aux_comm'.
     simpl.
     rewrite PeanoNat.Nat.sub_0_r.
     reflexivity.
