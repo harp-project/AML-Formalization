@@ -564,62 +564,76 @@ Section definedness.
   Hint Resolve T_predicate_in : core.
 
   (* defined, total, subseteq, equal, in *)
-  Lemma evar_open_defined db x ϕ : evar_open db x (patt_defined ϕ) = patt_defined (evar_open db x ϕ).
+  Lemma bevar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bevar_subst (patt_defined ϕ) ψ x = patt_defined (bevar_subst ϕ ψ x).
   Proof. unfold patt_defined. cbn. auto. Qed.
-  Lemma svar_open_defined db x ϕ : svar_open db x (patt_defined ϕ) = patt_defined (svar_open db x ϕ).
+  Lemma bsvar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bsvar_subst (patt_defined ϕ) ψ x = patt_defined (bsvar_subst ϕ ψ x).
   Proof. unfold patt_defined. cbn. auto. Qed.
 
   #[global]
    Instance Unary_defined : Unary patt_defined :=
-    {| unary_evar_open := evar_open_defined ;
-       unary_svar_open := svar_open_defined ;
+    {| unary_bevar_subst := bevar_subst_defined ;
+       unary_bsvar_subst := bsvar_subst_defined ;
     |}.
   
 
-  Lemma evar_open_total db x ϕ : evar_open db x (patt_total ϕ) = patt_total (evar_open db x ϕ).
-  Proof. unfold patt_total. rewrite !simpl_evar_open. reflexivity. Qed.
-  Lemma svar_open_total db x ϕ : svar_open db x (patt_total ϕ) = patt_total (svar_open db x ϕ).
-  Proof. unfold patt_total. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bevar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bevar_subst (patt_total ϕ) ψ x = patt_total (bevar_subst ϕ ψ x).
+  Proof. unfold patt_total. simpl_bevar_subst. reflexivity. Qed.
+  
+  Lemma bsvar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bsvar_subst (patt_total ϕ) ψ x = patt_total (bsvar_subst ϕ ψ x).
+  Proof. unfold patt_total. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Unary_total : Unary patt_total :=
-    {| unary_evar_open := evar_open_total ;
-       unary_svar_open := svar_open_total ;
+    {| unary_bevar_subst := bevar_subst_total ;
+       unary_bsvar_subst := bsvar_subst_total ;
     |}.
   
   
-  Lemma evar_open_equal db x ϕ₁ ϕ₂ : evar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_equal. rewrite !simpl_evar_open. reflexivity. Qed.
-  Lemma svar_open_equal db x ϕ₁ ϕ₂ : svar_open db x (patt_equal ϕ₁ ϕ₂) = patt_equal (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_equal. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bevar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bevar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+  Proof. unfold patt_equal. simpl_bevar_subst. reflexivity. Qed.
+
+  Lemma bsvar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bsvar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
+  Proof. unfold patt_equal. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_equal : Binary patt_equal :=
-    {| binary_evar_open := evar_open_equal ;
-       binary_svar_open := svar_open_equal ;
+    {| binary_bevar_subst := bevar_subst_equal ;
+       binary_bsvar_subst := bsvar_subst_equal ;
     |}.
   
-  Lemma evar_open_subseteq db x ϕ₁ ϕ₂ : evar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_subseteq. rewrite !simpl_evar_open. reflexivity. Qed.
-  Lemma svar_open_subseteq db x ϕ₁ ϕ₂ : svar_open db x (patt_subseteq ϕ₁ ϕ₂) = patt_subseteq (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_subseteq. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bevar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bevar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+  Proof. unfold patt_subseteq. simpl_bevar_subst. reflexivity. Qed.
+
+  Lemma bsvar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bsvar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
+  Proof. unfold patt_subseteq. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_subseteq : Binary patt_subseteq :=
-    {| binary_evar_open := evar_open_subseteq ;
-       binary_svar_open := svar_open_subseteq ;
+    {| binary_bevar_subst := bevar_subst_subseteq ;
+       binary_bsvar_subst := bsvar_subst_subseteq ;
     |}.
   
 
-  Lemma evar_open_in db x ϕ₁ ϕ₂ : evar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (evar_open db x ϕ₁) (evar_open db x ϕ₂).
-  Proof. unfold patt_in. rewrite !simpl_evar_open. reflexivity. Qed.
-  Lemma svar_open_in db x ϕ₁ ϕ₂ : svar_open db x (patt_in ϕ₁ ϕ₂) = patt_in (svar_open db x ϕ₁) (svar_open db x ϕ₂).
-  Proof. unfold patt_in. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bevar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bevar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
+  Proof. unfold patt_in. simpl_bevar_subst. reflexivity. Qed.
+
+  Lemma bsvar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
+    bsvar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
+  Proof. unfold patt_in. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_in : Binary patt_in :=
-    {| binary_evar_open := evar_open_in ;
-       binary_svar_open := svar_open_in ;
+    {| binary_bevar_subst := bevar_subst_in ;
+       binary_bsvar_subst := bsvar_subst_in ;
     |}.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)
@@ -641,7 +655,8 @@ Section definedness.
     | |- context G [fresh_evar ?t] => remember (fresh_evar t) as X
     end.
     
-    rewrite simpl_evar_open.
+    unfold evar_open.
+    simpl_bevar_subst.
     apply T_predicate_equals.
     apply Hm.
   Qed.
@@ -655,19 +670,20 @@ Section definedness.
   Proof.
     intros Htheory.
     rewrite pattern_interpretation_forall_predicate.
-    2: { rewrite simpl_evar_open. apply T_predicate_equals. apply Htheory. }
+    2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
           (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
              (ex ,
               (BoundVarSugar.b0
                  and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
-    rewrite !simpl_evar_open.
+    unfold evar_open.
+    simpl_bevar_subst.
     rewrite equal_iff_interpr_same.
     2: { apply Htheory. }
 
     rewrite pattern_interpretation_set_builder.
-    { rewrite !simpl_evar_open. apply T_predicate_in. apply Htheory. }
+    { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
 
     assert (Hpi: ∀ M ev sv phi rhs,
                @pattern_interpretation _ M ev sv phi = rhs
@@ -692,12 +708,17 @@ Section definedness.
       2: { apply set_evar_fresh_is_fresh. }
       solve_free_evars_inclusion 5.
     }
+    unfold evar_open.
+    simpl_bevar_subst. simpl.
+(*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.
-
-    remember (fresh_evar (patt_in (patt_free_evar x) (evar_open 1 x (nest_ex (nest_ex ϕ₂)) $ b0))) as y.
+*)
+    remember (fresh_evar (patt_in (patt_free_evar x) (bevar_subst (nest_ex (nest_ex ϕ₂)) (patt_free_evar x) 1 $ b0))) as y.
+(*
     rewrite simpl_evar_open.
     rewrite evar_open_free_evar.
+*)
     repeat rewrite elem_of_PropSet.
     rewrite <- free_evar_in_patt.
     2: { apply Htheory. }
@@ -705,12 +726,13 @@ Section definedness.
     rewrite update_evar_val_same.
     fold (m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁).
 
-    rewrite simpl_evar_open.
+    (*rewrite simpl_evar_open.*)
     rewrite pattern_interpretation_app_simpl.
-    rewrite [evar_open 0 y b0]/=.
+    (*rewrite [evar_open 0 y b0]/=.*)
     rewrite pattern_interpretation_free_evar_simpl.
     rewrite update_evar_val_same.
     
+    fold (evar_open 1 x (nest_ex (nest_ex ϕ₂))).
     rewrite evar_open_nest_ex_aux_comm.
     destruct (extralibrary.compare_nat 1 0); try lia. clear g.
     rewrite [1 - 1]/=.
@@ -724,6 +746,7 @@ Section definedness.
       subst.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh'.
+      simpl.
       solve_free_evars_inclusion 5.
     }
 
@@ -825,7 +848,7 @@ Section ProofSystemTheorems.
                                 Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ φ1 =ml φ2.
   Proof.
     intros φ1 φ2 Γ WF1 WF2 H.
-    epose proof (ANNA := A_implies_not_not_A_ctx Γ (φ1 <---> φ2) (ctx_app_r box _)). 
+    epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)). 
     apply ANNA; auto.
     Unshelve.
     auto.
@@ -835,7 +858,7 @@ Section ProofSystemTheorems.
     forall φ Γ, well_formed φ ->
                 Γ ⊢ φ =ml φ.
   Proof.
-    intros φ Γ WF. pose proof (IFF := pf_iff_equiv_refl Γ φ WF).
+    intros φ Γ WF. pose proof (IFF := @pf_iff_equiv_refl Σ Γ φ WF).
     apply patt_iff_implies_equal in IFF; auto.
   Qed.
 
@@ -932,7 +955,7 @@ Section ProofSystemTheorems.
       assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
       {
         toMyGoal. mgIntro.
-        mgAdd (A_or_notA Γ ϕ Hwfϕ); auto.
+        mgAdd (@A_or_notA Σ Γ ϕ Hwfϕ); auto.
         mgDestruct 0; auto.
         - mgRight; auto. mgExactn 0; auto.
         - mgLeft; auto. mgIntro.
@@ -1022,7 +1045,7 @@ Section ProofSystemTheorems.
     assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ)).
     {
       toMyGoal. mgIntro.
-      mgAdd (conj_intro Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)); auto.
+      mgAdd (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)); auto.
       
       mgAssert ((ϕ ---> ex , b0 and ϕ)); auto 10.
       {  mgApply 0; auto 10.  mgAdd (Existence Γ); auto 10.
@@ -1093,7 +1116,7 @@ Section ProofSystemTheorems.
     assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉)).
     {
       Check prf_prop_ex_iff.
-      pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and ϕ) x').
+      pose proof (Htmp := @prf_prop_ex_iff Σ Γ AC (b0 and ϕ) x').
       feed specialize Htmp.
       { unfold evar_is_fresh_in in *.
         rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
@@ -1262,7 +1285,7 @@ Section ProofSystemTheorems.
         specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
           mgDestruct 0; auto.
           - mgRight; auto 10. mgExactn 0; auto 10.
           - mgLeft; auto 10.
@@ -1284,7 +1307,7 @@ Section ProofSystemTheorems.
 
         assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
         {
-          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
           feed specialize Htmp.
           { auto. }
           { auto. }
@@ -1298,7 +1321,7 @@ Section ProofSystemTheorems.
         assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
         {
           toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgLeft; auto 10. mgExactn 0; auto 10.
           - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
@@ -1321,10 +1344,10 @@ Section ProofSystemTheorems.
         + mgExactn 3; auto 10.
         + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
           { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           * mgExactn 0; auto 15.
-          * mgAdd (bot_elim Γ (phi2 $ psi) ltac:(auto)); auto 15.
+          * mgAdd (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto)); auto 15.
             mgApply 0; auto 15.
             mgApply 3; auto 15.
             mgExactn 5; auto 15.
@@ -1348,7 +1371,7 @@ Section ProofSystemTheorems.
         specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
           mgDestruct 0; auto.
           - mgRight; auto 10. mgExactn 0; auto 10.
           - mgLeft; auto 10.
@@ -1370,7 +1393,7 @@ Section ProofSystemTheorems.
 
         assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
         {
-          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
           feed specialize Htmp.
           { auto. }
           { auto. }
@@ -1384,7 +1407,7 @@ Section ProofSystemTheorems.
         assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
         {
           toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgLeft; auto 10. mgExactn 0; auto 10.
           - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
@@ -1407,10 +1430,10 @@ Section ProofSystemTheorems.
         + mgExactn 3; auto 10.
         + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
           { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           * mgExactn 0; auto 15.
-          * mgAdd (bot_elim Γ (psi $ phi2) ltac:(auto)); auto 15.
+          * mgAdd (@bot_elim Σ Γ (psi $ phi2) ltac:(auto)); auto 15.
             mgApply 0; auto 15.
             mgApply 3; auto 15.
             mgExactn 5; auto 15.
@@ -1573,9 +1596,9 @@ Section ProofSystemTheorems.
         mgClear 0; auto 10.
 
         unfold patt_or.
-        mgApplyMeta (not_not_elim _ _ _); auto 10.
+        mgApplyMeta (@not_not_elim Σ _ _ _); auto 10.
         mgApply 0; auto 10.
-        mgApplyMeta (not_not_intro _ _ _); auto 10.
+        mgApplyMeta (@not_not_intro Σ _ _ _); auto 10.
         mgExactn 1.
         Unshelve. all: auto 15.
       }
@@ -1640,7 +1663,7 @@ Section ProofSystemTheorems.
         mgAssert ((! ⌈ patt_free_evar x and ! ϕ ⌉ or ! ⌈ patt_free_evar x and ϕ ⌉))
                  using first 1.
         {
-          mgAdd (A_or_notA Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgRight; auto 10. mgExactn 0; auto 10.
           - mgLeft; auto 10. mgApply 1; auto 10. mgExactn 0; auto 10.
@@ -1665,7 +1688,7 @@ Section ProofSystemTheorems.
       {
         assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
         {
-          toMyGoal. mgIntro. mgAdd (A_or_notA Γ ϕ ltac:(auto)); auto.
+          toMyGoal. mgIntro. mgAdd (@A_or_notA Σ Γ ϕ ltac:(auto)); auto.
           mgDestruct 0; auto.
           - mgLeft; auto 10. unfold patt_and. mgIntro. unfold patt_or.
             mgAssert ((! ϕ)).
@@ -1675,14 +1698,14 @@ Section ProofSystemTheorems.
             }
             mgApply 3; auto 10. mgExactn 0; auto 10.
           - mgRight; auto 10. unfold patt_and. mgIntro. unfold patt_or.
-            mgApply 0; auto 10. mgApplyMeta (not_not_elim Γ ϕ ltac:(auto)); auto 10.
+            mgApply 0; auto 10. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)); auto 10.
             mgApply 2; auto 10. mgIntro. mgApply 3; auto 10. mgExactn 1; auto 10.
         }
         eapply Framing_right in H.
         eapply Modus_ponens. 4: apply H. all: auto 10.
       }
 
-      pose proof (Htmp := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
+      pose proof (Htmp := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
                                           ltac:(auto) ltac:(auto)).
       simpl in Htmp.
       apply pf_iff_proj1 in Htmp; auto 10.
@@ -1735,7 +1758,7 @@ Section ProofSystemTheorems.
     Proof.
       intros wfϕ₁ wfϕ₂ HΓ.
       unfold patt_in.
-      pose proof (H1 := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
+      pose proof (H1 := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
                                         ltac:(auto) ltac:(auto)).
       apply pf_iff_proj2 in H1; auto 10.
       eapply syllogism_intro.
@@ -1929,7 +1952,7 @@ Section ProofSystemTheorems.
         specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
           mgDestruct 0; auto.
           - mgRight; auto 10. mgExactn 0; auto 10.
           - mgLeft; auto 10.
@@ -1951,7 +1974,7 @@ Section ProofSystemTheorems.
 
         assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
         {
-          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
           feed specialize Htmp.
           { auto. }
           { auto. }
@@ -1965,7 +1988,7 @@ Section ProofSystemTheorems.
         assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
         {
           toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgLeft; auto 10. mgExactn 0; auto 10.
           - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
@@ -1988,10 +2011,10 @@ Section ProofSystemTheorems.
         + mgExactn 3; auto 10.
         + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
           { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (A_or_notA Γ (phi2 $ psi) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           * mgExactn 0; auto 15.
-          * mgAdd (bot_elim Γ (phi2 $ psi) ltac:(auto)); auto 15.
+          * mgAdd (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto)); auto 15.
             mgApply 0; auto 15.
             mgApply 3; auto 15.
             mgExactn 5; auto 15.
@@ -2015,7 +2038,7 @@ Section ProofSystemTheorems.
         specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
         { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgRight; auto 10. mgExactn 0; auto 10.
           - mgLeft; auto 10.
@@ -2037,7 +2060,7 @@ Section ProofSystemTheorems.
 
         assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
         {
-          pose proof (Htmp := prf_prop_or_iff Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
           feed specialize Htmp.
           { auto. }
           { auto. }
@@ -2051,7 +2074,7 @@ Section ProofSystemTheorems.
         assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
         {
           toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           - mgLeft; auto 10. mgExactn 0; auto 10.
           - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
@@ -2074,10 +2097,10 @@ Section ProofSystemTheorems.
         + mgExactn 3; auto 10.
         + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
           { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (A_or_notA Γ (psi $ phi2) ltac:(auto)); auto 10.
+          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
           mgDestruct 0; auto 10.
           * mgExactn 0; auto 15.
-          * mgAdd (bot_elim Γ (psi $ phi2) ltac:(auto)); auto 15.
+          * mgAdd (@bot_elim Σ Γ (psi $ phi2) ltac:(auto)); auto 15.
             mgApply 0; auto 15.
             mgApply 3; auto 15.
             mgExactn 5; auto 15.
@@ -2110,1188 +2133,8 @@ Section ProofSystemTheorems.
         Unshelve. all: auto 10.
     Abort.
 
-  (*
-    Theorem deduction_theorem :
-      forall φ ψ Γ, (* psi closed *)
-        Γ ∪ {[ ψ ]} ⊢ φ ->
-        Γ ⊢ ⌊ ψ ⌋ ---> φ.
-    Proof.
-      
-    Admitted.
-
-    Theorem reverse_deduction_theorem :
-      forall φ ψ Γ,
-        Γ ⊢ ⌊ ψ ⌋ ---> φ ->
-        Γ ∪ {[ ψ ]} ⊢ φ.
-    Proof.
-      
-    Admitted.
- *)
-
-  Lemma decide_eq_refl {A : Type} {dec : EqDecision A} (x : A):
-    decide (x = x) = left (@erefl _ x).
-  Proof.
-    destruct (decide (x = x)).
-    - apply f_equal. apply eq_pi. intros z. apply dec.
-    - contradiction.
-  Qed.
-(*
-  Lemma uses_svar_subst_eq_rec_r Γ (A B : Pattern) (AeqB : A = B) (pfB : Γ ⊢ B) SvS:
-    @uses_svar_subst Γ A (@eq_rec_r Pattern B (fun p => Γ ⊢ p) pfB A AeqB) SvS
-    = @uses_svar_subst Γ B pfB SvS.
-  Proof.
-    unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. destruct AeqB.
-    reflexivity.
-  Qed.
-*)
-
-  Check syllogism.
-
-  Lemma syllogism_indifferent
-        P Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C):
-    indifferent_to_prop P ->
-    P _ _ (syllogism Γ A B C wfA wfB wfC) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hp4]]].
-    unfold syllogism_intro.
-    rewrite !(Hp1,Hp2,Hp3,Hp4).
-    reflexivity.
-  Qed.
-
-  Lemma syllogism_intro_indifferent
-        P Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C)
-        (AimpB : Γ ⊢ A ---> B)
-        (BimpC : Γ ⊢ B ---> C):
-    indifferent_to_prop P ->
-    P _ _ AimpB = false ->
-    P _ _ BimpC = false ->
-    P _ _ (syllogism_intro Γ A B C wfA wfB wfC AimpB BimpC) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hp4]]].
-    unfold syllogism_intro.
-    rewrite !(Hp1,Hp2,Hp3,Hp4).
-    rewrite H1. rewrite H2.
-    reflexivity.
-  Qed.
-
-  Lemma pf_iff_split_indifferent
-        P Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (AimpB : Γ ⊢ A ---> B)
-        (BimpA : Γ ⊢ B ---> A):
-    indifferent_to_prop P ->
-    P _ _ AimpB = false ->
-    P _ _ BimpA = false ->
-    P _ _ (pf_iff_split Γ A B wfA wfB AimpB BimpA) = false.
-  Proof.
-    intros [Hp1 [Hp2 [Hp3 Hp4]]] H1 H2.
-    unfold pf_iff_split. unfold conj_intro_meta. rewrite Hp4. rewrite H2. simpl.
-    rewrite Hp4. rewrite H1. simpl.
-    unfold conj_intro.
-    rewrite !(Hp1,Hp2,Hp3,Hp4).
-    reflexivity.
-  Qed.
-
-  Lemma A_impl_A_indifferent
-        P Γ A (wfA : well_formed A):
-    indifferent_to_prop P ->
-    P _ _ (A_impl_A Γ A wfA) = false.
-  Proof.
-    intros [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold A_impl_A.
-    rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
-  Qed.
-
-  (* TODO: use indifference proofs for subproofs *)
-  Lemma pf_iff_proj1_indifferent
-        P Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (AiffB : Γ ⊢ A <---> B):
-    indifferent_to_prop P ->
-    P _ _ AiffB = false ->
-    P _ _ (pf_iff_proj1 Γ A B wfA wfB AiffB) = false.
-  Proof.
-    intros [Hp1 [Hp2 [Hp3 Hmp]]] H.
-    unfold pf_iff_proj1. unfold pf_conj_elim_l_meta.
-    rewrite Hmp. rewrite H. simpl.
-    unfold pf_conj_elim_l.
-    rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
-  Qed.
-
-  (* TODO: use indifference proofs for subproofs *)
-  Lemma pf_iff_proj2_indifferent
-        P Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (AiffB : Γ ⊢ A <---> B):
-    indifferent_to_prop P ->
-    P _ _ AiffB = false ->
-    P _ _ (pf_iff_proj2 Γ A B wfA wfB AiffB) = false.
-  Proof.
-    intros [Hp1 [Hp2 [Hp3 Hmp]]] H.
-    unfold pf_iff_proj2. unfold pf_conj_elim_r_meta.
-    rewrite Hmp. rewrite H. simpl.
-    unfold pf_conj_elim_r.
-    rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
-  Qed.
-
-  Lemma pf_iff_equiv_trans_indifferent
-        P Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C)
-        (AiffB : Γ ⊢ A <---> B)
-        (BiffC : Γ ⊢ B <---> C):
-    indifferent_to_prop P ->
-    P _ _ AiffB = false ->
-    P _ _ BiffC = false ->
-    P _ _ (pf_iff_equiv_trans Γ A B C wfA wfB wfC AiffB BiffC) = false.
-  Proof.
-    intros Hp H1 H2. unfold pf_iff_equiv_trans. simpl.
-    pose proof (Hp' := Hp). unfold indifferent_to_prop in Hp'.
-    destruct Hp' as [Hp1 [Hp2 [Hp3 Hp4]]].
-    rewrite pf_iff_split_indifferent; auto;
-      rewrite syllogism_intro_indifferent; auto; try apply A_impl_A_indifferent; auto;
-      rewrite syllogism_intro_indifferent; auto.
-    + apply pf_iff_proj1_indifferent; auto.
-    + apply pf_iff_proj1_indifferent; auto.
-    + apply pf_iff_proj2_indifferent; auto.
-    + apply pf_iff_proj2_indifferent; auto.
-  Qed.
-
-  Lemma conj_intro_meta_indifferent
-        P Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (HA : Γ ⊢ A)
-        (HB : Γ ⊢ B):
-    indifferent_to_prop P ->
-    P _ _ HA = false ->
-    P _ _ HB = false ->
-    P _ _ (conj_intro_meta Γ A B wfA wfB HA HB) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold conj_intro_meta. unfold conj_intro.
-    rewrite !(Hp1,Hp2,Hp3,Hmp). rewrite H1. rewrite H2.
-    reflexivity.
-  Qed.
 
 
-  Lemma MyGoal_intro_indifferent (P : proofbpred) Γ l x g
-    (pf : Γ ⊢ foldr patt_imp g (l ++ [x])):
-    P _ _ pf = false ->
-    P _ _ (MyGoal_intro Γ l x g pf) = false.
-  Proof.
-    intros H.
-    unfold MyGoal_intro. simpl.
-    unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
-    move: (foldr_app Pattern Pattern patt_imp l [x] g).
-    unfold of_MyGoal in pf. simpl in pf.
-    simpl. unfold of_MyGoal. simpl.
-    move: pf H.
-    rewrite list.foldr_app. simpl.
-    intros pf H fapf.
-    replace fapf with (@erefl Pattern (foldr patt_imp (x ---> g) l)) by (apply UIP_dec; apply Pattern_eqdec).
-    simpl. exact H.
-  Qed.
-
-  Lemma reorder_indifferent
-        P Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C):
-    indifferent_to_prop P ->
-    P _ _ (reorder Γ A B C wfA wfB wfC) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold reorder. rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
-  Qed.
-
-  Lemma reorder_meta_indifferent
-        P Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C)
-        (AimpBimpC : Γ ⊢ A ---> B ---> C):
-    indifferent_to_prop P ->
-    P _ _ AimpBimpC = false ->
-    P _ _ (@reorder_meta _ Γ A B C wfA wfB wfC AimpBimpC) = false.
-  Proof.
-    intros Hp H. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold reorder_meta. rewrite !(Hp1,Hp2,Hp3,Hmp). rewrite H.
-    reflexivity.
-  Qed.
-
-  Lemma prf_weaken_conclusion_indifferent
-        P Γ A B B'
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfB' : well_formed B'):
-    indifferent_to_prop P ->
-    P _ _ (prf_weaken_conclusion Γ A B B' wfA wfB wfB') = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma prf_strenghten_premise_iter_indifferent
-        P Γ l₁ l₂ h h' g
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfh : well_formed h)
-        (wfh' : well_formed h')
-        (wfg : well_formed g):
-    indifferent_to_prop P ->
-    P _ _ (prf_strenghten_premise_iter Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg) = false.
-  Proof.
-    intros Hp.
-    induction l₁.
-    - simpl. unfold prf_strenghten_premise. apply syllogism_indifferent; assumption.
-    - simpl.
-      case_match. simpl.
-      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
-      rewrite syllogism_intro_indifferent; auto.
-      apply prf_weaken_conclusion_indifferent; auto.
-  Qed.
- 
-  Lemma prf_strenghten_premise_iter_meta_meta_indifferent
-        P Γ l₁ l₂ h h' g
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfh : well_formed h)
-        (wfh' : well_formed h')
-        (wfg : well_formed g)
-        (himph' : Γ ⊢ h' ---> h)
-        (pf': Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂)):
-    indifferent_to_prop P ->
-     P _ _ himph' = false ->
-     P _ _ pf' = false ->
-     P _ _ (prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g wfl₁ wfl₂ wfh wfh' wfg himph' pf') = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_strenghten_premise_iter_meta_meta.
-    rewrite Hmp. rewrite H2. simpl.
-    unfold prf_strenghten_premise_iter_meta.
-    rewrite Hmp. rewrite H1. simpl.
-    rewrite prf_strenghten_premise_iter_indifferent; auto.
-  Qed.
-
-  Lemma modus_ponens_indifferent
-        P Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B):
-    indifferent_to_prop P ->
-    P _ _ (modus_ponens Γ A B wfA wfB) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold modus_ponens.
-    rewrite 3!Hmp. rewrite Hp1. rewrite Hp2.
-    rewrite reorder_meta_indifferent; simpl; auto.
-    + rewrite syllogism_indifferent; auto.
-    + rewrite A_impl_A_indifferent; auto.
-  Qed.
-
-  Lemma prf_strenghten_premise_indifferent
-        P Γ A A' B
-        (wfA : well_formed A)
-        (wfA' : well_formed A')
-        (wfB : well_formed B):
-    indifferent_to_prop P ->
-    P _ _ (prf_strenghten_premise Γ A A' B wfA wfA' wfB) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_strenghten_premise.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma prf_strenghten_premise_meta_indifferent
-        P Γ A A' B
-        (wfA : well_formed A)
-        (wfA' : well_formed A')
-        (wfB : well_formed B)
-        (A'impA : Γ ⊢ A' ---> A):
-    indifferent_to_prop P ->
-    P _ _ A'impA = false ->
-    P _ _ (prf_strenghten_premise_meta Γ A A' B wfA wfA' wfB A'impA) = false.
-  Proof.
-    intros Hp H1. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_strenghten_premise_meta. rewrite Hmp. rewrite H1. simpl.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma prf_strenghten_premise_meta_meta_indifferent
-        P Γ A A' B
-        (wfA : well_formed A)
-        (wfA' : well_formed A')
-        (wfB : well_formed B)
-        (A'impA : Γ ⊢ A' ---> A)
-        (AimpB : Γ ⊢ A ---> B):
-    indifferent_to_prop P ->
-    P _ _ A'impA = false ->
-    P _ _ AimpB = false ->
-    P _ _ (prf_strenghten_premise_meta_meta Γ A A' B wfA wfA' wfB A'impA AimpB) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_strenghten_premise_meta_meta. rewrite Hmp. rewrite H2. simpl.
-    unfold prf_strenghten_premise_meta. rewrite Hmp. rewrite H1. simpl.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma prf_add_proved_to_assumptions_indifferent
-    P Γ l h g
-    (wfl : wf l)
-    (wfg : well_formed g)
-    (wfh : well_formed h)
-    (pfh : Γ ⊢ h):
-    indifferent_to_prop P ->
-    P _ _ pfh = false ->
-    P _ _ (prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) = false.
-  Proof.
-    intros Hp H. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    induction l.
-    - simpl. rewrite Hmp. rewrite H. simpl. apply modus_ponens_indifferent; assumption.
-    - simpl.
-      case_match.
-      unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. unfold tofold. unfold consume.
-      unfold eq_ind_r. unfold eq_ind. unfold eq_sym.
-      remember (foldr_app Pattern Pattern patt_imp []
-              [h ---> a ---> foldr patt_imp g l] (a ---> foldr patt_imp g l)) as fa.
-      simpl in fa.
-      clear Heqfa.
-      replace fa with (@erefl Pattern (((h ---> a ---> foldr patt_imp g l) ---> a ---> foldr patt_imp g l))).
-      2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
-      simpl.
-
-      pose proof (Htmp := prf_strenghten_premise_iter_meta_meta_indifferent).
-      specialize (Htmp P Γ).
-      specialize (Htmp [] [] (a ---> h ---> foldr patt_imp g l) (h ---> a ---> foldr patt_imp g l)).
-      simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-      { apply reorder_indifferent; assumption. }
-      rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
-      { rewrite reorder_indifferent; auto. }
-      rewrite Hmp. rewrite H. simpl.
-      rewrite modus_ponens_indifferent; auto.
-  Qed.
-
-  Lemma MyGoal_add_indifferent
-    P Γ l g h
-    (pfh: Γ ⊢ h)
-    (wfl : wf l)
-    (wfg : well_formed g)
-    (wfh : well_formed h)
-    (pf : Γ ⊢ foldr patt_imp g (h::l)):
-    indifferent_to_prop P ->
-    P _ _ pfh = false ->
-    P _ _ pf = false ->
-    P _ _ (MyGoal_add Γ l g h pfh wfl wfg wfh pf) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    simpl in *. unfold MyGoal_add. unfold prf_add_proved_to_assumptions_meta.
-    rewrite Hmp. simpl.
-    rewrite H2. simpl.
-    rewrite prf_add_proved_to_assumptions_indifferent; auto.
-  Qed.
-
-  Lemma prf_weaken_conclusion_iter_indifferent
-        P Γ l g g'
-        (wfl : wf l)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
-    : indifferent_to_prop P ->
-    P _ _ (prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg') = false.
-  Proof.
-    intros Hp.
-    move: wfl.
-    induction l; intros wfl.
-    - simpl. rewrite A_impl_A_indifferent; auto.
-    - simpl.
-      case_match.
-      rewrite syllogism_intro_indifferent; auto.
-      simpl in *.
-      rewrite prf_weaken_conclusion_indifferent; auto.
-  Qed.
-
-
-  Lemma prf_weaken_conclusion_meta_indifferent
-        P Γ A B B'
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfB' : well_formed B')
-        (pf : Γ ⊢ B ---> B')
-        :
-        indifferent_to_prop P ->
-        P _ _ pf = false ->
-        P _ _ (prf_weaken_conclusion_meta Γ A B B' wfA wfB wfB' pf) = false.
-  Proof.
-    intros Hp Hpf. pose proof (Hp' := Hp). destruct Hp as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion_meta. rewrite Hmp. rewrite Hpf. simpl.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma prf_weaken_conclusion_iter_meta_meta_indifferent
-        P Γ l g g'
-        (wfl : wf l)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
-        (gimpg' : Γ ⊢ g ---> g')
-        (pf : Γ ⊢ foldr patt_imp g l)
-    :
-    indifferent_to_prop P ->
-    P _ _ gimpg' = false ->
-    P _ _ pf = false ->
-    P _ _ (prf_weaken_conclusion_iter_meta_meta Γ l g g' wfl wfg wfg' gimpg' pf) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp':= Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion_iter_meta_meta. rewrite Hmp.
-    rewrite H2. simpl.
-    unfold prf_weaken_conclusion_iter_meta. rewrite Hmp.
-    rewrite H1. simpl.
-
-    clear H2 pf.
-    induction l.
-    - simpl. apply A_impl_A_indifferent; assumption.
-    - simpl. case_match. rewrite syllogism_intro_indifferent; auto.
-      simpl.
-      rewrite prf_weaken_conclusion_indifferent; auto.
-  Qed.
-
-  Lemma prf_contraction_indifferent
-        P Γ a b
-        (wfa : well_formed a)
-        (wfb : well_formed b):
-    indifferent_to_prop P ->
-    P _ _ (prf_contraction Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_contraction.
-    rewrite Hmp. rewrite modus_ponens_indifferent;[assumption|].
-    rewrite Hp2.
-    reflexivity.
-  Qed.
-      
-
-  Lemma prf_weaken_conclusion_iter_under_implication_indifferent
-        P Γ l g g'
-        (wfl : wf l)
-        (wfg : well_formed g)
-        (wfg' : well_formed g'):
-    indifferent_to_prop P ->
-    P _ _ (prf_weaken_conclusion_iter_under_implication Γ l g g' wfl wfg wfg') = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion_iter_under_implication.
-    rewrite Hmp.
-
-    (*simpl. rewrite !orbF.*)
-    unfold eq_rec_r. unfold eq_rec. unfold eq_rect.
-    remember (eq_sym (@erefl _ (g ---> g'))) as eqs.
-    clear Heqeqs.
-    move: (well_formed_imp wfg wfg').
-    replace eqs with (@erefl Pattern (g ---> g')).
-    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
-
-    remember (eq_sym (@erefl _ (foldr patt_imp g l))) as eqs2.
-    clear Heqeqs2.
-    replace eqs2 with (@erefl Pattern (foldr patt_imp g l)).
-    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
-
-    remember (eq_sym (@erefl _ (foldr patt_imp g' l))) as eqs3.
-    clear Heqeqs3.
-    replace eqs3 with (@erefl Pattern (foldr patt_imp g' l)).
-    2: { apply UIP_dec. intros. apply Pattern_eqdec. }
-
-    intros wfi.
-    rewrite prf_weaken_conclusion_iter_indifferent; simpl; auto.
-    rewrite reorder_meta_indifferent; auto.
-    unfold prf_weaken_conclusion_under_implication.
-    unfold prf_weaken_conclusion_meta_meta.
-    rewrite Hmp. unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym.
-    simpl.
-    pose proof (Htmp := prf_weaken_conclusion_iter_meta_meta_indifferent).
-    specialize (Htmp P Γ).
-    specialize (Htmp [(g ---> g') ---> foldr patt_imp g l;
-       foldr patt_imp g l ---> (g ---> g') ---> foldr patt_imp g' l]).
-    simpl in Htmp. rewrite Htmp; simpl; auto.
-    - rewrite prf_contraction_indifferent; [assumption|].
-      reflexivity.
-    - rewrite syllogism_indifferent; [assumption|].
-      reflexivity.
-    - clear Htmp. rewrite prf_weaken_conclusion_meta_indifferent; [assumption|idtac|reflexivity].
-      rewrite prf_strenghten_premise_meta_indifferent; auto.
-      rewrite reorder_indifferent; auto.
-  Qed.
-
-  Lemma prf_weaken_conclusion_iter_under_implication_iter_indifferent
-        P Γ l₁ l₂ g g'
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfg : well_formed g)
-        (wfg' : well_formed g') :
-    indifferent_to_prop P ->
-    P _ _ (prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg') = false.
-  Proof.
-    intros Hp.
-    induction l₁; simpl.
-    - rewrite prf_weaken_conclusion_iter_under_implication_indifferent; auto.
-    - case_match.
-      rewrite prf_weaken_conclusion_meta_indifferent; auto.
-  Qed.
-
-  Lemma MyGoal_weakenConclusion_indifferent
-        P Γ l₁ l₂ g g'
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
-        (pf : Γ ⊢ foldr patt_imp g (l₁ ++ (g ---> g') :: l₂))
-        :
-    indifferent_to_prop P ->
-    P _ _ pf = false ->
-    P _ _ (MyGoal_weakenConclusion Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg' pf) = false.
-  Proof.
-    intros Hp Huse. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    simpl.
-    unfold MyGoal_weakenConclusion.
-    unfold prf_weaken_conclusion_iter_under_implication_iter_meta.
-    rewrite Hmp. simpl. rewrite Huse. simpl.
-    rewrite prf_weaken_conclusion_iter_under_implication_iter_indifferent; auto.
-  Qed.
-  
-  Check not_not_elim.
-
-  Lemma not_not_elim_indifferent
-        P Γ a (wfa : well_formed a = true):
-    indifferent_to_prop P ->
-    P _ _ (not_not_elim Γ a wfa) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold not_not_elim. rewrite Hp3. reflexivity.
-  Qed.
-
-  Lemma A_impl_not_not_B_indifferent
-        P Γ a b
-        (wfa : well_formed a)
-        (wfb : well_formed b) :
-    indifferent_to_prop P ->
-    P _ _ (A_impl_not_not_B Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold A_impl_not_not_B.
-    rewrite Hmp. rewrite not_not_elim_indifferent; [assumption|]. simpl.
-    rewrite reorder_meta_indifferent;[assumption|idtac|reflexivity].
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-  Lemma A_impl_not_not_B_meta_indifferent
-        P Γ a b
-        (wfa : well_formed a)
-        (wfb : well_formed b) 
-        (pf : Γ ⊢ a ---> ! ! b)
-    :
-    indifferent_to_prop P ->
-    P _ _ pf = false ->
-    P _ _ (A_impl_not_not_B_meta Γ a b wfa wfb pf) = false.
-  Proof.
-   intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-   intros Hpf.
-   unfold A_impl_not_not_B_meta.
-   rewrite Hmp. rewrite Hpf. rewrite A_impl_not_not_B_indifferent; auto.
-  Qed.
-
-  Check syllogism_4_meta.
-  Lemma syllogism_4_meta_indifferent
-        P Γ a b c d
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (wfc : well_formed c = true)
-        (wfd : well_formed d = true)
-        (pf1 : Γ ⊢ a ---> b ---> c)
-        (pf2 : Γ ⊢ c ---> d):
-    indifferent_to_prop P ->
-    P _ _ pf1 = false ->
-    P _ _ pf2 = false ->
-    P _ _ (syllogism_4_meta Γ a b c d wfa wfb wfc wfd pf1 pf2) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros Hpf1 Hpf2.
-    unfold syllogism_4_meta.
-    rewrite !(Hp1,Hp2,Hp3,Hmp).
-    rewrite Hpf1. rewrite Hpf2.
-    reflexivity.
-  Qed.
-
-  Lemma P4_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true):
-    indifferent_to_prop P ->
-    P _ _ (P4 Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold P4. rewrite !(Hp1,Hp2,Hp3,Hmp). reflexivity.
-  Qed.
-
-  Lemma bot_elim_indifferent
-        P Γ a (wfa : well_formed a = true):
-    indifferent_to_prop P ->
-    P _ _ (bot_elim Γ a wfa) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    { unfold bot_elim. do 4 rewrite Hmp. rewrite Hp1. simpl.
-      rewrite Hp2. simpl. rewrite P4_indifferent; auto. simpl.
-      rewrite Hp1. simpl. rewrite P4_indifferent; auto. }
-  Qed.
-
-  Lemma disj_left_intro_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true) :
-    indifferent_to_prop P ->
-    P _ _ (disj_left_intro Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold disj_left_intro.
-    rewrite syllogism_4_meta_indifferent; auto.
-    { rewrite modus_ponens_indifferent; auto. }
-    rewrite bot_elim_indifferent.
-    assumption. reflexivity.
-  Qed.
-
-  Lemma disj_right_intro_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true) :
-    indifferent_to_prop P ->
-    P _ _ (disj_right_intro Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold disj_right_intro. rewrite Hp1. reflexivity.
-  Qed.
-
-  Lemma pf_conj_elim_l_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true):
-    indifferent_to_prop P ->
-    P _ _ (pf_conj_elim_l Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold pf_conj_elim_l. rewrite A_impl_not_not_B_meta_indifferent; auto.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_intro_indifferent; auto.
-    + rewrite disj_left_intro_indifferent; auto.
-    + rewrite modus_ponens_indifferent; auto.
-  Qed.
-
-  Lemma pf_conj_elim_l_meta_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (pf : Γ ⊢ a and b)
-    :
-    indifferent_to_prop P ->
-    P _ _ pf = false ->
-    P _ _ (pf_conj_elim_l_meta Γ a b wfa wfb pf) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros Hpf.
-    unfold pf_conj_elim_l_meta. rewrite Hmp. rewrite pf_conj_elim_l_indifferent; auto.
-    rewrite Hpf. reflexivity.
-  Qed.
-
-  Lemma pf_conj_elim_r_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true):
-    indifferent_to_prop P ->
-    P _ _ (pf_conj_elim_r Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold pf_conj_elim_r.
-    rewrite A_impl_not_not_B_meta_indifferent; auto.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_intro_indifferent; auto.
-    + rewrite disj_right_intro_indifferent; auto.
-    + rewrite modus_ponens_indifferent; auto.
-  Qed.
-
-  Lemma pf_conj_elim_r_meta_indifferent
-        P Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (pf : Γ ⊢ a and b)
-    :
-    indifferent_to_prop P ->
-    P _ _ pf = false ->
-    P _ _ (pf_conj_elim_r_meta Γ a b wfa wfb pf) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros Hpf.
-    unfold pf_conj_elim_r_meta. rewrite Hmp. rewrite pf_conj_elim_r_indifferent; auto.
-    rewrite Hpf. reflexivity.
-  Qed.
-
-  Check nested_const.
-  Lemma nested_const_indifferent
-        P Γ a l
-        (wfa : well_formed a = true)
-        (wfl : wf l = true) :
-    indifferent_to_prop P ->
-    P _ _ (nested_const Γ a l wfa wfl) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    induction l; simpl.
-    - rewrite A_impl_A_indifferent; auto.
-    - case_match. rewrite syllogism_intro_indifferent; auto.
-  Qed.
-
-  Lemma nested_const_middle_indifferent
-        P Γ a l₁ l₂
-        (wfa : well_formed a = true)
-        (wfl₁ : wf l₁ = true)
-        (wfl₂ : wf l₂ = true):
-    indifferent_to_prop P ->
-    P _ _ (nested_const_middle Γ a l₁ l₂ wfa wfl₁ wfl₂) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    induction l₁; simpl.
-    - apply nested_const_indifferent; assumption.
-    - case_match. rewrite Hmp. rewrite IHl₁. simpl. rewrite Hp1. reflexivity.
-  Qed.
-
-  Lemma prf_equiv_of_impl_of_equiv_indifferent
-        P Γ a b a' b'
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (wfa' : well_formed a' = true)
-        (wfb' : well_formed b' = true)
-        (aiffa' : Γ ⊢ a <---> a')
-        (biffb' : Γ ⊢ b <---> b'):
-    indifferent_to_prop P ->
-    indifferent_to_cast P ->
-    P _ _ aiffa' = false ->
-    P _ _ biffb' = false ->
-    P _ _ (prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros Hc H1 H2.
-    unfold prf_equiv_of_impl_of_equiv.
-    rewrite pf_iff_equiv_trans_indifferent; auto.
-    - rewrite conj_intro_meta_indifferent; auto.
-      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        rewrite (@MyGoal_add_indifferent P Γ [a ---> b; a]); auto.
-        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite nested_const_middle_indifferent; auto.
-      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        rewrite (@MyGoal_add_indifferent P Γ [a ---> b'; a]); auto.
-        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite nested_const_middle_indifferent; auto.
-    - rewrite conj_intro_meta_indifferent; auto.
-      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        rewrite (@MyGoal_add_indifferent P Γ [a ---> b'; a']); auto.
-        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite nested_const_middle_indifferent; auto.
-      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a' ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        rewrite (@MyGoal_add_indifferent P Γ [a' ---> b'; a]); auto.
-        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite nested_const_middle_indifferent; auto.
-  Qed.
-
-  Lemma uses_svar_subst_eq_prf_equiv_congruence
-        Γ p q E ψ EvS SvS SvS'
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    SvS ⊆ SvS' ->
-    uses_svar_subst SvS pf = false ->
-    uses_svar_subst SvS (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS SvS' E ψ wfψ pf) = false.
-  Proof.
-    intros Hsub H.
-    Check eq_prf_equiv_congruence_elim.
-    apply (eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS SvS' E ψ wfψ pf result
-      => SvS ⊆ SvS' ->
-         uses_svar_subst SvS pf = false ->
-         uses_svar_subst SvS result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS SvS' E x wfψ pf Hsub Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      subst pf₁. subst pf₂.
-      specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
-      pose proof (indifferent_to_prop_uses_svar_subst).
-      rewrite pf_iff_equiv_trans_indifferent; auto.
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind2. reflexivity. }
-        { simpl. rewrite Hind2. reflexivity. }
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind1. reflexivity. }
-        { simpl. rewrite Hind1. reflexivity. }
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      { apply indifferent_to_cast_uses_svar_subst. }
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
-      intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite Hind.
-        reflexivity.
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite Hind.
-        reflexivity.
-      + reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
-      intros.
-      unfold pf_iff_mu_remove_svar_quantify_svar_open.
-      rewrite indifferent_to_cast_uses_svar_subst.
-      inversion Heq; subst; clear Heq.
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      3: { reflexivity. }
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_svar_subst. }
-        simpl.
-        { case_match. clear -frX e H. set_solver.
-          unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_svar_subst.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl. reflexivity.
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_svar_subst. }
-        simpl.
-        { case_match. clear -frX e H. set_solver.
-          unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_svar_subst.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl. reflexivity.
-    - assumption.
-    - assumption.
-  Qed.
-
-
-  Lemma uses_ex_gen_eq_prf_equiv_congruence
-        Γ p q E ψ EvS EvS' SvS
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    EvS ⊆ EvS' ->
-    uses_ex_gen EvS pf = false ->
-    uses_ex_gen EvS (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS' SvS E ψ wfψ pf) = false.
-  Proof.
-    intros Hsub H.
-    apply  (eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS' SvS E ψ wfψ pf result
-      => EvS ⊆ EvS' -> uses_ex_gen EvS pf = false -> uses_ex_gen EvS result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS' SvS E x wfψ pf Hsub Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      subst pf₁. subst pf₂.
-      specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
-      pose proof (indifferent_to_prop_uses_ex_gen).
-      rewrite pf_iff_equiv_trans_indifferent; auto.
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind2. reflexivity. }
-        { simpl. rewrite Hind2. reflexivity. }
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind1. reflexivity. }
-        { simpl. rewrite Hind1. reflexivity. }
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      { apply indifferent_to_cast_uses_ex_gen. }
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
-      intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite Hind.
-        case_match.
-        { clear -frx e H.  set_solver. }
-        reflexivity.
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite Hind.
-        case_match.
-        { clear -frx e H. set_solver. }
-        reflexivity.
-      + reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
-      intros.
-      unfold pf_iff_mu_remove_svar_quantify_svar_open.
-      rewrite indifferent_to_cast_uses_ex_gen.
-      inversion Heq; subst; clear Heq.
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      3: { reflexivity. }
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_ex_gen. }
-        simpl.
-        { unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_ex_gen.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl. reflexivity.
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_ex_gen. }
-        simpl.
-        { unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_ex_gen.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl. reflexivity.
-    - assumption.
-    - assumption.
-  Qed.
-
-  Lemma uses_kt_nomu_eq_prf_equiv_congruence
-        Γ p q E ψ EvS SvS
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    mu_free ψ ->
-    uses_kt pf = false ->
-    uses_kt (@eq_prf_equiv_congruence _ Γ p q wfp wfq EvS SvS E ψ wfψ pf) = false.
-  Proof.
-    intros Hmfψ H.
-    apply  (eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS SvS E ψ wfψ pf result
-      => mu_free ψ -> uses_kt pf = false -> uses_kt result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS SvS E x wfψ pf Hmfψ Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_kt.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_kt.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hmfψ Hpf.
-      simpl in Hmfψ. apply andb_prop in Hmfψ. destruct Hmfψ as [Hmfϕ₁ Hmfϕ₂].
-      subst pf₁. subst pf₂.
-      specialize (Hind1 Hmfϕ₂ Hpf). specialize (Hind2 Hmfϕ₁ Hpf).
-      pose proof (indifferent_to_prop_uses_kt).
-      rewrite pf_iff_equiv_trans_indifferent; auto.
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind2. reflexivity. }
-        { simpl. rewrite Hind2. reflexivity. }
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind1. reflexivity. }
-        { simpl. rewrite Hind1. reflexivity. }
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hmf Hpf.
-      simpl in Hmf. apply andb_prop in Hmf as [Hmf1 Hmf2].
-      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
-      { apply indifferent_to_prop_uses_kt. }
-      { apply indifferent_to_cast_uses_kt. }
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
-      intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-      simpl in H.
-
-      feed specialize Hind.
-      { apply mu_free_evar_open. assumption. }
-      { assumption. }
-
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_kt. }
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_kt.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_kt.
-        rewrite Hind.
-        reflexivity.
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
-        rewrite indifferent_to_cast_uses_kt.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_kt.
-        rewrite Hind.
-        reflexivity.
-      + reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
-      intros. simpl in H. congruence.
-    - assumption.
-    - assumption.
-  Qed.
 
     Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
@@ -3374,7 +2217,7 @@ Section ProofSystemTheorems.
       }
       apply pf_iff_proj1; auto.
 
-      apply (eq_prf_equiv_congruence Γ' φ1 φ2 WF1 WF2 (free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
+      apply (@eq_prf_equiv_congruence Σ Γ' φ1 φ2 WF1 WF2 (free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
           (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)); auto.
       3: {
         abstract (
@@ -3491,14 +2334,14 @@ Section ProofSystemTheorems.
       pose proof (@equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
       apply pf_iff_iff in H. destruct H.
       pose proof (EQ := Ex_quan Γ φ Zvar).
-      epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ EQ).
+      epose proof (PC := @prf_conclusion Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ EQ).
       2-3: apply well_formed_equal;auto.
       assert (Γ
                 ⊢ patt_equal φ' Z ---> instantiate (ex , φ) φ' ---> ex , φ) as HSUB. {
         pose proof (EE := @equality_elimination2 Γ φ' Z φ HΓ
                                                  ltac:(auto) ltac:(auto) ltac:(auto) WFB).
         unfold instantiate in EE.
-        epose proof (PSP := prf_strenghten_premise Γ ((patt_equal φ' Z) and (instantiate (ex , φ) Z))
+        epose proof (PSP := @prf_strenghten_premise Σ Γ ((patt_equal φ' Z) and (instantiate (ex , φ) Z))
                                                    ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
                                                    (ex , φ) _ _ _).
         eapply Modus_ponens. 4: apply and_impl.
@@ -3507,14 +2350,14 @@ Section ProofSystemTheorems.
         eapply Modus_ponens. 4: eapply Modus_ponens.
         7: exact PSP.
         1,2,4,5: wf_auto2.
-        * unshelve (epose proof (AI := and_impl' Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _)).
+        * unshelve (epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _)).
           1,2,3: auto.
           unfold instantiate. eapply Modus_ponens. 4: exact AI.
           1, 2: unfold patt_equal, patt_iff, patt_total, patt_defined; wf_auto2.
           rewrite <- HeqZ in PC.
           exact PC.
         * apply and_drop. 1-3: auto.
-          unshelve(epose proof (AI := and_impl' Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)); auto.
+          unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)); auto.
           eapply Modus_ponens. 4: exact AI. 3: exact EE.
           1-2: auto 10.
       }
@@ -3595,20 +2438,20 @@ Section ProofSystemTheorems.
       { simpl. rewrite andbT. exact MF. }
       { apply wf_body_ex_to_wf in WFB; apply wf_ex_to_wf_body; auto. }
       simpl in H.
-      epose proof (H0 := and_impl _ _ _ _ _ _ _).
+      epose proof (H0 := @and_impl Σ _ _ _ _ _ _ _).
       eapply Modus_ponens in H0. 4: exact H. 2-3: unfold patt_equal,patt_total,patt_defined;wf_auto2.
       apply reorder_meta in H0. 2-4: auto.
       
-      epose proof (H1 := and_impl' _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
+      epose proof (H1 := @and_impl' Σ _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
       1-2: shelve.
       apply reorder_meta. 1-3: shelve.
-      epose proof (H2 := P4 Γ (bevar_subst φ φ' 0) (! ex , patt_not (φ)) _ _).
+      epose proof (H2 := @P4 Σ Γ (bevar_subst φ φ' 0) (! ex , patt_not (φ)) _ _).
       clear H H1.
-      epose proof (H := prf_weaken_conclusion Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
+      epose proof (H := @prf_weaken_conclusion Σ Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
       eapply Modus_ponens in H. eapply Modus_ponens in H; auto.
       2-4: shelve.
       2: {
-        epose proof (H1 := prf_weaken_conclusion Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (! φ)) (! ! ex , (! φ)) _ _ _). eapply Modus_ponens. 4: exact H1. 1-2: shelve.
+        epose proof (H1 := @prf_weaken_conclusion Σ Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (! φ)) (! ! ex , (! φ)) _ _ _). eapply Modus_ponens. 4: exact H1. 1-2: shelve.
         apply not_not_intro. shelve.
       }
       eapply syllogism_intro in H2. exact H2. all: auto.

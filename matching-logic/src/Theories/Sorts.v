@@ -10,7 +10,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Utils.extralibrary.
 Require Import MatchingLogic.Theories.Definedness.
 
 Import MatchingLogic.Syntax.Notations.
@@ -42,92 +42,89 @@ Section sorts.
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
 
-  Lemma evar_open_inhabitant_set db x ϕ :
-    evar_open db x (patt_inhabitant_set ϕ) = patt_inhabitant_set (evar_open db x ϕ).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_evar_open. reflexivity. Qed.
+  Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bevar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bevar_subst ϕ ψ x).
+  Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
   
-  Lemma svar_open_inhabitant_set db x ϕ :
-    svar_open db x (patt_inhabitant_set ϕ) = patt_inhabitant_set (svar_open db x ϕ).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_svar_open. reflexivity. Qed.
+  Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bsvar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bsvar_subst ϕ ψ x).
+  Proof. unfold patt_inhabitant_set. simpl_bsvar_subst. reflexivity. Qed.
   
   #[global]
    Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
-    {| unary_evar_open := evar_open_inhabitant_set ;
-       unary_svar_open := svar_open_inhabitant_set ;
+    {| unary_bevar_subst := bevar_subst_inhabitant_set ;
+       unary_bsvar_subst := bsvar_subst_inhabitant_set ;
     |}.
 
-  (* BV : nat -> sort *)
-  (* BV_inc : \forall n, BV n -> BV n *)
-  (* forall n:nat, forall x: BV n, exists y:BV n, BV_inc x = y *)
-  (* forall n:nat, forall x : BV n, P *)
-  (* forall n, n \in [[nat]] -> forall x, x \in [[BV n]], P *)
-  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV b1]], P  *)
-  (* forall, b0 \in [[nat]] -> forall, b0 \in [[BV (nest_ex b0)]], P  *)
-  (* forall, b0 \in [[nat]] -> Q(b0)*)
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
 
-  Lemma evar_open_forall_of_sort s db x ϕ :
-    evar_open db x (patt_forall_of_sort s ϕ) = patt_forall_of_sort (evar_open db x s) (evar_open (db+1) x ϕ).
+  Lemma bevar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
+    bevar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (db+1)).
   Proof.
     unfold patt_forall_of_sort.
-    rewrite !simpl_evar_open.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
     (* TODO rewrite all _+1 to 1+_ *)
     rewrite PeanoNat.Nat.add_comm. simpl.
-    unfold nest_ex.
-    rewrite evar_open_nest_ex_aux_comm.
+    rewrite bevar_subst_nest_ex_aux.
+    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     simpl.
     rewrite PeanoNat.Nat.sub_0_r.
     reflexivity.
   Qed.
 
-  Lemma svar_open_forall_of_sort s db X ϕ :
-    svar_open db X (patt_forall_of_sort s ϕ) = patt_forall_of_sort (svar_open db X s) (svar_open db X ϕ).
+  Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
+    bsvar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
   Proof.
     unfold patt_forall_of_sort.
-    rewrite !simpl_svar_open. simpl.
-    rewrite svar_open_nest_ex_comm.
+    repeat (rewrite simpl_bsvar_subst';[assumption|]).
+    simpl.
+    rewrite bsvar_subst_nest_ex_aux_comm.
+    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     reflexivity.
-  Qed. 
+  Qed.
 
-  Lemma evar_open_exists_of_sort s db x ϕ :
-    evar_open db x (patt_exists_of_sort s ϕ) = patt_exists_of_sort (evar_open db x s) (evar_open (db+1) x ϕ).
+  Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
+    bevar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (db+1)).
   Proof.
     unfold patt_exists_of_sort.
-    rewrite !simpl_evar_open.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
     (* TODO rewrite all _+1 to 1+_ *)
     rewrite PeanoNat.Nat.add_comm. simpl.
     unfold nest_ex.
-    rewrite evar_open_nest_ex_aux_comm.
+    rewrite bevar_subst_nest_ex_aux.
+    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     simpl.
     rewrite PeanoNat.Nat.sub_0_r.
     reflexivity.
   Qed.
 
-  Lemma svar_open_exists_of_sort s db X ϕ :
-    svar_open db X (patt_exists_of_sort s ϕ) = patt_exists_of_sort (svar_open db X s) (svar_open db X ϕ).
+  Lemma bsvar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
+    bsvar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
   Proof.
     unfold patt_exists_of_sort.
-    rewrite !simpl_svar_open. simpl.
-    rewrite svar_open_nest_ex_comm.
+    repeat (rewrite simpl_bsvar_subst';[assumption|]).
+    simpl.
+    rewrite bsvar_subst_nest_ex_aux_comm.
+    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     reflexivity.
   Qed.
     
   #[global]
    Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
     {|
-    ebinder_evar_open := evar_open_forall_of_sort s ;
-    ebinder_svar_open := svar_open_forall_of_sort s ;
+    ebinder_bevar_subst := bevar_subst_forall_of_sort s ;
+    ebinder_bsvar_subst := bsvar_subst_forall_of_sort s ;
     |}.
 
   #[global]
    Instance EBinder_exists_of_sort s : EBinder (patt_exists_of_sort s) _ _:=
     {|
-    ebinder_evar_open := evar_open_exists_of_sort s ;
-    ebinder_svar_open := svar_open_exists_of_sort s ;
+    ebinder_bevar_subst := bevar_subst_exists_of_sort s ;
+    ebinder_bsvar_subst := bsvar_subst_exists_of_sort s ;
     |}.
   
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
@@ -178,8 +175,7 @@ Section sorts.
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite pattern_interpretation_forall_predicate.
       2: {
-        rewrite !simpl_evar_open.
-        simpl.
+        unfold evar_open. simpl_bevar_subst. simpl.
         apply M_predicate_impl.
         - apply T_predicate_in.
           apply M_satisfies_theory.
@@ -252,10 +248,9 @@ Section sorts.
       - intros H m.
         pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [_ Hfeip2].
-        rewrite {3}HeqBigϕ. rewrite -> evar_open_imp, -> evar_open_in.
+        rewrite {3}HeqBigϕ.
+        unfold evar_open. simpl_bevar_subst. simpl.
         apply pattern_interpretation_predicate_impl.
-        2: fold evar_open.
-        fold evar_open.
         apply T_predicate_in. apply M_satisfies_theory.
         intros H1.
         specialize (Hfeip2 H1). clear H1.
@@ -290,8 +285,7 @@ Section sorts.
       { unfold patt_and. unfold patt_or.  apply sub_imp_l. apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity. }
       rewrite -> pattern_interpretation_exists_predicate_full.
       2: {
-        rewrite !simpl_evar_open.
-        simpl.
+        unfold evar_open. simpl_bevar_subst. simpl.
         apply M_predicate_and.
         - apply T_predicate_in.
           apply M_satisfies_theory.
@@ -393,8 +387,8 @@ Section sorts.
       intros x Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
-      rewrite !simpl_evar_open.
-      rewrite {1}[evar_open _ _]/=.
+      unfold evar_open. simpl_bevar_subst.
+      rewrite {1}[bevar_subst _ _ _]/=.
       apply M_predicate_and.
       - apply T_predicate_in.
         apply M_satisfies_theory.
@@ -417,7 +411,7 @@ Section sorts.
       intros x Hpred.
       unfold patt_forall_of_sort.
       apply M_predicate_forall.
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
       apply M_predicate_impl.
       - apply T_predicate_in.
         apply M_satisfies_theory.
@@ -438,10 +432,10 @@ Section sorts.
       rewrite pattern_interpretation_forall_of_sort_predicate.
       2: { eauto. }
 
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       rewrite -/(nest_ex s₂).
 
       apply all_iff_morphism.
@@ -449,7 +443,10 @@ Section sorts.
       apply all_iff_morphism. unfold pointwise_relation. intros Hinh1.
       
       rewrite pattern_interpretation_exists_of_sort_predicate.
-      2: rewrite !simpl_evar_open; apply T_predicate_equals; apply M_satisfies_theory.
+      2: {
+        unfold evar_open. simpl_bevar_subst.
+        apply T_predicate_equals; apply M_satisfies_theory.
+      }
       apply ex_iff_morphism. unfold pointwise_relation. intros m₂.
 
       unfold Minterp_inhabitant.
@@ -478,10 +475,10 @@ Section sorts.
       apply and_iff_morphism.
       rewrite pattern_interpretation_nest_ex_aux. reflexivity.
 
-      unfold nest_ex.      
-      rewrite !simpl_evar_open.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      unfold nest_ex.
+      unfold evar_open. simpl_bevar_subst.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       fold (nest_ex f). fold (nest_ex (nest_ex f)).
       
       
@@ -518,24 +515,30 @@ Section sorts.
       apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [_ Hx'fr].
       apply sets.not_elem_of_union in Hx'fr. destruct Hx'fr as [Hx'fr _].
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
-      
+
       rewrite {2}update_evar_val_comm.
-      do 2 rewrite -> evar_open_bound_evar.
-      repeat case_match; try lia.
-      rewrite <- Heqx''. apply Hx''neqx'.
+      { assumption. }
+      (* do 2 rewrite -> evar_open_bound_evar. *)
+      (* repeat case_match; try lia. *)
+      (* rewrite <- Heqx''. *)
+      (*apply Hx''neqx'.*)
       rewrite update_evar_val_same.
       unfold nest_ex.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux.
+      { reflexivity. }
+      simpl.
       fold (nest_ex f). fold (nest_ex (nest_ex f)).
 
       unfold nest_ex.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
       rewrite pattern_interpretation_free_evar_independent.
+      { assumption. }
+      (*
       do 2 rewrite evar_open_bound_evar.
       repeat case_match; try lia.
       unfold nest_ex in Heqx''.
-      rewrite <- Heqx''. assumption.
+      rewrite <- Heqx''. assumption.*)
       rewrite pattern_interpretation_free_evar_independent. assumption.
       auto.
     Qed.
@@ -549,12 +552,15 @@ Section sorts.
           (app_ext (@pattern_interpretation Σ M ρₑ ρₛ f) {[m₁]})
             ⊆ {[m₂]}.
     Proof.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto. }
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: { eauto. }
 
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.                                                       
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux.
+      { reflexivity. }
+      simpl.
       rewrite -/(nest_ex s₂).
 
       apply all_iff_morphism.
@@ -562,7 +568,11 @@ Section sorts.
       apply all_iff_morphism. unfold pointwise_relation. intros Hinh1.
       
       rewrite pattern_interpretation_exists_of_sort_predicate.
-      2: rewrite !simpl_evar_open; apply T_predicate_subseteq; apply M_satisfies_theory.
+      2: {
+        unfold evar_open. simpl_bevar_subst.
+        apply T_predicate_subseteq; apply M_satisfies_theory.
+      }
+      
       apply ex_iff_morphism. unfold pointwise_relation. intros m₂.
 
       unfold Minterp_inhabitant.
@@ -591,10 +601,14 @@ Section sorts.
       apply and_iff_morphism.
       rewrite pattern_interpretation_nest_ex_aux. reflexivity.
 
-      unfold nest_ex.      
-      rewrite !simpl_evar_open.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      unfold nest_ex.
+      unfold evar_open. simpl_bevar_subst.
+      rewrite bevar_subst_nest_ex_aux.
+      { reflexivity. }
+      simpl.
+      rewrite bevar_subst_nest_ex_aux.
+      { reflexivity. }
+      simpl.
       fold (nest_ex f). fold (nest_ex (nest_ex f)).
       
       
@@ -631,21 +645,23 @@ Section sorts.
       rewrite 2!free_evars_nest_ex_aux in Hx'fr.
       
       rewrite {2}update_evar_val_comm.
-      do 2 rewrite evar_open_bound_evar. cbn.
+      { assumption. }
+      (*do 2 rewrite evar_open_bound_evar. cbn.
       repeat case_match; try lia.
-      rewrite <- Heqx''. apply Hx''neqx'.
+      rewrite <- Heqx''. apply Hx''neqx'. *)
       rewrite update_evar_val_same.
       unfold nest_ex.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       fold (nest_ex f). fold (nest_ex (nest_ex f)).
 
       unfold nest_ex.
       rewrite 2!pattern_interpretation_nest_ex_aux.
 
       rewrite pattern_interpretation_free_evar_independent.
-      do 2 rewrite evar_open_bound_evar. cbn. unfold nest_ex in Heqx''.
+      { assumption. }
+      (*do 2 rewrite evar_open_bound_evar. cbn. unfold nest_ex in Heqx''.
       repeat case_match; try lia.
-      rewrite <- Heqx''. assumption.
+      rewrite <- Heqx''. assumption.*)
       rewrite pattern_interpretation_free_evar_independent. assumption.
       auto.
     Qed.
@@ -675,7 +691,19 @@ Section sorts.
           m₁ = m₂.
     Proof.
       unfold patt_partial_function_injective.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        apply M_predicate_forall_of_sort.
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
@@ -685,7 +713,7 @@ Section sorts.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      rewrite simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
       rewrite [0+1]/=.
       remember
@@ -705,14 +733,14 @@ Section sorts.
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
 
       rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
       simpl.
       rewrite pattern_interpretation_predicate_not. 2: { eauto. }
       rewrite equal_iff_interpr_same.
       rewrite pattern_interpretation_bott_simpl. 2: apply M_satisfies_theory.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       rewrite pattern_interpretation_app_simpl.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite pattern_interpretation_evar_open_nest_ex.
@@ -781,7 +809,19 @@ Section sorts.
     Proof.
       unfold total_function_is_injective.
       unfold patt_partial_function_injective.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        apply M_predicate_forall_of_sort.
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
@@ -790,8 +830,15 @@ Section sorts.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      rewrite simpl_evar_open.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      unfold evar_open. simpl_bevar_subst.
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+                match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       rewrite [0+1]/=.
       remember
       (fresh_evar
@@ -807,14 +854,14 @@ Section sorts.
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
 
       rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
       simpl.
       
       rewrite equal_iff_interpr_same.
       2: { apply M_satisfies_theory. }
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite pattern_interpretation_evar_open_nest_ex.

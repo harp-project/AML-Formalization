@@ -48,8 +48,8 @@ Module test_1.
   Definition more : Pattern := A or ! A.
 
   Example e1 X: evar_open 0 X more = more.
-  Proof. unfold more. rewrite !simpl_evar_open. reflexivity. Qed.
-
+  Proof. unfold more. unfold evar_open. simpl_bevar_subst. reflexivity. Qed.
+  
   Definition complex : Pattern :=
     a ---> (b ---> !C) $ ex , D $ Bot and Top.
 
@@ -114,7 +114,7 @@ Module test_2.
     Example test_pattern_5 : Pattern := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
 
     Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
-    Proof. unfold test_pattern_3. rewrite !simpl_evar_open. reflexivity. Qed.
+    Proof. unfold test_pattern_3. unfold evar_open. simpl_bevar_subst. reflexivity. Qed.
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
