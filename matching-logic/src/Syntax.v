@@ -3998,31 +3998,6 @@ Section syntax.
     - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
   Qed.
 
-  (*
-  Print well_formed_closed_aux.
-  Lemma l:
-    well_formed_closed_aux *)
-
-  Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
-    svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
-  Proof.
-    move: level dbi. unfold svar_open.
-    induction ϕ; move=> level dbi; simpl; auto.
-    - case_match; reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
-    - rewrite IHϕ. reflexivity.
-    - rewrite IHϕ. reflexivity.
-  Qed.
-
-  Lemma evar_open_nest_mu_aux_comm level more ϕ dbi X:
-    evar_open dbi X (nest_mu_aux level more ϕ) = nest_mu_aux level more (evar_open dbi X ϕ).
-  Proof.
-    move: level dbi. unfold evar_open.
-    induction ϕ; move=> level dbi; simpl; auto; try congruence.
-    - case_match; reflexivity.
-  Qed.
-
   Lemma nest_ex_aux_wfcex level more ϕ:
     well_formed_closed_ex_aux ϕ level ->
     nest_ex_aux level more ϕ = ϕ.
@@ -4047,6 +4022,51 @@ Section syntax.
     - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
     - by rewrite IHϕ.
     - by rewrite IHϕ.
+  Qed.
+
+  Lemma bsvar_subst_nest_ex_aux_comm level more ϕ dbi ψ:
+    well_formed_closed_ex_aux ψ level ->
+    bsvar_subst (nest_ex_aux level more ϕ) ψ dbi = nest_ex_aux level more (bsvar_subst ϕ ψ dbi).
+  Proof.
+    move: level dbi. unfold svar_open.
+    induction ϕ; move=> level dbi H; simpl; auto.
+    - case_match; try reflexivity. by rewrite nest_ex_aux_wfcex.
+    - rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity.
+    - rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity.
+    - rewrite IHϕ.
+      { eapply well_formed_closed_ex_aux_ind;[|eassumption]. lia. }
+      reflexivity.
+    - rewrite IHϕ;[assumption|]. reflexivity.
+  Qed.
+
+  Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
+    svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
+  Proof.
+    apply bsvar_subst_nest_ex_aux_comm.
+    reflexivity.
+  Qed.
+
+  Lemma bevar_subst_nest_mu_aux_comm level more ϕ dbi ψ:
+    well_formed_closed_mu_aux ψ level ->
+    bevar_subst (nest_mu_aux level more ϕ) ψ dbi = nest_mu_aux level more (bevar_subst ϕ ψ dbi).
+  Proof.
+    move: level dbi. unfold svar_open.
+    induction ϕ; move=> level dbi H; simpl; auto.
+    - case_match; try reflexivity. by rewrite nest_mu_aux_wfcmu.
+    - rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity.
+    - rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity.
+    - rewrite IHϕ;[assumption|]. reflexivity.
+    - rewrite IHϕ.
+      { eapply well_formed_closed_mu_aux_ind;[|eassumption]. lia. }
+      reflexivity.
+  Qed.
+
+  Lemma evar_open_nest_mu_aux_comm level more ϕ dbi X:
+    evar_open dbi X (nest_mu_aux level more ϕ) = nest_mu_aux level more (evar_open dbi X ϕ).
+  Proof.
+    move: level dbi. unfold evar_open.
+    induction ϕ; move=> level dbi; simpl; auto; try congruence.
+    - case_match; reflexivity.
   Qed.
 
   Lemma bevar_subst_nest_ex_aux level ϕ dbi ψ:
