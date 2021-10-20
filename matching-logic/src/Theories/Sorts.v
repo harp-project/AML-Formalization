@@ -691,7 +691,19 @@ Section sorts.
           m₁ = m₂.
     Proof.
       unfold patt_partial_function_injective.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        apply M_predicate_forall_of_sort.
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
@@ -701,7 +713,7 @@ Section sorts.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      rewrite simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
       rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
       rewrite [0+1]/=.
       remember
@@ -721,14 +733,14 @@ Section sorts.
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
 
       rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
       simpl.
       rewrite pattern_interpretation_predicate_not. 2: { eauto. }
       rewrite equal_iff_interpr_same.
       rewrite pattern_interpretation_bott_simpl. 2: apply M_satisfies_theory.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       rewrite pattern_interpretation_app_simpl.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite pattern_interpretation_evar_open_nest_ex.
@@ -797,7 +809,19 @@ Section sorts.
     Proof.
       unfold total_function_is_injective.
       unfold patt_partial_function_injective.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        apply M_predicate_forall_of_sort.
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
@@ -806,8 +830,15 @@ Section sorts.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      rewrite simpl_evar_open.
-      rewrite pattern_interpretation_forall_of_sort_predicate. 2: { eauto 8. }
+      unfold evar_open. simpl_bevar_subst.
+      rewrite pattern_interpretation_forall_of_sort_predicate.
+      2: {
+                match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        eauto.
+      }
       rewrite [0+1]/=.
       remember
       (fresh_evar
@@ -823,14 +854,14 @@ Section sorts.
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
-      rewrite !simpl_evar_open.
+      unfold evar_open. simpl_bevar_subst.
 
       rewrite pattern_interpretation_predicate_impl. 2: { eauto. }
       simpl.
       
       rewrite equal_iff_interpr_same.
       2: { apply M_satisfies_theory. }
-      rewrite evar_open_nest_ex_aux_comm. simpl.
+      rewrite bevar_subst_nest_ex_aux;[reflexivity|]. simpl.
       fold (nest_ex (evar_open 0 x₁ (nest_ex f))).
       rewrite 2!pattern_interpretation_app_simpl.
       rewrite pattern_interpretation_evar_open_nest_ex.
