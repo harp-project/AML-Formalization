@@ -168,7 +168,7 @@ Section with_signature.
 
       rewrite /patt_ind_gen_body.
       unfold svar_open.
-      rewrite !simpl_bsvar_subst. simpl.
+      simpl_bsvar_subst. simpl.
       rewrite 2!pattern_interpretation_or_simpl.
       rewrite pattern_interpretation_svar_open_nest_mu'.
       { assumption.  }

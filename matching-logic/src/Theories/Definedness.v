@@ -564,9 +564,11 @@ Section definedness.
   Hint Resolve T_predicate_in : core.
 
   (* defined, total, subseteq, equal, in *)
-  Lemma bevar_subst_defined ψ x ϕ : bevar_subst (patt_defined ϕ) ψ x = patt_defined (bevar_subst ϕ ψ x).
+  Lemma bevar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bevar_subst (patt_defined ϕ) ψ x = patt_defined (bevar_subst ϕ ψ x).
   Proof. unfold patt_defined. cbn. auto. Qed.
-  Lemma bsvar_subst_defined ψ x ϕ : bsvar_subst (patt_defined ϕ) ψ x = patt_defined (bsvar_subst ϕ ψ x).
+  Lemma bsvar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bsvar_subst (patt_defined ϕ) ψ x = patt_defined (bsvar_subst ϕ ψ x).
   Proof. unfold patt_defined. cbn. auto. Qed.
 
   #[global]
@@ -576,10 +578,13 @@ Section definedness.
     |}.
   
 
-  Lemma bevar_subst_total ψ x ϕ : bevar_subst (patt_total ϕ) ψ x = patt_total (bevar_subst ϕ ψ x).
-  Proof. unfold patt_total. rewrite !simpl_bevar_subst. reflexivity. Qed.
-  Lemma bsvar_subst_total ψ x ϕ : bsvar_subst (patt_total ϕ) ψ x = patt_total (bsvar_subst ϕ ψ x).
-  Proof. unfold patt_total. rewrite !simpl_bsvar_subst. reflexivity. Qed.
+  Lemma bevar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bevar_subst (patt_total ϕ) ψ x = patt_total (bevar_subst ϕ ψ x).
+  Proof. unfold patt_total. simpl_bevar_subst. reflexivity. Qed.
+  
+  Lemma bsvar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
+    bsvar_subst (patt_total ϕ) ψ x = patt_total (bsvar_subst ϕ ψ x).
+  Proof. unfold patt_total. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Unary_total : Unary patt_total :=
@@ -588,13 +593,13 @@ Section definedness.
     |}.
   
   
-  Lemma bevar_subst_equal ψ x ϕ₁ ϕ₂ :
+  Lemma bevar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bevar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_equal. rewrite !simpl_bevar_subst. reflexivity. Qed.
+  Proof. unfold patt_equal. simpl_bevar_subst. reflexivity. Qed.
 
-  Lemma bsvar_subst_equal ψ x ϕ₁ ϕ₂ :
+  Lemma bsvar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bsvar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_equal. rewrite !simpl_bsvar_subst. reflexivity. Qed.
+  Proof. unfold patt_equal. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_equal : Binary patt_equal :=
@@ -602,13 +607,13 @@ Section definedness.
        binary_bsvar_subst := bsvar_subst_equal ;
     |}.
   
-  Lemma bevar_subst_subseteq ψ x ϕ₁ ϕ₂ :
+  Lemma bevar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bevar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_subseteq. rewrite !simpl_bevar_subst. reflexivity. Qed.
+  Proof. unfold patt_subseteq. simpl_bevar_subst. reflexivity. Qed.
 
-  Lemma bsvar_subst_subseteq ψ x ϕ₁ ϕ₂ :
+  Lemma bsvar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bsvar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_subseteq. rewrite !simpl_bsvar_subst. reflexivity. Qed.
+  Proof. unfold patt_subseteq. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_subseteq : Binary patt_subseteq :=
@@ -617,13 +622,13 @@ Section definedness.
     |}.
   
 
-  Lemma bevar_subst_in ψ x ϕ₁ ϕ₂ :
+  Lemma bevar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bevar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_in. rewrite !simpl_bevar_subst. reflexivity. Qed.
+  Proof. unfold patt_in. simpl_bevar_subst. reflexivity. Qed.
 
-  Lemma bsvar_subst_in ψ x ϕ₁ ϕ₂ :
+  Lemma bsvar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
     bsvar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_in. rewrite !simpl_bsvar_subst. reflexivity. Qed.
+  Proof. unfold patt_in. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
    Instance Binary_in : Binary patt_in :=
@@ -651,7 +656,7 @@ Section definedness.
     end.
     
     unfold evar_open.
-    rewrite simpl_bevar_subst.
+    simpl_bevar_subst.
     apply T_predicate_equals.
     apply Hm.
   Qed.
@@ -665,7 +670,7 @@ Section definedness.
   Proof.
     intros Htheory.
     rewrite pattern_interpretation_forall_predicate.
-    2: { unfold evar_open. rewrite simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
+    2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
           (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
@@ -673,12 +678,12 @@ Section definedness.
               (BoundVarSugar.b0
                  and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
-    rewrite !simpl_bevar_subst.
+    simpl_bevar_subst.
     rewrite equal_iff_interpr_same.
     2: { apply Htheory. }
 
     rewrite pattern_interpretation_set_builder.
-    { unfold evar_open. rewrite !simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
+    { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
 
     assert (Hpi: ∀ M ev sv phi rhs,
                @pattern_interpretation _ M ev sv phi = rhs
@@ -704,7 +709,7 @@ Section definedness.
       solve_free_evars_inclusion 5.
     }
     unfold evar_open.
-    rewrite !simpl_bevar_subst. simpl.
+    simpl_bevar_subst. simpl.
 (*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.

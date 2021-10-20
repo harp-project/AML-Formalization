@@ -118,49 +118,52 @@ Module Syntax.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
     
-    Lemma bevar_subst_not ψ x ϕ : bevar_subst (patt_not ϕ) ψ x = patt_not (bevar_subst ϕ ψ x).
+    Lemma bevar_subst_not ψ (wfψ : well_formed_closed ψ) x ϕ :
+      bevar_subst (patt_not ϕ) ψ x = patt_not (bevar_subst ϕ ψ x).
     Proof. simpl. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_or ψ x ϕ₁ ϕ₂ :
+    Lemma bevar_subst_or ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bevar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_and ψ x ϕ₁ ϕ₂ :
+    Lemma bevar_subst_and ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bevar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_iff ψ x ϕ₁ ϕ₂ :
+    Lemma bevar_subst_iff ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bevar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_top ψ x : bevar_subst patt_top ψ x = patt_top.
+    Lemma bevar_subst_top ψ (wfψ : well_formed_closed ψ) x : bevar_subst patt_top ψ x = patt_top.
     Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_forall ψ x ϕ :
+    Lemma bevar_subst_forall ψ (wfψ : well_formed_closed ψ) x ϕ :
       bevar_subst (patt_forall ϕ) ψ x = patt_forall (bevar_subst ϕ ψ (S x)).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
     (* TODO: bevar_subst_nu *)
 
-    Lemma bsvar_subst_not ψ x ϕ : bsvar_subst (patt_not ϕ) ψ x = patt_not (bsvar_subst ϕ ψ x).
+    Lemma bsvar_subst_not ψ (wfψ : well_formed_closed ψ) x ϕ :
+      bsvar_subst (patt_not ϕ) ψ x = patt_not (bsvar_subst ϕ ψ x).
     Proof. simpl. unfold patt_not. reflexivity. Qed.
 
-    Lemma bsvar_subst_or ψ x ϕ₁ ϕ₂ :
+    Lemma bsvar_subst_or ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bsvar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
 
-    Lemma bsvar_subst_and ψ x ϕ₁ ϕ₂ :
+    Lemma bsvar_subst_and ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bsvar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
-    Lemma bsvar_subst_iff ψ x ϕ₁ ϕ₂ :
+    Lemma bsvar_subst_iff ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
       bsvar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
     Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
 
-    Lemma bsvar_subst_top ψ x : bsvar_subst patt_top ψ x = patt_top.
+    Lemma bsvar_subst_top ψ (wfψ : well_formed_closed ψ) x : bsvar_subst patt_top ψ x = patt_top.
     Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
 
-    Lemma bsvar_subst_forall ψ x ϕ : bsvar_subst (patt_forall ϕ) ψ x = patt_forall (bsvar_subst ϕ ψ x).
+    Lemma bsvar_subst_forall ψ (wfψ : well_formed_closed ψ) x ϕ :
+      bsvar_subst (patt_forall ϕ) ψ x = patt_forall (bsvar_subst ϕ ψ x).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
     (* ******* *)
@@ -431,7 +434,7 @@ Module Semantics.
         apply M_predicate_not.
         apply M_predicate_exists.
         unfold evar_open.
-        rewrite !simpl_bevar_subst.
+        repeat (rewrite simpl_bevar_subst';[reflexivity|]).
         apply M_predicate_not.
         subst x.
         simpl.        
@@ -537,7 +540,7 @@ Module Semantics.
 
         rewrite -> Hfr. subst x.
         unfold evar_open.
-        rewrite !simpl_bevar_subst.
+        simpl_bevar_subst.
         split; intros H'.
         - intros m.
           specialize (H' m).

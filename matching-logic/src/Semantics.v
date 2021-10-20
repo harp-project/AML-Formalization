@@ -731,10 +731,10 @@ Section semantics.
   (* theory predicate *)
   Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
 
-  Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst : core.
-  Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst : core.
-  Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst : core.
-  Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst : core.
+  Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
+  Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
+  Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
+  Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
   
   Lemma T_predicate_impl_M_predicate M Γ ϕ:
     satisfies_theory M Γ -> T_predicate Γ ϕ -> M_predicate M ϕ.
@@ -2784,13 +2784,13 @@ End Notations.
 #[export]
  Hint Resolve M_predicate_exists : core.
 #[export]
- Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst : core.
+ Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
 #[export]
- Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst : core.
+ Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
 #[export]
- Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst : core.
+ Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
 #[export]
- Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst : core.
+ Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
 #[export]
  Hint Resolve T_predicate_impl_M_predicate : core.
 #[export]

@@ -6038,15 +6038,22 @@ End BoundVarSugar.
 
 (* Tactics for resolving goals involving sets *)
 
+Ltac simpl_bevar_subst := repeat (rewrite simpl_bevar_subst';[reflexivity|]).
+Ltac simpl_bsvar_subst := repeat (rewrite simpl_bsvar_subst';[reflexivity|]).
+
 Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
   simpl;
   (do ? [rewrite simpl_free_evars/=]) ;
-  solve_set_inclusion depth.
+  auto;
+  clear;
+  set_solver.
 
 Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
   simpl;
   (do ? [rewrite simpl_free_svars/=]) ;
-  solve_set_inclusion depth.
+  auto;
+  clear;
+  set_solver.
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
  *)
@@ -6113,6 +6120,7 @@ Ltac solve_fresh_neq :=
   | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
     simpl in H;
     (do ? rewrite simpl_free_evars/= in H);
+    auto;
     rewrite -?union_assoc_L in H;
     repeat (
         match goal with
@@ -6141,6 +6149,7 @@ Ltac solve_fresh_svar_neq :=
   | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
     simpl in H;
     (do ? rewrite simpl_free_svars/= in H);
+    auto;
     rewrite -?union_assoc_L in H;
     repeat (
         match goal with

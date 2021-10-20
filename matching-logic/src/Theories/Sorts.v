@@ -10,7 +10,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators Utils.extralibrary.
 Require Import MatchingLogic.Theories.Definedness.
 
 Import MatchingLogic.Syntax.Notations.
@@ -42,13 +42,13 @@ Section sorts.
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
 
-  Lemma bevar_subst_inhabitant_set ψ x ϕ :
+  Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
     bevar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bevar_subst ϕ ψ x).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_bevar_subst. reflexivity. Qed.
+  Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
   
-  Lemma bsvar_subst_inhabitant_set ψ x ϕ :
+  Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
     bsvar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bsvar_subst ϕ ψ x).
-  Proof. unfold patt_inhabitant_set. rewrite !simpl_bsvar_subst. reflexivity. Qed.
+  Proof. unfold patt_inhabitant_set. simpl_bsvar_subst. reflexivity. Qed.
   
   #[global]
    Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
@@ -62,26 +62,27 @@ Section sorts.
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
 
-  Lemma bevar_subst_forall_of_sort s ψ db ϕ :
+  Lemma bevar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
     bevar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (db+1)).
   Proof.
     unfold patt_forall_of_sort.
-    rewrite !simpl_bevar_subst.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
     (* TODO rewrite all _+1 to 1+_ *)
     rewrite PeanoNat.Nat.add_comm. simpl.
-    unfold nest_ex.
-    rewrite evar_open_nest_ex_aux_comm'.
+    rewrite bevar_subst_nest_ex_aux.
+    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     simpl.
     rewrite PeanoNat.Nat.sub_0_r.
     reflexivity.
   Qed.
 
-  Lemma svar_open_forall_of_sort s db X ϕ :
-    svar_open db X (patt_forall_of_sort s ϕ) = patt_forall_of_sort (svar_open db X s) (svar_open db X ϕ).
+  Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
+    bsvar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
   Proof.
     unfold patt_forall_of_sort.
-    rewrite !simpl_svar_open. simpl.
-    rewrite svar_open_nest_ex_comm.
+    repeat (rewrite simpl_bsvar_subst';[assumption|]).
+    simpl.
+    rewrite bsvar_subst_nest_ex.
     reflexivity.
   Qed. 
 
