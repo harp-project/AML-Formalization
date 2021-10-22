@@ -5767,3 +5767,48 @@ Proof.
       mgApplyMeta IHl in 0; auto 10. unfold patt_iff at 1. mgDestructAnd 0; auto 10.
       mgExactn 1; auto 10.
 Defined.
+
+Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l:
+  well_formed g₁ ->
+  well_formed g₂ ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
+  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+Proof.
+  intros wfg₁ wfg₂ wfl H.
+  eapply Modus_ponens.
+  4: apply prf_local_goals_equiv_impl_full_equiv; auto.
+  all: auto.
+Defined.
+
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l:
+  well_formed g₁ ->
+  well_formed g₂ ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
+  Γ ⊢ (foldr patt_imp g₁ l) ->
+  Γ ⊢ (foldr patt_imp g₂ l).
+Proof.
+  intros wfg₁ wfg₂ wfl H1 H2.
+  eapply Modus_ponens.
+  4: eapply pf_iff_proj1.
+  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: apply H1.
+  all: auto.
+Defined.
+
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l:
+  well_formed g₁ ->
+  well_formed g₂ ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
+  Γ ⊢ (foldr patt_imp g₂ l) ->
+  Γ ⊢ (foldr patt_imp g₁ l).
+Proof.
+  intros wfg₁ wfg₂ wfl H1 H2.
+  eapply Modus_ponens.
+  4: eapply pf_iff_proj2.
+  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: apply H1.
+  all: auto.
+Defined.
