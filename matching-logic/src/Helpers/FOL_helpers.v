@@ -5741,3 +5741,29 @@ Qed.
 (* Hints *)
 #[export]
  Hint Resolve A_impl_A : core.
+
+
+Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
+  well_formed g₁ ->
+  well_formed g₂ ->
+  wf l ->
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
+      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+Proof.
+  intros wfg₁ wfg₂ wfl.
+  induction l; simpl.
+  - apply A_impl_A; wf_auto2.
+  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
+    specialize (IHl wfl').
+    toMyGoal. mgIntro. mgSplitAnd; auto 10.
+    + mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
+      fromMyGoal. toMyGoal. mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
+      mgIntro. mgClear 0; auto 10. mgIntro.
+      mgApplyMeta IHl in 0; auto 10. unfold patt_iff at 1. mgDestructAnd 0; auto 10.
+      mgExactn 0; auto 10.
+    + mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
+      fromMyGoal. toMyGoal. mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
+      mgIntro. mgClear 0; auto 10. mgIntro.
+      mgApplyMeta IHl in 0; auto 10. unfold patt_iff at 1. mgDestructAnd 0; auto 10.
+      mgExactn 1; auto 10.
+Defined.
