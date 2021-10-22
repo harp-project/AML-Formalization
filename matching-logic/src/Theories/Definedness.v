@@ -2196,7 +2196,48 @@ Section ProofSystemTheorems.
       }
      
     Defined.
-  
+
+    Lemma equality_elimination_basic_iter_1 Γ ϕ₁ ϕ₂ l C :
+      theory ⊆ Γ ->
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      wf l ->
+      PC_wf C ->
+      mu_free (pcPattern C) ->
+      Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) ((ϕ₁ =ml ϕ₂) :: l).
+    Proof.
+      intros HΓ wfϕ₁ wfϕ₂ wfl wfC Hmf.
+      induction l; simpl.
+      - apply equality_elimination_basic; assumption.
+      - pose proof (wfal := wfl). apply andb_prop in wfl as [wfa wfl].
+        specialize (IHl wfl).
+        simpl in IHl.
+        toMyGoal. mgIntro. mgIntro. mgClear 1.
+        1-4: auto.
+        { unfold emplace. auto 10. }
+        apply IHl.
+    Defined.
+
+
+    Lemma equality_elimination_basic_iter Γ ϕ₁ ϕ₂ l₁ l₂ C :
+      theory ⊆ Γ ->
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      wf l₁ ->
+      wf l₂ ->
+      PC_wf C ->
+      mu_free (pcPattern C) ->
+      Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) (l₁ ++ (ϕ₁ =ml ϕ₂)::l₂).
+    Proof.
+      intros HΓ wfϕ₁ wfϕ₂ wfl₁ wfl₂ wfC Hmf.
+      induction l₁; simpl.
+      - apply equality_elimination_basic_iter_1; assumption.
+      - pose proof (wfal := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁ as [wfa wfl].
+        specialize (IHl₁ wfl).
+        toMyGoal. mgIntro. mgClear 0. 1-4: auto.
+        { unfold emplace. auto 10. }
+        apply IHl₁.
+    Defined.
 
     Lemma equality_elimination_helper Γ φ1 φ2 ψ x :
       theory ⊆ Γ ->
