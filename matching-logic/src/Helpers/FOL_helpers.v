@@ -1797,6 +1797,47 @@ End FOL_helpers.
 #[export] Hint Resolve wf_app : core.
 
 
+Lemma well_formed_app_proj1 {Σ : Signature} p q:
+  well_formed (p $ q) ->
+  well_formed p.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_app_proj2 {Σ : Signature} p q:
+  well_formed (p $ q) ->
+  well_formed q.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_imp_proj1 {Σ : Signature} p q:
+  well_formed (p ---> q) ->
+  well_formed p.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_imp_proj2 {Σ : Signature} p q:
+  well_formed (p ---> q) ->
+  well_formed q.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+
 Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
 
 Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
@@ -1804,44 +1845,61 @@ Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : My
 Notation "[ S , G ⊢ l ==> g ]" := (@mkMyGoal S G l g).
 
 
-Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type := (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
+  well_formed (mgConclusion MG) ->
+  wf (mgHypotheses MG) ->
+  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+
+Ltac toMyGoal :=
+  lazymatch goal with
+  | [ |- ?G ⊢ ?phi ]
+    => cut (of_MyGoal (MyGoal_from_goal G phi));
+       unfold MyGoal_from_goal;
+       [(unfold of_MyGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
+  end.
+
+Ltac fromMyGoal := unfold of_MyGoal; simpl.
+
+Local Example ex_toMyGoal {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢ p ---> p.
+Proof.
+  intros wfp.
+  toMyGoal.
+  { auto. }
+  fromMyGoal. intros _ _. apply A_impl_A. exact wfp.
+Qed.
 
 
-Section FOL_helpers.
+Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
+  @mkMyGoal Σ Γ (l ++ [x]) g ->
+  @mkMyGoal Σ Γ l (x ---> g).
+Proof.
+  intros H.
+  unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H.
+  unfold of_MyGoal. simpl. intros wfxig wfl. apply H.
+  { apply well_formed_imp_proj2 in wfxig. exact wfxig. }
+  unfold wf. unfold wf in wfl. rewrite map_app foldr_app. simpl.
+  apply well_formed_imp_proj1 in wfxig. rewrite wfxig. simpl. exact wfl.
+Defined.
 
-  Context {Σ : Signature}.
-
-  Lemma of_MyGoal_from_goal Γ (goal : Pattern) : of_MyGoal (MyGoal_from_goal Γ goal) = (Γ ⊢ goal).
-  Proof. reflexivity. Defined.
-
-  Lemma MyGoal_intro (Γ : Theory) (l : list Pattern) (x g : Pattern):
-    @mkMyGoal Σ Γ (l ++ [x]) g ->
-    @mkMyGoal Σ Γ l (x ---> g).
-  Proof.
-    intros H.
-    unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H. exact H.
-  Defined.
-
-  Lemma MyGoal_intro_indifferent (P : proofbpred) Γ l x g
-    (pf : Γ ⊢ foldr patt_imp g (l ++ [x])):
-    P _ _ pf = false ->
-    P _ _ (@MyGoal_intro Γ l x g pf) = false.
-  Proof.
-    intros H.
-    unfold MyGoal_intro. simpl.
-    unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
-    move: (foldr_app Pattern Pattern patt_imp l [x] g).
-    unfold of_MyGoal in pf. simpl in pf.
-    simpl. unfold of_MyGoal. simpl.
-    move: pf H.
-    rewrite list.foldr_app. simpl.
-    intros pf H fapf.
-    replace fapf with (@erefl Pattern (foldr patt_imp (x ---> g) l)) by (apply UIP_dec; apply Pattern_eqdec).
-    simpl. exact H.
-  Qed.
-
-
-End FOL_helpers.
+Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) Γ l x g
+      (pf : Γ ⊢ foldr patt_imp g (l ++ [x])) wf1 wf2:
+  P _ _ pf = false ->
+  P _ _ (@MyGoal_intro Σ Γ l x g (fun _ _ => pf) wf1 wf2) = false.
+Proof.
+  intros H.
+  unfold MyGoal_intro. simpl.
+  unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
+  move: (foldr_app Pattern Pattern patt_imp l [x] g).
+  unfold of_MyGoal in pf. simpl in pf.
+  simpl. unfold of_MyGoal. simpl.
+  move: pf H.
+  rewrite list.foldr_app. simpl.
+  intros pf H fapf.
+  replace fapf with (@erefl Pattern (foldr patt_imp (x ---> g) l)) by (apply UIP_dec; apply Pattern_eqdec).
+  simpl. exact H.
+Qed.
 
 
 Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
@@ -1881,12 +1939,6 @@ Proof.
   intros Hp. simpl. unfold cast_proof_mg_goal.
   rewrite Hp. reflexivity.
 Qed.
-
-#[global]
- Ltac toMyGoal := rewrite <- of_MyGoal_from_goal; unfold MyGoal_from_goal.
-
-#[global]
- Ltac fromMyGoal := unfold of_MyGoal; simpl.
 
 Ltac simplLocalContext :=
   match goal with
@@ -4568,45 +4620,6 @@ Section FOL_helpers.
     assumption.
   Defined.
 
-  Lemma well_formed_app_proj1 p q:
-    well_formed (p $ q) ->
-    well_formed p.
-  Proof.
-    intros H.
-    unfold well_formed,well_formed_closed in *. simpl in *.
-    destruct_and!.
-    unfold well_formed,well_formed_closed. split_and!; assumption.
-  Qed.
-  
-  Lemma well_formed_app_proj2 p q:
-    well_formed (p $ q) ->
-    well_formed q.
-  Proof.
-    intros H.
-    unfold well_formed,well_formed_closed in *. simpl in *.
-    destruct_and!.
-    unfold well_formed,well_formed_closed. split_and!; assumption.
-  Qed.
-
-  Lemma well_formed_imp_proj1 p q:
-    well_formed (p ---> q) ->
-    well_formed p.
-  Proof.
-    intros H.
-    unfold well_formed,well_formed_closed in *. simpl in *.
-    destruct_and!.
-    unfold well_formed,well_formed_closed. split_and!; assumption.
-  Qed.
-  
-  Lemma well_formed_imp_proj2 p q:
-    well_formed (p ---> q) ->
-    well_formed q.
-  Proof.
-    intros H.
-    unfold well_formed,well_formed_closed in *. simpl in *.
-    destruct_and!.
-    unfold well_formed,well_formed_closed. split_and!; assumption.
-  Qed.
 
   (* These [Local Private_*] lemmas are not generally useful, but we use them to keep the body
      of [Private_prf_equiv_congruence] reasonably small. Because we want to reason about the body, too.
