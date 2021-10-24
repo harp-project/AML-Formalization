@@ -49,22 +49,26 @@ Section proof_system_translation.
   Definition to_NPCache (G : NamedTheory) (C : PfCache G) : gmap Pattern NamedPattern :=
     fmap (@projT1 NamedPattern (fun np => NP_ML_proof_system G np)) C.
     
-  
+
+  Check False_rect.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
            (pfcache : PfCache (theory_translation G))
            (used_evars : EVarSet) (used_svars : SVarSet)
     : (NP_ML_proof_system (theory_translation G)
                           (to_NamedPattern2' phi (to_NPCache (theory_translation G) pfcache)
                                              used_evars used_svars).1.1.1
-       * (gmap Pattern NamedPattern) * EVarSet * SVarSet)%type by struct prf :=
+       * (PfCache (theory_translation G)) * EVarSet * SVarSet)%type by struct prf :=
     translation' G phi (hypothesis wfa inG) _ _ _
       := let: tn := to_NamedPattern2' phi (to_NPCache _ pfcache) used_evars used_svars in
          let: (_, cache', used_evars', used_svars') := tn in
          let: named_prf := N_hypothesis (theory_translation G) tn.1.1.1 _ _ in
-         (named_prf, cache', used_evars', used_svars') ;
+         (named_prf, pfcache, used_evars', used_svars') ;
 
     translation' G phi (P1 psi wfphi wfpsi) _ _ _
-      := let: tn_phi := to_NamedPattern2' phi0 cache used_evars used_svars in
+      := if (pfcache !! phi) is Some (existT _ named_prf) then
+           (named_prf, pfcache, used_evar, used_svars)
+         else if (pfcache !! (psi ---> phi)) is Some (existT (named_imp)  _) then
+           let: tn_phi := to_NamedPattern2' phi0 (to_NPCache _ pfcache) used_evars used_svars in
          let: (_, cache_phi, used_evars_phi, used_svars_phi) := tn_phi in
          let: tn_psi := to_NamedPattern2' psi cache used_evars_phi used_svars_phi in
          let: (_, cache_psi, used_evars_psi, used_svars_psi) := tn_psi in
