@@ -43,28 +43,105 @@ Section proof_system_translation.
   .
    *)
 
-  Definition PfCache (G : NamedTheory)
-    := gmap Pattern { p : NamedPattern & NP_ML_proof_system G p }.
+  Definition Cache := gmap Pattern NamedPattern.
 
-  Definition to_NPCache (G : NamedTheory) (C : PfCache G) : gmap Pattern NamedPattern :=
-    fmap (@projT1 NamedPattern (fun np => NP_ML_proof_system G np)) C.
+  (* A subpattern property of the cache: with any pattern it contains its direct subpatterns. *)
+  Definition sub_prop (C : Cache) :=
+    forall (p : Pattern) (np : NamedPattern),
+      C !! p = Some np ->
+      match p with
+      | patt_bott => True
+      | patt_imp p' q' => exists np' nq', C !! p' = Some np' /\ C !! q' = Some nq'
+      | _ => True
+      end.
+
+  Lemma sub_prop_empty: sub_prop ∅.
+  Admitted.
+
+  Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
+    sub_prop C ->
+    sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Admitted.
     
 
-  Check False_rect.
+  About to_NamedPattern2'.
+  (* A correspondence property of the cache: any named pattern it contains is a translation
+     of the locally nameless pattern that is its key, under some unspecified parameters.
+     This should ensure that the named pattern has the same structure as the key. *)
+  Definition corr_prop (C : Cache) :=
+    forall (p : Pattern) (np : NamedPattern),
+      C !! p = Some np ->
+      exists cache evs svs,
+        np = (to_NamedPattern2' p cache evs svs).1.1.1.
+
+  Lemma corr_prop_empty: corr_prop ∅.
+  Admitted.
+
+  Lemma corr_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
+    corr_prop C ->
+    corr_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Admitted.
+  
+
+  
+  Check @P1.
+  Check False_rect. About False_rect.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
-           (pfcache : PfCache (theory_translation G))
+           (cache : Cache) (pfsub : sub_prop cache) (pfcorr : corr_prop cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
     : (NP_ML_proof_system (theory_translation G)
-                          (to_NamedPattern2' phi (to_NPCache (theory_translation G) pfcache)
+                          (to_NamedPattern2' phi (cache)
                                              used_evars used_svars).1.1.1
-       * (PfCache (theory_translation G)) * EVarSet * SVarSet)%type by struct prf :=
-    translation' G phi (hypothesis wfa inG) _ _ _
-      := let: tn := to_NamedPattern2' phi (to_NPCache _ pfcache) used_evars used_svars in
+       * Cache * EVarSet * SVarSet)%type by struct prf :=
+    translation' G phi (hypothesis wfa inG) _ _ _ _ _
+      := let: tn := to_NamedPattern2' phi cache used_evars used_svars in
          let: (_, cache', used_evars', used_svars') := tn in
          let: named_prf := N_hypothesis (theory_translation G) tn.1.1.1 _ _ in
-         (named_prf, pfcache, used_evars', used_svars') ;
+         (named_prf, cache', used_evars', used_svars') ;
 
-    translation' G phi (P1 psi wfphi wfpsi) _ _ _
+    translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
+      with (cache !! (patt_imp p (patt_imp q p))) => {
+      | None with (cache !! (patt_imp q p)) => {
+        | None :=
+          let: tn_p := to_NamedPattern2' p cache used_evars used_svars in
+          let: (_, cache', used_evars', used_svars') := tn_p in
+          let: tn_q := to_NamedPattern2' q cache' used_evars' used_svars' in
+          let: (_, cache'', used_evars'', used_svars'') := tn_q in
+          let: named_prf :=
+            eq_rect _ _
+                    (N_P1 (theory_translation G) tn_p.1.1.1 tn_q.1.1.1 _ _)
+                    _ _ in
+          (named_prf, cache'', used_evars'', used_svars'') ;
+        | Some qp_named := _ (* TODO *)
+        } ;
+      | Some pqp_named := _ (* TODO *)
+      };
+    
+(*
+      with ((cache !! (patt_imp p (patt_imp q p))), (cache !! (patt_imp q p)), (cache !! p), (cache !! q)) => {
+      | ((Some pqp_named), None, _, _) := False_rect _ _ ;
+      | (_, (Some qp_named), None, _) := False_rect _ _ ;
+      | (_, (Some qp_named), _, None) := False_rect _ _;
+      | ((Some pqp_named), (Some qp_named), (Some p_named), (Some q_named))
+        := _ (* TODO *) ;
+      | (None, (Some qp_named), (Some p_named), (Some q_named))
+        := _ (* TODO *) ;
+      | (None, None, _, _)
+        := (* TODO *)
+         let: tn_p := to_NamedPattern2' p cache used_evars used_svars in
+         let: (_, cache', used_evars', used_svars') := tn_p in
+         let: tn_q := to_NamedPattern2' q cache' used_evars' used_svars' in
+         let: (_, cache'', used_evars'', used_svars'') := tn_q in
+         let: named_prf :=
+           eq_rect _ _
+                   (N_P1 (theory_translation G) tn_p.1.1.1 tn_q.1.1.1 _ _)
+                   _ _ in
+         (named_prf, cache'', used_evars'', used_svars'') ;
+
+      } ;
+    *)
+                                               
+                 (*
       := if (pfcache !! phi) is Some (existT _ named_prf) then
            (named_prf, pfcache, used_evar, used_svars)
          else if (pfcache !! (psi ---> phi)) is Some (existT (named_imp)  _) then
@@ -77,7 +154,7 @@ Section proof_system_translation.
                    (N_P1 (theory_translation G) tn_phi.1.1.1 tn_psi.1.1.1 _ _)
                    _ _ in
          (named_prf, cache_psi, used_evars_psi, used_svars_psi) ;
-
+*)
     (*
     translation G phi (P2 psi xi wfphi wfpsi wfxi)
       := eq_rect _ _
@@ -111,9 +188,20 @@ Section proof_system_translation.
                             y)
                  _ _ ;
 *)
-    translation' _ _ _ _ _ _ := _.
+    translation' _ _ _ _ _ _ _ _ := _.
 
   Proof.
+    - admit.
+    - admit.
+    - admit.
+    - admit.
+    - admit.
+    - admit.
+    - case_match.
+      + simpl.
+        pose proof (pfcorr _ _ Heqo) as [cache0 [evs0 [svs0 H]]].
+        rewrite H. simpl. (* FIXME this maybe is not enough. Maybe the cache needs to contain
+        exactly the arguments with which the entry was created. *)
     (* hypothesis *)
     - admit
     - admit.
