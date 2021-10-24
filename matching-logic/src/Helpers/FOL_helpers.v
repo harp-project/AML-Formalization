@@ -1907,6 +1907,10 @@ Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
   @mkMyGoal Σ Γ hyps' goal.
 Proof.
   unfold of_MyGoal. simpl. intros H.
+  intros wfg wfhyps'.
+  feed specialize H.
+  { exact wfg. }
+  { rewrite e. exact wfhyps'. }
   unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
   rewrite e.
   reflexivity.
@@ -1917,27 +1921,37 @@ Lemma cast_proof_mg_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal'):
   @mkMyGoal Σ Γ hyps goal'.
 Proof.
   unfold of_MyGoal. simpl. intros H.
+  intros wfgoal' wfhyps.
+  feed specialize H.
+  { rewrite e. exact wfgoal'. }
+  { exact wfhyps. }
   unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
   rewrite e.
   reflexivity.
 Defined.
 
 Lemma cast_proof_mg_hyps_indifferent
-      Σ P Γ hyps hyps' (e : hyps = hyps') goal (pf : @mkMyGoal Σ Γ hyps goal):
+      Σ P Γ hyps hyps' (e : hyps = hyps') goal (pf : @mkMyGoal Σ Γ hyps goal) wf1 wf2 wf3 wf4:
   indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal pf) = P _ _ pf.
+  P _ _ (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal pf wf1 wf2) = P _ _ (pf wf3 wf4).
 Proof.
   intros Hp. simpl. unfold cast_proof_mg_hyps.
-  rewrite Hp. reflexivity.
+  rewrite Hp.
+  apply f_equal. f_equal.
+  { apply UIP_dec; apply bool_eqdec. }
+  { apply UIP_dec. apply bool_eqdec. }
 Qed.
 
 Lemma cast_proof_mg_goal_indifferent
-      Σ P Γ hyps goal goal' (e : goal = goal') (pf : @mkMyGoal Σ Γ hyps goal):
+      Σ P Γ hyps goal goal' (e : goal = goal') (pf : @mkMyGoal Σ Γ hyps goal) wf1 wf2 wf3 wf4:
   indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_goal Σ Γ hyps goal goal' e pf) = P _ _ pf.
+  P _ _ (@cast_proof_mg_goal Σ Γ hyps goal goal' e pf wf1 wf2) = P _ _ (pf wf3 wf4).
 Proof.
   intros Hp. simpl. unfold cast_proof_mg_goal.
-  rewrite Hp. reflexivity.
+  rewrite Hp.
+  apply f_equal. f_equal.
+  { apply UIP_dec; apply bool_eqdec. }
+  { apply UIP_dec. apply bool_eqdec. }
 Qed.
 
 Ltac simplLocalContext :=
@@ -1953,7 +1967,9 @@ Local Example ex_mgIntro {Σ : Signature} Γ a:
   Γ ⊢ a ---> a.
 Proof.
   intros wfa.
-  toMyGoal. mgIntro. fromMyGoal. apply A_impl_A; assumption.
+  toMyGoal.
+  { auto. }
+  mgIntro. fromMyGoal. intros _ _. apply A_impl_A; assumption.
 Defined.
 
 
