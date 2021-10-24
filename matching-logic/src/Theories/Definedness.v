@@ -16,7 +16,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem FOL_helpers.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -28,6 +28,7 @@ Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
+Import MatchingLogic.ProofSystem.Notations.
 
 Close Scope equations_scope. (* Because of [!] *)
 Open Scope ml_scope.
@@ -840,15 +841,23 @@ Section ProofSystemTheorems.
     {syntax : Syntax}
   .
 
-  
-  Import ProofSystem ProofSystem.Notations Helpers.FOL_helpers.
+  Lemma phi_impl_total_phi_meta Γ ϕ:
+    well_formed ϕ ->
+    Γ ⊢ ϕ ->
+    Γ ⊢ ⌊ ϕ ⌋.
+  Proof.
+    intros wfϕ Hϕ.
+    epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (ϕ) (ctx_app_r box _)).
+    apply ANNA; auto.
+    Unshelve. wf_auto2.
+  Defined.
 
   Lemma patt_iff_implies_equal :
     forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
                                 Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ φ1 =ml φ2.
   Proof.
     intros φ1 φ2 Γ WF1 WF2 H.
-    epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)). 
+    epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)).
     apply ANNA; auto.
     Unshelve.
     auto.
@@ -1177,6 +1186,18 @@ Section ProofSystemTheorems.
     unfold patt_total.
     pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(auto)).
     apply A_impl_not_not_B_meta; auto.
+  Defined.
+
+  Lemma total_phi_impl_phi_meta Γ ϕ:
+    theory ⊆ Γ ->
+    well_formed ϕ ->
+    Γ ⊢ ⌊ ϕ ⌋ ->
+    Γ ⊢ ϕ.
+  Proof.
+    intros HΓ wfϕ H.
+    eapply Modus_ponens.
+    4: apply total_phi_impl_phi.
+    all: auto.
   Defined.
     
   
@@ -2514,3 +2535,50 @@ End ProofSystemTheorems.
  Hint Resolve T_predicate_equals : core.
 #[export]
  Hint Resolve T_predicate_in : core.
+
+
+Search (ML_proof_system ?g (?a =ml ?b)).
+
+Check equality_elimination_basic_iter.
+(* (foldr patt_imp ((C [ϕ₁]) <---> (C [ϕ₂]))
+                            (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂)) *)
+Check prf_local_goals_equiv_impl_full_equiv_meta_proj2.
+
+Ltac wfauto' :=
+  lazymatch goal with
+  | [|- is_true (well_formed _)] => wf_auto2
+  | [|- well_formed _ = true ] => wf_auto2
+  | [|- is_true (wf _)] => wf_auto2
+  | [|- wf _ = true ] => wf_auto2
+  | _ => idtac
+  end.
+
+Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ϕ₁ ⊆ml ϕ₂ ->
+  Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ Hsub.
+  apply patt_iff_implies_equal; wfauto'.
+  apply pf_iff_split; wfauto'.
+  + toMyGoal. mgIntro. mgDestruct 0; wfauto'.
+    * apply total_phi_impl_phi_meta in Hsub;[|assumption|wfauto'].
+      apply Hsub.
+    * apply A_impl_A;wfauto'.
+  + toMyGoal. mgIntro. mgRight;wfauto'. apply A_impl_A; wfauto'.
+Defined.
+
+Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂ ->
+  Γ ⊢ ϕ₁ ⊆ml ϕ₂.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ Heq.
+  (* We have to rewrite the RHS using Heq... *)
+Abort.
+
+Abort.
