@@ -72,7 +72,8 @@ Section proof_system_translation.
     forall (p : Pattern) (np : NamedPattern),
       C !! p = Some np ->
       exists cache evs svs,
-        np = (to_NamedPattern2' p cache evs svs).1.1.1.
+        cache !! p = None /\
+        np = (to_NamedPattern2' p cache evs svs).1.1.1. (* and cache \subseteq C *)
 
   Lemma corr_prop_empty: corr_prop ∅.
   Admitted.
@@ -83,9 +84,96 @@ Section proof_system_translation.
   Admitted.
   
 
+  (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
+     and does not update anything.
+   *)
+  Lemma to_NamedPattern2'_lookup (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    forall (nϕ : NamedPattern),
+      C !! ϕ = Some nϕ ->
+      to_NamedPattern2' ϕ C evs svs = (nϕ, C, evs, svs).
+  Proof.
+    intros nϕ H.
+    destruct ϕ; simpl; case_match; rewrite H in Heqo; inversion Heqo; reflexivity.
+  Qed.
+
+  (* `to_NamedPattern2' ensures that the resulting cache is contains the given pattern *)
+  Lemma to_NamedPattern2'_ensures_present (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    (to_NamedPattern2' ϕ C evs svs).1.1.2 !! ϕ = Some ((to_NamedPattern2' ϕ C evs svs).1.1.1).
+  Proof.
+    destruct ϕ; simpl; repeat case_match; simpl;
+      try (rewrite Heqo; reflexivity);
+      try (rewrite lookup_insert; reflexivity).
+  Qed.
   
-  Check @P1.
-  Check False_rect. About False_rect.
+
+  Lemma consistency_pqp
+        (p q : Pattern)
+        (np' nq' np'' : NamedPattern)
+        (cache : Cache)
+        (evs : EVarSet)
+        (svs : SVarSet):
+    corr_prop cache ->
+    (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
+    = npatt_imp np' (npatt_imp nq' np'') ->
+    np'' = np'.
+  Proof.
+    intros Hcorr_cache H.
+    simpl in H.
+    case_match.
+    - admit.
+    - (* cache miss on p ---> (q ---> p) *)
+      repeat case_match; simpl in *; subst.
+      + (* cache hit on q ---> p *)
+        inversion Heqp0. subst. clear Heqp0.
+        inversion Heqp6. subst. clear Heqp6.
+
+        assert(cache !! patt_imp q p = Some (npatt_imp nq' np'')).
+        {
+          
+        }
+        
+        
+        (* Now [q ---> p] is in [g]. But it follows that [q ---> p] is also in [cache] (and has the same value).
+           Therefore, also [p] and [q] are in [cache].
+           It follows that [np' = cache !!! p].
+           By monotonicity (Lemma ???), ???
+         *)
+        simpl.
+        Check corr_prop_step. About corr_prop_step.
+        pose proof (Hcorr_g := corr_prop_step cache p evs svs Hcorr_cache).
+        rewrite Heqp3 in Hcorr_g. simpl in Hcorr_g.
+        pose proof (Hcorr_g _ _ Heqo0) as [cache' [evs' [svs' [Hnone H]]]].
+        simpl in H. rewrite Hnone in H. repeat case_match.
+        simpl in *. inversion Heqp0. subst. clear Heqp0.
+        inversion H1. subst. clear H1.
+
+        (* Now compare Heqp3 with Heqp7 *)
+        
+  Abort.
+  
+  (*
+    (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
+    (1) cache !! (p ---> (q ---> p)) = Some pqp'
+        ===> = Some (p' ---> (q' ---> p'')), and p' = p''.
+        we know that [exists cache1 used_evars' used_svars', (to_NamedPattern2' (p ---> (q ---> p)) cache1 used_evars' used_svars').1.1.1 = pqp'
+       and cache1 !! (p ---> (q ---> p)) = None ].
+       let (np, cache2) := to_NamedPattern2' p cache1 _ _.
+       (* now, by to_NamedPattern2'_ensures_present, we have: [cache2 !! p = Some np] *)
+       let (nqp, cache3) := to_NamedPattern2' (q ---> p) cache2 _ _.
+       [
+         let (nq, cache4) := to_NamedPattern2' q cache2 in
+         (* by monotonicity lemma (TODO), cache2 \subseteq cache4 and therefore cache4 !! p = Some np *)
+         let (np', cache5) := to_NamedPattern2' p cache4. (* now p is in cache4 *)
+         By to_NamedPattern2'_lookup, np' = cache4 !! p = Some np.
+         Q? (np' == np?)
+       ]
+   *)
+
+  (*
+     Non-Addition lemma. phi <= psi -> psi \not \in C -> psi \not \in (toNamedPattern2' phi C).2
+   *)
+  
+Print NamedPattern.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
            (cache : Cache) (pfsub : sub_prop cache) (pfcorr : corr_prop cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
@@ -99,6 +187,28 @@ Section proof_system_translation.
          let: named_prf := N_hypothesis (theory_translation G) tn.1.1.1 _ _ in
          (named_prf, cache', used_evars', used_svars') ;
 
+
+    translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
+      with (cache !! (patt_imp p (patt_imp q p))) => {
+      | Some pqp_named with pqp_named => {
+          | npatt_imp p' (npatt_imp q' p'')
+          := _ ;
+        }
+      | None with (cache !! (patt_imp q p)) => {
+        | None :=
+          let: tn_p := to_NamedPattern2' p cache used_evars used_svars in
+          let: (_, cache', used_evars', used_svars') := tn_p in
+          let: tn_q := to_NamedPattern2' q cache' used_evars' used_svars' in
+          let: (_, cache'', used_evars'', used_svars'') := tn_q in
+          let: named_prf :=
+            eq_rect _ _
+                    (N_P1 (theory_translation G) tn_p.1.1.1 tn_q.1.1.1 _ _)
+                    _ _ in
+          (named_prf, cache'', used_evars'', used_svars'') ;
+        | Some qp_named := _ (* TODO *)
+        } ;
+      };
+    (*
     translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
       with (cache !! (patt_imp p (patt_imp q p))) => {
       | None with (cache !! (patt_imp q p)) => {
@@ -116,7 +226,7 @@ Section proof_system_translation.
         } ;
       | Some pqp_named := _ (* TODO *)
       };
-    
+    *)
 (*
       with ((cache !! (patt_imp p (patt_imp q p))), (cache !! (patt_imp q p)), (cache !! p), (cache !! q)) => {
       | ((Some pqp_named), None, _, _) := False_rect _ _ ;
@@ -199,7 +309,20 @@ Section proof_system_translation.
     - admit.
     - case_match.
       + simpl.
-        pose proof (pfcorr _ _ Heqo) as [cache0 [evs0 [svs0 H]]].
+        pose proof (pfcorr _ _ Heqo) as [cache0 [evs0 [svs0 [Hnone H]]]].
+        simpl in H.
+        rewrite Hnone in H. simpl in H.
+        repeat case_match.
+        * simpl in H. subst n1. inversion Heqp4. subst. clear Heqp4.
+          inversion Heqp1. subst. clear Heqp1.
+          (* We have just called [to_NamedPattern2'] with [p], and the resulting cache contains [q ---> p].
+             Since [p] is a subpattern of [q ---> p], by lemma ??? we already had [q ---> p] before the call.
+             (and with the same value.) That is, [cache0 !! q ---> p = Some n4].
+           *)
+          f_equal.
+          -- 
+          (*  *)
+        * 
         rewrite H. simpl. (* FIXME this maybe is not enough. Maybe the cache needs to contain
         exactly the arguments with which the entry was created. *)
     (* hypothesis *)
