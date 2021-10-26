@@ -2302,15 +2302,16 @@ Section FOL_helpers.
     intros wfp wfq wfr wfs.
     unfold patt_or.
 
-    toMyGoal. mgIntro.
-    
-    mgIntro. mgIntro. mgIntro.
-    mgApply 1; auto 7.
-    mgApply 2; auto 7.
+    toMyGoal.
+    { auto 10. }
+
+    mgIntro. mgIntro. mgIntro. mgIntro.
+    mgApply 1.
+    mgApply 2.
     mgIntro.
-    mgApply 3; auto 7.
-    mgApply 0; auto 7.
-    mgExactn 4; auto 8.
+    mgApply 3.
+    mgApply 0.
+    mgExactn 4.
   Defined.
 
   Lemma prf_add_assumption Γ a b :
@@ -2382,15 +2383,26 @@ Section FOL_helpers.
   Defined.
 
   Lemma myGoal_assert Γ l g h:
-    wf l ->
-    well_formed g ->
     well_formed h ->
     @mkMyGoal Σ Γ l h ->
     @mkMyGoal Σ Γ (l ++ [h]) g ->
     @mkMyGoal Σ Γ l g.
   Proof.
-    intros wfl wfg wfh H1 H2.
-    eapply prf_add_lemma_under_implication_meta_meta. 4: apply H1. all: auto.
+    intros wfh H1 H2.
+    unfold of_MyGoal in *. simpl in *.
+    intros wfg wfl.
+    eapply prf_add_lemma_under_implication_meta_meta.
+    4: apply H1. 6: apply H2. all: try assumption.
+    { abstract (
+        unfold wf;
+        rewrite map_app;
+        rewrite foldr_app;
+        simpl;
+        rewrite wfh;
+        simpl;
+        exact wfl
+      ).
+    }
   Defined.
 
   Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
@@ -2443,16 +2455,45 @@ Section FOL_helpers.
   Defined.
 
   Lemma myGoal_assert_generalized Γ l1 l2 g h:
-    wf l1 ->
-    wf l2 ->
-    well_formed g ->
     well_formed h ->
     @mkMyGoal Σ Γ l1 h ->
     @mkMyGoal Σ Γ (l1 ++ [h] ++ l2) g ->
     @mkMyGoal Σ Γ (l1 ++ l2) g.
   Proof.
-    intros wfl1 wfl2 wfg wfh H1 H2.
-    eapply prf_add_lemma_under_implication_generalized_meta_meta. 5: apply H1. all: auto.
+    intros wfh H1 H2.
+    unfold of_MyGoal in *. simpl in *.
+    intros wfg wfl1l2.
+    eapply prf_add_lemma_under_implication_generalized_meta_meta.
+    5: apply H1. 7: apply H2. all: try assumption.
+    { abstract (
+          apply (wf_take (length l1)) in wfl1l2;
+          rewrite take_app in wfl1l2;
+          exact wfl1l2
+      ).
+    }
+    { abstract (
+          apply (wf_drop (length l1)) in wfl1l2;
+          rewrite drop_app in wfl1l2;
+          exact wfl1l2
+      ).
+    }
+    { abstract (
+          apply (wf_take (length l1)) in wfl1l2;
+          rewrite take_app in wfl1l2;
+          exact wfl1l2
+      ).
+    }
+    {
+      abstract(
+        pose proof (wfl1 := wf_take (length l1) wfl1l2);
+        rewrite take_app in wfl1;
+        pose proof (wfl2 := wf_drop (length l1) wfl1l2);
+        rewrite drop_app in wfl2;
+        unfold wf; rewrite map_app; rewrite foldr_app;
+        simpl; rewrite wfh; unfold wf in wfl2; rewrite wfl2;
+        simpl; exact wfl1
+      ).
+    }
   Defined.
   
 End FOL_helpers.
@@ -2460,10 +2501,28 @@ End FOL_helpers.
 Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    let H := fresh "H" in
-    assert (H : @mkMyGoal Sgm Ctx l t);
-    [ | (eapply (@myGoal_assert Sgm Ctx l g t _ _ _ H); rewrite [_ ++ _]/=; clear H)]
+    let Hwf := fresh "Hwf" in
+    assert (Hwf : well_formed t);
+    [idtac|
+      let H := fresh "H" in
+      assert (H : @mkMyGoal Sgm Ctx l t);
+      [ | (eapply (@myGoal_assert Sgm Ctx l g t Hwf H); rewrite [_ ++ _]/=; clear H)]
+    ]
   end.
+
+Local Example ex_mgAssert {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ (a ---> a ---> a).
+Proof.
+  intros wfa.
+  toMyGoal.
+  { auto. }
+  mgIntro. mgIntro.
+  mgAssert (a).
+  { auto. }
+  { mgExactn 1. }
+  { mgExactn 2. }
+Qed.
 
 Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
   match goal with
@@ -2476,10 +2535,14 @@ Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
     remember (take n l) as l1 eqn:Heql1;
     remember (drop n l) as l2 eqn:Heql2;
     simpl in Heql1; simpl in Heql2;
-    let H := fresh "H" in
-    assert (H : @mkMyGoal Sgm Ctx l1 t) ; subst l1 l2;
-    [ | (eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t _ _ _ _ H);
+    let Hwf := fresh "Hwf" in
+    assert (Hwf : well_formed t);
+    [idtac|
+      let H := fresh "H" in
+      assert (H : @mkMyGoal Sgm Ctx l1 t) ; subst l1 l2;
+      [ | (eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t Hwf H);
          rewrite [_ ++ _]/=; clear H)] 
+    ]
   end.
 
 Local Example ex_assert_using {Σ : Signature} Γ p q a b:
@@ -2491,8 +2554,12 @@ Local Example ex_assert_using {Σ : Signature} Γ p q a b:
 Proof.
   intros wfa wfb wfp wfq.
   toMyGoal.
+  { auto 10. }
   do 3 mgIntro.
   mgAssert (p) using first 2.
+  { auto. }
+  { admit. }
+  { admit. }
 Abort.
 
 
