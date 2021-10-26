@@ -1797,47 +1797,6 @@ End FOL_helpers.
 #[export] Hint Resolve wf_app : core.
 
 
-Lemma well_formed_app_proj1 {Σ : Signature} p q:
-  well_formed (p $ q) ->
-  well_formed p.
-Proof.
-  intros H.
-  unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
-Qed.
-
-Lemma well_formed_app_proj2 {Σ : Signature} p q:
-  well_formed (p $ q) ->
-  well_formed q.
-Proof.
-  intros H.
-  unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
-Qed.
-
-Lemma well_formed_imp_proj1 {Σ : Signature} p q:
-  well_formed (p ---> q) ->
-  well_formed p.
-Proof.
-  intros H.
-  unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
-Qed.
-
-Lemma well_formed_imp_proj2 {Σ : Signature} p q:
-  well_formed (p ---> q) ->
-  well_formed q.
-Proof.
-  intros H.
-  unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
-Qed.
-
-
 Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
 
 Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
@@ -2006,27 +1965,9 @@ Proof.
 Defined.
 
 
-
-
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
-  (* This almost works, but bound variables are not well-formed. TODO: change to free and move to example file. *)
-
-  Goal ∅ ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2 ---> patt_bound_evar 3 ---> patt_bound_evar 2).
-  Proof.
-    toMyGoal. mgIntro. mgIntro. mgIntro. mgExactn 1.
-  Abort.
-
-  Goal
-    ∅ ⊢ (patt_bound_evar 1 ---> patt_bound_evar 2) ->
-    ∅ ⊢ (patt_bound_evar 2 ---> patt_bound_evar 3)
-  .
-  Proof.
-    intros H.
-    toMyGoal. mgIntro. fromMyGoal.
-  Abort.
 
   Lemma MyGoal_weakenConclusion' Γ l g g':
     wf l ->
@@ -4502,9 +4443,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-  Tactic Notation "wf_auto" int_or_var(n)
-    := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
-  Tactic Notation "wf_auto" := wf_auto 5.
   
 Section FOL_helpers.
 
@@ -4774,26 +4712,6 @@ Section FOL_helpers.
   Qed.
 
 
-
-  Lemma wf_evar_open_from_wf_ex x ϕ:
-    well_formed (ex, ϕ) ->
-    well_formed (evar_open 0 x ϕ).
-  Proof.
-    intros H. wf_auto.
-  Qed.
-
-  Lemma wf_svar_open_from_wf_mu X ϕ:
-    well_formed (mu, ϕ) ->
-    well_formed (svar_open 0 X ϕ).
-  Proof.
-    intros H. wf_auto;
-    destruct_and!;
-        [ (apply wfp_svar_open; auto)
-        | (apply wfc_mu_aux_body_mu_imp1; assumption)
-        | (apply wfc_ex_aux_body_mu_imp1; assumption)
-        ].
-  Qed.
-
   Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
     x <> E ->
     well_formed p = true ->
@@ -4890,140 +4808,6 @@ Section FOL_helpers.
 
 
 End FOL_helpers.
-
-  Ltac wf_auto2 := unfold is_true in *;
-      repeat (try assumption; try (solve [wf_auto]);
-      match goal with
-      | [ |- ?H -> ?G ]
-        => intro
-
-      | [ |- size' (evar_open _ _ _) < _ ]
-        => rewrite evar_open_size'
-
-      | [ |- size' (svar_open _ _ _) < _ ]
-        => rewrite svar_open_size'
-
-      | [ |- size' _ < size' (_ $ _) ]
-        => simpl; lia
-
-      | [ |- size' _ < size' (_ ---> _) ]
-        => simpl; lia
-
-      | [ |- size' _ < size' (ex, _) ]
-        => simpl; lia
-
-      | [ |- well_formed (?p ---> ?q) = true]
-        => apply well_formed_imp
-
-      | [ |- well_formed (?p $ ?q) = true]
-        => apply well_formed_app
-
-      | [ H : well_formed (?p $ ?q) = true |- _]
-        => assert (well_formed p = true);
-          [eapply well_formed_app_proj1; eassumption|];
-          assert ( well_formed q = true);
-          [eapply well_formed_app_proj2; eassumption|];
-          clear H
-
-      | [ H : well_formed (?p ---> ?q) = true |- _]
-        => assert (well_formed p = true);
-          [eapply well_formed_imp_proj1; eassumption|];
-          assert ( well_formed q = true);
-          [eapply well_formed_imp_proj2; eassumption|];
-          clear H
-
-      | [ |- well_formed (free_evar_subst' ?n ?phi ?p ?E) = true ]
-        => apply well_formed_free_evar_subst
-
-      | [ |- ?x ∉ ?E ]
-        => progress simpl
-
-      | [ |- ?x ∉ free_evars (free_evar_subst' _ _ _ _) ]
-        => eapply not_elem_of_larger_impl_not_elem_of;
-           [apply free_evars_free_evar_subst|]
-
-      | [frx: ?x ∉ _ |- ?x <> ?E ]
-        => clear -frx; set_solver
-
-      | [frx: ?x ∉ _ |- ?x ∉ ?E ]
-        => clear -frx; set_solver
-
-      | [ |- well_formed (evar_open _ _ _) = true]
-        => apply wf_evar_open_from_wf_ex
-
-        (* fallback *)
-      | [ |- well_formed _ = true]
-        => unfold well_formed, well_formed_closed in *; simpl in *;
-           destruct_and?; split_and?
-
-      | [ |- well_formed_positive (free_evar_subst' _ _ _ _) = true ]
-        => apply wfp_free_evar_subst
-
-      | [H: well_formed_positive (ex, _) = true |- _]
-        => simpl in H
-
-      | [H: well_formed_closed_mu_aux (ex, _) _ = true |- _]
-        => simpl in H
-
-      | [H: well_formed_closed_ex_aux (ex, _) _ = true |- _]
-        => simpl in H
-
-      | [ |- well_formed_closed_mu_aux (free_evar_subst' _ _ _ _) _ = true]
-        => apply wfc_mu_free_evar_subst
-
-      | [ |- well_formed_closed_ex_aux (free_evar_subst' _ _ _ _) _ = true]
-        => apply wfc_ex_free_evar_subst_2; simpl
-
-      | [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
-        => apply wfp_bsvar_subst
-
-      | [ |- well_formed_positive _ = true ]
-        => progress (simpl; split_and?)
-
-      | [ |- no_negative_occurrence_db_b _ (free_evar_subst' _ _ _ _) = true ]
-        => apply free_evar_subst_preserves_no_negative_occurrence
-
-      | [ |- well_formed_closed_mu_aux (bsvar_subst _ _ _) _ = true ]
-        => apply wfc_mu_aux_bsvar_subst
-
-      | [ |- well_formed_closed_ex_aux (bsvar_subst _ _ _) _ = true ]
-        => apply wfc_ex_aux_bsvar_subst
-
-      | [ |- svar_has_negative_occurrence _ (svar_open _ _ _) = false] =>
-        unfold svar_open; apply svar_hno_bsvar_subst
-
-      |[ |- context C [ svar_quantify ?X ?n (svar_open ?n ?X _) ] ]
-        => rewrite svar_quantify_svar_open
-
-      | [ |- well_formed_closed_mu_aux (svar_open _ _ _) _ = true] =>
-        unfold svar_open; apply wfc_mu_aux_bsvar_subst
-
-      | [ |- well_formed_closed_ex_aux (svar_open _ _ _) _ = true] =>
-        unfold svar_open; apply wfc_ex_aux_bsvar_subst
-
-      | [ |- no_negative_occurrence_db_b _ _ = true ]
-        => solve [unfold well_formed in *; simpl in *; destruct_and!; assumption]
-
-      | [ |- no_negative_occurrence_db_b _ (free_evar_subst' _ _ _ _) = true ]
-        => apply free_evar_subst_preserves_no_negative_occurrence
-
-      (* last option for [svar_has_negative_occurrence] *)
-      | [ |- svar_has_negative_occurrence _ _ = false ]
-        => apply svar_hno_false_if_fresh
-
-      | [ |- svar_is_fresh_in _ _ ]
-        => unfold svar_is_fresh_in
-
-        (* last option for well_formed_closed_ex_aux: try decreasing n *)
-      | [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
-        => eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
-
-        (* last option for well_formed_closed_mu_aux: try decreasing n *)
-      | [ |- well_formed_closed_mu_aux ?p (S ?n) = true ]
-        => eapply well_formed_closed_mu_aux_ind with (ind_svar1 := n);[lia|]
-
-      end; unfold is_true in *
-    ).
 
   Add Search Blacklist "_elim".
   Add Search Blacklist "_graph_rect".
