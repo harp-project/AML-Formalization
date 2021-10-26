@@ -1972,11 +1972,25 @@ Proof.
   mgIntro. fromMyGoal. intros _ _. apply A_impl_A; assumption.
 Defined.
 
+Lemma MyGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g : Pattern):
+  @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g.
+Proof.
+  fromMyGoal. intros wfg wfl₁gl₂.
+  Search wf.
+  About wf_take.
+  pose proof (wfl₁ := wf_take (length l₁) wfl₁gl₂). rewrite take_app in wfl₁.
+  pose proof (wfgl₂ := wf_drop (length l₁) wfl₁gl₂). rewrite drop_app in wfgl₂.
+  unfold wf in wfgl₂. simpl in wfgl₂. apply andb_prop in wfgl₂. destruct wfgl₂ as [_ wfl₂].
+  apply nested_const_middle.
+  { exact wfg. }
+  { exact wfl₁. }
+  { exact wfl₂. }
+Defined.
 
 Tactic Notation "mgExactn" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
-  apply nested_const_middle.
+  apply MyGoal_exactn.
 
 Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   well_formed a = true ->
@@ -1985,9 +1999,14 @@ Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   Γ ⊢ a ---> b ---> c ---> b.
 Proof.
   intros wfa wfb wfc.
-  toMyGoal. mgIntro. mgIntro. mgIntro.
-  mgExactn 1; auto.
+  toMyGoal.
+  { auto. }
+  mgIntro. mgIntro. mgIntro.
+  mgExactn 1.
 Defined.
+
+
+
 
 Section FOL_helpers.
 
