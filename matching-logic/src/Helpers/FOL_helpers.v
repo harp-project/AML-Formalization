@@ -2819,8 +2819,10 @@ Section FOL_helpers.
 
       assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2)).
       {
-        toMyGoal. mgAdd IHl1; auto 10.
-        mgIntro. mgExactn 0; auto 10.
+        toMyGoal.
+        { auto 10. }
+        mgAdd IHl1.
+        mgIntro. mgExactn 0.
       }
       apply prf_impl_distr_meta; auto.
   Defined.
@@ -2838,16 +2840,73 @@ Section FOL_helpers.
     all: auto 10.
   Defined.  
 
+  Lemma wfapp_proj_1 l₁ l₂:
+    wf (l₁ ++ l₂) = true ->
+    wf l₁ = true.
+  Proof.
+    intros H.
+    apply (wf_take (length l₁)) in H.
+    rewrite take_app in H.
+    exact H.
+  Qed.
+
+  Lemma wfapp_proj_2 l₁ l₂:
+    wf (l₁ ++ l₂) = true ->
+    wf l₂ = true.
+  Proof.
+    intros H.
+    apply (wf_drop (length l₁)) in H.
+    rewrite drop_app in H.
+    exact H.
+  Qed.
+
+  Lemma wfl₁hl₂_proj_l₁ l₁ h l₂:
+    wf (l₁ ++ h :: l₂) ->
+    wf l₁.
+  Proof.
+    apply wfapp_proj_1.
+  Qed.
+
+  Lemma wfl₁hl₂_proj_h l₁ h l₂:
+    wf (l₁ ++ h :: l₂) ->
+    well_formed h.
+  Proof.
+    intros H. apply wfapp_proj_2 in H. unfold wf in H.
+    simpl in H. apply andb_prop in H as [H1 H2].
+    exact H1.
+  Qed.
+
+  Lemma wfl₁hl₂_proj_l₂ l₁ h l₂:
+    wf (l₁ ++ h :: l₂) ->
+    wf l₂.
+  Proof.
+    intros H. apply wfapp_proj_2 in H. unfold wf in H.
+    simpl in H. apply andb_prop in H as [H1 H2].
+    exact H2.
+  Qed.
+
+  Lemma wfl₁hl₂_proj_l₁l₂ l₁ h l₂:
+    wf (l₁ ++ h :: l₂) ->
+    wf (l₁ ++ l₂).
+  Proof.
+    intros H.
+    pose proof (wfl₁hl₂_proj_l₁ H).
+    pose proof (wfl₁hl₂_proj_l₂ H).
+    apply wf_app; assumption.
+  Qed.
+
   Lemma myGoal_clear_hyp Γ l1 l2 g h:
-    wf l1 ->
-    wf l2 ->
-    well_formed g ->
-    well_formed h ->
     @mkMyGoal Σ Γ (l1 ++ l2) g ->
     @mkMyGoal Σ Γ (l1 ++ h::l2) g.
   Proof.
-    intros wfl1 wfl2 wfg wfh H1.
-    apply prf_clear_hyp_meta; auto 10.
+    intros H1.
+    unfold of_MyGoal in *. simpl in *. intros wfg wfl1hl2.
+    apply prf_clear_hyp_meta.
+    5: apply H1. all: try assumption.
+    { apply wfl₁hl₂_proj_l₁ in wfl1hl2. exact wfl1hl2. }
+    { apply wfl₁hl₂_proj_l₂ in wfl1hl2. exact wfl1hl2. }
+    { apply wfl₁hl₂_proj_h in wfl1hl2. exact wfl1hl2. }
+    { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
   Defined.
 
   
@@ -2868,7 +2927,7 @@ Tactic Notation "mgClear" constr(n) :=
     let a := fresh "a" in
     destruct l2 as [|a l2];[congruence|];
     inversion Heql2; subst l1 a l2; clear Heql2;
-    apply myGoal_clear_hyp;[idtac|idtac|idtac|idtac|rewrite {1}[_ ++ _]/=]
+    apply myGoal_clear_hyp;rewrite {1}[_ ++ _]/=
   end.
 
 Local Example ex_mgClear {Σ : Signature} Γ a b c:
@@ -2878,10 +2937,12 @@ Local Example ex_mgClear {Σ : Signature} Γ a b c:
   Γ ⊢ a ---> (b ---> (c ---> b)).
 Proof.
   intros wfa wfb wfc.
-  toMyGoal. repeat mgIntro.
-  mgClear 2; auto.
-  mgClear 0; auto.
-  mgExactn 0; auto.
+  toMyGoal.
+  { auto. }
+  repeat mgIntro.
+  mgClear 2.
+  mgClear 0.
+  mgExactn 0.
 Qed.
 
 Section FOL_helpers.
