@@ -6988,6 +6988,35 @@ Proof.
       rewrite IHϕ. lia. reflexivity.
 Qed.
 
+Lemma wfp_free_svar_subst_1 {Σ : Signature} more ϕ ψ X:
+  well_formed_closed ψ = true ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->
+  well_formed_positive (free_svar_subst' more ϕ ψ X) = true.
+Proof.
+  intros wfcψ wfpψ wfpϕ.
+  move: more.
+  induction ϕ; intros more; simpl; auto.
+  - case_match. 2: assumption.
+    rewrite well_formed_positive_nest_mu_aux.
+    assumption.
+  - simpl in wfpϕ. destruct_and!.
+    rewrite -> IHϕ1 by assumption.
+    rewrite -> IHϕ2 by assumption.
+    reflexivity.
+  - simpl in wfpϕ. destruct_and!.
+    rewrite -> IHϕ1 by assumption.
+    rewrite -> IHϕ2 by assumption.
+    reflexivity.
+  - simpl in wfpϕ. destruct_and!.
+    specialize (IHϕ H0).
+    rewrite -> IHϕ.
+    rewrite nno_free_svar_subst.
+    { lia. }
+    rewrite H.
+    reflexivity.
+Qed.
+
 Lemma wfp_free_svar_subst {Σ : Signature} more ϕ ψ X:
   well_formed_closed_mu_aux ψ 0 ->
   well_formed_positive ψ = true ->

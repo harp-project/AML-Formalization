@@ -263,6 +263,7 @@ Qed.
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
+      well_formed (patt_mu phi) ->
       theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
       theory ⊢ ((@patt_mu signature phi) ---> psi)
 
@@ -821,7 +822,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Framing_right _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
     | Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
     | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_ex_gen EvS _ _ m0
+    | Knaster_tarski _ _ phi psi m0 => uses_ex_gen EvS _ _ m0
     | Existence _ => false
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
@@ -847,7 +848,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Framing_right _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
     | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
     | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_svar_subst S _ _ m0
+    | Knaster_tarski _ _ phi psi m0 => uses_svar_subst S _ _ m0
     | Existence _ => false
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
@@ -873,7 +874,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Framing_right _ _ _ _ _ m0 => uses_kt _ _ m0
     | Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
     | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ phi psi m0 => true
+    | Knaster_tarski _ _ phi psi m0 => true
     | Existence _ => false
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
@@ -963,7 +964,19 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
   Proof.
     intros pf.
     induction pf; auto; try (solve [wf_auto2]).
-    - Search free_svar_subst.
+    - unfold free_svar_subst. wf_auto2.
+      apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
+    - apply well_formed_not.
+      apply well_formed_and.
+      + apply wf_sctx.
+        apply well_formed_and.
+        * reflexivity.
+        * assumption.
+      + apply wf_sctx.
+        apply well_formed_and.
+        * reflexivity.
+        * apply well_formed_not.
+          assumption.
   Qed.
 
 End ml_proof_system.
