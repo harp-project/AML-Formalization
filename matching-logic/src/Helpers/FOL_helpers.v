@@ -3048,21 +3048,24 @@ Section FOL_helpers.
     Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))).
   Proof.
     intros wfp wfq wfr.
-    toMyGoal. repeat mgIntro.
-    unfold patt_and. mgApply 0; auto 10.
+    toMyGoal.
+    { auto 10. }
+    repeat mgIntro.
+    unfold patt_and. mgApply 0.
     mgIntro. unfold patt_or at 2.
     mgAssert ((! ! p)).
+    { auto. }
     {
-      mgAdd (@not_not_intro Σ Γ p wfp); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 2; auto 10.
+      mgAdd (@not_not_intro Σ Γ p wfp).
+      mgApply 0.
+      mgExactn 2.
     }
     mgAssert ((! q)).
+    { auto. }
     {
-      mgApply 3; auto 10. mgExactn 4; auto 10.
+      mgApply 3. mgExactn 4.
     }
-    mgApply 5; auto 10. mgExactn 2; auto 10.
-    Unshelve. all: auto 10.
+    mgApply 5. mgExactn 2.
   Defined.
 
   
@@ -3073,25 +3076,28 @@ Section FOL_helpers.
     Γ ⊢ ((p ---> (q ---> r)) ---> ((p and q) ---> r)).
   Proof.
     intros wfp wfq wfr.
-    toMyGoal. repeat mgIntro.
+    toMyGoal.
+    { auto 10. }
+    repeat mgIntro.
     mgAssert (p).
+    { auto. }
     {
-      mgAdd (@pf_conj_elim_l Σ Γ p q wfp wfq); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 2; auto 10.
+      mgAdd (@pf_conj_elim_l Σ Γ p q wfp wfq).
+      mgApply 0.
+      mgExactn 2.
     }
     mgAssert (q).
+    { auto. }
     {
-      mgAdd (@pf_conj_elim_r Σ Γ p q wfp wfq); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 2; auto 10.
+      mgAdd (@pf_conj_elim_r Σ Γ p q wfp wfq).
+      mgApply 0.
+      mgExactn 2.
     }
     (* This pattern is basically an "apply ... in" *)
     mgAssert ((q ---> r)).
-    { mgApply 0; auto 10. mgExactn 2; auto 10. }
-    mgApply 4; auto 10. mgExactn 3; auto 10.
-    Unshelve.
-    all: auto 10.
+    { auto. }
+    { mgApply 0. mgExactn 2. }
+    mgApply 4. mgExactn 3.
   Defined.
   
 
@@ -3114,17 +3120,21 @@ Section FOL_helpers.
       unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
       simpl in *.
-      toMyGoal. repeat mgIntro.
-      mgAdd IHl; auto 10.
+      toMyGoal.
+      { auto 10. }
+      repeat mgIntro.
+      mgAdd IHl.
       mgAssert ((foldr patt_imp r (l ++ [p]))).
-      { mgApply 1; auto 10. mgExactn 3; auto 10. }
+      { auto 10. }
+      { mgApply 1. mgExactn 3. }
       mgAssert ((foldr patt_imp r (l ++ [q]))).
-      { mgApply 2; auto 10. mgExactn 3; auto 10. }
+      { auto. }
+      { mgApply 2. mgExactn 3. }
       mgAssert ((foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
-      { mgApply 0; auto 10. mgExactn 4; auto 15. }
-      mgApply 6; auto 14.
-      mgExactn 5; auto 15.
-      Unshelve. all: auto 15.
+      { auto 10. }
+      { mgApply 0. mgExactn 4. }
+      mgApply 6.
+      mgExactn 5.
   Defined.
 
   
@@ -3182,15 +3192,6 @@ Section FOL_helpers.
           ([] ++ ((foldr patt_imp r (l₁ ++ p :: a :: l₂))::[foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
         by reflexivity.
 
-(*
-      replace
-        ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)])
-        with
-          (<[0 := foldr patt_imp r (l₁ ++ p :: a :: l₂)  ]>(
-             [foldr patt_imp r (l₁ ++ a :: p :: l₂); foldr patt_imp r (l₁ ++ a :: q :: l₂)]
-          ))
-        by reflexivity.*)
-
       eapply prf_strenghten_premise_iter_meta_meta with (h := (foldr patt_imp r (l₁ ++ a :: p :: l₂))).
       6: {  apply prf_reorder_iter; auto. }
       all: auto 10.
@@ -3237,22 +3238,44 @@ Defined.
   Defined.
 
   Lemma MyGoal_disj_elim Γ l₁ l₂ p q r:
-    wf l₁ ->
-    wf l₂ ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
     @mkMyGoal Σ Γ (l₁ ++ [p] ++ l₂) r ->
     @mkMyGoal Σ Γ (l₁ ++ [q] ++ l₂) r ->
     @mkMyGoal Σ Γ (l₁ ++ [p or q] ++ l₂) r.
   Proof.
-    intros WFl1 WFl2 WFp WFq WFr H H0.
-    apply prf_disj_elim_iter_2_meta_meta; auto.
+    intros H1 H2.
+    unfold of_MyGoal in *. simpl in *.
+    intros wfr Hwf.
+    apply prf_disj_elim_iter_2_meta_meta.
+    7: apply H2.
+    6: apply H1.
+    all: try assumption.
+    { abstract (apply wfl₁hl₂_proj_l₁ in Hwf; exact Hwf). }
+    { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
+    { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
+    { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
+    { abstract (
+        pose proof (wfl₁hl₂_proj_l₁ Hwf);
+        pose proof (wfl₁hl₂_proj_h Hwf);
+        pose proof (wfl₁hl₂_proj_l₂ Hwf);
+        apply wf_app; [assumption|];
+        unfold patt_or,patt_not in *;
+        wf_auto2
+      ).
+    }
+    { abstract (
+        pose proof (wfl₁hl₂_proj_l₁ Hwf);
+        pose proof (wfl₁hl₂_proj_h Hwf);
+        pose proof (wfl₁hl₂_proj_l₂ Hwf);
+        apply wf_app; [assumption|];
+        unfold patt_or,patt_not in *;
+        wf_auto2
+      ).
+    }
   Defined.
 
 End FOL_helpers.
 
-Tactic Notation "mgDestruct" constr(n) :=
+Tactic Notation "mgDestructOr" constr(n) :=
   match goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
     let Htd := fresh "Htd" in
@@ -3284,40 +3307,12 @@ Section FOL_helpers.
     Γ ⊢ (a ---> (p or q) ---> b ---> c).
   Proof.
     intros WFa WFb WFp WFq WFc H H0.
-    toMyGoal. repeat mgIntro.
-    mgDestruct 1; auto 10. (* TODO rename mgDestruct to mgDestructOr *)
+    toMyGoal.
+    { wf_auto2. } 
+    repeat mgIntro.
+    mgDestructOr 1.
   Abort.
   
-  Local Example exd2 Γ a b c p:
-    well_formed a ->
-    well_formed b ->
-    well_formed c ->
-    well_formed p ->
-    Γ ⊢ a ---> (b ---> p) ->
-    Γ ⊢ (a and b ---> c ---> p).
-  Proof.
-    intros WFa WFb WFc WFp H.
-    toMyGoal. repeat mgIntro.
-  Abort.
-  
-  
-  Lemma conclusion_anyway Γ A B:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ ((A ---> B) ---> (! A ---> B) ---> B).
-  Proof.
-    intros wfA wfB.
-    assert (H1: Γ ⊢ (B ---> ! ! B)) by auto.
-
-    epose proof (H10 := @P4m_neg Σ Γ (!B) A _ _). Unshelve. all: auto.
-    
-    assert (H2: Γ ⊢ ((A ---> B) ---> (! A ---> B) ---> ! !B)) by admit.
-    assert (H3: Γ ⊢ (((! A ---> B) ---> ! ! B) ---> ((! A ---> B) ---> B))) by auto.
-    assert (H4: Γ ⊢ (((A ---> B) ---> ((! A ---> B) ---> ! ! B)) ---> ((A ---> B) ---> ((! A ---> B) ---> B)))).
-    { apply prf_weaken_conclusion_meta; auto. }
-    eapply Modus_ponens. 4: apply H4. all: auto 10.
-    (* Give up *)
-  Abort.
   
   Lemma conclusion_anyway_meta Γ A B:
     well_formed A ->
@@ -3531,116 +3526,6 @@ Section FOL_helpers.
   Proof.
     intros WFa WFb H. eapply Modus_ponens. 4: apply P1. all: auto.
   Defined.
-  
-(*
-  Lemma prf_equiv_congruence_implicative_ctx Γ p q C:
-    well_formed p ->
-    well_formed q ->
-    PC_wf C ->
-    is_implicative_context C ->
-    is_linear_context C ->
-    Γ ⊢ (p <---> q) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))).
-  Proof.
-    unfold is_linear_context.
-    intros wfp wfq wfC impC Hlin Hiff.
-    destruct C.
-    move: Hlin.
-    induction pcPattern; simpl; intros Hlin; unfold is_implicative_context in impC; simpl in impC; inversion impC;
-      unfold emplace; unfold free_evar_subst; simpl.
-    - destruct (decide (pcEvar = x)); simpl.
-      { rewrite !nest_ex_aux_0. exact Hiff. }
-      apply pf_iff_equiv_refl. auto.
-      (*
-      + apply A_impl_A. unfold patt_iff. auto.
-      + apply prf_conclusion; auto. unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
-    - apply pf_iff_equiv_refl. auto.  (*apply prf_conclusion; auto unfold patt_iff. auto. apply pf_iff_equiv_refl. auto.*)
-    - unfold emplace in *. simpl in *.
-      pose proof (pwf := wfC).
-      unfold PC_wf in pwf.
-      
-      
-      assert (Hwf1 : well_formed pcPattern1).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
-      assert (Hwf2 : well_formed pcPattern2).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
-        unfold well_formed,well_formed_closed. split_and!; assumption.
-      }
-      
-      destruct (decide (count_evar_occurrences pcEvar pcPattern1 ≠ 0)),
-      (decide (count_evar_occurrences pcEvar pcPattern2 ≠ 0)); simpl in *; try lia.
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern1 = 1).
-        { lia. }
-        specialize (IHpcPattern1 ltac:(auto)).
-        unfold is_implicative_context in IHpcPattern1.
-        simpl in IHpcPattern1. rewrite andbT in impC.
-        specialize (IHpcPattern1 ltac:(assumption) ltac:(auto)).
-        clear IHpcPattern2. (* Can't specialize. *)
-
-        (* There is no occurrence of pcEvar in pcPattern2 (by [n0]).
-           Therefore, p2 = q2. We need a lemma for that. *)
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern2 q ltac:(lia)).
-        subst p2 q2. rewrite Hnoocp Hnoocq.
-        unfold patt_iff.
-
-        epose proof (H'1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern1).
-        epose proof (H'2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern1).
-
-        Unshelve. 2,3,4,5: subst; unfold free_evar_subst; auto 10.
-
-        apply conj_intro_meta; subst; auto 15.
-        unfold patt_iff in IHpcPattern1.
-                             
-        * toMyGoal. mgIntro. mgIntro. mgAdd H'2. 1,2,3: subst; auto.
-          mgApply 1; auto 5.
-          mgApply 0; auto 5.
-          mgExactn 2; subst; auto 10.
-
-        * toMyGoal. mgIntro. mgIntro. mgAdd H'1. 1,2,3: subst; auto.
-          mgApply 1; auto 5.
-          mgApply 0; auto 5.
-          mgExactn 2; subst; auto 10.
-      + remember (free_evar_subst pcPattern1 p pcEvar) as p1.
-        remember (free_evar_subst pcPattern2 p pcEvar) as p2.
-        remember (free_evar_subst pcPattern1 q pcEvar) as q1.
-        remember (free_evar_subst pcPattern2 q pcEvar) as q2.
-        assert (pcOneOcc1 : count_evar_occurrences pcEvar pcPattern2 = 1).
-        { lia. }
-        specialize (IHpcPattern2 ltac:(auto) ltac:(auto) ltac:(lia)).
-        pose proof (Hnoocp := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 p ltac:(lia)).
-        pose proof (Hnoocq := @free_evar_subst_no_occurrence _ 0 pcEvar pcPattern1 q ltac:(lia)).
-        subst p1 q1. rewrite Hnoocp Hnoocq.
-        unfold patt_iff.
-
-        epose proof (H1 := pf_conj_elim_l_meta _ _ _ _ _ IHpcPattern2).
-        epose proof (H2 := pf_conj_elim_r_meta _ _ _ _ _ IHpcPattern2).
-        Unshelve. 2,3,4,5: subst; auto.
-        
-        apply conj_intro_meta. 1,2: subst; auto.
-        unfold patt_iff in IHpcPattern2.
-        
-        * toMyGoal. mgIntro. mgIntro. mgAdd H1. 1,2,3: subst; auto.
-          subst.
-          mgApply 0; auto 5.
-          mgApply 1; auto 5.
-          mgExactn 2; subst; auto 10.
-
-        * toMyGoal. mgIntro. mgIntro. mgAdd H2. 1,2,3: subst; auto.
-          subst.
-          mgApply 0; auto 5.
-          mgApply 1; auto 5.
-          mgExactn 2; subst; auto 10.      
-  Defined.
-  *)    
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
@@ -3654,7 +3539,7 @@ Section FOL_helpers.
         eapply Framing_left in H.
         eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥)).
         { apply Prop_bott_left. shelve. }
-        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3: auto.
+        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3,4: auto.
       + apply bot_elim; auto.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
@@ -3663,7 +3548,7 @@ Section FOL_helpers.
         eapply Framing_right in H.
         eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥)).
         { apply Prop_bott_right. shelve. }
-        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3: auto.
+        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3,4: auto.
       + apply bot_elim; auto.
         Unshelve. all: auto.
   Defined.
@@ -3687,9 +3572,9 @@ Section FOL_helpers.
         remember (subst_ctx AC q) as q'.
         apply Prop_disj_left. all: subst; auto.
       + eapply prf_disj_elim_meta_meta; auto.
-        * apply Framing_left.
+        * apply Framing_left; auto.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-        * apply Framing_left.
+        * apply Framing_left; auto.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
@@ -3702,9 +3587,9 @@ Section FOL_helpers.
         remember (subst_ctx AC q) as q'.
         apply Prop_disj_right. all: subst; auto.
       + eapply prf_disj_elim_meta_meta; auto.
-        * apply Framing_right.
+        * apply Framing_right; auto.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-        * apply Framing_right.
+        * apply Framing_right; auto.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
   Defined.
 
@@ -3807,13 +3692,13 @@ Section FOL_helpers.
           set_solver.
         }
         
-        apply Framing_left.
+        apply Framing_left; auto.
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
         rewrite -> evar_quantify_evar_open by assumption.
-        apply Ex_quan.
+        apply Ex_quan; auto.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
@@ -3899,13 +3784,13 @@ Section FOL_helpers.
           set_solver.
         }
         
-        apply Framing_right.
+        apply Framing_right; auto.
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
         erewrite evar_quantify_evar_open by assumption.
-        apply Ex_quan.
+        apply Ex_quan; auto.
   Defined.
   
 
@@ -3918,28 +3803,30 @@ Section FOL_helpers.
     intros wfp1 wfp2.
     apply conj_intro_meta; auto 10.
     - toMyGoal.
+      { auto 10. }
       mgIntro. mgIntro.
-      mgApply 0; auto 7.
+      mgApply 0.
       mgIntro.
       unfold patt_or.
-      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgApply 2; auto 10.
-      mgAdd (@not_not_intro Σ Γ (! p1) ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 4; auto 10.
+      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)).
+      mgApply 0.
+      mgApply 2.
+      mgAdd (@not_not_intro Σ Γ (! p1) ltac:(auto)).
+      mgApply 0.
+      mgExactn 4.
     - toMyGoal.
+      { auto 10. }
       mgIntro. mgIntro.
       unfold patt_and.
-      mgApply 0; auto 10.
+      mgApply 0.
       unfold patt_or.
       mgIntro.
-      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgApply 2; auto 10.
-      mgAdd (@not_not_elim Σ Γ (! p1) ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 4; auto 10.
+      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)).
+      mgApply 0.
+      mgApply 2.
+      mgAdd (@not_not_elim Σ Γ (! p1) ltac:(auto)).
+      mgApply 0.
+      mgExactn 4.
   Defined.
 
   Lemma and_impl_2 Γ p1 p2:
