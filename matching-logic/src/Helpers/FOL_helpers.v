@@ -2737,28 +2737,35 @@ Section FOL_helpers.
   
   Lemma MyGoal_add Γ l g h:
     Γ ⊢ h ->
-    wf l ->
-    well_formed g ->
-    well_formed h ->
     @mkMyGoal Σ Γ (h::l) g ->
     @mkMyGoal Σ Γ l g.
   Proof.
-    intros H WFl WFg WFh H0.
+    intros H H0.
+    unfold of_MyGoal in *. simpl in *.
+    intros wfg wfl.
     apply prf_add_proved_to_assumptions_meta with (a := h).
-    all: auto.
+    5: apply H0.
+    all: try assumption.
+    { abstract (apply proved_impl_wf in H; exact H). }
+    { abstract (
+          unfold wf;
+          simpl;
+          apply proved_impl_wf in H;
+          rewrite H;
+          simpl;
+          exact wfl
+      ).
+    }
   Defined.
 
   Lemma MyGoal_add_indifferent
-    P Γ l g h
+    P Γ l g h wf1 wf2
     (pfh: Γ ⊢ h)
-    (wfl : wf l)
-    (wfg : well_formed g)
-    (wfh : well_formed h)
     (pf : Γ ⊢ foldr patt_imp g (h::l)):
     indifferent_to_prop P ->
     P _ _ pfh = false ->
     P _ _ pf = false ->
-    P _ _ (@MyGoal_add Γ l g h pfh wfl wfg wfh pf) = false.
+    P _ _ (@MyGoal_add Γ l g h pfh (fun _ _ => pf) wf1 wf2) = false.
   Proof.
     intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     simpl in *. unfold MyGoal_add. unfold prf_add_proved_to_assumptions_meta.
@@ -2781,7 +2788,7 @@ Section FOL_helpers.
   
   Context {Σ : Signature}.
   
-  Lemma test_mgAdd Γ l g h:
+  Local Example ex_mgAdd Γ l g h:
     wf l ->
     well_formed g ->
     well_formed h ->
@@ -2790,9 +2797,10 @@ Section FOL_helpers.
     Γ ⊢ g.
   Proof.
     intros WFl WFg WFh H H0. toMyGoal.
-    mgAdd H0; [auto|auto|auto|].
-    mgAdd H; [auto|auto|auto|].
-    mgApply 0; auto 5. mgExactn 1; auto.
+    { auto. }
+    mgAdd H0.
+    mgAdd H.
+    mgApply 0. mgExactn 1.
   Defined.
 
 
