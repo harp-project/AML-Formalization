@@ -4041,6 +4041,97 @@ Proof.
   mgExactn 0.
 Qed.
 
+Lemma MyGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y:
+    @mkMyGoal Σ Γ (l₁ ++ x::y::l₂ ) g ->
+    @mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂) g .
+Proof.
+  intros H.
+  unfold of_MyGoal. intros wfg Hwf. pose proof (wfg' := wfg). pose proof (Hwf' := Hwf).
+  revert wfg' Hwf'.
+  cut (of_MyGoal (@mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂ ) g)).
+  { auto. }
+  simpl in wfg, Hwf.
+
+  mgAssert (y) using first (length (l₁ ++ [x and y])).
+  { abstract (
+      apply wfapp_proj_2 in Hwf;
+      unfold wf in Hwf;
+      simpl in Hwf;
+      apply andb_prop in Hwf;
+      destruct Hwf as [wfxy _];
+      wf_auto2
+    ).
+  }
+  {
+    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    2: { rewrite -app_assoc. reflexivity. }
+    rewrite take_app.
+    assert (well_formed x).
+    {
+      abstract (
+        apply wfapp_proj_2 in Hwf;
+        unfold wf in Hwf;
+        simpl in Hwf;
+        apply andb_prop in Hwf as [wfxy _];
+        wf_auto2
+      ).
+    }
+    mgApplyMeta (@pf_conj_elim_r Σ Γ x y ltac:(assumption) ltac:(assumption)).
+    apply MyGoal_exactn.
+  }
+
+  eapply cast_proof_mg_hyps.
+  {  
+    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    2: { rewrite -app_assoc. reflexivity. }
+    rewrite take_app. rewrite drop_app. reflexivity.
+  }
+
+  mgAssert (x) using first (length (l₁ ++ [x and y])).
+  { abstract (
+      apply wfapp_proj_2 in Hwf;
+      unfold wf in Hwf;
+      simpl in Hwf;
+      apply andb_prop in Hwf;
+      destruct Hwf as [wfxy _];
+      wf_auto2
+    ).
+  }
+  {
+    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    2: { rewrite -app_assoc. reflexivity. }
+    rewrite take_app.
+    assert (well_formed x).
+    {
+      abstract (
+        apply wfapp_proj_2 in Hwf;
+        unfold wf in Hwf;
+        simpl in Hwf;
+        apply andb_prop in Hwf as [wfxy _];
+        wf_auto2
+      ).
+    }
+    mgApplyMeta (@pf_conj_elim_l Σ Γ x y ltac:(assumption) ltac:(assumption)).
+    apply MyGoal_exactn.
+  }
+
+  eapply cast_proof_mg_hyps.
+  {  
+    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    2: { rewrite -app_assoc. reflexivity. }
+    rewrite take_app. rewrite drop_app. reflexivity.
+  }
+
+  eapply cast_proof_mg_hyps.
+  {
+    rewrite -app_assoc. reflexivity.
+  }
+
+ apply myGoal_clear_hyp.  
+ exact H.
+Defined.
+
+
 Tactic Notation "mgDestructAnd" constr(n) :=
   lazymatch goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -4050,17 +4141,17 @@ Tactic Notation "mgDestructAnd" constr(n) :=
     simpl in Heqfound;
     lazymatch type of Heqfound with
     | found = Some (?x and ?y) =>
-      unshelve(
+(*      unshelve( *)
           mgAssert (y) using first (S n);
           [mgApplyMeta (@pf_conj_elim_r Sgm Ctx x y _ _);
-           [shelve|shelve|shelve|shelve|shelve|(mgExactn n; shelve)]
+           [(mgExactn n; shelve)]
           |idtac];
           mgAssert (x) using first (S n);
           [mgApplyMeta (@pf_conj_elim_l Sgm Ctx x y _ _);
-           [shelve|shelve|shelve|shelve|shelve|(mgExactn n; shelve)]
+           [(mgExactn n; shelve)]
           |idtac];
           mgClear n
-        )      
+(*        )       *)
     | _ => idtac "Not a conjunction"
     end ; clear found Heqfound
   end.
@@ -4072,8 +4163,10 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed q ->
   Γ ⊢ p ---> a and b ---> q ---> a.
 Proof.
-  intros. toMyGoal. do 3 mgIntro.
-  mgDestructAnd 1; auto 10.
+  intros. toMyGoal.
+  { auto. }
+  do 3 mgIntro.
+  mgDestructAnd 1.  ; auto 10.
   mgExactn 1; auto 10.
 Qed.
 (* Good until there *)
