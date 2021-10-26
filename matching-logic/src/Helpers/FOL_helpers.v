@@ -3837,27 +3837,29 @@ Section FOL_helpers.
     intros wfp1 wfp2.
     apply conj_intro_meta; auto.
     - toMyGoal.
+      { auto 10. }
       mgIntro. mgIntro.
-      mgApply 0; auto 10.
+      mgApply 0.
       mgIntro.
       unfold patt_or.
-      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgApply 2; auto 10.
-      mgAdd (@not_not_intro Σ Γ p1 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 4; auto 10.
+      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)).
+      mgApply 0.
+      mgApply 2.
+      mgAdd (@not_not_intro Σ Γ p1 ltac:(auto)).
+      mgApply 0.
+      mgExactn 4.
     - toMyGoal.
+      { auto 10. }
       mgIntro. mgIntro.
-      mgApply 0; auto 10.
+      mgApply 0.
       unfold patt_or.
       mgIntro.
-      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgApply 2; auto 10.
-      mgAdd (@not_not_elim Σ Γ p1 ltac:(auto)); auto 10.
-      mgApply 0; auto 10.
-      mgExactn 4; auto 10.
+      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)).
+      mgApply 0.
+      mgApply 2.
+      mgAdd (@not_not_elim Σ Γ p1 ltac:(auto)).
+      mgApply 0.
+      mgExactn 4.
   Defined.
 
   Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) :
@@ -3919,40 +3921,103 @@ Section FOL_helpers.
   Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
     forall l,
-    wf l ->
-    well_formed r ->
-    well_formed r' ->
     @mkMyGoal Σ Γ l r' ->
     @mkMyGoal Σ Γ l r.
   Proof.
-    intros Himp l wfl wfr wfr' H.
+    intros Himp l H.
+    unfold of_MyGoal in *. simpl in *.
+    intros wfr wfl.
     eapply prf_weaken_conclusion_iter_meta_meta.
-    4: { apply Himp; auto. }
-    all: auto.
+    4: apply Himp.
+    4: apply H.
+    all: try assumption.
+    1,2: pose proof (wfrr' := proved_impl_wf _ _ Himp); wf_auto2.
   Defined.
 
 End FOL_helpers.
 
 
 Tactic Notation "mgApplyMeta" uconstr(t) :=
-  unshelve (eapply (@MyGoal_applyMeta _ _ _ _ t)).
+  eapply (@MyGoal_applyMeta _ _ _ _ t).
 
-Ltac mgLeft := mgApplyMeta (@disj_left_intro _ _ _ _ _ _).
-Ltac mgRight := mgApplyMeta (@disj_right_intro _ _ _ _ _ _).
+Lemma MyGoal_left {Σ : Signature} Γ l x y:
+  @mkMyGoal Σ Γ l x ->
+  @mkMyGoal Σ Γ l (patt_or x y).
+Proof.
+  intros H.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfxy wfl.
+  eapply prf_weaken_conclusion_iter_meta_meta.
+  4: apply disj_left_intro.
+  6: apply H.
+  { assumption. }
+  all: abstract (wf_auto2).
+Defined.
+
+Lemma MyGoal_right {Σ : Signature} Γ l x y:
+  @mkMyGoal Σ Γ l y ->
+  @mkMyGoal Σ Γ l (patt_or x y).
+Proof.
+  intros H.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfxy wfl.
+  eapply prf_weaken_conclusion_iter_meta_meta.
+  4: apply disj_right_intro.
+  6: apply H.
+  { assumption. }
+  all: abstract (wf_auto2).
+Defined.
+
+
+Ltac mgLeft := apply MyGoal_left.
+Ltac mgRight := apply MyGoal_right.
+
+Example ex_mgLeft {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ a ---> (a or a).
+Proof.
+  intros wfa.
+  toMyGoal.
+  { auto. }
+  mgIntro.
+  mgLeft.
+Abort.
 
 Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r':
   Γ ⊢ (r ---> r') ->
   forall l₁ l₂ g,
-    wf l₁ -> wf l₂ ->
-    well_formed g ->
-    well_formed r ->
-    well_formed r' ->
     @mkMyGoal Σ Γ (l₁ ++ r'::l₂) g ->
     @mkMyGoal Σ Γ (l₁ ++ r::l₂ ) g.
 Proof.
-  intros Himp l₁ l₂ g wfl₁ wfl₂ wfg wfr wfr' H.
-  pose proof (Htmp := @prf_strenghten_premise_iter_meta_meta Σ Γ l₁ l₂ r' r g ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) ltac:(auto) Himp).
-  apply Htmp. apply H.
+  intros Himp l₁ l₂ g H.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfg Hwf.
+  specialize (H wfg).
+  eapply prf_strenghten_premise_iter_meta_meta.
+  6: apply Himp.
+  6: apply H.
+  { abstract (apply wfapp_proj_1 in Hwf; exact Hwf). }
+  { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
+  { abstract (apply proved_impl_wf in Himp; wf_auto2). }
+  { abstract (apply wfl₁hl₂_proj_h in Hwf; exact Hwf). }
+  { exact wfg. }
+  { abstract(
+      pose proof (wfapp_proj_1 Hwf);
+      pose proof (wfl₁hl₂_proj_l₂ Hwf);
+      pose proof (wfl₁hl₂_proj_h Hwf);
+      unfold wf;
+      rewrite map_app;
+      rewrite foldr_app;
+      simpl;
+      apply proved_impl_wf in Himp;
+      apply well_formed_imp_proj2 in Himp;
+      rewrite Himp;
+      simpl;
+      unfold wf in H1;
+      rewrite H1;
+      exact H0
+    ).
+ }
 Defined.
 
 Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
@@ -3960,8 +4025,8 @@ Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
   rewrite -[hyps in @mkMyGoal _ _ hyps _](firstn_skipn n);
   rewrite [hyps in @mkMyGoal _ _ (hyps ++ _) _]/=;
   rewrite [hyps in @mkMyGoal _ _ (_ ++ hyps) _]/=;
-  unshelve (eapply (@MyGoal_applyMetaIn _ _ _ _ t);
-            [idtac|idtac|idtac|idtac|idtac|rewrite [hyps in @mkMyGoal _ _ hyps _]/app]).
+  eapply (@MyGoal_applyMetaIn _ _ _ _ t);
+            rewrite [hyps in @mkMyGoal _ _ hyps _]/app.
 
 Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
@@ -3969,9 +4034,11 @@ Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   Γ ⊢ p ---> (p or q).
 Proof.
   intros wfp wfq.
-  toMyGoal. mgIntro.
-  mgApplyMeta (@disj_left_intro Σ Γ p q _ _) in 0; auto.
-  mgExactn 0; auto 10.
+  toMyGoal.
+  { auto. }
+  mgIntro.
+  mgApplyMeta (@disj_left_intro Σ Γ p q ltac:(auto) ltac:(auto)) in 0.
+  mgExactn 0.
 Qed.
 
 Tactic Notation "mgDestructAnd" constr(n) :=
