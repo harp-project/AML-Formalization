@@ -872,9 +872,9 @@ Defined. *)
   Proof.
     induction C.
     - simpl. eapply false_implies_everything. shelve.
-    - simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p IHC).
+    - simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p Prf IHC).
       epose proof (m1 := @syllogism_intro Γ _ _ _ _ _ _ (m0) (Prop_bott_left Γ p Prf)). exact m1.
-    - simpl. epose proof (m2 := Framing_right Γ (subst_ctx C Bot) (Bot) p IHC).
+    - simpl. epose proof (m2 := Framing_right Γ (subst_ctx C Bot) (Bot) p Prf IHC).
 
       epose proof (m3 := @syllogism_intro Γ _ _ _ _ _ _ (m2) (Prop_bott_right Γ p Prf)). exact m3.
       
@@ -888,8 +888,8 @@ Defined. *)
   Proof.
     induction C; intros WFA WFB H.
     - simpl. exact H.
-    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H)). exact m.
-    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p (IHC _ _ H)). exact m.
+    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p Prf (IHC _ _ H)). exact m.
+    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p Prf (IHC _ _ H)). exact m.
       Unshelve.
       all: auto.
   Defined.
@@ -1970,16 +1970,18 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma MyGoal_weakenConclusion' Γ l g g':
-    wf l ->
-    well_formed g ->
-    well_formed g' ->
     Γ ⊢ g ---> g' ->
     @mkMyGoal Σ Γ l g ->
     @mkMyGoal Σ Γ l g'.
   Proof.
-    intros wfg wfg' gimpg' H.
+    intros H.
     unfold of_MyGoal in *. simpl in *.
-    eauto using prf_weaken_conclusion_iter_meta_meta.
+    intros Hg wfg' wfl.
+    pose proof (wfimp := proved_impl_wf _ _ H).
+    apply well_formed_imp_proj1 in wfimp.
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    5: apply Hg.
+    all: assumption.
   Defined.
   
   Lemma prf_contraction Γ a b:
@@ -2139,13 +2141,15 @@ Section FOL_helpers.
   Defined.
   
   Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g':
-    wf l ->
-    well_formed g ->
-    well_formed g' ->
     @mkMyGoal Σ Γ ((g ---> g') :: l) g ->
     @mkMyGoal Σ Γ ((g ---> g') :: l) g'.
   Proof.
-    apply prf_weaken_conclusion_iter_under_implication_meta.
+    intros H. unfold of_MyGoal in *. simpl in *.
+    intros wfg' wfgg'l.
+    pose proof (Htmp := wfgg'l).
+    unfold wf in Htmp. simpl in Htmp. apply andb_prop in Htmp. destruct Htmp as [wfgg' wfl].
+    apply well_formed_imp_proj1 in wfgg'. specialize (H wfgg' wfgg'l).
+    apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
@@ -2196,27 +2200,63 @@ Section FOL_helpers.
 
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
-    wf l₁ ->
-    wf l₂ ->
-    well_formed g ->
-    well_formed g' ->
     @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
     @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g'.
   Proof.
+    unfold of_MyGoal in *. simpl in *.
+    intros H wfg' wfl₁gg'l₂.
+    
     apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+    { abstract (pose proof (wfl₁ := wf_take (length l₁) wfl₁gg'l₂); rewrite take_app in wfl₁; exact wfl₁). }
+    { abstract (
+        pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
+        rewrite drop_app in wfgg'l₂;
+        pose proof (Htmp := wfgg'l₂);
+        unfold wf in Htmp;
+        simpl in Htmp;
+        apply andb_prop in Htmp;
+        destruct Htmp as [wfgg' wfl₂];
+        exact wfl₂
+      ).
+    }
+    {
+      abstract(
+        pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
+        rewrite drop_app in wfgg'l₂;
+        pose proof (Htmp := wfgg'l₂);
+        unfold wf in Htmp;
+        simpl in Htmp;
+        apply andb_prop in Htmp;
+        destruct Htmp as [wfgg' wfl₂];
+        pose proof (wfg := well_formed_imp_proj1 wfgg');
+        exact wfg
+      ).
+    }
+    { exact wfg'. }
+    apply H.
+    {
+      abstract(
+        pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
+        rewrite drop_app in wfgg'l₂;
+        pose proof (Htmp := wfgg'l₂);
+        unfold wf in Htmp;
+        simpl in Htmp;
+        apply andb_prop in Htmp;
+        destruct Htmp as [wfgg' wfl₂];
+        pose proof (wfg := well_formed_imp_proj1 wfgg');
+        exact wfg
+      ).
+    }
+    exact wfl₁gg'l₂.
   Defined.
 
   Lemma MyGoal_weakenConclusion_indifferent
-        P Γ l₁ l₂ g g'
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
+        P Γ l₁ l₂ g g' wf1 wf2
         (pf : Γ ⊢ foldr patt_imp g (l₁ ++ (g ---> g') :: l₂))
         :
     indifferent_to_prop P ->
     P _ _ pf = false ->
-    P _ _ (@MyGoal_weakenConclusion Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg' pf) = false.
+    P _ _ (@MyGoal_weakenConclusion Γ l₁ l₂ g g' (fun _ _ => pf) wf1 wf2) = false.
   Proof.
     intros Hp Huse. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     simpl.
@@ -2233,7 +2273,7 @@ Tactic Notation "mgApply" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
   apply MyGoal_weakenConclusion;
-  [idtac|idtac|idtac|idtac| let hyps := fresh "hyps" in rewrite [hyps in @mkMyGoal _ _ hyps _]/app].
+  let hyps := fresh "hyps" in rewrite [hyps in @mkMyGoal _ _ hyps _]/app.
 
 Local Example ex_mgApply {Σ : Signature} Γ a b:
   well_formed a ->
@@ -2241,17 +2281,16 @@ Local Example ex_mgApply {Σ : Signature} Γ a b:
   Γ ⊢ a ---> (a ---> b) ---> b.
 Proof.
   intros wfa wfb.
-  toMyGoal. mgIntro. mgIntro.
-  mgApply 1; auto.
-  fromMyGoal. apply P1; auto.
+  toMyGoal.
+  { auto. }
+  mgIntro. mgIntro.
+  mgApply 1.
+  fromMyGoal. intros _ _. apply P1; auto.
 Defined.
-
-Print ex_mgApply.
 
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
   
   Lemma Constructive_dilemma Γ p q r s:
     well_formed p ->
