@@ -127,11 +127,7 @@ Section proof_system_translation.
         inversion Heqp0. subst. clear Heqp0.
         inversion Heqp6. subst. clear Heqp6.
 
-        assert(cache !! patt_imp q p = Some (npatt_imp nq' np'')).
-        {
-          
-        }
-        
+        (* assert(cache !! patt_imp q p = Some (npatt_imp nq' np'')). *)
         
         (* Now [q ---> p] is in [g]. But it follows that [q ---> p] is also in [cache] (and has the same value).
            Therefore, also [p] and [q] are in [cache].
@@ -172,8 +168,7 @@ Section proof_system_translation.
   (*
      Non-Addition lemma. phi <= psi -> psi \not \in C -> psi \not \in (toNamedPattern2' phi C).2
    *)
-  
-Print NamedPattern.
+
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
            (cache : Cache) (pfsub : sub_prop cache) (pfcorr : corr_prop cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
@@ -187,12 +182,11 @@ Print NamedPattern.
          let: named_prf := N_hypothesis (theory_translation G) tn.1.1.1 _ _ in
          (named_prf, cache', used_evars', used_svars') ;
 
-
     translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
       with (cache !! (patt_imp p (patt_imp q p))) => {
       | Some pqp_named with pqp_named => {
-          | npatt_imp p' (npatt_imp q' p'')
-          := _ ;
+          | npatt_imp p' (npatt_imp q' p'') := _ ;
+          | _ := _ ;
         }
       | None with (cache !! (patt_imp q p)) => {
         | None :=
@@ -205,7 +199,19 @@ Print NamedPattern.
                     (N_P1 (theory_translation G) tn_p.1.1.1 tn_q.1.1.1 _ _)
                     _ _ in
           (named_prf, cache'', used_evars'', used_svars'') ;
-        | Some qp_named := _ (* TODO *)
+        | Some qp_named with qp_named => {
+            | npatt_imp q' p' :=
+              if (cache !! p) is Some p' then
+                if (cache !! q) is Some q' then
+                  let: named_prf :=
+                     eq_rect _ _
+                             (N_P1 (theory_translation G) p' q' _ _)
+                             _ _ in
+                  (named_prf, cache, used_evars, used_svars)
+                else _
+              else _
+            | _ := _
+          }
         } ;
       };
     (*
@@ -303,10 +309,14 @@ Print NamedPattern.
   Proof.
     - admit.
     - admit.
-    - admit.
-    - admit.
-    - admit.
-    - admit.
+    - repeat case_match; simpl.
+      + unfold corr_prop in pfcorr.
+        specialize (pfcorr (patt_imp p (patt_imp q p)) n Heqo).
+        (* destruct pfcorr as [cache' [evs' svs']]. *)
+        assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
+        destruct H as [[p' q'] Hpq]. simpl in Hpq. subst. admit.
+      + admit.
+      + admit.
     - case_match.
       + simpl.
         pose proof (pfcorr _ _ Heqo) as [cache0 [evs0 [svs0 [Hnone H]]]].
