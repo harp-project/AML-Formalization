@@ -1,4 +1,4 @@
-{ coqVersion ? "8.13"}:
+{ coqVersion ? "8.14"}:
 with import <nixpkgs> {};
 
 let
@@ -26,7 +26,7 @@ let
     };
 
     passthru = {
-      compatibleCoqVersions = v: builtins.elem v [ "8.12" "8.13" ];
+      compatibleCoqVersions = v: builtins.elem v [ "8.12" "8.13" "8.14" ];
     };
   };
   in self
