@@ -1839,17 +1839,19 @@ Section ProofSystemTheorems.
       eapply syllogism_intro.
       5: apply Prop_disj_right; auto 10.
       all: auto 10.
-      apply Framing_right.
-      toMyGoal. mgIntro. mgDestructAnd 0; auto 10.
-      mgDestruct 1; auto 10.
-      - mgLeft; auto 10. unfold patt_and. mgIntro.
-        mgDestruct 2; auto 10.
-        + mgApply 2; auto 10. mgExactn 0; auto 10.
-        + mgApply 2; auto 10. mgExactn 1; auto 10.
-      - mgRight; auto 10. unfold patt_and. mgIntro.
-        mgDestruct 2; auto 10.
-        + mgApply 2; auto 10. mgExactn 0; auto 10.
-        + mgApply 2; auto 10. mgExactn 1; auto 10.
+      apply Framing_right. wf_auto2.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructAnd 0.
+      mgDestructOr 1.
+      - mgLeft. unfold patt_and. mgIntro.
+        mgDestructOr 2.
+        + mgApply 2. mgExactn 0.
+        + mgApply 2. mgExactn 1.
+      - mgRight. unfold patt_and. mgIntro.
+        mgDestructOr 2.
+        + mgApply 2. mgExactn 0.
+        + mgApply 2. mgExactn 1.
     Defined.
 
     Lemma membership_or_2 Γ x ϕ₁ ϕ₂:
@@ -1867,15 +1869,17 @@ Section ProofSystemTheorems.
       4: apply H1.
       all: auto.
       simpl.
-      apply Framing_right.
+      apply Framing_right. wf_auto2.
 
-      toMyGoal. mgIntro. mgDestruct 0; auto 10; mgDestructAnd 0; auto 10.
-      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
-        + mgApply 2; auto 10. mgExactn 0; auto 10.
-        + mgApply 2; auto 10. mgLeft; auto 10. mgExactn 1; auto 10.
-      - unfold patt_and. mgIntro. mgDestruct 2; auto 10.
-        + mgApply 2; auto 10. mgExactn 0; auto 10.
-        + mgApply 2; auto 10. mgRight; auto 10. mgExactn 1; auto 10.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructOr 0; mgDestructAnd 0.
+      - unfold patt_and. mgIntro. mgDestructOr 2.
+        + mgApply 2. mgExactn 0.
+        + mgApply 2. mgLeft. mgExactn 1.
+      - unfold patt_and. mgIntro. mgDestructOr 2.
+        + mgApply 2. mgExactn 0.
+        + mgApply 2. mgRight. mgExactn 1.
     Defined.
 
     Lemma membership_or_iff Γ x ϕ₁ ϕ₂:
@@ -1898,17 +1902,19 @@ Section ProofSystemTheorems.
     Proof.
       intros wfϕ₁ wfϕ₂ HΓ.
       unfold patt_and.
-      toMyGoal. mgIntro.
-      mgApplyMeta (membership_not_1 _ _ _) in 0; auto 10.
-      mgIntro. mgApply 0; auto 10. mgClear 0; auto 10.
-      mgApplyMeta (membership_or_2 _ _ _ _); auto 10.
-      mgDestruct 0; auto 10.
-      - mgLeft; auto 10.
-        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
-        mgExactn 0; auto.
-      - mgRight; auto 10.
-        mgApplyMeta (membership_not_2 _ _ _) in 0; auto 10.
-        mgExactn 0; auto.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro.
+      unshelve (mgApplyMeta (membership_not_1 _ _ _) in 0); auto.
+      mgIntro. mgApply 0. mgClear 0.
+      unshelve (mgApplyMeta (membership_or_2 _ _ _ _)); auto.
+      mgDestructOr 0.
+      - mgLeft.
+        unshelve (mgApplyMeta (membership_not_2 _ _ _) in 0); auto 10.
+        mgExactn 0.
+      - mgRight.
+        unshelve (mgApplyMeta (membership_not_2 _ _ _) in 0); auto 10.
+        mgExactn 0.
     Defined.
     
     Lemma membership_and_2 Γ x ϕ₁ ϕ₂:
