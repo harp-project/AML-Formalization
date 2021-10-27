@@ -1734,7 +1734,7 @@ Section ProofSystemTheorems.
     Proof.
       intros Hwf HΓ.
       
-      pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x).
+      pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x ltac:(wf_auto2)).
       simpl in S1.
 
       assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
@@ -1746,33 +1746,35 @@ Section ProofSystemTheorems.
         replace (patt_sym (inj definedness) $ (patt_free_evar x and ! ϕ))
           with (⌈ patt_free_evar x and ! ϕ ⌉) in S1 by reflexivity.
         
-        toMyGoal. mgIntro. mgAdd S1; auto 10.
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro. mgAdd S1.
         unfold patt_and at 1.
         mgAssert ((! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x and ! ϕ ⌉))
                  using first 1.
-        
+        { wf_auto2. }        
         {
-          fromMyGoal.
+          fromMyGoal. intros _ _.
           apply not_not_elim; auto 10.
         }
-        mgClear 0; auto 10.
+        mgClear 0.
 
         (* Symmetry of Or *)
         mgAssert ((! ⌈ patt_free_evar x and ! ϕ ⌉ or ! ⌈ patt_free_evar x and ϕ ⌉))
                  using first 1.
+        { wf_auto2. }
         {
-          mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          - mgRight; auto 10. mgExactn 0; auto 10.
-          - mgLeft; auto 10. mgApply 1; auto 10. mgExactn 0; auto 10.
+          mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)).
+          mgDestructOr 0.
+          - mgRight. mgExactn 0.
+          - mgLeft. mgApply 1. mgExactn 0.
         }
-        mgClear 0; auto 10.
+        mgClear 0.
 
-        mgApply 0; auto 10. mgClear 0; auto 10. fromMyGoal.
+        mgApply 0. mgClear 0. fromMyGoal. intros _ _.
         apply not_not_intro; auto 10.
       }
       apply S2.
-      Unshelve. all: auto 15.
     Qed.
 
     Lemma membership_not_2 Γ (ϕ : Pattern) x:
@@ -1786,18 +1788,21 @@ Section ProofSystemTheorems.
       {
         assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
         {
-          toMyGoal. mgIntro. mgAdd (@A_or_notA Σ Γ ϕ ltac:(auto)); auto.
-          mgDestruct 0; auto.
-          - mgLeft; auto 10. unfold patt_and. mgIntro. unfold patt_or.
+          toMyGoal.
+          { wf_auto2. }
+          mgIntro. mgAdd (@A_or_notA Σ Γ ϕ ltac:(auto)).
+          mgDestructOr 0.
+          - mgLeft. unfold patt_and. mgIntro. unfold patt_or.
             mgAssert ((! ϕ)).
+            { wf_auto2. }
             {
-              mgApply 2; auto 10. mgClear 0; auto 10. mgClear 1; auto. fromMyGoal.
+              mgApply 2. mgClear 0. mgClear 1. fromMyGoal. intros _ _.
               apply not_not_intro; auto.
             }
-            mgApply 3; auto 10. mgExactn 0; auto 10.
-          - mgRight; auto 10. unfold patt_and. mgIntro. unfold patt_or.
-            mgApply 0; auto 10. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)); auto 10.
-            mgApply 2; auto 10. mgIntro. mgApply 3; auto 10. mgExactn 1; auto 10.
+            mgApply 3. mgExactn 0.
+          - mgRight. unfold patt_and. mgIntro. unfold patt_or.
+            mgApply 0. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
+            mgApply 2. mgIntro. mgApply 3. mgExactn 1.
         }
         eapply Framing_right in H.
         eapply Modus_ponens. 4: apply H. all: auto 10.
@@ -1810,7 +1815,6 @@ Section ProofSystemTheorems.
       eapply Modus_ponens.
       4: apply Htmp.
       all: auto 10.
-      Unshelve. all: auto 10.
     Defined.
 
     Lemma membership_not_iff Γ ϕ x:
