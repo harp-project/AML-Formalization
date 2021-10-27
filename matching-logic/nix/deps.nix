@@ -60,7 +60,7 @@ let
 
         src = fetchGit {
           url = "https://github.com/unicoq/unicoq.git";
-          ref = "master-8.13";
+          ref = "master-8.14";
           rev = lib.strings.fileContents ../deps/unicoq.rev;
         };
 
@@ -92,7 +92,7 @@ let
 
         src = fetchGit {
           url = "https://github.com/Mtac2/Mtac2.git";
-          ref = "master-8.13";
+          ref = "master-8.14";
           rev = lib.strings.fileContents ../deps/mtac2.rev;
         };
 
