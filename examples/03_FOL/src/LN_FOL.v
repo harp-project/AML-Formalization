@@ -1104,7 +1104,7 @@ Section FOL_ML_correspondence.
   Proof.
     induction t using term_rect; intros.
     * simpl.
-      pose proof (Ex_quan (from_FOL_theory Γ ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x). unfold instantiate in H0.
+      pose proof (Ex_quan (from_FOL_theory Γ ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x ltac:(wf_auto2)). unfold instantiate in H0.
       simpl in H0. eapply Modus_ponens. 4: exact H0.
       all: auto.
       epose proof (@patt_equal_refl _ _ (patt_free_evar x) (from_FOL_theory Γ) _).

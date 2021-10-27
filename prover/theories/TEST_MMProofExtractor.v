@@ -233,8 +233,10 @@ Module MMTest.
     ∅ ⊢ ϕ10.
   Proof.
     toMyGoal.
+    { wf_auto2. }
     unfold ϕ10.
-    mgRight; auto.
+    mgRight.
+    fromMyGoal. intros _ _.
     apply Existence.
   Defined.
   

@@ -194,13 +194,14 @@ Qed.
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 ---> phi2) ->
+      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
       theory ⊢ phi1 ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ phi2
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar) :
+      well_formed (patt_exists phi) ->
       theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
@@ -240,10 +241,12 @@ Qed.
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
+      well_formed psi ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
+      well_formed psi ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
 
@@ -255,10 +258,12 @@ Qed.
 
   (* Pre-Fixpoint *)
   | Pre_fixp (phi : Pattern) :
+      well_formed (patt_mu phi) ->
       theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
+      well_formed (patt_mu phi) ->
       theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
       theory ⊢ ((@patt_mu signature phi) ---> psi)
 
@@ -267,7 +272,8 @@ Qed.
   | Existence : theory ⊢ (ex , patt_bound_evar 0)
 
   (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) : 
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
+      well_formed phi ->
       theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
                    (subst_ctx C2 (patt_free_evar x and (! phi)))))
 
@@ -804,7 +810,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Modus_ponens _ _ _ _ _ m0 m1
       => uses_ex_gen EvS _ _ m0
          || uses_ex_gen EvS _ _ m1
-    | Ex_quan _ _ _ => false
+    | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ x _ _ pf _ => if decide (x ∈ EvS) is left _ then true else uses_ex_gen EvS _ _ pf
     | Prop_bott_left _ _ _ => false
     | Prop_bott_right _ _ _ => false
@@ -812,13 +818,13 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Prop_disj_right _ _ _ _ _ _ _ => false
     | Prop_ex_left _ _ _ _ _ => false
     | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
-    | Framing_right _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+    | Framing_left _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+    | Framing_right _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
     | Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_ex_gen EvS _ _ m0
+    | Pre_fixp _ _ _ => false
+    | Knaster_tarski _ _ phi psi m0 => uses_ex_gen EvS _ _ m0
     | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
+    | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
   Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
@@ -830,7 +836,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Modus_ponens _ _ _ _ _ m0 m1
       => uses_svar_subst S _ _ m0
          || uses_svar_subst S _ _ m1
-    | Ex_quan _ _ _ => false
+    | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst S _ _ pf'
     | Prop_bott_left _ _ _ => false
     | Prop_bott_right _ _ _ => false
@@ -838,13 +844,13 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Prop_disj_right _ _ _ _ _ _ _ => false
     | Prop_ex_left _ _ _ _ _ => false
     | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_svar_subst S _ _ m0
-    | Framing_right _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Framing_left _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | Framing_right _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
     | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => uses_svar_subst S _ _ m0
+    | Pre_fixp _ _ _ => false
+    | Knaster_tarski _ _ phi psi m0 => uses_svar_subst S _ _ m0
     | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
+    | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
 
@@ -856,7 +862,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P3 _ _ _ => false
     | Modus_ponens _ _ _ _ _ m0 m1
       => uses_kt _ _ m0 || uses_kt _ _ m1
-    | Ex_quan _ _ _ => false
+    | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
     | Prop_bott_left _ _ _ => false
     | Prop_bott_right _ _ _ => false
@@ -864,13 +870,13 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Prop_disj_right _ _ _ _ _ _ _ => false
     | Prop_ex_left _ _ _ _ _ => false
     | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ m0 => uses_kt _ _ m0
-    | Framing_right _ _ _ _ m0 => uses_kt _ _ m0
+    | Framing_left _ _ _ _ _ m0 => uses_kt _ _ m0
+    | Framing_right _ _ _ _ _ m0 => uses_kt _ _ m0
     | Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
-    | Pre_fixp _ _ => false
-    | Knaster_tarski _ phi psi m0 => true
+    | Pre_fixp _ _ _ => false
+    | Knaster_tarski _ _ phi psi m0 => true
     | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ => false
+    | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
@@ -953,6 +959,25 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     intros. simpl. reflexivity.
   Qed.
 
+  Lemma proved_impl_wf Γ ϕ:
+    Γ ⊢ ϕ -> well_formed ϕ.
+  Proof.
+    intros pf.
+    induction pf; auto; try (solve [wf_auto2]).
+    - unfold free_svar_subst. wf_auto2.
+      apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
+    - apply well_formed_not.
+      apply well_formed_and.
+      + apply wf_sctx.
+        apply well_formed_and.
+        * reflexivity.
+        * assumption.
+      + apply wf_sctx.
+        apply well_formed_and.
+        * reflexivity.
+        * apply well_formed_not.
+          assumption.
+  Qed.
 
 End ml_proof_system.
 

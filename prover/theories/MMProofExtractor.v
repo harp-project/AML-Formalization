@@ -404,7 +404,7 @@ Section gen.
     | P2 _ _ _ _ _ _ _ => 1
     | P3 _ _ _ => 1
     | Modus_ponens _ _ _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
-    | Ex_quan _ _ _ => 1
+    | Ex_quan _ _ _ _ => 1
     | Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
     | Prop_bott_left _ _ _ => 1
     | Prop_bott_right _ _ _ => 1
@@ -412,13 +412,13 @@ Section gen.
     | Prop_disj_right _ _ _ _ _ _ _ => 1
     | Prop_ex_left _ _ _ _ _ => 1
     | Prop_ex_right _ _ _ _ _ => 1
-    | Framing_left _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Framing_right _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Framing_left _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Framing_right _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
     | Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Pre_fixp _ _ => 1
-    | Knaster_tarski _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | Pre_fixp _ _ _ => 1
+    | Knaster_tarski _ _ _ _ pf' => 1 + proof_size' _ _ pf'
     | Existence _ => 1
-    | Singleton_ctx _ _ _ _ _ => 1
+    | Singleton_ctx _ _ _ _ _ _ => 1
     end.
 
   Definition proof_size'' Γ (x : {ϕ : Pattern & ML_proof_system Γ ϕ}) :=
