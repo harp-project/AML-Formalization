@@ -4178,34 +4178,35 @@ Section FOL_helpers.
     
     apply conj_intro_meta; auto.
     - toMyGoal.
+      { auto. }
       mgIntro. unfold patt_and.
-      mgIntro. mgApply 0; auto 10.
-      mgDestruct 1; auto 10.
+      mgIntro. mgApply 0.
+      mgDestructOr 1.
       + apply modus_tollens in pip'; auto 10.
-        mgAdd pip'; auto 10.
-        mgLeft; auto 10.
-        mgApply 0; auto 10.
-        mgExactn 2; auto 10.
+        mgAdd pip'.
+        mgLeft.
+        mgApply 0.
+        mgExactn 2.
       + apply modus_tollens in qiq'; auto 10.
-        mgAdd qiq'; auto 10.
-        mgRight; auto 10.
-        mgApply 0; auto 10.
-        mgExactn 2; auto 10.
+        mgAdd qiq'.
+        mgRight.
+        mgApply 0.
+        mgExactn 2.
     - toMyGoal.
+      { auto. }
       mgIntro. unfold patt_and.
-      mgIntro. mgApply 0; auto 10.
-      mgDestruct 1; auto 10.
-      + mgLeft; auto 10.
+      mgIntro. mgApply 0.
+      mgDestructOr 1.
+      + mgLeft.
         apply modus_tollens in p'ip; auto.
-        mgAdd p'ip; auto 10.
-        mgApply 0; auto 10.
-        mgExactn 2; auto 10.
-      + mgRight; auto 10.
+        mgAdd p'ip.
+        mgApply 0.
+        mgExactn 2.
+      + mgRight.
         apply modus_tollens in q'iq; auto.
-        mgAdd q'iq; auto 10.
-        mgApply 0; auto 10.
-        mgExactn 2; auto 10.
-        Unshelve. all: auto.
+        mgAdd q'iq.
+        mgApply 0.
+        mgExactn 2.
   Defined.
   
 
@@ -4226,16 +4227,17 @@ Section FOL_helpers.
     
     apply conj_intro_meta; auto.
     - toMyGoal.
+      { auto. }
       mgIntro.
-      mgDestruct 0; auto.
-      + mgLeft; auto.
-      + mgRight; auto.
+      mgDestructOr 0.
+      + mgLeft. fromMyGoal. intros _ _. assumption.
+      + mgRight. fromMyGoal. intros _ _. assumption.
     - toMyGoal.
+      { auto. }
       mgIntro.
-      mgDestruct 0; auto.
-      + mgLeft; auto.
-      + mgRight; auto.
-        Unshelve. all: auto.
+      mgDestructOr 0.
+      + mgLeft. fromMyGoal. intros _ _. assumption.
+      + mgRight. fromMyGoal. intros _ _. assumption.
   Defined.
 
 End FOL_helpers.
@@ -4243,7 +4245,7 @@ End FOL_helpers.
 
 (* TODO this should have a different name, and we should give the name [mgSplit] to a tactic
   that works with our goals *)
-Ltac mgSplit := apply conj_intro_meta; auto.
+(*Ltac mgSplit := apply conj_intro_meta; auto.*)
 
 Section FOL_helpers.
 
@@ -4256,20 +4258,23 @@ Section FOL_helpers.
     Γ ⊢ ((p ---> q) <---> (! p or q)).
   Proof.
     intros wfp wfq.
-    mgSplit.
-    - toMyGoal. mgIntro.
-      mgAdd (@A_or_notA Σ Γ p wfp); auto.
-      mgDestruct 0; auto.
-      + mgRight; auto.
-        mgApply 1; auto 10.
-        mgExactn 0; auto.
-      + mgLeft; auto.
-        mgExactn 0; auto.
-    - toMyGoal. mgIntro. mgIntro. unfold patt_or.
-      mgApply 0; auto 10.
-      mgApplyMeta (@not_not_intro _ _ _ _); auto 10.
-      mgExactn 1; auto.
-      Unshelve. all: auto 10.
+    apply conj_intro_meta; auto.
+    - toMyGoal.
+      { wf_auto2. }
+      mgIntro.
+      mgAdd (@A_or_notA Σ Γ p wfp).
+      mgDestructOr 0.
+      + mgRight.
+        mgApply 1.
+        mgExactn 0.
+      + mgLeft.
+        mgExactn 0.
+    - toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgIntro. unfold patt_or.
+      mgApply 0.
+      mgApplyMeta (@not_not_intro _ _ p wfp).
+      mgExactn 1.
   Defined.
 
   Lemma p_and_notp_is_bot Γ p:
@@ -4277,13 +4282,15 @@ Section FOL_helpers.
     Γ ⊢ (⊥ <---> p and ! p).
   Proof.
     intros wfp.
-    mgSplit.
+    apply conj_intro_meta; auto.
     - apply bot_elim; auto.
-    - unfold patt_and. toMyGoal.
+    - unfold patt_and.
+      toMyGoal.
+      { wf_auto2. }
       mgIntro.
-      mgApply 0; auto 10.
-      mgAdd (@A_or_notA Σ Γ (! p) ltac:(auto)); auto 10.
-      mgExactn 0; auto 10.
+      mgApply 0.
+      mgAdd (@A_or_notA Σ Γ (! p) ltac:(auto)).
+      mgExactn 0.
   Defined.
 
   Lemma weird_lemma Γ A B L R:
@@ -4294,22 +4301,27 @@ Section FOL_helpers.
     Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R))).
   Proof.
     intros wfA wfB wfL wfR.
-    toMyGoal. mgIntro. mgIntro.
-    mgAdd (@A_or_notA Σ Γ A wfA); auto 10.
-    mgDestruct 0; auto 10.
-    - mgAssert ((B or R)); auto 10.
-      { mgApply 1; auto 10. unfold patt_and at 2. mgIntro.
-        mgDestruct 3; auto 10.
-        + mgApply 3; auto 10. mgExactn 2; auto 10.
-        + mgApply 3; auto 10. mgExactn 0; auto 10.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgIntro.
+    mgAdd (@A_or_notA Σ Γ A wfA).
+    mgDestructOr 0.
+    - mgAssert ((B or R)).
+      { wf_auto2. }
+      { mgApply 1.
+        unfold patt_and at 2.
+        mgIntro.
+        mgDestructOr 3.
+        + mgApply 3. mgExactn 2.
+        + mgApply 3. mgExactn 0.
       }
-      mgDestruct 3; auto 10.
-      + mgLeft; auto 10. mgIntro. mgExactn 3; auto 10.
-      + mgRight; auto 10. mgExactn 3; auto 10.
-    - mgLeft; auto 10. mgIntro.
-      mgApplyMeta (@bot_elim Σ _ _ _); auto 10.
-      mgApply 0; auto 10. mgExactn 3; auto 10.
-      Unshelve. all: auto 10.
+      mgDestructOr 3.
+      + mgLeft. mgIntro. mgExactn 3.
+      + mgRight. mgExactn 3.
+    - mgLeft.
+      mgIntro.
+      mgApplyMeta (@bot_elim Σ _ B wfB).
+      mgApply 0. mgExactn 3.
   Defined.
 
   Lemma weird_lemma_meta Γ A B L R:
@@ -4326,7 +4338,6 @@ Section FOL_helpers.
     all: auto 10.
   Defined.
 
-(* Try here *)
 
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
