@@ -1924,17 +1924,19 @@ Section ProofSystemTheorems.
       Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)).
     Proof.
       intros wfϕ₁ wfϕ₂ HΓ.
-      toMyGoal. mgIntro.
-      mgDestructAnd 0; auto 10.
-      unfold patt_and.
-      mgApplyMeta (@membership_not_2 _ _ _ _ _); auto 10.
+      toMyGoal.
+      { wf_auto2. }
       mgIntro.
-      mgApplyMeta (membership_or_1 _ _ _ _) in 2; auto 10.
-      mgDestruct 2; auto 10.
-      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
-        mgApply 2; auto 10. mgExactn 0; auto 10.
-      - mgApplyMeta (membership_not_1 _ _ _) in 2; auto 10.
-        mgApply 2; auto 10. mgExactn 1; auto 10.
+      mgDestructAnd 0.
+      unfold patt_and.
+      unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ _)); auto 10.
+      mgIntro.
+      unshelve (mgApplyMeta (membership_or_1 _ _ _ _) in 2); auto 10.
+      mgDestructOr 2.
+      - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+        mgApply 2. mgExactn 0.
+      - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+        mgApply 2. mgExactn 1.
     Defined.
 
     Lemma membership_and_iff Γ x ϕ₁ ϕ₂:
@@ -1959,291 +1961,6 @@ Section ProofSystemTheorems.
     Abort.
          
     
-    Theorem deduction_theorem_general Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
-      well_formed ϕ ->
-      well_formed ψ ->
-      theory ⊆ Γ ->
-      uses_ex_gen (free_evars ψ) pf = false ->
-      uses_svar_subst (free_svars ψ) pf = false ->
-      Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
-    Proof.
-      intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst.
-      induction pf.
-      - (* hypothesis *)
-        (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
-           when building Set, which is prohibited. *)
-        destruct (decide (axiom0 = ψ)).
-        + subst. apply total_phi_impl_phi; auto.
-        + assert (axiom0 ∈ Γ).
-          { set_solver. }
-          toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-          apply (hypothesis Γ axiom0 i H).
-      - (* P1 *)
-        toMyGoal. do 3 mgIntro. mgExactn 1; auto.
-      - (* P2 *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply P2; auto.
-      - (* P3 *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply P3; auto.
-      - (* Modus Ponens *)
-        assert (well_formed phi2).
-        { unfold well_formed, well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto.
-        }
-        simpl in HnoExGen. apply orb_false_iff in HnoExGen.
-        destruct HnoExGen as [HnoExGen1 HnoExGen2].
-        simpl in HnoSvarSubst. apply orb_false_iff in HnoSvarSubst.
-        destruct HnoSvarSubst as [HnoSvarSubst1 HnoSvarSubst2].
-        specialize (IHpf1 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-        specialize (IHpf2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-        
-        toMyGoal. mgIntro.
-        mgAdd IHpf2; auto.
-        mgAssert ((phi1 ---> phi2)).
-        { mgApply 0; auto 10. mgExactn 1; auto. }
-        mgApply 2; auto 10.
-        mgAdd IHpf1; auto.
-        mgApply 0; auto 10.
-        mgExactn 2; auto 10.
-      - (* Existential Quantifier *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Ex_quan.
-      - (* Existential Generalization *)
-        simpl in HnoExGen.
-        case_match;[congruence|].
-        feed specialize IHpf.
-        { auto. }
-        { exact HnoExGen. }
-        { simpl in HnoSvarSubst. exact HnoSvarSubst. }
-
-        apply reorder_meta in IHpf; auto.
-        apply reorder_meta; auto.
-        { wf_auto2. }
-        apply Ex_gen with (x0 := x) in IHpf; auto.
-        { simpl. clear -n n0. set_solver. }
-      - (* Propagation of ⊥, left *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_bott_left; assumption.
-      - (* Propagation of ⊥, right *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_bott_right; assumption.
-      - (* Propagation of 'or', left *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_disj_left; assumption.
-      - (* Propagation of 'or', right *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_disj_right; assumption.
-      - (* Propagation of 'exists', left *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_ex_left; assumption.
-      - (* Propagation of 'exists', right *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Prop_ex_right; assumption.
-      - (* Framing left *)
-        assert (well_formed (phi1)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-
-        assert (well_formed (phi2)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-
-        assert (well_formed (psi)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-        
-        assert (well_formed (phi1 ---> phi2)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-        simpl in HnoExGen. simpl in HnoSvarSubst.
-        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-        assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
-        { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
-          mgDestruct 0; auto.
-          - mgRight; auto 10. mgExactn 0; auto 10.
-          - mgLeft; auto 10.
-            mgAssert((phi1 ---> phi2)).
-            { mgApply 1; auto 10. mgExactn 0; auto 10. }
-            mgApply 3; auto 10. mgExactn 2; auto 10.
-        }
-
-        assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
-        {
-          replace (⌈ ! ψ ⌉ $ psi)
-            with (subst_ctx (@ctx_app_l _ AC_patt_defined psi ltac:(assumption)) (! ψ))
-            by reflexivity.
-          apply in_context_impl_defined; auto.
-        }
-
-        assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
-        { apply Framing_left. exact S2. }
-
-        assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-        {
-          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-          feed specialize Htmp.
-          { auto. }
-          { auto. }
-          simpl in Htmp.
-          apply pf_iff_proj1 in Htmp; auto.
-          eapply syllogism_intro.
-          5: apply Htmp.
-          all: auto 10.
-        }
-        
-        assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
-        {
-          toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          - mgLeft; auto 10. mgExactn 0; auto 10.
-          - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
-        }
-
-        assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
-        {
-          toMyGoal. mgAdd S5; auto 10. mgAdd S6; auto 10. mgIntro.
-          mgAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-          { mgApply 1; auto 10. mgExactn 2; auto 10. }
-          mgDestruct 3; auto 10.
-          - mgLeft; auto 10. mgExactn 3; auto 10.
-          - mgApply 0; auto 10. mgRight; auto 10. mgExactn 3; auto 15.
-        }
-
-        toMyGoal. do 2 mgIntro. mgAdd S7; auto 10.
-        mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-        { mgApply 0; auto 10. mgExactn 2; auto 10. }
-        mgDestruct 3; auto 10.
-        + mgExactn 3; auto 10.
-        + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-          { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          * mgExactn 0; auto 15.
-          * mgAdd (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto)); auto 15.
-            mgApply 0; auto 15.
-            mgApply 3; auto 15.
-            mgExactn 5; auto 15.
-      - (* Framing right *)
-        assert (well_formed (phi1)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-
-        assert (well_formed (phi2)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-
-        assert (well_formed (psi)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-        
-        assert (well_formed (phi1 ---> phi2)).
-        { unfold well_formed,well_formed_closed in *. simpl in *.
-          destruct_and!. split_and!; auto. }
-        simpl in HnoExGen. simpl in HnoSvarSubst.
-        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-        assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
-        { toMyGoal. mgAdd IHpf; auto 10. mgIntro.
-          mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          - mgRight; auto 10. mgExactn 0; auto 10.
-          - mgLeft; auto 10.
-            mgAssert((phi1 ---> phi2)).
-            { mgApply 1; auto 10. mgExactn 0; auto 10. }
-            mgApply 3; auto 10. mgExactn 2; auto 10.
-        }
-
-        assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
-        {
-          replace (psi $ ⌈ ! ψ ⌉)
-            with (subst_ctx (@ctx_app_r _ psi AC_patt_defined ltac:(assumption)) (! ψ))
-            by reflexivity.
-          apply in_context_impl_defined; auto.
-        }
-
-        assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
-        { apply Framing_right. exact S2. }
-
-        assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-        {
-          pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-          feed specialize Htmp.
-          { auto. }
-          { auto. }
-          simpl in Htmp.
-          apply pf_iff_proj1 in Htmp; auto.
-          eapply syllogism_intro.
-          5: apply Htmp.
-          all: auto 10.
-        }
-        
-        assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
-        {
-          toMyGoal. mgIntro. mgAdd S3; auto 10.
-          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          - mgLeft; auto 10. mgExactn 0; auto 10.
-          - mgRight; auto 10. mgApply 1; auto 10. mgApply 2; auto 10. mgExactn 0; auto 10.
-        }
-
-        assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
-        {
-          toMyGoal. mgAdd S5; auto 10. mgAdd S6; auto 10. mgIntro.
-          mgAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-          { mgApply 1; auto 10. mgExactn 2; auto 10. }
-          mgDestruct 3; auto 10.
-          - mgLeft; auto 10. mgExactn 3; auto 10.
-          - mgApply 0; auto 10. mgRight; auto 10. mgExactn 3; auto 15.
-        }
-
-        toMyGoal. do 2 mgIntro. mgAdd S7; auto 10.
-        mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-        { mgApply 0; auto 10. mgExactn 2; auto 10. }
-        mgDestruct 3; auto 10.
-        + mgExactn 3; auto 10.
-        + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-          { mgApply 0; auto 10. mgExactn 2; auto 10. }
-          mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)); auto 10.
-          mgDestruct 0; auto 10.
-          * mgExactn 0; auto 15.
-          * mgAdd (@bot_elim Σ Γ (psi $ phi2) ltac:(auto)); auto 15.
-            mgApply 0; auto 15.
-            mgApply 3; auto 15.
-            mgExactn 5; auto 15.
-      - (* Set variable substitution *)
-        simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
-        case_match.
-        { congruence. }
-        specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-        replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
-          with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
-        2: { unfold free_svar_subst. simpl.
-             rewrite [free_svar_subst' 0 ψ psi X]free_svar_subst_fresh.
-             { assumption. }
-             reflexivity.
-        }
-        apply Svar_subst; auto.
-      - (* Prefixpoint *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Pre_fixp.
-      - (* Knaster-Tarski *)
-        (*Print ML_proof_system.*)
-        admit.
-      - (* Existence *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Existence.
-      - (* Singleton *)
-        toMyGoal. mgIntro. mgClear 0; auto. fromMyGoal.
-        apply Singleton_ctx.
-
-        Unshelve. all: auto 10.
-    Abort.
-
-
-
-
     Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2320,9 +2037,11 @@ Section ProofSystemTheorems.
       - pose proof (wfal := wfl). apply andb_prop in wfl as [wfa wfl].
         specialize (IHl wfl).
         simpl in IHl.
-        toMyGoal. mgIntro. mgIntro. mgClear 1.
-        1-4: auto.
-        { unfold emplace. auto 10. }
+        pose proof (proved_impl_wf _ _ IHl).
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro. mgIntro. mgClear 1.
+        fromMyGoal. intros _ _.
         apply IHl.
     Defined.
 
@@ -2342,8 +2061,11 @@ Section ProofSystemTheorems.
       - apply equality_elimination_basic_iter_1; assumption.
       - pose proof (wfal := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁ as [wfa wfl].
         specialize (IHl₁ wfl).
-        toMyGoal. mgIntro. mgClear 0. 1-4: auto.
-        { unfold emplace. auto 10. }
+        pose proof (proved_impl_wf _ _ IHl₁).
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro. mgClear 0.
+        fromMyGoal. intros _ _.
         apply IHl₁.
     Defined.
 
@@ -2482,7 +2204,7 @@ Section ProofSystemTheorems.
       }
       pose proof (@equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
       apply pf_iff_iff in H. destruct H.
-      pose proof (EQ := Ex_quan Γ φ Zvar).
+      pose proof (EQ := Ex_quan Γ φ Zvar ltac:(wf_auto2)).
       epose proof (PC := @prf_conclusion Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ EQ).
       2-3: apply well_formed_equal;auto.
       assert (Γ
@@ -2650,11 +2372,15 @@ Proof.
   intros HΓ wfϕ₁ wfϕ₂ Hsub.
   apply patt_iff_implies_equal; wfauto'.
   apply pf_iff_split; wfauto'.
-  + toMyGoal. mgIntro. mgDestruct 0; wfauto'.
+  + toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgDestructOr 0.
     * apply total_phi_impl_phi_meta in Hsub;[|assumption|wfauto'].
-      apply Hsub.
-    * apply A_impl_A;wfauto'.
-  + toMyGoal. mgIntro. mgRight;wfauto'. apply A_impl_A; wfauto'.
+      fromMyGoal. intros _ _. apply Hsub.
+    * fromMyGoal. intros _ _. apply A_impl_A;wfauto'.
+  + toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgRight;wfauto'. fromMyGoal. intros _ _. apply A_impl_A; wfauto'.
 Defined.
 
 Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
