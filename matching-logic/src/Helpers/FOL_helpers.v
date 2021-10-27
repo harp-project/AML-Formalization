@@ -1930,16 +1930,36 @@ Lemma MyGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g
   @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g.
 Proof.
   fromMyGoal. intros wfg wfl₁gl₂.
-  Search wf.
-  About wf_take.
-  pose proof (wfl₁ := wf_take (length l₁) wfl₁gl₂). rewrite take_app in wfl₁.
-  pose proof (wfgl₂ := wf_drop (length l₁) wfl₁gl₂). rewrite drop_app in wfgl₂.
-  unfold wf in wfgl₂. simpl in wfgl₂. apply andb_prop in wfgl₂. destruct wfgl₂ as [_ wfl₂].
   apply nested_const_middle.
   { exact wfg. }
-  { exact wfl₁. }
-  { exact wfl₂. }
+  { abstract (
+      pose proof (wfl₁ := wf_take (length l₁) wfl₁gl₂);
+      rewrite take_app in wfl₁;
+      exact wfl₁
+    ).
+  }
+  {
+    abstract (
+      pose proof (wfgl₂ := wf_drop (length l₁) wfl₁gl₂);
+      rewrite drop_app in wfgl₂;
+      unfold wf in wfgl₂;
+      simpl in wfgl₂;
+      apply andb_prop in wfgl₂;
+      destruct wfgl₂ as [_ wfl₂];
+      exact wfl₂
+    ).
+  }
 Defined.
+
+Lemma MyGoal_exactn_indifferent {Σ : Signature} (P : proofbpred) Γ l₁ l₂ g:
+  indifferent_to_prop P ->
+  (forall wf1 wf2, P _ _ (@MyGoal_exactn Σ Γ l₁ l₂ g wf1 wf2) = false).
+Proof.
+  intros Hcast.
+  intros wf1 wf2.
+  unfold MyGoal_exactn.
+  rewrite nested_const_middle_indifferent;[assumption|reflexivity].
+Qed.
 
 Tactic Notation "mgExactn" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
@@ -2246,17 +2266,16 @@ Section FOL_helpers.
   Defined.
 
   Lemma MyGoal_weakenConclusion_indifferent
-        P Γ l₁ l₂ g g' wf1 wf2
-        (pf : Γ ⊢ foldr patt_imp g (l₁ ++ (g ---> g') :: l₂))
-        :
+        P Γ l₁ l₂ g g' pf :
     indifferent_to_prop P ->
-    P _ _ pf = false ->
-    P _ _ (@MyGoal_weakenConclusion Γ l₁ l₂ g g' (fun _ _ => pf) wf1 wf2) = false.
+    (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
+    (forall wf1 wf2, P _ _ (@MyGoal_weakenConclusion Γ l₁ l₂ g g' pf wf1 wf2) = false).
   Proof.
     intros Hp Huse. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     simpl.
     unfold MyGoal_weakenConclusion.
     unfold prf_weaken_conclusion_iter_under_implication_iter_meta.
+    intros wf1 wf2.
     rewrite Hmp. simpl. rewrite Huse. simpl.
     rewrite prf_weaken_conclusion_iter_under_implication_iter_indifferent; auto.
   Qed.
@@ -2754,16 +2773,17 @@ Section FOL_helpers.
   Defined.
 
   Lemma MyGoal_add_indifferent
-    P Γ l g h wf1 wf2
+    P Γ l g h pfh pf: (*
     (pfh: Γ ⊢ h)
-    (pf : Γ ⊢ foldr patt_imp g (h::l)):
+    (pf : Γ ⊢ foldr patt_imp g (h::l)): *)
     indifferent_to_prop P ->
     P _ _ pfh = false ->
-    P _ _ pf = false ->
-    P _ _ (@MyGoal_add Γ l g h pfh (fun _ _ => pf) wf1 wf2) = false.
+    (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
+    (forall wf1 wf2, P _ _ (@MyGoal_add Γ l g h pfh pf wf1 wf2) = false).
   Proof.
     intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
     simpl in *. unfold MyGoal_add. unfold prf_add_proved_to_assumptions_meta.
+    intros wf1 wf2.
     rewrite Hmp. simpl.
     rewrite H2. simpl.
     rewrite prf_add_proved_to_assumptions_indifferent; auto.
@@ -4894,11 +4914,13 @@ Section FOL_helpers.
         intros wf5 wf6.
         rewrite (@MyGoal_add_indifferent Σ P Γ [a ---> b; a]); auto.
         { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[|assumption|].
-        intros Hyp0.
+        intros wf7 wf8.
+        rewrite cast_proof_mg_hyps_indifferent; [assumption|].
         rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        intros wf9 wf10.
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
+        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
+        intros wf11 wf12.
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].
         rewrite nested_const_middle_indifferent; auto.
       + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
