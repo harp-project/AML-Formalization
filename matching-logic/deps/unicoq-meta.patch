@@ -1,0 +1,20 @@
+diff --git a/ocaml/META b/ocaml/META
+new file mode 100644
+index 0000000..627bf7a
+--- /dev/null
++++ b/ocaml/META
+@@ -0,0 +1,14 @@
++description = ""
++version = ""
++ 
++directory = ""
++requires = ""
++ 
++package "unicoq" (
++ 
++  description = "Unicoq"
++  version     = "8.14"
++ 
++  archive(byte)    = "unicoq.cma"
++  archive(native)  = "unicoq.cmxa"
++)

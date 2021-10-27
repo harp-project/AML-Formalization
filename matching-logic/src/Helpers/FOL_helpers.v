@@ -7,6 +7,7 @@ From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 
 From Equations Require Import Equations.
+Require Import Mtac2.Mtac2.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
