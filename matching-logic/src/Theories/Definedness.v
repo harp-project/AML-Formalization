@@ -2393,5 +2393,3 @@ Proof.
   intros HΓ wfϕ₁ wfϕ₂ Heq.
   (* We have to rewrite the RHS using Heq... *)
 Abort.
-
-Abort.
