@@ -4131,30 +4131,17 @@ Proof.
  exact H.
 Defined.
 
-
 Tactic Notation "mgDestructAnd" constr(n) :=
-  lazymatch goal with
-  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    let found := fresh "found" in
-    let Heqfound := fresh "Heqfound" in
-    remember (l !! n) as found eqn:Heqfound;
-    simpl in Heqfound;
-    lazymatch type of Heqfound with
-    | found = Some (?x and ?y) =>
-(*      unshelve( *)
-          mgAssert (y) using first (S n);
-          [mgApplyMeta (@pf_conj_elim_r Sgm Ctx x y _ _);
-           [(mgExactn n; shelve)]
-          |idtac];
-          mgAssert (x) using first (S n);
-          [mgApplyMeta (@pf_conj_elim_l Sgm Ctx x y _ _);
-           [(mgExactn n; shelve)]
-          |idtac];
-          mgClear n
-(*        )       *)
-    | _ => idtac "Not a conjunction"
-    end ; clear found Heqfound
-  end.
+  eapply cast_proof_mg_hyps;
+  [(let hyps := fresh "hyps" in
+    rewrite <- (firstn_skipn 1);
+    rewrite [hyps in (hyps ++ _)]/=;
+    rewrite [hyps in (_ ++ hyps)]/=;
+    reflexivity
+   )|];
+  apply MyGoal_destructAnd;
+  eapply cast_proof_mg_hyps;
+  [(rewrite /app; reflexivity)|].
 
 Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed a ->
@@ -4166,10 +4153,10 @@ Proof.
   intros. toMyGoal.
   { auto. }
   do 3 mgIntro.
-  mgDestructAnd 1.  ; auto 10.
-  mgExactn 1; auto 10.
+  mgDestructAnd 1.
+  mgExactn 1.
 Qed.
-(* Good until there *)
+
 Section FOL_helpers.
   
   Context {Σ : Signature}.
