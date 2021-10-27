@@ -1829,38 +1829,6 @@ Proof.
   fromMyGoal. intros _ _. apply A_impl_A. exact wfp.
 Qed.
 
-
-Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
-  @mkMyGoal Σ Γ (l ++ [x]) g ->
-  @mkMyGoal Σ Γ l (x ---> g).
-Proof.
-  intros H.
-  unfold of_MyGoal in H. simpl in H. rewrite foldr_app in H. simpl in H.
-  unfold of_MyGoal. simpl. intros wfxig wfl. apply H.
-  { apply well_formed_imp_proj2 in wfxig. exact wfxig. }
-  unfold wf. unfold wf in wfl. rewrite map_app foldr_app. simpl.
-  apply well_formed_imp_proj1 in wfxig. rewrite wfxig. simpl. exact wfl.
-Defined.
-
-Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) Γ l x g
-      (pf : Γ ⊢ foldr patt_imp g (l ++ [x])) wf1 wf2:
-  P _ _ pf = false ->
-  P _ _ (@MyGoal_intro Σ Γ l x g (fun _ _ => pf) wf1 wf2) = false.
-Proof.
-  intros H.
-  unfold MyGoal_intro. simpl.
-  unfold eq_rect_r. unfold eq_rect. unfold eq_sym.
-  move: (foldr_app Pattern Pattern patt_imp l [x] g).
-  unfold of_MyGoal in pf. simpl in pf.
-  simpl. unfold of_MyGoal. simpl.
-  move: pf H.
-  rewrite list.foldr_app. simpl.
-  intros pf H fapf.
-  replace fapf with (@erefl Pattern (foldr patt_imp (x ---> g) l)) by (apply UIP_dec; apply Pattern_eqdec).
-  simpl. exact H.
-Qed.
-
-
 Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
   @mkMyGoal Σ Γ hyps goal ->
   @mkMyGoal Σ Γ hyps' goal.
@@ -1911,6 +1879,33 @@ Proof.
   apply f_equal. f_equal.
   { apply UIP_dec; apply bool_eqdec. }
   { apply UIP_dec. apply bool_eqdec. }
+Qed.
+
+Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
+  @mkMyGoal Σ Γ (l ++ [x]) g ->
+  @mkMyGoal Σ Γ l (x ---> g).
+Proof.
+  intros H.
+  unfold of_MyGoal in H. simpl in H.
+  unfold of_MyGoal. simpl. intros wfxig wfl.
+
+  feed specialize H.
+  { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
+  { abstract (unfold wf; unfold wf in wfl; rewrite map_app foldr_app; simpl;
+              apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
+  }
+  unshelve (eapply (cast_proof _ H)).
+  { rewrite foldr_app. reflexivity. }
+Defined.
+
+Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) Γ l x g pf:
+  indifferent_to_cast P ->
+  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
+  (forall wf1 wf2, P _ _ (@MyGoal_intro Σ Γ l x g pf wf1 wf2) = false).
+Proof.
+  intros Hcast H wf1 wf2.
+  unfold MyGoal_intro. simpl.
+  rewrite Hcast. simpl in H. apply H.
 Qed.
 
 Ltac simplLocalContext :=
@@ -4338,7 +4333,7 @@ Section FOL_helpers.
     all: auto 10.
   Defined.
 
-
+(*
   Theorem congruence_iff :
     forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
      Γ ⊢ (φ1 <---> φ2)
@@ -4431,7 +4426,7 @@ Section FOL_helpers.
        apply andb_true_iff in WFC as [E1 E2].
        unfold well_formed_closed in *. destruct_and!. assumption.
   Defined.
-
+*)
   Lemma imp_trans_mixed_meta Γ A B C D :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (C ---> A) -> Γ ⊢ (B ---> D)
@@ -4446,7 +4441,7 @@ Section FOL_helpers.
     epose proof (@syllogism_intro Σ Γ _ _ _ _ _ _ H1 H2). auto.
     Unshelve. all: auto.
   Defined.
-
+(*
   Theorem congruence_iff_helper :
     forall sz ψ more, le (Syntax.size ψ) sz ->
      forall φ1 φ2 x Γ (MF : mu_free ψ), well_formed φ1 -> well_formed φ2 ->
@@ -4556,7 +4551,7 @@ Section FOL_helpers.
    all: apply sets.not_elem_of_union; auto.
    * inversion MF.
   Defined.
-
+*)
   Lemma and_weaken A B C Γ:
     well_formed A -> well_formed B -> well_formed C ->
     Γ ⊢ (B ---> C)
@@ -4627,8 +4622,10 @@ Section FOL_helpers.
       by reflexivity.
     apply Ex_gen; auto.
     2: { simpl. set_solver. }
-    toMyGoal. mgIntro. mgAdd Hϕ; auto.
-    mgApply 1; auto 10. mgExactn 0; auto.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgAdd Hϕ.
+    mgApply 1. mgExactn 0.
   Defined.
 
   Hint Resolve evar_quantify_well_formed.
@@ -4644,10 +4641,13 @@ Section FOL_helpers.
       with (evar_quantify x 0 (! ϕ))
       by reflexivity.
     apply double_neg_elim_meta; auto 10.
-    toMyGoal. mgIntro. mgIntro. mgApply 0; auto 5.
-    1,2: replace (evar_quantify x 0 ϕ ---> ⊥) with (evar_quantify x 0 (! ϕ)) by reflexivity.
-    1,2: auto 10.
-    mgIntro. mgApply 2 ; auto 20.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgIntro.
+    mgApply 0.
+    mgIntro.
+    mgApply 2.
     pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
     rewrite /instantiate in Htmp.
     rewrite bevar_subst_evar_quantify_free_evar in Htmp.
@@ -4656,9 +4656,12 @@ Section FOL_helpers.
       unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
       split_and; auto.
     }
-    mgAdd Htmp; auto 10. clear Htmp.
-    mgApply 0; auto 10. mgIntro. mgApply 2; auto 10.
-    mgExactn 4; auto 10.
+    specialize (Htmp ltac:(wf_auto2)).
+    mgAdd Htmp.
+    mgApply 0.
+    mgIntro.
+    mgApply 2.
+    mgExactn 4.
   Defined.
 
 End FOL_helpers.
@@ -4678,6 +4681,7 @@ Section FOL_helpers.
   Proof.
     intros wfϕ₁ wfϕ₂ nonegϕ₁ nonegϕ₂ Himp.
     apply Knaster_tarski.
+    { wf_auto2. }
 
     pose proof (Htmp := Svar_subst Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X).
     feed specialize Htmp.
@@ -4707,6 +4711,9 @@ Section FOL_helpers.
       2: lia.
       reflexivity.
     }
+
+    2: abstract (wf_auto2).
+
     eapply (@cast_proof Σ Γ) in Hpf.
     2: {
       rewrite svar_open_svar_quantify.
@@ -4774,17 +4781,6 @@ Section FOL_helpers.
     }
     
     epose proof (Hsi := @syllogism_intro Σ _ _ _ _ _ _ _ Htmp Hpf).
-    Unshelve.
-    4: {
-      abstract (wf_auto).
-    }
-    3: {
-      abstract (wf_auto).
-    }
-    2: {
-      abstract (wf_auto).
-    }
-
     simpl.
 
     eapply (@cast_proof Σ Γ).
@@ -4811,6 +4807,8 @@ Section FOL_helpers.
     }
     instantiate (more := 0).
     assumption.
+    Unshelve.
+    all: abstract(wf_auto2).
   Defined.
 
 
@@ -4838,23 +4836,35 @@ Section FOL_helpers.
 
     apply pf_iff_equiv_trans with (B := (a ---> b')); auto.
       + apply conj_intro_meta; subst; auto 10.
-        * toMyGoal. mgIntro. mgIntro. mgAdd Hbb'1; auto.
-          mgApply 0; auto 5.
-          mgApply 1; auto 5.
-          mgExactn 2; auto 5.
-        * toMyGoal. mgIntro. mgIntro. mgAdd Hbb'2; auto.
-          mgApply 0; auto 5.
-          mgApply 1; auto 5.
-          mgExactn 2; auto 5.
+        * toMyGoal.
+          { wf_auto2. }
+          mgIntro. mgIntro.
+          mgAdd Hbb'1.
+          mgApply 0.
+          mgApply 1.
+          mgExactn 2.
+        * toMyGoal.
+          { wf_auto2. }
+          mgIntro. mgIntro.
+          mgAdd Hbb'2.
+          mgApply 0.
+          mgApply 1.
+          mgExactn 2.
       + apply conj_intro_meta; auto.
-        * toMyGoal. mgIntro. mgIntro. mgAdd Haa'2; auto.
-          mgApply 1; auto 5.
-          mgApply 0; auto 5.
-          mgExactn 2; auto 5.
-        * toMyGoal. mgIntro. mgIntro. mgAdd Haa'1; auto.
-          mgApply 1; auto 5.
-          mgApply 0; auto 5.
-          mgExactn 2; auto 5.
+        * toMyGoal.
+          { wf_auto2. }
+          mgIntro. mgIntro.
+          mgAdd Haa'2.
+          mgApply 1.
+          mgApply 0.
+          mgExactn 2.
+        * toMyGoal.
+          { wf_auto2. }
+          mgIntro. mgIntro.
+          mgAdd Haa'1.
+          mgApply 1.
+          mgApply 0.
+          mgExactn 2.
   Defined.
 
   Lemma prf_equiv_of_impl_of_equiv_indifferent
@@ -4876,14 +4886,16 @@ Section FOL_helpers.
     unfold prf_equiv_of_impl_of_equiv.
     rewrite pf_iff_equiv_trans_indifferent; auto.
     - rewrite conj_intro_meta_indifferent; auto.
-      + unfold MyGoal_from_goal. unfold eq_rect at 1. unfold of_MyGoal_from_goal at 1.
-        pose proof (Htmp := MyGoal_intro_indifferent).
+      + pose proof (Htmp := MyGoal_intro_indifferent). simpl in Htmp.
         specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        intros wf3 wf4.
         pose proof (Htmp := MyGoal_intro_indifferent).
         specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
+        intros wf5 wf6.
         rewrite (@MyGoal_add_indifferent Σ P Γ [a ---> b; a]); auto.
         { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
+        rewrite cast_proof_mg_hyps_indifferent;[|assumption|].
+        intros Hyp0.
         rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
         rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
         rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
