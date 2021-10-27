@@ -1590,16 +1590,19 @@ Section ProofSystemTheorems.
 
       assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ)).
       {
-        toMyGoal. mgIntro. unfold patt_and. mgIntro.
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro. unfold patt_and. mgIntro.
         mgAssert ((! ϕ)).
-        { mgApply 1; auto 10. mgIntro. mgApply 2; auto 10. mgExactn 0; auto 10.  }
-        mgApply 2; auto 10.
-        mgAdd Hϕ; auto 10. mgExactn 0; auto 10.
+        { wf_auto2. }
+        { mgApply 1. mgIntro. mgApply 2. mgExactn 0.  }
+        mgApply 2.
+        mgAdd Hϕ. mgExactn 0.
       }
 
       assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉).
       {
-        apply Framing_right. assumption.
+        apply Framing_right. wf_auto2. assumption.
       }
       
       assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉).
@@ -1614,7 +1617,6 @@ Section ProofSystemTheorems.
 
       eapply universal_generalization with (x0 := x) in S9; auto.
       simpl in S9. case_match;[|congruence]. exact S9.
-      Unshelve. all: auto 10.
     Defined.
 
     Lemma membership_elimination Γ ϕ:
@@ -1656,42 +1658,46 @@ Section ProofSystemTheorems.
         eapply Modus_ponens. 4: apply S2. all: auto.
       }
 
-      pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x).
+      pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x ltac:(wf_auto2)).
       simpl in S5.
 
       assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) ).
       {
-        toMyGoal. mgIntro. mgIntro.
-        mgAdd S5; auto 10. unfold patt_and at 1. unfold patt_or at 1.
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro. mgIntro.
+        mgAdd S5. unfold patt_and at 1. unfold patt_or at 1.
         mgAssert((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
         using first 1.
+        { wf_auto2. }
         {
           remember ((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
             as A.
-          fromMyGoal. apply not_not_elim; subst; auto 10.
+          fromMyGoal. intros _ _. apply not_not_elim; subst; auto 10.
         }
-        mgClear 0; auto 10.
+        mgClear 0.
 
         mgAssert((! (patt_free_evar x and ! ϕ))) using first 2.
+        { wf_auto2. }
         {
-          mgApply 0; auto 10. mgClear 0; auto 10.
-          fromMyGoal. apply not_not_intro; auto 10.
+          mgApply 0. mgClear 0.
+          fromMyGoal. intros _ _. apply not_not_intro; auto 10.
         }
-        mgClear 0; auto 10. mgClear 0; auto 10.
+        mgClear 0. mgClear 0.
 
         unfold patt_and.
         mgAssert ((! patt_free_evar x or ! ! ϕ)) using first 1.
+        { wf_auto2. }
         {
-          fromMyGoal. apply not_not_elim; auto 10.
+          fromMyGoal. intros _ _. apply not_not_elim; auto 10.
         }
-        mgClear 0; auto 10.
+        mgClear 0.
 
         unfold patt_or.
-        mgApplyMeta (@not_not_elim Σ _ _ _); auto 10.
-        mgApply 0; auto 10.
-        mgApplyMeta (@not_not_intro Σ _ _ _); auto 10.
+        mgApplyMeta (@not_not_elim Σ _ _ _).
+        mgApply 0.
+        mgApplyMeta (@not_not_intro Σ _ _ _).
         mgExactn 1.
-        Unshelve. all: auto 15.
       }
 
       assert (S7: Γ ⊢ patt_free_evar x ---> ϕ).
@@ -1718,6 +1724,7 @@ Section ProofSystemTheorems.
       4: apply S9.
       3: apply Existence.
       all: auto.
+      Unshelve. all: wf_auto2.
     Defined.
 
     Lemma membership_not_1 Γ ϕ x:
