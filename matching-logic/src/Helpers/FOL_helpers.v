@@ -4149,7 +4149,7 @@ Defined.
 Tactic Notation "mgDestructAnd" constr(n) :=
   eapply cast_proof_mg_hyps;
   [(let hyps := fresh "hyps" in
-    rewrite <- (firstn_skipn 1);
+    rewrite <- (firstn_skipn n);
     rewrite [hyps in (hyps ++ _)]/=;
     rewrite [hyps in (_ ++ hyps)]/=;
     reflexivity
@@ -4163,13 +4163,14 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed b ->
   well_formed p ->
   well_formed q ->
-  Γ ⊢ p ---> a and b ---> q ---> a.
+  Γ ⊢ p and q ---> a and b ---> q ---> a.
 Proof.
   intros. toMyGoal.
   { auto. }
   do 3 mgIntro.
   mgDestructAnd 1.
-  mgExactn 1.
+  mgDestructAnd 0.
+  mgExactn 2.
 Qed.
 
 Section FOL_helpers.
@@ -5150,12 +5151,12 @@ Section FOL_helpers.
   | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
     | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst' 0 ϕ₁ q E $ free_evar_subst' 0 ϕ₂ p E) _ _ _ _
                (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_left Γ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₁))
-                 (Framing_left Γ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₁))
+                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₁))
+                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₁))
                )
                (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_right Γ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₂))
-                 (Framing_right Γ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₂))
+                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₂))
+                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₂))
                )
              )
     }
@@ -5166,7 +5167,7 @@ Section FOL_helpers.
   | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
     | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
       | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
-        | (IH1, IH2) with ((@syllogism_intro Σ Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x)),(@syllogism_intro Σ Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x))) => {
+        | (IH1, IH2) with ((@syllogism_intro Σ Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x _)),(@syllogism_intro Σ Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x _))) => {
           | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
             | (IH3', IH4')
                :=
@@ -5713,6 +5714,7 @@ Proof.
        apply wfc_ex_implies_not_bevar_occur. wf_auto. reflexivity.
   }
   apply Ex_quan.
+  abstract (wf_auto2).
 Defined.
 
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
@@ -5722,7 +5724,10 @@ Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone; auto.
-  toMyGoal. mgIntro. mgDestructAnd 0; auto. mgExactn 0; auto.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgDestructAnd 0. auto. mgExactn 0; auto.
 Defined.
 
 Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
@@ -5732,7 +5737,11 @@ Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone; auto.
-  toMyGoal. mgIntro. mgDestructAnd 0; auto. mgExactn 1; auto.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgDestructAnd 0.
+  mgExactn 1.
 Defined.
 
 Lemma lhs_to_and {Σ : Signature} Γ a b c:
@@ -5743,8 +5752,10 @@ Lemma lhs_to_and {Σ : Signature} Γ a b c:
   Γ ⊢ a ---> b ---> c.
 Proof.
   intros wfa wfb wfc H.
-  toMyGoal. do 2 mgIntro. mgApplyMeta H; auto.
-  fromMyGoal. apply conj_intro; auto.
+  toMyGoal.
+  { wf_auto2. }
+  do 2 mgIntro. mgApplyMeta H; auto.
+  fromMyGoal. intros _ _. apply conj_intro; auto.
 Defined.
 
 Lemma lhs_from_and {Σ : Signature} Γ a b c:
@@ -5755,17 +5766,21 @@ Lemma lhs_from_and {Σ : Signature} Γ a b c:
   Γ ⊢ (a and b) ---> c.
 Proof.
   intros wfa wfb wfc H.
-  toMyGoal. mgIntro.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
   mgAssert (b).
-  { fromMyGoal. apply pf_conj_elim_r; auto. }
+  { wf_auto2. }
+  { fromMyGoal. intros _ _. apply pf_conj_elim_r; auto. }
   mgAssert (a) using first 1.
-  { fromMyGoal. apply pf_conj_elim_l; auto. }
-  mgAdd H; auto.
+  { wf_auto2. }
+  { fromMyGoal. intros _ _. apply pf_conj_elim_l; auto. }
+  mgAdd H.
   mgAssert ((b ---> c)).
-  { mgApply 0; auto. mgExactn 2; auto. }
-  mgApply 4; auto 10.
-  mgExactn 3; auto 10.
-  Unshelve. all: auto 10.
+  { wf_auto2. }
+  { mgApply 0. mgExactn 2. }
+  mgApply 4.
+  mgExactn 3.
 Defined.
 
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
@@ -5779,14 +5794,17 @@ Proof.
   - simpl. apply conj_intro; auto.
   - simpl. pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
     specialize (IHl wfl').
-    toMyGoal. do 3 mgIntro.
+    toMyGoal.
+    { wf_auto2. }
+    do 3 mgIntro.
     mgAssert ((foldr patt_imp a l)).
-    { mgApply 0; auto. mgExactn 2; auto 10. }
+    { wf_auto2. }
+    { mgApply 0. mgExactn 2. }
     mgAssert ((foldr patt_imp b l)).
-    { mgApply 1; auto. mgExactn 2; auto 10. }
-    mgClear 2; auto 10. mgClear 1; auto 10. mgClear 0; auto 10.
-
-Unshelve. all: auto 10.
+    { wf_auto2. }
+    { mgApply 1. mgExactn 2. }
+    mgClear 2. mgClear 1. mgClear 0.
+    fromMyGoal. intros _ _. apply IHl.
 Defined.
 
 Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
@@ -5811,14 +5829,22 @@ Proof.
 Defined.
 
 Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l:
-  well_formed a ->
-  well_formed b ->
-  wf l ->
   @mkMyGoal Σ Γ l a ->
   @mkMyGoal Σ Γ l b ->
   @mkMyGoal Σ Γ l (a and b).
 Proof.
-  intros. apply prf_conj_split_meta_meta; auto.
+  intros Ha Hb.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfab wfl.
+  feed specialize Ha.
+  { abstract(wf_auto2). }
+  { exact wfl. }
+  feed specialize Hb.
+  { abstract(wf_auto2). }
+  { exact wfl. }
+  apply prf_conj_split_meta_meta; auto.
+  { abstract (wf_auto2). }
+  { abstract (wf_auto2). }
 Defined.
 
 Ltac mgSplitAnd := apply MyGoal_splitAnd.
@@ -5830,10 +5856,12 @@ Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
   Γ ⊢ a ---> b ---> c ---> (a and b).
 Proof.
   intros wfa wfb wfc.
-  toMyGoal. mgIntro. mgIntro. mgIntro.
-  mgSplitAnd; auto.
-  - mgExactn 0; auto.
-  - mgExactn 1; auto.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgIntro. mgIntro.
+  mgSplitAnd.
+  - mgExactn 0.
+  - mgExactn 1.
 Qed.
 
 (* Hints *)
