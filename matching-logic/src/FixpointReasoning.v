@@ -259,7 +259,7 @@ Section with_signature.
           /\
           hd_error l = Some m
           /\
-          ((@Forall _ (curry (λ new old,
+          ((@Forall _ (uncurry (λ new old,
                               new ∈
                      app_ext
                        (@pattern_interpretation Σ M ρₑ ρₛ step)
@@ -323,7 +323,7 @@ Section with_signature.
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
         is_witnessing_sequence m l <-> is_witnessing_sequence_old m (reverse l).
       Proof.
-        assert (Feq: (curry
+        assert (Feq: (uncurry
                         (flip
                            (λ new old : Domain M,
                                         new ∈

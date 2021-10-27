@@ -304,7 +304,7 @@ Proof.
 Qed.
 
 Lemma forall_zip_flip {A B : Type} (f : A -> B -> Prop) (xs : list A) (ys: list B) :
-  Forall (curry f) (zip xs ys) <-> Forall (curry (flip f)) (zip ys xs).
+  Forall (uncurry f) (zip xs ys) <-> Forall (uncurry (flip f)) (zip ys xs).
 Proof.
   split.
   - intros H.
@@ -451,9 +451,9 @@ Proof.
 Qed.
 
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :
-  Forall (curry f) (zip (m::l) (tail (m::l)))
+  Forall (uncurry f) (zip (m::l) (tail (m::l)))
   <->
-  Forall (curry (flip f)) (zip (reverse (m::l)) (tail (reverse (m::l)))).
+  Forall (uncurry (flip f)) (zip (reverse (m::l)) (tail (reverse (m::l)))).
 Proof.
   rewrite -forall_zip_flip.
   rewrite -Forall_reverse.
