@@ -5881,17 +5881,28 @@ Proof.
   - apply A_impl_A; wf_auto2.
   - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
     specialize (IHl wfl').
-    toMyGoal. mgIntro. mgSplitAnd; auto 10.
-    + mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
-      fromMyGoal. toMyGoal. mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
-      mgIntro. mgClear 0; auto 10. mgIntro.
-      mgApplyMeta IHl in 0; auto 10. unfold patt_iff at 1. mgDestructAnd 0; auto 10.
-      mgExactn 0; auto 10.
-    + mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
-      fromMyGoal. toMyGoal. mgApplyMeta (@P2 _ _ _ _ _ _ _ _); auto 10.
-      mgIntro. mgClear 0; auto 10. mgIntro.
-      mgApplyMeta IHl in 0; auto 10. unfold patt_iff at 1. mgDestructAnd 0; auto 10.
-      mgExactn 1; auto 10.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgSplitAnd.
+    + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      1-3: wf_auto2.
+      (* TODO we need some [mgRevert] tactic *)
+      fromMyGoal. intros _ _. toMyGoal.
+      { wf_auto2. }
+      unshelve(mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      1-3: wf_auto2.
+      mgIntro. mgClear 0. mgIntro.
+      mgApplyMeta IHl in 0. unfold patt_iff at 1. mgDestructAnd 0.
+      mgExactn 0.
+    + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      1-3: wf_auto2.
+      fromMyGoal. intros _ _. toMyGoal.
+      { wf_auto2. }
+      unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      1-3: wf_auto2.
+      mgIntro. mgClear 0. mgIntro.
+      mgApplyMeta IHl in 0. unfold patt_iff at 1. mgDestructAnd 0.
+      mgExactn 1.
 Defined.
 
 Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l:
