@@ -3,11 +3,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Ltac2 Require Import Ltac2.
+
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 
 From Equations Require Import Equations.
-Require Import Mtac2.Mtac2.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
@@ -22,6 +23,8 @@ Import
   MatchingLogic.DerivedOperators.Notations
   MatchingLogic.ProofSystem.Notations
 .
+
+Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
@@ -5225,16 +5228,17 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_equiv_congruence Γ p q C:
-    well_formed p ->
-    well_formed q ->
     PC_wf C ->
     Γ ⊢ (p <---> q) ->
     Γ ⊢ (((emplace C p) <---> (emplace C q))).
   Proof.
-    intros wfp wfq wfC Hiff.
+    intros wfC Hiff.
+    pose proof (proved_impl_wf _ _ Hiff).
+    assert (well_formed p) by wf_auto2.
+    assert (well_formed q) by wf_auto2.
     destruct C as [pcEvar pcPattern].
     apply (
-        @eq_prf_equiv_congruence Γ p q wfp wfq
+        @eq_prf_equiv_congruence Γ p q ltac:(assumption) ltac:(assumption)
           (free_evars pcPattern ∪ free_evars p ∪ free_evars q)
           (free_svars pcPattern ∪ free_svars p ∪ free_svars q)
       ); simpl;  assumption.
@@ -5589,118 +5593,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Local Ltac reduce_free_evar_subst_step star :=
-      match goal with
-      | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
-        =>
-          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
-            apply count_evar_occurrences_0;
-            subst star;
-            eapply evar_is_fresh_in_richer';
-            [|apply set_evar_fresh_is_fresh'];
-            simpl; clear; set_solver
-          )
-      end.
-
-Local Ltac reduce_free_evar_subst star :=
-  unfold free_evar_subst;
-  repeat (reduce_free_evar_subst_step star).
-
-Local Ltac solve_fresh_contradictions star :=
-  unfold fresh_evar; simpl;
-  match goal with
-  | h: star = ?x |- _
-    => let hcontra := fresh "Hcontra" in
-       assert (hcontra: x <> star) by (unfold fresh_evar; simpl; solve_fresh_neq);
-       rewrite -> h in hcontra;
-       contradiction
-  end.
-
-Local Ltac clear_obvious_equalities :=
-  repeat (
-      match goal with
-      | [ h: ?x = ?x |- _ ] => clear h
-      end
-    ).
-
-Local Ltac simplify_emplace star :=
-  unfold emplace;
-  simpl;
-  unfold free_evar_subst;
-  simpl;
-  repeat break_match_goal;
-  clear_obvious_equalities; try contradiction;
-  try (solve_fresh_contradictions star);
-  repeat (rewrite nest_ex_aux_0);
-  reduce_free_evar_subst star.
-
-Ltac pf_rewrite h :=
-  unshelve(
-  match type of h with
-  | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
-    =>
-    match goal with
-    | [ |- @ML_proof_system ?sigma ?gamma ?pat]
-      =>
-      match pat with
-      | context ctx [l] =>
-          let l' := context ctx [l] in
-          let star := fresh "star" in
-          remember (@fresh_evar sigma pat) as star;
-            (* Replace the original pattern with its emplace-ed version *)
-            let ctxpat := context ctx [(@patt_free_evar sigma star)] in
-            let alternative := (eval red in (@emplace sigma (@Build_PatternCtx sigma star ctxpat) l)) in
-            replace pat with alternative by (simplify_emplace star; try reflexivity; shelve);
-
-            (* Use the congruence lemma and h *)
-            eapply Modus_ponens;
-            [(shelve)|(shelve)|idtac|
-              (apply pf_iff_proj1;
-               [shelve|shelve|
-                 (apply prf_equiv_congruence;
-                  [shelve|shelve|shelve|
-                    (apply pf_iff_equiv_sym;
-                     [shelve|shelve|
-                       apply h])
-            ])])];
-        (* replace the emplaced version with the original pattern but with the new value *)
-            match goal with
-            | [ |- @ML_proof_system _ _ ?curpat]
-              => let new_pat := context ctx [r] in
-                 idtac "new: " new_pat;
-                 replace curpat with new_pat by (simplify_emplace star; try reflexivity; shelve)
-            end;
-            subst star
-      end
-    end
-  end).
-
-
-(* break_match_goal is slow here *)
-
-Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
-  well_formed a ->
-  well_formed a' ->
-  well_formed b ->
-  Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
-Proof.
-  intros wfa wfa' wfb Himp.
-  pf_rewrite Himp; unfold emplace,PC_wf; simpl; auto 10.
-  apply pf_iff_equiv_refl; auto.
-Qed.
-
-
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
-  well_formed a ->
-  well_formed a' ->
-  well_formed b ->
-  Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
-Proof.
-  intros wfa wfa' wfb Himp.
-Abort.
-
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
@@ -5961,3 +5853,203 @@ Proof.
   9: apply H1.
   all: auto.
 Defined.
+
+Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+  PC_wf C ->
+  wf l ->
+  Γ ⊢ p <---> q ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l).
+Proof.
+  intros wfC wfl Himp.
+  induction l; simpl in *.
+  - apply prf_equiv_congruence; assumption.
+  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+    specialize (IHl wfl).
+    pose proof (proved_impl_wf _ _ IHl).
+    toMyGoal.
+    { wf_auto2. }
+    unfold patt_iff.
+    mgSplitAnd.
+    + mgIntro. mgIntro.
+      mgAssert ((foldr patt_imp (emplace C p) l)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 1. }
+      apply pf_iff_proj1 in IHl.
+      2,3: wf_auto2.
+      mgApplyMeta IHl.
+      mgExactn 2.
+    + mgIntro. mgIntro.
+      mgAssert ((foldr patt_imp (emplace C q) l)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 1. }
+      apply pf_iff_proj2 in IHl.
+      2,3: wf_auto2.
+      mgApplyMeta IHl.
+      mgExactn 2.
+Defined.
+
+Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+  Γ ⊢ p <---> q ->
+  @mkMyGoal Σ Γ l (emplace C q) ->
+  @mkMyGoal Σ Γ l (emplace C p).
+Proof.
+  intros Hpiffq H.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfcp wfl.
+  feed specialize H.
+  { abstract (
+      pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
+      unfold emplace;
+      apply well_formed_free_evar_subst_0;[wf_auto2|];
+      fold (PC_wf C);
+      eapply wf_emplaced_impl_wf_context;
+      apply wfcp
+    ).
+  }
+  { exact wfl. }
+
+  eapply Modus_ponens.
+  4: apply pf_iff_proj2.
+  4: abstract (wf_auto2).
+  5: apply prf_equiv_congruence_iter.
+  7: apply Hpiffq.
+  3: apply H.
+  5: exact wfl.
+  4: eapply wf_emplaced_impl_wf_context;
+     apply wfcp.
+  1,3: apply proved_impl_wf in H; exact H.
+  1: abstract (apply proved_impl_wf in H; wf_auto2).
+Defined.
+
+Check MyGoal_rewriteIff.
+
+Print decide. Check left.
+Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+  try (
+    match! phi with
+    | context ctx [ ?x ]
+      => (if Constr.equal x a then cont ctx else ()); fail
+    end
+  ); ().
+
+Ltac2 mytest (a : constr) :=
+  match! goal with
+  | [ |- ?g ⊢ ?p] => for_each_match a p (fun _ => Message.print (Message.of_string "Test"))
+  end.
+
+Tactic Notation "myt" constr(x) :=
+  (let ff := ltac2:(a|- mytest (Option.get (Ltac1.to_constr(a)))) in
+   ff x).
+
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+Proof.
+  intros wfa wfa' wfb Himp.
+  myt a.
+Abort.
+
+
+Local Ltac reduce_free_evar_subst_step star :=
+      match goal with
+      | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
+        =>
+          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
+            apply count_evar_occurrences_0;
+            subst star;
+            eapply evar_is_fresh_in_richer';
+            [|apply set_evar_fresh_is_fresh'];
+            simpl; clear; set_solver
+          )
+      end.
+
+Local Ltac reduce_free_evar_subst star :=
+  unfold free_evar_subst;
+  repeat (reduce_free_evar_subst_step star).
+
+Local Ltac solve_fresh_contradictions star :=
+  unfold fresh_evar; simpl;
+  match goal with
+  | h: star = ?x |- _
+    => let hcontra := fresh "Hcontra" in
+       assert (hcontra: x <> star) by (unfold fresh_evar; simpl; solve_fresh_neq);
+       rewrite -> h in hcontra;
+       contradiction
+  end.
+
+Local Ltac clear_obvious_equalities :=
+  repeat (
+      match goal with
+      | [ h: ?x = ?x |- _ ] => clear h
+      end
+    ).
+
+Local Ltac simplify_emplace star :=
+  unfold emplace;
+  simpl;
+  unfold free_evar_subst;
+  simpl;
+  repeat break_match_goal;
+  clear_obvious_equalities; try contradiction;
+  try (solve_fresh_contradictions star);
+  repeat (rewrite nest_ex_aux_0);
+  reduce_free_evar_subst star.
+
+Ltac pf_rewrite h :=
+  unshelve(
+  match type of h with
+  | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
+    =>
+    match goal with
+    | [ |- @ML_proof_system ?sigma ?gamma ?pat]
+      =>
+      match pat with
+      | context ctx [l] =>
+          let l' := context ctx [l] in
+          let star := fresh "star" in
+          remember (@fresh_evar sigma pat) as star;
+            (* Replace the original pattern with its emplace-ed version *)
+            let ctxpat := context ctx [(@patt_free_evar sigma star)] in
+            let alternative := (eval red in (@emplace sigma (@Build_PatternCtx sigma star ctxpat) l)) in
+            replace pat with alternative by (simplify_emplace star; try reflexivity; shelve);
+
+            (* Use the congruence lemma and h *)
+            eapply Modus_ponens;
+            [(shelve)|(shelve)|idtac|
+              (apply pf_iff_proj1;
+               [shelve|shelve|
+                 (apply prf_equiv_congruence;
+                  [shelve|
+                    (apply pf_iff_equiv_sym;
+                     [shelve|shelve|
+                       apply h])
+            ])])];
+        (* replace the emplaced version with the original pattern but with the new value *)
+            match goal with
+            | [ |- @ML_proof_system _ _ ?curpat]
+              => let new_pat := context ctx [r] in
+                 idtac "new: " new_pat;
+                 replace curpat with new_pat by (simplify_emplace star; try reflexivity; shelve)
+            end;
+            subst star
+      end
+    end
+  end).
+
+
+(* break_match_goal is slow here *)
+
+Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
+Proof.
+  intros wfa wfa' wfb Himp.
+  pf_rewrite Himp; unfold emplace,PC_wf; simpl; auto 10.
+  apply pf_iff_equiv_refl; auto.
+Qed.
