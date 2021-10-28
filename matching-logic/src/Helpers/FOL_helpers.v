@@ -5690,6 +5690,17 @@ Proof.
   apply pf_iff_equiv_refl; auto.
 Qed.
 
+
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+Proof.
+  intros wfa wfa' wfb Himp.
+Abort.
+
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
