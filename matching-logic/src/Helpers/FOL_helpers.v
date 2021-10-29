@@ -5923,7 +5923,7 @@ Defined.
 
 Check MyGoal_rewriteIff.
 
-Print decide. Check left.
+(* Calls [cont] for every subpattern [a] of pattern [phi], giving the match context as an argument *)
 Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
   try (
     match! phi with
@@ -5932,14 +5932,122 @@ Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context 
     end
   ); ().
 
+
+(* Calls [cont] for [n]th subpatern [a] of pattern [phi]. *)
+Ltac2 for_nth_match :=
+  fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+    let curr : int ref := {contents := 0} in
+    let found : bool ref := {contents := false} in
+    for_each_match a phi
+    (fun ctx =>
+      if (found.(contents))
+      then ()
+      else
+        curr.(contents) := Int.add 1 (curr.(contents)) ;
+        if (Int.equal (curr.(contents)) n) then 
+          cont ctx
+        else ()
+    )
+.
+
+Local Ltac reduce_free_evar_subst_step_2 star :=
+      lazymatch goal with
+      | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
+        =>
+          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
+            apply count_evar_occurrences_0;
+            unfold star;
+            eapply evar_is_fresh_in_richer';
+            [|apply set_evar_fresh_is_fresh'];
+            simpl; clear; set_solver
+          )
+      end.
+
+Local Ltac reduce_free_evar_subst_2 star :=
+  unfold free_evar_subst;
+  repeat (reduce_free_evar_subst_step_2 star).
+
+Local Ltac solve_fresh_contradictions_2 star :=
+  unfold fresh_evar; simpl;
+  match goal with
+  | h: star = ?x |- _
+    => let hcontra := fresh "Hcontra" in
+       idtac "Here" x h;
+       assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
+       rewrite -> h in hcontra;
+       contradiction
+  end.
+
+Local Ltac clear_obvious_equalities_2 :=
+  repeat (
+      match goal with
+      | [ h: ?x = ?x |- _ ] => clear h
+      end
+    ).
+
+
+Local Ltac simplify_emplace_2 star :=
+  unfold emplace;
+  simpl;
+  unfold free_evar_subst;
+  simpl;
+  repeat break_match_goal;
+  clear_obvious_equalities_2; try contradiction;
+  try (solve_fresh_contradictions_2 star);
+  repeat (rewrite nest_ex_aux_0);
+  reduce_free_evar_subst_2 star.
+
+(*             let ctxpat := context ctx [(@patt_free_evar sigma star)] in *)
+
+(* Returns [n]th matching logic context [C] (of type [PatternCtx]) such that
+   [emplace C a = phi].
+ *)
+Ltac2 heat :=
+  fun (n : int) (a : constr) (phi : constr) : (ident * constr) =>
+    let found : (Pattern.context option) ref := { contents := None } in
+     for_nth_match n a phi
+     (fun ctx =>
+        found.(contents) := Some ctx; ()
+     );
+    match found.(contents) with
+    | None => Control.backtrack_tactic_failure "Cannot heat"
+    | Some ctx
+      => (
+         let fr := constr:(fresh_evar $phi) in
+         let star_ident := Fresh.in_goal ident:(star) in
+         set ($star_ident := $fr);
+         let star_hyp := Control.hyp star_ident in
+         let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
+         let heq1 := Fresh.in_goal ident:(heq1) in
+         Message.print (Message.of_string "Before assert");
+         assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a)));
+         Message.print (Message.of_string "After assert");
+         (star_ident, ctxpat)
+(*
+         assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a))) 
+         > [ (Control.shelve ())
+           | fun () => (star_ident, ctxpat)
+           ]
+*)
+         )
+    end
+.
+
 Ltac2 mytest (a : constr) :=
-  match! goal with
-  | [ |- ?g ⊢ ?p] => for_each_match a p (fun _ => Message.print (Message.of_string "Test"))
+  lazy_match! goal with
+  | [ |- ?g ⊢ ?p]
+    => let (star, ctxpat) := heat 2 a p in
+       Message.print (Message.of_constr ctxpat) (*;
+       let heq1 := Fresh.in_goal ident:(heq1) in
+       let star_constr := Control.hyp star in
+       assert(Heq1 : ($p = (@emplace _ (@Build_PatternCtx _ $star_constr $ctxpat) $a))) *)
+      (*for_nth_match 2 a p (fun _ => Message.print (Message.of_string "Test")) *)
   end.
 
 Tactic Notation "myt" constr(x) :=
   (let ff := ltac2:(a|- mytest (Option.get (Ltac1.to_constr(a)))) in
    ff x).
+
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
@@ -5950,6 +6058,7 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
 Proof.
   intros wfa wfa' wfb Himp.
   myt a.
+  { simplify_emplace_2 star. Unshelve. 2: { unfold star. unfold fresh_evar. simpl. clear e0. solve_fresh_neq.  2: reflexivity.
 Abort.
 
 
