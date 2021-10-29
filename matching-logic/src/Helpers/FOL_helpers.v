@@ -5972,7 +5972,6 @@ Local Ltac solve_fresh_contradictions_2 star :=
   match goal with
   | h: star = ?x |- _
     => let hcontra := fresh "Hcontra" in
-       idtac "Here" x h;
        assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
        rewrite -> h in hcontra;
        contradiction
@@ -6003,6 +6002,7 @@ Local Ltac simplify_emplace_2 star :=
 
 Ltac2 Type HeatResult := {
   star_ident : ident ;
+  pc : constr ;
   ctx_pat : constr ;
   equality : ident ;
 }.
@@ -6023,38 +6023,36 @@ Ltac2 heat :=
          set ($star_ident := $fr);
          let star_hyp := Control.hyp star_ident in
          let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
+         let pc := constr:((@Build_PatternCtx _ $star_hyp $ctxpat)) in
          let heq1 := Fresh.in_goal ident:(heq1) in
-         assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a))) 
+         assert(heq1 : ($phi = (@emplace _ $pc $a))) 
          > [
              (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident star_ident);
              reflexivity
              )
            | ()
            ];
-         { star_ident := star_ident; ctx_pat := ctxpat; equality := heq1 }
+         { star_ident := star_ident; pc := pc; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
 
-Ltac2 mytest (a : constr) :=
+Ltac2 mytest (a : constr) (himp : constr) :=
   lazy_match! goal with
-  | [ |- ?g ⊢ ?p]
+  | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
     => let hr : HeatResult := heat 2 a p in
        Message.print (Message.of_string "Here");
        Message.print (Message.of_constr (hr.(ctx_pat)));
        let heq := Control.hyp (hr.(equality)) in
-       eapply (@cast_proof _ $g) >
-         [ rewrite $heq; reflexivity | ()]
- (*;
-       let heq1 := Fresh.in_goal ident:(heq1) in
-       let star_constr := Control.hyp star in
-       assert(Heq1 : ($p = (@emplace _ (@Build_PatternCtx _ $star_constr $ctxpat) $a))) *)
-      (*for_nth_match 2 a p (fun _ => Message.print (Message.of_string "Test")) *)
+       let pc := (hr.(pc)) in
+       eapply (@cast_proof_mg_goal _ $g) >
+         [ rewrite $heq; reflexivity | ()];
+       apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $himp)
   end.
 
-Tactic Notation "myt" constr(x) :=
-  (let ff := ltac2:(a|- mytest (Option.get (Ltac1.to_constr(a)))) in
-   ff x).
+Tactic Notation "myt" constr(x) constr(Himp) :=
+  (let ff := ltac2:(a himp |- mytest (Option.get (Ltac1.to_constr(a))) (Option.get (Ltac1.to_constr(himp)))) in
+   ff x Himp).
 
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
@@ -6065,7 +6063,9 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Himp.
-  myt a. apply MyGoal_rewriteIff.
+  toMyGoal.
+  { wf_auto2. }
+  myt a Himp.
 Abort.
 
 
