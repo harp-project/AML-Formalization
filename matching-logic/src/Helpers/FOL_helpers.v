@@ -6019,16 +6019,9 @@ Ltac2 heat :=
          let star_hyp := Control.hyp star_ident in
          let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
          let heq1 := Fresh.in_goal ident:(heq1) in
-         Message.print (Message.of_string "Before assert");
-         assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a)));
-         Message.print (Message.of_string "After assert");
-         (star_ident, ctxpat)
-(*
          assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a))) 
-         > [ (Control.shelve ())
-           | fun () => (star_ident, ctxpat)
-           ]
-*)
+         > [ (ltac1:(star |- simplify_emplace_2 star; reflexivity) (Ltac1.of_ident star_ident)) | () ];
+         (star_ident, ctxpat)
          )
     end
 .
@@ -6037,7 +6030,8 @@ Ltac2 mytest (a : constr) :=
   lazy_match! goal with
   | [ |- ?g ⊢ ?p]
     => let (star, ctxpat) := heat 2 a p in
-       Message.print (Message.of_constr ctxpat) (*;
+       Message.print (Message.of_string "Here")
+       (*Message.print (Message.of_constr ctxpat)*) (*;
        let heq1 := Fresh.in_goal ident:(heq1) in
        let star_constr := Control.hyp star in
        assert(Heq1 : ($p = (@emplace _ (@Build_PatternCtx _ $star_constr $ctxpat) $a))) *)
