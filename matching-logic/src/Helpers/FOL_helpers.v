@@ -6037,7 +6037,7 @@ Ltac2 heat :=
     end
 .
 
-Ltac2 mytest (a : constr) (himp : constr) :=
+Ltac2 mytest (a : constr) (hiff : constr) (atn : int) :=
   lazy_match! goal with
   | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
     => let hr : HeatResult := heat 2 a p in
@@ -6047,12 +6047,26 @@ Ltac2 mytest (a : constr) (himp : constr) :=
        let pc := (hr.(pc)) in
        eapply (@cast_proof_mg_goal _ $g) >
          [ rewrite $heq; reflexivity | ()];
-       apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $himp)
+       apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff)
   end.
 
-Tactic Notation "myt" constr(x) constr(Himp) :=
-  (let ff := ltac2:(a himp |- mytest (Option.get (Ltac1.to_constr(a))) (Option.get (Ltac1.to_constr(himp)))) in
-   ff x Himp).
+Local Ltac2 rec constr_to_int (x : constr) : int :=
+  match! x with
+  | 0 => 0
+  | (S ?x') => Int.add 1 (constr_to_int x')
+  end.
+
+Check 0. Print nat.
+Ltac2 Eval (constr_to_int (constr:(10))).
+
+Tactic Notation "myt" constr(x) constr(Hiff) constr(atn) :=
+  (let ff := ltac2:(a hiff atn |-
+                      mytest
+                        (Option.get (Ltac1.to_constr(a)))
+                        (Option.get (Ltac1.to_constr(hiff)))
+                        (constr_to_int (Option.get (Ltac1.to_constr(atn))))
+                   ) in
+   ff x Hiff atn).
 
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
@@ -6062,10 +6076,10 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   Γ ⊢ a <---> a' ->
   Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
 Proof.
-  intros wfa wfa' wfb Himp.
+  intros wfa wfa' wfb Hiff.
   toMyGoal.
   { wf_auto2. }
-  myt a Himp.
+  myt a Hiff 2.
 Abort.
 
 
