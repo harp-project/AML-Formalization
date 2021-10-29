@@ -5997,13 +5997,18 @@ Local Ltac simplify_emplace_2 star :=
   repeat (rewrite nest_ex_aux_0);
   reduce_free_evar_subst_2 star.
 
-(*             let ctxpat := context ctx [(@patt_free_evar sigma star)] in *)
-
 (* Returns [n]th matching logic context [C] (of type [PatternCtx]) such that
    [emplace C a = phi].
  *)
+
+Ltac2 Type HeatResult := {
+  star_ident : ident ;
+  ctx_pat : constr ;
+  equality : ident ;
+}.
+
 Ltac2 heat :=
-  fun (n : int) (a : constr) (phi : constr) : (ident * constr) =>
+  fun (n : int) (a : constr) (phi : constr) : HeatResult =>
     let found : (Pattern.context option) ref := { contents := None } in
      for_nth_match n a phi
      (fun ctx =>
@@ -6020,8 +6025,13 @@ Ltac2 heat :=
          let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
          let heq1 := Fresh.in_goal ident:(heq1) in
          assert(heq1 : ($phi = (@emplace _ (@Build_PatternCtx _ $star_hyp $ctxpat) $a))) 
-         > [ (ltac1:(star |- simplify_emplace_2 star; reflexivity) (Ltac1.of_ident star_ident)) | () ];
-         (star_ident, ctxpat)
+         > [
+             (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident star_ident);
+             reflexivity
+             )
+           | ()
+           ];
+         { star_ident := star_ident; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
@@ -6029,9 +6039,13 @@ Ltac2 heat :=
 Ltac2 mytest (a : constr) :=
   lazy_match! goal with
   | [ |- ?g ⊢ ?p]
-    => let (star, ctxpat) := heat 2 a p in
-       Message.print (Message.of_string "Here")
-       (*Message.print (Message.of_constr ctxpat)*) (*;
+    => let hr : HeatResult := heat 2 a p in
+       Message.print (Message.of_string "Here");
+       Message.print (Message.of_constr (hr.(ctx_pat)));
+       let heq := Control.hyp (hr.(equality)) in
+       eapply (@cast_proof _ $g) >
+         [ rewrite $heq; reflexivity | ()]
+ (*;
        let heq1 := Fresh.in_goal ident:(heq1) in
        let star_constr := Control.hyp star in
        assert(Heq1 : ($p = (@emplace _ (@Build_PatternCtx _ $star_constr $ctxpat) $a))) *)
@@ -6051,8 +6065,7 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Himp.
-  myt a.
-  { simplify_emplace_2 star. Unshelve. 2: { unfold star. unfold fresh_evar. simpl. clear e0. solve_fresh_neq.  2: reflexivity.
+  myt a. apply MyGoal_rewriteIff.
 Abort.
 
 
