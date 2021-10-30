@@ -7729,3 +7729,140 @@ Import Notations.
       end; unfold is_true in *
     ).
 
+Lemma wfcex_after_subst_impl_wfcex_before {Σ : Signature} more ϕ ψ x dbi:
+  well_formed_closed_ex_aux (free_evar_subst' more ϕ ψ x) dbi = true ->
+  well_formed_closed_ex_aux ϕ dbi = true.
+Proof.
+  intros Hsubst.
+  move: dbi more Hsubst.
+  induction ϕ; intros dbi more Hsubst; simpl in *; auto.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 dbi more Hsubst1).
+    specialize (IHϕ2 dbi more Hsubst2).
+    rewrite IHϕ1 IHϕ2.
+    reflexivity.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 dbi more Hsubst1).
+    specialize (IHϕ2 dbi more Hsubst2).
+    rewrite IHϕ1 IHϕ2.
+    reflexivity.
+  - specialize (IHϕ (S dbi) (S more) Hsubst).
+    rewrite IHϕ. reflexivity.
+  - specialize (IHϕ dbi more Hsubst).
+    rewrite IHϕ. reflexivity.
+Qed.
+
+Lemma wfcmu_after_subst_impl_wfcmu_before {Σ : Signature} more ϕ ψ x dbi:
+  well_formed_closed_mu_aux (free_evar_subst' more ϕ ψ x) dbi = true ->
+  well_formed_closed_mu_aux ϕ dbi = true.
+Proof.
+  intros Hsubst.
+  move: dbi more Hsubst.
+  induction ϕ; intros dbi more Hsubst; simpl in *; auto.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 dbi more Hsubst1).
+    specialize (IHϕ2 dbi more Hsubst2).
+    rewrite IHϕ1 IHϕ2.
+    reflexivity.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 dbi more Hsubst1).
+    specialize (IHϕ2 dbi more Hsubst2).
+    rewrite IHϕ1 IHϕ2.
+    reflexivity.
+  - specialize (IHϕ dbi (S more) Hsubst).
+    rewrite IHϕ. reflexivity.
+  - specialize (IHϕ (S dbi) more Hsubst).
+    rewrite IHϕ. reflexivity.
+Qed.
+
+Lemma nno_after_subst_impl_nno_before {Σ : Signature} more ϕ ψ x dbi:
+  no_negative_occurrence_db_b dbi (free_evar_subst' more ϕ ψ x) = true ->
+  no_negative_occurrence_db_b dbi ϕ = true
+with npo_after_subst_impl_npo_before {Σ : Signature} more ϕ ψ x dbi:
+  no_positive_occurrence_db_b dbi (free_evar_subst' more ϕ ψ x) = true ->
+  no_positive_occurrence_db_b dbi ϕ = true.
+Proof.
+  - move: more dbi.
+    induction ϕ; intros more dbi Hsubst; cbn in *; auto.
+    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 more dbi Hsubst1).
+      specialize (IHϕ2 more dbi Hsubst2).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      fold no_positive_occurrence_db_b in Hsubst1.
+      fold no_positive_occurrence_db_b.
+      specialize (IHϕ2 more dbi Hsubst2).
+      rewrite IHϕ2.
+      erewrite npo_after_subst_impl_npo_before.
+      reflexivity. eassumption.
+    + erewrite IHϕ. reflexivity. eassumption.
+    + erewrite IHϕ. reflexivity. eassumption.
+  - move: more dbi.
+    induction ϕ; intros more dbi Hsubst; cbn in *; auto.
+    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 more dbi Hsubst1).
+      specialize (IHϕ2 more dbi Hsubst2).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      fold no_negative_occurrence_db_b in Hsubst1.
+      fold no_negative_occurrence_db_b.
+      specialize (IHϕ2 more dbi Hsubst2).
+      rewrite IHϕ2.
+      erewrite nno_after_subst_impl_nno_before.
+      reflexivity. eassumption.
+    + erewrite IHϕ. reflexivity. eassumption.
+    + erewrite IHϕ. reflexivity. eassumption.
+Qed.
+
+
+Lemma wfp_after_subst_impl_wfp_before {Σ : Signature} more ϕ ψ x:
+  well_formed_positive (free_evar_subst' more ϕ ψ x) = true ->
+  well_formed_positive ϕ = true.
+Proof.
+  intros Hsubst.
+  move: more Hsubst.
+  induction ϕ; intros more Hsubst; simpl in *; auto.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 more Hsubst1).
+    specialize (IHϕ2 more Hsubst2).
+    rewrite IHϕ1. rewrite IHϕ2.
+    reflexivity.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+    specialize (IHϕ1 more Hsubst1).
+    specialize (IHϕ2 more Hsubst2).
+    rewrite IHϕ1. rewrite IHϕ2.
+    reflexivity.
+  - specialize (IHϕ (S more) Hsubst).
+    rewrite IHϕ.
+    reflexivity.
+  - apply andb_prop in Hsubst. destruct Hsubst as [Hnno Hsubst]. 
+    specialize (IHϕ more Hsubst).
+    rewrite IHϕ.
+    erewrite nno_after_subst_impl_nno_before.
+    reflexivity. eassumption.
+Qed.
+
+Lemma wf_after_subst_impl_wf_before {Σ : Signature} more ϕ ψ x:
+  well_formed (free_evar_subst' more ϕ ψ x) = true ->
+  well_formed ϕ = true.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *.
+  destruct_and!.
+  split_and!.
+  - eapply wfp_after_subst_impl_wfp_before. eassumption.
+  - eapply wfcmu_after_subst_impl_wfcmu_before. eassumption.
+  - eapply wfcex_after_subst_impl_wfcex_before. eassumption.
+Qed.
+
+Lemma wf_emplaced_impl_wf_context {Σ : Signature} (C : PatternCtx) (ψ : Pattern) :
+  well_formed (emplace C ψ) = true ->
+  PC_wf C.
+Proof.
+  intros H.
+  unfold emplace in H. unfold PC_wf.
+  eapply wf_after_subst_impl_wf_before.
+  eassumption.
+Qed.

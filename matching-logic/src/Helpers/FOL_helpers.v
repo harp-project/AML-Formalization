@@ -3,11 +3,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Ltac2 Require Import Ltac2.
+
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 
 From Equations Require Import Equations.
-Require Import Mtac2.Mtac2.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
@@ -22,6 +23,8 @@ Import
   MatchingLogic.DerivedOperators.Notations
   MatchingLogic.ProofSystem.Notations
 .
+
+Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
@@ -5225,16 +5228,17 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_equiv_congruence Γ p q C:
-    well_formed p ->
-    well_formed q ->
     PC_wf C ->
     Γ ⊢ (p <---> q) ->
     Γ ⊢ (((emplace C p) <---> (emplace C q))).
   Proof.
-    intros wfp wfq wfC Hiff.
+    intros wfC Hiff.
+    pose proof (proved_impl_wf _ _ Hiff).
+    assert (well_formed p) by wf_auto2.
+    assert (well_formed q) by wf_auto2.
     destruct C as [pcEvar pcPattern].
     apply (
-        @eq_prf_equiv_congruence Γ p q wfp wfq
+        @eq_prf_equiv_congruence Γ p q ltac:(assumption) ltac:(assumption)
           (free_evars pcPattern ∪ free_evars p ∪ free_evars q)
           (free_svars pcPattern ∪ free_svars p ∪ free_svars q)
       ); simpl;  assumption.
@@ -5589,107 +5593,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Local Ltac reduce_free_evar_subst_step star :=
-      match goal with
-      | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
-        =>
-          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
-            apply count_evar_occurrences_0;
-            subst star;
-            eapply evar_is_fresh_in_richer';
-            [|apply set_evar_fresh_is_fresh'];
-            simpl; clear; set_solver
-          )
-      end.
-
-Local Ltac reduce_free_evar_subst star :=
-  unfold free_evar_subst;
-  repeat (reduce_free_evar_subst_step star).
-
-Local Ltac solve_fresh_contradictions star :=
-  unfold fresh_evar; simpl;
-  match goal with
-  | h: star = ?x |- _
-    => let hcontra := fresh "Hcontra" in
-       assert (hcontra: x <> star) by (unfold fresh_evar; simpl; solve_fresh_neq);
-       rewrite -> h in hcontra;
-       contradiction
-  end.
-
-Local Ltac clear_obvious_equalities :=
-  repeat (
-      match goal with
-      | [ h: ?x = ?x |- _ ] => clear h
-      end
-    ).
-
-Local Ltac simplify_emplace star :=
-  unfold emplace;
-  simpl;
-  unfold free_evar_subst;
-  simpl;
-  repeat break_match_goal;
-  clear_obvious_equalities; try contradiction;
-  try (solve_fresh_contradictions star);
-  repeat (rewrite nest_ex_aux_0);
-  reduce_free_evar_subst star.
-
-Ltac pf_rewrite h :=
-  unshelve(
-  match type of h with
-  | @ML_proof_system ?sigma ?gamma (?l <---> ?r)
-    =>
-    match goal with
-    | [ |- @ML_proof_system ?sigma ?gamma ?pat]
-      =>
-      match pat with
-      | context ctx [l] =>
-          let l' := context ctx [l] in
-          let star := fresh "star" in
-          remember (@fresh_evar sigma pat) as star;
-            (* Replace the original pattern with its emplace-ed version *)
-            let ctxpat := context ctx [(@patt_free_evar sigma star)] in
-            let alternative := (eval red in (@emplace sigma (@Build_PatternCtx sigma star ctxpat) l)) in
-            replace pat with alternative by (simplify_emplace star; try reflexivity; shelve);
-
-            (* Use the congruence lemma and h *)
-            eapply Modus_ponens;
-            [(shelve)|(shelve)|idtac|
-              (apply pf_iff_proj1;
-               [shelve|shelve|
-                 (apply prf_equiv_congruence;
-                  [shelve|shelve|shelve|
-                    (apply pf_iff_equiv_sym;
-                     [shelve|shelve|
-                       apply h])
-            ])])];
-        (* replace the emplaced version with the original pattern but with the new value *)
-            match goal with
-            | [ |- @ML_proof_system _ _ ?curpat]
-              => let new_pat := context ctx [r] in
-                 idtac "new: " new_pat;
-                 replace curpat with new_pat by (simplify_emplace star; try reflexivity; shelve)
-            end;
-            subst star
-      end
-    end
-  end).
-
-
-(* break_match_goal is slow here *)
-
-Local Example ex_prf_rewrite {Σ : Signature} Γ a a' b x:
-  well_formed a ->
-  well_formed a' ->
-  well_formed b ->
-  Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ b ---> (patt_free_evar x)) <---> (a' $ b ---> (patt_free_evar x)).
-Proof.
-  intros wfa wfa' wfb Himp.
-  pf_rewrite Himp; unfold emplace,PC_wf; simpl; auto 10.
-  apply pf_iff_equiv_refl; auto.
-Qed.
-
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
@@ -5950,3 +5853,254 @@ Proof.
   9: apply H1.
   all: auto.
 Defined.
+
+Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+  PC_wf C ->
+  wf l ->
+  Γ ⊢ p <---> q ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l).
+Proof.
+  intros wfC wfl Himp.
+  induction l; simpl in *.
+  - apply prf_equiv_congruence; assumption.
+  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+    specialize (IHl wfl).
+    pose proof (proved_impl_wf _ _ IHl).
+    toMyGoal.
+    { wf_auto2. }
+    unfold patt_iff.
+    mgSplitAnd.
+    + mgIntro. mgIntro.
+      mgAssert ((foldr patt_imp (emplace C p) l)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 1. }
+      apply pf_iff_proj1 in IHl.
+      2,3: wf_auto2.
+      mgApplyMeta IHl.
+      mgExactn 2.
+    + mgIntro. mgIntro.
+      mgAssert ((foldr patt_imp (emplace C q) l)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 1. }
+      apply pf_iff_proj2 in IHl.
+      2,3: wf_auto2.
+      mgApplyMeta IHl.
+      mgExactn 2.
+Defined.
+
+Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+  Γ ⊢ p <---> q ->
+  @mkMyGoal Σ Γ l (emplace C q) ->
+  @mkMyGoal Σ Γ l (emplace C p).
+Proof.
+  intros Hpiffq H.
+  unfold of_MyGoal in *. simpl in *.
+  intros wfcp wfl.
+  feed specialize H.
+  { abstract (
+      pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
+      unfold emplace;
+      apply well_formed_free_evar_subst_0;[wf_auto2|];
+      fold (PC_wf C);
+      eapply wf_emplaced_impl_wf_context;
+      apply wfcp
+    ).
+  }
+  { exact wfl. }
+
+  eapply Modus_ponens.
+  4: apply pf_iff_proj2.
+  4: abstract (wf_auto2).
+  5: apply prf_equiv_congruence_iter.
+  7: apply Hpiffq.
+  3: apply H.
+  5: exact wfl.
+  4: eapply wf_emplaced_impl_wf_context;
+     apply wfcp.
+  1,3: apply proved_impl_wf in H; exact H.
+  1: abstract (apply proved_impl_wf in H; wf_auto2).
+Defined.
+
+Check MyGoal_rewriteIff.
+
+(* Calls [cont] for every subpattern [a] of pattern [phi], giving the match context as an argument *)
+Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+  try (
+    match! phi with
+    | context ctx [ ?x ]
+      => (if Constr.equal x a then cont ctx else ()); fail
+    end
+  ); ().
+
+
+(* Calls [cont] for [n]th subpatern [a] of pattern [phi]. *)
+Ltac2 for_nth_match :=
+  fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+    let curr : int ref := {contents := 0} in
+    let found : bool ref := {contents := false} in
+    for_each_match a phi
+    (fun ctx =>
+      if (found.(contents))
+      then ()
+      else
+        curr.(contents) := Int.add 1 (curr.(contents)) ;
+        if (Int.equal (curr.(contents)) n) then 
+          cont ctx
+        else ()
+    )
+.
+
+Local Ltac reduce_free_evar_subst_step_2 star :=
+      lazymatch goal with
+      | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
+        =>
+          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
+            apply count_evar_occurrences_0;
+            unfold star;
+            eapply evar_is_fresh_in_richer';
+            [|apply set_evar_fresh_is_fresh'];
+            simpl; clear; set_solver
+          )
+      end.
+
+Local Ltac reduce_free_evar_subst_2 star :=
+  unfold free_evar_subst;
+  repeat (reduce_free_evar_subst_step_2 star).
+
+Local Ltac solve_fresh_contradictions_2 star :=
+  unfold fresh_evar; simpl;
+  match goal with
+  | h: star = ?x |- _
+    => let hcontra := fresh "Hcontra" in
+       assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
+       rewrite -> h in hcontra;
+       contradiction
+  end.
+
+Local Ltac clear_obvious_equalities_2 :=
+  repeat (
+      match goal with
+      | [ h: ?x = ?x |- _ ] => clear h
+      end
+    ).
+
+
+Local Ltac simplify_emplace_2 star :=
+  unfold emplace;
+  simpl;
+  unfold free_evar_subst;
+  simpl;
+  repeat break_match_goal;
+  clear_obvious_equalities_2; try contradiction;
+  try (solve_fresh_contradictions_2 star);
+  repeat (rewrite nest_ex_aux_0);
+  reduce_free_evar_subst_2 star.
+
+(* Returns [n]th matching logic context [C] (of type [PatternCtx]) such that
+   [emplace C a = phi].
+ *)
+
+Ltac2 Type HeatResult := {
+  star_ident : ident ;
+  pc : constr ;
+  ctx : Pattern.context ;
+  ctx_pat : constr ;
+  equality : ident ;
+}.
+
+Ltac2 heat :=
+  fun (n : int) (a : constr) (phi : constr) : HeatResult =>
+    let found : (Pattern.context option) ref := { contents := None } in
+     for_nth_match n a phi
+     (fun ctx =>
+        found.(contents) := Some ctx; ()
+     );
+    match found.(contents) with
+    | None => Control.backtrack_tactic_failure "Cannot heat"
+    | Some ctx
+      => (
+         let fr := constr:(fresh_evar $phi) in
+         let star_ident := Fresh.in_goal ident:(star) in
+         set ($star_ident := $fr);
+         let star_hyp := Control.hyp star_ident in
+         let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
+         let pc := constr:((@Build_PatternCtx _ $star_hyp $ctxpat)) in
+         let heq1 := Fresh.in_goal ident:(heq1) in
+         assert(heq1 : ($phi = (@emplace _ $pc $a))) 
+         > [ abstract(
+             (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident star_ident);
+             reflexivity
+             ))
+           | ()
+           ];
+         { star_ident := star_ident; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
+         )
+    end
+.
+
+Ltac2 mgRewrite (hiff : constr) (atn : int) :=
+  match! Constr.type hiff with
+  | @ML_proof_system _ _ (?a <---> ?a')
+    =>
+    lazy_match! goal with
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+      => let hr : HeatResult := heat 2 a p in
+         Message.print (Message.of_string "Here");
+         Message.print (Message.of_constr (hr.(ctx_pat)));
+         let heq := Control.hyp (hr.(equality)) in
+         let pc := (hr.(pc)) in
+         eapply (@cast_proof_mg_goal _ $g) >
+           [ rewrite $heq; reflexivity | ()];
+         Std.clear [hr.(equality)];
+         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
+         lazy_match! goal with
+         | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+           =>
+             let heq2 := Fresh.in_goal ident:(heq2) in
+             let plugged := Pattern.instantiate (hr.(ctx)) a' in
+             assert(heq2: ($p = $plugged))
+             > [
+                 abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
+                 reflexivity
+                 )
+               | ()
+               ];
+             let heq2_pf := Control.hyp heq2 in
+             eapply (@cast_proof_mg_goal _ $g) >
+               [ rewrite $heq2_pf; reflexivity | ()];
+             Std.clear [heq2 ; (hr.(star_ident))]
+         end
+    end
+  end.
+
+Local Ltac2 rec constr_to_int (x : constr) : int :=
+  match! x with
+  | 0 => 0
+  | (S ?x') => Int.add 1 (constr_to_int x')
+  end.
+
+
+Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
+  (let ff := ltac2:(hiff atn |-
+                      mgRewrite
+                        (Option.get (Ltac1.to_constr(hiff)))
+                        (constr_to_int (Option.get (Ltac1.to_constr(atn))))
+                   ) in
+   ff Hiff atn).
+
+
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+Proof.
+  intros wfa wfa' wfb Hiff.
+  toMyGoal.
+  { abstract(wf_auto2). }
+  mgRewrite Hiff at 2.
+  fromMyGoal. intros _ _.
+  apply pf_iff_equiv_refl; abstract(wf_auto2).
+Defined.
+
