@@ -6104,3 +6104,53 @@ Proof.
   apply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
 
+
+   Lemma ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p and q) <---> (p' and q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+
+    toMyGoal.
+    { wf_auto2. }
+    unfold patt_iff.
+    mgSplitAnd.
+    - mgIntro.
+      mgDestructAnd 0.
+      mgSplitAnd.
+      + mgApplyMeta pip'.
+        mgExactn 0.
+      + mgApplyMeta qiq' in 1.
+        mgExactn 1.
+    - mgIntro.
+      unfold patt_and at 2.
+      unfold patt_not at 1.
+      mgIntro.
+      mgDestructOr 1.
+      + mgDestructAnd 0.
+        unfold patt_not.
+        mgApply 2.
+        mgClear 2.
+        mgClear 1.
+        fromMyGoal. intros _ _.
+        exact p'ip.
+      + mgAdd q'iq.
+        mgDestructAnd 1.
+        mgAssert (q).
+        { wf_auto2. }
+        { mgApply 0. mgExactn 2. }
+        unfold patt_not at 1.
+        mgApply 3.
+        mgExactn 4.
+  Defined.
+      
+
