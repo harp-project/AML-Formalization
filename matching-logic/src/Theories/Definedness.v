@@ -2346,6 +2346,54 @@ End ProofSystemTheorems.
  Hint Resolve T_predicate_in : core.
 
 
+Lemma MyGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
+      (Γ : Theory) (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern) (C : PatternCtx) :
+  theory ⊆ Γ ->
+  mu_free (pcPattern C) ->
+  @mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₂) ->
+  @mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₁).
+Proof.
+  intros HΓ HmfC H.
+  mgExtractWF wfl wfg.
+  
+  pose proof (wfl₁ := wfapp_proj_1 wfl).
+  apply wfapp_proj_2 in wfl.
+  unfold wf in wfl. simpl in wfl.
+  apply andb_prop in wfl.
+  destruct wfl as [wfeq wfl₂].
+  pose proof (wfC := wf_emplaced_impl_wf_context wfg).
+  remember C as C'.
+  destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
+  mgAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
+  { unfold emplace,free_evar_subst in *. wf_auto2. }
+  { fromMyGoal. intros _ _. apply equality_elimination_basic_iter; auto.
+    { wf_auto2. }
+    { wf_auto2. }
+  }
+  unfold patt_iff.
+  unshelve(eapply (@MyGoal_applyMetaIn _ _ _ _ (@pf_conj_elim_r _ _ _ _ _ _))).
+  { wf_auto2. }
+  { wf_auto2. }
+  
+  replace (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) with ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ []) in H
+   by (rewrite app_nil_r; reflexivity).
+  apply myGoal_clear_hyp with (h := ((emplace C' ϕ₂) ---> (emplace C' ϕ₁))) in H.
+  unshelve (eapply (@myGoal_assert _ _ _ _ _ _ H)).
+  { wf_auto2. }
+
+  simpl.
+  rewrite -app_assoc.
+  simpl.
+  eapply MyGoal_weakenConclusion.
+
+  replace ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁); emplace C' ϕ₂])
+  with (((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁)]) ++ [emplace C' ϕ₂]).
+  2: {  rewrite -app_assoc. simpl. reflexivity. }
+  apply MyGoal_exactn.
+Qed.
+
+
+
 Search (ML_proof_system ?g (?a =ml ?b)).
 
 Check equality_elimination_basic_iter.
