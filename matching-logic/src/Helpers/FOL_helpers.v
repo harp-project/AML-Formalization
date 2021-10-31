@@ -1833,6 +1833,33 @@ Proof.
   fromMyGoal. intros _ _. apply A_impl_A. exact wfp.
 Qed.
 
+Tactic Notation "mgExtractWF" ident(wfl) ident(wfg) :=
+match goal with
+| [ |- ?g ] =>
+  let wfl' := fresh "wfl'" in
+  let wfg' := fresh "wfg'" in
+  intros wfg' wfl';
+  pose proof (wfl := wfl');
+  pose proof (wfg := wfg');
+  revert wfg' wfl';
+  fold g;
+  rewrite /mgConclusion in wfg;
+  rewrite /mgHypotheses in wfl
+end.
+
+Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢ p ---> p.
+Proof.
+  intros wfp.
+  toMyGoal.
+  { auto. }
+  mgExtractWF wfl wfg.
+  assert (wf []) by assumption.
+  assert (well_formed (p ---> p)) by assumption.
+Abort.
+  
+
 Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
   @mkMyGoal Σ Γ hyps goal ->
   @mkMyGoal Σ Γ hyps' goal.
