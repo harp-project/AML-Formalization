@@ -6,6 +6,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Ltac2 Require Import Ltac2.
+
 Require Import Equations.Prop.Equations.
 
 From Coq Require Import String Ensembles Setoid.
@@ -29,6 +31,8 @@ Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
+
+Set Default Proof Mode "Classic".
 
 Close Scope equations_scope. (* Because of [!] *)
 Open Scope ml_scope.
@@ -2346,12 +2350,124 @@ End ProofSystemTheorems.
  Hint Resolve T_predicate_in : core.
 
 
-Search (ML_proof_system ?g (?a =ml ?b)).
+Lemma MyGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
+      (Γ : Theory) (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern) (C : PatternCtx) :
+  theory ⊆ Γ ->
+  mu_free (pcPattern C) ->
+  @mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₂) ->
+  @mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₁).
+Proof.
+  intros HΓ HmfC H.
+  mgExtractWF wfl wfg.
+  
+  pose proof (wfl₁ := wfapp_proj_1 wfl).
+  apply wfapp_proj_2 in wfl.
+  unfold wf in wfl. simpl in wfl.
+  apply andb_prop in wfl.
+  destruct wfl as [wfeq wfl₂].
+  pose proof (wfC := wf_emplaced_impl_wf_context wfg).
+  remember C as C'.
+  destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
+  mgAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
+  { unfold emplace,free_evar_subst in *. wf_auto2. }
+  { fromMyGoal. intros _ _. apply equality_elimination_basic_iter; auto.
+    { wf_auto2. }
+    { wf_auto2. }
+  }
+  unfold patt_iff.
+  unshelve(eapply (@MyGoal_applyMetaIn _ _ _ _ (@pf_conj_elim_r _ _ _ _ _ _))).
+  { wf_auto2. }
+  { wf_auto2. }
+  
+  replace (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) with ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ []) in H
+   by (rewrite app_nil_r; reflexivity).
+  apply myGoal_clear_hyp with (h := ((emplace C' ϕ₂) ---> (emplace C' ϕ₁))) in H.
+  unshelve (eapply (@myGoal_assert _ _ _ _ _ _ H)).
+  { wf_auto2. }
 
-Check equality_elimination_basic_iter.
-(* (foldr patt_imp ((C [ϕ₁]) <---> (C [ϕ₂]))
-                            (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂)) *)
-Check prf_local_goals_equiv_impl_full_equiv_meta_proj2.
+  simpl.
+  rewrite -app_assoc.
+  simpl.
+  eapply MyGoal_weakenConclusion.
+
+  replace ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁); emplace C' ϕ₂])
+  with (((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁)]) ++ [emplace C' ϕ₂]).
+  2: {  rewrite -app_assoc. simpl. reflexivity. }
+  apply MyGoal_exactn.
+Qed.
+
+Ltac2 mgRewriteBy (n : constr) (atn : int) :=
+  eapply (@cast_proof_mg_hyps)
+  > [ (rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn; rewrite /skipn); reflexivity)
+    | ()
+    ];
+  lazy_match! goal with
+  | [ |- @of_MyGoal ?sgm (@mkMyGoal ?sgm ?g (?l₁ ++ (?a' =ml ?a)::?l₂) ?p)]
+    => 
+      Message.print (Message.of_string "Here");
+      let hr : HeatResult := heat atn a' p in
+      let heq := Control.hyp (hr.(equality)) in
+      let pc := (hr.(pc)) in
+      eapply (@cast_proof_mg_goal _ $g) >
+        [ rewrite $heq; reflexivity | ()];
+      Std.clear [hr.(equality)];
+      apply MyGoal_rewriteBy
+      > [ ()
+        | ()
+        | lazy_match! goal with
+          | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+            =>
+              let heq2 := Fresh.in_goal ident:(heq2) in
+              let plugged := Pattern.instantiate (hr.(ctx)) a in
+              assert(heq2: ($p = $plugged))
+              > [
+                  abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
+                            reflexivity
+                           )
+                | ()
+                ];
+              let heq2_pf := Control.hyp heq2 in
+              eapply (@cast_proof_mg_goal _ $g) >
+                [ rewrite $heq2_pf; reflexivity | ()];
+              Std.clear [heq2 ; (hr.(star_ident))];
+              eapply (@cast_proof_mg_hyps)
+              > [ (ltac1:(rewrite /app); reflexivity)
+                | ()
+                ]
+          end
+        ]
+  end
+.
+
+Tactic Notation "mgRewriteBy" constr(n) "at" constr(atn) :=
+  (let ff := ltac2:(n atn |-
+                      mgRewriteBy
+                        (Option.get (Ltac1.to_constr(n)))
+                        (constr_to_int (Option.get (Ltac1.to_constr(atn))))
+                   ) in
+   ff n atn).
+
+
+
+Local Example ex_rewriteBy {Σ : Signature} {syntax : Syntax} Γ a a' b:
+  theory ⊆ Γ ->
+  well_formed a ->
+  well_formed a' ->
+  well_formed b ->
+  mu_free b ->
+  Γ ⊢ a $ b ---> (a' =ml a) ---> a' $ b.
+Proof.
+  intros HΓ wfa wfa' wfb mfb.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgIntro.
+  mgRewriteBy 1 at 1.
+  { assumption. }
+  { simpl. assumption. }
+  mgExactn 0.
+Defined.
+
+
 
 Ltac wfauto' :=
   lazymatch goal with

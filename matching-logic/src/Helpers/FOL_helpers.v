@@ -1833,6 +1833,33 @@ Proof.
   fromMyGoal. intros _ _. apply A_impl_A. exact wfp.
 Qed.
 
+Tactic Notation "mgExtractWF" ident(wfl) ident(wfg) :=
+match goal with
+| [ |- ?g ] =>
+  let wfl' := fresh "wfl'" in
+  let wfg' := fresh "wfg'" in
+  intros wfg' wfl';
+  pose proof (wfl := wfl');
+  pose proof (wfg := wfg');
+  revert wfg' wfl';
+  fold g;
+  rewrite /mgConclusion in wfg;
+  rewrite /mgHypotheses in wfl
+end.
+
+Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢ p ---> p.
+Proof.
+  intros wfp.
+  toMyGoal.
+  { auto. }
+  mgExtractWF wfl wfg.
+  assert (wf []) by assumption.
+  assert (well_formed (p ---> p)) by assumption.
+Abort.
+  
+
 Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
   @mkMyGoal Σ Γ hyps goal ->
   @mkMyGoal Σ Γ hyps' goal.
@@ -5985,7 +6012,7 @@ Local Ltac clear_obvious_equalities_2 :=
     ).
 
 
-Local Ltac simplify_emplace_2 star :=
+Ltac simplify_emplace_2 star :=
   unfold emplace;
   simpl;
   unfold free_evar_subst;
@@ -6044,7 +6071,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     =>
     lazy_match! goal with
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
-      => let hr : HeatResult := heat 2 a p in
+      => let hr : HeatResult := heat atn a p in
          Message.print (Message.of_string "Here");
          Message.print (Message.of_constr (hr.(ctx_pat)));
          let heq := Control.hyp (hr.(equality)) in
@@ -6073,7 +6100,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     end
   end.
 
-Local Ltac2 rec constr_to_int (x : constr) : int :=
+Ltac2 rec constr_to_int (x : constr) : int :=
   match! x with
   | 0 => 0
   | (S ?x') => Int.add 1 (constr_to_int x')
