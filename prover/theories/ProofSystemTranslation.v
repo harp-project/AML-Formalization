@@ -71,9 +71,11 @@ Section proof_system_translation.
   Definition corr_prop (C : Cache) :=
     forall (p : Pattern) (np : NamedPattern),
       C !! p = Some np ->
-      exists cache evs svs,
-        cache !! p = None /\
-        np = (to_NamedPattern2' p cache evs svs).1.1.1. (* and cache \subseteq C *)
+      { cache_evs_svs : Cache * EVarSet * SVarSet |
+        cache_evs_svs.1.1 !! p = None
+        /\ np = (to_NamedPattern2' p cache_evs_svs.1.1 cache_evs_svs.1.2 cache_evs_svs.2).1.1.1
+        /\ sub_prop cache_evs_svs.1.1
+      }.
 
   Lemma corr_prop_empty: corr_prop ∅.
   Admitted.
@@ -138,8 +140,9 @@ Section proof_system_translation.
         Check corr_prop_step. About corr_prop_step.
         pose proof (Hcorr_g := corr_prop_step cache p evs svs Hcorr_cache).
         rewrite Heqp3 in Hcorr_g. simpl in Hcorr_g.
-        pose proof (Hcorr_g _ _ Heqo0) as [cache' [evs' [svs' [Hnone H]]]].
-        simpl in H. rewrite Hnone in H. repeat case_match.
+        pose proof (Hcorr_g _ _ Heqo0).
+        destruct X as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in H.
+        rewrite Hnone in H. repeat case_match.
         simpl in *. inversion Heqp0. subst. clear Heqp0.
         inversion H1. subst. clear H1.
 
@@ -312,9 +315,12 @@ Section proof_system_translation.
     - repeat case_match; simpl.
       + unfold corr_prop in pfcorr.
         specialize (pfcorr (patt_imp p (patt_imp q p)) n Heqo).
-        (* destruct pfcorr as [cache' [evs' svs']]. *)
+        destruct pfcorr as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
         assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
-        destruct H as [[p' q'] Hpq]. simpl in Hpq. subst. admit.
+        simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
+        simpl (cache', evs', svs').2 in H.
+        subst.
+        apply translation'. apply P1; assumption. apply Hsub. admit.
       + admit.
       + admit.
     - case_match.
