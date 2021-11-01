@@ -45,6 +45,10 @@ Section proof_system_translation.
 
   Definition Cache := gmap Pattern NamedPattern.
 
+  Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
+    C !! p = Some np -> map_subseteq C C' -> C' !! p = Some np.
+  Admitted.
+
   (* A subpattern property of the cache: with any pattern it contains its direct subpatterns. *)
   Definition sub_prop (C : Cache) :=
     forall (p : Pattern) (np : NamedPattern),
@@ -62,7 +66,18 @@ Section proof_system_translation.
     sub_prop C ->
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
   Admitted.
-    
+
+  Lemma sub_prop_subcache (C C' : Cache) :
+    sub_prop C' -> map_subseteq C C' -> sub_prop C.
+  Proof.
+    intros. induction C.
+    - unfold sub_prop. intros. destruct p; auto.
+      unfold sub_prop in H. specialize (H (patt_imp p1 p2) np).
+      destruct H as [np' [nq' [Hp1 Hp2]]]. eapply subcache_prop; eauto.
+      exists np', nq'. split.
+      (* need induction hypothesis *)
+      admit. admit.
+  Admitted.
 
   About to_NamedPattern2'.
   (* A correspondence property of the cache: any named pattern it contains is a translation
@@ -74,7 +89,7 @@ Section proof_system_translation.
       { cache_evs_svs : Cache * EVarSet * SVarSet |
         cache_evs_svs.1.1 !! p = None
         /\ np = (to_NamedPattern2' p cache_evs_svs.1.1 cache_evs_svs.1.2 cache_evs_svs.2).1.1.1
-        /\ sub_prop cache_evs_svs.1.1
+        /\ map_subseteq cache_evs_svs.1.1 C
       }.
 
   Lemma corr_prop_empty: corr_prop ∅.
@@ -84,8 +99,18 @@ Section proof_system_translation.
     corr_prop C ->
     corr_prop (to_NamedPattern2' p C evs svs).1.1.2.
   Admitted.
-  
 
+  Lemma corr_prop_subcache (C C' : Cache) :
+    corr_prop C' -> map_subseteq C C' -> corr_prop C.
+  Proof.
+    intros. unfold corr_prop. unfold corr_prop in X.
+    intros. specialize (X p np). destruct X. eapply subcache_prop; eauto.
+    destruct a as [Hnone [Hnp Hsub]].
+    exists x. split. assumption. split. assumption.
+    (* need induction hypothesis *)
+    admit.
+  Admitted.
+  
   (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
      and does not update anything.
    *)
@@ -313,14 +338,16 @@ Section proof_system_translation.
     - admit.
     - admit.
     - repeat case_match; simpl.
-      + unfold corr_prop in pfcorr.
-        specialize (pfcorr (patt_imp p (patt_imp q p)) n Heqo).
-        destruct pfcorr as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
+      + remember pfcorr as pfcorr'; clear Heqpfcorr'.
+        unfold corr_prop in pfcorr'.
+        specialize (pfcorr' (patt_imp p (patt_imp q p)) n Heqo).
+        destruct pfcorr' as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
         assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
         simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
-        simpl (cache', evs', svs').2 in H.
-        subst.
-        apply translation'. apply P1; assumption. apply Hsub. admit.
+        simpl (cache', evs', svs').2 in H. subst.
+        apply translation'. apply P1; assumption.
+        exact (sub_prop_subcache cache' cache pfsub Hsub).
+        exact (corr_prop_subcache cache' cache pfcorr Hsub).
       + admit.
       + admit.
     - case_match.
