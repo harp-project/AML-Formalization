@@ -10,7 +10,7 @@ From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
 From stdpp Require Import base list sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic Utils.Lattice Utils.stdpp_ext.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators monotonic Utils.Lattice Utils.stdpp_ext.
 
 Section with_signature.
   Context {Σ : Signature}.

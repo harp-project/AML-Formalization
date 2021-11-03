@@ -48,7 +48,7 @@ It will detect the nix-provided coq and libraries automatically.
 - `MatchingLogic.Syntax`, `MatchingLogic.Semantics`, `MatchingLogic.ProofSystem` -
   define syntax, semantics, proof system, respectively, and its properties.
   The user of the library is supposed to import these three.
-- `MatchingLogic.Helpers`
+- `MatchingLogic.ProofMode` - a proof mode for matching logic, together with a collection with results about the proof system
 
 
 

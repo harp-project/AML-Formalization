@@ -18,8 +18,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem FOL_helpers.
-From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
+From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem ProofMode.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
