@@ -9,7 +9,7 @@ From Equations Require Import Equations.
 From stdpp Require Import base option.
 
 From MatchingLogic Require Import
-     Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem Helpers.FOL_helpers
+     Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem ProofMode
      Utils.extralibrary
 .
 

@@ -2,7 +2,8 @@ From MatchingLogic Require Export Logic
                                   Theories.Definedness
                                   DerivedOperators
                                   Theories.Sorts
-                                  Helpers.FOL_helpers.
+                                  NamedAxioms
+                                  ProofMode.
 Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
 From Coq Require Import ssreflect ssrfun ssrbool.
 Require Export Coq.Program.Wf 
@@ -590,44 +591,6 @@ Section FOL_ML_correspondence.
                             (patt_or (patt_equal φ patt_top) (patt_equal φ patt_bott))
   end.
 
-  Definition named_axioms : NamedAxioms := {| NAName := AxName; NAAxiom := axiom; |}.
-  Definition base_FOL_theory : Theory := theory_of_NamedAxioms named_axioms.
-
-  Definition from_FOL_theory (Γ : list form) : Theory :=
-    List.fold_right (fun x Acc => {[ convert_form x ]} ∪ Acc) base_FOL_theory Γ.
-
-  Lemma have_base_FOL_theory Γ:
-    base_FOL_theory ⊆ from_FOL_theory Γ.
-  Proof.
-    unfold from_FOL_theory.
-    induction Γ.
-    - simpl. set_solver.
-    - simpl. set_solver.
-  Qed.
-
-  Lemma have_definedness Γ:
-    Definedness.theory ⊆ from_FOL_theory Γ.
-  Proof.
-    simpl.
-    assert (Definedness.theory ⊆ base_FOL_theory).
-    { 
-      unfold theory.
-      unfold base_FOL_theory.
-      unfold theory_of_NamedAxioms.
-      apply elem_of_subseteq. intros ax Hax.
-      inversion Hax. subst. clear Hax.
-      unfold elem_of.
-      apply propset.elem_of_PropSet. simpl. simpl in x.
-      exists (AxDefinedness x). simpl. reflexivity.
-    }
-    pose proof (have_base_FOL_theory Γ).
-    set_solver.
-  Qed.
-  
-  
-  Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
-  Notation "Γ ⊢_ML form" := (ML_proof_system Γ form) (at level 50).
-
   Theorem closed_ex_term_FOL_ML : forall t n,
     wf_term t n -> well_formed_closed_ex_aux (convert_term t) n.
   Proof.
@@ -733,6 +696,177 @@ Section FOL_ML_correspondence.
       + eapply closed_form_FOL_ML. eassumption.
       + apply closed_ex_form_FOL_ML. assumption.
   Qed.
+
+
+  Lemma well_formed_closed_ex_prefix φ : forall n k,
+    is_true (well_formed_closed_ex_aux (add_forall_prefix n φ) k) <-> 
+    is_true (well_formed_closed_ex_aux φ (n + k)).
+  Proof.
+    induction n; simpl; auto; intros.
+    do 2 rewrite andb_true_r.
+    rewrite -> IHn, -> NPeano.Nat.add_succ_r. auto.
+  Qed.
+
+  Lemma well_formed_closed_prefix φ : forall n m,
+    is_true (well_formed_closed_mu_aux (add_forall_prefix n φ) m) <-> 
+    is_true (well_formed_closed_mu_aux φ m).
+  Proof.
+    induction n; simpl; auto; intros.
+    do 2 rewrite andb_true_r.
+    rewrite -> IHn. auto.
+  Qed.
+  
+  Lemma well_formed_positive_prefix φ : forall n,
+    is_true (well_formed_positive (add_forall_prefix n φ)) <-> 
+    is_true (well_formed_positive φ).
+  Proof.
+    induction n; simpl; auto.
+    do 2 rewrite andb_true_r. auto.
+  Qed.
+
+  Lemma well_formed_closed_ex_list n : forall start m, m > n ->
+    is_true (well_formed_closed_ex_aux start m) ->
+    is_true (well_formed_closed_ex_aux
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list1 n) start )
+     m).
+  Proof.
+    induction n; intros start m H H0; simpl; auto.
+    apply (IHn). lia. simpl. rewrite H0. simpl.
+    case_match; auto.
+  Qed.
+
+  Lemma well_formed_closed_list n : forall start k,
+    is_true (well_formed_closed_mu_aux start k) ->
+    is_true (well_formed_closed_mu_aux
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list1 n) start )
+     k).
+  Proof.
+    induction n; intros start k H; simpl; auto.
+    apply (IHn). simpl. rewrite H. reflexivity.
+  Qed.
+  
+  Lemma well_formed_positive_list n : forall start,
+    is_true (well_formed_positive start) ->
+    is_true (well_formed_positive
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list1 n) start)).
+  Proof.
+    induction n; intros; simpl; auto.
+    apply (IHn). simpl. rewrite H. auto.
+  Qed.
+
+  Lemma well_formed_closed_ex_list0 n : forall start m, m >= n ->
+    is_true (well_formed_closed_ex_aux start m) ->
+    is_true (well_formed_closed_ex_aux
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list0 n) start)
+     m).
+  Proof.
+    induction n; intros start m H H0; simpl; auto.
+    apply (IHn). lia. simpl. rewrite H0. simpl.
+    case_match; auto.
+  Qed.
+
+
+  Lemma well_formed_closed_mu_list0 n : forall start k,
+    is_true (well_formed_closed_mu_aux start k) ->
+    is_true (well_formed_closed_mu_aux
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list0 n) start)
+     k).
+  Proof.
+    induction n; intros start k H; simpl; auto.
+    apply (IHn). simpl. rewrite H. reflexivity.
+  Qed.
+  
+  Lemma well_formed_positive_list0 n : forall start,
+    is_true (well_formed_positive start) ->
+    is_true (well_formed_positive
+     (List.fold_left
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (make_list0 n) start)).
+  Proof.
+    induction n; intros start H; simpl; auto.
+    apply (IHn). simpl. rewrite H. auto.
+  Qed.
+
+
+  Theorem ax_wf :
+    forall F, is_true (well_formed (axiom F)).
+  Proof.
+    
+    unfold axiom. intros F.
+    break_match_goal.
+    - unfold Definedness.axiom. destruct name. simpl. constructor.
+    - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
+      + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list. auto.
+        auto.
+      + split_and!.
+        * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_list.
+          simpl. auto.  all: now simpl.
+        * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list.
+          simpl. auto. lia. all: now simpl.
+          
+    - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
+      + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list0. auto.
+        auto.
+      + split_and!.
+        * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_mu_list0.
+          2: reflexivity.
+          simpl. auto.
+        * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list0.
+          simpl. auto. lia. all: now simpl.
+  Qed.
+
+
+  Program Definition named_axioms : NamedAxioms := {| NAName := AxName; NAAxiom := axiom; |}.
+  Next Obligation.
+    intros name. apply ax_wf.
+  Qed.
+  
+  Definition base_FOL_theory : Theory := theory_of_NamedAxioms named_axioms.
+
+  Definition from_FOL_theory (Γ : list form) : Theory :=
+    List.fold_right (fun x Acc => {[ convert_form x ]} ∪ Acc) base_FOL_theory Γ.
+
+  Lemma have_base_FOL_theory Γ:
+    base_FOL_theory ⊆ from_FOL_theory Γ.
+  Proof.
+    unfold from_FOL_theory.
+    induction Γ.
+    - simpl. set_solver.
+    - simpl. set_solver.
+  Qed.
+
+  Lemma have_definedness Γ:
+    Definedness.theory ⊆ from_FOL_theory Γ.
+  Proof.
+    simpl.
+    assert (Definedness.theory ⊆ base_FOL_theory).
+    { 
+      unfold theory.
+      unfold base_FOL_theory.
+      unfold theory_of_NamedAxioms.
+      apply elem_of_subseteq. intros ax Hax.
+      inversion Hax. subst. clear Hax.
+      unfold elem_of.
+      apply propset.elem_of_PropSet. simpl. simpl in x.
+      exists (AxDefinedness x). simpl. reflexivity.
+    }
+    pose proof (have_base_FOL_theory Γ).
+    set_solver.
+  Qed.
+  
+  
+  Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
+  Notation "Γ ⊢_ML form" := (ML_proof_system Γ form) (at level 50).
 
   Theorem in_FOL_theory : forall Γ x,
     List.In x Γ -> convert_form x ∈ from_FOL_theory Γ.
@@ -971,131 +1105,6 @@ Section FOL_ML_correspondence.
       intros start H. eapply IHv.
       simpl. now rewrite -> H, -> term_mu_free.
     * simpl. now rewrite -> IHφ1, -> IHφ2.
-  Qed.
-
-  Lemma well_formed_closed_ex_prefix φ : forall n k,
-    is_true (well_formed_closed_ex_aux (add_forall_prefix n φ) k) <-> 
-    is_true (well_formed_closed_ex_aux φ (n + k)).
-  Proof.
-    induction n; simpl; auto; intros.
-    do 2 rewrite andb_true_r.
-    rewrite -> IHn, -> NPeano.Nat.add_succ_r. auto.
-  Qed.
-
-  Lemma well_formed_closed_prefix φ : forall n m,
-    is_true (well_formed_closed_mu_aux (add_forall_prefix n φ) m) <-> 
-    is_true (well_formed_closed_mu_aux φ m).
-  Proof.
-    induction n; simpl; auto; intros.
-    do 2 rewrite andb_true_r.
-    rewrite -> IHn. auto.
-  Qed.
-  
-  Lemma well_formed_positive_prefix φ : forall n,
-    is_true (well_formed_positive (add_forall_prefix n φ)) <-> 
-    is_true (well_formed_positive φ).
-  Proof.
-    induction n; simpl; auto.
-    do 2 rewrite andb_true_r. auto.
-  Qed.
-
-  Lemma well_formed_closed_ex_list n : forall start m, m > n ->
-    is_true (well_formed_closed_ex_aux start m) ->
-    is_true (well_formed_closed_ex_aux
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list1 n) start )
-     m).
-  Proof.
-    induction n; intros start m H H0; simpl; auto.
-    apply (IHn). lia. simpl. rewrite H0. simpl.
-    case_match; auto.
-  Qed.
-
-  Lemma well_formed_closed_list n : forall start k,
-    is_true (well_formed_closed_mu_aux start k) ->
-    is_true (well_formed_closed_mu_aux
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list1 n) start )
-     k).
-  Proof.
-    induction n; intros start k H; simpl; auto.
-    apply (IHn). simpl. rewrite H. reflexivity.
-  Qed.
-  
-  Lemma well_formed_positive_list n : forall start,
-    is_true (well_formed_positive start) ->
-    is_true (well_formed_positive
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list1 n) start)).
-  Proof.
-    induction n; intros; simpl; auto.
-    apply (IHn). simpl. rewrite H. auto.
-  Qed.
-
-  Lemma well_formed_closed_ex_list0 n : forall start m, m >= n ->
-    is_true (well_formed_closed_ex_aux start m) ->
-    is_true (well_formed_closed_ex_aux
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list0 n) start)
-     m).
-  Proof.
-    induction n; intros start m H H0; simpl; auto.
-    apply (IHn). lia. simpl. rewrite H0. simpl.
-    case_match; auto.
-  Qed.
-
-
-  Lemma well_formed_closed_mu_list0 n : forall start k,
-    is_true (well_formed_closed_mu_aux start k) ->
-    is_true (well_formed_closed_mu_aux
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list0 n) start)
-     k).
-  Proof.
-    induction n; intros start k H; simpl; auto.
-    apply (IHn). simpl. rewrite H. reflexivity.
-  Qed.
-  
-  Lemma well_formed_positive_list0 n : forall start,
-    is_true (well_formed_positive start) ->
-    is_true (well_formed_positive
-     (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-        (make_list0 n) start)).
-  Proof.
-    induction n; intros start H; simpl; auto.
-    apply (IHn). simpl. rewrite H. auto.
-  Qed.
-
-  Theorem ax_wf :
-    forall F, is_true (well_formed (axiom F)).
-  Proof.
-    unfold axiom. intros F.
-    break_match_goal.
-    - unfold Definedness.axiom. destruct name. simpl. constructor.
-    - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
-      + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list. auto.
-        auto.
-      + split_and!.
-        * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_list.
-          simpl. auto.  all: now simpl.
-        * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list.
-          simpl. auto. lia. all: now simpl.
-          
-    - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
-      + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list0. auto.
-        auto.
-      + split_and!.
-        * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_mu_list0.
-          2: reflexivity.
-          simpl. auto.
-        * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list0.
-          simpl. auto. lia. all: now simpl.
   Qed.
 
   Proposition term_functionality :

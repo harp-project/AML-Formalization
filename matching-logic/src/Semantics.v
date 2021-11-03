@@ -11,7 +11,7 @@ From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Syntax NamedAxioms.
 
 Import MatchingLogic.Syntax.Notations.
 (** ** Matching Logic Semantics *)
@@ -644,7 +644,6 @@ Section semantics.
 
   (* Theory,axiom ref. snapshot: Definition 5 *)
 
-  Definition Theory := propset Pattern.
   
   Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
     forall (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)),
@@ -657,23 +656,7 @@ Section semantics.
   Definition satisfies (theory : Theory) (p: Pattern)
     : Prop := forall m : Model, (satisfies_theory m theory) -> (satisfies_model m p).
 
-  Definition TheoryIncluded (Γ₁ Γ₂ : Theory) :=  Γ₁ ⊆ Γ₂.
-
-  Lemma satisfies_theory_subseteq M Γ₁ Γ₂:
-    TheoryIncluded Γ₁ Γ₂ ->
-    satisfies_theory M Γ₂ ->
-    satisfies_theory M Γ₁.
-  Proof.
-    unfold TheoryIncluded,satisfies_theory.
-    set_solver by fail.
-  Qed.
-
-  Record NamedAxioms := { NAName : Type; NAAxiom : NAName -> Pattern }.
-
-  Definition theory_of_NamedAxioms (NAs : NamedAxioms) : Theory :=
-    PropSet (fun p => exists (n : NAName NAs), p = NAAxiom n).
-
-  Lemma satisfies_theory_iff_satisfies_named_axioms NAs M:
+  Lemma satisfies_theory_iff_satisfies_named_axioms {Σ : Signature} NAs M:
     satisfies_theory M (theory_of_NamedAxioms NAs) <->
     forall (n : NAName NAs), satisfies_model M (NAAxiom n).
   Proof.
@@ -690,43 +673,16 @@ Section semantics.
       subst ax.
       apply H.
   Qed.
-  
-  (* TODO: do we want to make this a type class? *)
-  Record NamedAxiomsIncluded (NA₁ NA₂ : NamedAxioms) :=
-    { NAIinj : NAName NA₁ -> NAName NA₂;
-      NAIax : forall (n : NAName NA₁), NAAxiom n = NAAxiom (NAIinj n);
-    }.
 
-  Lemma NamedAxiomsIncluded_impl_TheoryIncluded NA₁ NA₂:
-    NamedAxiomsIncluded NA₁ NA₂ ->
-    TheoryIncluded (theory_of_NamedAxioms NA₁) (theory_of_NamedAxioms NA₂).
+  Lemma satisfies_theory_subseteq M Γ₁ Γ₂:
+    Γ₁ ⊆ Γ₂ ->
+    satisfies_theory M Γ₂ ->
+    satisfies_theory M Γ₁.
   Proof.
-    intros [inj ax].
-    unfold TheoryIncluded, theory_of_NamedAxioms.
-    rewrite -> elem_of_subseteq.
-    intros ϕ H.
-    rewrite -> elem_of_PropSet. rewrite -> elem_of_PropSet in H.
-    destruct H as [n Hn]. subst ϕ.
-    eexists. auto.
+    unfold satisfies_theory.
+    set_solver by fail.
   Qed.
 
-  Program Definition NamedAxiomsIncluded_refl NA : NamedAxiomsIncluded NA NA :=
-    {| NAIinj := λ n, n; |}.
-  Next Obligation. auto. Qed.
-  (* TODO make it a stdpp preorder  *)
-
-  Program Definition NamedAxiomsIncluded_compose NA₁ NA₂ NA₃ :
-    NamedAxiomsIncluded NA₁ NA₂ ->
-    NamedAxiomsIncluded NA₂ NA₃ ->
-    NamedAxiomsIncluded NA₁ NA₃ :=
-    λ HI₁ HI₂, {| NAIinj := λ n, NAIinj HI₂ (NAIinj HI₁ n);  |}.
-  Next Obligation.
-    intros NA₁ NA₂ NA₃ [inj₁ ax₁] [inj₂ ax₂] n.
-    simpl.
-    rewrite -ax₂.
-    rewrite -ax₁.
-    auto.
-  Qed.
 
   (* theory predicate *)
   Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.

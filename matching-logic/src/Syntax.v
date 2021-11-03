@@ -10,7 +10,7 @@ Require Import Coq.Strings.String.
 
 From Coq Require Import Logic.Classical_Prop.
 From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets.
+From stdpp Require Import pmap gmap mapset fin_sets propset.
 Require Import stdpp_ext.
 
 Require Import extralibrary.
@@ -97,6 +97,9 @@ Proof.
   intros x.
   induction x; simpl; congruence.
 Defined.
+
+
+Definition Theory {Σ : Signature} := propset Pattern.
 
 Close Scope boolean_if_scope.
 
