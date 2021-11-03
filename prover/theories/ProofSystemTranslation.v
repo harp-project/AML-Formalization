@@ -350,6 +350,19 @@ Section proof_system_translation.
         exact (corr_prop_subcache cache' cache pfcorr Hsub).
       + admit.
       + admit.
+    - repeat case_match; simpl.
+      + remember pfcorr as pfcorr'; clear Heqpfcorr'.
+        unfold corr_prop in pfcorr'.
+        specialize (pfcorr' (patt_imp p (patt_imp q p)) n Heqo).
+        destruct pfcorr' as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
+        assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
+        simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
+        simpl (cache', evs', svs').2 in H. subst.
+        apply translation'. apply P1; assumption.
+        exact (sub_prop_subcache cache' cache pfsub Hsub).
+        exact (corr_prop_subcache cache' cache pfcorr Hsub).
+      + admit.
+      + admit.
     - case_match.
       + simpl.
         pose proof (pfcorr _ _ Heqo) as [cache0 [evs0 [svs0 [Hnone H]]]].
