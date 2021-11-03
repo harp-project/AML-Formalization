@@ -18,7 +18,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem FOL_helpers.
+From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem FOL_helpers.
 From MatchingLogic Require ProofSystem Helpers.FOL_helpers.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -169,7 +169,13 @@ Section definedness.
     | AxDefinedness => patt_defined p_x
     end.
 
-  Definition named_axioms : NamedAxioms := {| NAName := AxiomName; NAAxiom := axiom; |}.
+  Program Definition named_axioms : NamedAxioms :=
+    {| NAName := AxiomName;
+      NAAxiom := axiom;
+    |}.
+  Next Obligation.
+    intros name. destruct name; simpl; wf_auto2.
+  Qed.
 
   Definition theory := theory_of_NamedAxioms named_axioms.
   

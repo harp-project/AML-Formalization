@@ -6,6 +6,7 @@ src/Utils/stdpp_ext.v
 src/Utils/wflexprod.v
 
 src/Syntax.v
+src/NamedAxioms.v
 src/Semantics.v
 src/Helpers/monotonic.v
 src/DerivedOperators.v

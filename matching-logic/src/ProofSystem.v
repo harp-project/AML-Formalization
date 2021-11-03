@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
-From MatchingLogic Require Import Syntax Semantics DerivedOperators Helpers.monotonic.
+From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators Helpers.monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import extralibrary.
@@ -991,3 +991,15 @@ Module Notations.
 
 End Notations.
 
+Import Notations.
+
+Lemma instantiate_named_axiom {Σ : Signature} (NA : NamedAxioms) (name : (NAName NA)) :
+  (theory_of_NamedAxioms NA) ⊢ (@NAAxiom Σ NA name).
+Proof.
+  apply hypothesis.
+  { apply NAwf. }
+  unfold theory_of_NamedAxioms.
+  apply elem_of_PropSet.
+  exists name.
+  reflexivity.
+Defined.
