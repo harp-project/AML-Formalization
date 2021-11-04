@@ -2472,6 +2472,20 @@ Proof.
   mgExactn 0.
 Defined.
 
+Lemma patt_equal_implies_iff {Σ : Signature} {syntax : Syntax} (ϕ1 ϕ2 : Pattern) (Γ : Theory) :
+    theory ⊆ Γ ->
+    well_formed ϕ1 ->
+    well_formed ϕ2 ->
+    Γ ⊢ ϕ1 =ml ϕ2 ->
+    Γ ⊢ (ϕ1 <---> ϕ2).
+Proof.
+  intros HΓ wfϕ1 wfϕ2 H.
+  unfold "=ml" in H.
+  apply total_phi_impl_phi_meta in H.
+  { assumption. }
+  { assumption. }
+  { wf_auto2. }
+Defined.
 
 
 Ltac wfauto' :=
@@ -2512,5 +2526,21 @@ Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   Γ ⊢ ϕ₁ ⊆ml ϕ₂.
 Proof.
   intros HΓ wfϕ₁ wfϕ₂ Heq.
-  (* We have to rewrite the RHS using Heq... *)
-Abort.
+  toMyGoal.
+  { wf_auto2. }
+  unshelve (epose proof (Htmp := patt_equal_implies_iff HΓ _ _ Heq)).
+  { wf_auto2. }
+  { wf_auto2. }
+  apply pf_iff_equiv_sym in Htmp.
+  3: { wf_auto2. }
+  2: { wf_auto2. }
+  mgRewrite Htmp at 1.
+  fromMyGoal. intros _ _.
+  unfold "⊆ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgLeft. mgExactn 0.
+Defined.
+  
