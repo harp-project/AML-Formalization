@@ -2497,7 +2497,7 @@ Ltac wfauto' :=
   | _ => idtac
   end.
 
-Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
@@ -2518,7 +2518,62 @@ Proof.
     mgIntro. mgRight;wfauto'. fromMyGoal. intros _ _. apply A_impl_A; wfauto'.
 Defined.
 
-Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+Lemma def_not_phi_impl_not_total_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  unfold patt_total.
+  unfold patt_not.
+  mgIntro.
+  mgApply 1.
+  mgExactn 0.
+Defined.
+
+
+Lemma subseteq_antisym_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₁) ->
+  Γ ⊢ ϕ₁ =ml ϕ₂.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold "=ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgAdd H.
+  mgDestructAnd 0.
+  unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 0).
+  { wf_auto2. }
+  unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 1).
+  { wf_auto2. }
+  mgSplitAnd.
+  - mgExactn 0.
+  - mgExactn 1.
+Defined.
+
+Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+Defined.
+
+
+
+Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
@@ -2535,6 +2590,37 @@ Proof.
   3: { wf_auto2. }
   2: { wf_auto2. }
   mgRewrite Htmp at 1.
+  fromMyGoal. intros _ _.
+  unfold "⊆ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgLeft. mgExactn 0.
+Defined.
+  
+Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  mu_free ϕ₁ -> (* TODO get rid of it *)
+  Γ ⊢ ((ϕ₁ or ϕ₂) =ml ϕ₂) ---> (ϕ₁ ⊆ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ mfϕ₁.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+
+  Search "=ml" "sym".
+  unshelve(mgApplyMeta (patt_eq_sym _ _ _) in 0).
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  mgRewriteBy 0 at 1.
+  { assumption. }
+  { simpl. rewrite mfϕ₁. reflexivity. }
+  mgClear 0.
+
   fromMyGoal. intros _ _.
   unfold "⊆ml".
   apply phi_impl_total_phi_meta.
