@@ -196,7 +196,8 @@ Section proof_system_translation.
   (*
      Non-Addition lemma. phi <= psi -> psi \not \in C -> psi \not \in (toNamedPattern2' phi C).2
    *)
-
+  Check False_rect. Check eq_refl.
+  Obligation Tactic := idtac.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
            (cache : Cache) (pfsub : sub_prop cache) (pfcorr : corr_prop cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
@@ -212,10 +213,8 @@ Section proof_system_translation.
 
     translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
       with (cache !! (patt_imp p (patt_imp q p))) => {
-      | Some pqp_named with pqp_named => {
-          | npatt_imp p' (npatt_imp q' p'') := _ ;
-          | _ := _ ;
-        }
+      | Some (npatt_imp p' (npatt_imp q' p'')) := (_, cache, used_evars, used_svars) ;
+      | Some _ := (False_rect _ _) ;
       | None with (cache !! (patt_imp q p)) => {
         | None :=
           let: tn_p := to_NamedPattern2' p cache used_evars used_svars in
@@ -335,7 +334,12 @@ Section proof_system_translation.
     translation' _ _ _ _ _ _ _ _ := _.
 
   Proof.
-    - admit.
+    all: try(
+      lazymatch goal with
+      | [ |- (Is_true (named_well_formed _)) ] => admit
+      | _ => idtac
+      end).
+(*    - admit.*)
     - admit.
     - repeat case_match; simpl.
       + remember pfcorr as pfcorr'; clear Heqpfcorr'.
@@ -345,9 +349,11 @@ Section proof_system_translation.
         assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
         simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
         simpl (cache', evs', svs').2 in H. subst.
-        apply translation'. apply P1; assumption.
-        exact (sub_prop_subcache cache' cache pfsub Hsub).
-        exact (corr_prop_subcache cache' cache pfcorr Hsub).
+        destruct H0 as [[p' q'] Hpq].
+        repeat split. rewrite Hpq. simpl.
+        apply N_P1. admit. admit.
+        (* cache, evar_map, svar_map *)
+        exact cache. apply used_evars. apply used_svars.
       + admit.
       + admit.
     - repeat case_match; simpl.
