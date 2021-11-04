@@ -495,7 +495,7 @@ Section gen.
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
-    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-exists"]

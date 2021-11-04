@@ -301,6 +301,7 @@ Module MMTest.
     ∅ ⊢ ϕ11.
   Proof.
     apply Ex_quan.
+    { wf_auto2. }
   Qed.
 
   Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
