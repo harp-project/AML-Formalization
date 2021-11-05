@@ -2534,7 +2534,26 @@ Proof.
   mgExactn 0.
 Defined.
 
+Lemma def_def_phi_impl_def_phi
+{Σ : Signature} {syntax : Syntax} {Γ : Theory} (ϕ : Pattern) :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌈ ϕ ⌉.
+Proof.
+  intros HΓ wfϕ.
+  eapply (cast_proof).
+  { 
+    remember (@ctx_app_r _ (patt_sym (inj definedness)) box ltac:(wf_auto2)) as AC1.
+    remember (@ctx_app_r _ (patt_sym (inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
+    replace (⌈ ⌈ ϕ ⌉ ⌉) with (subst_ctx AC2 ϕ) by (subst; reflexivity).
+    subst. reflexivity.
+  }
+  apply in_context_impl_defined.
+  { exact HΓ. }
+  { exact wfϕ. }
+Defined.
 
+(* TODO need this non-meta *)
 Lemma subseteq_antisym_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
@@ -2569,6 +2588,7 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
+  (* TODO *)
 Defined.
 
 
@@ -2611,7 +2631,6 @@ Proof.
   { wf_auto2. }
   mgIntro.
 
-  Search "=ml" "sym".
   unshelve(mgApplyMeta (patt_eq_sym _ _ _) in 0).
   { assumption. }
   { wf_auto2. }
