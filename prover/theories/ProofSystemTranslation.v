@@ -60,7 +60,9 @@ Section proof_system_translation.
       end.
 
   Lemma sub_prop_empty: sub_prop ∅.
-  Admitted.
+  Proof.
+    unfold sub_prop; intros; inversion H.
+  Qed.
 
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     sub_prop C ->
@@ -93,7 +95,9 @@ Section proof_system_translation.
       }.
 
   Lemma corr_prop_empty: corr_prop ∅.
-  Admitted.
+  Proof.
+    unfold corr_prop; intros; inversion H.
+  Qed.
 
   Lemma corr_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     corr_prop C ->
@@ -214,7 +218,7 @@ Section proof_system_translation.
     translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
       with (cache !! (patt_imp p (patt_imp q p))) => {
       | Some (npatt_imp p' (npatt_imp q' p'')) := (_, cache, used_evars, used_svars) ;
-      | Some _ := (False_rect _ _) ;
+      | Some x := False_rect _ _ ;
       | None with (cache !! (patt_imp q p)) => {
         | None :=
           let: tn_p := to_NamedPattern2' p cache used_evars used_svars in
