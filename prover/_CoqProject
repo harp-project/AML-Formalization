@@ -1,5 +1,6 @@
 -R theories MatchingLogicProver
 
+theories/Matchers.v
 theories/MLTauto.v
 theories/Named.v
 theories/NamedProofSystem.v
