@@ -5,7 +5,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Export base.
 From MatchingLogic Require Import Syntax Semantics SignatureHelper ProofSystem ProofMode.
-From MatchingLogicProver Require Import Named NamedProofSystem Matchers.
+From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset.
 
@@ -90,34 +90,30 @@ Section proof_system_translation.
   (* A correspondence property of the cache: any named pattern it contains is a translation
      of the locally nameless pattern that is its key, under some unspecified parameters.
      This should ensure that the named pattern has the same structure as the key. *)
-  Definition corr_prop (C : Cache) :=
-    forall (p : Pattern) (np : NamedPattern),
-      C !! p = Some np ->
-      { cache_evs_svs : Cache * EVarSet * SVarSet |
-        cache_evs_svs.1.1 !! p = None
-        /\ np = (to_NamedPattern2' p cache_evs_svs.1.1 cache_evs_svs.1.2 cache_evs_svs.2).1.1.1
-        /\ map_subseteq cache_evs_svs.1.1 C
-      }.
 
-  Lemma corr_prop_empty: corr_prop ∅.
-  Proof.
-    unfold corr_prop; intros; inversion H.
-  Qed.
+  Print ex.
 
+ 
+  Inductive corr_prop : Cache -> Type :=
+  | corr_prop_empty : corr_prop ∅
+  | corr_prop_call (new_cache : Cache) :
+    (forall  (p : Pattern) (np : NamedPattern),
+        new_cache !! p = Some np ->
+        exists (old_cache : Cache)
+               (old_evs : EVarSet)
+               (old_svs : SVarSet),
+          old_cache ⊆ new_cache ->
+          old_cache !! p = None ->
+          corr_prop old_cache ->
+          sub_prop old_cache ->
+          np = (to_NamedPattern2' p old_cache old_evs old_svs).1.1.1) ->
+    corr_prop new_cache
+  .
+  
   Lemma corr_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     corr_prop C ->
     corr_prop (to_NamedPattern2' p C evs svs).1.1.2.
-  Admitted.
-
-  Lemma corr_prop_subcache (C C' : Cache) :
-    corr_prop C' -> map_subseteq C C' -> corr_prop C.
   Proof.
-    intros. unfold corr_prop. unfold corr_prop in X.
-    intros. specialize (X p np). destruct X. eapply subcache_prop; eauto.
-    destruct a as [Hnone [Hnp Hsub]].
-    exists x. split. assumption. split. assumption.
-    (* need induction hypothesis *)
-    admit.
   Admitted.
   
   (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
@@ -174,11 +170,11 @@ Section proof_system_translation.
         Check corr_prop_step. About corr_prop_step.
         pose proof (Hcorr_g := corr_prop_step cache p evs svs Hcorr_cache).
         rewrite Heqp3 in Hcorr_g. simpl in Hcorr_g.
-        pose proof (Hcorr_g _ _ Heqo0).
+        (* pose proof (Hcorr_g _ _ Heqo0).
         destruct X as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in H.
         rewrite Hnone in H. repeat case_match.
         simpl in *. inversion Heqp0. subst. clear Heqp0.
-        inversion H1. subst. clear H1.
+        inversion H1. subst. clear H1. *)
 
         (* Now compare Heqp3 with Heqp7 *)
         
@@ -223,9 +219,9 @@ Section proof_system_translation.
     translation' G phi (@P1 _ _ p q wfp wfq) _ _ _ _ _
       with (cache !! (patt_imp p (patt_imp q p))) => {
 (*      | Some (npatt_imp p' (npatt_imp q' p'')) := (_, cache, used_evars, used_svars) ;*)
-      | Some x with (match_a_impl_b_impl_c x) => {
-          | inl _ := _ ;
-          | inr _ := (False_rect _ _ );
+      | Some x with (nmatch_a_impl_b_impl_c x) => {
+          | inl HisImp := (_, cache, used_evars, used_svars) ;
+          | inr HisNotImp := (_, cache, used_evars, used_svars) ;
         }
       | None with (cache !! (patt_imp q p)) => {
         | None :=
@@ -355,18 +351,38 @@ Section proof_system_translation.
     - admit.
     - repeat case_match; simpl.
       + remember pfcorr as pfcorr'; clear Heqpfcorr'.
-        unfold corr_prop in pfcorr'.
+         Print corr_prop.
+        inversion pfcorr as [ | cache1 cache2 evs1 svs1 (patt_imp p (patt_imp q p)) ].
+        { subst. inversion Heqo. }
+        
         specialize (pfcorr' (patt_imp p (patt_imp q p)) n Heqo).
         destruct pfcorr' as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
-        simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
-        simpl (cache', evs', svs').2 in H. simpl in H. subst.
-        assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
+        simpl in H. rewrite Hnone in H. repeat case_match; subst.
+        { inversion Heqp0; clear Heqp0; subst.
+          inversion Heqp6; clear Heqp6; subst.
+          (* Heqo: p --> q --> p ===> n1 --> n2 *)
+          (* Heqo0: q --> p ===> n2 *)
+          (* Heqp3: p ===> n1 *)
+          simpl in *.
+          Search to_NamedPattern2' Cache.
+          (*  cache' ⊆ cache; cache' ⊆ g *)
+          admit.
+        }
+        { inversion Heqp0; clear Heqp0; subst.
+          inversion Heqp6; clear Heqp6; subst.
+          inversion Heqp9; clear Heqp9; subst. simpl in *.
+          (* This is the case we want *)
+        }
+        assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }). admit.
         destruct H0 as [[p' q'] Hpq].
+        simpl (cache', evs', svs').1.1 in H. simpl (cache', evs', svs').1.2 in H.
+        simpl (cache', evs', svs').2 in H. subst.
         repeat split. rewrite Hpq. simpl.
         apply N_P1. admit. admit.
         (* cache, evar_map, svar_map *)
         exact cache. apply used_evars. apply used_svars.
-      + admit.
+      + subst. inversion Heqp0; subst. clear Heqp0. inversion Heqp4; subst. clear Heqp4.
+        admit.
       + admit.
     - repeat case_match; simpl.
       + remember pfcorr as pfcorr'; clear Heqpfcorr'.
