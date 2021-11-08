@@ -6131,7 +6131,56 @@ Proof.
   apply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
 
+Lemma top_holds {Σ : Signature} Γ:
+  Γ ⊢ Top.
+Proof.
+  apply false_implies_everything.
+  { wf_auto2. }
+Defined.
 
+Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ ϕ <---> (ϕ <---> Top).
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgSplitAnd.
+    + mgIntro. mgClear 0. mgClear 0.
+      fromMyGoal. intros _ _.
+      apply top_holds. (* TODO: we need something like [mgExactMeta top_holds] *)
+    + fromMyGoal. intros _ _.
+      apply P1; wf_auto2.
+  - mgDestructAnd 0.
+    mgApply 1.
+    mgClear 0.
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply top_holds.
+Defined.
+
+Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥).
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgSplitAnd.
+    + mgExactn 0.
+    + mgClear 0. fromMyGoal. intros _ _.
+      apply false_implies_everything.
+      { wf_auto2. }
+  - mgDestructAnd 0.
+    mgExactn 0.
+Defined.
+
+
+(* This is an example and belongs to the end of this file.
+   Its only purpose is only to show as many tactics as possible.\
+ *)
    Lemma ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
     well_formed p ->
     well_formed q ->
@@ -6179,5 +6228,6 @@ Defined.
         mgApply 3.
         mgExactn 4.
   Defined.
-      
+
+
 
