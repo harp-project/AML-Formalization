@@ -75,7 +75,7 @@ Section definedness.
     @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
 
   Definition is_predicate_pattern ψ : Pattern :=
-    (patt_equal ψ patt_bott) or (patt_equal ψ patt_top).
+    (patt_equal ψ patt_top) or (patt_equal ψ patt_bott).
 End definedness.
 
 Module Notations.
@@ -2553,6 +2553,75 @@ Proof.
   { exact wfϕ. }
 Defined.
 
+Lemma bott_not_defined {Σ : Signature} {syntax : Syntax} Γ :
+  Γ ⊢ ! ⌈ ⊥ ⌉.
+Proof.
+  apply Prop_bott_right.
+  { wf_auto2. }
+Defined.
+
+Lemma not_def_phi_impl_not_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ! ⌈ ϕ ⌉ ---> ! ϕ.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgIntro.
+  mgApply 0.
+  mgClear 0.
+  fromMyGoal. intros _ _.
+  apply phi_impl_defined_phi; assumption.
+Defined.
+
+Lemma tot_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌊ ϕ ⌋ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgIntro. mgApply 0. mgClear 0.
+  fromMyGoal. intros _ _.
+  apply Framing_right.
+  { wf_auto2. }
+  apply not_def_phi_impl_not_phi; assumption.
+Defined.
+
+
+
+Lemma def_of_pred_impl_pred {Σ : Signature} {syntax : Syntax} Γ ψ :
+  theory ⊆ Γ ->
+  well_formed ψ ->
+  mu_free ψ ->
+  Γ ⊢ (ψ =ml patt_bott) or (ψ =ml patt_top) ->
+  Γ ⊢ ⌈ ψ ⌉ ---> ψ.
+Proof.
+  intros HΓ wfψ Hmfψ H.
+  toMyGoal.
+  {wf_auto2. }
+  mgAdd H.
+  mgDestructOr 0.
+  - mgRewriteBy 0 at 2.
+    { exact HΓ. }
+    { simpl. rewrite Hmfψ.  reflexivity. }
+    mgRewriteBy 0 at 1.
+    { exact HΓ. }
+    { simpl. reflexivity. }
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply bott_not_defined.
+  - mgRewriteBy 0 at 2.
+    { exact HΓ. }
+    { simpl. rewrite Hmfψ.  reflexivity. }
+    mgClear 0.
+    unfold patt_top. mgIntro. mgIntro. mgExactn 1.
+Defined.
+
 (* TODO need this non-meta *)
 Lemma subseteq_antisym_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
@@ -2577,6 +2646,98 @@ Proof.
   - mgExactn 0.
   - mgExactn 1.
 Defined.
+
+Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
+      Γ AC x ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (subst_ctx AC (ϕ₁ and ((patt_free_evar x) ∈ml ϕ₂))) ---> ((patt_free_evar x) ∈ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  unfold patt_in.
+  eapply syllogism_intro.
+  1,3 : wf_auto2.
+  2: apply Framing.
+  2: wf_auto2.
+  3: apply pf_conj_elim_r.
+  1-4: wf_auto2.
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: apply in_context_impl_defined.
+  2: assumption.
+  1,2: wf_auto2.
+  apply def_def_phi_impl_def_phi.
+  { assumption. }
+  { wf_auto2. }
+Defined.
+
+
+Lemma ceil_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ ⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  apply Framing_right.
+  { wf_auto2. }
+  exact H.
+Defined.
+  
+
+Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ ⌊ ϕ₁ ⌋ ---> ⌊ ϕ₂ ⌋.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold patt_total.
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply ceil_monotonic.
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  exact H.
+Defined.
+
+Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ is_predicate_pattern (⌊ ϕ ⌋).
+Proof.
+  intros HΓ wfϕ.
+  unfold is_predicate_pattern.
+  unfold "=ml".
+  About phi_iff_phi_top.
+  toMyGoal.
+  { wf_auto2. }
+  Search (?g ⊢ ?a <---> ?b).
+  About pf_iff_equiv_sym.
+  mgRewrite (@pf_iff_equiv_sym Σ Γ (⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> Top) ltac:(wf_auto2) ltac:(wf_auto2) (@phi_iff_phi_top _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
+
+  mgRewrite (@pf_iff_equiv_sym Σ Γ (! ⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2) (@not_phi_iff_phi_bott _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
+  fromMyGoal. intros _ _.
+
+  
+  unfold patt_total at 1.
+  unfold patt_total at 2.
+  apply modus_tollens.
+Defined.
+
+Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof. Defined. (* TODO *)
 
 Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
