@@ -6115,18 +6115,36 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
+Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
+  Γ ⊢ (A <---> B) ->
+  Γ ⊢ (B <---> A).
+Proof.
+  intros H.
+  pose proof (wf := proved_impl_wf _ _ H).
+  assert (well_formed A) by wf_auto2.
+  assert (well_formed B) by wf_auto2.
+  apply pf_iff_equiv_sym; assumption.
+Defined.
+
+Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
+  mgRewrite Hiff at atn.
+
+Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
+  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
+
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
+  mgRewrite <- Hiff at 3.
   fromMyGoal. intros _ _.
   apply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
@@ -6176,6 +6194,21 @@ Proof.
   - mgDestructAnd 0.
     mgExactn 0.
 Defined.
+
+
+Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢ A <---> ! ! A.
+Proof.
+  intros wfA.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply not_not_intro.
+    { wf_auto2. }
+  - apply not_not_elim.
+    { wf_auto2. }
+Defined.    
 
 
 (* This is an example and belongs to the end of this file.
