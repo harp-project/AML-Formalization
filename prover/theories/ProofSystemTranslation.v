@@ -70,6 +70,22 @@ Section proof_system_translation.
       try (rewrite Heqo; reflexivity);
       try (rewrite lookup_insert; reflexivity).
   Qed.
+
+  Instance incr_one_inj : Inj eq eq incr_one.
+  Proof.
+    unfold Inj. intros x y H.
+    induction x,y; simpl in *; congruence.
+  Qed.
+  
+  Lemma cache_incr_lookup_None (ϕ : Pattern) (C : Cache):
+    cache_incr C !! ϕ = None ->
+    C !! ϕ = None.
+  Proof.
+    intros H.
+    unfold cache_incr in *.
+    rewrite lookup_kmap_None in H.
+    apply H.
+  Abort.              
   
   Lemma to_NamedPattern2'_None (ϕ₁ ϕ₂ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
     (to_NamedPattern2' ϕ₁ C evs svs).1.1.2 !! ϕ₂ = None ->
@@ -131,10 +147,24 @@ Section proof_system_translation.
       
       destruct (decide (ϕ₂ = BoundVarSugar.b0)).
       { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
-      Search lookup insert.
       rewrite lookup_insert_ne in Hnone_g0.
       { apply not_eq_sym. assumption. }
       (* TODO cache_incr preserves lookup *)
+      Print incr_one.
+      admit.
+    - pose proof (Hnone_g0 := IHϕ₁
+                                (<[BoundVarSugar.B0:=npatt_svar (svs_fresh s ϕ₁)]> (cache_incr C))
+                                evs
+                                (s ∪ {[svs_fresh s ϕ₁]}) ϕ₂)
+      .
+      feed specialize Hnone_g0.
+      { rewrite Heqp2. simpl. exact Hnone. }
+
+      destruct (decide (ϕ₂ = BoundVarSugar.B0)).
+      { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
+      rewrite lookup_insert_ne in Hnone_g0.
+      { apply not_eq_sym. assumption. }
+      admit.
   Qed.
 
   Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
