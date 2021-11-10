@@ -1958,18 +1958,8 @@ Section ProofSystemTheorems.
       apply pf_iff_split; auto.
       + apply membership_and_1; auto 10.
       + apply membership_and_2; auto 10.
-    Defined.
+    Defined.       
 
-    Lemma membership_imp_1 Γ x ϕ₁ ϕ₂:
-      well_formed ϕ₁ ->
-      well_formed ϕ₂ ->
-      theory ⊆ Γ ->
-      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
-    Proof.
-      intros wfϕ₁ wfϕ₂ HΓ.
-    Abort.
-         
-    
     Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2746,6 +2736,89 @@ Proof.
 
 Defined.
 
+Lemma ceil_propagation_exists_1 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (⌈ ex, ϕ ⌉) ---> (ex, ⌈ ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  apply Prop_ex_right.
+  { wf_auto2. }
+  { wf_auto2. }
+Defined.
+
+Lemma ceil_propagation_exists_2 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (ex, ⌈ ϕ ⌉) ---> (⌈ ex, ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+
+  remember (fresh_evar ϕ) as x.
+  replace (⌈ ϕ ⌉) with (evar_quantify x 0 (evar_open 0 x (⌈ ϕ ⌉))).
+  2: {
+    rewrite evar_quantify_evar_open.
+       {
+         pose proof (@set_evar_fresh_is_fresh _ ϕ).
+         unfold evar_is_fresh_in in H.
+         simpl. set_solver.
+       }
+       reflexivity.
+  }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  2: {  simpl.
+        pose proof (Hfr := @set_evar_fresh_is_fresh _ ϕ).
+        unfold evar_is_fresh_in in Hfr.
+        simpl. set_solver.
+  }
+  unfold evar_open. simpl_bevar_subst.
+  fold (evar_open 0 x ϕ).
+  apply ceil_monotonic.
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply Ex_quan.
+  { wf_auto2. }
+Defined.
+
+Lemma ceil_propagation_exists_iff {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (⌈ ex, ϕ ⌉) <---> (ex, ⌈ ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply ceil_propagation_exists_1; assumption.
+  - apply ceil_propagation_exists_2; assumption.
+Defined.
+
+Lemma membership_exists {Σ : Signature} {syntax : Syntax} Γ x ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (patt_free_evar x ∈ml (ex, ϕ)) <---> (ex, patt_free_evar x ∈ml ϕ).
+Proof.
+  intros HΓ wfϕ.
+  unfold "∈ml".
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite <- (@ceil_propagation_exists_iff Σ syntax Γ (patt_free_evar x and ϕ) HΓ ltac:(wf_auto2)) at 1.
+  fromMyGoal. intros _ _.
+  assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x and ϕ))).
+  { (* prenex-exists-and *)
+
+  }
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite Htmp at 1.
+  fromMyGoal. intros _ _.
+  apply pf_iff_equiv_refl.
+  { wf_auto2. }
+Defined.
+
 Lemma membership_symbol_ceil_left_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -2775,7 +2848,11 @@ Proof.
   rewrite bevar_subst_not_occur_is_noop.
   { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
 
-  Search "∈ml" "--->".
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+
+  Search "∈ml" patt_exists.
   (* membership-symbol-ceil-left-aux-0 *)
   Search bevar_subst.
 Defined.
