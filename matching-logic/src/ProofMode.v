@@ -3953,7 +3953,7 @@ Section FOL_helpers.
     pose conj_intro_meta_partial2; auto.
   Defined.
 
-  Lemma patt_and_comm (A B : Pattern) Γ:
+  Lemma patt_and_comm_meta (A B : Pattern) Γ:
     well_formed A → well_formed B
   ->
     Γ ⊢ A and B -> Γ ⊢ B and A.
@@ -6349,6 +6349,20 @@ Proof.
   - apply prenex_exists_and_1; assumption.
 Defined.
 
+Lemma patt_and_comm {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ (p and q) <---> (q and p).
+Proof.
+  intros wfp wfq.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro; mgDestructAnd 0; mgSplitAnd.
+  - mgExactn 1.
+  - mgExactn 0.
+  - mgExactn 1.
+  - mgExactn 0.
+Defined.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
