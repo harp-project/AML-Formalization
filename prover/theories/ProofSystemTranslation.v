@@ -121,7 +121,20 @@ Section proof_system_translation.
       erewrite Heqp2.
       simpl.
       exact Hnone_g0.
-    - 
+    -
+      pose proof (Hnone_g0 := IHϕ₁
+                                (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]> (cache_incr C))
+                                (evs ∪ {[evs_fresh evs ϕ₁]}) s ϕ₂)
+      .
+      feed specialize Hnone_g0.
+      { rewrite Heqp2. simpl. exact Hnone. }
+      
+      destruct (decide (ϕ₂ = BoundVarSugar.b0)).
+      { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
+      Search lookup insert.
+      rewrite lookup_insert_ne in Hnone_g0.
+      { apply not_eq_sym. assumption. }
+      (* TODO cache_incr preserves lookup *)
   Qed.
 
   Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
