@@ -5050,11 +5050,11 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma strip_exists_quantify Γ x P Q :
+  Lemma strip_exists_quantify_l Γ x P Q :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
-    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> ex , Q) ->
-    Γ ⊢ ex , P ---> ex , Q.
+    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) ->
+    Γ ⊢ ex , P ---> Q.
   Proof.
     intros Hx HwfcP H.
     unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
@@ -5065,6 +5065,20 @@ Section FOL_helpers.
     ).
   Defined.
 
+  Lemma strip_exists_quantify_r Γ x P Q :
+    x ∉ free_evars Q ->
+    well_formed_closed_ex_aux Q 1 ->
+    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) ->
+    Γ ⊢ P ---> ex, Q.
+  Proof.
+    intros Hx HwfcP H.
+    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    abstract (
+      unfold exists_quantify;
+      rewrite -> evar_quantify_evar_open by assumption;
+      reflexivity
+    ).
+  Defined.
 
   Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X:
     well_formed_closed_mu_aux p 0 = true ->
@@ -5204,10 +5218,10 @@ Section FOL_helpers.
                :=
                 @pf_iff_split Σ Γ (ex, free_evar_subst' 1 ϕ' p E) (ex, free_evar_subst' 1 ϕ' q E) _ _
                   (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' p q E wfψ wfp wfq
-                    (@strip_exists_quantify Σ Γ x _ _ _ _ IH3')
+                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH3')
                   )
                   (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' q p E wfψ wfq wfp
-                    (@strip_exists_quantify Σ Γ x _ _ _ _ IH4')
+                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH4')
                   )
             }
           }
@@ -5336,7 +5350,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_svar_subst. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_svar_subst.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5345,7 +5359,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_svar_subst.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5461,7 +5475,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_ex_gen. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_ex_gen.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5472,7 +5486,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_ex_gen.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5593,7 +5607,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_kt. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_kt.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5602,7 +5616,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_kt.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -6209,6 +6223,131 @@ Proof.
   - apply not_not_elim.
     { wf_auto2. }
 Defined.    
+
+(* prenex-exists-and-left *)
+Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂)).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgDestructAnd 0.
+  fromMyGoal. intros _ _.
+
+  remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
+  apply strip_exists_quantify_l with (x0 := x).
+  { subst x. eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. clear. set_solver.
+  }
+  { wf_auto2. }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { subst x. apply set_evar_fresh_is_fresh. }
+  
+  apply lhs_to_and.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+
+  eapply cast_proof.
+  {
+    replace (evar_open 0 x ϕ₁ and ϕ₂)
+            with (evar_open 0 x (ϕ₁ and ϕ₂)).
+    2: {
+      unfold evar_open. simpl_bevar_subst.
+      rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+      { apply wfc_ex_implies_not_bevar_occur.
+        wf_auto2.
+      }
+      reflexivity.
+    }
+    reflexivity.
+  }
+  apply Ex_quan.
+  wf_auto2.
+Defined.
+
+(* prenex-exists-and-right *)
+Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgSplitAnd.
+  - fromMyGoal. intros _ _.
+    remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
+    apply strip_exists_quantify_l with (x0 := x).
+    { subst x. apply set_evar_fresh_is_fresh. }
+    (* TODO: make wf_auto2 solve this *)
+    { simpl. rewrite !andbT. split_and!.
+      + wf_auto2.
+      + wf_auto2.
+    }
+    apply strip_exists_quantify_r with (x0 := x).
+    { subst x. eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      simpl. clear. set_solver.
+    }
+    { wf_auto2. }
+    apply ex_quan_monotone.
+    { wf_auto2. }
+    { wf_auto2. }
+    unfold evar_open. simpl_bevar_subst.
+    rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+    { apply wfc_ex_aux_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgDestructAnd 0. mgExactn 0.
+  - fromMyGoal. intros _ _.
+    remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
+    eapply cast_proof.
+    {
+      rewrite -[ϕ₁ and ϕ₂](@evar_quantify_evar_open Σ x 0).
+      { subst x. apply set_evar_fresh_is_fresh. }
+      reflexivity.
+    }
+    apply Ex_gen.
+    { wf_auto2. }
+    { wf_auto2. }
+    2: { subst x. eapply evar_is_fresh_in_richer'.
+         2: { apply set_evar_fresh_is_fresh. }
+         solve_free_evars_inclusion 0.
+    }
+    unfold evar_open.
+    simpl_bevar_subst.
+    rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+    { apply wfc_ex_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgDestructAnd 0.
+    mgExactn 1.
+Defined.
+
+Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  apply conj_intro_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply prenex_exists_and_2; assumption.
+  - apply prenex_exists_and_1; assumption.
+Defined.
 
 
 (* This is an example and belongs to the end of this file.
