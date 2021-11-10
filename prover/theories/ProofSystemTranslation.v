@@ -76,33 +76,52 @@ Section proof_system_translation.
     C !! ϕ₂ = None.
   Proof.
     intros Hnone.
-    induction ϕ₂.
+    move: C evs svs ϕ₂ Hnone.
+    induction ϕ₁; intros C evs svs ϕ₂ Hnone.
     all:
       match type of Hnone with
-      | _ !! ?THIS = None => remember THIS as ϕ₂'
+      | (to_NamedPattern2' ?THIS _ _ _).1.1.2 !! _ = None => remember THIS as ϕ₁'
       end;
-      destruct (decide (ϕ₁ = ϕ₂')).
+      destruct (decide (ϕ₁' = ϕ₂)).
+
+    all:
+      subst ϕ₁'; simpl in *.
+
     all:
       match goal with
-      | [ e: ?ϕ₁ = ?ϕ₂', Heqϕ2': ?ϕ₂' = ?ϕ₃  |- _]
-        => subst ϕ₂'; subst ϕ₁;
+      | [ne: ?x <> ?y |- _]
+        => idtac "there"
+      | _
+        => subst;
            simpl in *;
            case_match;
            simpl in *;
            try congruence;
            auto
-      | _ => idtac "there"
       end.
-    
-    
-      try (subst ϕ₂'; simpl in Hnone; case_match; simpl in *; auto).
-      try (rewrite <- e in Hnone; rewrite lookup_insert in Hnone; inversion Hnone).
-      - simpl in Hnone; repeat case_match; subst; simpl in *; auto;
-        try rewrite lookup_insert_ne in Hnone; auto.
-      inversion Heqp; subst; clear Heqp. Print to_NamedPattern2'.
-    Search insert lookup.
-    Check lookup_insert_
-    rewrite H in Heqo; inversion Heqo; reflexivity.
+
+    all:
+      repeat case_match; simpl in *; subst; auto;
+      try (rewrite lookup_insert_ne in Hnone; auto);
+      inversion Heqp; subst; clear Heqp.
+
+    -
+      pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
+      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0. specialize (Hnone_g0 Hnone).
+      clear Heqp5.
+      eapply IHϕ₁1.
+      erewrite Heqp2.
+      simpl.
+      exact Hnone_g0.
+    -
+      pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
+      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0. specialize (Hnone_g0 Hnone).
+      clear Heqp5.
+      eapply IHϕ₁1.
+      erewrite Heqp2.
+      simpl.
+      exact Hnone_g0.
+    - 
   Qed.
 
   Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
