@@ -7,7 +7,7 @@ From stdpp Require Export base.
 From MatchingLogic Require Import Syntax Semantics SignatureHelper ProofSystem ProofMode.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
-From stdpp Require Import base finite gmap mapset listset_nodup numbers propset.
+From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
 
 Import ProofSystem.Notations.
 
@@ -49,6 +49,61 @@ Section proof_system_translation.
    *)
 
   Definition Cache := gmap Pattern NamedPattern.
+
+   (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
+     and does not update anything.
+   *)
+  Lemma to_NamedPattern2'_lookup (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    forall (nϕ : NamedPattern),
+      C !! ϕ = Some nϕ ->
+      to_NamedPattern2' ϕ C evs svs = (nϕ, C, evs, svs).
+  Proof.
+    intros nϕ H.
+    destruct ϕ; simpl; case_match; rewrite H in Heqo; inversion Heqo; reflexivity.
+  Qed.
+
+  (* `to_NamedPattern2' ensures that the resulting cache is contains the given pattern *)
+  Lemma to_NamedPattern2'_ensures_present (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    (to_NamedPattern2' ϕ C evs svs).1.1.2 !! ϕ = Some ((to_NamedPattern2' ϕ C evs svs).1.1.1).
+  Proof.
+    destruct ϕ; simpl; repeat case_match; simpl;
+      try (rewrite Heqo; reflexivity);
+      try (rewrite lookup_insert; reflexivity).
+  Qed.
+  
+  Lemma to_NamedPattern2'_None (ϕ₁ ϕ₂ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    (to_NamedPattern2' ϕ₁ C evs svs).1.1.2 !! ϕ₂ = None ->
+    C !! ϕ₂ = None.
+  Proof.
+    intros Hnone.
+    induction ϕ₂.
+    all:
+      match type of Hnone with
+      | _ !! ?THIS = None => remember THIS as ϕ₂'
+      end;
+      destruct (decide (ϕ₁ = ϕ₂')).
+    all:
+      match goal with
+      | [ e: ?ϕ₁ = ?ϕ₂', Heqϕ2': ?ϕ₂' = ?ϕ₃  |- _]
+        => subst ϕ₂'; subst ϕ₁;
+           simpl in *;
+           case_match;
+           simpl in *;
+           try congruence;
+           auto
+      | _ => idtac "there"
+      end.
+    
+    
+      try (subst ϕ₂'; simpl in Hnone; case_match; simpl in *; auto).
+      try (rewrite <- e in Hnone; rewrite lookup_insert in Hnone; inversion Hnone).
+      - simpl in Hnone; repeat case_match; subst; simpl in *; auto;
+        try rewrite lookup_insert_ne in Hnone; auto.
+      inversion Heqp; subst; clear Heqp. Print to_NamedPattern2'.
+    Search insert lookup.
+    Check lookup_insert_
+    rewrite H in Heqo; inversion Heqo; reflexivity.
+  Qed.
 
   Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
     C !! p = Some np -> map_subseteq C C' -> C' !! p = Some np.
@@ -93,7 +148,76 @@ Section proof_system_translation.
 
   Print ex.
 
- 
+  (*Example ex (l : list nat) (x:nat) : l!!x = Some x.*)
+  (* x !! i == pattern * cache * evs * svs *)
+  (* svarset, namedpattern * cache * evs * svs *)
+  Definition corr_prop (C : Cache) :=
+    forall (p : @Pattern signature) (np : @NamedPattern signature),
+      C !! p = Some np ->
+      { history : list (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))
+                  &
+                    match history with
+                    | [] => True
+                    | (x::xs) =>
+                        x.2.1.1.2 !! p = None /\
+                          forall (i:nat),
+                            match xs!!i with
+                            | None => True
+                            | Some (p_i, (np_i, c_i, evs_i, svs_i)) =>
+                                ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_i evs_i svs_i))
+                            end
+                    end
+      }.
+
+  
+  Definition corr_prop_old (C : Cache) :=
+    forall (p : Pattern) (np : NamedPattern),
+      C !! p = Some np ->
+      { old_cache : Cache & { old_evs : EVarSet & { old_svs : SVarSet &
+        old_cache !! p = None
+        /\ np = (to_NamedPattern2' p old_cache old_evs old_svs).1.1.1
+        /\ old_cache ⊆ C
+      }}}.
+
+  (* (* C1 ≡ {[ (p1 |-> (np1, ∅)) ]} *)
+     C3 ≡ C1 ∪ {[ (p2 |-> (np2, C2)) ]}
+     curr_prop C3.
+   *)
+  Lemma corr_prop_subseteq (C₁ C₂ : Cache) :
+    C₁ ⊆ C₂ ->
+    corr_prop C₂ ->
+    corr_prop C₁.
+  Proof.
+    intros Hsub Hc.
+    unfold corr_prop in *.
+    intros p np Hp.
+    specialize (Hc p np).
+    feed specialize Hc.
+    { eapply lookup_weaken. 2: apply Hsub. apply Hp. }
+    destruct Hc as [history Hhist].
+    case_match;[exists [];auto|].
+    destruct Hhist as [Hc Hhist].
+    exists l.
+    induction l;[auto|].
+    subst. split. specialize (Hhist 0). simpl in Hhist. repeat case_match; subst.
+    simpl. simpl in IHl. inversion Hhist; subst. clear Hhist. simpl in Hc.
+    assert (c ⊆ (to_NamedPattern2' p1 c e s).1.1.2) by admit.
+    Search to_NamedPattern2'.
+
+    destruct Hc as [old_cache [old_evs [old_svs [Hnone [Hnp Hc]]]]].
+    
+    exists old_cache.
+    exists old_evs.
+    exists old_svs.
+    repeat split; auto.
+    clear -Hc Hsub.
+    eapply transitivity; eassumption
+    
+
+      eapply elem_of_subseteq in Hsub.  }
+  Qed.
+  
+  
   Inductive corr_prop : Cache -> Type :=
   | corr_prop_empty : corr_prop ∅
   | corr_prop_call (new_cache : Cache) :
@@ -115,28 +239,6 @@ Section proof_system_translation.
     corr_prop (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
   Admitted.
-  
-  (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
-     and does not update anything.
-   *)
-  Lemma to_NamedPattern2'_lookup (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
-    forall (nϕ : NamedPattern),
-      C !! ϕ = Some nϕ ->
-      to_NamedPattern2' ϕ C evs svs = (nϕ, C, evs, svs).
-  Proof.
-    intros nϕ H.
-    destruct ϕ; simpl; case_match; rewrite H in Heqo; inversion Heqo; reflexivity.
-  Qed.
-
-  (* `to_NamedPattern2' ensures that the resulting cache is contains the given pattern *)
-  Lemma to_NamedPattern2'_ensures_present (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
-    (to_NamedPattern2' ϕ C evs svs).1.1.2 !! ϕ = Some ((to_NamedPattern2' ϕ C evs svs).1.1.1).
-  Proof.
-    destruct ϕ; simpl; repeat case_match; simpl;
-      try (rewrite Heqo; reflexivity);
-      try (rewrite lookup_insert; reflexivity).
-  Qed.
-  
 
   Lemma consistency_pqp
         (p q : Pattern)
