@@ -2809,7 +2809,60 @@ Proof.
   fromMyGoal. intros _ _.
   assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x and ϕ))).
   { (* prenex-exists-and *)
-
+    toMyGoal.
+    { wf_auto2. }
+    Check patt_and_comm.
+    mgRewrite (@patt_and_comm Σ Γ (patt_free_evar x) (ex, ϕ) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+    mgRewrite <- (@prenex_exists_and_iff Σ Γ ϕ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+    remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+    Check strip_exists_quantify_l.
+    mgSplitAnd; fromMyGoal; intros _ _.
+    - apply (@strip_exists_quantify_l Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply (@strip_exists_quantify_r Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      { wf_auto2. }
+      unfold evar_open. simpl_bevar_subst.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructAnd 0. mgSplitAnd.
+      + mgExactn 1.
+      + mgExactn 0.
+    - apply (@strip_exists_quantify_l Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply (@strip_exists_quantify_r Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      { wf_auto2. }
+      unfold evar_open. simpl_bevar_subst.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructAnd 0. mgSplitAnd.
+      + mgExactn 1.
+      + mgExactn 0.   
   }
   toMyGoal.
   { wf_auto2. }
