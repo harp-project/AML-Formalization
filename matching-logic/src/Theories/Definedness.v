@@ -2872,6 +2872,49 @@ Proof.
   { wf_auto2. }
 Defined.
 
+
+Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ((⌈ patt_free_evar x and ϕ ⌉) ---> (⌊ ⌈ patt_free_evar x and ϕ ⌉  ⌋)).
+Proof.
+  intros HΓ wfϕ.
+  unfold patt_total.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: { wf_auto2. }
+  3: {
+    apply ProofMode.modus_tollens.
+    { wf_auto2. }
+    2: {
+      apply ceil_monotonic.
+      { exact HΓ. }
+      { wf_auto2. }
+      2: {
+        apply membership_not_2.
+        { wf_auto2. }
+        { exact HΓ. }
+      }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+  Check membership_not_iff.
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@membership_not_iff Σ syntax Γ ϕ x wfϕ HΓ) at 1.
+Defined.
+
+Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (patt_free_evar x and ϕ) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉.
+Proof. Defined.
+
+
+
+
 Lemma membership_symbol_ceil_left_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -2904,6 +2947,14 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  Check membership_exists.
+  mgRewrite (@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2)) at 1.
+  mgIntro.
+  remember (fresh_evar ϕ) as y.
+  mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
+  unfold instantiate. simpl_bevar_subst. simpl.
+  Print ML_proof_system.
+
 
   Search "∈ml" patt_exists.
   (* membership-symbol-ceil-left-aux-0 *)
