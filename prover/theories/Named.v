@@ -116,15 +116,23 @@ Section named.
   Definition svm_incr (svm : SVarMap) : SVarMap :=
     kmap S svm.
 
-  Definition incr_one (phi : Pattern) : Pattern :=
+  Definition incr_one_evar (phi : Pattern) : Pattern :=
     match phi with
     | patt_bound_evar n => patt_bound_evar (S n)
-    | patt_bound_svar n => patt_bound_svar (S n)
     | x => x
     end.
 
-  Definition cache_incr (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
-    kmap incr_one cache.
+  Definition incr_one_svar (phi : Pattern) : Pattern :=
+    match phi with
+    | patt_bound_svar n => patt_bound_svar (S n)
+    | x => x
+    end.
+  
+  Definition cache_incr_evar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
+    kmap incr_one_evar cache.
+
+  Definition cache_incr_svar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
+    kmap incr_one_svar cache.
 
   Definition evm_fresh (evm : EVarMap) (ϕ : Pattern) : evar
     := evar_fresh (elements (free_evars ϕ ∪ (list_to_set (map snd (map_to_list evm))))).
@@ -212,14 +220,14 @@ Section named.
          | patt_exists phi
            => let: x := evs_fresh used_evars phi in
               let: used_evars_ex := used_evars ∪ {[x]} in
-              let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr cache) in
+              let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr_evar cache) in
               let: (nphi, cache', used_evars', used_svars')
                  := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
               (npatt_exists x nphi, cache', used_evars', used_svars)
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
               let: used_svars_ex := used_svars ∪ {[X]} in
-              let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr cache) in
+              let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr_svar cache) in
               let: (nphi, cache', used_evars', used_svars')
                  := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
               (npatt_mu X nphi, cache', used_evars', used_svars)
