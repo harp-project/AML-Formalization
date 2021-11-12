@@ -71,29 +71,109 @@ Section proof_system_translation.
       try (rewrite lookup_insert; reflexivity).
   Qed.
 
-  Instance incr_one_inj : Inj eq eq incr_one.
+  Instance incr_one_evar_inj : Inj eq eq incr_one_evar.
+  Proof.
+    unfold Inj. intros x y H.
+    induction x,y; simpl in *; congruence.
+  Qed.
+
+  Instance incr_one_svar_inj : Inj eq eq incr_one_svar.
   Proof.
     unfold Inj. intros x y H.
     induction x,y; simpl in *; congruence.
   Qed.
   
-  Lemma cache_incr_lookup_None (ϕ : Pattern) (C : Cache):
-    cache_incr C !! ϕ = None ->
+  Lemma cache_incr_evar_lookup_None (ϕ : Pattern) (C : Cache):
+    (forall b, ϕ <> patt_bound_evar b) ->
+    cache_incr_evar C !! ϕ = None ->
     C !! ϕ = None.
   Proof.
-    intros H.
-    unfold cache_incr in *.
+    intros Hbv H.
+    unfold cache_incr_evar in *.
+    pose proof (H' := H).
     rewrite lookup_kmap_None in H.
     apply H.
-  Abort.              
+    unfold incr_one_evar. case_match; auto.
+    exfalso.
+    subst. eapply Hbv. reflexivity.
+  Qed.
+
+  (* TODO: rename [bevar_occur] to [bevar_dangling] *)
+  Definition evar_is_dangling (ϕ : Pattern) (b : db_index) :=
+    bevar_occur ϕ b.
+
+  Definition svar_is_dangling (ϕ : Pattern) (b : db_index) :=
+    bsvar_occur ϕ b.
+
+  Definition dangling_evars_cached (C : Cache) (ϕ : Pattern) : Prop :=
+    forall (b : db_index),
+      evar_is_dangling ϕ b -> C !! (patt_bound_evar b) <> None.
+
+  Definition dangling_svars_cached (C : Cache) (ϕ : Pattern) : Prop :=
+    forall (b : db_index),
+      svar_is_dangling ϕ b -> C !! (patt_bound_svar b) <> None.
+
+  Definition dangling_vars_cached (C : Cache) (ϕ : Pattern) : Prop :=
+    dangling_evars_cached C ϕ /\ dangling_svars_cached C ϕ.
+
+  Lemma dangling_vars_subcache (C C' : Cache) (ϕ : Pattern) :
+    dangling_vars_cached C ϕ -> C ⊆ C' ->
+    dangling_vars_cached C' ϕ.
+  Proof.
+    intros Hcached Hsub.
+    unfold dangling_vars_cached, dangling_evars_cached,dangling_svars_cached in *.
+    destruct Hcached as [Hecached Hscached].
+    split; intros b Hb Hcontra.
+    - eapply Hecached;[eassumption|].
+      eapply lookup_weaken_None;eassumption.
+    - eapply Hscached;[eassumption|].
+      eapply lookup_weaken_None;eassumption.
+  Qed.
+
+  Lemma to_NamedPattern2'_cache_mono (C₁ C₂ : Cache) ϕ evs svs:
+    C₁ ⊆ C₂ ->
+    (to_NamedPattern2' ϕ C₁ evs svs).1.1.2 ⊆ (to_NamedPattern2' ϕ C₂ evs svs).1.1.2.
+  Proof.
+    intros Hincl.
+    move: C₁ C₂ Hincl evs svs.
+    induction ϕ; intros C₁ C₂ Hincl evs svs;
+      simpl; case_match; simpl; auto; repeat case_match; simpl; try assumption.
+  Abort. (* Oops, does not hold. *)
   
+  
+  Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs:
+    C ⊆ (to_NamedPattern2' ϕ C evs svs).1.1.2.
+  Proof.
+    move: C evs svs.
+    induction ϕ; intros C evs svs; simpl; case_match; simpl; auto; repeat case_match; simpl;
+      apply insert_subseteq_r; try apply reflexivity; try assumption; subst.
+    - inversion Heqp; subst; clear Heqp.
+      specialize (IHϕ2 g e s0).
+      rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
+      specialize (IHϕ1 C evs svs).
+      rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
+    - inversion Heqp; subst; clear Heqp.
+      specialize (IHϕ2 g e s0).
+      rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
+      specialize (IHϕ1 C evs svs).
+      rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
+    - inversion Heqp; subst; clear Heqp.
+      replace g0 with (n, g0, e0, s0).1.1.2 by reflexivity.
+      rewrite -Heqp0.
+      apply IHϕ.
+    Search subseteq insert.
+  Qed.
+  
+                                    
+  (* We assume that \phi_2 is well_formed *)
   Lemma to_NamedPattern2'_None (ϕ₁ ϕ₂ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+    dangling_vars_cached C ϕ₂ ->
     (to_NamedPattern2' ϕ₁ C evs svs).1.1.2 !! ϕ₂ = None ->
     C !! ϕ₂ = None.
   Proof.
-    intros Hnone.
-    move: C evs svs ϕ₂ Hnone.
-    induction ϕ₁; intros C evs svs ϕ₂ Hnone.
+    intros Hcached Hnone.
+    move: C evs svs ϕ₂ Hcached Hnone.
+    induction ϕ₁; intros C evs svs ϕ₂ Hcached Hnone.
     all:
       match type of Hnone with
       | (to_NamedPattern2' ?THIS _ _ _).1.1.2 !! _ = None => remember THIS as ϕ₁'
@@ -123,7 +203,8 @@ Section proof_system_translation.
 
     -
       pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
-      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0. specialize (Hnone_g0 Hnone).
+      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0.
+      specialize (Hnone_g0 Hcached Hnone).
       clear Heqp5.
       eapply IHϕ₁1.
       erewrite Heqp2.
@@ -139,7 +220,7 @@ Section proof_system_translation.
       exact Hnone_g0.
     -
       pose proof (Hnone_g0 := IHϕ₁
-                                (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]> (cache_incr C))
+                                (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]> (cache_incr_evar C))
                                 (evs ∪ {[evs_fresh evs ϕ₁]}) s ϕ₂)
       .
       feed specialize Hnone_g0.
@@ -149,6 +230,20 @@ Section proof_system_translation.
       { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
       rewrite lookup_insert_ne in Hnone_g0.
       { apply not_eq_sym. assumption. }
+      
+      assert(H0: forall b, g !! (patt_bound_evar b) = None -> well_formed_closed_ex_aux ϕ₂ b).
+      {
+        
+      }
+      apply cache_incr_evar_lookup_None.
+      { intros b.
+        destruct ϕ₂; try congruence.
+        intros Hcontra.
+        rewrite Hcontra in H0. simpl in H0.
+        specialize (H0 n2 Hnone).
+        case_match. inversion Hcontra. lia. apply H0.
+      }
+      { exact Hnone_g0. }
       (* TODO cache_incr preserves lookup *)
       Print incr_one.
       admit.

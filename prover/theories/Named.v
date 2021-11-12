@@ -183,6 +183,7 @@ Section named.
   Definition not_contain_bound_evar_0 ϕ : Prop := ~~ bevar_occur ϕ 0.
   Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
 
+  (* pre: all dangling variables of [\phi] are in [cache].  *)
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
            (cache : gmap Pattern NamedPattern)
@@ -554,6 +555,11 @@ Section named_test.
   Definition phi_ex := (patt_imp phi_ex1 phi_ex2).
   Compute to_NamedPattern phi_ex.
   Compute to_NamedPattern2 phi_ex.
+
+  Compute to_NamedPattern2 (@patt_mu sig (patt_mu (patt_bound_svar 1))).
+
+  (* FIXME: decrease after poping out *)
+  Compute to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))).
 
   Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
   Definition phi_mu2 := (@patt_mu sig (patt_bound_svar 0)).
