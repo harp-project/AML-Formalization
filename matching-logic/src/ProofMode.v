@@ -6389,17 +6389,11 @@ Defined.
 
 Search patt_and patt_imp.
 
-Lemma L {Σ : Signature}: forall G g x xs,
-     G ⊢ ((foldr (patt_and) x xs) ---> g) ->
-     G ⊢ foldr (patt_imp) g (x::xs) .
-Proof. Admitted.
-
-
 Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
 
-(*Definition reshape_cons {Σ : Signature} p := TagPattern p.  *)
-(*Canonical Structure reshape_nil {Σ : Signature} p := reshape_cons p.*)
-Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.
+Definition reshape_nil {Σ : Signature} p := TagPattern p.
+Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
+(*Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.*)
 (*Canonical Structure reshape_done {Σ : Signature} p := reshape_nil p.*)
 
 Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
@@ -6414,7 +6408,19 @@ Lemma ImpReshape_nil_pf0:
 Proof. intros. reflexivity. Qed.
 
 Canonical Structure ImpReshape_nil {Σ : Signature} (g : Pattern) : ImpReshapeS g [] :=
-  @ImpReshape Σ g [] (TagPattern g) (ImpReshape_nil_pf0 g).
+  @ImpReshape Σ g [] (reshape_nil g) (ImpReshape_nil_pf0 g).
+
+
+Program Canonical Structure ImpReshape_cons
+        {Σ : Signature} (g x : Pattern) (xs : list Pattern) (r : ImpReshapeS g xs)
+: ImpReshapeS g (x::xs) :=
+  @ImpReshape Σ g (x::xs) (reshape_cons (x ---> untagPattern (reshape_cons r))) _.
+Next Obligation.
+  intros Σ g x xs r. simpl.
+  rewrite irs_pf.
+  reflexivity.
+Qed.
+
 
 Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) :
   forall (r : ImpReshapeS g (xs)),
@@ -6427,6 +6433,111 @@ Proof.
   exact H.
 Defined.
 
+
+Local Example ex_reshape {Σ : Signature} Γ a b c d:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  Γ ⊢ a ---> (b ---> (c ---> d)).
+Proof.
+  intros wfa wfb wfc wfd.
+  apply reshape.
+  (* Now the goal has the right shape *)
+Abort.
+
+Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  wf xs ->
+  well_formed (foldr patt_and x xs).
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  - assumption.
+  - feed specialize IHxs.
+    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    apply well_formed_and.
+    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    assumption.
+Qed.
+
+
+Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs)).
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  - apply A_impl_A.
+    { wf_auto2. }
+  - pose proof (wfaxs := wfxs).
+    unfold wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMyGoal.
+    { wf_auto2. }
+    do 3 mgIntro.
+    mgAdd IHxs.
+    mgAssert (((foldr patt_and x xs ---> g) ---> foldr patt_imp g xs)).
+    { wf_auto2. }
+    { mgIntro.
+      mgAssert ((x ---> foldr patt_imp g xs)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 4. }
+      mgClear 0.
+      mgApply 4.
+      mgExactn 1.
+    }
+    mgClear 0.
+    mgApply 3.
+    mgClear 3.
+    mgIntro.
+    mgApply 0.
+    mgSplitAnd.
+    + mgExactn 2.
+    + mgExactn 3.
+Defined.
+
+Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  Γ ⊢ (foldr patt_and x xs ---> g) ->
+  Γ ⊢ (foldr patt_imp g (x :: xs)).
+Proof.
+  intros wfg wfx wfxs H.
+  eapply Modus_ponens.
+  4: apply lhs_and_to_imp.
+  all: try assumption.
+  { apply proved_impl_wf in H. exact H. }
+  { apply proved_impl_wf in H. wf_auto2. }
+Defined.
+
+
+
+Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  forall (r : ImpReshapeS g (x::xs)),
+     Γ ⊢ ((foldr (patt_and) x xs) ---> g) ->
+     Γ ⊢ untagPattern (irs_flattened r) .
+Proof.
+  intros wfg wfx wfxs r H.
+  eapply cast_proof.
+  { rewrite irs_pf; reflexivity. }
+  clear r.
+  apply lhs_and_to_imp_meta; assumption.
+Defined.
+
+
 Example ex_match {Σ : Signature} Γ a b c d:
   well_formed a ->
   well_formed b ->
@@ -6435,61 +6546,8 @@ Example ex_match {Σ : Signature} Γ a b c d:
   Γ ⊢ a ---> (b ---> (c ---> d)).
 Proof.
   intros wfa wfb wfc wfd.
-  apply: reshape.
-
-(*
-(?t ⊢ untagPattern (irs_flattened ?i)) =<= (Γ ⊢ a ---> b ---> c ---> d) (App-FO) ERR
-_@ML_proof_system =<= @ML_proof_system (Rigid-Same) OK
-_?Σ =?= Σ (Meta-Inst) OK
-__Signature =<= Signature (Reduce-Same) OK
-_?t =?= Γ (Meta-Inst) OK
-__Theory =<= Theory (Reduce-Same) OK
-_(untagPattern (irs_flattened ?i)) =?= (a ---> b ---> c ---> d) (CS) ERR
-__?s =?= Σ (Meta-Inst) OK
-___Signature =<= Signature (Reduce-Same) OK
-__(irs_flattened ?i) =?= (reshape_nil (a ---> b ---> c ---> d)) (CS) ERR
-___?s =?= Σ (Meta-Inst) OK
-____Signature =<= Signature (Reduce-Same) OK
-___?p1 =?= ?p (Meta-Inst) OK
-____Pattern =<= Pattern (Reduce-Same) OK
-__(irs_flattened ?i) =?= (reshape_nil (a ---> b ---> c ---> d)) (Cons-DeltaNotStuckR) ERR
-___(irs_flattened ?i) =?= \{| untagPattern := a ---> b ---> c ---> d |\} (Cons-DeltaL) ERR
-_(untagPattern (irs_flattened ?i)) =?= (a ---> b ---> c ---> d) (Cons-DeltaL) ERR
-(?t ⊢ untagPattern (irs_flattened ?i)) =<= (Γ ⊢ a ---> b ---> c ---> d) (App-FO) ERR
-_@ML_proof_system =<= @ML_proof_system (Rigid-Same) OK
-_Σ =?= Σ (Reduce-Same) OK
-_?t =?= Γ (Meta-Inst) OK
-__Theory =<= Theory (Reduce-Same) OK
-_(untagPattern (irs_flattened ?i)) =?= (a ---> b ---> c ---> d) (CS) ERR
-__?s =?= Σ (Meta-Inst) OK
-___Signature =<= Signature (Reduce-Same) OK
-__(irs_flattened ?i) =?= (reshape_nil (a ---> b ---> c ---> d)) (CS) ERR
-___?s =?= Σ (Meta-Inst) OK
-____Signature =<= Signature (Reduce-Same) OK
-___?p1 =?= ?p (Meta-Inst) OK
-____Pattern =<= Pattern (Reduce-Same) OK
-__(irs_flattened ?i) =?= (reshape_nil (a ---> b ---> c ---> d)) (Cons-DeltaNotStuckR) ERR
-___(irs_flattened ?i) =?= \{| untagPattern := a ---> b ---> c ---> d |\} (Cons-DeltaL) ERR
-_(untagPattern (irs_flattened ?i)) =?= (a ---> b ---> c ---> d) (Cons-DeltaL)Toplevel input, characters 0-14:
-> apply: reshape.
-> ^^^^^^^^^^^^^^
-Error: Cannot apply lemma reshape
- ERR
-*)
-  (*replace (a ---> (b ---> (c ---> d))) with (foldr patt_imp d [a;b;c]) by reflexivity.*)
-  apply L.
+  apply lhs_and_to_imp_r.
 Abort.
-
-
-Local Example ex_mt_2 {Σ : Signature} Γ ϕ₁ ϕ₂:
-  well_formed ϕ₁ ->
-  well_formed ϕ₂ ->
-  Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁).
-Proof.
-  Search (?a <---> ! ! ?a).
-  Check not_not_iff.
-  
-Defined.
 
 
 (* This is an example and belongs to the end of this file.
