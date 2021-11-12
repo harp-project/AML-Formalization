@@ -6179,5 +6179,42 @@ Defined.
         mgApply 3.
         mgExactn 4.
   Defined.
-      
+
+  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p or q) <---> (p' or q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+
+    toMyGoal.
+    { wf_auto2. }
+    unfold patt_iff.
+    mgSplitAnd.
+    - mgIntro.
+      mgDestructOr 0.
+      mgLeft.
+      + mgApplyMeta pip'.
+        mgExactn 0.
+      + mgRight.
+        mgApplyMeta qiq'.
+        mgExactn 0.
+    - mgIntro.
+      mgDestructOr 0.
+      mgLeft.
+      + mgApplyMeta p'ip.
+        mgExactn 0.
+      + mgRight.
+        mgApplyMeta q'iq.
+        mgExactn 0. 
+  Defined.
 
