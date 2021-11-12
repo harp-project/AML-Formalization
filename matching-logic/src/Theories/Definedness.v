@@ -3075,8 +3075,52 @@ Proof.
   { wf_auto2. }
   2: {wf_auto2. }
   2: {
-    Search patt_in patt_imp.
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      Search patt_defined "mono".
+      apply ceil_monotonic.
+      { exact HΓ. }
+      { wf_auto2. }
+      2: {
+        apply membership_symbol_ceil_left_aux_0.
+        { wf_auto2. }
+        { wf_auto2. }
+      }
+      wf_auto2.
+    }
+    wf_auto2.
   }
+  { wf_auto2. }
+
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      apply ceil_propagation_exists_1.
+      { exact HΓ. }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      (* ex_quan mono? *)
+    }
+  
 Defined.
 
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
