@@ -2923,11 +2923,44 @@ Proof.
   { exact wfϕ. }
 Defined.
 
+Lemma ceil_compat_in_or {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ( (⌈ ϕ₁ or ϕ₂ ⌉) <---> (⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉)).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgApplyMeta (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ).
+    mgExactn 0.
+  - mgDestructOr 0.
+    + unshelve (mgApplyMeta (Framing_right Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+      { toMyGoal. wf_auto2. mgIntro. mgLeft. mgExactn 0. }
+      mgExactn 0.
+    + unshelve (mgApplyMeta (Framing_right Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+      { toMyGoal. wf_auto2. mgIntro. mgRight. mgExactn 0. }
+      mgExactn 0.
+Defined.
+
 Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ (patt_free_evar x and ϕ) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉.
-Proof. Defined.
+  Γ ⊢ (⌈ patt_free_evar x and ϕ ⌉) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉.
+Proof.
+  intros HΓ wfϕ.
+
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgApplyMeta (@membership_symbol_ceil_aux_aux_0 Σ syntax Γ x ϕ HΓ wfϕ) in 0.
+  fromMyGoal. intros _ _.
+  unfold patt_total.
+  fold (⌈ ! ⌈ patt_free_evar x and ϕ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉).
+  Search patt_defined patt_or.
+  
+Defined.
 
 
 
