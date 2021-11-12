@@ -2958,8 +2958,42 @@ Proof.
   fromMyGoal. intros _ _.
   unfold patt_total.
   fold (⌈ ! ⌈ patt_free_evar x and ϕ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉).
-  Search patt_defined patt_or.
-  
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite <- (@ceil_compat_in_or Σ syntax Γ (! ⌈ patt_free_evar x and ϕ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+
+  unshelve (mgApplyMeta (@ceil_monotonic Σ syntax Γ
+                               (patt_free_evar y)
+                               (! ⌈ patt_free_evar x and ϕ ⌉ or patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉)
+                               HΓ ltac:(wf_auto2) ltac:(wf_auto2) _
+              )).
+  {
+
+    assert (Helper: forall ϕ₁ ϕ₂, well_formed ϕ₁ -> well_formed ϕ₂ -> Γ ⊢ (! ϕ₁ or ϕ₂) ---> (! ϕ₁ or (ϕ₂ and ϕ₁))).
+    {
+      intros ϕ₁ ϕ₂ wfϕ₁ wfϕ₂.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro.
+      mgAdd (@A_or_notA Σ Γ ϕ₁ ltac:(wf_auto2)).
+      mgDestructOr 0; mgDestructOr 1.
+      - (* TODO: mgExFalso *)
+        mgApplyMeta (@false_implies_everything Σ Γ (! ϕ₁ or (ϕ₂ and ϕ₁)) ltac:(wf_auto2)).
+        mgApply 1. mgExactn 0.
+      - mgRight. mgSplitAnd. mgExactn 1. mgExactn 0.
+      - mgLeft. mgExactn 0.
+      - mgLeft. mgExactn 0. 
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgApplyMeta (Helper (⌈ patt_free_evar x and ϕ ⌉) (patt_free_evar y) ltac:(wf_auto2) ltac:(wf_auto2)).
+    mgRight.
+    mgExactn 0.
+  }
+  fromMyGoal. intros _ _.
+  apply defined_evar.
+  { exact HΓ. }
 Defined.
 
 
