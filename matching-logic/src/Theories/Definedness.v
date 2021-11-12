@@ -2900,10 +2900,27 @@ Proof.
     { wf_auto2. }
   }
   { wf_auto2. }
-  Check membership_not_iff.
   toMyGoal.
   { wf_auto2. }
-  mgRewrite (@membership_not_iff Σ syntax Γ ϕ x wfϕ HΓ) at 1.
+
+  mgRewrite (@not_not_iff Σ Γ (⌈patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)) at 1.
+  fold (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉).
+  mgRewrite (@not_not_iff Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉) ltac:(wf_auto2)) at 1.
+  fold ((⌈ patt_free_evar x and ϕ ⌉ and ⌈ patt_free_evar x ∈ml (! ϕ) ⌉)).
+  unfold "∈ml".
+  fromMyGoal. intros _ _.
+  eapply cast_proof.
+  {
+    replace (⌈ patt_free_evar x and ϕ ⌉)
+            with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ))
+                 by reflexivity.
+    replace (⌈ ⌈ patt_free_evar x and ! ϕ ⌉ ⌉)
+            with (subst_ctx (@ctx_app_r Σ ((@patt_sym Σ (@inj Σ syntax definedness))) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! ϕ))
+      by reflexivity.
+    reflexivity.
+  }
+  apply Singleton_ctx.
+  { exact wfϕ. }
 Defined.
 
 Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y ϕ:
