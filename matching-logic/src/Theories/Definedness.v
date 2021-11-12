@@ -2997,8 +2997,6 @@ Proof.
 Defined.
 
 
-
-
 Lemma membership_symbol_ceil_left_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -3031,18 +3029,17 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-  Check membership_exists.
   mgRewrite (@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2)) at 1.
   mgIntro.
   remember (fresh_evar ϕ) as y.
   mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
   unfold instantiate. simpl_bevar_subst. simpl.
-  Print ML_proof_system.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
 
-
-  Search "∈ml" patt_exists.
-  (* membership-symbol-ceil-left-aux-0 *)
-  Search bevar_subst.
+  mgApplyMeta (@membership_symbol_ceil_aux_0 Σ syntax Γ y x ϕ HΓ wfϕ).
+  subst y. subst x.
+  mgExactn 0.
 Defined.
 
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
