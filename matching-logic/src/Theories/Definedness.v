@@ -3042,6 +3042,43 @@ Proof.
   mgExactn 0.
 Defined.
 
+Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (ϕ₁ ϕ₂ : Pattern) x:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢ (patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold patt_in.
+  apply ceil_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgDestructAnd 0.
+  mgSplitAnd.
+  - mgExactn 0.
+  - mgApplyMeta H.
+    mgExactn 1.
+Defined.
+
+Lemma membership_symbol_ceil_left {Σ : Signature} {syntax : Syntax} Γ ϕ x:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (patt_free_evar x ∈ml ⌈ ϕ ⌉) ---> (ex, (patt_bound_evar 0 ∈ml ϕ)).
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    Search patt_in patt_imp.
+  }
+Defined.
+
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -3056,8 +3093,34 @@ Proof.
   { wf_auto2. }
   { assumption. }
 
+  remember (fresh_evar ϕ) as x.
+  Search ML_proof_system patt_forall.
+  eapply cast_proof.
+  { 
+    rewrite -[b0 ∈ml _](@evar_quantify_evar_open Σ x 0).
+    {
+      simpl.
+      pose proof (@set_evar_fresh_is_fresh _ ϕ).
+      unfold evar_is_fresh_in in H.
+      simpl. set_solver.
+    }
+    reflexivity.
+  }
+  apply universal_generalization.
+  { wf_auto2. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  Search patt_in patt_imp.
+  
+
   toMyGoal.
   { wf_auto2. }
+  Check @membership_imp.
+  mgRewrite (@membership_imp Σ syntax Γ x (⌈ ! ⌈ ϕ ⌉ ⌉) (! ⌈ ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  Search "membership" "sym".
+
+
   mgIntro.
   (* lemma-ceil-imp-floor-ceil *)
 Defined.
