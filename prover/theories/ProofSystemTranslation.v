@@ -98,6 +98,35 @@ Section proof_system_translation.
     subst. eapply Hbv. reflexivity.
   Qed.
 
+  Lemma cache_incr_evar_lookup_Some (ϕ : Pattern) (nϕ : NamedPattern) (C : Cache):
+    ~ is_bound_evar ϕ ->
+    C !! ϕ = Some nϕ ->
+    cache_incr_evar C !! ϕ = Some nϕ.
+  Proof.
+    intros Hbv H.
+    unfold cache_incr_evar in *.
+    rewrite lookup_kmap_Some.
+    exists ϕ. split.
+    - unfold incr_one_evar. case_match; auto.
+      exfalso. apply Hbv. exists n. reflexivity.
+    - assumption.
+  Qed.
+
+  Lemma cache_incr_svar_lookup_Some (ϕ : Pattern) (nϕ : NamedPattern) (C : Cache):
+    ~ is_bound_svar ϕ ->
+    C !! ϕ = Some nϕ ->
+    cache_incr_svar C !! ϕ = Some nϕ.
+  Proof.
+    intros Hbv H.
+    unfold cache_incr_svar in *.
+    rewrite lookup_kmap_Some.
+    exists ϕ. split.
+    - unfold incr_one_svar. case_match; auto.
+      exfalso. apply Hbv. exists n. reflexivity.
+    - assumption.
+  Qed.
+
+  
   (* TODO: rename [bevar_occur] to [bevar_dangling] *)
   Definition evar_is_dangling (ϕ : Pattern) (b : db_index) :=
     bevar_occur ϕ b.
@@ -130,17 +159,6 @@ Section proof_system_translation.
       eapply lookup_weaken_None;eassumption.
   Qed.
 
-  Lemma to_NamedPattern2'_cache_mono (C₁ C₂ : Cache) ϕ evs svs:
-    C₁ ⊆ C₂ ->
-    (to_NamedPattern2' ϕ C₁ evs svs).1.1.2 ⊆ (to_NamedPattern2' ϕ C₂ evs svs).1.1.2.
-  Proof.
-    intros Hincl.
-    move: C₁ C₂ Hincl evs svs.
-    induction ϕ; intros C₁ C₂ Hincl evs svs;
-      simpl; case_match; simpl; auto; repeat case_match; simpl; try assumption.
-  Abort. (* Oops, does not hold. *)
-  
-  
   Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs:
     C ⊆ (to_NamedPattern2' ϕ C evs svs).1.1.2.
   Proof.
@@ -158,10 +176,87 @@ Section proof_system_translation.
       specialize (IHϕ1 C evs svs).
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
-      replace g0 with (n, g0, e0, s0).1.1.2 by reflexivity.
-      rewrite -Heqp0.
-      apply IHϕ.
-    Search subseteq insert.
+      replace g with (n, g, e0, s0).1.1.2 by reflexivity.
+      rewrite -Heqp0. clear Heqp0.
+      rewrite map_subseteq_spec.
+      intros ψ nψ Hψ.
+      destruct (decide (is_bound_evar ψ)).
+      + rewrite lookup_union_r.
+        { unfold remove_bound_evars. Search filter lookup None.
+          apply map_filter_lookup_None_2.
+          right. intros nψ'. intros _.
+          unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
+        }
+        unfold keep_bound_evars.
+        apply map_filter_lookup_Some_2.
+        { exact Hψ. }
+        { unfold is_bound_evar_entry. simpl. assumption. }
+      + rewrite lookup_union_l.
+        { unfold remove_bound_evars.
+          unfold is_Some. exists nψ.
+          apply map_filter_lookup_Some_2.
+          { setoid_rewrite map_subseteq_spec in IHϕ.
+            apply IHϕ.
+            apply lookup_insert_Some.
+            right.
+            split.
+            * intros Hcontra. apply n0. exists 0. subst. reflexivity.
+            * apply cache_incr_evar_lookup_Some; assumption.
+          }
+          { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
+        }
+        unfold remove_bound_evars.
+        apply map_filter_lookup_Some_2.
+        { setoid_rewrite map_subseteq_spec in IHϕ.
+          apply IHϕ.
+          apply lookup_insert_Some.
+          right.
+          split.
+          * intros Hcontra. apply n0. exists 0. subst. reflexivity.
+          * apply cache_incr_evar_lookup_Some; assumption.
+        }
+        { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
+    - inversion Heqp; subst; clear Heqp.
+      replace g with (n, g, e0, s0).1.1.2 by reflexivity.
+      rewrite -Heqp0. clear Heqp0.
+      rewrite map_subseteq_spec.
+      intros ψ nψ Hψ.
+      destruct (decide (is_bound_svar ψ)).
+      + rewrite lookup_union_r.
+        { unfold remove_bound_evars. Search filter lookup None.
+          apply map_filter_lookup_None_2.
+          right. intros nψ'. intros _.
+          unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
+        }
+        unfold keep_bound_svars.
+        apply map_filter_lookup_Some_2.
+        { exact Hψ. }
+        { unfold is_bound_svar_entry. simpl. assumption. }
+      + rewrite lookup_union_l.
+        { unfold remove_bound_svars.
+          unfold is_Some. exists nψ.
+          apply map_filter_lookup_Some_2.
+          { setoid_rewrite map_subseteq_spec in IHϕ.
+            apply IHϕ.
+            apply lookup_insert_Some.
+            right.
+            split.
+            * intros Hcontra. apply n0. exists 0. subst. reflexivity.
+            * apply cache_incr_svar_lookup_Some; assumption.
+          }
+          { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
+        }
+        unfold remove_bound_svars.
+        apply map_filter_lookup_Some_2.
+        { setoid_rewrite map_subseteq_spec in IHϕ.
+          apply IHϕ.
+          apply lookup_insert_Some.
+          right.
+          split.
+          * intros Hcontra. apply n0. exists 0. subst. reflexivity.
+          * apply cache_incr_svar_lookup_Some; assumption.
+        }
+        { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
   Qed.
   
                                     
