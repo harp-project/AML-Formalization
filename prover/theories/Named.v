@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From stdpp Require Import base pmap gmap.
+From stdpp Require Import base pmap gmap fin_maps.
 From MatchingLogic Require Import Syntax.
 
 Require Import String.
@@ -183,6 +183,63 @@ Section named.
   Definition not_contain_bound_evar_0 ϕ : Prop := ~~ bevar_occur ϕ 0.
   Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
 
+
+  Definition CacheEntry := (Pattern * NamedPattern)%type.
+  
+  Definition is_bound_evar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_evar b.
+  
+  Global Instance is_bound_evar_dec (ϕ : Pattern) : Decision (is_bound_evar ϕ).
+  Proof.
+    unfold Decision; destruct ϕ; simpl;
+      try solve[right; intros [b Hcontra]; inversion Hcontra].
+    left. exists n. reflexivity.
+  Defined.
+
+  Definition is_bound_evar_entry (ϕnϕ : CacheEntry) : Prop := is_bound_evar (fst ϕnϕ).
+  
+  Global Instance is_bound_evar_entry_dec (ce : CacheEntry) : Decision (is_bound_evar_entry ce).
+  Proof.
+    destruct ce as [ϕ nϕ].
+    destruct (decide (is_bound_evar ϕ)) as [L|R].
+    - left. destruct L as [dbi Hdbi]. subst ϕ. exists dbi. reflexivity.
+    - right. intros Hcontra. inversion Hcontra. simpl in H. subst ϕ.
+      apply R. exists x. reflexivity.
+  Defined.
+  
+  Definition is_bound_svar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_svar b.
+  
+  Global Instance is_bound_svar_dec (ϕ : Pattern) : Decision (is_bound_svar ϕ).
+  Proof.
+    unfold Decision; destruct ϕ; simpl;
+      try solve[right; intros [b Hcontra]; inversion Hcontra].
+    left. exists n. reflexivity.
+  Defined.
+
+  Definition is_bound_svar_entry (ϕnϕ : CacheEntry) : Prop := is_bound_svar (fst ϕnϕ).
+  
+  Global Instance is_bound_svar_entry_dec (ce : CacheEntry) : Decision (is_bound_svar_entry ce).
+  Proof.
+    destruct ce as [ϕ nϕ].
+    destruct (decide (is_bound_svar ϕ)) as [L|R].
+    - left. destruct L as [dbi Hdbi]. subst ϕ. exists dbi. reflexivity.
+    - right. intros Hcontra. inversion Hcontra. simpl in H. subst ϕ.
+      apply R. exists x. reflexivity.
+  Defined.
+
+  
+  Definition keep_bound_evars (cache : gmap Pattern NamedPattern) :=
+    filter is_bound_evar_entry cache.
+
+  Definition remove_bound_evars (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ is_bound_evar_entry e) cache.
+
+  Definition keep_bound_svars (cache : gmap Pattern NamedPattern) :=
+    filter is_bound_svar_entry cache.
+
+  Definition remove_bound_svars (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ is_bound_svar_entry e) cache.
+  
+  
   (* pre: all dangling variables of [\phi] are in [cache].  *)
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
@@ -223,15 +280,17 @@ Section named.
               let: used_evars_ex := used_evars ∪ {[x]} in
               let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr_evar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                 := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
-              (npatt_exists x nphi, cache', used_evars', used_svars)
+                := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
+              let: cache'' := (remove_bound_evars cache') ∪ (keep_bound_evars cache) in
+              (npatt_exists x nphi, cache'', used_evars', used_svars)
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
               let: used_svars_ex := used_svars ∪ {[X]} in
               let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr_svar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                 := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
-              (npatt_mu X nphi, cache', used_evars', used_svars)
+                := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
+              let: cache'' := (remove_bound_svars cache') ∪ (keep_bound_svars cache) in
+              (npatt_mu X nphi, cache'', used_evars', used_svars)
          end
       in
       (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
@@ -558,7 +617,6 @@ Section named_test.
 
   Compute to_NamedPattern2 (@patt_mu sig (patt_mu (patt_bound_svar 1))).
 
-  (* FIXME: decrease after poping out *)
   Compute to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))).
 
   Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
