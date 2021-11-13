@@ -3110,6 +3110,7 @@ Proof.
   }
   { wf_auto2. }
 
+  remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
   eapply syllogism_intro.
   { wf_auto2. }
   2: {wf_auto2. }
@@ -3118,8 +3119,77 @@ Proof.
     { exact HΓ. }
     { wf_auto2. }
     2: {
-      (* ex_quan mono? *)
+      eapply cast_proof.
+      {
+        rewrite -[⌈ ⌈ b0 and ϕ ⌉ ⌉](@evar_quantify_evar_open Σ y 0).
+        { simpl.
+          pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+          subst y. clear -Hfr. set_solver.
+        }
+        reflexivity.
+      }
+      Search exists_quantify "mono".
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      2: {
+        unfold evar_open. simpl_bevar_subst. simpl.
+        rewrite bevar_subst_not_occur_is_noop.
+        { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+        apply def_def_phi_impl_def_phi.
+        { exact HΓ. }
+        { wf_auto2. }
+      }
+      { wf_auto2. }
     }
+    {
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        wf_auto2.
+      }
+    }
+  }
+  { 
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        wf_auto2.
+      }
+  }
+
+  toMyGoal.
+  {
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        split_and!; auto; wf_auto2.
+      }
+  }
+  
+  unfold exists_quantify.
+  pose proof (Htmp := @membership_exists Σ syntax Γ x (evar_quantify y 0 ⌈ patt_free_evar y and ϕ ⌉)).
+  specialize (Htmp HΓ).
+  feed specialize Htmp.
+  { 
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        split_and!; auto; wf_auto2.
+      }
+  }
+  mgRewrite -> Htmp at 1.
   
 Defined.
 
