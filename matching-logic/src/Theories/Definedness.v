@@ -3042,6 +3042,28 @@ Proof.
   mgExactn 0.
 Defined.
 
+Lemma ceil_and_x_ceil_phi_impl_ceil_phi {Σ : Signature} {syntax : Syntax} Γ (ϕ : Pattern) x:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ( (⌈ patt_free_evar x and ⌈ ϕ ⌉ ⌉) ---> (⌈ ϕ ⌉)).
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: { wf_auto2. }
+  3: {
+    apply def_def_phi_impl_def_phi; assumption.
+  }
+  { wf_auto2. }
+  apply ceil_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgDestructAnd 0. mgExactn 1.
+Defined.
+
 Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (ϕ₁ ϕ₂ : Pattern) x:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
@@ -3079,7 +3101,6 @@ Proof.
     { exact HΓ. }
     { wf_auto2. }
     2: {
-      Search patt_defined "mono".
       apply ceil_monotonic.
       { exact HΓ. }
       { wf_auto2. }
@@ -3128,7 +3149,6 @@ Proof.
         }
         reflexivity.
       }
-      Search exists_quantify "mono".
       apply ex_quan_monotone.
       { wf_auto2. }
       2: {
@@ -3189,8 +3209,51 @@ Proof.
         split_and!; auto; wf_auto2.
       }
   }
-  mgRewrite -> Htmp at 1.
+  mgRewrite -> Htmp at 1. clear Htmp.
+
+  fromMyGoal. intros _ _.
+  case_match; try congruence.
+  rewrite evar_quantify_fresh.
+  { subst y. eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    clear. set_solver.
+  }
+  fold (patt_not b0).
+  fold (patt_not (patt_not b0)).
+  fold (patt_not ϕ).
+  fold (! b0 or ! ϕ).
+  fold (!(! b0 or ! ϕ)).
+  fold (b0 and ϕ).
+  fold (patt_defined (b0 and ϕ)).
+  unfold patt_in.
+
+  apply (@strip_exists_quantify_l Σ Γ y).
+  { simpl.
+    pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+    rewrite -Heqy in Hfr.
+    clear -Hfr.
+    set_solver.
+  }
+  { simpl. split_and!; auto; wf_auto2. }
+
+  apply (@strip_exists_quantify_r Σ Γ y).
+  { simpl.
+    pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+    rewrite -Heqy in Hfr.
+    clear -Hfr.
+    set_solver.
+  }
+  { simpl. split_and!; auto; wf_auto2. }
+  apply ex_quan_monotone.
+  { wf_auto2. }
+  { wf_auto2. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
   
+  apply ceil_and_x_ceil_phi_impl_ceil_phi.
+  { exact HΓ. }
+  { wf_auto2. }
 Defined.
 
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
