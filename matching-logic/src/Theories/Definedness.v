@@ -3288,13 +3288,50 @@ Proof.
   unfold evar_open. simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
   { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
-  Search patt_in patt_imp.
-  
 
   toMyGoal.
   { wf_auto2. }
-  Check @membership_imp.
   mgRewrite (@membership_imp Σ syntax Γ x (⌈ ! ⌈ ϕ ⌉ ⌉) (! ⌈ ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgIntro.
+  mgApplyMeta (@membership_symbol_ceil_left Σ syntax Γ (! ⌈ ϕ ⌉) x HΓ ltac:(wf_auto2)) in 0.
+  mgRewrite (@membership_not_iff Σ syntax Γ (⌈ ϕ ⌉) x ltac:(wf_auto2) HΓ) at 1.
+
+  remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+  pose proof (Hfr := @set_evar_fresh_is_fresh' _ ({[x]} ∪ (free_evars ϕ))).
+  eapply cast_proof_mg_hyps.
+  {
+    rewrite <- (@evar_quantify_evar_open Σ y 0 (b0 ∈ml (! ⌈ ϕ ⌉))).
+    2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
+    reflexivity.
+  }
+
+  assert (Htmp: Γ ⊢ ((evar_open 0 y (b0 ∈ml (! ⌈ ϕ ⌉))) ---> (evar_open 0 y (! (b0 ∈ml ⌈ ϕ ⌉))))).
+  {
+    unfold evar_open. simpl_bevar_subst. simpl. apply membership_not_1.
+    { wf_auto2.
+      apply wfc_ex_aux_bevar_subst. wf_auto2. reflexivity.
+    }
+    exact HΓ.
+  }
+  
+  Check ex_quan_monotone. (* TODO: have a version of ex_quan_monotone which does not require well-formedness. *)
+  mgApplyMeta (ex_quan_monotone)
+
+  apply (@strip_exists_quantify_l Σ Γ y (b0 ∈ml (! ⌈ ϕ ⌉)) (! patt_free_evar x ∈ml ⌈ ϕ ⌉)).
+  { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
+  { simpl. split_and!; try reflexivity. wf_auto2. }
+  
+  fromMyGoal. intros _ _.
+
+
+  eapply syllogism_intro.
+  { simpl. split_and!; try reflexivity. wf_auto2. }
+  2: { wf_auto2. }
+  2: {
+    
+  }
+  { wf_auto2. }
+
   Search "membership" "sym".
 
 

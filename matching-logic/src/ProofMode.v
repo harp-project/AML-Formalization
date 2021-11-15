@@ -5661,6 +5661,17 @@ Proof.
   abstract (wf_auto2).
 Defined.
 
+Lemma ex_quan_monotone_nowf {Σ : Signature} Γ x ϕ₁ ϕ₂:
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
+Proof.
+  intros H.
+  pose proof (Hwf := proved_impl_wf _ _ H).
+  pose proof (well_formed_imp_proj1 Hwf).
+  pose proof (well_formed_imp_proj2 Hwf).
+  apply ex_quan_monotone; assumption.
+Defined.
+
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
