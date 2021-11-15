@@ -3256,6 +3256,9 @@ Proof.
   { wf_auto2. }
 Defined.
 
+
+
+
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -3347,6 +3350,35 @@ Proof.
   apply ProofMode.modus_tollens.
   { wf_auto2. }
   { wf_auto2. }
+  
+  pose proof (Hfr' := @set_evar_fresh_is_fresh Σ ϕ).
+  eapply cast_proof.
+  {
+    rewrite -[THIS in (patt_exists THIS)](@evar_quantify_evar_open Σ x 0).
+    { simpl. 
+      unfold evar_is_fresh_in in Hfr'. rewrite -Heqx in Hfr'. clear -Hfr'.
+      set_solver.
+    }
+    rewrite -[THIS in (patt_forall THIS)](@evar_quantify_evar_open Σ y 0).
+    { simpl. 
+      unfold evar_is_fresh_in in Hfr'. rewrite -Heqy in Hfr. clear -Hfr.
+      set_solver.
+    }
+    reflexivity.
+  }
+  apply forall_gen.
+  { simpl. case_match;[|congruence].
+    subst x y.
+    eapply evar_is_fresh_in_richer'.
+    2: { eapply set_evar_fresh_is_fresh'. }
+    simpl.
+    rewrite free_evars_evar_quantify.
+    pose proof (Hsub := @free_evars_bevar_subst Σ ϕ (patt_free_evar (fresh_evar ϕ)) 0).
+    rewrite !simpl_free_evars.
+    set_solver.
+  }
+
+  Search patt_in "sym".
   Search ML_proof_system patt_forall.
   (* HERE *)
   (* lemma-ceil-imp-floor-ceil *)
