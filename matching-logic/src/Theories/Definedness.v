@@ -3271,7 +3271,6 @@ Proof.
   { assumption. }
 
   remember (fresh_evar ϕ) as x.
-  Search ML_proof_system patt_forall.
   eapply cast_proof.
   { 
     rewrite -[b0 ∈ml _](@evar_quantify_evar_open Σ x 0).
@@ -3314,28 +3313,42 @@ Proof.
     exact HΓ.
   }
   
-  Check ex_quan_monotone. (* TODO: have a version of ex_quan_monotone which does not require well-formedness. *)
-  mgApplyMeta (ex_quan_monotone)
-
-  apply (@strip_exists_quantify_l Σ Γ y (b0 ∈ml (! ⌈ ϕ ⌉)) (! patt_free_evar x ∈ml ⌈ ϕ ⌉)).
-  { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
-  { simpl. split_and!; try reflexivity. wf_auto2. }
-  
-  fromMyGoal. intros _ _.
+  mgApplyMeta (ex_quan_monotone_nowf y Htmp) in 0.
+  clear Htmp.
 
 
-  eapply syllogism_intro.
-  { simpl. split_and!; try reflexivity. wf_auto2. }
-  2: { wf_auto2. }
-  2: {
-    
+  eapply cast_proof_mg_hyps.
+  {
+    unfold exists_quantify.
+    rewrite -> (@evar_quantify_evar_open Σ y 0 (! b0 ∈ml (⌈ ϕ ⌉))).
+    2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
+    reflexivity.
   }
+
+  Search ML_proof_system patt_not.
+  mgApplyMeta (@not_not_intro Σ Γ (ex , (! b0 ∈ml ⌈ ϕ ⌉)) ltac:(wf_auto2)) in 0.
+  Print patt_forall.
+  eapply cast_proof_mg_hyps.
+  {
+    replace (! ! ex , (! b0 ∈ml ⌈ ϕ ⌉)) with (! all , (b0 ∈ml ⌈ ϕ ⌉)) by reflexivity.
+    reflexivity.
+  }
+
+
+  assert (Htmp: Γ ⊢ (! (ex, b0 ∈ml ⌈ ϕ ⌉)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉))).
+  {
+    apply ProofMode.modus_tollens.
+    { wf_auto2. }
+    { wf_auto2. }
+    admit.
+  }
+  mgApplyMeta Htmp.
+  fromMyGoal. intros _ _.
+  apply ProofMode.modus_tollens.
   { wf_auto2. }
-
-  Search "membership" "sym".
-
-
-  mgIntro.
+  { wf_auto2. }
+  Search ML_proof_system patt_forall.
+  (* HERE *)
   (* lemma-ceil-imp-floor-ceil *)
 Defined.
 
