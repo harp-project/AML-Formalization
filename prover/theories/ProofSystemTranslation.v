@@ -136,11 +136,15 @@ Section proof_system_translation.
 
   Definition dangling_evars_cached (C : Cache) (ϕ : Pattern) : Prop :=
     forall (b : db_index),
-      evar_is_dangling ϕ b -> C !! (patt_bound_evar b) <> None.
+      evar_is_dangling ϕ b ->
+      exists nϕ,
+        C !! (patt_bound_evar b) = Some nϕ.
 
   Definition dangling_svars_cached (C : Cache) (ϕ : Pattern) : Prop :=
     forall (b : db_index),
-      svar_is_dangling ϕ b -> C !! (patt_bound_svar b) <> None.
+      svar_is_dangling ϕ b ->
+      exists nϕ,
+        C !! (patt_bound_svar b) = Some nϕ.
 
   Definition dangling_vars_cached (C : Cache) (ϕ : Pattern) : Prop :=
     dangling_evars_cached C ϕ /\ dangling_svars_cached C ϕ.
@@ -152,11 +156,11 @@ Section proof_system_translation.
     intros Hcached Hsub.
     unfold dangling_vars_cached, dangling_evars_cached,dangling_svars_cached in *.
     destruct Hcached as [Hecached Hscached].
-    split; intros b Hb Hcontra.
-    - eapply Hecached;[eassumption|].
-      eapply lookup_weaken_None;eassumption.
-    - eapply Hscached;[eassumption|].
-      eapply lookup_weaken_None;eassumption.
+    split; intros b Hb.
+    - specialize (Hecached b Hb) as [nϕ Hnϕ].
+      exists nϕ. eapply lookup_weaken. apply Hnϕ. assumption.
+    - specialize (Hscached b Hb) as [nϕ Hnϕ].
+      exists nϕ. eapply lookup_weaken. apply Hnϕ. assumption.
   Qed.
 
   Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs:
@@ -257,12 +261,11 @@ Section proof_system_translation.
           * apply cache_incr_svar_lookup_Some; assumption.
         }
         { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
-  Qed.
+  Qed. 
   
-                                    
   (* We assume that \phi_2 is well_formed *)
   Lemma to_NamedPattern2'_None (ϕ₁ ϕ₂ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
-    dangling_vars_cached C ϕ₂ ->
+    dangling_vars_cached C ϕ₁ ->
     (to_NamedPattern2' ϕ₁ C evs svs).1.1.2 !! ϕ₂ = None ->
     C !! ϕ₂ = None.
   Proof.
@@ -297,28 +300,142 @@ Section proof_system_translation.
       inversion Heqp; subst; clear Heqp.
 
     -
+      assert (Hcached1: dangling_vars_cached C ϕ₁1).
+      {
+        unfold dangling_vars_cached in Hcached.
+        destruct Hcached as [Hcachede Hcacheds].
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
+        split; intros b Hb.
+        + specialize (Hcachede b).
+          simpl in Hcachede.
+          feed specialize Hcachede.
+          { apply orb_prop_intro. left. exact Hb. }
+          exact Hcachede.
+        + specialize (Hcacheds b).
+          simpl in Hcachede.
+          feed specialize Hcacheds.
+          { apply orb_prop_intro. left. exact Hb. }
+          exact Hcacheds.
+      }
+      assert (Hcached2: dangling_vars_cached C ϕ₁2).
+      {
+        unfold dangling_vars_cached in Hcached.
+        destruct Hcached as [Hcachede Hcacheds].
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
+        split; intros b Hb.
+        + specialize (Hcachede b).
+          simpl in Hcachede.
+          feed specialize Hcachede.
+          { apply orb_prop_intro. right. exact Hb. }
+          exact Hcachede.
+        + specialize (Hcacheds b).
+          simpl in Hcachede.
+          feed specialize Hcacheds.
+          { apply orb_prop_intro. right. exact Hb. }
+          exact Hcacheds.
+      }
+
+      
       pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
       rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0.
-      specialize (Hnone_g0 Hcached Hnone).
-      clear Heqp5.
-      eapply IHϕ₁1.
-      erewrite Heqp2.
-      simpl.
-      exact Hnone_g0.
+
+      pose proof (Hsub1 := to_NamedPattern2'_extends_cache C ϕ₁1 evs svs).
+      rewrite Heqp2 in Hsub1. simpl in Hsub1.
+      pose proof (Hsub2 := to_NamedPattern2'_extends_cache g0 ϕ₁2 e0 s0).
+      rewrite Heqp5 in Hsub2. simpl in Hsub2.
+      pose proof (Hcached_g0 := dangling_vars_subcache _ _ _ Hcached2 Hsub1).
+      specialize (Hnone_g0 Hcached_g0 Hnone).
+      clear Hcached_g0 IHϕ₁2 Heqp5.
+
+      specialize (IHϕ₁1 C evs svs ϕ₂).
+      rewrite Heqp2 in IHϕ₁1. clear Heqp2. simpl in IHϕ₁1.
+      specialize (IHϕ₁1 Hcached1 Hnone_g0). exact IHϕ₁1.
     -
+      assert (Hcached1: dangling_vars_cached C ϕ₁1).
+      {
+        unfold dangling_vars_cached in Hcached.
+        destruct Hcached as [Hcachede Hcacheds].
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
+        split; intros b Hb.
+        + specialize (Hcachede b).
+          simpl in Hcachede.
+          feed specialize Hcachede.
+          { apply orb_prop_intro. left. exact Hb. }
+          exact Hcachede.
+        + specialize (Hcacheds b).
+          simpl in Hcachede.
+          feed specialize Hcacheds.
+          { apply orb_prop_intro. left. exact Hb. }
+          exact Hcacheds.
+      }
+      assert (Hcached2: dangling_vars_cached C ϕ₁2).
+      {
+        unfold dangling_vars_cached in Hcached.
+        destruct Hcached as [Hcachede Hcacheds].
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
+        split; intros b Hb.
+        + specialize (Hcachede b).
+          simpl in Hcachede.
+          feed specialize Hcachede.
+          { apply orb_prop_intro. right. exact Hb. }
+          exact Hcachede.
+        + specialize (Hcacheds b).
+          simpl in Hcachede.
+          feed specialize Hcacheds.
+          { apply orb_prop_intro. right. exact Hb. }
+          exact Hcacheds.
+      }
+
+      
       pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
-      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0. specialize (Hnone_g0 Hnone).
-      clear Heqp5.
-      eapply IHϕ₁1.
-      erewrite Heqp2.
-      simpl.
-      exact Hnone_g0.
+      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0.
+
+      pose proof (Hsub1 := to_NamedPattern2'_extends_cache C ϕ₁1 evs svs).
+      rewrite Heqp2 in Hsub1. simpl in Hsub1.
+      pose proof (Hsub2 := to_NamedPattern2'_extends_cache g0 ϕ₁2 e0 s0).
+      rewrite Heqp5 in Hsub2. simpl in Hsub2.
+      pose proof (Hcached_g0 := dangling_vars_subcache _ _ _ Hcached2 Hsub1).
+      specialize (Hnone_g0 Hcached_g0 Hnone).
+      clear Hcached_g0 IHϕ₁2 Heqp5.
+
+      specialize (IHϕ₁1 C evs svs ϕ₂).
+      rewrite Heqp2 in IHϕ₁1. clear Heqp2. simpl in IHϕ₁1.
+      specialize (IHϕ₁1 Hcached1 Hnone_g0). exact IHϕ₁1.
+
     -
+      
       pose proof (Hnone_g0 := IHϕ₁
                                 (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]> (cache_incr_evar C))
                                 (evs ∪ {[evs_fresh evs ϕ₁]}) s ϕ₂)
       .
       feed specialize Hnone_g0.
+      {
+        destruct Hcached as [Hcachede Hcacheds].
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached.
+        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in Hcachede, Hcacheds.
+        simpl in Hcachede,Hcacheds.
+        split; intros dbi Hdbi.
+        + 
+          destruct dbi as [| dbi'].
+          * exists (npatt_evar (evs_fresh evs ϕ₁)).
+            rewrite lookup_insert. reflexivity.
+          * apply Hcachede in Hdbi. destruct Hdbi as [nϕ Hnϕ].
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_evar.
+            setoid_rewrite lookup_kmap_Some.
+            2: { apply _. }
+            exists nϕ. exists (patt_bound_evar (dbi')).
+            simpl. split;[reflexivity|auto].
+        + rewrite lookup_insert_ne.
+          { discriminate. }
+          setoid_rewrite lookup_kmap_Some.
+          2: { apply _. }
+          specialize (Hcacheds dbi Hdbi).
+          destruct Hcacheds as [nϕ Hnϕ].
+          exists nϕ,(patt_bound_svar dbi).
+          simpl. split;[reflexivity|assumption].
+      }
       { rewrite Heqp2. simpl. exact Hnone. }
       
       destruct (decide (ϕ₂ = BoundVarSugar.b0)).
