@@ -6592,6 +6592,60 @@ Proof.
   apply modus_tollens; assumption.
 Defined.
 
+Lemma forall_elim {Σ : Signature} Γ ϕ x:
+  well_formed (ex, ϕ) ->
+  evar_is_fresh_in x ϕ ->
+  Γ ⊢ (all, ϕ) ->
+  Γ ⊢ (evar_open 0 x ϕ).
+Proof.
+  intros wfϕ frϕ H.
+  eapply Modus_ponens.
+  4: apply (@forall_variable_substitution Σ Γ _ x).
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { wf_auto2. }
+  rewrite evar_quantify_evar_open; assumption.
+Defined.
+
+Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) ->
+  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂ H.
+  remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
+  apply (@strip_exists_quantify_l Σ Γ x).
+  { subst x.
+    eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. set_solver.
+  }
+  { wf_auto2. }
+  apply Ex_gen.
+  1,2: wf_auto2.
+  2: {
+    subst x.
+    eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. set_solver.
+  }
+
+  eapply cast_proof.
+  {
+    rewrite -[HERE in evar_open _ _ _ ---> HERE](@evar_open_not_occur Σ 0 x ϕ₂).
+    {
+      apply wfc_ex_aux_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    reflexivity.
+  }
+  eapply forall_elim with (x0 := x) in H.
+  2: wf_auto2.
+  2: { subst x. apply set_evar_fresh_is_fresh. }
+  unfold evar_open in *. simpl in *. exact H.
+Defined.
+
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
