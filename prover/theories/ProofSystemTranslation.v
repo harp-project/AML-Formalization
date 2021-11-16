@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect.
+From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Strings.String.
 From Equations Require Import Equations.
@@ -644,6 +644,115 @@ Section proof_system_translation.
       end.
       
       rewrite -> Heqp1 in IHp. simpl in IHp.
+      feed specialize IHp.
+      {
+        unfold corr_prop. intros p' np' Hp'.
+        inversion Heqp0. subst. clear Heqp0.
+        (* So what does the cache = ∅ mean here? 
+           Recall that we start with empty cache when translating pattern.
+           My intuition tells me that we behave here the same way as if we
+           just started. In other words, history behaves as if we started from
+           the nested existential and mu patterns.
+         *)
+        apply (existT [(p', (np', ∅, ∅, ∅))]).
+        simpl.
+        rewrite lookup_empty; auto.
+      }
+      unfold corr_prop. intros p' np' Hp'.
+      destruct (decide (p' = patt_exists p)).
+      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
+          apply (existT [(patt_exists p, (n0, C, evs, svs))]); simpl; split; auto
+        ).
+      +
+        inversion Heqp0. subst. clear Heqp0.
+        simpl in Hp'.
+        destruct (decide (is_bound_evar p')).
+        * apply (existT [(p', (np', ∅, ∅, ∅))]).
+          simpl. rewrite lookup_empty. split; auto.
+        * 
+          unfold corr_prop in IHp.
+          specialize (IHp p' np').
+          feed specialize IHp.
+          {
+            simpl in Hp'.
+            rewrite lookup_insert_ne in Hp'. apply not_eq_sym. assumption.
+            rewrite lookup_union_Some in Hp'.
+            destruct Hp' as [Hp'|Hp'].
+            -- unfold remove_bound_evars in Hp'.
+               rewrite map_filter_lookup_Some in Hp'.
+               destruct Hp' as [This _]. exact This.
+            -- rewrite map_filter_lookup_Some in Hp'.
+               destruct Hp' as [_ Hp'].
+               unfold is_bound_evar_entry in Hp'. simpl in Hp'.
+               contradiction.
+            -- unfold remove_bound_evars,keep_bound_evars.
+               intros x. unfold option_relation.
+               repeat case_match; try exact I.
+               rewrite map_filter_lookup_Some in Heqo0.
+               rewrite map_filter_lookup_Some in Heqo1.
+               destruct Heqo0 as [HH1 HH2].               
+               destruct Heqo1 as [HH3 HH4].
+               contradiction.
+          }
+          apply IHp.
+    - repeat case_match. subst.
+
+      match type of Heqp1 with
+      | (to_NamedPattern2' _ ?C ?evs ?svs = _) => specialize (IHp C evs svs)
+      end.
+      
+      rewrite -> Heqp1 in IHp. simpl in IHp.
+      feed specialize IHp.
+      {
+        unfold corr_prop. intros p' np' Hp'.
+        inversion Heqp0. subst. clear Heqp0.
+        (* So what does the cache = ∅ mean here? 
+           Recall that we start with empty cache when translating pattern.
+           My intuition tells me that we behave here the same way as if we
+           just started. In other words, history behaves as if we started from
+           the nested existential and mu patterns.
+         *)
+        apply (existT [(p', (np', ∅, ∅, ∅))]).
+        simpl.
+        rewrite lookup_empty; auto.
+      }
+      unfold corr_prop. intros p' np' Hp'.
+      destruct (decide (p' = patt_mu p)).
+      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
+          apply (existT [(patt_mu p, (n0, C, evs, svs))]); simpl; split; auto
+        ).
+      +
+        inversion Heqp0. subst. clear Heqp0.
+        simpl in Hp'.
+        destruct (decide (is_bound_svar p')).
+        * apply (existT [(p', (np', ∅, ∅, ∅))]).
+          simpl. rewrite lookup_empty. split; auto.
+        * 
+          unfold corr_prop in IHp.
+          specialize (IHp p' np').
+          feed specialize IHp.
+          {
+            simpl in Hp'.
+            rewrite lookup_insert_ne in Hp'. apply not_eq_sym. assumption.
+            rewrite lookup_union_Some in Hp'.
+            destruct Hp' as [Hp'|Hp'].
+            -- unfold remove_bound_evars in Hp'.
+               rewrite map_filter_lookup_Some in Hp'.
+               destruct Hp' as [This _]. exact This.
+            -- rewrite map_filter_lookup_Some in Hp'.
+               destruct Hp' as [_ Hp'].
+               unfold is_bound_svar_entry in Hp'. simpl in Hp'.
+               contradiction.
+            -- unfold remove_bound_svars,keep_bound_svars.
+               intros x. unfold option_relation.
+               repeat case_match; try exact I.
+               rewrite map_filter_lookup_Some in Heqo0.
+               rewrite map_filter_lookup_Some in Heqo1.
+               destruct Heqo0 as [HH1 HH2].               
+               destruct Heqo1 as [HH3 HH4].
+               contradiction.
+          }
+          apply IHp.
   Defined.
 
   Lemma consistency_pqp
