@@ -3257,7 +3257,54 @@ Proof.
 Defined.
 
 
-
+Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ y:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (ex, (⌈ (patt_free_evar y) and  ϕ ⌉ and (patt_free_evar y))) ---> ϕ.
+Proof.
+  intros HΓ wfϕ.
+  Search "prenex" patt_forall.
+  apply prenex_forall_imp.
+  1,2: wf_auto2.
+  remember (fresh_evar (⌈ patt_free_evar y and ϕ ⌉ and patt_free_evar y ---> ϕ)) as x.
+  eapply cast_proof.
+  {
+    rewrite -[HERE in (all, HERE)](@evar_quantify_evar_open Σ x 0).
+    { subst x. apply set_evar_fresh_is_fresh. }
+    reflexivity.
+  }
+  apply universal_generalization.
+  { wf_auto2. }
+  assert (Htmp: forall (ϕ₁ ϕ₂ ϕ₃ : Pattern),
+             well_formed ϕ₁ ->
+             well_formed ϕ₂ ->
+             well_formed ϕ₃ ->
+             Γ ⊢ ((! (ϕ₁ and (ϕ₂ and !ϕ₃))) ---> ((ϕ₁ and ϕ₂) ---> ϕ₃))).
+  {
+    intros ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃. toMyGoal.
+    { wf_auto2. }
+    do 2 mgIntro. mgDestructAnd 1.
+    mgApplyMeta (@not_not_elim Σ Γ ϕ₃ wfϕ₃).
+    mgIntro. mgApply 0. mgClear 0.
+    mgSplitAnd.
+    { mgExactn 0. }
+    mgSplitAnd.
+    { mgExactn 1. }
+    { mgExactn 2. }
+  }
+  eapply Modus_ponens.
+  4: apply Htmp.
+  all: fold bevar_subst.
+  1,2,4,5,6: wf_auto2.
+  1,2,4,5,6: apply wfc_ex_aux_bevar_subst; wf_auto2.
+  { apply wfc_ex_aux_bevar_subst. wf_auto2. simpl. reflexivity. }
+  simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  replace (⌈ patt_free_evar y and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar y and ϕ)) by reflexivity.
+  replace (patt_free_evar y and ! ϕ) with (subst_ctx box (patt_free_evar y and ! ϕ)) by reflexivity.
+  apply Singleton_ctx. exact wfϕ.
+Defined.
 
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
