@@ -6646,6 +6646,74 @@ Proof.
   unfold evar_open in *. simpl in *. exact H.
 Defined.
 
+Lemma evar_fresh_in_foldr {Σ : Signature} x g l:
+  evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
+Proof.
+  induction l; simpl; split; intros H.
+  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil. exact I.
+  - destruct H as [H _]. exact H.
+  - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
+    split;[set_solver|].
+    apply Forall_cons.
+    destruct IHl as [IHl1 IHl2].
+    split;[set_solver|].
+    apply IHl1. set_solver.
+  - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
+    destruct IHl as [IHl1 IHl2].
+    destruct H as [H1 H2].
+    inversion H2; subst.
+    specialize (IHl2 (conj H1 H4)).
+    set_solver.
+Qed.
+
+Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar):
+  evar_is_fresh_in x g ->
+  evar_is_fresh_in_list x l ->
+  bevar_occur ϕ₁ 0 = false ->
+  @mkMyGoal Σ Γ (ϕ₁::l) g ->
+  @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g.
+Proof.
+  intros xfrg xfrl Hno0 H.
+  mgExtractWF H1 H2.
+  fromMyGoal. intros _ _.
+  pose proof (H1' := H1).
+  unfold wf in H1. simpl in H1. apply andb_prop in H1. destruct H1 as [H11 H12].
+  apply wf_ex_quan_impl_wf in H11. 2: assumption.
+  unfold of_MyGoal in H. simpl in H.
+  specialize (H H2).
+  feed specialize H.
+  {
+    unfold wf. simpl. rewrite H11 H12. reflexivity.
+  }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  { assumption. }
+  simpl.
+  apply evar_fresh_in_foldr.
+  split; assumption.
+Defined.
+
+
+(* Weakening under existential *)
+Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃:
+  well_formed (ex, ϕ₁) ->
+  well_formed (ex, ϕ₂) ->
+  well_formed ϕ₃ ->
+  Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) ->
+  Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂ wfϕ₃ H.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  remember (fresh_evar ϕ₁) as x.
+  rewrite -[ϕ₁](@evar_quantify_evar_open Σ x 0).
+  { subst x. apply set_evar_fresh_is_fresh'. }
+  Check evar_is_fresh_in.
+  Check Ex_gen.
+
+Defined.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
