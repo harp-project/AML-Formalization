@@ -7907,3 +7907,132 @@ Proof.
   intros p.
   apply svar_is_fresh_in_dec.
 Defined.
+
+Lemma no_neg_occ_quan_impl_no_neg_occ {Σ : Signature} x n1 n2 ϕ:
+ no_negative_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+ no_negative_occurrence_db_b n1 ϕ = true
+with no_pos_occ_quan_impl_no_pos_occ {Σ : Signature} x n1 n2 ϕ:
+ no_positive_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+ no_positive_occurrence_db_b n1 ϕ = true.
+Proof.
+ - intros H.
+   move: n1 n2 H.
+   induction ϕ; intros n1 n2 H; simpl in *; auto.
+   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+     destruct_and!.
+     erewrite -> IHϕ1 by eassumption.
+     erewrite -> IHϕ2 by eassumption.
+     reflexivity.
+   + unfold no_negative_occurrence_db_b in *. simpl in *.
+     fold no_negative_occurrence_db_b no_positive_occurrence_db_b in *.
+     destruct_and!.
+     erewrite -> no_pos_occ_quan_impl_no_pos_occ by eassumption.
+     erewrite -> IHϕ2 by eassumption.
+     reflexivity.
+   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+     erewrite -> IHϕ by eassumption.
+     reflexivity.
+   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+     erewrite -> IHϕ by eassumption.
+     reflexivity.
+ - intros H.
+   move: n1 n2 H.
+   induction ϕ; intros n1 n2 H; simpl in *; auto.
+   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+     destruct_and!.
+     erewrite -> IHϕ1 by eassumption.
+     erewrite -> IHϕ2 by eassumption.
+     reflexivity.
+   + unfold no_positive_occurrence_db_b in *. simpl in *.
+     fold no_positive_occurrence_db_b no_negative_occurrence_db_b in *.
+     destruct_and!.
+     erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+     erewrite -> IHϕ2 by eassumption.
+     reflexivity.
+   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+     erewrite -> IHϕ by eassumption.
+     reflexivity.
+   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+     erewrite -> IHϕ by eassumption.
+     reflexivity.
+Qed.
+
+Lemma wfp_evar_quan_impl_wfp {Σ : Signature} x n ϕ:
+  well_formed_positive (evar_quantify x n ϕ) = true ->
+  well_formed_positive ϕ.
+Proof.
+  intros H.
+  move: n H.
+  induction ϕ; intros n' H; simpl in *; auto.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - erewrite IHϕ by eassumption.
+    reflexivity.
+  - simpl.
+    destruct_and!.
+    erewrite -> IHϕ by eassumption.
+    erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+    reflexivity.
+Qed.
+
+Lemma wfcex_evar_quan_impl_wfcex {Σ : Signature} x n dbi ϕ:
+  well_formed_closed_ex_aux (evar_quantify x n ϕ) dbi = true ->
+  well_formed_closed_ex_aux ϕ dbi.
+Proof.
+  intros H.
+  move: n dbi H.
+  induction ϕ; intros n' dbi H; simpl in *; auto.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - erewrite IHϕ by eassumption.
+    reflexivity.
+  - simpl.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+Qed.
+
+Lemma wfcmu_evar_quan_impl_wfcmu {Σ : Signature} x n dbi ϕ:
+  well_formed_closed_mu_aux (evar_quantify x n ϕ) dbi = true ->
+  well_formed_closed_mu_aux ϕ dbi.
+Proof.
+  intros H.
+  move: n dbi H.
+  induction ϕ; intros n' dbi H; simpl in *; auto.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - erewrite IHϕ by eassumption.
+    reflexivity.
+  - simpl.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+Qed.
+
+Lemma wf_ex_quan_impl_wf {Σ : Signature} (x : evar) (ϕ : Pattern):
+  well_formed (exists_quantify x ϕ) = true ->
+  well_formed ϕ = true.
+Proof.
+  intros H. unfold exists_quantify in H.
+  unfold well_formed, well_formed_closed in *. destruct_and!. simpl in *.
+  split_and!.
+  - eapply wfp_evar_quan_impl_wfp. eassumption.
+  - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
+  - eapply wfcex_evar_quan_impl_wfcex in H2.
+Abort. (* Oops *)
