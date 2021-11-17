@@ -3257,16 +3257,16 @@ Proof.
 Defined.
 
 
-Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ y:
+Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ (ex, (⌈ (patt_free_evar y) and  ϕ ⌉ and (patt_free_evar y))) ---> ϕ.
+  Γ ⊢ (ex, (⌈ b0 and  ϕ ⌉ and b0)) ---> ϕ.
 Proof.
   intros HΓ wfϕ.
   Search "prenex" patt_forall.
   apply prenex_forall_imp.
   1,2: wf_auto2.
-  remember (fresh_evar (⌈ patt_free_evar y and ϕ ⌉ and patt_free_evar y ---> ϕ)) as x.
+  remember (fresh_evar (⌈ b0 and ϕ ⌉ and b0 ---> ϕ)) as x.
   eapply cast_proof.
   {
     rewrite -[HERE in (all, HERE)](@evar_quantify_evar_open Σ x 0).
@@ -3301,8 +3301,8 @@ Proof.
   simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
   { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
-  replace (⌈ patt_free_evar y and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar y and ϕ)) by reflexivity.
-  replace (patt_free_evar y and ! ϕ) with (subst_ctx box (patt_free_evar y and ! ϕ)) by reflexivity.
+  replace (⌈ patt_free_evar x and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ)) by reflexivity.
+  replace (patt_free_evar x and ! ϕ) with (subst_ctx box (patt_free_evar x and ! ϕ)) by reflexivity.
   apply Singleton_ctx. exact wfϕ.
 Defined.
 
@@ -3375,9 +3375,7 @@ Proof.
     reflexivity.
   }
 
-  Search ML_proof_system patt_not.
   mgApplyMeta (@not_not_intro Σ Γ (ex , (! b0 ∈ml ⌈ ϕ ⌉)) ltac:(wf_auto2)) in 0.
-  Print patt_forall.
   eapply cast_proof_mg_hyps.
   {
     replace (! ! ex , (! b0 ∈ml ⌈ ϕ ⌉)) with (! all , (b0 ∈ml ⌈ ϕ ⌉)) by reflexivity.
@@ -3429,7 +3427,7 @@ Proof.
   Search ML_proof_system patt_forall.
   (* HERE *)
   (* lemma-ceil-imp-floor-ceil *)
-Defined.
+Abort.
 
 
 Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
@@ -3440,11 +3438,8 @@ Proof.
   intros HΓ wfϕ.
   unfold is_predicate_pattern.
   unfold "=ml".
-  About phi_iff_phi_top.
   toMyGoal.
   { wf_auto2. }
-  Search (?g ⊢ ?a <---> ?b).
-  About pf_iff_equiv_sym.
   mgRewrite (@pf_iff_equiv_sym Σ Γ (⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> Top) ltac:(wf_auto2) ltac:(wf_auto2) (@phi_iff_phi_top _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
 
   mgRewrite (@pf_iff_equiv_sym Σ Γ (! ⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2) (@not_phi_iff_phi_bott _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
@@ -3472,13 +3467,13 @@ Proof.
   { wf_auto2. }
   mgRewrite H at 1.
   (* TODO ceil-floor-imp-floor , ceil-imp-floor-ceil*)
-Defined.
+Abort.
 
 Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
-Proof. Defined. (* TODO *)
+Proof. Abort. (* TODO *)
 
 Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
@@ -3491,8 +3486,7 @@ Proof.
   { wf_auto2. }
   mgIntro.
   (* TODO *)
-Defined.
-
+Abort.
 
 
 Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
