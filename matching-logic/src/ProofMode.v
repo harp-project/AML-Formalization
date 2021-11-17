@@ -7,7 +7,7 @@ From Ltac2 Require Import Ltac2.
 
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-
+(*Require Import Unicoq.Unicoq.*)
 From Equations Require Import Equations.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
@@ -3953,7 +3953,7 @@ Section FOL_helpers.
     pose conj_intro_meta_partial2; auto.
   Defined.
 
-  Lemma patt_and_comm (A B : Pattern) Γ:
+  Lemma patt_and_comm_meta (A B : Pattern) Γ:
     well_formed A → well_formed B
   ->
     Γ ⊢ A and B -> Γ ⊢ B and A.
@@ -5024,13 +5024,12 @@ Section FOL_helpers.
     reflexivity.
   Defined.
 
-  Print pf_evar_open_free_evar_subst_equiv_sides.
 
   Definition evar_fresh_dep (S : EVarSet) : {x : evar & x ∉ S} :=
-    existT (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' _ S).
+    @existT evar (fun x => x ∉ S) (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' Σ S).
 
   Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
-    existT (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
+    @existT svar (fun x => x ∉ S) (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
 
   Lemma pf_impl_ex_free_evar_subst_twice Γ n ϕ p q E:
     well_formed (ex, ϕ) = true ->
@@ -5050,11 +5049,11 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma strip_exists_quantify Γ x P Q :
+  Lemma strip_exists_quantify_l Γ x P Q :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
-    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> ex , Q) ->
-    Γ ⊢ ex , P ---> ex , Q.
+    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) ->
+    Γ ⊢ ex , P ---> Q.
   Proof.
     intros Hx HwfcP H.
     unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
@@ -5065,6 +5064,20 @@ Section FOL_helpers.
     ).
   Defined.
 
+  Lemma strip_exists_quantify_r Γ x P Q :
+    x ∉ free_evars Q ->
+    well_formed_closed_ex_aux Q 1 ->
+    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) ->
+    Γ ⊢ P ---> ex, Q.
+  Proof.
+    intros Hx HwfcP H.
+    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    abstract (
+      unfold exists_quantify;
+      rewrite -> evar_quantify_evar_open by assumption;
+      reflexivity
+    ).
+  Defined.
 
   Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X:
     well_formed_closed_mu_aux p 0 = true ->
@@ -5204,10 +5217,10 @@ Section FOL_helpers.
                :=
                 @pf_iff_split Σ Γ (ex, free_evar_subst' 1 ϕ' p E) (ex, free_evar_subst' 1 ϕ' q E) _ _
                   (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' p q E wfψ wfp wfq
-                    (@strip_exists_quantify Σ Γ x _ _ _ _ IH3')
+                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH3')
                   )
                   (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' q p E wfψ wfq wfp
-                    (@strip_exists_quantify Σ Γ x _ _ _ _ IH4')
+                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH4')
                   )
             }
           }
@@ -5336,7 +5349,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_svar_subst. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_svar_subst.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5345,7 +5358,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_svar_subst.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5461,7 +5474,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_ex_gen. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_ex_gen.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5472,7 +5485,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_ex_gen.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5593,7 +5606,7 @@ Section FOL_helpers.
       { apply indifferent_to_prop_uses_kt. }
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_kt.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5602,7 +5615,7 @@ Section FOL_helpers.
         reflexivity.
       + unfold pf_impl_ex_free_evar_subst_twice.
         rewrite indifferent_to_cast_uses_kt.
-        unfold strip_exists_quantify.
+        unfold strip_exists_quantify_l.
         rewrite indifferent_to_cast_uses_kt.
         simpl.
         unfold pf_evar_open_free_evar_subst_equiv_sides.
@@ -5646,6 +5659,17 @@ Proof.
   }
   apply Ex_quan.
   abstract (wf_auto2).
+Defined.
+
+Lemma ex_quan_monotone_nowf {Σ : Signature} Γ x ϕ₁ ϕ₂:
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
+Proof.
+  intros H.
+  pose proof (Hwf := proved_impl_wf _ _ H).
+  pose proof (well_formed_imp_proj1 Hwf).
+  pose proof (well_formed_imp_proj2 Hwf).
+  apply ex_quan_monotone; assumption.
 Defined.
 
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
@@ -6115,23 +6139,517 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
+Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
+  Γ ⊢ (A <---> B) ->
+  Γ ⊢ (B <---> A).
+Proof.
+  intros H.
+  pose proof (wf := proved_impl_wf _ _ H).
+  assert (well_formed A) by wf_auto2.
+  assert (well_formed B) by wf_auto2.
+  apply pf_iff_equiv_sym; assumption.
+Defined.
+
+Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
+  mgRewrite Hiff at atn.
+
+Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
+  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
+
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ a $ b $ a' ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
+  mgRewrite <- Hiff at 3.
   fromMyGoal. intros _ _.
   apply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
 
+Lemma top_holds {Σ : Signature} Γ:
+  Γ ⊢ Top.
+Proof.
+  apply false_implies_everything.
+  { wf_auto2. }
+Defined.
 
+Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ ϕ <---> (ϕ <---> Top).
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgSplitAnd.
+    + mgIntro. mgClear 0. mgClear 0.
+      fromMyGoal. intros _ _.
+      apply top_holds. (* TODO: we need something like [mgExactMeta top_holds] *)
+    + fromMyGoal. intros _ _.
+      apply P1; wf_auto2.
+  - mgDestructAnd 0.
+    mgApply 1.
+    mgClear 0.
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply top_holds.
+Defined.
+
+Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥).
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgSplitAnd.
+    + mgExactn 0.
+    + mgClear 0. fromMyGoal. intros _ _.
+      apply false_implies_everything.
+      { wf_auto2. }
+  - mgDestructAnd 0.
+    mgExactn 0.
+Defined.
+
+
+Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢ A <---> ! ! A.
+Proof.
+  intros wfA.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply not_not_intro.
+    { wf_auto2. }
+  - apply not_not_elim.
+    { wf_auto2. }
+Defined.    
+
+(* prenex-exists-and-left *)
+Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂)).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgDestructAnd 0.
+  fromMyGoal. intros _ _.
+
+  remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
+  apply strip_exists_quantify_l with (x0 := x).
+  { subst x. eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. clear. set_solver.
+  }
+  { wf_auto2. }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { subst x. apply set_evar_fresh_is_fresh. }
+  
+  apply lhs_to_and.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+
+  eapply cast_proof.
+  {
+    replace (evar_open 0 x ϕ₁ and ϕ₂)
+            with (evar_open 0 x (ϕ₁ and ϕ₂)).
+    2: {
+      unfold evar_open. simpl_bevar_subst.
+      rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+      { apply wfc_ex_implies_not_bevar_occur.
+        wf_auto2.
+      }
+      reflexivity.
+    }
+    reflexivity.
+  }
+  apply Ex_quan.
+  wf_auto2.
+Defined.
+
+(* prenex-exists-and-right *)
+Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgSplitAnd.
+  - fromMyGoal. intros _ _.
+    remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
+    apply strip_exists_quantify_l with (x0 := x).
+    { subst x. apply set_evar_fresh_is_fresh. }
+    (* TODO: make wf_auto2 solve this *)
+    { simpl. rewrite !andbT. split_and!.
+      + wf_auto2.
+      + wf_auto2.
+    }
+    apply strip_exists_quantify_r with (x0 := x).
+    { subst x. eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      simpl. clear. set_solver.
+    }
+    { wf_auto2. }
+    apply ex_quan_monotone.
+    { wf_auto2. }
+    { wf_auto2. }
+    unfold evar_open. simpl_bevar_subst.
+    rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+    { apply wfc_ex_aux_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro. mgDestructAnd 0. mgExactn 0.
+  - fromMyGoal. intros _ _.
+    remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
+    eapply cast_proof.
+    {
+      rewrite -[ϕ₁ and ϕ₂](@evar_quantify_evar_open Σ x 0).
+      { subst x. apply set_evar_fresh_is_fresh. }
+      reflexivity.
+    }
+    apply Ex_gen.
+    { wf_auto2. }
+    { wf_auto2. }
+    2: { subst x. eapply evar_is_fresh_in_richer'.
+         2: { apply set_evar_fresh_is_fresh. }
+         solve_free_evars_inclusion 0.
+    }
+    unfold evar_open.
+    simpl_bevar_subst.
+    rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+    { apply wfc_ex_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgDestructAnd 0.
+    mgExactn 1.
+Defined.
+
+Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  apply conj_intro_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply prenex_exists_and_2; assumption.
+  - apply prenex_exists_and_1; assumption.
+Defined.
+
+Lemma patt_and_comm {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢ (p and q) <---> (q and p).
+Proof.
+  intros wfp wfq.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro; mgDestructAnd 0; mgSplitAnd.
+  - mgExactn 1.
+  - mgExactn 0.
+  - mgExactn 1.
+  - mgExactn 0.
+Defined.
+
+(* We need to come up with tactics that make this easier. *)
+Local Example ex_mt {Σ : Signature} Γ ϕ₁ ϕ₂:
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁).
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgIntro.
+  unfold patt_not.
+  mgAssert (((ϕ₁ ---> ⊥) ---> ⊥)).
+  { wf_auto2. }
+  { mgIntro. Check modus_ponens.
+    mgAssert ((ϕ₂ ---> ⊥)).
+    { wf_auto2. }
+    { mgApply 0. mgExactn 2. }
+    mgApply 3.
+    mgExactn 1.
+  }
+  mgApplyMeta (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
+  mgExactn 2.
+Defined.
+
+Search patt_and patt_imp.
+
+Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
+
+Definition reshape_nil {Σ : Signature} p := TagPattern p.
+Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
+(*Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.*)
+(*Canonical Structure reshape_done {Σ : Signature} p := reshape_nil p.*)
+
+Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
+ImpReshape
+  { irs_flattened :> TaggedPattern ;
+    irs_pf : (untagPattern irs_flattened) = foldr patt_imp g l ;
+  }.
+
+Lemma ImpReshape_nil_pf0:
+  ∀ (Σ : Signature) (g : Pattern),
+    g = foldr patt_imp g [].
+Proof. intros. reflexivity. Qed.
+
+Canonical Structure ImpReshape_nil {Σ : Signature} (g : Pattern) : ImpReshapeS g [] :=
+  @ImpReshape Σ g [] (reshape_nil g) (ImpReshape_nil_pf0 g).
+
+
+Program Canonical Structure ImpReshape_cons
+        {Σ : Signature} (g x : Pattern) (xs : list Pattern) (r : ImpReshapeS g xs)
+: ImpReshapeS g (x::xs) :=
+  @ImpReshape Σ g (x::xs) (reshape_cons (x ---> untagPattern (reshape_cons r))) _.
+Next Obligation.
+  intros Σ g x xs r. simpl.
+  rewrite irs_pf.
+  reflexivity.
+Qed.
+
+
+Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) :
+  forall (r : ImpReshapeS g (xs)),
+     Γ ⊢ foldr (patt_imp) g (xs) ->
+     Γ ⊢ (untagPattern (irs_flattened r)).
+Proof.
+  intros r H.
+  eapply cast_proof.
+  { rewrite irs_pf; reflexivity. }
+  exact H.
+Defined.
+
+
+Local Example ex_reshape {Σ : Signature} Γ a b c d:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  Γ ⊢ a ---> (b ---> (c ---> d)).
+Proof.
+  intros wfa wfb wfc wfd.
+  apply reshape.
+  (* Now the goal has the right shape *)
+Abort.
+
+Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  wf xs ->
+  well_formed (foldr patt_and x xs).
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  - assumption.
+  - feed specialize IHxs.
+    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    apply well_formed_and.
+    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    assumption.
+Qed.
+
+
+Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs)).
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  - apply A_impl_A.
+    { wf_auto2. }
+  - pose proof (wfaxs := wfxs).
+    unfold wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMyGoal.
+    { wf_auto2. }
+    do 3 mgIntro.
+    mgAdd IHxs.
+    mgAssert (((foldr patt_and x xs ---> g) ---> foldr patt_imp g xs)).
+    { wf_auto2. }
+    { mgIntro.
+      mgAssert ((x ---> foldr patt_imp g xs)).
+      { wf_auto2. }
+      { mgApply 0. mgExactn 4. }
+      mgClear 0.
+      mgApply 4.
+      mgExactn 1.
+    }
+    mgClear 0.
+    mgApply 3.
+    mgClear 3.
+    mgIntro.
+    mgApply 0.
+    mgSplitAnd.
+    + mgExactn 2.
+    + mgExactn 3.
+Defined.
+
+Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  Γ ⊢ (foldr patt_and x xs ---> g) ->
+  Γ ⊢ (foldr patt_imp g (x :: xs)).
+Proof.
+  intros wfg wfx wfxs H.
+  eapply Modus_ponens.
+  4: apply lhs_and_to_imp.
+  all: try assumption.
+  { apply proved_impl_wf in H. exact H. }
+  { apply proved_impl_wf in H. wf_auto2. }
+Defined.
+
+
+
+Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  forall (r : ImpReshapeS g (x::xs)),
+     Γ ⊢ ((foldr (patt_and) x xs) ---> g) ->
+     Γ ⊢ untagPattern (irs_flattened r) .
+Proof.
+  intros wfg wfx wfxs r H.
+  eapply cast_proof.
+  { rewrite irs_pf; reflexivity. }
+  clear r.
+  apply lhs_and_to_imp_meta; assumption.
+Defined.
+
+
+Local Example ex_match {Σ : Signature} Γ a b c d:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  Γ ⊢ a ---> (b ---> (c ---> d)).
+Proof.
+  intros wfa wfb wfc wfd.
+  apply lhs_and_to_imp_r.
+Abort.
+
+Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x:
+  evar_is_fresh_in x ϕ₁ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂).
+Proof.
+  intros Hfr Himp.
+  pose proof (Hwf := proved_impl_wf _ _ Himp).
+  pose proof (wfϕ₁ := well_formed_imp_proj1 Hwf).
+  pose proof (wfϕ₂ := well_formed_imp_proj2 Hwf).
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgApplyMeta (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2)) in 0.
+  fromMyGoal. intros _ _.
+  apply modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+
+  eapply cast_proof.
+  {
+    replace (! evar_quantify x 0 ϕ₂)
+            with (evar_quantify x 0 (! ϕ₂))
+                 by reflexivity.
+    reflexivity.
+  }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
+  apply modus_tollens; assumption.
+Defined.
+
+Lemma forall_elim {Σ : Signature} Γ ϕ x:
+  well_formed (ex, ϕ) ->
+  evar_is_fresh_in x ϕ ->
+  Γ ⊢ (all, ϕ) ->
+  Γ ⊢ (evar_open 0 x ϕ).
+Proof.
+  intros wfϕ frϕ H.
+  eapply Modus_ponens.
+  4: apply (@forall_variable_substitution Σ Γ _ x).
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { wf_auto2. }
+  rewrite evar_quantify_evar_open; assumption.
+Defined.
+
+Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂:
+  well_formed (ex, ϕ₁) ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) ->
+  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂ H.
+  remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
+  apply (@strip_exists_quantify_l Σ Γ x).
+  { subst x.
+    eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. set_solver.
+  }
+  { wf_auto2. }
+  apply Ex_gen.
+  1,2: wf_auto2.
+  2: {
+    subst x.
+    eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    simpl. set_solver.
+  }
+
+  eapply cast_proof.
+  {
+    rewrite -[HERE in evar_open _ _ _ ---> HERE](@evar_open_not_occur Σ 0 x ϕ₂).
+    {
+      apply wfc_ex_aux_implies_not_bevar_occur.
+      wf_auto2.
+    }
+    reflexivity.
+  }
+  eapply forall_elim with (x0 := x) in H.
+  2: wf_auto2.
+  2: { subst x. apply set_evar_fresh_is_fresh. }
+  unfold evar_open in *. simpl in *. exact H.
+Defined.
+
+
+(* This is an example and belongs to the end of this file.
+   Its only purpose is only to show as many tactics as possible.\
+ *)
    Lemma ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
     well_formed p ->
     well_formed q ->
@@ -6217,4 +6735,3 @@ Defined.
         mgApplyMeta q'iq.
         mgExactn 0. 
   Defined.
-

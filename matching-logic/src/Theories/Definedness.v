@@ -75,7 +75,7 @@ Section definedness.
     @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
 
   Definition is_predicate_pattern ψ : Pattern :=
-    (patt_equal ψ patt_bott) or (patt_equal ψ patt_top).
+    (patt_equal ψ patt_top) or (patt_equal ψ patt_bott).
 End definedness.
 
 Module Notations.
@@ -1958,18 +1958,8 @@ Section ProofSystemTheorems.
       apply pf_iff_split; auto.
       + apply membership_and_1; auto 10.
       + apply membership_and_2; auto 10.
-    Defined.
+    Defined.       
 
-    Lemma membership_imp_1 Γ x ϕ₁ ϕ₂:
-      well_formed ϕ₁ ->
-      well_formed ϕ₂ ->
-      theory ⊆ Γ ->
-      Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
-    Proof.
-      intros wfϕ₁ wfϕ₂ HΓ.
-    Abort.
-         
-    
     Lemma equality_elimination_basic Γ φ1 φ2 C :
       theory ⊆ Γ ->
       well_formed φ1 -> well_formed φ2 ->
@@ -2472,6 +2462,20 @@ Proof.
   mgExactn 0.
 Defined.
 
+Lemma patt_equal_implies_iff {Σ : Signature} {syntax : Syntax} (ϕ1 ϕ2 : Pattern) (Γ : Theory) :
+    theory ⊆ Γ ->
+    well_formed ϕ1 ->
+    well_formed ϕ2 ->
+    Γ ⊢ ϕ1 =ml ϕ2 ->
+    Γ ⊢ (ϕ1 <---> ϕ2).
+Proof.
+  intros HΓ wfϕ1 wfϕ2 H.
+  unfold "=ml" in H.
+  apply total_phi_impl_phi_meta in H.
+  { assumption. }
+  { assumption. }
+  { wf_auto2. }
+Defined.
 
 
 Ltac wfauto' :=
@@ -2483,7 +2487,7 @@ Ltac wfauto' :=
   | _ => idtac
   end.
 
-Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
@@ -2504,7 +2508,988 @@ Proof.
     mgIntro. mgRight;wfauto'. fromMyGoal. intros _ _. apply A_impl_A; wfauto'.
 Defined.
 
-Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+Lemma def_not_phi_impl_not_total_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  unfold patt_total.
+  unfold patt_not.
+  mgIntro.
+  mgApply 1.
+  mgExactn 0.
+Defined.
+
+Lemma def_def_phi_impl_def_phi
+{Σ : Signature} {syntax : Syntax} {Γ : Theory} (ϕ : Pattern) :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌈ ϕ ⌉.
+Proof.
+  intros HΓ wfϕ.
+  eapply (cast_proof).
+  { 
+    remember (@ctx_app_r _ (patt_sym (inj definedness)) box ltac:(wf_auto2)) as AC1.
+    remember (@ctx_app_r _ (patt_sym (inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
+    replace (⌈ ⌈ ϕ ⌉ ⌉) with (subst_ctx AC2 ϕ) by (subst; reflexivity).
+    subst. reflexivity.
+  }
+  apply in_context_impl_defined.
+  { exact HΓ. }
+  { exact wfϕ. }
+Defined.
+
+Lemma bott_not_defined {Σ : Signature} {syntax : Syntax} Γ :
+  Γ ⊢ ! ⌈ ⊥ ⌉.
+Proof.
+  apply Prop_bott_right.
+  { wf_auto2. }
+Defined.
+
+Lemma not_def_phi_impl_not_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ! ⌈ ϕ ⌉ ---> ! ϕ.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgIntro.
+  mgApply 0.
+  mgClear 0.
+  fromMyGoal. intros _ _.
+  apply phi_impl_defined_phi; assumption.
+Defined.
+
+Lemma tot_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌊ ϕ ⌋ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgIntro. mgApply 0. mgClear 0.
+  fromMyGoal. intros _ _.
+  apply Framing_right.
+  { wf_auto2. }
+  apply not_def_phi_impl_not_phi; assumption.
+Defined.
+
+
+
+Lemma def_of_pred_impl_pred {Σ : Signature} {syntax : Syntax} Γ ψ :
+  theory ⊆ Γ ->
+  well_formed ψ ->
+  mu_free ψ ->
+  Γ ⊢ (ψ =ml patt_bott) or (ψ =ml patt_top) ->
+  Γ ⊢ ⌈ ψ ⌉ ---> ψ.
+Proof.
+  intros HΓ wfψ Hmfψ H.
+  toMyGoal.
+  {wf_auto2. }
+  mgAdd H.
+  mgDestructOr 0.
+  - mgRewriteBy 0 at 2.
+    { exact HΓ. }
+    { simpl. rewrite Hmfψ.  reflexivity. }
+    mgRewriteBy 0 at 1.
+    { exact HΓ. }
+    { simpl. reflexivity. }
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply bott_not_defined.
+  - mgRewriteBy 0 at 2.
+    { exact HΓ. }
+    { simpl. rewrite Hmfψ.  reflexivity. }
+    mgClear 0.
+    unfold patt_top. mgIntro. mgIntro. mgExactn 1.
+Defined.
+
+(* TODO need this non-meta *)
+Lemma subseteq_antisym_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₁) ->
+  Γ ⊢ ϕ₁ =ml ϕ₂.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold "=ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgAdd H.
+  mgDestructAnd 0.
+  unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 0).
+  { wf_auto2. }
+  unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 1).
+  { wf_auto2. }
+  mgSplitAnd.
+  - mgExactn 0.
+  - mgExactn 1.
+Defined.
+
+Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
+      Γ AC x ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (subst_ctx AC (ϕ₁ and ((patt_free_evar x) ∈ml ϕ₂))) ---> ((patt_free_evar x) ∈ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  unfold patt_in.
+  eapply syllogism_intro.
+  1,3 : wf_auto2.
+  2: apply Framing.
+  2: wf_auto2.
+  3: apply pf_conj_elim_r.
+  1-4: wf_auto2.
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: apply in_context_impl_defined.
+  2: assumption.
+  1,2: wf_auto2.
+  apply def_def_phi_impl_def_phi.
+  { assumption. }
+  { wf_auto2. }
+Defined.
+
+
+Lemma ceil_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ ⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  apply Framing_right.
+  { wf_auto2. }
+  exact H.
+Defined.
+  
+
+Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ ->
+  Γ ⊢ ⌊ ϕ₁ ⌋ ---> ⌊ ϕ₂ ⌋.
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold patt_total.
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply ceil_monotonic.
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  exact H.
+Defined.
+
+Lemma double_not_ceil_alt {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ( ⌈ ! ⌈ ϕ ⌉ ⌉ ---> (! ⌈ ϕ ⌉)) ->
+  Γ ⊢ ( ⌈ ϕ ⌉ ---> ! ( ⌈ ! ⌈ ϕ ⌉ ⌉)).
+Proof.
+  intros HΓ wfϕ H.
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2)) at 1.
+  fromMyGoal. intros _ _.
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  exact H.
+Defined.
+
+Lemma membership_imp {Σ : Signature} {syntax : Syntax} Γ x ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂)).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@impl_iff_notp_or_q Σ Γ ϕ₁ ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgRewrite (@membership_or_iff Σ syntax Γ x (! ϕ₁) ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2) HΓ) at 1.
+  mgRewrite (@membership_not_iff Σ syntax Γ ϕ₁ x ltac:(wf_auto2) HΓ) at 1.
+  mgRewrite <- (@impl_iff_notp_or_q Σ Γ (patt_free_evar x ∈ml ϕ₁) (patt_free_evar x ∈ml ϕ₂) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  fromMyGoal. intros _ _.
+  apply pf_iff_equiv_refl.
+  { wf_auto2. }
+
+Defined.
+
+Lemma ceil_propagation_exists_1 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (⌈ ex, ϕ ⌉) ---> (ex, ⌈ ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  apply Prop_ex_right.
+  { wf_auto2. }
+  { wf_auto2. }
+Defined.
+
+Lemma ceil_propagation_exists_2 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (ex, ⌈ ϕ ⌉) ---> (⌈ ex, ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+
+  remember (fresh_evar ϕ) as x.
+  replace (⌈ ϕ ⌉) with (evar_quantify x 0 (evar_open 0 x (⌈ ϕ ⌉))).
+  2: {
+    rewrite evar_quantify_evar_open.
+       {
+         pose proof (@set_evar_fresh_is_fresh _ ϕ).
+         unfold evar_is_fresh_in in H.
+         simpl. set_solver.
+       }
+       reflexivity.
+  }
+  apply Ex_gen.
+  { wf_auto2. }
+  { wf_auto2. }
+  2: {  simpl.
+        pose proof (Hfr := @set_evar_fresh_is_fresh _ ϕ).
+        unfold evar_is_fresh_in in Hfr.
+        simpl. set_solver.
+  }
+  unfold evar_open. simpl_bevar_subst.
+  fold (evar_open 0 x ϕ).
+  apply ceil_monotonic.
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply Ex_quan.
+  { wf_auto2. }
+Defined.
+
+Lemma ceil_propagation_exists_iff {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (⌈ ex, ϕ ⌉) <---> (ex, ⌈ ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply ceil_propagation_exists_1; assumption.
+  - apply ceil_propagation_exists_2; assumption.
+Defined.
+
+Lemma membership_exists {Σ : Signature} {syntax : Syntax} Γ x ϕ:
+  theory ⊆ Γ ->
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (patt_free_evar x ∈ml (ex, ϕ)) <---> (ex, patt_free_evar x ∈ml ϕ).
+Proof.
+  intros HΓ wfϕ.
+  unfold "∈ml".
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite <- (@ceil_propagation_exists_iff Σ syntax Γ (patt_free_evar x and ϕ) HΓ ltac:(wf_auto2)) at 1.
+  fromMyGoal. intros _ _.
+  assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x and ϕ))).
+  { (* prenex-exists-and *)
+    toMyGoal.
+    { wf_auto2. }
+    Check patt_and_comm.
+    mgRewrite (@patt_and_comm Σ Γ (patt_free_evar x) (ex, ϕ) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+    mgRewrite <- (@prenex_exists_and_iff Σ Γ ϕ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+    remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+    Check strip_exists_quantify_l.
+    mgSplitAnd; fromMyGoal; intros _ _.
+    - apply (@strip_exists_quantify_l Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply (@strip_exists_quantify_r Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      { wf_auto2. }
+      unfold evar_open. simpl_bevar_subst.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructAnd 0. mgSplitAnd.
+      + mgExactn 1.
+      + mgExactn 0.
+    - apply (@strip_exists_quantify_l Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply (@strip_exists_quantify_r Σ Γ y).
+      { subst y. simpl.
+        eapply not_elem_of_larger_impl_not_elem_of.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      { wf_auto2. }
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      { wf_auto2. }
+      unfold evar_open. simpl_bevar_subst.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro. mgDestructAnd 0. mgSplitAnd.
+      + mgExactn 1.
+      + mgExactn 0.   
+  }
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite Htmp at 1.
+  fromMyGoal. intros _ _.
+  apply pf_iff_equiv_refl.
+  { wf_auto2. }
+Defined.
+
+
+Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ((⌈ patt_free_evar x and ϕ ⌉) ---> (⌊ ⌈ patt_free_evar x and ϕ ⌉  ⌋)).
+Proof.
+  intros HΓ wfϕ.
+  unfold patt_total.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: { wf_auto2. }
+  3: {
+    apply ProofMode.modus_tollens.
+    { wf_auto2. }
+    2: {
+      apply ceil_monotonic.
+      { exact HΓ. }
+      { wf_auto2. }
+      2: {
+        apply membership_not_2.
+        { wf_auto2. }
+        { exact HΓ. }
+      }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+
+  mgRewrite (@not_not_iff Σ Γ (⌈patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)) at 1.
+  fold (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉).
+  mgRewrite (@not_not_iff Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉) ltac:(wf_auto2)) at 1.
+  fold ((⌈ patt_free_evar x and ϕ ⌉ and ⌈ patt_free_evar x ∈ml (! ϕ) ⌉)).
+  unfold "∈ml".
+  fromMyGoal. intros _ _.
+  eapply cast_proof.
+  {
+    replace (⌈ patt_free_evar x and ϕ ⌉)
+            with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ))
+                 by reflexivity.
+    replace (⌈ ⌈ patt_free_evar x and ! ϕ ⌉ ⌉)
+            with (subst_ctx (@ctx_app_r Σ ((@patt_sym Σ (@inj Σ syntax definedness))) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! ϕ))
+      by reflexivity.
+    reflexivity.
+  }
+  apply Singleton_ctx.
+  { exact wfϕ. }
+Defined.
+
+Lemma ceil_compat_in_or {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ ( (⌈ ϕ₁ or ϕ₂ ⌉) <---> (⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉)).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgApplyMeta (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ).
+    mgExactn 0.
+  - mgDestructOr 0.
+    + unshelve (mgApplyMeta (Framing_right Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+      { toMyGoal. wf_auto2. mgIntro. mgLeft. mgExactn 0. }
+      mgExactn 0.
+    + unshelve (mgApplyMeta (Framing_right Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+      { toMyGoal. wf_auto2. mgIntro. mgRight. mgExactn 0. }
+      mgExactn 0.
+Defined.
+
+Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (⌈ patt_free_evar x and ϕ ⌉) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉.
+Proof.
+  intros HΓ wfϕ.
+
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgApplyMeta (@membership_symbol_ceil_aux_aux_0 Σ syntax Γ x ϕ HΓ wfϕ) in 0.
+  fromMyGoal. intros _ _.
+  unfold patt_total.
+  fold (⌈ ! ⌈ patt_free_evar x and ϕ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉).
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite <- (@ceil_compat_in_or Σ syntax Γ (! ⌈ patt_free_evar x and ϕ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+
+  unshelve (mgApplyMeta (@ceil_monotonic Σ syntax Γ
+                               (patt_free_evar y)
+                               (! ⌈ patt_free_evar x and ϕ ⌉ or patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉)
+                               HΓ ltac:(wf_auto2) ltac:(wf_auto2) _
+              )).
+  {
+
+    assert (Helper: forall ϕ₁ ϕ₂, well_formed ϕ₁ -> well_formed ϕ₂ -> Γ ⊢ (! ϕ₁ or ϕ₂) ---> (! ϕ₁ or (ϕ₂ and ϕ₁))).
+    {
+      intros ϕ₁ ϕ₂ wfϕ₁ wfϕ₂.
+      toMyGoal.
+      { wf_auto2. }
+      mgIntro.
+      mgAdd (@A_or_notA Σ Γ ϕ₁ ltac:(wf_auto2)).
+      mgDestructOr 0; mgDestructOr 1.
+      - (* TODO: mgExFalso *)
+        mgApplyMeta (@false_implies_everything Σ Γ (! ϕ₁ or (ϕ₂ and ϕ₁)) ltac:(wf_auto2)).
+        mgApply 1. mgExactn 0.
+      - mgRight. mgSplitAnd. mgExactn 1. mgExactn 0.
+      - mgLeft. mgExactn 0.
+      - mgLeft. mgExactn 0. 
+    }
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgApplyMeta (Helper (⌈ patt_free_evar x and ϕ ⌉) (patt_free_evar y) ltac:(wf_auto2) ltac:(wf_auto2)).
+    mgRight.
+    mgExactn 0.
+  }
+  fromMyGoal. intros _ _.
+  apply defined_evar.
+  { exact HΓ. }
+Defined.
+
+
+Lemma membership_symbol_ceil_left_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ϕ ---> (ex, ⌈ b0 and ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  apply membership_elimination.
+  { wf_auto2. }
+  { assumption. }
+  remember (fresh_evar ϕ) as x.
+  replace (b0 ∈ml (ϕ ---> ex , ⌈ b0 and ϕ ⌉))
+    with (evar_quantify x 0 (evar_open 0 x (b0 ∈ml (ϕ ---> ex , ⌈ b0 and ϕ ⌉)))).
+  2: { rewrite evar_quantify_evar_open.
+       {
+         pose proof (@set_evar_fresh_is_fresh _ ϕ).
+         unfold evar_is_fresh_in in H.
+         simpl. set_solver.
+       }
+       reflexivity.
+  }
+  
+  apply universal_generalization.
+  { wf_auto2. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur_is_noop.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  rewrite bevar_subst_not_occur_is_noop.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgRewrite (@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2)) at 1.
+  mgIntro.
+  remember (fresh_evar ϕ) as y.
+  mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
+  unfold instantiate. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+
+  mgApplyMeta (@membership_symbol_ceil_aux_0 Σ syntax Γ y x ϕ HΓ wfϕ).
+  subst y. subst x.
+  mgExactn 0.
+Defined.
+
+Lemma ceil_and_x_ceil_phi_impl_ceil_phi {Σ : Signature} {syntax : Syntax} Γ (ϕ : Pattern) x:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ( (⌈ patt_free_evar x and ⌈ ϕ ⌉ ⌉) ---> (⌈ ϕ ⌉)).
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: { wf_auto2. }
+  3: {
+    apply def_def_phi_impl_def_phi; assumption.
+  }
+  { wf_auto2. }
+  apply ceil_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgDestructAnd 0. mgExactn 1.
+Defined.
+
+Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (ϕ₁ ϕ₂ : Pattern) x:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢ (patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ H.
+  unfold patt_in.
+  apply ceil_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgDestructAnd 0.
+  mgSplitAnd.
+  - mgExactn 0.
+  - mgApplyMeta H.
+    mgExactn 1.
+Defined.
+
+Lemma membership_symbol_ceil_left {Σ : Signature} {syntax : Syntax} Γ ϕ x:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (patt_free_evar x ∈ml ⌈ ϕ ⌉) ---> (ex, (patt_bound_evar 0 ∈ml ϕ)).
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      apply ceil_monotonic.
+      { exact HΓ. }
+      { wf_auto2. }
+      2: {
+        apply membership_symbol_ceil_left_aux_0.
+        { wf_auto2. }
+        { wf_auto2. }
+      }
+      wf_auto2.
+    }
+    wf_auto2.
+  }
+  { wf_auto2. }
+
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      apply ceil_propagation_exists_1.
+      { exact HΓ. }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+
+  remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+  eapply syllogism_intro.
+  { wf_auto2. }
+  2: {wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+      eapply cast_proof.
+      {
+        rewrite -[⌈ ⌈ b0 and ϕ ⌉ ⌉](@evar_quantify_evar_open Σ y 0).
+        { simpl.
+          pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+          subst y. clear -Hfr. set_solver.
+        }
+        reflexivity.
+      }
+      apply ex_quan_monotone.
+      { wf_auto2. }
+      2: {
+        unfold evar_open. simpl_bevar_subst. simpl.
+        rewrite bevar_subst_not_occur_is_noop.
+        { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+        apply def_def_phi_impl_def_phi.
+        { exact HΓ. }
+        { wf_auto2. }
+      }
+      { wf_auto2. }
+    }
+    {
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        wf_auto2.
+      }
+    }
+  }
+  { 
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        wf_auto2.
+      }
+  }
+
+  toMyGoal.
+  {
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        split_and!; auto; wf_auto2.
+      }
+  }
+  
+  unfold exists_quantify.
+  pose proof (Htmp := @membership_exists Σ syntax Γ x (evar_quantify y 0 ⌈ patt_free_evar y and ϕ ⌉)).
+  specialize (Htmp HΓ).
+  feed specialize Htmp.
+  { 
+      unfold exists_quantify.
+      unfold well_formed. split_and!.
+      { wf_auto2; case_match; wf_auto2. }
+      unfold well_formed_closed. split_and!.
+      { simpl; case_match; wf_auto2. }
+      { simpl; case_match; try congruence. simpl.
+        split_and!; auto; wf_auto2.
+      }
+  }
+  mgRewrite -> Htmp at 1. clear Htmp.
+
+  fromMyGoal. intros _ _.
+  case_match; try congruence.
+  rewrite evar_quantify_fresh.
+  { subst y. eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh'. }
+    clear. set_solver.
+  }
+  fold (patt_not b0).
+  fold (patt_not (patt_not b0)).
+  fold (patt_not ϕ).
+  fold (! b0 or ! ϕ).
+  fold (!(! b0 or ! ϕ)).
+  fold (b0 and ϕ).
+  fold (patt_defined (b0 and ϕ)).
+  unfold patt_in.
+
+  apply (@strip_exists_quantify_l Σ Γ y).
+  { simpl.
+    pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+    rewrite -Heqy in Hfr.
+    clear -Hfr.
+    set_solver.
+  }
+  { simpl. split_and!; auto; wf_auto2. }
+
+  apply (@strip_exists_quantify_r Σ Γ y).
+  { simpl.
+    pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
+    rewrite -Heqy in Hfr.
+    clear -Hfr.
+    set_solver.
+  }
+  { simpl. split_and!; auto; wf_auto2. }
+  apply ex_quan_monotone.
+  { wf_auto2. }
+  { wf_auto2. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  
+  apply ceil_and_x_ceil_phi_impl_ceil_phi.
+  { exact HΓ. }
+  { wf_auto2. }
+Defined.
+
+
+Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (ex, (⌈ b0 and  ϕ ⌉ and b0)) ---> ϕ.
+Proof.
+  intros HΓ wfϕ.
+  Search "prenex" patt_forall.
+  apply prenex_forall_imp.
+  1,2: wf_auto2.
+  remember (fresh_evar (⌈ b0 and ϕ ⌉ and b0 ---> ϕ)) as x.
+  eapply cast_proof.
+  {
+    rewrite -[HERE in (all, HERE)](@evar_quantify_evar_open Σ x 0).
+    { subst x. apply set_evar_fresh_is_fresh. }
+    reflexivity.
+  }
+  apply universal_generalization.
+  { wf_auto2. }
+  assert (Htmp: forall (ϕ₁ ϕ₂ ϕ₃ : Pattern),
+             well_formed ϕ₁ ->
+             well_formed ϕ₂ ->
+             well_formed ϕ₃ ->
+             Γ ⊢ ((! (ϕ₁ and (ϕ₂ and !ϕ₃))) ---> ((ϕ₁ and ϕ₂) ---> ϕ₃))).
+  {
+    intros ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃. toMyGoal.
+    { wf_auto2. }
+    do 2 mgIntro. mgDestructAnd 1.
+    mgApplyMeta (@not_not_elim Σ Γ ϕ₃ wfϕ₃).
+    mgIntro. mgApply 0. mgClear 0.
+    mgSplitAnd.
+    { mgExactn 0. }
+    mgSplitAnd.
+    { mgExactn 1. }
+    { mgExactn 2. }
+  }
+  eapply Modus_ponens.
+  4: apply Htmp.
+  all: fold bevar_subst.
+  1,2,4,5,6: wf_auto2.
+  1,2,4,5,6: apply wfc_ex_aux_bevar_subst; wf_auto2.
+  { apply wfc_ex_aux_bevar_subst. wf_auto2. simpl. reflexivity. }
+  simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  replace (⌈ patt_free_evar x and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ)) by reflexivity.
+  replace (patt_free_evar x and ! ϕ) with (subst_ctx box (patt_free_evar x and ! ϕ)) by reflexivity.
+  apply Singleton_ctx. exact wfϕ.
+Defined.
+
+Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ϕ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  unfold patt_total.
+  apply double_not_ceil_alt.
+  { assumption. }
+  { assumption. }
+  apply membership_elimination.
+  { wf_auto2. }
+  { assumption. }
+
+  remember (fresh_evar ϕ) as x.
+  eapply cast_proof.
+  { 
+    rewrite -[b0 ∈ml _](@evar_quantify_evar_open Σ x 0).
+    {
+      simpl.
+      pose proof (@set_evar_fresh_is_fresh _ ϕ).
+      unfold evar_is_fresh_in in H.
+      simpl. set_solver.
+    }
+    reflexivity.
+  }
+  apply universal_generalization.
+  { wf_auto2. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@membership_imp Σ syntax Γ x (⌈ ! ⌈ ϕ ⌉ ⌉) (! ⌈ ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgIntro.
+  mgApplyMeta (@membership_symbol_ceil_left Σ syntax Γ (! ⌈ ϕ ⌉) x HΓ ltac:(wf_auto2)) in 0.
+  mgRewrite (@membership_not_iff Σ syntax Γ (⌈ ϕ ⌉) x ltac:(wf_auto2) HΓ) at 1.
+
+  remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+  pose proof (Hfr := @set_evar_fresh_is_fresh' _ ({[x]} ∪ (free_evars ϕ))).
+  eapply cast_proof_mg_hyps.
+  {
+    rewrite <- (@evar_quantify_evar_open Σ y 0 (b0 ∈ml (! ⌈ ϕ ⌉))).
+    2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
+    reflexivity.
+  }
+
+  assert (Htmp: Γ ⊢ ((evar_open 0 y (b0 ∈ml (! ⌈ ϕ ⌉))) ---> (evar_open 0 y (! (b0 ∈ml ⌈ ϕ ⌉))))).
+  {
+    unfold evar_open. simpl_bevar_subst. simpl. apply membership_not_1.
+    { wf_auto2.
+      apply wfc_ex_aux_bevar_subst. wf_auto2. reflexivity.
+    }
+    exact HΓ.
+  }
+  
+  mgApplyMeta (ex_quan_monotone_nowf y Htmp) in 0.
+  clear Htmp.
+
+
+  eapply cast_proof_mg_hyps.
+  {
+    unfold exists_quantify.
+    rewrite -> (@evar_quantify_evar_open Σ y 0 (! b0 ∈ml (⌈ ϕ ⌉))).
+    2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
+    reflexivity.
+  }
+
+  mgApplyMeta (@not_not_intro Σ Γ (ex , (! b0 ∈ml ⌈ ϕ ⌉)) ltac:(wf_auto2)) in 0.
+  eapply cast_proof_mg_hyps.
+  {
+    replace (! ! ex , (! b0 ∈ml ⌈ ϕ ⌉)) with (! all , (b0 ∈ml ⌈ ϕ ⌉)) by reflexivity.
+    reflexivity.
+  }
+
+
+  assert (Htmp: Γ ⊢ (! (ex, b0 ∈ml ⌈ ϕ ⌉)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉))).
+  {
+    apply ProofMode.modus_tollens.
+    { wf_auto2. }
+    { wf_auto2. }
+    admit.
+  }
+  mgApplyMeta Htmp.
+  fromMyGoal. intros _ _.
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+  
+  pose proof (Hfr' := @set_evar_fresh_is_fresh Σ ϕ).
+  eapply cast_proof.
+  {
+    rewrite -[THIS in (patt_exists THIS)](@evar_quantify_evar_open Σ x 0).
+    { simpl. 
+      unfold evar_is_fresh_in in Hfr'. rewrite -Heqx in Hfr'. clear -Hfr'.
+      set_solver.
+    }
+    rewrite -[THIS in (patt_forall THIS)](@evar_quantify_evar_open Σ y 0).
+    { simpl. 
+      unfold evar_is_fresh_in in Hfr'. rewrite -Heqy in Hfr. clear -Hfr.
+      set_solver.
+    }
+    reflexivity.
+  }
+  apply forall_gen.
+  { simpl. case_match;[|congruence].
+    subst x y.
+    eapply evar_is_fresh_in_richer'.
+    2: { eapply set_evar_fresh_is_fresh'. }
+    simpl.
+    rewrite free_evars_evar_quantify.
+    pose proof (Hsub := @free_evars_bevar_subst Σ ϕ (patt_free_evar (fresh_evar ϕ)) 0).
+    rewrite !simpl_free_evars.
+    set_solver.
+  }
+
+  Search patt_in "sym".
+  Search ML_proof_system patt_forall.
+  (* HERE *)
+  (* lemma-ceil-imp-floor-ceil *)
+Abort.
+
+
+Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ is_predicate_pattern (⌊ ϕ ⌋).
+Proof.
+  intros HΓ wfϕ.
+  unfold is_predicate_pattern.
+  unfold "=ml".
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@pf_iff_equiv_sym Σ Γ (⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> Top) ltac:(wf_auto2) ltac:(wf_auto2) (@phi_iff_phi_top _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
+
+  mgRewrite (@pf_iff_equiv_sym Σ Γ (! ⌊ ϕ ⌋) (⌊ ϕ ⌋ <---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2) (@not_phi_iff_phi_bott _ Γ (⌊ ϕ ⌋) ltac:(wf_auto2))) at 1.
+  fromMyGoal. intros _ _.
+
+  
+  unfold patt_total at 1.
+  unfold patt_total at 2.
+  unfold patt_or.
+  apply ProofMode.modus_tollens.
+  { wf_auto2. }
+  { wf_auto2. }
+
+  assert (Γ ⊢ (! ! ⌊ ϕ ⌋) <---> ⌊ ϕ ⌋).
+  { toMyGoal.
+    { wf_auto2. }
+    mgSplitAnd; mgIntro.
+    - fromMyGoal. intros _ _.
+      apply not_not_elim.
+      { wf_auto2. }
+    - mgIntro. mgApply 1. mgClear 1. mgExactn 0.
+  }
+  
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite H at 1.
+  (* TODO ceil-floor-imp-floor , ceil-imp-floor-ceil*)
+Abort.
+
+Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof. Abort. (* TODO *)
+
+Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  (* TODO *)
+Abort.
+
+
+Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
@@ -2512,5 +3497,51 @@ Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   Γ ⊢ ϕ₁ ⊆ml ϕ₂.
 Proof.
   intros HΓ wfϕ₁ wfϕ₂ Heq.
-  (* We have to rewrite the RHS using Heq... *)
-Abort.
+  toMyGoal.
+  { wf_auto2. }
+  unshelve (epose proof (Htmp := patt_equal_implies_iff HΓ _ _ Heq)).
+  { wf_auto2. }
+  { wf_auto2. }
+  apply pf_iff_equiv_sym in Htmp.
+  3: { wf_auto2. }
+  2: { wf_auto2. }
+  mgRewrite Htmp at 1.
+  fromMyGoal. intros _ _.
+  unfold "⊆ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgLeft. mgExactn 0.
+Defined.
+  
+Lemma disj_equals_greater_2 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  mu_free ϕ₁ -> (* TODO get rid of it *)
+  Γ ⊢ ((ϕ₁ or ϕ₂) =ml ϕ₂) ---> (ϕ₁ ⊆ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ mfϕ₁.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+
+  unshelve(mgApplyMeta (patt_eq_sym _ _ _) in 0).
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  mgRewriteBy 0 at 1.
+  { assumption. }
+  { simpl. rewrite mfϕ₁. reflexivity. }
+  mgClear 0.
+
+  fromMyGoal. intros _ _.
+  unfold "⊆ml".
+  apply phi_impl_total_phi_meta.
+  { wf_auto2. }
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro. mgLeft. mgExactn 0.
+Defined.
+  
