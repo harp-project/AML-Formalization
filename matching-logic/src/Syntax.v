@@ -7869,3 +7869,41 @@ Proof.
   eapply wf_after_subst_impl_wf_before.
   eassumption.
 Qed.
+
+Global Instance evar_is_fresh_in_dec {Σ : Signature} (x : evar) (p : Pattern) :
+  Decision (evar_is_fresh_in x p).
+Proof.
+  unfold evar_is_fresh_in.
+  apply not_dec. apply gset_elem_of_dec.
+Defined.
+
+Definition evar_is_fresh_in_list {Σ : Signature} (x : evar) (l : list Pattern) :=
+  Forall (evar_is_fresh_in x) l.
+
+Global Instance evar_is_fresh_in_list_dec {Σ : Signature} (x : evar) (l : list Pattern) :
+  Decision (evar_is_fresh_in_list x l).
+Proof.
+  unfold Decision. unfold evar_is_fresh_in_list.
+  apply Forall_dec.
+  intros p.
+  apply evar_is_fresh_in_dec.
+Defined.
+
+Global Instance svar_is_fresh_in_dec {Σ : Signature} (X : svar) (p : Pattern) :
+  Decision (svar_is_fresh_in X p).
+Proof.
+  unfold svar_is_fresh_in.
+  apply not_dec. apply gset_elem_of_dec.
+Defined.
+
+Definition svar_is_fresh_in_list {Σ : Signature} (X : svar) (l : list Pattern) :=
+  Forall (svar_is_fresh_in X) l.
+
+Global Instance svar_is_fresh_in_list_dec {Σ : Signature} (X : svar) (l : list Pattern) :
+  Decision (svar_is_fresh_in_list X l).
+Proof.
+  unfold Decision. unfold svar_is_fresh_in_list.
+  apply Forall_dec.
+  intros p.
+  apply svar_is_fresh_in_dec.
+Defined.
