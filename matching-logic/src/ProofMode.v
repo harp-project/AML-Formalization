@@ -7,7 +7,7 @@ From Ltac2 Require Import Ltac2.
 
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-Require Import Unicoq.Unicoq.
+(*Require Import Unicoq.Unicoq.*)
 From Equations Require Import Equations.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
