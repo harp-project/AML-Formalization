@@ -8025,14 +8025,35 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma wfc_ex_aux_Sn_and_not_bevar_occur_Sn_impl_wfc_ex_aux_n (Σ : Signature) ϕ n:
+  bevar_occur ϕ n = false ->
+  well_formed_closed_ex_aux ϕ (S n) = true ->
+  well_formed_closed_ex_aux ϕ n = true.
+Proof.
+  intros H1 H2.
+  move: n H1 H2.
+  induction ϕ; intros n' H1 H2; simpl in *; auto.
+  - repeat case_match; auto. lia.
+  - apply orb_false_elim in H1. destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - apply orb_false_elim in H1. destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+Qed.
+
 Lemma wf_ex_quan_impl_wf {Σ : Signature} (x : evar) (ϕ : Pattern):
+  bevar_occur ϕ 0 = false ->
   well_formed (exists_quantify x ϕ) = true ->
   well_formed ϕ = true.
 Proof.
-  intros H. unfold exists_quantify in H.
+  intros H0 H. unfold exists_quantify in H.
   unfold well_formed, well_formed_closed in *. destruct_and!. simpl in *.
   split_and!.
   - eapply wfp_evar_quan_impl_wfp. eassumption.
   - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
-  - eapply wfcex_evar_quan_impl_wfcex in H2.
-Abort. (* Oops *)
+  - apply wfcex_evar_quan_impl_wfcex in H3.
+    apply wfc_ex_aux_Sn_and_not_bevar_occur_Sn_impl_wfc_ex_aux_n; assumption.
+Qed.
