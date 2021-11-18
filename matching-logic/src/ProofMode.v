@@ -6118,7 +6118,9 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     lazy_match! goal with
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
       => let hr : HeatResult := heat atn a p in
-         Message.print (Message.of_constr (hr.(ctx_pat)));
+         if ml_debug_rewrite then
+           Message.print (Message.of_constr (hr.(ctx_pat)));
+         else () ;
          let heq := Control.hyp (hr.(equality)) in
          let pc := (hr.(pc)) in
          eapply (@cast_proof_mg_goal _ $g) >
