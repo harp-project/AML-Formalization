@@ -3643,6 +3643,19 @@ Proof.
   mgSplitAnd; mgIntro; mgExactn 0.
 Defined.
 
+Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: { apply def_def_phi_impl_def_phi; assumption. }
+  { wf_auto2. }
+  apply def_phi_impl_tot_def_phi; assumption.
+Defined.
+
 
 Lemma ceil_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
@@ -3655,7 +3668,6 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   unfold patt_or.
-  Check syllogism_intro.
   apply syllogism_intro with (B := ⌈ ⌈ ϕ ⌉ ⌉).
   1,2,3: wf_auto2.
   - toMyGoal.
@@ -3670,7 +3682,6 @@ Proof.
     fromMyGoal. intros _ _. toMyGoal. wf_auto2.
     mgRewrite (@def_propagate_not Σ syntax Γ ϕ HΓ ltac:(wf_auto2)) at 1.
     fromMyGoal. intros _ _.
-    Check deduction_theorem_noKT.
     unshelve (eapply deduction_theorem_noKT).
     4: exact HΓ.
     2,3: wf_auto2.
@@ -3911,21 +3922,109 @@ Proof.
         reflexivity.
       }
     }
-    - 
+    - eapply syllogism_intro with (B := ⌊ ⌈ ϕ ⌉ ⌋).
+      1,2,3: wf_auto2.
+      { apply def_def_phi_impl_tot_def_phi; assumption. }
+      unshelve (eapply deduction_theorem_noKT).
+      2,3: wf_auto2.
+      2: exact HΓ.
+      {
+        apply phi_impl_total_phi_meta.
+        { wf_auto2. }
+        apply pf_iff_split.
+        1,2: wf_auto2.
+        + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal. intros _ _. apply top_holds.
+        + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal. intros _ _.
+          apply hypothesis. wf_auto2. set_solver.
+      }
 
-Defined.
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (∅ ∪ free_evars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp Top (⌈ ϕ ⌉)). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        intros.
 
-Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
-  theory ⊆ Γ ->
-  well_formed ϕ ->
-  Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
-Proof.
-  intros HΓ wfϕ.
-  eapply syllogism_intro.
-  1,3: wf_auto2.
-  2: { apply def_def_phi_impl_def_phi; assumption. }
-  { wf_auto2. }
-  apply def_phi_impl_tot_def_phi; assumption.
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (∅ ∪ free_evars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [Top] [Top]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        { reflexivity. }
+      }
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (∅ ∪ free_evars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp (⌈ ϕ ⌉) Top). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (∅ ∪ free_evars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [⌈ ϕ ⌉]  [⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        reflexivity.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_svar_subst Σ (∅ ∪ free_svars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp Top (⌈ ϕ ⌉)). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_svar_subst. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_svar_subst Σ (∅ ∪ free_svars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [Top] [Top]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_svar_subst. }
+        { reflexivity. }
+      }
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_svar_subst Σ (∅ ∪ free_svars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp (⌈ ϕ ⌉) Top). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_svar_subst. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_svar_subst Σ (∅ ∪ free_svars ϕ)) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [⌈ ϕ ⌉]  [⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_svar_subst. }
+        reflexivity.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_kt Σ) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp Top (⌈ ϕ ⌉)). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_kt. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_kt Σ) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [Top] [Top]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_kt. }
+        { reflexivity. }
+      }
+      {
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_kt Σ) (Γ ∪ {[⌈ ϕ ⌉]}) []).
+        simpl in Htmp. specialize (Htmp (⌈ ϕ ⌉) Top). simpl in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_kt. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_kt Σ) (Γ ∪ {[⌈ ϕ ⌉]})).
+        simpl in Htmp. specialize (Htmp [⌈ ϕ ⌉]  [⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_kt. }
+        reflexivity.
+      }
+    }
+
 Defined.
 
 Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
