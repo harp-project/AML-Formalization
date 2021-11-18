@@ -8057,3 +8057,32 @@ Proof.
   - apply wfcex_evar_quan_impl_wfcex in H3.
     apply wfc_ex_aux_Sn_and_not_bevar_occur_Sn_impl_wfc_ex_aux_n; assumption.
 Qed.
+
+
+Lemma bevar_occur_evar_open_2 {Σ : Signature} dbi x ϕ:
+  bevar_occur (evar_open dbi x ϕ) dbi = false.
+Proof.
+  move: dbi.
+  unfold evar_open.
+  induction ϕ; intros dbi; simpl; try reflexivity.
+  - case_match; simpl;[reflexivity|].
+    case_match;[congruence|reflexivity].
+  - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+  - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+  - rewrite IHϕ. reflexivity.
+  - rewrite IHϕ. reflexivity.
+Qed.
+
+Lemma bsvar_occur_svar_open_2 {Σ : Signature} dbi X ϕ:
+  bsvar_occur (svar_open dbi X ϕ) dbi = false.
+Proof.
+  move: dbi.
+  unfold svar_open.
+  induction ϕ; intros dbi; simpl; try reflexivity.
+  - case_match; simpl;[reflexivity|].
+    case_match;[congruence|reflexivity].
+  - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+  - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+  - rewrite IHϕ. reflexivity.
+  - rewrite IHϕ. reflexivity.
+Qed.

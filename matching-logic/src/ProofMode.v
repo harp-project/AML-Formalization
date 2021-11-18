@@ -6694,7 +6694,6 @@ Proof.
   split; assumption.
 Defined.
 
-
 (* Weakening under existential *)
 Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃:
   well_formed (ex, ϕ₁) ->
@@ -6707,13 +6706,21 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  remember (fresh_evar ϕ₁) as x.
+  remember (evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃)))) as x.
   rewrite -[ϕ₁](@evar_quantify_evar_open Σ x 0).
-  { subst x. apply set_evar_fresh_is_fresh'. }
-  Check evar_is_fresh_in.
-  Check Ex_gen.
+  { subst x.
+    eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
+  }
+  mgIntro.
+  apply Ex_gen_lifted.
+  { subst x. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver. }
+  { constructor. 2: apply Forall_nil; exact I.
+    subst x.
+    eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
+  }
+  { apply bevar_occur_evar_open_2. }
 
-Defined.
+Abort.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
