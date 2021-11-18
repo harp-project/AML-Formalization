@@ -4067,12 +4067,16 @@ Proof.
 Defined.
 
 Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
-  let hyps := fresh "hyps" in
-  rewrite -[hyps in @mkMyGoal _ _ hyps _](firstn_skipn n);
-  rewrite [hyps in @mkMyGoal _ _ (hyps ++ _) _]/=;
-  rewrite [hyps in @mkMyGoal _ _ (_ ++ hyps) _]/=;
+  eapply cast_proof_mg_hyps;
+  [(let hyps := fresh "hyps" in
+    rewrite <- (firstn_skipn n);
+    rewrite [hyps in (hyps ++ _)]/=;
+    rewrite [hyps in (_ ++ hyps)]/=;
+    reflexivity
+   )|];
   eapply (@MyGoal_applyMetaIn _ _ _ _ t);
-            rewrite [hyps in @mkMyGoal _ _ hyps _]/app.
+  eapply cast_proof_mg_hyps;
+  [(rewrite /app; reflexivity)|].
 
 Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
@@ -6119,7 +6123,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
-           Message.print (Message.of_constr (hr.(ctx_pat)));
+           Message.print (Message.of_constr (hr.(ctx_pat)))
          else () ;
          let heq := Control.hyp (hr.(equality)) in
          let pc := (hr.(pc)) in
