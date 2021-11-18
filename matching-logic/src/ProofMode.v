@@ -2570,23 +2570,30 @@ Proof.
 Qed.
 
 Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
-  match goal with
+  lazymatch goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
     let l1 := fresh "l1" in
     let l2 := fresh "l2" in
     let Heql1 := fresh "Heql1" in
     let Heql2 := fresh "Heql2" in
-    rewrite -[l](take_drop n);
-    remember (take n l) as l1 eqn:Heql1;
-    remember (drop n l) as l2 eqn:Heql2;
+    remember (take n l) as l1 eqn:Heql1 in |-;
+    remember (drop n l) as l2 eqn:Heql2 in |-;
     simpl in Heql1; simpl in Heql2;
+    eapply cast_proof_mg_hyps;
+    [(
+      rewrite -[l](take_drop n);
+      reflexivity
+     )|];
     let Hwf := fresh "Hwf" in
     assert (Hwf : well_formed t);
     [idtac|
       let H := fresh "H" in
-      assert (H : @mkMyGoal Sgm Ctx l1 t) ; subst l1 l2;
-      [ | (eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t Hwf H);
-         rewrite [_ ++ _]/=; clear H)] 
+      assert (H : @mkMyGoal Sgm Ctx l1 t) ;
+      [
+        (eapply cast_proof_mg_hyps; [(rewrite Heql1; reflexivity)|]);  clear l1 l2 Heql1 Heql2
+      | apply (cast_proof_mg_hyps Heql1) in H;
+        eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t Hwf H);
+        rewrite [_ ++ _]/=; clear l1 l2 Heql1 Heql2 H] 
     ]
   end.
 
@@ -3325,16 +3332,19 @@ Tactic Notation "mgDestructOr" constr(n) :=
   match goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
     let Htd := fresh "Htd" in
-    epose proof (Htd :=take_drop);
-    specialize (Htd n l);
-    rewrite [take _ _]/= in Htd;
-    rewrite [drop _ _]/= in Htd;
-    rewrite -Htd; clear Htd;
-    epose proof (Htd :=take_drop);
-    specialize (Htd 1 (drop n l));
-    rewrite [take _ _]/= in Htd;
-    rewrite ![drop _ _]/= in Htd;
-    rewrite -Htd; clear Htd;
+    eapply cast_proof_mg_hyps;
+    [(
+      epose proof (Htd :=take_drop);
+      specialize (Htd n l);
+      rewrite [take _ _]/= in Htd;
+      rewrite [drop _ _]/= in Htd;
+      rewrite -Htd; clear Htd;
+      epose proof (Htd :=take_drop);
+      specialize (Htd 1 (drop n l));
+      rewrite [take _ _]/= in Htd;
+      rewrite ![drop _ _]/= in Htd;
+      rewrite -Htd; clear Htd; reflexivity
+      )|];
     apply MyGoal_disj_elim; simpl
   end.
 
