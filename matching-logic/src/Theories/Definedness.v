@@ -3693,15 +3693,76 @@ Proof.
       apply not_not_intro.
       assumption.
     }
-    { simpl. Search uses_ex_gen.
+    { simpl.
       rewrite !orbF.
       rewrite orb_false_iff. split.
       {
         simpl.
-        Check MyGoal_intro_indifferent.
-        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ ∪ ∅)) Γ [⊥]).
-        simpl in Htmp. eapply Htmp.
-        eapply indifferent_to_prop_uses_ex_gen.
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ ∪ ∅)) (Γ ∪ {[! ϕ]}) []).
+        simpl in Htmp. apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        unfold MyGoal_applyMetaIn.
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. specialize (Htmp [⊥] [⊥]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+
+        pose proof (Htmp := prf_strenghten_premise_iter_meta_meta_indifferent).
+        specialize (Htmp (@uses_ex_gen Σ (free_evars ϕ ∪ ∅)) (Γ ∪ {[! ϕ]}) [] [] (⌈ ϕ ⌉) ⊥ (⌈ ϕ ⌉)).
+        specialize (Htmp ltac:(wf_auto2)).
+        specialize (Htmp ltac:(wf_auto2)).
+        specialize (Htmp ltac:(wf_auto2)).
+        specialize (Htmp ltac:(wf_auto2)).
+        specialize (Htmp ltac:(wf_auto2)).
+        rewrite [(foldr (@patt_imp Σ) ⌈ ϕ ⌉ ([] ++ [⊥]))]/= in Htmp.
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_prop_uses_ex_gen. }
+        { reflexivity. }
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. specialize (Htmp [⌈ ϕ ⌉] [⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        2: { apply indifferent_to_cast_uses_ex_gen. }
+        2: { wf_auto2. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. specialize (Htmp [⌈ ϕ ⌉] [⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+
+        pose proof (Htmp := @MyGoal_exactn_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. specialize (Htmp [] [] (⌈ ϕ ⌉)). apply Htmp; clear Htmp.
+        { apply indifferent_to_prop_uses_ex_gen. }
+      }
+
+      {
+        simpl.
+        pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ ∪ ∅)) (Γ ∪ {[! ϕ]}) []).
+        simpl in Htmp. apply Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+        unfold MyGoal_applyMetaIn.
+        intros.
+
+        pose proof (Htmp := @MyGoal_add_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. apply Htmp; clear Htmp.
+        { apply indifferent_to_prop_uses_ex_gen. }
+        { reflexivity. }
+        intros.
+
+        pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        simpl in Htmp. specialize (Htmp [⌊ ! ϕ ⌋; ⌈ ϕ ⌉] [⌊ ! ϕ ⌋; ⌈ ϕ ⌉]). simpl in Htmp. rewrite Htmp; clear Htmp.
+        { apply indifferent_to_cast_uses_ex_gen. }
+
+        pose proof (Htmp := @MyGoal_weakenConclusion_indifferent Σ (@uses_ex_gen Σ (@free_evars Σ ϕ ∪ ∅)) (Γ ∪ {[! ϕ]})).
+        apply Htmp; clear Htmp.
+        { apply indifferent_to_prop_uses_ex_gen. }
+        intros.
+
+
+        simpl in Htmp
+        Search MyGoal_weakenConclusion.
+        Search MyGoal_add.
+
       }
       Search cast_proof.
 
