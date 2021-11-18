@@ -3568,6 +3568,22 @@ Proof.
   apply  membership_symbol_ceil_right; assumption.
 Defined.
 
+Lemma def_tot_phi_impl_tot_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ⌈ ⌊ ϕ ⌋ ⌉ ---> ⌊ ϕ ⌋ .
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  mgApplyMeta (@not_not_intro Σ Γ (⌈ ⌊ ϕ ⌋ ⌉) ltac:(wf_auto2)) in 0.
+  mgIntro. mgApply 0. mgClear 0.
+  fromMyGoal. intros _ _.
+  apply def_phi_impl_tot_def_phi.
+  { exact HΓ. }
+  { wf_auto2. }
+Defined.
 
 Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
@@ -3605,6 +3621,7 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgRewrite H at 1.
+  Check def_phi_impl_tot_def_phi.
   (* TODO ceil-floor-imp-floor , ceil-imp-floor-ceil*)
 Abort.
 
