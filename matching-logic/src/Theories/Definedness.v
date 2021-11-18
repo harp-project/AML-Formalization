@@ -3621,9 +3621,16 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgRewrite H at 1.
-  Check def_phi_impl_tot_def_phi.
-  (* TODO ceil-floor-imp-floor , ceil-imp-floor-ceil*)
-Abort.
+  clear H.
+  mgIntro.
+  mgApplyMeta (@def_phi_impl_tot_def_phi Σ syntax Γ (⌊ ϕ ⌋) HΓ ltac:(wf_auto2)) in 0.
+  fromMyGoal. intros _ _.
+  apply floor_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply def_tot_phi_impl_tot_phi; assumption.
+Defined.
 
 Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
