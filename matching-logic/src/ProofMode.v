@@ -2973,7 +2973,9 @@ Tactic Notation "mgClear" constr(n) :=
     let l2 := fresh "l2" in
     let Heql1 := fresh "Heql1" in
     let Heql2 := fresh "Heql2" in
-    rewrite -[l](take_drop n);
+    eapply cast_proof_mg_hyps;
+    [(
+      rewrite -[l](take_drop n); reflexivity)|];
     remember (take n l) as l1 eqn:Heql1;
     remember (drop n l) as l2 eqn:Heql2;
     simpl in Heql1; simpl in Heql2;
