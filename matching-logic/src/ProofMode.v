@@ -5972,21 +5972,43 @@ Proof.
   1: abstract (apply proved_impl_wf in H; wf_auto2).
 Defined.
 
-Check MyGoal_rewriteIff.
+Ltac2 mutable ml_debug_rewrite := false.
 
 (* Calls [cont] for every subpattern [a] of pattern [phi], giving the match context as an argument *)
 Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
   try (
-    match! phi with
-    | context ctx [ ?x ]
-      => (if Constr.equal x a then cont ctx else ()); fail
-    end
-  ); ().
-
+      if ml_debug_rewrite then
+           Message.print (
+               Message.concat
+                 (Message.of_string "Trying to match ")
+                 (Message.of_constr a)
+             )
+        else ();
+      match! phi with
+      | context ctx [ ?x ]
+        => if ml_debug_rewrite then
+             Message.print (
+                 Message.concat
+                   (Message.of_string " against ")
+                   (Message.of_constr x)
+               )
+           else ();
+           (if Constr.equal x a then
+              if ml_debug_rewrite then
+                Message.print (Message.of_string "Success.")
+              else () ;
+              cont ctx
+            else ());
+           fail (* backtrack *)
+      end
+    ); ().
 
 (* Calls [cont] for [n]th subpatern [a] of pattern [phi]. *)
 Ltac2 for_nth_match :=
   fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+    if ml_debug_rewrite then
+      Message.print (Message.of_string "for_nth_match")
+    else () ;
     let curr : int ref := {contents := 0} in
     let found : bool ref := {contents := false} in
     for_each_match a phi
@@ -6090,13 +6112,12 @@ Ltac2 heat :=
 .
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
-  match! Constr.type hiff with
+  lazy_match! Constr.type hiff with
   | @ML_proof_system _ _ (?a <---> ?a')
     =>
     lazy_match! goal with
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
       => let hr : HeatResult := heat atn a p in
-         Message.print (Message.of_string "Here");
          Message.print (Message.of_constr (hr.(ctx_pat)));
          let heq := Control.hyp (hr.(equality)) in
          let pc := (hr.(pc)) in
