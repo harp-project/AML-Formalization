@@ -3306,6 +3306,144 @@ Proof.
   apply Singleton_ctx. exact wfϕ.
 Defined.
 
+Lemma membership_symbol_ceil_right {Σ : Signature} {syntax : Syntax} Γ ϕ x:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ((ex, (BoundVarSugar.b0 ∈ml ϕ)) ---> (patt_free_evar x ∈ml ⌈ ϕ ⌉)).
+Proof.
+  intros HΓ wfϕ.
+  remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
+  pose proof (Htmp := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ free_evars ϕ)).
+  rewrite -Heqy in Htmp.
+  assert (x <> y).
+  { solve_fresh_neq. }
+
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: {
+    apply (@strip_exists_quantify_l Σ Γ y).
+    { simpl. clear -Htmp. set_solver. }
+    { simpl. split_and!; try reflexivity. wf_auto2. }
+    apply ex_quan_monotone.
+    { wf_auto2. }
+    2: {
+      unfold evar_open. simpl_bevar_subst. simpl.
+      rewrite bevar_subst_not_occur.
+      { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+      apply membership_symbol_ceil_aux_0 with (y0 := x); assumption.
+    }
+    { wf_auto2. }
+  }
+  { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+
+  eapply syllogism_intro.
+  3: wf_auto2.
+  1: { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+  2: {
+    apply pf_iff_proj2.
+    2: { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+    2: { 
+      unfold exists_quantify. simpl.
+      repeat case_match; try congruence; try contradiction.
+      apply membership_exists.
+      { exact HΓ. }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { wf_auto2. }
+    2: {
+    apply (@strip_exists_quantify_l Σ Γ y).
+    { simpl.
+      rewrite evar_quantify_free_evar_subst.
+      { apply count_evar_occurrences_0.
+        subst y.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      set_solver.
+    }
+    { simpl. split_and!; try reflexivity. wf_auto2. }
+    apply ex_quan_monotone.
+    { wf_auto2. }
+    2: {
+      eapply syllogism_intro.
+      1: wf_auto2.
+      3: {
+        unfold evar_open. simpl_bevar_subst. simpl.
+        rewrite bevar_subst_evar_quantify_free_evar.
+        { apply wfc_ex_implies_not_bevar_occur. wf_auto2. }
+        apply membership_symbol_ceil_aux_0 with (y0 := y); assumption.
+      }
+      { wf_auto2. }
+      2: {
+        apply ceil_monotonic.
+        { exact HΓ. }
+        { wf_auto2. }
+        2: {
+          eapply pf_iff_proj1.
+          { wf_auto2. }
+          2: {
+            apply patt_and_comm.
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+          { wf_auto2. }
+        }
+        { wf_auto2. }
+      }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+  }
+  { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+
+  eapply syllogism_intro.
+  { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+  2: { wf_auto2. }
+  2: {
+    apply membership_monotone.
+    { exact HΓ. }
+    { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. } 
+    2: {
+      unfold exists_quantify.
+      simpl.
+      repeat case_match; try congruence.
+      rewrite evar_quantify_free_evar_subst.
+      { apply count_evar_occurrences_0.
+        subst y.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      apply ceil_propagation_exists_2.
+      { exact HΓ. }
+      { wf_auto2. }
+    }
+    { wf_auto2. }
+  }
+  { wf_auto2. }
+  apply membership_monotone.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply ceil_monotonic.
+  { exact HΓ. }
+  { wf_auto2. }
+  { wf_auto2. }  
+  apply membership_symbol_ceil_right_aux_0; assumption.
+Defined.
+
 Lemma def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
@@ -3422,6 +3560,7 @@ Proof.
     rewrite !simpl_free_evars.
     set_solver.
   }
+  
 
   Search patt_in "sym".
   Search ML_proof_system patt_forall.
