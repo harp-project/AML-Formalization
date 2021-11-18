@@ -3520,13 +3520,12 @@ Proof.
     reflexivity.
   }
 
-
-  assert (Htmp: Γ ⊢ (! (ex, b0 ∈ml ⌈ ϕ ⌉)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉))).
+  assert (Htmp: Γ ⊢ (! (ex, b0 ∈ml ϕ)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉))).
   {
     apply ProofMode.modus_tollens.
     { wf_auto2. }
     { wf_auto2. }
-    admit.
+    apply membership_symbol_ceil_left; assumption.
   }
   mgApplyMeta Htmp.
   fromMyGoal. intros _ _.
@@ -3560,13 +3559,14 @@ Proof.
     rewrite !simpl_free_evars.
     set_solver.
   }
-  
 
-  Search patt_in "sym".
-  Search ML_proof_system patt_forall.
-  (* HERE *)
-  (* lemma-ceil-imp-floor-ceil *)
-Abort.
+  rewrite evar_quantify_evar_open.
+  { simpl. unfold evar_is_fresh_in in Hfr'. subst x. set_solver. }
+  unfold evar_open. simpl_bevar_subst. simpl.
+  rewrite bevar_subst_not_occur.
+  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  apply  membership_symbol_ceil_right; assumption.
+Defined.
 
 
 Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
