@@ -4034,10 +4034,37 @@ Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
 Proof.
   intros HΓ wfϕ₁ wfϕ₂.
-  toMyGoal.
-  { wf_auto2. }
-  mgIntro.
-  (* TODO *)
+  unshelve (eapply deduction_theorem_noKT).
+  2,3: wf_auto2.
+  2: exact HΓ.
+  {
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    - toMyGoal. wf_auto2. mgIntro. mgDestructOr 0.
+      + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂).
+        { apply hypothesis. wf_auto2. set_solver. }
+        mgApplyMeta H. mgExactn 0.
+      + mgExactn 0.
+    - apply disj_right_intro; assumption.
+  }
+  {
+    simpl. rewrite !orbF.
+    Set Printing Implicit.
+    pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ₁ ∪ free_evars ϕ₂)) (Γ ∪ {[ϕ₁ ---> ϕ₂]}) []).
+    simpl in Htmp. specialize (Htmp (ϕ₁ or ϕ₂) (ϕ₂)). simpl in Htmp.
+    apply Htmp; clear Htmp.
+    { apply indifferent_to_cast_uses_ex_gen. }
+    intros.
+
+    pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ₁ ∪ free_evars ϕ₂)) (Γ ∪ {[ϕ₁ ---> ϕ₂]})).
+    simpl in Htmp. specialize (Htmp [ϕ₁ or ϕ₂] [ϕ₁ or ϕ₂]). simpl in Htmp. rewrite Htmp; clear Htmp.
+    { apply indifferent_to_cast_uses_ex_gen. }
+    (* TODO lemmas for these. *)
+    unfold MyGoal_disj_elim. Search prf_disj_elim_iter_2_meta_meta.
+    { reflexivity. }    
+  }
 Abort.
 
 
