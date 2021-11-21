@@ -6115,6 +6115,235 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
+Local Definition length (A : Type) : list A -> nat :=
+  fix length l :=
+  match l with
+   | nil => O
+   | _ :: l' => S (length l')
+  end.
+
+Ltac mgTauto :=
+  let rec t_tauto_intuit :=
+ ( repeat mgIntro;
+    match goal with
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)] =>
+       match l with
+       | nil => (idtac "nil")
+       | _ => (idtac "notnil")
+      end
+    end
+ ) in t_tauto_intuit.
+
+  Search "A_impl_A".
+
+Ltac2 rec iterlist (l : constr) :=
+  match! l with
+     | nil => ltac1:(idtac "nil")
+     | (?a :: ?m) => 
+            
+            iterlist m
+  end.
+
+Ltac2 rec mlTauto := fun () =>
+  ltac1:((mgIntro; mgApplyMeta (@A_impl_A _ _ _ _)))
+  (*lazy_match! goal with
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+        =>
+          ltac1:(repeat (mgApplyMeta (@A_impl_A _ _ _ _); mgIntro));
+          Message.print (Message.of_string "Hyps");
+          Message.print (Message.of_constr l);
+          Message.print (Message.of_string "Goal");
+          Message.print (Message.of_constr p);
+          iterlist l
+    end.*)
+.
+
+Tactic Notation "mlTauto" :=
+  (let ff := ltac2:( |-
+                      mlTauto ()
+                   ) in
+   ff).
+
+
+  Lemma conj_right {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( b ---> a ---> a).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mlTauto.
+    mgClear 0.
+    mgApplyMeta (@A_impl_A _ _ _ _).
+    mgApplyMeta (@A_impl_A _ _ a wfa). wf_auto2
+  Qed.
+
+(*Tautos*)
+Search (?a ---> (?b ---> ?a) ). (*P1*)
+Search ((?a ---> (?b ---> ?c)) ---> ((?a ---> ?b) ---> (?a ---> ?c))). (*P2*)
+Search (?a ---> (?b ---> (?a and ?b)) ). (*conj_intro*)
+Search ((?a and ?b) ---> ?b ). (**)
+Search ((?a ---> ?b) ---> ((?b ---> ?c) ---> ((?a or ?b )---> ?c))). (**)
+Search (?a ---> (?a or ?b) ). (*disj_left_intro*)
+Search ((?a ---> ?b) ---> ((?a ---> ! ?b) ---> ! ?a)). (*P4m*)
+Search ( (! (! ?a)) ---> ?a). (**)
+Search ((?a or !?a)). (*A_or_notA*)
+Search (!(?a and !?a)). (**)
+Search ( ?a ---> ?a). (*A_impl_A*)
+Search ((?a ---> ?b) ---> (?b ---> ?c) ---> (?a ---> ?c)). (*syllogism*)
+Search ( ?a ---> ((! ?a) ---> ?b)). (**)
+Search ((((?a ---> ?b) ---> ?a) ---> ?a)). (**)
+
+  Lemma conj_right {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((a and b) ---> b).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro .
+    mgDestructAnd 0.
+    mgExactn 1.
+  Qed.
+
+  Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( a ---> ((! a) ---> b)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    unfold patt_not at 1.
+
+    mgApplyMeta (@false_implies_everything _ _ _ wfb ).
+    mgApply 1.
+    mgExactn 0.
+  Qed.
+
+  Lemma conj_left {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((a and b) ---> a).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro .
+    mgDestructAnd 0.
+    mgExactn 0.
+  Qed.
+
+  Lemma impl_taut_1 {Σ : Signature} Γ a b c:
+    well_formed a ->
+    well_formed b ->
+    well_formed c ->
+    Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b )---> c))).
+  Proof.
+    intros wfa wfb wfc.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgApply 1.
+    mgDestructOr 2.
+    - mgApply 0.
+      mgExactn 2.
+    - mgExactn 2.
+  Qed.
+
+  Lemma condtradict_taut_1 {Σ : Signature} Γ a:
+    well_formed a ->
+    Γ ⊢ !(a and !a).
+  Proof.
+    intros wfa.
+    toMyGoal.
+    { wf_auto2. }
+    unfold patt_not at 1.
+    mgIntro.
+    mgDestructAnd 0.
+    unfold patt_not at 1. (*messed up indexing?*)
+    mgApply 1.
+    mgExactn 0.
+  Qed.
+  
+  Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( a ---> ((! a) ---> b)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    unfold patt_not at 1.
+
+    mgApplyMeta (@false_implies_everything _ _ _ wfb ).
+    mgApply 1.
+    mgExactn 0.
+  Qed.
+
+  Lemma notnot_taut_1 {Σ : Signature} Γ a:
+    well_formed a ->
+    Γ ⊢ (! ! a ---> a).
+  Proof.
+    intros wfa.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    repeat unfold patt_not at 1.
+    mgApplyMeta (@false_implies_everything _ _ _ wfa ).
+    mgApply 0.
+    mgIntro.
+    Search "A_or_notA".
+    epose (@A_or_notA _ _ _ wfa).
+    fromMyGoal.
+    Admitted.
+ 
+
+
+  Lemma Peirce_taut {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((((a ---> b) ---> a) ---> a)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgApply 0. 
+ 
+  Qed.
+
+
+
+
+  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p or q) <---> (p' or q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+
+    toMyGoal.
+    { wf_auto2. }
+    mgRewrite pep' at 1.
+    mgRewrite qeq' at 1.
+    Search "<--->".
+    epose (pf_iff_equiv_refl ).
+    eapply m.
+  Defined.
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
@@ -6180,41 +6409,4 @@ Defined.
         mgExactn 4.
   Defined.
 
-  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
-    well_formed p ->
-    well_formed q ->
-    well_formed p' ->
-    well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p or q) <---> (p' or q')).
-  Proof.
-    intros wfp wfq wfp' wfq' pep' qeq'.
-
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
-
-    toMyGoal.
-    { wf_auto2. }
-    unfold patt_iff.
-    mgSplitAnd.
-    - mgIntro.
-      mgDestructOr 0.
-      mgLeft.
-      + mgApplyMeta pip'.
-        mgExactn 0.
-      + mgRight.
-        mgApplyMeta qiq'.
-        mgExactn 0.
-    - mgIntro.
-      mgDestructOr 0.
-      mgLeft.
-      + mgApplyMeta p'ip.
-        mgExactn 0.
-      + mgRight.
-        mgApplyMeta q'iq.
-        mgExactn 0. 
-  Defined.
 
