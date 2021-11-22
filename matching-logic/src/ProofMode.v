@@ -2989,7 +2989,37 @@ Check @MyGoal_add.
 
 Definition Pattern_of {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (pf : Γ ⊢ ϕ) : Pattern := ϕ.
 
+Class IndifCast {Σ : Signature} (P : proofbpred)
+  := mkIndifCast { cast_indif : indifferent_to_cast P }.
 
+Class IndifProp {Σ : Signature} (P : proofbpred)
+  := mkIndifProp { prop_indif : indifferent_to_prop P }.
+
+#[export]
+ Instance uses_svar_subst_IndifCast {Σ : Signature} (SvS : SVarSet) : IndifCast (@uses_svar_subst Σ SvS)
+  := mkIndifCast (indifferent_to_cast_uses_svar_subst SvS).
+
+#[export]
+ Instance uses_svar_subst_IndifProp {Σ : Signature} (SvS : SVarSet) : IndifProp (@uses_svar_subst Σ SvS)
+  := mkIndifProp (indifferent_to_prop_uses_svar_subst SvS).
+
+#[export]
+ Instance uses_ex_gen_IndifCast {Σ : Signature} (EvS : EVarSet) : IndifCast (@uses_ex_gen Σ EvS)
+  := mkIndifCast (indifferent_to_cast_uses_ex_gen EvS).
+
+#[export]
+ Instance uses_ex_gen_IndifProp {Σ : Signature} (EvS : EVarSet) : IndifProp (@uses_ex_gen Σ EvS)
+  := mkIndifProp (indifferent_to_prop_uses_ex_gen EvS).
+
+#[export]
+ Instance uses_kt_IndifCast {Σ : Signature} : IndifCast (@uses_kt Σ)
+  := mkIndifCast (indifferent_to_cast_uses_kt).
+
+#[export]
+ Instance uses_kt_IndifProp {Σ : Signature} : IndifProp (@uses_kt Σ)
+  := mkIndifProp (indifferent_to_prop_uses_kt).
+
+(*
 Structure proofbpredIndifCast {Σ : Signature}
   := ProofbpredIndifCast { pbic_P : proofbpred; pbic_P_indif : indifferent_to_cast pbic_P }.
 
@@ -3021,15 +3051,15 @@ Canonical Structure uses_kt_indif_cast_S {Σ : Signature}
 Canonical Structure uses_kt_indif_prop_S {Σ : Signature}
   : proofbpredIndifProp
   := @ProofbpredIndifProp Σ (@uses_kt Σ) (indifferent_to_prop_uses_kt).
-
+*)
 
 Structure myProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
   := MyProofProperty { mpp_proof : Γ ⊢ ϕ; mpp_proof_property : P Γ ϕ mpp_proof = false  }.
 
 Structure myNWFProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
   := MyNWFProofProperty
-       { mnpp_proof : wf l -> well_formed g -> Γ ⊢ (foldr patt_imp g l);
-         mnpp_proof_property : forall wfl wfg, P Γ (foldr patt_imp g l) (mnpp_proof wfl wfg) = false ;
+       { mnpp_proof : of_MyGoal (mkMyGoal Γ l g) ;
+         mnpp_proof_property : forall wfg wfl, P Γ (foldr patt_imp g l) (mnpp_proof wfg wfl) = false ;
        }.
 
 Canonical Structure myProofProperty_from_myNWFProofProperty
@@ -3041,7 +3071,7 @@ Canonical Structure myProofProperty_from_myNWFProofProperty
   : myProofProperty P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
   := @MyProofProperty Σ P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
                       _
-                      (mnpp_proof_property MNPP wfl wfg).
+                      (mnpp_proof_property MNPP wfg wfl).
 
 Program Canonical Structure myNWFProofProperty_from_myProofProperty
           {Σ : Signature} (P : proofbpred) (Γ : Theory)
@@ -3053,29 +3083,40 @@ Program Canonical Structure myNWFProofProperty_from_myProofProperty
 Next Obligation.
   intros Σ P Γ l g r Hmpp wfl wfg.
   apply irs_pf.
-Qed.
+Defined.
 Next Obligation.
   intros Σ P Γ l g r MPP wfl wfg.
-  simpl. (* TODO I need to show that the predicate in question ignores well-formed constraints in the proof system.
-*)
+  simpl.
+  unfold eq_rect. unfold myNWFProofProperty_from_myProofProperty_obligation_1.
+  destruct r. simpl in *. case_match. reflexivity.
+Qed.
 
 
 Check @MyGoal_add_indifferent.
 Check @MyProofProperty.
+Print myProofProperty.
+Print myNWFProofProperty.
+Check MyGoal_add.
 
-Canonical Structure MyGoal_add_indifferent_S
-          {Σ : Signature} (P : profbpred) (Γ : Theory) (ϕ : Pattern)
-          (Pip : proofbpredIndifProp)
+Program Canonical Structure MyGoal_add_indifferent_S
+          {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} (Γ : Theory) (*ϕ : Pattern*)
           (l: list Pattern)
           (g h : Pattern)
-          (pfh : Γ ⊢ h)
-          (P_pfh : myProofProperty P pfh)
-          pf
-  : @myProofProperty Σ P Γ ϕ
-  := @MyProofProperty Σ P Γ ϕ pf
-                      (@MyGoal_add_indifferent Σ P Γ l g h pfh pf
-                                               (pbip_P_indif Pip)
-                                               (mpp_proof_property P_pfh))
+          (P_pfh : myProofProperty P Γ h)
+          (P_pf : myNWFProofProperty P Γ (h::l) g)
+  := @MyNWFProofProperty Σ P Γ l g
+                         (fun wfl wfg =>
+                            (@MyGoal_add Σ Γ l g h (mpp_proof P_pfh) (mnpp_proof P_pf) wfl wfg)
+                         )
+                         _
+.
+Next Obligation.
+  intros Σ P Γ Pip l g h P_pfh P_pf wfg wfl.
+  apply MyGoal_add_indifferent.
+  { apply prop_indif. }
+  { apply mpp_proof_property. }
+  { apply mnpp_proof_property. }
+Qed.
 
   Lemma prf_clear_hyp_indifferent
     P Γ l₁ l₂ g h
