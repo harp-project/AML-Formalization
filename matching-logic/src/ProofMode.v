@@ -3056,11 +3056,68 @@ Canonical Structure uses_kt_indif_prop_S {Σ : Signature}
 Structure myProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
   := MyProofProperty { mpp_proof : Γ ⊢ ϕ; mpp_proof_property : P Γ ϕ mpp_proof = false  }.
 
-Structure myNWFProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
+Structure equals_pf {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ) := Pack_pf { unpack_pf : Γ ⊢ ϕ }.
+Canonical Structure equate_pf {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ) := Pack_pf pf pf.
+
+Structure equals_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat { unpack_pat : Pattern }.
+Canonical Structure equate_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat ϕ ϕ.
+
+Print ImpReshapeS.
+
+(*
+Structure helper {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
+ := Helper
+      { helper_packed_ϕ : equals_pat ϕ;
+        helper_P : (fun (pf : Γ ⊢ (unpack_pat helper_packed_ϕ) ) => P Γ (unpack_pat helper_packed_ϕ) pf);
+      }.
+*)
+
+Structure myNWFProofProperty
+          {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
+          (*r : ImpReshapeS g l*)
   := MyNWFProofProperty
        { mnpp_proof : of_MyGoal (mkMyGoal Γ l g) ;
-         mnpp_proof_property : forall wfg wfl, P Γ (foldr patt_imp g l) (mnpp_proof wfg wfl) = false ;
+         mnpp_proof_property :
+         forall wfg wfl,
+           P Γ (foldr patt_imp g l)
+             ((*equate_pf*) (mnpp_proof wfg wfl)) = false ;
        }.
+
+Structure PWrap {Σ : Signature} (P : proofbpred) (Γ : Theory)
+:= mkPWrap { pwrap_pattern : Pattern ;
+             pwrap_proof : Γ ⊢ pwrap_pattern ;
+             pwrap_proof_pred : P Γ pwrap_pattern pwrap_proof = false ;
+  }.
+
+Program Canonical Structure PWrapS {Σ : Signature} (P : proofbpred) (Γ : Theory)
+(l : list Pattern) (g : Pattern)
+(wfl : wf l) (wfg : well_formed g)
+(r : ImpReshapeS g l)
+(pf : of_MyGoal (@mkMyGoal Σ Γ l g))
+ := @mkPWrap Σ P Γ (untagPattern (irs_flattened r)) (pf wfg wfl) _
+.
+Next Obligation.
+  intros Σ P Γ l g wfl wfg r pf. simpl. rewrite irs_pf. reflexivity.
+Qed.
+Next Obligation.
+Admitted.
+Print PWrapS.
+
+Lemma overloaded_lemma {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern) (pf: Γ ⊢ ϕ)
+      (pw : PWrap P Γ)
+  :
+  P Γ (pwrap_pattern pw) (pwrap_proof pw) = false.
+Proof.
+  apply pwrap_proof_pred.
+Qed.
+
+(*
+Lemma my_mnpp_proof_property {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
+          (r : ImpReshapeS g l) (mnpp : @myNWFProofProperty Σ P Γ l g):
+         forall wfg wfl pf,
+           pf = (mnpp_proof mnpp wfg wfl) ->
+           P Γ (untagPattern (irs_flattened r)) pf = false.
+*)
 
 Canonical Structure myProofProperty_from_myNWFProofProperty
           {Σ : Signature} (P : proofbpred) (Γ : Theory)
@@ -3118,50 +3175,6 @@ Next Obligation.
   { apply mnpp_proof_property. }
 Qed.
 
-  Lemma prf_clear_hyp_indifferent
-    P Γ l₁ l₂ g h
-    (wfl₁ : wf l₁)
-    (wfl₂ : wf l₂)
-    (wfg : well_formed g)
-    (wfh : well_formed h):
-    indifferent_to_prop P ->
-    P _ _ (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) = false.
-  Proof.
-
-Set Printing Implicit.
-Check @irs_flattened. Check indifferent_to_prop.
-Lemma MyGoal_add_indifferent_r
-      (Σ : Signature)
-      (P : proofbpred) Γ l g h pfh pf:
-  indifferent_to_prop P ->
-  P _ _ pfh = false ->
-  (*forall (g' : Pattern)(xs : list Pattern) (r : ImpReshapeS g' xs),*)
-  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-  (forall wf1 wf2 g' xs (r : ImpReshapeS g' xs),
-      forall (e : (untagPattern (irs_flattened r)) = (Pattern_of (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2))),
-    P _ _ (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2) = false).
-Proof.
-  simpl. intros. apply MyGoal_add_indifferent; auto.
-Qed.
-  
-(*
-Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
-  well_formed g ->
-  well_formed x ->
-  wf xs ->
-  forall (r : ImpReshapeS g (x::xs)),
-     Γ ⊢ ((foldr (patt_and) x xs) ---> g) ->
-     Γ ⊢ untagPattern (irs_flattened r) .
-Proof.
-  intros wfg wfx wfxs r H.
-  eapply cast_proof.
-  { rewrite irs_pf; reflexivity. }
-  clear r.
-  apply lhs_and_to_imp_meta; assumption.
-Defined.
-*)
-
-
 Tactic Notation "mgAdd" constr(n) :=
   match goal with
   | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
@@ -3215,6 +3228,11 @@ Section FOL_helpers.
   Lemma helper (P : proofbpred) Γ ϕ₁ ϕ₂ (pf1: Γ ⊢ ϕ₁) (pf2 : Γ ⊢ ϕ₂) (e : pf1 = pf2):
     pf1 -> pf2.*)
 
+
+  (*
+  About MyGoal_add_indifferent.
+  Arguments MyGoal_add_indifferent _ _ _ & _ _ _ _ _ _ _ _ _ _.
+  *)
   Lemma prf_clear_hyp_indifferent
     P Γ l₁ l₂ g h
     (wfl₁ : wf l₁)
@@ -3233,13 +3251,26 @@ Section FOL_helpers.
       rewrite HMP.
       + apply orb_false_intro.
         * Set Printing Implicit.
+          Check MyGoal_add_indifferent.
+          Fail apply (@MyGoal_add_indifferent Σ P Γ).
+          (*apply (@MyGoal_add_indifferent Σ P Γ []).*)
+          
 (*
           pose proof (Htmp := @MyGoal_add_indifferent Σ P Γ).
           simpl in Htmp.
           Fail rewrite Htmp.
           About MyGoal_add_indifferent.
 *)
-          Set Unicoq Debug.
+          Set Unicoq Debug. Check mnpp_proof_property.
+          (*apply: overloaded_lemma.*)
+
+          Check mnpp_proof_property.
+Print MyGoal_add_indifferent_S.
+(*          apply: (@mnpp_proof_property Σ P Γ []).*)
+          Check @mpp_proof_property.
+          Print Canonical Projections.
+          apply: (@mpp_proof_property Σ P Γ).
+(*          apply mnpp_proof_property with (l := []).*)
 (*
           rapply (@MyGoal_add_indifferent_r Σ P Γ _).
           rapply MyGoal_add_indifferent_r.
@@ -7038,8 +7069,8 @@ Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list P
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
   bevar_occur ϕ₁ 0 = false ->
-  @mkMyGoal Σ Γ (ϕ₁::l) g ->
-  @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g.
+  @mkMyGoal Σ Γ (ϕ₁::l) g -> 
+ @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g.
 Proof.
   intros xfrg xfrl Hno0 H.
   mgExtractWF H1 H2.
