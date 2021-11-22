@@ -2888,8 +2888,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Set Printing Implicit.
-Check @untagPattern. Check @MyGoal_add.
 (*
  Htmp : ∀ (l : list Pattern) (g h : Pattern) (pfh : Γ ⊢ h) 
            (pf : well_formed g → wf (h :: l) → Γ ⊢ h ---> foldr patt_imp g l),
@@ -2990,6 +2988,104 @@ Check @untagPattern. Check @MyGoal_add.
 Check @MyGoal_add.
 
 Definition Pattern_of {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (pf : Γ ⊢ ϕ) : Pattern := ϕ.
+
+
+Structure proofbpredIndifCast {Σ : Signature}
+  := ProofbpredIndifCast { pbic_P : proofbpred; pbic_P_indif : indifferent_to_cast pbic_P }.
+
+Structure proofbpredIndifProp {Σ : Signature}
+  := ProofbpredIndifProp { pbip_P : proofbpred; pbip_P_indif : indifferent_to_prop pbip_P }.
+
+Canonical Structure uses_svar_subst_indif_cast_S {Σ : Signature} (SvS : SVarSet)
+  : proofbpredIndifCast
+  := @ProofbpredIndifCast Σ (@uses_svar_subst Σ SvS) (indifferent_to_cast_uses_svar_subst SvS).
+
+
+Canonical Structure uses_svar_subst_indif_prop_S {Σ : Signature} (SvS : SVarSet)
+  : proofbpredIndifProp
+  := @ProofbpredIndifProp Σ (@uses_svar_subst Σ SvS) (indifferent_to_prop_uses_svar_subst SvS).
+
+Canonical Structure uses_ex_gen_indif_cast_S {Σ : Signature} (EvS : EVarSet)
+  : proofbpredIndifCast
+  := @ProofbpredIndifCast Σ (@uses_ex_gen Σ EvS) (indifferent_to_cast_uses_ex_gen EvS).
+
+Canonical Structure uses_ex_gen_indif_prop_S {Σ : Signature} (EvS : EVarSet)
+  : proofbpredIndifProp
+  := @ProofbpredIndifProp Σ (@uses_ex_gen Σ EvS) (indifferent_to_prop_uses_ex_gen EvS).
+
+Canonical Structure uses_kt_indif_cast_S {Σ : Signature}
+  : proofbpredIndifCast
+  := @ProofbpredIndifCast Σ (@uses_kt Σ) (indifferent_to_cast_uses_kt).
+
+
+Canonical Structure uses_kt_indif_prop_S {Σ : Signature}
+  : proofbpredIndifProp
+  := @ProofbpredIndifProp Σ (@uses_kt Σ) (indifferent_to_prop_uses_kt).
+
+
+Structure myProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
+  := MyProofProperty { mpp_proof : Γ ⊢ ϕ; mpp_proof_property : P Γ ϕ mpp_proof = false  }.
+
+Structure myNWFProofProperty {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
+  := MyNWFProofProperty
+       { mnpp_proof : wf l -> well_formed g -> Γ ⊢ (foldr patt_imp g l);
+         mnpp_proof_property : forall wfl wfg, P Γ (foldr patt_imp g l) (mnpp_proof wfl wfg) = false ;
+       }.
+
+Canonical Structure myProofProperty_from_myNWFProofProperty
+          {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l : list Pattern) (g : Pattern)
+          (wfl : wf l) (wfg : well_formed g)
+          (*r : ImpReshapeS g l*)
+          (MNPP : myNWFProofProperty P Γ l g)
+  : myProofProperty P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
+  := @MyProofProperty Σ P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
+                      _
+                      (mnpp_proof_property MNPP wfl wfg).
+
+Program Canonical Structure myNWFProofProperty_from_myProofProperty
+          {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l : list Pattern) (g : Pattern)
+          (r : ImpReshapeS g l)
+          (MPP : myProofProperty P Γ (untagPattern (irs_flattened r)))
+  : myNWFProofProperty P Γ l g
+  := @MyNWFProofProperty Σ P Γ l g (fun _ _ => mpp_proof MPP) (fun _ _ => mpp_proof_property MPP).
+Next Obligation.
+  intros Σ P Γ l g r Hmpp wfl wfg.
+  apply irs_pf.
+Qed.
+Next Obligation.
+  intros Σ P Γ l g r MPP wfl wfg.
+  simpl. (* TODO I need to show that the predicate in question ignores well-formed constraints in the proof system.
+*)
+
+
+Check @MyGoal_add_indifferent.
+Check @MyProofProperty.
+
+Canonical Structure MyGoal_add_indifferent_S
+          {Σ : Signature} (P : profbpred) (Γ : Theory) (ϕ : Pattern)
+          (Pip : proofbpredIndifProp)
+          (l: list Pattern)
+          (g h : Pattern)
+          (pfh : Γ ⊢ h)
+          (P_pfh : myProofProperty P pfh)
+          pf
+  : @myProofProperty Σ P Γ ϕ
+  := @MyProofProperty Σ P Γ ϕ pf
+                      (@MyGoal_add_indifferent Σ P Γ l g h pfh pf
+                                               (pbip_P_indif Pip)
+                                               (mpp_proof_property P_pfh))
+
+  Lemma prf_clear_hyp_indifferent
+    P Γ l₁ l₂ g h
+    (wfl₁ : wf l₁)
+    (wfl₂ : wf l₂)
+    (wfg : well_formed g)
+    (wfh : well_formed h):
+    indifferent_to_prop P ->
+    P _ _ (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) = false.
+  Proof.
 
 Set Printing Implicit.
 Check @irs_flattened. Check indifferent_to_prop.
