@@ -7,8 +7,10 @@ From Ltac2 Require Import Ltac2.
 
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-(*Require Import Unicoq.Unicoq.*)
+Require Import Unicoq.Unicoq.
 From Equations Require Import Equations.
+
+Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
 
@@ -1801,6 +1803,64 @@ End FOL_helpers.
 #[export] Hint Resolve wf_app : core.
 
 
+
+Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
+
+Definition reshape_nil {Σ : Signature} p := TagPattern p.
+Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
+(*Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.*)
+(*Canonical Structure reshape_done {Σ : Signature} p := reshape_nil p.*)
+
+Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
+ImpReshape
+  { irs_flattened :> TaggedPattern ;
+    irs_pf : (untagPattern irs_flattened) = foldr patt_imp g l ;
+  }.
+
+Lemma ImpReshape_nil_pf0:
+  ∀ (Σ : Signature) (g : Pattern),
+    g = foldr patt_imp g [].
+Proof. intros. reflexivity. Qed.
+
+Canonical Structure ImpReshape_nil {Σ : Signature} (g : Pattern) : ImpReshapeS g [] :=
+  @ImpReshape Σ g [] (reshape_nil g) (ImpReshape_nil_pf0 g).
+
+
+Program Canonical Structure ImpReshape_cons
+        {Σ : Signature} (g x : Pattern) (xs : list Pattern) (r : ImpReshapeS g xs)
+: ImpReshapeS g (x::xs) :=
+  @ImpReshape Σ g (x::xs) (reshape_cons (x ---> untagPattern (reshape_cons r))) _.
+Next Obligation.
+  intros Σ g x xs r. simpl.
+  rewrite irs_pf.
+  reflexivity.
+Qed.
+
+
+Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) :
+  forall (r : ImpReshapeS g (xs)),
+     Γ ⊢ foldr (patt_imp) g (xs) ->
+     Γ ⊢ (untagPattern (irs_flattened r)).
+Proof.
+  intros r H.
+  eapply cast_proof.
+  { rewrite irs_pf; reflexivity. }
+  exact H.
+Defined.
+
+
+Local Example ex_reshape {Σ : Signature} Γ a b c d:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  Γ ⊢ a ---> (b ---> (c ---> d)).
+Proof.
+  intros wfa wfb wfc wfd.
+  apply reshape.
+  (* Now the goal has the right shape *)
+Abort.
+
 Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
 
 Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
@@ -2811,9 +2871,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma MyGoal_add_indifferent
-    P Γ l g h pfh pf: (*
-    (pfh: Γ ⊢ h)
-    (pf : Γ ⊢ foldr patt_imp g (h::l)): *)
+    P Γ l g h pfh pf:
     indifferent_to_prop P ->
     P _ _ pfh = false ->
     (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
@@ -2829,6 +2887,142 @@ Section FOL_helpers.
 
 
 End FOL_helpers.
+
+Set Printing Implicit.
+Check @untagPattern. Check @MyGoal_add.
+(*
+ Htmp : ∀ (l : list Pattern) (g h : Pattern) (pfh : Γ ⊢ h) 
+           (pf : well_formed g → wf (h :: l) → Γ ⊢ h ---> foldr patt_imp g l),
+           indifferent_to_prop P
+           → P Γ h pfh = false
+             → (∀ (wf3 : well_formed g) (wf4 : wf (h :: l)),
+                  P Γ (h ---> foldr patt_imp g l) (pf wf3 wf4) = false)
+               → ∀ (wf1 : well_formed g) (wf2 : wf l),
+                   P Γ (foldr patt_imp g l) (MyGoal_add pfh pf wf1 wf2) =
+                   false
+  ============================
+  P Γ
+    (a ---> foldr patt_imp g (l₁ ++ l₂) ---> foldr patt_imp g (l₁ ++ h :: l₂))
+    (MyGoal_add (prf_clear_hyp Γ e0 wfl₂ wfg wfh)
+       (MyGoal_intro
+          (cast_proof_mg_hyps
+             (eq_ind
+                [foldr patt_imp g (l₁ ++ l₂) --->
+                 foldr patt_imp g (l₁ ++ h :: l₂); a]
+                (eq
+                   [foldr patt_imp g (l₁ ++ l₂) --->
+                    foldr patt_imp g (l₁ ++ h :: l₂); a]) erefl
+                [foldr patt_imp g (l₁ ++ l₂) --->
+                 foldr patt_imp g (l₁ ++ h :: l₂); a]
+                (firstn_skipn 0
+                   [foldr patt_imp g (l₁ ++ l₂) --->
+                    foldr patt_imp g (l₁ ++ h :: l₂); a]))
+             (MyGoal_exactn
+                (g:=foldr patt_imp g (l₁ ++ l₂) --->
+                    foldr patt_imp g (l₁ ++ h :: l₂)))))
+       (well_formed_imp e
+          (well_formed_imp (well_formed_foldr wfg (wf_app e0 wfl₂))
+             (well_formed_foldr wfg (wf_app e0 (wf_cons wfh wfl₂))))) erefl) =
+  false
+
+
+  Htmp : ∀ (l : list (@Pattern Σ)) (g h : @Pattern Σ) 
+           (pfh : Γ ⊢ h) (pf : @well_formed Σ g
+                               → @wf Σ (h :: l)
+                                 → Γ ⊢ h ---> foldr (@patt_imp Σ) g l),
+           @indifferent_to_prop Σ P
+           → P Γ h pfh = false
+             → (∀ (wf3 : @well_formed Σ g) (wf4 : @wf Σ (h :: l)),
+                  P Γ (h ---> foldr (@patt_imp Σ) g l) (pf wf3 wf4) = false)
+               → ∀ (wf1 : @well_formed Σ g) (wf2 : @wf Σ l),
+                   P Γ (foldr (@patt_imp Σ) g l)
+                     (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2) = false
+  ============================
+  P Γ
+    (a --->
+     foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+     foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+    (@MyGoal_add Σ Γ []
+       (a --->
+        foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+        foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+       (foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+        foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+       (@prf_clear_hyp Γ l₁ l₂ g h e0 wfl₂ wfg wfh)
+       (@MyGoal_intro Σ Γ
+          [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+           foldr (@patt_imp Σ) g (l₁ ++ h :: l₂)] a
+          (foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+           foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+          (@cast_proof_mg_hyps Σ Γ
+             [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+              foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]
+             [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+              foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]
+             (@eq_ind (list (@Pattern Σ))
+                [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+                 foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]
+                (@eq (list (@Pattern Σ))
+                   [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+                    foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]) erefl
+                [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+                 foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]
+                (@firstn_skipn (@Pattern Σ) 0
+                   [foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+                    foldr (@patt_imp Σ) g (l₁ ++ h :: l₂); a]))
+             (foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+              foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+             (@MyGoal_exactn Σ Γ [] [a]
+                (foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+                 foldr (@patt_imp Σ) g (l₁ ++ h :: l₂)))))
+       (@well_formed_imp Σ a
+          (foldr (@patt_imp Σ) g (l₁ ++ l₂) --->
+           foldr (@patt_imp Σ) g (l₁ ++ h :: l₂)) e
+          (@well_formed_imp Σ (foldr (@patt_imp Σ) g (l₁ ++ l₂))
+             (foldr (@patt_imp Σ) g (l₁ ++ h :: l₂))
+             (@well_formed_foldr Σ g (l₁ ++ l₂) wfg (@wf_app Σ l₁ l₂ e0 wfl₂))
+             (@well_formed_foldr Σ g (l₁ ++ h :: l₂) wfg
+                (@wf_app Σ l₁ (h :: l₂) e0 (@wf_cons Σ h l₂ wfh wfl₂)))))
+       erefl) = false
+
+*)
+
+Check @MyGoal_add.
+
+Definition Pattern_of {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (pf : Γ ⊢ ϕ) : Pattern := ϕ.
+
+Set Printing Implicit.
+Check @irs_flattened. Check indifferent_to_prop.
+Lemma MyGoal_add_indifferent_r
+      (Σ : Signature)
+      (P : proofbpred) Γ l g h pfh pf:
+  indifferent_to_prop P ->
+  P _ _ pfh = false ->
+  (*forall (g' : Pattern)(xs : list Pattern) (r : ImpReshapeS g' xs),*)
+  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
+  (forall wf1 wf2 g' xs (r : ImpReshapeS g' xs),
+      forall (e : (untagPattern (irs_flattened r)) = (Pattern_of (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2))),
+    P _ _ (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2) = false).
+Proof.
+  simpl. intros. apply MyGoal_add_indifferent; auto.
+Qed.
+  
+(*
+Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  wf xs ->
+  forall (r : ImpReshapeS g (x::xs)),
+     Γ ⊢ ((foldr (patt_and) x xs) ---> g) ->
+     Γ ⊢ untagPattern (irs_flattened r) .
+Proof.
+  intros wfg wfx wfxs r H.
+  eapply cast_proof.
+  { rewrite irs_pf; reflexivity. }
+  clear r.
+  apply lhs_and_to_imp_meta; assumption.
+Defined.
+*)
 
 
 Tactic Notation "mgAdd" constr(n) :=
@@ -2879,6 +3073,50 @@ Section FOL_helpers.
       }
       apply prf_impl_distr_meta; auto.
   Defined.
+
+(*
+  Lemma helper (P : proofbpred) Γ ϕ₁ ϕ₂ (pf1: Γ ⊢ ϕ₁) (pf2 : Γ ⊢ ϕ₂) (e : pf1 = pf2):
+    pf1 -> pf2.*)
+
+  Lemma prf_clear_hyp_indifferent
+    P Γ l₁ l₂ g h
+    (wfl₁ : wf l₁)
+    (wfl₂ : wf l₂)
+    (wfg : well_formed g)
+    (wfh : well_formed h):
+    indifferent_to_prop P ->
+    P _ _ (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) = false.
+  Proof.
+    intros HP.
+    destruct HP as [HP1 [HP2 [HP3 HMP]]].
+    induction l₁; simpl.
+    - apply HP1.
+    - case_match.
+      unfold prf_impl_distr_meta.
+      rewrite HMP.
+      + apply orb_false_intro.
+        * Set Printing Implicit.
+(*
+          pose proof (Htmp := @MyGoal_add_indifferent Σ P Γ).
+          simpl in Htmp.
+          Fail rewrite Htmp.
+          About MyGoal_add_indifferent.
+*)
+          Set Unicoq Debug.
+(*
+          rapply (@MyGoal_add_indifferent_r Σ P Γ _).
+          rapply MyGoal_add_indifferent_r.
+*)
+          (*Set Debug "tactic-unification".*)
+(*
+          apply: MyGoal_add_indifferent_r.
+          apply (@MyGoal_add_indifferent Σ P Γ []).
+          specialize (Htmp [])
+          rewrite Htmp.
+      simpl.
+  Qed.
+*)
+Abort.
 
   Lemma prf_clear_hyp_meta Γ l1 l2 g h:
     wf l1 ->
@@ -3329,6 +3567,19 @@ Defined.
   Defined.
 
 End FOL_helpers.
+
+Check @MyGoal_disj_elim.
+
+Lemma MyGoal_disj_elim_indifferent {Σ : Signature}
+      P Γ l₁ l₂ p q r pf₁ pf₂:
+  indifferent_to_prop P ->
+  (forall wf3 wf4, P _ _ (pf₁ wf3 wf4) = false) ->
+  (forall wf3 wf4, P _ _ (pf₂ wf3 wf4) = false) ->
+  (forall wf1 wf2, P _ _ (@MyGoal_disj_elim Σ Γ l₁ l₂ p q r pf₁ pf₂ wf1 wf2) = false).
+Proof.
+  intros H
+Qed.
+
 
 Tactic Notation "mgDestructOr" constr(n) :=
   match goal with
@@ -6436,65 +6687,6 @@ Proof.
   mgApplyMeta (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
   mgExactn 2.
 Defined.
-
-Search patt_and patt_imp.
-
-Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
-
-Definition reshape_nil {Σ : Signature} p := TagPattern p.
-Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
-(*Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.*)
-(*Canonical Structure reshape_done {Σ : Signature} p := reshape_nil p.*)
-
-Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
-ImpReshape
-  { irs_flattened :> TaggedPattern ;
-    irs_pf : (untagPattern irs_flattened) = foldr patt_imp g l ;
-  }.
-
-Lemma ImpReshape_nil_pf0:
-  ∀ (Σ : Signature) (g : Pattern),
-    g = foldr patt_imp g [].
-Proof. intros. reflexivity. Qed.
-
-Canonical Structure ImpReshape_nil {Σ : Signature} (g : Pattern) : ImpReshapeS g [] :=
-  @ImpReshape Σ g [] (reshape_nil g) (ImpReshape_nil_pf0 g).
-
-
-Program Canonical Structure ImpReshape_cons
-        {Σ : Signature} (g x : Pattern) (xs : list Pattern) (r : ImpReshapeS g xs)
-: ImpReshapeS g (x::xs) :=
-  @ImpReshape Σ g (x::xs) (reshape_cons (x ---> untagPattern (reshape_cons r))) _.
-Next Obligation.
-  intros Σ g x xs r. simpl.
-  rewrite irs_pf.
-  reflexivity.
-Qed.
-
-
-Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) :
-  forall (r : ImpReshapeS g (xs)),
-     Γ ⊢ foldr (patt_imp) g (xs) ->
-     Γ ⊢ (untagPattern (irs_flattened r)).
-Proof.
-  intros r H.
-  eapply cast_proof.
-  { rewrite irs_pf; reflexivity. }
-  exact H.
-Defined.
-
-
-Local Example ex_reshape {Σ : Signature} Γ a b c d:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)).
-Proof.
-  intros wfa wfb wfc wfd.
-  apply reshape.
-  (* Now the goal has the right shape *)
-Abort.
 
 Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
   well_formed x ->
