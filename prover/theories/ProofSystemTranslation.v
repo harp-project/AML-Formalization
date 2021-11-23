@@ -420,21 +420,21 @@ Section proof_system_translation.
            just started. In other words, history behaves as if we started from
            the nested existential and mu patterns.
          *)
-        apply (existT [(p', (np', ∅, ∅, ∅))]).
-        simpl.
-        rewrite lookup_empty; auto.
+        apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
+        simpl. repeat split; auto.
       }
       unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_exists p)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_exists p, (n0, C, evs, svs))]); simpl; split; auto
+          apply (existT [(patt_exists p, (to_NamedPattern2' (patt_exists p) ∅ ∅ ∅))]); simpl; split; auto
         ).
+        
       +
         inversion Heqp0. subst. clear Heqp0.
         simpl in Hp'.
         destruct (decide (is_bound_evar p')).
-        * apply (existT [(p', (np', ∅, ∅, ∅))]).
-          simpl. rewrite lookup_empty. split; auto.
+        * apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
+          simpl. repeat split; auto.
         * 
           unfold history_generator in IHp.
           specialize (IHp p' np').
@@ -478,21 +478,20 @@ Section proof_system_translation.
            just started. In other words, history behaves as if we started from
            the nested existential and mu patterns.
          *)
-        apply (existT [(p', (np', ∅, ∅, ∅))]).
-        simpl.
-        rewrite lookup_empty; auto.
+        apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
+        simpl. repeat split; auto.
       }
       unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_mu p)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_mu p, (n0, C, evs, svs))]); simpl; split; auto
+          apply (existT [(patt_mu p, (to_NamedPattern2' (patt_mu p) ∅ ∅ ∅))]); simpl; split; auto
         ).
       +
         inversion Heqp0. subst. clear Heqp0.
         simpl in Hp'.
         destruct (decide (is_bound_svar p')).
-        * apply (existT [(p', (np', ∅, ∅, ∅))]).
-          simpl. rewrite lookup_empty. split; auto.
+        * apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
+          simpl. repeat split; auto.
         * 
           unfold history_generator in IHp.
           specialize (IHp p' np').
