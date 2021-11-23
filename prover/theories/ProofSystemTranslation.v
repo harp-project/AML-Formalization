@@ -29,13 +29,7 @@ Section proof_system_translation.
   Definition well_formed_translation (phi : Pattern) (wfphi : is_true (well_formed phi))
     : (named_well_formed (to_NamedPattern2 phi)).
   Admitted.
-
-  Lemma named_pattern_imp (phi psi : Pattern) :
-    npatt_imp (to_NamedPattern2 phi) (to_NamedPattern2 psi) =
-    to_NamedPattern2 (patt_imp phi psi).
-  Proof.
-  Admitted.
-    
+   
   (*
   Print ML_proof_system. Check @hypothesis. Check N_hypothesis.
  Program Fixpoint translation (Gamma : Theory) (phi : Pattern) (prf : Gamma ⊢ phi)
@@ -262,252 +256,6 @@ Section proof_system_translation.
         }
         { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
   Qed. 
-  (* Why this lemma? It is just a consequence of [to_NamedPattern2'_extends_cache]. *)
-  (* We assume that \phi_2 is well_formed *)
-  (*
-  Lemma to_NamedPattern2'_None (ϕ₁ ϕ₂ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
-    dangling_vars_cached C ϕ₁ ->
-    (to_NamedPattern2' ϕ₁ C evs svs).1.1.2 !! ϕ₂ = None ->
-    C !! ϕ₂ = None.
-  Proof.
-    intros Hcached Hnone.
-    Check to_NamedPattern2'_extends_cache.
-    
-    move: C evs svs ϕ₂ Hcached Hnone.
-    induction ϕ₁; intros C evs svs ϕ₂ Hcached Hnone.
-    all:
-      match type of Hnone with
-      | (to_NamedPattern2' ?THIS _ _ _).1.1.2 !! _ = None => remember THIS as ϕ₁'
-      end;
-      destruct (decide (ϕ₁' = ϕ₂)).
-
-    all:
-      subst ϕ₁'; simpl in *.
-
-    all:
-      match goal with
-      | [ne: ?x <> ?y |- _]
-        => idtac "there"
-      | _
-        => subst;
-           simpl in *;
-           case_match;
-           simpl in *;
-           try congruence;
-           auto
-      end.
-
-    all:
-      repeat case_match; simpl in *; subst; auto;
-      try (rewrite lookup_insert_ne in Hnone; auto);
-      inversion Heqp; subst; clear Heqp.
-
-    -
-      assert (Hcached1: dangling_vars_cached C ϕ₁1).
-      {
-        unfold dangling_vars_cached in Hcached.
-        destruct Hcached as [Hcachede Hcacheds].
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
-        split; intros b Hb.
-        + specialize (Hcachede b).
-          simpl in Hcachede.
-          feed specialize Hcachede.
-          { apply orb_prop_intro. left. exact Hb. }
-          exact Hcachede.
-        + specialize (Hcacheds b).
-          simpl in Hcachede.
-          feed specialize Hcacheds.
-          { apply orb_prop_intro. left. exact Hb. }
-          exact Hcacheds.
-      }
-      assert (Hcached2: dangling_vars_cached C ϕ₁2).
-      {
-        unfold dangling_vars_cached in Hcached.
-        destruct Hcached as [Hcachede Hcacheds].
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
-        split; intros b Hb.
-        + specialize (Hcachede b).
-          simpl in Hcachede.
-          feed specialize Hcachede.
-          { apply orb_prop_intro. right. exact Hb. }
-          exact Hcachede.
-        + specialize (Hcacheds b).
-          simpl in Hcachede.
-          feed specialize Hcacheds.
-          { apply orb_prop_intro. right. exact Hb. }
-          exact Hcacheds.
-      }
-
-      
-      pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
-      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0.
-
-      pose proof (Hsub1 := to_NamedPattern2'_extends_cache C ϕ₁1 evs svs).
-      rewrite Heqp2 in Hsub1. simpl in Hsub1.
-      pose proof (Hsub2 := to_NamedPattern2'_extends_cache g0 ϕ₁2 e0 s0).
-      rewrite Heqp5 in Hsub2. simpl in Hsub2.
-      pose proof (Hcached_g0 := dangling_vars_subcache _ _ _ Hcached2 Hsub1).
-      specialize (Hnone_g0 Hcached_g0 Hnone).
-      clear Hcached_g0 IHϕ₁2 Heqp5.
-
-      specialize (IHϕ₁1 C evs svs ϕ₂).
-      rewrite Heqp2 in IHϕ₁1. clear Heqp2. simpl in IHϕ₁1.
-      specialize (IHϕ₁1 Hcached1 Hnone_g0). exact IHϕ₁1.
-    -
-      assert (Hcached1: dangling_vars_cached C ϕ₁1).
-      {
-        unfold dangling_vars_cached in Hcached.
-        destruct Hcached as [Hcachede Hcacheds].
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
-        split; intros b Hb.
-        + specialize (Hcachede b).
-          simpl in Hcachede.
-          feed specialize Hcachede.
-          { apply orb_prop_intro. left. exact Hb. }
-          exact Hcachede.
-        + specialize (Hcacheds b).
-          simpl in Hcachede.
-          feed specialize Hcacheds.
-          { apply orb_prop_intro. left. exact Hb. }
-          exact Hcacheds.
-      }
-      assert (Hcached2: dangling_vars_cached C ϕ₁2).
-      {
-        unfold dangling_vars_cached in Hcached.
-        destruct Hcached as [Hcachede Hcacheds].
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in *.
-        split; intros b Hb.
-        + specialize (Hcachede b).
-          simpl in Hcachede.
-          feed specialize Hcachede.
-          { apply orb_prop_intro. right. exact Hb. }
-          exact Hcachede.
-        + specialize (Hcacheds b).
-          simpl in Hcachede.
-          feed specialize Hcacheds.
-          { apply orb_prop_intro. right. exact Hb. }
-          exact Hcacheds.
-      }
-
-      
-      pose proof (Hnone_g0 := IHϕ₁2 g0 e0 s0 ϕ₂).
-      rewrite Heqp5 in Hnone_g0. simpl in Hnone_g0.
-
-      pose proof (Hsub1 := to_NamedPattern2'_extends_cache C ϕ₁1 evs svs).
-      rewrite Heqp2 in Hsub1. simpl in Hsub1.
-      pose proof (Hsub2 := to_NamedPattern2'_extends_cache g0 ϕ₁2 e0 s0).
-      rewrite Heqp5 in Hsub2. simpl in Hsub2.
-      pose proof (Hcached_g0 := dangling_vars_subcache _ _ _ Hcached2 Hsub1).
-      specialize (Hnone_g0 Hcached_g0 Hnone).
-      clear Hcached_g0 IHϕ₁2 Heqp5.
-
-      specialize (IHϕ₁1 C evs svs ϕ₂).
-      rewrite Heqp2 in IHϕ₁1. clear Heqp2. simpl in IHϕ₁1.
-      specialize (IHϕ₁1 Hcached1 Hnone_g0). exact IHϕ₁1.
-
-    -
-
-      rewrite lookup_union_None in Hnone.
-      destruct Hnone as [Hnone1 Hnone2].
-      unfold remove_bound_evars in Hnone1.
-      rewrite map_filter_lookup_None in Hnone1.
-      unfold keep_bound_evars in Hnone2.
-      rewrite map_filter_lookup_None in Hnone2.
-
-      destruct Hnone2 as [Hnone2|Hnone2].
-      { exact Hnone2. }
-      
-      
-      pose proof (Hnone_g0 := IHϕ₁
-                                (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]> (cache_incr_evar C))
-                                (evs ∪ {[evs_fresh evs ϕ₁]}) s ϕ₂)
-      .
-      feed specialize Hnone_g0.
-      {
-        destruct Hcached as [Hcachede Hcacheds].
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached.
-        unfold dangling_vars_cached,dangling_evars_cached,dangling_svars_cached in Hcachede, Hcacheds.
-        simpl in Hcachede,Hcacheds.
-        split; intros dbi Hdbi.
-        + 
-          destruct dbi as [| dbi'].
-          * exists (npatt_evar (evs_fresh evs ϕ₁)).
-            rewrite lookup_insert. reflexivity.
-          * apply Hcachede in Hdbi. destruct Hdbi as [nϕ Hnϕ].
-            rewrite lookup_insert_ne.
-            { discriminate. }
-            unfold cache_incr_evar.
-            setoid_rewrite lookup_kmap_Some.
-            2: { apply _. }
-            exists nϕ. exists (patt_bound_evar (dbi')).
-            simpl. split;[reflexivity|auto].
-        + rewrite lookup_insert_ne.
-          { discriminate. }
-          setoid_rewrite lookup_kmap_Some.
-          2: { apply _. }
-          specialize (Hcacheds dbi Hdbi).
-          destruct Hcacheds as [nϕ Hnϕ].
-          exists nϕ,(patt_bound_svar dbi).
-          simpl. split;[reflexivity|assumption].
-      }
-      { rewrite Heqp2. simpl.
-        pose proof (Hsub := to_NamedPattern2'_extends_cache ((<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ₁)]>
-                                                                (cache_incr_evar C))) ϕ₁ (evs ∪ {[evs_fresh evs ϕ₁]}) s).
-        rewrite Heqp2 in Hsub. simpl in Hsub.
-        unfold is_bound_evar_entry in Hnone1,Hnone2. simpl in Hnone1,Hnone2.
-
-        remember (g0 !! ϕ₂) as onϕ.
-        destruct onϕ as [nϕ|];[|reflexivity].
-        
-        destruct Hnone1 as [Hnone1|Hnone1].
-        { exact Hnone1. }
-        exfalso.
-        specialize (Hnone1 nϕ eq_refl).
-        apply Hnone1. eapply Hnone2.
-       
-        admit.
-      }
-      
-      destruct (decide (ϕ₂ = BoundVarSugar.b0)).
-      { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
-      rewrite lookup_insert_ne in Hnone_g0.
-      { apply not_eq_sym. assumption. }
-      
-      assert(H0: forall b, g !! (patt_bound_evar b) = None -> well_formed_closed_ex_aux ϕ₂ b).
-      {
-        
-      }
-      apply cache_incr_evar_lookup_None.
-      { intros b.
-        destruct ϕ₂; try congruence.
-        intros Hcontra.
-        rewrite Hcontra in H0. simpl in H0.
-        specialize (H0 n2 Hnone).
-        case_match. inversion Hcontra. lia. apply H0.
-      }
-      { exact Hnone_g0. }
-      (* TODO cache_incr preserves lookup *)
-      Print incr_one.
-      admit.
-    - pose proof (Hnone_g0 := IHϕ₁
-                                (<[BoundVarSugar.B0:=npatt_svar (svs_fresh s ϕ₁)]> (cache_incr C))
-                                evs
-                                (s ∪ {[svs_fresh s ϕ₁]}) ϕ₂)
-      .
-      feed specialize Hnone_g0.
-      { rewrite Heqp2. simpl. exact Hnone. }
-
-      destruct (decide (ϕ₂ = BoundVarSugar.B0)).
-      { subst ϕ₂. rewrite lookup_insert in Hnone_g0. inversion Hnone_g0. }
-      rewrite lookup_insert_ne in Hnone_g0.
-      { apply not_eq_sym. assumption. }
-      admit.
-  Qed.
-*)
-
-  Lemma subcache_prop (C C' : Cache) (p : Pattern) (np : NamedPattern) :
-    C !! p = Some np -> map_subseteq C C' -> C' !! p = Some np.
-  Admitted.
 
   (* A subpattern property of the cache: with any pattern it contains its direct subpatterns. *)
   Definition sub_prop (C : Cache) :=
@@ -529,6 +277,7 @@ Section proof_system_translation.
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
   Admitted.
 
+  (*
   Lemma sub_prop_subcache (C C' : Cache) :
     sub_prop C' -> map_subseteq C C' -> sub_prop C.
   Proof.
@@ -540,6 +289,7 @@ Section proof_system_translation.
       (* need induction hypothesis *)
       admit. admit.
   Admitted.
+   *)
 
   About to_NamedPattern2'.
   (* A correspondence property of the cache: any named pattern it contains is a translation
@@ -548,11 +298,14 @@ Section proof_system_translation.
 
   Print ex.
 
-  (*Example ex (l : list nat) (x:nat) : l!!x = Some x.*)
-  (* x !! i == pattern * cache * evs * svs *)
-  (* svarset, namedpattern * cache * evs * svs *)
-  (* Maybe rename to [history_generator], [historian] or something like that *)
-  Definition corr_prop (C : Cache) :=
+  Search last.
+
+  (* s_1 $ s_2
+     C0 = ∅
+     1. to_namedPattern2'  (s_1 $ s_2) ∅
+     1.1. to_namedPattern2' s_1  ∅  ==> {(s₁, ns₁)}. hist(_) => {[(s₁, (ns₁, ∅))] &  }
+   *)
+  Definition history_generator (C : Cache) :=
     forall (p : @Pattern signature) (np : @NamedPattern signature),
       C !! p = Some np ->
       { history : list (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))
@@ -560,23 +313,30 @@ Section proof_system_translation.
                     match history with
                     | [] => False
                     | (x::xs) =>
-                        x.2.1.1.2 !! p = None /\
+                        x.1 = p /\
+(*                        x.2.1.1.2 !! p = None /\ *)
+                          (match (last (x::xs)) with
+                          | None => False
+                          | Some (p_l, x_l) => x_l = (to_NamedPattern2' p_l ∅ ∅ ∅)
+                          end) /\
                           forall (i:nat),
                             match xs!!i with
                             | None => True
-                            | Some (p_i, (np_i, c_i, evs_i, svs_i)) =>
-                                ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_i evs_i svs_i))
+                            | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
+                                exists p_i,
+                                c_Si !! p_i = None /\
+                                ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
                             end
                     end
       }.
 
-  Lemma corr_prop_subseteq (C₁ C₂ : Cache) :
+  Lemma history_generator_subseteq (C₁ C₂ : Cache) :
     C₁ ⊆ C₂ ->
-    corr_prop C₂ ->
-    corr_prop C₁.
+    history_generator C₂ ->
+    history_generator C₁.
   Proof.
     intros Hsub Hc.
-    unfold corr_prop in *.
+    unfold history_generator in *.
     intros p np Hp.
     specialize (Hc p np).
     feed specialize Hc.
@@ -584,27 +344,29 @@ Section proof_system_translation.
     exact Hc.
   Defined. (* I think this should not be opaque. *)
   
-  Lemma corr_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
-    corr_prop C ->
-    corr_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
+    history_generator C ->
+    history_generator (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
     intros cpC.
     move: C evs svs cpC.
     induction p; intros C evs svs cpC; simpl; case_match.
 
     (* [p] was in cache -> the history function stays the same. Solves 10 subgoals *)
-    all: try (solve[unfold corr_prop; intros p' np' Hp'; simpl in Hp'; specialize (cpC p' np' Hp'); exact cpC]).
+    all: try (solve[unfold history_generator; intros p' np' Hp'; simpl in Hp'; specialize (cpC p' np' Hp'); exact cpC]).
     (* 10 subgoals remain - the pattern p' was not found in cache. *)
     (* Base cases *)
     1,2,3,4,5,7: simpl; intros p' np' Hp';
-    match type of Hp' with
+    lazymatch type of Hp' with
     | (<[?q:=?nq]> _ !! p' = _ ) =>
         destruct (decide (p' = q));
         [(subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(q, (nq, C, evs, svs))]); simpl; split; auto
+          apply (existT [(q, (to_NamedPattern2' q ∅ ∅ ∅))]); simpl;
+          split;[reflexivity|]; case_match;[inversion Heqo0|];
+          split;[|auto];reflexivity
          )
         |(rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac];
-         unfold corr_prop in cpC; specialize (cpC p' np' Hp'); apply cpC)
+         unfold history_generator in cpC; specialize (cpC p' np' Hp'); apply cpC)
         ]
     end.
 
@@ -612,11 +374,13 @@ Section proof_system_translation.
     - repeat case_match. subst.
       inversion Heqp. subst. clear Heqp.
       simpl.
-      unfold corr_prop. intros p' np' Hp'.
+      unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_app p1 p2)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_app p1 p2, (npatt_app n n0, C, evs, svs))]); simpl; split; auto
+          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) ∅ ∅ ∅))]); simpl; split;[reflexivity|]
         ).
+        repeat case_match;(split;[|auto]); reflexivity.
+        
       + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
         specialize (IHp1 C evs svs cpC).
         rewrite Heqp0 in IHp1. simpl in IHp1.
@@ -626,11 +390,13 @@ Section proof_system_translation.
     - repeat case_match. subst.
       inversion Heqp. subst. clear Heqp.
       simpl.
-      unfold corr_prop. intros p' np' Hp'.
+      unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_imp p1 p2)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_imp p1 p2, (npatt_imp n n0, C, evs, svs))]); simpl; split; auto
+          apply (existT [(patt_imp p1 p2, (to_NamedPattern2' (patt_imp p1 p2) ∅ ∅ ∅))]); simpl; split;[reflexivity|]
         ).
+        repeat case_match;(split;[|auto]); reflexivity.
+        
       + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
         specialize (IHp1 C evs svs cpC).
         rewrite Heqp0 in IHp1. simpl in IHp1.
@@ -646,7 +412,7 @@ Section proof_system_translation.
       rewrite -> Heqp1 in IHp. simpl in IHp.
       feed specialize IHp.
       {
-        unfold corr_prop. intros p' np' Hp'.
+        unfold history_generator. intros p' np' Hp'.
         inversion Heqp0. subst. clear Heqp0.
         (* So what does the cache = ∅ mean here? 
            Recall that we start with empty cache when translating pattern.
@@ -658,7 +424,7 @@ Section proof_system_translation.
         simpl.
         rewrite lookup_empty; auto.
       }
-      unfold corr_prop. intros p' np' Hp'.
+      unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_exists p)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
           apply (existT [(patt_exists p, (n0, C, evs, svs))]); simpl; split; auto
@@ -670,7 +436,7 @@ Section proof_system_translation.
         * apply (existT [(p', (np', ∅, ∅, ∅))]).
           simpl. rewrite lookup_empty. split; auto.
         * 
-          unfold corr_prop in IHp.
+          unfold history_generator in IHp.
           specialize (IHp p' np').
           feed specialize IHp.
           {
@@ -704,7 +470,7 @@ Section proof_system_translation.
       rewrite -> Heqp1 in IHp. simpl in IHp.
       feed specialize IHp.
       {
-        unfold corr_prop. intros p' np' Hp'.
+        unfold history_generator. intros p' np' Hp'.
         inversion Heqp0. subst. clear Heqp0.
         (* So what does the cache = ∅ mean here? 
            Recall that we start with empty cache when translating pattern.
@@ -716,7 +482,7 @@ Section proof_system_translation.
         simpl.
         rewrite lookup_empty; auto.
       }
-      unfold corr_prop. intros p' np' Hp'.
+      unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_mu p)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
           apply (existT [(patt_mu p, (n0, C, evs, svs))]); simpl; split; auto
@@ -728,7 +494,7 @@ Section proof_system_translation.
         * apply (existT [(p', (np', ∅, ∅, ∅))]).
           simpl. rewrite lookup_empty. split; auto.
         * 
-          unfold corr_prop in IHp.
+          unfold history_generator in IHp.
           specialize (IHp p' np').
           feed specialize IHp.
           {
@@ -761,12 +527,30 @@ Section proof_system_translation.
         (cache : Cache)
         (evs : EVarSet)
         (svs : SVarSet):
-    corr_prop cache ->
+    history_generator cache ->
     (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
     = npatt_imp np' (npatt_imp nq' np'') ->
     np'' = np'.
   Proof.
-    intros Hcorr_cache H.
+    intros Hg H. Search to_NamedPattern2'.
+    remember (patt_imp p (patt_imp q p)) as pqp.
+    pose proof (Hpresent := to_NamedPattern2'_ensures_present pqp cache evs svs).
+    rewrite H in Hpresent.
+    match type of H with
+    | (?e.1.1.1 = _) => remember e as Call
+    end.
+    remember (Call.1.1.2) as cache'.
+    
+    pose proof (Hg' := history_generator_step cache pqp evs svs Hg).
+    rewrite -HeqCall in Hg'. rewrite -Heqcache' in Hg'.
+    apply Hg' in Hpresent.
+    destruct Hpresent as [history Hhistory].
+    destruct history;[inversion Hhistory|].
+    induction history; simpl in *.
+    - subst. clear Hg'. simpl in *.
+      case_match.
+      + simpl in *. subst.
+    
     simpl in H.
     case_match.
     - admit.
@@ -784,8 +568,8 @@ Section proof_system_translation.
            By monotonicity (Lemma ???), ???
          *)
         simpl.
-        Check corr_prop_step. About corr_prop_step.
-        pose proof (Hcorr_g := corr_prop_step cache p evs svs Hcorr_cache).
+        Check history_generator_step. About history_generator_step.
+        pose proof (Hcorr_g := history_generator_step cache p evs svs Hcorr_cache).
         rewrite Heqp3 in Hcorr_g. simpl in Hcorr_g.
         (* pose proof (Hcorr_g _ _ Heqo0).
         destruct X as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in H.
@@ -821,7 +605,7 @@ Section proof_system_translation.
   Check False_rect. Check eq_refl.
   Obligation Tactic := idtac.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
-           (cache : Cache) (pfsub : sub_prop cache) (pfcorr : corr_prop cache)
+           (cache : Cache) (pfsub : sub_prop cache) (pfcorr : history_generator cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
     : (NP_ML_proof_system (theory_translation G)
                           (to_NamedPattern2' phi (cache)
@@ -968,7 +752,7 @@ Section proof_system_translation.
     - admit.
     - repeat case_match; simpl.
       + remember pfcorr as pfcorr'; clear Heqpfcorr'.
-         Print corr_prop.
+         Print history_generator.
         inversion pfcorr as [ | cache1 cache2 evs1 svs1 (patt_imp p (patt_imp q p)) ].
         { subst. inversion Heqo. }
         
@@ -1003,7 +787,7 @@ Section proof_system_translation.
       + admit.
     - repeat case_match; simpl.
       + remember pfcorr as pfcorr'; clear Heqpfcorr'.
-        unfold corr_prop in pfcorr'.
+        unfold history_generator in pfcorr'.
         specialize (pfcorr' (patt_imp p (patt_imp q p)) n Heqo).
         destruct pfcorr' as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in Hnone.
         assert ({ pq | n = npatt_imp pq.1 (npatt_imp pq.2 pq.1) }) by admit.
@@ -1011,7 +795,7 @@ Section proof_system_translation.
         simpl (cache', evs', svs').2 in H. subst.
         apply translation'. apply P1; assumption.
         exact (sub_prop_subcache cache' cache pfsub Hsub).
-        exact (corr_prop_subcache cache' cache pfcorr Hsub).
+        exact (history_generator_subcache cache' cache pfcorr Hsub).
       + admit.
       + admit.
     - case_match.
