@@ -204,6 +204,17 @@ Structure proofProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : P
 
 Arguments ProofProperty0 [Σ] P [Γ ϕ] pp0_proof _.
 
+Structure proofProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ : Pattern)
+  := ProofProperty1 {
+      pp1_proof : Γ ⊢ ψ₁ -> Γ ⊢ ϕ;
+      pp1_proof_property :
+      forall (pf₁ : Γ ⊢ ψ₁),
+        P Γ ψ₁ pf₁ = false ->
+        P Γ ϕ (pp1_proof pf₁) = false;
+    }.
+
+Arguments ProofProperty1 [Σ] P [Γ ϕ ψ₁] pp1_proof%function_scope _%function_scope.
+
 Structure proofProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ ψ₂ : Pattern)
   := ProofProperty2 {
       pp2_proof : Γ ⊢ ψ₁ -> Γ ⊢ ψ₂ -> Γ ⊢ ϕ;
@@ -215,6 +226,12 @@ Structure proofProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ�
     }.
 
 Arguments ProofProperty2 [Σ] P [Γ ϕ ψ₁ ψ₂] pp2_proof%function_scope _%function_scope.
+
+Ltac solve_indif := repeat (
+                        eapply pp0_proof_property
+                        || eapply pp1_proof_property
+                        || eapply pp2_proof_property).
+
 
 Program Canonical Structure P1_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
           (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
@@ -249,7 +266,6 @@ Next Obligation.
   rewrite Hmp. apply orb_false_intro. exact H1. exact H2.
 Qed.
 
-Ltac solve_indif := repeat (apply pp0_proof_property || apply pp2_proof_property).
 
 Section FOL_helpers.
 
@@ -281,22 +297,11 @@ Section FOL_helpers.
     P _ _ (@A_impl_A Γ A wfA) = false.
   Proof.
     unfold A_impl_A.
-    apply pp2_proof_property.
     solve_indif.
-    pose proof (HP' := HP). destruct HP' as [[Hp1 [Hp2 [Hp3 Hmp]]]].
-    unfold A_impl_A.
-    rewrite Hmp. apply orb_false_intro.
-    - rewrite pp0_proof_property.
-    
-
-    intros [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold A_impl_A.
-    rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
   Qed.
 
-  Canonical Structure A_impl_A_indifferent_S := MyNWFProofProperty
-
+  Canonical Structure A_impl_A_indifferent_S P {HP : IndifProp P} Γ A (wfA : well_formed A)
+    := ProofProperty0 P _ (A_impl_A_indifferent Γ wfA).
 
   Lemma P4m (Γ : Theory) (A B : Pattern) :
     (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A)).
@@ -317,6 +322,12 @@ Section FOL_helpers.
         all: auto 10.
   Defined.
 
+  Program Canonical Structure P4m_indifferent_S P {HP : IndifProp P}
+            Γ A B (wfA : well_formed A) (wfB: well_formed B)
+    := ProofProperty0 P (P4m Γ wfA wfB) _.
+  Next Obligation.
+    intros. unfold P4m. solve_indif.
+  Qed.
 
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
@@ -328,6 +339,14 @@ Section FOL_helpers.
       Unshelve.
       all: auto 10.
   Defined.
+
+  Program Canonical Structure P4i_indifferent_S P {HP : IndifProp P}
+            Γ A (wfA : well_formed A)
+    := ProofProperty0 P (P4i Γ wfA) _.
+  Next Obligation.
+    intros. unfold P4m. solve_indif.
+  Qed.
+
 
   Lemma reorder (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
@@ -367,18 +386,18 @@ Section FOL_helpers.
   Defined.
 
   Lemma reorder_indifferent
-        P Γ A B C
+        P {HP : IndifProp P} Γ A B C
         (wfA : well_formed A)
         (wfB : well_formed B)
         (wfC : well_formed C):
-    indifferent_to_prop P ->
     P _ _ (@reorder Γ A B C wfA wfB wfC) = false.
   Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold reorder. rewrite !(Hp1,Hp2,Hp3,Hmp).
-    reflexivity.
+    unfold reorder. solve_indif.
   Qed.
 
+  Canonical Structure reorder_indifferent_S P {HP : IndifProp P} Γ A B C
+            (wfA : well_formed A) (wfB : well_formed B) (wfC : well_formed C)
+    := ProofProperty0 P _ (reorder_indifferent Γ wfA wfB wfC).
 
   Lemma reorder_meta (Γ : Theory) {A B C : Pattern} :
     well_formed A -> well_formed B -> well_formed C ->  
@@ -418,6 +437,14 @@ Section FOL_helpers.
     unfold reorder_meta. rewrite !(Hp1,Hp2,Hp3,Hmp). rewrite H.
     reflexivity.
   Qed.
+
+  Print ProofProperty1.
+
+  Program Canonical Structure reorder_meta_indifferent_S
+          {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
+          (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ : Pattern)
+          (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
+  := ProofProperty2 P (fun pf1 pf2 => @Modus_ponens Σ Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₁₂ pf1 pf2) _.
 
 
   Lemma syllogism (Γ : Theory) (A B C : Pattern) :
