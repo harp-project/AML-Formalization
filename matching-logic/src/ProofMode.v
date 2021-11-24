@@ -1936,6 +1936,7 @@ Defined. *)
 
 End FOL_helpers.
 
+(* TODO remove these hints *)
 #[export] Hint Resolve A_impl_A : core.
 #[export] Hint Resolve syllogism : core.
 #[export] Hint Resolve syllogism_intro : core.
@@ -1961,8 +1962,6 @@ Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern
 
 Definition reshape_nil {Σ : Signature} p := TagPattern p.
 Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
-(*Canonical Structure reshape_nil {Σ : Signature} p := TagPattern p.*)
-(*Canonical Structure reshape_done {Σ : Signature} p := reshape_nil p.*)
 
 Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
 ImpReshape
@@ -2103,6 +2102,42 @@ Proof.
   { apply UIP_dec. apply bool_eqdec. }
 Qed.
 
+(*
+Structure proofProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ : Pattern)
+  := ProofProperty1 {
+      pp1_proof : Γ ⊢ ψ₁ -> Γ ⊢ ϕ;
+      pp1_proof_property :
+      forall (pf₁ : Γ ⊢ ψ₁),
+        P Γ ψ₁ pf₁ = false ->
+        P Γ ϕ (pp1_proof pf₁) = false;
+    }.
+
+Arguments ProofProperty1 [Σ] P [Γ ϕ ψ₁] pp1_proof%function_scope _%function_scope.
+*)
+
+Structure tacticProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₁ : list Pattern) (g₁ : Pattern)
+  := TacticProperty0 {
+      tp0_tactic : @mkMyGoal Σ Γ l₁ g₁;
+      tp0_tactic_property :
+        (forall wf1 wf2, P _ _ (tp0_tactic  wf1 wf2) = false)
+    }.
+
+Arguments TacticProperty0 [Σ] P [Γ] [l₁]%list_scope [g₁] tp0_tactic _%function_scope.
+
+Structure tacticProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₁ l₂ : list Pattern) (g₁ g₂ : Pattern)
+  := TacticProperty1 {
+      tp1_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ ;
+      tp1_tactic_property :
+      forall (pf : @mkMyGoal Σ Γ l₁ g₁),
+        (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
+        (forall wf1 wf2, P _ _ ((tp1_tactic pf) wf1 wf2) = false)
+    }.
+
+Arguments TacticProperty1 [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1_tactic%function_scope _%function_scope.
+
+
 Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
   @mkMyGoal Σ Γ (l ++ [x]) g ->
   @mkMyGoal Σ Γ l (x ---> g).
@@ -2120,15 +2155,21 @@ Proof.
   { rewrite foldr_app. reflexivity. }
 Defined.
 
-Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) Γ l x g pf:
-  indifferent_to_cast P ->
+Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) {Hcast : IndifCast P} Γ l x g pf:
   (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
   (forall wf1 wf2, P _ _ (@MyGoal_intro Σ Γ l x g pf wf1 wf2) = false).
 Proof.
-  intros Hcast H wf1 wf2.
+  intros H wf1 wf2.
   unfold MyGoal_intro. simpl.
+  destruct Hcast as [Hcast].
   rewrite Hcast. simpl in H. apply H.
 Qed.
+
+Program Canonical Structure MyGoal_intro_indifferent_S 
+          {Σ : Signature} (P : proofbpred) {Pic : IndifCast P}
+          Γ l x g
+  := TacticProperty1 P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
+Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
 
 Ltac simplLocalContext :=
   match goal with
@@ -2173,15 +2214,20 @@ Proof.
   }
 Defined.
 
-Lemma MyGoal_exactn_indifferent {Σ : Signature} (P : proofbpred) Γ l₁ l₂ g:
-  indifferent_to_prop P ->
+Lemma MyGoal_exactn_indifferent {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} Γ l₁ l₂ g:
   (forall wf1 wf2, P _ _ (@MyGoal_exactn Σ Γ l₁ l₂ g wf1 wf2) = false).
 Proof.
-  intros Hcast.
   intros wf1 wf2.
   unfold MyGoal_exactn.
-  rewrite nested_const_middle_indifferent;[assumption|reflexivity].
+  solve_indif.
 Qed.
+
+Print tacticProperty0.
+
+Program Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
+          Γ l₁ l₂ g
+  := TacticProperty0 P (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
+Next Obligation. intros. simpl. apply MyGoal_exactn_indifferent. exact Pip. Qed.
 
 Tactic Notation "mgExactn" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
@@ -2200,6 +2246,16 @@ Proof.
   mgIntro. mgIntro. mgIntro.
   mgExactn 1.
 Defined.
+
+Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : IndifCast P} Γ a b c
+  (wfa : well_formed a = true)
+  (wfb : well_formed b = true)
+  (wfc : well_formed c = true):
+  P _ _ (@ex_mgExactn Σ Γ a b c wfa wfb wfc) = false.
+Proof.
+  
+Qed.
+
 
 
 Section FOL_helpers.
