@@ -894,6 +894,13 @@ Section FOL_helpers.
     all: auto.
   Defined.
 
+  Program Canonical Structure disj_right_intro_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+    := ProofProperty1 P (@disj_right_intro_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
@@ -908,6 +915,13 @@ Section FOL_helpers.
     all: auto.
   Defined.
 
+  Program Canonical Structure disj_left_intro_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b
+        (wfa : well_formed a = true)
+        (wfb : well_formed b = true)
+    := ProofProperty1 P (@disj_left_intro_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (!(!A) ---> A).
   Proof.
@@ -919,14 +933,13 @@ Section FOL_helpers.
   #[local] Hint Resolve not_not_elim : core.
 
   Lemma not_not_elim_indifferent
-        P Γ a (wfa : well_formed a = true):
-    indifferent_to_prop P ->
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
     P _ _ (@not_not_elim Γ a wfa) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold not_not_elim. rewrite Hp3. reflexivity.
-  Qed.
+  Proof. solve_indif. Qed.
 
+  Canonical Structure not_not_elim_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty0 P _ (@not_not_elim_indifferent P _ Γ _ wfa).
 
   Lemma not_not_elim_meta Γ A :
     well_formed A ->
@@ -941,6 +954,11 @@ Section FOL_helpers.
 
   #[local] Hint Resolve not_not_elim_meta : core.
 
+  Program Canonical Structure not_not_elim_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty1 P (@not_not_elim_meta Γ a wfa) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
   Proof.
@@ -951,6 +969,11 @@ Section FOL_helpers.
       Unshelve.
       all: auto.
   Defined.
+
+  Program Canonical Structure double_neg_elim_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@double_neg_elim Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> 
