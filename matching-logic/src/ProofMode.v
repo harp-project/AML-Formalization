@@ -987,6 +987,12 @@ Section FOL_helpers.
       all: auto 10.
   Defined.
 
+  Program Canonical Structure double_neg_elim_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@double_neg_elim_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
+
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (!B ---> !A)).
   Proof.
@@ -1004,6 +1010,11 @@ Section FOL_helpers.
         all: auto 10.
   Defined.
 
+  Program Canonical Structure P4_rev_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@P4_rev_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
@@ -1019,6 +1030,12 @@ Section FOL_helpers.
 
   #[local] Hint Resolve P4_rev_meta' : core.
   
+  Program Canonical Structure P4_rev_meta'_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@P4_rev_meta' Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
+
   Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((!B ---> !A) ---> (A ---> !B) --->  !A).
   Proof.
@@ -1030,6 +1047,11 @@ Section FOL_helpers.
       Unshelve.
       all: auto.
   Defined.
+
+  Program Canonical Structure P4m_neg_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@P4m_neg Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
@@ -1045,6 +1067,11 @@ Section FOL_helpers.
     Unshelve.
     all: auto.
   Defined.
+
+  Program Canonical Structure not_not_impl_intro_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@not_not_impl_intro_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B))).
@@ -1075,6 +1102,10 @@ Section FOL_helpers.
       all: auto 10.
   Defined.
 
+  Program Canonical Structure not_not_impl_intro_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@not_not_impl_intro Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma contraposition (Γ : Theory) (A B : Pattern) : 
     well_formed A -> well_formed B -> 
@@ -1091,6 +1122,11 @@ Section FOL_helpers.
       Unshelve.
       all: auto.
   Defined.
+
+  Program Canonical Structure contraposition_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@contraposition Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma or_comm_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B ->
@@ -1111,6 +1147,12 @@ Section FOL_helpers.
       all: auto 10.
   Defined.
 
+  Program Canonical Structure or_comm_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@or_comm_meta Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
+
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ A -> Γ ⊢ (!( !A )).
   Proof.
@@ -1122,6 +1164,11 @@ Section FOL_helpers.
     Unshelve.
     all: auto.
   Defined.
+
+  Program Canonical Structure A_implies_not_not_A_alt_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty1 P (@A_implies_not_not_A_alt Γ a wfa) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma P5i (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (! A ---> (A ---> B)).
@@ -1138,6 +1185,11 @@ Section FOL_helpers.
     all: auto.
   Defined.
 
+  Program Canonical Structure P5i_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@P5i Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi -> Γ ⊢ (Bot ---> phi).
   Proof.
@@ -1152,6 +1204,11 @@ Section FOL_helpers.
       Unshelve.
       all: auto.
   Defined.
+
+  Program Canonical Structure false_implies_everthing_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty0 P (@false_implies_everything Γ a wfa) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
 
   (* Goal  forall (A B : Pattern) (Γ : Theory) , well_formed A -> well_formed B ->
@@ -1228,6 +1285,12 @@ Defined. *)
     all: auto.
   Defined.
 
+
+  Program Canonical Structure A_implies_not_not_A_alt_Γ_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty1 P (@A_implies_not_not_A_alt_Γ Γ a wfa) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   (* Lemma equiv_implies_eq (Γ : Theory) (A B : Pattern) :
   well_formed A -> well_formed B -> Γ ⊢ (A <---> B) -> Γ ⊢ ()
    *) (*Need equal*)
@@ -1270,7 +1333,9 @@ Defined. *)
       all: auto.
   Abort.
 
+  (* TODO remove *)
   Definition empty_Γ := Empty_set (@Pattern Σ).
+
   Lemma exclusion (G : Theory) (A : Pattern) :
     well_formed A -> G ⊢ A -> G ⊢ (A ---> Bot) -> G ⊢ Bot.
   Proof.
@@ -1280,6 +1345,11 @@ Defined. *)
     Unshelve.
     all: auto.
   Defined.
+
+  Program Canonical Structure exclusion_indifferent_S
+        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
+    := ProofProperty2 P (@exclusion Γ a wfa) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma modus_tollens Γ A B :
     well_formed A ->
@@ -1292,6 +1362,11 @@ Defined. *)
     4: apply contraposition.
     all: auto.
   Defined.
+
+  Program Canonical Structure modus_tollens_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@modus_tollens Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
   
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
@@ -1305,21 +1380,13 @@ Defined. *)
     eapply Modus_ponens. 4: apply H0. all: auto 10.
   Defined.
 
+  (* TODO remove this hint *)
   #[local] Hint Resolve A_impl_not_not_B : core.
 
-  Lemma A_impl_not_not_B_indifferent
-        P Γ a b
-        (wfa : well_formed a)
-        (wfb : well_formed b) :
-    indifferent_to_prop P ->
-    P _ _ (@A_impl_not_not_B Γ a b wfa wfb) = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold A_impl_not_not_B.
-    rewrite Hmp. rewrite not_not_elim_indifferent; [assumption|]. simpl.
-    rewrite reorder_meta_indifferent;[assumption|idtac|reflexivity].
-    rewrite syllogism_indifferent; auto.
-  Qed.
+  Program Canonical Structure A_impl_not_not_B_indifferent_S
+        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@A_impl_not_not_B Γ a b wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion Γ A B B' :
     well_formed A ->
@@ -1330,22 +1397,13 @@ Defined. *)
     intros wfA wfB wfB'.
     apply reorder_meta; auto.
   Defined.
+
+  Program Canonical Structure prf_weaken_conclusion_indifferent_S
+        P {Pip : IndifProp P} Γ a b c
+        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
+    := ProofProperty0 P (@prf_weaken_conclusion Γ a b c wfa wfb wfc) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
   
-  Lemma prf_weaken_conclusion_indifferent
-        P Γ A B B'
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfB' : well_formed B'):
-    indifferent_to_prop P ->
-    P _ _ (@prf_weaken_conclusion Γ A B B' wfA wfB wfB') = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
-
   Lemma prf_weaken_conclusion_meta Γ A B B' :
     well_formed A ->
     well_formed B ->
@@ -1359,23 +1417,11 @@ Defined. *)
     eapply Modus_ponens. 4: apply H1. all: auto 10.
   Defined.
 
-  Lemma prf_weaken_conclusion_meta_indifferent
-        P Γ A B B'
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfB' : well_formed B')
-        (pf : Γ ⊢ B ---> B')
-        :
-        indifferent_to_prop P ->
-        P _ _ pf = false ->
-        P _ _ (@prf_weaken_conclusion_meta Γ A B B' wfA wfB wfB' pf) = false.
-  Proof.
-    intros Hp Hpf. pose proof (Hp' := Hp). destruct Hp as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion_meta. rewrite Hmp. rewrite Hpf. simpl.
-    rewrite reorder_meta_indifferent; auto.
-    rewrite syllogism_indifferent; auto.
-  Qed.
-
+  Program Canonical Structure prf_weaken_conclusion_meta_indifferent_S
+        P {Pip : IndifProp P} Γ a b c
+        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
+    := ProofProperty1 P (@prf_weaken_conclusion_meta Γ a b c wfa wfb wfc) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
@@ -1394,25 +1440,16 @@ Defined. *)
       all: apply well_formed_foldr; auto.
   Defined.
 
-  Lemma prf_weaken_conclusion_iter_indifferent
-        P Γ l g g'
-        (wfl : wf l)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
-    : indifferent_to_prop P ->
-    P _ _ (@prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg') = false.
-  Proof.
-    intros Hp.
-    move: wfl.
-    induction l; intros wfl.
-    - simpl. rewrite A_impl_A_indifferent; auto.
+  Program Canonical Structure prf_weaken_conclusion_iter_indifferent_S
+        P {Pip : IndifProp P} Γ l a b (wfl : wf l = true) (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty0 P (@prf_weaken_conclusion_iter Γ l a b wfl wfa wfb) _.
+  Next Obligation.
+    intros. induction l.
+    - simpl. solve_indif.
     - simpl.
       case_match.
-      rewrite syllogism_intro_indifferent; auto.
-      simpl in *.
-      rewrite prf_weaken_conclusion_indifferent; auto.
+      solve_indif. apply IHl.
   Qed.
-
 
   Lemma prf_weaken_conclusion_iter_meta Γ l g g':
     wf l ->
@@ -1427,6 +1464,11 @@ Defined. *)
     all: auto.
   Defined.
 
+  Program Canonical Structure prf_weaken_conclusion_iter_meta_indifferent_S
+        P {Pip : IndifProp P} Γ l a b (wfl : wf l = true) (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty1 P (@prf_weaken_conclusion_iter_meta Γ l a b wfl wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
+
   Lemma prf_weaken_conclusion_iter_meta_meta Γ l g g':
     wf l ->
     well_formed g ->
@@ -1439,35 +1481,12 @@ Defined. *)
     eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_meta. 3: apply H.
     all: auto.
   Defined.
+
+  Program Canonical Structure prf_weaken_conclusion_iter_meta_meta_indifferent_S
+        P {Pip : IndifProp P} Γ l a b (wfl : wf l = true) (wfa : well_formed a = true) (wfb : well_formed b = true)
+    := ProofProperty2 P (@prf_weaken_conclusion_iter_meta_meta Γ l a b wfl wfa wfb) _.
+  Next Obligation. intros. solve_indif; assumption. Qed.
     
-  Lemma prf_weaken_conclusion_iter_meta_meta_indifferent
-        P Γ l g g'
-        (wfl : wf l)
-        (wfg : well_formed g)
-        (wfg' : well_formed g')
-        (gimpg' : Γ ⊢ g ---> g')
-        (pf : Γ ⊢ foldr patt_imp g l)
-    :
-    indifferent_to_prop P ->
-    P _ _ gimpg' = false ->
-    P _ _ pf = false ->
-    P _ _ (@prf_weaken_conclusion_iter_meta_meta Γ l g g' wfl wfg wfg' gimpg' pf) = false.
-  Proof.
-    intros Hp H1 H2. pose proof (Hp':= Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    unfold prf_weaken_conclusion_iter_meta_meta. rewrite Hmp.
-    rewrite H2. simpl.
-    unfold prf_weaken_conclusion_iter_meta. rewrite Hmp.
-    rewrite H1. simpl.
-
-    clear H2 pf.
-    induction l.
-    - simpl. apply A_impl_A_indifferent; assumption.
-    - simpl. case_match. rewrite syllogism_intro_indifferent; auto.
-      simpl.
-      rewrite prf_weaken_conclusion_indifferent; auto.
-  Qed.
-
-
   Lemma prf_weaken_conclusion_meta_meta Γ A B B' :
     well_formed A ->
     well_formed B ->
