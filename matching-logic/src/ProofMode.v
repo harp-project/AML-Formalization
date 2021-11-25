@@ -2491,6 +2491,17 @@ Section FOL_helpers.
     apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
   Defined.
 
+  Program Canonical Structure MyGoal_weakenConclusion_under_first_implication_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
+            (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
+    := TacticProperty1 P (@MyGoal_weakenConclusion_under_first_implication Γ l ϕ₁ ϕ₂) _.
+  Next Obligation.
+    intros. simpl. 
+    unfold MyGoal_weakenConclusion_under_first_implication.
+    case_match. unfold liftP. solve_indif. apply H.
+  Qed.
+
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
     wf l₁ ->
     wf l₂ ->
@@ -2506,22 +2517,17 @@ Section FOL_helpers.
       eapply prf_weaken_conclusion_meta. all: auto 10.
   Defined.
 
-  Lemma prf_weaken_conclusion_iter_under_implication_iter_indifferent
-        P Γ l₁ l₂ g g'
-        (wfl₁ : wf l₁)
-        (wfl₂ : wf l₂)
-        (wfg : well_formed g)
-        (wfg' : well_formed g') :
-    indifferent_to_prop P ->
-    P _ _ (@prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g' wfl₁ wfl₂ wfg wfg') = false.
-  Proof.
-    intros Hp.
-    induction l₁; simpl.
-    - rewrite prf_weaken_conclusion_iter_under_implication_indifferent; auto.
-    - case_match.
-      rewrite prf_weaken_conclusion_meta_indifferent; auto.
+  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_iter_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
+            (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
+    := ProofProperty0 P (@prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
+  Next Obligation.
+    intros.
+    induction l₁.
+    - solve_indif.
+    - simpl. case_match. solve_indif. apply IHl₁.
   Qed.
-
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g':
     wf l₁ ->
@@ -2537,6 +2543,12 @@ Section FOL_helpers.
     all: auto 10.
   Defined.
 
+  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_iter_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
+            (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
+    := ProofProperty1 P (@prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
     @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
@@ -2589,21 +2601,11 @@ Section FOL_helpers.
     exact wfl₁gg'l₂.
   Defined.
 
-  Lemma MyGoal_weakenConclusion_indifferent
-        P Γ l₁ l₂ g g' pf :
-    indifferent_to_prop P ->
-    (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-    (forall wf1 wf2, P _ _ (@MyGoal_weakenConclusion Γ l₁ l₂ g g' pf wf1 wf2) = false).
-  Proof.
-    intros Hp Huse. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    simpl.
-    unfold MyGoal_weakenConclusion.
-    unfold prf_weaken_conclusion_iter_under_implication_iter_meta.
-    intros wf1 wf2.
-    rewrite Hmp. simpl. rewrite Huse. simpl.
-    rewrite prf_weaken_conclusion_iter_under_implication_iter_indifferent; auto.
-  Qed.
-
+  Program Canonical Structure MyGoal_weakenConclusion_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
+    := TacticProperty1 P (@MyGoal_weakenConclusion Γ l₁ l₂ ϕ₁ ϕ₂) _.
+  Next Obligation. intros. unfold MyGoal_weakenConclusion. unfold liftP. solve_indif. apply H. Qed.
 
 End FOL_helpers.
 
@@ -2652,6 +2654,16 @@ Section FOL_helpers.
     mgExactn 4.
   Defined.
 
+  Program Canonical Structure Constructive_dilemma_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (p q r s : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+            (wfr : well_formed r)
+            (wfs : well_formed s)
+    := ProofProperty0 P (@Constructive_dilemma Γ p q r s wfp wfq wfr wfs) _.
+  Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
+
   Lemma prf_add_assumption Γ a b :
     well_formed a ->
     well_formed b ->
@@ -2663,6 +2675,14 @@ Section FOL_helpers.
     4: apply P1. all: auto.
   Defined.
 
+  Program Canonical Structure prf_add_assumption_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (p q : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty1 P (@prf_add_assumption Γ p q wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
   Lemma prf_impl_distr_meta Γ a b c:
     well_formed a ->
     well_formed b ->
@@ -2673,6 +2693,15 @@ Section FOL_helpers.
     intros wfa wfb wfc H.
     eapply Modus_ponens. 4: apply P2. all: auto.
   Defined.
+
+  Program Canonical Structure prf_impl_distr_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (p q r : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+            (wfr : well_formed r)
+    := ProofProperty1 P (@prf_impl_distr_meta Γ p q r wfp wfq wfr) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
     wf l ->
@@ -2697,6 +2726,22 @@ Section FOL_helpers.
       eapply prf_weaken_conclusion_meta_meta.
       4: apply H3. all: auto 10.
   Defined.
+
+
+  Program Canonical Structure prf_add_lemma_under_implication_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfl : wf l)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty0 P (@prf_add_lemma_under_implication Γ l p q wfl wfp wfq) _.
+  Next Obligation.
+    intros.
+    induction l.
+    - solve_indif.
+    - simpl. case_match. solve_indif. apply IHl.
+  Qed.
 
   Lemma prf_add_lemma_under_implication_meta Γ l g h:
     wf l ->
