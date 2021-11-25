@@ -3101,7 +3101,6 @@ Section FOL_helpers.
     := ProofProperty0 P (@prf_disj_elim Γ p q r wfp wfq wfr) _.
   Next Obligation. solve_indif. Qed.
 
-
   Lemma prf_disj_elim_meta Γ p q r:
     well_formed p ->
     well_formed q ->
@@ -3113,6 +3112,15 @@ Section FOL_helpers.
     all: auto 10.
   Defined.
   
+
+  Program Canonical Structure prf_disj_elim_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (p q r : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+            (wfr : well_formed r)
+    := ProofProperty1 P (@prf_disj_elim_meta Γ p q r wfp wfq wfr) _.
+  Next Obligation. solve_indif; assumption. Qed.
   
   Lemma prf_disj_elim_meta_meta Γ p q r:
     well_formed p ->
@@ -3126,6 +3134,16 @@ Section FOL_helpers.
     all: auto.
   Defined.
 
+  Program Canonical Structure prf_disj_elim_meta_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+            (p q r : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+            (wfr : well_formed r)
+    := ProofProperty2 P (@prf_disj_elim_meta_meta Γ p q r wfp wfq wfr) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
+  (* TODO: add an indifference canonical structure for this (ProofProperty3) *)
   Lemma prf_disj_elim_meta_meta_meta Γ p q r:
     well_formed p ->
     well_formed q ->
@@ -3175,18 +3193,17 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_proved_to_assumptions_indifferent
-    P Γ l h g
+    P {Pip : IndifProp P} Γ l h g
     (wfl : wf l)
     (wfg : well_formed g)
     (wfh : well_formed h)
     (pfh : Γ ⊢ h):
-    indifferent_to_prop P ->
     P _ _ pfh = false ->
     P _ _ (@prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) = false.
   Proof.
-    intros Hp H. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
+    intros H. pose proof (Hp' := Pip). destruct Hp' as [[Hp1 [Hp2 [Hp3 Hmp]]]].
     induction l.
-    - simpl. rewrite Hmp. rewrite H. simpl. apply modus_ponens_indifferent; assumption.
+    - solve_indif; assumption.
     - simpl.
       case_match.
       unfold eq_rec_r. unfold eq_rec. unfold eq_rect. unfold eq_sym. unfold tofold. unfold consume.
@@ -3198,18 +3215,28 @@ Section FOL_helpers.
       replace fa with (@erefl Pattern (((h ---> a ---> foldr patt_imp g l) ---> a ---> foldr patt_imp g l))).
       2: { apply UIP_dec. intros x y. apply Pattern_eqdec. }
       simpl.
+      solve_indif.
 
-      pose proof (Htmp := prf_strenghten_premise_iter_meta_meta_indifferent).
-      specialize (Htmp P Γ).
-      specialize (Htmp [] [] (a ---> h ---> foldr patt_imp g l) (h ---> a ---> foldr patt_imp g l)).
-      simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-      { apply reorder_indifferent; assumption. }
-      rewrite prf_strenghten_premise_meta_meta_indifferent; auto.
-      { rewrite reorder_indifferent; auto. }
-      rewrite Hmp. rewrite H. simpl.
-      rewrite modus_ponens_indifferent; auto.
+      epose proof (Htmp :=
+                     pp2_proof_property (
+                         @prf_strenghten_premise_iter_meta_meta_indifferent_S
+                           Σ P Pip Γ [] [] (a ---> h ---> foldr patt_imp g l) (h ---> a ---> foldr patt_imp g l)
+                       _ _ _ _ _ _)
+                  ).
+      apply Htmp; clear Htmp.
+      solve_indif. solve_indif. assumption.
   Qed.
 
+  Program Canonical Structure prf_add_proved_to_assumptions_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfl : wf l)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty1 P (@prf_add_proved_to_assumptions Γ l p q wfl wfp wfq) _.
+  Next Obligation.
+    intros. apply prf_add_proved_to_assumptions_indifferent; assumption. Qed.
 
   Lemma prf_add_proved_to_assumptions_meta Γ l a g:
     wf l ->
@@ -3225,6 +3252,16 @@ Section FOL_helpers.
     3: apply H0.
     all: auto.
   Defined.
+
+  Program Canonical Structure prf_add_proved_to_assumptions_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfl : wf l)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty2 P (@prf_add_proved_to_assumptions_meta Γ l p q wfl wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
   
   Lemma MyGoal_add Γ l g h:
     Γ ⊢ h ->
