@@ -227,10 +227,12 @@ Structure proofProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ�
 
 Arguments ProofProperty2 [Σ] P [Γ ϕ ψ₁ ψ₂] pp2_proof%function_scope _%function_scope.
 
-Ltac solve_indif := repeat (
+Ltac2 mutable solve_indif () := ltac1:(repeat (
                         eapply pp0_proof_property
                         || eapply pp1_proof_property
-                        || eapply pp2_proof_property).
+                        || eapply pp2_proof_property)).
+
+Ltac solve_indif := ltac2:(solve_indif ()).
 
 
 Program Canonical Structure P1_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
@@ -2102,18 +2104,19 @@ Proof.
   { apply UIP_dec. apply bool_eqdec. }
 Qed.
 
-(*
-Structure proofProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ : Pattern)
-  := ProofProperty1 {
-      pp1_proof : Γ ⊢ ψ₁ -> Γ ⊢ ϕ;
-      pp1_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ϕ (pp1_proof pf₁) = false;
-    }.
 
-Arguments ProofProperty1 [Σ] P [Γ ϕ ψ₁] pp1_proof%function_scope _%function_scope.
-*)
+
+Definition liftP {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
+           (pf : Γ ⊢ (foldr patt_imp g l)) := P _ _ pf.
+
+Arguments liftP {Σ} _ Γ l%list_scope g _.
+
+Lemma liftP_impl_P {Σ : Signature} (P : proofbpred) (Γ : Theory) (p : Pattern)
+      (pf : Γ ⊢ p) :
+  @liftP Σ P Γ [] p pf = false -> P Γ p pf = false.
+Proof.
+  intros H. apply H.
+Qed.
 
 Structure tacticProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory)
           (l₁ : list Pattern) (g₁ : Pattern)
@@ -2136,6 +2139,37 @@ Structure tacticProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
     }.
 
 Arguments TacticProperty1 [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1_tactic%function_scope _%function_scope.
+
+Structure tacticProperty1' {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₁ l₂ : list Pattern) (g₁ g₂ : Pattern)
+  := TacticProperty1' {
+      tp1'_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ ;
+      tp1'_tactic_property :
+      forall (pf : @mkMyGoal Σ Γ l₁ g₁),
+        (forall wf3 wf4, liftP P _ _ _ (pf wf3 wf4) = false) ->
+        (forall wf1 wf2, liftP P _ _ _ ((tp1'_tactic pf) wf1 wf2) = false)
+    }.
+
+Arguments TacticProperty1' [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1'_tactic%function_scope _%function_scope.
+
+Ltac2 Set solve_indif :=
+  (fun () =>
+     ltac1:(
+              repeat (
+                  intros;
+                  (
+                    lazymatch goal with
+                    | [ |- liftP _ _ _ _ _ = _ ] => idtac "liftp"
+                    | _ => (
+                            eapply pp0_proof_property
+                            || eapply pp1_proof_property
+                            || eapply pp2_proof_property
+                          )
+                    end
+                  )
+                )
+            )
+  ).
 
 
 Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
@@ -2170,6 +2204,13 @@ Program Canonical Structure MyGoal_intro_indifferent_S
           Γ l x g
   := TacticProperty1 P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
 Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
+
+Program Canonical Structure MyGoal_intro_indifferent_S' 
+          {Σ : Signature} (P : proofbpred) {Pic : IndifCast P}
+          Γ l x g
+  := TacticProperty1' P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
+Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
+
 
 Ltac simplLocalContext :=
   match goal with
@@ -2253,7 +2294,20 @@ Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : 
   (wfc : well_formed c = true):
   P _ _ (@ex_mgExactn Σ Γ a b c wfa wfb wfc) = false.
 Proof.
-  
+  Print tacticProperty0.
+  unfold ex_mgExactn. Set Printing Implicit.
+  (*eapply (@tp1'_tactic_property Σ P Γ).
+  About tp1_tactic_property.*)
+
+  apply liftP_impl_P.
+  solve_indif.
+  eapply @tp1'_tactic_property.
+  eapply (@tp1'_tactic_property Σ P Γ).
+
+  eapply (@tp1_tactic_property Σ P Γ _ []).
+  intros. unfold proofbpred in P. Print sigT.
+  eapply (@tp1_tactic_property Σ P Γ _ [a]).
+  apply tp1_tactic_property.
 Qed.
 
 
