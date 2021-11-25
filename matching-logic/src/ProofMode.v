@@ -268,6 +268,12 @@ Next Obligation.
   rewrite Hmp. apply orb_false_intro. exact H1. exact H2.
 Qed.
 
+Program Canonical Structure cast_proof_indifferent_S
+        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
+        (ϕ ψ : Pattern) (e : ψ = ϕ)
+  := ProofProperty1 P (@cast_proof Σ Γ ϕ ψ e) _.
+Next Obligation. intros. destruct Pic as [hic]. rewrite hic. exact H. Qed.
+
 
 Section FOL_helpers.
 
@@ -3087,13 +3093,13 @@ Section FOL_helpers.
   Defined.
 
   Program Canonical Structure prf_disj_elim_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (p q r : Pattern)
             (wfp : well_formed p)
             (wfq : well_formed q)
             (wfr : well_formed r)
     := ProofProperty0 P (@prf_disj_elim Γ p q r wfp wfq wfr) _.
-  Next Obligation. intros. unfold prf_disj_elim.  solve_indif.  , Qed.
+  Next Obligation. solve_indif. Qed.
 
 
   Lemma prf_disj_elim_meta Γ p q r:
