@@ -2727,7 +2727,6 @@ Section FOL_helpers.
       4: apply H3. all: auto 10.
   Defined.
 
-
   Program Canonical Structure prf_add_lemma_under_implication_indifferent_S
             (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
             (l : list Pattern)
@@ -2753,6 +2752,16 @@ Section FOL_helpers.
     intros WFl WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
   Defined.
 
+  Program Canonical Structure prf_add_lemma_under_implication_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfl : wf l)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty1 P (@prf_add_lemma_under_implication_meta Γ l p q wfl wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
     wf l ->
     well_formed g ->
@@ -2764,6 +2773,16 @@ Section FOL_helpers.
     intros WFl WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
     3: apply H0. all: auto 7.
   Defined.
+
+  Program Canonical Structure prf_add_lemma_under_implication_meta_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfl : wf l)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty2 P (@prf_add_lemma_under_implication_meta_meta Γ l p q wfl wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma myGoal_assert Γ l g h:
     well_formed h ->
@@ -2787,6 +2806,19 @@ Section FOL_helpers.
       ).
     }
   Defined.
+
+  Program Canonical Structure myGoal_assert_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+            (wfq : well_formed q)
+    := TacticProperty2 P (@myGoal_assert Γ l p q wfq) _.
+  Next Obligation.
+    intros. unfold myGoal_assert. unfold liftP.
+    solve_indif.
+    - apply H.
+    - apply H0.
+  Qed.
 
   Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
     wf l1 ->
@@ -2813,6 +2845,22 @@ Section FOL_helpers.
       4: apply H3. all: auto 10.
   Defined.
   
+  Program Canonical Structure prf_add_lemma_under_implication_generalized_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l₁ l₂ : list Pattern)
+            (p q : Pattern)
+            (wfl₁ : wf l₁)
+            (wfl₂ : wf l₂)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty0 P (@prf_add_lemma_under_implication_generalized Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
+  Next Obligation.
+    intros.
+    induction l₁.
+    - solve_indif.
+    - simpl. case_match. solve_indif. apply IHl₁.
+  Qed.
+
   Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h:
     wf l1 ->
     wf l2 ->
@@ -2823,6 +2871,17 @@ Section FOL_helpers.
   Proof.
     intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 10.
   Defined.
+
+  Program Canonical Structure prf_add_lemma_under_implication_generalized_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l₁ l₂ : list Pattern)
+            (p q : Pattern)
+            (wfl₁ : wf l₁)
+            (wfl₂ : wf l₂)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty1 P (@prf_add_lemma_under_implication_generalized_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
   
   Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
     wf l1 ->
@@ -2836,6 +2895,17 @@ Section FOL_helpers.
     intros WFl1 WFl2 WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized_meta.
     3: apply H0. all: auto 7.
   Defined.
+
+  Program Canonical Structure prf_add_lemma_under_implication_generalized_meta_meta_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l₁ l₂ : list Pattern)
+            (p q : Pattern)
+            (wfl₁ : wf l₁)
+            (wfl₂ : wf l₂)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+    := ProofProperty2 P (@prf_add_lemma_under_implication_generalized_meta_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma myGoal_assert_generalized Γ l1 l2 g h:
     well_formed h ->
@@ -2878,6 +2948,14 @@ Section FOL_helpers.
       ).
     }
   Defined.
+
+  Program Canonical Structure myGoal_assert_generalized_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l₁ l₂ : list Pattern)
+            (p q : Pattern)
+            (wfq : well_formed q)
+    := TacticProperty2 P (@myGoal_assert_generalized Γ l₁ l₂ p q wfq) _.
+  Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
   
 End FOL_helpers.
 
@@ -2973,6 +3051,13 @@ Section FOL_helpers.
 
   #[local] Hint Resolve P4i' : core.
 
+  Program Canonical Structure P4i'_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (q : Pattern)
+            (wfq : well_formed q)
+    := ProofProperty0 P (@P4i' Γ q wfq) _.
+  Next Obligation. solve_indif. Qed.
+
   Lemma tofold p:
     p = fold_right patt_imp p [].
   Proof.
@@ -2996,9 +3081,19 @@ Section FOL_helpers.
     pose proof (H1 := @Constructive_dilemma Σ Γ p r q r wfp wfr wfq wfr).
     assert (Γ ⊢ ((r or r) ---> r)).
     { unfold patt_or. apply P4i'; auto. }
-    rewrite -> tofold in H1. rewrite 3!consume in H1.
+    eapply cast_proof in H1.
+    2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
     eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H. all: auto 10.
   Defined.
+
+  Program Canonical Structure prf_disj_elim_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (p q r : Pattern)
+            (wfp : well_formed p)
+            (wfq : well_formed q)
+            (wfr : well_formed r)
+    := ProofProperty0 P (@prf_disj_elim Γ p q r wfp wfq wfr) _.
+  Next Obligation. intros. unfold prf_disj_elim.  solve_indif.  , Qed.
 
 
   Lemma prf_disj_elim_meta Γ p q r:
