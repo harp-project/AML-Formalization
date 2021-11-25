@@ -3369,58 +3369,24 @@ Section FOL_helpers.
       apply prf_impl_distr_meta; auto.
   Defined.
 
-  
-
-  Lemma prf_clear_hyp_indifferent
-    P Γ l₁ l₂ g h
+  Program Canonical Structure prf_clear_hyp_indifferent_S
+    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+    (l₁ l₂ : list Pattern)
+    (g h : Pattern)
     (wfl₁ : wf l₁)
     (wfl₂ : wf l₂)
     (wfg : well_formed g)
-    (wfh : well_formed h):
-    indifferent_to_prop P ->
-    P _ _ (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) = false.
-  Proof.
-    intros HP.
-    destruct HP as [HP1 [HP2 [HP3 HMP]]].
-    induction l₁; simpl.
-    - apply HP1.
-    - case_match.
-      unfold prf_impl_distr_meta.
-      rewrite HMP.
-      + apply orb_false_intro.
-        * Set Printing Implicit.
-          Check MyGoal_add_indifferent.
-          (*Fail apply (@MyGoal_add_indifferent Σ P Γ).*)
-          (*apply (@MyGoal_add_indifferent Σ P Γ []).*)
-          
-(*
-          pose proof (Htmp := @MyGoal_add_indifferent Σ P Γ).
-          simpl in Htmp.
-          Fail rewrite Htmp.
-          About MyGoal_add_indifferent.
-*)
-          Set Unicoq Debug. Check mnpp_proof_property.
-          simpl.
-          (*apply: overloaded_lemma.*)
-
-(*          apply: (@mnpp_proof_property Σ P Γ).*)
-          apply: (@mnpp_proof_property Σ P Γ []).
-(*          apply: (@mpp_proof_property Σ P Γ).*)
-(*          apply mnpp_proof_property with (l := []).*)
-(*
-          rapply (@MyGoal_add_indifferent_r Σ P Γ _).
-          rapply MyGoal_add_indifferent_r.
-*)
-          (*Set Debug "tactic-unification".*)
-(*
-          apply: MyGoal_add_indifferent_r.
-          apply (@MyGoal_add_indifferent Σ P Γ []).
-          specialize (Htmp [])
-          rewrite Htmp.
-      simpl.
+    (wfh : well_formed h)
+    := ProofProperty0 P (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
+  Next Obligation.
+    intros.
+    induction l₁.
+    - solve_indif.
+    - simpl.
+      case_match.
+      solve_indif.
+      apply IHl₁.
   Qed.
-*)
-Abort.
 
   Lemma prf_clear_hyp_meta Γ l1 l2 g h:
     wf l1 ->
@@ -3435,6 +3401,18 @@ Abort.
     all: auto 10.
   Defined.  
 
+  Program Canonical Structure prf_clear_hyp_meta_indifferent_S
+    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+    (l₁ l₂ : list Pattern)
+    (g h : Pattern)
+    (wfl₁ : wf l₁)
+    (wfl₂ : wf l₂)
+    (wfg : well_formed g)
+    (wfh : well_formed h)
+    := ProofProperty1 P (@prf_clear_hyp_meta Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
+  (* TODO move somewhere else *)
   Lemma wfapp_proj_1 l₁ l₂:
     wf (l₁ ++ l₂) = true ->
     wf l₁ = true.
@@ -3504,6 +3482,12 @@ Abort.
     { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
   Defined.
 
+  Program Canonical Structure myGoal_clear_hyp_indifferent_S
+    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+    (l₁ l₂ : list Pattern)
+    (g h : Pattern)
+    := TacticProperty1 P (@myGoal_clear_hyp Γ l₁ l₂ g h) _.
+  Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
   
 End FOL_helpers.
 
@@ -3516,15 +3500,22 @@ Tactic Notation "mgClear" constr(n) :=
     let Heql1 := fresh "Heql1" in
     let Heql2 := fresh "Heql2" in
     eapply cast_proof_mg_hyps;
-    [(
-      rewrite -[l](take_drop n); reflexivity)|];
-    remember (take n l) as l1 eqn:Heql1;
-    remember (drop n l) as l2 eqn:Heql2;
+    [(rewrite -[l](take_drop n); reflexivity)|];
+    remember (take n l) as l1 eqn:Heql1 in |-;
+    remember (drop n l) as l2 eqn:Heql2 in |-;
+    eapply cast_proof_mg_hyps;
+    [(rewrite -Heql1; rewrite -Heql2; reflexivity)|];
     simpl in Heql1; simpl in Heql2;
     let a := fresh "a" in
     destruct l2 as [|a l2];[congruence|];
-    inversion Heql2; subst l1 a l2; clear Heql2;
-    apply myGoal_clear_hyp;rewrite {1}[_ ++ _]/=
+    let Heqa := fresh "Heqa" in
+    let Heql2' := fresh "Heql2'" in
+    inversion Heql2 as [[Heqa Heql2']]; clear Heql2;
+    apply myGoal_clear_hyp;
+    eapply cast_proof_mg_hyps;
+    [(try(rewrite -> Heql1 at 1); try(rewrite -> Heql2' at 1); reflexivity)|];
+    clear Heql2' Heqa l2 a Heql1 l1;
+    eapply cast_proof_mg_hyps;[rewrite {1}[_ ++ _]/=; reflexivity|]
   end.
 
 Local Example ex_mgClear {Σ : Signature} Γ a b c:
@@ -3540,7 +3531,21 @@ Proof.
   mgClear 2.
   mgClear 0.
   mgExactn 0.
+Defined.
+
+Local Example ex_mgClear_indif {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P}
+      (Γ : Theory)
+      (a b c : Pattern)
+      (wfa : well_formed a)
+      (wfb : well_formed b)
+      (wfc : well_formed c):
+  P _ _ (@ex_mgClear Σ Γ a b c wfa wfb wfc) = false.
+Proof.
+  unfold ex_mgClear. simpl.
+  apply liftP_impl_P.
+  solve_indif.
 Qed.
+
 
 Section FOL_helpers.
   
