@@ -2159,6 +2159,20 @@ Structure tacticProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory)
 
 Arguments TacticProperty2 [Σ] P [Γ] [l₁ l₂ l₃]%list_scope [g₁ g₂ g₃] tp2_tactic%function_scope _%function_scope.
 
+Structure tacticProperty1_1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₂ l₃ : list Pattern) (p₁ g₂ g₃ : Pattern)
+  := TacticProperty1_1 {
+      tp1_1_tactic : Γ ⊢ p₁ -> @mkMyGoal Σ Γ l₂ g₂ -> @mkMyGoal Σ Γ l₃ g₃ ;
+      tp1_1_tactic_property :
+      forall (pf₁ : Γ ⊢ p₁) (pf₂ : @mkMyGoal Σ Γ l₂ g₂),
+        (P Γ p₁ pf₁ = false) ->
+        (forall wf5 wf6, liftP P _ _ _ (pf₂ wf5 wf6) = false) ->
+        (forall wf1 wf2, liftP P _ _ _ ((tp1_1_tactic pf₁ pf₂) wf1 wf2) = false)
+    }.
+
+Arguments TacticProperty1_1 [Σ] P [Γ] [l₂ l₃]%list_scope [p₁ g₂ g₃] tp1_1_tactic%function_scope _%function_scope.
+
+
 
 Ltac2 Set solve_indif :=
   (fun () =>
@@ -2172,6 +2186,7 @@ Ltac2 Set solve_indif :=
                           eapply tp0_tactic_property
                           || eapply tp1_tactic_property
                           || eapply tp2_tactic_property
+                          || eapply tp1_1_tactic_property
                         )
                                                     
                     | _ => (
@@ -3286,80 +3301,16 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma MyGoal_add_indifferent
-    P Γ l g h pfh pf:
-    indifferent_to_prop P ->
-    P _ _ pfh = false ->
-    (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-    (forall wf1 wf2, P _ _ (@MyGoal_add Γ l g h pfh pf wf1 wf2) = false).
-  Proof.
-    intros Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    simpl in *. unfold MyGoal_add. unfold prf_add_proved_to_assumptions_meta.
-    intros wf1 wf2.
-    rewrite Hmp. simpl.
-    rewrite H2. simpl.
-    rewrite prf_add_proved_to_assumptions_indifferent; auto.
+  Program Canonical Structure MyGoal_add_indifferent_S
+            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (l : list Pattern)
+            (p q : Pattern)
+    := TacticProperty1_1 P (@MyGoal_add Γ l p q) _.
+  Next Obligation.
+    intros. unfold MyGoal_add. unfold liftP. solve_indif. apply H. apply H0.
   Qed.
 
-
 End FOL_helpers.
-
-(*
-Lemma cast_proof_collapse {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ (pf : Γ ⊢ ϕ₁) (e₂₁ : ϕ₂ = ϕ₁) (e₃₂ : ϕ₃ = ϕ₂):
-  @cast_proof Σ Γ ϕ₂ ϕ₃ e₃₂ (@cast_proof Σ Γ ϕ₁ ϕ₂ e₂₁ pf ) = (@cast_proof Σ Γ ϕ₁ ϕ₃ (eq_trans e₃₂ e₂₁) pf ).
-Proof.
-  unfold cast_proof,eq_rec_r,eq_rec,eq_rect.
-  repeat case_match.
-  replace (eq_sym (eq_trans e₃₂ e₂₁)) with (@eq_refl _ ϕ₁) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec).
-  reflexivity.
-Qed.
-
-Lemma MyGoal_add_indifferent_extended {Σ : Signature}
-      P Γ l g h pfh pf:
-  indifferent_to_cast P ->
-  indifferent_to_prop P ->
-  P _ _ pfh = false ->
-  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-  (forall wf1 wf2 ϕ₂ (e: ϕ₂ = (foldr patt_imp g l)),
-      P _ ϕ₂ (@cast_proof Σ Γ (foldr patt_imp g l) ϕ₂ e (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2)) = false).
-Proof.
-  intros Hc Hp H1 H2. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-  simpl in *. unfold MyGoal_add. unfold prf_add_proved_to_assumptions_meta.
-  intros wf1 wf2 ϕ₂ e.
-  unfold indifferent_to_cast in Hc. rewrite Hc.
-  rewrite Hmp. simpl.
-  rewrite H2. simpl.
-  rewrite prf_add_proved_to_assumptions_indifferent; auto.
-Qed.
-
-
-Definition relax_P {Σ : Signature} (P: proofbpred) (Γ : Theory) (ϕ₁ : Pattern) (pf : Γ ⊢ ϕ₁) (ϕ₂ : Pattern)
-: bool
-:=
-if (decide (ϕ₁ = ϕ₂)) is left _ then P Γ ϕ₁ pf else negb (P Γ ϕ₁ pf).
-
-Check @cast_proof.
-Lemma relax {Σ : Signature} (P: proofbpred) (Γ : Theory) (ϕ₁ : Pattern) (pf : Γ ⊢ ϕ₁)
-      (ϕ₂ : Pattern) (e : ϕ₁ = ϕ₂):
-  @relax_P Σ P Γ ϕ₁ (@cast_proof Σ Γ _ _ e pf) ϕ₂ ->
-  P Γ ϕ₂ pf.
-
-
-Lemma MyGoal_add_indifferent_relaxed {Σ : Signature}
-      P Γ l g h pfh pf ϕ₂:
-  ϕ₂ = foldr patt_imp g l ->
-  indifferent_to_prop P ->
-  P _ _ pfh = false ->
-  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-  (forall wf1 wf2, @relax_P Σ P Γ (foldr patt_imp g l) (@MyGoal_add Σ Γ l g h pfh pf wf1 wf2) ϕ₂ = false).
-Proof.
-  intros Hϕ₂.
-  intros. unfold relax_P.
-  case_match.
-  + apply MyGoal_add_indifferent; assumption.
-  + symmetry in Hϕ₂. contradiction.
-Qed.
-*)
 
 Definition Pattern_of {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (pf : Γ ⊢ ϕ) : Pattern := ϕ.
 
@@ -3368,81 +3319,6 @@ Canonical Structure equate_pf {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf 
 
 Structure equals_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat { unpack_pat : Pattern }.
 Canonical Structure equate_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat ϕ ϕ.
-
-Print ImpReshapeS.
-
-(*
-Structure helper {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
- := Helper
-      { helper_packed_ϕ : equals_pat ϕ;
-        helper_P : (fun (pf : Γ ⊢ (unpack_pat helper_packed_ϕ) ) => P Γ (unpack_pat helper_packed_ϕ) pf);
-      }.
-*)
-
-(*
-Lemma my_mnpp_proof_property {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
-          (r : ImpReshapeS g l) (mnpp : @myNWFProofProperty Σ P Γ l g):
-         forall wfg wfl pf,
-           pf = (mnpp_proof mnpp wfg wfl) ->
-           P Γ (untagPattern (irs_flattened r)) pf = false.
-*)
-
-(*
-Canonical Structure myProofProperty_from_myNWFProofProperty
-          {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l : list Pattern) (g : Pattern)
-          (wfl : wf l) (wfg : well_formed g)
-          (*r : ImpReshapeS g l*)
-          (MNPP : myNWFProofProperty P Γ l g)
-  : myProofProperty P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
-  := @MyProofProperty Σ P Γ (*untagPattern (irs_flattened r)*) (foldr patt_imp g l)
-                      (mnpp_proof MNPP wfg wfl)
-                      (mnpp_proof_property MNPP wfg wfl).
-*)
-Print Canonical Projections.
-(*Print myProofProperty_from_myNWFProofProperty.*)
-(*
-Program Canonical Structure myNWFProofProperty_from_myProofProperty
-          {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l : list Pattern) (g : Pattern)
-          (r : ImpReshapeS g l)
-          (MPP : myProofProperty P Γ (untagPattern (irs_flattened r)))
-  : myNWFProofProperty P Γ l g
-  := @MyNWFProofProperty Σ P Γ l g (fun _ _ => mpp_proof MPP) (fun _ _ => mpp_proof_property MPP).
-Next Obligation.
-  intros Σ P Γ l g r Hmpp wfl wfg.
-  apply irs_pf.
-Defined.
-Next Obligation.
-  intros Σ P Γ l g r MPP wfl wfg.
-  simpl.
-  unfold eq_rect. unfold myNWFProofProperty_from_myProofProperty_obligation_1.
-  destruct r. simpl in *. case_match. reflexivity.
-Qed.
-*)
-
-Program Canonical Structure MyGoal_add_indifferent_S
-          {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} (Γ : Theory) (*ϕ : Pattern*)
-          (l: list Pattern)
-          (g h : Pattern)
-          (P_pfh : myProofProperty P Γ h)
-          (P_pf : myNWFProofProperty P Γ (h::l) g)
-  := @MyNWFProofProperty Σ P Γ l g
-                         (fun wfl wfg =>
-                            (@MyGoal_add Σ Γ l g h (mpp_proof P_pfh) (mnpp_proof P_pf) wfl wfg)
-                         )
-                         _
-.
-Next Obligation.
-  intros Σ P Γ Pip l g h P_pfh P_pf wfg wfl.
-  apply MyGoal_add_indifferent.
-  { apply prop_indif. }
-  { apply mpp_proof_property. }
-  { apply mnpp_proof_property. }
-Qed.
-
-Print MyGoal_add_indifferent_S.
-
 
 Tactic Notation "mgAdd" constr(n) :=
   match goal with
@@ -3493,15 +3369,8 @@ Section FOL_helpers.
       apply prf_impl_distr_meta; auto.
   Defined.
 
-(*
-  Lemma helper (P : proofbpred) Γ ϕ₁ ϕ₂ (pf1: Γ ⊢ ϕ₁) (pf2 : Γ ⊢ ϕ₂) (e : pf1 = pf2):
-    pf1 -> pf2.*)
+  
 
-
-  (*
-  About MyGoal_add_indifferent.
-  Arguments MyGoal_add_indifferent _ _ _ & _ _ _ _ _ _ _ _ _ _.
-  *)
   Lemma prf_clear_hyp_indifferent
     P Γ l₁ l₂ g h
     (wfl₁ : wf l₁)
