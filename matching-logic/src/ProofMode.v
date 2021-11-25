@@ -2123,7 +2123,7 @@ Structure tacticProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory)
   := TacticProperty0 {
       tp0_tactic : @mkMyGoal Σ Γ l₁ g₁;
       tp0_tactic_property :
-        (forall wf1 wf2, P _ _ (tp0_tactic  wf1 wf2) = false)
+        (forall wf1 wf2, liftP P _ _ _ (tp0_tactic  wf1 wf2) = false)
     }.
 
 Arguments TacticProperty0 [Σ] P [Γ] [l₁]%list_scope [g₁] tp0_tactic _%function_scope.
@@ -2134,23 +2134,25 @@ Structure tacticProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
       tp1_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ ;
       tp1_tactic_property :
       forall (pf : @mkMyGoal Σ Γ l₁ g₁),
-        (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-        (forall wf1 wf2, P _ _ ((tp1_tactic pf) wf1 wf2) = false)
+        (forall wf3 wf4, liftP P _ _ _ (pf wf3 wf4) = false) ->
+        (forall wf1 wf2, liftP P _ _ _ ((tp1_tactic pf) wf1 wf2) = false)
     }.
 
 Arguments TacticProperty1 [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1_tactic%function_scope _%function_scope.
 
-Structure tacticProperty1' {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l₁ l₂ : list Pattern) (g₁ g₂ : Pattern)
-  := TacticProperty1' {
-      tp1'_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ ;
-      tp1'_tactic_property :
-      forall (pf : @mkMyGoal Σ Γ l₁ g₁),
-        (forall wf3 wf4, liftP P _ _ _ (pf wf3 wf4) = false) ->
-        (forall wf1 wf2, liftP P _ _ _ ((tp1'_tactic pf) wf1 wf2) = false)
+Structure tacticProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₁ l₂ l₃ : list Pattern) (g₁ g₂ g₃ : Pattern)
+  := TacticProperty2 {
+      tp2_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ -> @mkMyGoal Σ Γ l₃ g₃ ;
+      tp2_tactic_property :
+      forall (pf₁ : @mkMyGoal Σ Γ l₁ g₁) (pf₂ : @mkMyGoal Σ Γ l₂ g₂),
+        (forall wf3 wf4, liftP P _ _ _ (pf₁ wf3 wf4) = false) ->
+        (forall wf5 wf6, liftP P _ _ _ (pf₂ wf5 wf6) = false) ->
+        (forall wf1 wf2, liftP P _ _ _ ((tp2_tactic pf₁ pf₂) wf1 wf2) = false)
     }.
 
-Arguments TacticProperty1' [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1'_tactic%function_scope _%function_scope.
+Arguments TacticProperty2 [Σ] P [Γ] [l₁ l₂ l₃]%list_scope [g₁ g₂ g₃] tp2_tactic%function_scope _%function_scope.
+
 
 Ltac2 Set solve_indif :=
   (fun () =>
@@ -2159,7 +2161,13 @@ Ltac2 Set solve_indif :=
                   intros;
                   (
                     lazymatch goal with
-                    | [ |- liftP _ _ _ _ _ = _ ] => idtac "liftp"
+                    | [ |- liftP _ _ _ _ _ = _ ] =>
+                        (
+                          eapply tp0_tactic_property
+                          || eapply tp1_tactic_property
+                          || eapply tp2_tactic_property
+                        )
+                                                    
                     | _ => (
                             eapply pp0_proof_property
                             || eapply pp1_proof_property
@@ -2205,12 +2213,15 @@ Program Canonical Structure MyGoal_intro_indifferent_S
   := TacticProperty1 P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
 Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
 
-Program Canonical Structure MyGoal_intro_indifferent_S' 
-          {Σ : Signature} (P : proofbpred) {Pic : IndifCast P}
-          Γ l x g
-  := TacticProperty1' P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
-Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
-
+Program Canonical Structure cast_proof_mg_hyps_indifferent_S
+        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
+        (l₁ l₂ : list Pattern) (g : Pattern) (e : l₁ = l₂)
+  := TacticProperty1 P (@cast_proof_mg_hyps Σ Γ l₁ l₂ e g) _.
+Next Obligation.
+  intros. unfold liftP. simpl. unfold cast_proof_mg_hyps.
+  pose proof (Pic' := Pic). destruct Pic' as [cast_indif0].
+  rewrite cast_indif0. simpl in *. unfold liftP in H. apply H.
+Qed.
 
 Ltac simplLocalContext :=
   match goal with
@@ -2263,8 +2274,6 @@ Proof.
   solve_indif.
 Qed.
 
-Print tacticProperty0.
-
 Program Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
           Γ l₁ l₂ g
   := TacticProperty0 P (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
@@ -2296,18 +2305,8 @@ Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : 
 Proof.
   Print tacticProperty0.
   unfold ex_mgExactn. Set Printing Implicit.
-  (*eapply (@tp1'_tactic_property Σ P Γ).
-  About tp1_tactic_property.*)
-
   apply liftP_impl_P.
   solve_indif.
-  eapply @tp1'_tactic_property.
-  eapply (@tp1'_tactic_property Σ P Γ).
-
-  eapply (@tp1_tactic_property Σ P Γ _ []).
-  intros. unfold proofbpred in P. Print sigT.
-  eapply (@tp1_tactic_property Σ P Γ _ [a]).
-  apply tp1_tactic_property.
 Qed.
 
 
