@@ -4716,6 +4716,14 @@ Section FOL_helpers.
     Unshelve. all: auto.
   Defined.
 
+  Program Canonical Structure conj_intro_meta_partial2_indifferent_S
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+    := ProofProperty1 P (@conj_intro_meta_partial2 Γ a b wfa wfb) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
   Lemma and_impl_patt2  (A B C : Pattern) Γ:
     well_formed A → well_formed B → well_formed C →
     Γ ⊢ A -> Γ ⊢ ((B and A) ---> C) -> Γ ⊢ (B ---> C).
@@ -4724,6 +4732,15 @@ Section FOL_helpers.
     eapply syllogism_intro with (B0 := patt_and B A); auto.
     pose conj_intro_meta_partial2; auto.
   Defined.
+
+  Program Canonical Structure and_impl_patt2_indifferent_S
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b c : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+    := ProofProperty2 P (@and_impl_patt2 a b c Γ wfa wfb wfc) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma patt_and_comm_meta (A B : Pattern) Γ:
     well_formed A → well_formed B
@@ -4735,6 +4752,14 @@ Section FOL_helpers.
     apply pf_conj_elim_l_meta in H as P2. all: auto.
     apply conj_intro_meta; auto.
   Defined.
+
+  Program Canonical Structure patt_and_comm_meta_indifferent_S
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+    := ProofProperty1 P (@patt_and_comm_meta a b Γ wfa wfb) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
@@ -4751,6 +4776,15 @@ Section FOL_helpers.
     all: try assumption.
     1,2: pose proof (wfrr' := proved_impl_wf _ _ Himp); wf_auto2.
   Defined.
+
+  Program Canonical Structure MyGoal_applyMeta_indifferent_S
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+    := TacticProperty1_1 P (fun pf₁ => @MyGoal_applyMeta Γ a b pf₁ l) _.
+  Next Obligation.
+    intros. unfold liftP. solve_indif. assumption. apply H0.
+  Qed.
 
 End FOL_helpers.
 
@@ -4772,6 +4806,13 @@ Proof.
   all: abstract (wf_auto2).
 Defined.
 
+Program Canonical Structure MyGoal_left_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+  := TacticProperty1 P (@MyGoal_left Σ Γ l a b) _.
+Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
+
 Lemma MyGoal_right {Σ : Signature} Γ l x y:
   @mkMyGoal Σ Γ l y ->
   @mkMyGoal Σ Γ l (patt_or x y).
@@ -4786,6 +4827,12 @@ Proof.
   all: abstract (wf_auto2).
 Defined.
 
+Program Canonical Structure MyGoal_right_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+  := TacticProperty1 P (@MyGoal_right Σ Γ l a b) _.
+Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
 
 Ltac mgLeft := apply MyGoal_left.
 Ltac mgRight := apply MyGoal_right.
@@ -4838,6 +4885,13 @@ Proof.
  }
 Defined.
 
+Program Canonical Structure MyGoal_applyMetaIn_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l₁ l₂ : list Pattern)
+        (a b g : Pattern)
+  := TacticProperty1_1 P (fun pf => @MyGoal_applyMetaIn Σ Γ a b pf l₁ l₂ g) _.
+Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
+
 Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
   eapply cast_proof_mg_hyps;
   [(let hyps := fresh "hyps" in
@@ -4861,7 +4915,15 @@ Proof.
   mgIntro.
   mgApplyMeta (@disj_left_intro Σ Γ p q ltac:(auto) ltac:(auto)) in 0.
   mgExactn 0.
-Qed.
+Defined.
+
+Local Program Canonical Structure Private_ex_mgApplyMetaIn_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty0 P (@Private_ex_mgApplyMetaIn Σ Γ a b wfa wfb) _.
+Next Obligation. solve_indif. Qed.
 
 Lemma MyGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y:
     @mkMyGoal Σ Γ (l₁ ++ x::y::l₂ ) g ->
@@ -4952,6 +5014,13 @@ Proof.
  apply myGoal_clear_hyp.  
  exact H.
 Defined.
+
+Program Canonical Structure MyGoal_destructAnd_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l₁ l₂ : list Pattern)
+        (a b g : Pattern)
+  := TacticProperty1 P (@MyGoal_destructAnd Σ Γ g l₁ l₂ a b) _.
+Next Obligation. solve_indif. intros. unfold liftP. solve_indif. intros. unfold liftP. solve_indif. apply H. Qed.
 
 Tactic Notation "mgDestructAnd" constr(n) :=
   eapply cast_proof_mg_hyps;
