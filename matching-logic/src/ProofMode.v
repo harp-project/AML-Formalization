@@ -4947,9 +4947,12 @@ Proof.
     ).
   }
   {
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-    2: { rewrite -app_assoc. reflexivity. }
-    rewrite take_app.
+    eapply cast_proof_mg_hyps.
+    { replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+      2: { rewrite -app_assoc. reflexivity. }
+      rewrite take_app.
+      reflexivity.
+    }
     assert (well_formed x).
     {
       abstract (
@@ -4982,9 +4985,13 @@ Proof.
     ).
   }
   {
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-    2: { rewrite -app_assoc. reflexivity. }
-    rewrite take_app.
+    eapply cast_proof_mg_hyps.
+    {
+      replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+      2: { rewrite -app_assoc. reflexivity. }
+      rewrite take_app.
+      reflexivity.
+    }
     assert (well_formed x).
     {
       abstract (
@@ -5020,7 +5027,12 @@ Program Canonical Structure MyGoal_destructAnd_indifferent_S {Σ : Signature}
         (l₁ l₂ : list Pattern)
         (a b g : Pattern)
   := TacticProperty1 P (@MyGoal_destructAnd Σ Γ g l₁ l₂ a b) _.
-Next Obligation. solve_indif. intros. unfold liftP. solve_indif. intros. unfold liftP. solve_indif. apply H. Qed.
+Next Obligation.
+  solve_indif.
+  intros. unfold liftP. solve_indif.
+  intros. unfold liftP. solve_indif.
+  intros. unfold liftP. apply H.
+Qed.
 
 Tactic Notation "mgDestructAnd" constr(n) :=
   eapply cast_proof_mg_hyps;
@@ -5047,6 +5059,18 @@ Proof.
   mgDestructAnd 1.
   mgDestructAnd 0.
   mgExactn 2.
+Defined.
+
+Local Program Canonical Structure ex_mgDestructAnd_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b p q : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfp : well_formed p)
+        (wfq : well_formed q)
+  := ProofProperty0 P (@ex_mgDestructAnd Σ Γ a b p q wfa wfb wfp wfq) _.
+Next Obligation.
+  intros. apply liftP_impl_P. solve_indif.
 Qed.
 
 Section FOL_helpers.
