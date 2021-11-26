@@ -2112,11 +2112,41 @@ Proof.
 Qed.
 
 
+Lemma cast_proof_trans {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ (pf : Γ ⊢ ϕ₁) (e₂₁ : ϕ₂ = ϕ₁) (e₃₂ : ϕ₃ = ϕ₂):
+  @cast_proof Σ Γ ϕ₂ ϕ₃ e₃₂ (@cast_proof Σ Γ ϕ₁ ϕ₂ e₂₁ pf ) = (@cast_proof Σ Γ ϕ₁ ϕ₃ (eq_trans e₃₂ e₂₁) pf ).
+Proof.
+  unfold cast_proof,eq_rec_r,eq_rec,eq_rect.
+  repeat case_match.
+  replace (eq_sym (eq_trans e₃₂ e₂₁)) with (@eq_refl _ ϕ₁) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec).
+  reflexivity.
+Qed.
+
+Lemma cast_proof_refl {Σ : Signature} Γ ϕ₁ (pf : Γ ⊢ ϕ₁):
+  @cast_proof Σ Γ ϕ₁ ϕ₁ eq_refl pf = pf.
+Proof.
+  reflexivity.
+Qed.
 
 Definition liftP {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
            (pf : Γ ⊢ (foldr patt_imp g l)) := P _ _ pf.
 
 Arguments liftP {Σ} _ Γ l%list_scope g _.
+
+Lemma liftP_impl_P' {Σ : Signature} (P : proofbpred) (Γ : Theory) (p g : Pattern) (l : list Pattern)
+      (pf : Γ ⊢ p) (e : foldr patt_imp g l = p):
+  @liftP Σ P Γ l g (@cast_proof Σ Γ _ _ e pf) = false -> P Γ p pf = false.
+Proof.
+  intros H.
+  pose proof (e1 := e).
+  rewrite -[pf]cast_proof_refl.
+
+  unfold liftP in H.
+  move: e pf H.
+  rewrite -e1. intros.
+  replace e with (@eq_refl Pattern (foldr patt_imp g l)) in H.
+  2: { symmetry. apply UIP_dec; intros x' y'; apply Pattern_eqdec. }
+  apply H.
+Qed.
 
 Lemma liftP_impl_P {Σ : Signature} (P : proofbpred) (Γ : Theory) (p : Pattern)
       (pf : Γ ⊢ p) :
@@ -5124,6 +5154,26 @@ Section FOL_helpers.
         mgApply 0.
         mgExactn 2.
   Defined.
+
+  Program Canonical Structure and_of_equiv_is_equiv_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty2 P (@and_of_equiv_is_equiv Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation.
+    solve_indif. simpl.
+    apply (@liftP_impl_P' _ _ _ _ (! a or ! b) [! a or ! b ---> ⊥; ! p] _ ltac:(reflexivity)).
+    solve_indif. assumption. simpl.
+    apply (@liftP_impl_P' _ _ _ _ (! a or ! b) [! a or ! b ---> ⊥; ! q] _ ltac:(reflexivity)).
+    solve_indif. assumption. simpl.
+    apply (@liftP_impl_P' _ _ _ _ (! p) [! p or ! q ---> ⊥; ! a] _ ltac:(reflexivity)).
+    solve_indif. assumption. simpl.
+    apply (@liftP_impl_P' _ _ _ _ (! q) [! p or ! q ---> ⊥; ! b] _ ltac:(reflexivity)).
+    solve_indif. assumption.
+  Qed.
   
 
   Lemma or_of_equiv_is_equiv Γ p q p' q':
