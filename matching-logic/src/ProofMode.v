@@ -5206,6 +5206,18 @@ Section FOL_helpers.
       + mgRight. fromMyGoal. intros _ _. assumption.
   Defined.
 
+  Program Canonical Structure or_of_equiv_is_equiv_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty2 P (@or_of_equiv_is_equiv Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation.
+    intros. solve_indif; assumption.
+  Qed.
+
 End FOL_helpers.
 
 
@@ -5243,6 +5255,16 @@ Section FOL_helpers.
       mgExactn 1.
   Defined.
 
+  Program Canonical Structure impl_iff_notp_or_q_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (p q : Pattern)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty0 P (@impl_iff_notp_or_q Γ p q wfp wfq) _.
+  Next Obligation.
+    intros. solve_indif.
+  Qed.
+
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
     Γ ⊢ (⊥ <---> p and ! p).
@@ -5258,6 +5280,13 @@ Section FOL_helpers.
       mgAdd (@A_or_notA Σ Γ (! p) ltac:(auto)).
       mgExactn 0.
   Defined.
+
+  Program Canonical Structure p_and_notp_is_bot_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (p : Pattern)
+          (wfp : well_formed p)
+    := ProofProperty0 P (@p_and_notp_is_bot Γ p wfp) _.
+  Next Obligation. solve_indif. Qed.
 
   Lemma weird_lemma Γ A B L R:
     well_formed A ->
@@ -5290,6 +5319,20 @@ Section FOL_helpers.
       mgApply 0. mgExactn 3.
   Defined.
 
+  Program Canonical Structure weird_lemma_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty0 P (@weird_lemma Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation.
+    intros. unfold weird_lemma. simpl.
+    apply liftP_impl_P.
+    solve_indif. intros. unfold liftP. solve_indif.
+  Qed.
+
   Lemma weird_lemma_meta Γ A B L R:
     well_formed A ->
     well_formed B ->
@@ -5303,6 +5346,16 @@ Section FOL_helpers.
     4: apply weird_lemma.
     all: auto 10.
   Defined.
+
+  Program Canonical Structure weird_lemma_meta_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty1 P (@weird_lemma_meta Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
 (*
   Theorem congruence_iff :
@@ -5412,6 +5465,16 @@ Section FOL_helpers.
     epose proof (@syllogism_intro Σ Γ _ _ _ _ _ _ H1 H2). auto.
     Unshelve. all: auto.
   Defined.
+
+  Program Canonical Structure imp_trans_mixed_meta_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty2 P (@imp_trans_mixed_meta Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
 (*
   Theorem congruence_iff_helper :
     forall sz ψ more, le (Syntax.size ψ) sz ->
@@ -5539,6 +5602,15 @@ Section FOL_helpers.
     Unshelve.
     all: unfold patt_and, patt_or, patt_not; auto 10.
   Defined.
+
+  Program Canonical Structure and_weaken_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+    := ProofProperty1 P (@and_weaken a b p Γ wfa wfb wfp) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma impl_and Γ A B C D: 
     well_formed A -> well_formed B -> well_formed C -> well_formed D
