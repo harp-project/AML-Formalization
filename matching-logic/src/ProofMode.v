@@ -5635,6 +5635,16 @@ Section FOL_helpers.
     all: unfold patt_and, patt_or, patt_not; auto 10.
   Defined.
 
+  Program Canonical Structure impl_and_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty2 P (@impl_and Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
+
   Lemma and_drop A B C Γ:
     well_formed A -> well_formed B -> well_formed C ->
     Γ ⊢ ((A and B) ---> C)
@@ -5650,6 +5660,15 @@ Section FOL_helpers.
     eapply Modus_ponens in H3. 4: exact H2. auto.
     Unshelve. all: unfold patt_and, patt_or, patt_not; auto 20.
   Defined.
+
+  Program Canonical Structure and_drop_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+    := ProofProperty1 P (@and_drop a b p Γ wfa wfb wfp) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
 
   Lemma universal_generalization Γ ϕ x:
@@ -5910,96 +5929,15 @@ Section FOL_helpers.
           mgExactn 2.
   Defined.
 
-  Lemma prf_equiv_of_impl_of_equiv_indifferent
-        P Γ a b a' b'
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (wfa' : well_formed a' = true)
-        (wfb' : well_formed b' = true)
-        (aiffa' : Γ ⊢ a <---> a')
-        (biffb' : Γ ⊢ b <---> b'):
-    indifferent_to_prop P ->
-    indifferent_to_cast P ->
-    P _ _ aiffa' = false ->
-    P _ _ biffb' = false ->
-    P _ _ (@prf_equiv_of_impl_of_equiv Γ a b a' b' wfa wfb wfa' wfb' aiffa' biffb') = false.
-  Proof.
-    intros Hp. pose proof (Hp' := Hp). destruct Hp' as [Hp1 [Hp2 [Hp3 Hmp]]].
-    intros Hc H1 H2.
-    unfold prf_equiv_of_impl_of_equiv.
-    rewrite pf_iff_equiv_trans_indifferent; auto.
-    - rewrite conj_intro_meta_indifferent; auto.
-      + pose proof (Htmp := MyGoal_intro_indifferent). simpl in Htmp.
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf3 wf4.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b]). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf5 wf6.
-        rewrite (@MyGoal_add_indifferent Σ P Γ [a ---> b; a]); auto.
-        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        intros wf7 wf8.
-        rewrite cast_proof_mg_hyps_indifferent; [assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf9 wf10.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf11 wf12.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_exactn_indifferent;[assumption|reflexivity].
-      + pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf3 wf4.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf5 wf6.
-        rewrite (@MyGoal_add_indifferent Σ P Γ [a ---> b'; a]); auto.
-        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
-        intros wf7 wf8.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf9 wf10.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        intros wf11 wf12.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_exactn_indifferent;[assumption|reflexivity].
-    - rewrite conj_intro_meta_indifferent; auto.
-      + pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf3 wf4.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf5 wf6.
-        rewrite (@MyGoal_add_indifferent Σ P Γ [a ---> b'; a']); auto.
-        { rewrite pf_conj_elim_r_meta_indifferent; auto. }
-        intros wf7 wf8.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf9 wf10.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf11 wf12.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_exactn_indifferent;[assumption|reflexivity].
-      + pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ []). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf3 wf4.
-        pose proof (Htmp := MyGoal_intro_indifferent).
-        specialize (Htmp P Γ [a' ---> b']). simpl in Htmp. rewrite Htmp; clear Htmp; auto.
-        intros wf5 wf6.
-        rewrite (@MyGoal_add_indifferent Σ P Γ [a' ---> b'; a]); auto.
-        { rewrite pf_conj_elim_l_meta_indifferent; auto. }
-        intros wf7 wf8.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].
-        intros wf9 wf10.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].        
-        rewrite MyGoal_weakenConclusion_indifferent;[assumption|idtac|reflexivity].      
-        intros wf11 wf12.
-        rewrite cast_proof_mg_hyps_indifferent;[assumption|].
-        rewrite MyGoal_exactn_indifferent;[assumption|reflexivity].
-  Qed.
-
+  Program Canonical Structure prf_equiv_of_impl_of_equiv_indifferent_S
+          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+          (a b p q : Pattern)
+          (wfa : well_formed a)
+          (wfb : well_formed b)
+          (wfp : well_formed p)
+          (wfq : well_formed q)
+    := ProofProperty2 P (@prf_equiv_of_impl_of_equiv Γ a b p q wfa wfb wfp wfq) _.
+  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
     x <> E ->
@@ -6317,18 +6255,10 @@ Section FOL_helpers.
       subst pf₁. subst pf₂.
       specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
       pose proof (indifferent_to_prop_uses_svar_subst).
-      rewrite pf_iff_equiv_trans_indifferent; auto.
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind2. reflexivity. }
-        { simpl. rewrite Hind2. reflexivity. }
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind1. reflexivity. }
-        { simpl. rewrite Hind1. reflexivity. }
+      solve_indif; auto.
     - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
       intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      { apply indifferent_to_cast_uses_svar_subst. }
+      solve_indif; subst; auto.
     - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
       intros.
       inversion Heq; subst; clear Heq.
@@ -6336,68 +6266,20 @@ Section FOL_helpers.
       inversion Heq1; subst; clear Heq1.
 
       specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify_l.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite Hind.
-        reflexivity.
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        unfold strip_exists_quantify_l.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite Hind.
-        reflexivity.
-      + reflexivity.
+      solve_indif; auto.
     - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
       intros.
       unfold pf_iff_mu_remove_svar_quantify_svar_open.
       rewrite indifferent_to_cast_uses_svar_subst.
       inversion Heq; subst; clear Heq.
       specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_svar_subst. }
-      3: { reflexivity. }
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_svar_subst. }
-        simpl.
-        { case_match. clear -frX e H. set_solver.
-          unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_svar_subst.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl. reflexivity.
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_svar_subst. }
-        simpl.
-        { case_match. clear -frX e H. set_solver.
-          unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_svar_subst.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        simpl. reflexivity.
+      solve_indif; auto.
+      + Unset Printing Implicit. case_match.
+        { clear -frX e H. set_solver. }
+        solve_indif. apply Hind.
+      + case_match.
+        { clear -frX e H. set_solver. }
+        solve_indif. apply Hind.
     - assumption.
     - assumption.
   Qed.
