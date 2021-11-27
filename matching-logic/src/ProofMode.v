@@ -3539,14 +3539,17 @@ Tactic Notation "mgClear" constr(n) :=
     [(rewrite -Heql1; rewrite -Heql2; reflexivity)|];
     simpl in Heql1; simpl in Heql2;
     let a := fresh "a" in
-    destruct l2 as [|a l2];[congruence|];
+    let Hd := fresh "Hd" in
+    destruct l2 as [|a l2''] eqn:Hd in *|-;[congruence|];
+    eapply cast_proof_mg_hyps;
+    [(rewrite -> Hd at 1; reflexivity)|];
     let Heqa := fresh "Heqa" in
     let Heql2' := fresh "Heql2'" in
     inversion Heql2 as [[Heqa Heql2']]; clear Heql2;
     apply myGoal_clear_hyp;
     eapply cast_proof_mg_hyps;
     [(try(rewrite -> Heql1 at 1); try(rewrite -> Heql2' at 1); reflexivity)|];
-    clear Heql2' Heqa l2 a Heql1 l1;
+    clear Hd Heql2' Heqa l2 l2'' a Heql1 l1;
     eapply cast_proof_mg_hyps;[rewrite {1}[_ ++ _]/=; reflexivity|]
   end.
 
