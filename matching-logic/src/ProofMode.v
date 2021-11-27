@@ -6323,90 +6323,23 @@ Section FOL_helpers.
       intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
       subst pf₁. subst pf₂.
       specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
-      pose proof (indifferent_to_prop_uses_ex_gen).
-      rewrite pf_iff_equiv_trans_indifferent; auto.
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind2. reflexivity. }
-        { simpl. rewrite Hind2. reflexivity. }
-      + rewrite conj_intro_meta_indifferent; auto.
-        { simpl. rewrite Hind1. reflexivity. }
-        { simpl. rewrite Hind1. reflexivity. }
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      rewrite prf_equiv_of_impl_of_equiv_indifferent; subst; auto.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      { apply indifferent_to_cast_uses_ex_gen. }
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
-      intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify_l.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite Hind.
-        case_match.
-        { clear -frx e H.  set_solver. }
-        reflexivity.
-      + unfold pf_impl_ex_free_evar_subst_twice.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        unfold strip_exists_quantify_l.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl.
-        unfold pf_evar_open_free_evar_subst_equiv_sides.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite Hind.
-        case_match.
-        { clear -frx e H. set_solver. }
-        reflexivity.
-      + reflexivity.
+      solve_indif; auto.
     - clear. intros Γ p q wfp wfq EvS' SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
       intros.
       unfold pf_iff_mu_remove_svar_quantify_svar_open.
-      rewrite indifferent_to_cast_uses_ex_gen.
+      solve_indif; auto. rewrite -IH2. auto. rewrite -IH'. auto.
+    - clear. intros.
       inversion Heq; subst; clear Heq.
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      rewrite pf_iff_split_indifferent.
-      { apply indifferent_to_prop_uses_ex_gen. }
-      3: { reflexivity. }
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_ex_gen. }
-        simpl.
-        { unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_ex_gen.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl. reflexivity.
-      + unfold mu_monotone.
-        simpl.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite syllogism_intro_indifferent.
-        { apply indifferent_to_prop_uses_ex_gen. }
-        simpl.
-        { unfold pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst.
-          rewrite indifferent_to_cast_uses_ex_gen.
-          rewrite Hind. reflexivity.
-        }
-        2: reflexivity.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        simpl. reflexivity.
+      inversion Heq0; subst; clear Heq0.
+      inversion Heq1; subst; clear Heq1.
+      solve_indif; auto; simpl; case_match.
+      + exfalso. clear -frx H e. set_solver.
+      + rewrite !orbF.  solve_indif. auto.
+      + exfalso. clear -frx H e. set_solver.
+      + rewrite !orbF.  solve_indif. auto.
+    - clear. intros.
+      inversion Heq; subst; clear Heq.
+      solve_indif; auto.
     - assumption.
     - assumption.
   Qed.
