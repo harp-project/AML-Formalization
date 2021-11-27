@@ -6124,13 +6124,16 @@ Ltac2 rec iterlist (l : constr) :=
   end.
 
 Ltac mlTauto3 :=
+  mgIntro;
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
       =>
-        mgIntro;
-        (*idtac l;*)
+        idtac l;
         let newn := eval compute in (length l) in
-          ( (*idtac newn ; *)try mgExactn newn);
+          ( idtac newn ;
+            try mgDestructAnd (newn - 1);
+            try ( mgExactn (newn - 1) ||  mgExactn newn)
+          );
         mlTauto3
   end.
 
@@ -6181,7 +6184,18 @@ Tactic Notation "mlTauto" :=
     mlTauto3.
   Qed.
 
-(*Tautos*)
+  Lemma conj_left {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((a and b) ---> a).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mlTauto3.
+  Qed.
+
+(*Tautos
 Search (?a ---> (?b ---> ?a) ). (*P1*)
 Search ((?a ---> (?b ---> ?c)) ---> ((?a ---> ?b) ---> (?a ---> ?c))). (*P2*)
 Search (?a ---> (?b ---> (?a and ?b)) ). (*conj_intro*)
@@ -6195,20 +6209,7 @@ Search (!(?a and !?a)). (**)
 Search ( ?a ---> ?a). (*A_impl_A*)
 Search ((?a ---> ?b) ---> (?b ---> ?c) ---> (?a ---> ?c)). (*syllogism*)
 Search ( ?a ---> ((! ?a) ---> ?b)). (**)
-Search ((((?a ---> ?b) ---> ?a) ---> ?a)). (**)
-
-  Lemma conj_right {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ((a and b) ---> b).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgIntro .
-    mgDestructAnd 0.
-    mgExactn 1.
-  Qed.
+Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
 
   Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
     well_formed a ->
@@ -6218,6 +6219,7 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). (**)
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
+    mlTauto3.
     repeat mgIntro.
     unfold patt_not at 1.
 
@@ -6226,18 +6228,6 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). (**)
     mgExactn 0.
   Qed.
 
-  Lemma conj_left {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ((a and b) ---> a).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgIntro .
-    mgDestructAnd 0.
-    mgExactn 0.
-  Qed.
 
   Lemma impl_taut_1 {Σ : Signature} Γ a b c:
     well_formed a ->
