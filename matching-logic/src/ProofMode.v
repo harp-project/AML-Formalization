@@ -2366,8 +2366,7 @@ Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : 
   (wfc : well_formed c = true):
   P _ _ (@ex_mgExactn Σ Γ a b c wfa wfb wfc) = false.
 Proof.
-  Print tacticProperty0.
-  unfold ex_mgExactn. Set Printing Implicit.
+  unfold ex_mgExactn.
   apply liftP_impl_P.
   solve_indif.
 Qed.
@@ -6278,7 +6277,7 @@ Section FOL_helpers.
       inversion Heq; subst; clear Heq.
       specialize (Hind ltac:(assumption) ltac:(assumption)).
       solve_indif; auto.
-      + Unset Printing Implicit. case_match.
+      + case_match.
         { clear -frX e H. set_solver. }
         solve_indif. apply Hind.
       + case_match.
@@ -7162,11 +7161,10 @@ Program Canonical Structure phi_iff_phi_top_indifferent_S {Σ : Signature}
         (wfa : well_formed a)
   := ProofProperty0 P (@phi_iff_phi_top Σ Γ a wfa) _.
 Next Obligation.
-  intros. apply liftP_impl_P. solve_indif. simpl.
-  intros. unfold liftP
-  solve_indif. simpl. solve_indif simpl.
-  apply liftP_impl_P. solve_indif.
-solve_indif. assumption. Qed.
+  intros. apply liftP_impl_P.
+  unfold phi_iff_phi_top. simpl.
+  solve_indif; simpl; unfold liftP; solve_indif.
+Qed.
 
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
@@ -7185,6 +7183,16 @@ Proof.
     mgExactn 0.
 Defined.
 
+Program Canonical Structure not_phi_iff_phi_bott_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@not_phi_iff_phi_bott Σ Γ a wfa) _.
+Next Obligation.
+  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
+  solve_indif. unfold liftP. solve_indif.
+Qed.
+
 
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
@@ -7199,6 +7207,16 @@ Proof.
   - apply not_not_elim.
     { wf_auto2. }
 Defined.    
+
+Program Canonical Structure not_not_iff_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@not_not_iff Σ Γ a wfa) _.
+Next Obligation.
+  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
+  solve_indif. unfold liftP. solve_indif.
+Qed.
 
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
