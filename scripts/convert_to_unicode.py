@@ -26,7 +26,7 @@ if __name__ == '__main__':
 				print(f'\t{replaces[-1]}')
 	print(f"{len(replaces)} codes were replaced in the .v files")
 	replaces = set(replaces)
-	for f in root.glob('*.v'):
+	for f in root.glob('*/*/*.v'):
 		data = f.open('r').read()
 		for esc, uni in replaces:
 			data = data.replace(esc,uni)
