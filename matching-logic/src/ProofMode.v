@@ -6115,54 +6115,59 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
-Local Definition length (A : Type) : list A -> nat :=
-  fix length l :=
-  match l with
-   | nil => O
-   | _ :: l' => S (length l')
-  end.
-
-Ltac mgTauto :=
-  let rec t_tauto_intuit :=
- ( repeat mgIntro;
-    match goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)] =>
-       match l with
-       | nil => (idtac "nil")
-       | _ => (idtac "notnil")
-      end
-    end
- ) in t_tauto_intuit.
-
   Search "A_impl_A".
 
 Ltac2 rec iterlist (l : constr) :=
   match! l with
-     | nil => ltac1:(idtac "nil")
-     | (?a :: ?m) => 
-            
-            iterlist m
+     | nil => ltac1:(idtac 0)
+     | (?a :: ?m) => ltac1:(idtac 1)
   end.
 
+Ltac mlTauto3 :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        mgIntro;
+        (*idtac l;*)
+        let newn := eval compute in (length l) in
+          ( (*idtac newn ; *)try mgExactn newn);
+        mlTauto3
+  end.
+
+(*
 Ltac2 rec mlTauto := fun () =>
-  ltac1:((mgIntro; mgApplyMeta (@A_impl_A _ _ _ _)))
-  (*lazy_match! goal with
+  lazy_match! goal with
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+        =>
+          repeat (
+          ltac1:(mgIntro);
+          let k := eval compute iterlist l
+          in
+          (ltac1:(mgExactn (ltac2:(iterlist l))))
+          (*ltac1:(length l);
+            let newn := eval cbv in (length l) in
+                (mgExactn newn))*)
+        )
+    end.
+
+
+Ltac2 rec mlTauto2 := fun () =>
+  lazy_match! goal with
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
         =>
           ltac1:(repeat (mgApplyMeta (@A_impl_A _ _ _ _); mgIntro));
           Message.print (Message.of_string "Hyps");
-          Message.print (Message.of_constr l);
           Message.print (Message.of_string "Goal");
           Message.print (Message.of_constr p);
           iterlist l
-    end.*)
-.
+end.
+
 
 Tactic Notation "mlTauto" :=
   (let ff := ltac2:( |-
                       mlTauto ()
                    ) in
-   ff).
+   ff).*)
 
 
   Lemma conj_right {Σ : Signature} Γ a b:
@@ -6173,10 +6178,7 @@ Tactic Notation "mlTauto" :=
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
-    mlTauto.
-    mgClear 0.
-    mgApplyMeta (@A_impl_A _ _ _ _).
-    mgApplyMeta (@A_impl_A _ _ a wfa). wf_auto2
+    mlTauto3.
   Qed.
 
 (*Tautos*)
