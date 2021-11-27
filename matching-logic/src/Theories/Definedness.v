@@ -3819,21 +3819,17 @@ Proof.
   }
   {
     simpl. rewrite !orbF.
-    Set Printing Implicit.
-    pose proof (Htmp := @MyGoal_intro_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ₁ ∪ free_evars ϕ₂)) (Γ ∪ {[ϕ₁ ---> ϕ₂]}) []).
-    simpl in Htmp. specialize (Htmp (ϕ₁ or ϕ₂) (ϕ₂)). simpl in Htmp.
-    apply Htmp; clear Htmp.
-    { apply indifferent_to_cast_uses_ex_gen. }
-    intros.
-
-    pose proof (Htmp := @cast_proof_mg_hyps_indifferent Σ (@uses_ex_gen Σ (free_evars ϕ₁ ∪ free_evars ϕ₂)) (Γ ∪ {[ϕ₁ ---> ϕ₂]})).
-    simpl in Htmp. specialize (Htmp [ϕ₁ or ϕ₂] [ϕ₁ or ϕ₂]). simpl in Htmp. rewrite Htmp; clear Htmp.
-    { apply indifferent_to_cast_uses_ex_gen. }
-    (* TODO lemmas for these. *)
-    unfold MyGoal_disj_elim. Search prf_disj_elim_iter_2_meta_meta.
-    { reflexivity. }    
+    solve_indif. reflexivity.
   }
-Abort.
+  {
+    simpl. rewrite !orbF.
+    solve_indif. reflexivity.
+  }
+  {
+    simpl. rewrite !orbF.
+    solve_indif. reflexivity.
+  }
+Defined.
 
 
 Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
