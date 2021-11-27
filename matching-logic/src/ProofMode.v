@@ -2287,7 +2287,8 @@ Qed.
 
 Ltac simplLocalContext :=
   match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] => rewrite {1}[l]/app
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+      => eapply cast_proof_mg_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
 #[global]
@@ -6759,6 +6760,16 @@ Proof.
   all: auto.
 Defined.
 
+Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty1 P (@prf_local_goals_equiv_impl_full_equiv_meta Σ Γ a b l wfa wfb wfl) _.
+Next Obligation. solve_indif; assumption. Qed.
+
 Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
@@ -6775,6 +6786,16 @@ Proof.
   all: auto.
 Defined.
 
+Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj1_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj1 Σ Γ a b l wfa wfb wfl) _.
+Next Obligation. solve_indif; assumption. Qed.
+
 Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
@@ -6790,6 +6811,16 @@ Proof.
   9: apply H1.
   all: auto.
 Defined.
+
+Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj2_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj2 Σ Γ a b l wfa wfb wfl) _.
+Next Obligation. solve_indif; assumption. Qed.
 
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
   PC_wf C ->
@@ -7059,6 +7090,12 @@ Proof.
   apply pf_iff_equiv_sym; assumption.
 Defined.
 
+Program Canonical Structure pf_iff_equiv_sym_nowf_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+  := ProofProperty1 P (@pf_iff_equiv_sym_nowf Σ Γ a b) _.
+Next Obligation. solve_indif; assumption. Qed.
+
 Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
   mgRewrite Hiff at atn.
 
@@ -7089,6 +7126,11 @@ Proof.
   { wf_auto2. }
 Defined.
 
+Program Canonical Structure top_holds_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+  := ProofProperty0 P (@top_holds Σ Γ) _.
+Next Obligation. solve_indif; assumption. Qed.
+
 Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
   Γ ⊢ ϕ <---> (ϕ <---> Top).
@@ -7110,6 +7152,18 @@ Proof.
     fromMyGoal. intros _ _.
     apply top_holds.
 Defined.
+
+Program Canonical Structure phi_iff_phi_top_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@phi_iff_phi_top Σ Γ a wfa) _.
+Next Obligation.
+  intros. apply liftP_impl_P. solve_indif. simpl.
+  intros. unfold liftP
+  solve_indif. simpl. solve_indif simpl.
+  apply liftP_impl_P. solve_indif.
+solve_indif. assumption. Qed.
 
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
