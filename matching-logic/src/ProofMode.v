@@ -6484,6 +6484,15 @@ Proof.
   fromMyGoal. intros _ _. apply conj_intro; auto.
 Defined.
 
+Program Canonical Structure lhs_to_and_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b c : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+  := ProofProperty1 P (@lhs_to_and Σ Γ a b c wfa wfb wfc) _.
+Next Obligation. solve_indif; assumption. Qed.
+
 Lemma lhs_from_and {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
@@ -6509,6 +6518,19 @@ Proof.
   mgExactn 3.
 Defined.
 
+Program Canonical Structure lhs_from_and_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b c : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+  := ProofProperty1 P (@lhs_from_and Σ Γ a b c wfa wfb wfc) _.
+Next Obligation.
+  solve_indif. simpl.
+  apply (@liftP_impl_P' Σ P Γ _ c [a and b] _ ltac:(reflexivity)).
+  solve_indif; auto; unfold liftP; solve_indif.
+Qed.
+
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
@@ -6533,6 +6555,21 @@ Proof.
     fromMyGoal. intros _ _. apply IHl.
 Defined.
 
+Program Canonical Structure prf_conj_split_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty0 P (@prf_conj_split Σ Γ a b l wfa wfb wfl) _.
+Next Obligation.
+  intros.
+  induction l.
+  - solve_indif.
+  - simpl. case_match. solve_indif. apply IHl.
+Qed.
+
 Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
@@ -6542,6 +6579,16 @@ Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
 Proof.
   intros. eapply Modus_ponens. 4: apply prf_conj_split. all: auto 10.
 Defined.
+
+Program Canonical Structure prf_conj_split_meta_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty1 P (@prf_conj_split_meta Σ Γ a b l wfa wfb wfl) _.
+Next Obligation. solve_indif; assumption. Qed.
 
 Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l:
   well_formed a ->
@@ -6553,6 +6600,16 @@ Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l:
 Proof.
   intros. eapply Modus_ponens. 4: apply prf_conj_split_meta. all: auto 10.
 Defined.
+
+Program Canonical Structure prf_conj_split_meta_meta_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty2 P (@prf_conj_split_meta_meta Σ Γ a b l wfa wfb wfl) _.
+Next Obligation. solve_indif; assumption. Qed.
 
 Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l:
   @mkMyGoal Σ Γ l a ->
@@ -6573,6 +6630,13 @@ Proof.
   { abstract (wf_auto2). }
 Defined.
 
+Program Canonical Structure MyGoal_splitAnd_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+  := TacticProperty2 P (@MyGoal_splitAnd Σ Γ a b l) _.
+Next Obligation. unfold liftP. solve_indif. apply H. apply H0. Qed.
+
 Ltac mgSplitAnd := apply MyGoal_splitAnd.
 
 Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
@@ -6588,7 +6652,18 @@ Proof.
   mgSplitAnd.
   - mgExactn 0.
   - mgExactn 1.
-Qed.
+Defined.
+
+Local Program Canonical Structure ex_mgSplitAnd_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b c : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+  := ProofProperty0 P (@ex_mgSplitAnd Σ Γ a b c wfa wfb wfc) _.
+Next Obligation. solve_indif; assumption. Qed.
 
 (* Hints *)
 #[export]
@@ -6630,6 +6705,46 @@ Proof.
       mgApplyMeta IHl in 0. unfold patt_iff at 1. mgDestructAnd 0.
       mgExactn 1.
 Defined.
+
+Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (l : list Pattern)
+        (a b : Pattern)
+        (wfl : wf l)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty0 P (@prf_local_goals_equiv_impl_full_equiv Σ Γ a b l wfa wfb wfl) _.
+Next Obligation.
+  intros.
+  induction l.
+  - solve_indif.
+  - simpl. case_match. solve_indif.
+    + apply liftP_impl_P.
+      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
+        a0 ---> foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)) ((a0 --->
+        foldr (@patt_imp Σ) (a <---> b) l --->
+        foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)))).
+      { solve_indif. }
+      solve_indif.
+      intros.
+      simpl.
+      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
+      { apply IHl. }
+      solve_indif.
+    + apply liftP_impl_P.
+      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
+        a0 ---> foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)) ((a0 --->
+        foldr (@patt_imp Σ) (a <---> b) l --->
+        foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)))).
+      { solve_indif. }
+      solve_indif.
+      intros.
+      simpl.
+      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
+      { apply IHl. }
+      solve_indif.
+Qed.
+
 
 Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
