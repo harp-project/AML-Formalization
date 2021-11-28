@@ -2399,7 +2399,6 @@ Ltac2 mgRewriteBy (n : constr) (atn : int) :=
   lazy_match! goal with
   | [ |- @of_MyGoal ?sgm (@mkMyGoal ?sgm ?g (?l₁ ++ (?a' =ml ?a)::?l₂) ?p)]
     => 
-      Message.print (Message.of_string "Here");
       let hr : HeatResult := heat atn a' p in
       let heq := Control.hyp (hr.(equality)) in
       let pc := (hr.(pc)) in
@@ -3632,11 +3631,169 @@ Proof.
   apply def_tot_phi_impl_tot_phi; assumption.
 Defined.
 
+Lemma def_propagate_not {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ (! ⌈ ϕ ⌉) <---> (⌊ ! ϕ ⌋).
+Proof.
+  intros HΓ wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite (@not_not_iff Σ Γ ϕ wfϕ) at 1.
+  mgSplitAnd; mgIntro; mgExactn 0.
+Defined.
+
 Lemma def_def_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌊ ⌈ ϕ ⌉ ⌋.
-Proof. Abort. (* TODO *)
+Proof.
+  intros HΓ wfϕ.
+  eapply syllogism_intro.
+  1,3: wf_auto2.
+  2: { apply def_def_phi_impl_def_phi; assumption. }
+  { wf_auto2. }
+  apply def_phi_impl_tot_def_phi; assumption.
+Defined.
+
+
+Lemma ceil_is_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ is_predicate_pattern (⌈ ϕ ⌉).
+Proof.
+  intros HΓ wfϕ.
+  unfold is_predicate_pattern.
+  apply or_comm_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  unfold patt_or.
+  apply syllogism_intro with (B := ⌈ ⌈ ϕ ⌉ ⌉).
+  1,2,3: wf_auto2.
+  - toMyGoal.
+    { wf_auto2. }
+
+    mgRewrite (@not_not_iff Σ Γ (⌈ ⌈ ϕ ⌉ ⌉) ltac:(wf_auto2)) at 1.
+    do 2 mgIntro. mgApply 0. mgClear 0.
+    fromMyGoal. intros _ _. toMyGoal. wf_auto2.
+    mgRewrite (@def_propagate_not Σ syntax Γ (⌈ ϕ ⌉) HΓ ltac:(wf_auto2)) at 1.
+    mgIntro. 
+    mgApplyMeta (@total_phi_impl_phi Σ syntax Γ (! ⌈ ϕ ⌉) HΓ ltac:(wf_auto2)) in 0.
+    fromMyGoal. intros _ _. toMyGoal. wf_auto2.
+    mgRewrite (@def_propagate_not Σ syntax Γ ϕ HΓ ltac:(wf_auto2)) at 1.
+    fromMyGoal. intros _ _.
+    unshelve (eapply deduction_theorem_noKT).
+    4: exact HΓ.
+    2,3: wf_auto2.
+    { apply patt_iff_implies_equal.
+      1,2: wf_auto2.
+      toMyGoal.
+      { wf_auto2. }
+      mgSplitAnd; mgIntro.
+      2: { mgApplyMeta (@false_implies_everything Σ (Γ ∪ {[! ϕ]}) (⌈ ϕ ⌉) ltac:(wf_auto2)) in 0.
+           mgExactn 0.
+      }
+      assert (Htmp: ((Γ ∪ {[! ϕ]})) ⊢ ! ϕ).
+      { apply hypothesis. wf_auto2. set_solver. }
+      apply phi_impl_total_phi_meta in Htmp.
+      2: { wf_auto2. }
+      mgAdd Htmp.  mgApply 0. mgClear 0.
+      fromMyGoal. intros _ _.
+      apply Framing_right.
+      { wf_auto2. }
+      apply not_not_intro.
+      assumption.
+    }
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        simpl.
+        solve_indif.
+      }
+
+      {
+        simpl.
+        solve_indif; auto.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        simpl.
+        solve_indif.
+      }
+
+      {
+        simpl.
+        solve_indif; auto.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        solve_indif.
+      }
+
+      {
+        simpl.
+        solve_indif; auto.
+      }
+    }
+    - eapply syllogism_intro with (B := ⌊ ⌈ ϕ ⌉ ⌋).
+      1,2,3: wf_auto2.
+      { apply def_def_phi_impl_tot_def_phi; assumption. }
+      unshelve (eapply deduction_theorem_noKT).
+      2,3: wf_auto2.
+      2: exact HΓ.
+      {
+        apply phi_impl_total_phi_meta.
+        { wf_auto2. }
+        apply pf_iff_split.
+        1,2: wf_auto2.
+        + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal. intros _ _. apply top_holds.
+        + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal. intros _ _.
+          apply hypothesis. wf_auto2. set_solver.
+      }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        solve_indif. reflexivity.
+      }
+      {
+        solve_indif.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        solve_indif. reflexivity.
+      }
+      {
+        solve_indif.
+      }
+    }
+
+    { simpl.
+      rewrite !orbF.
+      rewrite orb_false_iff. split.
+      {
+        solve_indif. reflexivity.
+      }
+      {
+        solve_indif.
+      }
+    }
+
+Defined.
 
 Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
@@ -3645,11 +3802,34 @@ Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
 Proof.
   intros HΓ wfϕ₁ wfϕ₂.
-  toMyGoal.
-  { wf_auto2. }
-  mgIntro.
-  (* TODO *)
-Abort.
+  unshelve (eapply deduction_theorem_noKT).
+  2,3: wf_auto2.
+  2: exact HΓ.
+  {
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    - toMyGoal. wf_auto2. mgIntro. mgDestructOr 0.
+      + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂).
+        { apply hypothesis. wf_auto2. set_solver. }
+        mgApplyMeta H. mgExactn 0.
+      + mgExactn 0.
+    - apply disj_right_intro; assumption.
+  }
+  {
+    simpl. rewrite !orbF.
+    solve_indif. reflexivity.
+  }
+  {
+    simpl. rewrite !orbF.
+    solve_indif. reflexivity.
+  }
+  {
+    simpl. rewrite !orbF.
+    solve_indif. reflexivity.
+  }
+Defined.
 
 
 Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
