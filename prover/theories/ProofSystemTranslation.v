@@ -313,7 +313,7 @@ Section proof_system_translation.
                     match history with
                     | [] => False
                     | (x::xs) =>
-                        x.1 = p /\
+                        x.1 = p /\ x.2.1.1.1 = np /\
 (*                        x.2.1.1.2 !! p = None /\ *)
                           (match (last (x::xs)) with
                           | None => False
@@ -374,12 +374,103 @@ Section proof_system_translation.
     - repeat case_match. subst.
       inversion Heqp. subst. clear Heqp.
       simpl.
+
       unfold history_generator. intros p' np' Hp'.
+      
+      
+      destruct (decide (p' = patt_app p1 p2)).
+      + subst p'.
+
+        pose proof (Htmp := Heqp0).
+        apply (f_equal fst) in Htmp.
+        apply (f_equal fst) in Htmp.
+        pose proof (Htmp' := Htmp).
+        apply (f_equal fst) in Htmp.
+        apply (f_equal snd) in Htmp'.
+        assert (g !! p1 = Some n).
+        { simpl in Htmp. simpl in Htmp'. rewrite -Htmp. rewrite -Htmp'.          
+          apply to_NamedPattern2'_ensures_present.
+        }
+        clear Htmp Htmp'.
+        pose proof (Htmp := Heqp1).
+        apply (f_equal fst) in Htmp.
+        apply (f_equal fst) in Htmp.
+        pose proof (Htmp' := Htmp).
+        apply (f_equal fst) in Htmp.
+        apply (f_equal snd) in Htmp'.
+        assert (g1 !! p2 = Some n0).
+        { simpl in Htmp,Htmp'. rewrite -Htmp -Htmp'.
+          apply to_NamedPattern2'_ensures_present.
+        }
+        clear Htmp Htmp'.
+
+        pose proof (IH1 := IHp1 C evs svs cpC).
+        rewrite Heqp0 in IH1. simpl in IH1.
+        pose proof (IH2 := IHp2 g e s0 IH1).
+        rewrite Heqp1 in IH2. simpl in IH2.
+
+
+        unfold history_generator in IH2.
+        pose proof (IH2' := IH2 p2 n0 H0).
+        destruct IH2' as [hist Hhist].
+        destruct hist as [|h hist];[inversion Hhist|].
+        destruct_and!; subst.
+
+        eapply (existT ((patt_app p1 h.1, (np', g1, e1, s))::h::hist)).
+        split_and!; auto.
+        intros i.
+        destruct i.
+        * simpl. clear H2. repeat case_match. simpl.
+          exists (patt_app p1 p).
+          simpl in *. subst.
+          split. admit.
+          repeat f_equal.
+          case_match.
+          Search c.
+        * simpl. apply H5.
+        
+        admit.
+      +
+        pose proof (IH1 := IHp1 C evs svs cpC).
+        rewrite Heqp0 in IH1. simpl in IH1.
+        pose proof (IH2 := IHp2 g e s0 IH1).
+        rewrite Heqp1 in IH2. simpl in IH2.
+      
+        unfold history_generator in IH2.
+        specialize (IH2 p' np').
+      
+        rewrite lookup_insert_ne in Hp'.
+        { apply not_eq_sym. assumption. }
+        specialize (IH2 Hp').
+        destruct IH2 as [hist Hhist].
+        destruct hist as [| h hist] ;[inversion Hhist|].
+        destruct_and!. subst.
+        apply (existT (h::hist)).
+        simpl. split_and!; auto; simpl.
+
+      
       destruct (decide (p' = patt_app p1 p2)).
       + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) ∅ ∅ ∅))]); simpl; split;[reflexivity|]
+          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) C evs svs))]); simpl; split;[reflexivity|]
         ).
-        repeat case_match;(split;[|auto]); reflexivity.
+        repeat case_match;(split;[|auto]); simpl.
+        * inversion Heqo1.
+        * inversion Heqo1.
+        * inversion Heqo.
+        * inversion Heqo.
+        * inversion Heqo1.
+        * inversion Heqo1.
+        * inversion Heqp10; clear Heqp10; subst.
+          inversion Heqp; clear Heqp; subst.
+          inversion Heqp0; clear Heqp0; subst.
+          rewrite Heqp1 in Heqp5. inversion Heqp5.
+          reflexivity.
+        * subst. inversion Heqp10; clear Heqp10; subst.
+          inversion Heqp; clear Heqp; subst.
+          inversion Heqp0; clear Heqp0; subst.
+          rewrite Heqp1 in Heqp5. inversion Heqp5; clear Heqp5; subst.
+          
+          
         
       + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
         specialize (IHp1 C evs svs cpC).
@@ -545,6 +636,7 @@ Section proof_system_translation.
     apply Hg' in Hpresent.
     destruct Hpresent as [history Hhistory].
     destruct history;[inversion Hhistory|].
+    
     induction history; simpl in *.
     - subst. clear Hg'. simpl in *.
       case_match.
