@@ -313,7 +313,7 @@ Section proof_system_translation.
                     match history with
                     | [] => False
                     | (x::xs) =>
-                        x.1 = p /\ x.2.1.1.1 = np  /\
+                        x.1 = p /\
 (*                        x.2.1.1.2 !! p = None /\ *)
                           (match (last (x::xs)) with
                           | None => False
@@ -376,14 +376,10 @@ Section proof_system_translation.
       simpl.
       unfold history_generator. intros p' np' Hp'.
       destruct (decide (p' = patt_app p1 p2)).
-      + subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np'.
-          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) C evs svs))]); simpl; split;[reflexivity|]
-        .
-        repeat case_match; simpl in *.
-        1,3: inversion Heqo1.
-        * subst. inversion Heqp; subst; clear Heqp.
-        
-        repeat case_match;(split;[|auto]); simpl. 2: { reflexivity.
+      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
+          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) ∅ ∅ ∅))]); simpl; split;[reflexivity|]
+        ).
+        repeat case_match;(split;[|auto]); reflexivity.
         
       + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
         specialize (IHp1 C evs svs cpC).
