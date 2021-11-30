@@ -10,30 +10,39 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators Utils.extralibrary.
-Require Import MatchingLogic.Theories.Definedness.
+From MatchingLogic Require Import
+     Syntax
+     Semantics
+     DerivedOperators
+     ProofSystem
+     Utils.extralibrary
+     Theories.Definedness
+.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
-
+Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.Theories.Definedness.Notations.
 
 Inductive Symbols := inhabitant.
 
 Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
+Class Syntax {Σ : Signature} :=
+  { inj : Symbols -> symbols;
+    imported_definedness :> Definedness.Syntax;
+  }.
+
+
 Section sorts.
 
-  Context {Σ : Signature}.
-
-  Class Syntax :=
-    { inj : Symbols -> symbols;
-      imported_definedness :> Definedness.Syntax;
-    }.
-
-  Context {self : Syntax}.
+  Context
+    {Σ : Signature}
+    {syntax : Syntax}
+  .
 
   Local Definition sym (s : Symbols) : Pattern :=
     patt_sym (inj s).
@@ -152,6 +161,33 @@ Section sorts.
             (patt_not (patt_equal (patt_app (nest_ex (nest_ex f)) b1) patt_bott ))
             (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0)))).
   
+  Definition patt_not_s (s phi : Pattern) : Pattern :=
+    (patt_inhabitant_set s) and (! phi).
+
+  #[global]
+  Program Instance Unary_not_s : Binary patt_not_s :=
+    {| binary_bevar_subst := _; binary_bsvar_subst := _; |}.
+
+End sorts.
+
+Module Notations.
+  Import Syntax.
+
+  Notation "[[ A ]]" := (patt_inhabitant_set A) : ml_scope.
+  (* TODO: tweak this *)
+  Notation "'!{' s '}' phi" := (patt_not_s s phi) (at level 71) : ml_scope.
+  
+End Notations.
+
+Import Notations.
+
+Section sorts.
+
+  Context
+    {Σ : Signature}
+    {syntax : Syntax}
+  .
+
 
   Section with_model.
     Context {M : Model}.
@@ -356,7 +392,7 @@ Section sorts.
         rewrite pattern_interpretation_sym_simpl.
         apply H1.
         
-      - intros [m [H1 H2]]. exists m.
+      - intros [m [H1 H2] ]. exists m.
         pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρₑ) ρₛ).
         destruct Hfeip as [Hfeip1 _].
         rewrite {3}HeqBigϕ.
@@ -901,13 +937,28 @@ Section sorts.
       clear. set_solver.
     Qed.
 
-
-  End with_model.
-    
+  End with_model.    
 End sorts.
 
-    #[export]
-    Hint Resolve M_predicate_exists_of_sort : core.
+#[export]
+ Hint Resolve M_predicate_exists_of_sort : core.
 
-        #[export]
-    Hint Resolve M_predicate_forall_of_sort : core.
+ #[export]
+  Hint Resolve M_predicate_forall_of_sort : core.
+
+Lemma double_not_s {Σ : Signature} {syntax : Syntax} (Γ : Theory) (s ϕ : Pattern):
+  Γ ⊢ (ϕ ⊆ml [[ s ]])%ml ->
+  Γ ⊢ (!{s} (!{s} ϕ)) =ml ϕ.
+Proof.
+  intros H.
+  pose proof (Hwf := @proved_impl_wf Σ Γ _ H).
+  assert (wfϕ : well_formed ϕ) by wf_auto2.
+  assert (wfs : well_formed s) by wf_auto2.
+  clear Hwf.
+
+  unfold patt_not_s.
+  Search ML_proof_system patt_and "assoc".
+
+Defined.
+
+

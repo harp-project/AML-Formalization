@@ -3888,3 +3888,17 @@ Proof.
   mgIntro. mgLeft. mgExactn 0.
 Defined.
   
+Lemma disj_equals_greater_iff {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  mu_free ϕ₁ -> (* TODO get rid of it *)
+  Γ ⊢ (ϕ₁ ⊆ml ϕ₂) <---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ mfϕ₁.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply disj_equals_greater_1; assumption.
+  - apply disj_equals_greater_2; assumption.
+Qed.
