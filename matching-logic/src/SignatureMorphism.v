@@ -52,8 +52,6 @@ Fixpoint SMϕ {Σ₁ Σ₂ : Signature} (SM : SignatureMorphism Σ₁ Σ₂) (ϕ
 Definition SMΓ (Σ₁ Σ₂ : Signature) (SM : SignatureMorphism Σ₁ Σ₂) (Γ : @Theory Σ₁) : (@Theory Σ₂)
   := fmap (SMϕ SM) Γ.
 
-
-Check @no_negative_occurrence_db_b.
 Lemma SM_nno (Σ₁ Σ₂ : Signature) (SM : SignatureMorphism Σ₁ Σ₂) (ϕ : @Pattern Σ₁) (dbi : nat) :
   no_negative_occurrence_db_b dbi ϕ = true ->
   no_negative_occurrence_db_b dbi (SMϕ SM ϕ) = true
@@ -87,8 +85,10 @@ Lemma SM_well_formed_positive (Σ₁ Σ₂ : Signature) (SM : SignatureMorphism 
 Proof.
   intros H.
   induction ϕ; simpl in *; destruct_and?; split_and?; auto.
+  apply SM_nno. assumption.
 Qed.
 
+(*
 Check @ML_proof_system.
 Lemma SMpf (Σ₁ Σ₂ : Signature) (SM : SignatureMorphism Σ₁ Σ₂)
       {SM_inj : InjSignatureMorphism Σ₁ Σ₂ SM}
@@ -97,8 +97,5 @@ Lemma SMpf (Σ₁ Σ₂ : Signature) (SM : SignatureMorphism Σ₁ Σ₂)
 Proof.
   induction pf.
   - constructor.
-
-
-
-
 Abort.
+*)

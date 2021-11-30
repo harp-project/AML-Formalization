@@ -11,6 +11,8 @@ src/Semantics.v
 src/monotonic.v
 src/DerivedOperators.v
 src/ProofSystem.v
+src/Herbrandization.v
+src/SignatureMorphism.v
 src/FixpointReasoning.v
 src/SignatureHelper.v
 src/Logic.v
