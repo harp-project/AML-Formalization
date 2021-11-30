@@ -7802,3 +7802,33 @@ Program Canonical Structure prf_or_assoc_indifferent_S {Σ : Signature}
   := ProofProperty0 P (@prf_or_assoc Σ Γ a b c wfa wfb wfc) _.
 Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
 
+Lemma prf_not_and_is_or_not {Σ : Signature} (Γ : Theory) (a b : Pattern) :
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢ (!(a and b)) <---> (!a or !b).
+Proof.
+  intros wfa wfb.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - unfold patt_and at 1.
+    mgApplyMeta (@not_not_elim Σ Γ (!a or !b) ltac:(wf_auto2)) in 0.
+    mgExactn 0.
+  - unfold patt_and at 1.
+    mgApplyMeta (@not_not_intro Σ Γ (!a or !b) ltac:(wf_auto2)).
+    mgExactn 0.
+Defined.
+
+Program Canonical Structure prf_not_and_is_or_not_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+  := ProofProperty0 P (@prf_not_and_is_or_not Σ Γ a b wfa wfb) _.
+Next Obligation.
+  intros. apply liftP_impl_P. solve_indif; intros. Set Printing Implicit.
+  - apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
+    solve_indif. unfold liftP. solve_indif.
+  - apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ _ _)).
+    solve_indif. unfold liftP. solve_indif.
+Qed.

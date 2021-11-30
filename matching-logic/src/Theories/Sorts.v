@@ -15,6 +15,7 @@ From MatchingLogic Require Import
      Semantics
      DerivedOperators
      ProofSystem
+     ProofMode
      Utils.extralibrary
      Theories.Definedness
 .
@@ -958,6 +959,10 @@ Proof.
 
   unfold patt_not_s.
   Search ML_proof_system patt_and "assoc".
+  Check (@prf_and_assoc Σ Γ ([[s]]) (![[s]]) (!ϕ) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  toMyGoal.
+  { wf_auto2. }
+  (*mgRewrite (@prf_and_assoc Σ Γ ([[s]]) (![[s]]) (!ϕ) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.*)
 
 Defined.
 
