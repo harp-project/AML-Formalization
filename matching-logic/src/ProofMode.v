@@ -7735,3 +7735,70 @@ Abort.
         mgApplyMeta q'iq.
         mgExactn 0. 
   Defined.
+
+Lemma prf_and_assoc {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ ((a and b) and c) <---> (a and (b and c)).
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - do 2 mgDestructAnd 0.
+    mgSplitAnd.
+    { mgExactn 0. }
+    mgSplitAnd.
+    { mgExactn 1. }
+    { mgExactn 2. }
+  - mgDestructAnd 0.
+    mgDestructAnd 1.
+    mgSplitAnd.
+    mgSplitAnd.
+    mgExactn 0.
+    mgExactn 1.
+    mgExactn 2.
+Defined.
+
+Program Canonical Structure prf_and_assoc_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b c : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+  := ProofProperty0 P (@prf_and_assoc Σ Γ a b c wfa wfb wfc) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
+
+
+Lemma prf_or_assoc {Σ : Signature} (Γ : Theory)  (a b c : Pattern) :
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ ((a or b) or c) <---> (a or (b or c)).
+Proof.
+  intros wfa wfb wfc.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgDestructOr 0.
+    + mgDestructOr 0.
+      * mgLeft. mgExactn 0.
+      * mgRight. mgLeft. mgExactn 0.
+    + mgRight. mgRight. mgExactn 0.
+  - mgDestructOr 0.
+    + mgLeft. mgLeft. mgExactn 0.
+    + mgDestructOr 0.
+      * mgLeft. mgRight. mgExactn 0.
+      * mgRight. mgExactn 0.
+Defined.
+
+Program Canonical Structure prf_or_assoc_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b c : Pattern)
+        (wfa : well_formed a)
+        (wfb : well_formed b)
+        (wfc : well_formed c)
+  := ProofProperty0 P (@prf_or_assoc Σ Γ a b c wfa wfb wfc) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
+
