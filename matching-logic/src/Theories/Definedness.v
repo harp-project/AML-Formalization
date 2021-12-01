@@ -943,11 +943,14 @@ Section ProofSystemTheorems.
     
     assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
     {
-      (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
-      replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
-        with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉) in S1'.
-      2: { simpl. repeat case_match; auto; contradiction. }
-          
+      eapply cast_proof in S1'.
+      2: {
+        (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
+        replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
+        with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉).
+        2: { simpl. repeat case_match; auto; contradiction. }
+        reflexivity.
+      }
       eapply Modus_ponens.
       4: apply forall_variable_substitution.
       3: apply S1'.
@@ -1016,8 +1019,13 @@ Section ProofSystemTheorems.
       simpl in Htmp.
       unfold patt_and in Htmp at 1.
       apply not_not_elim_meta in Htmp; auto 10.
-      replace (patt_sym (inj definedness) $ (patt_free_evar x' and ! ϕ))
-        with (patt_defined (patt_free_evar x' and ! ϕ)) in Htmp by reflexivity.
+
+      eapply cast_proof in Htmp.
+      2: {
+        replace (patt_sym (inj definedness) $ (patt_free_evar x' and ! ϕ))
+        with (patt_defined (patt_free_evar x' and ! ϕ)) by reflexivity.
+        reflexivity.
+      }
       
       toMyGoal.
       { wf_auto2. }
@@ -1039,11 +1047,13 @@ Section ProofSystemTheorems.
       eapply universal_generalization with (x := x') in S8; auto.
       simpl in S8.
       
-      rewrite evar_quantify_subst_ctx in S8;[assumption|].
+      eapply cast_proof in S8.
+      2: { rewrite evar_quantify_subst_ctx;[assumption|]. reflexivity. }
 
       simpl in S8.
       case_match; try contradiction.
-      rewrite evar_quantify_fresh in S8; [assumption|].
+      eapply cast_proof in S8.
+      2: { rewrite evar_quantify_fresh; [assumption|]. reflexivity. }
       apply S8.
     }
 
@@ -1061,7 +1071,8 @@ Section ProofSystemTheorems.
         rewrite evar_quantify_fresh; [assumption|].
         reflexivity.
       }
-      rewrite <- Heq.
+      eapply cast_proof.
+      { rewrite <- Heq. reflexivity. }
       apply Ex_gen.
       4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
       1,2: auto.
@@ -1129,12 +1140,16 @@ Section ProofSystemTheorems.
         fromMyGoal. intros _ _.
         case_match;[|congruence].
 
-        replace (patt_free_evar x' and ϕ)
-          with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x')).
-        2: {
-          simpl. rewrite bevar_subst_not_occur.
-          { apply wfc_ex_aux_implies_not_bevar_occur. unfold well_formed, well_formed_closed in *.
-            destruct_and!. auto.
+        eapply cast_proof.
+        {
+          replace (patt_free_evar x' and ϕ)
+            with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x')).
+          2: {
+            simpl. rewrite bevar_subst_not_occur.
+            { apply wfc_ex_aux_implies_not_bevar_occur. unfold well_formed, well_formed_closed in *.
+              destruct_and!. auto.
+            }
+            reflexivity.
           }
           reflexivity.
         }
@@ -1160,8 +1175,12 @@ Section ProofSystemTheorems.
       }
       { auto. }
       unfold exists_quantify in Htmp.
-      rewrite evar_quantify_subst_ctx in Htmp.
-      { assumption. }
+
+      eapply cast_proof in Htmp.
+      2: { rewrite evar_quantify_subst_ctx.
+           { assumption. }
+           reflexivity.
+      }
 
       assert (well_formed (ex , subst_ctx AC (b0 and ϕ))).
       {
@@ -1180,8 +1199,11 @@ Section ProofSystemTheorems.
         }
       }
       
-      rewrite -> evar_quantify_evar_open in Htmp.
-      2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+      eapply cast_proof in Htmp.
+      2: { rewrite -> evar_quantify_evar_open.
+           2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+           reflexivity.
+      }
       apply pf_iff_proj1 in Htmp; auto.
       eapply syllogism_intro.
       5: apply S10.
