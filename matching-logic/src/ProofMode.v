@@ -1265,7 +1265,7 @@ Defined. *)
   Definition Framing₂ := Framing₁.
   Definition Framing := Framing₂.
 
-  Program Canonical Structure Framing_uses_ex_gen_S P {HP : IndifProp P}
+  Program Canonical Structure Framing_uses_ex_gen_S
             Γ AC evs
             A B
             (wfA : well_formed A)
@@ -1276,7 +1276,7 @@ Defined. *)
     induction AC; simpl; auto.
   Qed.
 
-  Program Canonical Structure Framing_uses_svar_subst_S P {HP : IndifProp P}
+  Program Canonical Structure Framing_uses_svar_subst_S
             Γ AC svs
             A B
             (wfA : well_formed A)
@@ -1287,7 +1287,7 @@ Defined. *)
     induction AC; simpl; auto.
   Qed.
 
-  Program Canonical Structure Framing_uses_kt_S P {HP : IndifProp P}
+  Program Canonical Structure Framing_uses_kt_S
             Γ AC
             A B
             (wfA : well_formed A)
