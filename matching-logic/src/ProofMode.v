@@ -4628,7 +4628,7 @@ Section FOL_helpers.
   Definition prf_prop_ex_iff := prf_prop_ex_iff₂.
 
   Program Canonical Structure Private_in_contex_impl_defined_uses_ex_gen_S
-            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            Γ AC ϕ (x : evar)
             (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
             (wfϕ: well_formed (ex, ϕ))
             (evs : EVarSet) (Hxevs: x ∉ evs)
@@ -4660,7 +4660,7 @@ Section FOL_helpers.
   Qed.
 
   Program Canonical Structure Private_in_contex_impl_defined_uses_svar_subst_S
-            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            Γ AC ϕ (x : evar)
             (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
             (wfϕ: well_formed (ex, ϕ))
             (svs : SVarSet)
@@ -4686,7 +4686,7 @@ Section FOL_helpers.
   Qed.
 
   Program Canonical Structure Private_in_contex_impl_defined_uses_kt_S
-            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            Γ AC ϕ (x : evar)
             (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
             (wfϕ: well_formed (ex, ϕ))
     := ProofProperty0 (@uses_kt Σ) (@prf_prop_ex_iff₂ Γ AC ϕ x Hfr wfϕ) _.
