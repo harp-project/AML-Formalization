@@ -1199,7 +1199,10 @@ Section ProofSystemTheorems.
     Γ ⊢ ϕ ---> ⌈ ϕ ⌉.
   Proof.
     intros HΓ wfϕ.
-    replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
+    eapply cast_proof.
+    { replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
+      reflexivity.
+    }
     apply in_context_impl_defined; assumption.
   Defined.
 
@@ -4131,15 +4134,21 @@ Lemma and_predicate_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
+  mu_free ϕ₁ ->
+  mu_free ϕ₂ ->
   Γ ⊢ (is_predicate_pattern ϕ₁) ->
   Γ ⊢ (is_predicate_pattern ϕ₂) ->
   Γ ⊢ (is_predicate_pattern (ϕ₁ and ϕ₂)).
 Proof.
-  intros wfϕ₁ wfϕ₂ prϕ₁ prϕ₂.
+  intros HΓ wfϕ₁ wfϕ₂ mfϕ₁ mfϕ₂ prϕ₁ prϕ₂.
+  eapply Modus_ponens.
+  4: eapply Modus_ponens.
+  7: apply and_predicate.
+  1,2,4,5,8,9: wf_auto2.
+  all: assumption.
 Defined.
 
 
-(*
 Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
@@ -4152,13 +4161,58 @@ Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
 Proof.
   intros HΓ wfϕ₁ wfϕ₂ wfϕ₃ mfϕ₁ mfϕ₂ mfϕ₃.
   unshelve (eapply deduction_theorem_noKT_predicate).
-  { admit. }
+  { 
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    apply syllogism_intro with (B := ϕ₂).
+    1,2,3: wf_auto2.
+    - assert (Htmp : Γ ∪ {[ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃]} ⊢ (ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃)).
+      { apply hypothesis. wf_auto2. set_solver. }
+      assert (H1 : Γ ∪ {[ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃]} ⊢ (ϕ₁ ⊆ml ϕ₂)).
+      { eapply pf_conj_elim_l_meta.
+        3: apply Htmp.
+        1,2: wf_auto2.
+      }
+      apply total_phi_impl_phi_meta.
+      { set_solver. }
+      { wf_auto2. }
+      apply H1.
+    - assert (Htmp : Γ ∪ {[ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃]} ⊢ (ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃)).
+      { apply hypothesis. wf_auto2. set_solver. }
+      assert (H2 : Γ ∪ {[ϕ₁ ⊆ml ϕ₂ and ϕ₂ ⊆ml ϕ₃]} ⊢ (ϕ₂ ⊆ml ϕ₃)).
+      { eapply pf_conj_elim_r_meta.
+        3: apply Htmp.
+        1,2: wf_auto2.
+      }
+      apply total_phi_impl_phi_meta.
+      { set_solver. }
+      { wf_auto2. }
+      apply H2.
+  }
   { wf_auto2. }
   { wf_auto2. }
   { simpl. split_and!; auto. }
   { assumption. }
   4: {
-    
+    apply and_predicate_meta.
+    { assumption. }
+    { wf_auto2. }
+    { wf_auto2. }
+    { simpl. split_and!; auto. }
+    { simpl. split_and!; auto. }
+    - apply floor_is_predicate.
+      { assumption. }
+      { wf_auto2. }
+    - apply floor_is_predicate.
+      { assumption. }
+      { wf_auto2. }
   }
+  { simpl.
+    rewrite !orbF.
+    unfold phi_impl_defined_phi.
+    repeat (try apply orb_false_intro; try split).
+    - rewrite indifferent_to_cast_uses_ex_gen.
+    Search orb false.
+    Search cast_proof.
   Search patt_imp patt_and
-*)
+Defined.
