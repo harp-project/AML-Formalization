@@ -1110,18 +1110,18 @@ Section ProofSystemTheorems.
     remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
     assert (Hx1': evar_is_fresh_in x' ϕ).
-    { rewrite Heqx'.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
+    { abstract (rewrite Heqx';
+      eapply not_elem_of_larger_impl_not_elem_of;
+      [|apply set_evar_fresh_is_fresh'];
+      clear; set_solver).
     }
 
     assert (Hx'2: x' ∉ AC_free_evars AC).
-    { rewrite Heqx'.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: apply set_evar_fresh_is_fresh'.
-      clear.
-      set_solver.
+    { abstract (rewrite Heqx';
+      eapply not_elem_of_larger_impl_not_elem_of;
+      [|apply set_evar_fresh_is_fresh'];
+      clear;
+      set_solver).
     }
     
     assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
@@ -1132,8 +1132,8 @@ Section ProofSystemTheorems.
     assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉).
     {
       apply disj_left_intro_meta.
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract(wf_auto2). }
+      { abstract(wf_auto2). }
       { exact S1''. }
     }
 
@@ -1143,7 +1143,8 @@ Section ProofSystemTheorems.
       simpl in Htmp.
       apply pf_conj_elim_r_meta in Htmp; auto.
       eapply Modus_ponens. 4: apply Htmp.
-      all: auto.
+      1,2: abstract(wf_auto2).
+      assumption.
     }
 
     assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉).
@@ -1160,7 +1161,8 @@ Section ProofSystemTheorems.
       simpl in Htmp.
       apply pf_conj_elim_l_meta in Htmp; auto 10.
       eapply Modus_ponens. 4: apply Htmp.
-      all: auto 10.
+      1,2: abstract(wf_auto2).
+      assumption.
     }
 
     assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉).
@@ -1178,7 +1180,7 @@ Section ProofSystemTheorems.
       }
       
       toMyGoal.
-      { wf_auto2. }
+      { abstract (wf_auto2). }
       mgIntro. mgAdd Htmp.
       mgApply 0. mgIntro. mgApply 2.
       mgExactn 1.
@@ -1190,7 +1192,8 @@ Section ProofSystemTheorems.
     {
       eapply syllogism_intro.
       5: apply S7.
-      all: auto 10.
+      1-3: abstract(wf_auto2).
+      assumption.
     }
     assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
     {
@@ -1212,32 +1215,34 @@ Section ProofSystemTheorems.
       unfold patt_forall in S9.
       unfold patt_not in S9 at 1.
 
-      assert (Heq: evar_quantify x' 0 (subst_ctx AC (patt_free_evar x' and ϕ)) = subst_ctx AC (b0 and ϕ)).
-      {
-        rewrite evar_quantify_subst_ctx;[assumption|].
-        f_equal.
-        simpl.
-        case_match; [|congruence].
-        rewrite evar_quantify_fresh; [assumption|].
-        reflexivity.
-      }
       eapply cast_proof.
-      { rewrite <- Heq. reflexivity. }
+      { 
+        assert (Heq: evar_quantify x' 0 (subst_ctx AC (patt_free_evar x' and ϕ)) = subst_ctx AC (b0 and ϕ)).
+        {
+          rewrite evar_quantify_subst_ctx;[assumption|].
+          f_equal.
+          simpl.
+          case_match; [|congruence].
+          rewrite evar_quantify_fresh; [assumption|].
+          reflexivity.
+        }
+        rewrite <- Heq. reflexivity.
+      }
       apply Ex_gen.
-      4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-      1,2: auto.
+      4: { abstract (simpl; unfold evar_is_fresh_in in Hx1'; clear -Hx1'; set_solver). }
+      1,2: abstract (wf_auto2).
       assumption.
     }
 
     assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ)).
     {
       toMyGoal.
-      { wf_auto2. }
+      { abstract (wf_auto2). }
       mgIntro.
       mgAdd (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)).
       
       mgAssert ((ϕ ---> ex , b0 and ϕ)).
-      { wf_auto2. }
+      { abstract (wf_auto2). }
       {  mgApply 0.
          mgAdd (Existence Γ).
          mgExactn 0.
@@ -1247,17 +1252,18 @@ Section ProofSystemTheorems.
 
     assert (well_formed (ex , (b0 and ϕ))).
     {
-      unfold well_formed,well_formed_closed in *.
-      destruct_and!.
-      simpl; split_and!; auto.
-      eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+      abstract (
+          unfold well_formed,well_formed_closed in *;
+          destruct_and!;
+                      simpl; split_and!; auto;
+          eapply well_formed_closed_ex_aux_ind;[|eassumption]; lia).
     }
     
     assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ)).
     {
 
       assert(well_formed (ex , (evar_quantify x' 0 (patt_free_evar x') and ϕ))).
-      {
+      { 
         unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto.
         all: repeat case_match; auto.
@@ -1266,7 +1272,7 @@ Section ProofSystemTheorems.
       assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ)))).
       {
         toMyGoal.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
         mgIntro.
         mgDestructAnd 0.
         fromMyGoal. intros _ _.
@@ -1281,10 +1287,10 @@ Section ProofSystemTheorems.
              unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
         }
         toMyGoal.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
         do 2 mgIntro.
         mgAssert ((patt_free_evar x' and ϕ)) using first 2.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
         { unfold patt_and. unfold patt_not at 1. mgIntro.
           mgDestructOr 2.
           - mgApply 2. mgExactn 0.
@@ -1308,16 +1314,19 @@ Section ProofSystemTheorems.
           reflexivity.
         }
         apply Ex_quan.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
       }
       eapply syllogism_intro.
       5: { apply Htmp. }
-      all: auto.
+      1,2,3: abstract (wf_auto2).
+      assumption.
     }
 
     assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ)))).
     {
-      apply Framing; auto.
+      apply Framing.
+      1,2: abstract (wf_auto2).
+      assumption.
     }
 
     assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉)).
@@ -1330,7 +1339,7 @@ Section ProofSystemTheorems.
             clear -Hx1' Hx'2; simpl; set_solver
         ).
       }
-      { auto. }
+      { abstract (wf_auto2). }
       unfold exists_quantify in Htmp.
 
       eapply cast_proof in Htmp.
@@ -1376,10 +1385,10 @@ Section ProofSystemTheorems.
   Definition in_context_impl_defined₂ := in_context_impl_defined₁.
   Definition in_context_impl_defined := in_context_impl_defined₂.
 
-  Check in_context_impl_defined.
   Program Canonical Structure Private_in_contex_impl_defined_uses_ex_gen_S
             Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (evs : EVarSet)
             (Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs)
+            (Hevx : ev_x ∉ evs)
     := ProofProperty0 (@uses_ex_gen Σ evs) (@in_context_impl_defined₀ Γ AC ϕ HΓ wfϕ) _.
   Next Obligation.
     solve_indif.
@@ -1397,9 +1406,34 @@ Section ProofSystemTheorems.
       unfold decide, decide_rel. rewrite evar_eqdec_refl.
       intros. unfold liftP. solve_indif.
       reflexivity.
-    - 
-  Abort.
+    - unshelve (eapply Private_in_contex_impl_defined_uses_ex_gen_S).
+      assumption.
+    - simpl.
+      case_match;[contradiction|].
+      repeat apply orb_false_intro; simpl; try reflexivity; try solve_indif; simpl.
+      + case_match.
+        { contradiction. }
+        solve_indif.
+        reflexivity.
+      + reflexivity.
+      + case_match.
+        solve_indif.
+        case_match.
+        solve_indif.
+        case_match.
+        solve_indif.
+      + repeat (case_match; solve_indif).
+  Qed.
 
+
+  Program Canonical Structure Private_in_contex_impl_defined_uses_svar_subst_S
+            Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (svs : SVarSet)
+            (*Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs*)
+            (*Hevx : ev_x ∉ evs*)
+    := ProofProperty0 (@uses_svar_subst Σ svs) (@in_context_impl_defined₀ Γ AC ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif.
+    - eapply Framing_uses_svar_subst_S.
 
   Lemma phi_impl_defined_phi Γ ϕ:
     theory ⊆ Γ ->
