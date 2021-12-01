@@ -962,6 +962,7 @@ Proof.
   Check (@prf_and_assoc Σ Γ ([[s]]) (![[s]]) (!ϕ) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   toMyGoal.
   { wf_auto2. }
+  Search ML_proof_system patt_and patt_not.
   (*mgRewrite (@prf_and_assoc Σ Γ ([[s]]) (![[s]]) (!ϕ) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.*)
 
 Defined.

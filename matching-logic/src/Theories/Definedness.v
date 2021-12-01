@@ -3901,4 +3901,108 @@ Proof.
   { wf_auto2. }
   - apply disj_equals_greater_1; assumption.
   - apply disj_equals_greater_2; assumption.
-Qed.
+Defined.
+
+Lemma Top_iff_tot_Top {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (Top <---> ⌊ Top ⌋).
+Proof.
+  intros HΓ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd.
+  - mgIntro. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    apply top_holds.
+  - mgIntro. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply top_holds.
+Defined.
+
+Lemma Top_equals_tot_Top {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (Top =ml ⌊ Top ⌋).
+Proof.
+  intros HΓ.
+  apply patt_iff_implies_equal.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply Top_iff_tot_Top; assumption.
+Defined.
+
+Lemma Bot_iff_tot_Bot {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (Bot <---> ⌊ Bot ⌋).
+Proof.
+  intros HΓ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - fromMyGoal. intros _ _.
+    apply false_implies_everything.
+    wf_auto2.
+  - fromMyGoal. intros _ _.
+    apply total_phi_impl_phi.
+    assumption.
+    wf_auto2.
+Defined.
+
+Lemma Bot_equals_tot_Bot {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (Bot =ml ⌊ Bot ⌋).
+Proof.
+  intros HΓ.
+  apply patt_iff_implies_equal.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply Bot_iff_tot_Bot; assumption.
+Defined.
+  
+Lemma predicate_is_total {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  mu_free ϕ ->
+  Γ ⊢ (is_predicate_pattern ϕ) ---> (ϕ =ml ⌊ ϕ ⌋).
+Proof.
+  intros HΓ wfϕ mfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgIntro.
+  unfold is_predicate_pattern.
+  mgDestructOr 0.
+  - mgRewriteBy 0 at 2.
+    { assumption. }
+    { simpl. rewrite mfϕ. reflexivity. }
+    mgRewriteBy 0 at 1.
+    { assumption. }
+    { reflexivity. }
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Top_equals_tot_Top.
+    { assumption. }
+  - mgRewriteBy 0 at 2.
+    { assumption. }
+    { simpl. rewrite mfϕ. reflexivity. }
+    mgRewriteBy 0 at 1.
+    { assumption. }
+    { reflexivity. }
+    mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Bot_equals_tot_Bot.
+    { assumption. }
+Defined.
+
+(*
+Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  well_formed ϕ₃ ->
+  Γ ⊢ ((ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₃)) ---> (ϕ₁ ⊆ml ϕ₃).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ wfϕ₃.
+  eapply deduction_theorem_noKT.
+  Search patt_imp patt_and
+*)
