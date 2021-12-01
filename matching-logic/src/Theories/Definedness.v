@@ -39,6 +39,7 @@ Open Scope ml_scope.
 (* We have only one symbol *)
 Inductive Symbols := definedness.
 
+#[global]
 Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
@@ -913,7 +914,7 @@ Section ProofSystemTheorems.
     all: auto; simpl; case_match; auto.
   Defined.
  
-  Lemma Private_in_context_impl_defined_aux_1 Γ x':
+  Lemma Private_in_context_impl_defined_aux_1₀ Γ x':
     theory ⊆ Γ ->
     Γ ⊢ patt_defined p_x ->
     Γ ⊢ ⌈ patt_free_evar x' ⌉.
@@ -934,9 +935,13 @@ Section ProofSystemTheorems.
       all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
   Defined.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_ex_gen_S P {HP : IndifProp P}
+  Definition Private_in_context_impl_defined_aux_1₁ := Private_in_context_impl_defined_aux_1₀.
+  Definition Private_in_context_impl_defined_aux_1₂ := Private_in_context_impl_defined_aux_1₁.
+  Definition Private_in_context_impl_defined_aux_1 := Private_in_context_impl_defined_aux_1₂.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_ex_gen_S
             Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' (Hev_x: ev_x ∉ evs)
-    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_1₀ Γ x' HΓ) _.
   Next Obligation.
     solve_indif.
     { simpl. case_match. contradiction. solve_indif. assumption. }
@@ -944,22 +949,22 @@ Section ProofSystemTheorems.
   Qed.
 
   (* Warning: Ignoring canonical projection ... *)
-  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_svar_subst_S P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_svar_subst_S
             Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x'
-    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_1₁ Γ x' HΓ) _.
   Next Obligation.
     solve_indif. apply H. reflexivity.
   Qed.
 
   (* Warning: Ignoring canonical projection ... *)
-  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_kt_S P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_kt_S
             Γ (HΓ : theory ⊆ Γ) x'
-    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_1₂ Γ x' HΓ) _.
   Next Obligation.
     solve_indif. apply H. reflexivity.
   Qed.
 
-  Lemma Private_in_context_impl_defined_aux_4 Γ x' ϕ:
+  Lemma Private_in_context_impl_defined_aux_4₀ Γ x' ϕ:
     theory ⊆ Γ ->
     well_formed ϕ ->
     Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉ ->
@@ -994,28 +999,33 @@ Section ProofSystemTheorems.
       { wf_auto2. }
       exact S3.
   Defined.
-    
-  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_ex_gen_S P {HP : IndifProp P}
+
+  Definition Private_in_context_impl_defined_aux_4₁ := Private_in_context_impl_defined_aux_4₀.
+  Definition Private_in_context_impl_defined_aux_4₂ := Private_in_context_impl_defined_aux_4₁.
+  Definition Private_in_context_impl_defined_aux_4 := Private_in_context_impl_defined_aux_4₂.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_ex_gen_S
             Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' ϕ (wfϕ : well_formed ϕ)
-    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_4₀ Γ x' ϕ HΓ wfϕ) _.
   Next Obligation.
     solve_indif. assumption.
   Qed.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_svar_subst_S P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_svar_subst_S
             Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x' ϕ (wfϕ : well_formed ϕ)
-    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_4₁ Γ x' ϕ HΓ wfϕ) _.
   Next Obligation.
     solve_indif. assumption.
   Qed.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_kt P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_kt
             Γ (HΓ : theory ⊆ Γ) x' ϕ (wfϕ : well_formed ϕ)
-    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_4₂ Γ x' ϕ HΓ wfϕ) _.
   Next Obligation.
     solve_indif. assumption.
   Qed.
 
+  (* TODO move to Syntax.v *)
   Lemma evar_eqdec_refl x:
     evar_eqdec x x = left (@eq_refl _ x).
   Proof.
@@ -1025,7 +1035,7 @@ Section ProofSystemTheorems.
     apply evar_eqdec.
   Qed.
 
-  Lemma Private_in_context_impl_defined_aux_9 Γ x' AC ϕ:
+  Lemma Private_in_context_impl_defined_aux_9₀ Γ x' AC ϕ:
     theory ⊆ Γ ->
     well_formed ϕ ->
     x' ∉ AC_free_evars AC ->
@@ -1052,41 +1062,42 @@ Section ProofSystemTheorems.
     apply S8.
   Defined.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_ex_gen_S P {HP : IndifProp P}
+  Definition Private_in_context_impl_defined_aux_9₁ := Private_in_context_impl_defined_aux_9₀.
+  Definition Private_in_context_impl_defined_aux_9₂ := Private_in_context_impl_defined_aux_9₁.
+  Definition Private_in_context_impl_defined_aux_9 := Private_in_context_impl_defined_aux_9₂.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_ex_gen_S
             Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' AC ϕ (wfϕ : well_formed ϕ)
             (Hx'AC: x' ∉ AC_free_evars AC)
             (Hx'ϕ: evar_is_fresh_in x' ϕ)
             (Hx'evs : x' ∉ evs)
-    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_9₀ Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
   Next Obligation.
     solve_indif. simpl. case_match. contradiction.
     solve_indif. apply H.
   Qed.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_svar_subst_S P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_svar_subst_S
             Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x' AC ϕ (wfϕ : well_formed ϕ)
             (Hx'AC: x' ∉ AC_free_evars AC)
             (Hx'ϕ: evar_is_fresh_in x' ϕ)
-            (*Hx'evs : x' ∉ evs*)
-    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_9₁ Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
   Next Obligation.
-    intros. unfold Private_in_context_impl_defined_aux_9.
+    intros. unfold Private_in_context_impl_defined_aux_9₁,Private_in_context_impl_defined_aux_9₀.
     solve_indif. apply H.
   Qed.
 
-  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_kt_S P {HP : IndifProp P}
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_kt_S
             Γ (HΓ : theory ⊆ Γ) x' AC ϕ (wfϕ : well_formed ϕ)
             (Hx'AC: x' ∉ AC_free_evars AC)
             (Hx'ϕ: evar_is_fresh_in x' ϕ)
-            (*Hx'evs : x' ∉ evs*)
-    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_9₂ Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
   Next Obligation.
-    intros. unfold Private_in_context_impl_defined_aux_9.
+    intros. unfold Private_in_context_impl_defined_aux_9₂,Private_in_context_impl_defined_aux_9₁,Private_in_context_impl_defined_aux_9₀.
     solve_indif. apply H.
   Qed.
 
-
-  Lemma in_context_impl_defined Γ AC ϕ:
+  Lemma in_context_impl_defined₀ Γ AC ϕ:
     theory ⊆ Γ ->
     well_formed ϕ ->
     Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉.
@@ -1259,8 +1270,12 @@ Section ProofSystemTheorems.
         mgIntro.
         mgDestructAnd 0.
         fromMyGoal. intros _ _.
-        replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
-        2: { simpl. case_match;[reflexivity|congruence]. }
+        eapply cast_proof.
+        {
+          replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
+          2: { simpl. case_match;[reflexivity|congruence]. }
+          reflexivity.
+        }
         apply Ex_gen; auto.
         2: { simpl. case_match;[|congruence]. simpl.
              unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
@@ -1309,8 +1324,11 @@ Section ProofSystemTheorems.
     {
       pose proof (Htmp := @prf_prop_ex_iff Σ Γ AC (b0 and ϕ) x').
       feed specialize Htmp.
-      { unfold evar_is_fresh_in in *.
-        rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
+      { abstract (
+            unfold evar_is_fresh_in in *;
+            rewrite free_evars_subst_ctx;
+            clear -Hx1' Hx'2; simpl; set_solver
+        ).
       }
       { auto. }
       unfold exists_quantify in Htmp.
@@ -1353,6 +1371,35 @@ Section ProofSystemTheorems.
     5: apply S14.
     all: auto.    
   Defined.
+
+  Definition in_context_impl_defined₁ := in_context_impl_defined₀.
+  Definition in_context_impl_defined₂ := in_context_impl_defined₁.
+  Definition in_context_impl_defined := in_context_impl_defined₂.
+
+  Check in_context_impl_defined.
+  Program Canonical Structure Private_in_contex_impl_defined_uses_ex_gen_S
+            Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (evs : EVarSet)
+            (Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs)
+    := ProofProperty0 (@uses_ex_gen Σ evs) (@in_context_impl_defined₀ Γ AC ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif.
+    - eapply Framing_uses_ex_gen_S.
+      simpl. rewrite !orbF.
+      apply orb_false_intro.
+      { solve_indif. reflexivity. }
+      apply liftP_impl_P.
+      solve_indif. intros. unfold liftP.
+      solve_indif. simpl.
+      case_match.
+      { contradiction.  }
+      apply liftP_impl_P.
+      solve_indif. intros.
+      unfold decide, decide_rel. rewrite evar_eqdec_refl.
+      intros. unfold liftP. solve_indif.
+      reflexivity.
+    - 
+  Abort.
+
 
   Lemma phi_impl_defined_phi Γ ϕ:
     theory ⊆ Γ ->
