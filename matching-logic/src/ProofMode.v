@@ -5682,9 +5682,13 @@ Section FOL_helpers.
     intros wfϕ Hϕ.
     unfold patt_forall.
     unfold patt_not at 1.
-    replace (! evar_quantify x 0 ϕ)
-      with (evar_quantify x 0 (! ϕ))
-      by reflexivity.
+    eapply cast_proof.
+    {
+      replace (! evar_quantify x 0 ϕ)
+        with (evar_quantify x 0 (! ϕ))
+        by reflexivity.
+      reflexivity.
+    }
     apply Ex_gen; auto.
     2: { simpl. set_solver. }
     toMyGoal.
@@ -5702,9 +5706,14 @@ Section FOL_helpers.
     intros wfϕ.
    
     unfold patt_forall.
-    replace (! evar_quantify x 0 ϕ)
-      with (evar_quantify x 0 (! ϕ))
-      by reflexivity.
+    eapply cast_proof.
+    {
+      replace (! evar_quantify x 0 ϕ)
+        with (evar_quantify x 0 (! ϕ))
+        by reflexivity.
+      reflexivity.
+    }
+
     apply double_neg_elim_meta; auto 10.
     toMyGoal.
     { wf_auto2. }
@@ -5715,13 +5724,18 @@ Section FOL_helpers.
     mgApply 2.
     pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
     rewrite /instantiate in Htmp.
-    rewrite bevar_subst_evar_quantify_free_evar in Htmp.
-    {
-      apply wfc_ex_implies_not_bevar_occur.
-      unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
-      split_and; auto.
-    }
+
     specialize (Htmp ltac:(wf_auto2)).
+    eapply cast_proof in Htmp.
+    2: {
+      rewrite bevar_subst_evar_quantify_free_evar.
+      {
+        apply wfc_ex_implies_not_bevar_occur.
+        unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
+        split_and; auto.
+      }
+      reflexivity.
+    }
     mgAdd Htmp.
     mgApply 0.
     mgIntro.
