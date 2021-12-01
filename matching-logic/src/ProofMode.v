@@ -4442,7 +4442,7 @@ Section FOL_helpers.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
   Defined.
 
-  Lemma prf_prop_ex_iff Γ AC p x:
+  Lemma prf_prop_ex_iff₀ Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
     Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
@@ -4506,8 +4506,14 @@ Section FOL_helpers.
         eapply cast_proof.
         { rewrite -Heqp'. reflexivity. }
         unfold exists_quantify.
-        simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
-        { eapply evar_is_fresh_in_app_r. apply Hx. }
+        simpl.
+
+        eapply cast_proof.
+        {
+          rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
+          { eapply evar_is_fresh_in_app_r. apply Hx. }
+          reflexivity.
+        }
         apply Prop_ex_left. all: subst; auto.
       + clear IH1.
 
@@ -4616,6 +4622,94 @@ Section FOL_helpers.
         { erewrite evar_quantify_evar_open by assumption. reflexivity. }
         apply Ex_quan; auto.
   Defined.
+
+  Definition prf_prop_ex_iff₁ := prf_prop_ex_iff₀.
+  Definition prf_prop_ex_iff₂ := prf_prop_ex_iff₁.
+  Definition prf_prop_ex_iff := prf_prop_ex_iff₂.
+
+  Program Canonical Structure Private_in_contex_impl_defined_uses_ex_gen_S
+            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
+            (wfϕ: well_formed (ex, ϕ))
+            (evs : EVarSet) (Hxevs: x ∉ evs)
+    := ProofProperty0 (@uses_ex_gen Σ evs) (@prf_prop_ex_iff₀ Γ AC ϕ x Hfr wfϕ) _.
+  Next Obligation.
+    intros.
+    induction AC.
+    - solve_indif.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + simpl.
+        case_match;[contradiction|].
+        solve_indif.
+        reflexivity.
+      + apply IHAC.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + simpl.
+        case_match;[contradiction|].
+        solve_indif.
+        reflexivity.
+      + apply IHAC.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_uses_svar_subst_S
+            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
+            (wfϕ: well_formed (ex, ϕ))
+            (svs : SVarSet)
+    := ProofProperty0 (@uses_svar_subst Σ svs) (@prf_prop_ex_iff₁ Γ AC ϕ x Hfr wfϕ) _.
+  Next Obligation.
+    intros.
+    induction AC.
+    - solve_indif.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + reflexivity.
+      + apply IHAC.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + reflexivity.
+      + apply IHAC.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_uses_kt_S
+            Γ AC ϕ (wfϕ : well_formed ϕ) (x : evar)
+            (Hfr: evar_is_fresh_in x (subst_ctx AC ϕ))
+            (wfϕ: well_formed (ex, ϕ))
+    := ProofProperty0 (@uses_kt Σ) (@prf_prop_ex_iff₂ Γ AC ϕ x Hfr wfϕ) _.
+  Next Obligation.
+    intros.
+    induction AC.
+    - solve_indif.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + reflexivity.
+      + apply IHAC.
+    - simpl.
+      case_match.
+      solve_indif.
+      + apply IHAC.
+      + reflexivity.
+      + reflexivity.
+      + apply IHAC.
+  Qed.
+  
   
   Lemma and_of_negated_iff_not_impl Γ p1 p2:
     well_formed p1 ->
