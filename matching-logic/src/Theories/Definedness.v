@@ -3994,6 +3994,58 @@ Proof.
     { assumption. }
 Defined.
 
+Lemma predicate_is_total_meta {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  mu_free ϕ ->
+  Γ ⊢ (is_predicate_pattern ϕ) ->
+  Γ ⊢ (ϕ =ml ⌊ ϕ ⌋).
+Proof.
+  intros.
+  eapply Modus_ponens.
+  4: apply predicate_is_total.
+  1,2,5: wf_auto2.
+  all: assumption.
+Defined.
+
+
+Lemma predicate_is_total_meta_iff {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  mu_free ϕ ->
+  Γ ⊢ (is_predicate_pattern ϕ) ->
+  Γ ⊢ (ϕ <---> ⌊ ϕ ⌋).
+Proof.
+  intros.
+  apply patt_equal_implies_iff.
+  { assumption. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply predicate_is_total_meta; assumption.
+Defined.
+
+Theorem deduction_theorem_noKT_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  mu_free ψ ->
+  theory ⊆ Γ ->
+  uses_ex_gen (free_evars ψ) pf = false ->
+  uses_svar_subst (free_svars ψ) pf = false ->
+  uses_kt pf = false ->
+  Γ ⊢ (is_predicate_pattern ψ) ->
+  Γ ⊢ ψ ---> ϕ.
+Proof.
+  intros wfϕ wfψ mfψ HΓ Hexgen Hsvs Hkt Hpred.
+  pose proof (Heq := Hpred).
+  apply predicate_is_total_meta_iff in Heq.
+  2-4: assumption.
+  toMyGoal.
+  { wf_auto2. }
+  mgRewrite Heq at 1.
+  fromMyGoal. intros _ _.
+  eapply deduction_theorem_noKT; eassumption.
+Defined.
+
 (*
 Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
   theory ⊆ Γ ->
