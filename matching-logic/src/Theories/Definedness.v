@@ -4046,15 +4046,60 @@ Proof.
   eapply deduction_theorem_noKT; eassumption.
 Defined.
 
-(*
+Lemma and_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  mu_free ϕ₁ ->
+  mu_free ϕ₂ ->
+  Γ ⊢ (is_predicate_pattern ϕ₁) ---> (is_predicate_pattern ϕ₂) ---> (is_predicate_pattern (ϕ₁ and ϕ₂)).
+Proof.
+  intros HΓ wfϕ₁ wfϕ₂ mfϕ₁ mfϕ₂.
+  toMyGoal.
+  { wf_auto2. }
+  do 2 mgIntro.
+  mgDestructOr 0; mgDestructOr 1.
+  - mgRewriteBy 0 at 1.
+    { assumption. }
+    { simpl. split_and!; auto. }
+    mgRewriteBy 1 at 1.
+    { assumption. }
+    { reflexivity. }
+    Search (Top and Top).
+Defined.
+
+Lemma and_predicate_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+  theory ⊆ Γ ->
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢ (is_predicate_pattern ϕ₁) ->
+  Γ ⊢ (is_predicate_pattern ϕ₂) ->
+  Γ ⊢ (is_predicate_pattern (ϕ₁ and ϕ₂)).
+Proof.
+  intros wfϕ₁ wfϕ₂ prϕ₁ prϕ₂.
+Defined.
+
+
+
 Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
   well_formed ϕ₃ ->
+  mu_free ϕ₁ ->
+  mu_free ϕ₂ ->
+  mu_free ϕ₃ ->
   Γ ⊢ ((ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₃)) ---> (ϕ₁ ⊆ml ϕ₃).
 Proof.
-  intros HΓ wfϕ₁ wfϕ₂ wfϕ₃.
-  eapply deduction_theorem_noKT.
+  intros HΓ wfϕ₁ wfϕ₂ wfϕ₃ mfϕ₁ mfϕ₂ mfϕ₃.
+  unshelve (eapply deduction_theorem_noKT_predicate).
+  { admit. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { simpl. split_and!; auto. }
+  { assumption. }
+  4: {
+    
+  }
   Search patt_imp patt_and
 *)
