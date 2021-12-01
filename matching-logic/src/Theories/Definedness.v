@@ -4046,6 +4046,32 @@ Proof.
   eapply deduction_theorem_noKT; eassumption.
 Defined.
 
+Lemma Top_predicate {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (is_predicate_pattern Top).
+Proof.
+  intros HΓ.
+  unfold is_predicate_pattern.
+  apply disj_left_intro_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply patt_equal_refl.
+  { wf_auto2. }
+Defined.
+
+Lemma Bot_predicate {Σ : Signature} {syntax : Syntax} Γ:
+  theory ⊆ Γ ->
+  Γ ⊢ (is_predicate_pattern Bot).
+Proof.
+  intros HΓ.
+  unfold is_predicate_pattern.
+  apply disj_right_intro_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  apply patt_equal_refl.
+  { wf_auto2. }
+Defined.
+
 Lemma and_predicate {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
@@ -4065,7 +4091,40 @@ Proof.
     mgRewriteBy 1 at 1.
     { assumption. }
     { reflexivity. }
-    Search (Top and Top).
+    mgRewrite (@Top_and_phi Σ Γ Top ltac:(wf_auto2)) at 1.
+    mgClear 1. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Top_predicate; assumption.
+  - mgRewriteBy 0 at 1.
+    { assumption. }
+    { simpl. split_and!; auto. }
+    mgRewriteBy 1 at 1.
+    { assumption. }
+    { reflexivity. }
+    mgRewrite (@Top_and_phi Σ Γ Bot ltac:(wf_auto2)) at 1.
+    mgClear 1. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Bot_predicate; assumption.
+  - mgRewriteBy 0 at 1.
+    { assumption. }
+    { simpl. split_and!; auto. }
+    mgRewriteBy 1 at 1.
+    { assumption. }
+    { reflexivity. }
+    mgRewrite (@Bot_and_phi Σ Γ Top ltac:(wf_auto2)) at 1.
+    mgClear 1. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Bot_predicate; assumption.
+  - mgRewriteBy 0 at 1.
+    { assumption. }
+    { simpl. split_and!; auto. }
+    mgRewriteBy 1 at 1.
+    { assumption. }
+    { reflexivity. }
+    mgRewrite (@Bot_and_phi Σ Γ Bot ltac:(wf_auto2)) at 1.
+    mgClear 1. mgClear 0.
+    fromMyGoal. intros _ _.
+    apply Bot_predicate; assumption.
 Defined.
 
 Lemma and_predicate_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
