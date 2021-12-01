@@ -7832,3 +7832,87 @@ Next Obligation.
   - apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ _ _)).
     solve_indif. unfold liftP. solve_indif.
 Qed.
+
+Lemma Top_and_phi {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢ (Top and ϕ) <---> ϕ.
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgDestructAnd 0. mgExactn 1.
+  - mgSplitAnd.
+    + mgClear 0.
+      fromMyGoal. intros _ _.
+      apply top_holds.
+    + mgExactn 0.
+Defined.
+
+Program Canonical Structure Top_and_phi_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@Top_and_phi Σ Γ a wfa) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. unfold liftP. solve_indif. Qed.
+
+Lemma phi_and_Top {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢ (ϕ and Top) <---> ϕ.
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgDestructAnd 0. mgExactn 0.
+  - mgSplitAnd.
+    + mgExactn 0.
+    + mgClear 0.
+      fromMyGoal. intros _ _.
+      apply top_holds.
+Defined.
+
+Program Canonical Structure phi_and_Top_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@phi_and_Top Σ Γ a wfa) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. unfold liftP. solve_indif. Qed.
+
+Lemma Bot_and_phi {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢ (Bot and ϕ) <---> Bot.
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgDestructAnd 0. mgExactn 0.
+  - fromMyGoal. intros _ _. apply false_implies_everything. wf_auto2.
+Defined.
+
+Program Canonical Structure Bot_and_phi_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@Bot_and_phi Σ Γ a wfa) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. unfold liftP. solve_indif. Qed.
+
+Lemma phi_and_Bot {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢ (ϕ and Bot) <---> Bot.
+Proof.
+  intros wfϕ.
+  toMyGoal.
+  { wf_auto2. }
+  mgSplitAnd; mgIntro.
+  - mgDestructAnd 0. mgExactn 1.
+  - fromMyGoal. intros _ _. apply false_implies_everything. wf_auto2.
+Defined.
+
+Program Canonical Structure phi_and_Bot_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+        (wfa : well_formed a)
+  := ProofProperty0 P (@phi_and_Bot Σ Γ a wfa) _.
+Next Obligation. intros. apply liftP_impl_P. solve_indif. unfold liftP. solve_indif. Qed.

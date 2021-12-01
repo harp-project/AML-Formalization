@@ -4080,7 +4080,7 @@ Proof.
 Defined.
 
 
-
+(*
 Lemma subseteq_trans {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ ϕ₃:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
