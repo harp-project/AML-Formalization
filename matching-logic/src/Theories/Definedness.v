@@ -1016,6 +1016,76 @@ Section ProofSystemTheorems.
     solve_indif. assumption.
   Qed.
 
+  Lemma evar_eqdec_refl x:
+    evar_eqdec x x = left (@eq_refl _ x).
+  Proof.
+    destruct (evar_eqdec x x);[|contradiction].
+    apply f_equal.
+    apply UIP_dec.
+    apply evar_eqdec.
+  Qed.
+
+  Lemma Private_in_context_impl_defined_aux_9 Γ x' AC ϕ:
+    theory ⊆ Γ ->
+    well_formed ϕ ->
+    x' ∉ AC_free_evars AC ->
+    evar_is_fresh_in x' ϕ ->
+    Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉ ->
+    Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉).
+  Proof.
+    intros HΓ wfϕ Hx'AC Hx'ϕ S8.
+    eapply universal_generalization with (x := x') in S8; auto.
+    simpl in S8.
+      
+    eapply cast_proof in S8.
+    2: { rewrite evar_quantify_subst_ctx; [assumption|]. reflexivity. }
+
+    simpl in S8.
+    eapply cast_proof in S8.
+    2: {
+      unfold decide,decide_rel. rewrite evar_eqdec_refl.
+      reflexivity.
+    }
+
+    eapply cast_proof in S8.
+    2: { rewrite evar_quantify_fresh; [assumption|]. reflexivity. }
+    apply S8.
+  Defined.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_ex_gen_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' AC ϕ (wfϕ : well_formed ϕ)
+            (Hx'AC: x' ∉ AC_free_evars AC)
+            (Hx'ϕ: evar_is_fresh_in x' ϕ)
+            (Hx'evs : x' ∉ evs)
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+  Next Obligation.
+    solve_indif. simpl. case_match. contradiction.
+    solve_indif. apply H.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_svar_subst_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x' AC ϕ (wfϕ : well_formed ϕ)
+            (Hx'AC: x' ∉ AC_free_evars AC)
+            (Hx'ϕ: evar_is_fresh_in x' ϕ)
+            (*Hx'evs : x' ∉ evs*)
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+  Next Obligation.
+    intros. unfold Private_in_context_impl_defined_aux_9.
+    solve_indif. apply H.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_9_uses_kt_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) x' AC ϕ (wfϕ : well_formed ϕ)
+            (Hx'AC: x' ∉ AC_free_evars AC)
+            (Hx'ϕ: evar_is_fresh_in x' ϕ)
+            (*Hx'evs : x' ∉ evs*)
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_9 Γ x' AC ϕ HΓ wfϕ Hx'AC Hx'ϕ) _.
+  Next Obligation.
+    intros. unfold Private_in_context_impl_defined_aux_9.
+    solve_indif. apply H.
+  Qed.
+
+
   Lemma in_context_impl_defined Γ AC ϕ:
     theory ⊆ Γ ->
     well_formed ϕ ->
