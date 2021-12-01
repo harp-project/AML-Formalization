@@ -912,8 +912,110 @@ Section ProofSystemTheorems.
     3: apply S1'.
     all: auto; simpl; case_match; auto.
   Defined.
-  
+ 
+  Lemma Private_in_context_impl_defined_aux_1 Γ x':
+    theory ⊆ Γ ->
+    Γ ⊢ patt_defined p_x ->
+    Γ ⊢ ⌈ patt_free_evar x' ⌉.
+  Proof.
+    intros HΓ S1'.
+    apply universal_generalization with (x := ev_x) in S1'; auto.
+      eapply cast_proof in S1'.
+      2: {
+        (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
+        replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
+        with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉).
+        2: { simpl. repeat case_match; auto; contradiction. }
+        reflexivity.
+      }
+      eapply Modus_ponens.
+      4: apply forall_variable_substitution.
+      3: apply S1'.
+      all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
+  Defined.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_ex_gen_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' (Hev_x: ev_x ∉ evs)
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+  Next Obligation.
+    solve_indif.
+    { simpl. case_match. contradiction. solve_indif. assumption. }
+    reflexivity.
+  Qed.
+
+  (* Warning: Ignoring canonical projection ... *)
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_svar_subst_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x'
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+  Next Obligation.
+    solve_indif. apply H. reflexivity.
+  Qed.
+
+  (* Warning: Ignoring canonical projection ... *)
+  Program Canonical Structure Private_in_contex_impl_defined_aux_1_uses_kt_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) x'
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_1 Γ x' HΓ) _.
+  Next Obligation.
+    solve_indif. apply H. reflexivity.
+  Qed.
+
+  Lemma Private_in_context_impl_defined_aux_4 Γ x' ϕ:
+    theory ⊆ Γ ->
+    well_formed ϕ ->
+    Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉ ->
+    Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉.
+  Proof.
+    intros HΓ wfϕ S3.
+      assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
+      {
+        toMyGoal.
+        { wf_auto2. }
+        mgIntro.
+        mgAdd (@A_or_notA Σ Γ ϕ wfϕ).
+        mgDestructOr 0.
+        - mgRight. mgExactn 0.
+        - mgLeft. mgIntro.
+          mgDestructOr 1.
+          + mgDestructOr 2.
+            * mgApply 2. mgExactn 1.
+            * mgApply 2. mgExactn 0.
+          + mgApply 0.
+            mgExactn 1.
+      }
+      
+      assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉)).
+      {
+        apply Framing_right. wf_auto2. apply Htmp1.
+      }
+      
+      eapply Modus_ponens.
+      4: apply Htmp2.
+      { wf_auto2. }
+      { wf_auto2. }
+      exact S3.
+  Defined.
     
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_ex_gen_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (evs : EVarSet) x' ϕ (wfϕ : well_formed ϕ)
+    := ProofProperty1 (@uses_ex_gen Σ evs) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif. assumption.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_svar_subst_S P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) (svs : SVarSet) x' ϕ (wfϕ : well_formed ϕ)
+    := ProofProperty1 (@uses_svar_subst Σ svs) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif. assumption.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_aux_4_uses_kt P {HP : IndifProp P}
+            Γ (HΓ : theory ⊆ Γ) x' ϕ (wfϕ : well_formed ϕ)
+    := ProofProperty1 (@uses_kt Σ) (@Private_in_context_impl_defined_aux_4 Γ x' ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif. assumption.
+  Qed.
+
   Lemma in_context_impl_defined Γ AC ϕ:
     theory ⊆ Γ ->
     well_formed ϕ ->
@@ -943,27 +1045,15 @@ Section ProofSystemTheorems.
     
     assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
     {
-      eapply cast_proof in S1'.
-      2: {
-        (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
-        replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
-        with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉).
-        2: { simpl. repeat case_match; auto; contradiction. }
-        reflexivity.
-      }
-      eapply Modus_ponens.
-      4: apply forall_variable_substitution.
-      3: apply S1'.
-      all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
+      apply Private_in_context_impl_defined_aux_1; assumption.
     }
     
     assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉).
     {
-      toMyGoal.
+      apply disj_left_intro_meta.
       { wf_auto2. }
-      mgLeft.
-      fromMyGoal. intros _ _.
-      apply S1''.
+      { wf_auto2. }
+      { exact S1''. }
     }
 
     assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉).
@@ -977,31 +1067,10 @@ Section ProofSystemTheorems.
 
     assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉).
     {
-      assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
-      {
-        toMyGoal.
-        { wf_auto2. }
-        mgIntro.
-        mgAdd (@A_or_notA Σ Γ ϕ Hwfϕ).
-        mgDestructOr 0.
-        - mgRight. mgExactn 0.
-        - mgLeft. mgIntro.
-          mgDestructOr 1.
-          + mgDestructOr 2.
-            * mgApply 2. mgExactn 1.
-            * mgApply 2. mgExactn 0.
-          + mgApply 0.
-            mgExactn 1.
-      }
-      
-      assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉)).
-      {
-        apply Framing_right. wf_auto2. apply Htmp1.
-      }
-      
-      eapply Modus_ponens.
-      4: apply Htmp2.
-      all: auto 10.
+      apply Private_in_context_impl_defined_aux_4.
+      { assumption. }
+      { assumption. }
+      { exact S3. }
     }
 
     assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
@@ -4234,6 +4303,15 @@ Proof.
     unfold phi_impl_defined_phi.
     repeat (try apply orb_false_intro; try split).
     - rewrite indifferent_to_cast_uses_ex_gen.
+      unfold in_context_impl_defined.
+      solve_indif.
+      { reflexivity. }
+      apply liftP_impl_P. solve_indif.
+      fold (@uses_ex_gen Σ (∅ ∪ (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ ∅) ∪ ∅ ∪ ∅ ∪ ∅
+        ∪ (∅ ∪ (free_evars ϕ₂ ∪ free_evars ϕ₃ ∪ ∅) ∪ ∅ ∪ ∅) ∪ ∅)).
+      simpl. solve_indif.
+      fold uses_ex_gen.
+      case_match.
     Search orb false.
     Search cast_proof.
   Search patt_imp patt_and
