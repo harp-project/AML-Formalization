@@ -229,9 +229,9 @@ Arguments ProofProperty3 [Σ] P [Γ ϕ ψ₁ ψ₂ ψ₃] pp3_proof%function_sco
 
 
 Ltac2 mutable solve_indif () := ltac1:(repeat (
-                        eapply pp0_proof_property
-                        || eapply pp1_proof_property
-                        || eapply pp2_proof_property)).
+                        simple eapply pp0_proof_property
+                        || simple eapply pp1_proof_property
+                        || simple eapply pp2_proof_property)).
 
 Ltac solve_indif := ltac2:(solve_indif ()).
 
@@ -353,7 +353,7 @@ Section FOL_helpers.
             Γ A (wfA : well_formed A)
     := ProofProperty0 P (P4i Γ wfA) _.
   Next Obligation.
-    intros. unfold P4m. solve_indif.
+    intros. unfold P4i. solve_indif.
   Qed.
 
 
@@ -441,7 +441,7 @@ Section FOL_helpers.
     P _ _ AimpBimpC = false ->
     P _ _ (@reorder_meta Γ A B C wfA wfB wfC AimpBimpC) = false.
   Proof.
-    intros H. solve_indif. assumption.
+    intros H. unfold reorder_meta. solve_indif. assumption.
   Qed.
 
   Program Canonical Structure reorder_meta_indifferent_S
@@ -554,6 +554,12 @@ Section FOL_helpers.
     unfold modus_ponens. solve_indif.
   Qed.
 
+  Canonical Structure modus_ponens_indifferent_S (P : proofbpred) {Pip : IndifProp P}
+          (Γ : Theory) (A B : Pattern)
+          (wfA : well_formed A)
+          (wfB : well_formed B)
+    := ProofProperty0 P (@modus_ponens Γ A B wfA wfB) (@modus_ponens_indifferent P Pip Γ A B wfA wfB).
+
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (A ---> !(!A)).
   Proof.
@@ -567,6 +573,14 @@ Section FOL_helpers.
 
   #[local] Hint Resolve not_not_intro : core.
 
+  Program Canonical Structure not_not_intro_indifferent_S (P : proofbpred) {Pip : IndifProp P}
+          (Γ : Theory) (A : Pattern)
+          (wfA : well_formed A)
+    := ProofProperty0 P (@not_not_intro Γ A wfA) _.
+  Next Obligation.
+    intros. unfold not_not_intro. unfold patt_not. solve_indif.
+  Qed.
+
   (* FIXME this has a very wrong name. Do we need it at all? *)
   Lemma deduction (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
@@ -578,6 +592,15 @@ Section FOL_helpers.
       Unshelve.
       all: auto.
   Defined.
+
+  Program Canonical Structure deduction_indifferent_S (P : proofbpred) {Pip : IndifProp P}
+          (Γ : Theory) (A B : Pattern)
+          (wfA : well_formed A)
+          (wfB : well_formed B)
+    := ProofProperty2 P (@deduction Γ A B wfA wfB) _.
+  Next Obligation.
+    intros. unfold deduction. solve_indif. assumption.
+  Qed.
 
   Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
@@ -627,7 +650,7 @@ Section FOL_helpers.
         (wfb : well_formed b = true):
     P _ _ (@P4 Γ a b wfa wfb) = false.
   Proof.
-    solve_indif.
+    unfold P4. solve_indif.
   Qed.
 
   Program Canonical Structure P4_indifferent_S
@@ -687,7 +710,7 @@ Section FOL_helpers.
           (Γ : Theory) (A B : Pattern)
           (wfA : well_formed A) (wfB : well_formed B)
     := ProofProperty0 P (@conj_intro Γ A B wfA wfB) _.
-  Next Obligation. intros. solve_indif. Qed.
+  Next Obligation. intros. unfold conj_intro. solve_indif. Qed.
 
 
   Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
@@ -712,7 +735,7 @@ Section FOL_helpers.
     P _ _ HA = false ->
     P _ _ HB = false ->
     P _ _ (@conj_intro_meta Γ A B wfA wfB HA HB) = false.
-  Proof. intros H1 H2. solve_indif; assumption. Qed.
+  Proof. intros H1 H2. unfold conj_intro_meta. solve_indif; assumption. Qed.
 
   Canonical Structure conj_intro_meta_indifferent_S
             (P : proofbpred) {Pip : IndifProp P}
@@ -784,7 +807,7 @@ Section FOL_helpers.
     P _ _ pf1 = false ->
     P _ _ pf2 = false ->
     P _ _ (@syllogism_4_meta Γ a b c d wfa wfb wfc wfd pf1 pf2) = false.
-  Proof. intros. solve_indif; assumption. Qed.
+  Proof. intros. unfold syllogism_4_meta. solve_indif; assumption. Qed.
 
   Canonical Structure syllogism_4_meta_indifferent_S
         P {Pip : IndifProp P} Γ a b c d
@@ -815,7 +838,12 @@ Section FOL_helpers.
   Lemma bot_elim_indifferent
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
     P _ _ (@bot_elim Γ a wfa) = false.
-  Proof. solve_indif. Qed.
+  Proof.
+    unfold bot_elim. solve_indif.
+    (* TODO extract sublemmas *)
+    - unfold P4. solve_indif.
+    - unfold P4. solve_indif.     
+  Qed.
 
   Canonical Structure bot_elim_indifferent_S
         P {Pip : IndifProp P} Γ a
@@ -836,7 +864,7 @@ Section FOL_helpers.
   Program Canonical Structure modus_ponens'_indifferent_S
             P {Pip : IndifProp P} Γ A B (wfA : well_formed A) (wfB : well_formed B)
     := ProofProperty0 P (@modus_ponens' Γ A B wfA wfB) _.
-  Next Obligation. intros. solve_indif. Qed.
+  Next Obligation. intros. unfold modus_ponens'. solve_indif. Qed.
 
   Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
@@ -856,7 +884,7 @@ Section FOL_helpers.
         (wfa : well_formed a = true)
         (wfb : well_formed b = true) :
     P _ _ (@disj_right_intro Γ a b wfa wfb) = false.
-  Proof. solve_indif. Qed.
+  Proof. unfold disj_right_intro. unfold patt_or. solve_indif. Qed.
 
   Canonical Structure disj_right_intro_indifferent_S
         P {Pip : IndifProp P} Γ a b
@@ -881,7 +909,7 @@ Section FOL_helpers.
         (wfa : well_formed a = true)
         (wfb : well_formed b = true) :
     P _ _ (@disj_left_intro Γ a b wfa wfb) = false.
-  Proof. solve_indif. Qed.
+  Proof. unfold disj_left_intro. unfold patt_or. solve_indif. Qed.
 
   Canonical Structure disj_left_intro_indifferent_S
         P {Pip : IndifProp P} Γ a b
@@ -908,7 +936,7 @@ Section FOL_helpers.
         (wfa : well_formed a = true)
         (wfb : well_formed b = true)
     := ProofProperty1 P (@disj_right_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold disj_right_intro_meta. solve_indif; assumption. Qed.
 
   Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -929,7 +957,7 @@ Section FOL_helpers.
         (wfa : well_formed a = true)
         (wfb : well_formed b = true)
     := ProofProperty1 P (@disj_left_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold disj_left_intro_meta. solve_indif; assumption. Qed.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ (!(!A) ---> A).
@@ -944,7 +972,7 @@ Section FOL_helpers.
   Lemma not_not_elim_indifferent
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
     P _ _ (@not_not_elim Γ a wfa) = false.
-  Proof. solve_indif. Qed.
+  Proof. unfold not_not_elim. unfold patt_not. solve_indif. Qed.
 
   Canonical Structure not_not_elim_indifferent_S
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
@@ -966,7 +994,7 @@ Section FOL_helpers.
   Program Canonical Structure not_not_elim_meta_indifferent_S
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
     := ProofProperty1 P (@not_not_elim_meta Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold not_not_elim_meta. solve_indif; assumption. Qed.
 
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
@@ -982,7 +1010,7 @@ Section FOL_helpers.
   Program Canonical Structure double_neg_elim_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty0 P (@double_neg_elim Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold double_neg_elim. solve_indif; assumption. Qed.
 
   Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> 
@@ -999,7 +1027,7 @@ Section FOL_helpers.
   Program Canonical Structure double_neg_elim_meta_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty1 P (@double_neg_elim_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold double_neg_elim_meta. solve_indif; assumption. Qed.
 
 
   Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
@@ -1022,7 +1050,7 @@ Section FOL_helpers.
   Program Canonical Structure P4_rev_meta_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty1 P (@P4_rev_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold P4_rev_meta. solve_indif; try assumption. Qed.
 
   Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -1042,7 +1070,7 @@ Section FOL_helpers.
   Program Canonical Structure P4_rev_meta'_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty1 P (@P4_rev_meta' Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold P4_rev_meta'. solve_indif; assumption. Qed.
 
 
   Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
@@ -1060,7 +1088,7 @@ Section FOL_helpers.
   Program Canonical Structure P4m_neg_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty0 P (@P4m_neg Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold P4m_neg. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
@@ -1080,7 +1108,7 @@ Section FOL_helpers.
   Program Canonical Structure not_not_impl_intro_meta_indifferent_S
         P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty1 P (@not_not_impl_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Next Obligation. intros. unfold not_not_impl_intro_meta. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B))).
