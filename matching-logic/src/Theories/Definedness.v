@@ -1204,7 +1204,8 @@ Section ProofSystemTheorems.
       2: { rewrite evar_quantify_subst_ctx;[assumption|]. reflexivity. }
 
       simpl in S8.
-      case_match; try contradiction.
+      eapply cast_proof in S8.
+      2: { unfold decide,decide_rel. rewrite evar_eqdec_refl. reflexivity. }
       eapply cast_proof in S8.
       2: { rewrite evar_quantify_fresh; [assumption|]. reflexivity. }
       apply S8.
@@ -1222,7 +1223,7 @@ Section ProofSystemTheorems.
           rewrite evar_quantify_subst_ctx;[assumption|].
           f_equal.
           simpl.
-          case_match; [|congruence].
+          unfold decide,decide_rel. rewrite evar_eqdec_refl.
           rewrite evar_quantify_fresh; [assumption|].
           reflexivity.
         }
@@ -1279,7 +1280,7 @@ Section ProofSystemTheorems.
         eapply cast_proof.
         {
           replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
-          2: { simpl. case_match;[reflexivity|congruence]. }
+          2: { simpl. unfold decide,decide_rel. rewrite evar_eqdec_refl. reflexivity. }
           reflexivity.
         }
         apply Ex_gen; auto.
@@ -1298,7 +1299,8 @@ Section ProofSystemTheorems.
         }
         mgClear 1. mgClear 0.
         fromMyGoal. intros _ _.
-        case_match;[|congruence].
+        eapply cast_proof.
+        { unfold decide,decide_rel. rewrite evar_eqdec_refl. reflexivity. }
 
         eapply cast_proof.
         {
@@ -1402,8 +1404,7 @@ Section ProofSystemTheorems.
       case_match.
       { contradiction.  }
       apply liftP_impl_P.
-      solve_indif. intros.
-      unfold decide, decide_rel. rewrite evar_eqdec_refl.
+      solve_indif.
       intros. unfold liftP. solve_indif.
       reflexivity.
     - unshelve (eapply Private_in_contex_impl_defined_uses_ex_gen_S).
@@ -1430,10 +1431,52 @@ Section ProofSystemTheorems.
             Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (svs : SVarSet)
             (*Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs*)
             (*Hevx : ev_x ∉ evs*)
-    := ProofProperty0 (@uses_svar_subst Σ svs) (@in_context_impl_defined₀ Γ AC ϕ HΓ wfϕ) _.
+    := ProofProperty0 (@uses_svar_subst Σ svs) (@in_context_impl_defined₁ Γ AC ϕ HΓ wfϕ) _.
   Next Obligation.
     solve_indif.
     - eapply Framing_uses_svar_subst_S.
+      simpl.
+      repeat apply orb_false_intro.
+      + apply liftP_impl_P. solve_indif. reflexivity.
+      + apply liftP_impl_P. solve_indif.
+        intros. unfold liftP.
+        solve_indif. reflexivity.
+      + reflexivity.
+    - solve_indif.
+      apply Private_in_contex_impl_defined_uses_svar_subst_S.
+    - reflexivity.
+    - cbn zeta.
+      solve_indif.
+      reflexivity.
+  Qed.
+
+  Program Canonical Structure Private_in_contex_impl_defined_uses_kt_S
+            Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ)
+    := ProofProperty0 (@uses_kt Σ) (@in_context_impl_defined₂ Γ AC ϕ HΓ wfϕ) _.
+  Next Obligation.
+    solve_indif.
+    - reflexivity.
+    - cbn zeta.
+      eapply cast_proof_mg_hyps_indifferent_S.
+      intros.
+      eapply myGoal_assert_generalized_indifferent_S.
+      solve_indif.
+      + intros.
+        eapply MyGoal_applyMeta_indifferent_S.
+        solve_indif.
+        unfold liftP.
+        solve_indif.
+      + intros.
+        eapply cast_proof_mg_hyps_indifferent_S.
+        intros.
+        eapply cast_proof_mg_hyps_indifferent_S.
+        solve_indif.
+        intros.
+        unfold liftP.
+        solve_indif.
+        reflexivity.
+    - reflexivity.
+  Qed.
 
   Lemma phi_impl_defined_phi Γ ϕ:
     theory ⊆ Γ ->
