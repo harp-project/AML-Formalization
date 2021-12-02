@@ -1387,7 +1387,7 @@ Section ProofSystemTheorems.
   Definition in_context_impl_defined₂ := in_context_impl_defined₁.
   Definition in_context_impl_defined := in_context_impl_defined₂.
 
-  Program Canonical Structure Private_in_contex_impl_defined_uses_ex_gen_S
+  Program Canonical Structure in_context_impl_defined_uses_ex_gen_S
             Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (evs : EVarSet)
             (Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs)
             (Hevx : ev_x ∉ evs)
@@ -1427,7 +1427,7 @@ Section ProofSystemTheorems.
   Qed.
 
 
-  Program Canonical Structure Private_in_contex_impl_defined_uses_svar_subst_S
+  Program Canonical Structure in_context_impl_defined_uses_svar_subst_S
             Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ) (svs : SVarSet)
             (*Hevs: evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC)) ∉ evs*)
             (*Hevx : ev_x ∉ evs*)
@@ -1450,7 +1450,7 @@ Section ProofSystemTheorems.
       reflexivity.
   Qed.
 
-  Program Canonical Structure Private_in_contex_impl_defined_uses_kt_S
+  Program Canonical Structure in_context_impl_defined_uses_kt_S
             Γ (HΓ : theory ⊆ Γ) AC ϕ (wfϕ : well_formed ϕ)
     := ProofProperty0 (@uses_kt Σ) (@in_context_impl_defined₂ Γ AC ϕ HΓ wfϕ) _.
   Next Obligation.
@@ -4496,17 +4496,6 @@ Proof.
     rewrite !orbF.
     unfold phi_impl_defined_phi.
     repeat (try apply orb_false_intro; try split).
-    - rewrite indifferent_to_cast_uses_ex_gen.
-      unfold in_context_impl_defined.
-      solve_indif.
-      { reflexivity. }
-      apply liftP_impl_P. solve_indif.
-      fold (@uses_ex_gen Σ (∅ ∪ (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ ∅) ∪ ∅ ∪ ∅ ∪ ∅
-        ∪ (∅ ∪ (free_evars ϕ₂ ∪ free_evars ϕ₃ ∪ ∅) ∪ ∅ ∪ ∅) ∪ ∅)).
-      simpl. solve_indif.
-      fold uses_ex_gen.
-      case_match.
-    Search orb false.
-    Search cast_proof.
-  Search patt_imp patt_and
+    - eapply cast_proof_indifferent_S.
+      eapply Private_in_context_impl_defined_uses_ex_gen_S.
 Defined.

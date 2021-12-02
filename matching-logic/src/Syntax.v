@@ -1212,7 +1212,7 @@ Section syntax.
 
 
   Lemma well_formed_bott:
-    well_formed patt_bott.
+    well_formed patt_bott = true.
   Proof.
     unfold well_formed. simpl.
     unfold well_formed_closed. simpl.
@@ -6321,7 +6321,7 @@ Section with_signature.
 End with_signature.
 
 Lemma wf_imp_wfc {Σ : Signature} ϕ:
-  well_formed ϕ -> well_formed_closed ϕ.
+  well_formed ϕ = true -> well_formed_closed ϕ = true.
 Proof.
   intros H. apply andb_prop in H. tauto.
 Qed.
