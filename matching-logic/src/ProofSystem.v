@@ -168,6 +168,207 @@ Proof.
   erewrite <- free_svar_subst_update_exchange in e. exact e. assumption. unfold well_formed in H. assumption.
 Qed.
 
+
+  Inductive ML_proof_from_theory (Γ : Theory) : Set :=
+
+  (* Hypothesis *)
+  | hypothesis (axiom : Pattern) :
+      well_formed axiom ->
+      (axiom ∈ Γ) -> ML_proof_from_theory Γ
+                                              
+  (* FOL reasoning *)
+  (* Propositional tautology *)
+  | P1 (phi psi : Pattern) :
+      well_formed phi -> well_formed psi ->  ML_proof_from_theory Γ
+(*      theory ⊢ (phi ---> (psi ---> phi))*)
+  | P2 (phi psi xi : Pattern) :
+      well_formed phi -> well_formed psi -> well_formed xi ->  ML_proof_from_theory Γ
+(*      theory ⊢ ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi))) *)
+  | P3 (phi : Pattern) :
+      well_formed phi -> ML_proof_from_theory Γ
+(*      theory ⊢ (((phi ---> Bot) ---> Bot) ---> phi) *)
+
+  (* Modus ponens *)
+  | Modus_ponens (phi1 phi2 : Pattern) :
+      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
+      ML_proof_from_theory Γ ->  ML_proof_from_theory Γ ->  ML_proof_from_theory Γ
+(*
+      theory ⊢ phi1 ->
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ phi2
+*)
+
+  (* Existential quantifier *)
+  | Ex_quan (phi : Pattern) (y : evar) :
+      well_formed (patt_exists phi) ->  ML_proof_from_theory Γ
+(*      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi)) *)
+
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
+      well_formed phi1 -> well_formed phi2 ->
+      ML_proof_from_theory Γ ->
+      (* theory ⊢ (phi1 ---> phi2) -> *)
+      x ∉ (free_evars phi2) ->  ML_proof_from_theory Γ
+      (* theory ⊢ (exists_quantify x phi1 ---> phi2) *)
+
+  (* Frame reasoning *)
+  (* Propagation bottom *)
+  | Prop_bott_left (phi : Pattern) :
+      well_formed phi -> ML_proof_from_theory Γ
+(*      theory ⊢ (patt_bott $ phi ---> patt_bott)*)
+
+  | Prop_bott_right (phi : Pattern) :
+      well_formed phi ->  ML_proof_from_theory Γ
+(*      theory ⊢ (phi $ patt_bott ---> patt_bott) *)
+
+  (* Propagation disjunction *)
+  | Prop_disj_left (phi1 phi2 psi : Pattern) :
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->  ML_proof_from_theory Γ
+(*      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi))) *)
+
+  | Prop_disj_right (phi1 phi2 psi : Pattern) :
+      well_formed phi1 -> well_formed phi2 -> well_formed psi ->  ML_proof_from_theory Γ
+(*      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2))) *)
+
+  (* Propagation exist *)
+  | Prop_ex_left (phi psi : Pattern) :
+      well_formed (ex , phi) -> well_formed psi ->  ML_proof_from_theory Γ
+(*      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi)) *)
+
+  | Prop_ex_right (phi psi : Pattern) :
+      well_formed (ex , phi) -> well_formed psi ->  ML_proof_from_theory Γ
+(*      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi)) *)
+
+  (* Framing *)
+  | Framing_left (phi1 phi2 psi : Pattern) :
+      well_formed psi ->
+      ML_proof_from_theory Γ ->  ML_proof_from_theory Γ
+(*
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi)) *)
+
+  | Framing_right (phi1 phi2 psi : Pattern) :
+      well_formed psi ->  ML_proof_from_theory Γ -> ML_proof_from_theory Γ
+(*
+      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢ ((psi $ phi1) ---> (psi $ phi2)) *)
+
+  (* Fixpoint reasoning *)
+  (* Set Variable Substitution *)
+  | Svar_subst (phi psi : Pattern) (X : svar) :
+      well_formed phi -> well_formed psi ->  ML_proof_from_theory Γ -> ML_proof_from_theory Γ
+(*
+      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X) *)
+
+  (* Pre-Fixpoint *)
+  | Pre_fixp (phi : Pattern) :
+      well_formed (patt_mu phi) ->  ML_proof_from_theory Γ
+(*
+      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi)) *)
+
+  (* Knaster-Tarski *)
+  | Knaster_tarski (phi psi : Pattern) :
+      well_formed (patt_mu phi) ->  ML_proof_from_theory Γ ->  ML_proof_from_theory Γ
+(*
+      theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
+      theory ⊢ ((@patt_mu signature phi) ---> psi)
+*)
+  (* Technical rules *)
+  (* Existence *)
+  | Existence :
+    ML_proof_from_theory Γ
+(* theory ⊢ (ex , patt_bound_evar 0) *)
+
+  (* Singleton *)
+  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
+      well_formed phi ->
+      ML_proof_from_theory Γ (*
+      theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
+                   (subst_ctx C2 (patt_free_evar x and (! phi))))) *)
+  .
+
+  Print ML_proof_from_theory.
+  Fixpoint Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern :=
+    match pf with
+    | hypothesis _ axiom _ _ => Some axiom
+
+    | P1 _ phi psi _ _
+      => Some (phi ---> (psi ---> phi))
+
+    | P2 _ phi psi xi _ _ _
+      => Some ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
+
+    | P3 _ phi _
+      => Some (((phi ---> Bot) ---> Bot) ---> phi)
+
+    | Modus_ponens _ phi1 phi2 _ _ pf1 pf2
+      => if (decide ((Proved_pattern Γ pf1 = Some phi1) /\ (Proved_pattern Γ pf2 = Some (phi1 ---> phi2)))) is left _
+         then (Some phi2)
+         else None
+
+    | Ex_quan _ phi y _
+      => Some (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+
+    | Ex_gen _ phi1 phi2 x _ _ pf _
+      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+         then Some (exists_quantify x phi1 ---> phi2)
+         else None
+
+    | Prop_bott_left _ phi _
+      => Some (patt_bott $ phi ---> patt_bott)
+
+    | Prop_bott_right _ phi _
+      => Some (phi $ patt_bott ---> patt_bott)
+
+    | Prop_disj_left _ phi1 phi2 psi _ _ _
+      => Some (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+
+    | Prop_disj_right _ phi1 phi2 psi _ _ _ 
+      => Some ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+
+    | Prop_ex_left _ phi psi _ _
+      => Some (((ex , phi) $ psi) ---> (ex , phi $ psi))
+
+    | Prop_ex_right _ phi psi _ _
+      => Some ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+
+    | Framing_left _ phi1 phi2 psi _ pf
+      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+         then Some ((phi1 $ psi) ---> (phi2 $ psi))
+         else None
+
+    | Framing_right _ phi1 phi2 psi _ pf
+      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+         then Some ((psi $ phi1) ---> (psi $ phi2))
+         else None
+
+    | Svar_subst _ phi psi X _ _ pf
+      => if (decide (Proved_pattern Γ pf = Some phi)) is left _
+         then Some (free_svar_subst phi psi X)
+         else None
+
+    | Pre_fixp _ phi _
+      => Some (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
+
+    | Knaster_tarski _ phi psi _ pf
+      => if (decide (Proved_pattern Γ pf = Some ((instantiate (patt_mu phi) psi) ---> psi))) is left _
+         then Some ((@patt_mu signature phi) ---> psi)
+         else None
+
+    | Existence _
+      => Some (ex , patt_bound_evar 0)
+
+    | Singleton_ctx _ C1 C2 phi x _
+      => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
+                    and (subst_ctx C2 (patt_free_evar x and (! phi)))))
+    end.
+
+  Definition proof_of (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ) :=
+    Proved_pattern Γ pf = Some ϕ.
+
+  Definition valid_proof (Γ : Theory) (pf : ML_proof_from_theory Γ)
+    := exists ϕ, proof_of Γ ϕ pf.
+  
   
   (* Proof system for AML ref. snapshot: Section 3 *)
 
