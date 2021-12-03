@@ -2273,7 +2273,6 @@ Structure tacticProperty1_1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
 Arguments TacticProperty1_1 [Σ] P [Γ] [l₂ l₃]%list_scope [p₁ g₂ g₃] tp1_1_tactic%function_scope _%function_scope.
 
 
-
 Ltac2 Set solve_indif :=
   (fun () =>
      ltac1:(
@@ -2406,10 +2405,38 @@ Proof.
   solve_indif.
 Qed.
 
+Structure TaggedPatternList {Σ : Signature} := TagPatternList { untagPatternList : list Pattern; }.
+
+(*
+Definition reshape_nil {Σ : Signature} p := TagPattern p.
+Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.*)
+
+Structure ListMiddleS {Σ : Signature} (g : Pattern) (l₁ l₂ : list Pattern) :=
+  ListMiddle {
+      lm_full_list : TaggedPatternList ;
+      lm_pf : (untagPatternList lm_full_list) = l₁ ++ g::l₂ ;
+    }.
+
+(*
+Check @TacticProperty0.
+Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
+          Γ l₁ l₂ g
+        {lms : ListMiddleS g l₁ l₂}
+  := @TacticProperty0 Σ P Γ (untagPatternList (lm_full_list lms)) g (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
+Next Obligation. Admitted. Next Obligation. Admitted. Next Obligation. Admitted.
+Print MyGoal_exactn_indifferent_S.
+Next Obligation. intros. simpl in *. rewrite lm_pf. reflexivity. Qed.
+Next Obligation. intros. simpl in *. rewrite lm_pf. reflexivity. Qed.
+Next Obligation. intros. simpl in *. Admitted.
+Print MyGoal_exactn_indifferent_S.
+ rewrite -lm_pf. apply MyGoal_exactn_indifferent. exact Pip. Qed.*)
+*)
 Program Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
           Γ l₁ l₂ g
-  := TacticProperty0 P (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
+  := @TacticProperty0 Σ P Γ (l₁ ++ g::l₂) g (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
 Next Obligation. intros. simpl. apply MyGoal_exactn_indifferent. exact Pip. Qed.
+
+
 
 Tactic Notation "mgExactn" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
@@ -2429,7 +2456,7 @@ Proof.
   mgExactn 1.
 Defined.
 
-Print MyGoal_intro_indifferent_S.
+Print MyGoal_exactn_indifferent_S.
 Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : IndifCast P} Γ a b c
   (wfa : well_formed a = true)
   (wfb : well_formed b = true)
@@ -2438,8 +2465,9 @@ Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : 
 Proof.
   unfold ex_mgExactn. simpl.
   apply liftP_impl_P.
-  solve_indif.
-  simple eapply tp0_tactic_property.
+  solve_indif. intros. Set Printing Implicit. Print MyGoal_exactn_indifferent_S.
+  (*Set Debug "tactic-unification".*)
+  (*simple*) eapply tp0_tactic_property.
 Qed.
 
 
@@ -2488,7 +2516,7 @@ Section FOL_helpers.
             (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
             (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := ProofProperty0 P (@prf_contraction Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₂) _.
-  Next Obligation. solve_indif. Qed.
+  Next Obligation. unfold prf_contraction. solve_indif. Qed.
 
   Lemma prf_weaken_conclusion_under_implication Γ a b c:
     well_formed a ->
@@ -2506,17 +2534,18 @@ Section FOL_helpers.
     assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c))) by auto.
     assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
                    = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
-    rewrite Hiter. 
+    eapply cast_proof.
+    { rewrite Hiter. reflexivity. }
     eapply prf_weaken_conclusion_iter_meta_meta.
     4: apply H4. all: auto 10.
   Defined.
 
   Program Canonical Structure prf_weaken_conclusion_under_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (ϕ₁ ϕ₂ ϕ₃ : Pattern)
             (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
     := ProofProperty0 P (@prf_weaken_conclusion_under_implication Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif. Qed.
+  Next Obligation. unfold prf_weaken_conclusion_under_implication. solve_indif. simpl. solve_indif. Qed.
 
   Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
     well_formed a ->
@@ -2532,11 +2561,11 @@ Section FOL_helpers.
   Defined.
 
   Program Canonical Structure prf_weaken_conclusion_under_implication_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (ϕ₁ ϕ₂ ϕ₃ : Pattern)
             (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
     := ProofProperty1 P (@prf_weaken_conclusion_under_implication_meta Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_weaken_conclusion_under_implication_meta. solve_indif; assumption. Qed.
 
 
   Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c:
@@ -2554,11 +2583,11 @@ Section FOL_helpers.
   Defined.
 
   Program Canonical Structure prf_weaken_conclusion_under_implication_meta_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (ϕ₁ ϕ₂ ϕ₃ : Pattern)
             (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
     := ProofProperty2 P (@prf_weaken_conclusion_under_implication_meta_meta Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_weaken_conclusion_under_implication_meta_meta. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
     wf l ->
@@ -2568,20 +2597,22 @@ Section FOL_helpers.
   Proof.
     intros wfl wfg wfg'.
     pose proof (H1 := @prf_weaken_conclusion_iter Σ Γ l g g' wfl wfg wfg').
-    remember ((g ---> g')) as a.
-    remember (foldr patt_imp g l) as b.
-    remember (foldr patt_imp g' l) as c.
-    pose proof (H2 := @prf_weaken_conclusion_under_implication Γ a b c ltac:(subst;auto) ltac:(subst;auto) ltac:(subst; auto)).
-    apply reorder_meta in H2. 2,3,4: subst;auto.
-    eapply Modus_ponens. 4: apply H2. all: subst;auto 10.
+
+    pose proof (H2 := @prf_weaken_conclusion_under_implication
+                        Γ
+                        (g ---> g')
+                        (foldr patt_imp g l)
+                        (foldr patt_imp g' l) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    apply reorder_meta in H2. 2,3,4: wf_auto2.
+    eapply Modus_ponens. 4: apply H2. 1,2: wf_auto2. apply H1.
   Defined.
 
   Program Canonical Structure prf_weaken_conclusion_iter_under_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
             (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := ProofProperty0 P (@prf_weaken_conclusion_iter_under_implication Γ l ϕ₁ ϕ₂ wfl wfϕ₁ wfϕ₂) _.
-  Next Obligation. intros. solve_indif. Defined.
+  Next Obligation. intros. unfold prf_weaken_conclusion_iter_under_implication. solve_indif. Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g':
     wf l ->
@@ -2596,11 +2627,12 @@ Section FOL_helpers.
   Defined.
 
   Program Canonical Structure prf_weaken_conclusion_iter_under_implication_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
+            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
             (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
             (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := ProofProperty1 P (@prf_weaken_conclusion_iter_under_implication_meta Γ l ϕ₁ ϕ₂ wfl wfϕ₁ wfϕ₂) _.
-  Next Obligation. intros. solve_indif; assumption. Defined.
+  Next Obligation. intros. unfold prf_weaken_conclusion_iter_under_implication_meta.
+                   solve_indif; assumption. Defined.
   
   Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g':
     @mkMyGoal Σ Γ ((g ---> g') :: l) g ->
@@ -2620,9 +2652,9 @@ Section FOL_helpers.
             (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := TacticProperty1 P (@MyGoal_weakenConclusion_under_first_implication Γ l ϕ₁ ϕ₂) _.
   Next Obligation.
-    intros. simpl. 
+    intros. unfold MyGoal_weakenConclusion_under_first_implication. simpl. 
     unfold MyGoal_weakenConclusion_under_first_implication.
-    case_match. unfold liftP. solve_indif. apply H.
+    case_match. unfold liftP. simpl. solve_indif. apply H.
   Qed.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
@@ -2646,8 +2678,8 @@ Section FOL_helpers.
             (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := ProofProperty0 P (@prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
   Next Obligation.
-    intros.
-    induction l₁.
+    intros. unfold prf_weaken_conclusion_iter_under_implication_iter.
+    induction l₁; simpl.
     - solve_indif.
     - simpl. case_match. solve_indif. apply IHl₁.
   Qed.
@@ -2671,7 +2703,7 @@ Section FOL_helpers.
             (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
             (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
     := ProofProperty1 P (@prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_weaken_conclusion_iter_under_implication_iter_meta. solve_indif; assumption. Qed.
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
     @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
@@ -2785,7 +2817,9 @@ Section FOL_helpers.
             (wfr : well_formed r)
             (wfs : well_formed s)
     := ProofProperty0 P (@Constructive_dilemma Γ p q r s wfp wfq wfr wfs) _.
-  Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
+  Next Obligation. intros. unfold Constructive_dilemma. apply liftP_impl_P. simpl. solve_indif.
+  intros. simpl. solve_indif. eapply tp1_tactic_property. intros. solve_indif.
+  Qed.
 
   Lemma prf_add_assumption Γ a b :
     well_formed a ->
