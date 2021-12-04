@@ -1236,3 +1236,62 @@ Proof.
   - apply Existence.
   - apply Singleton_ctx; assumption.
 Defined.
+
+Lemma proof_to_weak_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
+      : {pf : ML_proof_from_theory Γ & Proved_pattern Γ pf = Some ϕ}.
+Proof.
+  induction pf.
+  - unshelve(eapply (existT (mlp_hypothesis Γ axiom i e) _)).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_P1 Γ phi psi i i0))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_P2 Γ phi psi xi ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_P3 Γ phi ltac:(assumption)))).
+    reflexivity.
+  - destruct IHpf1 as [IHpf1 IHe1].
+    destruct IHpf2 as [IHpf2 IHe2].
+    unshelve (eapply (existT (mlp_Modus_ponens Γ phi1 phi2 ltac:(assumption) ltac:(assumption) IHpf1 IHpf2))).
+    simpl. rewrite IHe1. rewrite IHe2.
+    case_match;[reflexivity|].
+    exfalso. apply n. split;reflexivity.
+  - unshelve (eapply (existT (mlp_Ex_quan Γ phi y ltac:(assumption)))).
+    reflexivity.
+  - destruct IHpf as [IHpf IHe].
+    unshelve (eapply (existT (mlp_Ex_gen Γ phi1 phi2 x
+                                         ltac:(assumption) ltac:(assumption) IHpf ltac:(assumption)))).
+    simpl.
+    case_match;[reflexivity|contradiction].
+  - unshelve (eapply (existT (mlp_Prop_bott_left Γ phi ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Prop_bott_right Γ phi ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Prop_disj_left Γ phi1 phi2 psi
+                                                 ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Prop_disj_right Γ phi1 phi2 psi
+                                                 ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Prop_ex_left Γ phi psi ltac:(assumption) ltac:(assumption)))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Prop_ex_right Γ phi psi ltac:(assumption) ltac:(assumption)))).
+    reflexivity.
+  - destruct IHpf as [IHpf IHe].
+    unshelve (eapply (existT (mlp_Framing_left Γ phi1 phi2 psi ltac:(assumption) IHpf))).
+    simpl. case_match;[reflexivity|contradiction].
+  - destruct IHpf as [IHpf IHe].
+    unshelve (eapply (existT (mlp_Framing_right Γ phi1 phi2 psi ltac:(assumption) IHpf))).
+    simpl. case_match;[reflexivity|contradiction].
+  - destruct IHpf as [IHpf IHe].
+    unshelve (eapply (existT (mlp_Svar_subst Γ phi psi X ltac:(assumption) ltac:(assumption) IHpf))).
+    simpl. case_match; [reflexivity|contradiction].
+  - unshelve (eapply (existT (mlp_Pre_fixp Γ phi ltac:(assumption)))).
+    reflexivity.
+  - destruct IHpf as [IHpf IHe].
+    unshelve (eapply (existT (mlp_Knaster_tarski Γ phi psi ltac:(assumption) IHpf))).
+    simpl. case_match;[reflexivity|contradiction].
+  - unshelve (eapply (existT (mlp_Existence Γ))).
+    reflexivity.
+  - unshelve (eapply (existT (mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption)))).
+    reflexivity.
+Defined.
