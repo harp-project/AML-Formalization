@@ -1746,7 +1746,7 @@ Proof.
     reflexivity.
   - reflexivity.
   - reflexivity.
-Qed.
+Defined.
 
 Lemma weak_proof_to_proof_to_weak_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
       (pf : ML_proof_from_theory Γ) (pat : Proved_pattern' Γ pf = ϕ) (wf : ML_proof_from_theory_wf Γ pf):
@@ -1761,274 +1761,39 @@ Proof.
   - rewrite IHpf. reflexivity.
   - rewrite IHpf. reflexivity.
   - rewrite IHpf. reflexivity.
-Qed.
-(*
-Lemma proof_to_weak_proof__data__weak_proof_to_proof'
-      {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (epf : Proved_pattern Γ pf = Some ϕ):
-  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf epf) = pf.
-Proof.
-  simpl.
-  funelim (Proved_pattern Γ pf); simpl in *.
-  - cbn. pose proof (epf' := epf).
-    simp Proved_pattern in epf'. inversion epf'; subst.
-    move: erefl.
-    pose proof (epf'' := epf).
-    dependent elimination epf.
-    cbv.
-
-
-Unset Equations With UIP.
-*)
-
-Lemma proof_to_weak_proof__data__weak_proof_to_proof'
-      {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (epf : Proved_pattern_old Γ pf = Some ϕ):
-  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof_old' Γ ϕ pf epf) = pf.
-Proof.
-  move: ϕ epf.
-  induction pf; intros ϕ epf; simpl in *.
-  - pose proof (epf' := epf).
-    simpl in epf'.
-    inversion epf'. subst.
-    cbn. dependent elimination epf.
-    simpl. reflexivity.
-  - pose proof (epf' := epf).
-    simpl in epf'.
-    inversion epf'; subst.
-    cbn. dependent elimination epf. simpl.
-    reflexivity.
-  - pose proof (epf' := epf).
-    inversion epf'; subst.
-    cbn. dependent elimination epf. simpl.
-    reflexivity.
-  - pose proof (epf' := epf).
-    inversion epf'; subst.
-    cbn. dependent elimination epf. simpl.
-    reflexivity.
-  - pose proof (epf' := epf).
-    destruct (bool_decide (Proved_pattern_old Γ pf1 = Some phi1)) eqn:Heq1 in epf'.
-    2: { inversion epf'. }
-    destruct (bool_decide (Proved_pattern_old Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq2 in epf'.
-    2: { inversion epf'. }
-    inversion epf'. subst. simpl.
-    do 3 (move: erefl).
-    apply bool_decide_eq_true in Heq1.
-    apply bool_decide_eq_true in Heq2.
-    specialize (IHpf1 _ Heq1).
-    specialize (IHpf2 _ Heq2).
-
-    move: epf. Set Printing All
-    rewrite -Heq1.
-    
-    dependent elimination epf.
-    unfold weak_proof_to_proof'. simpl. cbn.
-    unfold Proved_pattern_elim. unfold Proved_pattern_graph_rect. unfold Proved_pattern_graph_mut.
-    cbv.
-    
-    dependent elimination epf.
-    cbn.
-    dependent elimination epf.
-    cbv.
-    inversion epf'; subst
-    cbn. dependent elimination epf. simpl.
-    reflexivity.
-    match type of epf with
-    | (?x = _)
-      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - inversion epf; subst.
-    match type of epf with
-    | (?x = _)
-      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - inversion epf; subst.
-    match type of epf with
-    | (?x = _)
-      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - pose proof (epf' := epf).
-    destruct (bool_decide (Proved_pattern Γ pf1 = Some phi1)) eqn:Heq1 in |-.
-    2: { rewrite Heq1 in epf'. inversion epf'. }
-    rewrite Heq1 in epf'.
-    destruct (bool_decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq2 in |-.
-    2: { rewrite Heq2 in epf'. inversion epf'. }
-    rewrite Heq2 in epf'.
-    inversion epf'. subst. clear epf'.
-    move: epf.
-    move: (erefl (bool_decide (Proved_pattern Γ pf1 = Some phi1))).
-    Set Printing All.
-    rewrite {1 3 4 5 6 7 8 9} Heq1.
-    rewrite epf.
-(*
-    destruct (decide (Proved_pattern Γ pf1 = Some phi1)).
-    2: { inversion epf. }
-    pose proof (epf' := epf).
-    destruct (decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) in epf'.
-    2: { inversion epf'. }
-    move: epf.
-    inversion epf' as [[Hphi2]].
-    subst phi2. clear epf'.
-    repeat (move: (erefl _)).
-    (*rewrite e0.*)
-    Set Printing All.
-    rewrite {1 2 3 4 5 6 15 16 17 18 19 20}e0.
-*)
-    (*
-    pose proof (epf' := epf). 
-    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq
-      in |-.
-    2: { rewrite Heq in epf'. inversion epf'. }
-    rewrite Heq in epf'. inversion epf'. subst.
-    destruct a as [H1 H2].
-    repeat (move: (erefl _)).
-    (*
-    Set Printing Implicit.
-    rewrite {1 4 5 6 9}Heq.
-
-    replace epf with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
-    reflexivity.
-    *)
-    *)
-    admit.
-  - admit.
-  - case_match.
-  
-
-
-Lemma proof_to_weak_proof__proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
-      : Proved_pattern Γ (proof_to_weak_proof__data Γ ϕ pf) = Some ϕ.
-Proof.
-  induction pf; simpl; try reflexivity; case_match; destruct_and?; try contradiction; try reflexivity.
-  exfalso. apply n. split; auto.
 Defined.
 
-Lemma proof_to_weak_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
-      : {pf : ML_proof_from_theory Γ & Proved_pattern Γ pf = Some ϕ}.
+Lemma proof_to_weak_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
+  : {pf' : ML_proof_from_theory Γ & Proved_pattern' Γ pf' = ϕ & ML_proof_from_theory_wf Γ pf' }.
 Proof.
-  apply (existT (proof_to_weak_proof__data Γ ϕ pf)).
-  apply proof_to_weak_proof__proof.
+  eapply (existT2 _ _ (proof_to_weak_proof__data Γ ϕ pf)).
+  { apply proof_to_weak_proof__pattern. }
+  { apply proof_to_weak_proof__wf. }
+Defined.
+
+Lemma weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
+      (pf : {pf' : ML_proof_from_theory Γ & Proved_pattern' Γ pf' = ϕ & ML_proof_from_theory_wf Γ pf' })
+  : ML_proof_system Γ ϕ.
+Proof.
+  destruct pf.
+  eapply weak_proof_to_proof'; eassumption.
 Defined.
 
 Instance proof_to_weak_proof__weak_proof_to_proof__cancel
-         {Σ : Signature} (Γ : Theory) (ϕ : Pattern)
+         {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
   : Cancel eq (proof_to_weak_proof Γ ϕ) (weak_proof_to_proof Γ ϕ).
 Proof.
   unfold Cancel.
-  intros [pf He].
-  Check sigT_eta.
-  rewrite (sigT_eta (proof_to_weak_proof Γ ϕ (weak_proof_to_proof Γ ϕ (existT pf He)))).
-
-  cut ((projT1
-       (proof_to_weak_proof Γ ϕ (weak_proof_to_proof Γ ϕ (existT pf He)))) = pf).
-  {
-    intros H.
-    move: (projT2 _).
-    rewrite H.
-    intros Heq.
-    apply f_equal.
-    apply UIP_dec.
-    intros x' y'; apply option_eq_dec.
-  }
+  intros x. destruct x.
   simpl.
-
-  move: ϕ He.
-  induction pf; intros ϕ He; simpl in *.
-  - inversion He. subst axiom.
-    replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
-    reflexivity.
-  - inversion He; subst.
-    match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - inversion He; subst.
-    match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - inversion He; subst.
-    match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - 
-    pose proof (He' := He). 
-    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq in |-.
-    2: { rewrite Heq in He'. inversion He'. }
-    rewrite Heq in He'. inversion He'. subst.
-    destruct a as [H1 H2].
-    repeat (move: (erefl _)).
-    
-
-
-  move: ϕ He.
-  induction pf; simpl; intros ϕ He.
-  1-4: admit.
-  - 
-  - replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
- 
-
-
-  apply f_equal.
-  Search eq existT.
-
-  move: ϕ He.
-  induction pf; intros ϕ He; simpl in *; inversion He; subst; simpl.
-  - replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - match type of He with
-    | (?x = _)
-      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
-    end.
-    reflexivity.
-  - match type of He with
-    | ( (match ?b with _ => _ end) = _) => destruct b eqn:Heq in |-
-    end.
-    repeat (move: (erefl _)).
-    
-    Set Printing Implicit.
-
-    match type of Heq with (?L = _) => remember L in |- end.
-    rewrite {1 2 4 5 6 7}Heq.
-
-
- rewrite Heq.   destruct_and?.
-    specialize (IHpf1 _ H).
-    specialize (IHpf2 _ H1).
-    
-    repeat (move: (erefl _)).
-    intros e1 e2. rewrite e1.
-    rewrite {1}H.
+  (*rewrite proof_to_weak_proof_to_proof.*)
+  unfold proof_to_weak_proof.
+  Search eq existT2.
+  apply eq_existT2_uncurried; simpl.
+  unshelve(eexists).
+  apply weak_proof_to_proof_to_weak_proof.
+  - unfold eq_rect.
+    apply UIP_dec. intros x0 y0. apply Pattern_eqdec.
+  - unfold eq_rect. (* TODO: UIP_dec and decidable equality on weak proofs *)
+  Set Printing All.
+  apply weak_proof_to_proof_to_weak_proof.
