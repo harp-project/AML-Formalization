@@ -1281,7 +1281,7 @@ End Notations.
 
 Import Notations.
 
-Lemma instantiate_named_axiom {Σ : Signature} (NA : NamedAxioms) (name : (NAName NA)) :
+Lemma instantiate_named_axiom {Σ : Syntax.Signature} (NA : NamedAxioms) (name : (NAName NA)) :
   (theory_of_NamedAxioms NA) ⊢ (@NAAxiom Σ NA name).
 Proof.
   apply hypothesis.
@@ -1296,34 +1296,31 @@ Defined.
 Print proof_of.
 Check proof_of. Check ML_proof_system.
 
-Lemma weak_proof_to_proof' {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
       (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
 Proof.
   move: ϕ pateq.
-  induction pf; intros ϕ pateq;
-    simpl in *; (repeat case_match); destruct_and?; inversion pateq; clear pateq; try subst.
+  eapply (Proved_pattern_elim); clear; intros; inversion pateq; clear pateq; try subst.
   - apply hypothesis; assumption.
   - apply P1; assumption.
   - apply P2; assumption.
   - apply P3; assumption.
-  - apply bool_decide_eq_true in Heqb.
-    apply bool_decide_eq_true in Heqb0.
-    eauto using Modus_ponens with nocore.
   - apply Ex_quan; assumption.
-  - apply Ex_gen; try assumption. auto with nocore.
   - apply Prop_bott_left; assumption.
   - apply Prop_bott_right; assumption.
   - apply Prop_disj_left; assumption.
   - apply Prop_disj_right; assumption.
   - apply Prop_ex_left; assumption.
   - apply Prop_ex_right; assumption.
-  - apply Framing_left; try assumption. auto with nocore.
-  - apply Framing_right; try assumption. auto with nocore.
-  - apply Svar_subst; try assumption. auto with nocore.
   - apply Pre_fixp; assumption.
-  - apply Knaster_tarski; try assumption. auto with nocore.
   - apply Existence.
   - apply Singleton_ctx; assumption.
+  - eauto using Modus_ponens with nocore.
+  - eauto using Ex_gen with nocore.
+  - eauto using Framing_left with nocore.
+  - eauto using Framing_right with nocore.
+  - eauto using Svar_subst with nocore.
+  - eauto using Knaster_tarski with nocore.
 Defined.
 
 Lemma weak_proof_to_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern)
