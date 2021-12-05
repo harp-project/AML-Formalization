@@ -288,167 +288,69 @@ Qed.
       theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
                    (subst_ctx C2 (patt_free_evar x and (! phi))))) *)
   .
-(*
-  Fixpoint Proved_pattern_old (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern :=
-    match pf with
-    | mlp_hypothesis _ axiom _ _ => Some axiom
 
-    | mlp_P1 _ phi psi _ _
-      => Some (phi ---> (psi ---> phi))
+  Instance ML_proof_from_theory_eqdec (Γ : Theory) : EqDecision (ML_proof_from_theory Γ).
+  Proof.
+    unfold EqDecision. intros pf1 pf2. unfold Decision.
 
-    | mlp_P2 _ phi psi xi _ _ _
-      => Some ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
+    move: pf2.
+    induction pf1; intros pf2; destruct pf2; auto.
 
-    | mlp_P3 _ phi _
-      => Some (((phi ---> Bot) ---> Bot) ---> phi)
-
-    | mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2
-      => if (bool_decide (Proved_pattern_old Γ pf1 = Some phi1)) is true
-         then
-           if (bool_decide (Proved_pattern_old Γ pf2 = Some (phi1 ---> phi2))) is true
-           then (Some phi2)
-           else None
-         else None
-
-    | mlp_Ex_quan _ phi y _
-      => Some (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
-
-    | mlp_Ex_gen _ phi1 phi2 x _ _ pf _
-      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
-         then Some (exists_quantify x phi1 ---> phi2)
-         else None
-
-    | mlp_Prop_bott_left _ phi _
-      => Some (patt_bott $ phi ---> patt_bott)
-
-    | mlp_Prop_bott_right _ phi _
-      => Some (phi $ patt_bott ---> patt_bott)
-
-    | mlp_Prop_disj_left _ phi1 phi2 psi _ _ _
-      => Some (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
-
-    | mlp_Prop_disj_right _ phi1 phi2 psi _ _ _ 
-      => Some ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
-
-    | mlp_Prop_ex_left _ phi psi _ _
-      => Some (((ex , phi) $ psi) ---> (ex , phi $ psi))
-
-    | mlp_Prop_ex_right _ phi psi _ _
-      => Some ((psi $ (ex , phi)) ---> (ex , psi $ phi))
-
-    | mlp_Framing_left _ phi1 phi2 psi _ pf
-      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
-         then Some ((phi1 $ psi) ---> (phi2 $ psi))
-         else None
-
-    | mlp_Framing_right _ phi1 phi2 psi _ pf
-      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
-         then Some ((psi $ phi1) ---> (psi $ phi2))
-         else None
-
-    | mlp_Svar_subst _ phi psi X _ _ pf
-      => if (decide (Proved_pattern_old Γ pf = Some phi)) is left _
-         then Some (free_svar_subst phi psi X)
-         else None
-
-    | mlp_Pre_fixp _ phi _
-      => Some (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
-
-    | mlp_Knaster_tarski _ phi psi _ pf
-      => if (decide (Proved_pattern_old Γ pf = Some ((instantiate (patt_mu phi) psi) ---> psi))) is left _
-         then Some ((@patt_mu signature phi) ---> psi)
-         else None
-
-    | mlp_Existence _
-      => Some (ex , patt_bound_evar 0)
-
-    | mlp_Singleton_ctx _ C1 C2 phi x _
-      => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
-                    and (subst_ctx C2 (patt_free_evar x and (! phi)))))
-    end.
-*)
-(*
-  Equations Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern by struct pf :=
-    Proved_pattern _ (mlp_hypothesis _ axiom _ _) => Some axiom ;
-
-    Proved_pattern _ (mlp_P1 _ phi psi _ _)
-      => Some (phi ---> (psi ---> phi)) ;
-
-    Proved_pattern _ (mlp_P2 _ phi psi xi _ _ _)
-      => Some ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi))) ;
-
-    Proved_pattern _ (mlp_P3 _ phi _)
-      => Some (((phi ---> Bot) ---> Bot) ---> phi) ;
-
-    Proved_pattern _ (mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2)
-      with ((decide (Proved_pattern Γ pf1 = Some phi1)),(decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2)))) => {
-      | ((right _ ), _) => None
-      | (_, (right _ )) => None
-      | ((left _), (left _)) => Some phi2
-      } ;
-
-    Proved_pattern _ (mlp_Ex_quan _ phi y _)
-      => Some (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi)) ;
-
-    Proved_pattern _ (mlp_Ex_gen _ phi1 phi2 x _ _ pf' _)
-      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))  ) => {
-      | left _ => Some (exists_quantify x phi1 ---> phi2)
-      | right _ => None
-      } ;
-
-    Proved_pattern _ (mlp_Prop_bott_left _ phi _)
-      => Some (patt_bott $ phi ---> patt_bott) ;
-
-    Proved_pattern _ (mlp_Prop_bott_right _ phi _)
-      => Some (phi $ patt_bott ---> patt_bott) ;
-
-    Proved_pattern _ (mlp_Prop_disj_left _ phi1 phi2 psi _ _ _)
-      => Some (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi))) ;
-
-    Proved_pattern _ (mlp_Prop_disj_right _ phi1 phi2 psi _ _ _)
-      => Some ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2))) ;
-
-    Proved_pattern _ (mlp_Prop_ex_left _ phi psi _ _)
-      => Some (((ex , phi) $ psi) ---> (ex , phi $ psi)) ;
-
-    Proved_pattern _ (mlp_Prop_ex_right _ phi psi _ _)
-      => Some ((psi $ (ex , phi)) ---> (ex , psi $ phi)) ;
-
-    Proved_pattern _ (mlp_Framing_left _ phi1 phi2 psi _ pf')
-      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))) => {
-      | left _ => Some ((phi1 $ psi) ---> (phi2 $ psi))
-      | right _ => None
-      } ;
-
-    Proved_pattern _ (mlp_Framing_right _ phi1 phi2 psi _ pf')
-      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))) => {
-      | left _ => Some ((psi $ phi1) ---> (psi $ phi2))
-      | right _ => None
-      } ;
-
-    Proved_pattern _ (mlp_Svar_subst _ phi psi X _ _ pf')
-      with (decide (Proved_pattern Γ pf' = Some phi)) => {
-      | left _ => Some (free_svar_subst phi psi X)
-      | right _ => None
-      } ;
-
-    Proved_pattern _ (mlp_Pre_fixp _ phi _)
-      => Some (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi)) ;
-
-    Proved_pattern _ (mlp_Knaster_tarski _ phi psi _ pf')
-      with (decide (Proved_pattern Γ pf' = Some ((instantiate (patt_mu phi) psi) ---> psi))) => {
-      | left _ => Some ((@patt_mu signature phi) ---> psi)
-      | right _ => None
-      } ;
-
-    Proved_pattern _ (mlp_Existence _)
-      => Some (ex , patt_bound_evar 0) ;
-
-    Proved_pattern _ (mlp_Singleton_ctx _ C1 C2 phi x _)
-      => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
-                    and (subst_ctx C2 (patt_free_evar x and (! phi)))))
-  .
-*)
+    (* induction pf1,pf2; auto.*)
+    - destruct (decide (axiom = axiom0)).
+      + subst. left. f_equal. apply proof_irrelevance. apply proof_irrelevance.
+      + right. congruence.
+    - destruct (decide (phi = phi0)), (decide (psi = psi0)); subst; try (right; congruence).
+      { subst. left. f_equal. apply proof_irrelevance. apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)), (decide (psi = psi0)), (decide (xi = xi0));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)); subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi1 = phi0)), (decide (phi2 = phi3)); subst; try (right; congruence).
+      destruct (IHpf1_1 pf2_1).
+      2: { right. congruence. }
+      subst.
+      destruct (IHpf1_2 pf2_2).
+      2: { right. congruence. }
+      subst.
+      left. f_equal; apply proof_irrelevance.
+    - destruct (decide (phi = phi0)), (decide (y = y0)); subst; try (right; congruence).
+      { left. f_equal. apply proof_irrelevance. }
+    - destruct (decide (phi1 = phi0)), (decide (phi2 = phi3)), (decide (x = x0)), (IHpf1 pf2);
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)); subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)); subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi0 = phi1)), (decide (phi2 = phi3)), (decide (psi = psi0));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi0 = phi1)), (decide (phi2 = phi3)), (decide (psi = psi0));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)), (decide (psi = psi0));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)), (decide (psi = psi0));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi0 = phi1)), (decide (phi2 = phi3)), (decide (psi = psi0)), (IHpf1 pf2);
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi0 = phi1)), (decide (phi2 = phi3)), (decide (psi = psi0)), (IHpf1 pf2);
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)), (decide (psi = psi0)), (decide (X = X0)), (IHpf1 pf2);
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)); subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - destruct (decide (phi = phi0)), (decide (psi = psi0)), (IHpf1 pf2); subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+    - 
+      
 
   Definition Proved_pattern' (Γ : Theory) (pf : ML_proof_from_theory Γ) : Pattern :=
     match pf with
