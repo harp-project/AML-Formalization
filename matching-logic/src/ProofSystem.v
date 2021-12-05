@@ -1291,10 +1291,83 @@ Proof.
   exists name.
   reflexivity.
 Defined.
+(*
+Print ML_proof_system.
+Equations? weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ by struct pf :=
+  weak_proof_to_proof' _ _ (@mlp_hypothesis _ _ _) pateq => hypothesis _ _ _ _ ;
+  weak_proof_to_proof' _ _ (@mlp_P1 _ _ _ _) pateq => _ ;
+  weak_proof_to_proof' _ _ (@mlp_P2 _ _ _ _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_P3 _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Ex_quan _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_bott_left _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_bott_right _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_disj_left _ _ _ _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_disj_right _ _ _ _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_ex_left _ _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Prop_ex_right _ _ _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Pre_fixp _ _) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Existence) _ => _ ;
+  weak_proof_to_proof' _ _ (@mlp_Singleton_ctx _ _ _ _ _) _ => _ ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Modus_ponens phi1 phi2 _ _ pf1 pf2) _
+  with ((weak_proof_to_proof' Γ phi1 pf1 _),(weak_proof_to_proof' Γ (phi1 ---> phi2) pf2 _)) => {
+  | (pf1',pf2') => _
+  } ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Ex_gen phi1 phi2 x _ _ pf1 _) _
+  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
+  | pf1' => _
+  } ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Framing_left phi1 phi2 psi _ pf1) _
+  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
+  | pf1' => _
+  } ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Framing_right phi1 phi2 psi _ pf1) _
+  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
+  | pf1' => _
+  } ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Svar_subst phi psi X _ _ pf1) _
+  with (weak_proof_to_proof' Γ phi pf1) => {
+  | pf1' => _
+  } ;
+  weak_proof_to_proof' Γ ϕ (@mlp_Knaster_tarski phi psi _ pf1) _
+  with (weak_proof_to_proof' Γ (instantiate (mu, phi) psi ---> psi) pf1) => {
+  | pf1' => _
+  }.
+Proof.
+  all: clear weak_proof_to_proof'; simp Proved_pattern.
+  - eauto using P1 with nocore.
+  - eauto using P2 with nocore.
+  - eauto using P3 with nocore.
+  - simp Proved_pattern in pateq.
+    unfold Proved_pattern_clause_5 in pateq.
+    case_match.
+    2: { inversion pateq. }
+    case_match.
+    2: { inversion pateq. }
+    inversion pateq; subst.
+    exact e.
+  - simp Proved_pattern in pateq.
+    unfold Proved_pattern_clause_5 in pateq.
+    case_match.
+    2: { inversion pateq. }
+    case_match.
+    2: { inversion pateq. }
+    inversion pateq; subst.
+    exact e0.
+  - eauto using Ex_quan with nocore.
+  - eauto using Prop_bott_left with nocore.
+  - eauto using Prop_bott_right with nocore.
+  - eauto using Prop_disj_left with nocore.
+  - eauto using Prop_disj_right with nocore.
+  - eauto using Prop_ex_left with nocore.
+  - eauto using Prop_ex_right with nocore.
+  - eauto using Pre_fixp with nocore.
+  - eauto using Existence with nocore.
+  - eauto using Singleton_ctx with nocore.
+Defined.
+*)
 
 
-Print proof_of.
-Check proof_of. Check ML_proof_system.
 
 Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
       (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
@@ -1323,22 +1396,22 @@ Proof.
   - eauto using Knaster_tarski with nocore.
 Defined.
 
-Lemma weak_proof_to_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern)
+Lemma weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
       (pf : {pf' : ML_proof_from_theory Γ & Proved_pattern Γ pf' = Some ϕ}) : ML_proof_system Γ ϕ.
 Proof.
   destruct pf. eapply weak_proof_to_proof'; eassumption.
 Defined.
 
-Lemma proof_to_weak_proof__data {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
+Lemma proof_to_weak_proof__data {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
       : ML_proof_from_theory Γ.
-Proof.
+Proof.  
   induction pf.
   - apply (mlp_hypothesis Γ axiom i e).
   - apply ((mlp_P1 Γ phi psi i i0)).
   - apply ((mlp_P2 Γ phi psi xi ltac:(assumption) ltac:(assumption) ltac:(assumption))).
   - apply ((mlp_P3 Γ phi ltac:(assumption))).
   - apply (mlp_Modus_ponens Γ phi1 phi2 ltac:(assumption) ltac:(assumption) IHpf1 IHpf2).
-  - eapply ((mlp_Ex_quan Γ phi y ltac:(assumption))).
+  - apply ((mlp_Ex_quan Γ phi y ltac:(assumption))).
   - apply ((mlp_Ex_gen Γ phi1 phi2 x ltac:(assumption) ltac:(assumption) IHpf ltac:(assumption))).
   - apply ((mlp_Prop_bott_left Γ phi ltac:(assumption))).
   - apply ((mlp_Prop_bott_right Γ phi ltac:(assumption))).
@@ -1355,20 +1428,85 @@ Proof.
   - apply ((mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption))).
 Defined.
 
+#[global]
+ Instance option_Pattern_eqdec {Σ : Syntax.Signature} : Classes.EqDec (option Pattern).
+Proof.
+  unfold EqDec. intros x' y'. apply option_eq_dec.
+Defined.
+
+#[global]
+ Instance option_Pattern_uip {Σ : Syntax.Signature} : Classes.UIP (option Pattern).
+Proof.
+  unfold UIP. intros x' y' e e'. apply UIP_dec. intros x y. apply option_eq_dec.
+Defined.
+
+Set Equations With UIP.
+(*
+Lemma proof_to_weak_proof__data__weak_proof_to_proof'
+      {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (epf : Proved_pattern Γ pf = Some ϕ):
+  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf epf) = pf.
+Proof.
+  simpl.
+  funelim (Proved_pattern Γ pf); simpl in *.
+  - cbn. pose proof (epf' := epf).
+    simp Proved_pattern in epf'. inversion epf'; subst.
+    move: erefl.
+    pose proof (epf'' := epf).
+    dependent elimination epf.
+    cbv.
+
+
+Unset Equations With UIP.
+*)
 Check proof_to_weak_proof__data.
 
 Check weak_proof_to_proof'.
 Lemma proof_to_weak_proof__data__weak_proof_to_proof'
-      {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
       (epf : Proved_pattern Γ pf = Some ϕ):
   proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf epf) = pf.
 Proof.
   move: ϕ epf.
   induction pf; intros ϕ epf; simpl in *.
-  - inversion epf; subst.
-    replace epf with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+  - pose proof (epf' := epf).
+    simp Proved_pattern in epf'.
+    inversion epf'. subst.
+    cbn. dependent elimination epf.
+    simpl. reflexivity.
+  - pose proof (epf' := epf).
+    simp Proved_pattern in epf'.
+    inversion epf'; subst.
+    cbn. dependent elimination epf. simpl.
     reflexivity.
-  - inversion epf; subst.
+  - pose proof (epf' := epf).
+    simp Proved_pattern in epf'.
+    inversion epf'; subst.
+    cbn. dependent elimination epf. simpl.
+    reflexivity.
+  - pose proof (epf' := epf).
+    simp Proved_pattern in epf'.
+    inversion epf'; subst.
+    cbn. dependent elimination epf. simpl.
+    reflexivity.
+  - pose proof (epf' := epf).
+    simp Proved_pattern in epf'.
+    unfold Proved_pattern_clause_5 in epf'.
+    case_match.
+    2: { inversion epf'. }
+    case_match.
+    2: { inversion epf'. }
+    inversion epf'. subst.
+    unfold weak_proof_to_proof'. simpl.
+    unfold Proved_pattern_elim.
+    
+    dependent elimination .
+    cbn.
+    dependent elimination epf.
+    cbv.
+    inversion epf'; subst
+    cbn. dependent elimination epf. simpl.
+    reflexivity.
     match type of epf with
     | (?x = _)
       => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
