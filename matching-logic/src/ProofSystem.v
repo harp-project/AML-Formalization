@@ -1709,3 +1709,13 @@ Proof.
     apply UIP_dec. intros x0 y0. apply Pattern_eqdec.
   - unfold eq_rect. apply proof_irrelevance.
 Defined.
+
+Instance weak_proof_to_proof__proof_to_weak_proof__cancel
+         {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
+  : Cancel eq (weak_proof_to_proof Γ ϕ) (proof_to_weak_proof Γ ϕ).
+Proof.
+  unfold Cancel.
+  intros pf.
+  unfold proof_to_weak_proof. simpl.
+  apply proof_to_weak_proof_to_proof.
+Defined.
