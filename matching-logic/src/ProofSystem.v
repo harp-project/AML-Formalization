@@ -289,6 +289,17 @@ Qed.
                    (subst_ctx C2 (patt_free_evar x and (! phi))))) *)
   .
 
+  Instance AC_eqdec : EqDecision Application_context.
+  Proof.
+    unfold EqDecision. intros AC1 AC2. unfold Decision.
+    move: AC2.
+    induction AC1; intros AC2; destruct AC2; auto.
+    - destruct (decide (p = p0)), (IHAC1 AC2); subst; try (right; congruence).
+      { left. f_equal. apply proof_irrelevance. }
+    - destruct (decide (p = p0)), (IHAC1 AC2); subst; try (right; congruence).
+      { left. f_equal. apply proof_irrelevance. }
+  Defined.
+
   Instance ML_proof_from_theory_eqdec (Γ : Theory) : EqDecision (ML_proof_from_theory Γ).
   Proof.
     unfold EqDecision. intros pf1 pf2. unfold Decision.
@@ -296,7 +307,6 @@ Qed.
     move: pf2.
     induction pf1; intros pf2; destruct pf2; auto.
 
-    (* induction pf1,pf2; auto.*)
     - destruct (decide (axiom = axiom0)).
       + subst. left. f_equal. apply proof_irrelevance. apply proof_irrelevance.
       + right. congruence.
@@ -349,7 +359,10 @@ Qed.
       { left. f_equal; apply proof_irrelevance. }
     - destruct (decide (phi = phi0)), (decide (psi = psi0)), (IHpf1 pf2); subst; try (right; congruence).
       { left. f_equal; apply proof_irrelevance. }
-    - 
+    - destruct (decide (phi = phi0)), (decide (x = x0)), (decide (C1 = C0)), (decide (C2 = C3));
+      subst; try (right; congruence).
+      { left. f_equal; apply proof_irrelevance. }
+  Defined.
       
 
   Definition Proved_pattern' (Γ : Theory) (pf : ML_proof_from_theory Γ) : Pattern :=
