@@ -367,7 +367,7 @@ Qed.
                     and (subst_ctx C2 (patt_free_evar x and (! phi)))))
     end.
 
-
+(*
   Equations Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern by struct pf :=
     Proved_pattern _ (mlp_hypothesis _ axiom _ _) => Some axiom ;
 
@@ -448,10 +448,10 @@ Qed.
       => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
                     and (subst_ctx C2 (patt_free_evar x and (! phi)))))
   .
-
+*)
 
   Definition proof_of (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ) :=
-    Proved_pattern Γ pf = Some ϕ.
+    Proved_pattern_old Γ pf = Some ϕ.
 
   Definition valid_proof (Γ : Theory) (pf : ML_proof_from_theory Γ)
     := exists ϕ, proof_of Γ ϕ pf.
@@ -1369,39 +1369,111 @@ Defined.
 
 
 
-Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
+
+Lemma weak_proof_to_proof_old' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (pateq: Proved_pattern_old Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
 Proof.
   move: ϕ pateq.
-  eapply (Proved_pattern_elim); clear; intros; inversion pateq; clear pateq; try subst.
+  induction pf; intros ϕ pateq; inversion pateq; clear pateq; try subst; simp Proved_pattern.
   - apply hypothesis; assumption.
   - apply P1; assumption.
   - apply P2; assumption.
   - apply P3; assumption.
+  -  case_match.
+     2: { inversion H0. }
+     case_match.
+     2: { inversion H0. }
+     inversion H0. subst.
+     apply bool_decide_eq_true in Heqb.
+     apply bool_decide_eq_true in Heqb0.
+    eauto using Modus_ponens with nocore.
   - apply Ex_quan; assumption.
+  - case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Ex_gen with nocore.
   - apply Prop_bott_left; assumption.
   - apply Prop_bott_right; assumption.
   - apply Prop_disj_left; assumption.
   - apply Prop_disj_right; assumption.
   - apply Prop_ex_left; assumption.
   - apply Prop_ex_right; assumption.
+  - case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Framing_left with nocore.
+  - case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Framing_right with nocore.
+  - case_match; inversion H0. subst.
+    eauto using Svar_subst with nocore.
   - apply Pre_fixp; assumption.
+  - case_match; inversion H0. subst.
+    eauto using Knaster_tarski with nocore.
   - apply Existence.
   - apply Singleton_ctx; assumption.
-  - eauto using Modus_ponens with nocore.
-  - eauto using Ex_gen with nocore.
-  - eauto using Framing_left with nocore.
-  - eauto using Framing_right with nocore.
-  - eauto using Svar_subst with nocore.
-  - eauto using Knaster_tarski with nocore.
 Defined.
 
+
+(*
+Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
+Proof.
+  move: ϕ pateq.
+  induction pf; intros ϕ pateq; inversion pateq; clear pateq; try subst; simp Proved_pattern.
+  - apply hypothesis; assumption.
+  - apply P1; assumption.
+  - apply P2; assumption.
+  - apply P3; assumption.
+  - simp Proved_pattern in H0. simpl in H0.
+    case_match.
+    2: { inversion H0. }
+    case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Modus_ponens with nocore.
+  - apply Ex_quan; assumption.
+  - simp Proved_pattern in H0. unfold Proved_pattern_clause_7 in H0.
+    case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Ex_gen with nocore.
+  - apply Prop_bott_left; assumption.
+  - apply Prop_bott_right; assumption.
+  - apply Prop_disj_left; assumption.
+  - apply Prop_disj_right; assumption.
+  - apply Prop_ex_left; assumption.
+  - apply Prop_ex_right; assumption.
+  - simp Proved_pattern in H0. unfold Proved_pattern_clause_14 in H0.
+    case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Framing_left with nocore.
+  - simp Proved_pattern in H0. unfold Proved_pattern_clause_15 in H0.
+    case_match.
+    2: { inversion H0. }
+    inversion H0. subst.
+    eauto using Framing_right with nocore.
+  - simp Proved_pattern in H0. unfold Proved_pattern_clause_16 in H0.
+    case_match; inversion H0. subst.
+    eauto using Svar_subst with nocore.
+  - apply Pre_fixp; assumption.
+  - 
+    simp Proved_pattern in H0. unfold Proved_pattern_clause_18 in H0.
+    case_match; inversion H0. subst.
+    eauto using Knaster_tarski with nocore.
+  - apply Existence.
+  - apply Singleton_ctx; assumption.
+Defined.
+*)
+(*
 Lemma weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
       (pf : {pf' : ML_proof_from_theory Γ & Proved_pattern Γ pf' = Some ϕ}) : ML_proof_system Γ ϕ.
 Proof.
   destruct pf. eapply weak_proof_to_proof'; eassumption.
 Defined.
-
+*)
 Lemma proof_to_weak_proof__data {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
       : ML_proof_from_theory Γ.
 Proof.  
@@ -1440,6 +1512,15 @@ Proof.
   unfold UIP. intros x' y' e e'. apply UIP_dec. intros x y. apply option_eq_dec.
 Defined.
 
+#[global]
+ Instance Pattern_uip {Σ : Syntax.Signature} : Classes.UIP (Pattern).
+Proof.
+  unfold UIP. intros x' y' e e'. apply UIP_dec. intros x y. apply Pattern_eqdec.
+Defined.
+
+Global Set Transparent Obligations.
+Equations Derive NoConfusion for Pattern.
+
 Set Equations With UIP.
 (*
 Lemma proof_to_weak_proof__data__weak_proof_to_proof'
@@ -1459,48 +1540,53 @@ Proof.
 
 Unset Equations With UIP.
 *)
-Check proof_to_weak_proof__data.
 
-Check weak_proof_to_proof'.
 Lemma proof_to_weak_proof__data__weak_proof_to_proof'
       {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (epf : Proved_pattern Γ pf = Some ϕ):
-  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf epf) = pf.
+      (epf : Proved_pattern_old Γ pf = Some ϕ):
+  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof_old' Γ ϕ pf epf) = pf.
 Proof.
   move: ϕ epf.
   induction pf; intros ϕ epf; simpl in *.
   - pose proof (epf' := epf).
-    simp Proved_pattern in epf'.
+    simpl in epf'.
     inversion epf'. subst.
     cbn. dependent elimination epf.
     simpl. reflexivity.
   - pose proof (epf' := epf).
-    simp Proved_pattern in epf'.
+    simpl in epf'.
     inversion epf'; subst.
     cbn. dependent elimination epf. simpl.
     reflexivity.
   - pose proof (epf' := epf).
-    simp Proved_pattern in epf'.
     inversion epf'; subst.
     cbn. dependent elimination epf. simpl.
     reflexivity.
   - pose proof (epf' := epf).
-    simp Proved_pattern in epf'.
     inversion epf'; subst.
     cbn. dependent elimination epf. simpl.
     reflexivity.
   - pose proof (epf' := epf).
-    simp Proved_pattern in epf'.
-    unfold Proved_pattern_clause_5 in epf'.
-    case_match.
+    destruct (bool_decide (Proved_pattern_old Γ pf1 = Some phi1)) eqn:Heq1 in epf'.
     2: { inversion epf'. }
-    case_match.
+    destruct (bool_decide (Proved_pattern_old Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq2 in epf'.
     2: { inversion epf'. }
-    inversion epf'. subst.
-    unfold weak_proof_to_proof'. simpl.
-    unfold Proved_pattern_elim.
+    inversion epf'. subst. simpl.
+    do 3 (move: erefl).
+    apply bool_decide_eq_true in Heq1.
+    apply bool_decide_eq_true in Heq2.
+    specialize (IHpf1 _ Heq1).
+    specialize (IHpf2 _ Heq2).
+
+    move: epf. Set Printing All
+    rewrite -Heq1.
     
-    dependent elimination .
+    dependent elimination epf.
+    unfold weak_proof_to_proof'. simpl. cbn.
+    unfold Proved_pattern_elim. unfold Proved_pattern_graph_rect. unfold Proved_pattern_graph_mut.
+    cbv.
+    
+    dependent elimination epf.
     cbn.
     dependent elimination epf.
     cbv.
