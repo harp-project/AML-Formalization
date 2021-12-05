@@ -1341,130 +1341,7 @@ Proof.
   exists name.
   reflexivity.
 Defined.
-(*
-Print ML_proof_system.
-Equations? weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ by struct pf :=
-  weak_proof_to_proof' _ _ (@mlp_hypothesis _ _ _) pateq => hypothesis _ _ _ _ ;
-  weak_proof_to_proof' _ _ (@mlp_P1 _ _ _ _) pateq => _ ;
-  weak_proof_to_proof' _ _ (@mlp_P2 _ _ _ _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_P3 _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Ex_quan _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_bott_left _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_bott_right _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_disj_left _ _ _ _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_disj_right _ _ _ _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_ex_left _ _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Prop_ex_right _ _ _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Pre_fixp _ _) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Existence) _ => _ ;
-  weak_proof_to_proof' _ _ (@mlp_Singleton_ctx _ _ _ _ _) _ => _ ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Modus_ponens phi1 phi2 _ _ pf1 pf2) _
-  with ((weak_proof_to_proof' Γ phi1 pf1 _),(weak_proof_to_proof' Γ (phi1 ---> phi2) pf2 _)) => {
-  | (pf1',pf2') => _
-  } ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Ex_gen phi1 phi2 x _ _ pf1 _) _
-  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
-  | pf1' => _
-  } ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Framing_left phi1 phi2 psi _ pf1) _
-  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
-  | pf1' => _
-  } ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Framing_right phi1 phi2 psi _ pf1) _
-  with (weak_proof_to_proof' Γ (phi1 ---> phi2) pf1) => {
-  | pf1' => _
-  } ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Svar_subst phi psi X _ _ pf1) _
-  with (weak_proof_to_proof' Γ phi pf1) => {
-  | pf1' => _
-  } ;
-  weak_proof_to_proof' Γ ϕ (@mlp_Knaster_tarski phi psi _ pf1) _
-  with (weak_proof_to_proof' Γ (instantiate (mu, phi) psi ---> psi) pf1) => {
-  | pf1' => _
-  }.
-Proof.
-  all: clear weak_proof_to_proof'; simp Proved_pattern.
-  - eauto using P1 with nocore.
-  - eauto using P2 with nocore.
-  - eauto using P3 with nocore.
-  - simp Proved_pattern in pateq.
-    unfold Proved_pattern_clause_5 in pateq.
-    case_match.
-    2: { inversion pateq. }
-    case_match.
-    2: { inversion pateq. }
-    inversion pateq; subst.
-    exact e.
-  - simp Proved_pattern in pateq.
-    unfold Proved_pattern_clause_5 in pateq.
-    case_match.
-    2: { inversion pateq. }
-    case_match.
-    2: { inversion pateq. }
-    inversion pateq; subst.
-    exact e0.
-  - eauto using Ex_quan with nocore.
-  - eauto using Prop_bott_left with nocore.
-  - eauto using Prop_bott_right with nocore.
-  - eauto using Prop_disj_left with nocore.
-  - eauto using Prop_disj_right with nocore.
-  - eauto using Prop_ex_left with nocore.
-  - eauto using Prop_ex_right with nocore.
-  - eauto using Pre_fixp with nocore.
-  - eauto using Existence with nocore.
-  - eauto using Singleton_ctx with nocore.
-Defined.
-*)
 
-(*
-
-
-Lemma weak_proof_to_proof_old' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (pateq: Proved_pattern_old Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
-Proof.
-  move: ϕ pateq.
-  induction pf; intros ϕ pateq; inversion pateq; clear pateq; try subst; simp Proved_pattern.
-  - apply hypothesis; assumption.
-  - apply P1; assumption.
-  - apply P2; assumption.
-  - apply P3; assumption.
-  -  case_match.
-     2: { inversion H0. }
-     case_match.
-     2: { inversion H0. }
-     inversion H0. subst.
-     apply bool_decide_eq_true in Heqb.
-     apply bool_decide_eq_true in Heqb0.
-    eauto using Modus_ponens with nocore.
-  - apply Ex_quan; assumption.
-  - case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Ex_gen with nocore.
-  - apply Prop_bott_left; assumption.
-  - apply Prop_bott_right; assumption.
-  - apply Prop_disj_left; assumption.
-  - apply Prop_disj_right; assumption.
-  - apply Prop_ex_left; assumption.
-  - apply Prop_ex_right; assumption.
-  - case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Framing_left with nocore.
-  - case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Framing_right with nocore.
-  - case_match; inversion H0. subst.
-    eauto using Svar_subst with nocore.
-  - apply Pre_fixp; assumption.
-  - case_match; inversion H0. subst.
-    eauto using Knaster_tarski with nocore.
-  - apply Existence.
-  - apply Singleton_ctx; assumption.
-Defined.
-*)
 Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
       (pateq: Proved_pattern' Γ pf = ϕ) (patwf : ML_proof_from_theory_wf Γ pf) : ML_proof_system Γ ϕ.
 Proof.
@@ -1498,65 +1375,6 @@ Proof.
   - apply Singleton_ctx; assumption.
 Defined.
 
-
-(*
-Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
-      (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
-Proof.
-  move: ϕ pateq.
-  induction pf; intros ϕ pateq; inversion pateq; clear pateq; try subst; simp Proved_pattern.
-  - apply hypothesis; assumption.
-  - apply P1; assumption.
-  - apply P2; assumption.
-  - apply P3; assumption.
-  - simp Proved_pattern in H0. simpl in H0.
-    case_match.
-    2: { inversion H0. }
-    case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Modus_ponens with nocore.
-  - apply Ex_quan; assumption.
-  - simp Proved_pattern in H0. unfold Proved_pattern_clause_7 in H0.
-    case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Ex_gen with nocore.
-  - apply Prop_bott_left; assumption.
-  - apply Prop_bott_right; assumption.
-  - apply Prop_disj_left; assumption.
-  - apply Prop_disj_right; assumption.
-  - apply Prop_ex_left; assumption.
-  - apply Prop_ex_right; assumption.
-  - simp Proved_pattern in H0. unfold Proved_pattern_clause_14 in H0.
-    case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Framing_left with nocore.
-  - simp Proved_pattern in H0. unfold Proved_pattern_clause_15 in H0.
-    case_match.
-    2: { inversion H0. }
-    inversion H0. subst.
-    eauto using Framing_right with nocore.
-  - simp Proved_pattern in H0. unfold Proved_pattern_clause_16 in H0.
-    case_match; inversion H0. subst.
-    eauto using Svar_subst with nocore.
-  - apply Pre_fixp; assumption.
-  - 
-    simp Proved_pattern in H0. unfold Proved_pattern_clause_18 in H0.
-    case_match; inversion H0. subst.
-    eauto using Knaster_tarski with nocore.
-  - apply Existence.
-  - apply Singleton_ctx; assumption.
-Defined.
-*)
-(*
-Lemma weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
-      (pf : {pf' : ML_proof_from_theory Γ & Proved_pattern Γ pf' = Some ϕ}) : ML_proof_system Γ ϕ.
-Proof.
-  destruct pf. eapply weak_proof_to_proof'; eassumption.
-Defined.
-*)
 Lemma proof_to_weak_proof__data {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
       : ML_proof_from_theory Γ.
 Proof.  
@@ -1617,10 +1435,6 @@ Global Set Transparent Obligations.
 Equations Derive NoConfusion for Pattern.
 
 Set Equations With UIP.
-
-
-
-Check weak_proof_to_proof'.
 
 Lemma proof_to_weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
       (pf : ML_proof_system Γ ϕ):
@@ -1694,7 +1508,8 @@ Proof.
   eapply weak_proof_to_proof'; eassumption.
 Defined.
 
-Instance proof_to_weak_proof__weak_proof_to_proof__cancel
+#[global]
+ Instance proof_to_weak_proof__weak_proof_to_proof__cancel
          {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
   : Cancel eq (proof_to_weak_proof Γ ϕ) (weak_proof_to_proof Γ ϕ).
 Proof.
@@ -1710,7 +1525,8 @@ Proof.
   - unfold eq_rect. apply proof_irrelevance.
 Defined.
 
-Instance weak_proof_to_proof__proof_to_weak_proof__cancel
+#[global]
+ Instance weak_proof_to_proof__proof_to_weak_proof__cancel
          {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
   : Cancel eq (weak_proof_to_proof Γ ϕ) (proof_to_weak_proof Γ ϕ).
 Proof.
