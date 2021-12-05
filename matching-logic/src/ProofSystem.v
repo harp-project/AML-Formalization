@@ -1668,20 +1668,17 @@ Proof.
   - apply ((mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption))).
 Defined.
 
-
-Check ML_proof_from_theory_wf.
-Check Proved_pattern'.
 Lemma proof_to_weak_proof__pattern {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ):
   Proved_pattern' Γ (proof_to_weak_proof__data Γ ϕ pf) = ϕ.
 Proof.
   induction pf; simpl; auto.
-Qed.
+Defined.
 
 Lemma proof_to_weak_proof__wf {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ):
   ML_proof_from_theory_wf Γ (proof_to_weak_proof__data Γ ϕ pf).
 Proof.
   induction pf; simpl; auto; split_and?; auto; auto using proof_to_weak_proof__pattern.
-Qed.
+Defined.
 
 #[global]
  Instance option_Pattern_eqdec {Σ : Syntax.Signature} : Classes.EqDec (option Pattern).
@@ -1705,6 +1702,66 @@ Global Set Transparent Obligations.
 Equations Derive NoConfusion for Pattern.
 
 Set Equations With UIP.
+
+
+
+Check weak_proof_to_proof'.
+
+Lemma proof_to_weak_proof_to_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
+      (pf : ML_proof_system Γ ϕ):
+  weak_proof_to_proof' Γ ϕ
+                       (proof_to_weak_proof__data Γ ϕ pf)
+                       (proof_to_weak_proof__pattern Γ ϕ pf)
+                       (proof_to_weak_proof__wf Γ ϕ pf)
+  = pf.
+Proof.
+  induction pf; simpl.
+  - unfold eq_rec_r,eq_rec,eq_rect.
+    replace (eq_sym erefl) with (@erefl _ axiom) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec).
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - unfold eq_rec_r,eq_rec,eq_rect.
+    replace (eq_sym erefl) with (@erefl _ phi2) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec).
+    rewrite IHpf1. rewrite IHpf2.
+    reflexivity.
+  - reflexivity.
+  - rewrite IHpf.
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+  - rewrite IHpf.
+    reflexivity.
+  - rewrite IHpf.
+    reflexivity.
+  - rewrite IHpf.
+    reflexivity.
+  - reflexivity.
+  - rewrite IHpf.
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma weak_proof_to_proof_to_weak_proof {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern)
+      (pf : ML_proof_from_theory Γ) (pat : Proved_pattern' Γ pf = ϕ) (wf : ML_proof_from_theory_wf Γ pf):
+  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf pat wf)
+  = pf.
+Proof.
+  move: ϕ pat.
+  induction pf; intros ϕ pat; simpl in *; repeat case_match; destruct_and?; simpl in *; auto.
+  - rewrite IHpf1. rewrite IHpf2. reflexivity.
+  - rewrite IHpf. reflexivity.
+  - rewrite IHpf. reflexivity.
+  - rewrite IHpf. reflexivity.
+  - rewrite IHpf. reflexivity.
+  - rewrite IHpf. reflexivity.
+Qed.
 (*
 Lemma proof_to_weak_proof__data__weak_proof_to_proof'
       {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
