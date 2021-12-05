@@ -288,7 +288,7 @@ Qed.
       theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
                    (subst_ctx C2 (patt_free_evar x and (! phi))))) *)
   .
-
+(*
   Fixpoint Proved_pattern_old (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern :=
     match pf with
     | mlp_hypothesis _ axiom _ _ => Some axiom
@@ -366,7 +366,7 @@ Qed.
       => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
                     and (subst_ctx C2 (patt_free_evar x and (! phi)))))
     end.
-
+*)
 (*
   Equations Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern by struct pf :=
     Proved_pattern _ (mlp_hypothesis _ axiom _ _) => Some axiom ;
@@ -450,12 +450,147 @@ Qed.
   .
 *)
 
+  Definition Proved_pattern' (Γ : Theory) (pf : ML_proof_from_theory Γ) : Pattern :=
+    match pf with
+    | mlp_hypothesis _ axiom _ _ => axiom
+
+    | mlp_P1 _ phi psi _ _
+      => (phi ---> (psi ---> phi))
+
+    | mlp_P2 _ phi psi xi _ _ _
+      => ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
+
+    | mlp_P3 _ phi _
+      => (((phi ---> Bot) ---> Bot) ---> phi)
+
+    | mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2
+      => phi2
+
+    | mlp_Ex_quan _ phi y _
+      => (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+
+    | mlp_Ex_gen _ phi1 phi2 x _ _ pf _
+      => (exists_quantify x phi1 ---> phi2)
+
+    | mlp_Prop_bott_left _ phi _
+      => (patt_bott $ phi ---> patt_bott)
+
+    | mlp_Prop_bott_right _ phi _
+      => (phi $ patt_bott ---> patt_bott)
+
+    | mlp_Prop_disj_left _ phi1 phi2 psi _ _ _
+      => (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+
+    | mlp_Prop_disj_right _ phi1 phi2 psi _ _ _ 
+      => ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+
+    | mlp_Prop_ex_left _ phi psi _ _
+      => (((ex , phi) $ psi) ---> (ex , phi $ psi))
+
+    | mlp_Prop_ex_right _ phi psi _ _
+      => ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+
+    | mlp_Framing_left _ phi1 phi2 psi _ pf
+      => ((phi1 $ psi) ---> (phi2 $ psi))
+
+    | mlp_Framing_right _ phi1 phi2 psi _ pf
+      => ((psi $ phi1) ---> (psi $ phi2))
+
+    | mlp_Svar_subst _ phi psi X _ _ pf
+      => (free_svar_subst phi psi X)
+
+    | mlp_Pre_fixp _ phi _
+      => (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
+
+    | mlp_Knaster_tarski _ phi psi _ pf
+      => ((@patt_mu signature phi) ---> psi)
+
+    | mlp_Existence _
+      => (ex , patt_bound_evar 0)
+
+    | mlp_Singleton_ctx _ C1 C2 phi x _
+      => (! ((subst_ctx C1 (patt_free_evar x and phi))
+                    and (subst_ctx C2 (patt_free_evar x and (! phi)))))
+    end.
+
+  Fixpoint ML_proof_from_theory_wf (Γ : Theory) (pf : ML_proof_from_theory Γ) : Prop :=
+    match pf with
+    | mlp_hypothesis _ axiom _ _ => True
+
+    | mlp_P1 _ phi psi _ _
+      => True
+
+    | mlp_P2 _ phi psi xi _ _ _
+      => True
+
+    | mlp_P3 _ phi _
+      => True
+
+    | mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2
+      => (Proved_pattern' Γ pf1 = phi1)
+         /\ (Proved_pattern' Γ pf2 = (phi1 ---> phi2))
+         /\ ML_proof_from_theory_wf Γ pf1
+         /\ ML_proof_from_theory_wf Γ pf2
+
+    | mlp_Ex_quan _ phi y _
+      => True
+
+    | mlp_Ex_gen _ phi1 phi2 x _ _ pf _
+      => (Proved_pattern' Γ pf = (phi1 ---> phi2))
+         /\ ML_proof_from_theory_wf Γ pf
+
+    | mlp_Prop_bott_left _ phi _
+      => True
+
+    | mlp_Prop_bott_right _ phi _
+      => True
+
+    | mlp_Prop_disj_left _ phi1 phi2 psi _ _ _
+      => True
+
+    | mlp_Prop_disj_right _ phi1 phi2 psi _ _ _ 
+      => True
+
+    | mlp_Prop_ex_left _ phi psi _ _
+      => True
+
+    | mlp_Prop_ex_right _ phi psi _ _
+      => True
+
+    | mlp_Framing_left _ phi1 phi2 psi _ pf
+      => (Proved_pattern' Γ pf = (phi1 ---> phi2))
+         /\ ML_proof_from_theory_wf Γ pf
+
+    | mlp_Framing_right _ phi1 phi2 psi _ pf
+      => (Proved_pattern' Γ pf = (phi1 ---> phi2))
+         /\ ML_proof_from_theory_wf Γ pf
+
+    | mlp_Svar_subst _ phi psi X _ _ pf
+      => (Proved_pattern' Γ pf = phi)
+         /\ ML_proof_from_theory_wf Γ pf
+
+    | mlp_Pre_fixp _ phi _
+      => True
+
+    | mlp_Knaster_tarski _ phi psi _ pf
+      => (Proved_pattern' Γ pf = ((instantiate (patt_mu phi) psi) ---> psi))
+         /\ ML_proof_from_theory_wf Γ pf
+
+    | mlp_Existence _
+      => True
+
+    | mlp_Singleton_ctx _ C1 C2 phi x _
+      => True
+    end.
+
+
+(*
   Definition proof_of (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ) :=
     Proved_pattern_old Γ pf = Some ϕ.
 
   Definition valid_proof (Γ : Theory) (pf : ML_proof_from_theory Γ)
     := exists ϕ, proof_of Γ ϕ pf.
-  
+  *)
   
   (* Proof system for AML ref. snapshot: Section 3 *)
 
@@ -1367,7 +1502,7 @@ Proof.
 Defined.
 *)
 
-
+(*
 
 
 Lemma weak_proof_to_proof_old' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
@@ -1410,6 +1545,39 @@ Proof.
     eauto using Svar_subst with nocore.
   - apply Pre_fixp; assumption.
   - case_match; inversion H0. subst.
+    eauto using Knaster_tarski with nocore.
+  - apply Existence.
+  - apply Singleton_ctx; assumption.
+Defined.
+*)
+Lemma weak_proof_to_proof' {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (pateq: Proved_pattern' Γ pf = ϕ) (patwf : ML_proof_from_theory_wf Γ pf) : ML_proof_system Γ ϕ.
+Proof.
+  move: ϕ pateq.
+  induction pf; intros ϕ pateq; inversion pateq; clear pateq; try subst; simpl in *.
+  - apply hypothesis; assumption.
+  - apply P1; assumption.
+  - apply P2; assumption.
+  - apply P3; assumption.
+  - destruct_and!.
+    eauto using Modus_ponens with nocore.
+  - apply Ex_quan; assumption.
+  - destruct_and!.
+    eauto using Ex_gen with nocore.
+  - apply Prop_bott_left; assumption.
+  - apply Prop_bott_right; assumption.
+  - apply Prop_disj_left; assumption.
+  - apply Prop_disj_right; assumption.
+  - apply Prop_ex_left; assumption.
+  - apply Prop_ex_right; assumption.
+  - destruct_and!.
+    eauto using Framing_left with nocore.
+  - destruct_and!.
+    eauto using Framing_right with nocore.
+  - destruct_and!.
+    eauto using Svar_subst with nocore.
+  - apply Pre_fixp; assumption.
+  - destruct_and!.
     eauto using Knaster_tarski with nocore.
   - apply Existence.
   - apply Singleton_ctx; assumption.
@@ -1499,6 +1667,21 @@ Proof.
   - apply ((mlp_Existence Γ)).
   - apply ((mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption))).
 Defined.
+
+
+Check ML_proof_from_theory_wf.
+Check Proved_pattern'.
+Lemma proof_to_weak_proof__pattern {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ):
+  Proved_pattern' Γ (proof_to_weak_proof__data Γ ϕ pf) = ϕ.
+Proof.
+  induction pf; simpl; auto.
+Qed.
+
+Lemma proof_to_weak_proof__wf {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ):
+  ML_proof_from_theory_wf Γ (proof_to_weak_proof__data Γ ϕ pf).
+Proof.
+  induction pf; simpl; auto; split_and?; auto; auto using proof_to_weak_proof__pattern.
+Qed.
 
 #[global]
  Instance option_Pattern_eqdec {Σ : Syntax.Signature} : Classes.EqDec (option Pattern).
