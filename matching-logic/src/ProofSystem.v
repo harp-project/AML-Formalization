@@ -1209,7 +1209,7 @@ Defined.
 Print proof_of.
 Check proof_of. Check ML_proof_system.
 
-Lemma weak_proof_to_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+Lemma weak_proof_to_proof' {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
       (pateq: Proved_pattern Γ pf = Some ϕ) : ML_proof_system Γ ϕ.
 Proof.
   move: ϕ pateq.
@@ -1237,61 +1237,214 @@ Proof.
   - apply Singleton_ctx; assumption.
 Defined.
 
+Lemma weak_proof_to_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern)
+      (pf : {pf' : ML_proof_from_theory Γ & Proved_pattern Γ pf' = Some ϕ}) : ML_proof_system Γ ϕ.
+Proof.
+  destruct pf. eapply weak_proof_to_proof'; eassumption.
+Defined.
+
+Lemma proof_to_weak_proof__data {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
+      : ML_proof_from_theory Γ.
+Proof.
+  induction pf.
+  - apply (mlp_hypothesis Γ axiom i e).
+  - apply ((mlp_P1 Γ phi psi i i0)).
+  - apply ((mlp_P2 Γ phi psi xi ltac:(assumption) ltac:(assumption) ltac:(assumption))).
+  - apply ((mlp_P3 Γ phi ltac:(assumption))).
+  - apply (mlp_Modus_ponens Γ phi1 phi2 ltac:(assumption) ltac:(assumption) IHpf1 IHpf2).
+  - eapply ((mlp_Ex_quan Γ phi y ltac:(assumption))).
+  - apply ((mlp_Ex_gen Γ phi1 phi2 x ltac:(assumption) ltac:(assumption) IHpf ltac:(assumption))).
+  - apply ((mlp_Prop_bott_left Γ phi ltac:(assumption))).
+  - apply ((mlp_Prop_bott_right Γ phi ltac:(assumption))).
+  - apply ((mlp_Prop_disj_left Γ phi1 phi2 psi ltac:(assumption) ltac:(assumption) ltac:(assumption))).
+  - apply ((mlp_Prop_disj_right Γ phi1 phi2 psi ltac:(assumption) ltac:(assumption) ltac:(assumption))).
+  - apply ((mlp_Prop_ex_left Γ phi psi ltac:(assumption) ltac:(assumption))).
+  - apply ((mlp_Prop_ex_right Γ phi psi ltac:(assumption) ltac:(assumption))).
+  - apply ((mlp_Framing_left Γ phi1 phi2 psi ltac:(assumption) IHpf)).
+  - apply ((mlp_Framing_right Γ phi1 phi2 psi ltac:(assumption) IHpf)).
+  - apply ((mlp_Svar_subst Γ phi psi X ltac:(assumption) ltac:(assumption) IHpf)).
+  - apply ((mlp_Pre_fixp Γ phi ltac:(assumption))).
+  - apply ((mlp_Knaster_tarski Γ phi psi ltac:(assumption) IHpf)).
+  - apply ((mlp_Existence Γ)).
+  - apply ((mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption))).
+Defined.
+
+Check proof_to_weak_proof__data.
+
+Check weak_proof_to_proof'.
+Lemma proof_to_weak_proof__data__weak_proof_to_proof'
+      {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ)
+      (epf : Proved_pattern Γ pf = Some ϕ):
+  proof_to_weak_proof__data Γ ϕ (weak_proof_to_proof' Γ ϕ pf epf) = pf.
+Proof.
+  move: ϕ epf.
+  induction pf; intros ϕ epf; simpl in *.
+  - inversion epf; subst.
+    replace epf with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+    reflexivity.
+  - inversion epf; subst.
+    match type of epf with
+    | (?x = _)
+      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - inversion epf; subst.
+    match type of epf with
+    | (?x = _)
+      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - inversion epf; subst.
+    match type of epf with
+    | (?x = _)
+      => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - 
+    pose proof (epf' := epf). 
+    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq in |-.
+    2: { rewrite Heq in epf'. inversion epf'. }
+    rewrite Heq in epf'. inversion epf'. subst.
+    destruct a as [H1 H2].
+    repeat (move: (erefl _)).
+    
+Set Printing Implicit.
+    rewrite {1 4 5 6 7}Heq.
+
+    replace epf with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+    reflexivity.
+
+
+Lemma proof_to_weak_proof__proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
+      : Proved_pattern Γ (proof_to_weak_proof__data Γ ϕ pf) = Some ϕ.
+Proof.
+  induction pf; simpl; try reflexivity; case_match; destruct_and?; try contradiction; try reflexivity.
+  exfalso. apply n. split; auto.
+Defined.
+
 Lemma proof_to_weak_proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
       : {pf : ML_proof_from_theory Γ & Proved_pattern Γ pf = Some ϕ}.
 Proof.
-  induction pf.
-  - unshelve(eapply (existT (mlp_hypothesis Γ axiom i e) _)).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_P1 Γ phi psi i i0))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_P2 Γ phi psi xi ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_P3 Γ phi ltac:(assumption)))).
-    reflexivity.
-  - destruct IHpf1 as [IHpf1 IHe1].
-    destruct IHpf2 as [IHpf2 IHe2].
-    unshelve (eapply (existT (mlp_Modus_ponens Γ phi1 phi2 ltac:(assumption) ltac:(assumption) IHpf1 IHpf2))).
-    simpl. rewrite IHe1. rewrite IHe2.
-    case_match;[reflexivity|].
-    exfalso. apply n. split;reflexivity.
-  - unshelve (eapply (existT (mlp_Ex_quan Γ phi y ltac:(assumption)))).
-    reflexivity.
-  - destruct IHpf as [IHpf IHe].
-    unshelve (eapply (existT (mlp_Ex_gen Γ phi1 phi2 x
-                                         ltac:(assumption) ltac:(assumption) IHpf ltac:(assumption)))).
-    simpl.
-    case_match;[reflexivity|contradiction].
-  - unshelve (eapply (existT (mlp_Prop_bott_left Γ phi ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Prop_bott_right Γ phi ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Prop_disj_left Γ phi1 phi2 psi
-                                                 ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Prop_disj_right Γ phi1 phi2 psi
-                                                 ltac:(assumption) ltac:(assumption) ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Prop_ex_left Γ phi psi ltac:(assumption) ltac:(assumption)))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Prop_ex_right Γ phi psi ltac:(assumption) ltac:(assumption)))).
-    reflexivity.
-  - destruct IHpf as [IHpf IHe].
-    unshelve (eapply (existT (mlp_Framing_left Γ phi1 phi2 psi ltac:(assumption) IHpf))).
-    simpl. case_match;[reflexivity|contradiction].
-  - destruct IHpf as [IHpf IHe].
-    unshelve (eapply (existT (mlp_Framing_right Γ phi1 phi2 psi ltac:(assumption) IHpf))).
-    simpl. case_match;[reflexivity|contradiction].
-  - destruct IHpf as [IHpf IHe].
-    unshelve (eapply (existT (mlp_Svar_subst Γ phi psi X ltac:(assumption) ltac:(assumption) IHpf))).
-    simpl. case_match; [reflexivity|contradiction].
-  - unshelve (eapply (existT (mlp_Pre_fixp Γ phi ltac:(assumption)))).
-    reflexivity.
-  - destruct IHpf as [IHpf IHe].
-    unshelve (eapply (existT (mlp_Knaster_tarski Γ phi psi ltac:(assumption) IHpf))).
-    simpl. case_match;[reflexivity|contradiction].
-  - unshelve (eapply (existT (mlp_Existence Γ))).
-    reflexivity.
-  - unshelve (eapply (existT (mlp_Singleton_ctx Γ C1 C2 phi x ltac:(assumption)))).
-    reflexivity.
+  apply (existT (proof_to_weak_proof__data Γ ϕ pf)).
+  apply proof_to_weak_proof__proof.
 Defined.
+
+Instance proof_to_weak_proof__weak_proof_to_proof__cancel
+         {Σ : Signature} (Γ : Theory) (ϕ : Pattern)
+  : Cancel eq (proof_to_weak_proof Γ ϕ) (weak_proof_to_proof Γ ϕ).
+Proof.
+  unfold Cancel.
+  intros [pf He].
+  Check sigT_eta.
+  rewrite (sigT_eta (proof_to_weak_proof Γ ϕ (weak_proof_to_proof Γ ϕ (existT pf He)))).
+
+  cut ((projT1
+       (proof_to_weak_proof Γ ϕ (weak_proof_to_proof Γ ϕ (existT pf He)))) = pf).
+  {
+    intros H.
+    move: (projT2 _).
+    rewrite H.
+    intros Heq.
+    apply f_equal.
+    apply UIP_dec.
+    intros x' y'; apply option_eq_dec.
+  }
+  simpl.
+
+  move: ϕ He.
+  induction pf; intros ϕ He; simpl in *.
+  - inversion He. subst axiom.
+    replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+    reflexivity.
+  - inversion He; subst.
+    match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - inversion He; subst.
+    match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - inversion He; subst.
+    match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - 
+    pose proof (He' := He). 
+    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq in |-.
+    2: { rewrite Heq in He'. inversion He'. }
+    rewrite Heq in He'. inversion He'. subst.
+    destruct a as [H1 H2].
+    repeat (move: (erefl _)).
+    
+
+
+  move: ϕ He.
+  induction pf; simpl; intros ϕ He.
+  1-4: admit.
+  - 
+  - replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+ 
+
+
+  apply f_equal.
+  Search eq existT.
+
+  move: ϕ He.
+  induction pf; intros ϕ He; simpl in *; inversion He; subst; simpl.
+  - replace He with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - match type of He with
+    | (?x = _)
+      => replace He with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
+    end.
+    reflexivity.
+  - match type of He with
+    | ( (match ?b with _ => _ end) = _) => destruct b eqn:Heq in |-
+    end.
+    repeat (move: (erefl _)).
+    
+    Set Printing Implicit.
+
+    match type of Heq with (?L = _) => remember L in |- end.
+    rewrite {1 2 4 5 6 7}Heq.
+
+
+ rewrite Heq.   destruct_and?.
+    specialize (IHpf1 _ H).
+    specialize (IHpf2 _ H1).
+    
+    repeat (move: (erefl _)).
+    intros e1 e2. rewrite e1.
+    rewrite {1}H.
