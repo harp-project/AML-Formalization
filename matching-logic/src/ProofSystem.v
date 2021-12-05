@@ -1701,14 +1701,11 @@ Proof.
   unfold Cancel.
   intros x. destruct x.
   simpl.
-  (*rewrite proof_to_weak_proof_to_proof.*)
   unfold proof_to_weak_proof.
-  Search eq existT2.
   apply eq_existT2_uncurried; simpl.
   unshelve(eexists).
   apply weak_proof_to_proof_to_weak_proof.
   - unfold eq_rect.
     apply UIP_dec. intros x0 y0. apply Pattern_eqdec.
-  - unfold eq_rect. (* TODO: UIP_dec and decidable equality on weak proofs *)
-  Set Printing All.
-  apply weak_proof_to_proof_to_weak_proof.
+  - unfold eq_rect. apply proof_irrelevance.
+Defined.
