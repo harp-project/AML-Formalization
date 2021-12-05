@@ -5,6 +5,8 @@ From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators monotonic.
 From stdpp Require Import base fin_sets sets propset.
 
+From Equations Require Import Equations.
+
 From MatchingLogic.Utils Require Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
@@ -14,7 +16,7 @@ Import MatchingLogic.DerivedOperators.Notations.
 Section ml_proof_system.
   Open Scope ml_scope.
 
-  Context {signature : Signature}.
+  Context {signature : Syntax.Signature}.
 
   (* soundness for prop_ex_right *)
   Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)
@@ -287,8 +289,7 @@ Qed.
                    (subst_ctx C2 (patt_free_evar x and (! phi))))) *)
   .
 
-
-  Fixpoint Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern :=
+  Fixpoint Proved_pattern_old (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern :=
     match pf with
     | mlp_hypothesis _ axiom _ _ => Some axiom
 
@@ -302,15 +303,18 @@ Qed.
       => Some (((phi ---> Bot) ---> Bot) ---> phi)
 
     | mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2
-      => if (decide ((Proved_pattern Γ pf1 = Some phi1) /\ (Proved_pattern Γ pf2 = Some (phi1 ---> phi2)))) is left _
-         then (Some phi2)
+      => if (bool_decide (Proved_pattern_old Γ pf1 = Some phi1)) is true
+         then
+           if (bool_decide (Proved_pattern_old Γ pf2 = Some (phi1 ---> phi2))) is true
+           then (Some phi2)
+           else None
          else None
 
     | mlp_Ex_quan _ phi y _
       => Some (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
     | mlp_Ex_gen _ phi1 phi2 x _ _ pf _
-      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
          then Some (exists_quantify x phi1 ---> phi2)
          else None
 
@@ -333,17 +337,17 @@ Qed.
       => Some ((psi $ (ex , phi)) ---> (ex , psi $ phi))
 
     | mlp_Framing_left _ phi1 phi2 psi _ pf
-      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
          then Some ((phi1 $ psi) ---> (phi2 $ psi))
          else None
 
     | mlp_Framing_right _ phi1 phi2 psi _ pf
-      => if (decide (Proved_pattern Γ pf = Some (phi1 ---> phi2))) is left _
+      => if (decide (Proved_pattern_old Γ pf = Some (phi1 ---> phi2))) is left _
          then Some ((psi $ phi1) ---> (psi $ phi2))
          else None
 
     | mlp_Svar_subst _ phi psi X _ _ pf
-      => if (decide (Proved_pattern Γ pf = Some phi)) is left _
+      => if (decide (Proved_pattern_old Γ pf = Some phi)) is left _
          then Some (free_svar_subst phi psi X)
          else None
 
@@ -351,7 +355,7 @@ Qed.
       => Some (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
     | mlp_Knaster_tarski _ phi psi _ pf
-      => if (decide (Proved_pattern Γ pf = Some ((instantiate (patt_mu phi) psi) ---> psi))) is left _
+      => if (decide (Proved_pattern_old Γ pf = Some ((instantiate (patt_mu phi) psi) ---> psi))) is left _
          then Some ((@patt_mu signature phi) ---> psi)
          else None
 
@@ -362,6 +366,89 @@ Qed.
       => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
                     and (subst_ctx C2 (patt_free_evar x and (! phi)))))
     end.
+
+
+  Equations Proved_pattern (Γ : Theory) (pf : ML_proof_from_theory Γ) : option Pattern by struct pf :=
+    Proved_pattern _ (mlp_hypothesis _ axiom _ _) => Some axiom ;
+
+    Proved_pattern _ (mlp_P1 _ phi psi _ _)
+      => Some (phi ---> (psi ---> phi)) ;
+
+    Proved_pattern _ (mlp_P2 _ phi psi xi _ _ _)
+      => Some ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi))) ;
+
+    Proved_pattern _ (mlp_P3 _ phi _)
+      => Some (((phi ---> Bot) ---> Bot) ---> phi) ;
+
+    Proved_pattern _ (mlp_Modus_ponens _ phi1 phi2 _ _ pf1 pf2)
+      with ((decide (Proved_pattern Γ pf1 = Some phi1)),(decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2)))) => {
+      | ((right _ ), _) => None
+      | (_, (right _ )) => None
+      | ((left _), (left _)) => Some phi2
+      } ;
+
+    Proved_pattern _ (mlp_Ex_quan _ phi y _)
+      => Some (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi)) ;
+
+    Proved_pattern _ (mlp_Ex_gen _ phi1 phi2 x _ _ pf' _)
+      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))  ) => {
+      | left _ => Some (exists_quantify x phi1 ---> phi2)
+      | right _ => None
+      } ;
+
+    Proved_pattern _ (mlp_Prop_bott_left _ phi _)
+      => Some (patt_bott $ phi ---> patt_bott) ;
+
+    Proved_pattern _ (mlp_Prop_bott_right _ phi _)
+      => Some (phi $ patt_bott ---> patt_bott) ;
+
+    Proved_pattern _ (mlp_Prop_disj_left _ phi1 phi2 psi _ _ _)
+      => Some (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi))) ;
+
+    Proved_pattern _ (mlp_Prop_disj_right _ phi1 phi2 psi _ _ _)
+      => Some ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2))) ;
+
+    Proved_pattern _ (mlp_Prop_ex_left _ phi psi _ _)
+      => Some (((ex , phi) $ psi) ---> (ex , phi $ psi)) ;
+
+    Proved_pattern _ (mlp_Prop_ex_right _ phi psi _ _)
+      => Some ((psi $ (ex , phi)) ---> (ex , psi $ phi)) ;
+
+    Proved_pattern _ (mlp_Framing_left _ phi1 phi2 psi _ pf')
+      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))) => {
+      | left _ => Some ((phi1 $ psi) ---> (phi2 $ psi))
+      | right _ => None
+      } ;
+
+    Proved_pattern _ (mlp_Framing_right _ phi1 phi2 psi _ pf')
+      with (decide (Proved_pattern Γ pf' = Some (phi1 ---> phi2))) => {
+      | left _ => Some ((psi $ phi1) ---> (psi $ phi2))
+      | right _ => None
+      } ;
+
+    Proved_pattern _ (mlp_Svar_subst _ phi psi X _ _ pf')
+      with (decide (Proved_pattern Γ pf' = Some phi)) => {
+      | left _ => Some (free_svar_subst phi psi X)
+      | right _ => None
+      } ;
+
+    Proved_pattern _ (mlp_Pre_fixp _ phi _)
+      => Some (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi)) ;
+
+    Proved_pattern _ (mlp_Knaster_tarski _ phi psi _ pf')
+      with (decide (Proved_pattern Γ pf' = Some ((instantiate (patt_mu phi) psi) ---> psi))) => {
+      | left _ => Some ((@patt_mu signature phi) ---> psi)
+      | right _ => None
+      } ;
+
+    Proved_pattern _ (mlp_Existence _)
+      => Some (ex , patt_bound_evar 0) ;
+
+    Proved_pattern _ (mlp_Singleton_ctx _ C1 C2 phi x _)
+      => Some (! ((subst_ctx C1 (patt_free_evar x and phi))
+                    and (subst_ctx C2 (patt_free_evar x and (! phi)))))
+  .
+
 
   Definition proof_of (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_from_theory Γ) :=
     Proved_pattern Γ pf = Some ϕ.
@@ -1219,7 +1306,9 @@ Proof.
   - apply P1; assumption.
   - apply P2; assumption.
   - apply P3; assumption.
-  - eauto using Modus_ponens with nocore.
+  - apply bool_decide_eq_true in Heqb.
+    apply bool_decide_eq_true in Heqb0.
+    eauto using Modus_ponens with nocore.
   - apply Ex_quan; assumption.
   - apply Ex_gen; try assumption. auto with nocore.
   - apply Prop_bott_left; assumption.
@@ -1300,19 +1389,53 @@ Proof.
       => replace epf with (eq_refl x) by (apply UIP_dec; intros x' y'; apply option_eq_dec)
     end.
     reflexivity.
-  - 
+  - pose proof (epf' := epf).
+    destruct (bool_decide (Proved_pattern Γ pf1 = Some phi1)) eqn:Heq1 in |-.
+    2: { rewrite Heq1 in epf'. inversion epf'. }
+    rewrite Heq1 in epf'.
+    destruct (bool_decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq2 in |-.
+    2: { rewrite Heq2 in epf'. inversion epf'. }
+    rewrite Heq2 in epf'.
+    inversion epf'. subst. clear epf'.
+    move: epf.
+    move: (erefl (bool_decide (Proved_pattern Γ pf1 = Some phi1))).
+    Set Printing All.
+    rewrite {1 3 4 5 6 7 8 9} Heq1.
+    rewrite epf.
+(*
+    destruct (decide (Proved_pattern Γ pf1 = Some phi1)).
+    2: { inversion epf. }
+    pose proof (epf' := epf).
+    destruct (decide (Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) in epf'.
+    2: { inversion epf'. }
+    move: epf.
+    inversion epf' as [[Hphi2]].
+    subst phi2. clear epf'.
+    repeat (move: (erefl _)).
+    (*rewrite e0.*)
+    Set Printing All.
+    rewrite {1 2 3 4 5 6 15 16 17 18 19 20}e0.
+*)
+    (*
     pose proof (epf' := epf). 
-    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq in |-.
+    destruct (decide (Proved_pattern Γ pf1 = Some phi1 ∧ Proved_pattern Γ pf2 = Some (phi1 ---> phi2))) eqn:Heq
+      in |-.
     2: { rewrite Heq in epf'. inversion epf'. }
     rewrite Heq in epf'. inversion epf'. subst.
     destruct a as [H1 H2].
     repeat (move: (erefl _)).
-    
-Set Printing Implicit.
-    rewrite {1 4 5 6 7}Heq.
+    (*
+    Set Printing Implicit.
+    rewrite {1 4 5 6 9}Heq.
 
     replace epf with (eq_refl (Some ϕ)) by (apply UIP_dec; intros x' y'; apply option_eq_dec).
     reflexivity.
+    *)
+    *)
+    admit.
+  - admit.
+  - case_match.
+  
 
 
 Lemma proof_to_weak_proof__proof {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ)
