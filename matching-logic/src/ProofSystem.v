@@ -1813,28 +1813,46 @@ Proof.
   { simpl. split_and!; assumption. }
 Defined.
 
-  (* Pre-Fixpoint *)
-  | Pre_fixp (phi : Pattern) :
-      well_formed (patt_mu phi) ->
-      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
+Lemma Pre_fixp {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢w (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ)).
+Proof.
+  intros wfϕ.
+  eapply (existT2 _ _ (mlp_Pre_fixp Γ ϕ wfϕ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Knaster-Tarski *)
-  | Knaster_tarski (phi psi : Pattern) :
-      well_formed (patt_mu phi) ->
-      theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
-      theory ⊢ ((@patt_mu signature phi) ---> psi)
+Lemma Knaster_tarski {Σ : Syntax.Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢w ((instantiate (patt_mu ϕ) ψ) ---> ψ) ->
+  Γ ⊢w ((patt_mu ϕ) ---> ψ).
+Proof.
+  intros wfϕ [pf pfe pfwf].
+  eapply (existT2 _ _ (mlp_Knaster_tarski Γ ϕ ψ wfϕ pf)).
+  { reflexivity. }
+  { simpl. split; assumption. }
+Defined.
 
-  (* Technical rules *)
-  (* Existence *)
-  | Existence : theory ⊢ (ex , patt_bound_evar 0)
+Lemma Existence {Σ : Syntax.Signature} (Γ : Theory) :
+  Γ ⊢w (ex , patt_bound_evar 0).
+Proof.
+  eapply (existT2 _ _ (mlp_Existence Γ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
-      well_formed phi ->
-      theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
-                   (subst_ctx C2 (patt_free_evar x and (! phi)))))
-
-
+Lemma Singleton_ctx {Σ : Syntax.Signature} (Γ : Theory)
+      (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
+  well_formed ϕ ->
+  Γ ⊢w (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
+                   (subst_ctx C2 (patt_free_evar x and (! ϕ)))))%ml.
+Proof.
+  intros wfϕ.
+  eapply (existT2 _ _ (mlp_Singleton_ctx Γ C1 C2 ϕ x wfϕ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
 (*
 Definition windifferent_to_cast (P : wproofbpred)
