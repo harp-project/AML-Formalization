@@ -1672,19 +1672,44 @@ Proof.
 Defined.
 
 
-(* Template *)
+Lemma Modus_ponens {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern):
+  well_formed ϕ₁ ->
+  well_formed (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢w ϕ₁ ->
+  Γ ⊢w (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢w ϕ₂.
+Proof.
+  intros wfϕ₁ wfϕ₁₂ Hϕ₁ Hϕ₁₂.
+  destruct Hϕ₁ as [pf1 pf1e pf1wf].
+  destruct Hϕ₁₂ as [pf2 pf2e pf2wf].
+  eapply (existT2 _ _ (mlp_Modus_ponens Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₁₂ pf1 pf2)).
+  { reflexivity. }
+  { simpl. split_and!; assumption. }
+Defined.
 
-  (* Modus ponens *)
-  | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
-      theory ⊢ phi1 ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ phi2
+Lemma Ex_quan {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern) (y : evar):
+      well_formed (patt_exists ϕ) ->
+      Γ ⊢w (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ)).
+Proof.
+  intros wfϕ.
+  eapply (existT2 _ _ (mlp_Ex_quan Γ ϕ y wfϕ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Existential quantifier *)
-  | Ex_quan (phi : Pattern) (y : evar) :
-      well_formed (patt_exists phi) ->
-      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+Lemma Ex_gen {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar):
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢w (ϕ₁ ---> ϕ₂) ->
+  x ∉ (free_evars ϕ₂) ->
+  Γ ⊢w (exists_quantify x ϕ₁ ---> ϕ₂).
+Proof.
+  intros wfϕ₁ wfϕ₂ H Hx.
+  destruct H as [pf pfe pfwf].
+  eapply (existT2 _ _ (mlp_Ex_gen Γ ϕ₁ ϕ₂ x wfϕ₁ wfϕ₂ pf Hx)).
+  { reflexivity. }
+  simpl. split_and!; assumption.
+Defined.
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
