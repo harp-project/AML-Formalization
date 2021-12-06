@@ -1766,26 +1766,52 @@ Proof.
   { simpl. exact I. }
 Defined.
 
-  | Prop_ex_right (phi psi : Pattern) :
-      well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+Lemma Prop_ex_right {Σ : Syntax.Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed (ex , ϕ) ->
+  well_formed ψ ->
+  Γ ⊢w ((ψ $ (ex , ϕ)) ---> (ex , ψ $ ϕ))%ml.
+Proof.
+  intros wfϕ wfψ.
+  eapply (existT2 _ _ (mlp_Prop_ex_right Γ ϕ ψ wfϕ wfψ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Framing *)
-  | Framing_left (phi1 phi2 psi : Pattern) :
-      well_formed psi ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
+Lemma Framing_left {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+  well_formed ψ ->
+  Γ ⊢w (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢w ((ϕ₁ $ ψ) ---> (ϕ₂ $ ψ))%ml.
+Proof.
+  intros wfψ H.
+  destruct H as [pf pfe pfwf].
+  eapply (existT2 _ _ (mlp_Framing_left Γ ϕ₁ ϕ₂ ψ wfψ pf)).
+  { reflexivity. }
+  { simpl. split_and!; assumption. }
+Defined.
 
-  | Framing_right (phi1 phi2 psi : Pattern) :
-      well_formed psi ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
+Lemma Framing_right {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+  well_formed ψ ->
+  Γ ⊢w (ϕ₁ ---> ϕ₂) ->
+  Γ ⊢w ((ψ $ ϕ₁) ---> (ψ $ ϕ₂))%ml.
+Proof.
+  intros wfψ H.
+  destruct H as [pf pfe pfwf].
+  eapply (existT2 _ _ (mlp_Framing_right Γ ϕ₁ ϕ₂ ψ wfψ pf)).
+  { reflexivity. }
+  { simpl. split_and!; assumption. }
+Defined.
 
-  (* Fixpoint reasoning *)
-  (* Set Variable Substitution *)
-  | Svar_subst (phi psi : Pattern) (X : svar) :
-      well_formed phi -> well_formed psi ->
-      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
+Lemma Svar_subst {Σ : Syntax.Signature} (Γ : Theory) (ϕ ψ : Pattern) (X : svar) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  Γ ⊢w ϕ ->
+  Γ ⊢w (free_svar_subst ϕ ψ X)%ml.
+Proof.
+  intros wfϕ wfψ [pf pfe pfwf].
+  eapply (existT2 _ _ (mlp_Svar_subst Γ ϕ ψ X wfϕ wfψ pf)).
+  { reflexivity. }
+  { simpl. split_and!; assumption. }
+Defined.
 
   (* Pre-Fixpoint *)
   | Pre_fixp (phi : Pattern) :
