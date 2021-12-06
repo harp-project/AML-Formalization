@@ -1563,6 +1563,8 @@ Fixpoint wuses_ex_gen {Σ : Syntax.Signature} (EvS : EVarSet) Γ (pf : ML_proof_
   | mlp_Singleton_ctx _ _ _ _ _ _ => false
   end.
 
+(*Lemma wuses_ex_gen__correct {Σ : Syntax.Signature} (EvS : EVarSet) Γ (pf : ML_proof_from_theory Γ) *)
+
 Fixpoint wuses_svar_subst {Σ : Syntax.Signature} (S : SVarSet) Γ (pf : ML_proof_from_theory Γ) :=
   match pf with
   | mlp_hypothesis _ _ _ _ => false
