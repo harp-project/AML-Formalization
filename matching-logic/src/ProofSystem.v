@@ -1535,3 +1535,82 @@ Proof.
   unfold proof_to_weak_proof. simpl.
   apply proof_to_weak_proof_to_proof.
 Defined.
+
+
+Fixpoint wuses_ex_gen {Σ : Syntax.Signature} (EvS : EVarSet) Γ (pf : ML_proof_from_theory Γ) :=
+  match pf with
+  | mlp_hypothesis _ _ _ _ => false
+  | mlp_P1 _ _ _ _ _ => false
+  | mlp_P2 _ _ _ _ _ _ _ => false
+  | mlp_P3 _ _ _ => false
+  | mlp_Modus_ponens _ _ _ _ _ m0 m1
+    => wuses_ex_gen EvS _ m0
+       || wuses_ex_gen EvS _ m1
+  | mlp_Ex_quan _ _ _ _ => false
+  | mlp_Ex_gen _ _ _ x _ _ pf _ => if decide (x ∈ EvS) is left _ then true else wuses_ex_gen EvS _ pf
+  | mlp_Prop_bott_left _ _ _ => false
+  | mlp_Prop_bott_right _ _ _ => false
+  | mlp_Prop_disj_left _ _ _ _ _ _ _ => false
+  | mlp_Prop_disj_right _ _ _ _ _ _ _ => false
+  | mlp_Prop_ex_left _ _ _ _ _ => false
+  | mlp_Prop_ex_right _ _ _ _ _ => false
+  | mlp_Framing_left _ _ _ _ _ m0 => wuses_ex_gen EvS _ m0
+  | mlp_Framing_right _ _ _ _ _ m0 => wuses_ex_gen EvS _ m0
+  | mlp_Svar_subst _ _ _ _ _ _ m0 => wuses_ex_gen EvS _ m0
+  | mlp_Pre_fixp _ _ _ => false
+  | mlp_Knaster_tarski _ _ phi psi m0 => wuses_ex_gen EvS _ m0
+  | mlp_Existence _ => false
+  | mlp_Singleton_ctx _ _ _ _ _ _ => false
+  end.
+
+Fixpoint wuses_svar_subst {Σ : Syntax.Signature} (S : SVarSet) Γ (pf : ML_proof_from_theory Γ) :=
+  match pf with
+  | mlp_hypothesis _ _ _ _ => false
+  | mlp_P1 _ _ _ _ _ => false
+  | mlp_P2 _ _ _ _ _ _ _ => false
+  | mlp_P3 _ _ _ => false
+  | mlp_Modus_ponens _ _ _ _ _ m0 m1
+    => wuses_svar_subst S _ m0
+       || wuses_svar_subst S _ m1
+  | mlp_Ex_quan _ _ _ _ => false
+  | mlp_Ex_gen _ _ _ _ _ _ pf' _ => wuses_svar_subst S _ pf'
+  | mlp_Prop_bott_left _ _ _ => false
+  | mlp_Prop_bott_right _ _ _ => false
+  | mlp_Prop_disj_left _ _ _ _ _ _ _ => false
+  | mlp_Prop_disj_right _ _ _ _ _ _ _ => false
+  | mlp_Prop_ex_left _ _ _ _ _ => false
+  | mlp_Prop_ex_right _ _ _ _ _ => false
+  | mlp_Framing_left _ _ _ _ _ m0 => wuses_svar_subst S _ m0
+  | mlp_Framing_right _ _ _ _ _ m0 => wuses_svar_subst S _ m0
+  | mlp_Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else wuses_svar_subst S _ m0
+  | mlp_Pre_fixp _ _ _ => false
+  | mlp_Knaster_tarski _ _ phi psi m0 => wuses_svar_subst S _ m0
+  | mlp_Existence _ => false
+  | mlp_Singleton_ctx _ _ _ _ _ _ => false
+  end.
+
+
+Fixpoint wuses_kt {Σ : Syntax.Signature} Γ (pf : ML_proof_from_theory Γ) :=
+  match pf with
+  | mlp_hypothesis _ _ _ _ => false
+  | mlp_P1 _ _ _ _ _ => false
+  | mlp_P2 _ _ _ _ _ _ _ => false
+  | mlp_P3 _ _ _ => false
+  | mlp_Modus_ponens _ _ _ _ _ m0 m1
+    => wuses_kt _ m0 || wuses_kt _ m1
+  | mlp_Ex_quan _ _ _ _ => false
+  | mlp_Ex_gen _ _ _ _ _ _ pf' _ => wuses_kt _ pf'
+  | mlp_Prop_bott_left _ _ _ => false
+  | mlp_Prop_bott_right _ _ _ => false
+  | mlp_Prop_disj_left _ _ _ _ _ _ _ => false
+  | mlp_Prop_disj_right _ _ _ _ _ _ _ => false
+  | mlp_Prop_ex_left _ _ _ _ _ => false
+  | mlp_Prop_ex_right _ _ _ _ _ => false
+  | mlp_Framing_left _ _ _ _ _ m0 => wuses_kt _ m0
+  | mlp_Framing_right _ _ _ _ _ m0 => wuses_kt _ m0
+  | mlp_Svar_subst _ _ _ X _ _ m0 => wuses_kt _ m0
+  | mlp_Pre_fixp _ _ _ => false
+  | mlp_Knaster_tarski _ _ phi psi m0 => true
+  | mlp_Existence _ => false
+  | mlp_Singleton_ctx _ _ _ _ _ _ => false
+  end.
