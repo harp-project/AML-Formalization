@@ -1711,36 +1711,60 @@ Proof.
   simpl. split_and!; assumption.
 Defined.
 
-  (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
-      well_formed phi1 -> well_formed phi2 ->
-      theory ⊢ (phi1 ---> phi2) ->
-      x ∉ (free_evars phi2) ->
-      theory ⊢ (exists_quantify x phi1 ---> phi2)
+Lemma Prop_bott_left {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern):
+  well_formed ϕ ->
+  Γ ⊢w (patt_bott $ ϕ ---> patt_bott)%ml.
+Proof.
+  intros wfϕ.
+  eapply (existT2 _ _ (mlp_Prop_bott_left Γ ϕ wfϕ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Frame reasoning *)
-  (* Propagation bottom *)
-  | Prop_bott_left (phi : Pattern) :
-      well_formed phi ->
-      theory ⊢ (patt_bott $ phi ---> patt_bott)
+Lemma Prop_bott_right {Σ : Syntax.Signature} (Γ : Theory) (ϕ : Pattern):
+  well_formed ϕ ->
+  Γ ⊢w (ϕ $ patt_bott ---> patt_bott)%ml.
+Proof.
+  intros wfϕ.
+  eapply (existT2 _ _ (mlp_Prop_bott_right Γ ϕ wfϕ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  | Prop_bott_right (phi : Pattern) :
-      well_formed phi ->
-      theory ⊢ (phi $ patt_bott ---> patt_bott)
+Lemma Prop_disj_left {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern):
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  well_formed ψ ->
+  Γ ⊢w (((ϕ₁ or ϕ₂) $ ψ) ---> ((ϕ₁ $ ψ) or (ϕ₂ $ ψ)))%ml.
+Proof.
+  intros wfϕ₁ wfϕ₂ wfψ.
+  eapply (existT2 _ _ (mlp_Prop_disj_left Γ ϕ₁ ϕ₂ ψ wfϕ₁ wfϕ₂ wfψ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  (* Propagation disjunction *)
-  | Prop_disj_left (phi1 phi2 psi : Pattern) :
-      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+Lemma Prop_disj_right {Σ : Syntax.Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern):
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  well_formed ψ ->
+  Γ ⊢w ((ψ $ (ϕ₁ or ϕ₂)) ---> ((ψ $ ϕ₁) or (ψ $ ϕ₂)))%ml.
+Proof.
+  intros wfϕ₁ wfϕ₂ wfψ.
+  eapply (existT2 _ _ (mlp_Prop_disj_right Γ ϕ₁ ϕ₂ ψ wfϕ₁ wfϕ₂ wfψ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
-  | Prop_disj_right (phi1 phi2 psi : Pattern) :
-      well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
-
-  (* Propagation exist *)
-  | Prop_ex_left (phi psi : Pattern) :
-      well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
+Lemma Prop_ex_left {Σ : Syntax.Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed (ex , ϕ) ->
+  well_formed ψ ->
+  Γ ⊢w (((ex , ϕ) $ ψ) ---> (ex , ϕ $ ψ))%ml.
+Proof.
+  intros wfϕ wfψ.
+  eapply (existT2 _ _ (mlp_Prop_ex_left Γ ϕ ψ wfϕ wfψ)).
+  { reflexivity. }
+  { simpl. exact I. }
+Defined.
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
