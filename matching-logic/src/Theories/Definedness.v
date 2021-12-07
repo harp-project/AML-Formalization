@@ -2254,7 +2254,7 @@ Section ProofSystemTheorems.
       }
       destruct (decide ((fresh_evar (φ $ φ')) = (fresh_evar (φ $ φ')))) in HSUB;
         simpl in HSUB. 2: congruence.
-      rewrite evar_quantify_free_evar_subst in HSUB; auto.
+      rewrite evar_quantify_noop in HSUB; auto.
 
       apply count_evar_occurrences_0.
       unfold fresh_evar. simpl.
@@ -3361,7 +3361,7 @@ Proof.
     2: {
     apply (@strip_exists_quantify_l Σ Γ y).
     { simpl.
-      rewrite evar_quantify_free_evar_subst.
+      rewrite evar_quantify_noop.
       { apply count_evar_occurrences_0.
         subst y.
         eapply evar_is_fresh_in_richer'.
@@ -3418,7 +3418,7 @@ Proof.
       unfold exists_quantify.
       simpl.
       repeat case_match; try congruence.
-      rewrite evar_quantify_free_evar_subst.
+      rewrite evar_quantify_noop.
       { apply count_evar_occurrences_0.
         subst y.
         eapply evar_is_fresh_in_richer'.
