@@ -106,7 +106,6 @@ Section syntax.
   Context {Σ : Signature}.
   
   (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
-Check compare_nat. Print comparison_nat.
   (* substitute bound variable x for psi in phi *)
   Fixpoint bevar_subst (phi psi : Pattern) (x : db_index) :=
     match phi with
@@ -397,7 +396,7 @@ Check compare_nat. Print comparison_nat.
   Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
   Proof. reflexivity. Qed.
   Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
-  Proof. reflexivity. Qed. Print evar_open.
+  Proof. reflexivity. Qed.
   Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = 
                            match compare_nat x k with
                            | Nat_less _ _ _ => patt_bound_evar x
@@ -478,7 +477,9 @@ Check compare_nat. Print comparison_nat.
     rewrite (IHp (S k)); reflexivity.
   Qed.
 
-  (* set variable occurs positively in pattern *)
+(*  TODO: deprecated
+
+ (* set variable occurs positively in pattern *)
 
   Inductive positive_occurrence_named : svar -> Pattern -> Prop :=
   | po_free_evar (x : evar) (sv : svar) : positive_occurrence_named sv (patt_free_evar x)
@@ -562,7 +563,7 @@ Check compare_nat. Print comparison_nat.
   | nodb_mu (phi : Pattern) (n : db_index) :
       negative_occurrence_db (S n) phi ->
       negative_occurrence_db n (patt_mu phi)
-  .
+  . *)
 
   (* for bound set variables *)
   Fixpoint no_negative_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
@@ -625,7 +626,9 @@ Check compare_nat. Print comparison_nat.
     | patt_mu ϕ' => svar_has_negative_occurrence X ϕ'
     end.
   
-  Lemma Private_no_negative_positive_occurrence_P dbi ϕ :
+(* TODO: deprecated
+
+   Lemma Private_no_negative_positive_occurrence_P dbi ϕ :
     prod (reflect (positive_occurrence_db dbi ϕ) (no_negative_occurrence_db_b dbi ϕ))
          (reflect (negative_occurrence_db dbi ϕ) (no_positive_occurrence_db_b dbi ϕ)).
   Proof.
@@ -690,32 +693,38 @@ Check compare_nat. Print comparison_nat.
     intros phi db1 db2 x H.
     pose proof (H' := positive_negative_occurrence_db_evar_open phi db1 db2 x).
     firstorder.
+  Qed. *)
+
+  Lemma positive_negative_occurrence_evar_open_and : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
+      (*le db1 db2 ->*)
+      (no_positive_occurrence_db_b db1 phi -> no_positive_occurrence_db_b db1 (evar_open db2 x phi))
+      /\ (no_negative_occurrence_db_b db1 phi -> no_negative_occurrence_db_b db1 (evar_open db2 x phi)).
+  Proof.
+    induction phi; intros db1 db2 x'; cbn; split; intro H; try lia; auto.
+    * case_match; auto.
+    * case_match; auto.
+    * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
+    * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
+    * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
+    * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
+    * rewrite -> (proj1 (IHphi db1 (S db2) x')); auto.
+    * rewrite -> (proj2 (IHphi db1 (S db2) x')); auto.
+    * rewrite -> (proj1 (IHphi (S db1) db2 x')); auto.
+    * rewrite -> (proj2 (IHphi (S db1) db2 x')); auto.
   Qed.
 
   Lemma no_negative_occurrence_evar_open phi db1 db2 x:
     no_negative_occurrence_db_b db1 phi = true ->
     no_negative_occurrence_db_b db1 (evar_open db2 x phi) = true.
   Proof.
-    intros H.
-    eapply elimT in H.
-    2: apply no_negative_occurrence_P.
-    eapply introT.
-    apply no_negative_occurrence_P.
-    apply positive_occurrence_db_evar_open.
-    apply H.
+    apply positive_negative_occurrence_evar_open_and.
   Qed.
 
   Lemma no_positive_occurrence_evar_open phi db1 db2 x:
     no_positive_occurrence_db_b db1 phi = true ->
     no_positive_occurrence_db_b db1 (evar_open db2 x phi) = true.
   Proof.
-    intros H.
-    eapply elimT in H.
-    2: apply no_positive_occurrence_P.
-    eapply introT.
-    apply no_positive_occurrence_P.
-    apply negative_occurrence_db_evar_open.
-    apply H.
+    apply positive_negative_occurrence_evar_open_and.
   Qed.
 
   Fixpoint well_formed_positive (phi : Pattern) : bool :=
@@ -1659,12 +1668,7 @@ Check compare_nat. Print comparison_nat.
       destruct H as [H1 H2].
       apply andb_true_iff.
       split.
-      eapply introT.
-      apply no_negative_occurrence_P.      
-      apply positive_occurrence_db_evar_open.
-      eapply elimT.
-      apply no_negative_occurrence_P.
-      apply H1.
+      apply no_negative_occurrence_evar_open; auto.
       apply IHphi. apply H2.
   Qed.
 
@@ -1768,7 +1772,7 @@ Check compare_nat. Print comparison_nat.
       destruct H as [H1 H2].
       erewrite -> IHphi1, IHphi2 by eassumption.
       reflexivity.
-    - simpl in H. unfold evar_open, evar_quantify in IHphi. Print free_evar_subst.
+    - simpl in H. unfold evar_open, evar_quantify in IHphi.
       erewrite -> IHphi by eassumption. reflexivity.
     - simpl in H. apply IHphi in H. unfold evar_open in H. rewrite H. reflexivity.
   Qed.
@@ -2237,28 +2241,19 @@ Check compare_nat. Print comparison_nat.
   Lemma not_free_implies_positive_negative_occurrence :
     forall (phi : Pattern) (X : svar),
       X ∉ (free_svars phi) ->
-      positive_occurrence_named X phi /\ negative_occurrence_named X phi.
+      svar_has_positive_occurrence X phi = false /\ svar_has_negative_occurrence X phi = false.
   Proof.
-    induction phi; simpl; intros Y H; split; try constructor. (* try firstorder.*)
-    * unfold not. intros H0. apply H. apply elem_of_singleton_2. symmetry. assumption.
-    * apply IHphi1. unfold not. intros H0.
-      assert (H': Y ∈ (union (free_svars phi1) (free_svars phi2))).
-      { apply elem_of_union_l. assumption. }
-      auto.
-    * apply IHphi2. unfold not. intros H0.
-      assert (H': Y ∈ (union (free_svars phi1) (free_svars phi2))).
-      { apply elem_of_union_r. assumption. }
-      auto.
-    * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
-    * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
-    * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
-    * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
-    * apply IHphi1. unfold not. intros H0. apply H. apply elem_of_union_l. auto.
-    * apply IHphi2. unfold not. intros H0. apply H. apply elem_of_union_r. auto.
-    * apply IHphi. auto.
-    * apply IHphi. auto.
-    * apply IHphi. auto.
-    * apply IHphi. auto.
+    induction phi; simpl; intros Y H; split; try auto.
+    * case_match; auto. set_solver.
+    * now erewrite -> (proj1 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)).
+    * now erewrite -> (proj2 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)).
+    * now erewrite -> (proj2 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)).
+    * now erewrite -> (proj1 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)).
+    * now erewrite -> (proj1 (IHphi _ _)).
+    * now erewrite -> (proj2 (IHphi _ _)).
+    * now erewrite -> (proj1 (IHphi _ _)).
+    * now erewrite -> (proj2 (IHphi _ _)).
+    Unshelve. all: set_solver.
   Qed.
 
   Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
@@ -2305,72 +2300,79 @@ Check compare_nat. Print comparison_nat.
 
   Lemma positive_negative_occurrence_db_named :
     forall (phi : Pattern) (dbi : db_index) (X : svar),
-      (positive_occurrence_db dbi phi ->
-       positive_occurrence_named X phi ->
-       positive_occurrence_named X (svar_open dbi X phi))
-      /\ (negative_occurrence_db dbi phi ->
-          negative_occurrence_named X phi ->
-          negative_occurrence_named X (svar_open dbi X phi)).
+      (no_positive_occurrence_db_b dbi phi ->
+       svar_has_positive_occurrence X phi = false ->
+       svar_has_positive_occurrence X (svar_open dbi X phi) = false)
+      /\ (no_negative_occurrence_db_b dbi phi ->
+          svar_has_negative_occurrence X phi = false ->
+          svar_has_negative_occurrence X (svar_open dbi X phi) = false).
   Proof.
     unfold svar_open.
     induction phi; intros dbi X; split; simpl; try firstorder.
-    + case_match; constructor.
-    + case_match; try constructor.
-      inversion H; subst; congruence.
-    + inversion H; subst. inversion H0; subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. apply IHphi. firstorder. assumption.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
-    + inversion H. inversion H0. subst.
-      constructor. firstorder.
+    * do 2 case_match; auto; congruence.
+    * case_match; auto; congruence.
+    * destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+      erewrite -> (proj1 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)); auto.
+    * destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+      erewrite -> (proj2 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)); auto.
+    * destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+      erewrite -> (proj2 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)); auto.
+    * destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+      erewrite -> (proj1 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)); auto.
   Qed.
 
   Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-      (positive_occurrence_named X (evar_open dbi x ϕ) <-> positive_occurrence_named X ϕ)
-      /\ (negative_occurrence_named X (evar_open dbi x ϕ) <-> negative_occurrence_named X ϕ).
+      (svar_has_positive_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_positive_occurrence X ϕ = false)
+      /\ (svar_has_negative_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_negative_occurrence X ϕ = false).
   Proof.
     unfold evar_open.
-    induction ϕ; intros X dbi x'; simpl; split; try reflexivity.
-    + case_match; auto.
-      split; intros H; inversion H; constructor.
-      split; intros H; constructor.
-    + case_match; auto.
-      split; intros H; inversion H; constructor.
-      split; intros H; constructor.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
-    + split; intros H; inversion H; subst; constructor; firstorder.
+    induction ϕ; intros dbi X; split; simpl; auto.
+    * case_match; auto; congruence.
+    * case_match; auto; congruence.
+    * split.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj1 (proj1 (IHϕ1 _ _ _))), -> (proj1 (proj1 (IHϕ2 _ _ _))); eauto.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj2 (proj1 (IHϕ1 _ _ _))), -> (proj2 (proj1 (IHϕ2 _ _ _))); eauto.
+    * split.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj1 (proj2 (IHϕ1 _ _ _))), -> (proj1 (proj2 (IHϕ2 _ _ _))); eauto.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj2 (proj2 (IHϕ1 _ _ _))), -> (proj2 (proj2 (IHϕ2 _ _ _))); eauto.
+    * split.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj1 (proj2 (IHϕ1 _ _ _))), -> (proj1 (proj1 (IHϕ2 _ _ _))); eauto.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj2 (proj2 (IHϕ1 _ _ _))), -> (proj2 (proj1 (IHϕ2 _ _ _))); eauto.
+    * split.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj1 (proj1 (IHϕ1 _ _ _))), -> (proj1 (proj2 (IHϕ2 _ _ _))); eauto.
+      - intro H. apply orb_false_iff in H as [? ?].
+        erewrite -> (proj2 (proj1 (IHϕ1 _ _ _))), -> (proj2 (proj2 (IHϕ2 _ _ _))); eauto.
+    * split.
+      - intro H. erewrite -> (proj1 (proj1 (IHϕ _ _ _))); eauto.
+      - intro H. erewrite -> (proj2 (proj1 (IHϕ _ _ _))); eauto.
+    * split.
+      - intro H. erewrite -> (proj1 (proj2 (IHϕ _ _ _))); eauto.
+      - intro H. erewrite -> (proj2 (proj2 (IHϕ _ _ _))); eauto.
+    * split.
+      - intro H. erewrite -> (proj1 (proj1 (IHϕ _ _ _))); eauto.
+      - intro H. erewrite -> (proj2 (proj1 (IHϕ _ _ _))); eauto.
+    * split.
+      - intro H. erewrite -> (proj1 (proj2 (IHϕ _ _ _))); eauto.
+      - intro H. erewrite -> (proj2 (proj2 (IHϕ _ _ _))); eauto.
   Qed.
 
-  Lemma positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-      positive_occurrence_named X (evar_open dbi x ϕ) <-> positive_occurrence_named X ϕ.
+  Corollary positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
+      svar_has_positive_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_positive_occurrence X ϕ = false.
   Proof.
-    intros ϕ X dbi x.
-    pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
-    destruct P as [P _]. exact P.
+    apply positive_negative_occurrence_evar_open.
   Qed.
 
-  Lemma negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-      negative_occurrence_named X (evar_open dbi x ϕ) <-> negative_occurrence_named X ϕ.
+  Corollary negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
+      svar_has_negative_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_negative_occurrence X ϕ = false.
   Proof.
-    intros ϕ X dbi x.
-    pose proof (P := positive_negative_occurrence_evar_open ϕ X dbi x).
-    destruct P as [_ P]. exact P.
+    apply positive_negative_occurrence_evar_open.
   Qed.
 
   Lemma evar_open_wfp : forall (sz : nat) (phi : Pattern),
@@ -2429,23 +2431,31 @@ Check compare_nat. Print comparison_nat.
   Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi1 dbi2 : db_index) (X : svar),
       dbi1 < dbi2 ->
       (
-        positive_occurrence_db dbi1 phi ->
-        positive_occurrence_db dbi1 (svar_open dbi2 X phi)
+        no_positive_occurrence_db_b dbi1 phi ->
+        no_positive_occurrence_db_b dbi1 (svar_open dbi2 X phi)
       )
-      /\ (negative_occurrence_db dbi1 phi -> negative_occurrence_db dbi1 (svar_open dbi2 X phi)).
+      /\ (no_negative_occurrence_db_b dbi1 phi -> no_negative_occurrence_db_b dbi1 (svar_open dbi2 X phi)).
   Proof.
     unfold svar_open.
-    induction phi; intros dbi1 dbi2 X Hneq; split; intros H; inversion H; subst; simpl in *; auto.
-    + case_match; constructor.
-    + case_match; constructor; auto. lia.
-    + constructor; firstorder.
-    + constructor; firstorder.
-    + constructor; firstorder.
-    + constructor; firstorder.
-    + constructor. apply IHphi. lia. assumption.
-    + constructor. apply IHphi. lia. assumption.
-    + constructor. apply IHphi. lia. assumption.
-    + constructor. apply IHphi. lia. assumption.
+    induction phi; intros dbi1 dbi2 X Hneq; split; intros H; simpl in *; auto.
+    + do 2 case_match; auto; simpl; case_match; auto. lia.
+    + case_match; constructor; auto.
+    + destruct_and!; split_and!.
+      - now apply IHphi1.
+      - now apply IHphi2.
+    + destruct_and!; split_and!.
+      - now apply IHphi1.
+      - now apply IHphi2.
+    + destruct_and!; split_and!.
+      - now apply IHphi1.
+      - now apply IHphi2.
+    + destruct_and!; split_and!.
+      - now apply IHphi1.
+      - now apply IHphi2.
+    + now apply IHphi.
+    + now apply IHphi.
+    + apply IHphi; auto. lia.
+    + apply IHphi; auto. lia.
   Qed.
 
   Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar),
@@ -2468,30 +2478,32 @@ Check compare_nat. Print comparison_nat.
     + simpl in H. simpl. auto.
     + simpl in H. simpl. apply andb_true_iff in H. destruct H as [H1 H2].
       rewrite IHphi. apply H2. rewrite andb_true_r.
-      eapply introT. apply no_negative_occurrence_P.
-      apply positive_negative_occurrence_db_svar_open_le. lia.
-      eapply elimT. apply no_negative_occurrence_P.
-      apply H1.
+      apply positive_negative_occurrence_db_svar_open_le; auto. lia.
   Qed.
 
   Lemma positive_negative_occurrence_named_svar_open :
     forall (phi : Pattern) (X Y : svar) (dbi : db_index),
       X <> Y ->
       (
-        negative_occurrence_named X phi ->
-        negative_occurrence_named X (svar_open dbi Y phi)
+        svar_has_negative_occurrence X phi = false ->
+        svar_has_negative_occurrence X (svar_open dbi Y phi) = false
       ) /\ (
-        positive_occurrence_named X phi ->
-        positive_occurrence_named X (svar_open dbi Y phi)
+        svar_has_positive_occurrence X phi = false ->
+        svar_has_positive_occurrence X (svar_open dbi Y phi) = false
       ).
   Proof.
     unfold svar_open.
-    induction phi; intros X Y dbi XneY; split; intros Hneg; inversion Hneg; subst;
-      simpl in *; try constructor; try firstorder.
-    - case_match; constructor. 
-      unfold not. intros H0. assert (X = Y). symmetry. assumption.
-      unfold not in XneY. destruct (XneY H).
-    - case_match; constructor.
+    induction phi; intros X Y dbi XneY; split; intros Hneg; simpl in *; auto; try firstorder.
+    - now case_match.
+    - case_match; try auto. simpl. case_match; auto. congruence.
+    - apply orb_false_iff in Hneg as [H1 H2].
+      now erewrite -> (proj1 (IHphi1 X Y dbi XneY)), -> (proj1 (IHphi2 X Y dbi XneY)).
+    - apply orb_false_iff in Hneg as [H1 H2].
+      now erewrite -> (proj2 (IHphi1 X Y dbi XneY)), -> (proj2 (IHphi2 X Y dbi XneY)).
+    - apply orb_false_iff in Hneg as [H1 H2].
+      now erewrite -> (proj2 (IHphi1 X Y dbi XneY)), -> (proj1 (IHphi2 X Y dbi XneY)).
+    - apply orb_false_iff in Hneg as [H1 H2].
+      now erewrite -> (proj1 (IHphi1 X Y dbi XneY)), -> (proj2 (IHphi2 X Y dbi XneY)).
   Qed.
 
   Corollary evar_open_wfc_aux db1 db2 X phi :
@@ -3879,28 +3891,20 @@ Check compare_nat. Print comparison_nat.
 
   Corollary not_bsvar_occur_impl_pos_occ_db phi n:
     ~ bsvar_occur phi n ->
-    positive_occurrence_db n phi.
+    no_positive_occurrence_db_b n phi.
   Proof.
     intros H.
-    eapply elimT.
-    apply (no_negative_occurrence_P n phi).
     pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
-    apply andb_true_iff in H1.
-    destruct H1 as [H1 H2].
-    apply H1.
+    now apply andb_true_iff in H1.
   Qed.
 
   Corollary not_bsvar_occur_impl_neg_occ_db phi n:
     ~ bsvar_occur phi n ->
-    negative_occurrence_db n phi.
+    no_negative_occurrence_db_b n phi.
   Proof.
     intros H.
-    eapply elimT.
-    apply (no_positive_occurrence_P n phi).
     pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
-    apply andb_true_iff in H1.
-    destruct H1 as [H1 H2].
-    apply H2.
+    now apply andb_true_iff in H1.
   Qed.
 
   (* TODO: why is this Private? It can be useful for not only 0 dbi *)
@@ -4105,7 +4109,7 @@ Check compare_nat. Print comparison_nat.
       pose proof (IHphi' := IHphi (S n') Hwfpphi2).
       destruct IHphi' as [IHphi1' IHphi2'].
       assert (H: no_negative_occurrence_db_b 0 (bsvar_subst phi psi (S n'))).
-      { clear IHphi1' IHphi2'. Check no_neg_occ_db_bsvar_subst.
+      { clear IHphi1' IHphi2'.
         apply no_neg_occ_db_bsvar_subst; auto. lia.
       }
       split.
@@ -6540,7 +6544,6 @@ Proof.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
-    Check free_evar_subst_no_occurrence.
     rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
     rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
@@ -6928,8 +6931,6 @@ Proof.
   - rewrite IHAC. clear. set_solver.
 Qed.
 
-Search free_svar_subst.
-
 Lemma free_svar_subst_fresh {Σ : Signature} phi psi X:
   svar_is_fresh_in X phi ->
   free_svar_subst phi psi X = phi.
@@ -7167,7 +7168,7 @@ Proof.
     reflexivity.
   - simpl in wfpϕ. destruct_and!.
     specialize (IHϕ H0).
-    rewrite -> IHϕ. Print well_formed_positive.
+    rewrite -> IHϕ.
     rewrite nno_free_svar_subst.
     { apply andb_true_iff in wfcψ. apply wfcψ. }
     rewrite H.
@@ -7506,7 +7507,6 @@ Proof.
   move: dbi.
   induction ϕ; intros dbi H1 H2; simpl; auto.
   - repeat case_match; auto.
-    Search bsvar_subst well_formed_closed_mu_aux.
     erewrite well_formed_bsvar_subst. reflexivity.
     2: eassumption.
     lia.
@@ -7694,8 +7694,6 @@ Import Notations.
         | (apply wfc_ex_aux_body_mu_imp1; assumption)
         ].
   Qed.
-
-  Search well_formed_closed_mu_aux free_evar_subst.
 
   Ltac wf_auto2 := unfold is_true in *;
       repeat (try assumption; try (solve [wf_auto]);
@@ -8146,7 +8144,6 @@ Lemma bevar_occur_evar_open_2 {Σ : Signature} dbi x ϕ:
   well_formed_closed_ex_aux ϕ dbi ->
   bevar_occur (evar_open dbi x ϕ) dbi = false.
 Proof.
-  Search bevar_occur bevar_subst.
   move: dbi.
   unfold evar_open.
   induction ϕ; intros dbi Hwf; simpl; try reflexivity.
