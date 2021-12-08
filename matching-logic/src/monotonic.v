@@ -20,14 +20,14 @@ Section monotonic.
      Bn - Blacklist of Negative Occurrence - these variables can occur only positively *)
     Definition respects_blacklist (phi : Pattern) (Bp Bn : Ensemble svar) : Prop :=
       forall (var : svar),
-        (Bp var -> negative_occurrence_named var phi) /\ (Bn var -> @positive_occurrence_named Σ var phi).
+        (Bp var -> svar_has_positive_occurrence var phi = false) /\ (Bn var -> @svar_has_negative_occurrence Σ var phi = false).
 
     Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
         respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
         respects_blacklist (phi1 $ phi2)%ml Bp Bn.
     Proof.
       intros. unfold respects_blacklist in *.
-      intros. split; intros; constructor; firstorder; firstorder.
+      intros. split; intros; cbn; apply orb_false_iff; split; try apply H; try apply H0; auto.
     Qed.
 
     Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
@@ -38,10 +38,10 @@ Section monotonic.
       specialize (H var).
       destruct H as [Hneg Hpos].
       split; intros.
-      * specialize (Hneg H).
-        inversion Hneg. subst. assumption.
-      * specialize (Hpos H).
-        inversion Hpos. subst. assumption.
+      * specialize (Hneg H). cbn in Hneg.
+        apply orb_false_iff in Hneg as [Hneg _]. assumption.
+      * specialize (Hpos H). cbn in Hneg.
+        apply orb_false_iff in Hpos as [Hpos _]. assumption.
     Qed.
 
     (* This proof is the same as for app_1 *)
@@ -53,23 +53,18 @@ Section monotonic.
       specialize (H var).
       destruct H as [Hneg Hpos].
       split; intros.
-      * specialize (Hneg H).
-        inversion Hneg. subst. assumption.
-      * specialize (Hpos H).
-        inversion Hpos. subst. assumption.
+      * specialize (Hneg H). cbn in Hneg.
+        apply orb_false_iff in Hneg as [_ Hneg]. assumption.
+      * specialize (Hpos H). cbn in Hneg.
+        apply orb_false_iff in Hpos as [_ Hpos]. assumption.
     Qed.
 
     Lemma respects_blacklist_impl : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
         respects_blacklist phi1 Bn Bp -> respects_blacklist phi2 Bp Bn ->
         respects_blacklist (phi1 ---> phi2) Bp Bn.
     Proof.
-      unfold respects_blacklist.
-      intros.
-      specialize (H var).
-      specialize (H0 var).
-      destruct H as [H1neg H1pos].
-      destruct H0 as [H2neg H2pos].
-      split; intros; constructor; firstorder.
+      intros. unfold respects_blacklist in *.
+      intros. split; intros; cbn; apply orb_false_iff; split; try apply H; try apply H0; auto.
     Qed.
 
     Lemma respects_blacklist_impl_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
@@ -78,12 +73,12 @@ Section monotonic.
       unfold respects_blacklist.
       intros.
       specialize (H var).
-      destruct H as [Hneg Hpos].
+      destruct H as [Hpos Hneg].
       split; intros.
-      * specialize (Hpos H).
-        inversion Hpos. subst. assumption.
-      * specialize (Hneg H).
-        inversion Hneg. subst. assumption.
+      * specialize (Hneg H). cbn in Hneg.
+        apply orb_false_iff in Hneg as [Hneg _]. assumption.
+      * specialize (Hpos H). cbn in Hneg.
+        apply orb_false_iff in Hpos as [Hpos _]. assumption.
     Qed.
 
     Lemma respects_blacklist_impl_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
@@ -92,12 +87,12 @@ Section monotonic.
       unfold respects_blacklist.
       intros.
       specialize (H var).
-      destruct H as [Hneg Hpos].
+      destruct H as [Hpos Hneg].
       split; intros.
-      * specialize (Hneg H).
-        inversion Hneg. subst. assumption.
-      * specialize (Hpos H).
-        inversion Hpos. subst. assumption.
+      * specialize (Hpos H). cbn in Hpos.
+        apply orb_false_iff in Hpos as [_ Hpos]. assumption.
+      * specialize (Hneg H). cbn in Hneg.
+        apply orb_false_iff in Hneg as [_ Hneg]. assumption.
     Qed.
 
     Lemma respects_blacklist_ex : forall (phi : Pattern) (Bp Bn : Ensemble svar),
@@ -106,8 +101,8 @@ Section monotonic.
       intros. unfold respects_blacklist in *.
       intros. specialize (H var). destruct H as [Hneg Hpos].
       split; intros.
-      * specialize (Hneg H). inversion Hneg. assumption.
-      * specialize (Hpos H). inversion Hpos. assumption.
+      * specialize (Hneg H). assumption.
+      * specialize (Hpos H). assumption.
     Qed.
 
     Lemma respects_blacklist_ex' : forall (phi : Pattern) (Bp Bn : Ensemble svar),
@@ -116,7 +111,7 @@ Section monotonic.
       unfold respects_blacklist. intros.
       specialize (H var).
       destruct H as [Hneg Hpos].
-      split; intros; constructor; firstorder.
+      split; auto.
     Qed.
 
     Lemma respects_blacklist_mu : forall (phi : Pattern) (Bp Bn : Ensemble svar),
@@ -125,11 +120,7 @@ Section monotonic.
       unfold respects_blacklist. intros.
       specialize (H var).
       destruct H as [Hneg Hpos].
-      split; intros.
-      - specialize (Hneg H).
-        inversion Hneg. assumption.
-      - specialize (Hpos H).
-        inversion Hpos. assumption.
+      split; intros; auto.
     Qed.
 
     Lemma respects_blacklist_mu' : forall (phi : Pattern) (Bp Bn : Ensemble svar),
@@ -138,7 +129,7 @@ Section monotonic.
       unfold respects_blacklist. intros.
       specialize (H var).
       destruct H as [Hneg Hpos].
-      split; intros; constructor; firstorder.
+      split; auto.
     Qed.
 
     Lemma respects_blacklist_union : forall (phi : Pattern) (Bp1 Bn1 Bp2 Bn2 : Ensemble svar),
@@ -155,7 +146,7 @@ Section monotonic.
 
     Lemma positive_occurrence_respects_blacklist_svar_open :
       forall (phi : Pattern) (dbi : db_index) (X : svar),
-        positive_occurrence_db dbi phi ->
+        no_negative_occurrence_db_b dbi phi ->
         X ∉ (free_svars phi) ->
         respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
@@ -170,7 +161,7 @@ Section monotonic.
         destruct Hpno as [Hpno1 Hpno2].
         auto.
     Qed.
-    
+
     Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern) (X : svar),
         well_formed_positive (patt_mu phi) ->
         svar_is_fresh_in X phi ->
@@ -179,13 +170,7 @@ Section monotonic.
       intros phi X H Hfr. simpl in H.
       apply andb_true_iff in H.
       destruct H as [Hpo Hwfp].
-      apply positive_occurrence_respects_blacklist_svar_open.
-      { eapply elimT.
-        apply no_negative_occurrence_P.
-        rewrite Hpo.
-        constructor.
-      }
-      apply Hfr.
+      apply positive_occurrence_respects_blacklist_svar_open; auto.
     Qed.
 
 
@@ -203,10 +188,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       induction phi; try auto.
       - (* EVar bound *)
         intros. simpl. rewrite evar_open_bound_evar.
-        case_match.
-        * unfold respects_blacklist. intros.
-          split; intros; constructor.
-        * assumption.  
+        case_match; assumption.
       -  (* App *) 
         intros.
         simpl.
@@ -230,12 +212,6 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         apply respects_blacklist_ex'.
         apply respects_blacklist_ex in H.
         auto.
-      - (* Mu *)
-        intros.
-        rewrite evar_open_mu.
-        apply respects_blacklist_mu in H.
-        specialize (IHphi Bp Bn x n H).
-        auto using respects_blacklist_mu'.
     Qed.
   End respects_blacklist.
 
@@ -286,7 +262,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             specialize (H1 x).
             destruct H1 as [Hneg Hpos].
             specialize (Hneg H2).
-            inversion Hneg. subst. contradiction.
+            inversion Hneg. subst. cbn in H5. case_match; congruence.
           * assumption.
           * simpl. simpl in H4. auto.
           * assumption.
@@ -459,7 +435,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := @evar_open_wfp Σ n phi Hsz' 0 fresh Hwfp).
+          pose proof (Hwfp' := @evar_open_wfp Σ n phi Hsz' Hwfp 0 fresh).
           specialize (IHn Hsz' Hwfp' Bp Bn).
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
@@ -558,7 +534,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                         symmetry. assumption.
                       }
                       unfold not in n0. destruct (n0 H3).
-                    * inversion Hrbn. assumption.
+                    * assumption.
                   - intros. destruct H1.
                 }
 
@@ -632,7 +608,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                         symmetry. assumption.
                       }
                       unfold not in n0. destruct (n0 H3).
-                    * inversion Hrbp. assumption.
+                    * assumption.
                 }
 
                 specialize (IHn Hwfp' (Empty_set svar) (Ensembles.Singleton svar V) HrbV).
