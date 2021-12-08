@@ -56,7 +56,7 @@ Section ml_proof_system.
       unfold stdpp_ext.propset_fa_union in H1.
       unfold app_ext in H1.
       rewrite -> elem_of_PropSet in H1.
-      destruct H1 as [le [re [Hunion [Hext_le Happ]]]].
+      destruct H1 as [le [re [Hunion [Hext_le Happ] ] ] ].
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
       exists c. rewrite -> evar_open_app, -> pattern_interpretation_app_simpl. unfold app_ext.
@@ -125,7 +125,7 @@ Section ml_proof_system.
       unfold stdpp_ext.propset_fa_union in H1.
       unfold app_ext in H1.
       rewrite -> elem_of_PropSet in H1.
-      destruct H1 as [le [re [Hext_le [Hunion Happ]]]].
+      destruct H1 as [le [re [Hext_le [Hunion Happ] ] ] ].
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
 
@@ -360,7 +360,7 @@ Proof.
     simpl.
     rewrite -> pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_ex_simpl.
-    simpl.
+    simpl. Check element_substitution_lemma.
 
     rewrite -> element_substitution_lemma with (x := fresh_evar phi).
     2: { apply set_evar_fresh_is_fresh. }
@@ -383,6 +383,7 @@ Proof.
                  (evar_open 0 (fresh_evar phi) phi) → False).
        { intros Hcontra. apply H. split. apply elem_of_top'. apply Hcontra. }
        apply NNPP in H0. exact H0.
+    -- apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [_ i]. auto.
        
   (* Existential generalization *)
   - intros Hv evar_val svar_val.
@@ -528,7 +529,7 @@ Proof.
     rewrite -> pattern_interpretation_iff_subset in e.
     repeat rewrite -> pattern_interpretation_app_simpl.
     rewrite -> elem_of_subseteq. intros.
-    destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
+    destruct H as [le [re [Hphi1 [Hpsi Happ] ] ] ].
     unfold app_ext.
     exists le, re.
     split. apply e. assumption.
@@ -561,7 +562,7 @@ Proof.
     rewrite -> pattern_interpretation_iff_subset in e.
     repeat rewrite -> pattern_interpretation_app_simpl.
     rewrite -> elem_of_subseteq. intros.
-    destruct H as [le [re [Hphi1 [Hpsi Happ]]]].
+    destruct H as [le [re [Hphi1 [Hpsi Happ] ] ] ].
     unfold app_ext.
     exists le, re.
     split. assumption.
@@ -628,12 +629,8 @@ Proof.
     rewrite <- Hsimpl.
     
     rewrite <- set_substitution_lemma.
-    2: { simpl in Hwf. unfold well_formed in Hwf.
-         apply andb_true_iff in Hwf.
-         destruct Hwf as [_ Hwfc].
-         apply wfc_wfc_ind in Hwfc. inversion Hwfc. subst.
-         apply wfc_ind_wfc. assumption.
-    }
+    2: { now apply andb_true_iff in i as [_ i]. }
+    2: { apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [i _]. auto.  }
     2: { apply set_svar_fresh_is_fresh. }
     apply reflexivity.
 
@@ -688,26 +685,16 @@ Proof.
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
     { unfold well_formed in Hwf. apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
-      simpl in Hwfp. apply andb_true_iff in Hwfp. 
-      destruct Hwfp as [Hwfp1 Hwfp2].
-      simpl in Hwfp1.
-      apply wfc_wfc_ind in Hwfc.
-      inversion Hwfc. rename H3 into Hwfcpsi. apply wfc_ind_wfc in Hwfcpsi.
-      simpl. unfold well_formed. simpl.
-      rewrite Hwfp2.
-      apply wfc_ind_wfc in H2.
-
-      rewrite wfp_bsvar_subst; auto.
-      simpl.
-
-      unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. assumption.
-      split_and!; auto.
-      unfold well_formed_closed in *. simpl in *.
+      simpl in Hwfp. apply andb_true_iff in Hwfp as [Hwfp1 Hwfp2]. 
       destruct_and!.
-      split_and!; auto.
-      + apply wfc_mu_aux_bsvar_subst; auto.
-      + apply wfc_ex_aux_bsvar_subst; auto.
+      apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
+      destruct_and!.
+      apply andb_true_iff; split; simpl.
+      apply andb_true_iff in i as [i1 i2].
+      * apply andb_true_iff; split; auto. apply wfp_bsvar_subst; auto.
+      * apply andb_true_iff; split; simpl; apply andb_true_iff; split; auto.
+        apply wfc_mu_aux_bsvar_subst; auto.
+        apply wfc_ex_aux_bsvar_subst; auto.
     }
     specialize (IHHp Hwf').
     
@@ -715,8 +702,8 @@ Proof.
     simpl in IHHp.
     unfold well_formed in Hwf.
     apply andb_true_iff in Hwf.
-    destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc.
-    subst psi0. subst phi0.
+    (*  destruct Hwf as [_ Hwfc]. apply wfc_wfc_ind in Hwfc. inversion Hwfc. *)
+   (*  subst psi0. subst phi0. *)
 
     unfold instantiate in Hp.
     apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
@@ -724,7 +711,12 @@ Proof.
     
     subst F.
     rewrite <- set_substitution_lemma.
-    apply Hv. apply wfc_ind_wfc in H3. apply H3. apply set_svar_fresh_is_fresh.
+    apply Hv. 3: apply set_svar_fresh_is_fresh.
+    {
+      destruct_and!. apply andb_true_iff in H1 as [H10 H11]. simpl in H10, H11.
+      destruct_and!. apply andb_true_iff. auto.
+    }
+    { apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [i _]. auto. }
 
 
   (* Existence *)
@@ -966,6 +958,9 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     induction pf; auto; try (solve [wf_auto2]).
     - unfold free_svar_subst. wf_auto2.
       apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
+      all: fold free_svar_subst.
+      apply wfc_mu_free_svar_subst; auto.
+      apply wfc_ex_free_svar_subst; auto.
     - apply well_formed_not.
       apply well_formed_and.
       + apply wf_sctx.

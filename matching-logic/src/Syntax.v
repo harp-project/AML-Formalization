@@ -7267,6 +7267,28 @@ Qed.
 #[export]
  Hint Resolve wfc_mu_free_svar_subst : core.
 
+Lemma wfc_ex_free_svar_subst {Σ : Signature} level ϕ ψ X:
+  well_formed_closed_ex_aux ϕ level ->
+  well_formed_closed_ex_aux ψ level ->
+  well_formed_closed_ex_aux (free_svar_subst ϕ ψ X) level = true.
+Proof.
+  intros Hϕ Hψ.
+  move: level Hϕ Hψ.
+  induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
+  - case_match; [|reflexivity].
+    assumption.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - destruct_and!.
+    rewrite IHϕ1; auto.
+    rewrite IHϕ2; auto.
+  - rewrite IHϕ; auto. eapply well_formed_closed_ex_aux_ind. 2: exact Hψ. lia.
+Qed.
+
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst : core.
+
 Lemma wfc_ex_free_evar_subst_2 {Σ : Signature} level ϕ ψ X:
   well_formed_closed_ex_aux ϕ level ->
   well_formed_closed_ex_aux ψ level ->
@@ -7904,6 +7926,8 @@ Proof.
       reflexivity. eassumption.
 Qed.
 
+#[export]
+ Hint Resolve wfc_mu_free_evar_subst : core.
 
 Lemma wfp_after_subst_impl_wfp_before {Σ : Signature} ϕ ψ x:
   well_formed_positive (free_evar_subst ϕ ψ x) = true ->
@@ -8107,10 +8131,29 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma wfc_ex_aux_Sn_and_not_bevar_occur_Sn_impl_wfc_ex_aux_n (Σ : Signature) ϕ n:
+Lemma wfc_ex_lower (Σ : Signature) ϕ n:
   bevar_occur ϕ n = false ->
   well_formed_closed_ex_aux ϕ (S n) = true ->
   well_formed_closed_ex_aux ϕ n = true.
+Proof.
+  intros H1 H2.
+  move: n H1 H2.
+  induction ϕ; intros n' H1 H2; simpl in *; auto.
+  - repeat case_match; auto. lia.
+  - apply orb_false_elim in H1. destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  - apply orb_false_elim in H1. destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+Qed.
+
+Lemma wfc_mu_lower (Σ : Signature) ϕ n:
+  bsvar_occur ϕ n = false ->
+  well_formed_closed_mu_aux ϕ (S n) = true ->
+  well_formed_closed_mu_aux ϕ n = true.
 Proof.
   intros H1 H2.
   move: n H1 H2.
@@ -8137,7 +8180,7 @@ Proof.
   - eapply wfp_evar_quan_impl_wfp. eassumption.
   - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
   - apply wfcex_evar_quan_impl_wfcex in H3.
-    apply wfc_ex_aux_Sn_and_not_bevar_occur_Sn_impl_wfc_ex_aux_n; assumption.
+    apply wfc_ex_lower; assumption.
 Qed.
 
 Lemma bevar_occur_evar_open_2 {Σ : Signature} dbi x ϕ:
@@ -8173,3 +8216,4 @@ Proof.
   - rewrite IHϕ; auto.
   - rewrite IHϕ; auto.
 Qed.
+

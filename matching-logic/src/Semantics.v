@@ -1250,7 +1250,7 @@ Section semantics.
   Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
       size phi1 <= sz -> forall (evar_val : EVarVal)
                                 (svar_val : SVarVal) (X : svar),
-        well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 dbi ->
+        well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
         @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
         = @pattern_interpretation M evar_val
@@ -1439,7 +1439,7 @@ Section semantics.
             { subst Xfr1.
               symmetry in HeqHoc'.
               pose proof (Hsubst := @bsvar_subst_not_occur_is_noop _ phi1 phi2 dbi HeqHoc').
-              rewrite Hsubst. auto. apply set_evar_fresh_is_fresh.
+              rewrite Hsubst. auto. apply wfc_mu_lower; auto. auto.
             }
             { pose proof (Hfr := set_evar_fresh_is_fresh').
               specialize (Hfr (union (free_evars (svar_open dbi X phi1)) (free_evars phi2))).
@@ -1449,13 +1449,13 @@ Section semantics.
               rewrite free_evars_svar_open. auto.
             }
             {
-              auto.
+              apply wfc_mu_lower; auto.
             }
             {
               apply bsvar_occur_evar_open. symmetry. auto.
             }
             {
-              now apply wfc_mu_aux_body_ex_imp1.
+              apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_lower; auto.
             }
 
       + (* Mu case *)
@@ -1563,6 +1563,7 @@ Section semantics.
           rewrite Heqphi_subst.
           rewrite bsvar_subst_not_occur_is_noop. auto.
           rewrite bsvar_subst_not_occur_is_noop in Heqphi_subst. all: auto.
+          1-2: apply wfc_mu_lower; auto.
 
           rewrite -> interpretation_fresh_svar_open with (X := fresh_svar phi1) (Y := Y).
           2: { apply set_svar_fresh_is_fresh. }
@@ -1593,12 +1594,12 @@ Section semantics.
              apply interpretation_fresh_svar_open.
              { apply Hfreshy'. }
              apply set_svar_fresh_is_fresh.
-          ++ auto.
+          ++ apply wfc_mu_lower; auto.
   Qed.
 
   Lemma set_substitution_lemma : forall (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
       forall (evar_val : EVarVal) (svar_val : SVarVal) (X : svar),
-        well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 dbi ->
+        well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
         @pattern_interpretation M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
         = @pattern_interpretation M evar_val
@@ -1613,7 +1614,7 @@ Section semantics.
   Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) (M : Model) (phi : Pattern) (y : evar),
       size phi <= sz -> forall (evar_val : EVarVal)
                                (svar_val : SVarVal) (x : evar),
-        evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi dbi ->
+        evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi (S dbi) ->
         @pattern_interpretation M evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
         = @pattern_interpretation M
                                   (update_evar_val x (evar_val y) evar_val)
@@ -1816,6 +1817,7 @@ Section semantics.
       + rewrite evar_open_mu.
         rewrite 2!pattern_interpretation_mu_simpl. simpl.
         apply f_equal. apply functional_extensionality. intros x0.
+        (* fold (evar_open dbi y phi). *)
         remember (evar_open dbi x phi) as phi'.
         remember (fresh_svar phi') as Xfr'.
         remember (svar_fresh (elements (free_svars phi'))) as Xu.
@@ -1884,14 +1886,17 @@ Section semantics.
               unfold evar_is_fresh_in.
               rewrite -> free_evars_svar_open. subst phi'.
               rewrite evar_open_not_occur; auto.
+              simpl in Hwf. apply wfc_ex_lower; auto.
             }
             rewrite <- Hpi. subst phi'. rewrite evar_open_not_occur; auto.
+            { apply wfc_ex_lower; auto. }
             subst svar_val1'. subst svar_val2'.
             rewrite -> interpretation_fresh_svar_open with (Y := Xu). reflexivity.
             { subst Xfr1.
               symmetry in HeqHoc'.
               pose proof (Hsubst := @bevar_subst_not_occur_is_noop _ phi (patt_free_evar y) dbi HeqHoc').
               rewrite Hsubst; auto.
+              apply wfc_ex_lower; auto.
             }
             { pose proof (Hfr := set_svar_fresh_is_fresh').
               specialize (Hfr (free_svars (evar_open dbi x phi))).
@@ -1900,14 +1905,14 @@ Section semantics.
               rewrite free_svars_evar_open. auto.
             }
             { apply bevar_occur_svar_open. symmetry. auto. }
-            { apply wfc_ex_aux_body_mu_imp1. eapply well_formed_closed_ex_aux_ind.
-              2: exact Hwf. auto.
-            } 
+            { apply wfc_ex_aux_body_mu_imp1.
+              apply wfc_ex_lower; auto.
+            }
   Qed.
 
   Lemma element_substitution_lemma
         (M : Model) (phi : Pattern) (x y : evar) (evar_val : EVarVal) (svar_val : SVarVal) (dbi : db_index) :
-    evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi dbi ->
+    evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi (S dbi) ->
     pattern_interpretation evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
     = @pattern_interpretation M
                               (update_evar_val x (evar_val y) evar_val)
