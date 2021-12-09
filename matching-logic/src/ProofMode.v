@@ -227,12 +227,59 @@ Structure proofProperty3 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ�
 
 Arguments ProofProperty3 [Σ] P [Γ ϕ ψ₁ ψ₂ ψ₃] pp3_proof%function_scope _%function_scope.
 
+Check locked. Print locked.
+Definition id_nat_t' (x : nat) : nat. Proof. exact x. Defined.
+Definition id_nat_t := nosimpl id_nat_t'.
+Print id_nat_t.
+Strategy 1 [id_nat_t].
+(*Opaque id_nat_t.*)
+Compute (id_nat_t 5).
+(*Lemma id_nat_t_of_5 : id_nat_t 5 = 5.
+Proof. unfold id_nat_t.*)
 
-Ltac2 mutable solve_indif () := ltac1:(repeat (
-                        simple eapply pp0_proof_property
-                        || simple eapply pp1_proof_property
-                        || simple eapply pp2_proof_property)).
+Definition nsu := unit.
+Strategy 10000 [nsu].
+Lemma pf_nsu : nsu.
+  simpl.
+  (*Set Debug "tactic-unification".*)
+  eapply ().
+Defined.
 
+Print Strategies.
+(* First, define a lemma, Defined. Then, prove its properties. Then, make it Opaque. *)
+
+(*Proof. with_strategy transparent [id_nat_t] unfold id_nat_t. reflexivity. Defined.*)
+
+
+Local Ltac eapply_X_proof_property := eapply pp0_proof_property
+                        || eapply pp1_proof_property
+                        || eapply pp2_proof_property.
+
+Local Ltac eapply_X_proof_property_but_do_not_unfold :=
+    lazymatch goal with
+    | [|- _ _ _ ?tgt = _]
+      => (*idtac tgt;*)
+         let rec go t :=
+           lazymatch t with
+           | (?f ?x) => go f
+           | ?f => f
+           end
+         in
+         let f := (go tgt) in
+         idtac f;
+         (let ff :=
+            ltac2:(f |-
+                     if (Constr.is_constructor(Option.get (Ltac1.to_constr(f))))
+                     then (ltac1:(idtac "is constructor"; eapply_X_proof_property))
+                     else (ltac1:(f |- (idtac "is not constructor";
+                  with_strategy opaque [f] eapply_X_proof_property)) f))
+          in
+          (ff f)
+         )
+    end.
+  
+
+Ltac2 mutable solve_indif () := ltac1:(repeat (eapply_X_proof_property_but_do_not_unfold)).
 Ltac solve_indif := ltac2:(solve_indif ()).
 
 
@@ -304,7 +351,8 @@ Section FOL_helpers.
   Lemma A_impl_A_indifferent
         P {HP : IndifProp P} Γ A (wfA : well_formed A):
     P _ _ (@A_impl_A Γ A wfA) = false.
-  Proof.
+  Proof. simpl.
+    solve_indif. (* Should have no progress *)
     unfold A_impl_A.
     solve_indif.
   Qed.
@@ -2224,12 +2272,35 @@ Proof.
   intros H. apply H.
 Qed.
 
+Structure BundledProof {Σ : Signature}
+  := mkBundledProof {
+      bf_theory : Theory;
+      bf_hyps : list Pattern ;
+      bf_goal : Pattern ;
+      bf_proof : bf_theory ⊢ (foldr patt_imp bf_goal bf_hyps) ;
+      }.
+
+Definition lift2P {Σ : Signature} (P : proofbpred) (bp : BundledProof)
+           := P _ _ (bf_proof bp).
+Check  mkBundledProof.
+
+(*
+Structure tacticProperty000 {Σ : Signature} (P : proofbpred) (Γ : Theory)
+          (l₁ : list Pattern) (g₁ : Pattern)
+  := TacticProperty0 {
+      tp0_tactic : @mkMyGoal Σ Γ l₁ g₁;
+      tp0_tactic_property :
+      (forall wf1 wf2, lift2P P (mkBundledProof Γ l₁ g₁ (tp0_tactic wf1 wf2)))
+(*        (forall wf1 wf2, liftP P Γ l₁ g₁ (tp0_tactic  wf1 wf2) = false) *)
+    }.
+*)
 Structure tacticProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory)
           (l₁ : list Pattern) (g₁ : Pattern)
   := TacticProperty0 {
       tp0_tactic : @mkMyGoal Σ Γ l₁ g₁;
       tp0_tactic_property :
-        (forall wf1 wf2, liftP P Γ l₁ g₁ (tp0_tactic  wf1 wf2) = false)
+(*      (forall wf1 wf2, lift2P P (mkBundledProof Γ l₁ g₁ (tp0_tactic wf1 wf2)))*)
+        (forall wf1 wf2, liftP P Γ l₁ g₁ (tp0_tactic  wf1 wf2) = false) 
     }.
 
 Arguments TacticProperty0 [Σ] P [Γ] [l₁]%list_scope [g₁] tp0_tactic _%function_scope.
@@ -2430,7 +2501,7 @@ Next Obligation. intros. simpl in *. rewrite lm_pf. reflexivity. Qed.
 Next Obligation. intros. simpl in *. Admitted.
 Print MyGoal_exactn_indifferent_S.
  rewrite -lm_pf. apply MyGoal_exactn_indifferent. exact Pip. Qed.*)
-*)
+
 Program Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
           Γ l₁ l₂ g
   := @TacticProperty0 Σ P Γ (l₁ ++ g::l₂) g (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
@@ -2456,6 +2527,8 @@ Proof.
   mgExactn 1.
 Defined.
 
+(*Definition tmp : nat := ltac2:(open_constr:(1 + (ltac2:(Std.eval_red constr:(1 + 1))))).*)
+
 Print MyGoal_exactn_indifferent_S.
 Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : IndifCast P} Γ a b c
   (wfa : well_formed a = true)
@@ -2466,8 +2539,20 @@ Proof.
   unfold ex_mgExactn. simpl.
   apply liftP_impl_P.
   solve_indif. intros. Set Printing Implicit. Print MyGoal_exactn_indifferent_S.
-  (*Set Debug "tactic-unification".*)
-  (*simple*) eapply tp0_tactic_property.
+  Search MyGoal_exactn.
+  Print MyGoal_exactn_indifferent_S.
+
+  Check @MyGoal_exactn.
+  munify ?[x] 5.
+  (*eapply @tp0_tactic_property.*)
+  Compute (@tp0_tactic_property Σ P Γ _ _ (@MyGoal_exactn_indifferent_S Σ P Pip Γ _ _ _)).
+  Set Debug "tactic-unification".
+  Check @tp0_tactic_property.
+  (*eapply (@tp0_tactic_property).*)
+  (*simple eapply (@tp0_tactic_property).*)
+  eapply (@tp0_tactic_property _ _ _ _ _ _).
+  apply (ltac:(vm_compute (@tp0_tactic_property Σ P Γ _ _ (@MyGoal_exactn_indifferent_S Σ P Pip Γ _ _ _) _ _))).
+  (*simple*)  simple eapply tp0_tactic_property.
 Qed.
 
 
