@@ -6137,42 +6137,6 @@ Ltac mlTauto3 :=
         mlTauto3
   end.
 
-(*
-Ltac2 rec mlTauto := fun () =>
-  lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
-        =>
-          repeat (
-          ltac1:(mgIntro);
-          let k := eval compute iterlist l
-          in
-          (ltac1:(mgExactn (ltac2:(iterlist l))))
-          (*ltac1:(length l);
-            let newn := eval cbv in (length l) in
-                (mgExactn newn))*)
-        )
-    end.
-
-
-Ltac2 rec mlTauto2 := fun () =>
-  lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
-        =>
-          ltac1:(repeat (mgApplyMeta (@A_impl_A _ _ _ _); mgIntro));
-          Message.print (Message.of_string "Hyps");
-          Message.print (Message.of_string "Goal");
-          Message.print (Message.of_constr p);
-          iterlist l
-end.
-
-
-Tactic Notation "mlTauto" :=
-  (let ff := ltac2:( |-
-                      mlTauto ()
-                   ) in
-   ff).*)
-
-
   Lemma conj_right {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
@@ -6219,7 +6183,6 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
-    mlTauto3.
     repeat mgIntro.
     unfold patt_not at 1.
 
@@ -6228,23 +6191,157 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     mgExactn 0.
   Qed.
 
+  Lemma implt_to_or_helper {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( ((! a) or a) ---> (a ---> b ) ---> ((! a) or b)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgDestructOr 0.
+      - mgApplyMeta (@false_implies_everything _ _ _ wfb).
+        mgApply 2.
+        mgExactn 0.
+      - mgApply 1.
+        mgExactn 0.
+  Qed.
+
+  Lemma impl_to_or {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( (a ---> b ) ---> ((! a) or b)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgApplyMeta (@implt_to_or_helper _ _ _ _ wfa wfb).
+    fromMyGoal.
+    unfold patt_or.
+    auto.
+  Qed.
+
+ Ltac mgTautoTree l g :=
+    let rec recmgTautoTree rlis rgoa :=
+    match rgoa with
+      | (?x ---> ?y) =>
+          let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
+           (
+              (*let lret := eval compute in ( recmgTautoTree newl x) in
+              ( let rret := eval compute in ( recmgTautoTree newl y) in
+              ( let ret := eval compute in ( cons lret rret) in
+               idtac ret
+              ))*)
+             idtac recmgTautoTree newl y
+           )
+      (*| (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
+      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
+      | ?x => let lx := eval compute in ( cons x rlis) in 
+              idtac lx
+    end
+    in (recmgTautoTree l g)
+  .
+
+
+
+  Ltac mgTauto :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+      =>
+          mgTautoTree l g
+  end.
+
+  Ltac mgTautoTree2 l g :=
+    let rec recmgTautoTree rlis rgoa :=
+    match rgoa with
+      | (?x ---> ?y) =>
+          let ret := eval compute in ( x ---> y ) in (
+          idtac ret ;  recmgTautoTree nil x; recmgTautoTree nil y)
+      (*    let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
+           (
+              let ret := eval compute in ( cons ( recmgTautoTree newl x)
+                                         ( cons ( recmgTautoTree newl y) nil)) in
+              ( idtac ret )
+           )
+      | (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
+      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
+      | ?x => let lx := eval compute in ( cons x nil) in
+              idtac lx
+    end
+    in (recmgTautoTree l g)
+  .
+
+  Ltac mgTauto4 :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+      =>
+          mgTautoTree2 l g
+  end.
 
   Lemma impl_taut_1 {Σ : Signature} Γ a b c:
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b )---> c))).
+    (*Γ ⊢ (a ---> b).*)
+     Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> c)).
   Proof.
     intros wfa wfb wfc.
     toMyGoal.
     { wf_auto2. }
-    repeat mgIntro.
+    mgTauto.
     mgApply 1.
     mgDestructOr 2.
     - mgApply 0.
       mgExactn 2.
     - mgExactn 2.
   Qed.
+
+  Ltac mgTautoTree l g :=
+    let rec recmgTautoTree rlis rgoa :=
+    match rgoa with
+      | (?x ---> ?y) =>
+          let ret := eval compute in ( x ---> y ) in (
+          idtac ret ;  recmgTautoTree nil x; recmgTautoTree nil y)
+      (*    let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
+           (
+              let ret := eval compute in ( cons ( recmgTautoTree newl x)
+                                         ( cons ( recmgTautoTree newl y) nil)) in
+              ( idtac ret )
+           )
+      | (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
+      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
+      | ?x => let lx := eval compute in ( cons x nil) in
+              idtac lx
+    end
+    in (recmgTautoTree l g)
+  .
+
+  Ltac mgTautoTree l g :=
+    let rec recmgTautoTree rlis rgoa :=
+    match rgoa with
+      | (?x ---> ?y) =>
+          let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
+           (
+              let ret := eval compute in ( cons ( recmgTautoTree newl x)
+                                         ( cons ( recmgTautoTree newl y) nil)) in
+              ( idtac ret )
+           )
+      (*| (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
+      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
+      | ?x => let lx := eval compute in ( cons x nil) in
+              idtac lx
+    end
+    in (recmgTautoTree l g)
+  .
+
+  Ltac mgTauto :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+      =>
+          mgTautoTree nil g
+  end.
+
 
   Lemma condtradict_taut_1 {Σ : Signature} Γ a:
     well_formed a ->
@@ -6260,22 +6357,7 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     mgApply 1.
     mgExactn 0.
   Qed.
-  
-  Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( a ---> ((! a) ---> b)).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    unfold patt_not at 1.
 
-    mgApplyMeta (@false_implies_everything _ _ _ wfb ).
-    mgApply 1.
-    mgExactn 0.
-  Qed.
 
   Lemma notnot_taut_1 {Σ : Signature} Γ a:
     well_formed a ->
