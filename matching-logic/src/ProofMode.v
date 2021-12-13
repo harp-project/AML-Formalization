@@ -3776,8 +3776,6 @@ Proof.
   unfold ex_mgClear. simpl.
   apply liftP_impl_P.
   solve_indif.
-  unfold liftP. simpl. intros. solve_indif.
-  unfold eq_rect_r,eq_rect.
 Qed.
 
 
@@ -3853,9 +3851,11 @@ Section FOL_helpers.
     (wfx : well_formed x)
     := ProofProperty0 P (@reorder_last_to_head Γ g x l wfl wfg wfx) _.
   Next Obligation.
-    intros. induction l.
+    unfold reorder_last_to_head.
+    intros. induction l; simpl.
     - solve_indif.
     - simpl. case_match. solve_indif. apply IHl.
+      repeat eapply_X_proof_property.
   Qed.
 
 
@@ -3880,7 +3880,7 @@ Section FOL_helpers.
     (wfg : well_formed g)
     (wfx : well_formed x)
     := ProofProperty1 P (@reorder_last_to_head_meta Γ g x l wfl wfg wfx) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold reorder_last_to_head_meta. solve_indif; assumption. Qed.
   
   (* Iterated modus ponens.
      For l = [x₁, ..., xₙ], it says that
@@ -3918,10 +3918,10 @@ Section FOL_helpers.
     (wfg : well_formed g)
     := ProofProperty0 P (@modus_ponens_iter Γ l g wfl wfg) _.
   Next Obligation.
-    intros.
-    induction l.
+    intros. unfold modus_ponens_iter.
+    induction l; simpl.
     - solve_indif.
-    - simpl. case_match. solve_indif.
+    - case_match. solve_indif.
   Qed.
   
   Lemma and_impl Γ p q r:
@@ -3959,6 +3959,7 @@ Section FOL_helpers.
     (wfr : well_formed r)
     := ProofProperty0 P (@and_impl Γ p q r wfp wfq wfr) _.
   Next Obligation.
+    unfold and_impl.
     intros. apply liftP_impl_P. solve_indif.
   Qed.
   
@@ -4001,6 +4002,7 @@ Section FOL_helpers.
     (wfr : well_formed r)
     := ProofProperty0 P (@and_impl' Γ p q r wfp wfq wfr) _.
   Next Obligation.
+    unfold and_impl'.
     intros. apply liftP_impl_P. solve_indif.
   Qed.
 
@@ -4050,8 +4052,8 @@ Section FOL_helpers.
     (wfr : well_formed r)
     := ProofProperty0 P (@prf_disj_elim_iter Γ l p q r wfl wfp wfq wfr) _.
   Next Obligation.
-    intros.
-    induction l.
+    intros. unfold prf_disj_elim_iter.
+    induction l; simpl.
     - solve_indif.
     - apply liftP_impl_P. simpl. case_match. solve_indif. apply IHl.
   Qed.
@@ -4203,7 +4205,7 @@ Section FOL_helpers.
     (wfq : well_formed q)
     (wfr : well_formed r)
     := ProofProperty1 P (@prf_disj_elim_iter_2_meta Γ l₁ l₂ p q r wfl₁ wfl₂ wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_disj_elim_iter_2_meta. solve_indif; assumption. Qed.
   
   Lemma prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r:
     wf l₁ ->
@@ -4232,7 +4234,7 @@ Section FOL_helpers.
     (wfq : well_formed q)
     (wfr : well_formed r)
     := ProofProperty2 P (@prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r wfl₁ wfl₂ wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_disj_elim_iter_2_meta_meta. solve_indif; assumption. Qed.
 
   Lemma MyGoal_disj_elim Γ l₁ l₂ p q r:
     @mkMyGoal Σ Γ (l₁ ++ [p] ++ l₂) r ->
@@ -4276,7 +4278,7 @@ Section FOL_helpers.
     (l₁ l₂ : list Pattern)
     (p q r : Pattern)
     := TacticProperty2 P (@MyGoal_disj_elim Γ l₁ l₂ p q r) _.
-  Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
+  Next Obligation. intros. unfold MyGoal_disj_elim. unfold liftP. solve_indif. apply H. apply H0. Qed.
 
 End FOL_helpers.
 
@@ -4333,7 +4335,7 @@ Section FOL_helpers.
         (wfq : well_formed q)
         (wfc : well_formed c)
     := ProofProperty2 P (@exd Γ a b p q c wfa wfb wfp wfq wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold exd. intros. apply liftP_impl_P. solve_indif; intros; assumption. Qed.
 
   Lemma conclusion_anyway_meta Γ A B:
     well_formed A ->
@@ -4363,7 +4365,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty2 P (@conclusion_anyway_meta Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold conclusion_anyway_meta. solve_indif; assumption. Qed.
     
   Lemma pf_or_elim Γ A B C :
     well_formed A ->
@@ -4394,7 +4396,7 @@ Section FOL_helpers.
         (wfb : well_formed b)
         (wfc : well_formed c)
     := ProofProperty3 P (@pf_or_elim Γ a b c wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_or_elim. solve_indif; assumption. Qed.
   
   Lemma pf_iff_split Γ A B:
     well_formed A ->
@@ -4414,7 +4416,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty2 P (@pf_iff_split Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_split. solve_indif; assumption. Qed.
   
   Lemma pf_iff_proj1 Γ A B:
     well_formed A ->
@@ -4432,7 +4434,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@pf_iff_proj1 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_proj1. solve_indif; assumption. Qed.
 
   Lemma pf_iff_proj2 Γ A B:
     well_formed A ->
@@ -4450,7 +4452,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@pf_iff_proj2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_proj2. solve_indif; assumption. Qed.
 
   Lemma pf_iff_iff Γ A B:
     well_formed A ->
@@ -4474,7 +4476,7 @@ Section FOL_helpers.
         (a : Pattern)
         (wfa : well_formed a)
     := ProofProperty0 P (@pf_iff_equiv_refl Γ a wfa) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_equiv_refl. solve_indif; assumption. Qed.
 
   Lemma pf_iff_equiv_sym Γ A B :
     well_formed A ->
@@ -4496,7 +4498,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@pf_iff_equiv_sym Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_equiv_sym. solve_indif; assumption. Qed.
 
   Lemma pf_iff_equiv_trans Γ A B C :
     well_formed A ->
@@ -4520,7 +4522,7 @@ Section FOL_helpers.
         (wfb : well_formed b)
         (wfc : well_formed c)
     := ProofProperty2 P (@pf_iff_equiv_trans Γ a b c wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold pf_iff_equiv_trans. solve_indif; simpl; intros. solve_indif; assumption. Qed.
 
   Lemma prf_conclusion Γ a b:
     well_formed a ->
@@ -4537,7 +4539,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@prf_conclusion Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_conclusion. solve_indif; assumption. Qed.
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
@@ -4798,7 +4800,7 @@ Section FOL_helpers.
     := ProofProperty0 (@uses_ex_gen Σ evs) (@prf_prop_ex_iff₀ Γ AC ϕ x Hfr wfϕ) _.
   Next Obligation.
     intros.
-    induction AC.
+    induction AC; simpl.
     - solve_indif.
     - simpl.
       case_match.
@@ -4829,8 +4831,8 @@ Section FOL_helpers.
             (svs : SVarSet)
     := ProofProperty0 (@uses_svar_subst Σ svs) (@prf_prop_ex_iff₁ Γ AC ϕ x Hfr wfϕ) _.
   Next Obligation.
-    intros.
-    induction AC.
+    intros. unfold prf_prop_ex_iff₁.
+    induction AC; simpl.
     - solve_indif.
     - simpl.
       case_match.
@@ -4855,7 +4857,7 @@ Section FOL_helpers.
     := ProofProperty0 (@uses_kt Σ) (@prf_prop_ex_iff₂ Γ AC ϕ x Hfr wfϕ) _.
   Next Obligation.
     intros.
-    induction AC.
+    induction AC; simpl.
     - solve_indif.
     - simpl.
       case_match.
@@ -4914,7 +4916,8 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty0 P (@and_of_negated_iff_not_impl Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold and_of_negated_iff_not_impl.
+                   solve_indif; apply liftP_impl_P; solve_indif. Qed.
 
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
@@ -4955,7 +4958,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty0 P (@and_impl_2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold and_impl_2. solve_indif; apply liftP_impl_P; solve_indif. Qed.
 
   Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) :
     well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (A and B).
@@ -4973,7 +4976,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@conj_intro_meta_partial Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold conj_intro_meta_partial. solve_indif; assumption. Qed.
 
   Lemma and_impl_patt (A B C : Pattern) Γ:
     well_formed A → well_formed B → well_formed C →
@@ -4991,7 +4994,7 @@ Section FOL_helpers.
         (wfb : well_formed b)
         (wfc : well_formed c)
     := ProofProperty2 P (@and_impl_patt a b c Γ wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold and_impl_patt. solve_indif; assumption. Qed.
 
   Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> (B ---> (B and A))).
@@ -5006,7 +5009,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty0 P (@conj_intro2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold conj_intro2. solve_indif; assumption. Qed.
 
   Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern):
     well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (B and A).
@@ -5024,7 +5027,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@conj_intro_meta_partial2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold conj_intro_meta_partial2. solve_indif; assumption. Qed.
 
   Lemma and_impl_patt2  (A B C : Pattern) Γ:
     well_formed A → well_formed B → well_formed C →
@@ -5042,7 +5045,7 @@ Section FOL_helpers.
         (wfb : well_formed b)
         (wfc : well_formed c)
     := ProofProperty2 P (@and_impl_patt2 a b c Γ wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold and_impl_patt2. solve_indif; assumption. Qed.
 
   Lemma patt_and_comm_meta (A B : Pattern) Γ:
     well_formed A → well_formed B
@@ -5061,7 +5064,7 @@ Section FOL_helpers.
         (wfa : well_formed a)
         (wfb : well_formed b)
     := ProofProperty1 P (@patt_and_comm_meta a b Γ wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold patt_and_comm_meta. solve_indif; assumption. Qed.
 
   Lemma MyGoal_applyMeta Γ r r':
     Γ ⊢ (r' ---> r) ->
