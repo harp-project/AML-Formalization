@@ -6222,62 +6222,26 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     auto.
   Qed.
 
- Ltac mgTautoTree l g :=
-    let rec recmgTautoTree rlis rgoa :=
-    match rgoa with
-      | (?x ---> ?y) =>
-          let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
-           (
-              (*let lret := eval compute in ( recmgTautoTree newl x) in
-              ( let rret := eval compute in ( recmgTautoTree newl y) in
-              ( let ret := eval compute in ( cons lret rret) in
-               idtac ret
-              ))*)
-             idtac recmgTautoTree newl y
-           )
-      (*| (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
-      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
-      | ?x => let lx := eval compute in ( cons x rlis) in 
-              idtac lx
+  Ltac mgTautoTree l g :=
+    match g with
+      | (?x ---> ?y) => 
+        let newl := eval compute in ( cons (x ---> y) l ) in
+        (
+        mgTautoTree newl y; mgTautoTree newl x
+        )
+      | ?x =>
+        let lx := eval compute in ( cons x l) in
+          idtac lx
     end
-    in (recmgTautoTree l g)
   .
-
-
 
   Ltac mgTauto :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+    match goal with
+      | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
       =>
-          mgTautoTree l g
-  end.
-
-  Ltac mgTautoTree2 l g :=
-    let rec recmgTautoTree rlis rgoa :=
-    match rgoa with
-      | (?x ---> ?y) =>
-          let ret := eval compute in ( x ---> y ) in (
-          idtac ret ;  recmgTautoTree nil x; recmgTautoTree nil y)
-      (*    let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
-           (
-              let ret := eval compute in ( cons ( recmgTautoTree newl x)
-                                         ( cons ( recmgTautoTree newl y) nil)) in
-              ( idtac ret )
-           )
-      | (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
-      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
-      | ?x => let lx := eval compute in ( cons x nil) in
-              idtac lx
+        mgTautoTree l g
     end
-    in (recmgTautoTree l g)
   .
-
-  Ltac mgTauto4 :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
-      =>
-          mgTautoTree2 l g
-  end.
 
   Lemma impl_taut_1 {Σ : Signature} Γ a b c:
     well_formed a ->
