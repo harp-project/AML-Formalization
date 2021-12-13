@@ -255,23 +255,35 @@ Local Ltac eapply_X_proof_property := eapply pp0_proof_property
                         || eapply pp1_proof_property
                         || eapply pp2_proof_property.
 
-Local Ltac eapply_X_proof_property_but_do_not_unfold :=
-    lazymatch goal with
-    | [|- _ _ _ ?tgt = _]
-      => (*idtac tgt;*)
-         let rec go t :=
+Ltac get_head t :=
+           let rec go t :=
            lazymatch t with
            | (?f ?x) => go f
            | ?f => f
            end
          in
-         let f := (go tgt) in
-         idtac f;
+         (go t).
+
+(* Suppose we have a goal of the shape
+   [P Γ ϕ (some_lemma arg1 ... argn) = false].
+   I want to use [eapply] which is stronger than [simple eapply],
+   but which does not unfold [some_lemma].
+   This is what [with_strategy opaque [some_lemma] eapply_X_proof_property] does.
+   However, we cannot use tis when [some_lemma] is a constructor in the proof system.
+   But in that case, it cannot be unfolded,
+   so we can just call [eapply_x_proof_property]
+ *)
+Local Ltac eapply_X_proof_property_but_do_not_unfold :=
+    lazymatch goal with
+    | [|- _ _ _ ?tgt = _]
+      => (*idtac tgt;*)
+         let f := (get_head tgt) in
+         (*idtac f;*)
          (let ff :=
             ltac2:(f |-
                      if (Constr.is_constructor(Option.get (Ltac1.to_constr(f))))
-                     then (ltac1:(idtac "is constructor"; eapply_X_proof_property))
-                     else (ltac1:(f |- (idtac "is not constructor";
+                     then (ltac1:((*idtac "is constructor"; *) eapply_X_proof_property))
+                     else (ltac1:(f |- ((*idtac "is not constructor";*)
                   with_strategy opaque [f] eapply_X_proof_property)) f))
           in
           (ff f)
@@ -887,10 +899,7 @@ Section FOL_helpers.
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
     P _ _ (@bot_elim Γ a wfa) = false.
   Proof.
-    unfold bot_elim. solve_indif.
-    (* TODO extract sublemmas *)
-    - unfold P4. solve_indif.
-    - unfold P4. solve_indif.     
+    unfold bot_elim. solve_indif. 
   Qed.
 
   Canonical Structure bot_elim_indifferent_S
@@ -1295,7 +1304,6 @@ Section FOL_helpers.
     := ProofProperty0 P (@false_implies_everything Γ a wfa) _.
   Next Obligation.
     intros. unfold false_implies_everything. solve_indif.
-    unfold patt_not. solve_indif.
   Qed.
 
 
@@ -1960,8 +1968,7 @@ Defined. *)
         P {Pip : IndifProp P} Γ a b
         (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty0 P (@pf_conj_elim_l Γ a b wfa wfb) _.
-  Next Obligation. intros. unfold pf_conj_elim_l. solve_indif.
-                   unfold reorder_meta. solve_indif. Qed.
+  Next Obligation. intros. unfold pf_conj_elim_l. solve_indif. Qed.
 
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
@@ -1984,7 +1991,7 @@ Defined. *)
         P {Pip : IndifProp P} Γ a b
         (wfa : well_formed a = true) (wfb : well_formed b = true)
     := ProofProperty0 P (@pf_conj_elim_r Γ a b wfa wfb) _.
-  Next Obligation. intros. unfold pf_conj_elim_r. solve_indif. unfold reorder_meta. solve_indif. Qed.
+  Next Obligation. intros. unfold pf_conj_elim_r. solve_indif. Qed.
 
   Lemma pf_conj_elim_l_meta Γ A B :
     well_formed A ->
@@ -2037,7 +2044,7 @@ Defined. *)
         P {Pip : IndifProp P} Γ a
         (wfa : well_formed a = true)
     := ProofProperty0 P (@A_or_notA Γ a wfa) _.
-  Next Obligation. intros. unfold A_or_notA. solve_indif. unfold patt_or. solve_indif. Qed.
+  Next Obligation. intros. unfold A_or_notA. solve_indif. Qed.
 
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -2343,6 +2350,31 @@ Structure tacticProperty1_1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
 
 Arguments TacticProperty1_1 [Σ] P [Γ] [l₂ l₃]%list_scope [p₁ g₂ g₃] tp1_1_tactic%function_scope _%function_scope.
 
+Local Ltac eapply_X_tactic_property :=
+  eapply tp0_tactic_property
+  || eapply tp1_tactic_property
+  || eapply tp2_tactic_property
+  || eapply tp1_1_tactic_property.
+
+(*Local Ltac eapply_X_proof_property_but_do_not_unfold := *)
+
+Local Ltac eapply_X_tactic_property_but_do_not_unfold :=
+    lazymatch goal with
+    | [|- liftP _ _ _ _ ?tgt = _]
+      => (*idtac tgt;*)
+         let f := (get_head tgt) in
+         (*idtac f;*)
+         (let ff :=
+            ltac2:(f |-
+                     if (Constr.is_constructor(Option.get (Ltac1.to_constr(f))))
+                     then (ltac1:((*idtac "is constructor"; *) eapply_X_proof_property))
+                     else (ltac1:(f |- ((*idtac "is not constructor";*)
+                  with_strategy opaque [f] eapply_X_tactic_property)) f))
+          in
+          (ff f)
+         )
+    end.
+
 
 Ltac2 Set solve_indif :=
   (fun () =>
@@ -2351,19 +2383,10 @@ Ltac2 Set solve_indif :=
                   intros;
                   (
                     lazymatch goal with
-                    | [ |- liftP _ _ _ _ _ = _ ] =>
-                        (
-                          simple eapply tp0_tactic_property
-                          || simple eapply tp1_tactic_property
-                          || simple eapply tp2_tactic_property
-                          || simple eapply tp1_1_tactic_property
-                        )
-                                                    
-                    | _ => (
-                            simple eapply pp0_proof_property
-                            || simple eapply pp1_proof_property
-                            || simple eapply pp2_proof_property
-                          )
+                    | [ |- liftP _ _ _ _ _ = _ ]
+                      => eapply_X_tactic_property_but_do_not_unfold
+                    | _
+                      => eapply_X_proof_property_but_do_not_unfold
                     end
                   )
                 )
@@ -2536,23 +2559,10 @@ Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : 
   (wfc : well_formed c = true):
   P _ _ (@ex_mgExactn Σ Γ a b c wfa wfb wfc) = false.
 Proof.
+  (*Fail (solve [solve_indif]).*) (* -- need unfold *)
   unfold ex_mgExactn. simpl.
   apply liftP_impl_P.
-  solve_indif. intros. Set Printing Implicit. Print MyGoal_exactn_indifferent_S.
-  Search MyGoal_exactn.
-  Print MyGoal_exactn_indifferent_S.
-
-  Check @MyGoal_exactn.
-  munify ?[x] 5.
-  (*eapply @tp0_tactic_property.*)
-  Compute (@tp0_tactic_property Σ P Γ _ _ (@MyGoal_exactn_indifferent_S Σ P Pip Γ _ _ _)).
-  Set Debug "tactic-unification".
-  Check @tp0_tactic_property.
-  (*eapply (@tp0_tactic_property).*)
-  (*simple eapply (@tp0_tactic_property).*)
-  eapply (@tp0_tactic_property _ _ _ _ _ _).
-  apply (ltac:(vm_compute (@tp0_tactic_property Σ P Γ _ _ (@MyGoal_exactn_indifferent_S Σ P Pip Γ _ _ _) _ _))).
-  (*simple*)  simple eapply tp0_tactic_property.
+  solve_indif.
 Qed.
 
 
@@ -2630,7 +2640,7 @@ Section FOL_helpers.
             (ϕ₁ ϕ₂ ϕ₃ : Pattern)
             (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
     := ProofProperty0 P (@prf_weaken_conclusion_under_implication Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. unfold prf_weaken_conclusion_under_implication. solve_indif. simpl. solve_indif. Qed.
+  Next Obligation. unfold prf_weaken_conclusion_under_implication. solve_indif. Qed.
 
   Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
     well_formed a ->
@@ -2903,7 +2913,6 @@ Section FOL_helpers.
             (wfs : well_formed s)
     := ProofProperty0 P (@Constructive_dilemma Γ p q r s wfp wfq wfr wfs) _.
   Next Obligation. intros. unfold Constructive_dilemma. apply liftP_impl_P. simpl. solve_indif.
-  intros. simpl. solve_indif. eapply tp1_tactic_property. intros. solve_indif.
   Qed.
 
   Lemma prf_add_assumption Γ a b :
@@ -2923,7 +2932,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty1 P (@prf_add_assumption Γ p q wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_assumption. solve_indif; assumption. Qed.
 
   Lemma prf_impl_distr_meta Γ a b c:
     well_formed a ->
@@ -2943,7 +2952,7 @@ Section FOL_helpers.
             (wfq : well_formed q)
             (wfr : well_formed r)
     := ProofProperty1 P (@prf_impl_distr_meta Γ p q r wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_impl_distr_meta. solve_indif; assumption. Qed.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
     wf l ->
@@ -2978,10 +2987,10 @@ Section FOL_helpers.
             (wfq : well_formed q)
     := ProofProperty0 P (@prf_add_lemma_under_implication Γ l p q wfl wfp wfq) _.
   Next Obligation.
-    intros.
-    induction l.
+    intros. unfold prf_add_lemma_under_implication.
+    induction l; simpl.
     - solve_indif.
-    - simpl. case_match. solve_indif. apply IHl.
+    - case_match. solve_indif. apply IHl.
   Qed.
 
   Lemma prf_add_lemma_under_implication_meta Γ l g h:
@@ -3002,7 +3011,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty1 P (@prf_add_lemma_under_implication_meta Γ l p q wfl wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_lemma_under_implication_meta. solve_indif; assumption. Qed.
 
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
     wf l ->
@@ -3024,7 +3033,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty2 P (@prf_add_lemma_under_implication_meta_meta Γ l p q wfl wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_lemma_under_implication_meta_meta. solve_indif; assumption. Qed.
 
   Lemma myGoal_assert Γ l g h:
     well_formed h ->
@@ -3097,10 +3106,10 @@ Section FOL_helpers.
             (wfq : well_formed q)
     := ProofProperty0 P (@prf_add_lemma_under_implication_generalized Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
   Next Obligation.
-    intros.
-    induction l₁.
+    intros. unfold prf_add_lemma_under_implication_generalized.
+    induction l₁; simpl.
     - solve_indif.
-    - simpl. case_match. solve_indif. apply IHl₁.
+    - case_match. solve_indif. apply IHl₁.
   Qed.
 
   Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h:
@@ -3123,7 +3132,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty1 P (@prf_add_lemma_under_implication_generalized_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_lemma_under_implication_generalized_meta. solve_indif; assumption. Qed.
   
   Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
     wf l1 ->
@@ -3147,7 +3156,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty2 P (@prf_add_lemma_under_implication_generalized_meta_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_lemma_under_implication_generalized_meta_meta. solve_indif; assumption. Qed.
 
   Lemma myGoal_assert_generalized Γ l1 l2 g h:
     well_formed h ->
@@ -3197,7 +3206,7 @@ Section FOL_helpers.
             (p q : Pattern)
             (wfq : well_formed q)
     := TacticProperty2 P (@myGoal_assert_generalized Γ l₁ l₂ p q wfq) _.
-  Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
+  Next Obligation. unfold myGoal_assert_generalized. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
   
 End FOL_helpers.
 
@@ -3298,7 +3307,7 @@ Section FOL_helpers.
             (q : Pattern)
             (wfq : well_formed q)
     := ProofProperty0 P (@P4i' Γ q wfq) _.
-  Next Obligation. solve_indif. Qed.
+  Next Obligation. unfold P4i'. solve_indif. Qed.
 
   Lemma tofold p:
     p = fold_right patt_imp p [].
@@ -3335,7 +3344,7 @@ Section FOL_helpers.
             (wfq : well_formed q)
             (wfr : well_formed r)
     := ProofProperty0 P (@prf_disj_elim Γ p q r wfp wfq wfr) _.
-  Next Obligation. solve_indif. Qed.
+  Next Obligation. unfold prf_disj_elim. solve_indif. Qed.
 
   Lemma prf_disj_elim_meta Γ p q r:
     well_formed p ->
@@ -3356,7 +3365,7 @@ Section FOL_helpers.
             (wfq : well_formed q)
             (wfr : well_formed r)
     := ProofProperty1 P (@prf_disj_elim_meta Γ p q r wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_disj_elim_meta. solve_indif; assumption. Qed.
   
   Lemma prf_disj_elim_meta_meta Γ p q r:
     well_formed p ->
@@ -3377,7 +3386,7 @@ Section FOL_helpers.
             (wfq : well_formed q)
             (wfr : well_formed r)
     := ProofProperty2 P (@prf_disj_elim_meta_meta Γ p q r wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_disj_elim_meta_meta. solve_indif; assumption. Qed.
 
   (* TODO: add an indifference canonical structure for this (ProofProperty3) *)
   Lemma prf_disj_elim_meta_meta_meta Γ p q r:
@@ -3437,8 +3446,9 @@ Section FOL_helpers.
     P _ _ pfh = false ->
     P _ _ (@prf_add_proved_to_assumptions Γ l h g wfl wfh wfg pfh) = false.
   Proof.
+    unfold prf_add_proved_to_assumptions.
     intros H. pose proof (Hp' := Pip). destruct Hp' as [[Hp1 [Hp2 [Hp3 Hmp]]]].
-    induction l.
+    induction l; simpl.
     - solve_indif; assumption.
     - simpl.
       case_match.
@@ -3497,7 +3507,7 @@ Section FOL_helpers.
             (wfp : well_formed p)
             (wfq : well_formed q)
     := ProofProperty2 P (@prf_add_proved_to_assumptions_meta Γ l p q wfl wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_add_proved_to_assumptions_meta. solve_indif; assumption. Qed.
   
   Lemma MyGoal_add Γ l g h:
     Γ ⊢ h ->
@@ -3600,12 +3610,11 @@ Section FOL_helpers.
     (wfh : well_formed h)
     := ProofProperty0 P (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
   Next Obligation.
-    intros.
-    induction l₁.
+    intros. unfold prf_clear_hyp.
+    induction l₁; simpl.
     - solve_indif.
-    - simpl.
-      case_match.
-      solve_indif.
+    - case_match. simpl.
+      solve_indif. apply liftP_impl_P. simpl. solve_indif.
       apply IHl₁.
   Qed.
 
@@ -3631,7 +3640,7 @@ Section FOL_helpers.
     (wfg : well_formed g)
     (wfh : well_formed h)
     := ProofProperty1 P (@prf_clear_hyp_meta Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
-  Next Obligation. solve_indif; assumption. Qed.
+  Next Obligation. unfold prf_clear_hyp_meta. solve_indif; assumption. Qed.
 
   (* TODO move somewhere else *)
   Lemma wfapp_proj_1 l₁ l₂:
@@ -3708,7 +3717,7 @@ Section FOL_helpers.
     (l₁ l₂ : list Pattern)
     (g h : Pattern)
     := TacticProperty1 P (@myGoal_clear_hyp Γ l₁ l₂ g h) _.
-  Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
+  Next Obligation. unfold myGoal_clear_hyp. intros. unfold liftP. solve_indif. apply H. Qed.
   
 End FOL_helpers.
 
@@ -3732,13 +3741,12 @@ Tactic Notation "mgClear" constr(n) :=
     destruct l2 as [|a l2''] eqn:Hd in *|-;[congruence|];
     eapply cast_proof_mg_hyps;
     [(rewrite -> Hd at 1; reflexivity)|];
-    let Heqa := fresh "Heqa" in
-    let Heql2' := fresh "Heql2'" in
-    inversion Heql2 as [[Heqa Heql2']]; clear Heql2;
     apply myGoal_clear_hyp;
+    let Heql2' := fresh "Heql2'" in
+    injection Heql2; intros Heql2' _;
     eapply cast_proof_mg_hyps;
     [(try(rewrite -> Heql1 at 1); try(rewrite -> Heql2' at 1); reflexivity)|];
-    clear Hd Heql2' Heqa l2 l2'' a Heql1 l1;
+    clear Hd Heql2 Heql2' l2 l2'' a Heql1 l1;
     eapply cast_proof_mg_hyps;[rewrite {1}[_ ++ _]/=; reflexivity|]
   end.
 
@@ -3768,6 +3776,8 @@ Proof.
   unfold ex_mgClear. simpl.
   apply liftP_impl_P.
   solve_indif.
+  unfold liftP. simpl. intros. solve_indif.
+  unfold eq_rect_r,eq_rect.
 Qed.
 
 
