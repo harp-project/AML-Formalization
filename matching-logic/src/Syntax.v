@@ -1788,7 +1788,7 @@ Section syntax.
     - destruct (decide (X = x)); subst; simpl.
       + break_match_goal; auto; lia.
       + reflexivity.
-    - simpl in *. repeat case_match; simpl; auto; try lia; congruence.
+    - simpl in *. repeat case_match; simpl; auto; subst; try lia; try congruence.
     - cbn in H. simpl. unfold svar_open in IHphi1, IHphi2.
       apply andb_true_iff in H.
       destruct H as [H1 H2].
@@ -1805,7 +1805,7 @@ Section syntax.
   Qed.
 
   Lemma evar_quantify_evar_open x n phi:
-    x ∉ free_evars phi -> well_formed_closed_ex_aux phi n ->
+    x ∉ free_evars phi -> well_formed_closed_ex_aux phi (S n) ->
     (evar_quantify x n (evar_open n x phi)) = phi.
   Proof.
     revert n.
@@ -1832,7 +1832,7 @@ Section syntax.
   Qed.
 
   Lemma svar_quantify_svar_open X n phi:
-    X ∉ free_svars phi -> well_formed_closed_mu_aux phi n ->
+    X ∉ free_svars phi -> well_formed_closed_mu_aux phi (S n) ->
     (svar_quantify X n (svar_open n X phi)) = phi.
   Proof.
     revert n.
