@@ -6940,7 +6940,7 @@ Ltac2 for_nth_match :=
       then ()
       else
         curr.(contents) := Int.add 1 (curr.(contents)) ;
-        if (Int.equal (curr.(contents)) n) then 
+        if (Int.equal (curr.(contents)) n) then
           cont ctx
         else ()
     )
@@ -6950,7 +6950,7 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
       lazymatch goal with
       | [ |- context ctx [free_evar_subst ?p ?q star] ]
         =>
-          rewrite -> (@free_evar_subst_no_occurrence star p q) by (
+          progress rewrite -> (@free_evar_subst_no_occurrence _ star p q) by (
             apply count_evar_occurrences_0;
             unfold star;
             eapply evar_is_fresh_in_richer';
@@ -6960,7 +6960,7 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
       end.
 
 Local Ltac reduce_free_evar_subst_2 star :=
-  unfold free_evar_subst;
+  (* unfold free_evar_subst; *)
   repeat (reduce_free_evar_subst_step_2 star).
 
 Local Ltac solve_fresh_contradictions_2 star :=
@@ -6984,7 +6984,7 @@ Local Ltac clear_obvious_equalities_2 :=
 Ltac simplify_emplace_2 star :=
   unfold emplace;
   simpl;
-  unfold free_evar_subst;
+  (* unfold free_evar_subst; *)
   simpl;
   repeat break_match_goal;
   clear_obvious_equalities_2; try contradiction;
@@ -7108,9 +7108,6 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
 
-
-(* TODO: adjust
-
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
@@ -7125,7 +7122,7 @@ Proof.
   mgRewrite <- Hiff at 3.
   fromMyGoal. intros _ _.
   apply pf_iff_equiv_refl; abstract(wf_auto2).
-Defined. *)
+Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
   Γ ⊢ Top.

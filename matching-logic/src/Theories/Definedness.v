@@ -216,7 +216,7 @@ Section definedness.
     destruct (decide (ev_x = ev_x)).
     2: { contradiction. }
     unfold app_ext in H. unfold In in H.
-    destruct H as [m1 [m2 Hm1m2]].
+    destruct H as [m1 [m2 Hm1m2] ].
     destruct Hm1m2. destruct H0.
     inversion H0. clear H0. simpl in H2. subst.
     exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
@@ -647,16 +647,18 @@ Section definedness.
     |}.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)
-  (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)  *)
+  (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)
+     This assumes, that bound element variables x and y do not occur in ϕ₁ and ϕ₂ *)
   Definition patt_eq_inversion_of ϕ₁ ϕ₂
     := patt_forall
          (patt_equal
-            (patt_app (nest_ex ϕ₁) (patt_bound_evar 0))
+            (patt_app ϕ₁ (patt_bound_evar 0))
             (patt_exists (patt_and (patt_bound_evar 0)
                                    (patt_in (patt_bound_evar 1)
-                                            (patt_app (nest_ex (nest_ex ϕ₂)) (patt_bound_evar 0)))))).
+                                            (patt_app ϕ₂ (patt_bound_evar 0)))))).
 
-  Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂, T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
+  Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂,
+    T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
   Proof.
     intros ϕ₁ ϕ₂ M Hm.
     unfold patt_eq_inversion_of.
@@ -673,20 +675,21 @@ Section definedness.
 
   Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
     M ⊨ᵀ theory ->
+    well_formed_closed_ex_aux ϕ₁ 0 -> well_formed_closed_ex_aux ϕ₂ 0 ->
     @pattern_interpretation Σ M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
     <-> (forall m₁ m₂,
             m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁ <-> m₁ ∈ rel_of ρₑ ρₛ ϕ₂ m₂ (* TODO make rel_of take one more parameter. *)
         ).
   Proof.
-    intros Htheory.
+    intros Htheory Wfc1 Wfc2.
     rewrite pattern_interpretation_forall_predicate.
     2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
-          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
+          (patt_equal (ϕ₁ $ BoundVarSugar.b0)
              (ex ,
               (BoundVarSugar.b0
-                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
+                 and patt_in BoundVarSugar.b1 (ϕ₂ $ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
     simpl_bevar_subst.
     rewrite equal_iff_interpr_same.
@@ -710,21 +713,13 @@ Section definedness.
     rewrite Hpi.
     apply all_iff_morphism. intros m₂.
     rewrite pattern_interpretation_app_simpl.
-
-    rewrite pattern_interpretation_evar_open_nest_ex.
-    {
-      subst x.
-      eapply evar_is_fresh_in_richer.
-      2: { apply set_evar_fresh_is_fresh. }
-      solve_free_evars_inclusion 5.
-    }
     unfold evar_open.
     simpl_bevar_subst. simpl.
 (*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.
 *)
-    remember (fresh_evar (patt_in (patt_free_evar x) (bevar_subst (nest_ex (nest_ex ϕ₂)) (patt_free_evar x) 1 $ b0))) as y.
+    remember (fresh_evar (patt_in (patt_free_evar x) (bevar_subst ϕ₂ (patt_free_evar x) 1 $ b0))) as y.
 (*
     rewrite simpl_evar_open.
     rewrite evar_open_free_evar.
@@ -742,27 +737,12 @@ Section definedness.
     rewrite pattern_interpretation_free_evar_simpl.
     rewrite update_evar_val_same.
     
-    fold (evar_open 1 x (nest_ex (nest_ex ϕ₂))).
-    rewrite evar_open_nest_ex_aux_comm.
+    fold (evar_open 1 x ϕ₂).
     destruct (extralibrary.compare_nat 1 0); try lia. clear g.
-    rewrite [1 - 1]/=.
 
-    rewrite pattern_interpretation_evar_open_nest_ex'.
+    rewrite pattern_interpretation_free_evar_independent.
     {
-      rewrite evar_open_nest_ex_aux_comm.
-      destruct (extralibrary.compare_nat 0 0); try lia.
-      unfold evar_is_fresh_in.
-      rewrite free_evars_nest_ex_aux.
-      subst.
-      eapply evar_is_fresh_in_richer'.
-      2: apply set_evar_fresh_is_fresh'.
-      simpl.
-      solve_free_evars_inclusion 5.
-    }
-
-    rewrite pattern_interpretation_evar_open_nest_ex'.
-    {
-      subst.
+      subst. erewrite well_formed_bevar_subst; try eassumption; auto.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh'.
       solve_free_evars_inclusion 5.
@@ -770,18 +750,19 @@ Section definedness.
 
     rewrite pattern_interpretation_free_evar_independent.
     {
-      subst.
+      subst. unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh'.
       solve_free_evars_inclusion 5.
+      eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
     }
-
     rewrite pattern_interpretation_free_evar_independent.
     {
-      subst.
+      subst. unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh'.
       solve_free_evars_inclusion 5.
+      1-2: eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
     }
 
     rewrite update_evar_val_comm.
@@ -790,8 +771,8 @@ Section definedness.
     rewrite update_evar_val_same.
     unfold app_ext.
     rewrite elem_of_PropSet.
-    fold (rel_of ρₑ ρₛ ϕ₂ m₂).
-    auto.
+    unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
+    1-2: eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
   Qed.
 
   Lemma single_element_definedness_impl_satisfies_definedness (M : @Model Σ) :
@@ -801,7 +782,7 @@ Section definedness.
     ) ->
         satisfies_model M (axiom AxDefinedness).
   Proof.
-    intros [hashdef [Hhashdefsym Hhashdeffull]].
+    intros [hashdef [Hhashdefsym Hhashdeffull] ].
     unfold satisfies_model. intros.
     unfold axiom.
     unfold sym.
@@ -1133,7 +1114,7 @@ Section ProofSystemTheorems.
           with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x')).
         2: {
           simpl. rewrite bevar_subst_not_occur.
-          { apply wfc_ex_aux_implies_not_bevar_occur. unfold well_formed, well_formed_closed in *.
+          { unfold well_formed, well_formed_closed in *.
             destruct_and!. auto.
           }
           reflexivity.
@@ -1186,11 +1167,14 @@ Section ProofSystemTheorems.
       eapply syllogism_intro.
       5: apply S10.
       all: auto.
+      simpl. split_and!; auto.
+      apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0); auto.
+      unfold well_formed,well_formed_closed in *. destruct_and!. auto.
     }
 
     eapply syllogism_intro.
     5: apply S14.
-    all: auto.    
+    all: auto.
   Defined.
 
   Lemma phi_impl_defined_phi Γ ϕ:
@@ -1540,8 +1524,8 @@ Section ProofSystemTheorems.
         specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
         replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
           with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
-        2: { unfold free_svar_subst. simpl.
-             rewrite [free_svar_subst' 0 ψ psi X]free_svar_subst_fresh.
+        2: {  simpl.
+             rewrite [free_svar_subst ψ psi X]free_svar_subst_fresh.
              { assumption. }
              reflexivity.
         }
@@ -2125,24 +2109,21 @@ Section ProofSystemTheorems.
     Corollary equality_elimination2 Γ φ1 φ2 ψ:
       theory ⊆ Γ ->
       mu_free ψ ->
-      well_formed φ1 -> well_formed φ2 -> wf_body_ex ψ ->
+      well_formed φ1 -> well_formed φ2 -> well_formed_closed_ex_aux ψ 1 -> well_formed_closed_mu_aux ψ 0 ->
       Γ ⊢ (φ1 =ml φ2) ---> 
         (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0).
     Proof.
-      intros HΓ MF WF1 WF2 WFB. remember (fresh_evar ψ) as x.
+      intros HΓ MF WF1 WF2 WF3 WF4. remember (fresh_evar ψ) as x.
       assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
-      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1 0).
-      { lia. }
+      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ1 ltac:(lia)); auto.
       { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
-      { apply wf_body_ex_to_wf in WFB. unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
-      { assumption. }
-      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ2 0).
-      { lia. }
+      rewrite (@bound_to_free_variable_subst _ ψ x 1 0 φ2 ltac:(lia)); auto.
       { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
-      { apply wf_body_ex_to_wf in WFB. unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
-      { assumption. }
       apply equality_elimination_helper; auto.
       { now apply mu_free_evar_open. }
+      apply wf_evar_open_from_wf_ex.
+      unfold well_formed, well_formed_closed; simpl.
+      rewrite -> WF3, -> WF4, -> mu_free_wfp; auto.
     Defined.
 
     Lemma patt_eq_sym Γ φ1 φ2:
@@ -2169,11 +2150,10 @@ Section ProofSystemTheorems.
 
     Lemma exists_functional_subst φ φ' Γ :
       theory ⊆ Γ ->
-      mu_free φ -> well_formed φ' -> wf_body_ex φ ->
+      mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
       Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ).
     Proof.
-      intros HΓ MF WF WFB.
-      pose proof (WFϕ := wf_body_ex_to_wf WFB).
+      intros HΓ MF WF WFB WFM.
       remember (fresh_evar (φ $ φ')) as Zvar.
       remember (patt_free_evar Zvar) as Z.
       assert (well_formed Z) as WFZ. { rewrite HeqZ. auto. }
@@ -2185,25 +2165,24 @@ Section ProofSystemTheorems.
       assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
         unfold instantiate.
         unfold well_formed, well_formed_closed.
-        apply andb_true_iff in WF as [E1 E2]. simpl in E1, E2.
-        apply wf_body_ex_to_wf in WFB.
-        apply andb_true_iff in WFB as [E3 E4]. simpl in E3, E4.
+        apply andb_true_iff in WF as [E1 E2].
         unfold well_formed_closed in *. destruct_and!.
         erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
+        now apply mu_free_wfp.
       }
       assert (well_formed (instantiate (ex , φ) Z)) as WF2. {
         unfold instantiate.
         unfold well_formed, well_formed_closed.
         apply andb_true_iff in WF as [E1 E2]. simpl in E1, E2.
-        apply wf_body_ex_to_wf in WFB.
-        apply andb_true_iff in WFB as [E3 E4]. simpl in E3, E4.
         unfold well_formed_closed in *. destruct_and!.
         erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
-        all: rewrite HeqZ; auto.
+        all: try rewrite HeqZ; auto.
+        now apply mu_free_wfp.
       }
       pose proof (@equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
       apply pf_iff_iff in H. destruct H.
-      pose proof (EQ := Ex_quan Γ φ Zvar ltac:(wf_auto2)).
+      assert (well_formed (ex, φ)) as WFEX. { wf_auto. now apply mu_free_wfp. }
+      pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
       epose proof (PC := @prf_conclusion Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ EQ).
       2-3: apply well_formed_equal;auto.
       assert (Γ
@@ -2228,8 +2207,8 @@ Section ProofSystemTheorems.
           exact PC.
         * apply and_drop. 1-3: auto.
           unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)); auto.
-          eapply Modus_ponens. 4: exact AI. 3: exact EE.
-          1-2: auto 10.
+          eapply Modus_ponens. 4: exact AI. 3: apply EE.
+          all: auto 10.
       }
       eapply Modus_ponens. 4: apply and_impl'; auto.
       1,2,4: unfold instantiate,patt_equal,patt_total,patt_defined in *; wf_auto2.
@@ -2269,25 +2248,18 @@ Section ProofSystemTheorems.
 
     Corollary forall_functional_subst φ φ' Γ :
       theory ⊆ Γ ->
-      mu_free φ -> well_formed φ' -> wf_body_ex φ -> 
+      mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
       Γ ⊢ ((patt_forall φ) and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (bevar_subst φ φ' 0).
     Proof.
-      intros HΓ MF WF WFB. unfold patt_forall.
+      intros HΓ MF WF WFB WFM. unfold patt_forall.
       assert (well_formed (bevar_subst φ φ' 0)) as BWF. {
         unfold well_formed, well_formed_closed in *.
         destruct_and!.
         split_and!.
         - apply well_formed_positive_bevar_subst; auto.
-          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
-          simpl in *. assumption.
-        - apply wfc_mu_aux_bevar_subst; auto.
-          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
-          unfold well_formed_closed in *. simpl in *.
-          destruct_and!; auto.
+          now apply mu_free_wfp.
+        - auto.
         - apply wfc_ex_aux_bevar_subst; auto.
-          apply wf_body_ex_to_wf, andb_true_iff in WFB as [E1 E2].
-          unfold well_formed_closed in *. simpl in *.
-          destruct_and!; auto.
       }
       assert (well_formed (ex , patt_equal φ' b0)) as SWF. {
         unfold well_formed, well_formed_closed.
@@ -2299,18 +2271,20 @@ Section ProofSystemTheorems.
         - eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
       }
       assert (well_formed (ex , (φ ---> ⊥))) as NWF. {
-        apply wf_body_ex_to_wf in WFB. unfold well_formed, well_formed_closed in *.
+        unfold well_formed, well_formed_closed in *.
         clear BWF SWF.
-        apply andb_true_iff in WFB as [E1 E2]. simpl in *.
         destruct_and!. split_and!; auto.
+        apply mu_free_wfp; simpl; now rewrite MF.
+        all: simpl; wf_auto.
       }
       unshelve (epose proof (H := @exists_functional_subst (! φ) φ' Γ HΓ _ WF _)).
       { simpl. rewrite andbT. exact MF. }
-      { apply wf_body_ex_to_wf in WFB; apply wf_ex_to_wf_body; auto. }
+      { wf_auto. }
       simpl in H.
       epose proof (H0 := @and_impl Σ _ _ _ _ _ _ _).
-      eapply Modus_ponens in H0. 4: exact H. 2-3: unfold patt_equal,patt_total,patt_defined;wf_auto2.
+      eapply Modus_ponens in H0. 4: apply H. 2-3: unfold patt_equal,patt_total,patt_defined;wf_auto2.
       apply reorder_meta in H0. 2-4: auto.
+      2: { wf_auto. }
       
       epose proof (H1 := @and_impl' Σ _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
       1-2: shelve.
@@ -2364,7 +2338,7 @@ Proof.
   remember C as C'.
   destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
   mgAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
-  { unfold emplace,free_evar_subst in *. wf_auto2. }
+  { unfold emplace in *. wf_auto2. }
   { fromMyGoal. intros _ _. apply equality_elimination_basic_iter; auto.
     { wf_auto2. }
     { wf_auto2. }
@@ -2762,6 +2736,7 @@ Proof.
          unfold evar_is_fresh_in in H.
          simpl. set_solver.
        }
+       wf_auto.
        reflexivity.
   }
   apply Ex_gen.
@@ -3014,6 +2989,8 @@ Proof.
          unfold evar_is_fresh_in in H.
          simpl. set_solver.
        }
+       wf_auto.
+       1-2: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
        reflexivity.
   }
   
@@ -3022,9 +2999,10 @@ Proof.
   unfold evar_open. simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur_is_noop.
   { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  wf_auto2.
   rewrite bevar_subst_not_occur_is_noop.
   { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
-
+  wf_auto2.
   toMyGoal.
   { wf_auto2. }
   mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
@@ -3034,7 +3012,7 @@ Proof.
   mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
   unfold instantiate. simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  { wf_auto2. }
 
   mgApplyMeta (@membership_symbol_ceil_aux_0 Σ syntax Γ y x ϕ HΓ wfϕ).
   subst y. subst x.
@@ -3146,6 +3124,9 @@ Proof.
           pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars ϕ))).
           subst y. clear -Hfr. set_solver.
         }
+        simpl. split_and!; auto.
+        unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+        eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         reflexivity.
       }
       apply ex_quan_monotone.
@@ -3154,6 +3135,7 @@ Proof.
         unfold evar_open. simpl_bevar_subst. simpl.
         rewrite bevar_subst_not_occur_is_noop.
         { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+        wf_auto2.
         apply def_def_phi_impl_def_phi.
         { exact HΓ. }
         { wf_auto2. }
@@ -3248,7 +3230,7 @@ Proof.
   { wf_auto2. }
   unfold evar_open. simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  { wf_auto2. }
   
   apply ceil_and_x_ceil_phi_impl_ceil_phi.
   { exact HΓ. }
@@ -3270,6 +3252,9 @@ Proof.
   {
     rewrite -[HERE in (all, HERE)](@evar_quantify_evar_open Σ x 0).
     { subst x. apply set_evar_fresh_is_fresh. }
+    unfold well_formed, well_formed_closed in wfϕ. destruct_and!. simpl.
+    split_and!; auto.
+    1-2: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
     reflexivity.
   }
   apply universal_generalization.
@@ -3299,7 +3284,7 @@ Proof.
   { apply wfc_ex_aux_bevar_subst. wf_auto2. simpl. reflexivity. }
   simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  { wf_auto2. }
   replace (⌈ patt_free_evar x and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ)) by reflexivity.
   replace (patt_free_evar x and ! ϕ) with (subst_ctx box (patt_free_evar x and ! ϕ)) by reflexivity.
   apply Singleton_ctx. exact wfϕ.
@@ -3328,7 +3313,7 @@ Proof.
     2: {
       unfold evar_open. simpl_bevar_subst. simpl.
       rewrite bevar_subst_not_occur.
-      { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+      { wf_auto2. }
       apply membership_symbol_ceil_aux_0 with (y0 := x); assumption.
     }
     { wf_auto2. }
@@ -3379,7 +3364,7 @@ Proof.
       3: {
         unfold evar_open. simpl_bevar_subst. simpl.
         rewrite bevar_subst_evar_quantify_free_evar.
-        { apply wfc_ex_implies_not_bevar_occur. wf_auto2. }
+        { wf_auto2. }
         apply membership_symbol_ceil_aux_0 with (y0 := y); assumption.
       }
       { wf_auto2. }
@@ -3467,13 +3452,16 @@ Proof.
       unfold evar_is_fresh_in in H.
       simpl. set_solver.
     }
+    unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+    simpl; split_and!; auto.
+    1-2: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
     reflexivity.
   }
   apply universal_generalization.
   { wf_auto2. }
   unfold evar_open. simpl_bevar_subst. simpl.
   rewrite bevar_subst_not_occur.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  { wf_auto2. }
 
   toMyGoal.
   { wf_auto2. }
@@ -3489,6 +3477,9 @@ Proof.
     rewrite <- (@evar_quantify_evar_open Σ y 0 (b0 ∈ml (! ⌈ ϕ ⌉))).
     2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
     reflexivity.
+    unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+    simpl; split_and!; auto.
+    eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
   }
 
   assert (Htmp: Γ ⊢ ((evar_open 0 y (b0 ∈ml (! ⌈ ϕ ⌉))) ---> (evar_open 0 y (! (b0 ∈ml ⌈ ϕ ⌉))))).
@@ -3510,6 +3501,9 @@ Proof.
     rewrite -> (@evar_quantify_evar_open Σ y 0 (! b0 ∈ml (⌈ ϕ ⌉))).
     2: { simpl. rewrite <- Heqy in Hfr. clear -Hfr. set_solver. }
     reflexivity.
+    unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+    simpl; split_and!; auto.
+    eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
   }
 
   mgApplyMeta (@not_not_intro Σ Γ (ex , (! b0 ∈ml ⌈ ϕ ⌉)) ltac:(wf_auto2)) in 0.
@@ -3540,10 +3534,20 @@ Proof.
       unfold evar_is_fresh_in in Hfr'. rewrite -Heqx in Hfr'. clear -Hfr'.
       set_solver.
     }
+    {
+      unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+      simpl; split_and!; auto.
+      eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+    }
     rewrite -[THIS in (patt_forall THIS)](@evar_quantify_evar_open Σ y 0).
     { simpl. 
       unfold evar_is_fresh_in in Hfr'. rewrite -Heqy in Hfr. clear -Hfr.
       set_solver.
+    }
+    {
+      unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+      simpl; split_and!; auto.
+      eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
     }
     reflexivity.
   }
@@ -3561,9 +3565,13 @@ Proof.
 
   rewrite evar_quantify_evar_open.
   { simpl. unfold evar_is_fresh_in in Hfr'. subst x. set_solver. }
-  unfold evar_open. simpl_bevar_subst. simpl.
-  rewrite bevar_subst_not_occur.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  {
+    unfold well_formed, well_formed_closed in wfϕ. destruct_and!.
+    simpl; split_and!; auto.
+    eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+  }
+  unfold evar_open. simpl_bevar_subst. simpl. rewrite bevar_subst_not_occur.
+  { wf_auto2. }
   apply  membership_symbol_ceil_right; assumption.
 Defined.
 

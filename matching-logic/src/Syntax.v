@@ -5765,6 +5765,13 @@ Fixpoint no_bsvar_in_range (phi : Pattern) (min_ind_svar max_ind_svar : db_index
     * break_match_goal; auto.
   Qed.
 
+  Theorem mu_free_wfp φ :
+    mu_free φ -> well_formed_positive φ.
+  Proof.
+    induction φ; intros Hmf; simpl; auto.
+    all: simpl in Hmf; destruct_and!; rewrite -> IHφ1, -> IHφ2; auto.
+  Qed.
+
   Lemma mu_free_bevar_subst :
     forall φ ψ, mu_free φ -> mu_free ψ -> forall n, mu_free (bevar_subst φ ψ n).
   Proof.
