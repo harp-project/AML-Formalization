@@ -360,7 +360,7 @@ Proof.
     simpl.
     rewrite -> pattern_interpretation_imp_simpl.
     rewrite -> pattern_interpretation_ex_simpl.
-    simpl. Check element_substitution_lemma.
+    simpl.
 
     rewrite -> element_substitution_lemma with (x := fresh_evar phi).
     2: { apply set_evar_fresh_is_fresh. }

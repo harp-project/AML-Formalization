@@ -245,7 +245,7 @@ Section fix_signature.
     forall b t n, wf_term b (S n) -> wf_term t n ->
       wf_term (bsubst_term b t n) n.
   Proof.
-    induction b; intros t n H H0; subst. Search bevar_subst well_formed_closed_ex_aux.
+    induction b; intros t n H H0; subst.
     * reflexivity.
     * simpl. repeat case_match; auto; simpl; case_match; auto. simpl in H. case_match. lia. congruence.
     * simpl in *; induction v; simpl in *; auto.
@@ -407,7 +407,6 @@ Section semantics.
       right. rewrite sat_impl. intros. auto.
     * rewrite sat_exs. simpl.
       epose proof (IHsz (bsubst_form φ (fvar (var_fresh (form_vars φ))) 0) _).
-      Search "ex" not.
       admit. (* TODO: not trivial, maybe using size based induction *)
   Abort.
 

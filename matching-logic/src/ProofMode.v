@@ -5965,25 +5965,6 @@ Section FOL_helpers.
   Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
     @existT svar (fun x => x ∉ S) (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
 
-(*  TODO: deprecated
-  Lemma pf_impl_ex_free_evar_subst_twice Γ n ϕ p q E:
-    well_formed (ex, ϕ) = true ->
-    well_formed p = true ->
-    well_formed q = true ->
-    Γ ⊢ ex , free_evar_subst' 0 ϕ p E ---> ex , free_evar_subst' 0 ϕ q E ->
-    Γ ⊢ ex , free_evar_subst' n ϕ p E ---> ex , free_evar_subst' n ϕ q E.
-  Proof.
-    intros wfϕ wfp wfq H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
-    abstract (
-      replace n with (0 + n) by reflexivity;
-      repeat rewrite -free_evar_subst_nest_ex_1;
-      rewrite -> nest_ex_aux_wfc_ex by wf_auto;
-      rewrite -> nest_ex_aux_wfc_ex by wf_auto;
-      reflexivity
-    ).
-  Defined. *)
-
   Lemma strip_exists_quantify_l Γ x P Q :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
@@ -6430,7 +6411,7 @@ Proof.
   clear H wfϕ₁ ϕ₁.
 
   replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
-  2: { unfold instantiate. Search bevar_subst evar_quantify.
+  2: { unfold instantiate.
        rewrite bevar_subst_evar_quantify_free_evar.
        now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
        reflexivity.
@@ -7375,7 +7356,7 @@ Proof.
   unfold patt_not.
   mgAssert (((ϕ₁ ---> ⊥) ---> ⊥)).
   { wf_auto2. }
-  { mgIntro. Check modus_ponens.
+  { mgIntro.
     mgAssert ((ϕ₂ ---> ⊥)).
     { wf_auto2. }
     { mgApply 0. mgExactn 2. }

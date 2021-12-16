@@ -66,56 +66,18 @@ Section sorts.
     bevar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bevar_subst s ψ (S db)) (bevar_subst ϕ ψ (S db)).
   Proof. reflexivity. Qed.
 
-  (*  TODO: deprecated
-    unfold patt_forall_of_sort.
-    repeat (rewrite simpl_bevar_subst';[assumption|]).
-    (* TODO rewrite all _+1 to 1+_ *)
-    rewrite PeanoNat.Nat.add_comm. simpl.
-    simpl.
-    rewrite PeanoNat.Nat.sub_0_r.
-    reflexivity.
-  Qed. *)
-
   Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
     bsvar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
   Proof. reflexivity. Qed.
-(*  TODO: deprecated
-    unfold patt_forall_of_sort.
-    repeat (rewrite simpl_bsvar_subst';[assumption|]).
-    simpl.
-    rewrite bsvar_subst_nest_ex_aux_comm.
-    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
-    reflexivity.
-  Qed.*)
 
   Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
     bevar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bevar_subst s ψ (S db)) (bevar_subst ϕ ψ (S db)).
   Proof. reflexivity. Qed.
-(*  TODO: deprecated
-    unfold patt_exists_of_sort.
-    repeat (rewrite simpl_bevar_subst';[assumption|]).
-    (* TODO rewrite all _+1 to 1+_ *)
-    rewrite PeanoNat.Nat.add_comm. simpl.
-    unfold nest_ex.
-    rewrite bevar_subst_nest_ex_aux.
-    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
-    simpl.
-    rewrite PeanoNat.Nat.sub_0_r.
-    reflexivity.
-  Qed.*)
 
   Lemma bsvar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
     bsvar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
   Proof. reflexivity. Qed.
-(* TODO: deprecated
-     unfold patt_exists_of_sort.
-    repeat (rewrite simpl_bsvar_subst';[assumption|]).
-    simpl.
-    rewrite bsvar_subst_nest_ex_aux_comm.
-    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
-    reflexivity.
-  Qed. *)
-    
+
   #[global]
    Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
     {|

@@ -152,7 +152,7 @@ Section with_signature.
       rewrite Hwfpstep.
       rewrite !andb_true_r.
       unfold patt_ind_gen_body. cbn. rewrite !andb_true_r.
-      fold no_negative_occurrence_db_b. Check wfc_impl_no_neg_occ.
+      fold no_negative_occurrence_db_b.
       rewrite wfc_impl_no_neg_occ. 2: rewrite wfc_impl_no_neg_occ; auto.
       apply andb_true_iff in Hwfcbase as [? ?]; auto.
       apply andb_true_iff in Hwfcstep as [? ?]; auto.

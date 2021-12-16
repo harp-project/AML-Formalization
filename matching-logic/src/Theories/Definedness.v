@@ -2785,11 +2785,9 @@ Proof.
   { (* prenex-exists-and *)
     toMyGoal.
     { wf_auto2. }
-    Check patt_and_comm.
     mgRewrite (@patt_and_comm Σ Γ (patt_free_evar x) (ex, ϕ) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
     mgRewrite <- (@prenex_exists_and_iff Σ Γ ϕ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
     remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
-    Check strip_exists_quantify_l.
     mgSplitAnd; fromMyGoal; intros _ _.
     - apply (@strip_exists_quantify_l Σ Γ y).
       { subst y. simpl.
@@ -2997,11 +2995,11 @@ Proof.
   apply universal_generalization.
   { wf_auto2. }
   unfold evar_open. simpl_bevar_subst. simpl.
-  rewrite bevar_subst_not_occur_is_noop.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  rewrite bevar_subst_not_occur.
+  { wf_auto2. }
   wf_auto2.
-  rewrite bevar_subst_not_occur_is_noop.
-  { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+  rewrite bevar_subst_not_occur.
+  { wf_auto2. }
   wf_auto2.
   toMyGoal.
   { wf_auto2. }
@@ -3133,8 +3131,8 @@ Proof.
       { wf_auto2. }
       2: {
         unfold evar_open. simpl_bevar_subst. simpl.
-        rewrite bevar_subst_not_occur_is_noop.
-        { apply wfc_ex_aux_implies_not_bevar_occur. wf_auto2. }
+        rewrite bevar_subst_not_occur.
+        { wf_auto2. }
         wf_auto2.
         apply def_def_phi_impl_def_phi.
         { exact HΓ. }
@@ -3244,7 +3242,6 @@ Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ �
   Γ ⊢ (ex, (⌈ b0 and  ϕ ⌉ and b0)) ---> ϕ.
 Proof.
   intros HΓ wfϕ.
-  Search "prenex" patt_forall.
   apply prenex_forall_imp.
   1,2: wf_auto2.
   remember (fresh_evar (⌈ b0 and ϕ ⌉ and b0 ---> ϕ)) as x.

@@ -1419,9 +1419,10 @@ Section semantics.
         * auto.
           -- (* dbi does not occur in phi1 *)
             pose proof (HeqHoc' := HeqHoc).
-            rewrite -> bsvar_subst_not_occur_is_noop.
+            rewrite -> bsvar_subst_not_occur.
             (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc). *)
-            symmetry in HeqHoc. apply svar_open_not_occur_is_noop with (X0:=X) in HeqHoc.
+            symmetry in HeqHoc. simpl in Hwfphi1. apply wfc_mu_lower in Hwfphi1; auto.
+            apply svar_open_not_occur with (x:=X) in Hwfphi1 as HWF.
             (* X is not free in phi1, so the fact that in svar_val2' it is updated to some 
            value is irrelevant. *)
             assert (Hpi: pattern_interpretation evar_val2' svar_val2' (evar_open 0 Xu phi1')
@@ -1430,16 +1431,16 @@ Section semantics.
               unfold svar_is_fresh_in. rewrite -> free_svars_evar_open. subst phi1'.
               replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
                       (svar_open dbi X phi1) by reflexivity.
-              rewrite -> HeqHoc. auto.
+              rewrite -> HWF. auto.
             }
-            rewrite -> Hpi. subst phi1'. unfold svar_open in HeqHoc. rewrite -> HeqHoc.
+            rewrite -> Hpi. subst phi1'. unfold svar_open in HWF. rewrite -> HWF.
             subst evar_val1'. subst evar_val2'.
             rewrite -> interpretation_fresh_evar_open with (y := Xu).
             reflexivity.
             { subst Xfr1.
               symmetry in HeqHoc'.
-              pose proof (Hsubst := @bsvar_subst_not_occur_is_noop _ phi1 phi2 dbi HeqHoc').
-              rewrite Hsubst. auto. apply wfc_mu_lower; auto. auto.
+              pose proof (Hsubst := @bsvar_subst_not_occur _ dbi phi2 _ Hwfphi1).
+              rewrite Hsubst. auto.
             }
             { pose proof (Hfr := set_evar_fresh_is_fresh').
               specialize (Hfr (union (free_evars (svar_open dbi X phi1)) (free_evars phi2))).
@@ -1449,13 +1450,7 @@ Section semantics.
               rewrite free_evars_svar_open. auto.
             }
             {
-              apply wfc_mu_lower; auto.
-            }
-            {
-              apply bsvar_occur_evar_open. symmetry. auto.
-            }
-            {
-              apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_lower; auto.
+              apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_lower in Hwfphi1; auto.
             }
 
       + (* Mu case *)
@@ -1561,8 +1556,8 @@ Section semantics.
           
         --
           rewrite Heqphi_subst.
-          rewrite bsvar_subst_not_occur_is_noop. auto.
-          rewrite bsvar_subst_not_occur_is_noop in Heqphi_subst. all: auto.
+          rewrite bsvar_subst_not_occur. auto.
+          rewrite bsvar_subst_not_occur in Heqphi_subst. all: auto.
           1-2: apply wfc_mu_lower; auto.
 
           rewrite -> interpretation_fresh_svar_open with (X := fresh_svar phi1) (Y := Y).
@@ -1577,8 +1572,8 @@ Section semantics.
           
           subst phi_subst.
 
-          rewrite -> svar_open_not_occur_is_noop with (X0 := X)(dbi0 := S dbi).
-          2: { symmetry. apply HeqHoc. }
+          rewrite -> svar_open_not_occur with (x := X)(n := S dbi).
+          2: { apply wfc_mu_lower; auto. }
 
           destruct (decide (X = (fresh_svar phi1))).
           ++ subst X. rewrite update_svar_val_shadow.
@@ -1594,7 +1589,6 @@ Section semantics.
              apply interpretation_fresh_svar_open.
              { apply Hfreshy'. }
              apply set_svar_fresh_is_fresh.
-          ++ apply wfc_mu_lower; auto.
   Qed.
 
   Lemma set_substitution_lemma : forall (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
@@ -1875,7 +1869,7 @@ Section semantics.
 
           -- (* dbi does not occur in phi1 *)
             pose proof (HeqHoc' := HeqHoc).
-            rewrite -> bevar_subst_not_occur_is_noop.
+            rewrite -> bevar_subst_not_occur.
             (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc). *)
             (* symmetry in HeqHoc. apply evar_open_not_occur with (x1:=x) in HeqHoc. *)
             (* X is not free in phi1, so the fact that in evar_val' it is updated to some 
@@ -1893,10 +1887,10 @@ Section semantics.
             subst svar_val1'. subst svar_val2'.
             rewrite -> interpretation_fresh_svar_open with (Y := Xu). reflexivity.
             { subst Xfr1.
-              symmetry in HeqHoc'.
-              pose proof (Hsubst := @bevar_subst_not_occur_is_noop _ phi (patt_free_evar y) dbi HeqHoc').
+              simpl in Hwf. symmetry in HeqHoc'.
+              apply wfc_ex_lower in Hwf; auto.
+              pose proof (Hsubst := @bevar_subst_not_occur _ _ (patt_free_evar y) _ Hwf).
               rewrite Hsubst; auto.
-              apply wfc_ex_lower; auto.
             }
             { pose proof (Hfr := set_svar_fresh_is_fresh').
               specialize (Hfr (free_svars (evar_open dbi x phi))).
@@ -1904,7 +1898,6 @@ Section semantics.
               rewrite free_svars_evar_open in Hfr.
               rewrite free_svars_evar_open. auto.
             }
-            { apply bevar_occur_svar_open. symmetry. auto. }
             { apply wfc_ex_aux_body_mu_imp1.
               apply wfc_ex_lower; auto.
             }
@@ -1959,337 +1952,6 @@ Section semantics.
     apply M_predicate_evar_open_fresh_evar_1 with (x₁ := fresh_evar ϕ); auto.
   Qed.
 
-  (* TODO: deprecated
-
-  Print nest_ex_aux.
-  (* TODO similar for svar_open_nest_mu *)
-  (* interpretation of a formula is the same as the interpretation of opening the 
-     inside of an existential formula *)
-  Lemma Private_pattern_interpretation_evar_open_nest_ex M sz ϕ x dbi e ρₑ ρ :
-    size ϕ <= sz ->
-    evar_is_fresh_in x ϕ ->
-    @pattern_interpretation M (update_evar_val x e ρₑ) ρ (evar_open dbi x (nest_ex_aux dbi 1 ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    move: ϕ x dbi e ρₑ ρ.
-    induction sz; move=> ϕ x dbi e ρₑ ρ.
-    - destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity; try lia.
-      apply pattern_interpretation_free_evar_independent.
-      unfold evar_is_fresh_in in Hfr. apply Hfr.
-      rewrite evar_open_bound_evar.
-      repeat case_match; try lia.
-      + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-      + rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-    - pose proof (Hnot0 := not_bevar_occur_0_nest_ex ϕ).
-      destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
-      rewrite evar_open_free_evar.
-      + (* duplicate *)
-        apply pattern_interpretation_free_evar_independent.
-        unfold evar_is_fresh_in in Hfr. apply Hfr.
-      + rewrite evar_open_bound_evar.
-        repeat case_match; try lia.
-        * rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-        * rewrite 2!pattern_interpretation_bound_evar_simpl. reflexivity.
-      + simpl in Hnot0.
-        apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
-        rewrite 2!pattern_interpretation_app_simpl.
-        rewrite IHsz. lia. eapply evar_is_fresh_in_app_l. apply Hfr.
-        rewrite IHsz. lia. eapply evar_is_fresh_in_app_r. apply Hfr.
-        reflexivity.
-      + simpl in Hnot0.
-        apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
-        rewrite 2!pattern_interpretation_imp_simpl.
-        rewrite IHsz. lia. eapply evar_is_fresh_in_app_l. apply Hfr.
-        rewrite IHsz. lia. eapply evar_is_fresh_in_app_r. apply Hfr.
-        reflexivity.
-      + simpl in Hnot0.
-        rewrite 2!pattern_interpretation_ex_simpl. simpl.
-        apply f_equal. apply functional_extensionality.
-        intros c. fold bevar_subst.
-        replace (bevar_subst (nest_ex_aux (S dbi) 1 ϕ) (patt_free_evar x) (S dbi))
-                with (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)) by reflexivity.
-        remember (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)) as ϕ' in |-.
-        remember (fresh_evar (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ))) as x'.
-
-        (*assert (Hplus1: dbi+1 = S dbi). lia. rewrite Hplus1. clear Hplus1.*)
-
-        (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
-
-        remember ((@singleton evar (@EVarSet signature) _ x)
-                    ∪ ((free_evars (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ)))
-                         ∪ (free_evars ϕ))) as B.
-        remember (evar_fresh (elements B)) as x''.
-        assert(HB: x'' ∉ B).
-        { subst. apply set_evar_fresh_is_fresh'. }
-        rewrite HeqB in HB.
-        apply not_elem_of_union in HB.
-        destruct HB as [Hx''neqx HB].
-        apply not_elem_of_singleton_1 in Hx''neqx.
-        apply not_elem_of_union in HB.
-        destruct HB as [Hfree1 Hfree2].
-        
-        fold (evar_is_fresh_in x'' (evar_open (S dbi) x (nest_ex_aux (S dbi) 1 ϕ))) in Hfree1.
-        rewrite (@interpretation_fresh_evar_open _ _ _ x'').
-        { subst. apply set_evar_fresh_is_fresh. }
-        { subst. apply Hfree1. }
-        
-        rewrite evar_open_nest_ex_aux_comm in Heqϕ'.
-        destruct (compare_nat (S dbi) (S dbi)); try lia.
-
-        rewrite evar_open_comm. lia.
-        rewrite (evar_open_nest_ex_aux_comm _ _ 0).
-        destruct (compare_nat 0 (S dbi)); try lia.
-
-        rewrite update_evar_val_comm. apply Hx''neqx.
-        rewrite (IHsz _ x (S dbi)). rewrite -evar_open_size. lia.
-        apply evar_is_fresh_in_evar_open. intros Contra. symmetry in Contra. contradiction.
-        apply evar_is_fresh_in_exists in Hfr. apply Hfr.
-
-        apply interpretation_fresh_evar_open. apply Hfree2.
-        apply set_evar_fresh_is_fresh.
-      + simpl in Hnot0.
-        fold (nest_ex ϕ) in Hnot0.
-
-        rewrite 2!pattern_interpretation_mu_simpl. simpl.
-        apply f_equal. apply functional_extensionality.
-
-        intros S.
-        rewrite -svar_open_evar_open_comm.
-        rewrite svar_open_nest_ex_aux_comm.
-        rewrite IHsz. rewrite -svar_open_size. lia.
-        apply evar_fresh_svar_open.
-        apply evar_is_fresh_in_mu in Hfr. apply Hfr.
-        rewrite (@interpretation_fresh_svar_open _ _ _ (fresh_svar ϕ)).
-        rewrite fresh_svar_evar_open. rewrite fresh_svar_nest_ex_aux.
-        1,2: apply set_svar_fresh_is_fresh.
-        reflexivity.
-  Qed.
-
-  Lemma pattern_interpretation_evar_open_nest_ex M ϕ x e ρₑ ρ :
-    evar_is_fresh_in x ϕ ->
-    @pattern_interpretation M (update_evar_val x e ρₑ) ρ (evar_open 0 x (nest_ex ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    intros Hfr. apply Private_pattern_interpretation_evar_open_nest_ex with (sz := size ϕ). lia. assumption.
-  Qed.
-
-  Lemma pattern_interpretation_evar_open_nest_ex' M ϕ x ρₑ ρ :
-    evar_is_fresh_in x ϕ ->
-    @pattern_interpretation M ρₑ ρ (evar_open 0 x (nest_ex ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    intros Hfr.
-    rewrite -{1}(@update_evar_val_same_2 M x ρₑ).
-    apply pattern_interpretation_evar_open_nest_ex.
-    apply Hfr.
-  Qed.
-
-  (* interpretation of a formula is the same as the interpretation of opening the 
-     inside of a mu formula *)
-  Lemma Private_pattern_interpretation_svar_open_nest_mu_aux M sz ϕ X dbi S ρₑ ρ :
-    size ϕ <= sz ->
-    svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi 1 ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    move: ϕ X dbi S ρₑ ρ.
-    induction sz; move=> ϕ X dbi S ρₑ ρ.
-    - destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity; try lia.
-      rewrite svar_open_free_svar.
-      apply pattern_interpretation_free_svar_independent.
-      unfold evar_is_fresh_in in Hfr. apply Hfr.
-      case_match.
-      + rewrite svar_open_bound_svar.
-        case_match; try lia. simpl.
-        rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
-      + rewrite svar_open_bound_svar.
-        case_match; try lia.
-        rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
-    - pose proof (Hnot0 := not_bsvar_occur_0_nest_mu ϕ).
-      destruct ϕ; simpl; move=> Hsz Hfr; try reflexivity.
-      + (* duplicate *)
-        apply pattern_interpretation_free_svar_independent.
-        unfold evar_is_fresh_in in Hfr. apply Hfr.
-      + rewrite svar_open_bound_svar.
-        repeat case_match; try lia.
-        * rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
-        * rewrite 2!pattern_interpretation_bound_svar_simpl. reflexivity.
-      + simpl in Hnot0.
-        apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
-        rewrite 2!pattern_interpretation_app_simpl.
-        rewrite IHsz. lia. eapply svar_is_fresh_in_app_l. apply Hfr.
-        rewrite IHsz. lia. eapply svar_is_fresh_in_app_r. apply Hfr.
-        reflexivity.
-      + simpl in Hnot0.
-        apply orb_false_iff in Hnot0. destruct Hnot0 as [Hnot1 Hnot2].
-        rewrite 2!pattern_interpretation_imp_simpl.
-        rewrite IHsz. lia. eapply svar_is_fresh_in_app_l. apply Hfr.
-        rewrite IHsz. lia. eapply svar_is_fresh_in_app_r. apply Hfr.
-        reflexivity.
-      + simpl in Hnot0.
-        rewrite 2!pattern_interpretation_ex_simpl. simpl.
-        apply f_equal. apply functional_extensionality.
-        intros c.
-        rewrite svar_open_evar_open_comm.
-        rewrite evar_open_nest_mu_aux_comm.
-        rewrite IHsz.
-        { rewrite -evar_open_size. lia. }
-        { apply svar_fresh_evar_open. apply svar_is_fresh_in_exists in Hfr. apply Hfr. }
-        rewrite (@interpretation_fresh_evar_open _ _ _ (fresh_evar ϕ)).
-        rewrite fresh_evar_svar_open. rewrite fresh_evar_nest_mu_aux.
-        1,2: apply set_evar_fresh_is_fresh.
-        reflexivity.      
-        
-      + simpl in Hnot0. rewrite svar_open_mu.
-        rewrite 2!pattern_interpretation_mu_simpl. simpl.
-        apply f_equal. apply functional_extensionality.
-        intros S'.
-        
-        remember (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ)) as ϕ'.
-        remember (fresh_svar ϕ') as X'.
-
-        (* replace x' with x'' such that x'' <> x (and x'' is fresh in ϕ) *)
-
-        remember ((@singleton svar (@SVarSet signature) _ X)
-                    ∪ ((free_svars (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ)))
-                         ∪ (free_svars ϕ))) as B.
-        remember (svar_fresh (elements B)) as X''.
-        assert(HB: X'' ∉ B).
-        { subst. apply set_svar_fresh_is_fresh'. }
-        rewrite HeqB in HB.
-        apply not_elem_of_union in HB.
-        destruct HB as [Hx''neqx HB].
-        apply not_elem_of_singleton_1 in Hx''neqx.
-        apply not_elem_of_union in HB.
-        destruct HB as [Hfree1 Hfree2].
-        
-        fold (svar_is_fresh_in X'' (svar_open (Datatypes.S dbi) X (nest_mu_aux (Datatypes.S dbi) 1 ϕ))) in Hfree1.
-        rewrite (@interpretation_fresh_svar_open _ _ _ X'').
-        { subst. apply set_svar_fresh_is_fresh. }
-        { subst. apply Hfree1. }
-        
-        rewrite Heqϕ'.    
-        rewrite svar_open_comm.
-        { lia. }
-        rewrite (svar_open_nest_mu_aux_comm _ _ 0).
-        destruct (compare_nat 0 (Datatypes.S dbi)); try lia.
-
-
-        rewrite update_svar_val_comm.
-        { apply Hx''neqx. }
-        
-        rewrite (IHsz _ X (Datatypes.S dbi)).
-        { rewrite -svar_open_size. lia. }
-        { apply svar_is_fresh_in_svar_open. intros Contra. symmetry in Contra. contradiction.
-          apply svar_is_fresh_in_mu in Hfr. apply Hfr.
-        }
-
-        apply interpretation_fresh_svar_open. { apply Hfree2. }
-                                              apply set_svar_fresh_is_fresh.
-  Qed.
-
-  Lemma pattern_interpretation_svar_open_nest_mu_aux M ϕ X dbi S ρₑ ρ :
-    svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open dbi X (nest_mu_aux dbi 1 ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    apply Private_pattern_interpretation_svar_open_nest_mu_aux with (sz := size ϕ).
-    lia.
-  Qed.
-
-  Lemma pattern_interpretation_svar_open_nest_mu M ϕ X S ρₑ ρ :
-    svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ (update_svar_val X S ρ) (svar_open 0 X (nest_mu ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    apply pattern_interpretation_svar_open_nest_mu_aux.
-  Qed.
-
-  Lemma pattern_interpretation_svar_open_nest_mu' M ϕ X ρₑ ρ :
-    svar_is_fresh_in X ϕ ->
-    @pattern_interpretation M ρₑ ρ (svar_open 0 X (nest_mu ϕ))
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    intros Hfr.
-    rewrite -{1}(@update_svar_val_same_2 M X ρ).
-    apply pattern_interpretation_svar_open_nest_mu.
-    apply Hfr.
-  Qed.
-
-  Lemma Private_pattern_interpretation_nest_ex_aux M sz ϕ level ρₑ ρ :
-    size ϕ <= sz ->
-    @pattern_interpretation M ρₑ ρ (nest_ex_aux level 1 ϕ)
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    move: ϕ level ρₑ ρ.
-    induction sz; move=> ϕ; destruct ϕ; move=> level ρₑ ρ Hsz; simpl; simpl in Hsz; try reflexivity; try lia.
-    - rewrite 2!pattern_interpretation_app_simpl.
-      rewrite IHsz. lia. rewrite IHsz. lia.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_imp_simpl.
-      rewrite IHsz. lia. rewrite IHsz. lia.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_ex_simpl.
-      simpl. apply f_equal. apply functional_extensionality.
-      intros m.
-      rewrite evar_open_nest_ex_aux_comm. simpl.
-      rewrite IHsz. rewrite -evar_open_size. lia.
-      rewrite fresh_evar_nest_ex_aux.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_mu_simpl.
-      simpl. apply f_equal. apply functional_extensionality.
-      intros S.
-      rewrite svar_open_nest_ex_aux_comm.
-      rewrite IHsz. rewrite -svar_open_size. lia.
-      rewrite fresh_svar_nest_ex_aux.
-      reflexivity.
-  Qed.
-
-  Lemma pattern_interpretation_nest_ex_aux M ϕ level ρₑ ρ :
-    @pattern_interpretation M ρₑ ρ (nest_ex_aux level 1 ϕ)
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    apply Private_pattern_interpretation_nest_ex_aux with (sz := size ϕ).
-    lia.
-  Qed.
-
-  Lemma Private_pattern_interpretation_nest_mu_aux M sz ϕ level ρₑ ρ :
-    size ϕ <= sz ->
-    @pattern_interpretation M ρₑ ρ (nest_mu_aux level 1 ϕ)
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    move: ϕ level ρₑ ρ.
-    induction sz; move=> ϕ; destruct ϕ; move=> level ρₑ ρ Hsz; simpl; simpl in Hsz; try reflexivity; try lia.
-    - rewrite 2!pattern_interpretation_app_simpl.
-      rewrite IHsz. lia. rewrite IHsz. lia.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_imp_simpl.
-      rewrite IHsz. lia. rewrite IHsz. lia.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_ex_simpl.
-      simpl. apply f_equal. apply functional_extensionality.
-      intros m.
-      rewrite evar_open_nest_mu_aux_comm. simpl.
-      rewrite IHsz. rewrite -evar_open_size. lia.
-      rewrite fresh_evar_nest_mu_aux.
-      reflexivity.
-    - rewrite 2!pattern_interpretation_mu_simpl.
-      simpl. apply f_equal. apply functional_extensionality.
-      intros S.
-      rewrite svar_open_nest_mu_aux_comm.
-      rewrite IHsz. rewrite -svar_open_size. lia.
-      rewrite fresh_svar_nest_mu_aux.
-      reflexivity.
-  Qed.
-
-  Lemma pattern_interpretation_nest_mu_aux M ϕ level ρₑ ρ :
-    @pattern_interpretation M ρₑ ρ (nest_mu_aux level 1 ϕ)
-    = @pattern_interpretation M ρₑ ρ ϕ.
-  Proof.
-    apply Private_pattern_interpretation_nest_mu_aux with (sz := size ϕ).
-    lia.
-  Qed.*)
-  
   (* Similar to plugging_patterns: using free svar substitution instead of 
      bound svar substitution.
      TODO: we may be able to gneeralize this lemma to non-closed psi,

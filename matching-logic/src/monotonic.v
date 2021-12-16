@@ -435,7 +435,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := @evar_open_wfp Σ n phi Hsz' Hwfp 0 fresh).
+          pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 Hwfp).
           specialize (IHn Hsz' Hwfp' Bp Bn).
           pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
           unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
