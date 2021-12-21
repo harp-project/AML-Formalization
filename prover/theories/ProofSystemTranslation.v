@@ -305,31 +305,38 @@ Section proof_system_translation.
      1. to_namedPattern2'  (s_1 $ s_2) ∅
      1.1. to_namedPattern2' s_1  ∅  ==> {(s₁, ns₁)}. hist(_) => {[(s₁, (ns₁, ∅))] &  }
    *)
-  Definition history_generator (C : Cache) :=
-    forall (p : @Pattern signature) (np : @NamedPattern signature),
-      C !! p = Some np ->
-      { history : list (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))
-                  &
-                    match history with
-                    | [] => False
-                    | (x::xs) =>
-                        x.1 = p /\ x.2.1.1.1 = np /\
-(*                        x.2.1.1.2 !! p = None /\ *)
-                          (match (last (x::xs)) with
-                          | None => False
-                          | Some (p_l, x_l) => x_l = (to_NamedPattern2' p_l ∅ ∅ ∅)
-                          end) /\
-                          forall (i:nat),
-                            match xs!!i with
-                            | None => True
-                            | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
-                                exists p_i,
-                                c_Si !! p_i = None /\
-                                ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
-                            end
-                    end
-      }.
+  Definition hist_entry := (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))%type.
+  
+  Definition evs_of (h : hist_entry) : (@EVarSet signature) := h.2.1.2.
+  Definition svs_of (h : hist_entry) : (@SVarSet signature) := h.2.2.
+  
+  Definition hist_prop (C : Cache) (history : list hist_entry) : Prop :=
+    match history with
+    | [] => False
+    | (x::xs) =>
+        x.2.1.1.2 = C /\
+          (match (last (x::xs)) with
+           | None => False
+           | Some (p_l, x_l) => x_l = (to_NamedPattern2' p_l ∅ ∅ ∅)
+           end) /\
+          forall (i:nat),
+            match xs!!i with
+            | None => True
+            (* p_i came from the result of the cache c_Si and everything before it *)
+            | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
+                exists p_i,
+                c_Si !! p_i = None /\
+                  ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
+            end
+    end.
 
+  Record History_generator (C : Cache) :=
+    mkHistory {
+        Hst_history : list hist_entry ;
+        Hst_prop : hist_prop C Hst_history ;
+    }.
+
+  (*
   Lemma history_generator_subseteq (C₁ C₂ : Cache) :
     C₁ ⊆ C₂ ->
     history_generator C₂ ->
@@ -337,341 +344,40 @@ Section proof_system_translation.
   Proof.
     intros Hsub Hc.
     unfold history_generator in *.
-    intros p np Hp.
-    specialize (Hc p np).
-    feed specialize Hc.
-    { eapply lookup_weaken. 2: apply Hsub. apply Hp. }
-    exact Hc.
-  Defined. (* I think this should not be opaque. *)
-  
-  Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
-    history_generator C ->
-    history_generator (to_NamedPattern2' p C evs svs).1.1.2.
+    destruct Hc as [history Hhistory].
+    induction history.
+    contradiction.
+  Abort.
+*)
+
+  Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet)
+    (hC : History_generator C) :
+    fmap evs_of (head (Hst_history C hC)) = Some evs ->
+    fmap svs_of (head (Hst_history C hC)) = Some svs ->
+    History_generator (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
-    intros cpC.
-    move: C evs svs cpC.
-    induction p; intros C evs svs cpC; simpl; case_match.
-
-    (* [p] was in cache -> the history function stays the same. Solves 10 subgoals *)
-    all: try (solve[unfold history_generator; intros p' np' Hp'; simpl in Hp'; specialize (cpC p' np' Hp'); exact cpC]).
-    (* 10 subgoals remain - the pattern p' was not found in cache. *)
-    (* Base cases *)
-    1,2,3,4,5,7: simpl; intros p' np' Hp';
-    lazymatch type of Hp' with
-    | (<[?q:=?nq]> _ !! p' = _ ) =>
-        destruct (decide (p' = q));
-        [(subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(q, (to_NamedPattern2' q ∅ ∅ ∅))]); simpl;
-          split;[reflexivity|]; case_match;[inversion Heqo0|];
-          split;[|auto];reflexivity
-         )
-        |(rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac];
-         unfold history_generator in cpC; specialize (cpC p' np' Hp'); apply cpC)
-        ]
-    end.
-
-    (* Inductive cases *)
-    - repeat case_match. subst.
-      inversion Heqp. subst. clear Heqp.
+    intros Hevs Hsvs.
+    destruct (C !! p) eqn:Hin.
+    - exists (Hst_history C hC).
+      unfold to_NamedPattern2'.
+      destruct p; simpl; rewrite Hin; simpl;  destruct hC; simpl; assumption.
+    - exists ((p, to_NamedPattern2' p C evs svs) :: (Hst_history C hC)).
       simpl.
-
-      unfold history_generator. intros p' np' Hp'.
-      
-      
-      destruct (decide (p' = patt_app p1 p2)).
-      + subst p'.
-
-        pose proof (Htmp := Heqp0).
-        apply (f_equal fst) in Htmp.
-        apply (f_equal fst) in Htmp.
-        pose proof (Htmp' := Htmp).
-        apply (f_equal fst) in Htmp.
-        apply (f_equal snd) in Htmp'.
-        assert (g !! p1 = Some n).
-        { simpl in Htmp. simpl in Htmp'. rewrite -Htmp. rewrite -Htmp'.          
-          apply to_NamedPattern2'_ensures_present.
-        }
-        clear Htmp Htmp'.
-        pose proof (Htmp := Heqp1).
-        apply (f_equal fst) in Htmp.
-        apply (f_equal fst) in Htmp.
-        pose proof (Htmp' := Htmp).
-        apply (f_equal fst) in Htmp.
-        apply (f_equal snd) in Htmp'.
-        assert (g1 !! p2 = Some n0).
-        { simpl in Htmp,Htmp'. rewrite -Htmp -Htmp'.
-          apply to_NamedPattern2'_ensures_present.
-        }
-        clear Htmp Htmp'.
-
-        pose proof (IH1 := IHp1 C evs svs cpC).
-        rewrite Heqp0 in IH1. simpl in IH1.
-        pose proof (IH2 := IHp2 g e s0 IH1).
-        rewrite Heqp1 in IH2. simpl in IH2.
-
-
-        unfold history_generator in IH2.
-        pose proof (IH2' := IH2 p2 n0 H0).
-        destruct IH2' as [hist Hhist].
-        destruct hist as [|h hist];[inversion Hhist|].
-        destruct_and!; subst.
-
-        eapply (existT ((patt_app p1 h.1, (np', g1, e1, s))::h::hist)).
-        split_and!; auto.
-        intros i.
-        destruct i.
-        * simpl. clear H2. repeat case_match. simpl.
-          exists (patt_app p1 p).
-          simpl in *. subst.
-          split. admit.
-          repeat f_equal.
-          case_match.
-          Search c.
-        * simpl. apply H5.
-        
-        admit.
-      +
-        pose proof (IH1 := IHp1 C evs svs cpC).
-        rewrite Heqp0 in IH1. simpl in IH1.
-        pose proof (IH2 := IHp2 g e s0 IH1).
-        rewrite Heqp1 in IH2. simpl in IH2.
-      
-        unfold history_generator in IH2.
-        specialize (IH2 p' np').
-      
-        rewrite lookup_insert_ne in Hp'.
-        { apply not_eq_sym. assumption. }
-        specialize (IH2 Hp').
-        destruct IH2 as [hist Hhist].
-        destruct hist as [| h hist] ;[inversion Hhist|].
-        destruct_and!. subst.
-        apply (existT (h::hist)).
-        simpl. split_and!; auto; simpl.
-
-      
-      destruct (decide (p' = patt_app p1 p2)).
-      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_app p1 p2, (to_NamedPattern2' (patt_app p1 p2) C evs svs))]); simpl; split;[reflexivity|]
-        ).
-        repeat case_match;(split;[|auto]); simpl.
-        * inversion Heqo1.
-        * inversion Heqo1.
-        * inversion Heqo.
-        * inversion Heqo.
-        * inversion Heqo1.
-        * inversion Heqo1.
-        * inversion Heqp10; clear Heqp10; subst.
-          inversion Heqp; clear Heqp; subst.
-          inversion Heqp0; clear Heqp0; subst.
-          rewrite Heqp1 in Heqp5. inversion Heqp5.
-          reflexivity.
-        * subst. inversion Heqp10; clear Heqp10; subst.
-          inversion Heqp; clear Heqp; subst.
-          inversion Heqp0; clear Heqp0; subst.
-          rewrite Heqp1 in Heqp5. inversion Heqp5; clear Heqp5; subst.
-          
-          
-        
-      + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
-        specialize (IHp1 C evs svs cpC).
-        rewrite Heqp0 in IHp1. simpl in IHp1.
-        specialize (IHp2 g e s0 IHp1).
-        rewrite Heqp1 in IHp2. simpl in IHp2.
-        specialize (IHp2 p' np' Hp'). apply IHp2.
-    - repeat case_match. subst.
-      inversion Heqp. subst. clear Heqp.
-      simpl.
-      unfold history_generator. intros p' np' Hp'.
-      destruct (decide (p' = patt_imp p1 p2)).
-      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_imp p1 p2, (to_NamedPattern2' (patt_imp p1 p2) ∅ ∅ ∅))]); simpl; split;[reflexivity|]
-        ).
-        repeat case_match;(split;[|auto]); reflexivity.
-        
-      + (rewrite lookup_insert_ne in Hp';[(apply not_eq_sym; assumption)|idtac]).
-        specialize (IHp1 C evs svs cpC).
-        rewrite Heqp0 in IHp1. simpl in IHp1.
-        specialize (IHp2 g e s0 IHp1).
-        rewrite Heqp1 in IHp2. simpl in IHp2.
-        specialize (IHp2 p' np' Hp'). apply IHp2.
-    - repeat case_match. subst.
-
-      match type of Heqp1 with
-      | (to_NamedPattern2' _ ?C ?evs ?svs = _) => specialize (IHp C evs svs)
-      end.
-      
-      rewrite -> Heqp1 in IHp. simpl in IHp.
-      feed specialize IHp.
-      {
-        unfold history_generator. intros p' np' Hp'.
-        inversion Heqp0. subst. clear Heqp0.
-        (* So what does the cache = ∅ mean here? 
-           Recall that we start with empty cache when translating pattern.
-           My intuition tells me that we behave here the same way as if we
-           just started. In other words, history behaves as if we started from
-           the nested existential and mu patterns.
-         *)
-        apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
-        simpl. repeat split; auto.
-      }
-      unfold history_generator. intros p' np' Hp'.
-      destruct (decide (p' = patt_exists p)).
-      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_exists p, (to_NamedPattern2' (patt_exists p) ∅ ∅ ∅))]); simpl; split; auto
-        ).
-        
-      +
-        inversion Heqp0. subst. clear Heqp0.
-        simpl in Hp'.
-        destruct (decide (is_bound_evar p')).
-        * apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
-          simpl. repeat split; auto.
-        * 
-          unfold history_generator in IHp.
-          specialize (IHp p' np').
-          feed specialize IHp.
-          {
-            simpl in Hp'.
-            rewrite lookup_insert_ne in Hp'. apply not_eq_sym. assumption.
-            rewrite lookup_union_Some in Hp'.
-            destruct Hp' as [Hp'|Hp'].
-            -- unfold remove_bound_evars in Hp'.
-               rewrite map_filter_lookup_Some in Hp'.
-               destruct Hp' as [This _]. exact This.
-            -- rewrite map_filter_lookup_Some in Hp'.
-               destruct Hp' as [_ Hp'].
-               unfold is_bound_evar_entry in Hp'. simpl in Hp'.
-               contradiction.
-            -- unfold remove_bound_evars,keep_bound_evars.
-               intros x. unfold option_relation.
-               repeat case_match; try exact I.
-               rewrite map_filter_lookup_Some in Heqo0.
-               rewrite map_filter_lookup_Some in Heqo1.
-               destruct Heqo0 as [HH1 HH2].               
-               destruct Heqo1 as [HH3 HH4].
-               contradiction.
-          }
-          apply IHp.
-    - repeat case_match. subst.
-
-      match type of Heqp1 with
-      | (to_NamedPattern2' _ ?C ?evs ?svs = _) => specialize (IHp C evs svs)
-      end.
-      
-      rewrite -> Heqp1 in IHp. simpl in IHp.
-      feed specialize IHp.
-      {
-        unfold history_generator. intros p' np' Hp'.
-        inversion Heqp0. subst. clear Heqp0.
-        (* So what does the cache = ∅ mean here? 
-           Recall that we start with empty cache when translating pattern.
-           My intuition tells me that we behave here the same way as if we
-           just started. In other words, history behaves as if we started from
-           the nested existential and mu patterns.
-         *)
-        apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
-        simpl. repeat split; auto.
-      }
-      unfold history_generator. intros p' np' Hp'.
-      destruct (decide (p' = patt_mu p)).
-      + (subst p'; rewrite lookup_insert in Hp'; inversion Hp'; clear Hp'; subst np';
-          apply (existT [(patt_mu p, (to_NamedPattern2' (patt_mu p) ∅ ∅ ∅))]); simpl; split; auto
-        ).
-      +
-        inversion Heqp0. subst. clear Heqp0.
-        simpl in Hp'.
-        destruct (decide (is_bound_svar p')).
-        * apply (existT [(p', (to_NamedPattern2' p' ∅ ∅ ∅))]).
-          simpl. repeat split; auto.
-        * 
-          unfold history_generator in IHp.
-          specialize (IHp p' np').
-          feed specialize IHp.
-          {
-            simpl in Hp'.
-            rewrite lookup_insert_ne in Hp'. apply not_eq_sym. assumption.
-            rewrite lookup_union_Some in Hp'.
-            destruct Hp' as [Hp'|Hp'].
-            -- unfold remove_bound_evars in Hp'.
-               rewrite map_filter_lookup_Some in Hp'.
-               destruct Hp' as [This _]. exact This.
-            -- rewrite map_filter_lookup_Some in Hp'.
-               destruct Hp' as [_ Hp'].
-               unfold is_bound_svar_entry in Hp'. simpl in Hp'.
-               contradiction.
-            -- unfold remove_bound_svars,keep_bound_svars.
-               intros x. unfold option_relation.
-               repeat case_match; try exact I.
-               rewrite map_filter_lookup_Some in Heqo0.
-               rewrite map_filter_lookup_Some in Heqo1.
-               destruct Heqo0 as [HH1 HH2].               
-               destruct Heqo1 as [HH3 HH4].
-               contradiction.
-          }
-          apply IHp.
+      split;[reflexivity|].
+      destruct hC. simpl in *.
+      unfold hist_prop in Hst_prop0.
+      destruct Hst_history0; [contradiction|].
+      destruct Hst_prop0 as [Hcache [HhistoryC Hinner]].
+      split; auto.
+      destruct i; simpl.
+      unfold evs_of, svs_of in *. simpl in *.
+      inversion Hevs; inversion Hsvs; subst.
+      repeat case_match; simpl in *; subst.
+      + exists p. split. assumption. reflexivity.
+      + exists p. split. assumption. reflexivity.
+      + apply Hinner.
   Defined.
 
-  Lemma consistency_pqp
-        (p q : Pattern)
-        (np' nq' np'' : NamedPattern)
-        (cache : Cache)
-        (evs : EVarSet)
-        (svs : SVarSet):
-    history_generator cache ->
-    (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
-    = npatt_imp np' (npatt_imp nq' np'') ->
-    np'' = np'.
-  Proof.
-    intros Hg H. Search to_NamedPattern2'.
-    remember (patt_imp p (patt_imp q p)) as pqp.
-    pose proof (Hpresent := to_NamedPattern2'_ensures_present pqp cache evs svs).
-    rewrite H in Hpresent.
-    match type of H with
-    | (?e.1.1.1 = _) => remember e as Call
-    end.
-    remember (Call.1.1.2) as cache'.
-    
-    pose proof (Hg' := history_generator_step cache pqp evs svs Hg).
-    rewrite -HeqCall in Hg'. rewrite -Heqcache' in Hg'.
-    apply Hg' in Hpresent.
-    destruct Hpresent as [history Hhistory].
-    destruct history;[inversion Hhistory|].
-    
-    induction history; simpl in *.
-    - subst. clear Hg'. simpl in *.
-      case_match.
-      + simpl in *. subst.
-    
-    simpl in H.
-    case_match.
-    - admit.
-    - (* cache miss on p ---> (q ---> p) *)
-      repeat case_match; simpl in *; subst.
-      + (* cache hit on q ---> p *)
-        inversion Heqp0. subst. clear Heqp0.
-        inversion Heqp6. subst. clear Heqp6.
-
-        (* assert(cache !! patt_imp q p = Some (npatt_imp nq' np'')). *)
-        
-        (* Now [q ---> p] is in [g]. But it follows that [q ---> p] is also in [cache] (and has the same value).
-           Therefore, also [p] and [q] are in [cache].
-           It follows that [np' = cache !!! p].
-           By monotonicity (Lemma ???), ???
-         *)
-        simpl.
-        Check history_generator_step. About history_generator_step.
-        pose proof (Hcorr_g := history_generator_step cache p evs svs Hcorr_cache).
-        rewrite Heqp3 in Hcorr_g. simpl in Hcorr_g.
-        (* pose proof (Hcorr_g _ _ Heqo0).
-        destruct X as [[[cache' evs'] svs'] [Hnone [H Hsub]]]. simpl in H.
-        rewrite Hnone in H. repeat case_match.
-        simpl in *. inversion Heqp0. subst. clear Heqp0.
-        inversion H1. subst. clear H1. *)
-
-        (* Now compare Heqp3 with Heqp7 *)
-        
-  Abort.
-  
   (*
     (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
     (1) cache !! (p ---> (q ---> p)) = Some pqp'
