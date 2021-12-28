@@ -6229,6 +6229,11 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
         (
         mgTautoTree newl y; mgTautoTree newl x
         )
+      | (?x or ?y) => 
+        let newl := eval compute in ( cons (x or y) l ) in
+        (
+            mgTautoTree newl y; mgTautoTree newl x
+        )
       | ?x =>
         let lx := eval compute in ( cons x l) in
           idtac lx
@@ -6239,7 +6244,7 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     match goal with
       | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
       =>
-        mgTautoTree l g
+         mgTautoTree l g
     end
   .
 
@@ -6248,7 +6253,7 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     well_formed b ->
     well_formed c ->
     (*Γ ⊢ (a ---> b).*)
-     Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> c)).
+     Γ ⊢ ((a or b) or ((b or c) or c)).
   Proof.
     intros wfa wfb wfc.
     toMyGoal.
