@@ -275,6 +275,30 @@ Section proof_system_translation.
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     sub_prop C ->
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Proof.
+    intros Hsub.
+    destruct (lookup p C) eqn:Hcache.
+    - destruct p eqn:Hp; unfold to_NamedPattern2'; simpl in *; rewrite Hcache; auto.
+    - destruct p eqn:Hp; simpl in *; rewrite Hcache; simpl.
+      unfold sub_prop in *. intros.
+      destruct p0; auto.
+      rewrite lookup_insert_Some in H.
+      destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1.
+      apply Hsub in H4.
+      destruct H4 as [np' [nq' [H4 H5]]].
+      destruct (decide (patt_free_evar x = p0_1)), (decide (patt_free_evar x = p0_2)); subst.
+      + exists (npatt_evar x), (npatt_evar x).
+        split; apply lookup_insert.
+      + exists (npatt_evar x), nq'.
+        split. apply lookup_insert.
+        rewrite <- H5.
+        apply lookup_insert_ne. assumption.
+      + exists np', (npatt_evar x).
+        split. rewrite <- H4. apply lookup_insert_ne. assumption.
+        apply lookup_insert.
+      + exists np', nq'.
+        split. rewrite <- H4. apply lookup_insert_ne. assumption.
+        rewrite <- H5. apply lookup_insert_ne. assumption.
   Admitted.
 
   (*
@@ -378,6 +402,18 @@ Section proof_system_translation.
       + apply Hinner.
   Defined.
 
+  Lemma consistency_pqp
+        (p q : Pattern)
+        (np' nq' np'' : NamedPattern)
+        (cache : Cache)
+        (evs : EVarSet)
+        (svs : SVarSet):
+    History_generator cache ->
+    (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
+    = npatt_imp np' (npatt_imp nq' np'') ->
+    np'' = np'.
+  Proof.
+
   (*
     (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
     (1) cache !! (p ---> (q ---> p)) = Some pqp'
@@ -399,10 +435,8 @@ Section proof_system_translation.
   (*
      Non-Addition lemma. phi <= psi -> psi \not \in C -> psi \not \in (toNamedPattern2' phi C).2
    *)
-  Check False_rect. Check eq_refl.
-  Obligation Tactic := idtac.
   Equations? translation' (G : Theory) (phi : Pattern) (prf : G ⊢ phi)
-           (cache : Cache) (pfsub : sub_prop cache) (pfcorr : history_generator cache)
+           (cache : Cache) (pfsub : sub_prop cache) (pfcorr : History_generator cache)
            (used_evars : EVarSet) (used_svars : SVarSet)
     : (NP_ML_proof_system (theory_translation G)
                           (to_NamedPattern2' phi (cache)
