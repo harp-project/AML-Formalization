@@ -6123,6 +6123,50 @@ Ltac2 rec iterlist (l : constr) :=
      | (?a :: ?m) => ltac1:(idtac 1)
   end.
 
+Ltac rfindContradictionTo a ll k n:=
+  match ll with
+    | ((! a) :: ?m) => mgApply n; mgExactn k
+    | (?b :: ?m) => 
+                    let nn := eval compute in ( n + 1 ) in
+                     (rfindContradictionTo a m k nn)
+    | _ => fail
+  end.
+
+Ltac findContradiction l k:=
+    match l with
+       | (?a :: ?m) => 
+             match goal with
+                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+                  =>
+                      idtac "Have:" a "Search: !" a;
+                     try rfindContradictionTo a ll k 0;
+                     let kk := eval compute in ( k + 1 ) in
+                     (findContradiction m kk)
+             end
+       | _ => fail
+    end.
+
+Ltac findContradiction_start :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        findContradiction l 0
+  end.
+
+
+  Lemma conj_right {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( b ---> a ---> !b ---> a ---> ⊥).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    findContradiction_start.
+  Qed.
+
+
 Ltac mlTauto3 :=
   mgIntro;
   match goal with
@@ -6137,28 +6181,6 @@ Ltac mlTauto3 :=
         mlTauto3
   end.
 
-  Lemma conj_right {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ( b ---> a ---> a).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mlTauto3.
-  Qed.
-
-  Lemma conj_left {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ((a and b) ---> a).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mlTauto3.
-  Qed.
-
 (*Tautos
 Search (?a ---> (?b ---> ?a) ). (*P1*)
 Search ((?a ---> (?b ---> ?c)) ---> ((?a ---> ?b) ---> (?a ---> ?c))). (*P2*)
@@ -6167,7 +6189,7 @@ Search ((?a and ?b) ---> ?b ). (**)
 Search ((?a ---> ?b) ---> ((?b ---> ?c) ---> ((?a or ?b )---> ?c))). (**)
 Search (?a ---> (?a or ?b) ). (*disj_left_intro*)
 Search ((?a ---> ?b) ---> ((?a ---> ! ?b) ---> ! ?a)). (*P4m*)
-Search ( (! (! ?a)) ---> ?a). (**)
+Search ( (! (! ?a)) ---> ?a). (*not_not_elim*)
 Search ((?a or !?a)). (*A_or_notA*)
 Search (!(?a and !?a)). (**)
 Search ( ?a ---> ?a). (*A_impl_A*)
@@ -6208,19 +6230,94 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
         mgExactn 0.
   Qed.
 
-  Lemma impl_to_or {Σ : Signature} Γ a b:
+  Lemma or_to_impl {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢( (a ---> b ) ---> ((! a) or b)).
+    Γ ⊢( ((! a) or b)  ---> (a ---> b )).
   Proof.
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
-    mgApplyMeta (@implt_to_or_helper _ _ _ _ wfa wfb).
-    fromMyGoal.
-    unfold patt_or.
-    auto.
+    repeat mgIntro.
+    mgDestructOr 0.
+    - mgApplyMeta (@false_implies_everything _ _ _ wfb).
+      mgApply 0.
+      mgExactn 1.
+    - mgExactn 0.
   Qed.
+  Lemma deMorgan1 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( (!a or !b) ---> !(a and b)).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    unfold patt_not.
+    mgDestructAnd 1.
+    mgDestructOr 0.
+    - mgApply 0.
+      mgExactn 1.
+    - mgApply 0.
+      mgExactn 2.
+  Qed.
+  Lemma ex_conj_left {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ((a and b) ---> a).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgApplyMeta (@or_to_impl _ _ (a and b) (a)  _ _).
+    mgApplyMeta (@not_not_elim _ _ _ _ ).
+    (*  [Σ, Γ ⊢ [] ==> ! ! ((!a or !b) or a)]  *)
+    Admitted.
+  (*!((!a or !b) or a) ---> ⊥*)
+  (*(!(!a or !b) and !a) ---> ⊥*)
+  (*((!!a and !!b) and !a) ---> ⊥*)
+  (*((a and b) and !a) ---> ⊥*)
+  (*
+      !a\
+      |  |
+      a /
+      |
+      b
+
+*)
+
+  Lemma ex_conj_left2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ (((a and b) and !a) ---> ⊥ ).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    repeat mgDestructAnd 0.
+    mgApply 2.
+    mgExactn 0.
+  Qed.
+
+
+  Lemma ex_disj_left_intro {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ a ---> (a or b).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    mgApplyMeta (@or_to_impl _ _ (a) (a or b)  _ _).
+    mgApplyMeta (@not_not_elim _ _ _ _ ).	
+    (*! ! (! a or a or b)*)
+    (*! (! a or a or b) --->  ⊥ *)
+    (*(!! a and !a and !b) --->  ⊥ *)
+    (*(a and !a and !b) --->  ⊥ *)
+    Admitted.
+
 
   Ltac mgTautoTree l g :=
     match g with
