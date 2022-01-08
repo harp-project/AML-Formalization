@@ -262,9 +262,16 @@ Section proof_system_translation.
     forall (p : Pattern) (np : NamedPattern),
       C !! p = Some np ->
       match p with
+      | patt_free_evar _ => True
+      | patt_free_svar _ => True
+      | patt_bound_evar _ => True
+      | patt_bound_svar _ => True
       | patt_bott => True
+      | patt_sym _ => True
       | patt_imp p' q' => exists np' nq', C !! p' = Some np' /\ C !! q' = Some nq'
-      | _ => True
+      | patt_app p' q' => exists np' nq', C !! p' = Some np' /\ C !! q' = Some nq'
+      | patt_exists p' => exists np', C !! p' = Some np'
+      | patt_mu p' => exists np', C !! p' = Some np'
       end.
 
   Lemma sub_prop_empty: sub_prop ∅.
@@ -272,6 +279,9 @@ Section proof_system_translation.
     unfold sub_prop; intros; inversion H.
   Qed.
 
+  Print to_NamedPattern2'.
+  
+  
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     sub_prop C ->
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
@@ -282,23 +292,31 @@ Section proof_system_translation.
     - destruct p eqn:Hp; simpl in *; rewrite Hcache; simpl.
       unfold sub_prop in *. intros.
       destruct p0; auto.
-      rewrite lookup_insert_Some in H.
-      destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1.
-      apply Hsub in H4.
-      destruct H4 as [np' [nq' [H4 H5]]].
-      destruct (decide (patt_free_evar x = p0_1)), (decide (patt_free_evar x = p0_2)); subst.
-      + exists (npatt_evar x), (npatt_evar x).
-        split; apply lookup_insert.
-      + exists (npatt_evar x), nq'.
-        split. apply lookup_insert.
-        rewrite <- H5.
-        apply lookup_insert_ne. assumption.
-      + exists np', (npatt_evar x).
-        split. rewrite <- H4. apply lookup_insert_ne. assumption.
-        apply lookup_insert.
-      + exists np', nq'.
-        split. rewrite <- H4. apply lookup_insert_ne. assumption.
-        rewrite <- H5. apply lookup_insert_ne. assumption.
+      1,2: (rewrite lookup_insert_Some in H;
+        destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
+        apply Hsub in H4;
+        destruct H4 as [np' [nq' [H4 H5]]];
+        destruct (decide (patt_free_evar x = p0_1)), (decide (patt_free_evar x = p0_2)); subst;
+        [(exists (npatt_evar x), (npatt_evar x);
+          split; apply lookup_insert)
+        |(exists (npatt_evar x), nq';
+          split; [(apply lookup_insert)|(
+          rewrite <- H5;
+          apply lookup_insert_ne; assumption)])
+        |(exists np', (npatt_evar x);
+          split; [(rewrite <- H4; apply lookup_insert_ne; assumption)
+          |apply lookup_insert])
+        |(exists np', nq';
+          split; [(rewrite <- H4; apply lookup_insert_ne; assumption)|
+                      (rewrite <- H5; apply lookup_insert_ne; assumption)])
+      ]).
+      1,2: rewrite lookup_insert_Some in H;
+      destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
+      apply Hsub in H4;
+      destruct H4 as [np' H4];
+      destruct (decide (patt_free_evar x = p0)); subst;
+      [(exists (npatt_evar x); apply lookup_insert)
+      |(exists np'; rewrite <- H4; apply lookup_insert_ne; assumption)].
   Admitted.
 
   (*
