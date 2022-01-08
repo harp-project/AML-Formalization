@@ -289,34 +289,43 @@ Section proof_system_translation.
     intros Hsub.
     destruct (lookup p C) eqn:Hcache.
     - destruct p eqn:Hp; unfold to_NamedPattern2'; simpl in *; rewrite Hcache; auto.
-    - destruct p eqn:Hp; simpl in *; rewrite Hcache; simpl.
-      unfold sub_prop in *. intros.
-      destruct p0; auto.
-      1,2: (rewrite lookup_insert_Some in H;
+    - move: C Hsub Hcache.
+      induction p; intros C Hsub Hcache; simpl in *; rewrite Hcache; simpl;
+        unfold sub_prop in *; intros;
+        try rename p0 into p00;
+        rename p into p0;
+      try lazymatch type of H with
+      | <[?P := ?NP]> _ !! _ = _ =>
+      destruct p0; auto;
+      try (rewrite lookup_insert_Some in H;
         destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
         apply Hsub in H4;
         destruct H4 as [np' [nq' [H4 H5]]];
-        destruct (decide (patt_free_evar x = p0_1)), (decide (patt_free_evar x = p0_2)); subst;
-        [(exists (npatt_evar x), (npatt_evar x);
+        destruct (decide (P = p0_1)), (decide (P = p0_2)); subst;
+        [(exists NP, NP;
           split; apply lookup_insert)
-        |(exists (npatt_evar x), nq';
+        |(exists NP, nq';
           split; [(apply lookup_insert)|(
           rewrite <- H5;
           apply lookup_insert_ne; assumption)])
-        |(exists np', (npatt_evar x);
+        |(exists np', NP;
           split; [(rewrite <- H4; apply lookup_insert_ne; assumption)
           |apply lookup_insert])
         |(exists np', nq';
           split; [(rewrite <- H4; apply lookup_insert_ne; assumption)|
                       (rewrite <- H5; apply lookup_insert_ne; assumption)])
-      ]).
-      1,2: rewrite lookup_insert_Some in H;
+      ]);
+      try (rewrite lookup_insert_Some in H;
       destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
       apply Hsub in H4;
       destruct H4 as [np' H4];
-      destruct (decide (patt_free_evar x = p0)); subst;
-      [(exists (npatt_evar x); apply lookup_insert)
-      |(exists np'; rewrite <- H4; apply lookup_insert_ne; assumption)].
+      destruct (decide (P = p0)); subst;
+      [(exists NP; apply lookup_insert)
+      |(exists np'; rewrite <- H4; apply lookup_insert_ne; assumption)])
+          end.
+      + repeat case_match; subst; auto; simpl in *.
+        inversion Heqp1; subst; clear Heqp1.
+        inversion Heqp; subst; clear Heqp.
   Admitted.
 
   (*
