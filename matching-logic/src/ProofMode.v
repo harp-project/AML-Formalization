@@ -6123,6 +6123,166 @@ Ltac2 rec iterlist (l : constr) :=
      | (?a :: ?m) => ltac1:(idtac 1)
   end.
 
+Ltac tryExact l idx :=
+  match l with
+    | nil => idtac
+    | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
+  end.
+
+Ltac mgAssumption :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        tryExact l 0
+  end.
+
+(* TODO: prove without well_formed x ? *)
+Lemma MyGoal_revert {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
+  well_formed x ->
+  @mkMyGoal Σ Γ l (x ---> g) ->
+  @mkMyGoal Σ Γ (l ++ [x]) g.
+Proof.
+  intros wfx H.
+  unfold of_MyGoal in H. simpl in H.
+  unfold of_MyGoal. simpl. intros wfxig wfl.
+
+  feed specialize H.
+  - apply well_formed_imp; auto.
+  - unfold wf in wfl. rewrite map_app foldr_app in wfl. simpl in wfl.
+    unfold wf. rewrite wfx in wfl. simpl in wfl. auto.
+  - unshelve (eapply (cast_proof _ H)).
+  { rewrite foldr_app. reflexivity. }
+Defined.
+
+(* Notation "[ S , G ⊢ l ==> g ]" := (@mkMyGoal S G l g). *)
+
+#[global]
+Ltac mgRevert :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?Hs ?g) ]
+      =>
+        idtac Hs;
+        match Hs with
+          | (?a :: ?m) => let lm := eval compute in (take (length Hs - 1) Hs) in (
+                            apply MyGoal_revert with (l := lm)
+                          ); wf_auto2
+          | nil => fail "Nothing to revert"
+        end
+  end.
+  (* simplLocalContext. *)
+
+Lemma deMorgan_nand {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( !(a and b) ---> !a or !b).
+Proof.
+  intros wfa wfb.
+  toMyGoal. wf_auto2.
+  repeat mgIntro. (* mgRevert. simplLocalContext. *)
+  Check MyGoal_revert wfb.
+  mgApplyMeta (@not_not_elim _ _ _ wfa) in 1.
+  mgApply 0.
+  mgClear 0. fromMyGoal. intros.
+  apply conj_intro; auto.
+Defined.
+
+Lemma deMorgan_nor {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( !(a or b) ---> !a and !b).
+Proof.
+  intros wfa wfb.
+  toMyGoal. wf_auto2.
+  repeat mgIntro.
+  mgApply 0.
+  mgDestructOr 1.
+  - mgApplyMeta (@not_not_elim _ _ _ wfa) in 1.
+    mgApplyMeta (@disj_left_intro _ _ _ b _ _) in 1. mgAssumption.
+  - mgApplyMeta (@not_not_elim _ _ _ wfb) in 1.
+    mgApplyMeta (@disj_right_intro _ _ a _ _ _) in 1. mgAssumption.
+  Unshelve. all: auto.
+Qed.
+
+Lemma impl_to_or {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( (a ---> b) ---> !a or b).
+Proof.
+  intros wfa wfb.
+  toMyGoal. wf_auto2.
+  repeat mgIntro.
+  mgApplyMeta (@not_not_elim _ _ _ _) in 1. mgApply 0. mgAssumption.
+  Unshelve. all: auto.
+Qed.
+
+Lemma or_monotone_l {Σ : Signature} Γ a a' b:
+    well_formed a ->
+    well_formed a' ->
+    well_formed b ->
+    Γ ⊢( (a ---> a') ) ->
+    Γ ⊢( (a or b) ---> (a' or b)).
+Proof.
+  intros.
+  toMyGoal.
+  wf_auto2.
+  mgIntro. mgIntro.
+  mgDestructOr 0.
+  - mgApplyMeta (@false_implies_everything _ _ _ _).
+    mgApply 1. mgApplyMeta H2. mgAssumption.
+  - mgAssumption.
+  Unshelve.
+  all: auto.
+Defined.
+
+Lemma or_monotone_r {Σ : Signature} Γ a b b':
+    well_formed a ->
+    well_formed b ->
+    well_formed b' ->
+    Γ ⊢( (b ---> b') ) ->
+    Γ ⊢( (a or b) ---> (a or b')).
+Proof.
+  intros.
+  toMyGoal.
+  wf_auto2.
+  mgIntro. mgIntro.
+  mgApplyMeta H2.
+  mgDestructOr 0.
+  - mgApplyMeta (@false_implies_everything _ _ _ _).
+    mgApply 1. mgAssumption.
+  - mgAssumption.
+  Unshelve.
+  all: auto.
+Defined.
+
+(* Ltac stepNNF pat idx :=
+    lazymatch pat with
+      | (?x ---> ?y) => (patt_or (patt_not x) y)
+      | (patt_not (patt_not ?x)) => x
+      | (patt_and ?x ?y) => patt_and (stepNNF x idx) (stepNNF y idx)
+      | (patt_not (patt_and ?x ?y)) => patt_or (patt_not x) (patt_not y)
+      | (patt_or ?x ?y) => patt_or (stepNNF x idx) (stepNNF y idx)
+      | (patt_not (patt_or ?x ?y)) => (patt_and (patt_not x) (patt_not y))
+      | _ => idtac
+    end. *)
+
+Ltac convertToNNF l idx :=
+  idtac l;
+  match l with
+    | nil => idtac "End"
+    | (?a :: ?m) => 
+       lazymatch a with
+         | (?x ---> ?y) => mgApplyMeta (@impl_to_or _ _ _ _ _ _) in idx; idtac "Implication"; convertToNNF ((!x or y) :: m) idx
+         | (! ! ?x) => mgApplyMeta (@not_not_elim _ _ _ _) in idx; idtac "Not not"; convertToNNF (x :: m) idx
+         | (patt_and ?x ?y) => mgDestructAnd idx; idtac "And"; convertToNNF (x :: y :: m) idx
+         | patt_not (patt_and ?x ?y) => mgApplyMeta (@deMorgan_nand _ _ x y _ _) in idx; idtac "Not and"; convertToNNF ((!x or !y) :: m) idx
+         | (patt_or ?x ?y) => (* mgDestructOr idx; *) idtac "Or"; convertToNNF m (idx + 1)
+         | patt_not (patt_or ?x ?y) => mgApplyMeta (@deMorgan_nor _ _ x y _ _) in idx; idtac "Not or"; convertToNNF ((!x and !y) :: m) idx
+         | _ => idtac a; convertToNNF m (idx + 1)
+       end
+  end.
+
+Ltac toNNF l := convertToNNF l 0(* ; mgApplyMeta (@not_not_intro _ _ _ _) *).
+
 Ltac rfindContradictionTo a ll k n:=
   match ll with
     | ((! a) :: ?m) =>
@@ -6161,7 +6321,12 @@ Ltac findContradiction_start :=
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
       =>
-        findContradiction l 0
+        toNNF l;
+        match goal with
+          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+            =>
+              findContradiction l 0
+        end
   end.
 
 Ltac breakHyps l n:=
@@ -6194,6 +6359,28 @@ Ltac mgTauto :=
   end;
   findContradiction_start)
 .
+
+Lemma test_1 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( (!(a and b) ---> b) ---> !a or !b).
+Proof.
+  intros.
+  toMyGoal. wf_auto2.
+  repeat mgIntro.
+  try findContradiction_start.
+Admitted.
+
+Lemma test_2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( !(a or b) ---> !a and !b).
+Proof.
+  intros.
+  toMyGoal. wf_auto2.
+  mgIntro.
+  try findContradiction_start.
+Admitted.
 
   Lemma conj_right {Σ : Signature} Γ a b:
     well_formed a ->
