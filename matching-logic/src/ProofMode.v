@@ -6125,10 +6125,22 @@ Ltac2 rec iterlist (l : constr) :=
 
 Ltac rfindContradictionTo a ll k n:=
   match ll with
-    | ((! a) :: ?m) => mgApply n; mgExactn k
+    | ((! a) :: ?m) =>
+        (* idtac "Contradiction:" a "and !" a "in hyps";*)
+        (*match goal with
+        | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+          =>
+            multimatch g with
+              | ⊥ =>
+                  mgApplyMeta (@false_implies_everything _ _ g _);
+                  wf_auto2
+              | _ => *) 
+                  mgApply n; mgExactn k
+         (*   end
+        end *)
     | (?b :: ?m) => 
-                    let nn := eval compute in ( n + 1 ) in
-                     (rfindContradictionTo a m k nn)
+        let nn := eval compute in ( n + 1 ) in
+         (rfindContradictionTo a m k nn)
     | _ => fail
   end.
 
@@ -6138,7 +6150,6 @@ Ltac findContradiction l k:=
              match goal with
                 | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
                   =>
-                      idtac "Have:" a "Search: !" a;
                      try rfindContradictionTo a ll k 0;
                      let kk := eval compute in ( k + 1 ) in
                      (findContradiction m kk)
@@ -6153,33 +6164,49 @@ Ltac findContradiction_start :=
         findContradiction l 0
   end.
 
+Ltac breakHyps l n:=
+  let nn := eval compute in ( n + 1)
+  in
+  (
+    match l with
+    | ((?x and ?y) :: ?m) => 
+        mgDestructAnd n
+    | ((?x or ?y) :: ?m) => 
+        mgDestructOr n
+    | (?x :: ?m)  =>
+        breakHyps m nn
+    end
+  )
+.
+
+Ltac mgTauto :=
+  try (
+  repeat mgIntro;
+  repeat match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        lazymatch g with
+          | (⊥) =>
+                  breakHyps l 0
+          | _ => mgApplyMeta (@false_implies_everything _ _ g _)
+                  (*idtac "Goal is not correct form"*)
+        end
+  end;
+  findContradiction_start)
+.
 
   Lemma conj_right {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ( b ---> a ---> !b ---> a ---> ⊥).
+    Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥).
   Proof.
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
-    repeat mgIntro.
-    findContradiction_start.
+    mgTauto.
   Qed.
 
 
-Ltac mlTauto3 :=
-  mgIntro;
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        idtac l;
-        let newn := eval compute in (length l) in
-          ( idtac newn ;
-            try mgDestructAnd (newn - 1);
-            try ( mgExactn (newn - 1) ||  mgExactn newn)
-          );
-        mlTauto3
-  end.
 
 (*Tautos
 Search (?a ---> (?b ---> ?a) ). (*P1*)
@@ -6205,12 +6232,9 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     intros wfa wfb.
     toMyGoal.
     { wf_auto2. }
-    repeat mgIntro.
-    unfold patt_not at 1.
-
-    mgApplyMeta (@false_implies_everything _ _ _ wfb ).
-    mgApply 1.
-    mgExactn 0.
+    mgTauto.
+    Unshelve.
+    { wf_auto2. }
   Qed.
 
   Lemma implt_to_or_helper {Σ : Signature} Γ a b:
@@ -6319,31 +6343,8 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     Admitted.
 
 
-  Ltac mgTautoTree l g :=
-    match g with
-      | (?x ---> ?y) => 
-        let newl := eval compute in ( cons (x ---> y) l ) in
-        (
-        mgTautoTree newl y; mgTautoTree newl x
-        )
-      | (?x or ?y) => 
-        let newl := eval compute in ( cons (x or y) l ) in
-        (
-            mgTautoTree newl y; mgTautoTree newl x
-        )
-      | ?x =>
-        let lx := eval compute in ( cons x l) in
-          idtac lx
-    end
-  .
 
-  Ltac mgTauto :=
-    match goal with
-      | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
-      =>
-         mgTautoTree l g
-    end
-  .
+
 
   Lemma impl_taut_1 {Σ : Signature} Γ a b c:
     well_formed a ->
@@ -6363,50 +6364,6 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
     - mgExactn 2.
   Qed.
 
-  Ltac mgTautoTree l g :=
-    let rec recmgTautoTree rlis rgoa :=
-    match rgoa with
-      | (?x ---> ?y) =>
-          let ret := eval compute in ( x ---> y ) in (
-          idtac ret ;  recmgTautoTree nil x; recmgTautoTree nil y)
-      (*    let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
-           (
-              let ret := eval compute in ( cons ( recmgTautoTree newl x)
-                                         ( cons ( recmgTautoTree newl y) nil)) in
-              ( idtac ret )
-           )
-      | (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
-      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
-      | ?x => let lx := eval compute in ( cons x nil) in
-              idtac lx
-    end
-    in (recmgTautoTree l g)
-  .
-
-  Ltac mgTautoTree l g :=
-    let rec recmgTautoTree rlis rgoa :=
-    match rgoa with
-      | (?x ---> ?y) =>
-          let newl := eval compute in ( cons (?x ---> ?y) rlis ) in
-           (
-              let ret := eval compute in ( cons ( recmgTautoTree newl x)
-                                         ( cons ( recmgTautoTree newl y) nil)) in
-              ( idtac ret )
-           )
-      (*| (?x and ?y) => mgTautoTree nil x; mgTautoTree nil y
-      | (?x or ?y) => mgTautoTree nil x; mgTautoTree nil y*)
-      | ?x => let lx := eval compute in ( cons x nil) in
-              idtac lx
-    end
-    in (recmgTautoTree l g)
-  .
-
-  Ltac mgTauto :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
-      =>
-          mgTautoTree nil g
-  end.
 
 
   Lemma condtradict_taut_1 {Σ : Signature} Γ a:
