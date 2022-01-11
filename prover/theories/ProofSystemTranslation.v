@@ -280,17 +280,56 @@ Section proof_system_translation.
   Qed.
 
   Print to_NamedPattern2'.
-  
-  
+
+  Lemma app_neq1 : forall x y, patt_app x y <> x.
+  Proof.
+    intros x y Hcontra.
+    induction x; try discriminate.
+    inversion Hcontra; subst. apply IHx1; assumption.
+  Qed.
+
+  Lemma app_neq2 : forall x y, patt_app x y <> y.
+  Proof.
+    intros x y Hcontra.
+    induction y; try discriminate.
+    inversion Hcontra; subst. apply IHy2; assumption.
+  Qed.
+
+  Lemma imp_neq1 : forall x y, patt_imp x y <> x.
+  Proof.
+    intros x y Hcontra.
+    induction x; try discriminate.
+    inversion Hcontra; subst. apply IHx1; assumption.
+  Qed.
+
+  Lemma imp_neq2 : forall x y, patt_imp x y <> y.
+  Proof.
+    intros x y Hcontra.
+    induction y; try discriminate.
+    inversion Hcontra; subst. apply IHy2; assumption.
+  Qed.
+
+  Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
+    forall (p' : Pattern),
+      C !! p' = None ->
+      (exists (np' : NamedPattern),
+          (to_NamedPattern2' p C evs svs).1.1.2 !! p' = Some np') ->
+      is_subformula_of_ind p' p.
+  Proof. Admitted.
+
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     sub_prop C ->
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
     intros Hsub.
-    destruct (lookup p C) eqn:Hcache.
-    - destruct p eqn:Hp; unfold to_NamedPattern2'; simpl in *; rewrite Hcache; auto.
-    - move: C Hsub Hcache.
-      induction p; intros C Hsub Hcache; simpl in *; rewrite Hcache; simpl;
+    move: C Hsub.
+    induction p; intros C Hsub;
+    lazymatch goal with
+    | [|- (sub_prop (to_NamedPattern2' ?P _ _ _).1.1.2) ]
+      => destruct (lookup P C) eqn:Hcache;
+         [(unfold to_NamedPattern2'; simpl in *; rewrite Hcache; auto)
+         |(simpl in *; rewrite Hcache; simpl)]
+    end;
         unfold sub_prop in *; intros;
         try rename p0 into p00;
         rename p into p0;
@@ -326,6 +365,47 @@ Section proof_system_translation.
       + repeat case_match; subst; auto; simpl in *.
         inversion Heqp1; subst; clear Heqp1.
         inversion Heqp; subst; clear Heqp.
+
+        Search lookup insert Some.
+        rewrite lookup_insert_Some in H.
+        destruct H as [[H H']|[H H']].
+        * inversion H. clear H. subst.
+          exists n0,n1.
+          pose proof (Htmp := to_NamedPattern2'_ensures_present p8_1 C evs svs).
+          rewrite Heqp0 in Htmp. simpl in Htmp.
+          Search to_NamedPattern2'.
+          pose proof (Hec := to_NamedPattern2'_extends_cache g0 p8_2 e0 s0).
+          rewrite H1 in Hec. simpl in Hec.
+          pose proof (Htmp2 := to_NamedPattern2'_ensures_present p8_2 g0 e0 s0).
+          rewrite H1 in Htmp2. simpl in Htmp2.
+          Search subseteq lookup.
+          Check lookup_weaken.
+          eapply lookup_weaken with (m2 := g) in Htmp;[|assumption].
+          rewrite -Htmp -Htmp2.
+          split; apply lookup_insert_ne. apply app_neq1. apply app_neq2.
+
+        * pose proof (Hsub' := Hsub).
+          unshelve (eapply IHp1 in Hsub). apply np. apply (patt_app p8_1 p8_2).
+          simpl in Hsub. rewrite Heqp0 in Hsub. rewrite /= in Hsub.
+          destruct Hsub as [np' [nq' Hsub]].
+          exists np', nq'.
+          pose proof (Hec := to_NamedPattern2'_extends_cache g0 p2 e0 s0).
+          rewrite H1 in Hec. simpl in Hec.
+          destruct Hsub as [Hp81 Hp82].
+          split. eapply lookup_weaken. eassumption.
+
+          destruct (g !! patt_app p1 p2) eqn:Hgapp.
+          -- (* we want to show that patt_app p1 p2 is not in g *)
+             (* from H1 and onlyAddsSubpatterns: g = g0 U p2 U subpatterns(p2) *)
+             (* from Heqp0 and onlyAddsSubpatterns: g0 = C U p1 U subpatterns(p1) *)
+             (* Hcache: patt_app p1 p2 is not in C *)
+             (* therefore g = C U p1 U p2 U subpatterns(p1) U subpatterns(p2) *)
+             (* thus patt_app p1 p2 cannot be in g *)
+             pose proof (Hsp := onlyAddsSubpatterns C p1 evs svs (patt_app p1 p2) Hcache).
+             pose proof (Hsp2 := onlyAddsSubpatterns g0 p2 e0 s0 (patt_app p1 p2)).
+             rewrite Heqp0 in Hsp. simpl in Hsp.
+             assert (~ is_subformula_of_ind (patt_app p1 p2) p1) by admit.
+             exfalso. apply H0. apply Hsp. exists n.
   Admitted.
 
   (*
