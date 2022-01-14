@@ -4665,23 +4665,6 @@ End BoundVarSugar.
  Hint Resolve evar_is_fresh_in_evar_quantify : core.
 
 (* Tactics for resolving goals involving sets *)
-
-Ltac simpl_bevar_subst := repeat (rewrite simpl_bevar_subst';[reflexivity|]).
-Ltac simpl_bsvar_subst := repeat (rewrite simpl_bsvar_subst';[reflexivity|]).
-
-Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
-  simpl;
-  (do ? [rewrite simpl_free_evars/=]) ;
-  auto;
-  clear;
-  set_solver.
-
-Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
-  simpl;
-  (do ? [rewrite simpl_free_svars/=]) ;
-  auto;
-  clear;
-  set_solver.
 (*
         eauto 5 using @sets.elem_of_union_l, @sets.elem_of_union_r with typeclass_instances.
  *)
@@ -4801,9 +4784,9 @@ Section with_signature.
     - simpl. split; set_solver.
     - simpl. split; intros H.
       + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
-        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
         assert (Hfr2: evar_is_fresh_in x p0).
-        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
         rewrite -> IHAC in Hfr1.
         split; [apply Hfr1|].
         clear -Hfr1 Hfr2.
@@ -4816,9 +4799,9 @@ Section with_signature.
         * unfold evar_is_fresh_in. set_solver.
     - simpl. split; intros H.
       + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
-        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
         assert (Hfr2: evar_is_fresh_in x p0).
-        { eapply evar_is_fresh_in_richer. 2: apply H. solve_free_evars_inclusion 5. }
+        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
         rewrite -> IHAC in Hfr1.
         split; [apply Hfr1|].
         clear -Hfr1 Hfr2.
