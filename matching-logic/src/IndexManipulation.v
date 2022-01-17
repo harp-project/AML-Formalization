@@ -97,6 +97,60 @@ Section index_manipulation.
     apply not_bsvar_occur_level_nest_mu_aux. lia.
   Qed.
 
+  Lemma nest_ex_aux_wfcex level more ϕ:
+    well_formed_closed_ex_aux ϕ level ->
+    nest_ex_aux level more ϕ = ϕ.
+  Proof.
+    move: level.
+    induction ϕ; simpl; intros level H; auto.
+    - case_match;[reflexivity|congruence].
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - by rewrite IHϕ.
+    - by rewrite IHϕ.
+  Qed.
+
+  Lemma nest_mu_aux_wfcmu level more ϕ:
+    well_formed_closed_mu_aux ϕ level ->
+    nest_mu_aux level more ϕ = ϕ.
+  Proof.
+    move: level.
+    induction ϕ; simpl; intros level H; auto.
+    - case_match;[reflexivity|congruence].
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - by rewrite IHϕ.
+    - by rewrite IHϕ.
+  Qed.
+
+  Lemma nest_ex_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
+     bevar_subst (nest_ex_aux dbi more φ) ψ (dbi2 + more) = nest_ex_aux dbi more (bevar_subst φ ψ dbi2).
+  Proof.
+    induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
+    * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
+      rewrite nest_ex_aux_wfcex; auto. wf_auto. eapply well_formed_closed_ex_aux_ind. 2: exact H0. lia.
+      now replace (pred n + more) with (pred (n + more)) by lia.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * specialize (IHφ (S dbi) (S dbi2) ψ more ltac:(lia) Hwf). simpl in IHφ.
+      rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
+     bsvar_subst (nest_mu_aux dbi more φ) ψ (dbi2 + more) = nest_mu_aux dbi more (bsvar_subst φ ψ dbi2).
+  Proof.
+    induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
+    * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
+      rewrite nest_mu_aux_wfcmu; auto. wf_auto. eapply well_formed_closed_mu_aux_ind. 2: exact H. lia.
+      now replace (pred n + more) with (pred (n + more)) by lia.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * specialize (IHφ (S dbi) (S dbi2) ψ more ltac:(lia) Hwf). simpl in IHφ.
+      rewrite -> IHφ; auto.
+  Qed.
+
   Lemma nest_ex_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 
      bevar_subst (nest_ex_aux dbi more φ) ψ x = nest_ex_aux dbi (pred more) φ.
@@ -199,32 +253,6 @@ Section index_manipulation.
     nest_mu_aux n more' (nest_mu_aux n more p) = nest_mu_aux n (more + more') p.
   Proof.
     pose proof (@fuse_nest_mu n more more' p 0 ltac:(lia)). now rewrite Nat.add_0_r in H.
-  Qed.
-
-  Lemma nest_ex_aux_wfcex level more ϕ:
-    well_formed_closed_ex_aux ϕ level ->
-    nest_ex_aux level more ϕ = ϕ.
-  Proof.
-    move: level.
-    induction ϕ; simpl; intros level H; auto.
-    - case_match;[reflexivity|congruence].
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - by rewrite IHϕ.
-    - by rewrite IHϕ.
-  Qed.
-
-  Lemma nest_mu_aux_wfcmu level more ϕ:
-    well_formed_closed_mu_aux ϕ level ->
-    nest_mu_aux level more ϕ = ϕ.
-  Proof.
-    move: level.
-    induction ϕ; simpl; intros level H; auto.
-    - case_match;[reflexivity|congruence].
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - by rewrite IHϕ.
-    - by rewrite IHϕ.
   Qed.
 
  Lemma bsvar_subst_nest_ex_aux_comm level more ϕ dbi ψ:

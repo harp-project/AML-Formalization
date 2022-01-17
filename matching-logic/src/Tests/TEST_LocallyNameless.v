@@ -14,6 +14,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.IndexManipulation.
 
 (* In this module we show how to define a signature and build patterns *)
 Module test_1.
