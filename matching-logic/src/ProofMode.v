@@ -12,7 +12,7 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem IndexManipulation.
 
 From stdpp Require Import list tactics fin_sets.
 

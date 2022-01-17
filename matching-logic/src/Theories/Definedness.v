@@ -18,7 +18,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem ProofMode.
+From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem ProofMode IndexManipulation.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
@@ -652,10 +652,10 @@ Section definedness.
   Definition patt_eq_inversion_of ϕ₁ ϕ₂
     := patt_forall
          (patt_equal
-            (patt_app ϕ₁ (patt_bound_evar 0))
+            (patt_app (nest_ex ϕ₁) (patt_bound_evar 0))
             (patt_exists (patt_and (patt_bound_evar 0)
                                    (patt_in (patt_bound_evar 1)
-                                            (patt_app ϕ₂ (patt_bound_evar 0)))))).
+                                            (patt_app (nest_ex (nest_ex ϕ₂)) (patt_bound_evar 0)))))).
 
   Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂,
     T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
@@ -675,21 +675,20 @@ Section definedness.
 
   Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
     M ⊨ᵀ theory ->
-    well_formed_closed_ex_aux ϕ₁ 0 -> well_formed_closed_ex_aux ϕ₂ 0 ->
     @pattern_interpretation Σ M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
     <-> (forall m₁ m₂,
             m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁ <-> m₁ ∈ rel_of ρₑ ρₛ ϕ₂ m₂ (* TODO make rel_of take one more parameter. *)
         ).
   Proof.
-    intros Htheory Wfc1 Wfc2.
+    intros Htheory.
     rewrite pattern_interpretation_forall_predicate.
     2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
-          (patt_equal (ϕ₁ $ BoundVarSugar.b0)
+          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
              (ex ,
               (BoundVarSugar.b0
-                 and patt_in BoundVarSugar.b1 (ϕ₂ $ BoundVarSugar.b0)))))) as x.
+                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
     simpl_bevar_subst.
     rewrite equal_iff_interpr_same.
@@ -713,66 +712,74 @@ Section definedness.
     rewrite Hpi.
     apply all_iff_morphism. intros m₂.
     rewrite pattern_interpretation_app_simpl.
-    unfold evar_open.
-    simpl_bevar_subst. simpl.
+
+    rewrite nest_ex_same.
+(*     {
+      subst x.
+      eapply evar_is_fresh_in_richer.
+      2: { apply set_evar_fresh_is_fresh. }
+      solve_free_evars_inclusion 5.
+    } *)
+    unfold evar_open, nest_ex.
+    remember (fresh_evar
+                (patt_free_evar x
+                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂)).[evar:1↦patt_free_evar x] $ b0)) as y.
+    rewrite fuse_nest_ex_same.
+    rewrite nest_ex_same_general. 1-2: lia.
+    simpl_bevar_subst. simpl. rewrite nest_ex_same.
 (*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.
 *)
-    remember (fresh_evar (patt_in (patt_free_evar x) (bevar_subst ϕ₂ (patt_free_evar x) 1 $ b0))) as y.
 (*
     rewrite simpl_evar_open.
     rewrite evar_open_free_evar.
 *)
     repeat rewrite elem_of_PropSet.
-    rewrite <- free_evar_in_patt.
-    2: { apply Htheory. }
+   (*  rewrite <- free_evar_in_patt.
+    2: { apply Htheory. } *)
     rewrite pattern_interpretation_free_evar_simpl.
     rewrite update_evar_val_same.
     fold (m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁).
 
     (*rewrite simpl_evar_open.*)
+    rewrite <- free_evar_in_patt; auto.
     rewrite pattern_interpretation_app_simpl.
-    (*rewrite [evar_open 0 y b0]/=.*)
-    rewrite pattern_interpretation_free_evar_simpl.
+    repeat rewrite pattern_interpretation_free_evar_simpl.
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'. unfold nest_ex.
+      rewrite fuse_nest_ex_same. simpl.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite update_evar_val_comm.
+    { solve_fresh_neq. }
+
     rewrite update_evar_val_same.
-    
-    fold (evar_open 1 x ϕ₂).
-    destruct (extralibrary.compare_nat 1 0); try lia. clear g.
-
-    rewrite pattern_interpretation_free_evar_independent.
-    {
-      subst. erewrite well_formed_bevar_subst; try eassumption; auto.
-      eapply evar_is_fresh_in_richer'.
-      2: apply set_evar_fresh_is_fresh'.
-      solve_free_evars_inclusion 5.
-    }
-
-    rewrite pattern_interpretation_free_evar_independent.
-    {
-      subst. unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
-      eapply evar_is_fresh_in_richer'.
-      2: apply set_evar_fresh_is_fresh'.
-      solve_free_evars_inclusion 5.
-      eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
-    }
-    rewrite pattern_interpretation_free_evar_independent.
-    {
-      subst. unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
-      eapply evar_is_fresh_in_richer'.
-      2: apply set_evar_fresh_is_fresh'.
-      solve_free_evars_inclusion 5.
-      1-2: eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
-    }
-
     rewrite update_evar_val_comm.
     { solve_fresh_neq. }
 
     rewrite update_evar_val_same.
     unfold app_ext.
     rewrite elem_of_PropSet.
-    unfold evar_open. repeat erewrite well_formed_bevar_subst; eauto.
-    1-2: eapply well_formed_closed_ex_aux_ind; [|eassumption]; lia.
+    fold (rel_of ρₑ ρₛ ϕ₂ m₂).
+    auto.
   Qed.
 
   Lemma single_element_definedness_impl_satisfies_definedness (M : @Model Σ) :

@@ -49,16 +49,40 @@ Section index_manipulation.
   Definition nest_ex ϕ := nest_ex_aux 0 1 ϕ.
   Definition nest_mu ϕ := nest_mu_aux 0 1 ϕ.
 
-  Lemma not_bevar_occur_level_nest_ex_aux level more ϕ :
+  Lemma bevar_occur_nest_ex dbi more φ:
+    forall x, x >= dbi -> x < dbi + more -> bevar_occur (nest_ex_aux dbi more φ) x = false.
+  Proof.
+    move: φ dbi.
+    induction φ; move=> dbi x' Hlt Hgt; simpl; auto.
+    - repeat case_match; simpl; auto; lia.
+    - rewrite -> IHφ1, -> IHφ2; auto.
+    - rewrite -> IHφ1, -> IHφ2; auto.
+    - rewrite -> IHφ; auto. all: lia.
+  Qed.
+
+  Lemma bsvar_occur_nest_mu dbi more φ:
+    forall x, x >= dbi -> x < dbi + more -> bsvar_occur (nest_mu_aux dbi more φ) x = false.
+  Proof.
+    move: φ dbi.
+    induction φ; move=> dbi x' Hlt Hgt; simpl; auto.
+    - repeat case_match; simpl; auto; lia.
+    - rewrite -> IHφ1, -> IHφ2; auto.
+    - rewrite -> IHφ1, -> IHφ2; auto.
+    - rewrite -> IHφ; auto. all: lia.
+  Qed.
+
+  Corollary not_bevar_occur_level_nest_ex_aux level more ϕ :
     more > 0 ->
     bevar_occur (nest_ex_aux level more ϕ) level = false.
   Proof.
-    intros Hmore.
-    move: ϕ level.
-    induction ϕ; move=> level; simpl; auto.
-    - repeat case_match; simpl; auto; lia.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
+    intro Hmore. apply bevar_occur_nest_ex; lia.
+  Qed.
+
+  Corollary not_bsvar_occur_level_nest_mu_aux level more ϕ :
+    more > 0 ->
+    bsvar_occur (nest_mu_aux level more ϕ) level = false.
+  Proof.
+    intro Hmore. apply bsvar_occur_nest_mu; lia.
   Qed.
 
   Corollary not_bevar_occur_0_nest_ex ϕ :
@@ -67,72 +91,114 @@ Section index_manipulation.
     apply not_bevar_occur_level_nest_ex_aux. lia.
   Qed.
 
-  Lemma nest_ex_same : forall φ dbi ψ,
-     bevar_subst (nest_ex_aux dbi 1 φ) ψ dbi = φ.
-  Proof.
-    induction φ; intros; cbn; auto.
-    * do 2 case_match; auto; try lia. rewrite Nat.add_comm. now simpl.
-    * now rewrite -> IHφ1, -> IHφ2.
-    * now rewrite -> IHφ1, -> IHφ2.
-    * simpl. now rewrite IHφ.
-    * now rewrite IHφ.
-  Qed.
-
-  Lemma not_bsvar_occur_level_nest_mu_aux level more ϕ :
-    more > 0 ->
-    bsvar_occur (nest_mu_aux level more ϕ) level = false.
-  Proof.
-    intros Hmore.
-    move: ϕ level.
-    induction ϕ; move=> level; simpl; auto.
-    - repeat case_match; simpl; auto; lia.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
-    - rewrite IHϕ1. rewrite IHϕ2. simpl. reflexivity.
-  Qed.
-
   Corollary not_bsvar_occur_0_nest_mu ϕ :
     bsvar_occur (nest_mu ϕ) 0 = false.
   Proof.
     apply not_bsvar_occur_level_nest_mu_aux. lia.
   Qed.
 
-  Lemma nest_mu_same : forall φ dbi ψ,
+  Lemma nest_ex_same_general : forall φ dbi ψ more,
+     forall x,  x >= dbi -> x < dbi + more -> 
+     bevar_subst (nest_ex_aux dbi more φ) ψ x = nest_ex_aux dbi (pred more) φ.
+  Proof.
+    induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
+    * do 2 case_match; auto; try lia.
+      now replace (n + pred more) with (pred (n + more)) by lia.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. all: lia.
+    * rewrite -> IHφ; auto. all: lia.
+  Qed.
+
+  Lemma nest_mu_same_general : forall φ dbi ψ more,
+     forall x,  x >= dbi -> x < dbi + more -> 
+     bsvar_subst (nest_mu_aux dbi more φ) ψ x = nest_mu_aux dbi (pred more) φ.
+  Proof.
+    induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
+    * do 2 case_match; auto; try lia.
+      now replace (n + pred more) with (pred (n + more)) by lia.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. all: lia.
+    * rewrite -> IHφ; auto. all: lia.
+  Qed.
+
+  Lemma nest_mu_aux_0 level p:
+    nest_mu_aux level 0 p = p.
+  Proof.
+    move: level.
+    induction p; intros level; simpl; auto.
+    - case_match; auto.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp.
+    - by rewrite IHp.
+  Defined.
+
+  Lemma nest_ex_aux_0 level p:
+    nest_ex_aux level 0 p = p.
+  Proof.
+    move: level.
+    induction p; intros level; simpl; auto.
+    - case_match; auto.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp1 IHp2.
+    - by rewrite IHp.
+    - by rewrite IHp.
+  Defined.
+
+  Corollary nest_ex_same : forall φ dbi ψ,
+     bevar_subst (nest_ex_aux dbi 1 φ) ψ dbi = φ.
+  Proof.
+    intros φ dbi ψ. rewrite nest_ex_same_general; try lia.
+    simpl. now rewrite nest_ex_aux_0.
+  Qed.
+
+  Corollary nest_mu_same : forall φ dbi ψ,
      bsvar_subst (nest_mu_aux dbi 1 φ) ψ dbi = φ.
   Proof.
-    induction φ; intros; cbn; auto.
-    * do 2 case_match; auto; try lia. rewrite Nat.add_comm. now simpl.
-    * now rewrite -> IHφ1, -> IHφ2.
-    * now rewrite -> IHφ1, -> IHφ2.
-    * simpl. now rewrite IHφ.
-    * now rewrite IHφ.
+    intros φ dbi ψ. rewrite nest_mu_same_general; try lia.
+    simpl. now rewrite nest_mu_aux_0.
   Qed.
 
-  Lemma nest_ex_aux_comm n more more' p:
-    nest_ex_aux (n + more) more' (nest_ex_aux n more p) = nest_ex_aux n (more + more') p.
+  Lemma fuse_nest_ex n more more' p:
+    forall x, x <= more -> nest_ex_aux (n + x) more' (nest_ex_aux n more p) = nest_ex_aux n (more + more') p.
   Proof.
     move: n more more'.
-    induction p; intros n' more more'; simpl; auto.
+    induction p; intros n' more more' x' Hx'; simpl; auto.
     - f_equal.
       repeat case_match; auto; try lia.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp1 IHp2.
-    - replace (S (n' + more)) with ((S n') + more) by lia.
+    - rewrite -> IHp1, -> IHp2; auto.
+    - rewrite -> IHp1, -> IHp2; auto.
+    - replace (S (n' + x')) with ((S n') + x') by lia.
         by rewrite IHp.
     - by rewrite IHp.
   Qed.
 
-  Lemma nest_mu_aux_comm n more more' p:
-    nest_mu_aux (n + more) more' (nest_mu_aux n more p) = nest_mu_aux n (more + more') p.
+  Lemma fuse_nest_mu n more more' p:
+    forall x, x <= more -> nest_mu_aux (n + x) more' (nest_mu_aux n more p) = nest_mu_aux n (more + more') p.
   Proof.
     move: n more more'.
-    induction p; intros n' more more'; simpl; auto.
+    induction p; intros n' more more' x' Hx'; simpl; auto.
     - f_equal.
       repeat case_match; auto; try lia.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp1 IHp2.
+    - rewrite -> IHp1, -> IHp2; auto.
+    - rewrite -> IHp1, -> IHp2; auto.
     - by rewrite IHp.
-    - replace (S (n' + more)) with ((S n') + more) by lia.
+    - replace (S (n' + x')) with ((S n') + x') by lia.
         by rewrite IHp.
+  Qed.
+
+  Corollary fuse_nest_ex_same n more more' p:
+    nest_ex_aux n more' (nest_ex_aux n more p) = nest_ex_aux n (more + more') p.
+  Proof.
+    pose proof (@fuse_nest_ex n more more' p 0 ltac:(lia)). now rewrite Nat.add_0_r in H.
+  Qed.
+
+  Corollary fuse_nest_mu_same n more more' p:
+    nest_mu_aux n more' (nest_mu_aux n more p) = nest_mu_aux n (more + more') p.
+  Proof.
+    pose proof (@fuse_nest_mu n more more' p 0 ltac:(lia)). now rewrite Nat.add_0_r in H.
   Qed.
 
   Lemma nest_ex_aux_wfcex level more ϕ:
@@ -297,30 +363,6 @@ Section index_manipulation.
   Proof.
     exact (evar_open_nest_mu_aux_comm 0 1 ϕ dbi X).
   Qed.
-
-  Lemma nest_mu_aux_0 level p:
-    nest_mu_aux level 0 p = p.
-  Proof.
-    move: level.
-    induction p; intros level; simpl; auto.
-    - case_match; auto.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp.
-    - by rewrite IHp.
-  Defined.
-
-  Lemma nest_ex_aux_0 level p:
-    nest_ex_aux level 0 p = p.
-  Proof.
-    move: level.
-    induction p; intros level; simpl; auto.
-    - case_match; auto.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp1 IHp2.
-    - by rewrite IHp.
-    - by rewrite IHp.
-  Defined.
 
   Lemma wfc_mu_nest_mu psi level level' more:
     well_formed_closed_mu_aux psi level ->
