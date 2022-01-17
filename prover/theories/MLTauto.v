@@ -11,6 +11,7 @@ From stdpp Require Import base option.
 From MatchingLogic Require Import
      Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem ProofMode
      Utils.extralibrary
+     IndexManipulation
 .
 
 

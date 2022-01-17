@@ -1,1 +1,1 @@
-From MatchingLogic Require Export Syntax Semantics ProofSystem SignatureHelper.
+From MatchingLogic Require Export Syntax IndexManipulation Semantics ProofSystem SignatureHelper.
