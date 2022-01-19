@@ -467,6 +467,25 @@ Section proof_system_translation.
         rewrite -Htmp -Htmp2.
         split; apply lookup_insert_ne. apply imp_neq1. apply imp_neq2.
 
+      * admit.
+      * admit.
+      * admit.
+
+      * remember (evs ∪ {[evs_fresh evs p0]}) as evs'.
+        remember (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p0)]> (cache_incr_evar C)) as C'.
+        (* need to show sub_prop C' holds *)
+        (* likely need invariant that caches are continuous for bound variables;
+           that is, \exists k. patt_bound_evar k' \in C iff k' < k
+           (and the same for bound_svar)
+         *)
+        Print cache_incr_evar. Print incr_one_evar.
+        Print to_NamedPattern2'.
+        (* b0 ---> b0 *)
+        pose proof (Hsub' := IHp C' Hsub evs' s).
+        rewrite Heqp0 in Hsub'; simpl in Hsub'.
+      pose proof (Hsub'' := IHp2 g0 Hsub' e0 s0);
+      rewrite Heqp1 in Hsub''; simpl in Hsub'');
+
 
       * inversion Heqp; subst; clear Heqp.
 
