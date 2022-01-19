@@ -11,6 +11,7 @@ From stdpp Require Import base option.
 From MatchingLogic Require Import
      Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem ProofMode
      Utils.extralibrary
+     IndexManipulation
 .
 
 
@@ -383,11 +384,11 @@ Section ml_tauto.
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
       unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
-      unfold free_evar_subst in Hctx; simpl in Hctx;
+      (* unfold free_evar_subst in Hctx; *) simpl in Hctx;
       destruct (decide (star = star)); [|contradiction]; simpl in Hctx;
       repeat (rewrite -> free_evar_subst_no_occurrence in Hctx by assumption);
       simpl in Hctx;
-      rewrite !nest_ex_aux_0 in Hctx;
+      (* rewrite !nest_ex_aux_0 in Hctx; *)
       simpl in Hctx;
       apply (Modus_ponens_alt _ _ _ Hctx); auto 20
     .
@@ -1203,7 +1204,7 @@ Section ml_tauto.
       unfold well_formed,well_formed_closed.
       rewrite wf1 wf2. reflexivity.
     - subst. clear abstract'.
-      destruct s as [p1 [p2 Heqp']].
+      destruct s as [p1 [p2 Heqp'] ].
       subst.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1235,8 +1236,8 @@ Section ml_tauto.
           remember (match_imp p1') as mip1'.
           remember (match_imp p2') as mip2'.
           destruct mip1',mip2'.
-          -- destruct s as [a [b Hab]].
-             destruct s0 as [c [d Hcd]].
+          -- destruct s as [a [b Hab] ].
+             destruct s0 as [c [d Hcd] ].
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
@@ -1245,7 +1246,7 @@ Section ml_tauto.
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 IH2.
              simpl in *. lia.
-          -- destruct s as [a [b Hab]].
+          -- destruct s as [a [b Hab] ].
              subst. simpl in Hsz.
              clear Heqmip1' Heqmip2'.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
@@ -1257,7 +1258,7 @@ Section ml_tauto.
              rewrite Hn.
              pose proof (Hsznp2' := max_negation_size_not p2').
              simpl in *. lia.
-          -- destruct s as [a [b Hab]].
+          -- destruct s as [a [b Hab] ].
              subst. simpl in Hsz.
              clear Heqmip1' Heqmip2'.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
@@ -1285,8 +1286,8 @@ Section ml_tauto.
           remember (match_imp p1') as mip1'.
           remember (match_imp p2') as mip2'.
           destruct mip1',mip2'.
-          -- destruct s as [a [b Hab]].
-             destruct s0 as [c [d Hcd]].
+          -- destruct s as [a [b Hab] ].
+             destruct s0 as [c [d Hcd] ].
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (IH2 := IHsz c d ltac:(simpl; lia)).
@@ -1295,7 +1296,7 @@ Section ml_tauto.
                try inversion e; subst; solve_match_impossibilities.
              clear -IH1 IH2.
              simpl in *. lia.
-          -- destruct s as [a [b Hab]].
+          -- destruct s as [a [b Hab] ].
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n0).
@@ -1306,7 +1307,7 @@ Section ml_tauto.
              rewrite Hn.
              pose proof (Hsznp2' := max_negation_size_not p2').
              simpl in *. lia.
-          -- destruct s as [a [b Hab]].
+          -- destruct s as [a [b Hab] ].
              subst. simpl in Hsz.
              pose proof (IH1 := IHsz a b ltac:(simpl; lia)).
              pose proof (Hn := negate_not_imp_is_not _ n0).
@@ -1333,7 +1334,7 @@ Section ml_tauto.
           lia.
         * remember (match_imp p2) as mip2.
           destruct mip2.
-          -- destruct s as [a [b Hab]].
+          -- destruct s as [a [b Hab] ].
              subst. simpl in Hsz.
              pose proof (IH := IHsz a b ltac:(simpl; lia)).
              clear e Heq H IHsz Hsz Heqmip2.

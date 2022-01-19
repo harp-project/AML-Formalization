@@ -10,7 +10,9 @@ From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
 From stdpp Require Import base list sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators monotonic Utils.Lattice Utils.stdpp_ext.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators monotonic Utils.Lattice Utils.stdpp_ext IndexManipulation.
+Import MatchingLogic.Syntax.Notations.
+
 
 Section with_signature.
   Context {Σ : Signature}.
@@ -170,15 +172,7 @@ Section with_signature.
       unfold svar_open.
       simpl_bsvar_subst. simpl.
       rewrite 2!pattern_interpretation_or_simpl.
-      rewrite pattern_interpretation_svar_open_nest_mu'.
-      { assumption.  }
-      apply f_equal.
-
-      rewrite 2!pattern_interpretation_app_simpl.
-      rewrite pattern_interpretation_svar_open_nest_mu'.
-      { assumption. }
-      apply f_equal.
-
+      unfold nest_mu. rewrite 2!nest_mu_same.
       reflexivity.
     Qed.
     
@@ -234,8 +228,7 @@ Section with_signature.
         }
         reflexivity.
       Qed.
-      
-      
+
       Definition is_witnessing_sequence_old (m : Domain M) (l : list (Domain M)) :=
         (last l = Some m) /\
         (match l with
@@ -277,7 +270,7 @@ Section with_signature.
         m' ∈ @pattern_interpretation Σ M ρₑ ρₛ base ->
         is_witnessing_sequence m' (drop n l).
       Proof.
-        intros [[lst [Hlst Hbase]] [Hhd Hfa]] Hm' Hbase'.
+        intros [[lst [Hlst Hbase] ] [Hhd Hfa] ] Hm' Hbase'.
         split.
         { exists lst. split.
           rewrite -> last_drop with (x := lst).
@@ -304,7 +297,7 @@ Section with_signature.
       Proof.
         intros Hw Hhead.
         unfold is_witnessing_sequence in Hw.
-        destruct Hw as [[lst [Hlst1 Hlst2]] Hw].
+        destruct Hw as [[lst [Hlst1 Hlst2] ] Hw].
         unfold is_witnessing_sequence.
         split.
         { exists lst.
@@ -343,7 +336,7 @@ Section with_signature.
         }
         
         split.
-        - intros [[m' [Hlast Hbase]] [Hhd Hfa]].
+        - intros [[m' [Hlast Hbase] ] [Hhd Hfa] ].
           destruct l as [|x l].
           { simpl in Hhd. inversion Hhd. }
           simpl in Hhd. inversion Hhd. subst. clear Hhd.
@@ -435,7 +428,7 @@ Section with_signature.
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
-        - intros [[[lst [Hlst Hbase]] [Hhd Hwit]] [step' [Hstep' Hm']]].
+        - intros [[[lst [Hlst Hbase] ] [Hhd Hwit] ] [step' [Hstep' Hm'] ] ].
           split.
           2: { destruct l. simpl in Hhd. inversion Hhd. discriminate. }
           move: m Hhd m' step' Hm' Hstep'.
@@ -469,12 +462,12 @@ Section with_signature.
             { apply H1. }
             specialize (IHl d).
             specialize (IHl (eq_refl (Some d))).
-            destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d'']]]].
+            destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d''] ] ] ].
             inversion Hd''. subst d''. clear Hd''.
             specialize (IHl m step'' Hstep''d'' Hstep'').
             unfold is_witnessing_sequence in IHl.
             simpl in IHl.
-            destruct IHl as [_ [_ Hforall]].
+            destruct IHl as [_ [_ Hforall] ].
             inversion Hforall. subst. apply H2.
         -            
       Abort.
@@ -491,8 +484,8 @@ Section with_signature.
       Proof.
         split.
         -
-          intros [Hwit [step' [Hstep' Hm']]].
-          destruct Hwit as [Hwit1 [Hwit2 Hwit3]].
+          intros [Hwit [step' [Hstep' Hm'] ] ].
+          destruct Hwit as [Hwit1 [Hwit2 Hwit3] ].
           split.
           { apply Hwit1. }
           split.
@@ -562,7 +555,7 @@ Section with_signature.
             split.
             { apply Forall_nil. exact I. }
             inversion Hall. subst. clear Hall. clear H2.
-            destruct H1 as [step' [m'' [Hstep' [Hm'm'' Hstep'm'']]]].
+            destruct H1 as [step' [m'' [Hstep' [Hm'm'' Hstep'm''] ] ] ].
             inversion Hm'm''. subst. clear Hm'm''.
             exists step'. split. apply Hstep'.
             simpl in Hlast. inversion Hlast. subst.
@@ -578,7 +571,7 @@ Section with_signature.
               { apply Forall_nil. exact I. }
               destruct H1 as [step' Hstep'].
               exists step'.
-              destruct Hstep' as [m'' [Hstep' [Hmm'' Hm'']]].
+              destruct Hstep' as [m'' [Hstep' [Hmm'' Hm''] ] ].
               split.
               { apply Hstep'. }
               inversion Hmm''. subst.
@@ -618,23 +611,17 @@ Section with_signature.
           rewrite pattern_interpretation_free_svar_independent in H.
           {
             eapply svar_is_fresh_in_richer. 2: { subst. auto. }
+            unfold svar_open.
             solve_free_svars_inclusion 5.
           }
-          simpl.
-          rewrite pattern_interpretation_svar_open_nest_mu' in H.
-          { 
-            eapply svar_is_fresh_in_richer.
-            2: { apply set_svar_fresh_is_fresh. }
-            simpl.
-            solve_free_svars_inclusion 2.
-          }
-          assumption.
+          simpl. unfold svar_open in H.
+          rewrite nest_mu_same in H. auto.
         - unfold Ensembles.In in H.
           rewrite pattern_interpretation_app_simpl in H.
           rewrite pattern_interpretation_free_svar_simpl in H.
           rewrite update_svar_val_same in H.
           unfold app_ext in H.
-          destruct H as [step' [m [H1 [H2 Happ]]]].
+          destruct H as [step' [m [H1 [H2 Happ] ] ] ].
           unfold witnessed_elements_old in H2.
           destruct H2 as [l Hl].
 
@@ -645,7 +632,8 @@ Section with_signature.
           destruct l as [|m₀ l'] eqn:Heql.
           { unfold is_witnessing_sequence in Hl. destruct Hl. simpl in H. inversion H. }
 
-          rewrite pattern_interpretation_svar_open_nest_mu in H1.
+          unfold svar_open in H1. rewrite nest_mu_same in H1.
+          rewrite pattern_interpretation_free_svar_independent in H1.
           {
             eapply svar_is_fresh_in_richer.
             2: { apply set_svar_fresh_is_fresh. }
@@ -688,7 +676,7 @@ Section with_signature.
           intros H.
           unfold witnessed_elements_old_of_max_len.
           rewrite F_interp.
-          destruct H as [l [Hwit Hlen]].
+          destruct H as [l [Hwit Hlen] ].
           unfold is_witnessing_sequence in Hwit.
           destruct Hwit as [Hlast Hm].
           destruct l.
@@ -701,7 +689,7 @@ Section with_signature.
         - unfold Included. intros m.
           rewrite -pattern_interpretation_patt_ind_gen_fix.
           unfold Ensembles.In. intros H.
-          destruct H as [l [Hwit Hlen]].
+          destruct H as [l [Hwit Hlen] ].
           unfold Included in IHlen. unfold Ensembles.In in IHlen.
           rewrite F_interp.
           pose proof (Hwit' := Hwit).
@@ -726,7 +714,7 @@ Section with_signature.
               assert (Hsomed: Some d = Some d).
               { reflexivity. }
               specialize (P (conj Hsomed Hwit')).
-              destruct P as [Hwitd [step' Hstep']].
+              destruct P as [Hwitd [step' Hstep'] ].
               exists step'. exists d.
               destruct Hstep' as [Hstep' Hm].
               split.
@@ -825,7 +813,7 @@ Section with_signature.
               apply last_rev_head.
             }
             specialize (P (@conj _ _ Hm Hwit')). clear Hm Hwit'.
-            destruct P as [Hwitmprev [step' [Hstep' Hm]]].
+            destruct P as [Hwitmprev [step' [Hstep' Hm] ] ].
             exists step'. exists mprev.
             split.
             { apply Hstep'. }
@@ -842,8 +830,7 @@ Section with_signature.
             { apply (@list_len_slice _ _ _ _ _ H2). }
             rewrite -H. lia.
       Qed.
-      
-          
+
       Lemma witnessed_elements_old_included_in_interp:
         witnessed_elements_old ⊆ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
@@ -914,12 +901,12 @@ Section with_signature.
 
           assert (Hlcom:  (common_length l₁ l₂ = length l₂)).
           {
-            destruct Hw₁ as [[lst₁ [Hlst₁ Hbase₁]] [Hhd₁ Hfa₁]].
+            destruct Hw₁ as [[lst₁ [Hlst₁ Hbase₁] ] [Hhd₁ Hfa₁] ].
             destruct l₁ as [|m₁ l₁].
             { simpl in Hlst₁. inversion Hlst₁. }
             simpl in Hhd₁. inversion Hhd₁. subst. clear Hhd₁.
 
-            destruct Hw₂ as [[lst₂ [Hlst₂ Hbase₂]] [Hhd₂ Hfa₂]].
+            destruct Hw₂ as [[lst₂ [Hlst₂ Hbase₂] ] [Hhd₂ Hfa₂] ].
             destruct l₂ as [|m₂ l₂].
             { simpl in Hlst₂. inversion Hlst₂. }
             simpl in Hhd₂. inversion Hhd₂. subst. clear Hhd₂.
@@ -992,7 +979,7 @@ Section with_signature.
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwita).
-                destruct H as [a' [_ Ha']].
+                destruct H as [a' [_ Ha'] ].
                 rewrite Ha' in Hma.
                 inversion Hma. subst.
                 apply Ha'.
@@ -1002,7 +989,7 @@ Section with_signature.
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwitb).
-                destruct H as [b' [_ Hb']].
+                destruct H as [b' [_ Hb'] ].
                 rewrite Hb' in Hmb.
                 inversion Hmb. subst.
                 apply Hb'.
@@ -1043,7 +1030,7 @@ Section with_signature.
             {
               destruct l₂.
               { unfold is_witnessing_sequence in Hw₂.
-                simpl in Hw₂. destruct Hw₂ as [_ [Contra _]].
+                simpl in Hw₂. destruct Hw₂ as [_ [Contra _] ].
                 inversion Contra.
               }
               simpl. lia.
@@ -1063,7 +1050,7 @@ Section with_signature.
             pose proof (Hwsm := witnessing_sequence_middle Hw₁ Hm').
             pose proof (Hw₂' := Hw₂).
             unfold is_witnessing_sequence in Hw₂'.
-            destruct Hw₂' as [[lst [Hlst1 Hlst2]] _].
+            destruct Hw₂' as [[lst [Hlst1 Hlst2] ] _].
             rewrite list_last_length in Hlst1.
             assert (Hlsteqm' : m' = lst).
             {
@@ -1077,7 +1064,7 @@ Section with_signature.
 
             destruct (drop (length l₂ - 1) l₁) eqn:Heq.
             {
-              destruct Hwsm as [_ [Contra _]].
+              destruct Hwsm as [_ [Contra _] ].
               inversion Contra.
             }
             (* if `l` is empty, then length l₁ = length l₂ -> Contradiction *)
@@ -1090,7 +1077,7 @@ Section with_signature.
               { intros Hcontra'.
                 apply nil_length_inv in Hcontra'.
                 subst l₂.
-                destruct Hw₂ as [_ [HContra'' _]].
+                destruct Hw₂ as [_ [HContra'' _] ].
                 inversion HContra''.
               }
               lia.
@@ -1107,7 +1094,7 @@ Section with_signature.
 
             assert (Heqm'd : m' = d).
             { unfold is_witnessing_sequence in Hwsm.
-              destruct Hwsm as [_ [H _]].
+              destruct Hwsm as [_ [H _] ].
               simpl in H. inversion H.
               reflexivity.
             }
@@ -1120,7 +1107,7 @@ Section with_signature.
             {
               unfold is_witnessing_sequence in Hwsm.
               simpl in Hwsm.
-              destruct Hwsm as [_ [_ Hwsm]].
+              destruct Hwsm as [_ [_ Hwsm] ].
               inversion Hwsm. subst.
               simpl in H1.
               apply H1.
@@ -1136,7 +1123,7 @@ Section with_signature.
             - apply Hlst2.
             - unfold Ensembles.In.
               unfold app_ext.
-              destruct H as [le' [re' [H1 [H2 H3]]]].
+              destruct H as [le' [re' [H1 [H2 H3] ] ] ].
               exists le'. exists d0.
               split.
               { apply H1. }
@@ -1155,10 +1142,6 @@ Section with_signature.
       
     End with_interpretation.
 
-    
-
-    
   End inductive_generation.
-  
-  
+
 End with_signature.
