@@ -322,7 +322,120 @@ Section proof_system_translation.
             | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
             end).
 
+        (* likely need invariant that caches are continuous for bound variables;
+           that is, \exists k. \forall k'. patt_bound_evar k' \in C iff k' < k
+           (and the same for bound_svar)
+         *)
+  Check npatt_evar.
+  Definition cache_continuous_prop (C : Cache) : Prop :=
+    (∃ (k : nat), ∀ (k' : nat),
+        (k' < k)
+        <->
+          (∃ (e : evar), C !! (patt_bound_evar k') = Some (npatt_evar e))
+    ) /\
+      (∃ (k : nat), ∀ (k' : nat),
+          (k' < k)
+          <->          
+            (∃ (s : svar), C !! (patt_bound_svar k') = Some (npatt_svar s))).
+
+  Lemma cache_continuous_empty: cache_continuous_prop ∅.
+  Proof.
+    split; exists 0; intros; split; intros H.
+    - lia.
+    - destruct H as [e Hcontra]. inversion Hcontra.
+    - lia.
+    - destruct H as [e Hcontra]. inversion Hcontra.
+  Qed.
+
+
+Check dangling_vars_cached.
   
+  Lemma cache_continuous_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
+    dangling_vars_cached C p ->
+    cache_continuous_prop C ->
+    cache_continuous_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Proof.
+    intros Hcached Hsub.
+    move: C Hcached Hsub evs svs.
+    induction p; intros C Hcached Hsub evs svs; simpl; case_match; simpl; try apply Hsub.
+    - admit.
+    - admit.
+    - destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      specialize (Hcachede n). simpl in Hcachede.
+      case_match;[|contradiction].
+      specialize (Hcachede erefl).
+      destruct Hcachede as [nϕ Hnϕ].
+      rewrite Hnϕ in Heqo. inversion Heqo.
+    - destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_svars_cached in Hcacheds.
+      specialize (Hcacheds n). simpl in Hcacheds.
+      case_match;[|contradiction].
+      specialize (Hcacheds erefl).
+      destruct Hcacheds as [nϕ Hnϕ].
+      rewrite Hnϕ in Heqo. inversion Heqo.
+    - admit.
+    - admit.
+    - admit.
+    - repeat case_match. subst. invert_tuples. simpl.
+      unfold dangling_vars_cached in Hcached.
+      destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      unfold dangling_svars_cached in Hcacheds.
+      
+      specialize (IHp1 C).
+      feed specialize IHp1.
+      {
+        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+        + apply Hcachede. simpl.
+          rewrite H. reflexivity.
+        + apply Hcacheds. simpl. rewrite H. reflexivity.
+      }
+      { apply Hsub. }
+      specialize (IHp1 evs svs).
+      rewrite Heqp0 in IHp1. simpl in IHp1.
+
+      specialize (IHp2 g).
+      feed specialize IHp2.
+      {
+        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+        + pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+          rewrite Heqp0 in Hextends. simpl in Hextends.
+          specialize (Hcachede b).
+          feed specialize Hcachede.
+          {
+            simpl. rewrite H. apply orb_comm.
+          }
+          destruct Hcachede as [nϕ Hnϕ].
+          exists nϕ.
+          eapply lookup_weaken; eassumption.
+
+        + pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+          rewrite Heqp0 in Hextends. simpl in Hextends.
+          specialize (Hcacheds b).
+          feed specialize Hcacheds.
+          {
+            simpl. rewrite H. apply orb_comm.
+          }
+          destruct Hcacheds as [nϕ Hnϕ].
+          exists nϕ.
+          eapply lookup_weaken; eassumption.
+      }
+      { apply IHp1. }
+
+      specialize (IHp2 e s0).
+      rewrite Heqp1 in IHp2. simpl in IHp2.
+
+      destruct IHp2 as [H1g H2g].
+      split.
+      + destruct H1g as [
+      
+      
+      
+      simpl
+      simpl in Hcached.
+
+      
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     sub_prop C ->
     sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
