@@ -347,8 +347,56 @@ Section proof_system_translation.
     - destruct H as [e Hcontra]. inversion Hcontra.
   Qed.
 
-
-Check dangling_vars_cached.
+  Definition is_bound_var (p : Pattern) :=
+    match p with
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | _ => False
+    end.
+  
+  Lemma cache_continuous_add_not_bound (C : Cache) (p : Pattern) (np : NamedPattern) :
+    ~ is_bound_var p ->
+    cache_continuous_prop C ->
+    cache_continuous_prop (<[p := np]> C).
+  Proof.
+    intros Hneg Hcache.
+    destruct Hcache as [Hcachee Hcaches].
+    split.
+    - destruct Hcachee as [k Hcachee].
+      exists k; intros.
+      specialize (Hcachee k').
+      destruct Hcachee as [Hl Hr].
+      split; intros.
+      + specialize (Hl H).
+        destruct Hl as [e Hl].
+        exists e.
+        rewrite <- Hl. eapply lookup_insert_ne.
+        unfold not; destruct p; intros; try inversion H0.
+        simpl in Hneg. apply Hneg. exact I.
+      + apply Hr.
+        destruct H as [e H].
+        exists e.
+        rewrite <- H. symmetry. eapply lookup_insert_ne.
+        unfold not; destruct p; intros; try inversion H0.
+        simpl in Hneg. apply Hneg. exact I.
+    - destruct Hcaches as [k Hcaches].
+      exists k; intros.
+      specialize (Hcaches k').
+      destruct Hcaches as [Hl Hr].
+      split; intros.
+      + specialize (Hl H).
+        destruct Hl as [e Hl].
+        exists e.
+        rewrite <- Hl. eapply lookup_insert_ne.
+        unfold not; destruct p; intros; try inversion H0.
+        simpl in Hneg. apply Hneg. exact I.
+      + apply Hr.
+        destruct H as [e H].
+        exists e.
+        rewrite <- H. symmetry. eapply lookup_insert_ne.
+        unfold not; destruct p; intros; try inversion H0.
+        simpl in Hneg. apply Hneg. exact I.
+  Qed.        
   
   Lemma cache_continuous_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
