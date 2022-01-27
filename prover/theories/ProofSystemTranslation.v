@@ -473,15 +473,11 @@ Section proof_system_translation.
 
       specialize (IHp2 e s0).
       rewrite Heqp1 in IHp2. simpl in IHp2.
+      apply cache_continuous_add_not_bound.
+      intros Hcontra. inversion Hcontra.
+      apply IHp2.
 
-      destruct IHp2 as [H1g H2g].
-      split.
-      + destruct H1g as [
-      
-      
-      
-      simpl
-      simpl in Hcached.
+    -
 
       
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
