@@ -123,7 +123,11 @@ Section fix_signature.
 
   Fixpoint bsubst_term (t0 t : term) (n : nat) : term :=
   match t0 with
-  | bvar t' => if decide (t' = n) is left _ then t else bvar t'
+  | bvar t' => match compare_nat t' n with
+               | Nat_less _ _ _ => bvar t'
+               | Nat_equal _ _ _ => t
+               | Nat_greater _ _ _ => bvar (pred t')
+               end
   | fvar _ => t0
   | func f v => func f (map (fun x => bsubst_term x t n) v)
   end.
@@ -241,9 +245,9 @@ Section fix_signature.
     forall b t n, wf_term b (S n) -> wf_term t n ->
       wf_term (bsubst_term b t n) n.
   Proof.
-    induction b; intros t n H H0; inversion H; subst.
-    * constructor.
-    * simpl. repeat case_match; auto; simpl; case_match; auto; lia.
+    induction b; intros t n H H0; subst.
+    * reflexivity.
+    * simpl. repeat case_match; auto; simpl; case_match; auto. simpl in H. case_match. lia. congruence.
     * simpl in *; induction v; simpl in *; auto.
       do 2 separate. rewrite IH; auto. constructor. split; auto.
       apply IHv; auto. intros t0 H. apply IH. now constructor 2.
@@ -403,7 +407,6 @@ Section semantics.
       right. rewrite sat_impl. intros. auto.
     * rewrite sat_exs. simpl.
       epose proof (IHsz (bsubst_form φ (fvar (var_fresh (form_vars φ))) 0) _).
-      Search "ex" not.
       admit. (* TODO: not trivial, maybe using size based induction *)
   Abort.
 
@@ -999,53 +1002,63 @@ Section FOL_ML_correspondence.
   Qed.
 
   Theorem bevar_subst_corr_term :
-    forall b t n, wf_term t n ->
+    forall b t n, wf_term t n -> wf_term b (S n) ->
                   convert_term (bsubst_term b t n) = 
                   bevar_subst (convert_term b) (convert_term t) n.
   Proof.
-    induction b; intros t n H; auto.
+    induction b; intros t n H H0; auto.
     * simpl. now repeat (case_match; simpl).
     * simpl. remember (@patt_sym sig (sym_fun F)) as start.
       rewrite fold_left_map.
       assert (start = bevar_subst start (convert_term t) n) by now rewrite Heqstart.
-      clear Heqstart.
+      clear Heqstart. simpl in H0.
       generalize dependent start.
       induction v; intros; simpl; auto.
-      rewrite IHv. 
-      - intros. apply IH. constructor 2; auto. auto.
-      - simpl. erewrite <- H0, IH, double_bevar_subst; auto.
+      rewrite IHv.
+      - intros. apply IH. constructor 2; auto. auto. auto.
+      - simpl in H0. now apply andb_true_iff in H0.
+      - simpl. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2]. erewrite <- H1, IH; auto.
         2: constructor.
-        now apply closed_ex_term_FOL_ML.
+        apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
+        apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto.
+        rewrite -> (bevar_subst_not_occur _ Wf2'); auto.
       - do 2 rewrite bevar_subst_fold.
-        simpl. erewrite IH, double_bevar_subst; auto.
-        apply closed_ex_term_FOL_ML. auto. constructor.
-    Unshelve. all: exact 0.
+        simpl. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2].
+        apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
+        apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto.
+        erewrite IH. rewrite -> (bevar_subst_not_occur _ Wf2'); auto.
+        constructor. auto. auto.
   Qed.
 
   Theorem bevar_subst_corr_form :
-    forall φ t n, wf_term t n ->
+    forall φ t n, wf_term t n -> wf_form φ (S n) ->
                   convert_form (bsubst_form φ t n) = 
                   bevar_subst (convert_form φ) (convert_term t) n.
   Proof.
-    induction φ; intros t n H; auto.
+    induction φ; intros t n H H0; auto.
     * simpl.
       remember (@patt_sym sig (sym_pred P)) as start.
       rewrite fold_left_map.
       assert (start = bevar_subst start (convert_term t) n) by now rewrite Heqstart.
       clear Heqstart. revert H.
-      generalize dependent start.
+      generalize dependent start. simpl in H0.
       induction v; intros; simpl; auto.
       rewrite IHv.
-      - intros. rewrite bevar_subst_corr_term; auto.
-        simpl. erewrite double_bevar_subst. rewrite <- H0. auto.
-        apply closed_ex_term_FOL_ML. auto.
+      - now apply andb_true_iff in H0.
+      - intros. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2].
+        rewrite bevar_subst_corr_term; auto.
+        apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
+        apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto. simpl.
+        rewrite -> (bevar_subst_not_occur (convert_term t) Wf2'), <- H1; auto.
       - auto.
-      - do 2 rewrite bevar_subst_fold.
-        simpl. erewrite bevar_subst_corr_term, double_bevar_subst. auto.
-        apply closed_ex_term_FOL_ML; auto. assumption.
-    * simpl. now rewrite -> IHφ1, -> IHφ2.
-    * simpl. rewrite IHφ. auto. eapply wf_increase_term. apply H. lia. auto.
-    Unshelve. all: exact 0.
+      - do 2 rewrite bevar_subst_fold. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2].
+        simpl. erewrite bevar_subst_corr_term, <- H1.
+        apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
+        apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto. simpl.
+        rewrite -> (bevar_subst_not_occur (convert_term t) Wf2'); auto.
+        auto. auto.
+    * simpl. apply andb_true_iff in H0. rewrite -> IHφ1, -> IHφ2; auto; apply H0. 
+    * simpl. rewrite IHφ. auto. eapply wf_increase_term. apply H. lia. auto. auto.
   Qed.
 
   Theorem ax_in :
@@ -1078,7 +1091,7 @@ Section FOL_ML_correspondence.
           (make_list1 n) (bevar_subst start ψ m)).
   Proof.
     induction n; intros; cbn; auto.
-    rewrite IHn. lia. cbn. break_match_goal; auto. lia.
+    rewrite IHn. lia. cbn. break_match_goal; auto. lia. lia.
   Qed.
 
   Lemma term_mu_free :
@@ -1229,14 +1242,15 @@ Section FOL_ML_correspondence.
         simpl in H0.
         rewrite subst_make_list in H0. lia.
         simpl in H0. rewrite HIND in H0. break_match_hyp.
+        + lia.
         + exact H0.
         + lia.
         + apply have_definedness.
         (** asserted hypotheses *)
-        + apply wf_ex_to_wf_body. unfold well_formed, well_formed_closed in *.
-          do 2 separate. simpl in E0, E3.
-          do 4 rewrite andb_true_r in E0, E3. simpl in *.
-          destruct_and!. split_and!; assumption.
+        + apply andb_true_iff in WfA as [_ WfA]. apply andb_true_iff in WfA as [_ WfA]. cbn in WfA.
+          now destruct_and!.
+        + apply andb_true_iff in WfA as [_ WfA]. apply andb_true_iff in WfA as [WfA _]. cbn in WfA.
+          now destruct_and!.
         + intros. simpl. rewrite HIND. erewrite well_formed_bevar_subst.
           auto.
           2: { apply closed_ex_term_FOL_ML. inversion H0. separate. eassumption. }
@@ -1278,7 +1292,6 @@ Section FOL_ML_correspondence.
       all: try eassumption.
       all: split_and?; auto; simpl in *.
       10: apply have_definedness.
-      12: apply wf_ex_to_wf_body; unfold well_formed,well_formed_closed; simpl; split_and!; simpl.
       all: try apply closed_ex_form_FOL_ML; try assumption.
       all: try apply form_mu_free.
       all: try apply wf_increase_term with (n := 0); auto.
