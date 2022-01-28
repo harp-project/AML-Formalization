@@ -5809,8 +5809,8 @@ Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
 Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
-  - apply A_impl_A; wf_auto2.
-  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
+  - eapply A_impl_A; wf_auto2.
+  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. eapply andb_prop in wfl' as [wfa wfl'].
     specialize (IHl wfl').
     toMyGoal.
     { wf_auto2. }
@@ -5845,7 +5845,7 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l
 Proof.
   intros wfg₁ wfg₂ wfl H.
   eapply Modus_ponens.
-  4: apply prf_local_goals_equiv_impl_full_equiv; auto.
+  4: eapply prf_local_goals_equiv_impl_full_equiv; auto.
   all: auto.
 Defined.
 
@@ -5860,8 +5860,8 @@ Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply Modus_ponens.
   4: eapply pf_iff_proj1.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
+  6: eapply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: eapply H1.
   all: auto.
 Defined.
 
@@ -5876,8 +5876,8 @@ Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply Modus_ponens.
   4: eapply pf_iff_proj2.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
+  6: eapply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: eapply H1.
   all: auto.
 Defined.
 
@@ -5889,8 +5889,8 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
 Proof.
   intros wfC wfl Himp.
   induction l; simpl in *.
-  - apply prf_equiv_congruence; assumption.
-  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+  - eapply prf_equiv_congruence; assumption.
+  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. eapply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
     pose proof (proved_impl_wf _ _ IHl).
     toMyGoal.
@@ -5901,7 +5901,7 @@ Proof.
       mgAssert ((foldr patt_imp (emplace C p) l)).
       { wf_auto2. }
       { mgApply 0. mgExactn 1. }
-      apply pf_iff_proj1 in IHl.
+      eapply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
       mgApplyMeta IHl.
       mgExactn 2.
@@ -5909,7 +5909,7 @@ Proof.
       mgAssert ((foldr patt_imp (emplace C q) l)).
       { wf_auto2. }
       { mgApply 0. mgExactn 1. }
-      apply pf_iff_proj2 in IHl.
+      eapply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
       mgApplyMeta IHl.
       mgExactn 2.
@@ -5927,24 +5927,24 @@ Proof.
   { abstract (
       pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
       unfold emplace;
-      apply well_formed_free_evar_subst_0;[wf_auto2|];
+      eapply well_formed_free_evar_subst_0;[wf_auto2|];
       fold (PC_wf C);
       eapply wf_emplaced_impl_wf_context;
-      apply wfcp
+      eapply wfcp
     ).
   }
   { exact wfl. }
 
   eapply Modus_ponens.
-  4: apply pf_iff_proj2.
+  4: eapply pf_iff_proj2.
   4: abstract (wf_auto2).
-  5: apply prf_equiv_congruence_iter.
-  7: apply Hpiffq.
-  3: apply H.
+  5: eapply prf_equiv_congruence_iter.
+  7: eapply Hpiffq.
+  3: eapply H.
   5: exact wfl.
   4: eapply wf_emplaced_impl_wf_context;
-     apply wfcp.
-  1,3: apply proved_impl_wf in H; exact H.
+     eapply wfcp.
+  1,3: eapply proved_impl_wf in H; exact H.
   1: abstract (apply proved_impl_wf in H; wf_auto2).
 Defined.
 
@@ -5981,8 +5981,8 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
       lazymatch goal with
       | [ |- context ctx [free_evar_subst' ?more ?p ?q star]]
         =>
-          rewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
-            apply count_evar_occurrences_0;
+          erewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
+            eapply count_evar_occurrences_0;
             unfold star;
             eapply evar_is_fresh_in_richer';
             [|apply set_evar_fresh_is_fresh'];
@@ -6000,7 +6000,7 @@ Local Ltac solve_fresh_contradictions_2 star :=
   | h: star = ?x |- _
     => let hcontra := fresh "Hcontra" in
        assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
-       rewrite -> h in hcontra;
+       erewrite -> h in hcontra;
        contradiction
   end.
 
@@ -6077,9 +6077,9 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
          let heq := Control.hyp (hr.(equality)) in
          let pc := (hr.(pc)) in
          eapply (@cast_proof_mg_goal _ $g) >
-           [ rewrite $heq; reflexivity | ()];
+           [ erewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
-         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
+         eapply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
          lazy_match! goal with
          | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
            =>
@@ -6094,7 +6094,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
                ];
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_mg_goal _ $g) >
-               [ rewrite $heq2_pf; reflexivity | ()];
+               [ erewrite $heq2_pf; reflexivity | ()];
              Std.clear [heq2 ; (hr.(star_ident))]
          end
     end
@@ -6123,487 +6123,6 @@ Ltac2 rec iterlist (l : constr) :=
      | (?a :: ?m) => ltac1:(idtac 1)
   end.
 
-Ltac tryExact l idx :=
-  match l with
-    | nil => idtac
-    | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
-  end.
-
-Ltac mgAssumption :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        tryExact l 0
-  end.
-
-(* TODO: prove without well_formed x ? *)
-Lemma MyGoal_revert {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
-  well_formed x ->
-  @mkMyGoal Σ Γ l (x ---> g) ->
-  @mkMyGoal Σ Γ (l ++ [x]) g.
-Proof.
-  intros wfx H.
-  unfold of_MyGoal in H. simpl in H.
-  unfold of_MyGoal. simpl. intros wfxig wfl.
-
-  feed specialize H.
-  - apply well_formed_imp; auto.
-  - unfold wf in wfl. rewrite map_app foldr_app in wfl. simpl in wfl.
-    unfold wf. rewrite wfx in wfl. simpl in wfl. auto.
-  - unshelve (eapply (cast_proof _ H)).
-  { rewrite foldr_app. reflexivity. }
-Defined.
-
-(* Notation "[ S , G ⊢ l ==> g ]" := (@mkMyGoal S G l g). *)
-
-#[global]
-Ltac mgRevert :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?Hs ?g) ]
-      =>
-        idtac Hs;
-        match Hs with
-          | (?a :: ?m) => let lm := eval compute in (take (length Hs - 1) Hs) in (
-                            apply MyGoal_revert with (l := lm)
-                          ); wf_auto2
-          | nil => fail "Nothing to revert"
-        end
-  end.
-  (* simplLocalContext. *)
-
-Lemma deMorgan_nand {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( !(a and b) ---> !a or !b).
-Proof.
-  intros wfa wfb.
-  toMyGoal. wf_auto2.
-  repeat mgIntro. (* mgRevert. simplLocalContext. *)
-  Check MyGoal_revert wfb.
-  mgApplyMeta (@not_not_elim _ _ _ wfa) in 1.
-  mgApply 0.
-  mgClear 0. fromMyGoal. intros.
-  apply conj_intro; auto.
-Defined.
-
-Lemma deMorgan_nor {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( !(a or b) ---> !a and !b).
-Proof.
-  intros wfa wfb.
-  toMyGoal. wf_auto2.
-  repeat mgIntro.
-  mgApply 0.
-  mgDestructOr 1.
-  - mgApplyMeta (@not_not_elim _ _ _ wfa) in 1.
-    mgApplyMeta (@disj_left_intro _ _ _ b _ _) in 1. mgAssumption.
-  - mgApplyMeta (@not_not_elim _ _ _ wfb) in 1.
-    mgApplyMeta (@disj_right_intro _ _ a _ _ _) in 1. mgAssumption.
-  Unshelve. all: auto.
-Qed.
-
-Lemma impl_to_or {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( (a ---> b) ---> !a or b).
-Proof.
-  intros wfa wfb.
-  toMyGoal. wf_auto2.
-  repeat mgIntro.
-  mgApplyMeta (@not_not_elim _ _ _ _) in 1. mgApply 0. mgAssumption.
-  Unshelve. all: auto.
-Qed.
-
-Lemma or_monotone_l {Σ : Signature} Γ a a' b:
-    well_formed a ->
-    well_formed a' ->
-    well_formed b ->
-    Γ ⊢( (a ---> a') ) ->
-    Γ ⊢( (a or b) ---> (a' or b)).
-Proof.
-  intros.
-  toMyGoal.
-  wf_auto2.
-  mgIntro. mgIntro.
-  mgDestructOr 0.
-  - mgApplyMeta (@false_implies_everything _ _ _ _).
-    mgApply 1. mgApplyMeta H2. mgAssumption.
-  - mgAssumption.
-  Unshelve.
-  all: auto.
-Defined.
-
-Lemma or_monotone_r {Σ : Signature} Γ a b b':
-    well_formed a ->
-    well_formed b ->
-    well_formed b' ->
-    Γ ⊢( (b ---> b') ) ->
-    Γ ⊢( (a or b) ---> (a or b')).
-Proof.
-  intros.
-  toMyGoal.
-  wf_auto2.
-  mgIntro. mgIntro.
-  mgApplyMeta H2.
-  mgDestructOr 0.
-  - mgApplyMeta (@false_implies_everything _ _ _ _).
-    mgApply 1. mgAssumption.
-  - mgAssumption.
-  Unshelve.
-  all: auto.
-Defined.
-
-(* Ltac stepNNF pat idx :=
-    lazymatch pat with
-      | (?x ---> ?y) => (patt_or (patt_not x) y)
-      | (patt_not (patt_not ?x)) => x
-      | (patt_and ?x ?y) => patt_and (stepNNF x idx) (stepNNF y idx)
-      | (patt_not (patt_and ?x ?y)) => patt_or (patt_not x) (patt_not y)
-      | (patt_or ?x ?y) => patt_or (stepNNF x idx) (stepNNF y idx)
-      | (patt_not (patt_or ?x ?y)) => (patt_and (patt_not x) (patt_not y))
-      | _ => idtac
-    end. *)
-
-Ltac convertToNNF l idx :=
-  idtac l;
-  match l with
-    | nil => idtac "End"
-    | (?a :: ?m) => 
-       lazymatch a with
-         | (?x ---> ?y) => mgApplyMeta (@impl_to_or _ _ _ _ _ _) in idx; idtac "Implication"; convertToNNF ((!x or y) :: m) idx
-         | (! ! ?x) => mgApplyMeta (@not_not_elim _ _ _ _) in idx; idtac "Not not"; convertToNNF (x :: m) idx
-         | (patt_and ?x ?y) => mgDestructAnd idx; idtac "And"; convertToNNF (x :: y :: m) idx
-         | patt_not (patt_and ?x ?y) => mgApplyMeta (@deMorgan_nand _ _ x y _ _) in idx; idtac "Not and"; convertToNNF ((!x or !y) :: m) idx
-         | (patt_or ?x ?y) => (* mgDestructOr idx; *) idtac "Or"; convertToNNF m (idx + 1)
-         | patt_not (patt_or ?x ?y) => mgApplyMeta (@deMorgan_nor _ _ x y _ _) in idx; idtac "Not or"; convertToNNF ((!x and !y) :: m) idx
-         | _ => idtac a; convertToNNF m (idx + 1)
-       end
-  end.
-
-Ltac toNNF l := convertToNNF l 0(* ; mgApplyMeta (@not_not_intro _ _ _ _) *).
-
-Ltac rfindContradictionTo a ll k n:=
-  match ll with
-    | ((! a) :: ?m) =>
-        (* idtac "Contradiction:" a "and !" a "in hyps";*)
-        (*match goal with
-        | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
-          =>
-            multimatch g with
-              | ⊥ =>
-                  mgApplyMeta (@false_implies_everything _ _ g _);
-                  wf_auto2
-              | _ => *) 
-                  mgApply n; mgExactn k
-         (*   end
-        end *)
-    | (?b :: ?m) => 
-        let nn := eval compute in ( n + 1 ) in
-         (rfindContradictionTo a m k nn)
-    | _ => fail
-  end.
-
-Ltac findContradiction l k:=
-    match l with
-       | (?a :: ?m) => 
-             match goal with
-                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
-                  =>
-                     try rfindContradictionTo a ll k 0;
-                     let kk := eval compute in ( k + 1 ) in
-                     (findContradiction m kk)
-             end
-       | _ => fail
-    end.
-
-Ltac findContradiction_start :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        toNNF l;
-        match goal with
-          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-            =>
-              findContradiction l 0
-        end
-  end.
-
-Ltac breakHyps l n:=
-  let nn := eval compute in ( n + 1)
-  in
-  (
-    match l with
-    | ((?x and ?y) :: ?m) => 
-        mgDestructAnd n
-    | ((?x or ?y) :: ?m) => 
-        mgDestructOr n
-    | (?x :: ?m)  =>
-        breakHyps m nn
-    end
-  )
-.
-
-Ltac mgTauto :=
-  try (
-  repeat mgIntro;
-  repeat match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        lazymatch g with
-          | (⊥) =>
-                  breakHyps l 0
-          | _ => mgApplyMeta (@false_implies_everything _ _ g _)
-                  (*idtac "Goal is not correct form"*)
-        end
-  end;
-  findContradiction_start)
-.
-
-Lemma test_1 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( (!(a and b) ---> b) ---> !a or !b).
-Proof.
-  intros.
-  toMyGoal. wf_auto2.
-  repeat mgIntro.
-  try findContradiction_start.
-Admitted.
-
-Lemma test_2 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( !(a or b) ---> !a and !b).
-Proof.
-  intros.
-  toMyGoal. wf_auto2.
-  mgIntro.
-  try findContradiction_start.
-Admitted.
-
-  Lemma conj_right {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgTauto.
-  Qed.
-
-
-
-(*Tautos
-Search (?a ---> (?b ---> ?a) ). (*P1*)
-Search ((?a ---> (?b ---> ?c)) ---> ((?a ---> ?b) ---> (?a ---> ?c))). (*P2*)
-Search (?a ---> (?b ---> (?a and ?b)) ). (*conj_intro*)
-Search ((?a and ?b) ---> ?b ). (**)
-Search ((?a ---> ?b) ---> ((?b ---> ?c) ---> ((?a or ?b )---> ?c))). (**)
-Search (?a ---> (?a or ?b) ). (*disj_left_intro*)
-Search ((?a ---> ?b) ---> ((?a ---> ! ?b) ---> ! ?a)). (*P4m*)
-Search ( (! (! ?a)) ---> ?a). (*not_not_elim*)
-Search ((?a or !?a)). (*A_or_notA*)
-Search (!(?a and !?a)). (**)
-Search ( ?a ---> ?a). (*A_impl_A*)
-Search ((?a ---> ?b) ---> (?b ---> ?c) ---> (?a ---> ?c)). (*syllogism*)
-Search ( ?a ---> ((! ?a) ---> ?b)). (**)
-Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
-
-  Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( a ---> ((! a) ---> b)).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgTauto.
-    Unshelve.
-    { wf_auto2. }
-  Qed.
-
-  Lemma implt_to_or_helper {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( ((! a) or a) ---> (a ---> b ) ---> ((! a) or b)).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    mgDestructOr 0.
-      - mgApplyMeta (@false_implies_everything _ _ _ wfb).
-        mgApply 2.
-        mgExactn 0.
-      - mgApply 1.
-        mgExactn 0.
-  Qed.
-
-  Lemma or_to_impl {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢( ((! a) or b)  ---> (a ---> b )).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    mgDestructOr 0.
-    - mgApplyMeta (@false_implies_everything _ _ _ wfb).
-      mgApply 0.
-      mgExactn 1.
-    - mgExactn 0.
-  Qed.
-  Lemma deMorgan1 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ( (!a or !b) ---> !(a and b)).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    unfold patt_not.
-    mgDestructAnd 1.
-    mgDestructOr 0.
-    - mgApply 0.
-      mgExactn 1.
-    - mgApply 0.
-      mgExactn 2.
-  Qed.
-  Lemma ex_conj_left {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ((a and b) ---> a).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgApplyMeta (@or_to_impl _ _ (a and b) (a)  _ _).
-    mgApplyMeta (@not_not_elim _ _ _ _ ).
-    (*  [Σ, Γ ⊢ [] ==> ! ! ((!a or !b) or a)]  *)
-    Admitted.
-  (*!((!a or !b) or a) ---> ⊥*)
-  (*(!(!a or !b) and !a) ---> ⊥*)
-  (*((!!a and !!b) and !a) ---> ⊥*)
-  (*((a and b) and !a) ---> ⊥*)
-  (*
-      !a\
-      |  |
-      a /
-      |
-      b
-
-*)
-
-  Lemma ex_conj_left2 {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ (((a and b) and !a) ---> ⊥ ).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    repeat mgDestructAnd 0.
-    mgApply 2.
-    mgExactn 0.
-  Qed.
-
-
-  Lemma ex_disj_left_intro {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ a ---> (a or b).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgApplyMeta (@or_to_impl _ _ (a) (a or b)  _ _).
-    mgApplyMeta (@not_not_elim _ _ _ _ ).	
-    (*! ! (! a or a or b)*)
-    (*! (! a or a or b) --->  ⊥ *)
-    (*(!! a and !a and !b) --->  ⊥ *)
-    (*(a and !a and !b) --->  ⊥ *)
-    Admitted.
-
-
-
-
-
-  Lemma impl_taut_1 {Σ : Signature} Γ a b c:
-    well_formed a ->
-    well_formed b ->
-    well_formed c ->
-    (*Γ ⊢ (a ---> b).*)
-     Γ ⊢ ((a or b) or ((b or c) or c)).
-  Proof.
-    intros wfa wfb wfc.
-    toMyGoal.
-    { wf_auto2. }
-    mgTauto.
-    mgApply 1.
-    mgDestructOr 2.
-    - mgApply 0.
-      mgExactn 2.
-    - mgExactn 2.
-  Qed.
-
-
-
-  Lemma condtradict_taut_1 {Σ : Signature} Γ a:
-    well_formed a ->
-    Γ ⊢ !(a and !a).
-  Proof.
-    intros wfa.
-    toMyGoal.
-    { wf_auto2. }
-    unfold patt_not at 1.
-    mgIntro.
-    mgDestructAnd 0.
-    unfold patt_not at 1. (*messed up indexing?*)
-    mgApply 1.
-    mgExactn 0.
-  Qed.
-
-
-  Lemma notnot_taut_1 {Σ : Signature} Γ a:
-    well_formed a ->
-    Γ ⊢ (! ! a ---> a).
-  Proof.
-    intros wfa.
-    toMyGoal.
-    { wf_auto2. }
-    repeat mgIntro.
-    repeat unfold patt_not at 1.
-    mgApplyMeta (@false_implies_everything _ _ _ wfa ).
-    mgApply 0.
-    mgIntro.
-    Search "A_or_notA".
-    epose (@A_or_notA _ _ _ wfa).
-    fromMyGoal.
-    Admitted.
- 
-
-
-  Lemma Peirce_taut {Σ : Signature} Γ a b:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢ ((((a ---> b) ---> a) ---> a)).
-  Proof.
-    intros wfa wfb.
-    toMyGoal.
-    { wf_auto2. }
-    mgIntro.
-    mgApply 0. 
- 
-  Qed.
-
-
-
-
   Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
     well_formed p ->
     well_formed q ->
@@ -6615,18 +6134,20 @@ Search ((((?a ---> ?b) ---> ?a) ---> ?a)). *)
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
 
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+    pose proof (pip' := pep'). eapply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). eapply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). eapply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). eapply pf_conj_elim_r_meta in q'iq; auto.
 
     toMyGoal.
     { wf_auto2. }
     mgRewrite pep' at 1.
     mgRewrite qeq' at 1.
     Search "<--->".
-    epose (pf_iff_equiv_refl ).
+    epose proof (pf_iff_equiv_refl _ _) as m.
+    fromMyGoal. intros.
     eapply m.
+    Unshelve. auto.
   Defined.
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
@@ -6641,7 +6162,7 @@ Proof.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
   fromMyGoal. intros _ _.
-  apply pf_iff_equiv_refl; abstract(wf_auto2).
+  eapply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
 
 
@@ -6655,10 +6176,10 @@ Defined.
     Γ ⊢ ((p and q) <---> (p' and q')).
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+    pose proof (pip' := pep'). eapply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). eapply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). eapply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). eapply pf_conj_elim_r_meta in q'iq; auto.
 
     toMyGoal.
     { wf_auto2. }
@@ -6693,4 +6214,363 @@ Defined.
         mgExactn 4.
   Defined.
 
+Ltac tryExact l idx :=
+  match l with
+    | nil => idtac
+    | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
+  end.
+
+Ltac mgAssumption :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        tryExact l 0
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  Lemma MyGoal_revert (Γ : Theory) (l : list Pattern) (x g : Pattern):
+      @mkMyGoal Σ Γ l (x ---> g) ->
+      @mkMyGoal Σ Γ (l ++ [x]) g.
+    Proof.
+      intros H.
+      unfold of_MyGoal in H. simpl in H.
+      unfold of_MyGoal. simpl. intros wfxig wfl.
+
+      feed specialize H.
+      {
+        abstract (
+            apply wfapp_proj_2 in wfl;
+            unfold wf in wfl;
+            simpl in wfl;
+            rewrite andbT in wfl;
+            wf_auto2
+          ).
+      }
+      {
+        abstract (apply wfapp_proj_1 in wfl; exact wfl).
+      }
+
+      eapply cast_proof.
+      { rewrite foldr_app. simpl. reflexivity. }
+      exact H.
+    Defined.
+
+End FOL_helpers.
+
+  Ltac mgRevert :=
+    match goal with
+    | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
+      => eapply cast_proof_mg_hyps;
+         [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
+         apply MyGoal_revert
+    end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  Lemma impl_eq_or Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( (a ---> b) <---> ((! a) or b) ).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgDestructOr 0.
+    - mgApply 0. mgIntro. mgClear 0. mgIntro.
+      mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+      mgApply 0. mgAssumption.
+    - mgApply 0. mgIntro. mgClear 0. mgIntro.
+      mgDestructOr 0.
+      + mgApplyMeta (@false_implies_everything _ _ _ _).
+        mgApply 0. mgAssumption.
+      + mgAssumption.
+    Unshelve. all: auto.
+  Qed.
+
+  Lemma nimpl_eq_and Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢( ! (a ---> b) <---> (a and !b) ).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgDestructOr 0.
+    - mgApply 0. repeat mgIntro.
+      mgApply 1. mgIntro.
+      mgDestructOr 2.
+      + mgApplyMeta (false_implies_everything _ _).
+        mgApply 2. mgAssumption.
+      + mgApplyMeta (@not_not_elim _ _ _ _) in 2.
+        mgAssumption.
+    - mgApply 0. repeat mgIntro.
+      mgDestructAnd 1. mgApply 2. mgApply 3.
+      mgAssumption.
+    Unshelve. all: auto.
+  Qed.
+
+  Lemma deMorgan_nand Γ a b:
+      well_formed a ->
+      well_formed b ->
+      Γ ⊢ ( !(a and b) <---> (!a or !b) ).
+    Proof.
+      intros wfa wfb.
+      toMyGoal.
+      { wf_auto2. }
+      repeat mgIntro.
+      mgDestructOr 0.
+      - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+        mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+        mgApply 0. mgIntro.
+        mgDestructOr 3.
+        all: mgApply 3; mgAssumption.
+      - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+        mgDestructAnd 1.
+        mgDestructOr 0.
+        all: mgApply 0; mgAssumption.
+      Unshelve. all: auto.
+    Qed.
+
+  Lemma deMorgan_nor Γ a b:
+      well_formed a ->
+      well_formed b ->
+      Γ ⊢ ( !(a or b) <---> (!a and !b)).
+    Proof.
+      intros wfa wfb.
+      toMyGoal.
+      { wf_auto2. }
+      repeat mgIntro.
+      mgDestructOr 0.
+      - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+        mgApply 0.
+        mgDestructOr 1.
+        + mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+          mgLeft. mgAssumption.
+        + mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+          mgRight. mgAssumption.
+      - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+        mgDestructAnd 0.
+        mgDestructOr 2.
+        + mgApply 0. mgAssumption.
+        + mgApply 1. mgAssumption.
+      Unshelve. all: auto.
+    Qed.
+
+  Lemma not_not_eq (Γ : Theory) (a : Pattern) :
+    well_formed a ->
+    Γ ⊢ (!(!a) <---> a).
+  Proof.
+    intros wfa.
+    toMyGoal.
+    { wf_auto2. }
+    mgIntro.
+    mgDestructOr 0.
+    - mgApply 0. mgIntro.
+      mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+      mgAssumption.
+    - unfold patt_not. mgApply 0. repeat mgIntro.
+      mgApply 2. mgAssumption.
+    Unshelve.
+    all: auto.
+  Defined.
+
+End FOL_helpers.
+
+  Ltac convertToNNF_rewrite_pat Ctx p :=
+    idtac p;
+    lazymatch p with
+      | (! ! ?x) =>
+          idtac "Not not";
+          let H' := fresh "H" in
+          epose proof (@not_not_eq Ctx x _) as H';
+          repeat (mgRewrite H' at 1);
+          clear H';
+          convertToNNF_rewrite_pat Ctx x
+      | patt_not (patt_and ?x ?y) =>
+          idtac "Not and";
+          let H' := fresh "H" in
+          epose proof (@deMorgan_nand Ctx x y _ _) as H';
+          repeat (mgRewrite H' at 1);
+          clear H';
+          convertToNNF_rewrite_pat Ctx (!x or !y)
+      | patt_not (patt_or ?x ?y) =>
+          idtac "Not or";
+          let H' := fresh "H" in
+          epose proof (@deMorgan_nor Ctx x y _ _) as H';
+          repeat (mgRewrite H' at 1);
+          clear H';
+          convertToNNF_rewrite_pat Ctx (!x and !y)
+      | patt_not (?x ---> ?y) =>
+          idtac "Not implication";
+          let H' := fresh "H" in
+          epose proof (@nimpl_eq_and Ctx x y _ _) as H';
+          repeat (mgRewrite H' at 1);
+          clear H';
+          convertToNNF_rewrite_pat Ctx (x and !y)
+      | (?x ---> ?y) =>
+          idtac "Implication";
+          let H' := fresh "H" in
+          epose proof (@impl_eq_or Ctx x y _ _) as H';
+          repeat (mgRewrite H' at 1);
+          clear H';
+          convertToNNF_rewrite_pat Ctx (!x or y)
+      | patt_and ?x ?y => idtac "And"; convertToNNF_rewrite_pat Ctx x; convertToNNF_rewrite_pat Ctx y
+      | patt_or ?x ?y => idtac "Or"; convertToNNF_rewrite_pat Ctx x; convertToNNF_rewrite_pat Ctx y
+      | _ => idtac p
+    end.
+
+  Ltac toNNF := 
+    repeat mgRevert;
+    match goal with
+      | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+        =>
+          mgApplyMeta (@not_not_elim _ _ _ _);
+          convertToNNF_rewrite_pat Ctx (!g)
+    end.
+
+  Ltac rfindContradictionTo a ll k n:=
+    match ll with
+      | ((! a) :: ?m) =>
+          mgApply n; mgExactn k
+      | (?b :: ?m) => 
+          let nn := eval compute in ( n + 1 ) in
+           (rfindContradictionTo a m k nn)
+      | _ => fail
+    end.
+
+  Ltac findContradiction l k:=
+      match l with
+         | (?a :: ?m) => 
+               match goal with
+                  | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+                    =>
+                       try rfindContradictionTo a ll k 0;
+                       let kk := eval compute in ( k + 1 ) in
+                       (findContradiction m kk)
+               end
+         | _ => fail
+      end.
+
+  Ltac findContradiction_start :=
+    match goal with
+      | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+        =>
+          match goal with
+            | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+              =>
+                idtac l;
+                findContradiction l 0
+          end
+    end.
+
+  Ltac breakHyps l n:=
+    let nn := eval compute in ( n + 1)
+    in
+    (
+      match l with
+      | ((?x and ?y) :: ?m) => 
+          mgDestructAnd n
+      | ((?x or ?y) :: ?m) => 
+          mgDestructOr n
+      | (?x :: ?m)  =>
+          breakHyps m nn
+      end
+    )
+  .
+
+  Ltac mgTauto :=
+    try (
+    toNNF;
+    idtac "NFF ready";
+    repeat mgIntro;
+    repeat match goal with
+      | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+        =>
+          lazymatch g with
+            | (⊥) =>
+                    breakHyps l 0
+            | _ => mgApplyMeta (@false_implies_everything _ _ g _)
+                    (*idtac "Goal is not correct form"*)
+          end
+    end;
+    findContradiction_start)
+  .
+
+    Lemma conj_right {Σ : Signature} Γ a b:
+      well_formed a ->
+      well_formed b ->
+      Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥).
+    Proof.
+      intros wfa wfb.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
+
+    Lemma condtradict_taut_2 Γ a b:
+      well_formed a ->
+      well_formed b ->
+      Γ ⊢( a ---> ((! a) ---> b)).
+    Proof.
+      intros wfa wfb.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
+
+    Lemma taut Γ a b c:
+      well_formed a ->
+      well_formed b ->
+      well_formed c ->
+      Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c))).
+    Proof.
+      intros wfa wfb wfc.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
+
+    Lemma condtradict_taut_1 Γ a:
+      well_formed a ->
+      Γ ⊢ !(a and !a).
+    Proof.
+      intros wfa.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
+
+    Lemma notnot_taut_1 Γ a:
+      well_formed a ->
+      Γ ⊢ (! ! a ---> a).
+    Proof.
+      intros wfa.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
+
+    Lemma Peirce_taut Γ a b:
+      well_formed a ->
+      well_formed b ->
+      Γ ⊢ ((((a ---> b) ---> a) ---> a)).
+    Proof.
+      intros wfa wfb.
+      toMyGoal.
+      { wf_auto2. }
+      mgTauto.
+      Unshelve. all: wf_auto2.
+    Qed.
 
