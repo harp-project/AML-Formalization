@@ -11,7 +11,7 @@ From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 
 From Equations Require Import Equations.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem ProofMode MLTauto.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem ProofMode.
 
 From stdpp Require Import list tactics fin_sets.
 

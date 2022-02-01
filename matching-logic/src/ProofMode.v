@@ -6931,8 +6931,8 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
       lazymatch goal with
       | [ |- context ctx [free_evar_subst ?p ?q star] ]
         =>
-          erewrite -> (@free_evar_subst_no_occurrence _ more star p q) by (
-            eapply count_evar_occurrences_0;
+          progress rewrite -> (@free_evar_subst_no_occurrence _ star p q) by (
+            apply count_evar_occurrences_0;
             unfold star;
             eapply evar_is_fresh_in_richer';
             [|apply set_evar_fresh_is_fresh'];
@@ -7066,12 +7066,30 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
-Ltac2 rec iterlist (l : constr) :=
-  match! l with
-     | nil => ltac1:(idtac 0)
-     | (?a :: ?m) => ltac1:(idtac 1)
-  end.
 
+Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
+  Γ ⊢ (A <---> B) ->
+  Γ ⊢ (B <---> A).
+Proof.
+  intros H.
+  pose proof (wf := proved_impl_wf _ _ H).
+  assert (well_formed A) by wf_auto2.
+  assert (well_formed B) by wf_auto2.
+  apply pf_iff_equiv_sym; assumption.
+Defined.
+
+Program Canonical Structure pf_iff_equiv_sym_nowf_indifferent_S {Σ : Signature}
+        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
+        (a b : Pattern)
+  := ProofProperty1 P (@pf_iff_equiv_sym_nowf Σ Γ a b) _.
+Next Obligation. solve_indif; assumption. Qed.
+
+Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
+  mgRewrite Hiff at atn.
+
+Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
+  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
+  
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
@@ -7184,6 +7202,7 @@ Next Obligation.
   intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
   solve_indif. unfold liftP. solve_indif.
 Qed.
+
 
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
@@ -7612,7 +7631,7 @@ Proof.
   }
   { wf_auto. }
 
-Abort.
+
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
