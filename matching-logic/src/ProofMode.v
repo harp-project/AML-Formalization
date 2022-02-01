@@ -7202,7 +7202,6 @@ Next Obligation.
   solve_indif. unfold liftP. solve_indif.
 Qed.
 
-
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
@@ -7629,8 +7628,8 @@ Proof.
     eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
   }
   { wf_auto. }
-Abort.
 
+Abort.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
