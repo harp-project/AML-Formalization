@@ -406,8 +406,12 @@ Section proof_system_translation.
     intros Hcached Hsub.
     move: C Hcached Hsub evs svs.
     induction p; intros C Hcached Hsub evs svs; simpl; case_match; simpl; try apply Hsub.
-    - admit.
-    - admit.
+    - apply cache_continuous_add_not_bound;[|exact Hsub].
+      intros Hcontra.
+      inversion Hcontra.
+    - apply cache_continuous_add_not_bound;[|exact Hsub].
+      intros Hcontra.
+      inversion Hcontra.
     - destruct Hcached as [Hcachede Hcacheds].
       unfold dangling_evars_cached in Hcachede.
       specialize (Hcachede n). simpl in Hcachede.
@@ -422,9 +426,9 @@ Section proof_system_translation.
       specialize (Hcacheds erefl).
       destruct Hcacheds as [nϕ Hnϕ].
       rewrite Hnϕ in Heqo. inversion Heqo.
-    - admit.
-    - admit.
-    - admit.
+    - apply cache_continuous_add_not_bound;[|exact Hsub].
+      intros Hcontra.
+      inversion Hcontra.
     - repeat case_match. subst. invert_tuples. simpl.
       unfold dangling_vars_cached in Hcached.
       destruct Hcached as [Hcachede Hcacheds].
@@ -476,8 +480,76 @@ Section proof_system_translation.
       apply cache_continuous_add_not_bound.
       intros Hcontra. inversion Hcontra.
       apply IHp2.
+    - apply cache_continuous_add_not_bound;[|exact Hsub].
+      intros Hcontra.
+      inversion Hcontra.
+    - repeat case_match. subst. invert_tuples. simpl.
+      unfold dangling_vars_cached in Hcached.
+      destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      unfold dangling_svars_cached in Hcacheds.
+      
+      specialize (IHp1 C).
+      feed specialize IHp1.
+      {
+        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+        + apply Hcachede. simpl.
+          rewrite H. reflexivity.
+        + apply Hcacheds. simpl. rewrite H. reflexivity.
+      }
+      { apply Hsub. }
+      specialize (IHp1 evs svs).
+      rewrite Heqp0 in IHp1. simpl in IHp1.
 
-    -
+      specialize (IHp2 g).
+      feed specialize IHp2.
+      {
+        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+        + pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+          rewrite Heqp0 in Hextends. simpl in Hextends.
+          specialize (Hcachede b).
+          feed specialize Hcachede.
+          {
+            simpl. rewrite H. apply orb_comm.
+          }
+          destruct Hcachede as [nϕ Hnϕ].
+          exists nϕ.
+          eapply lookup_weaken; eassumption.
+
+        + pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+          rewrite Heqp0 in Hextends. simpl in Hextends.
+          specialize (Hcacheds b).
+          feed specialize Hcacheds.
+          {
+            simpl. rewrite H. apply orb_comm.
+          }
+          destruct Hcacheds as [nϕ Hnϕ].
+          exists nϕ.
+          eapply lookup_weaken; eassumption.
+      }
+      { apply IHp1. }
+
+      specialize (IHp2 e s0).
+      rewrite Heqp1 in IHp2. simpl in IHp2.
+      apply cache_continuous_add_not_bound.
+      intros Hcontra. inversion Hcontra.
+      apply IHp2.
+    - repeat case_match. subst. invert_tuples. simpl.
+      unfold dangling_vars_cached in Hcached.
+      destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      unfold dangling_svars_cached in Hcacheds.
+      specialize (IHp (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p)]>
+      (cache_incr_evar C))).
+      feed specialize IHp.
+      {
+        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+        + pose proof (Hcachedeb := Hcachede (b - 1)).
+          simpl in Hcachedeb.
+          apply Hcachede. simpl.
+          rewrite H. reflexivity.
+        + apply Hcacheds. simpl. rewrite H. reflexivity.
+      }
 
       
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
