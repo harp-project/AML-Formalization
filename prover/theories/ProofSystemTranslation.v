@@ -331,12 +331,12 @@ Section proof_system_translation.
     (∃ (k : nat), ∀ (k' : nat),
         (k' < k)
         <->
-          (∃ (e : evar), C !! (patt_bound_evar k') = Some (npatt_evar e))
+          (∃ (np : NamedPattern), C !! (patt_bound_evar k') = Some np)
     ) /\
       (∃ (k : nat), ∀ (k' : nat),
           (k' < k)
           <->          
-            (∃ (s : svar), C !! (patt_bound_svar k') = Some (npatt_svar s))).
+            (∃ (np : NamedPattern), C !! (patt_bound_svar k') = Some np)).
 
   Lemma cache_continuous_empty: cache_continuous_prop ∅.
   Proof.
@@ -606,7 +606,7 @@ Qed.
           split; intros H.
           * destruct k'.
             --
-              exists (evs_fresh evs p).
+              exists (npatt_evar (evs_fresh evs p)).
               apply lookup_insert.
             --
               specialize (Hk k').
@@ -687,9 +687,9 @@ Qed.
       + destruct HCs as [k Hk].
         exists k.
         intros k'.
-        rewrite Hk.
         split; intros H.
-        * destruct H as [s1 Hs1].
+        * rewrite Hk in H.
+          destruct H as [s1 Hs1].
           exists s1.
           apply lookup_union_Some.
           { apply remove_disjoint_keep_e.  }
@@ -714,30 +714,46 @@ Qed.
             inversion Hwitness.
           }
         * destruct H as [s1 Hs1].
-          (*destruct (decide (C !! patt_bound_svar k' = Some ))*)
-          (* Three cases may happen:
-            (1) C !! patt_bound_svar k' = Some (npatt_svar _)
-            (2) C !! patt_bound_svar k' = Some _ (* but not npatt_svar *)
-            (3) C !! patt_bound_svar k' = None
-          *)
-          (*
-          destruct (C !! patt_bound_svar k').
+          (* TODO use Hsub / HCe HCs ; Hgs; HCs*)
+          destruct (C !! patt_bound_svar k') eqn:Hck'.
           {
-
+            rewrite Hk.
+            exists n0. exact Hck'.
           }
-          exists s1.
+          {
+            destruct Hgs as [k2 Hk2].
+            (* I think I need a stronger induction hypothesis, saying that
+               the [k] only grows with calls to the translation function.
+            *)
+            apply Hcacheds.
+          }
+          exfalso.
           rewrite lookup_union_Some in Hs1.
           2: { apply remove_disjoint_keep_e. }
           destruct Hs1 as [Hs1|Hs1].
           --
+            unfold remove_bound_evars in Hs1.
+            rewrite map_filter_lookup_Some in Hs1.
+            destruct Hs1 as [Hs11 Hs12].
             epose proof (Honly := onlyAddsSubpatterns _ _ _ _).
             erewrite Heqp1 in Honly.
             simpl in Honly.
             specialize (Honly (patt_bound_svar k')).
-            unfold remove_bound_evars in Hs1.
-            rewrite map_filter_lookup_Some in Hs1.
-            destruct Hs1 as [Hs11 Hs12].
-            rewrite Hs11 in Honly.
+            feed specialize Honly.
+            {
+              rewrite lookup_insert_ne.
+              { discriminate. }
+              unfold cache_incr_evar.
+              replace (patt_bound_svar k') with (incr_one_evar (patt_bound_svar k')) by reflexivity.
+              rewrite lookup_kmap.
+              exact Hck'.
+            }
+            {
+              exists s1. exact Hs11.
+            }
+            inversion Honly; subst; clear Honly.
+            2: {}
+            Search k'.
 
 *)
   Abort.
