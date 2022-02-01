@@ -309,24 +309,81 @@ Section proof_system_translation.
     inversion Hcontra; subst. apply IHy2; assumption.
   Qed.
 
-  Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
-    forall (p' : Pattern),
-      C !! p' = None ->
-      (exists (np' : NamedPattern),
-          (to_NamedPattern2' p C evs svs).1.1.2 !! p' = Some np') ->
-      is_subformula_of_ind p' p.
-  Proof. Admitted.
 
   Ltac invert_tuples :=
     repeat (match goal with
             | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
             end).
 
-        (* likely need invariant that caches are continuous for bound variables;
-           that is, \exists k. \forall k'. patt_bound_evar k' \in C iff k' < k
-           (and the same for bound_svar)
-         *)
-  Check npatt_evar.
+
+  Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
+    dangling_vars_cached C p ->
+    forall (p' : Pattern),
+      C !! p' = None ->
+      (exists (np' : NamedPattern),
+          (to_NamedPattern2' p C evs svs).1.1.2 !! p' = Some np') ->
+      is_subformula_of_ind p' p /\ ~is_bound_evar p' /\ ~ is_bound_svar p'.
+  Proof.
+    intros HCached.
+    move: C evs svs HCached.
+    induction p; intros C evs svs HCached p' HCp' [np' Hcall]; simpl in Hcall; case_match;
+      simpl in Hcall; try (rewrite HCp' in Hcall; inversion Hcall).
+    - rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        split.
+        { constructor. }
+        split; intros HContra; inversion HContra; inversion H.
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        rewrite HCp' in Hnp'.
+        inversion Hnp'.
+    - rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        split.
+        { constructor. }
+        split; intros HContra; inversion HContra; inversion H.
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        rewrite HCp' in Hnp'.
+        inversion Hnp'.
+    - rewrite lookup_insert_Some in Hcall.
+      destruct HCached as [HCachede HCacheds].
+      unfold dangling_evars_cached in HCachede.
+      specialize (HCachede n).
+      feed specialize HCachede.
+      { unfold evar_is_dangling. simpl. case_match; auto. }
+      destruct HCachede as [nphi Hnphi].
+      rewrite Hnphi in Heqo.
+      inversion Heqo.
+    - rewrite lookup_insert_Some in Hcall.
+      destruct HCached as [HCachede HCacheds].
+      unfold dangling_svars_cached in HCacheds.
+      specialize (HCacheds n).
+      feed specialize HCacheds.
+      { unfold svar_is_dangling. simpl. case_match; auto. }
+      destruct HCacheds as [nphi Hnphi].
+      rewrite Hnphi in Heqo.
+      inversion Heqo.
+    - rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        split.
+        { constructor. }
+        split; intros HContra; inversion HContra; inversion H.
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        rewrite HCp' in Hnp'.
+        inversion Hnp'.
+    - repeat case_match. invert_tuples.
+      simpl in *.
+  
+  Admitted.
+
   Definition cache_continuous_prop (C : Cache) : Prop :=
     (∃ (k : nat), ∀ (k' : nat),
         (k' < k)
@@ -722,6 +779,16 @@ Qed.
           }
           {
             destruct Hgs as [k2 Hk2].
+            clear Hge HCe.
+            (* If [C] does not contain [k'], and [g] contains it,
+              then something is wrong.
+              Bound variables are added to the cache only temporarily,
+              for the recursive calls.
+            *)
+            specialize (Hk k').
+            destruct Hk as [_ Hk20]. apply Hk20. clear Hk20.
+            (* This is unprovable; we cannot use Hk this way. *)
+
             (* I think I need a stronger induction hypothesis, saying that
                the [k] only grows with calls to the translation function.
             *)
