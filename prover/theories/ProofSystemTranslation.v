@@ -398,6 +398,38 @@ Section proof_system_translation.
         simpl in Hneg. apply Hneg. exact I.
   Qed.        
   
+  Lemma remove_disjoint_keep_e C1 C2:
+    remove_bound_evars C1 ##ₘ keep_bound_evars C2.
+  Proof.
+    unfold remove_bound_evars.
+    unfold keep_bound_evars.
+    rewrite map_disjoint_spec.
+    intros i x y H1 H2.
+    rewrite map_filter_lookup_Some in H1.
+    destruct H1 as [H11 H12].
+    unfold is_bound_evar_entry in H12. simpl in H12.
+    rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+    unfold is_bound_evar_entry in H22. simpl in H22.
+    contradiction.
+  Qed.
+
+Lemma remove_disjoint_keep_s C1 C2:
+  remove_bound_svars C1 ##ₘ keep_bound_svars C2.
+Proof.
+  unfold remove_bound_svars.
+  unfold keep_bound_svars.
+  rewrite map_disjoint_spec.
+  intros i x y H1 H2.
+  rewrite map_filter_lookup_Some in H1.
+  destruct H1 as [H11 H12].
+  unfold is_bound_svar_entry in H12. simpl in H12.
+  rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+  unfold is_bound_svar_entry in H22. simpl in H22.
+  contradiction.
+Qed.
+
+
+
   Lemma cache_continuous_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
     cache_continuous_prop C ->
@@ -623,7 +655,6 @@ Section proof_system_translation.
         * rewrite Hk in H.
           destruct H as [e He].
           exists e.
-          Search union lookup Some.
           rewrite lookup_union_Some.
           --
             right.
@@ -634,20 +665,26 @@ Section proof_system_translation.
             ++
               exact He.
             ++ unfold is_bound_evar_entry. simpl. exists k'. reflexivity.
-          -- 
-            unfold remove_bound_evars.
-            unfold keep_bound_evars.
-            rewrite map_disjoint_spec.
-            intros.
-            Search filter lookup Some.
-            rewrite map_filter_lookup_Some in H0.
-            destruct H0 as [H0 H1].
-            unfold is_bound_evar_entry in H1. simpl in H1.
-            rewrite map_filter_lookup_Some in H. destruct H as [H2 H3].
-            unfold is_bound_evar_entry in H3. simpl in H3.
-            contradiction.
+          -- apply remove_disjoint_keep_e.
         * apply Hk.
-
+          destruct H as [e He].
+          exists e.
+          rewrite lookup_union_Some in He.
+          2: { apply remove_disjoint_keep_e. }
+          destruct He as [He|He].
+          --
+            unfold remove_bound_evars in He.
+            Search filter lookup Some.
+            rewrite map_filter_lookup_Some in He.
+            destruct He as [He1 He2].
+            unfold is_bound_evar_entry in He2. simpl in He2.
+            exfalso. apply He2. exists k'. reflexivity.
+          --
+            unfold keep_bound_evars in He.
+            rewrite map_filter_lookup_Some in He.
+            destruct He as [He1 He2].
+            exact He1.
+      + 
   Qed.
 
 
