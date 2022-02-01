@@ -714,13 +714,33 @@ Qed.
             inversion Hwitness.
           }
         * destruct H as [s1 Hs1].
+          (*destruct (decide (C !! patt_bound_svar k' = Some ))*)
+          (* Three cases may happen:
+            (1) C !! patt_bound_svar k' = Some (npatt_svar _)
+            (2) C !! patt_bound_svar k' = Some _ (* but not npatt_svar *)
+            (3) C !! patt_bound_svar k' = None
+          *)
+          (*
+          destruct (C !! patt_bound_svar k').
+          {
+
+          }
           exists s1.
           rewrite lookup_union_Some in Hs1.
           2: { apply remove_disjoint_keep_e. }
           destruct Hs1 as [Hs1|Hs1].
           --
-            
-  Qed.
+            epose proof (Honly := onlyAddsSubpatterns _ _ _ _).
+            erewrite Heqp1 in Honly.
+            simpl in Honly.
+            specialize (Honly (patt_bound_svar k')).
+            unfold remove_bound_evars in Hs1.
+            rewrite map_filter_lookup_Some in Hs1.
+            destruct Hs1 as [Hs11 Hs12].
+            rewrite Hs11 in Honly.
+
+*)
+  Abort.
 
 
       
@@ -879,6 +899,30 @@ Qed.
            that is, \exists k. patt_bound_evar k' \in C iff k' < k
            (and the same for bound_svar)
          *)
+        assert(HsubC' : sub_prop C').
+        {
+          unfold sub_prop.
+          intros p1 np1 Hnp1.
+          specialize (Hsub p1 np1).
+          rewrite HeqC' in Hnp1.
+          destruct p1; try exact I;
+          feed specialize Hsub;
+          try(
+            (rewrite lookup_insert_ne in Hnp1;[discriminate|]);
+            unfold cache_incr_evar in Hnp1;
+            rewrite lookup_kmap_Some in Hnp1;
+            destruct Hnp1 as [pincr [Hpincr1 Hpincr2]];
+            destruct pincr; simpl in Hpincr1; inversion Hpincr1;
+            subst; exact Hpincr2
+          ).
+          + destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
+            exists np', nq'.
+            (* If p1_1 (or p1_2) is not a bevar, then this should be easy.
+               However, if it is a bevar,
+            *)
+          }
+        }
+         Print sub_prop.
         Print cache_incr_evar. Print incr_one_evar.
         Print to_NamedPattern2'.
         (* b0 ---> b0 *)
