@@ -16,7 +16,10 @@ src/FixpointReasoning.v
 src/SignatureHelper.v
 src/Logic.v
 src/ProofMode.v
+<<<<<<< HEAD
 src/tauto.v
+=======
+>>>>>>> Move mgTauto into ProofMode, small fixes
 
 src/Theories/Definedness.v
 src/Theories/Sorts.v
