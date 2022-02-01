@@ -14,10 +14,10 @@ if __name__ == '__main__':
 	AML = Path.cwd()
 	while AML.name != 'AML-Formalization':
 		AML = AML.parent
-	root = AML / 'matching-logic' / 'src'
+	root = AML # / 'matching-logic' / 'src'
 	replaces = []
 	print('The following unicodes were found in the following .v files:')
-	for f in root.glob('*.v'):
+	for f in root.glob('*/*/*.v'):
 		res = find_unicodes(f)
 		if len(res[1]) > 0:
 			print(res[0].relative_to(AML))
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 				print(f'\t{replaces[-1]}')
 	print(f"{len(replaces)} codes were replaced in the .v files")
 	replaces = set(replaces)
-	for f in root.glob('*.v'):
+	for f in root.glob('*/*/*.v'):
 		data = f.open('r').read()
 		for esc, uni in replaces:
 			data = data.replace(esc,uni)
