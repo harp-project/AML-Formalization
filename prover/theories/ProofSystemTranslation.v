@@ -316,6 +316,66 @@ Section proof_system_translation.
             end).
 
 
+  Lemma dangling_vars_cached_app_proj1 C p1 p2:
+    dangling_vars_cached C (patt_app p1 p2) ->
+    dangling_vars_cached C p1.
+  Proof.
+    intros Hcached.
+    unfold dangling_vars_cached in Hcached.
+    destruct Hcached as [Hcachede Hcacheds].
+    unfold dangling_evars_cached in Hcachede.
+    unfold dangling_svars_cached in Hcacheds.
+    split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+    + apply Hcachede. simpl.
+      rewrite H. reflexivity.
+    + apply Hcacheds. simpl. rewrite H. reflexivity.
+  Qed.
+
+  Lemma dangling_vars_cached_app_proj2 C p1 p2:
+    dangling_vars_cached C (patt_app p1 p2) ->
+    dangling_vars_cached C p2.
+  Proof.
+    intros Hcached.
+    unfold dangling_vars_cached in Hcached.
+    destruct Hcached as [Hcachede Hcacheds].
+    unfold dangling_evars_cached in Hcachede.
+    unfold dangling_svars_cached in Hcacheds.
+    split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+    + apply Hcachede. simpl.
+      rewrite H. apply orb_comm.
+    + apply Hcacheds. simpl. rewrite H. apply orb_comm.
+  Qed.
+
+  Lemma dangling_vars_cached_imp_proj1 C p1 p2:
+    dangling_vars_cached C (patt_imp p1 p2) ->
+    dangling_vars_cached C p1.
+  Proof.
+    intros Hcached.
+    unfold dangling_vars_cached in Hcached.
+    destruct Hcached as [Hcachede Hcacheds].
+    unfold dangling_evars_cached in Hcachede.
+    unfold dangling_svars_cached in Hcacheds.
+    split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+    + apply Hcachede. simpl.
+      rewrite H. reflexivity.
+    + apply Hcacheds. simpl. rewrite H. reflexivity.
+  Qed.
+
+  Lemma dangling_vars_cached_imp_proj2 C p1 p2:
+    dangling_vars_cached C (patt_imp p1 p2) ->
+    dangling_vars_cached C p2.
+  Proof.
+    intros Hcached.
+    unfold dangling_vars_cached in Hcached.
+    destruct Hcached as [Hcachede Hcacheds].
+    unfold dangling_evars_cached in Hcachede.
+    unfold dangling_svars_cached in Hcacheds.
+    split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
+    + apply Hcachede. simpl.
+      rewrite H. apply orb_comm.
+    + apply Hcacheds. simpl. rewrite H. apply orb_comm.
+  Qed.
+
   Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
     dangling_vars_cached C p ->
     forall (p' : Pattern),
@@ -381,6 +441,18 @@ Section proof_system_translation.
         inversion Hnp'.
     - repeat case_match. invert_tuples.
       simpl in *.
+      (* TODO move this somewhere *)
+      (*
+      unfold dangling_vars_cached in HCached.
+      destruct HCached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      unfold dangling_svars_cached in Hcacheds.
+      pose proof (IH1 := IHp1 C evs svs).
+      feed specialize IH1.
+      {
+
+      }
+      *)
   
   Admitted.
 
