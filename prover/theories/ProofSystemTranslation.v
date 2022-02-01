@@ -684,7 +684,42 @@ Qed.
             rewrite map_filter_lookup_Some in He.
             destruct He as [He1 He2].
             exact He1.
-      + 
+      + destruct HCs as [k Hk].
+        exists k.
+        intros k'.
+        rewrite Hk.
+        split; intros H.
+        * destruct H as [s1 Hs1].
+          exists s1.
+          apply lookup_union_Some.
+          { apply remove_disjoint_keep_e.  }
+          left.
+          unfold remove_bound_evars.
+          rewrite map_filter_lookup_Some.
+          split.
+          {
+            epose proof (Hext := to_NamedPattern2'_extends_cache _ _ _ _).
+            erewrite Heqp1 in Hext. simpl in Hext.
+            eapply lookup_weaken;[|eassumption].
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_evar.
+            rewrite lookup_kmap_Some.
+            exists (patt_bound_svar k').
+            split.
+            * reflexivity.
+            * exact Hs1.
+          }
+          { unfold is_bound_evar_entry. simpl. intros [witness Hwitness].
+            inversion Hwitness.
+          }
+        * destruct H as [s1 Hs1].
+          exists s1.
+          rewrite lookup_union_Some in Hs1.
+          2: { apply remove_disjoint_keep_e. }
+          destruct Hs1 as [Hs1|Hs1].
+          --
+            
   Qed.
 
 
