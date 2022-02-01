@@ -16,7 +16,6 @@ src/FixpointReasoning.v
 src/SignatureHelper.v
 src/Logic.v
 src/ProofMode.v
-src/tauto.v
 
 src/Theories/Definedness.v
 src/Theories/Sorts.v
