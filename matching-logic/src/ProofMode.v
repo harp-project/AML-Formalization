@@ -7066,6 +7066,7 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
+
 Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
   Γ ⊢ (A <---> B) ->
   Γ ⊢ (B <---> A).
@@ -7088,7 +7089,7 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
-
+  
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
@@ -7201,6 +7202,7 @@ Next Obligation.
   intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
   solve_indif. unfold liftP. solve_indif.
 Qed.
+
 
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
@@ -7629,7 +7631,7 @@ Proof.
   }
   { wf_auto. }
 
-Abort.
+
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
