@@ -6667,8 +6667,8 @@ Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
 Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
-  - eapply A_impl_A; wf_auto2.
-  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. eapply andb_prop in wfl' as [wfa wfl'].
+  - apply A_impl_A; wf_auto2.
+  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
     specialize (IHl wfl').
     toMyGoal.
     { wf_auto2. }
@@ -6743,7 +6743,7 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l
 Proof.
   intros wfg₁ wfg₂ wfl H.
   eapply Modus_ponens.
-  4: eapply prf_local_goals_equiv_impl_full_equiv; auto.
+  4: apply prf_local_goals_equiv_impl_full_equiv; auto.
   all: auto.
 Defined.
 
@@ -6768,8 +6768,8 @@ Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply Modus_ponens.
   4: eapply pf_iff_proj1.
-  6: eapply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: eapply H1.
+  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: apply H1.
   all: auto.
 Defined.
 
@@ -6794,8 +6794,8 @@ Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply Modus_ponens.
   4: eapply pf_iff_proj2.
-  6: eapply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: eapply H1.
+  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  9: apply H1.
   all: auto.
 Defined.
 
@@ -6817,8 +6817,8 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
 Proof.
   intros wfC wfl Himp.
   induction l; simpl in *.
-  - eapply prf_equiv_congruence; assumption.
-  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. eapply andb_prop in wfl as [wfa wfl].
+  - apply prf_equiv_congruence; assumption.
+  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
     pose proof (proved_impl_wf _ _ IHl).
     toMyGoal.
@@ -6829,7 +6829,7 @@ Proof.
       mgAssert ((foldr patt_imp (emplace C p) l)).
       { wf_auto2. }
       { mgApply 0. mgExactn 1. }
-      eapply pf_iff_proj1 in IHl.
+      apply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
       mgApplyMeta IHl.
       mgExactn 2.
@@ -6837,7 +6837,7 @@ Proof.
       mgAssert ((foldr patt_imp (emplace C q) l)).
       { wf_auto2. }
       { mgApply 0. mgExactn 1. }
-      eapply pf_iff_proj2 in IHl.
+      apply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
       mgApplyMeta IHl.
       mgExactn 2.
@@ -6855,24 +6855,24 @@ Proof.
   { abstract (
       pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
       unfold emplace;
-      eapply well_formed_free_evar_subst_0;[wf_auto2|];
+      apply well_formed_free_evar_subst_0;[wf_auto2|];
       fold (PC_wf C);
       eapply wf_emplaced_impl_wf_context;
-      eapply wfcp
+      apply wfcp
     ).
   }
   { exact wfl. }
 
   eapply Modus_ponens.
-  4: eapply pf_iff_proj2.
+  4: apply pf_iff_proj2.
   4: abstract (wf_auto2).
-  5: eapply prf_equiv_congruence_iter.
-  7: eapply Hpiffq.
-  3: eapply H.
+  5: apply prf_equiv_congruence_iter.
+  7: apply Hpiffq.
+  3: apply H.
   5: exact wfl.
   4: eapply wf_emplaced_impl_wf_context;
-     eapply wfcp.
-  1,3: eapply proved_impl_wf in H; exact H.
+     apply wfcp.
+  1,3: apply proved_impl_wf in H; exact H.
   1: abstract (apply proved_impl_wf in H; wf_auto2).
 Defined.
 
@@ -6950,7 +6950,7 @@ Local Ltac solve_fresh_contradictions_2 star :=
   | h: star = ?x |- _
     => let hcontra := fresh "Hcontra" in
        assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
-       erewrite -> h in hcontra;
+       rewrite -> h in hcontra;
        contradiction
   end.
 
@@ -7028,9 +7028,9 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
          let heq := Control.hyp (hr.(equality)) in
          let pc := (hr.(pc)) in
          eapply (@cast_proof_mg_goal _ $g) >
-           [ erewrite $heq; reflexivity | ()];
+           [ rewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
-         eapply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
+         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
          lazy_match! goal with
          | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
            =>
@@ -7045,7 +7045,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
                ];
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_mg_goal _ $g) >
-               [ erewrite $heq2_pf; reflexivity | ()];
+               [ rewrite $heq2_pf; reflexivity | ()];
              Std.clear [heq2 ; (hr.(star_ident))]
          end
     end
@@ -7065,7 +7065,6 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                         (constr_to_int (Option.get (Ltac1.to_constr(atn))))
                    ) in
    ff Hiff atn).
-
 
 Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
   Γ ⊢ (A <---> B) ->
@@ -7089,7 +7088,7 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
-  
+
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
@@ -7103,7 +7102,7 @@ Proof.
   mgRewrite Hiff at 2.
   mgRewrite <- Hiff at 3.
   fromMyGoal. intros _ _.
-  eapply pf_iff_equiv_refl; abstract(wf_auto2).
+  apply pf_iff_equiv_refl; abstract(wf_auto2).
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
@@ -7630,7 +7629,7 @@ Proof.
     eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
   }
   { wf_auto. }
-  Abort.
+Abort.
 
 
 (* This is an example and belongs to the end of this file.
@@ -7646,10 +7645,10 @@ Proof.
     Γ ⊢ ((p and q) <---> (p' and q')).
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
-    pose proof (pip' := pep'). eapply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). eapply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). eapply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). eapply pf_conj_elim_r_meta in q'iq; auto.
+    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
 
     toMyGoal.
     { wf_auto2. }
