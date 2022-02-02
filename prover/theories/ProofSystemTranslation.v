@@ -1134,44 +1134,80 @@ Qed.
               Bound variables are added to the cache only temporarily,
               for the recursive calls.
             *)
-            specialize (Hk k').
-            destruct Hk as [_ Hk20]. apply Hk20. clear Hk20.
-            (* This is unprovable; we cannot use Hk this way. *)
-
-            (* I think I need a stronger induction hypothesis, saying that
-               the [k] only grows with calls to the translation function.
-            *)
-            apply Hcacheds.
-          }
-          exfalso.
-          rewrite lookup_union_Some in Hs1.
-          2: { apply remove_disjoint_keep_e. }
-          destruct Hs1 as [Hs1|Hs1].
-          --
+            rewrite lookup_union_Some in Hs1.
+            2: {
+              apply remove_disjoint_keep_e.
+            }
+            destruct Hs1 as [Hs1|Hs1].
+            2: {
+              unfold keep_bound_evars in Hs1.
+              rewrite map_filter_lookup_Some in Hs1.
+              destruct Hs1 as [Hs11 Hs12].
+              rewrite Hck' in Hs11. inversion Hs11.
+            }
             unfold remove_bound_evars in Hs1.
             rewrite map_filter_lookup_Some in Hs1.
-            destruct Hs1 as [Hs11 Hs12].
-            epose proof (Honly := onlyAddsSubpatterns _ _ _ _).
-            erewrite Heqp1 in Honly.
-            simpl in Honly.
-            specialize (Honly (patt_bound_svar k')).
-            feed specialize Honly.
+            destruct Hs1 as [Hgk' _].
+            pose proof (Hoas := onlyAddsSubpatterns (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p)]>
+            (cache_incr_evar C)) p (evs ∪ {[evs_fresh evs p]}) s).
+            feed specialize Hoas.
             {
-              rewrite lookup_insert_ne.
-              { discriminate. }
+              split.
+              + unfold dangling_evars_cached.
+                intros b Hb.
+                destruct b.
+                {
+                  exists (npatt_evar (evs_fresh evs p)).
+                  apply lookup_insert.
+                }
+                specialize (Hcachede b Hb).
+                destruct Hcachede as [nphi Hnphi].
+                exists nphi.
+                rewrite lookup_insert_ne.
+                { discriminate. }
+                unfold cache_incr_evar.
+                replace (patt_bound_evar (S b))
+                  with (incr_one_evar (patt_bound_evar b))
+                  by reflexivity.
+                rewrite lookup_kmap.
+                exact Hnphi.
+              + unfold dangling_svars_cached.
+                intros b Hb.
+                rewrite lookup_insert_ne.
+                { discriminate. }
+                specialize (Hcacheds b Hb).
+                destruct Hcacheds as [nphi Hnphi].
+                exists nphi.
+                unfold cache_incr_evar.
+                replace (patt_bound_svar b)
+                  with (incr_one_evar (patt_bound_svar b))
+                  by reflexivity.
+                rewrite lookup_kmap.
+                exact Hnphi.
+            }
+            specialize (Hoas (patt_bound_svar k')).
+            feed specialize Hoas.
+            {
+              rewrite lookup_insert_None.
+              split;[|discriminate].
               unfold cache_incr_evar.
-              replace (patt_bound_svar k') with (incr_one_evar (patt_bound_svar k')) by reflexivity.
-              rewrite lookup_kmap.
+              rewrite lookup_kmap_None.
+              intros p'' Hp''.
+              replace (patt_bound_svar k')
+                with (incr_one_evar (patt_bound_svar k'))
+                in Hp'' by reflexivity.
+              apply (inj incr_one_evar) in Hp''.
+              subst p''.
               exact Hck'.
             }
             {
-              exists s1. exact Hs11.
+              rewrite Heqp1. simpl.
+              exists s1. exact Hgk'.
             }
-            inversion Honly; subst; clear Honly.
-            2: {}
-            Search k'.
-
-*)
+            destruct Hoas as [_ [_ Hcontra]].
+            exfalso. apply Hcontra. exists k'. reflexivity.
+          }
+      -
   Abort.
 
 
