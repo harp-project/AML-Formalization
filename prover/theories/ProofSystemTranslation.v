@@ -423,7 +423,7 @@ Qed.
       + destruct Hcall as [Hp' Hnp'].
         subst.
         split.
-        { constructor. }
+        { constructor. reflexivity. }
         split; intros HContra; inversion HContra; inversion H.
       + destruct Hcall as [Hp' Hnp'].
         subst.
@@ -434,7 +434,7 @@ Qed.
       + destruct Hcall as [Hp' Hnp'].
         subst.
         split.
-        { constructor. }
+        { constructor. reflexivity. }
         split; intros HContra; inversion HContra; inversion H.
       + destruct Hcall as [Hp' Hnp'].
         subst.
@@ -463,7 +463,7 @@ Qed.
       + destruct Hcall as [Hp' Hnp'].
         subst.
         split.
-        { constructor. }
+        { constructor. reflexivity. }
         split; intros HContra; inversion HContra; inversion H.
       + destruct Hcall as [Hp' Hnp'].
         subst.
@@ -489,7 +489,7 @@ Qed.
       {
         destruct Hcall; subst p' np'.
         split.
-        { constructor. }
+        { constructor. reflexivity. }
         split; intros Hcontra; inversion Hcontra; inversion H.
       }
       destruct Hcall as [Hp' Hgp'].
@@ -524,7 +524,7 @@ Qed.
       + destruct Hcall as [Hp' Hnp'].
         subst.
         split.
-        { constructor. }
+        { constructor. reflexivity. }
         split; intros HContra; inversion HContra; inversion H.
       + destruct Hcall as [Hp' Hnp'].
         subst.
@@ -550,7 +550,7 @@ Qed.
     {
       destruct Hcall; subst p' np'.
       split.
-      { constructor. }
+      { constructor. reflexivity. }
       split; intros Hcontra; inversion Hcontra; inversion H.
     }
     destruct Hcall as [Hp' Hgp'].
@@ -766,7 +766,6 @@ Qed.
         rewrite map_filter_lookup_Some in Hnp'.
         destruct Hnp' as [Hcontra _]. rewrite HCp' in Hcontra. inversion Hcontra.
       }
-
   Qed.
 
   Definition cache_continuous_prop (C : Cache) : Prop :=
