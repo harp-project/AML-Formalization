@@ -376,6 +376,38 @@ Section proof_system_translation.
     + apply Hcacheds. simpl. rewrite H. apply orb_comm.
   Qed.
 
+  Lemma remove_disjoint_keep_e C1 C2:
+  remove_bound_evars C1 ##ₘ keep_bound_evars C2.
+Proof.
+  unfold remove_bound_evars.
+  unfold keep_bound_evars.
+  rewrite map_disjoint_spec.
+  intros i x y H1 H2.
+  rewrite map_filter_lookup_Some in H1.
+  destruct H1 as [H11 H12].
+  unfold is_bound_evar_entry in H12. simpl in H12.
+  rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+  unfold is_bound_evar_entry in H22. simpl in H22.
+  contradiction.
+Qed.
+
+Lemma remove_disjoint_keep_s C1 C2:
+remove_bound_svars C1 ##ₘ keep_bound_svars C2.
+Proof.
+unfold remove_bound_svars.
+unfold keep_bound_svars.
+rewrite map_disjoint_spec.
+intros i x y H1 H2.
+rewrite map_filter_lookup_Some in H1.
+destruct H1 as [H11 H12].
+unfold is_bound_svar_entry in H12. simpl in H12.
+rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+unfold is_bound_svar_entry in H22. simpl in H22.
+contradiction.
+Qed.
+
+
+
   Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
     dangling_vars_cached C p ->
     forall (p' : Pattern),
@@ -550,8 +582,95 @@ Section proof_system_translation.
       apply sub_imp_r. exact Hp'p2.
     }
     split. exact Hbep'. exact Hbsp'.
-  -
-    
+    - repeat case_match. invert_tuples.
+      simpl in *.
+      rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      { destruct Hcall as [Hp' Hnp']. subst p' np'.
+        split. constructor. reflexivity.
+        split; intros Hcontra; inversion Hcontra; inversion H.
+      }
+      destruct Hcall as [Hp' Hnp'].
+      rewrite lookup_union_Some in Hnp'.
+      2: { apply remove_disjoint_keep_e. }
+      destruct Hnp' as [Hnp'|Hnp'].
+      {
+        unfold remove_bound_evars in Hnp'.
+        rewrite map_filter_lookup_Some in Hnp'.
+        destruct Hnp' as [Hg0p' Hbep'].
+        pose proof (IH := IHp (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p)]>
+        (cache_incr_evar C)) (evs ∪ {[evs_fresh evs p]}) s).
+        rewrite Heqp3 in IH. simpl in IH.
+        feed specialize IH.
+        {
+          unfold dangling_vars_cached. unfold dangling_vars_cached in HCached.
+          destruct HCached as [HCachede HCacheds].
+          split.
+          + unfold dangling_evars_cached.
+            intros b Hpb.
+            destruct b.
+            {
+              exists (npatt_evar (evs_fresh evs p)).
+              apply lookup_insert.
+            }
+            specialize (HCachede b).
+            simpl in HCachede. specialize (HCachede Hpb).
+            destruct HCachede as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_evar.
+            replace (patt_bound_evar (S b)) with (incr_one_evar (patt_bound_evar b)) by reflexivity.
+            rewrite lookup_kmap_Some.
+            exists (patt_bound_evar b).
+            split;[reflexivity|].
+            exact Hnphi.
+          + unfold dangling_svars_cached.
+            intros b Hpb.
+            specialize (HCacheds b).
+            simpl in HCacheds. specialize (HCacheds Hpb).
+            destruct HCacheds as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_evar.
+            replace (patt_bound_evar (S b)) with (incr_one_evar (patt_bound_evar b)) by reflexivity.
+            rewrite lookup_kmap_Some.
+            exists (patt_bound_svar b).
+            split;[reflexivity|].
+            exact Hnphi.
+        }
+        specialize (IH p').
+        unfold is_bound_evar_entry in Hbep'. simpl in Hbep'.
+        feed specialize IH.
+        {
+          destruct (decide (p' = BoundVarSugar.b0)).
+          {
+            subst p'. exfalso. apply Hbep'. exists 0. reflexivity.
+          }
+          rewrite lookup_insert_ne.
+          { apply not_eq_sym. assumption. }
+          unfold cache_incr_evar.
+          replace p' with (incr_one_evar p').
+          2: {
+            destruct p'; simpl; try reflexivity.
+            exfalso. apply Hbep'. exists n1. reflexivity.
+          }
+          rewrite lookup_kmap_None.
+          intros p'' Hp''.
+          apply (inj incr_one_evar) in Hp''.
+          subst p''.
+          exact HCp'.
+        }
+        {
+          exists np'. exact Hg0p'.
+        }
+        destruct IH as [Hsub [Hbe Hbs]].
+        split.
+        { apply sub_exists. exact Hsub. }
+        split. exact Hbe. exact Hbs.
+      }
+
   Admitted.
 
   Definition cache_continuous_prop (C : Cache) : Prop :=
@@ -624,38 +743,6 @@ Section proof_system_translation.
         unfold not; destruct p; intros; try inversion H0.
         simpl in Hneg. apply Hneg. exact I.
   Qed.        
-  
-  Lemma remove_disjoint_keep_e C1 C2:
-    remove_bound_evars C1 ##ₘ keep_bound_evars C2.
-  Proof.
-    unfold remove_bound_evars.
-    unfold keep_bound_evars.
-    rewrite map_disjoint_spec.
-    intros i x y H1 H2.
-    rewrite map_filter_lookup_Some in H1.
-    destruct H1 as [H11 H12].
-    unfold is_bound_evar_entry in H12. simpl in H12.
-    rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
-    unfold is_bound_evar_entry in H22. simpl in H22.
-    contradiction.
-  Qed.
-
-Lemma remove_disjoint_keep_s C1 C2:
-  remove_bound_svars C1 ##ₘ keep_bound_svars C2.
-Proof.
-  unfold remove_bound_svars.
-  unfold keep_bound_svars.
-  rewrite map_disjoint_spec.
-  intros i x y H1 H2.
-  rewrite map_filter_lookup_Some in H1.
-  destruct H1 as [H11 H12].
-  unfold is_bound_svar_entry in H12. simpl in H12.
-  rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
-  unfold is_bound_svar_entry in H22. simpl in H22.
-  contradiction.
-Qed.
-
-
 
   Lemma cache_continuous_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
