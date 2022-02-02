@@ -279,8 +279,6 @@ Section proof_system_translation.
     unfold sub_prop; intros; inversion H.
   Qed.
 
-  Print to_NamedPattern2'.
-
   Lemma app_neq1 : forall x y, patt_app x y <> x.
   Proof.
     intros x y Hcontra.
@@ -634,7 +632,7 @@ Qed.
             rewrite lookup_insert_ne.
             { discriminate. }
             unfold cache_incr_evar.
-            replace (patt_bound_evar (S b)) with (incr_one_evar (patt_bound_evar b)) by reflexivity.
+            replace (patt_bound_svar b) with (incr_one_evar (patt_bound_svar b)) by reflexivity.
             rewrite lookup_kmap_Some.
             exists (patt_bound_svar b).
             split;[reflexivity|].
@@ -670,8 +668,106 @@ Qed.
         { apply sub_exists. exact Hsub. }
         split. exact Hbe. exact Hbs.
       }
+      {
+        unfold keep_bound_evars in Hnp'.
+        rewrite map_filter_lookup_Some in Hnp'.
+        destruct Hnp' as [Hcontra _]. rewrite HCp' in Hcontra. inversion Hcontra.
+      }
+    - repeat case_match. invert_tuples.
+      simpl in *.
+      rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      { destruct Hcall as [Hp' Hnp']. subst p' np'.
+       split. constructor. reflexivity.
+       split; intros Hcontra; inversion Hcontra; inversion H.
+      }
+      destruct Hcall as [Hp' Hnp'].
+      rewrite lookup_union_Some in Hnp'.
+      2: { apply remove_disjoint_keep_s. }
+      destruct Hnp' as [Hnp'|Hnp'].
+      {
+        unfold remove_bound_svars in Hnp'.
+        rewrite map_filter_lookup_Some in Hnp'.
+        destruct Hnp' as [Hg0p' Hbep'].
+        pose proof (IH := IHp (<[BoundVarSugar.B0:=npatt_svar (svs_fresh s p)]>
+        (cache_incr_svar C)) evs (s ∪ {[svs_fresh s p]})).
+        rewrite Heqp3 in IH. simpl in IH.
+        feed specialize IH.
+        {
+          unfold dangling_vars_cached. unfold dangling_vars_cached in HCached.
+          destruct HCached as [HCachede HCacheds].
+          split.
+          + unfold dangling_evars_cached.
+            intros b Hpb.
+            specialize (HCachede b).
+            simpl in HCachede. specialize (HCachede Hpb).
+            destruct HCachede as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_svar.
+            replace (patt_bound_evar b) with (incr_one_svar (patt_bound_evar b)) by reflexivity.
+            rewrite lookup_kmap_Some.
+            exists (patt_bound_evar b).
+            split;[reflexivity|].
+            exact Hnphi.
+          + unfold dangling_svars_cached.
+            intros b Hpb.
+            destruct b.
+            {
+              exists (npatt_svar (svs_fresh s p)).
+              apply lookup_insert.
+            }
+            specialize (HCacheds b).
+            simpl in HCacheds. specialize (HCacheds Hpb).
+            destruct HCacheds as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_svar.
+            replace (patt_bound_svar (S b)) with (incr_one_svar (patt_bound_svar b)) by reflexivity.
+            rewrite lookup_kmap_Some.
+            exists (patt_bound_svar b).
+            split;[reflexivity|].
+            exact Hnphi.
+        }
+        specialize (IH p').
+        unfold is_bound_svar_entry in Hbep'. simpl in Hbep'.
+        feed specialize IH.
+        {
+          destruct (decide (p' = BoundVarSugar.B0)).
+          {
+            subst p'. exfalso. apply Hbep'. exists 0. reflexivity.
+          }
+          rewrite lookup_insert_ne.
+          { apply not_eq_sym. assumption. }
+          unfold cache_incr_svar.
+          replace p' with (incr_one_svar p').
+          2: {
+            destruct p'; simpl; try reflexivity.
+            exfalso. apply Hbep'. exists n1. reflexivity.
+          }
+          rewrite lookup_kmap_None.
+          intros p'' Hp''.
+          apply (inj incr_one_svar) in Hp''.
+          subst p''.
+          exact HCp'.
+        }
+        {
+          exists np'. exact Hg0p'.
+        }
+        destruct IH as [Hsub [Hbe Hbs]].
+        split.
+        { apply sub_mu. exact Hsub. }
+        split. exact Hbe. exact Hbs.
+      }
+      {
+        unfold keep_bound_evars in Hnp'.
+        rewrite map_filter_lookup_Some in Hnp'.
+        destruct Hnp' as [Hcontra _]. rewrite HCp' in Hcontra. inversion Hcontra.
+      }
 
-  Admitted.
+  Qed.
 
   Definition cache_continuous_prop (C : Cache) : Prop :=
     (∃ (k : nat), ∀ (k' : nat),
