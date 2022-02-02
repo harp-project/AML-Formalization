@@ -7682,12 +7682,14 @@ Abort.
         mgExactn 4.
   Defined.
 
+#[local]
 Ltac tryExact l idx :=
   match l with
     | nil => idtac
     | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
   end.
 
+#[local]
 Ltac mgAssumption :=
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
@@ -7728,52 +7730,55 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-  Ltac mgRevert :=
-    match goal with
-    | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
-      => eapply cast_proof_mg_hyps;
-         [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
-         apply MyGoal_revert
-    end.
+#[local]
+Ltac mgRevert :=
+  match goal with
+  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
+    => eapply cast_proof_mg_hyps;
+       [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
+       apply MyGoal_revert
+  end.
 
-  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
-    well_formed p ->
-    well_formed q ->
-    well_formed p' ->
-    well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p or q) <---> (p' or q')).
-  Proof.
-    intros wfp wfq wfp' wfq' pep' qeq'.
+#[local]
+Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+  well_formed p ->
+  well_formed q ->
+  well_formed p' ->
+  well_formed q' ->
+  Γ ⊢ (p <---> p') ->
+  Γ ⊢ (q <---> q') ->
+  Γ ⊢ ((p or q) <---> (p' or q')).
+Proof.
+  intros wfp wfq wfp' wfq' pep' qeq'.
 
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+  pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+  pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+  pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+  pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
 
-    toMyGoal.
-    { wf_auto2. }
-    unfold patt_iff.
-    mgSplitAnd.
-    - mgIntro.
-      mgDestructOr 0.
-      mgLeft.
-      + mgApplyMeta pip'.
-        mgExactn 0.
-      + mgRight.
-        mgApplyMeta qiq'.
-        mgExactn 0.
-    - mgIntro.
-      mgDestructOr 0.
-      mgLeft.
-      + mgApplyMeta p'ip.
-        mgExactn 0.
-      + mgRight.
-        mgApplyMeta q'iq.
-        mgExactn 0. 
-  Defined.
+  toMyGoal.
+  { wf_auto2. }
+  unfold patt_iff.
+  mgSplitAnd.
+  - mgIntro.
+    mgDestructOr 0.
+    mgLeft.
+    + mgApplyMeta pip'.
+      mgExactn 0.
+    + mgRight.
+      mgApplyMeta qiq'.
+      mgExactn 0.
+  - mgIntro.
+    mgDestructOr 0.
+    mgLeft.
+    + mgApplyMeta p'ip.
+      mgExactn 0.
+    + mgRight.
+      mgApplyMeta q'iq.
+      mgExactn 0. 
+Defined.
 
+#[local]
 Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -7795,6 +7800,7 @@ Proof.
   Unshelve. all: auto.
 Qed.
 
+#[local]
 Lemma nimpl_eq_and {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -7818,6 +7824,7 @@ Proof.
   Unshelve. all: auto.
 Qed.
 
+#[local]
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
@@ -7840,6 +7847,7 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     Unshelve. all: auto.
   Qed.
 
+#[local]
 Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
@@ -7865,6 +7873,7 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     Unshelve. all: auto.
   Qed.
 
+#[local]
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
   Γ ⊢ (!(!a) <---> a).
@@ -7883,6 +7892,7 @@ Proof.
   all: auto.
 Defined.
 
+#[local]
 Ltac convertToNNF_rewrite_pat Ctx p :=
   lazymatch p with
     | (! ! ?x) =>
@@ -7920,6 +7930,7 @@ Ltac convertToNNF_rewrite_pat Ctx p :=
     | _ => idtac
   end.
 
+#[local]
 Ltac toNNF := 
   repeat mgRevert;
   match goal with
@@ -7929,6 +7940,7 @@ Ltac toNNF :=
         convertToNNF_rewrite_pat Ctx (!g)
   end.
 
+#[local]
 Ltac rfindContradictionTo a ll k n:=
   match ll with
     | ((! a) :: ?m) =>
@@ -7939,6 +7951,7 @@ Ltac rfindContradictionTo a ll k n:=
     | _ => fail
   end.
 
+#[local]
 Ltac findContradiction l k:=
     match l with
        | (?a :: ?m) => 
@@ -7952,6 +7965,7 @@ Ltac findContradiction l k:=
        | _ => fail
     end.
 
+#[local]
 Ltac findContradiction_start :=
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
@@ -7963,6 +7977,7 @@ Ltac findContradiction_start :=
         end
   end.
 
+#[local]
 Ltac breakHyps l n:=
   let nn := eval compute in ( n + 1)
   in
@@ -7978,6 +7993,7 @@ Ltac breakHyps l n:=
   )
 .
 
+#[local]
 Ltac mgTauto :=
   try (
   toNNF;
@@ -7994,6 +8010,7 @@ Ltac mgTauto :=
   findContradiction_start)
 .
 
+#[local]
 Lemma conj_right {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -8005,6 +8022,7 @@ Proof.
   mgTauto.
 Qed.
 
+#[local]
 Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -8016,6 +8034,7 @@ Proof.
   mgTauto.
 Qed.
 
+#[local]
 Lemma taut {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
@@ -8028,6 +8047,7 @@ Proof.
   mgTauto.
 Qed.
 
+#[local]
 Lemma condtradict_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢ !(a and !a).
@@ -8038,6 +8058,7 @@ Proof.
   mgTauto.
 Qed.
 
+#[local]
 Lemma notnot_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢ (! ! a ---> a).
@@ -8048,6 +8069,7 @@ Proof.
   mgTauto.
 Qed.
 
+#[local]
 Lemma Peirce_taut {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
