@@ -441,19 +441,117 @@ Section proof_system_translation.
         inversion Hnp'.
     - repeat case_match. invert_tuples.
       simpl in *.
-      (* TODO move this somewhere *)
-      (*
-      unfold dangling_vars_cached in HCached.
-      destruct HCached as [Hcachede Hcacheds].
-      unfold dangling_evars_cached in Hcachede.
-      unfold dangling_svars_cached in Hcacheds.
       pose proof (IH1 := IHp1 C evs svs).
       feed specialize IH1.
-      {
-
+      { eapply dangling_vars_cached_app_proj1. apply HCached. }
+      specialize (IH1 p').
+      rewrite Heqp1 in IH1. simpl in IH1.
+      pose proof (IH2 := IHp2 g0 e0 s0).
+      pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+      rewrite Heqp1 in Hextends. simpl in Hextends.
+      feed specialize IH2.
+      { eapply dangling_vars_subcache;[|apply Hextends].
+      eapply dangling_vars_cached_app_proj2. apply HCached.
       }
-      *)
-  
+      specialize (IH2 p').
+      rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      {
+        destruct Hcall; subst p' np'.
+        split.
+        { constructor. }
+        split; intros Hcontra; inversion Hcontra; inversion H.
+      }
+      destruct Hcall as [Hp' Hgp'].
+      rewrite Heqp2 in IH2. simpl in IH2.
+      specialize (IH1 HCp').
+      destruct (g0 !! p') eqn:Hg0p'.
+      {
+        feed specialize IH1.
+        {
+          exists n. reflexivity.
+        }
+        destruct IH1 as [Hp'p1 [Hbep' Hbsp']].
+        split.
+        {
+          apply sub_app_l. exact Hp'p1.
+        }
+        split. apply Hbep'. apply Hbsp'.
+      }
+      specialize (IH2 Hg0p').
+      feed specialize IH2.
+      {
+        exists np'. exact Hgp'.
+      }
+      destruct IH2 as [Hp'p2 [Hbep' Hbsp']].
+      split.
+      {
+        apply sub_app_r. exact Hp'p2.
+      }
+      split. exact Hbep'. exact Hbsp'.
+    - rewrite lookup_insert_Some in Hcall.
+      destruct Hcall as [Hcall|Hcall].
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        split.
+        { constructor. }
+        split; intros HContra; inversion HContra; inversion H.
+      + destruct Hcall as [Hp' Hnp'].
+        subst.
+        rewrite HCp' in Hnp'.
+        inversion Hnp'.
+    - repeat case_match. invert_tuples.
+    simpl in *.
+    pose proof (IH1 := IHp1 C evs svs).
+    feed specialize IH1.
+    { eapply dangling_vars_cached_app_proj1. apply HCached. }
+    specialize (IH1 p').
+    rewrite Heqp1 in IH1. simpl in IH1.
+    pose proof (IH2 := IHp2 g0 e0 s0).
+    pose proof (Hextends := to_NamedPattern2'_extends_cache C p1 evs svs).
+    rewrite Heqp1 in Hextends. simpl in Hextends.
+    feed specialize IH2.
+    { eapply dangling_vars_subcache;[|apply Hextends].
+    eapply dangling_vars_cached_app_proj2. apply HCached.
+    }
+    specialize (IH2 p').
+    rewrite lookup_insert_Some in Hcall.
+    destruct Hcall as [Hcall|Hcall].
+    {
+      destruct Hcall; subst p' np'.
+      split.
+      { constructor. }
+      split; intros Hcontra; inversion Hcontra; inversion H.
+    }
+    destruct Hcall as [Hp' Hgp'].
+    rewrite Heqp2 in IH2. simpl in IH2.
+    specialize (IH1 HCp').
+    destruct (g0 !! p') eqn:Hg0p'.
+    {
+      feed specialize IH1.
+      {
+        exists n. reflexivity.
+      }
+      destruct IH1 as [Hp'p1 [Hbep' Hbsp']].
+      split.
+      {
+        apply sub_imp_l. exact Hp'p1.
+      }
+      split. apply Hbep'. apply Hbsp'.
+    }
+    specialize (IH2 Hg0p').
+    feed specialize IH2.
+    {
+      exists np'. exact Hgp'.
+    }
+    destruct IH2 as [Hp'p2 [Hbep' Hbsp']].
+    split.
+    {
+      apply sub_imp_r. exact Hp'p2.
+    }
+    split. exact Hbep'. exact Hbsp'.
+  -
+    
   Admitted.
 
   Definition cache_continuous_prop (C : Cache) : Prop :=
@@ -591,23 +689,20 @@ Qed.
       intros Hcontra.
       inversion Hcontra.
     - repeat case_match. subst. invert_tuples. simpl.
-      unfold dangling_vars_cached in Hcached.
-      destruct Hcached as [Hcachede Hcacheds].
-      unfold dangling_evars_cached in Hcachede.
-      unfold dangling_svars_cached in Hcacheds.
       
       specialize (IHp1 C).
       feed specialize IHp1.
-      {
-        split; unfold dangling_evars_cached; unfold dangling_svars_cached; intros.
-        + apply Hcachede. simpl.
-          rewrite H. reflexivity.
-        + apply Hcacheds. simpl. rewrite H. reflexivity.
-      }
+      { eapply dangling_vars_cached_app_proj1. apply Hcached. }
       { apply Hsub. }
       specialize (IHp1 evs svs).
       rewrite Heqp0 in IHp1. simpl in IHp1.
 
+
+      unfold dangling_vars_cached in Hcached.
+      destruct Hcached as [Hcachede Hcacheds].
+      unfold dangling_evars_cached in Hcachede.
+      unfold dangling_svars_cached in Hcacheds.
+    
       specialize (IHp2 g).
       feed specialize IHp2.
       {
