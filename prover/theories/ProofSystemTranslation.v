@@ -313,6 +313,11 @@ Section proof_system_translation.
             | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
             end).
 
+            (*
+  Lemma dangling_vars_cached_ex_proj C p:
+    dangling_vars_cached C (patt_exists p) ->
+    dangling_vars_cached C p.
+*)
 
   Lemma dangling_vars_cached_app_proj1 C p1 p2:
     dangling_vars_cached C (patt_app p1 p2) ->
@@ -1486,6 +1491,99 @@ Qed.
   | context [ match ?x with _ => _ end ] => destruct x eqn:?
   end.
 
+  Lemma dangling_vars_cached_shift_e C e p:
+    dangling_vars_cached C (patt_exists p) ->
+    dangling_vars_cached
+      (<[BoundVarSugar.b0:=npatt_evar e]> (cache_incr_evar C))
+      p
+  .
+  Proof.
+    intros Hdangling.
+    unfold dangling_vars_cached. unfold dangling_evars_cached.
+    unfold dangling_svars_cached.
+    destruct Hdangling as [Hdanglinge Hdanglings].
+    split.
+    --
+      unfold dangling_evars_cached in Hdanglinge.
+      intros b Hb.
+      destruct b.
+      {
+        exists (npatt_evar e).
+        apply lookup_insert.
+      }
+      specialize (Hdanglinge b Hb).
+      destruct Hdanglinge as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne.
+      { discriminate. }
+      unfold cache_incr_evar.
+      replace (patt_bound_evar (S b))
+        with (incr_one_evar (patt_bound_evar b))
+        by reflexivity.
+      rewrite lookup_kmap.
+      exact Hnphi.
+    --
+      unfold dangling_svars_cached in Hdanglings.
+      intros b Hb.
+      specialize (Hdanglings b Hb).
+      destruct Hdanglings as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne.
+      { discriminate. }
+      replace (patt_bound_svar b)
+        with (incr_one_evar (patt_bound_svar b))
+        by reflexivity.
+      unfold cache_incr_evar.
+      rewrite lookup_kmap.
+      exact Hnphi.
+  Qed.
+
+  Lemma dangling_vars_cached_shift_s C s p:
+    dangling_vars_cached C (patt_mu p) ->
+    dangling_vars_cached
+      (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar C))
+      p
+  .
+  Proof.
+    intros Hdangling.
+    unfold dangling_vars_cached. unfold dangling_evars_cached.
+    unfold dangling_svars_cached.
+    destruct Hdangling as [Hdanglinge Hdanglings].
+    split.
+    --
+      unfold dangling_evars_cached in Hdanglinge.
+      intros b Hb.
+      specialize (Hdanglinge b Hb).
+      destruct Hdanglinge as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne.
+      { discriminate. }
+      replace (patt_bound_evar b)
+        with (incr_one_svar (patt_bound_evar b))
+        by reflexivity.
+      unfold cache_incr_svar.
+      rewrite lookup_kmap.
+      exact Hnphi.
+    --
+      unfold dangling_svars_cached in Hdanglings.
+      intros b Hb.
+      destruct b.
+      {
+        exists (npatt_svar s).
+        apply lookup_insert.
+      }
+      specialize (Hdanglings b Hb).
+      destruct Hdanglings as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne.
+      { discriminate. }
+      unfold cache_incr_svar.
+      replace (patt_bound_svar (S b))
+        with (incr_one_svar (patt_bound_svar b))
+        by reflexivity.
+      rewrite lookup_kmap.
+      exact Hnphi.
+  Qed.
       
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
@@ -1757,79 +1855,59 @@ Qed.
           ++
             exists np'. rewrite <- Hnp'. apply lookup_insert_ne. assumption.
         }
-      * 
-      * unfold sub_prop in Hsub''.
-        pose proof (Htmp := Hsub'' (patt_imp p8_1 p8_2) np H').
-        simpl in Htmp. destruct Htmp as [np8_1 [np8_2 [Hp8_1 Hp8_2]]].
-        destruct (decide (patt_app p1 p2 = p8_1)), (decide (patt_app p1 p2 = p8_2)); subst.
-        -- exists (npatt_app n0 n1), (npatt_app n0 n1).
-           split; apply lookup_insert.
-        -- exists (npatt_app n0 n1), np8_2.
-           split. apply lookup_insert.
-           rewrite <- Hp8_2. apply lookup_insert_ne. assumption.
-        -- exists np8_1, (npatt_app n0 n1).
-           split. rewrite <- Hp8_1. apply lookup_insert_ne. assumption.
-           apply lookup_insert.
-        -- exists np8_1, np8_2.
-           split. rewrite <- Hp8_1. apply lookup_insert_ne. assumption.
-           rewrite <- Hp8_2. apply lookup_insert_ne. assumption.
+      * repeat case_match_in_hyp H.
+        repeat case_match_in_hyp Heqp.
+        subst. simpl in *. invert_tuples.
+        rewrite lookup_insert_Some in H.
 
-      * unfold sub_prop in Hsub''.
-        pose proof (Htmp := Hsub'' (patt_exists p8) np H').
-        simpl in Htmp. destruct Htmp as [np8 Hp8].
-        destruct (decide (patt_app p1 p2 = p8)); subst.
-        -- exists (npatt_app n0 n1).
-           apply lookup_insert.
-        -- exists np8.
-           rewrite <- Hp8. apply lookup_insert_ne. assumption.
-
-      * unfold sub_prop in Hsub''.
-        pose proof (Htmp := Hsub'' (patt_mu p8) np H').
-        simpl in Htmp. destruct Htmp as [np8 Hp8].
-        destruct (decide (patt_app p1 p2 = p8)); subst.
-        -- exists (npatt_app n0 n1).
-           apply lookup_insert.
-        -- exists np8.
-           rewrite <- Hp8. apply lookup_insert_ne. assumption.
-
-      * unfold sub_prop in Hsub''.
-        pose proof (Htmp := Hsub'' (patt_app p8_1 p8_2) np H').
-        simpl in Htmp. destruct Htmp as [np8_1 [np8_2 [Hp8_1 Hp8_2]]].
-        destruct (decide (patt_imp p1 p2 = p8_1)), (decide (patt_imp p1 p2 = p8_2)); subst.
-        -- exists (npatt_imp n0 n1), (npatt_imp n0 n1).
-           split; apply lookup_insert.
-        -- exists (npatt_imp n0 n1), np8_2.
-           split. apply lookup_insert.
-           rewrite <- Hp8_2. apply lookup_insert_ne. assumption.
-        -- exists np8_1, (npatt_imp n0 n1).
-           split. rewrite <- Hp8_1. apply lookup_insert_ne. assumption.
-           apply lookup_insert.
-        -- exists np8_1, np8_2.
-           split. rewrite <- Hp8_1. apply lookup_insert_ne. assumption.
-           rewrite <- Hp8_2. apply lookup_insert_ne. assumption.
-
-      * exists n0,n1.
-        pose proof (Htmp := to_NamedPattern2'_ensures_present p8_1 C evs svs).
-        rewrite Heqp0 in Htmp. simpl in Htmp.
-        pose proof (Hec := to_NamedPattern2'_extends_cache g0 p8_2 e0 s0).
-        rewrite Heqp1 in Hec. simpl in Hec.
-        pose proof (Htmp2 := to_NamedPattern2'_ensures_present p8_2 g0 e0 s0).
-        rewrite Heqp1 in Htmp2. simpl in Htmp2.
-        eapply lookup_weaken with (m2 := g) in Htmp;[|assumption].
-        rewrite -Htmp -Htmp2.
-        split; apply lookup_insert_ne. apply imp_neq1. apply imp_neq2.
-
-      * admit.
-      * admit.
-      * admit.
-
-      * remember (evs ∪ {[evs_fresh evs p0]}) as evs'.
+        remember (evs ∪ {[evs_fresh evs p0]}) as evs'.
         remember (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p0)]> (cache_incr_evar C)) as C'.
+
+        assert (HdanglingC'p0: dangling_vars_cached C' p0).
+        {
+          rewrite HeqC'.
+          unfold dangling_vars_cached. unfold dangling_evars_cached.
+          unfold dangling_svars_cached.
+          destruct Hdangling as [Hdanglinge Hdanglings].
+          split.
+          --
+            unfold dangling_evars_cached in Hdanglinge.
+            intros b Hb.
+            destruct b.
+            {
+              exists (npatt_evar (evs_fresh evs p0)).
+              apply lookup_insert.
+            }
+            specialize (Hdanglinge b Hb).
+            destruct Hdanglinge as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            unfold cache_incr_evar.
+            replace (patt_bound_evar (S b))
+              with (incr_one_evar (patt_bound_evar b))
+              by reflexivity.
+            rewrite lookup_kmap.
+            exact Hnphi.
+          --
+            unfold dangling_svars_cached in Hdanglings.
+            intros b Hb.
+            specialize (Hdanglings b Hb).
+            destruct Hdanglings as [nphi Hnphi].
+            exists nphi.
+            rewrite lookup_insert_ne.
+            { discriminate. }
+            replace (patt_bound_svar b)
+              with (incr_one_evar (patt_bound_svar b))
+              by reflexivity.
+            unfold cache_incr_evar.
+            rewrite lookup_kmap.
+            exact Hnphi.
+        }
+
+        
+
         (* need to show sub_prop C' holds *)
-        (* likely need invariant that caches are continuous for bound variables;
-           that is, \exists k. patt_bound_evar k' \in C iff k' < k
-           (and the same for bound_svar)
-         *)
         assert(HsubC' : sub_prop C').
         {
           unfold sub_prop.
