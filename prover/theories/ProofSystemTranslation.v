@@ -1322,92 +1322,7 @@ Qed.
           apply lookup_kmap. apply _.
       }
       {
-        destruct Hsub as [Hconte Hconts].
-        split.
-        + destruct Hconte as [k Hk]. exists (k). intros k'.
-          split; intros H.
-          * rewrite lookup_insert_ne.
-            { discriminate. }
-            simpl in Hcachede.
-            specialize (Hcachede k').
-            unfold cache_incr_svar.
-            specialize (Hk k').
-            clear Hconts. rewrite Hk in H.
-            destruct H as [np Hnp].
-            exists np.
-            replace (patt_bound_evar k')
-              with (incr_one_svar (patt_bound_evar k'))
-              by reflexivity.
-            rewrite lookup_kmap.
-            exact Hnp.
-          * destruct H as [np Hnp].
-            rewrite lookup_insert_Some in Hnp.
-            destruct Hnp as [Hnp|Hnp].
-            --
-              destruct Hnp as [Hcontra _]. inversion Hcontra.
-            --
-              destruct Hnp as [_ Hnp].
-              unfold cache_incr_svar in Hnp.
-              replace (patt_bound_evar k')
-                with (incr_one_svar (patt_bound_evar k'))
-                in Hnp by reflexivity.
-              rewrite lookup_kmap_Some in Hnp.
-              destruct Hnp as [p'' [Hp''1 Hp''2]].
-              apply (inj incr_one_svar) in Hp''1.
-              subst p''.
-              rewrite Hk.
-              exists np.
-              exact Hp''2.
-        + destruct Hconts as [k Hk].
-          exists (S k). intros k'. split.
-          * intros Hk'.
-            destruct k'.
-            --
-              exists (npatt_svar (svs_fresh s p)).
-              apply lookup_insert.
-            --
-              specialize (Hk k').
-              destruct Hk as [Hk1 Hk2].
-              specialize (Hk1 ltac:(lia)).
-              destruct Hk1 as [np Hnp].
-              exists np.
-              rewrite lookup_insert_ne.
-              { discriminate. }
-              unfold cache_incr_svar.
-              replace (patt_bound_svar (S k'))
-                with (incr_one_svar (patt_bound_svar k'))
-                by reflexivity.
-              rewrite lookup_kmap.
-              exact Hnp.
-          * intros H.
-            destruct H as [np Hnp].
-            rewrite lookup_insert_Some in Hnp.
-            destruct Hnp as [Hnp|Hnp].
-            --
-              destruct Hnp as [Hnp1 Hnp2].
-              inversion Hnp1. subst k' np.
-              lia.
-            --
-              destruct Hnp as [Hk' Hck'].
-              unfold cache_incr_svar in Hck'.
-              destruct (decide (k' = k)).
-              {
-                subst k'. lia.
-              }
-
-              destruct k'.
-              {
-                contradiction.
-              }
-              replace (patt_bound_svar (S k'))
-                with (incr_one_svar (patt_bound_svar k'))
-                in Hck' by reflexivity.
-              rewrite lookup_kmap in Hck'.
-              cut (k' < k).
-              { intros. lia. }
-              apply Hk.
-              exists np.
-              apply Hck'.
+        apply cache_continuous_shift_s. apply Hsub.
       }
       pose proof (IHp0 := IHp evs (s ∪ {[svs_fresh s p]})).
       rewrite Heqp1 in IHp0. simpl in IHp0.
@@ -1662,7 +1577,75 @@ Qed.
       rewrite lookup_kmap.
       exact Hnphi.
   Qed.
-      
+
+  Lemma bound_evar_cont_cache_shift C p e:
+    cache_continuous_prop C ->
+    is_bound_evar p ->
+    (exists (np : NamedPattern), C !! p = Some np) ->
+    exists (np : NamedPattern),
+      (<[BoundVarSugar.b0:=npatt_evar e]>
+       (cache_incr_evar C)
+      ) !! p = Some np.
+  Proof.
+    intros Hcont Hbe [np Hnp].
+    unfold cache_continuous_prop in Hcont.
+    destruct Hcont as [Hconte _].
+    destruct Hconte as [k Hk].
+    unfold is_bound_evar in Hbe.
+    destruct Hbe as [b Hb]. subst p.
+    destruct b.
+    {
+      exists (npatt_evar e). apply lookup_insert.
+    }
+    rewrite lookup_insert_ne.
+    { discriminate. }
+    unfold cache_incr_evar.
+    replace (patt_bound_evar (S b)) with (incr_one_evar (patt_bound_evar b)) by reflexivity.
+    rewrite lookup_kmap.
+    pose proof (Hb := Hk (S b)).
+    destruct Hb as [Hb1 Hb2].
+    feed specialize Hb2.
+    {
+      exists np. exact Hnp.
+    }
+    rewrite -Hk.
+    lia.
+  Qed.
+
+  Lemma bound_svar_cont_cache_shift C p s:
+    cache_continuous_prop C ->
+    is_bound_svar p ->
+    (exists (np : NamedPattern), C !! p = Some np) ->
+    exists (np : NamedPattern),
+      (<[BoundVarSugar.B0:=npatt_svar s]>
+      (cache_incr_svar C)
+      ) !! p = Some np.
+  Proof.
+    intros Hcont Hbs [np Hnp].
+    unfold cache_continuous_prop in Hcont.
+    destruct Hcont as [_ Hconts].
+    destruct Hconts as [k Hk].
+    unfold is_bound_svar in Hbs.
+    destruct Hbs as [b Hb]. subst p.
+    destruct b.
+    {
+      exists (npatt_svar s). apply lookup_insert.
+    }
+    rewrite lookup_insert_ne.
+    { discriminate. }
+    unfold cache_incr_svar.
+    replace (patt_bound_svar (S b)) with (incr_one_svar (patt_bound_svar b)) by reflexivity.
+    rewrite lookup_kmap.
+    pose proof (Hb := Hk (S b)).
+    destruct Hb as [Hb1 Hb2].
+    feed specialize Hb2.
+    {
+      exists np. exact Hnp.
+    }
+    rewrite -Hk.
+    lia.
+  Qed.
+
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
     cache_continuous_prop C ->
@@ -1944,25 +1927,58 @@ Qed.
         assert (HdanglingC'p0: dangling_vars_cached C' p0).
         { 
           rewrite HeqC'. apply dangling_vars_cached_shift_e. apply Hdangling.
-        }        
+        }       
+        
+        assert (HcontC': cache_continuous_prop C').
+        {
+          rewrite HeqC'. apply cache_continuous_shift_e. exact Hcont.
+        }
 
         (* need to show sub_prop C' holds *)
         assert(HsubC' : sub_prop C').
         {
           unfold sub_prop.
           intros p1 np1 Hnp1.
-          specialize (Hsub p1 np1).
           rewrite HeqC' in Hnp1.
           destruct p1; try exact I;
-          feed specialize Hsub;
-          try(
             (rewrite lookup_insert_ne in Hnp1;[discriminate|]);
             unfold cache_incr_evar in Hnp1;
             rewrite lookup_kmap_Some in Hnp1;
             destruct Hnp1 as [pincr [Hpincr1 Hpincr2]];
-            destruct pincr; simpl in Hpincr1; inversion Hpincr1;
-            subst; exact Hpincr2
-          );(rewrite lookup_insert_ne in Hnp1;[discriminate|]);
+            destruct pincr; simpl in Hpincr1; inversion Hpincr1; clear Hpincr1;
+            subst.
+          
+          + 
+            destruct (decide (is_bound_evar pincr1)), (decide (is_bound_evar pincr2)).
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_app pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              unfold cache_incr_evar.
+              specialize (Hsub (incr_one_evar pincr1) (incr_one_evar pincr2)).
+              specialize (Hsub Hpincr2)
+              destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
+            destruct (decide (pincr1 = BoundVarSugar.b0)),(decide (pincr2 = BoundVarSugar.b0)).
+            * subst pincr1 pincr2.
+              exists (npatt_evar (evs_fresh evs p0)),(npatt_evar (evs_fresh evs p0)).
+              split; apply lookup_insert.
+            * subst pincr1.
+              exists (npatt_evar (evs_fresh evs p0)), nq'.
+              split.
+              {
+                apply lookup_insert.
+              }
+              {
+                rewrite lookup_insert_ne. apply not_eq_sym. assumption.
+
+              }
+            split.
+            exists np',nq'.
+            Search pincr1.
+
+
+            destruct H as [[H1 H2]|H].
+            subst p00 np.
+
           (rewrite lookup_union_Some in H';[|apply remove_disjoint_keep_e]);
           (
             destruct H' as [H'|H'];
