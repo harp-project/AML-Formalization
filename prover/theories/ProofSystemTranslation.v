@@ -1969,6 +1969,232 @@ Qed.
               destruct Hshift2 as [nq'2 Hnq'2].
               exists np'1,nq'2.
               split. exact Hnp'1. exact Hnq'2.
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_app pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr1 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift1.
+              {
+                exists np'. exact Hnp'.
+              }
+              destruct Hshift1 as [np'1 Hnp'1].
+              exists np'1, nq'.
+              split.
+              { exact Hnp'1. }
+              rewrite lookup_insert_ne.
+              { intros Hcontra. apply n. subst pincr2. exists 0. reflexivity. }
+              unfold cache_incr_evar.
+              replace pincr2 with (incr_one_evar pincr2).
+              2: {
+                destruct pincr2; try reflexivity.
+                exfalso. apply n. exists n1. reflexivity.
+              }
+              rewrite lookup_kmap. exact Hnq'.
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_app pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift2 := bound_evar_cont_cache_shift C pincr2 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift2.
+              {
+                exists nq'. exact Hnq'.
+              }
+              destruct Hshift2 as [nq'2 Hnq'2].
+              exists np', nq'2.
+              split.
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n. subst pincr1. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr1 with (incr_one_evar pincr1).
+                2: {
+                  destruct pincr1; try reflexivity.
+                  exfalso. apply n. exists n1. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnp'.
+              }
+              { exact Hnq'2. }
+            * 
+              unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_app pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              exists np', nq'.
+              split.
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n. subst pincr1. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr1 with (incr_one_evar pincr1).
+                2: {
+                  destruct pincr1; try reflexivity.
+                  exfalso. apply n. exists n2. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnp'.
+              }
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n1. subst pincr2. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr2 with (incr_one_evar pincr2).
+                2: {
+                  destruct pincr2; try reflexivity.
+                  exfalso. apply n1. exists n2. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnq'.
+              }
+          + destruct (decide (is_bound_evar pincr1)), (decide (is_bound_evar pincr2)).
+            * 
+              unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_imp pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr1 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift1.
+              {
+                exists np'. exact Hnp'.
+              }
+              destruct Hshift1 as [np'1 Hnp'1].
+              pose proof (Hshift2 := bound_evar_cont_cache_shift C pincr2 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift2.
+              {
+                exists nq'. exact Hnq'.
+              }
+              destruct Hshift2 as [nq'2 Hnq'2].
+              exists np'1,nq'2.
+              split. exact Hnp'1. exact Hnq'2.
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_imp pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr1 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift1.
+              {
+                exists np'. exact Hnp'.
+              }
+              destruct Hshift1 as [np'1 Hnp'1].
+              exists np'1, nq'.
+              split.
+              { exact Hnp'1. }
+              rewrite lookup_insert_ne.
+              { intros Hcontra. apply n. subst pincr2. exists 0. reflexivity. }
+              unfold cache_incr_evar.
+              replace pincr2 with (incr_one_evar pincr2).
+              2: {
+                destruct pincr2; try reflexivity.
+                exfalso. apply n. exists n1. reflexivity.
+              }
+              rewrite lookup_kmap. exact Hnq'.
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_imp pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift2 := bound_evar_cont_cache_shift C pincr2 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift2.
+              {
+                exists nq'. exact Hnq'.
+              }
+              destruct Hshift2 as [nq'2 Hnq'2].
+              exists np', nq'2.
+              split.
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n. subst pincr1. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr1 with (incr_one_evar pincr1).
+                2: {
+                  destruct pincr1; try reflexivity.
+                  exfalso. apply n. exists n1. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnp'.
+              }
+              { exact Hnq'2. }
+            * 
+              unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_imp pincr1 pincr2) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              exists np', nq'.
+              split.
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n. subst pincr1. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr1 with (incr_one_evar pincr1).
+                2: {
+                  destruct pincr1; try reflexivity.
+                  exfalso. apply n. exists n2. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnp'.
+              }
+              {
+                rewrite lookup_insert_ne.
+                { intros Hcontra. apply n1. subst pincr2. exists 0. reflexivity. }
+                unfold cache_incr_evar.
+                replace pincr2 with (incr_one_evar pincr2).
+                2: {
+                  destruct pincr2; try reflexivity.
+                  exfalso. apply n1. exists n2. reflexivity.
+                }
+                rewrite lookup_kmap. exact Hnq'.
+              }
+          + destruct (decide (is_bound_evar pincr)).
+          * 
+            unfold sub_prop in Hsub.
+            pose proof (Hsub1 := Hsub (patt_exists pincr) np1 Hpincr2).
+            simpl in Hsub1.
+            destruct Hsub1 as [np' Hnp'].
+            pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr (evs_fresh evs p0) Hcont ltac:(assumption)).
+            feed specialize Hshift1.
+            {
+              exists np'. exact Hnp'.
+            }
+            destruct Hshift1 as [np'1 Hnp'1].
+            exists np'1.
+            exact Hnp'1.
+          * unfold sub_prop in Hsub.
+            pose proof (Hsub1 := Hsub (patt_exists pincr) np1 Hpincr2).
+            simpl in Hsub1.
+            destruct Hsub1 as [np' Hnp'].
+            rewrite lookup_insert_ne.
+            { intros Hcontra. apply n. subst pincr. exists 0. reflexivity. }
+            unfold cache_incr_evar.
+            replace pincr with (incr_one_evar pincr).
+            2: {
+              destruct pincr; try reflexivity.
+              exfalso. apply n. exists n1. reflexivity.
+            }
+            rewrite lookup_kmap.
+            exists np'. exact Hnp'.
+            + destruct (decide (is_bound_evar pincr)).
+            * 
+              unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_mu pincr) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' Hnp'].
+              pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift1.
+              {
+                exists np'. exact Hnp'.
+              }
+              destruct Hshift1 as [np'1 Hnp'1].
+              exists np'1.
+              exact Hnp'1.
+            * unfold sub_prop in Hsub.
+              pose proof (Hsub1 := Hsub (patt_mu pincr) np1 Hpincr2).
+              simpl in Hsub1.
+              destruct Hsub1 as [np' Hnp'].
+              rewrite lookup_insert_ne.
+              { intros Hcontra. apply n. subst pincr. exists 0. reflexivity. }
+              unfold cache_incr_evar.
+              replace pincr with (incr_one_evar pincr).
+              2: {
+                destruct pincr; try reflexivity.
+                exfalso. apply n. exists n1. reflexivity.
+              }
+              rewrite lookup_kmap.
+              exists np'. exact Hnp'.
         }
          Print sub_prop.
         Print cache_incr_evar. Print incr_one_evar.
