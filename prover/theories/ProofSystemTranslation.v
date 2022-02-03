@@ -1950,51 +1950,25 @@ Qed.
           
           + 
             destruct (decide (is_bound_evar pincr1)), (decide (is_bound_evar pincr2)).
-            * unfold sub_prop in Hsub.
+            * 
+              unfold sub_prop in Hsub.
               pose proof (Hsub1 := Hsub (patt_app pincr1 pincr2) np1 Hpincr2).
               simpl in Hsub1.
-              unfold cache_incr_evar.
-              specialize (Hsub (incr_one_evar pincr1) (incr_one_evar pincr2)).
-              specialize (Hsub Hpincr2)
-              destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
-            destruct (decide (pincr1 = BoundVarSugar.b0)),(decide (pincr2 = BoundVarSugar.b0)).
-            * subst pincr1 pincr2.
-              exists (npatt_evar (evs_fresh evs p0)),(npatt_evar (evs_fresh evs p0)).
-              split; apply lookup_insert.
-            * subst pincr1.
-              exists (npatt_evar (evs_fresh evs p0)), nq'.
-              split.
+              destruct Hsub1 as [np' [nq' [Hnp' Hnq']]].
+              pose proof (Hshift1 := bound_evar_cont_cache_shift C pincr1 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift1.
               {
-                apply lookup_insert.
+                exists np'. exact Hnp'.
               }
+              destruct Hshift1 as [np'1 Hnp'1].
+              pose proof (Hshift2 := bound_evar_cont_cache_shift C pincr2 (evs_fresh evs p0) Hcont ltac:(assumption)).
+              feed specialize Hshift2.
               {
-                rewrite lookup_insert_ne. apply not_eq_sym. assumption.
-
+                exists nq'. exact Hnq'.
               }
-            split.
-            exists np',nq'.
-            Search pincr1.
-
-
-            destruct H as [[H1 H2]|H].
-            subst p00 np.
-
-          (rewrite lookup_union_Some in H';[|apply remove_disjoint_keep_e]);
-          (
-            destruct H' as [H'|H'];
-            [|(unfold keep_bound_evars in H';
-               rewrite map_filter_lookup_Some in H';
-               destruct H' as [_ Hcontra];
-               destruct Hcontra as [x Hcontra];
-               inversion Hcontra
-              )]
-          ).
-          + destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
-            exists np', nq'.
-            (* If p1_1 (or p1_2) is not a bevar, then this should be easy.
-               However, if it is a bevar,
-            *)
-          }
+              destruct Hshift2 as [nq'2 Hnq'2].
+              exists np'1,nq'2.
+              split. exact Hnp'1. exact Hnq'2.
         }
          Print sub_prop.
         Print cache_incr_evar. Print incr_one_evar.
