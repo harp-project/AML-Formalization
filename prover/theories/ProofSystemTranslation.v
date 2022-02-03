@@ -1653,8 +1653,20 @@ Qed.
             destruct Hnp1 as [pincr [Hpincr1 Hpincr2]];
             destruct pincr; simpl in Hpincr1; inversion Hpincr1;
             subst; exact Hpincr2
+          );(rewrite lookup_insert_ne in Hnp1;[discriminate|]);
+          (rewrite lookup_union_Some in H';[|apply remove_disjoint_keep_e]);
+          (
+            destruct H' as [H'|H'];
+            [|(unfold keep_bound_evars in H';
+               rewrite map_filter_lookup_Some in H';
+               destruct H' as [_ Hcontra];
+               destruct Hcontra as [x Hcontra];
+               inversion Hcontra
+              )]
           ).
-          + destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
+          + 
+            
+            destruct Hsub as [np' [nq' [Hsub1 Hsub2]]].
             exists np', nq'.
             (* If p1_1 (or p1_2) is not a bevar, then this should be easy.
                However, if it is a bevar,
