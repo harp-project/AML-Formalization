@@ -7,7 +7,6 @@ From Ltac2 Require Import Ltac2.
 
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-Require Import Unicoq.Unicoq.
 From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
