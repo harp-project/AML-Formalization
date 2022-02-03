@@ -2196,6 +2196,164 @@ Qed.
               rewrite lookup_kmap.
               exists np'. exact Hnp'.
         }
+        epose proof (IH1 := IHp C' HdanglingC'p0 HcontC' HsubC' _ _).
+        erewrite Heqp0 in IH1. simpl in IH1.
+        destruct p00; try exact I.
+        --
+          destruct H as [[H H']|[H H']];[(inversion H; subst; clear H)|].
+        {
+          rewrite lookup_union_Some in H'.
+          2: { apply remove_disjoint_keep_e. }
+          destruct H' as [H'|H'].
+          2: {
+            unfold keep_bound_evars in H'.
+            rewrite map_filter_lookup_Some in H'.
+            destruct H' as [_ HContra].
+            unfold is_bound_evar_entry in HContra.
+            simpl in HContra. destruct HContra as [nn HContra]. inversion HContra.
+          }
+          unfold remove_bound_evars in H'.
+          rewrite map_filter_lookup_Some in H'.
+          destruct H' as [H' _].
+          pose proof (Htmp := IH1 (patt_app p00_1 p00_2) np H').
+          simpl in Htmp.
+          destruct Htmp as [np0_1 [np0_2 [Hp0_1 Hp0_2]]].
+          destruct (decide (patt_exists p0 = p00_1)), (decide (patt_exists p0 = p00_2)); subst.
+          ++
+            exists (npatt_exists (evs_fresh evs p0) n0), (npatt_exists (evs_fresh evs p0) n0).
+            split; apply lookup_insert.
+          ++
+            rewrite lookup_insert.
+            rewrite lookup_insert_ne.
+            { assumption. }
+            destruct (decide (is_bound_evar p00_2)).
+            {
+              destruct (C !! p00_2) eqn:HCp002.
+              {
+                exists (npatt_exists (evs_fresh evs p0) n0), n1.
+                split;[reflexivity|].
+                rewrite lookup_union_Some.
+                2: { apply remove_disjoint_keep_e. }
+                right.
+                unfold keep_bound_evars.
+                rewrite map_filter_lookup_Some.
+                split;[exact HCp002|].
+                unfold is_bound_evar_entry. simpl. assumption.
+              }
+              {
+                unfold is_bound_evar in i.
+                destruct i as [b Hb]. subst p00_2.
+                epose proof (Honly := onlyAddsSubpatterns _ _ _ _).
+                erewrite Heqp0 in Honly. simpl in Honly.
+                specialize (Honly HdanglingC'p0).
+                (*specialize (Honly (patt_bound_evar b)).*)
+                (*
+                  Now we have [H': g0 !! patt_app (patt_exists p0) (patt_bound_evar b) = Some np]
+                  and since [g0] comes from [C'], that is,
+                  from [(<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p0)]>
+                        (cache_incr_evar C))],
+                  and [patt_app] cannot be added by [cache_incr_evar] or the insert
+                  because it is not a bound evar,
+                  it follows that [patt_app (patt_exists p0) (patt_bound_evar b)]
+                  either (1) was in [C], or (2) was added to [g0] by a recursive call
+                  (see [Heqp0]).
+                  If (1) is the case, then by [Hsub: sub_prop C], we have [patt_bound_evar b]
+                  in [C] - and we can choose the right part of the union
+                  (that is, [keep_bound_evars C !! patt_bound_evar b = Some _]).
+                  But if (2) is the case, then by [Honly],
+                  [patt_app (patt_exists p0) (patt_bound_evar b)] is a subpattern
+                  of [p0] - which is a nonsense, contradiction.
+
+                *)
+                feed specialize Honly.
+                {
+
+                }
+              }
+
+              exists (npatt_exists (evs_fresh evs p0) n0), np0_2.
+              split.
+              rewrite lookup_union_Some.
+              2: { apply remove_disjoint_keep_e. }
+              right.
+            }
+            {
+              exists (npatt_exists (evs_fresh evs p0) n0), np0_2.
+              split. apply lookup_insert.
+              rewrite lookup_insert_ne;[assumption|].
+              rewrite lookup_union_Some.
+              2: { apply remove_disjoint_keep_e. }
+            }
+            rewrite <- Hp0_2. apply lookup_insert_ne. assumption.
+        --
+          exists np0_1, (npatt_app n0 n1).
+          split. rewrite <- Hp0_1. apply lookup_insert_ne. assumption.
+          apply lookup_insert.
+        --
+          exists np0_1, np0_2.
+          split. rewrite <- Hp0_1. apply lookup_insert_ne. assumption.
+          rewrite <- Hp0_2. apply lookup_insert_ne. assumption.
+      }
+      --
+    destruct H as [[H H']|[H H']];[(inversion H; subst; clear H)|].
+      {
+      unfold sub_prop in Hsub''.
+      pose proof (Htmp := Hsub'' (patt_imp p0_1 p0_2) np H').
+      simpl in Htmp. destruct Htmp as [np0_1 [np0_2 [Hp0_1 Hp0_2]]].
+      destruct (decide (patt_app p1 p2 = p0_1)), (decide (patt_app p1 p2 = p0_2)); subst.
+      --
+        exists (npatt_app n0 n1), (npatt_app n0 n1).
+        split; apply lookup_insert.
+      --
+        exists (npatt_app n0 n1), np0_2.
+        split. apply lookup_insert.
+        rewrite <- Hp0_2. apply lookup_insert_ne. assumption.
+      --
+        exists np0_1, (npatt_app n0 n1).
+        split. rewrite <- Hp0_1. apply lookup_insert_ne. assumption.
+        apply lookup_insert.
+      --
+        exists np0_1, np0_2.
+        split. rewrite <- Hp0_1. apply lookup_insert_ne. assumption.
+        rewrite <- Hp0_2. apply lookup_insert_ne. assumption.
+    } 
+  --
+    destruct H as [[H H']|[H H']];[(inversion H; subst; clear H)|].
+    { 
+      exists n0,n1.
+      pose proof (Htmp := to_NamedPattern2'_ensures_present p0_1 C evs svs).
+      rewrite Heqp0 in Htmp. simpl in Htmp.
+      pose proof (Hec := to_NamedPattern2'_extends_cache g0 p0_2 e0 s0).
+      rewrite Heqp1 in Hec. simpl in Hec.
+      pose proof (Htmp2 := to_NamedPattern2'_ensures_present p0_2 g0 e0 s0).
+      rewrite Heqp1 in Htmp2. simpl in Htmp2.
+      eapply lookup_weaken with (m2 := g) in Htmp;[|assumption].
+      rewrite -Htmp -Htmp2.
+      split; apply lookup_insert_ne. apply app_neq1. apply app_neq2.
+    }
+    {
+      unfold sub_prop in Hsub''.
+      pose proof (Htmp := Hsub'' (patt_exists p0) np H').
+      simpl in Htmp. destruct Htmp as [np' Hnp'].
+      destruct (decide (patt_app p1 p2 = p0)).
+      ++
+        subst p0. exists (npatt_app n0 n1). apply lookup_insert.
+      ++
+        exists np'. rewrite <- Hnp'. apply lookup_insert_ne. assumption.
+    }
+    --
+      destruct H as [[H H']|[H H']];[(inversion H; subst; clear H)|].
+      {
+        unfold sub_prop in Hsub''.
+        pose proof (Htmp := Hsub'' (patt_mu p0) np H').
+        simpl in Htmp. destruct Htmp as [np' Hnp'].
+        destruct (decide (patt_app p1 p2 = p0)).
+        ++
+          subst p0. exists (npatt_app n0 n1). apply lookup_insert.
+        ++
+          exists np'. rewrite <- Hnp'. apply lookup_insert_ne. assumption.
+      }
+        
          Print sub_prop.
         Print cache_incr_evar. Print incr_one_evar.
         Print to_NamedPattern2'.
