@@ -844,6 +844,123 @@ Qed.
         simpl in Hneg. apply Hneg. exact I.
   Qed.        
 
+  Lemma cache_continuous_shift_e C e:
+    cache_continuous_prop C ->
+    cache_continuous_prop (
+          <[BoundVarSugar.b0:=npatt_evar e]>
+          (cache_incr_evar C)).
+  Proof.
+    intros [Hconte Hconts].
+    split.
+    + destruct Hconte as [k Hk]. exists (S k). intros k'.
+      split; intros H.
+      * destruct k'.
+        --
+          exists (npatt_evar e).
+          apply lookup_insert.
+        --
+          specialize (Hk k').
+          destruct Hk as [Hk1 Hk2].
+          specialize (Hk1 ltac:(lia)).
+          destruct Hk1 as [e' He'].
+          exists e'.
+          rewrite lookup_insert_ne.
+          { discriminate. }
+          unfold cache_incr_evar.
+          replace (patt_bound_evar (S k')) with (incr_one_evar (patt_bound_evar k')) by reflexivity.
+          rewrite lookup_kmap.
+          exact He'.
+      * destruct H as [e' He'].
+        destruct k'.
+        { lia. }
+        cut (k' < k).
+        { lia. }
+        rewrite Hk.
+        rewrite lookup_insert_ne in He'.
+        { discriminate. }
+        unfold cache_incr_evar in He'.
+        replace (patt_bound_evar (S k')) with (incr_one_evar (patt_bound_evar k')) in He' by reflexivity.
+        rewrite lookup_kmap in He'.
+        exists e'. exact He'.
+
+    + destruct Hconts as [k Hk]. exists k. intros k'.
+      rewrite lookup_insert_ne.
+      { discriminate. }
+      unfold cache_incr_evar.
+      replace (patt_bound_svar k') with (incr_one_evar (patt_bound_svar k')) by reflexivity.
+      rewrite lookup_kmap.
+      apply Hk.
+  Qed. 
+
+  Lemma cache_continuous_shift_s C s:
+    cache_continuous_prop C ->
+    cache_continuous_prop (
+          <[BoundVarSugar.B0:=npatt_svar s]>
+          (cache_incr_svar C)).
+  Proof.
+  intros [Hconte Hconts].
+  split.
+  + destruct Hconte as [k Hk]. exists (k). intros k'.
+    rewrite lookup_insert_ne.
+    { discriminate. }
+    unfold cache_incr_svar.
+    replace (patt_bound_evar k')
+      with (incr_one_svar (patt_bound_evar k'))
+      by reflexivity.
+    rewrite lookup_kmap.
+    apply Hk.
+  + destruct Hconts as [k Hk].
+    exists (S k). intros k'. split.
+    * intros Hk'.
+      destruct k'.
+      --
+        exists (npatt_svar s).
+        apply lookup_insert.
+      --
+        specialize (Hk k').
+        destruct Hk as [Hk1 Hk2].
+        specialize (Hk1 ltac:(lia)).
+        destruct Hk1 as [np Hnp].
+        exists np.
+        rewrite lookup_insert_ne.
+        { discriminate. }
+        unfold cache_incr_svar.
+        replace (patt_bound_svar (S k'))
+          with (incr_one_svar (patt_bound_svar k'))
+          by reflexivity.
+        rewrite lookup_kmap.
+        exact Hnp.
+    * intros H.
+      destruct H as [np Hnp].
+      rewrite lookup_insert_Some in Hnp.
+      destruct Hnp as [Hnp|Hnp].
+      --
+        destruct Hnp as [Hnp1 Hnp2].
+        inversion Hnp1. subst k' np.
+        lia.
+      --
+        destruct Hnp as [Hk' Hck'].
+        unfold cache_incr_svar in Hck'.
+        destruct (decide (k' = k)).
+        {
+          subst k'. lia.
+        }
+
+        destruct k'.
+        {
+          contradiction.
+        }
+        replace (patt_bound_svar (S k'))
+          with (incr_one_svar (patt_bound_svar k'))
+          in Hck' by reflexivity.
+        rewrite lookup_kmap in Hck'.
+        cut (k' < k).
+        { intros. lia. }
+        apply Hk.
+        exists np.
+        apply Hck'.
+  Qed.
+
   Lemma cache_continuous_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
     cache_continuous_prop C ->
@@ -1011,46 +1128,7 @@ Qed.
           apply lookup_kmap. apply _.
       }
       {
-        destruct Hsub as [Hconte Hconts].
-        split.
-        + destruct Hconte as [k Hk]. exists (S k). intros k'.
-          split; intros H.
-          * destruct k'.
-            --
-              exists (npatt_evar (evs_fresh evs p)).
-              apply lookup_insert.
-            --
-              specialize (Hk k').
-              destruct Hk as [Hk1 Hk2].
-              specialize (Hk1 ltac:(lia)).
-              destruct Hk1 as [e He].
-              exists e.
-              rewrite lookup_insert_ne.
-              { discriminate. }
-              unfold cache_incr_evar.
-              replace (patt_bound_evar (S k')) with (incr_one_evar (patt_bound_evar k')) by reflexivity.
-              rewrite lookup_kmap.
-              exact He.
-          * destruct H as [e He].
-            destruct k'.
-            { lia. }
-            cut (k' < k).
-            { lia. }
-            rewrite Hk.
-            rewrite lookup_insert_ne in He.
-            { discriminate. }
-            unfold cache_incr_evar in He.
-            replace (patt_bound_evar (S k')) with (incr_one_evar (patt_bound_evar k')) in He by reflexivity.
-            rewrite lookup_kmap in He.
-            exists e. exact He.
-
-        + destruct Hconts as [k Hk]. exists k. intros k'.
-          rewrite lookup_insert_ne.
-          { discriminate. }
-          unfold cache_incr_evar.
-          replace (patt_bound_svar k') with (incr_one_evar (patt_bound_svar k')) by reflexivity.
-          rewrite lookup_kmap.
-          apply Hk.
+        apply cache_continuous_shift_e. apply Hsub.
       }
       pose proof (IHp0 := IHp (evs ∪ {[evs_fresh evs p]}) s).
       rewrite Heqp1 in IHp0. simpl in IHp0.
@@ -1864,48 +1942,9 @@ Qed.
         remember (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs p0)]> (cache_incr_evar C)) as C'.
 
         assert (HdanglingC'p0: dangling_vars_cached C' p0).
-        {
-          rewrite HeqC'.
-          unfold dangling_vars_cached. unfold dangling_evars_cached.
-          unfold dangling_svars_cached.
-          destruct Hdangling as [Hdanglinge Hdanglings].
-          split.
-          --
-            unfold dangling_evars_cached in Hdanglinge.
-            intros b Hb.
-            destruct b.
-            {
-              exists (npatt_evar (evs_fresh evs p0)).
-              apply lookup_insert.
-            }
-            specialize (Hdanglinge b Hb).
-            destruct Hdanglinge as [nphi Hnphi].
-            exists nphi.
-            rewrite lookup_insert_ne.
-            { discriminate. }
-            unfold cache_incr_evar.
-            replace (patt_bound_evar (S b))
-              with (incr_one_evar (patt_bound_evar b))
-              by reflexivity.
-            rewrite lookup_kmap.
-            exact Hnphi.
-          --
-            unfold dangling_svars_cached in Hdanglings.
-            intros b Hb.
-            specialize (Hdanglings b Hb).
-            destruct Hdanglings as [nphi Hnphi].
-            exists nphi.
-            rewrite lookup_insert_ne.
-            { discriminate. }
-            replace (patt_bound_svar b)
-              with (incr_one_evar (patt_bound_svar b))
-              by reflexivity.
-            unfold cache_incr_evar.
-            rewrite lookup_kmap.
-            exact Hnphi.
-        }
-
-        
+        { 
+          rewrite HeqC'. apply dangling_vars_cached_shift_e. apply Hdangling.
+        }        
 
         (* need to show sub_prop C' holds *)
         assert(HsubC' : sub_prop C').
