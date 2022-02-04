@@ -257,6 +257,16 @@ Section proof_system_translation.
         { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
   Qed. 
 
+  Definition is_bound_var (p : Pattern) :=
+    match p with
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | _ => False
+    end.
+
+  Definition bound_or_cached (C : Cache) (p : Pattern) : Prop
+    := is_bound_var p \/ exists np, C !! p = Some np.
+
   (* A subpattern property of the cache: with any pattern it contains its direct subpatterns. *)
   Definition sub_prop (C : Cache) :=
     forall (p : Pattern) (np : NamedPattern),
@@ -268,10 +278,10 @@ Section proof_system_translation.
       | patt_bound_svar _ => True
       | patt_bott => True
       | patt_sym _ => True
-      | patt_imp p' q' => exists np' nq', C !! p' = Some np' /\ C !! q' = Some nq'
-      | patt_app p' q' => exists np' nq', C !! p' = Some np' /\ C !! q' = Some nq'
-      | patt_exists p' => exists np', C !! p' = Some np'
-      | patt_mu p' => exists np', C !! p' = Some np'
+      | patt_imp p' q' => bound_or_cached C p' /\ bound_or_cached C q'
+      | patt_app p' q' => bound_or_cached C p' /\ bound_or_cached C q'
+      | patt_exists p' => bound_or_cached C p'
+      | patt_mu p' => bound_or_cached C p'
       end.
 
   Lemma sub_prop_empty: sub_prop ∅.
@@ -793,12 +803,6 @@ Qed.
     - destruct H as [e Hcontra]. inversion Hcontra.
   Qed.
 
-  Definition is_bound_var (p : Pattern) :=
-    match p with
-    | patt_bound_evar _ => True
-    | patt_bound_svar _ => True
-    | _ => False
-    end.
   
   Lemma cache_continuous_add_not_bound (C : Cache) (p : Pattern) (np : NamedPattern) :
     ~ is_bound_var p ->
@@ -1678,25 +1682,27 @@ Qed.
       try (rewrite lookup_insert_Some in H;
         destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
         apply Hsub in H4;
-        destruct H4 as [np' [nq' [H4 H5]]];
-        destruct (decide (P = p0_1)), (decide (P = p0_2)); subst;
-        [(exists NP, NP;
-          split; apply lookup_insert)
-        |(exists NP, nq';
-          split; [(apply lookup_insert)|(
-          rewrite <- H5;
-          apply lookup_insert_ne; assumption)])
-        |(exists np', NP;
-          split; [(rewrite <- H4; apply lookup_insert_ne; assumption)
-          |apply lookup_insert])
-        |(exists np', nq';
-          split; [(rewrite <- H4; apply lookup_insert_ne; assumption)|
-                      (rewrite <- H5; apply lookup_insert_ne; assumption)])
-      ]);
+        destruct H4 as [H4 H5];
+        split;[rename H4 into HBoC; rename p0_1 into pcached|rename H5 into HBoC;rename p0_2 into pcached];
+           (destruct HBoC as [HBound|HCached];[
+               (left; exact HBound)|
+               (right; destruct HCached as [npcached HCached];
+                destruct (decide (P = pcached));
+                [(subst; exists NP; apply lookup_insert)
+                |(exists npcached; rewrite -HCached; apply lookup_insert_ne; assumption)]
+          )]));
       try (rewrite lookup_insert_Some in H;
       destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
-      apply Hsub in H4;
-      destruct H4 as [np' H4];
+           apply Hsub in H4; rename H4 into HBoC; rename p0 into pcached;
+           (destruct HBoC as [HBound|HCached];[
+               (left; exact HBound)|
+               (right; destruct HCached as [npcached HCached];
+                destruct (decide (P = pcached));
+                [(subst; exists NP; apply lookup_insert)
+                |(exists npcached; rewrite -HCached; apply lookup_insert_ne; assumption)]
+          )]))
+          end.
+      destruct H4 as [np' H4]).
       destruct (decide (P = p0)); subst;
       [(exists NP; apply lookup_insert)
       |(exists np'; rewrite <- H4; apply lookup_insert_ne; assumption)])
