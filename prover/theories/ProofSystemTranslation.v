@@ -1786,20 +1786,16 @@ Qed.
         rewrite Heqp0 in Hsub'; simpl in Hsub'.
         pose proof (Hsub'' := IHp2 g0 Hdanglingg0p2 Hcont' Hsub' e0 s0).
         rewrite Heqp1 in Hsub''; simpl in Hsub''.
-        
-        destruct p0; auto.
-        -- destruct H as [[H _]|[_ H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_2 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_2 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_1 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_1 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1). }
+
+        destruct p0; auto; destruct H as [[H _]|[_ H']].
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_2 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_2 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_1 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_1 H' Hsub'' (patt_app p1 p2) (npatt_app n0 n1).
 
       * repeat case_match_in_hyp H.
         repeat case_match_in_hyp Heqp.
@@ -1829,19 +1825,15 @@ Qed.
         pose proof (Hsub'' := IHp2 g0 Hdanglingg0p2 Hcont' Hsub' e0 s0).
         rewrite Heqp1 in Hsub''; simpl in Hsub''.
 
-        destruct p0; auto.
-        -- destruct H as [[H _]|[_ H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_2 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_2 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_1 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1). }
-        -- destruct H as [[H H']|[H H']].
-           { if_equal_then_cached H Heqp0 Heqp1. }
-           { if_not_equal_boc_1 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1). }
+        destruct p0; auto; destruct H as [[H _]|[_ H']].
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_2 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_2 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_1 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1).
+        -- if_equal_then_cached H Heqp0 Heqp1.
+        -- if_not_equal_boc_1 H' Hsub'' (patt_imp p1 p2) (npatt_imp n0 n1).
 
     * repeat case_match_in_hyp H.
         repeat case_match_in_hyp Heqp.
