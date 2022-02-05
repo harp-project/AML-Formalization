@@ -1657,7 +1657,21 @@ Qed.
   Lemma is_not_subformula_2 p q:
     ~is_subformula_of_ind (patt_app q (patt_exists p)) p.
   Proof. Admitted.
-  
+
+  Lemma bound_evar_is_bound_var p:
+    is_bound_evar p ->
+    is_bound_var p.
+  Proof.
+    intros [b H]. subst p. simpl. exact I.
+  Qed.
+
+  Lemma bound_svar_is_bound_var p:
+    is_bound_svar p ->
+    is_bound_var p.
+  Proof.
+    intros [b H]. subst p. simpl. exact I.
+  Qed.
+
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
     cache_continuous_prop C ->
@@ -1938,6 +1952,33 @@ Qed.
         epose proof (IH1 := IHp C' HdanglingC'p0 HcontC' HsubC' _ _).
         erewrite Heqp0 in IH1. simpl in IH1.
         destruct p00; try exact I.
+        {
+          split.
+          {
+            destruct (decide (is_bound_evar p00_1)) as [Hbound|Hnbound].
+            {
+              left. apply bound_evar_is_bound_var. exact Hbound.
+            }
+            right.
+            destruct (decide (p00_1 = patt_exists p0)) as [Hsame|Hnsame].
+            {
+              exists (npatt_exists (evs_fresh evs p0) n0).
+              subst.
+              apply lookup_insert.
+            }
+            rewrite lookup_insert_ne.
+            { apply not_eq_sym. apply Hnsame. }
+
+            destruct H as [H|H].
+            {
+              destruct H as [Hcontra _]. inversion Hcontra.
+            }
+            destruct H as [_ H].
+            pose proof (IH1 (patt_app p00_1 p00_2)).
+            exists npatt_bott.
+            rewrite lookup_union_Some.
+          }
+        }
         --
           destruct H as [[H H']|[H H']];[(inversion H; subst; clear H)|].
         {
