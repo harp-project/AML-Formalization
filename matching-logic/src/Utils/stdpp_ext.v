@@ -446,7 +446,6 @@ Proof.
     rewrite -> H2 at 4.
 
     rewrite zip_with_take_r.
-    { rewrite length_tail. lia. }
     reflexivity.
 Qed.
 
