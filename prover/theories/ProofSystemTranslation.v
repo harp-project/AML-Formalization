@@ -2493,7 +2493,9 @@ Qed.
          Q? (np' == np?)
        ]
    *)
+  Abort.
 
+  (*
   (*
      Non-Addition lemma. phi <= psi -> psi \not \in C -> psi \not \in (toNamedPattern2' phi C).2
    *)
@@ -2731,5 +2733,5 @@ Qed.
       Search to_NamedPattern2'.
       Print Table Search Blacklist. simpl.
   Abort.
-
+*)
 End proof_system_translation.
