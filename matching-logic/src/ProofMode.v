@@ -7,7 +7,6 @@ From Ltac2 Require Import Ltac2.
 
 From Coq Require Import Ensembles Bool.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-Require Import Unicoq.Unicoq.
 From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
@@ -7689,6 +7688,65 @@ Ltac tryExact l idx :=
     | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
   end.
 
+Ltac mgAssumption :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        tryExact l 0
+  end.
+
+Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
+  Lemma MyGoal_revert (Γ : Theory) (l : list Pattern) (x g : Pattern):
+      @mkMyGoal Σ Γ l (x ---> g) ->
+      @mkMyGoal Σ Γ (l ++ [x]) g.
+    Proof.
+      intros H.
+      unfold of_MyGoal in H. simpl in H.
+      unfold of_MyGoal. simpl. intros wfxig wfl.
+
+      feed specialize H.
+      {
+        abstract (
+            apply wfapp_proj_2 in wfl;
+            unfold wf in wfl;
+            simpl in wfl;
+            rewrite andbT in wfl;
+            wf_auto2
+          ).
+      }
+      {
+        abstract (apply wfapp_proj_1 in wfl; exact wfl).
+      }
+
+      eapply cast_proof.
+      { rewrite foldr_app. simpl. reflexivity. }
+      exact H.
+    Defined.
+
+End FOL_helpers.
+
+  Ltac mgRevert :=
+    match goal with
+    | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
+      => eapply cast_proof_mg_hyps;
+         [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
+         apply MyGoal_revert
+    end.
+
+  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢ (p <---> p') ->
+    Γ ⊢ (q <---> q') ->
+    Γ ⊢ ((p or q) <---> (p' or q')).
+  Proof.
+    intros wfp wfq wfp' wfq' pep' qeq'.
+
 #[local]
 Ltac mgAssumption :=
   match goal with
@@ -7825,6 +7883,76 @@ Proof.
 Qed.
 
 #[local]
+Lemma deMorgan_nand {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( !(a and b) <---> (!a or !b) ).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgDestructOr 0.
+    - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+      mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+      mgApply 0. mgIntro.
+      mgDestructOr 3.
+      all: mgApply 3; mgAssumption.
+    - mgRevert. mgApplyMeta (@not_not_intro _ _ _ _). repeat mgIntro.
+      mgDestructAnd 1.
+      mgDestructOr 0.
+      mgLeft.
+      + mgApplyMeta p'ip.
+        mgExactn 0.
+      + mgRight.
+        mgApplyMeta q'iq.
+        mgExactn 0. 
+  Defined.
+
+Lemma impl_eq_or {Σ : Signature} Γ a b:
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢( (a ---> b) <---> ((! a) or b) ).
+Proof.
+  intros wfa wfb.
+  toMyGoal.
+  { wf_auto2. }
+  repeat mgIntro.
+  mgDestructOr 0.
+  - mgApply 0. mgIntro. mgClear 0. mgIntro.
+    mgApplyMeta (@not_not_elim _ _ _ _) in 1.
+    mgApply 0. mgAssumption.
+  - mgApply 0. mgIntro. mgClear 0. mgIntro.
+    mgDestructOr 0.
+    + mgApplyMeta (@false_implies_everything _ _ _ _).
+      mgApply 0. mgAssumption.
+    + mgAssumption.
+  Unshelve. all: auto.
+Qed.
+
+Lemma nimpl_eq_and {Σ : Signature} Γ a b:
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢( ! (a ---> b) <---> (a and !b) ).
+Proof.
+  intros wfa wfb.
+  toMyGoal.
+  { wf_auto2. }
+  repeat mgIntro.
+  mgDestructOr 0.
+  - mgApply 0. repeat mgIntro.
+    mgApply 1. mgIntro.
+    mgDestructOr 2.
+    + mgApplyMeta (false_implies_everything _ _).
+      mgApply 2. mgAssumption.
+    + mgApplyMeta (@not_not_elim _ _ _ _) in 2.
+      mgAssumption.
+  - mgApply 0. repeat mgIntro.
+    mgDestructAnd 1. mgApply 2. mgApply 3.
+    mgAssumption.
+  Unshelve. all: auto.
+Qed.
+
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
