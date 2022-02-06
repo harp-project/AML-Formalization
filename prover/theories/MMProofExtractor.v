@@ -249,6 +249,7 @@ Import MetaMath.
 Section gen.
   Context
     {signature : Signature}
+    {symbols_countable : Countable symbols}
     (symbolPrinter : symbols -> string)
     (evarPrinter : @evar variables -> string)
     (svarPrinter : @svar variables -> string)
@@ -444,7 +445,10 @@ Section gen.
   (* (exists x, x) -> exists x, (exists y, y)  *)
   (* (exists, 0) -> (exists, exists, 0)  *)
   (* (exists x, x) -> (phi -> (exists y, y)) *)
-  Equations? proof2proof'
+
+  Print Ex_quan.
+
+ Equations? proof2proof'
             Γ
             (acc : list Label)
             (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
@@ -460,8 +464,8 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-1"]
-              ++ (reverse (pattern2proof (to_NamedPattern q)))
-              ++ (reverse (pattern2proof (to_NamedPattern p)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 q)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
               ++ acc)
            pfs' ;
     
@@ -469,9 +473,9 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-2"]
-              ++ (reverse (pattern2proof (to_NamedPattern r)))
-              ++ (reverse (pattern2proof (to_NamedPattern q)))
-              ++ (reverse (pattern2proof (to_NamedPattern p)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 r)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 q)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
               ++ acc)
            pfs' ;
     
@@ -479,17 +483,26 @@ Section gen.
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-3"]
-              ++ (reverse (pattern2proof (to_NamedPattern p)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
               ++ acc)
            pfs' ;
 
     proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
-           ((reverse (pattern2proof (to_NamedPattern q)))
-              ++ (reverse (pattern2proof (to_NamedPattern p)))
+           ((reverse (pattern2proof (to_NamedPattern2 q)))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
+
+    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y _)))::pfs')
+      := proof2proof'
+           Γ
+           ([lbl "proof-rule-exists"]
+              ++ (reverse (pattern2proof (to_NamedPattern2 (instantiate p (patt_free_evar y)))))
+              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ acc)
+           pfs' ;
 
     proof2proof' Γ prefix ((inl _)::_) := []
   .
@@ -511,8 +524,8 @@ Section gen.
                                   | inr _ => 1
                                   end) pfs'))) as C.
       lia.
-    - unfold proof2proof'_stack_size.
-      simpl. lia.
+    - unfold proof2proof'_stack_size. simpl. lia.
+    - unfold proof2proof'_stack_size. simpl. lia.
   Defined.
 
   Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
@@ -537,7 +550,7 @@ Section gen.
    *)
   
   Definition proof2database Γ (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
-    let named := to_NamedPattern ϕ in
+    let named := to_NamedPattern2 ϕ in
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
     (dependenciesForPattern named)
       ++ [oss_s (stmt_assert_stmt (as_provable (ps

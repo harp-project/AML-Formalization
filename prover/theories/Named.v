@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From stdpp Require Import base pmap gmap.
+From stdpp Require Import base pmap gmap fin_maps.
 From MatchingLogic Require Import Syntax.
 
 Require Import String.
@@ -32,6 +32,82 @@ Section named.
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
 
+  Fixpoint named_free_evars (phi : NamedPattern) : EVarSet :=
+    match phi with
+    | npatt_evar x => singleton x
+    | npatt_svar X => empty
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_free_evars phi1) (named_free_evars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_free_evars phi1) (named_free_evars phi2)
+    | npatt_exists x phi => difference (named_free_evars phi) (singleton x)
+    | npatt_mu X phi => named_free_evars phi
+    end.
+
+  Fixpoint named_free_svars (phi : NamedPattern) : SVarSet :=
+    match phi with
+    | npatt_evar x => empty
+    | npatt_svar X => singleton X
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_free_svars phi1) (named_free_svars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_free_svars phi1) (named_free_svars phi2)
+    | npatt_exists x phi => named_free_svars phi
+    | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
+    end.
+
+  Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
+  Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
+
+  (* substitute variable x for psi in phi: phi[psi/x] *)
+  Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
+    match phi with
+    | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
+    | npatt_svar X => npatt_svar X
+    | npatt_sym sigma => npatt_sym sigma
+    | npatt_app phi1 phi2 => npatt_app (named_evar_subst phi1 psi x)
+                                       (named_evar_subst phi2 psi x)
+    | npatt_bott => npatt_bott
+    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst phi1 psi x)
+                                       (named_evar_subst phi2 psi x)
+    | npatt_exists x' phi' => if decide (x = x') is left _
+                              then let fx := named_fresh_evar phi' in
+                                   npatt_exists fx (named_evar_subst phi' (npatt_evar fx) x)
+                              else npatt_exists x' (named_evar_subst phi' psi x)
+    | npatt_mu X phi' => npatt_mu X (named_evar_subst phi' psi x)
+    end.
+
+  (* substitute variable X for psi in phi: phi[psi/X] *)
+  Fixpoint named_svar_subst (phi psi : NamedPattern) (X : svar) :=
+    match phi with
+    | npatt_evar x => npatt_evar x
+    | npatt_svar X' => if decide (X = X') is left _ then psi else npatt_svar X'
+    | npatt_sym sigma => npatt_sym sigma
+    | npatt_app phi1 phi2 => npatt_app (named_svar_subst phi1 psi X)
+                                       (named_svar_subst phi2 psi X)
+    | npatt_bott => npatt_bott
+    | npatt_imp phi1 phi2 => npatt_imp (named_svar_subst phi1 psi X)
+                                       (named_svar_subst phi2 psi X)
+    | npatt_exists x phi' => npatt_exists x (named_svar_subst phi' psi X)
+    | npatt_mu X' phi' => if decide (X = X') is left _
+                          then let fX := named_fresh_svar phi' in
+                               npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
+                          else npatt_mu X' (named_svar_subst phi' psi X)
+    end.
+
+  (* Derived named operators *)
+  Definition npatt_not (phi : NamedPattern) := npatt_imp phi npatt_bott.
+  Definition npatt_or  (l r : NamedPattern) := npatt_imp (npatt_not l) r.
+  Definition npatt_and (l r : NamedPattern) :=
+    npatt_not (npatt_or (npatt_not l) (npatt_not r)).
+  Definition npatt_top := (npatt_not npatt_bott).
+  Definition npatt_iff (l r : NamedPattern) :=
+    npatt_and (npatt_imp l r) (npatt_imp r l).
+  Definition npatt_forall (phi : NamedPattern) (x : evar) :=
+    npatt_not (npatt_exists x (npatt_not phi)).
+  Definition npatt_nu (phi : NamedPattern) (X : svar) :=
+    npatt_not (npatt_mu X (npatt_not (named_svar_subst phi (npatt_not (npatt_svar X)) X))).
+
   Check @kmap.
   (* TODO: use kmap. Check kmap. *)
   Definition evm_incr (evm : EVarMap) : EVarMap :=
@@ -40,15 +116,23 @@ Section named.
   Definition svm_incr (svm : SVarMap) : SVarMap :=
     kmap S svm.
 
-  Definition incr_one (phi : Pattern) : Pattern :=
+  Definition incr_one_evar (phi : Pattern) : Pattern :=
     match phi with
     | patt_bound_evar n => patt_bound_evar (S n)
-    | patt_bound_svar n => patt_bound_svar (S n)
     | x => x
     end.
 
-  Definition cache_incr (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
-    kmap incr_one cache.
+  Definition incr_one_svar (phi : Pattern) : Pattern :=
+    match phi with
+    | patt_bound_svar n => patt_bound_svar (S n)
+    | x => x
+    end.
+  
+  Definition cache_incr_evar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
+    kmap incr_one_evar cache.
+
+  Definition cache_incr_svar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
+    kmap incr_one_svar cache.
 
   Definition evm_fresh (evm : EVarMap) (ϕ : Pattern) : evar
     := evar_fresh (elements (free_evars ϕ ∪ (list_to_set (map snd (map_to_list evm))))).
@@ -99,6 +183,64 @@ Section named.
   Definition not_contain_bound_evar_0 ϕ : Prop := ~~ bevar_occur ϕ 0.
   Definition not_contain_bound_svar_0 ϕ : Prop := ~~ bsvar_occur ϕ 0.
 
+
+  Definition CacheEntry := (Pattern * NamedPattern)%type.
+  
+  Definition is_bound_evar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_evar b.
+  
+  Global Instance is_bound_evar_dec (ϕ : Pattern) : Decision (is_bound_evar ϕ).
+  Proof.
+    unfold Decision; destruct ϕ; simpl;
+      try solve[right; intros [b Hcontra]; inversion Hcontra].
+    left. exists n. reflexivity.
+  Defined.
+
+  Definition is_bound_evar_entry (ϕnϕ : CacheEntry) : Prop := is_bound_evar (fst ϕnϕ).
+  
+  Global Instance is_bound_evar_entry_dec (ce : CacheEntry) : Decision (is_bound_evar_entry ce).
+  Proof.
+    destruct ce as [ϕ nϕ].
+    destruct (decide (is_bound_evar ϕ)) as [L|R].
+    - left. destruct L as [dbi Hdbi]. subst ϕ. exists dbi. reflexivity.
+    - right. intros Hcontra. inversion Hcontra. simpl in H. subst ϕ.
+      apply R. exists x. reflexivity.
+  Defined.
+  
+  Definition is_bound_svar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_svar b.
+  
+  Global Instance is_bound_svar_dec (ϕ : Pattern) : Decision (is_bound_svar ϕ).
+  Proof.
+    unfold Decision; destruct ϕ; simpl;
+      try solve[right; intros [b Hcontra]; inversion Hcontra].
+    left. exists n. reflexivity.
+  Defined.
+
+  Definition is_bound_svar_entry (ϕnϕ : CacheEntry) : Prop := is_bound_svar (fst ϕnϕ).
+  
+  Global Instance is_bound_svar_entry_dec (ce : CacheEntry) : Decision (is_bound_svar_entry ce).
+  Proof.
+    destruct ce as [ϕ nϕ].
+    destruct (decide (is_bound_svar ϕ)) as [L|R].
+    - left. destruct L as [dbi Hdbi]. subst ϕ. exists dbi. reflexivity.
+    - right. intros Hcontra. inversion Hcontra. simpl in H. subst ϕ.
+      apply R. exists x. reflexivity.
+  Defined.
+
+  
+  Definition keep_bound_evars (cache : gmap Pattern NamedPattern) :=
+    filter is_bound_evar_entry cache.
+
+  Definition remove_bound_evars (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ is_bound_evar_entry e) cache.
+
+  Definition keep_bound_svars (cache : gmap Pattern NamedPattern) :=
+    filter is_bound_svar_entry cache.
+
+  Definition remove_bound_svars (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ is_bound_svar_entry e) cache.
+  
+  
+  (* pre: all dangling variables of [\phi] are in [cache].  *)
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
            (cache : gmap Pattern NamedPattern)
@@ -136,17 +278,19 @@ Section named.
          | patt_exists phi
            => let: x := evs_fresh used_evars phi in
               let: used_evars_ex := used_evars ∪ {[x]} in
-              let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr cache) in
+              let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr_evar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                 := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
-              (npatt_exists x nphi, cache', used_evars', used_svars)
+                := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
+              let: cache'' := (remove_bound_evars cache') ∪ (keep_bound_evars cache) in
+              (npatt_exists x nphi, cache'', used_evars', used_svars)
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
               let: used_svars_ex := used_svars ∪ {[X]} in
-              let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr cache) in
+              let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr_svar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                 := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
-              (npatt_mu X nphi, cache', used_evars', used_svars)
+                := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
+              let: cache'' := (remove_bound_svars cache') ∪ (keep_bound_svars cache) in
+              (npatt_mu X nphi, cache'', used_evars', used_svars)
          end
       in
       (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
@@ -306,6 +450,22 @@ Section named.
     | npatt_mu X psi => named_no_negative_occurrence X psi && named_well_formed_positive psi
     end.
 
+  Definition named_well_formed := named_well_formed_positive.
+
+  Inductive Named_Application_context : Type :=
+  | nbox
+  | nctx_app_l (cc : Named_Application_context) (p : NamedPattern) (Prf : named_well_formed p)
+  | nctx_app_r (p : NamedPattern) (cc : Named_Application_context) (Prf : named_well_formed p)
+  .
+
+  Fixpoint named_subst_ctx (C : Named_Application_context) (p : NamedPattern)
+    : NamedPattern :=
+    match C with
+    | nbox => p
+    | @nctx_app_l C' p' prf => npatt_app (named_subst_ctx C' p) p'
+    | @nctx_app_r p' C' prf => npatt_app p' (named_subst_ctx C' p)
+    end.  
+
 (*  
   Print well_formed_positive.
 
@@ -454,6 +614,10 @@ Section named_test.
   Definition phi_ex := (patt_imp phi_ex1 phi_ex2).
   Compute to_NamedPattern phi_ex.
   Compute to_NamedPattern2 phi_ex.
+
+  Compute to_NamedPattern2 (@patt_mu sig (patt_mu (patt_bound_svar 1))).
+
+  Compute to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))).
 
   Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
   Definition phi_mu2 := (@patt_mu sig (patt_bound_svar 0)).

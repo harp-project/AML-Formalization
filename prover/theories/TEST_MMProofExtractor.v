@@ -9,6 +9,8 @@ From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem ProofMode.
 From MatchingLogicProver Require Import MMProofExtractor Named.
 
+From stdpp Require Import base finite gmap mapset listset_nodup numbers.
+
 Open Scope ml_scope.
 Module MMTest.
   Import
@@ -31,7 +33,51 @@ Module MMTest.
     {| variables := StringMLVariables ;
        symbols := Symbol ;
     |}.
-  
+
+  Instance symbols_countable : Countable symbols.
+  Proof.
+    eapply finite_countable.
+    Unshelve.
+    destruct Symbol_eqdec with (x:=a) (y:=b), Symbol_eqdec with (x:=a) (y:=c).
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[]).
+        apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+        rewrite e0. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[c]).
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[b]).
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[b; c]).
+        apply not_elem_of_cons. split. auto.
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_further. apply elem_of_list_here.
+  Qed.
+
   Definition symbolPrinter (s : Symbol) : string :=
     match s with
     | a => "sym-a"
@@ -51,7 +97,7 @@ Module MMTest.
   Proof.
     apply P1; auto.
   Defined.
-  
+
   Definition proof_1 : string :=
     (Database_toString
        (proof2database
@@ -62,7 +108,6 @@ Module MMTest.
           _
           ϕ₁_holds
     )).
-
 
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
 
@@ -207,9 +252,6 @@ Module MMTest.
 
   Open Scope string.
   
-  Compute (to_NamedPattern ϕ9).
-  Compute (to_NamedPattern ((ex, ex, patt_bound_evar 0) ---> (ex, patt_bound_evar 0))).
-  
   Lemma ϕ9_holds:
     ∅ ⊢ ϕ9.
   Proof.
@@ -240,10 +282,7 @@ Module MMTest.
     apply Existence.
   Defined.
   
-  Compute (to_NamedPattern
-             ϕ10).
-
-  Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern
+  Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern2
                                                          ϕ10)).
 
   Definition proof_10 : string :=
@@ -256,6 +295,14 @@ Module MMTest.
           _
           ϕ10_holds
     )).
+
+  Definition ϕ11 := instantiate (ex , patt_bound_evar 0) (patt_free_evar "y") ---> ex , patt_bound_evar 0.
+  Lemma ϕ11_holds:
+    ∅ ⊢ ϕ11.
+  Proof.
+    apply Ex_quan.
+    { wf_auto2. }
+  Qed.
 
   Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
   Lemma ϕtest_holds: ∅ ⊢ ϕtest.
