@@ -7757,6 +7757,17 @@ End FOL_helpers.
 
     toMyGoal.
     { wf_auto2. }
+    unfold patt_iff.
+    mgSplitAnd.
+    - mgIntro.
+      mgDestructOr 0.
+      mgLeft.
+      + mgApplyMeta pip'.
+        mgExactn 0.
+      + mgRight.
+        mgApplyMeta qiq'.
+        mgExactn 0.
+    - mgIntro.
       mgDestructOr 0.
       mgLeft.
       + mgApplyMeta p'ip.
