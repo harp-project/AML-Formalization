@@ -180,7 +180,7 @@ Section proof_system_translation.
       intros ψ nψ Hψ.
       destruct (decide (is_bound_evar ψ)).
       + rewrite lookup_union_r.
-        { unfold remove_bound_evars. Search filter lookup None.
+        { unfold remove_bound_evars.
           apply map_filter_lookup_None_2.
           right. intros nψ'. intros _.
           unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
@@ -221,7 +221,7 @@ Section proof_system_translation.
       intros ψ nψ Hψ.
       destruct (decide (is_bound_svar ψ)).
       + rewrite lookup_union_r.
-        { unfold remove_bound_evars. Search filter lookup None.
+        { unfold remove_bound_evars.
           apply map_filter_lookup_None_2.
           right. intros nψ'. intros _.
           unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
@@ -2061,7 +2061,6 @@ Qed.
           {
             destruct H as [H1 H2].
             inversion H1. subst. clear H1.
-            Search to_NamedPattern2'.
             epose proof (Hp00present := to_NamedPattern2'_ensures_present _ _ _ _).
             erewrite Heqp0 in Hp00present. simpl in Hp00present.
             right.
@@ -2106,9 +2105,263 @@ Qed.
           ex_extract_cached_subpattern H IH1 Hg0large p00.
           ex_finish_cached Hnsame Hnsubpattern Hnbound.
         }
-      * 
+      * repeat case_match_in_hyp H.
+        repeat case_match_in_hyp Heqp.
+        subst. simpl in *. invert_tuples.
+        rewrite lookup_insert_Some in H.
 
-  Admitted.
+        remember (s ∪ {[svs_fresh s p0]}) as svs'.
+        remember (<[BoundVarSugar.B0:=npatt_svar (svs_fresh s p0)]> (cache_incr_svar C)) as C'.
+
+        assert (HdanglingC'p0: dangling_vars_cached C' p0).
+        { 
+          rewrite HeqC'. apply dangling_vars_cached_shift_s. apply Hdangling.
+        }       
+        
+        assert (HcontC': cache_continuous_prop C').
+        {
+          rewrite HeqC'. apply cache_continuous_shift_s. exact Hcont.
+        }
+
+        (* need to show sub_prop C' holds *)
+        assert(HsubC' : sub_prop C').
+        {
+          unfold sub_prop.
+          intros p1 np1 Hnp1.
+          rewrite HeqC' in Hnp1.
+
+          Local Ltac mu_destruct_lookup_in_C' Hnp :=
+            match type of Hnp with
+            | ((_ !! ?P) = _) =>
+            (rewrite lookup_insert_ne in Hnp;[discriminate|]);
+            unfold cache_incr_svar in Hnp;
+            rewrite lookup_kmap_Some in Hnp;
+            destruct Hnp as [pincr [Hpincr1 Hpincr2]];
+            assert (Hpincreq: pincr = P);
+            [(destruct pincr; simpl in Hpincr1; inversion Hpincr1; reflexivity)|];
+            subst pincr; clear Hpincr1; rename Hpincr2 into Hnp
+            end.
+
+            Local Ltac mu_propagate_cached_into_C' HeqC' Hcp1_1 Hnbound :=
+              match goal with
+              | [ |- bound_or_cached _ ?p1_1] =>
+                destruct Hcp1_1 as [np1_1 Hnp1_1];
+                right;
+                exists np1_1;
+                rewrite HeqC';
+                rewrite lookup_insert_ne;
+                [(
+                  intros HContra; subst p1_1;
+                  apply Hnbound; exists 0; reflexivity
+                )|];
+                unfold cache_incr_svar;
+                replace (p1_1) with (incr_one_svar p1_1);
+                [|(destruct p1_1; try reflexivity;
+                  exfalso; apply Hnbound; eexists; reflexivity)
+                ];
+                rewrite lookup_kmap;
+                exact Hnp1_1
+              end.
+
+              Local Ltac mu_propagate_bound p1_1 Hnbound :=
+                destruct (decide (is_bound_svar p1_1)) as [Hbound|Hnbound];
+                [(
+                  left;
+                  unfold is_bound_svar in Hbound;
+                  destruct Hbound as [b Hbound];
+                  subst p1_1;
+                  reflexivity
+                )|].
+
+                Local Ltac mu_make_subpattern_boc Hsub Hnp1 subpattern Hsubcached :=
+                  match type of Hnp1 with
+                  | (?C !! ?big_pattern = Some ?np1) =>
+                    pose proof (Hsub1 := Hsub big_pattern np1 Hnp1);
+                    simpl in Hsub1;
+                    assert (Hsubboc: bound_or_cached C subpattern) by (destruct_and?; assumption);
+                    destruct Hsubboc as [Hsubbound|Hsubcached];
+                    [(left; exact Hsubbound)|]
+                  end.
+
+          Local Ltac mu_subpattern_boc HeqC' Hsub Hnp1 p1_1 :=
+            let Hnbound := fresh "Hnbound" in
+            mu_propagate_bound p1_1 Hnbound;
+            mu_destruct_lookup_in_C' Hnp1;
+            let Hsubcached := fresh "Hsubcached" in
+            mu_make_subpattern_boc Hsub Hnp1 p1_1 Hsubcached;
+            mu_propagate_cached_into_C' HeqC' Hsubcached Hnbound.
+
+          destruct p1; try exact I.
+          {            
+            split.
+            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
+            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
+          }
+          {
+            split.
+            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
+            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
+          }
+          { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
+          { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
+        }
+        epose proof (IH1 := IHp C' HdanglingC'p0 HcontC' HsubC' _ _).
+        erewrite Heqp0 in IH1. simpl in IH1.
+
+        Ltac mu2_propagate_bound subpattern Hnbound :=
+          destruct (decide (is_bound_svar subpattern)) as [Hbound|Hnbound];
+          [
+            left; apply bound_svar_is_bound_var; exact Hbound
+          |].
+        Ltac mu2_propagate_same subpattern largepattern nlargepattern :=
+          destruct (decide (subpattern = largepattern)) as [Hsame|Hnsame];
+          [
+            (right;
+            exists nlargepattern;
+            subst;
+            apply lookup_insert)
+          |].            
+        
+        Ltac mu2_extract_Hg0large H Hg0large :=
+          destruct H as [H|H];
+          [
+            (destruct H as [Hcontra _]; inversion Hcontra)
+          |];
+          destruct H as [_ H];
+          rewrite lookup_union_Some in H;
+          [|apply remove_disjoint_keep_s];
+          unfold keep_bound_svars in H;
+          rewrite map_filter_lookup_Some in H;
+          destruct H as [H|H];
+          [|(
+            rewrite map_filter_lookup_Some in H;
+            destruct H as [_ Hcontra];
+            destruct Hcontra as [dbi Hcontradbi];
+            inversion Hcontradbi
+          )];
+          destruct H as [Hg0large _].
+
+
+        Ltac mu2_extract_cached_subpattern H IH1 Hg0large subpattern :=
+          lazymatch type of Hg0large with
+          | (?g0 !! ?large_pattern = Some ?np) =>
+            pose proof (IH1 large_pattern np Hg0large);
+            simpl in H;
+            assert(Hbocsubpattern: bound_or_cached g0 subpattern);
+            [(destruct_and?; assumption)|];
+            destruct Hbocsubpattern as [Hboundsubpattern|Hcachedsubpattern];
+            [(left; exact Hboundsubpattern)|];
+            destruct Hcachedsubpattern as [nsubpattern Hnsubpattern]
+          end.
+
+        Ltac mu2_finish_cached Hnsame Hnsubpattern Hnbound :=
+          lazymatch type of Hnsubpattern with
+          | ((?g0 !! ?subpattern) = Some ?nsubpattern) =>
+            right;
+            exists nsubpattern;
+            rewrite lookup_insert_ne;
+            [(apply not_eq_sym; apply Hnsame)|];
+            rewrite lookup_union_Some;
+            [|apply remove_disjoint_keep_s];
+            left;
+            unfold remove_bound_svars;
+            rewrite map_filter_lookup_Some;
+            split;
+            [exact Hnsubpattern|];
+            unfold is_bound_svar_entry;
+            simpl;
+            exact Hnbound
+          end.
+
+
+        destruct p00; try exact I.
+        {
+          split.
+          {
+            mu2_propagate_bound p00_1 Hnbound.
+            mu2_propagate_same p00_1 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).  
+            mu2_extract_Hg0large H Hg0large.
+            mu2_extract_cached_subpattern H IH1 Hg0large p00_1.
+            mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+          }
+          {
+            mu2_propagate_bound p00_2 Hnbound.
+            mu2_propagate_same p00_2 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).  
+            mu2_extract_Hg0large H Hg0large.
+            mu2_extract_cached_subpattern H IH1 Hg0large p00_2.
+            mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+          }
+        }
+        {
+          split.
+          {
+            mu2_propagate_bound p00_1 Hnbound.
+            mu2_propagate_same p00_1 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).  
+            mu2_extract_Hg0large H Hg0large.
+            mu2_extract_cached_subpattern H IH1 Hg0large p00_1.
+            mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+          }
+          {
+            mu2_propagate_bound p00_2 Hnbound.
+            mu2_propagate_same p00_2 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).  
+            mu2_extract_Hg0large H Hg0large.
+            mu2_extract_cached_subpattern H IH1 Hg0large p00_2.
+            mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+          }
+        }
+        {
+          mu2_propagate_bound p00 Hnbound.
+          mu2_propagate_same p00 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).  
+          mu2_extract_Hg0large H Hg0large.
+          mu2_extract_cached_subpattern H IH1 Hg0large p00.
+          mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+        }
+        {
+          mu2_propagate_bound p00 Hnbound.
+          mu2_propagate_same p00 (patt_mu p0) (npatt_mu (svs_fresh s p0) n0).
+
+          destruct H as [H|H].
+          {
+            destruct H as [H1 H2].
+            inversion H1. subst. clear H1.
+            epose proof (Hp00present := to_NamedPattern2'_ensures_present _ _ _ _).
+            erewrite Heqp0 in Hp00present. simpl in Hp00present.
+            right.
+            exists n0.
+            rewrite lookup_insert_ne.
+            { apply not_eq_sym. exact Hnsame. }
+            rewrite lookup_union_Some.
+            2: { apply remove_disjoint_keep_s. }
+            left.
+            unfold remove_bound_svars.
+            rewrite map_filter_lookup_Some.
+            split.
+            {
+              exact Hp00present.
+            }
+            {
+              unfold is_bound_svar_entry. simpl. exact Hnbound.
+            }
+          }
+
+          destruct H as [_ H];
+          rewrite lookup_union_Some in H;
+          [|apply remove_disjoint_keep_s];
+          unfold keep_bound_evars in H;
+          rewrite map_filter_lookup_Some in H;
+          destruct H as [H|H];
+          [|(
+            rewrite map_filter_lookup_Some in H;
+            destruct H as [_ Hcontra];
+            destruct Hcontra as [dbi Hcontradbi];
+            inversion Hcontradbi
+          )];
+          destruct H as [Hg0large _].
+
+          mu2_extract_cached_subpattern H IH1 Hg0large p00.
+          mu2_finish_cached Hnsame Hnsubpattern Hnbound.
+        }
+  Qed.
 
   (*
   Lemma sub_prop_subcache (C C' : Cache) :
