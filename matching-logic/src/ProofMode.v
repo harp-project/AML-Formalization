@@ -7688,7 +7688,7 @@ Ltac tryExact l idx :=
     | (?a :: ?m) => try mgExactn idx; tryExact m (idx + 1)
   end.
 
-#[local]
+#[global]
 Ltac mgAssumption :=
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
@@ -7729,7 +7729,7 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-#[local]
+#[global]
   Ltac mgRevert :=
     match goal with
     | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
@@ -7992,7 +7992,7 @@ Ltac breakHyps l n:=
   )
 .
 
-#[local]
+#[global]
 Ltac mgTauto :=
   try (
   toNNF;
