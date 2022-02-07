@@ -2464,6 +2464,109 @@ Qed.
       + apply Hinner.
   Defined.
 
+  Lemma dangling_vars_cached_proj_insert C p q nq:
+    ~is_bound_var q ->
+    dangling_vars_cached (<[q := nq]> C) p ->
+    dangling_vars_cached C p.
+  Proof.
+    intros Hnb Hc.
+    destruct Hc as [Hce Hcs].
+    unfold dangling_evars_cached in Hce.
+    unfold dangling_svars_cached in Hcs.
+    split.
+    - unfold dangling_evars_cached.
+      intros b Hdng.
+      specialize (Hce b Hdng).
+      destruct Hce as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne in Hnphi.
+      {
+        destruct q; try discriminate.
+        exfalso. apply Hnb.
+        apply bound_evar_is_bound_var. exists n. reflexivity.
+      }
+      exact Hnphi.
+    - unfold dangling_svars_cached.
+      intros b Hdng.
+      specialize (Hcs b Hdng).
+      destruct Hcs as [nphi Hnphi].
+      exists nphi.
+      rewrite lookup_insert_ne in Hnphi.
+      {
+        destruct q; try discriminate.
+        exfalso. apply Hnb.
+        apply bound_svar_is_bound_var. exists n. reflexivity.
+      }
+      exact Hnphi.
+  Qed.
+
+  Lemma cached_imp_is_nimp
+    (C : Cache)
+    (hg : History_generator C)
+    (p q : Pattern)
+    (npq : NamedPattern):
+    dangling_vars_cached C (patt_imp p q) ->
+    C !! (patt_imp p q) = Some npq ->
+    exists (np nq : NamedPattern), npq = npatt_imp np nq.
+  Proof.
+    intros Hdangling Hcached.
+    destruct hg as [history Hhistory].
+    move: p q npq C Hdangling Hhistory Hcached.
+    induction history; intros p q npq C Hdangling Hhistory Hcached.
+    {
+      simpl in Hhistory. inversion Hhistory.
+    }
+    {
+      simpl in Hhistory.
+      destruct a as [p0 rest].
+      destruct rest as [rest svs].
+      destruct rest as [[np0 C'] evs].
+      simpl in Hhistory.
+      destruct Hhistory as [HC' Hhistory]. subst C'.
+      remember (last ((p0, (np0, C, evs, svs)) :: history)) as Hlast.
+      destruct Hlast.
+      2: {
+        destruct history.
+        { simpl in HeqHlast. inversion HeqHlast. }
+        {
+          simpl in HeqHlast. rewrite last_cons in HeqHlast.
+          destruct (last history) eqn:Hlh.
+          {
+            rewrite Hlh in HeqHlast. inversion HeqHlast.
+          }
+          {
+            rewrite Hlh in HeqHlast. inversion HeqHlast.
+          }
+        }
+      }
+      rewrite -HeqHlast in Hhistory.
+      destruct Hhistory as [Hhistory1 Hhistory2].
+      destruct p1 as [p_l x_l]. subst x_l.
+
+      destruct history.
+      {
+        simpl in HeqHlast. inversion HeqHlast. subst p_l. clear HeqHlast.
+        (*clear IHhistory. *)
+        destruct p0; simpl in H1;
+        case_match_in_hyp H1; rewrite lookup_empty in Heqo; inversion Heqo; clear Heqo;
+        inversion H1; subst; repeat case_match; invert_tuples;
+        try (rewrite lookup_insert_ne in Hcached;[discriminate|];
+        rewrite lookup_empty in Hcached; inversion Hcached).
+        - rewrite lookup_insert_ne in Hcached.
+          { discriminate. }
+          (* Contradiction. [g] cannot contain the implication. *)
+          (*assert(empty !! patt_imp p q = None).*)
+          pose proof (Honly1 := onlyAddsSubpatterns empty p0_1 empty empty).
+          feed specialize Honly1.
+          {
+            Search dangling_vars_cached.
+          }
+        
+      }
+      
+    }
+  Abort.
+
   Lemma consistency_pqp
         (p q : Pattern)
         (np' nq' np'' : NamedPattern)
