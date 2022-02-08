@@ -3071,14 +3071,97 @@ Qed.
       subst. exists np. exact HCp.
     }
     {
+      pose proof (Hsubp' := Hsubp (patt_app ϕ₂ ϕ₃) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hboc2 Hboc3].
+      destruct Hboc2 as [Hbound2|Hcached2].
+      {
+        destruct ϕ₂; simpl in Hbound2; inversion Hbound2.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached2 as [nϕ2 Hnϕ2].
+
       eapply IHHsubf.
       { exact Hnbound. }
       { exact Hsubp. }
-      { unfold sub_prop in Hsubp.
-        specialize (Hsubp (patt_app ϕ₂ ϕ₃)).
-      }
+      { exact Hnϕ2. }
     }
+    {
+      pose proof (Hsubp' := Hsubp (patt_app ϕ₂ ϕ₃) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hboc2 Hboc3].
+      destruct Hboc3 as [Hbound3|Hcached3].
+      {
+        destruct ϕ₃; simpl in Hbound3; inversion Hbound3.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached3 as [nϕ3 Hnϕ3].
 
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { exact Hnϕ3. }
+    }
+    {
+      pose proof (Hsubp' := Hsubp (patt_imp ϕ₂ ϕ₃) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hboc2 Hboc3].
+      destruct Hboc2 as [Hbound2|Hcached2].
+      {
+        destruct ϕ₂; simpl in Hbound2; inversion Hbound2.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached2 as [nϕ2 Hnϕ2].
+
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { exact Hnϕ2. }
+    }
+    {
+      pose proof (Hsubp' := Hsubp (patt_imp ϕ₂ ϕ₃) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hboc2 Hboc3].
+      destruct Hboc3 as [Hbound3|Hcached3].
+      {
+        destruct ϕ₃; simpl in Hbound3; inversion Hbound3.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached3 as [nϕ3 Hnϕ3].
+
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { exact Hnϕ3. }
+    }
+    {
+      pose proof (Hsubp' := Hsubp (patt_exists ϕ₂) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hbound|Hcached].
+      {
+        destruct ϕ₂; simpl in Hbound; inversion Hbound.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached as [nϕ Hnϕ].
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { exact Hnϕ. }
+    }
+    {
+      pose proof (Hsubp' := Hsubp (patt_mu ϕ₂) np HCp). simpl in Hsubp'.
+      destruct Hsubp' as [Hbound|Hcached].
+      {
+        destruct ϕ₂; simpl in Hbound; inversion Hbound.
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+        { inversion Hsubf. subst. clear Hsubf. exfalso. apply Hnbound. simpl. exact I. }
+      }
+      destruct Hcached as [nϕ Hnϕ].
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { exact Hnϕ. }
+    }
   Qed.
 
   Lemma actually_adds_subpatterns p C evs svs q:
