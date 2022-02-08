@@ -3173,63 +3173,10 @@ Qed.
     exists nq, (to_NamedPattern2' p C evs svs).1.1.2 !! q = Some nq.
   Proof.
     intros Hdgcached Hccont Hsubp Hsubf Hnbound.
-    Check sub_prop_step.
-    pose proof (Hsubp' := sub_prop_step C p evs svs Hdgcached Hccont Hsubp).
-
-
-
-  move: C evs svs q.
-  induction p; intros C evs svs q Hsub Hnbound; simpl.
-  - inversion Hsub; subst; clear Hsub.
-    case_match.
-    {
-      simpl. exists n. exact Heqo.
-    }
-    simpl. exists (npatt_evar x). apply lookup_insert.
-  - inversion Hsub; subst; clear Hsub.
-    case_match.
-    {
-      simpl. exists n. exact Heqo.
-    }
-    simpl. exists (npatt_svar x). apply lookup_insert.
-  - inversion Hsub; subst; clear Hsub.
-    exfalso. apply Hnbound. simpl. exact I.
-  - inversion Hsub; subst; clear Hsub.
-    exfalso. apply Hnbound. simpl. exact I.
-  - inversion Hsub; subst; clear Hsub.
-    case_match.
-    {
-      simpl. exists n. exact Heqo.
-    }
-    simpl. exists (npatt_sym sigma). apply lookup_insert.
-  - inversion Hsub; subst; clear Hsub.
-    {
-      repeat case_match; invert_tuples; simpl in *.
-      { exists n. exact Heqo. }
-      { exists (npatt_app n n0). apply lookup_insert. }
-    }
-    {
-      repeat case_match; invert_tuples; simpl in *. Print sub_prop.
-      (*
-
-      *)
-    }
-
-
-
-    intros Hsub.
-    move: C evs svs.
-    induction Hsub; intros C evs svs Hnbound.
-    - subst.
-      eexists.
-      apply to_NamedPattern2'_ensures_present.
-    - specialize (IHHsub C evs svs Hnbound).
-      destruct IHHsub as [nq Hnq].
-      exists nq. simpl. repeat case_match.
-      + simpl.
-    apply IHHsub.
+    epose proof (to_NamedPattern2'_ensures_present _ _ _ _).
+    eapply sub_prop_trans; eauto.
+    { apply sub_prop_step; assumption. }
   Qed.
-
 
   Lemma find_nested_call
     (p : Pattern)
