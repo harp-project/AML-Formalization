@@ -3173,10 +3173,20 @@ Qed.
     exists nq, (to_NamedPattern2' p C evs svs).1.1.2 !! q = Some nq.
   Proof.
     intros Hdgcached Hccont Hsubp Hsubf Hnbound.
-    epose proof (to_NamedPattern2'_ensures_present _ _ _ _).
-    eapply sub_prop_trans; eauto.
+    epose proof (to_NamedPattern2'_ensures_present p C evs svs).
+    Check sub_prop_trans.
+    pose proof (Htrans := sub_prop_trans (to_NamedPattern2' p C evs svs).1.1.2 p (to_NamedPattern2' p C evs svs).1.1.1 q Hsubf Hnbound).
+    feed specialize Htrans.
     { apply sub_prop_step; assumption. }
+    { exact H. }
+    exact Htrans.
   Qed.
+
+  #[global]
+  Instance NamedPattern_eqdec : EqDecision NamedPattern.
+  Proof.
+    solve_decision.
+  Defined.
 
   Lemma find_nested_call
     (p : Pattern)
@@ -3186,20 +3196,30 @@ Qed.
     (Cout : Cache)
     (q : Pattern)
     (nq : NamedPattern):
+    ~ is_bound_var q ->
+    dangling_vars_cached Cin p ->
+    cache_continuous_prop Cin ->
+    sub_prop Cin ->
     Cin !! q = None ->
     Cout !! q = Some nq ->
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
     exists Cfound evsfound svsfound,
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
-    intros Hqin Hqout Hcall.
+    intros Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall.
+    (*
     pose proof (Hsub := onlyAddsSubpatterns2 Cin p evsin svsin q Hqin).
     feed specialize Hsub.
     {
       exists nq. rewrite Hcall. exact Hqout.
-    }
-    move: q nq evsin svsin Cin Cout Hqin Hqout Hcall Hsub.
-    induction p; intros q nq evsin svsin Cin Cout Hqin Hqout Hcall Hsub;
+    }*)
+    remember (size' p) as sz.
+    assert (Hsz: size' p <= sz) by lia.
+    clear Heqsz.
+    move: p Hsz q nq evsin svsin Cin Cout Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall.
+    induction sz.
+    { intros p Hsz; destruct p; simpl in Hsz; lia. }
+    intros p Hsz; destruct p; simpl in Hsz; intros q nq evsin svsin Cin Cout Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall;
       simpl in Hcall.
     {
       case_match_in_hyp Hcall.
@@ -3319,14 +3339,71 @@ Qed.
       }
       {
         destruct Hneq as [Hneq1 Hnq].
-        inversion Hsub; subst; clear Hsub.
-        { contradiction Hneq1. reflexivity. }
-        {
-          specialize (IHp1 q nq evsin svsin Cin g0 Hqin).
+        
+        assert (Hdvcp1: dangling_vars_cached Cin p1).
+          {
+            eapply dangling_vars_cached_app_proj1. exact Hdvc.
+          }
+
+          assert (Hdvcp2: dangling_vars_cached Cin p2).
+          {
+            eapply dangling_vars_cached_app_proj2. exact Hdvc.
+          }
+          Search dangling_vars_cached. (* we want something like dangling_vars_cached_step. *)
+
+          destruct (g0 !! q) eqn:Hg0q.
+          {
+            epose proof (Hext := to_NamedPattern2'_extends_cache _ _ _ _).
+            erewrite Heqp2 in Hext. simpl in Hext.
+            Search subseteq lookup.
+            pose proof (Hg0q' := Hg0q).
+            eapply lookup_weaken in Hg0q';[|exact Hext].
+            rewrite Hnq in Hg0q'. inversion Hg0q'; subst; clear Hg0q'.
+            
+            eapply IHsz with (p := p1).
+            { lia. }
+            { exact Hnbq. }
+            { exact Hdvcp1. }
+            { exact Hccp. }
+            { exact Hsp. }
+            { exact Hqin. }
+            { exact Hg0q. }
+            { erewrite Heqp1. reflexivity. }
+          }
+          {
+            eapply IHsz with (p := p2).
+            { lia. }
+            { exact Hnbq. }
+            { (* FIXME here we want ?Cin to unify with g0; i.e., dangling_vars_cached g0 p2*)
+              exact Hdvcp2. }
+            { exact Hccp. }
+            { exact Hsp. }
+            { exact Hqin. }
+            { exact Hnq. }
+
+            erewrite Heqp2.
+          }
+
+          exists Cin, evsin, svsin.
+          Check actually_adds_subpatterns.
+          pose proof (Haas := actually_adds_subpatterns p1 Cin evsin svsin q Hdvcp1 Hccp Hsp H1 Hnbq).
+          destruct Haas as [nq' Hnq'].
+          rewrite Heqp1 in Hnq'. simpl in Hnq'.
           (* We need a lemma saying that the translation function actually adds subpatterns
           (other than bound variables) to the cache.
           Then g0 contains q and we can specialize IHp1
           *)
+          specialize (IHp1 q nq' evsin svsin Cin g0 Hnbq Hdvcp1 Hccp Hsp Hqin Hnq').
+          rewrite Heqp1 in IHp1. simpl in IHp1.
+          specialize (IHp1 eq_refl H1).
+          destruct IHp1 as [Cfound [evsfound [svsfound IHp1]]].
+          exists Cfound,evsfound,svsfound.
+          apply IHp1.
+          feed specialize IHp1.
+          {
+            eapply dangling_vars_cached_app_proj1. exact Hdvc.
+          }
+          specialize (IHp1 Hqin).
         }
       }
     }
