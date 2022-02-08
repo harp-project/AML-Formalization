@@ -3057,12 +3057,199 @@ Qed.
       exact Hnphi.
   Qed.
 
+  Lemma find_nested_call
+    (p : Pattern)
+    (Cin : Cache)
+    (evsin : EVarSet)
+    (svsin : SVarSet)
+    (Cout : Cache)
+    (q : Pattern)
+    (nq : NamedPattern):
+    Cin !! q = None ->
+    Cout !! q = Some nq ->
+    (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
+    exists Cfound evsfound svsfound,
+      (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
+  Proof.
+    intros Hqin Hqout Hcall.
+    pose proof (Hsub := onlyAddsSubpatterns2 Cin p evsin svsin q Hqin).
+    feed specialize Hsub.
+    {
+      exists nq. rewrite Hcall. exact Hqout.
+    }
+    move: q nq evsin svsin Cin Cout Hqin Hqout Hcall Hsub.
+    induction p; intros q nq evsin svsin Cin Cout Hqin Hqout Hcall Hsub;
+      simpl in Hcall.
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      simpl in Hcall.
+      rewrite -Hcall in Hqout.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [H|H].
+      {
+        destruct H as [H1 H2]. subst.
+        exists Cin, evsin, svsin.
+        simpl.
+        rewrite Hqin. simpl. reflexivity.
+      }
+      {
+        destruct H as [H1 H2].
+        rewrite H2 in Hqin. inversion Hqin.
+      }
+    }
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      simpl in Hcall.
+      rewrite -Hcall in Hqout.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [H|H].
+      {
+        destruct H as [H1 H2]. subst.
+        exists Cin, evsin, svsin.
+        simpl.
+        rewrite Hqin. simpl. reflexivity.
+      }
+      {
+        destruct H as [H1 H2].
+        rewrite H2 in Hqin. inversion Hqin.
+      }
+    }
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      simpl in Hcall.
+      rewrite -Hcall in Hqout.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [H|H].
+      {
+        destruct H as [H1 H2]. subst.
+        exists Cin, evsin, svsin.
+        simpl.
+        rewrite Hqin. simpl. reflexivity.
+      }
+      {
+        destruct H as [H1 H2].
+        rewrite H2 in Hqin. inversion Hqin.
+      }
+    }
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      simpl in Hcall.
+      rewrite -Hcall in Hqout.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [H|H].
+      {
+        destruct H as [H1 H2]. subst.
+        exists Cin, evsin, svsin.
+        simpl.
+        rewrite Hqin. simpl. reflexivity.
+      }
+      {
+        destruct H as [H1 H2].
+        rewrite H2 in Hqin. inversion Hqin.
+      }
+    }
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      simpl in Hcall.
+      rewrite -Hcall in Hqout.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [H|H].
+      {
+        destruct H as [H1 H2]. subst.
+        exists Cin, evsin, svsin.
+        simpl.
+        rewrite Hqin. simpl. reflexivity.
+      }
+      {
+        destruct H as [H1 H2].
+        rewrite H2 in Hqin. inversion Hqin.
+      }
+    }
+    {
+      case_match_in_hyp Hcall.
+      {
+        simpl in Hcall. rewrite Hcall in Hqin. rewrite Hqout in Hqin. inversion Hqin.
+      }
+      repeat case_match. invert_tuples. simpl in *.
+      rewrite lookup_insert_Some in Hqout.
+      destruct Hqout as [Heq|Hneq].
+      {
+        destruct Heq as [Heq1 Heq2].
+        subst.
+        exists Cin, evsin, svsin.
+        simpl. rewrite Hqin.
+        repeat case_match. invert_tuples. simpl in *.
+        rewrite Heqp2 in Heqp5. inversion Heqp5. subst. reflexivity.
+      }
+      {
+        destruct Hneq as [Hneq1 Hnq].
+        inversion Hsub; subst; clear Hsub.
+        { contradiction Hneq1. reflexivity. }
+        {
+          specialize (IHp1 q nq evsin svsin Cin g0 Hqin).
+        }
+      }
+    }
+  Qed.
+
+  Lemma cached_p_impl_called_with_p
+    (C : Cache)
+    (hg : History_generator C)
+    (p : Pattern)
+    (np : NamedPattern):
+    C !! p = Some np ->
+    exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet),
+      C' !! p = None /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
+  Proof.
+    intros Hcached.
+    destruct hg as [history Hhistory].
+    move: p np C Hcached Hhistory.
+    induction history; intros p np C Hcached Hhistory.
+    {
+      simpl in Hhistory. inversion Hhistory.
+    }
+    {
+      simpl in Hhistory.
+      destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
+      destruct a as [hip [[[hinp hiC] hievs] hisvs]].
+      simpl in Hhistory1. subst hiC.
+      destruct history.
+      {
+        simpl in Hhistory2. clear Hhistory3 IHhistory.
+        pose proof (Hoas := onlyAddsSubpatterns2 empty hip empty empty p).
+        feed specialize Hoas.
+        {
+          apply lookup_empty.
+        }
+        {
+          rewrite -Hhistory2. simpl. exists np. exact Hcached.
+        }
+        exists C, hievs, hisvs.
+      }
+    }
+  Qed.
+
   Lemma cached_imp_is_nimp
     (C : Cache)
     (hg : History_generator C)
     (p q : Pattern)
     (npq : NamedPattern):
-    dangling_vars_cached C (patt_imp p q) ->
+    dangling_vars_cached C (patt_imp p q) -> (* Maybe not needed? *)
     C !! (patt_imp p q) = Some npq ->
     exists (np nq : NamedPattern), npq = npatt_imp np nq.
   Proof.
@@ -3115,11 +3302,21 @@ Qed.
           2: { simpl. auto. }
           (* Contradiction. [g] cannot contain the implication. *)
           (*assert(empty !! patt_imp p q = None).*)
-          pose proof (Honly1 := onlyAddsSubpatterns empty p0_1 empty empty).
-          feed specialize Honly1.
+          assert (g0 !! patt_imp p q = None).
           {
-            Search dangling_vars_cached.
+            assert (~ (exists npq', g0 !! patt_imp p q = npq')).
+            {
+              intros HContra.
+              pose proof (Honly1 := onlyAddsSubpatterns2 empty p0_1 empty empty).
+              specialize (Honly1 (patt_imp p q)).
+              feed specialize Honly1.
+              {
+
+              }
+            }
+            
           }
+          
         
       }
       
