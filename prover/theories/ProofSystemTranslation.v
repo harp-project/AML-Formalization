@@ -3057,6 +3057,97 @@ Qed.
       exact Hnphi.
   Qed.
 
+  Lemma sub_prop_trans C p np q:
+    is_subformula_of_ind q p ->
+    ~ is_bound_var q ->
+    sub_prop C ->
+    C !! p = Some np ->
+    exists nq, C !! q = Some nq.
+  Proof.
+    intros Hsubf.
+    move: C np.
+    induction Hsubf; intros C np Hnbound Hsubp HCp.
+    {
+      subst. exists np. exact HCp.
+    }
+    {
+      eapply IHHsubf.
+      { exact Hnbound. }
+      { exact Hsubp. }
+      { unfold sub_prop in Hsubp.
+        specialize (Hsubp (patt_app ϕ₂ ϕ₃)).
+      }
+    }
+
+  Qed.
+
+  Lemma actually_adds_subpatterns p C evs svs q:
+    dangling_vars_cached C p ->
+    cache_continuous_prop C ->
+    sub_prop C ->
+    is_subformula_of_ind q p ->
+    ~ is_bound_var q ->
+    exists nq, (to_NamedPattern2' p C evs svs).1.1.2 !! q = Some nq.
+  Proof.
+    intros Hdgcached Hccont Hsubp Hsubf Hnbound.
+    Check sub_prop_step.
+    pose proof (Hsubp' := sub_prop_step C p evs svs Hdgcached Hccont Hsubp).
+
+
+
+  move: C evs svs q.
+  induction p; intros C evs svs q Hsub Hnbound; simpl.
+  - inversion Hsub; subst; clear Hsub.
+    case_match.
+    {
+      simpl. exists n. exact Heqo.
+    }
+    simpl. exists (npatt_evar x). apply lookup_insert.
+  - inversion Hsub; subst; clear Hsub.
+    case_match.
+    {
+      simpl. exists n. exact Heqo.
+    }
+    simpl. exists (npatt_svar x). apply lookup_insert.
+  - inversion Hsub; subst; clear Hsub.
+    exfalso. apply Hnbound. simpl. exact I.
+  - inversion Hsub; subst; clear Hsub.
+    exfalso. apply Hnbound. simpl. exact I.
+  - inversion Hsub; subst; clear Hsub.
+    case_match.
+    {
+      simpl. exists n. exact Heqo.
+    }
+    simpl. exists (npatt_sym sigma). apply lookup_insert.
+  - inversion Hsub; subst; clear Hsub.
+    {
+      repeat case_match; invert_tuples; simpl in *.
+      { exists n. exact Heqo. }
+      { exists (npatt_app n n0). apply lookup_insert. }
+    }
+    {
+      repeat case_match; invert_tuples; simpl in *. Print sub_prop.
+      (*
+
+      *)
+    }
+
+
+
+    intros Hsub.
+    move: C evs svs.
+    induction Hsub; intros C evs svs Hnbound.
+    - subst.
+      eexists.
+      apply to_NamedPattern2'_ensures_present.
+    - specialize (IHHsub C evs svs Hnbound).
+      destruct IHHsub as [nq Hnq].
+      exists nq. simpl. repeat case_match.
+      + simpl.
+    apply IHHsub.
+  Qed.
+
+
   Lemma find_nested_call
     (p : Pattern)
     (Cin : Cache)
@@ -3202,6 +3293,10 @@ Qed.
         { contradiction Hneq1. reflexivity. }
         {
           specialize (IHp1 q nq evsin svsin Cin g0 Hqin).
+          (* We need a lemma saying that the translation function actually adds subpatterns
+          (other than bound variables) to the cache.
+          Then g0 contains q and we can specialize IHp1
+          *)
         }
       }
     }
