@@ -3238,7 +3238,6 @@ Qed.
   Proof.
     intros Hdgcached Hccont Hsubp Hsubf Hnbound.
     epose proof (to_NamedPattern2'_ensures_present p C evs svs).
-    Check sub_prop_trans.
     pose proof (Htrans := sub_prop_trans (to_NamedPattern2' p C evs svs).1.1.2 p (to_NamedPattern2' p C evs svs).1.1.1 q Hsubf Hnbound).
     feed specialize Htrans.
     { apply sub_prop_step; assumption. }
@@ -3678,6 +3677,50 @@ Qed.
         }
   Qed.
 
+
+  Lemma hist_prop_strip C a hip hinp hiC hievs hisvs history:
+    hist_prop C (a :: (hip, (hinp, hiC, hievs, hisvs)) :: history) ->
+    hist_prop hiC ((hip, (hinp, hiC, hievs, hisvs)) :: history).
+  Proof.
+    intros HC.
+    unfold hist_prop in *.
+    destruct HC as [HC1 [HC2 HC3]].
+    subst C.
+    split.
+    { simpl. reflexivity. }
+    split.
+    { simpl in HC2. apply HC2. }
+    clear HC2.
+    intros i.
+    specialize (HC3 (S i)).
+    repeat case_match; subst; try exact I.
+    {
+      Search list lookup S.
+      destruct HC3 as [p_i Hp_i].
+      rewrite lookup_cons_Some in Hp_i. simpl in Hp_i.
+      rewrite lookup_cons_Some in Heqo. simpl in Heqo.
+      destruct Heqo as [Heqo|Heqo].
+      {
+        destruct Heqo as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo as [_ Heqo].
+      replace (i - 0) with i in Heqo by lia.
+      rewrite Heqo in Heqo0. inversion Heqo0. subst. clear Heqo0.
+      exists p_i. destruct Hp_i as [Hcpi [Hccpc [Hsubc [Hdngl Hrest]]]].
+      split; [exact Hcpi|]. split; [exact Hccpc|]. split; [exact Hsubc|]. split; [exact Hdngl|].
+      destruct Hrest as [Hrest|Hrest].
+      {
+        destruct Hrest as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Hrest as [_ Hrest].
+      replace (i - 0) with i in Hrest by lia.
+      exact Hrest.
+    }
+    {
+      simpl in Heqo. rewrite Heqo in Heqo0. inversion Heqo0.
+    }
+  Qed.
+
   Lemma cached_p_impl_called_with_p
     (C : Cache)
     (hg : History_generator C)
@@ -3719,6 +3762,13 @@ Qed.
         destruct h as [hip [[[hinp hiC] hievs] hisvs]].
         destruct (hiC !! p) eqn:HeqhiCp.
         {
+          pose proof (IH := IHhistory p n hiC Hnboundp HeqhiCp).
+          eapply IHhistory with (C := hiC).
+          { exact Hnboundp. }
+          { exact Hcached. }
+          {
+            simpl.
+          }
           admit.
         }
         {
@@ -3727,21 +3777,11 @@ Qed.
           destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
           subst aC.
           specialize (Hhistory3 0). simpl in Hhistory3.
-          destruct Hhistory3 as [p_i [HhiCp_i [Hdngl Hp_i]]].
+          destruct Hhistory3 as [p_i [HhiCp_i [Hcont_i [Hsubp_i [Hdngl Hp_i]]]]].
           inversion Hp_i. subst ap. clear Hp_i.
-          Check find_nested_call.
-          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs C p np Hnboundp Hdngl).
-          feed specialize Hfnc.
-          exists hiC, hievs, hisvs.
-          split;[exact HeqhiCp|].
-          eapply find_nested_call.
-        }
-        Print hist_prop.
-        eapply IHhistory with (C := hiC).
-        { exact Hnboundp. }
-        { exact Hcached. }
-        {
-          simpl.
+          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs C p np Hnboundp Hdngl Hcont_i Hsubp_i HeqhiCp Hcached).
+          rewrite -H1 in Hfnc. simpl in Hfnc. specialize (Hfnc erefl).
+          apply Hfnc.
         }
       }
     }
