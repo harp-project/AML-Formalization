@@ -2989,6 +2989,7 @@ Qed.
             | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
                 exists p_i,
                 c_Si !! p_i = None /\
+                dangling_vars_cached c_Si p_i /\
                   ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
             end
     end.
@@ -3017,9 +3018,10 @@ Qed.
     (hC : History_generator C) :
     fmap evs_of (head (Hst_history C hC)) = Some evs ->
     fmap svs_of (head (Hst_history C hC)) = Some svs ->
+    dangling_vars_cached C p ->
     History_generator (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
-    intros Hevs Hsvs.
+    intros Hevs Hsvs HdcCp.
     destruct (C !! p) eqn:Hin.
     - exists (Hst_history C hC).
       unfold to_NamedPattern2'.
@@ -3036,8 +3038,8 @@ Qed.
       unfold evs_of, svs_of in *. simpl in *.
       inversion Hevs; inversion Hsvs; subst.
       repeat case_match; simpl in *; subst.
-      + exists p. split. assumption. reflexivity.
-      + exists p. split. assumption. reflexivity.
+      + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
+      + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
       + apply Hinner.
   Defined.
 
@@ -3639,14 +3641,15 @@ Qed.
     (hg : History_generator C)
     (p : Pattern)
     (np : NamedPattern):
+    ~ is_bound_var p ->
     C !! p = Some np ->
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet),
       C' !! p = None /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
   Proof.
-    intros Hcached.
+    intros Hnboundp Hcached.
     destruct hg as [history Hhistory].
-    move: p np C Hcached Hhistory.
-    induction history; intros p np C Hcached Hhistory.
+    move: p np C Hnboundp Hcached Hhistory.
+    induction history; intros p np C Hnboundp Hcached Hhistory.
     {
       simpl in Hhistory. inversion Hhistory.
     }
@@ -3658,6 +3661,8 @@ Qed.
       destruct history.
       {
         simpl in Hhistory2. clear Hhistory3 IHhistory.
+        pose proof (Hfnc := find_nested_call hip empty empty empty C p np Hnboundp).
+        rewrite -Hhistory2 in Hfnc. simpl in Hfnc.
         pose proof (Hoas := onlyAddsSubpatterns2 empty hip empty empty p).
         feed specialize Hoas.
         {
