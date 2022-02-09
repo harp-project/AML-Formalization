@@ -3260,17 +3260,18 @@ Qed.
     (q : Pattern)
     (nq : NamedPattern):
     ~ is_bound_var q ->
+    History_generator Cin ->
     dangling_vars_cached Cin p ->
     cache_continuous_prop Cin ->
     sub_prop Cin ->
     Cin !! q = None ->
     Cout !! q = Some nq ->
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
-    exists Cfound evsfound svsfound,
+    exists Cfound evsfound svsfound (HhistCfound : History_generator Cfound),
       Cfound !! q = None /\
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
-    intros Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall.
+    intros Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
     (*
     pose proof (Hsub := onlyAddsSubpatterns2 Cin p evsin svsin q Hqin).
     feed specialize Hsub.
@@ -3280,10 +3281,10 @@ Qed.
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz) by lia.
     clear Heqsz.
-    move: p Hsz q nq evsin svsin Cin Cout Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall.
+    move: p Hsz q nq evsin svsin Cin Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
     induction sz.
     { intros p Hsz; destruct p; simpl in Hsz; lia. }
-    intros p Hsz; destruct p; simpl in Hsz; intros q nq evsin svsin Cin Cout Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall;
+    intros p Hsz; destruct p; simpl in Hsz; intros q nq evsin svsin Cin Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall;
       simpl in Hcall.
     {
       case_match_in_hyp Hcall.
@@ -3296,7 +3297,7 @@ Qed.
       destruct Hqout as [H|H].
       {
         destruct H as [H1 H2]. subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl.
         rewrite Hqin. simpl. split; reflexivity.
       }
@@ -3316,7 +3317,7 @@ Qed.
       destruct Hqout as [H|H].
       {
         destruct H as [H1 H2]. subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl.
         rewrite Hqin. simpl. split; reflexivity.
       }
@@ -3336,7 +3337,7 @@ Qed.
       destruct Hqout as [H|H].
       {
         destruct H as [H1 H2]. subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl.
         rewrite Hqin. simpl. split; reflexivity.
       }
@@ -3356,7 +3357,7 @@ Qed.
       destruct Hqout as [H|H].
       {
         destruct H as [H1 H2]. subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl.
         rewrite Hqin. simpl. split; reflexivity.
       }
@@ -3376,7 +3377,7 @@ Qed.
       destruct Hqout as [H|H].
       {
         destruct H as [H1 H2]. subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl.
         rewrite Hqin. simpl. split; reflexivity.
       }
@@ -3396,7 +3397,7 @@ Qed.
       {
         destruct Heq as [Heq1 Heq2].
         subst.
-        exists Cin, evsin, svsin.
+        exists Cin, evsin, svsin, Hhist.
         simpl. rewrite Hqin.
         repeat case_match. invert_tuples. simpl in *.
         rewrite Heqp2 in Heqp5. inversion Heqp5. subst. split; reflexivity.
@@ -3430,17 +3431,26 @@ Qed.
             eapply lookup_weaken in Hg0q';[|exact Hext].
             rewrite Hnq in Hg0q'. inversion Hg0q'; subst; clear Hg0q'.
             
-            eapply IHsz with (p := p1).
-            { lia. }
-            { exact Hnbq. }
-            { exact Hdvcp1. }
-            { exact Hccp. }
-            { exact Hsp. }
-            { exact Hqin. }
-            { exact Hg0q. }
-            { erewrite Heqp1. reflexivity. }
+            epose proof (IH := IHsz p1 ltac:(lia) _ _ _ _ _ _ Hnbq Hhist Hdvcp1 Hccp Hsp Hqin Hg0q).
+            erewrite Heqp1 in IH. simpl in IH. specialize (IH erefl).
+            destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
+            exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1. exact H2.
           }
           {
+            Check history_generator_step.
+            assert (Hhist': History_generator g0).
+            {
+              replace g0 with ((n0, g0, e0, s0).1.1.2) by reflexivity.
+              rewrite -Heqp1.
+              
+              destruct (decide (Cin = ∅)).
+              {
+                subst Cin. 
+                eapply history_generator_step; auto.
+                right.
+              }
+            }
+            epose proof (IH := IHsz p2 ltac:(lia) _ _ _ _ _ _ Hnbq). Hdvg0p2).
             eapply IHsz with (p := p2).
             { lia. }
             { exact Hnbq. }
@@ -3744,7 +3754,7 @@ Qed.
     (np : NamedPattern):
     ~ is_bound_var p ->
     C !! p = Some np ->
-    exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet),
+    exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C'),
       C' !! p = None /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
   Proof.
     intros Hnboundp Hcached.
@@ -3809,7 +3819,7 @@ Qed.
       }
     }
   Qed.
-
+(*
   Lemma cached_imp_is_nimp
     (C : Cache)
     (hg : History_generator C)
@@ -3888,7 +3898,7 @@ Qed.
       
     }
   Abort.
-
+*)
   Lemma consistency_pqp
         (p q : Pattern)
         (np' nq' np'' : NamedPattern)
@@ -3896,11 +3906,84 @@ Qed.
         (evs : EVarSet)
         (svs : SVarSet):
     History_generator cache ->
-    (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
-    = npatt_imp np' (npatt_imp nq' np'') ->
-    np'' = np'.
+    sub_prop cache ->
+    dangling_vars_cached cache (patt_imp p (patt_imp q p)) ->
+      exists np nq,
+        (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
+    = npatt_imp np (npatt_imp nq np).
   Proof.
-
+    intros Hhist Hsubp Hdngcached.
+    remember ((to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs)) as Call.
+    simpl in HeqCall.
+    destruct (cache !! patt_imp p (patt_imp q p)) eqn:Hcachepqp.
+    {
+      rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
+    
+      apply cached_p_impl_called_with_p in Hcachepqp.
+      3: { simpl. auto. }
+      2: { exact Hhist. }
+      destruct Hcachepqp as [C' [evs' [svs' [HC'notcached HeqCall1]]]].
+      rewrite -HeqCall1. simpl. rewrite HC'notcached.
+      repeat case_match; invert_tuples; simpl in *.
+      {
+           apply cached_p_impl_called_with_p in Heqo.
+           3: { simpl. auto. }
+           2: {  }
+     }
+   
+     
+          pose proof (Hnp := Hsubp (patt_imp p (patt_imp q p)) npqp Hcachepqp).
+          simpl in Hnp.
+          destruct Hnp as [Hbocp Hbocqp].
+    
+          assert (Hcachedp: exists np, cache !! p = Some np).
+          {
+            destruct Hbocp as [Hboundp|Hcachedp'].
+            {
+              (* p is in cache because it is bound *)
+              pose proof (Hcachedp := Hdngcached).
+              apply dangling_vars_cached_imp_proj1 in Hcachedp.
+              destruct Hcachedp as [Hcachede Hcacheds].
+              unfold dangling_evars_cached,dangling_svars_cached in *.
+              destruct p; simpl in Hboundp; try inversion Hboundp.
+              { apply Hcachede. simpl. case_match. reflexivity. contradiction. }
+              { apply Hcacheds. simpl. case_match. reflexivity. contradiction. }
+            }
+            {
+              exact Hcachedp'.
+            }
+          }
+          destruct Hcachedp as [np Hcachedp].
+          exists np.
+    
+          destruct Hbocqp as [Hbqp|Hcqp].
+          { simpl in Hbqp. inversion Hbqp. }
+          destruct Hcqp as [nqp Hcachedqp].
+          pose proof (Hnqp := Hsubp (patt_imp q p) nqp Hcachedqp).
+          simpl in Hnqp.
+          destruct Hnqp as [Hbocq _].
+          assert (Hcachedq: exists nq, cache !! q = Some nq).
+          {
+            destruct Hbocq as [Hboundq|Hcachedq'].
+            {
+              (* p is in cache because it is bound *)
+              pose proof (Hcachedq := Hdngcached).
+              apply dangling_vars_cached_imp_proj2 in Hcachedq.
+              apply dangling_vars_cached_imp_proj1 in Hcachedq.
+              destruct Hcachedq as [Hcachede Hcacheds].
+              unfold dangling_evars_cached,dangling_svars_cached in *.
+              destruct q; simpl in Hboundq; try inversion Hboundq.
+              { apply Hcachede. simpl. case_match. reflexivity. contradiction. }
+              { apply Hcacheds. simpl. case_match. reflexivity. contradiction. }
+            }
+            {
+              exact Hcachedq'.
+            }
+          }
+          destruct Hcachedq as [nq Hcachedq].
+          exists nq.
+        }
+    
   (*
     (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
     (1) cache !! (p ---> (q ---> p)) = Some pqp'
