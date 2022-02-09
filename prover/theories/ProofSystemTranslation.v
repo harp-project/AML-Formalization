@@ -2991,6 +2991,8 @@ Qed.
             | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
                 exists p_i,
                 c_Si !! p_i = None /\
+                cache_continuous_prop c_Si /\
+                sub_prop c_Si /\
                 dangling_vars_cached c_Si p_i /\
                   ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
             end
@@ -3028,10 +3030,12 @@ Qed.
     ((fmap evs_of (head (Hst_history C hC)) = Some evs /\
      fmap svs_of (head (Hst_history C hC)) = Some svs)
      \/ ( (Hst_history C hC = []) /\ C = ∅ /\ evs = ∅ /\ svs = ∅)) ->
+    cache_continuous_prop C ->
+    sub_prop C ->
     dangling_vars_cached C p ->
     History_generator (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
-    intros Hevssvs HdcCp.
+    intros Hevssvs Hcont Hsubp HdcCp.
     destruct (C !! p) eqn:Hin.
     - exists (Hst_history C hC).
       unfold to_NamedPattern2'.
@@ -3061,8 +3065,12 @@ Qed.
         unfold evs_of, svs_of in *. simpl in *.
         inversion Hevs; inversion Hsvs; subst.
         repeat case_match; simpl in *; subst.
-        + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
-        + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
+        + exists p. split. exact Hin. split.
+          exact Hcont. split. exact Hsubp. split.
+          exact HdcCp. reflexivity.
+        + exists p. split. exact Hin. split.
+          exact Hcont. split. exact Hsubp. split.
+          exact HdcCp. reflexivity.
         + apply Hinner.
       }
       {
@@ -3714,9 +3722,7 @@ Qed.
           admit.
         }
         {
-          exists hiC, hievs, hisvs.
           destruct a as [ap [[[anp aC] aievs] aisvs]].
-          split;[exact HeqhiCp|].
           simpl in Hhistory.
           destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
           subst aC.
@@ -3726,6 +3732,8 @@ Qed.
           Check find_nested_call.
           pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs C p np Hnboundp Hdngl).
           feed specialize Hfnc.
+          exists hiC, hievs, hisvs.
+          split;[exact HeqhiCp|].
           eapply find_nested_call.
         }
         Print hist_prop.
