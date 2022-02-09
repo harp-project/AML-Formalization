@@ -3721,6 +3721,22 @@ Qed.
     }
   Qed.
 
+  Lemma hist_prop_subseteq C a hip hinp hiC hievs hisvs history:
+    hist_prop C (a :: (hip, (hinp, hiC, hievs, hisvs)) :: history) ->
+    hiC ⊆ C.
+  Proof.
+    intros Hhist.
+    unfold hist_prop in Hhist.
+    destruct Hhist as [Hhist1 [Hhist2 Hhist3]].
+    subst C.
+    destruct a as [ap [[[anp aC] aevs] asvs]].
+    specialize (Hhist3 0). simpl in Hhist3.
+    destruct Hhist3 as [p_i [H1 [H2 [H3 [H4 H5]]]]].
+    inversion H5; subst; clear H5.
+    rewrite H6.
+    apply to_NamedPattern2'_extends_cache.
+  Qed.
+
   Lemma cached_p_impl_called_with_p
     (C : Cache)
     (hg : History_generator C)
@@ -3763,13 +3779,20 @@ Qed.
         destruct (hiC !! p) eqn:HeqhiCp.
         {
           pose proof (IH := IHhistory p n hiC Hnboundp HeqhiCp).
+          feed specialize IH.
+          { apply hist_prop_strip in Hhistory. exact Hhistory. }
+          destruct IH as [C' [evs' [svs' [IH1 IH2]]]].
+          (* C came from hiC  *)
+          assert ( hiC ⊆ C ).
+          { eapply hist_prop_subseteq. exact Hhistory. }
           eapply IHhistory with (C := hiC).
           { exact Hnboundp. }
-          { exact Hcached. }
-          {
-            simpl.
+          { pose proof (Htmp := HeqhiCp).
+            apply lookup_weaken with (m2 := C) in Htmp.
+            2: { exact H. }
+            rewrite Htmp in Hcached. inversion Hcached. subst. exact HeqhiCp.
           }
-          admit.
+          { apply hist_prop_strip in Hhistory. exact Hhistory. }
         }
         {
           destruct a as [ap [[[anp aC] aievs] aisvs]].
