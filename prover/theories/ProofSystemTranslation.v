@@ -2980,7 +2980,9 @@ Qed.
         x.2.1.1.2 = C /\
           (match (last (x::xs)) with
            | None => False
-           | Some (p_l, x_l) => x_l = (to_NamedPattern2' p_l ∅ ∅ ∅)
+           | Some (p_l, x_l) =>
+            dangling_vars_cached ∅ p_l /\
+            x_l = (to_NamedPattern2' p_l ∅ ∅ ∅)
            end) /\
           forall (i:nat),
             match xs!!i with
@@ -3023,12 +3025,13 @@ Qed.
 
   Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet)
     (hC : History_generator C) :
-    fmap evs_of (head (Hst_history C hC)) = Some evs ->
-    fmap svs_of (head (Hst_history C hC)) = Some svs ->
+    ((fmap evs_of (head (Hst_history C hC)) = Some evs /\
+     fmap svs_of (head (Hst_history C hC)) = Some svs)
+     \/ ( (Hst_history C hC = []) /\ C = ∅ /\ evs = ∅ /\ svs = ∅)) ->
     dangling_vars_cached C p ->
     History_generator (to_NamedPattern2' p C evs svs).1.1.2.
   Proof.
-    intros Hevs Hsvs HdcCp.
+    intros Hevssvs HdcCp.
     destruct (C !! p) eqn:Hin.
     - exists (Hst_history C hC).
       unfold to_NamedPattern2'.
@@ -3037,26 +3040,41 @@ Qed.
       simpl.
       split;[reflexivity|].
       destruct hC. simpl in *.
-      unfold hist_prop in Hst_prop0.
-      destruct Hst_history0.
-      { subst C. simpl in *. inversion Hevs. }
-      destruct Hst_prop0 as [Hcache [HhistoryC Hinner]].
-      split.
-      { subst C. destruct h as [p0 [[[np0 C0] evs0] svs0]].
-        simpl in *. inversion Hevs. inversion Hsvs. clear Hevs Hsvs. subst.
+
+      destruct Hevssvs as [[Hevs Hsvs]|Hevssvs].
+      {
+        unfold hist_prop in Hst_prop0.
+        destruct Hst_history0.
+        { subst C. simpl in *. inversion Hevs. }
+        destruct Hst_prop0 as [Hcache [HhistoryC Hinner]].
+        split.
+        { subst C. destruct h as [p0 [[[np0 C0] evs0] svs0]].
+          simpl in * |-. inversion Hevs. inversion Hsvs. clear Hevs Hsvs. subst.
+          repeat unfold fst,snd,svs_of,evs_of.
+          unfold evs_of, svs_of in *. simpl in *.
+          rewrite last_cons. rewrite last_cons in HhistoryC.
+          destruct (last Hst_history0) eqn:Heqtmp.
+          { exact HhistoryC. }
+          { exact HhistoryC. }
+        }
+        destruct i; simpl.
         unfold evs_of, svs_of in *. simpl in *.
-        rewrite last_cons. rewrite last_cons in HhistoryC.
-        destruct (last Hst_history0) eqn:Heqtmp.
-        { exact HhistoryC. }
-        { exact HhistoryC. }
+        inversion Hevs; inversion Hsvs; subst.
+        repeat case_match; simpl in *; subst.
+        + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
+        + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
+        + apply Hinner.
       }
-      destruct i; simpl.
-      unfold evs_of, svs_of in *. simpl in *.
-      inversion Hevs; inversion Hsvs; subst.
-      repeat case_match; simpl in *; subst.
-      + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
-      + exists p. split. exact Hin. split. exact HdcCp. reflexivity.
-      + apply Hinner.
+      {
+        destruct Hevssvs as [H1 [H2 [H3 H4]]]. subst.
+        split.
+        {
+          simpl. split. exact HdcCp. reflexivity.
+        }
+        {
+          intros i. simpl. exact I.
+        }
+      }
   Defined.
 
   Lemma dangling_vars_cached_proj_insert C p q nq:
@@ -3667,7 +3685,8 @@ Qed.
     move: p np C Hnboundp Hcached Hhistory.
     induction history; intros p np C Hnboundp Hcached Hhistory.
     {
-      simpl in Hhistory. inversion Hhistory.
+      simpl in Hhistory. inversion Hhistory. subst C.
+      rewrite lookup_empty in Hcached. inversion Hcached.
     }
     {
       simpl in Hhistory.
