@@ -2975,7 +2975,7 @@ Qed.
   
   Definition hist_prop (C : Cache) (history : list hist_entry) : Prop :=
     match history with
-    | [] => False
+    | [] => C = ∅
     | (x::xs) =>
         x.2.1.1.2 = C /\
           (match (last (x::xs)) with
@@ -3014,6 +3014,13 @@ Qed.
   Abort.
 *)
 
+  Lemma history_generator_empty:
+    History_generator empty.
+  Proof.
+    apply mkHistory with (Hst_history := []).
+    simpl. reflexivity.
+  Qed.
+
   Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet)
     (hC : History_generator C) :
     fmap evs_of (head (Hst_history C hC)) = Some evs ->
@@ -3031,9 +3038,18 @@ Qed.
       split;[reflexivity|].
       destruct hC. simpl in *.
       unfold hist_prop in Hst_prop0.
-      destruct Hst_history0; [contradiction|].
+      destruct Hst_history0.
+      { subst C. simpl in *. inversion Hevs. }
       destruct Hst_prop0 as [Hcache [HhistoryC Hinner]].
-      split; auto.
+      split.
+      { subst C. destruct h as [p0 [[[np0 C0] evs0] svs0]].
+        simpl in *. inversion Hevs. inversion Hsvs. clear Hevs Hsvs. subst.
+        unfold evs_of, svs_of in *. simpl in *.
+        rewrite last_cons. rewrite last_cons in HhistoryC.
+        destruct (last Hst_history0) eqn:Heqtmp.
+        { exact HhistoryC. }
+        { exact HhistoryC. }
+      }
       destruct i; simpl.
       unfold evs_of, svs_of in *. simpl in *.
       inversion Hevs; inversion Hsvs; subst.
