@@ -3689,24 +3689,52 @@ Qed.
       rewrite lookup_empty in Hcached. inversion Hcached.
     }
     {
-      simpl in Hhistory.
-      destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
-      destruct a as [hip [[[hinp hiC] hievs] hisvs]].
-      simpl in Hhistory1. subst hiC.
       destruct history.
       {
-        simpl in Hhistory2. clear Hhistory3 IHhistory.
-        pose proof (Hfnc := find_nested_call hip empty empty empty C p np Hnboundp).
-        rewrite -Hhistory2 in Hfnc. simpl in Hfnc.
-        pose proof (Hoas := onlyAddsSubpatterns2 empty hip empty empty p).
-        feed specialize Hoas.
+        simpl in Hhistory.
+        destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
+        destruct a as [hip [[[hinp hiC] hievs] hisvs]].
+        simpl in Hhistory1. subst hiC.
+        clear Hhistory3 IHhistory.
+        simpl in Hhistory2.
+        destruct Hhistory2 as [Hhistory2a Hhistory2b].
+        pose proof (Hfnc := find_nested_call hip empty empty empty C p np Hnboundp Hhistory2a).
+        feed specialize Hfnc.
+        { apply cache_continuous_empty. }
+        { apply sub_prop_empty. }
+        { apply lookup_empty. }
+        { exact Hcached. }
+        { rewrite -Hhistory2b. reflexivity. }
+        apply Hfnc.
+      }
+      {
+        destruct h as [hip [[[hinp hiC] hievs] hisvs]].
+        destruct (hiC !! p) eqn:HeqhiCp.
         {
-          apply lookup_empty.
+          admit.
         }
         {
-          rewrite -Hhistory2. simpl. exists np. exact Hcached.
+          exists hiC, hievs, hisvs.
+          destruct a as [ap [[[anp aC] aievs] aisvs]].
+          split;[exact HeqhiCp|].
+          simpl in Hhistory.
+          destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
+          subst aC.
+          specialize (Hhistory3 0). simpl in Hhistory3.
+          destruct Hhistory3 as [p_i [HhiCp_i [Hdngl Hp_i]]].
+          inversion Hp_i. subst ap. clear Hp_i.
+          Check find_nested_call.
+          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs C p np Hnboundp Hdngl).
+          feed specialize Hfnc.
+          eapply find_nested_call.
         }
-        exists C, hievs, hisvs.
+        Print hist_prop.
+        eapply IHhistory with (C := hiC).
+        { exact Hnboundp. }
+        { exact Hcached. }
+        {
+          simpl.
+        }
       }
     }
   Qed.
