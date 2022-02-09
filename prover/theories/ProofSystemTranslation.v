@@ -3224,6 +3224,7 @@ Qed.
     Cout !! q = Some nq ->
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
     exists Cfound evsfound svsfound,
+      Cfound !! q = None /\
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
     intros Hnbq Hdvc Hccp Hsp Hqin Hqout Hcall.
@@ -3254,7 +3255,7 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin.
         simpl.
-        rewrite Hqin. simpl. reflexivity.
+        rewrite Hqin. simpl. split; reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3274,7 +3275,7 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin.
         simpl.
-        rewrite Hqin. simpl. reflexivity.
+        rewrite Hqin. simpl. split; reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3294,7 +3295,7 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin.
         simpl.
-        rewrite Hqin. simpl. reflexivity.
+        rewrite Hqin. simpl. split; reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3314,7 +3315,7 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin.
         simpl.
-        rewrite Hqin. simpl. reflexivity.
+        rewrite Hqin. simpl. split; reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3334,7 +3335,7 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin.
         simpl.
-        rewrite Hqin. simpl. reflexivity.
+        rewrite Hqin. simpl. split; reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3355,7 +3356,7 @@ Qed.
         exists Cin, evsin, svsin.
         simpl. rewrite Hqin.
         repeat case_match. invert_tuples. simpl in *.
-        rewrite Heqp2 in Heqp5. inversion Heqp5. subst. reflexivity.
+        rewrite Heqp2 in Heqp5. inversion Heqp5. subst. split; reflexivity.
       }
       {
         destruct Hneq as [Hneq1 Hnq].
@@ -3433,7 +3434,7 @@ Qed.
           destruct H as [H1 H2]. subst.
           exists Cin, evsin, svsin.
           simpl.
-          rewrite Hqin. simpl. reflexivity.
+          rewrite Hqin. simpl. split; reflexivity.
         }
         {
           destruct H as [H1 H2].
@@ -3454,7 +3455,7 @@ Qed.
           exists Cin, evsin, svsin.
           simpl. rewrite Hqin.
           repeat case_match. invert_tuples. simpl in *.
-          rewrite Heqp2 in Heqp5. inversion Heqp5. subst. reflexivity.
+          rewrite Heqp2 in Heqp5. inversion Heqp5. subst. split; reflexivity.
         }
         {
           destruct Hneq as [Hneq1 Hnq].
@@ -3533,7 +3534,7 @@ Qed.
             exists Cin, evsin, s.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
-            reflexivity.
+            split; reflexivity.
           }
           {
             destruct Hneq as [Hneq1 Hnq].
@@ -3551,13 +3552,6 @@ Qed.
             unfold remove_bound_evars in Hnq.
             rewrite map_filter_lookup_Some in Hnq.
             destruct Hnq as [Hg0q _].
-
-            (*
-            assert (Hdvcp : dangling_vars_cached Cin p).
-            {
-              apply dangling_vars_cached_ex_proj
-            }
-            *)
 
             epose proof (IH := IHsz p ltac:(lia) q nq _ _ _ _ Hnbq).
             feed specialize IH.
@@ -3596,7 +3590,7 @@ Qed.
             exists Cin, evsin, s.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
-            reflexivity.
+            split; reflexivity.
           }
           {
             destruct Hneq as [Hneq1 Hnq].
@@ -3614,13 +3608,6 @@ Qed.
             unfold remove_bound_evars in Hnq.
             rewrite map_filter_lookup_Some in Hnq.
             destruct Hnq as [Hg0q _].
-
-            (*
-            assert (Hdvcp : dangling_vars_cached Cin p).
-            {
-              apply dangling_vars_cached_ex_proj
-            }
-            *)
 
             epose proof (IH := IHsz p ltac:(lia) q nq _ _ _ _ Hnbq).
             feed specialize IH.
