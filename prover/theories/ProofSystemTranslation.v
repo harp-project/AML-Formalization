@@ -3023,7 +3023,7 @@ Qed.
   Proof.
     apply mkHistory with (Hst_history := []).
     simpl. reflexivity.
-  Qed.
+  Defined.
 
   Lemma history_generator_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet)
     (hC : History_generator C) :
@@ -3251,6 +3251,31 @@ Qed.
     solve_decision.
   Defined.
 
+  Definition CES_prop (C : Cache) (evs : EVarSet) (svs : SVarSet) : Prop
+  := (C = ∅) -> (evs = ∅ /\ svs = ∅).
+
+  Lemma CES_prop_empty: CES_prop ∅ ∅ ∅.
+  Proof. intros H. split; reflexivity. Qed.
+
+  Lemma CES_prop_insert p np C evs svs:
+    CES_prop (<[p := np]> C) evs svs.
+  Proof.
+    intros H. Search insert empty. exfalso.
+    epose proof (Htmp := insert_non_empty C p np).
+    contradiction.
+  Qed.
+
+
+  Lemma CES_prop_step p C evs svs:
+    CES_prop C evs svs ->
+    let: (_, C', evs', svs') := (to_NamedPattern2' p C evs svs) in
+    CES_prop C' evs' svs'.
+  Proof.
+    intros HCES.
+    induction p; simpl; repeat case_match; invert_tuples; try assumption;
+      apply CES_prop_insert.
+  Qed.
+
   Lemma find_nested_call
     (p : Pattern)
     (Cin : Cache)
@@ -3259,6 +3284,7 @@ Qed.
     (Cout : Cache)
     (q : Pattern)
     (nq : NamedPattern):
+    CES_prop Cin evsin svsin ->
     ~ is_bound_var q ->
     History_generator Cin ->
     dangling_vars_cached Cin p ->
@@ -3271,7 +3297,7 @@ Qed.
       Cfound !! q = None /\
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
-    intros Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
+    intros HCES Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
     (*
     pose proof (Hsub := onlyAddsSubpatterns2 Cin p evsin svsin q Hqin).
     feed specialize Hsub.
@@ -3281,10 +3307,10 @@ Qed.
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz) by lia.
     clear Heqsz.
-    move: p Hsz q nq evsin svsin Cin Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
+    move: p Hsz q nq evsin svsin Cin HCES Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
     induction sz.
     { intros p Hsz; destruct p; simpl in Hsz; lia. }
-    intros p Hsz; destruct p; simpl in Hsz; intros q nq evsin svsin Cin Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall;
+    intros p Hsz; destruct p; simpl in Hsz; intros q nq evsin svsin Cin HCES Cout Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall;
       simpl in Hcall.
     {
       case_match_in_hyp Hcall.
@@ -3431,7 +3457,8 @@ Qed.
             eapply lookup_weaken in Hg0q';[|exact Hext].
             rewrite Hnq in Hg0q'. inversion Hg0q'; subst; clear Hg0q'.
             
-            epose proof (IH := IHsz p1 ltac:(lia) _ _ _ _ _ _ Hnbq Hhist Hdvcp1 Hccp Hsp Hqin Hg0q).
+
+            epose proof (IH := IHsz p1 ltac:(lia) _ _ _ _ _ (ltac:(auto using CES_prop_step)) _ Hnbq Hhist Hdvcp1 Hccp Hsp Hqin Hg0q).
             erewrite Heqp1 in IH. simpl in IH. specialize (IH erefl).
             destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
             exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1. exact H2.
@@ -3446,8 +3473,43 @@ Qed.
               destruct (decide (Cin = ∅)).
               {
                 subst Cin. 
+                specialize (HCES erefl). destruct HCES as [HCES1 HCES2].
+                subst.
+                pose hempty := history_generator_empty.
+                pose proof (Xstep := history_generator_step ∅ p1 ∅ ∅ hempty).
+                feed specialize Xstep.
+                {
+                  right. unfold hempty. simpl.
+                  repeat split; reflexivity.
+                }
+                { apply cache_continuous_empty. }
+                { apply sub_prop_empty. }
+                { exact Hdvcp1. }
+                { exact Xstep. }
+              }
+              {
+                  (* We need nonempty cache to have nonempty history *)
+                  Check history_generator_step.
+                pose proof (Xstep := history_generator_step Cin p1 evsin svsin Hhist).
+                feed specialize Xstep.
+                {
+                  left. 
+                  destruct Hhist as [Hst_history0 Hst_prop0].
+                  simpl.
+                  destruct Hst_history0.
+                  { simpl in Hst_prop0. contradiction. }
+                  { simpl in Hst_prop0. simpl.
+                    pose proof (Hst_prop1 := Hst_prop0).
+                    rewrite last_cons in Hst_prop1.
+                    destruct Hst_history0.
+                    { simpl in Hst_prop1. destruct h as [h1 [[h2 h3] h4]].
+                      simpl in *. unfold evs_of,svs_of. simpl.
+                    }
+                  }
+                }
                 eapply history_generator_step; auto.
-                right.
+                left.
+                simpl.
               }
             }
             epose proof (IH := IHsz p2 ltac:(lia) _ _ _ _ _ _ Hnbq). Hdvg0p2).
