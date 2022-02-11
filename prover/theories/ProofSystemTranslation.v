@@ -2954,20 +2954,36 @@ Qed.
   Admitted.
    *)
 
-  About to_NamedPattern2'.
-  (* A correspondence property of the cache: any named pattern it contains is a translation
-     of the locally nameless pattern that is its key, under some unspecified parameters.
-     This should ensure that the named pattern has the same structure as the key. *)
-
-  Print ex.
-
-  Search last.
-
-  (* s_1 $ s_2
-     C0 = ∅
-     1. to_namedPattern2'  (s_1 $ s_2) ∅
-     1.1. to_namedPattern2' s_1  ∅  ==> {(s₁, ns₁)}. hist(_) => {[(s₁, (ns₁, ∅))] &  }
-   *)
+   #[global]
+   Instance NamedPattern_eqdec : EqDecision NamedPattern.
+   Proof.
+     solve_decision.
+   Defined.
+ 
+   Definition CES_prop (C : Cache) (evs : EVarSet) (svs : SVarSet) : Prop
+   := (C = ∅) -> (evs = ∅ /\ svs = ∅).
+ 
+   Lemma CES_prop_empty: CES_prop ∅ ∅ ∅.
+   Proof. intros H. split; reflexivity. Qed.
+ 
+   Lemma CES_prop_insert p np C evs svs:
+     CES_prop (<[p := np]> C) evs svs.
+   Proof.
+     intros H. Search insert empty. exfalso.
+     epose proof (Htmp := insert_non_empty C p np).
+     contradiction.
+   Qed.
+ 
+ 
+   Lemma CES_prop_step p C evs svs:
+     CES_prop C evs svs ->
+     let: (_, C', evs', svs') := (to_NamedPattern2' p C evs svs) in
+     CES_prop C' evs' svs'.
+   Proof.
+     intros HCES.
+     induction p; simpl; repeat case_match; invert_tuples; try assumption;
+       apply CES_prop_insert.
+   Qed.
    
   Definition normal_hist_entry := (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))%type.
   Definition inner_hist_entry := (Cache * (@EVarSet signature) * (@SVarSet signature))%type.
@@ -3039,6 +3055,7 @@ Qed.
                     cache_continuous_prop c_Si /\  
                     sub_prop c_Si /\ 
                     dangling_vars_cached c_Si p_i /\
+                    CES_prop c_Si evs_Si svs_Si /\
                     nhei = (p_i, (to_NamedPattern2' p_i c_Si evs_Si svs_Si))
                     )
                   )
@@ -3082,13 +3099,14 @@ Qed.
     ((fmap evs_of (head (Hst_history C evs svs hC)) = Some evs /\
      fmap svs_of (head (Hst_history C evs svs hC)) = Some svs)
      \/ ( (Hst_history C evs svs hC = []) /\ C = ∅ /\ evs = ∅ /\ svs = ∅)) ->
+    CES_prop C evs svs ->
     cache_continuous_prop C ->
     sub_prop C ->
     dangling_vars_cached C p ->
     let: (_, C', evs', svs') := to_NamedPattern2' p C evs svs in
     History_generator C' evs' svs'.
   Proof.
-    intros Hevssvs Hcont Hsubp HdcCp.
+    intros Hevssvs HCES Hcont Hsubp HdcCp.
     destruct (C !! p) eqn:Hin.
     - repeat case_match. subst.
       exists (Hst_history C evs svs hC).
@@ -3136,16 +3154,21 @@ Qed.
         repeat case_match; simpl in *; subst.
         + exists p. split. exact Hin. split.
           exact Hcont. split. exact Hsubp. split.
-          exact HdcCp. rewrite Heqp0. reflexivity.
+          exact HdcCp. rewrite Heqp0.
+          split. exact HCES.
+          reflexivity.
         + exists p. split. exact Hin. split.
           exact Hcont. split. exact Hsubp. split.
-          exact HdcCp. rewrite Heqp0. reflexivity.
+          exact HdcCp. rewrite Heqp0.
+          split. exact HCES.
+          reflexivity.
         + 
           clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
           split;[exact Hin|].
           split;[exact Hcont|].
           split;[exact Hsubp|].
           split;[exact HdcCp|].
+          split;[exact HCES|].
           reflexivity.
         +
         clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
@@ -3153,6 +3176,7 @@ Qed.
         split;[exact Hcont|].
         split;[exact Hsubp|].
         split;[exact HdcCp|].
+        split;[exact HCES|].
         reflexivity.
         + 
         clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
@@ -3160,6 +3184,7 @@ Qed.
         split;[exact Hcont|].
         split;[exact Hsubp|].
         split;[exact HdcCp|].
+        split;[exact HCES|].
         reflexivity.
         +
         clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
@@ -3167,6 +3192,7 @@ Qed.
         split;[exact Hcont|].
         split;[exact Hsubp|].
         split;[exact HdcCp|].
+        split;[exact HCES|].
         reflexivity.
         + 
           apply Hinner.
@@ -3343,36 +3369,7 @@ Qed.
     exact Htrans.
   Qed.
 
-  #[global]
-  Instance NamedPattern_eqdec : EqDecision NamedPattern.
-  Proof.
-    solve_decision.
-  Defined.
-
-  Definition CES_prop (C : Cache) (evs : EVarSet) (svs : SVarSet) : Prop
-  := (C = ∅) -> (evs = ∅ /\ svs = ∅).
-
-  Lemma CES_prop_empty: CES_prop ∅ ∅ ∅.
-  Proof. intros H. split; reflexivity. Qed.
-
-  Lemma CES_prop_insert p np C evs svs:
-    CES_prop (<[p := np]> C) evs svs.
-  Proof.
-    intros H. Search insert empty. exfalso.
-    epose proof (Htmp := insert_non_empty C p np).
-    contradiction.
-  Qed.
-
-
-  Lemma CES_prop_step p C evs svs:
-    CES_prop C evs svs ->
-    let: (_, C', evs', svs') := (to_NamedPattern2' p C evs svs) in
-    CES_prop C' evs' svs'.
-  Proof.
-    intros HCES.
-    induction p; simpl; repeat case_match; invert_tuples; try assumption;
-      apply CES_prop_insert.
-  Qed.
+ 
 
   Lemma History_generator_shift_e Cin evsin svsin e:
   History_generator Cin evsin svsin ->
@@ -3777,6 +3774,9 @@ Qed.
                   right. unfold hempty. simpl.
                   repeat split; reflexivity.
                 }
+                {
+                  apply CES_prop_empty.
+                }
                 { apply cache_continuous_empty. }
                 { apply sub_prop_empty. }
                 { exact Hdvcp1. }
@@ -3805,6 +3805,7 @@ Qed.
                     }
                   }
                 }
+                { exact HCES. }
                 { exact Hccp. }
                 { exact Hsp. }
                 { eapply dangling_vars_cached_imp_proj1. exact Hdvc. }
@@ -3929,6 +3930,7 @@ Qed.
                     right. unfold hempty. simpl.
                     repeat split; reflexivity.
                   }
+                  { apply CES_prop_empty. }
                   { apply cache_continuous_empty. }
                   { apply sub_prop_empty. }
                   { exact Hdvcp1. }
@@ -3957,6 +3959,7 @@ Qed.
                       }
                     }
                   }
+                  { exact HCES. }
                   { exact Hccp. }
                   { exact Hsp. }
                   { eapply dangling_vars_cached_imp_proj1. exact Hdvc. }
@@ -4323,15 +4326,16 @@ Qed.
     (hg : History_generator C evs svs)
     (p : Pattern)
     (np : NamedPattern):
+    CES_prop C evs svs ->
     ~ is_bound_var p ->
     C !! p = Some np ->
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C' evs' svs'),
       C' !! p = None /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
   Proof.
-    intros Hnboundp Hcached.
+    intros HCES Hnboundp Hcached.
     destruct hg as [history Hhistory].
-    move: p np evs svs C Hnboundp Hcached Hhistory.
-    induction history; intros p np evs svs C Hnboundp Hcached Hhistory.
+    move: p np evs svs C HCES Hnboundp Hcached Hhistory.
+    induction history; intros p np evs svs C HCES Hnboundp Hcached Hhistory.
     {
       simpl in Hhistory. inversion Hhistory. subst C.
       rewrite lookup_empty in Hcached. inversion Hcached.
@@ -4399,9 +4403,11 @@ Qed.
         destruct nh as [hip [[[hinp hiC] hievs] hisvs]].
         destruct (hiC !! p) eqn:HeqhiCp.
         {
-          epose proof (IH := IHhistory p n _ _ hiC Hnboundp HeqhiCp).
+          epose proof (IH := IHhistory p n _ _ hiC _ Hnboundp HeqhiCp).
           feed specialize IH.
           { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
+          Unshelve.
+          2: { (* we need to add CES_prop to the history *) }
           destruct IH as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
           subst.
           (* C came from hiC  *)
