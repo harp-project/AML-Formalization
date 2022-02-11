@@ -3600,12 +3600,6 @@ Qed.
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
     intros HCES Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
-    (*
-    pose proof (Hsub := onlyAddsSubpatterns2 Cin p evsin svsin q Hqin).
-    feed specialize Hsub.
-    {
-      exists nq. rewrite Hcall. exact Hqout.
-    }*)
     remember (size' p) as sz.
     assert (Hsz: size' p <= sz) by lia.
     clear Heqsz.
@@ -4038,6 +4032,10 @@ Qed.
             ).
             feed specialize IH.
             {
+              apply History_generator_shift_e.
+              exact Hhist.
+            }
+            {
               apply dangling_vars_cached_shift_e with (e := (evs_fresh evsin p)) in Hdvc.
               apply Hdvc.
             }
@@ -4054,7 +4052,7 @@ Qed.
               }
             }
             { exact Hg0q. }
-            { erewrite Heqp3. reflexivity. }
+            { rewrite Heqp3. reflexivity. }
             apply IH.
           }
         }
@@ -4069,7 +4067,7 @@ Qed.
           {
             destruct Heq as [Heq1 Heq2].
             subst.
-            exists Cin, evsin, s.
+            exists Cin, evsin, s, Hhist.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
             split; reflexivity.
@@ -4091,8 +4089,16 @@ Qed.
             rewrite map_filter_lookup_Some in Hnq.
             destruct Hnq as [Hg0q _].
 
-            epose proof (IH := IHsz p ltac:(lia) q nq _ _ _ _ Hnbq).
+            epose proof (IH := IHsz p ltac:(lia) q nq evsin (s ∪ {[svs_fresh s p]})
+              (<[BoundVarSugar.B0:=npatt_svar (svs_fresh s p)]> (cache_incr_svar Cin))
+              (CES_prop_insert _ _ _ _ _)
+              _ Hnbq
+            ).
             feed specialize IH.
+            {
+              apply History_generator_shift_s.
+              exact Hhist.
+            }
             {
               apply dangling_vars_cached_shift_s with (s := (svs_fresh s p)) in Hdvc.
               apply Hdvc.
@@ -4110,8 +4116,26 @@ Qed.
               }
             }
             { exact Hg0q. }
-            { erewrite Heqp3. reflexivity. }
+            { rewrite Heqp3. reflexivity. }
             apply IH.
+          }
+          Unshelve. all: auto.
+          {
+            epose proof (Htmp := CES_prop_step _ _ _ _).
+            repeat case_match. subst. erewrite Heqp1 in Heqp.
+            specialize (Htmp ltac:(assumption)).
+            epose proof (Htmp2 := CES_prop_step _ _ _ _).
+            repeat case_match. subst. erewrite Heqp2 in Heqp0. invert_tuples.
+            exact Htmp.
+          }
+          {
+            Search CES_prop.
+            epose proof (Htmp := CES_prop_step _ _ _ _).
+            repeat case_match. subst. erewrite Heqp1 in Heqp.
+            specialize (Htmp ltac:(assumption)).
+            epose proof (Htmp2 := CES_prop_step _ _ _ _).
+            repeat case_match. subst. erewrite Heqp2 in Heqp0. invert_tuples.
+            exact Htmp.
           }
         }
   Qed.
