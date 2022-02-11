@@ -4280,8 +4280,8 @@ Qed.
   Qed.
 
   Lemma hist_prop_subseteq C evs svs a b history:
-    hist_prop C evs svs (a :: b :: history) ->
-    cache_of b ⊆ C.
+    hist_prop C evs svs (a :: (inl b) :: history) ->
+    cache_of_nhe b ⊆ C.
   Proof.
     intros Hhist.
     unfold hist_prop in Hhist.
@@ -4296,13 +4296,8 @@ Qed.
         svs_of_ihe,evs_of_ihe,cache_of_ihe,fst,snd in *.
       repeat case_match; subst.
       {
-        replace c0 with (n2, c0, e0, s0).1.1.2 by reflexivity.
+        replace c0 with (n1, c0, e0, s0).1.1.2 by reflexivity.
         rewrite -Heqp4.
-        apply to_NamedPattern2'_extends_cache.    
-      }
-      {
-        replace c0 with (n, c0, e0, s0).1.1.2 by reflexivity.
-        rewrite -Heqp2.
         apply to_NamedPattern2'_extends_cache.    
       }
     }
@@ -4313,13 +4308,8 @@ Qed.
         svs_of_ihe,evs_of_ihe,cache_of_ihe,fst,snd in *.
       repeat case_match; subst.
       {
-        replace c1 with (n1, c1, e1, s1).1.1.2 by reflexivity.
+        replace c1 with (n0, c1, e1, s1).1.1.2 by reflexivity.
         rewrite -Heqp5.
-        apply to_NamedPattern2'_extends_cache.    
-      }
-      {
-        replace c1 with (n, c1, e1, s1).1.1.2 by reflexivity.
-        rewrite -Heqp3.
         apply to_NamedPattern2'_extends_cache.    
       }
     }
@@ -4412,30 +4402,70 @@ Qed.
           epose proof (IH := IHhistory p n _ _ hiC Hnboundp HeqhiCp).
           feed specialize IH.
           { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
-          destruct IH as [C' [evs' [svs' [IH1 IH2]]]].
+          destruct IH as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
+          subst.
           (* C came from hiC  *)
-          assert ( hiC ⊆ C ).
-          { eapply hist_prop_subseteq. exact Hhistory. }
+          (*assert ( hiC ⊆ C ).
+          { admit. (* eapply hist_prop_subseteq. exact Hhistory.*) }
+          *)
           eapply IHhistory with (C := hiC).
           { exact Hnboundp. }
           { pose proof (Htmp := HeqhiCp).
-            apply lookup_weaken with (m2 := C) in Htmp.
+            assert(H: remove_bound_evars (remove_bound_svars hiC) ⊆ remove_bound_evars (remove_bound_svars C)).
+            { admit. (*hist_prop_subseteq. exact Hhistory*) }
+            assert (Htmp2: (remove_bound_evars (remove_bound_svars hiC)) !! p = Some (to_NamedPattern2' p C' evs' svs').1.1.1).
+            {
+              unfold remove_bound_evars.
+              rewrite map_filter_lookup_Some.
+              split.
+              2: { unfold is_bound_evar_entry. simpl. intros HContra. apply Hnboundp.
+                apply bound_evar_is_bound_var. exact HContra.
+              }
+              unfold remove_bound_svars.
+              rewrite map_filter_lookup_Some.
+              split.
+              2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
+                apply bound_svar_is_bound_var. exact HContra.
+              }
+              exact Htmp.
+            }
+            apply lookup_weaken with (m2 := (remove_bound_evars (remove_bound_svars C))) in Htmp2.
             2: { exact H. }
-            rewrite Htmp in Hcached. inversion Hcached. subst. exact HeqhiCp.
+            assert (Hcached2: (remove_bound_evars (remove_bound_svars C)) !! p = Some np ).
+            {
+              unfold remove_bound_evars.
+              rewrite map_filter_lookup_Some.
+              split.
+              2: { unfold is_bound_evar_entry. simpl. intros HContra. apply Hnboundp.
+                apply bound_evar_is_bound_var. exact HContra.
+              }
+              unfold remove_bound_svars.
+              rewrite map_filter_lookup_Some.
+              split.
+              2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
+                apply bound_svar_is_bound_var. exact HContra.
+              }
+              exact Hcached.
+            }
+            rewrite Htmp2 in Hcached2. inversion Hcached2. subst. exact HeqhiCp.
           }
-          { apply hist_prop_strip in Hhistory. exact Hhistory. }
+          { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
         }
         {
-          destruct a as [ap [[[anp aC] aievs] aisvs]].
+          destruct a as [anormal|ain].
+          {
+          destruct anormal as [ap [[[anp aC] aievs] aisvs]].
           simpl in Hhistory.
-          destruct Hhistory as [Hhistory1 [Hhistory2 Hhistory3]].
-          subst aC.
+          destruct Hhistory as [Hhistory1 [Hevs [Hsvs [Hhistory2 Hhistory3]]]].
+          subst.
           specialize (Hhistory3 0). simpl in Hhistory3.
           destruct Hhistory3 as [p_i [HhiCp_i [Hcont_i [Hsubp_i [Hdngl Hp_i]]]]].
           inversion Hp_i. subst ap. clear Hp_i.
-          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs C p np Hnboundp Hdngl Hcont_i Hsubp_i HeqhiCp Hcached).
+          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs aC p np).
+           Hnboundp Hdngl Hcont_i Hsubp_i HeqhiCp Hcached).
           rewrite -H1 in Hfnc. simpl in Hfnc. specialize (Hfnc erefl).
           apply Hfnc.
+          }
         }
         }
       }
