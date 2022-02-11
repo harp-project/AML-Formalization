@@ -4141,14 +4141,18 @@ Qed.
   Qed.
 
 
-  Lemma hist_prop_strip C a hip hinp hiC hievs hisvs history:
-    hist_prop C (a :: (hip, (hinp, hiC, hievs, hisvs)) :: history) ->
-    hist_prop hiC ((hip, (hinp, hiC, hievs, hisvs)) :: history).
+  Lemma hist_prop_strip_1 C evs svs a hip hinp hiC hievs hisvs history:
+    hist_prop C evs svs (a :: (inl (hip, (hinp, hiC, hievs, hisvs))) :: history) ->
+    hist_prop hiC hievs hisvs ((inl (hip, (hinp, hiC, hievs, hisvs))) :: history).
   Proof.
     intros HC.
     unfold hist_prop in *.
-    destruct HC as [HC1 [HC2 HC3]].
-    subst C.
+    destruct HC as [HC1 [Hevs [Hsvs [HC2 HC3]]]].
+    subst C evs svs.
+    split.
+    { simpl. reflexivity. }
+    split.
+    { simpl. reflexivity. }
     split.
     { simpl. reflexivity. }
     split.
@@ -4156,11 +4160,10 @@ Qed.
     clear HC2.
     intros i.
     specialize (HC3 (S i)).
-    repeat case_match; subst; try exact I.
+    repeat case_match; subst; try exact I; try contradiction.
     {
-      Search list lookup S.
       destruct HC3 as [p_i Hp_i].
-      rewrite lookup_cons_Some in Hp_i. simpl in Hp_i.
+      rewrite lookup_cons_Some in Heqo0. simpl in Heqo0.
       rewrite lookup_cons_Some in Heqo. simpl in Heqo.
       destruct Heqo as [Heqo|Heqo].
       {
@@ -4168,19 +4171,111 @@ Qed.
       }
       destruct Heqo as [_ Heqo].
       replace (i - 0) with i in Heqo by lia.
-      rewrite Heqo in Heqo0. inversion Heqo0. subst. clear Heqo0.
-      exists p_i. destruct Hp_i as [Hcpi [Hccpc [Hsubc [Hdngl Hrest]]]].
-      split; [exact Hcpi|]. split; [exact Hccpc|]. split; [exact Hsubc|]. split; [exact Hdngl|].
-      destruct Hrest as [Hrest|Hrest].
-      {
-        destruct Hrest as [Hcontra _]. inversion Hcontra.
-      }
-      destruct Hrest as [_ Hrest].
-      replace (i - 0) with i in Hrest by lia.
-      exact Hrest.
+      replace (i - 0) with i in Heqo0 by lia.
+      rewrite Heqo2 in Heqo0. inversion Heqo0; subst; clear Heqo0.
+      { destruct H as [HContra _]. inversion HContra. }
+      destruct H as [_ H]. inversion H. subst. clear H.
+      rewrite Heqo in Heqo1. inversion Heqo1. subst. clear Heqo1.
+      exists p_i.
+      destruct_and!. split_and!; assumption.
     }
     {
-      simpl in Heqo. rewrite Heqo in Heqo0. inversion Heqo0.
+      destruct HC3 as [p_i Hp_i].
+      rewrite lookup_cons_Some in Heqo0. simpl in Heqo0.
+      rewrite lookup_cons_Some in Heqo. simpl in Heqo.
+      destruct Heqo as [Heqo|Heqo].
+      {
+        destruct Heqo as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo as [_ Heqo].
+      replace (i - 0) with i in Heqo by lia.
+      replace (i - 0) with i in Heqo0 by lia.
+      rewrite Heqo2 in Heqo0. inversion Heqo0; subst; clear Heqo0.
+      { destruct H as [HContra _]. inversion HContra. }
+      destruct H as [_ H]. inversion H.
+    }
+    {
+      (* An ugly contradiction that we may extract into a lemma *)
+      remember (inl (hip, (hinp, hiC, hievs, hisvs))) as b.
+      clear -Heqo1 Heqo2.
+      move: b history Heqo1 Heqo2.
+      induction i; intros b history Heqo1 Heqo2.
+      {
+        simpl in *. inversion Heqo2.
+      }
+      {
+        destruct history.
+        { simpl in Heqo1. inversion Heqo1. }
+        {
+          simpl in *. eapply IHi. apply Heqo1. apply Heqo2.
+        }
+      }
+    }
+    {
+      rewrite lookup_cons_Some in Heqo0. simpl in Heqo0.
+      rewrite lookup_cons_Some in Heqo. simpl in Heqo.
+      replace (i - 0) with i in Heqo by lia.
+      replace (i - 0) with i in Heqo0 by lia.
+      destruct Heqo as [Hcontra|Heqo].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo as [_ Heqo].
+      destruct Heqo0 as [Hcontra|Heqo0].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo0 as [_ Heqo0].
+      rewrite Heqo2 in Heqo0. inversion Heqo0.
+    }
+    {
+      rewrite lookup_cons_Some in Heqo0. simpl in Heqo0.
+      rewrite lookup_cons_Some in Heqo. simpl in Heqo.
+      replace (i - 0) with i in Heqo by lia.
+      replace (i - 0) with i in Heqo0 by lia.
+      destruct Heqo as [Hcontra|Heqo].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo as [_ Heqo].
+      destruct Heqo0 as [Hcontra|Heqo0].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo0 as [_ Heqo0].
+      rewrite Heqo2 in Heqo0. inversion Heqo0.
+      subst. clear Heqo0.
+      rewrite Heqo in Heqo1. inversion Heqo1. subst. clear Heqo1.
+      exact HC3.
+    }
+    {
+      rewrite lookup_cons_Some in Heqo0. simpl in Heqo0.
+      rewrite lookup_cons_Some in Heqo. simpl in Heqo.
+      replace (i - 0) with i in Heqo by lia.
+      replace (i - 0) with i in Heqo0 by lia.
+      destruct Heqo as [Hcontra|Heqo].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo as [_ Heqo].
+      destruct Heqo0 as [Hcontra|Heqo0].
+      {
+        destruct Hcontra as [Hcontra _]. inversion Hcontra.
+      }
+      destruct Heqo0 as [_ Heqo0].
+      rewrite Heqo2 in Heqo0. inversion Heqo0.
+    }
+    {
+      rewrite lookup_cons in Heqo. 
+      rewrite Heqo0 in Heqo. inversion Heqo.
+    }
+    {
+      rewrite lookup_cons in Heqo. 
+      rewrite Heqo0 in Heqo. inversion Heqo.
+    }
+    {
+      rewrite lookup_cons in Heqo. 
+      rewrite Heqo0 in Heqo. inversion Heqo.
     }
   Qed.
 
