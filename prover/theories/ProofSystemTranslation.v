@@ -3476,6 +3476,108 @@ Qed.
     }
   Defined.
 
+  Lemma History_generator_shift_s Cin evsin svsin s:
+  History_generator Cin evsin svsin ->
+  History_generator (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar Cin))
+       evsin (svsin ∪ {[s]}).
+  Proof.
+    intros Hhist.
+    destruct Hhist as [history Hhistory].
+    exists ((inr ((<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar Cin)), evsin, (svsin ∪ {[s]})))::history).
+    simpl.
+    split.
+    { reflexivity. }
+    split.
+    { reflexivity. }
+    split.
+    { reflexivity. }
+    split.
+    {
+      rewrite last_cons.
+      destruct (last history) eqn:Heqlsthist.
+      {
+        unfold hist_prop in Hhistory.
+        destruct history.
+        {
+          simpl in Heqlsthist. inversion Heqlsthist.
+        }
+        rewrite Heqlsthist in Hhistory.
+        destruct h as [nhe | ihe].
+        {
+          destruct Hhistory as [Hcache [Hevs [Hsvs Hhistory]]]. subst evsin svsin.
+          destruct Hhistory as [[Hdngl Hresult] Hhistory].
+          split. exact Hdngl. exact Hresult.
+        }
+        {
+          destruct Hhistory as [Hcache [Hevs [Hsvs Hhistory]]]. subst evsin svsin.
+          destruct Hhistory as [[np Hnp] Hhistory].
+          exists np. exact Hnp.
+        }
+      }
+      {
+        unfold hist_prop in Hhistory.
+        destruct history.
+        2: { rewrite last_cons in Heqlsthist. destruct (last history); simpl in Heqlsthist; inversion Heqlsthist. }
+        clear Heqlsthist.
+        exists (npatt_svar s). right. subst Cin. reflexivity.
+      }
+    }
+    {
+      unfold hist_prop in Hhistory.
+      destruct history.
+      {
+        intros i. simpl. exact I.
+      }
+      {
+        destruct Hhistory as [Hcache [Hevs [Hsvs Hhistory]]]. subst Cin evsin svsin.
+        destruct Hhistory as [Hlast Hhistory].
+        intros i.
+        destruct i; simpl.
+        {
+          right. repeat unfold cache_of_ihe,fst.
+          unfold remove_bound_svars.
+          rewrite map_filter_insert.
+          unfold is_bound_svar_entry. simpl.
+          rewrite map_filter_delete_not.
+          {
+            intros np. simpl. unfold cache_incr_svar.
+            rewrite lookup_kmap_Some.
+            intros [p [Hp1 Hp2]].
+            destruct p; simpl in Hp1; inversion Hp1.
+          }
+          unfold cache_incr_svar.
+          rewrite map_filter_strong_ext.
+          intros p np. simpl.
+          split; intros H.
+          {
+            destruct H as [H1 H2].
+            split;[exact H1|].
+            replace p with (incr_one_svar p) in H2.
+            2: {
+              destruct p; simpl; try reflexivity.
+              exfalso. apply H1. exists n. reflexivity.
+            }
+            rewrite lookup_kmap in H2.
+            exact H2.
+          }
+          {
+            destruct H as [H1 H2].
+            split;[exact H1|].
+            replace p with (incr_one_svar p).
+            2: {
+              destruct p; simpl; try reflexivity.
+              exfalso. apply H1. exists n. reflexivity.
+            }
+            rewrite lookup_kmap. exact H2.
+          }
+        }
+        {
+          apply Hhistory.
+        }
+      }
+    }
+  Defined.
+
   Lemma find_nested_call
     (p : Pattern)
     (Cin : Cache)
