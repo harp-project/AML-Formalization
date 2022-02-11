@@ -3042,7 +3042,9 @@ Qed.
                     nhei = (p_i, (to_NamedPattern2' p_i c_Si evs_Si svs_Si))
                     )
                   )
-                | inr ihei => True
+                | inr ihei =>
+                  (remove_bound_evars (cache_of_ihe ihei) = remove_bound_evars (cache_of heSi))
+                  \/ (remove_bound_svars (cache_of_ihe ihei) = remove_bound_svars (cache_of heSi))
                 end 
               end
             end
@@ -3093,7 +3095,7 @@ Qed.
       destruct p; simpl in Heqp0; rewrite Hin in Heqp0; simpl;
         destruct hC; simpl in Heqp0; inversion Heqp0; subst; simpl; assumption.
     - repeat case_match. subst.
-      exists ((p, to_NamedPattern2' p C evs svs) :: (Hst_history C evs svs hC)).
+      exists ((inl (p, to_NamedPattern2' p C evs svs)) :: (Hst_history C evs svs hC)).
       simpl. rewrite Heqp0.
       split;[reflexivity|].
       split;[reflexivity|].
@@ -3108,14 +3110,25 @@ Qed.
         destruct Hst_prop0 as [Hcache [H2evs [H2svs [HhistoryC Hinner]]]].
         subst evs svs.
         split.
-        { subst C. destruct h as [p0 [[[np0 C0] evs0] svs0]].
-          simpl in * |-. inversion Hevs. inversion Hsvs. clear Hevs Hsvs. subst.
-          repeat unfold fst,snd,svs_of,evs_of.
-          unfold evs_of, svs_of in *. simpl in *.
-          rewrite last_cons. rewrite last_cons in HhistoryC.
-          destruct (last Hst_history0) eqn:Heqtmp.
-          { exact HhistoryC. }
-          { exact HhistoryC. }
+        { subst C.
+          destruct h as [hnormal|hinner].
+          {
+            destruct hnormal as [p0 [[[np0 C0] evs0] svs0]].
+            simpl in * |-. inversion Hevs. inversion Hsvs. clear Hevs Hsvs. subst.
+            repeat unfold fst,snd,svs_of,evs_of.
+            unfold evs_of, svs_of in *. simpl in *.
+            rewrite last_cons. rewrite last_cons in HhistoryC.
+            destruct (last Hst_history0) eqn:Heqtmp.
+            { exact HhistoryC. }
+            { exact HhistoryC. }
+          }
+          {
+            unfold evs_of, svs_of in *. simpl in *.
+            rewrite last_cons. rewrite last_cons in HhistoryC.
+            destruct (last Hst_history0) eqn:Heqtmp.
+            { exact HhistoryC. }
+            { exact HhistoryC. }
+          }
         }
         destruct i; simpl.
         unfold evs_of, svs_of in *. simpl in *.
@@ -3127,7 +3140,36 @@ Qed.
         + exists p. split. exact Hin. split.
           exact Hcont. split. exact Hsubp. split.
           exact HdcCp. rewrite Heqp0. reflexivity.
-        + apply Hinner.
+        + 
+          clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
+          split;[exact Hin|].
+          split;[exact Hcont|].
+          split;[exact Hsubp|].
+          split;[exact HdcCp|].
+          reflexivity.
+        +
+        clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
+        split;[exact Hin|].
+        split;[exact Hcont|].
+        split;[exact Hsubp|].
+        split;[exact HdcCp|].
+        reflexivity.
+        + 
+        clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
+        split;[exact Hin|].
+        split;[exact Hcont|].
+        split;[exact Hsubp|].
+        split;[exact HdcCp|].
+        reflexivity.
+        +
+        clear Hevs Hsvs. exists p. rewrite Heqp0. simpl.
+        split;[exact Hin|].
+        split;[exact Hcont|].
+        split;[exact Hsubp|].
+        split;[exact HdcCp|].
+        reflexivity.
+        + 
+          apply Hinner.
       }
       {
         destruct Hevssvs as [H1 [H2 [H3 H4]]]. subst.
