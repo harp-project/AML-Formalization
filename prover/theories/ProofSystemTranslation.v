@@ -2968,35 +2968,83 @@ Qed.
      1. to_namedPattern2'  (s_1 $ s_2) ∅
      1.1. to_namedPattern2' s_1  ∅  ==> {(s₁, ns₁)}. hist(_) => {[(s₁, (ns₁, ∅))] &  }
    *)
+   
   Definition normal_hist_entry := (@Pattern signature * ((@NamedPattern signature) * Cache * (@EVarSet signature) * (@SVarSet signature)))%type.
   Definition inner_hist_entry := (Cache * (@EVarSet signature) * (@SVarSet signature))%type.
-  Inductive hist_entry := nhe (e : normal_hist_entry) | ihe (e : inner_hist_entry).
+  Definition hist_entry := (normal_hist_entry + inner_hist_entry)%type.
   
-  Definition evs_of (h : normal_hist_entry) : (@EVarSet signature) := h.2.1.2.
-  Definition svs_of (h : hist_entry) : (@SVarSet signature) := h.2.2.
+  Definition pattern_of_nhe (h : normal_hist_entry) : (@Pattern signature) := h.1.
+  Definition result_of_nhe (h : normal_hist_entry) := h.2.
+  
+  Definition cache_of_nhe (h : normal_hist_entry) : Cache := h.2.1.1.2.
+  Definition evs_of_nhe (h : normal_hist_entry) : (@EVarSet signature) := h.2.1.2.
+  Definition svs_of_nhe (h : normal_hist_entry) : (@SVarSet signature) := h.2.2.
+
+  Definition cache_of_ihe (e : inner_hist_entry) : Cache := e.1.1.
+  Definition evs_of_ihe (e : inner_hist_entry) : (@EVarSet signature) := e.1.2.
+  Definition svs_of_ihe (e : inner_hist_entry) : (@SVarSet signature) := e.2.
+
+  Definition cache_of (e : hist_entry) : Cache :=
+    match e with
+    | inl e' => cache_of_nhe e'
+    | inr e' => cache_of_ihe e'
+    end.
+
+  Definition evs_of (e : hist_entry) : (@EVarSet signature) :=
+    match e with
+    | inl e' => evs_of_nhe e'
+    | inr e' => evs_of_ihe e'
+    end.
+
+  Definition svs_of (e : hist_entry) : (@SVarSet signature) :=
+    match e with
+    | inl e' => svs_of_nhe e'
+    | inr e' => svs_of_ihe e'
+    end.
   
   Definition hist_prop (C : Cache) (evs : EVarSet) (svs : SVarSet) (history : list hist_entry) : Prop :=
     match history with
     | [] => C = ∅
     | (x::xs) =>
-        x.2.1.1.2 = C /\ evs_of x = evs /\ svs_of x = svs /\
+        cache_of x = C /\ evs_of x = evs /\ svs_of x = svs /\
           (match (last (x::xs)) with
-           | None => False
-           | Some (p_l, x_l) =>
-            dangling_vars_cached ∅ p_l /\
-            (x_l = (to_NamedPattern2' p_l ∅ ∅ ∅))
+           | None => False (* x::xs always has a last element *)
+           | Some he =>
+            match he with
+            | inl nhe =>
+              dangling_vars_cached ∅ (pattern_of_nhe nhe) /\
+              result_of_nhe nhe = to_NamedPattern2' (pattern_of_nhe nhe) ∅ ∅ ∅
+            | inr ihe =>
+              exists (np : NamedPattern),
+                (cache_of_ihe ihe = {[ patt_bound_evar 0 := np ]})
+                \/
+                (cache_of_ihe ihe = {[ patt_bound_svar 0 := np ]})
+            end
            end) /\
-          forall (i:nat),
+          forall (i:nat), 
             match xs!!i with
-            | None => True
+            | None => True (* out of bounds, index too large *)
             (* p_i came from the result of the cache c_Si and everything before it *)
-            | Some (p_Si, (np_Si, c_Si, evs_Si, svs_Si)) =>
-                exists p_i,
-                c_Si !! p_i = None /\
-                cache_continuous_prop c_Si /\
-                sub_prop c_Si /\
-                dangling_vars_cached c_Si p_i /\
-                  ((x::xs)!!i) = Some (p_i,(to_NamedPattern2' p_i c_Si evs_Si svs_Si))
+            | Some heSi => 
+              match ((x::xs)!!i) with
+              | None => False (* this can never happen because i < length xs *)
+              | Some hei =>
+                match hei with
+                | inl nhei => (
+                  let c_Si : Cache := (cache_of heSi) in
+                  let evs_Si := (evs_of heSi) in
+                  let svs_Si := (svs_of heSi) in
+                  exists (p_i : Pattern), (
+                    ((c_Si !! p_i) = None) /\ 
+                    cache_continuous_prop c_Si /\  
+                    sub_prop c_Si /\ 
+                    dangling_vars_cached c_Si p_i /\
+                    nhei = (p_i, (to_NamedPattern2' p_i c_Si evs_Si svs_Si))
+                    )
+                  )
+                | inr ihei => True
+                end 
+              end
             end
     end.
 
