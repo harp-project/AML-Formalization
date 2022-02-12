@@ -4504,96 +4504,67 @@ Qed.
           }
         }
         {
-          destruct a as [anormal|ain].
-          {
-          destruct anormal as [ap [[[anp aC] aievs] aisvs]].
+          pose proof (Hhistory' := Hhistory).
+          apply hist_prop_strip_1 in Hhistory'.
           simpl in Hhistory.
           destruct Hhistory as [Hhistory1 [Hevs [Hsvs [Hhistory2 Hhistory3]]]].
-          subst.
           specialize (Hhistory3 0). simpl in Hhistory3.
           destruct Hhistory3 as [HCES' Hhistory3].
-          destruct Hhistory3 as [p_i [HhiCp_i [Hcont_i [Hsubp_i [Hdngl Hp_i]]]]].
-          inversion Hp_i. subst ap. clear Hp_i.
-          unfold cache_of_nhe,evs_of_nhe,svs_of_nhe,fst,snd in *.
-          pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs aC p np HCES' Hnboundp).
-          feed specialize Hfnc.
+          destruct a as [anormal|ain].
           {
-            destruct hg' as [hist' Hhist'].
-            destruct hist'.
+            destruct Hhistory3 as [p_i [HhiCp_i [Hcont_i [Hsubp_i [Hdngl Hp_i]]]]].
+            destruct anormal as [ap [[[anp aC] aievs] aisvs]]. subst.
+            inversion Hp_i. subst ap. clear Hp_i.
+            cbn in HCES', HhiCp_i, Hcont_i, Hsubp_i, Hdngl, H1.
+            (*unfold cache_of_nhe,evs_of_nhe,svs_of_nhe,fst,snd in *.*)
+            pose proof (Hfnc := find_nested_call p_i hiC hievs hisvs aC p np HCES' Hnboundp).
+            feed specialize Hfnc.
             {
-              simpl in *. subst. symmetry in H1.
-              pose proof (H := to_NamedPattern2'_ensures_present p_i hiC hievs hisvs).
-              rewrite H1 in H. simpl in H. rewrite lookup_empty in H. inversion H.
+              exists ((inl (hip, (hinp, hiC, hievs, hisvs)))::history).
+              apply Hhistory'.
             }
-            destruct h.
-            2: {
-              simpl in *. destruct_and?. subst.
-              clear IHhistory Hfnc.
-              assert (is_subformula_of_ind p p_i).
-              {
-                epose proof (Hoas := onlyAddsSubpatterns2 hiC p_i hievs hisvs p HeqhiCp).
-                feed specialize Hoas.
-                { exists np. rewrite -H1. simpl. exact Hcached. }
-                exact Hoas.
-              }
-              destruct hist'.
-              {
-                simpl in *. destruct i as [[i1 i2] i3].
-                cbn in *.
-                exfalso.
-                destruct H3 as [np' [Hnp'|Hnp']]; subst.
-                {
-                  apply Hnboundp. unfold singletonM,map_singleton in Hcached.
-                  rewrite lookup_insert_Some in Hcached.
-                  destruct Hcached as [HCached|HCached].
-                  {
-                    destruct HCached. subst.
-                    simpl. exact I.
-                  }
-                  {
-                    destruct HCached as [_ HContra].
-                    rewrite lookup_empty in HContra. inversion HContra.
-                  }
-                }
-                {
-                  apply Hnboundp. unfold singletonM,map_singleton in Hcached.
-                  rewrite lookup_insert_Some in Hcached.
-                  destruct Hcached as [HCached|HCached].
-                  {
-                    destruct HCached. subst.
-                    simpl. exact I.
-                  }
-                  {
-                    destruct HCached as [_ HContra].
-                    rewrite lookup_empty in HContra. inversion HContra.
-                  }
-                }
-              }
-              {
-                cbn in *. specialize (H5 0). simpl in H5.
-                rewrite last_cons in H3.
-                destruct (last hist') eqn:?.
-                {
-                  destruct h0.
-                  {
-                    destruct_and!.
-                  }
-                }
-                {
-
-                }
-                
-              }
-              
-              clear Hhistory2.
-              clear H3. clear Hfnc.
-            }
-            apply hist_prop_strip_1 in Hhist'.
+            { exact Hdngl. }
+            { exact Hcont_i. }
+            { exact Hsubp_i. }
+            { exact HeqhiCp. }
+            { exact Hcached. }
+            { rewrite -H1. reflexivity. }
+            apply Hfnc.
           }
-          Hdngl).
-             Hcont_i Hsubp_i HeqhiCp Hcached).
-          rewrite -H1 in Hfnc. simpl in Hfnc. specialize (Hfnc erefl).
-          apply Hfnc.
+          {
+            destruct ain as [[ainC ainE] ainS].
+            clear Hhistory2.
+            cbn in Hhistory3. cbn in HCES', Hhistory1, Hsvs, Hevs. subst ainC ainE ainS.
+            clear -Hhistory3 HeqhiCp Hcached Hnboundp. exfalso.
+            destruct Hhistory3 as [Hhistory3|Hhistory3].
+            {
+              assert (Hcached': (remove_bound_evars C) !! p = Some np).
+              {
+                unfold remove_bound_evars. rewrite map_filter_lookup_Some.
+                split;[exact Hcached|]. unfold is_bound_evar_entry. simpl.
+                intros Hcontra. apply Hnboundp. apply bound_evar_is_bound_var.
+                exact Hcontra.
+              }
+              rewrite Hhistory3 in Hcached'.
+              unfold remove_bound_evars in Hcached'.
+              rewrite map_filter_lookup_Some in Hcached'.
+              destruct Hcached' as [Hcontra _].
+              rewrite HeqhiCp in Hcontra. inversion Hcontra.
+            }
+            {
+              assert (Hcached': (remove_bound_svars C) !! p = Some np).
+              {
+                unfold remove_bound_svars. rewrite map_filter_lookup_Some.
+                split;[exact Hcached|]. unfold is_bound_svar_entry. simpl.
+                intros Hcontra. apply Hnboundp. apply bound_svar_is_bound_var.
+                exact Hcontra.
+              }
+              rewrite Hhistory3 in Hcached'.
+              unfold remove_bound_svars in Hcached'.
+              rewrite map_filter_lookup_Some in Hcached'.
+              destruct Hcached' as [Hcontra _].
+              rewrite HeqhiCp in Hcontra. inversion Hcontra.
+            }
           }
         }
         }
