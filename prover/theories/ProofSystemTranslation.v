@@ -4536,6 +4536,54 @@ Qed.
                 { exists np. rewrite -H1. simpl. exact Hcached. }
                 exact Hoas.
               }
+              destruct hist'.
+              {
+                simpl in *. destruct i as [[i1 i2] i3].
+                cbn in *.
+                exfalso.
+                destruct H3 as [np' [Hnp'|Hnp']]; subst.
+                {
+                  apply Hnboundp. unfold singletonM,map_singleton in Hcached.
+                  rewrite lookup_insert_Some in Hcached.
+                  destruct Hcached as [HCached|HCached].
+                  {
+                    destruct HCached. subst.
+                    simpl. exact I.
+                  }
+                  {
+                    destruct HCached as [_ HContra].
+                    rewrite lookup_empty in HContra. inversion HContra.
+                  }
+                }
+                {
+                  apply Hnboundp. unfold singletonM,map_singleton in Hcached.
+                  rewrite lookup_insert_Some in Hcached.
+                  destruct Hcached as [HCached|HCached].
+                  {
+                    destruct HCached. subst.
+                    simpl. exact I.
+                  }
+                  {
+                    destruct HCached as [_ HContra].
+                    rewrite lookup_empty in HContra. inversion HContra.
+                  }
+                }
+              }
+              {
+                cbn in *. specialize (H5 0). simpl in H5.
+                rewrite last_cons in H3.
+                destruct (last hist') eqn:?.
+                {
+                  destruct h0.
+                  {
+                    destruct_and!.
+                  }
+                }
+                {
+
+                }
+                
+              }
               
               clear Hhistory2.
               clear H3. clear Hfnc.
