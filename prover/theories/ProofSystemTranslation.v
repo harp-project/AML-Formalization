@@ -2208,19 +2208,6 @@ Qed.
     lia.
   Qed.
 
-(*
-  Lemma app_exist_p_q_neq_p p q:
-    ~ patt_app (patt_exists p) q = p.
-  Proof. Admitted.
-
-  Lemma is_not_subformula_1 p q:
-    ~is_subformula_of_ind (patt_app (patt_exists p) q) p.
-  Proof. Admitted.
-
-  Lemma is_not_subformula_2 p q:
-    ~is_subformula_of_ind (patt_app q (patt_exists p)) p.
-  Proof. Admitted.
-*)
   Lemma bound_evar_is_bound_var p:
     is_bound_evar p ->
     is_bound_var p.
@@ -2939,20 +2926,6 @@ Qed.
           mu2_finish_cached Hnsame Hnsubpattern Hnbound.
         }
   Qed.
-
-  (*
-  Lemma sub_prop_subcache (C C' : Cache) :
-    sub_prop C' -> map_subseteq C C' -> sub_prop C.
-  Proof.
-    intros. induction C.
-    - unfold sub_prop. intros. destruct p; auto.
-      unfold sub_prop in H. specialize (H (patt_imp p1 p2) np).
-      destruct H as [np' [nq' [Hp1 Hp2]]]. eapply subcache_prop; eauto.
-      exists np', nq'. split.
-      (* need induction hypothesis *)
-      admit. admit.
-  Admitted.
-   *)
 
    #[global]
    Instance NamedPattern_eqdec : EqDecision NamedPattern.
@@ -4516,9 +4489,7 @@ Qed.
             destruct IH as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
             subst.
             (* C came from hiC  *)
-            (*assert ( hiC ⊆ C ).
-            { admit. (* eapply hist_prop_subseteq. exact Hhistory.*) }
-            *)
+
             eapply IHhistory with (C := hiC).
             { shelve. }
             { shelve. }
