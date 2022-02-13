@@ -4744,171 +4744,42 @@ Qed.
       }
     }
   Qed.
-(*
-  Lemma cached_imp_is_nimp
-    (C : Cache)
-    (hg : History_generator C)
-    (p q : Pattern)
-    (npq : NamedPattern):
-    dangling_vars_cached C (patt_imp p q) -> (* Maybe not needed? *)
-    C !! (patt_imp p q) = Some npq ->
-    exists (np nq : NamedPattern), npq = npatt_imp np nq.
-  Proof.
-    intros Hdangling Hcached.
-    destruct hg as [history Hhistory].
-    move: p q npq C Hdangling Hhistory Hcached.
-    induction history; intros p q npq C Hdangling Hhistory Hcached.
-    {
-      simpl in Hhistory. inversion Hhistory.
-    }
-    {
-      simpl in Hhistory.
-      destruct a as [p0 rest].
-      destruct rest as [rest svs].
-      destruct rest as [[np0 C'] evs].
-      simpl in Hhistory.
-      destruct Hhistory as [HC' Hhistory]. subst C'.
-      remember (last ((p0, (np0, C, evs, svs)) :: history)) as Hlast.
-      destruct Hlast.
-      2: {
-        destruct history.
-        { simpl in HeqHlast. inversion HeqHlast. }
-        {
-          simpl in HeqHlast. rewrite last_cons in HeqHlast.
-          destruct (last history) eqn:Hlh.
-          {
-            rewrite Hlh in HeqHlast. inversion HeqHlast.
-          }
-          {
-            rewrite Hlh in HeqHlast. inversion HeqHlast.
-          }
-        }
-      }
-      rewrite -HeqHlast in Hhistory.
-      destruct Hhistory as [Hhistory1 Hhistory2].
-      destruct p1 as [p_l x_l]. subst x_l.
 
-      destruct history.
-      {
-        simpl in HeqHlast. inversion HeqHlast. subst p_l. clear HeqHlast.
-        (*clear IHhistory. *)
-        destruct p0; simpl in H1;
-        case_match_in_hyp H1; rewrite lookup_empty in Heqo; inversion Heqo; clear Heqo;
-        inversion H1; subst; repeat case_match; invert_tuples;
-        try (rewrite lookup_insert_ne in Hcached;[discriminate|];
-        rewrite lookup_empty in Hcached; inversion Hcached).
-        - rewrite lookup_insert_ne in Hcached.
-          { discriminate. }
-          apply dangling_vars_cached_proj_insert in Hdangling.
-          2: { simpl. auto. }
-          (* Contradiction. [g] cannot contain the implication. *)
-          (*assert(empty !! patt_imp p q = None).*)
-          assert (g0 !! patt_imp p q = None).
-          {
-            assert (~ (exists npq', g0 !! patt_imp p q = npq')).
-            {
-              intros HContra.
-              pose proof (Honly1 := onlyAddsSubpatterns2 empty p0_1 empty empty).
-              specialize (Honly1 (patt_imp p q)).
-              feed specialize Honly1.
-              {
-
-              }
-            }
-            
-          }
-          
-        
-      }
-      
-    }
-  Abort.
-*)
   Lemma consistency_pqp
         (p q : Pattern)
         (np' nq' np'' : NamedPattern)
         (cache : Cache)
         (evs : EVarSet)
         (svs : SVarSet):
-    History_generator cache ->
+    CES_prop cache evs svs ->
+    History_generator cache evs svs ->
     sub_prop cache ->
     dangling_vars_cached cache (patt_imp p (patt_imp q p)) ->
       exists np nq,
         (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
     = npatt_imp np (npatt_imp nq np).
   Proof.
-    intros Hhist Hsubp Hdngcached.
+    intros HCES Hhist Hsubp Hdngcached.
     remember ((to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs)) as Call.
     simpl in HeqCall.
     destruct (cache !! patt_imp p (patt_imp q p)) eqn:Hcachepqp.
     {
       rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
-    
-      apply cached_p_impl_called_with_p in Hcachepqp.
-      3: { simpl. auto. }
-      2: { exact Hhist. }
-      destruct Hcachepqp as [C' [evs' [svs' [HC'notcached HeqCall1]]]].
+      pose proof (Hcall2 := cached_p_impl_called_with_p cache evs svs Hhist).
+      specialize (Hcall2 (patt_imp p (patt_imp q p)) npqp HCES ltac:(simpl; auto) Hcachepqp).
+      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached HeqCall1]]]]].
       rewrite -HeqCall1. simpl. rewrite HC'notcached.
       repeat case_match; invert_tuples; simpl in *.
       {
-           apply cached_p_impl_called_with_p in Heqo.
-           3: { simpl. auto. }
-           2: {  }
-     }
-   
-     
-          pose proof (Hnp := Hsubp (patt_imp p (patt_imp q p)) npqp Hcachepqp).
-          simpl in Hnp.
-          destruct Hnp as [Hbocp Hbocqp].
-    
-          assert (Hcachedp: exists np, cache !! p = Some np).
-          {
-            destruct Hbocp as [Hboundp|Hcachedp'].
-            {
-              (* p is in cache because it is bound *)
-              pose proof (Hcachedp := Hdngcached).
-              apply dangling_vars_cached_imp_proj1 in Hcachedp.
-              destruct Hcachedp as [Hcachede Hcacheds].
-              unfold dangling_evars_cached,dangling_svars_cached in *.
-              destruct p; simpl in Hboundp; try inversion Hboundp.
-              { apply Hcachede. simpl. case_match. reflexivity. contradiction. }
-              { apply Hcacheds. simpl. case_match. reflexivity. contradiction. }
-            }
-            {
-              exact Hcachedp'.
-            }
-          }
-          destruct Hcachedp as [np Hcachedp].
-          exists np.
-    
-          destruct Hbocqp as [Hbqp|Hcqp].
-          { simpl in Hbqp. inversion Hbqp. }
-          destruct Hcqp as [nqp Hcachedqp].
-          pose proof (Hnqp := Hsubp (patt_imp q p) nqp Hcachedqp).
-          simpl in Hnqp.
-          destruct Hnqp as [Hbocq _].
-          assert (Hcachedq: exists nq, cache !! q = Some nq).
-          {
-            destruct Hbocq as [Hboundq|Hcachedq'].
-            {
-              (* p is in cache because it is bound *)
-              pose proof (Hcachedq := Hdngcached).
-              apply dangling_vars_cached_imp_proj2 in Hcachedq.
-              apply dangling_vars_cached_imp_proj1 in Hcachedq.
-              destruct Hcachedq as [Hcachede Hcacheds].
-              unfold dangling_evars_cached,dangling_svars_cached in *.
-              destruct q; simpl in Hboundq; try inversion Hboundq.
-              { apply Hcachede. simpl. case_match. reflexivity. contradiction. }
-              { apply Hcacheds. simpl. case_match. reflexivity. contradiction. }
-            }
-            {
-              exact Hcachedq'.
-            }
-          }
-          destruct Hcachedq as [nq Hcachedq].
-          exists nq.
+        Check cached_p_impl_called_with_p.
+        apply cached_p_impl_called_with_p with (evs := e1) (svs := s) in Heqo.
+        4: { simpl. auto. }
+        3: { pose proof (Htmp := CES_prop_step p C' evs' svs').
+        admit.
         }
-    
+        admit. admit.
+      }
+  
   (*
     (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
     (1) cache !! (p ---> (q ---> p)) = Some pqp'
