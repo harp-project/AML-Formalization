@@ -4668,7 +4668,14 @@ Qed.
             destruct Hhistory2 as [HCES' Hhistory2].
             destruct a.
             {
-              admit.
+              destruct Hhistory2 as [p_i [Hhistory21 [Hhistory22 [Hhistory23 [Hhistory24 Hhistory25]]]]].
+              subst. cbn in Hhistory21,Hhistory22,Hhistory23,Hhistory24, Hcached.
+              unfold cache_of_nhe in Hcached. cbn in Hcached.
+              pose proof (Hfnc := find_nested_call p_i iC ievs isvs).
+              specialize (Hfnc (to_NamedPattern2' p_i iC ievs isvs).1.1.2 p np HCES').
+              specialize (Hfnc Hnboundp Hhistory' Hhistory24 Hhistory22 Hhistory23 HiCp).
+              specialize (Hfnc Hcached erefl).
+              apply Hfnc.
             }
             {
               destruct i as [[iC' ievs'] isvs']. cbn in Hhistory2.
