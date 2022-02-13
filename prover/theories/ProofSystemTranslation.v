@@ -4318,10 +4318,35 @@ Qed.
     specialize (HC3 (S i)). simpl in HC3. apply HC3.
   Qed.
 
-  (* TODO *)
+  Lemma remove_bound_evars_mono C1 C2:
+    C1 ⊆ C2 -> remove_bound_evars C1 ⊆ remove_bound_evars C2.
+  Proof.
+    intros H.
+    unfold remove_bound_evars.
+    apply map_filter_subseteq_mono.
+    exact H.
+  Qed.
+
+  Lemma remove_bound_svars_mono C1 C2:
+    C1 ⊆ C2 -> remove_bound_svars C1 ⊆ remove_bound_svars C2.
+  Proof.
+    intros H.
+    unfold remove_bound_svars.
+    apply map_filter_subseteq_mono.
+    exact H.
+  Qed.
+
+  Lemma remove_bound_evars_remove_bound_svars_comm C:
+    remove_bound_evars (remove_bound_svars C) = remove_bound_svars (remove_bound_evars C).
+  Proof.
+    unfold remove_bound_evars. unfold remove_bound_svars.
+    apply map_filter_comm.
+  Qed.
+
+
   Lemma hist_prop_subseteq C evs svs a b history:
     hist_prop C evs svs (a :: (inl b) :: history) ->
-    cache_of_nhe b ⊆ C.
+    remove_bound_evars (remove_bound_svars (cache_of_nhe b)) ⊆ remove_bound_evars (remove_bound_svars C).
   Proof.
     intros Hhist.
     unfold hist_prop in Hhist.
@@ -4338,6 +4363,8 @@ Qed.
       {
         replace c0 with (n1, c0, e0, s0).1.1.2 by reflexivity.
         rewrite -Heqp4.
+        apply remove_bound_evars_mono.
+        apply remove_bound_svars_mono.
         apply to_NamedPattern2'_extends_cache.    
       }
     }
@@ -4350,13 +4377,40 @@ Qed.
       {
         replace c1 with (n0, c1, e1, s1).1.1.2 by reflexivity.
         rewrite -Heqp5.
+        apply remove_bound_evars_mono.
+        apply remove_bound_svars_mono.
         apply to_NamedPattern2'_extends_cache.    
       }
     }
     {
       inversion Hhist2.
     }
-  Abort.
+    {
+      destruct Hhist3 as [HCES [Hhist3|Hhist3]].
+      {
+        do 2 rewrite remove_bound_evars_remove_bound_svars_comm.
+        rewrite -Hhist3.
+        apply reflexivity.
+      }
+      {
+        rewrite Hhist3. apply reflexivity.
+      }
+    }
+    {
+      destruct Hhist3 as [HCES [Hhist3|Hhist3]].
+      {
+        do 2 rewrite remove_bound_evars_remove_bound_svars_comm.
+        rewrite -Hhist3.
+        apply reflexivity.
+      }
+      {
+        rewrite Hhist3. apply reflexivity.
+      }
+    }
+    {
+      inversion Hhist2.
+    }
+  Qed.
 
   Lemma cached_p_impl_called_with_p
     (C : Cache) (evs : EVarSet) (svs : SVarSet)
@@ -4471,7 +4525,10 @@ Qed.
             { exact Hnboundp. }
             { pose proof (Htmp := HeqhiCp).
               assert(H: remove_bound_evars (remove_bound_svars hiC) ⊆ remove_bound_evars (remove_bound_svars C)).
-              { admit. (*hist_prop_subseteq. exact Hhistory*) }
+              { 
+                epose proof (Htmp' := hist_prop_subseteq _ _ _ _ _ _ Hhistory).
+                apply Htmp'.
+              }
               assert (Htmp2: (remove_bound_evars (remove_bound_svars hiC)) !! p = Some (to_NamedPattern2' p C' evs' svs').1.1.1).
               {
                 unfold remove_bound_evars.
@@ -4714,6 +4771,7 @@ Qed.
           }
         }
       }
+    }
   Qed.
 (*
   Lemma cached_imp_is_nimp
