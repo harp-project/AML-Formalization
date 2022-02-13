@@ -4600,6 +4600,71 @@ Qed.
             apply Hhist_prop.
           }
 
+          destruct (iC !! p) eqn:HiCp.
+          {
+            assert (n = np).
+            {
+              simpl in Hhistory. destruct Hhistory as [HC [Hevs [Hsvs [Hhistory1 Hhistory2]]]].
+              subst. specialize (Hhistory2 0). simpl in Hhistory2.
+              destruct Hhistory2 as [HCES' Hhistory2].
+              destruct a.
+              {
+                destruct Hhistory2 as [p_i [Hhistory21 [Hhistory22 [Hhistory23 [Hhistory24 Hhistory25]]]]].
+                subst. cbn in Hcached. unfold cache_of_nhe in Hcached. simpl in Hcached.
+                pose proof (Hextends := to_NamedPattern2'_extends_cache iC p_i ievs isvs).
+                eapply lookup_weaken in HiCp;[|apply Hextends].
+                rewrite HiCp in Hcached. inversion Hcached.
+                subst. reflexivity.
+              }
+              {
+                destruct i. destruct p0. cbn in Hcached.
+                cbn in Hhistory2.
+                destruct Hhistory2 as [Hhistory2|Hhistory2].
+                {
+                  assert (HiCp': remove_bound_evars iC !! p = Some n).
+                  {
+                    unfold remove_bound_evars. rewrite map_filter_lookup_Some.
+                    split. exact HiCp. unfold is_bound_evar_entry. simpl.
+                    intros Hcontra. apply Hnboundp. apply bound_evar_is_bound_var.
+                    apply Hcontra.
+                  }
+                  rewrite -Hhistory2 in HiCp'.
+                  unfold remove_bound_evars in HiCp'.
+                  rewrite map_filter_lookup_Some in HiCp'.
+                  destruct HiCp' as [HiCp' _].
+                  rewrite Hcached in HiCp'. inversion HiCp'. subst. reflexivity.
+                }
+                {
+                  assert (HiCp': remove_bound_svars iC !! p = Some n).
+                  {
+                    unfold remove_bound_svars. rewrite map_filter_lookup_Some.
+                    split. exact HiCp. unfold is_bound_svar_entry. simpl.
+                    intros Hcontra. apply Hnboundp. apply bound_svar_is_bound_var.
+                    apply Hcontra.
+                  }
+                  rewrite -Hhistory2 in HiCp'.
+                  unfold remove_bound_svars in HiCp'.
+                  rewrite map_filter_lookup_Some in HiCp'.
+                  destruct HiCp' as [HiCp' _].
+                  rewrite Hcached in HiCp'. inversion HiCp'. subst. reflexivity.
+                }
+              }
+            }
+            subst n.
+            specialize (IHhistory p np  ievs isvs iC Hhistory').
+            feed specialize IHhistory.
+            {
+              intros Hempty. subst iC. rewrite lookup_empty in HiCp. inversion HiCp.
+            }
+            { exact Hnboundp. }
+            { exact HiCp. }
+            { exact Hhist_prop. }
+            apply IHhistory.
+          }
+          {
+            pose proof (Hfnc := find_nested_call).
+          }
+
           simpl in Hhistory.
           destruct Hhistory as [HC [Hevs [Hsvs [Hrest1 Hrest2]]]]. subst.
           specialize (Hrest2 0). simpl in Hrest2. destruct Hrest2 as [HCES2 Hrest2].
