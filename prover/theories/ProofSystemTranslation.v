@@ -4590,7 +4590,54 @@ Qed.
           }
         }
         {
-          pose proof (Hhistory' := Hhistory).
+          (*pose proof (Hhistory' := Hhistory).*)
+          destruct ih as [[iC ievs] isvs].
+          pose proof (Hhist_prop := Hhistory).
+          eapply hist_prop_strip_2 in Hhist_prop.
+          assert (Hhistory' : History_generator iC ievs isvs).
+          {
+            exists (inr (iC, ievs, isvs) :: history).
+            apply Hhist_prop.
+          }
+
+          simpl in Hhistory.
+          destruct Hhistory as [HC [Hevs [Hsvs [Hrest1 Hrest2]]]]. subst.
+          specialize (Hrest2 0). simpl in Hrest2. destruct Hrest2 as [HCES2 Hrest2].
+          destruct a.
+          {
+            destruct Hrest2 as [p_i Hp_i]. cbn in Hp_i.
+            destruct Hp_i as [HiCp_i [Hconti [Hsubpi [Hdnglp_i Hn]]]].
+            subst. simpl in Hcached. unfold cache_of_nhe in Hcached. simpl in Hcached.
+          
+            specialize (IHhistory p np  ievs isvs iC Hhistory' HCES2 Hnboundp).
+
+            pose proof (Hfnc := find_nested_call p_i iC ievs isvs).
+            specialize (Hfnc ((to_NamedPattern2' p_i iC ievs isvs).1.1.2) p np).
+            specialize (Hfnc HCES2 Hnboundp Hhistory' Hdnglp_i Hconti Hsubpi).
+            exists iC, ievs, isvs, Hhistory'.
+            split.
+            {}
+          }
+
+          specialize (IHhistory p np  ievs isvs iC Hhistory').
+          feed specialize IHhistory.
+          {
+            unfold CES_prop. intros hIC. subst. simpl in Hhistory.
+            destruct_and!. subst. specialize (H4 0). simpl in H4.
+            destruct_and!. apply H. reflexivity.
+          }
+          { exact Hnboundp. }
+          {
+            simpl in Hhistory. destruct_and!. subst.
+            specialize (H4 0). simpl in H4. destruct_and!. simpl in H.
+            destruct a.
+            { cbn in H0.
+              destruct H0.
+              destruct_and?. subst. cbn in Hcached.
+            }
+          }
+          
+          apply IHhistory with (p := p) (np := np) in Hhistory'.
           simpl in Hhistory.
           destruct_and!. subst. specialize (H4 0). simpl in H4.
           destruct_and!.
