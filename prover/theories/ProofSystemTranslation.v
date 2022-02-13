@@ -4298,6 +4298,27 @@ Qed.
     }
   Qed.
 
+  Lemma hist_prop_strip_2 C evs svs a hiC hievs hisvs history:
+    hist_prop C evs svs (a :: ((inr (hiC, hievs, hisvs)) :: history)) ->
+    hist_prop hiC hievs hisvs ((inr (hiC, hievs, hisvs)) :: history).
+  Proof.
+    intros HC.
+    unfold hist_prop in *.
+    destruct HC as [HC1 [Hevs [Hsvs [HC2 HC3]]]].
+    subst C evs svs.
+    split.
+    { simpl. reflexivity. }
+    split.
+    { simpl. reflexivity. }
+    split.
+    { simpl. reflexivity. }
+    split.
+    { simpl in HC2. apply HC2. }
+    intros i.
+    specialize (HC3 (S i)). simpl in HC3. apply HC3.
+  Qed.
+
+  (* TODO *)
   Lemma hist_prop_subseteq C evs svs a b history:
     hist_prop C evs svs (a :: (inl b) :: history) ->
     cache_of_nhe b ⊆ C.
@@ -4567,6 +4588,13 @@ Qed.
               }
             }
           }
+        }
+        {
+          pose proof (Hhistory' := Hhistory).
+          simpl in Hhistory.
+          destruct_and!. subst. specialize (H4 0). simpl in H4.
+          destruct_and!.
+          Print hist_prop.
         }
       }
     }
