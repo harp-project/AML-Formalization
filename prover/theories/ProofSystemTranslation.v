@@ -4662,54 +4662,51 @@ Qed.
             apply IHhistory.
           }
           {
-            pose proof (Hfnc := find_nested_call).
-          }
-
-          simpl in Hhistory.
-          destruct Hhistory as [HC [Hevs [Hsvs [Hrest1 Hrest2]]]]. subst.
-          specialize (Hrest2 0). simpl in Hrest2. destruct Hrest2 as [HCES2 Hrest2].
-          destruct a.
-          {
-            destruct Hrest2 as [p_i Hp_i]. cbn in Hp_i.
-            destruct Hp_i as [HiCp_i [Hconti [Hsubpi [Hdnglp_i Hn]]]].
-            subst. simpl in Hcached. unfold cache_of_nhe in Hcached. simpl in Hcached.
-          
-            specialize (IHhistory p np  ievs isvs iC Hhistory' HCES2 Hnboundp).
-
-            pose proof (Hfnc := find_nested_call p_i iC ievs isvs).
-            specialize (Hfnc ((to_NamedPattern2' p_i iC ievs isvs).1.1.2) p np).
-            specialize (Hfnc HCES2 Hnboundp Hhistory' Hdnglp_i Hconti Hsubpi).
-            exists iC, ievs, isvs, Hhistory'.
-            split.
-            {}
-          }
-
-          specialize (IHhistory p np  ievs isvs iC Hhistory').
-          feed specialize IHhistory.
-          {
-            unfold CES_prop. intros hIC. subst. simpl in Hhistory.
-            destruct_and!. subst. specialize (H4 0). simpl in H4.
-            destruct_and!. apply H. reflexivity.
-          }
-          { exact Hnboundp. }
-          {
-            simpl in Hhistory. destruct_and!. subst.
-            specialize (H4 0). simpl in H4. destruct_and!. simpl in H.
+            simpl in Hhistory.
+            destruct Hhistory as [HC [Hevs [Hsvs [Hhistory1 Hhistory2]]]]. subst.
+            specialize (Hhistory2 0). simpl in Hhistory2.
+            destruct Hhistory2 as [HCES' Hhistory2].
             destruct a.
-            { cbn in H0.
-              destruct H0.
-              destruct_and?. subst. cbn in Hcached.
+            {
+              admit.
+            }
+            {
+              destruct i as [[iC' ievs'] isvs']. cbn in Hhistory2.
+              destruct Hhistory2 as [Hhistory2|Hhistory2].
+              {
+                cbn in Hcached.
+                assert (Hcached2: remove_bound_evars iC' !! p = Some np).
+                {
+                  unfold remove_bound_evars. rewrite map_filter_lookup_Some.
+                  split. exact Hcached. unfold is_bound_evar_entry. simpl.
+                  intros Hcontra. apply Hnboundp. apply bound_evar_is_bound_var.
+                  apply Hcontra.
+                }
+                rewrite Hhistory2 in Hcached2.
+                unfold remove_bound_evars in Hcached2.
+                rewrite map_filter_lookup_Some in Hcached2.
+                destruct Hcached2 as [Hcached2 _]. rewrite HiCp in Hcached2.
+                inversion Hcached2.
+              }
+              {
+                cbn in Hcached.
+                assert (Hcached2: remove_bound_svars iC' !! p = Some np).
+                {
+                  unfold remove_bound_svars. rewrite map_filter_lookup_Some.
+                  split. exact Hcached. unfold is_bound_svar_entry. simpl.
+                  intros Hcontra. apply Hnboundp. apply bound_svar_is_bound_var.
+                  apply Hcontra.
+                }
+                rewrite Hhistory2 in Hcached2.
+                unfold remove_bound_svars in Hcached2.
+                rewrite map_filter_lookup_Some in Hcached2.
+                destruct Hcached2 as [Hcached2 _]. rewrite HiCp in Hcached2.
+                inversion Hcached2.
+              }
             }
           }
-          
-          apply IHhistory with (p := p) (np := np) in Hhistory'.
-          simpl in Hhistory.
-          destruct_and!. subst. specialize (H4 0). simpl in H4.
-          destruct_and!.
-          Print hist_prop.
         }
       }
-    }
   Qed.
 (*
   Lemma cached_imp_is_nimp
