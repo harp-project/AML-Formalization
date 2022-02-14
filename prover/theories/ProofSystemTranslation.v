@@ -3570,8 +3570,10 @@ Qed.
     Cout !! q = Some nq ->
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
     exists Cfound evsfound svsfound (HhistCfound : History_generator Cfound evsfound svsfound),
-      Cfound !! q = None /\ CES_prop Cfound evsfound svsfound /\
-      (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
+      Cfound !! q = None
+      /\ CES_prop Cfound evsfound svsfound
+      /\ dangling_vars_cached Cfound q
+      /\ (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
     intros HCES Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
     remember (size' p) as sz.
@@ -3598,6 +3600,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3621,6 +3624,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3644,6 +3648,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3667,6 +3672,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3690,6 +3696,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3714,6 +3721,7 @@ Qed.
         rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hdvc|].
         reflexivity.
       }
       {
@@ -3749,7 +3757,8 @@ Qed.
             epose proof (IH := IHsz p1 ltac:(lia) _ _ _ _ _ (ltac:(auto using CES_prop_step)) _ Hnbq Hhist Hdvcp1 Hccp Hsp Hqin Hg0q).
             erewrite Heqp1 in IH. simpl in IH. specialize (IH erefl).
             destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
-            exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1. exact H2.
+            exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
+            exact H2.
           }
           {
             assert (Hhist': History_generator g0 e0 s0).
@@ -3852,6 +3861,7 @@ Qed.
           rewrite Hqin. simpl.
           split;[reflexivity|].
           split;[apply HCES|].
+          split;[apply Hdvc|].
           reflexivity.
         }
         {
@@ -3876,6 +3886,7 @@ Qed.
           rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
           split;[reflexivity|].
           split;[apply HCES|].
+          split;[apply Hdvc|].
           reflexivity.
         }
         {
@@ -4012,6 +4023,7 @@ Qed.
             repeat case_match. invert_tuples. simpl in *.
             split;[reflexivity|].
             split;[apply HCES|].
+            split;[apply Hdvc|].
             reflexivity.
           }
           {
@@ -4079,6 +4091,7 @@ Qed.
             repeat case_match. invert_tuples. simpl in *.
             split;[reflexivity|].
             split;[apply HCES|].
+            split;[apply Hdvc|].
             reflexivity.
           }
           {
@@ -4422,7 +4435,10 @@ Qed.
     ~ is_bound_var p ->
     C !! p = Some np ->
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C' evs' svs'),
-      C' !! p = None /\ CES_prop C' evs' svs' /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
+      C' !! p = None
+      /\ CES_prop C' evs' svs'
+      /\ dangling_vars_cached C' p
+      /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
   Proof.
     intros HCES Hnboundp Hcached.
     pose proof (hg' := hg).
@@ -4542,8 +4558,8 @@ Qed.
                 2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
                   apply bound_svar_is_bound_var. exact HContra.
                 }
-                destruct IH3 as [IH31 IH32].
-                rewrite IH32.
+                destruct IH3 as [IH31 [IH32 IH33]].
+                rewrite IH33.
                 exact Htmp.
               }
               apply lookup_weaken with (m2 := (remove_bound_evars (remove_bound_svars C))) in Htmp2.
@@ -4565,8 +4581,8 @@ Qed.
                 exact Hcached.
               }
               rewrite Htmp2 in Hcached2. inversion Hcached2. subst.
-              destruct IH3 as [IH31 IH32].
-              rewrite IH32.
+              destruct IH3 as [IH31 [IH32 IH33]].
+              rewrite IH33.
               exact HeqhiCp.
             }
             { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
@@ -4800,15 +4816,24 @@ Qed.
       rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
       pose proof (Hcall2 := cached_p_impl_called_with_p cache evs svs Hhist).
       specialize (Hcall2 (patt_imp p (patt_imp q p)) npqp HCES ltac:(simpl; auto) Hcachepqp).
-      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached HeqCall1]]]]].
+      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' HeqCall1]]]]]].
       rewrite -HeqCall1. simpl. rewrite HC'notcached.
       repeat case_match; invert_tuples; simpl in *.
       {
-        Check cached_p_impl_called_with_p.
         apply cached_p_impl_called_with_p with (evs := e1) (svs := s) in Heqo.
         4: { simpl. auto. }
-        3: { pose proof (Htmp := CES_prop_step p C' evs' svs').
-        admit.
+        3: { pose proof (Htmp := CES_prop_step p C' evs' svs' HCES').
+          do 3 case_match_in_hyp Htmp. invert_tuples.
+          exact Htmp.
+        }
+        2: {
+          Check history_generator_step.
+          pose proof (Htmp := history_generator_step C' p evs' svs' Hhist').
+          rewrite Heqp1 in Htmp.
+          apply Htmp.
+          5: {
+
+          }
         }
         admit. admit.
       }
