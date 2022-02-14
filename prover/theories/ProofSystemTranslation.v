@@ -3552,6 +3552,56 @@ Qed.
     }
   Defined.
 
+  Lemma remove_bound_evars_mono C1 C2:
+  C1 ⊆ C2 -> remove_bound_evars C1 ⊆ remove_bound_evars C2.
+Proof.
+  intros H.
+  unfold remove_bound_evars.
+  apply map_filter_subseteq_mono.
+  exact H.
+Qed.
+
+Lemma remove_bound_svars_mono C1 C2:
+  C1 ⊆ C2 -> remove_bound_svars C1 ⊆ remove_bound_svars C2.
+Proof.
+  intros H.
+  unfold remove_bound_svars.
+  apply map_filter_subseteq_mono.
+  exact H.
+Qed.
+
+Lemma remove_bound_evars_remove_bound_svars_comm C:
+  remove_bound_evars (remove_bound_svars C) = remove_bound_svars (remove_bound_evars C).
+Proof.
+  unfold remove_bound_evars. unfold remove_bound_svars.
+  apply map_filter_comm.
+Qed.
+
+  Lemma not_is_subformula_of_app_l p1 p2:
+  ~ is_subformula_of_ind (patt_app p1 p2) p1.
+  Proof. Admitted.
+
+  Lemma not_is_subformula_of_app_r p1 p2:
+  ~ is_subformula_of_ind (patt_app p1 p2) p2.
+  Proof. Admitted.
+
+  Lemma not_is_subformula_of_imp_l p1 p2:
+  ~ is_subformula_of_ind (patt_imp p1 p2) p1.
+  Proof. Admitted.
+
+  Lemma not_is_subformula_of_imp_r p1 p2:
+  ~ is_subformula_of_ind (patt_imp p1 p2) p2.
+  Proof. Admitted.
+
+  Lemma not_is_subformula_of_ex p:
+  ~ is_subformula_of_ind (patt_exists p) p.
+  Proof. Admitted.
+
+  Lemma not_is_subformula_of_mu p:
+  ~ is_subformula_of_ind (patt_mu p) p.
+  Proof. Admitted.
+
+
   Lemma find_nested_call
     (p : Pattern)
     (Cin : Cache)
@@ -3571,6 +3621,8 @@ Qed.
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
     exists Cfound evsfound svsfound (HhistCfound : History_generator Cfound evsfound svsfound),
       Cfound !! q = None
+      /\ remove_bound_evars (remove_bound_svars Cfound) ⊆ remove_bound_evars (remove_bound_svars Cout)
+      /\ remove_bound_evars (remove_bound_svars Cin) ⊆ remove_bound_evars (remove_bound_svars Cfound)
       /\ CES_prop Cfound evsfound svsfound
       /\ cache_continuous_prop Cfound
       /\ sub_prop Cfound
@@ -3601,6 +3653,17 @@ Qed.
         simpl.
         rewrite Hqin. simpl.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          apply insert_subseteq.
+          exact Hqin.
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3627,6 +3690,17 @@ Qed.
         simpl.
         rewrite Hqin. simpl.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          apply insert_subseteq.
+          exact Hqin.
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3653,6 +3727,17 @@ Qed.
         simpl.
         rewrite Hqin. simpl.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          apply insert_subseteq.
+          exact Hqin.
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3679,6 +3764,17 @@ Qed.
         simpl.
         rewrite Hqin. simpl.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          apply insert_subseteq.
+          exact Hqin.
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3705,6 +3801,17 @@ Qed.
         simpl.
         rewrite Hqin. simpl.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          apply insert_subseteq.
+          exact Hqin.
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3732,6 +3839,42 @@ Qed.
         repeat case_match. invert_tuples. simpl in *.
         rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
         split;[reflexivity|].
+        split.
+        {
+          apply remove_bound_evars_mono.
+          apply remove_bound_svars_mono.
+          pose proof (Htmp1 := to_NamedPattern2'_extends_cache Cin p1 evsin svsin).
+          rewrite Heqp0 in Htmp1. simpl in Htmp1.
+          pose proof (Htmp2 := to_NamedPattern2'_extends_cache g0 p2 e0 s0).
+          rewrite Heqp2 in Htmp2. simpl in Htmp2.
+          eapply transitivity. apply Htmp1.
+          eapply transitivity. apply Htmp2.
+          apply insert_subseteq.
+
+          destruct (g3 !! patt_app p1 p2) eqn:Hg3appp1p2;[|reflexivity].
+          exfalso.
+          destruct (g0 !! patt_app p1 p2) eqn:Hg0appp1p2.
+          {
+            pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_app p1 p2) Hqin).
+            feed specialize Htmp3.
+            {
+              rewrite Heqp0. simpl. exists n1. exact Hg0appp1p2.
+            }
+            eapply not_is_subformula_of_app_l. apply Htmp3.
+          }
+          {
+            pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2).
+            feed specialize Htmp4.
+            {
+              rewrite Heqp2. simpl. exists n. exact Hg3appp1p2.
+            }
+            eapply not_is_subformula_of_app_r. apply Htmp4.
+          }
+        }
+        split.
+        {
+          apply reflexivity.
+        }
         split;[apply HCES|].
         split;[apply Hccp|].
         split;[apply Hsp|].
@@ -3772,7 +3915,38 @@ Qed.
             erewrite Heqp1 in IH. simpl in IH. specialize (IH erefl).
             destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
             exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
-            exact H2.
+            destruct H2 as [H21 [H22 H23]].
+            split.
+            {
+              eapply transitivity. exact H21.
+              eapply transitivity.
+              { apply remove_bound_evars_mono. apply remove_bound_svars_mono. apply Hext. }
+              apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+              apply insert_subseteq.
+
+              destruct (g !! patt_app p1 p2) eqn:Hgappp1p2;[|reflexivity].
+              exfalso.
+              destruct (g0 !! patt_app p1 p2) eqn:Hg0appp1p2.
+              {
+                pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_app p1 p2) Heqo).
+                feed specialize Htmp3.
+                {
+                  rewrite Heqp1. simpl. exists n3. exact Hg0appp1p2.
+                }
+                eapply not_is_subformula_of_app_l. apply Htmp3.
+              }
+              {
+                pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2).
+                feed specialize Htmp4.
+                {
+                  rewrite Heqp2. simpl. exists n2. exact Hgappp1p2.
+                }
+                eapply not_is_subformula_of_app_r. apply Htmp4.
+              }
+            }
+            split.
+            { exact H22. }
+            exact H23.
           }
           {
             assert (Hhist': History_generator g0 e0 s0).
@@ -3855,7 +4029,44 @@ Qed.
             { exact Hg0q. }
             { exact Hnq. }
             { erewrite Heqp2. simpl. reflexivity. }
-            apply IH.
+            destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
+            exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
+            destruct H2 as [H21 [H22 H23]].
+            split.
+            {
+              eapply transitivity. apply H21.
+              apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+              apply insert_subseteq.
+
+              destruct (g !! patt_app p1 p2) eqn:Hgappp1p2;[|reflexivity].
+              exfalso.
+              destruct (g0 !! patt_app p1 p2) eqn:Hg0appp1p2.
+              {
+                pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_app p1 p2) Heqo).
+                feed specialize Htmp3.
+                {
+                  rewrite Heqp1. simpl. eexists. exact Hg0appp1p2.
+                }
+                eapply not_is_subformula_of_app_l. apply Htmp3.
+              }
+              {
+                pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2).
+                feed specialize Htmp4.
+                {
+                  rewrite Heqp2. simpl. eexists. exact Hgappp1p2.
+                }
+                eapply not_is_subformula_of_app_r. apply Htmp4.
+              }
+            }
+            split.
+            {
+              eapply transitivity.
+              2: { apply H22. }
+              epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+              erewrite Heqp1 in Htmp. simpl in Htmp.
+              apply remove_bound_evars_mono. apply remove_bound_svars_mono. apply Htmp.
+            }
+            exact H23.
           }
         }
       }
@@ -3874,6 +4085,17 @@ Qed.
           simpl.
           rewrite Hqin. simpl.
           split;[reflexivity|].
+          split.
+          {
+            apply remove_bound_evars_mono.
+            apply remove_bound_svars_mono.
+            apply insert_subseteq.
+            exact Hqin.
+          }
+          split.
+          {
+            apply reflexivity.
+          }
           split;[apply HCES|].
           split;[apply Hccp|].
           split;[apply Hsp|].
@@ -3901,6 +4123,42 @@ Qed.
           repeat case_match. invert_tuples. simpl in *.
           rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
           split;[reflexivity|].
+          split.
+          {
+            apply remove_bound_evars_mono.
+            apply remove_bound_svars_mono.
+            pose proof (Htmp1 := to_NamedPattern2'_extends_cache Cin p1 evsin svsin).
+            rewrite Heqp0 in Htmp1. simpl in Htmp1.
+            pose proof (Htmp2 := to_NamedPattern2'_extends_cache g0 p2 e0 s0).
+            rewrite Heqp2 in Htmp2. simpl in Htmp2.
+            eapply transitivity. apply Htmp1.
+            eapply transitivity. apply Htmp2.
+            apply insert_subseteq.
+  
+            destruct (g3 !! patt_imp p1 p2) eqn:Hg3appp1p2;[|reflexivity].
+            exfalso.
+            destruct (g0 !! patt_imp p1 p2) eqn:Hg0appp1p2.
+            {
+              pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_imp p1 p2) Hqin).
+              feed specialize Htmp3.
+              {
+                rewrite Heqp0. simpl. exists n1. exact Hg0appp1p2.
+              }
+              eapply not_is_subformula_of_imp_l. apply Htmp3.
+            }
+            {
+              pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_imp p1 p2) Hg0appp1p2).
+              feed specialize Htmp4.
+              {
+                rewrite Heqp2. simpl. exists n. exact Hg3appp1p2.
+              }
+              eapply not_is_subformula_of_imp_r. apply Htmp4.
+            }
+          }
+          split.
+          {
+            apply reflexivity.
+          }
           split;[apply HCES|].
           split;[apply Hccp|].
           split;[apply Hsp|].
@@ -3940,7 +4198,39 @@ Qed.
               epose proof (IH := IHsz p1 ltac:(lia) _ _ _ _ _ (ltac:(auto using CES_prop_step)) _ Hnbq Hhist Hdvcp1 Hccp Hsp Hqin Hg0q).
               erewrite Heqp1 in IH. simpl in IH. specialize (IH erefl).
               destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
-              exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1. exact H2.
+              exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
+              destruct H2 as [H21 [H22 H23]].
+              split.
+              {
+                eapply transitivity. exact H21.
+                eapply transitivity.
+                { apply remove_bound_evars_mono. apply remove_bound_svars_mono. apply Hext. }
+                apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+                apply insert_subseteq.
+
+                destruct (g !! patt_imp p1 p2) eqn:Hgappp1p2;[|reflexivity].
+                exfalso.
+                destruct (g0 !! patt_imp p1 p2) eqn:Hg0appp1p2.
+                {
+                  pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_imp p1 p2) Heqo).
+                  feed specialize Htmp3.
+                  {
+                    rewrite Heqp1. simpl. exists n3. exact Hg0appp1p2.
+                  }
+                  eapply not_is_subformula_of_imp_l. apply Htmp3.
+                }
+                {
+                  pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_imp p1 p2) Hg0appp1p2).
+                  feed specialize Htmp4.
+                  {
+                    rewrite Heqp2. simpl. exists n2. exact Hgappp1p2.
+                  }
+                  eapply not_is_subformula_of_imp_r. apply Htmp4.
+                }
+              }
+              split.
+              { exact H22. }
+              exact H23.
             }
             {
               assert (Hhist': History_generator g0 e0 s0).
@@ -4021,7 +4311,44 @@ Qed.
               { exact Hg0q. }
               { exact Hnq. }
               { erewrite Heqp2. simpl. reflexivity. }
-              apply IH.
+              destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
+              exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
+              destruct H2 as [H21 [H22 H23]].
+              split.
+              {
+                eapply transitivity. apply H21.
+                apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+                apply insert_subseteq.
+  
+                destruct (g !! patt_imp p1 p2) eqn:Hgappp1p2;[|reflexivity].
+                exfalso.
+                destruct (g0 !! patt_imp p1 p2) eqn:Hg0appp1p2.
+                {
+                  pose proof (Htmp3 := onlyAddsSubpatterns2 Cin p1 evsin svsin (patt_imp p1 p2) Heqo).
+                  feed specialize Htmp3.
+                  {
+                    rewrite Heqp1. simpl. eexists. exact Hg0appp1p2.
+                  }
+                  eapply not_is_subformula_of_imp_l. apply Htmp3.
+                }
+                {
+                  pose proof (Htmp4 := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_imp p1 p2) Hg0appp1p2).
+                  feed specialize Htmp4.
+                  {
+                    rewrite Heqp2. simpl. eexists. exact Hgappp1p2.
+                  }
+                  eapply not_is_subformula_of_imp_r. apply Htmp4.
+                }
+              }
+              split.
+              {
+                eapply transitivity.
+                2: { apply H22. }
+                epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+                erewrite Heqp1 in Htmp. simpl in Htmp.
+                apply remove_bound_evars_mono. apply remove_bound_svars_mono. apply Htmp.
+              }
+              exact H23.
             }
           }
         }
@@ -4352,31 +4679,6 @@ Qed.
     { simpl in HC2. apply HC2. }
     intros i.
     specialize (HC3 (S i)). simpl in HC3. apply HC3.
-  Qed.
-
-  Lemma remove_bound_evars_mono C1 C2:
-    C1 ⊆ C2 -> remove_bound_evars C1 ⊆ remove_bound_evars C2.
-  Proof.
-    intros H.
-    unfold remove_bound_evars.
-    apply map_filter_subseteq_mono.
-    exact H.
-  Qed.
-
-  Lemma remove_bound_svars_mono C1 C2:
-    C1 ⊆ C2 -> remove_bound_svars C1 ⊆ remove_bound_svars C2.
-  Proof.
-    intros H.
-    unfold remove_bound_svars.
-    apply map_filter_subseteq_mono.
-    exact H.
-  Qed.
-
-  Lemma remove_bound_evars_remove_bound_svars_comm C:
-    remove_bound_evars (remove_bound_svars C) = remove_bound_svars (remove_bound_evars C).
-  Proof.
-    unfold remove_bound_evars. unfold remove_bound_svars.
-    apply map_filter_comm.
   Qed.
 
 
@@ -4840,10 +5142,11 @@ Qed.
       rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
       pose proof (Hcall2 := cached_p_impl_called_with_p cache evs svs Hhist).
       specialize (Hcall2 (patt_imp p (patt_imp q p)) npqp HCES ltac:(simpl; auto) Hcachepqp).
-      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' [Hsp' [Hdng' HeqCall1]]]]]]]].
+      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' [Hccp' [Hsp' [Hdng' HeqCall1]]]]]]]]].
       rewrite -HeqCall1. simpl. rewrite HC'notcached.
       repeat case_match; invert_tuples; simpl in *.
       {
+        pose proof (Heqo' := Heqo).
         apply cached_p_impl_called_with_p with (evs := e1) (svs := s) in Heqo.
         4: { simpl. auto. }
         3: { pose proof (Htmp := CES_prop_step p C' evs' svs' HCES').
@@ -4851,7 +5154,6 @@ Qed.
           exact Htmp.
         }
         2: {
-          Check history_generator_step.
           pose proof (Htmp := history_generator_step C' p evs' svs' Hhist').
           rewrite Heqp1 in Htmp.
           apply Htmp.
@@ -4859,7 +5161,62 @@ Qed.
             apply dangling_vars_cached_imp_proj1 in Hdng'. exact Hdng'.
           }
           4: { exact Hsp'. }
-          3: {  }
+          3: { exact Hccp'. }
+          2: { exact HCES'. }
+          1: {
+            (* TODO extract a lemma *)
+            destruct Hhist' as [Hst_history' Hst_prop'].
+            destruct Hst_history'.
+            {
+              simpl. right. split;[reflexivity|].
+              simpl in Hst_prop'. subst C'.
+              specialize (HCES' erefl).
+              destruct HCES' as [Hevs' Hsvs']. subst.
+              repeat split; reflexivity.
+            }
+            {
+              left. simpl. simpl in Hst_prop'.
+              destruct Hst_prop' as [HC' [Hevs' [Hsvs' Hst_prop']]].
+              subst. repeat split; reflexivity.
+            }
+          }
+        }
+        destruct Heqo as [C'' [evs'' [svs'' [hg'' [HC''qp [HCES'' [Hccp'' [Hsp'' [Hdng'' Hcall'']]]]]]]]].
+        exists n.
+        rewrite -Hcall''.
+        simpl. rewrite HC''qp.
+
+
+        repeat case_match; subst; invert_tuples; simpl in *.
+        {
+          exists n2. f_equal. f_equal.
+          repeat case_match; simpl in *.
+          {
+            (* C'' contains p, therefore g contains p, therefore Heqp5 translates p to the cached value*)
+            admit.
+          }
+          {
+            subst. invert_tuples.
+          }
+        }
+        {
+
+        }
+        {
+
+        }
+        
+
+        clear Hcachepqp.
+        repeat case_match. subst. invert_tuples. simpl. simpl in Heqo'.
+        repeat case_match; simpl in *.
+        {
+
+        }
+        exists n1.
+        assert (n2 = n).
+        {
+
         }
         admit. admit.
       }
