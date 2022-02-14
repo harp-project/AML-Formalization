@@ -5151,31 +5151,6 @@ Qed.
           destruct nh as [hip [[[hinp hiC] hievs] hisvs]].
           destruct (hiC !! p) eqn:HeqhiCp.
           {
-            (*
-            epose proof (IH := IHhistory p n _ _ hiC _ _ Hnboundp HeqhiCp).
-            feed specialize IH.
-            { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
-            Unshelve.
-            3: {
-              simpl in Hhistory.
-              destruct Hhistory as [HC [Hevs [Hsvs Hhistory]]].
-              subst.
-              destruct Hhistory as [Hhistory1 Hhistory2].
-              specialize (Hhistory2 0).
-              simpl in Hhistory2.
-              destruct Hhistory2 as [HCES' Hhistory2].
-              apply HCES'.
-            }
-            2: {
-              apply hist_prop_strip_1 in Hhistory.
-              eexists. apply Hhistory.
-            }
-            destruct IH as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
-            subst.
-            exists C',evs',svs', IH1.
-            destruct_and!. split_and!; try assumption.
-            *)
-            (* C came from hiC  *)
             
             pose proof (IH' := IHhistory p np hievs hisvs hiC).
             feed specialize IH'.
@@ -5512,7 +5487,7 @@ Qed.
       rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
       pose proof (Hcall2 := cached_p_impl_called_with_p cache evs svs Hhist).
       specialize (Hcall2 (patt_imp p (patt_imp q p)) npqp HCES ltac:(simpl; auto) Hcachepqp).
-      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' [Hccp' [Hsp' [Hdng' HeqCall1]]]]]]]]].
+      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [Hsubseteq1 [HCES' [Hccp' [Hsp' [Hdng' HeqCall1]]]]]]]]]].
       rewrite -HeqCall1. simpl. rewrite HC'notcached.
       repeat case_match; invert_tuples; simpl in *.
       {
@@ -5551,37 +5526,99 @@ Qed.
             }
           }
         }
-        destruct Heqo as [C'' [evs'' [svs'' [hg'' [HC''qp [HCES'' [Hccp'' [Hsp'' [Hdng'' Hcall'']]]]]]]]].
-        exists n.
+        destruct Heqo as [C'' [evs'' [svs'' [hg'' [HC''qp [Hsubseteq'' [HCES'' [Hccp'' [Hsp'' [Hdng'' Hcall'']]]]]]]]]].
         rewrite -Hcall''.
         simpl. rewrite HC''qp.
 
 
+        (*clear Hcachepqp.*)
+        repeat case_match; subst; invert_tuples; simpl; simpl in Heqo';
         repeat case_match; subst; invert_tuples; simpl in *.
         {
-          exists n2. f_equal. f_equal.
-          repeat case_match; simpl in *.
+          rewrite HC''qp in Heqo0. inversion Heqo0.
+        }
+        {
+          rewrite HC'notcached in Heqo. inversion Heqo.
+        }
+        {
+          rewrite HC''qp in Heqo1. inversion Heqo1.
+        }
+        {
+          rewrite Heqp14 in Heqp7. inversion Heqp7. subst. clear Heqp7.
+          rewrite Heqo0 in Heqo'. inversion Heqo'. subst. clear Heqo'.
+          clear HC''qp. (*duplicate of Heqo.*)
+          (* we need g !! p = Some n
+             The only thing we know about n is that it is
+             g1 !! p = Some n
+          *)
+          assert (Hg1p: g1 !! p = Some n).
           {
-            (* C'' contains p, therefore g contains p, therefore Heqp5 translates p to the cached value*)
-            admit.
+            epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _).
+            erewrite Heqp1 in Htmp. simpl in Htmp.
+            exact Htmp.
           }
+          assert (Hspg1 : sub_prop g1).
           {
-            subst. invert_tuples.
+            epose proof (Htmp := sub_prop_step _ _ _ _).
+            erewrite Heqp1 in Htmp.
+            feed specialize Htmp.
+            {
+              eapply dangling_vars_cached_imp_proj1. eassumption.
+            }
+            {
+              apply Hccp'.
+            }
+            {
+              exact Hsp'.
+            }
+            apply Htmp.
           }
-        }
-        {
 
-        }
-        {
+          (* we can prove that C' !! patt_imp p q = Some _
+             because g1 contains it and it could not have been added into g1
+             by the translation function called with p.
+          *)
+          pose proof (Htmp := Hspg1). unfold sub_prop in Htmp.
+          specialize (Htmp (patt_imp q p) (npatt_imp n1 n4) Heqo'). simpl in Htmp.
 
-        }
-        
+          
+          
+          assert(C' ⊆ g1).
+          {
+            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+            erewrite Heqp1 in Htmp. simpl in Htmp. exact Htmp.
+          }
+          assert(C'' ⊆ g).
+          {
+            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+            erewrite Heqp2 in Htmp. simpl in Htmp. exact Htmp.
+          }
+          assert(g ⊆ g2).
+          {
+            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+            erewrite Heqp5 in Htmp. simpl in Htmp. exact Htmp.
+          }
+          assert(remove_bound_evars (remove_bound_svars C') ⊆ remove_bound_evars (remove_bound_svars g1)).
+          {
+            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
+          }
+          assert(remove_bound_evars (remove_bound_svars C'') ⊆ remove_bound_evars (remove_bound_svars g)).
+          {
+            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
+          }
+          assert(remove_bound_evars (remove_bound_svars g) ⊆ remove_bound_evars (remove_bound_svars g2)).
+          {
+            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
+          }
 
-        clear Hcachepqp.
-        repeat case_match. subst. invert_tuples. simpl. simpl in Heqo'.
-        repeat case_match; simpl in *.
-        {
+          assert (C'' !! patt)
 
+          exists n.
+          exists n1.
+          assert (n2 = n).
+          {
+            
+          }
         }
         exists n1.
         assert (n2 = n).
