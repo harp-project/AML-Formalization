@@ -289,6 +289,40 @@ Section proof_system_translation.
     unfold sub_prop; intros; inversion H.
   Qed.
 
+  Definition inv_sub_prop (C : Cache) :=
+    forall (p : Pattern) (np : NamedPattern),
+    match p with
+    | patt_free_evar _ => True
+    | patt_free_svar _ => True
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | patt_bott => True
+    | patt_sym _ => True
+    | patt_imp p' q' =>
+      (forall np' nq',
+        C !! p' = Some np' ->
+        C !! q' = Some nq' ->
+        np = npatt_imp np' nq')
+    | patt_app p' q' => 
+      (forall np' nq',
+      C !! p' = Some np' ->
+      C !! q' = Some nq' ->
+      np = npatt_app np' nq')
+    | patt_exists p' =>
+      (forall np' e,
+        C !! p' = Some np' ->
+        C !! (patt_bound_evar 0) = Some (npatt_evar e) ->
+        np = npatt_exists e np'
+      )
+    | patt_mu p' =>
+      (forall np' s,
+        C !! p' = Some np' ->
+        C !! (patt_bound_svar 0) = Some (npatt_svar s) ->
+        np = npatt_mu s np'
+      )    
+    end.
+
+
   Lemma app_neq1 : forall x y, patt_app x y <> x.
   Proof.
     intros x y Hcontra.
