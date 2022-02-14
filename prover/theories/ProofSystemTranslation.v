@@ -3572,6 +3572,7 @@ Qed.
     exists Cfound evsfound svsfound (HhistCfound : History_generator Cfound evsfound svsfound),
       Cfound !! q = None
       /\ CES_prop Cfound evsfound svsfound
+      /\ cache_continuous_prop Cfound
       /\ sub_prop Cfound
       /\ dangling_vars_cached Cfound q
       /\ (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
@@ -3601,6 +3602,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3626,6 +3628,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3651,6 +3654,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3676,6 +3680,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3701,6 +3706,7 @@ Qed.
         rewrite Hqin. simpl.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3727,6 +3733,7 @@ Qed.
         rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
         split;[reflexivity|].
         split;[apply HCES|].
+        split;[apply Hccp|].
         split;[apply Hsp|].
         split;[apply Hdvc|].
         reflexivity.
@@ -3868,6 +3875,7 @@ Qed.
           rewrite Hqin. simpl.
           split;[reflexivity|].
           split;[apply HCES|].
+          split;[apply Hccp|].
           split;[apply Hsp|].
           split;[apply Hdvc|].
           reflexivity.
@@ -3894,6 +3902,7 @@ Qed.
           rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
           split;[reflexivity|].
           split;[apply HCES|].
+          split;[apply Hccp|].
           split;[apply Hsp|].
           split;[apply Hdvc|].
           reflexivity.
@@ -4032,6 +4041,7 @@ Qed.
             repeat case_match. invert_tuples. simpl in *.
             split;[reflexivity|].
             split;[apply HCES|].
+            split;[apply Hccp|].
             split;[apply Hsp|].
             split;[apply Hdvc|].
             reflexivity.
@@ -4101,6 +4111,7 @@ Qed.
             repeat case_match. invert_tuples. simpl in *.
             split;[reflexivity|].
             split;[apply HCES|].
+            split;[apply Hccp|].
             split;[apply Hsp|].
             split;[apply Hdvc|].
             reflexivity.
@@ -4448,6 +4459,7 @@ Qed.
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C' evs' svs'),
       C' !! p = None
       /\ CES_prop C' evs' svs'
+      /\ cache_continuous_prop C'
       /\ sub_prop C'
       /\ dangling_vars_cached C' p
       /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
@@ -4570,8 +4582,8 @@ Qed.
                 2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
                   apply bound_svar_is_bound_var. exact HContra.
                 }
-                destruct IH3 as [IH31 [IH32 [IH33 IH34]]].
-                rewrite IH34.
+                destruct IH3 as [IH31 [IH32 [IH33 [IH34 IH35]]]].
+                rewrite IH35.
                 exact Htmp.
               }
               apply lookup_weaken with (m2 := (remove_bound_evars (remove_bound_svars C))) in Htmp2.
@@ -4593,8 +4605,8 @@ Qed.
                 exact Hcached.
               }
               rewrite Htmp2 in Hcached2. inversion Hcached2. subst.
-              destruct IH3 as [IH31 [IH32 [IH33 IH34]]].
-              rewrite IH34.
+              destruct IH3 as [IH31 [IH32 [IH33 [IH34 IH35]]]].
+              rewrite IH35.
               exact HeqhiCp.
             }
             { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
@@ -4828,7 +4840,7 @@ Qed.
       rewrite Hcachepqp in HeqCall. rewrite HeqCall. simpl. rename n into npqp.
       pose proof (Hcall2 := cached_p_impl_called_with_p cache evs svs Hhist).
       specialize (Hcall2 (patt_imp p (patt_imp q p)) npqp HCES ltac:(simpl; auto) Hcachepqp).
-      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' [Hdng' HeqCall1]]]]]]].
+      destruct Hcall2 as [C' [evs' [svs' [Hhist' [HC'notcached [HCES' [Hsp' [Hdng' HeqCall1]]]]]]]].
       rewrite -HeqCall1. simpl. rewrite HC'notcached.
       repeat case_match; invert_tuples; simpl in *.
       {
@@ -4846,9 +4858,8 @@ Qed.
           5: {
             apply dangling_vars_cached_imp_proj1 in Hdng'. exact Hdng'.
           }
-          4: {
-
-          }
+          4: { exact Hsp'. }
+          3: {  }
         }
         admit. admit.
       }
