@@ -5581,85 +5581,15 @@ Qed.
           rewrite Heqp14 in Heqp7. inversion Heqp7. subst. clear Heqp7.
           rewrite Heqo0 in Heqo'. inversion Heqo'. subst. clear Heqo'.
           clear HC''qp. (*duplicate of Heqo.*)
-          (* we need g !! p = Some n
-             The only thing we know about n is that it is
-             g1 !! p = Some n
-          *)
-          assert (Hg1p: g1 !! p = Some n).
+          assert(Hisp: inv_sub_prop cache) by admit.
+          pose proof (H := Hisp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2))).
+          simpl in H.
+          assert (exists np1, cache !! p = Some np1).
           {
-            epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _).
-            erewrite Heqp1 in Htmp. simpl in Htmp.
-            exact Htmp.
+            admit.
+            (*destruct (decide (is_bound_var p)).*)
           }
-          assert (Hspg1 : sub_prop g1).
-          {
-            epose proof (Htmp := sub_prop_step _ _ _ _).
-            erewrite Heqp1 in Htmp.
-            feed specialize Htmp.
-            {
-              eapply dangling_vars_cached_imp_proj1. eassumption.
-            }
-            {
-              apply Hccp'.
-            }
-            {
-              exact Hsp'.
-            }
-            apply Htmp.
-          }
-
-          (* we can prove that C' !! patt_imp p q = Some _
-             because g1 contains it and it could not have been added into g1
-             by the translation function called with p.
-          *)
-          pose proof (Htmp := Hspg1). unfold sub_prop in Htmp.
-          specialize (Htmp (patt_imp q p) (npatt_imp n1 n4) Heqo'). simpl in Htmp.
-
-          
-          
-          assert(C' ⊆ g1).
-          {
-            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
-            erewrite Heqp1 in Htmp. simpl in Htmp. exact Htmp.
-          }
-          assert(C'' ⊆ g).
-          {
-            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
-            erewrite Heqp2 in Htmp. simpl in Htmp. exact Htmp.
-          }
-          assert(g ⊆ g2).
-          {
-            epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
-            erewrite Heqp5 in Htmp. simpl in Htmp. exact Htmp.
-          }
-          assert(remove_bound_evars (remove_bound_svars C') ⊆ remove_bound_evars (remove_bound_svars g1)).
-          {
-            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
-          }
-          assert(remove_bound_evars (remove_bound_svars C'') ⊆ remove_bound_evars (remove_bound_svars g)).
-          {
-            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
-          }
-          assert(remove_bound_evars (remove_bound_svars g) ⊆ remove_bound_evars (remove_bound_svars g2)).
-          {
-            apply remove_bound_evars_mono. apply remove_bound_svars_mono. assumption.
-          }
-
-          assert (C'' !! patt)
-
-          exists n.
-          exists n1.
-          assert (n2 = n).
-          {
-            
-          }
-        }
-        exists n1.
-        assert (n2 = n).
-        {
-
-        }
-        admit. admit.
+         admit.
       }
   
   (*
