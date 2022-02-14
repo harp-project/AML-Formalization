@@ -3570,7 +3570,7 @@ Qed.
     Cout !! q = Some nq ->
     (to_NamedPattern2' p Cin evsin svsin).1.1.2 = Cout ->
     exists Cfound evsfound svsfound (HhistCfound : History_generator Cfound evsfound svsfound),
-      Cfound !! q = None /\
+      Cfound !! q = None /\ CES_prop Cfound evsfound svsfound /\
       (to_NamedPattern2' q Cfound evsfound svsfound).1.1.1 = nq.
   Proof.
     intros HCES Hnbq Hhist Hdvc Hccp Hsp Hqin Hqout Hcall.
@@ -3595,7 +3595,10 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin, Hhist.
         simpl.
-        rewrite Hqin. simpl. split; reflexivity.
+        rewrite Hqin. simpl.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3615,7 +3618,10 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin, Hhist.
         simpl.
-        rewrite Hqin. simpl. split; reflexivity.
+        rewrite Hqin. simpl.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3635,7 +3641,10 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin, Hhist.
         simpl.
-        rewrite Hqin. simpl. split; reflexivity.
+        rewrite Hqin. simpl.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3655,7 +3664,10 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin, Hhist.
         simpl.
-        rewrite Hqin. simpl. split; reflexivity.
+        rewrite Hqin. simpl.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3675,7 +3687,10 @@ Qed.
         destruct H as [H1 H2]. subst.
         exists Cin, evsin, svsin, Hhist.
         simpl.
-        rewrite Hqin. simpl. split; reflexivity.
+        rewrite Hqin. simpl.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct H as [H1 H2].
@@ -3696,7 +3711,10 @@ Qed.
         exists Cin, evsin, svsin, Hhist.
         simpl. rewrite Hqin.
         repeat case_match. invert_tuples. simpl in *.
-        rewrite Heqp2 in Heqp5. inversion Heqp5. subst. split; reflexivity.
+        rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
+        split;[reflexivity|].
+        split;[apply HCES|].
+        reflexivity.
       }
       {
         destruct Hneq as [Hneq1 Hnq].
@@ -3831,7 +3849,10 @@ Qed.
           destruct H as [H1 H2]. subst.
           exists Cin, evsin, svsin, Hhist.
           simpl.
-          rewrite Hqin. simpl. split; reflexivity.
+          rewrite Hqin. simpl.
+          split;[reflexivity|].
+          split;[apply HCES|].
+          reflexivity.
         }
         {
           destruct H as [H1 H2].
@@ -3852,7 +3873,10 @@ Qed.
           exists Cin, evsin, svsin, Hhist.
           simpl. rewrite Hqin.
           repeat case_match. invert_tuples. simpl in *.
-          rewrite Heqp2 in Heqp5. inversion Heqp5. subst. split; reflexivity.
+          rewrite Heqp2 in Heqp5. inversion Heqp5. subst.
+          split;[reflexivity|].
+          split;[apply HCES|].
+          reflexivity.
         }
         {
           destruct Hneq as [Hneq1 Hnq].
@@ -3986,7 +4010,9 @@ Qed.
             exists Cin, evsin, s, Hhist.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
-            split; reflexivity.
+            split;[reflexivity|].
+            split;[apply HCES|].
+            reflexivity.
           }
           {
             destruct Hneq as [Hneq1 Hnq].
@@ -4051,7 +4077,9 @@ Qed.
             exists Cin, evsin, s, Hhist.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
-            split; reflexivity.
+            split;[reflexivity|].
+            split;[apply HCES|].
+            reflexivity.
           }
           {
             destruct Hneq as [Hneq1 Hnq].
@@ -4394,7 +4422,7 @@ Qed.
     ~ is_bound_var p ->
     C !! p = Some np ->
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C' evs' svs'),
-      C' !! p = None /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
+      C' !! p = None /\ CES_prop C' evs' svs' /\ (to_NamedPattern2' p C' evs' svs').1.1.1 = np.
   Proof.
     intros HCES Hnboundp Hcached.
     pose proof (hg' := hg).
@@ -4514,6 +4542,8 @@ Qed.
                 2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
                   apply bound_svar_is_bound_var. exact HContra.
                 }
+                destruct IH3 as [IH31 IH32].
+                rewrite IH32.
                 exact Htmp.
               }
               apply lookup_weaken with (m2 := (remove_bound_evars (remove_bound_svars C))) in Htmp2.
@@ -4534,7 +4564,10 @@ Qed.
                 }
                 exact Hcached.
               }
-              rewrite Htmp2 in Hcached2. inversion Hcached2. subst. exact HeqhiCp.
+              rewrite Htmp2 in Hcached2. inversion Hcached2. subst.
+              destruct IH3 as [IH31 IH32].
+              rewrite IH32.
+              exact HeqhiCp.
             }
             { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
             Unshelve.
