@@ -4592,6 +4592,74 @@ Qed.
             simpl. rewrite Hqin.
             repeat case_match. invert_tuples. simpl in *.
             split;[reflexivity|].
+            split.
+            {
+              do 2 unfold remove_bound_evars at 1.
+              do 2 unfold remove_bound_svars at 1.
+              do 2 rewrite map_filter_filter.
+              rewrite map_filter_insert.
+              case_match.
+              2: {
+                exfalso. apply n. unfold is_bound_evar_entry,is_bound_svar_entry. simpl.
+                split; intros [n' Hcontran']; inversion Hcontran'.
+              }
+              eapply transitivity.
+              2: {
+                apply insert_subseteq.
+                rewrite map_filter_lookup_None.
+                left.
+                rewrite lookup_union_None.
+                split.
+                2: {
+                  unfold keep_bound_evars.
+                  rewrite map_filter_lookup_None.
+                  left. exact Hqin.
+                }
+                epose proof (Hoas := onlyAddsSubpatterns2 _ _ _ _ (patt_mu p)).
+                erewrite Heqp1 in Hoas. simpl in Hoas.
+                destruct (g0 !! patt_mu p) eqn:Hgoexp.
+                2: {
+                  unfold remove_bound_evars.
+                  rewrite map_filter_lookup_None. left. exact Hgoexp.
+                }
+                feed specialize Hoas.
+                {
+                  rewrite lookup_insert_ne.
+                  { discriminate. }
+                  unfold cache_incr_svar.
+                  replace (patt_mu p) with (incr_one_svar (patt_mu p)) by reflexivity.
+                  rewrite lookup_kmap. exact Hqin.
+                }
+                {
+                  exists n. reflexivity.
+                }
+                exfalso. eapply not_is_subformula_of_mu. apply Hoas.
+              }
+              
+              rewrite map_filter_strong_subseteq_ext.
+              intros pi npi [[Hpi1 Hpi2] Hpi3].
+              split.
+              { split; assumption. }
+              rewrite lookup_union_Some.
+              2: { apply remove_disjoint_keep_s. }
+              left.
+              epose proof (Hextends := to_NamedPattern2'_extends_cache _ _ _ _).
+              erewrite Heqp1 in Hextends. simpl in Hextends.
+              unfold remove_bound_evars.
+              rewrite map_filter_lookup_Some.
+              split.
+              2: { exact Hpi2. }
+              eapply lookup_weaken.
+              2: { apply Hextends. }
+              rewrite lookup_insert_ne.
+              { intros Hcontra. apply Hpi2. subst. exists 0. reflexivity. }
+              unfold cache_incr_evar.
+              replace pi with (incr_one_svar pi).
+              2: { destruct pi; simpl; try reflexivity. exfalso. apply Hpi2. exists n. reflexivity. }
+              rewrite lookup_kmap. exact Hpi3.
+            }
+            split.
+            { apply reflexivity. }
             split;[apply HCES|].
             split;[apply Hccp|].
             split;[apply Hsp|].
@@ -4644,7 +4712,93 @@ Qed.
             }
             { exact Hg0q. }
             { rewrite Heqp3. reflexivity. }
-            apply IH.
+            destruct IH as [Cfound [evsfound [svsfound [Hhistgen' [H1 H2]]]]].
+            exists Cfound,evsfound,svsfound,Hhistgen'. split. exact H1.
+            destruct H2 as [H21 [H22 H23]].
+            split.
+            {
+              eapply transitivity. apply H21.
+              do 2 unfold remove_bound_evars at 1.
+              do 2 unfold remove_bound_svars at 1.
+              do 2 rewrite map_filter_filter.
+              rewrite map_filter_insert.
+              case_match.
+              2: {
+                exfalso. apply n. split; intros Hcontra; destruct Hcontra as [x Hx]; inversion Hx.
+              }
+              clear Heqs1.
+              eapply transitivity.
+              2: {
+                apply insert_subseteq.
+                rewrite map_filter_lookup_None.
+                left.
+                rewrite lookup_union_None.
+                split.
+                2: {
+                  unfold keep_bound_evars.
+                  rewrite map_filter_lookup_None.
+                  left. exact Heqo.
+                }
+                epose proof (Hoas := onlyAddsSubpatterns2 _ _ _ _ (patt_mu p)).
+                erewrite Heqp3 in Hoas. simpl in Hoas.
+                destruct (g0 !! patt_mu p) eqn:Hgoexp.
+                2: {
+                  unfold remove_bound_svars.
+                  rewrite map_filter_lookup_None. left. exact Hgoexp.
+                }
+                feed specialize Hoas.
+                {
+                  rewrite lookup_insert_ne.
+                  { discriminate. }
+                  unfold cache_incr_svar.
+                  replace (patt_mu p) with (incr_one_svar (patt_mu p)) by reflexivity.
+                  rewrite lookup_kmap. exact Heqo.
+                }
+                {
+                  exists n. reflexivity.
+                }
+                exfalso. eapply not_is_subformula_of_mu. apply Hoas.
+              }
+              rewrite map_filter_strong_subseteq_ext.
+              intros pi npi [[Hpi1 Hpi2] Hpi3].
+              split.
+              { split; assumption. }
+              rewrite lookup_union_Some.
+              2: { apply remove_disjoint_keep_s. }
+              left.
+              unfold remove_bound_svars.
+              rewrite map_filter_lookup_Some.
+              split. exact Hpi3. exact Hpi2.
+            }
+            split.
+            {
+              eapply transitivity.
+              2: { apply H22. }
+              do 2 unfold remove_bound_evars at 1.
+              do 2 unfold remove_bound_svars at 1.
+              do 2 rewrite map_filter_filter.
+              rewrite map_filter_insert.
+              case_match.
+              1: {
+                destruct a as [a1 a2]. exfalso. apply a2. exists 0. reflexivity.
+              }
+              clear n Heqs1.
+              rewrite map_filter_strong_subseteq_ext.
+              intros ip nip [[Hip1 Hip2] Hip3].
+              split.
+              { split; assumption. }
+              rewrite lookup_delete_Some.
+              split.
+              { intros HContra. apply Hip2. subst. exists 0. reflexivity. }
+              unfold cache_incr_evar.
+              replace ip with (incr_one_svar ip).
+              2: {
+                destruct ip; simpl; try reflexivity. exfalso. apply Hip2. exists n. reflexivity.
+              }
+              rewrite lookup_kmap.
+              exact Hip3.
+            }
+            exact H23.
           }
           Unshelve. all: auto.
           {
