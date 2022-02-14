@@ -5058,7 +5058,7 @@ Qed.
       inversion Hhist2.
     }
   Qed.
-
+  
   Lemma cached_p_impl_called_with_p
     (C : Cache) (evs : EVarSet) (svs : SVarSet)
     (hg : History_generator C evs svs)
@@ -5069,6 +5069,7 @@ Qed.
     C !! p = Some np ->
     exists (C' : Cache) (evs' : EVarSet) (svs' : SVarSet) (hgC' : History_generator C' evs' svs'),
       C' !! p = None
+      /\ remove_bound_evars (remove_bound_svars C') ⊆ remove_bound_evars (remove_bound_svars C)
       /\ CES_prop C' evs' svs'
       /\ cache_continuous_prop C'
       /\ sub_prop C'
@@ -5103,7 +5104,10 @@ Qed.
           { apply lookup_empty. }
           { exact Hcached. }
           { rewrite -Hhistory2b. reflexivity. }
-          apply Hfnc.
+          cbn.
+          destruct Hfnc as [Cfound [evsfound [svsfound [hgfound Hfnc]]]].
+          exists Cfound,evsfound,svsfound,hgfound.
+          destruct_and!. split_and!; assumption.
         }
         {
           destruct Hhistory2 as [np' [Hnp'|Hnp']].
@@ -5147,6 +5151,7 @@ Qed.
           destruct nh as [hip [[[hinp hiC] hievs] hisvs]].
           destruct (hiC !! p) eqn:HeqhiCp.
           {
+            (*
             epose proof (IH := IHhistory p n _ _ hiC _ _ Hnboundp HeqhiCp).
             feed specialize IH.
             { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
@@ -5167,11 +5172,23 @@ Qed.
             }
             destruct IH as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
             subst.
+            exists C',evs',svs', IH1.
+            destruct_and!. split_and!; try assumption.
+            *)
             (* C came from hiC  *)
-
-            eapply IHhistory with (C := hiC).
-            { shelve. }
-            { shelve. }
+            
+            pose proof (IH' := IHhistory p np hievs hisvs hiC).
+            feed specialize IH'.
+            { apply hist_prop_strip_1 in Hhistory. eexists. apply Hhistory. }
+            { simpl in Hhistory.
+              destruct Hhistory as [HC [Hevs [Hsvs Hhistory]]].
+              subst.
+              destruct Hhistory as [Hhistory1 Hhistory2].
+              specialize (Hhistory2 0).
+              simpl in Hhistory2.
+              destruct Hhistory2 as [HCES' Hhistory2].
+              apply HCES'.
+            }
             { exact Hnboundp. }
             { pose proof (Htmp := HeqhiCp).
               assert(H: remove_bound_evars (remove_bound_svars hiC) ⊆ remove_bound_evars (remove_bound_svars C)).
@@ -5179,7 +5196,7 @@ Qed.
                 epose proof (Htmp' := hist_prop_subseteq _ _ _ _ _ _ Hhistory).
                 apply Htmp'.
               }
-              assert (Htmp2: (remove_bound_evars (remove_bound_svars hiC)) !! p = Some (to_NamedPattern2' p C' evs' svs').1.1.1).
+              assert (Htmp2: (remove_bound_evars (remove_bound_svars hiC)) !! p = Some n).
               {
                 unfold remove_bound_evars.
                 rewrite map_filter_lookup_Some.
@@ -5193,8 +5210,6 @@ Qed.
                 2: { unfold is_bound_svar_entry. simpl. intros HContra. apply Hnboundp.
                   apply bound_svar_is_bound_var. exact HContra.
                 }
-                destruct IH3 as [IH31 [IH32 [IH33 [IH34 IH35]]]].
-                rewrite IH35.
                 exact Htmp.
               }
               apply lookup_weaken with (m2 := (remove_bound_evars (remove_bound_svars C))) in Htmp2.
@@ -5216,24 +5231,37 @@ Qed.
                 exact Hcached.
               }
               rewrite Htmp2 in Hcached2. inversion Hcached2. subst.
-              destruct IH3 as [IH31 [IH32 [IH33 [IH34 IH35]]]].
-              rewrite IH35.
-              exact HeqhiCp.
+              exact Htmp.
             }
             { apply hist_prop_strip_1 in Hhistory. exact Hhistory. }
-            Unshelve.
+            
+            destruct IH' as [C' [evs' [svs' [IH1 [IH2 IH3]]]]].
+            subst.
+            exists C',evs',svs', IH1.
+            destruct_and!. split_and!; try assumption.
+
+            eapply transitivity. apply H.
+            simpl in Hhistory.
+            destruct Hhistory as [HC [Hevs [Hsvs [Hhistory1 Hhistory2]]]].
+            specialize (Hhistory2 0). simpl in Hhistory2. subst.
+            destruct Hhistory2 as [HCES' Hhistory2].
+            destruct a.
             {
-              apply hist_prop_strip_1 in Hhistory. eexists. apply Hhistory.
+              destruct Hhistory2 as [p_i Hp_i]. destruct_and!. subst. simpl.
+              unfold cache_of_nhe. simpl.
+              apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+              apply to_NamedPattern2'_extends_cache.
             }
             {
-              simpl in Hhistory.
-              destruct Hhistory as [HC [Hevs [Hsvs Hhistory]]].
-              subst.
-              destruct Hhistory as [Hhistory1 Hhistory2].
-              specialize (Hhistory2 0).
-              simpl in Hhistory2.
-              destruct Hhistory2 as [HCES' Hhistory2].
-              apply HCES'.
+              destruct Hhistory2 as [Hhistory2|Hhistory2].
+              {
+                unfold cache_of. do 2 rewrite remove_bound_evars_remove_bound_svars_comm.
+                apply remove_bound_svars_mono. rewrite Hhistory2. cbn.
+                apply reflexivity.
+              }
+              {
+                rewrite Hhistory2. cbn. apply reflexivity.
+              }
             }
           }
           {
@@ -5262,7 +5290,9 @@ Qed.
               { exact HeqhiCp. }
               { exact Hcached. }
               { rewrite -H1. reflexivity. }
-              apply Hfnc.
+              destruct Hfnc as [Cfound [evsfound [svsfound [hgfound Hfnc]]]].
+              exists Cfound,evsfound,svsfound,hgfound.
+              destruct_and!. split_and!; assumption.
             }
             {
               destruct ain as [[ainC ainE] ainS].
@@ -5371,7 +5401,36 @@ Qed.
             { exact Hnboundp. }
             { exact HiCp. }
             { exact Hhist_prop. }
-            apply IHhistory.
+            destruct IHhistory as [C'' [evs'' [svs'' [hg'' IH'']]]].
+            exists C'',evs'',svs'',hg''.
+            destruct_and!. split_and!; try assumption.
+            eapply transitivity. apply H1.
+            simpl in Hhistory.
+            destruct Hhistory as [HC [Hevs [Hsvs [Hhistory1 Hhistory2]]]].
+            specialize (Hhistory2 0). simpl in Hhistory2.
+            destruct Hhistory2 as [HCES2 Hhistory2].
+            destruct a.
+            {
+              destruct Hhistory2 as [p_i Hp_i].
+              destruct_and!. subst. cbn.
+              apply remove_bound_evars_mono. apply remove_bound_svars_mono.
+              apply to_NamedPattern2'_extends_cache.
+            }
+            {
+              subst.
+              destruct Hhistory2 as [Hhistory2|Hhistory2].
+              {
+                cbn in Hhistory2.
+                do 2 rewrite remove_bound_evars_remove_bound_svars_comm.
+                rewrite Hhistory2.
+                apply reflexivity.
+              }
+              {
+                cbn in Hhistory2.
+                rewrite Hhistory2.
+                apply reflexivity.
+              }
+            }
           }
           {
             simpl in Hhistory.
@@ -5387,7 +5446,9 @@ Qed.
               specialize (Hfnc (to_NamedPattern2' p_i iC ievs isvs).1.1.2 p np HCES').
               specialize (Hfnc Hnboundp Hhistory' Hhistory24 Hhistory22 Hhistory23 HiCp).
               specialize (Hfnc Hcached erefl).
-              apply Hfnc.
+              destruct Hfnc as [Cfound [evsfound [svsfound [hgfound Hfnc]]]].
+              exists Cfound,evsfound,svsfound,hgfound.
+              destruct_and!. split_and!; assumption.
             }
             {
               destruct i as [[iC' ievs'] isvs']. cbn in Hhistory2.
