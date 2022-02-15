@@ -2967,18 +2967,6 @@ Qed.
     intros p np H. rewrite lookup_empty in H. inversion H.
   Qed.
 
-  (*
-  Lemma inv_sub_prop_step C p evs svs:
-    inv_sub_prop C ->
-    inv_sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
-  Proof.
-    intros H.
-    move: C evs svs H.
-    induction p; intros C evs svs H; simpl; case_match; simpl; try exact H.
-    - intros p np Hp.
-      destruct p; try exact I.
-      + intros np' nq' Hnp' Hnq'.
-  Qed.*)
 
    #[global]
    Instance NamedPattern_eqdec : EqDecision NamedPattern.
@@ -5581,6 +5569,101 @@ Qed.
     }
     exact Hcp.
   Qed.
+
+  Lemma inv_sub_prop_step C p evs svs:
+  sub_prop C ->
+  dangling_vars_cached C p ->
+  inv_sub_prop C ->
+  inv_sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
+Proof.
+  intros Hsubp Hdngl H.
+  move: C evs svs Hsubp Hdngl H.
+  induction p; intros C evs svs Hsubp Hdngl H; simpl; case_match; simpl; try exact H.
+    Local Ltac contradict_not_cached Hdngl Heqo Hboc :=
+    lazymatch type of Heqo with
+    | (?C !! ?formula = None) =>
+      assert (Hnp1: exists np1, C !! formula = Some np1);
+      [(
+        apply cached_anyway;
+        [ exact Hdngl
+        | exact Hboc
+        ]
+      )|];
+      destruct Hnp1 as [np1 Hnp1];
+      rewrite Heqo in Hnp1; inversion Hnp1
+    end.
+    Local Ltac solve_app_imp Hsubp Hinvsub Hdngl Heqo Hp :=
+      lazymatch type of Hp with
+      | (_ !! ?app_or_imp = Some ?np) =>
+        intros np' nq' Hnp' Hnq';
+        rewrite lookup_insert_ne in Hp;
+        [discriminate|];
+        rewrite lookup_insert_Some in Hnp';
+        rewrite lookup_insert_Some in Hnq';
+        pose proof (Hsubp' := Hsubp app_or_imp np Hp);
+        simpl in Hsubp'; destruct Hsubp' as [Hbocp1 Hbocp2];
+        destruct Hnp',Hnq'; destruct_and!; subst;
+        [(contradict_not_cached Hdngl Heqo Hbocp1)
+        |(contradict_not_cached Hdngl Heqo Hbocp1)
+        |(contradict_not_cached Hdngl Heqo Hbocp2)
+        |(pose proof (Hinv' := Hinvsub app_or_imp np Hp); simpl in Hinv'; apply Hinv'; assumption)
+        ]
+      end.
+    Local Ltac solve_mu_ex Hsubp Hinvsub Hdngl Heqo Hp :=
+      lazymatch type of Hp with
+      | (_ !! ?mu_or_ex = Some ?np) =>
+        intros np' nq' Hnp' Hnq';
+        rewrite lookup_insert_ne in Hp;
+        [discriminate|];
+        rewrite lookup_insert_Some in Hnp';
+        rewrite lookup_insert_Some in Hnq';
+        pose proof (Hsubp' := Hsubp mu_or_ex np Hp);
+        let Hbocp := fresh "Hbocp" in
+        simpl in Hsubp'; rename Hsubp' into Hbocp;
+        destruct Hnp',Hnq'; destruct_and!; subst;
+        [(contradict_not_cached Hdngl Heqo Hbocp)
+        |(contradict_not_cached Hdngl Heqo Hbocp)
+        |(inversion H2)
+        |(pose proof (Hinv' := Hinvsub mu_or_ex np Hp); simpl in Hinv'; apply Hinv'; assumption)
+        ]
+      end.
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp. inversion H3.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp. inversion H3.
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+Qed.
 
   Lemma consistency_pqp
         (p q : Pattern)
