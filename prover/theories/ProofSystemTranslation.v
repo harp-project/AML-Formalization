@@ -5703,9 +5703,24 @@ Proof.
         { exact HCsubg0. }
       }
 
+      assert (Hdnglg: dangling_vars_cached g (patt_app p1 p2)).
+      {
+        eapply dangling_vars_subcache.
+        { apply Hdnglg0. }
+        { exact Hg0subg. }
+      }
+
       assert (Hdnglg0p2: dangling_vars_cached g0 p2).
       {
         eapply dangling_vars_cached_app_proj2. exact Hdnglg0.
+      }
+
+      assert (Hsubpg: sub_prop g).
+      {
+        epose proof (Htmp := sub_prop_step _ _ _ _).
+        erewrite Heqp2 in Htmp. simpl in Htmp.
+        specialize (Htmp Hdnglg0p2 Hcontg0 Hsubpg0).
+        exact Htmp.
       }
 
       epose proof (IH1 := IHp1 _ _ _).
@@ -5774,10 +5789,27 @@ Proof.
       }
       {
         destruct Hp as [Hp1 Hp2].
-        rewrite lookup_insert_Some in Hnp' Hnq'.
+        rewrite lookup_insert_Some in Hnp'.
+        rewrite lookup_insert_Some in Hnq'.
         destruct Hnp',Hnq'; destruct_and!; subst.
         {
-
+          pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) (patt_app p1 p2)) np Hp2).
+          simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+          contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+        }
+        {
+          pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) p4) np Hp2).
+          simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+          contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+        }
+        {
+          pose proof (Hsubp' := Hsubpg (patt_app p3 (patt_app p1 p2)) np Hp2).
+          simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+          contradict_not_cached Hdnglg Hgappp1p2 Hbocp2.
+        }
+        {
+          pose proof (Hinv' := IH2 (patt_app p3 p4) np Hp2).
+          simpl in Hinv'; apply Hinv'; assumption.
         }
       }
     + solve_app_imp Hsubp H Hdngl Heqo Hp.
