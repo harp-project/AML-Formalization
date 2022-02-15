@@ -5740,25 +5740,29 @@ Proof.
           erewrite Heqp2 in Htmp; simpl in Htmp;
           exact Htmp
         )|];
-        assert(Hg0appp1p2: g0 !! patt_app p1 p2 = None);
+        assert(Hg0appp1p2: g0 !! app_or_imp = None);
         [(
-          destruct (g0 !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
-          pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs (patt_app p1 p2) Heqo);
+          let Hg0app := fresh "Hg0app" in
+          destruct (g0 !! app_or_imp) eqn:Hg0app;[exfalso|reflexivity];
+          pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs app_or_imp Heqo);
           feed specialize Htmp;
           [(
             eexists; erewrite Heqp1; simpl; apply Hg0app
           )|];
-          eapply not_is_subformula_of_app_l; apply Htmp
+          (*eauto using not_is_subformula_of_app_l,not_is_subformula_of_imp_l,Htmp*)
+          (eapply not_is_subformula_of_app_l + eapply not_is_subformula_of_imp_l); apply Htmp
         )|];
-        assert(Hgappp1p2: g !! patt_app p1 p2 = None);
+        assert(Hgappp1p2: g !! app_or_imp = None);
         [(
-          destruct (g !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
-          pose proof (Htmp := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2);
+          let Hg0app := fresh "Hg0app" in
+          destruct (g !! app_or_imp) eqn:Hg0app;[exfalso|reflexivity];
+          pose proof (Htmp := onlyAddsSubpatterns2 g0 p2 e0 s0 app_or_imp Hg0appp1p2);
           feed specialize Htmp;
           [(
             eexists; erewrite Heqp2; simpl; apply Hg0app
           )|];
-          eapply not_is_subformula_of_app_r; apply Htmp
+          (*eauto using not_is_subformula_of_app_r,not_is_subformula_of_imp_r,Htmp*)
+          (eapply not_is_subformula_of_app_r + eapply not_is_subformula_of_imp_r); apply Htmp
         )|])
       end)
     end)
@@ -5902,7 +5906,152 @@ Proof.
           simpl in Hinv'; apply Hinv'; assumption.
         }
       }
-  - 
+  - intros p np Hp.
+    destruct p; try exact I.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_app_imp Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp.
+    + solve_mu_ex Hsubp H Hdngl Heqo Hp. 
+  - intros p np Hp.
+  
+    destruct p; try exact I.
+    + repeat case_match. subst. invert_tuples. simpl in *.
+    intros np' nq' Hnp' Hnq'.
+    app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp H.
+    (** end of preparation phase. **)
+
+    rewrite lookup_insert_Some in Hp.
+    destruct Hp as [Hp|Hp].
+    {
+      destruct Hp as [Hp1 Hp2]. inversion Hp1. subst. clear Hp1.
+      rewrite lookup_insert_ne in Hnp'.
+      { apply app_neq1. }
+      rewrite lookup_insert_ne in Hnq'.
+      { apply app_neq2. }
+      congruence.
+    }
+    {
+      destruct Hp as [Hp1 Hp2].
+      rewrite lookup_insert_Some in Hnp'.
+      rewrite lookup_insert_Some in Hnq'.
+      destruct Hnp',Hnq'; destruct_and!; subst.
+      {
+        pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) p4) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_app p3 (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp2.
+      }
+      {
+        pose proof (Hinv' := IH2 (patt_app p3 p4) np Hp2).
+        simpl in Hinv'; apply Hinv'; assumption.
+      }
+    }
+  + repeat case_match. subst. invert_tuples. simpl in *.
+    intros np' nq' Hnp' Hnq'.
+    app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp H.
+    (** end of preparation phase. **)
+
+    rewrite lookup_insert_Some in Hp.
+    destruct Hp as [Hp|Hp].
+    {
+      destruct Hp as [Hp1 Hp2]. inversion Hp1.
+    }
+    {
+      destruct Hp as [Hp1 Hp2].
+      rewrite lookup_insert_Some in Hnp'.
+      rewrite lookup_insert_Some in Hnq'.
+      destruct Hnp',Hnq'; destruct_and!; subst.
+      {
+        pose proof (Hsubp' := Hsubpg (patt_imp (patt_app p1 p2) (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_imp (patt_app p1 p2) p4) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_imp p3 (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
+        contradict_not_cached Hdnglg Hgappp1p2 Hbocp2.
+      }
+      {
+        pose proof (Hinv' := IH2 (patt_imp p3 p4) np Hp2).
+        simpl in Hinv'; apply Hinv'; assumption.
+      }
+    }
+  + repeat case_match. subst. invert_tuples. simpl in *.
+    intros np' nq' Hnp' Hnq'.
+    app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp H.
+    rewrite lookup_insert_Some in Hp.
+    destruct Hp as [Hp|Hp].
+    {
+      destruct Hp as [Hp1 Hp2]. inversion Hp1.
+    }
+    {
+      destruct Hp as [Hp1 Hp2].
+      rewrite lookup_insert_Some in Hnp'.
+      rewrite lookup_insert_Some in Hnq'.
+      destruct Hnp',Hnq'; destruct_and!; subst.
+      {
+        pose proof (Hsubp' := Hsubpg (patt_exists (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'.
+        contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_exists (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. 
+        contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
+      }
+      {
+        inversion H2.
+      }
+      {
+        pose proof (Hinv' := IH2 _ np Hp2).
+        simpl in Hinv'; apply Hinv'; assumption.
+      }
+    }
+  + repeat case_match. subst. invert_tuples. simpl in *.
+    intros np' nq' Hnp' Hnq'.
+    app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp H.
+    rewrite lookup_insert_Some in Hp.
+    destruct Hp as [Hp|Hp].
+    {
+      destruct Hp as [Hp1 Hp2]. inversion Hp1.
+    }
+    {
+      destruct Hp as [Hp1 Hp2].
+      rewrite lookup_insert_Some in Hnp'.
+      rewrite lookup_insert_Some in Hnq'.
+      destruct Hnp',Hnq'; destruct_and!; subst.
+      {
+        pose proof (Hsubp' := Hsubpg (patt_mu (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'.
+        contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
+      }
+      {
+        pose proof (Hsubp' := Hsubpg (patt_mu (patt_app p1 p2)) np Hp2).
+        simpl in Hsubp'. 
+        contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
+      }
+      {
+        inversion H2.
+      }
+      {
+        pose proof (Hinv' := IH2 _ np Hp2).
+        simpl in Hinv'; apply Hinv'; assumption.
+      }
+    }
 Qed.
 
   Lemma consistency_pqp
