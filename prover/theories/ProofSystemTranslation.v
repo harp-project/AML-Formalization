@@ -5923,12 +5923,7 @@ Proof.
     rewrite lookup_insert_Some in Hp.
     destruct Hp as [Hp|Hp].
     {
-      destruct Hp as [Hp1 Hp2]. inversion Hp1. subst. clear Hp1.
-      rewrite lookup_insert_ne in Hnp'.
-      { apply app_neq1. }
-      rewrite lookup_insert_ne in Hnq'.
-      { apply app_neq2. }
-      congruence.
+      destruct Hp as [Hp1 Hp2]. inversion Hp1.
     }
     {
       destruct Hp as [Hp1 Hp2].
@@ -5936,17 +5931,17 @@ Proof.
       rewrite lookup_insert_Some in Hnq'.
       destruct Hnp',Hnq'; destruct_and!; subst.
       {
-        pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_app (patt_imp p1 p2) (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_app (patt_app p1 p2) p4) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_app (patt_imp p1 p2) p4) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_app p3 (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_app p3 (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp2.
       }
@@ -5964,6 +5959,12 @@ Proof.
     destruct Hp as [Hp|Hp].
     {
       destruct Hp as [Hp1 Hp2]. inversion Hp1.
+      subst. clear Hp1.
+      rewrite lookup_insert_ne in Hnp'.
+      { apply imp_neq1. }
+      rewrite lookup_insert_ne in Hnq'.
+      { apply imp_neq2. }
+      congruence.
     }
     {
       destruct Hp as [Hp1 Hp2].
@@ -5971,17 +5972,17 @@ Proof.
       rewrite lookup_insert_Some in Hnq'.
       destruct Hnp',Hnq'; destruct_and!; subst.
       {
-        pose proof (Hsubp' := Hsubpg (patt_imp (patt_app p1 p2) (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_imp (patt_imp p1 p2) (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_imp (patt_app p1 p2) p4) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_imp (patt_imp p1 p2) p4) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp1.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_imp p3 (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_imp p3 (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. destruct Hsubp' as [Hbocp1 Hbocp2].
         contradict_not_cached Hdnglg Hgappp1p2 Hbocp2.
       }
@@ -6004,12 +6005,12 @@ Proof.
       rewrite lookup_insert_Some in Hnq'.
       destruct Hnp',Hnq'; destruct_and!; subst.
       {
-        pose proof (Hsubp' := Hsubpg (patt_exists (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_exists (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'.
         contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_exists (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_exists (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. 
         contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
       }
@@ -6035,12 +6036,12 @@ Proof.
       rewrite lookup_insert_Some in Hnq'.
       destruct Hnp',Hnq'; destruct_and!; subst.
       {
-        pose proof (Hsubp' := Hsubpg (patt_mu (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_mu (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'.
         contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
       }
       {
-        pose proof (Hsubp' := Hsubpg (patt_mu (patt_app p1 p2)) np Hp2).
+        pose proof (Hsubp' := Hsubpg (patt_mu (patt_imp p1 p2)) np Hp2).
         simpl in Hsubp'. 
         contradict_not_cached Hdnglg Hgappp1p2 Hsubp'.
       }
