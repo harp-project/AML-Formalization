@@ -291,6 +291,7 @@ Section proof_system_translation.
 
   Definition inv_sub_prop (C : Cache) :=
     forall (p : Pattern) (np : NamedPattern),
+    C !! p = Some np ->
     match p with
     | patt_free_evar _ => True
     | patt_free_svar _ => True
@@ -2961,6 +2962,24 @@ Qed.
         }
   Qed.
 
+  Lemma inv_sub_prop_empty: inv_sub_prop ∅.
+  Proof.
+    intros p np H. rewrite lookup_empty in H. inversion H.
+  Qed.
+
+  (*
+  Lemma inv_sub_prop_step C p evs svs:
+    inv_sub_prop C ->
+    inv_sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
+  Proof.
+    intros H.
+    move: C evs svs H.
+    induction p; intros C evs svs H; simpl; case_match; simpl; try exact H.
+    - intros p np Hp.
+      destruct p; try exact I.
+      + intros np' nq' Hnp' Hnq'.
+  Qed.*)
+
    #[global]
    Instance NamedPattern_eqdec : EqDecision NamedPattern.
    Proof.
@@ -5499,6 +5518,70 @@ Qed.
     }
   Qed.
 
+  Lemma not_bound_evar_and_not_bound_svar_impl_not_bound_var (p : Pattern):
+    ~ is_bound_evar p ->
+    ~ is_bound_svar p ->
+    ~ is_bound_var p.
+  Proof.
+    intros H1 H2.
+    destruct p; simpl in *; auto.
+    { exfalso. apply H1. exists n. reflexivity. }
+    { exfalso. apply H2. exists n. reflexivity. }
+  Qed.
+
+  Instance is_bound_var_dec (p : Pattern) : Decision (is_bound_var p).
+  Proof.
+    destruct (decide (is_bound_evar p)).
+    {
+      left. apply bound_evar_is_bound_var. assumption.
+    }
+    destruct (decide (is_bound_svar p)).
+    {
+      left. apply bound_svar_is_bound_var. assumption.
+    }
+    right.
+    apply not_bound_evar_and_not_bound_svar_impl_not_bound_var; assumption.
+  Defined.
+
+  Lemma cached_anyway C p:
+    dangling_vars_cached C p ->
+    bound_or_cached C p ->
+    exists np1, C !! p = Some np1.
+  Proof.
+    intros Hdngcached Hbocp.
+    unfold dangling_vars_cached in Hdngcached.
+    destruct Hdngcached as [Hdngcachede Hdngcacheds].
+    destruct (decide (is_bound_evar p)) as [Hboundep|Hnboundep].
+    {
+      destruct p; unfold is_bound_evar in Hboundep; simpl in Hboundep;
+      destruct Hboundep as [b Hb]; inversion Hb; subst.
+      unfold dangling_evars_cached in Hdngcachede.
+      specialize (Hdngcachede b).
+      simpl in Hdngcachede.
+      destruct (decide (b = b));[|contradiction].
+      apply Hdngcachede. reflexivity.
+    }
+    destruct (decide (is_bound_svar p)) as [Hboundsp|Hnboundsp].
+    {
+      destruct p; unfold is_bound_svar in Hboundsp; simpl in Hboundsp;
+      destruct Hboundsp as [b Hb]; inversion Hb; subst.
+      unfold dangling_svars_cached in Hdngcacheds.
+      specialize (Hdngcacheds b).
+      simpl in Hdngcacheds.
+      destruct (decide (b = b));[|contradiction].
+      apply Hdngcacheds. reflexivity.
+    }
+    assert (~ is_bound_var p).
+    {
+      apply not_bound_evar_and_not_bound_svar_impl_not_bound_var; assumption.
+    }
+    destruct Hbocp as [Hbp|Hcp].
+    {
+      contradiction.
+    }
+    exact Hcp.
+  Qed.
+
   Lemma consistency_pqp
         (p q : Pattern)
         (np' nq' np'' : NamedPattern)
@@ -5582,15 +5665,88 @@ Qed.
           rewrite Heqo0 in Heqo'. inversion Heqo'. subst. clear Heqo'.
           clear HC''qp. (*duplicate of Heqo.*)
           assert(Hisp: inv_sub_prop cache) by admit.
-          pose proof (H := Hisp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2))).
-          simpl in H.
-          assert (exists np1, cache !! p = Some np1).
+          pose proof (H' := Hsubp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2)) Hcachepqp).
+          simpl in H'.
+          destruct H' as [Hbocp Hbocqp].
+          destruct Hbocqp as [Hbqp|Hcqp].
           {
-            admit.
-            (*destruct (decide (is_bound_var p)).*)
+            simpl in Hbqp. inversion Hbqp.
           }
-         admit.
+          destruct Hcqp as [nqp Hnqp].
+          assert (Hnp1: exists np1, cache !! p = Some np1).
+          {
+            apply cached_anyway.
+            {
+              eapply dangling_vars_cached_imp_proj1.
+              eassumption.
+            }
+            assumption.
+          }
+          assert (Hbocq: bound_or_cached cache q).
+          {
+            pose proof (Htmp := Hsubp (patt_imp q p) nqp Hnqp).
+            simpl in Htmp.
+            destruct Htmp as [Hbocq _].
+            exact Hbocq.
+          }
+          assert (Hnq1: exists nq1, cache !! q = Some nq1).
+          {
+            apply cached_anyway.
+            {
+              eapply dangling_vars_cached_imp_proj1.
+              eapply dangling_vars_cached_imp_proj2.
+              eassumption.
+            }
+            assumption.
+          }
+          destruct Hnp1 as [np1 Hnp1].
+          pose proof (H := Hisp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2)) Hcachepqp).
+          simpl in H.
+          pose proof (Htmp := H _ _ Hnp1 Hnqp).
+          inversion Htmp; subst. clear Htmp.
+          clear H.
+
+          destruct Hnq1 as [nq1 Hnq1].
+          pose proof (H := Hisp (patt_imp q p) (npatt_imp n5 n2) Hnqp).
+          simpl in H.
+          pose proof (Htmp := H  _ _ Hnq1 Hnp1).
+          inversion Htmp. subst. clear Htmp.
+          exists np1, nq1.
+          reflexivity.
       }
+      {
+        rewrite HC''qp in Heqo1. inversion Heqo1.
+      }
+      {
+        rewrite Heqp7 in Heqp23. inversion Heqp23. subst. clear Heqp23.
+        rewrite Heqo0 in Heqo'. inversion Heqo'.
+      }
+    }
+    {
+      case_match; simpl in *.
+      {
+        rewrite Heqo0 in HC'notcached. inversion HC'notcached.
+      }
+      {
+        assert (Hgp: g !! p = Some n).
+        {
+          epose proof (Hensures := to_NamedPattern2'_ensures_present _ _ _ _).
+          erewrite Heqp1 in Hensures. simpl in Hensures.
+          exact Hensures.
+        }
+        assert (Hg2p: g2 !! p = Some n).
+        {
+          epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+          erewrite Heqp10 in Htmp. simpl in Htmp.
+          eapply lookup_weaken. exact Hgp. exact Htmp.
+        }
+        epose proof (Htmp := to_NamedPattern2'_lookup _ _ _ _ _ Hg2p).
+        erewrite Heqp13 in Htmp. inversion Htmp. subst. clear Htmp.
+        exists n,n2. reflexivity.
+      }
+    }
+
+
   
   (*
     (to_NamedPattern2' (p ---> (q ---> p)) cache used_evars used_svars).1.1.1
