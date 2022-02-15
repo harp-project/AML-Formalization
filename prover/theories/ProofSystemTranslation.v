@@ -5572,13 +5572,14 @@ Qed.
 
   Lemma inv_sub_prop_step C p evs svs:
   sub_prop C ->
+  cache_continuous_prop C ->
   dangling_vars_cached C p ->
   inv_sub_prop C ->
   inv_sub_prop (to_NamedPattern2' p C evs svs).1.1.2.
 Proof.
-  intros Hsubp Hdngl H.
-  move: C evs svs Hsubp Hdngl H.
-  induction p; intros C evs svs Hsubp Hdngl H; simpl; case_match; simpl; try exact H.
+  intros Hsubp Hcont Hdngl H.
+  move: C evs svs Hsubp Hcont Hdngl H.
+  induction p; intros C evs svs Hsubp Hcont Hdngl H; simpl; case_match; simpl; try exact H.
     Local Ltac contradict_not_cached Hdngl Heqo Hboc :=
     lazymatch type of Heqo with
     | (?C !! ?formula = None) =>
@@ -5659,6 +5660,61 @@ Proof.
     + solve_mu_ex Hsubp H Hdngl Heqo Hp.
   - intros p np Hp.
     destruct p; try exact I.
+    + repeat case_match. subst. invert_tuples. simpl in *.
+      intros np' nq' Hnp' Hnq'.
+      assert (HdngCp1: dangling_vars_cached C p1).
+      { eapply dangling_vars_cached_imp_proj1. apply Hdngl. }
+
+
+      assert (Hsubpg0: sub_prop g0).
+      {
+        epose proof (Htmp := sub_prop_step _ _ _ _).
+        erewrite Heqp1 in Htmp. simpl in Htmp.
+        specialize (Htmp HdngCp1 Hcont Hsubp).
+        exact Htmp.
+      }
+
+      assert (Hcontg0: cache_continuous_prop g0).
+      {
+        epose proof (Htmp := cache_continuous_step _ _ _ _).
+        erewrite Heqp1 in Htmp. simpl in Htmp.
+        specialize (Htmp HdngCp1 Hcont).
+        exact Htmp.
+      }
+
+      assert (HCsubg0: C ⊆ g0).
+      {
+        epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+        erewrite Heqp1 in Htmp. simpl in Htmp.
+        exact Htmp.
+      }
+
+      assert (Hdnglg0: dangling_vars_cached g0 (patt_app p1 p2)).
+      {
+        eapply dangling_vars_subcache.
+        { apply Hdngl. }
+        { exact HCsubg0. }
+      }
+
+      assert (Hdnglg0p2: dangling_vars_cached g0 p2).
+      {
+        eapply dangling_vars_cached_app_proj2. exact Hdnglg0.
+      }
+
+      epose proof (IH1 := IHp1 _ _ _).
+      erewrite Heqp1 in IH1. simpl in IH1.
+      specialize (IH1 Hsubp Hcont HdngCp1 H).
+      clear IHp1.
+
+      epose proof (IH2 := IHp2 _ _ _).
+      erewrite Heqp2 in IH2. simpl in IH2.
+      specialize (IH2 Hsubpg0 Hcontg0 Hdnglg0p2 IH1).
+      
+      rewrite lookup_insert_Some in Hp.
+      destruct Hp as [Hp|Hp].
+      {
+        destruct Hp as [Hp1 Hp2]. inversion Hp1. subst. clear Hp1.
+      }
     + solve_app_imp Hsubp H Hdngl Heqo Hp.
     + solve_app_imp Hsubp H Hdngl Heqo Hp.
     + solve_mu_ex Hsubp H Hdngl Heqo Hp.
