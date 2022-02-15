@@ -5663,118 +5663,112 @@ Proof.
     + repeat case_match. subst. invert_tuples. simpl in *.
       intros np' nq' Hnp' Hnq'.
 
-      Local Ltac app_imp_prepare Heqo :=
-      assert (HdngCp1: dangling_vars_cached C p1);
-      [(eapply dangling_vars_cached_imp_proj1; apply Hdngl)|];
+      Local Ltac app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp Hinvsub :=
+        lazymatch type of Heqo with
+        | (?C !! ?app_or_imp = None) => (
+          lazymatch type of Heqp1 with
+          | (to_NamedPattern2' ?p1 ?C ?evs ?svs = (?n0, ?g0, ?e0, ?s0)) => (
+            lazymatch type of Heqp2 with
+            | (to_NamedPattern2' ?p2 ?g0 ?e0 ?s0 = (?n1, ?g, ?e, ?s)) => (
+              assert (HdngCp1: dangling_vars_cached C p1);
+              [(eapply dangling_vars_cached_imp_proj1; apply Hdngl)|];
+              assert (Hsubpg0: sub_prop g0);
+              [(
+                epose proof (Htmp := sub_prop_step _ _ _ _);
+                erewrite Heqp1 in Htmp; simpl in Htmp;
+                specialize (Htmp HdngCp1 Hcont Hsubp);
+                exact Htmp
+              )|];
+              assert (Hcontg0: cache_continuous_prop g0);
+              [(
+                epose proof (Htmp := cache_continuous_step _ _ _ _);
+                erewrite Heqp1 in Htmp; simpl in Htmp;
+                specialize (Htmp HdngCp1 Hcont);
+                exact Htmp
+              )|];
+              assert (HCsubg0: C ⊆ g0);
+              [(
+                epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _);
+                erewrite Heqp1 in Htmp; simpl in Htmp;
+                exact Htmp
+              )|];
+              assert (Hg0subg: g0 ⊆ g);
+              [(
+                epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _);
+                erewrite Heqp2 in Htmp; simpl in Htmp;
+                exact Htmp
+              )|];
+              assert (Hdnglg0: dangling_vars_cached g0 (patt_app p1 p2));
+              [(
+                eapply dangling_vars_subcache;
+                [apply Hdngl
+                |exact HCsubg0
+                ]
+              )|];
+              assert (Hdnglg: dangling_vars_cached g (patt_app p1 p2));
+              [(
+                eapply dangling_vars_subcache;
+                [apply Hdnglg0
+                |exact Hg0subg
+                ]
+              )|];
+              assert (Hdnglg0p2: dangling_vars_cached g0 p2);
+              [(eapply dangling_vars_cached_app_proj2; exact Hdnglg0)|];
+              assert (Hsubpg: sub_prop g);
+              [(
+                epose proof (Htmp := sub_prop_step _ _ _ _);
+                erewrite Heqp2 in Htmp; simpl in Htmp;
+                specialize (Htmp Hdnglg0p2 Hcontg0 Hsubpg0);
+                exact Htmp
+              )|];
+              epose proof (IH1 := IHp1 _ _ _);
+              erewrite Heqp1 in IH1; simpl in IH1;
+              specialize (IH1 Hsubp Hcont HdngCp1 Hinvsub);
+              clear IHp1;
+              epose proof (IH2 := IHp2 _ _ _);
+              erewrite Heqp2 in IH2; simpl in IH2;
+              specialize (IH2 Hsubpg0 Hcontg0 Hdnglg0p2 IH1);
+              assert (Hg0p1n0: g0 !! p1 = Some n0);
+              [(
+                epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _);
+                erewrite Heqp1 in Htmp; simpl in Htmp;
+                exact Htmp
+              )|];
+              assert (Hgp1n0: g !! p1 = Some n0);
+              [(
+                eapply lookup_weaken;[apply Hg0p1n0|apply Hg0subg]
+              )|];
+              assert (Hgp2n1: g !! p2 = Some n1);
+              [(
+                epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _);
+                erewrite Heqp2 in Htmp; simpl in Htmp;
+                exact Htmp
+              )|];
+              assert(Hg0appp1p2: g0 !! patt_app p1 p2 = None);
+              [(
+                destruct (g0 !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
+                pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs (patt_app p1 p2) Heqo);
+                feed specialize Htmp;
+                [(
+                  eexists; erewrite Heqp1; simpl; apply Hg0app
+                )|];
+                eapply not_is_subformula_of_app_l; apply Htmp
+              )|];
+              assert(Hgappp1p2: g !! patt_app p1 p2 = None);
+              [(
+                destruct (g !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
+                pose proof (Htmp := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2);
+                feed specialize Htmp;
+                [(
+                  eexists; erewrite Heqp2; simpl; apply Hg0app
+                )|];
+                eapply not_is_subformula_of_app_r; apply Htmp
+              )|])
+            end)
+          end)
+        end.
 
-
-      assert (Hsubpg0: sub_prop g0);
-      [(
-        epose proof (Htmp := sub_prop_step _ _ _ _);
-        erewrite Heqp1 in Htmp; simpl in Htmp;
-        specialize (Htmp HdngCp1 Hcont Hsubp);
-        exact Htmp
-      )|];
-
-      assert (Hcontg0: cache_continuous_prop g0);
-      [(
-        epose proof (Htmp := cache_continuous_step _ _ _ _);
-        erewrite Heqp1 in Htmp; simpl in Htmp;
-        specialize (Htmp HdngCp1 Hcont);
-        exact Htmp
-      )|];
-
-      assert (HCsubg0: C ⊆ g0);
-      [(
-        epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _);
-        erewrite Heqp1 in Htmp; simpl in Htmp;
-        exact Htmp
-      )|];
-
-      assert (Hg0subg: g0 ⊆ g);
-      [(
-        epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _);
-        erewrite Heqp2 in Htmp; simpl in Htmp;
-        exact Htmp
-      )|];
-
-      assert (Hdnglg0: dangling_vars_cached g0 (patt_app p1 p2));
-      [(
-        eapply dangling_vars_subcache;
-        [apply Hdngl
-        |exact HCsubg0
-        ]
-      )|];
-
-      assert (Hdnglg: dangling_vars_cached g (patt_app p1 p2));
-      [(
-        eapply dangling_vars_subcache;
-        [apply Hdnglg0
-        |exact Hg0subg
-        ]
-      )|];
-
-      assert (Hdnglg0p2: dangling_vars_cached g0 p2);
-      [(eapply dangling_vars_cached_app_proj2; exact Hdnglg0)|];
-
-      assert (Hsubpg: sub_prop g);
-      [(
-        epose proof (Htmp := sub_prop_step _ _ _ _);
-        erewrite Heqp2 in Htmp; simpl in Htmp;
-        specialize (Htmp Hdnglg0p2 Hcontg0 Hsubpg0);
-        exact Htmp
-      )|];
-
-      epose proof (IH1 := IHp1 _ _ _);
-      erewrite Heqp1 in IH1; simpl in IH1;
-      specialize (IH1 Hsubp Hcont HdngCp1 H);
-      clear IHp1;
-
-      epose proof (IH2 := IHp2 _ _ _);
-      erewrite Heqp2 in IH2; simpl in IH2;
-      specialize (IH2 Hsubpg0 Hcontg0 Hdnglg0p2 IH1).
-      
-      assert (Hg0p1n0: g0 !! p1 = Some n0);
-      [(
-        epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _);
-        erewrite Heqp1 in Htmp; simpl in Htmp;
-        exact Htmp
-      )|];
-
-      assert (Hgp1n0: g !! p1 = Some n0);
-      [(
-        eapply lookup_weaken;[apply Hg0p1n0|apply Hg0subg]
-      )|];
-
-      assert (Hgp2n1: g !! p2 = Some n1);
-      [(
-        epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _);
-        erewrite Heqp2 in Htmp; simpl in Htmp;
-        exact Htmp
-      )|];
-
-      assert(Hg0appp1p2: g0 !! patt_app p1 p2 = None);
-      [(
-        destruct (g0 !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
-        pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs (patt_app p1 p2) Heqo);
-        feed specialize Htmp;
-        [(
-          eexists; erewrite Heqp1; simpl; apply Hg0app
-        )|];
-        eapply not_is_subformula_of_app_l; apply Htmp
-      )|];
-
-      assert(Hgappp1p2: g !! patt_app p1 p2 = None);
-      [(
-        destruct (g !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity];
-        pose proof (Htmp := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2);
-        feed specialize Htmp;
-        [(
-          eexists; erewrite Heqp2; simpl; apply Hg0app
-        )|];
-        eapply not_is_subformula_of_app_r; apply Htmp
-      )|].
-
+      app_imp_prepare Heqo IHp1 IHp2 Hdngl Heqp1 Heqp2 Hcont Hsubp H.
       (** end of preparation phase. **)
 
       rewrite lookup_insert_Some in Hp.
