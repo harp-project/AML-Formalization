@@ -5570,6 +5570,35 @@ Qed.
     exact Hcp.
   Qed.
 
+  (* This does not hold as is. *)
+  Lemma inv_sub_prop_shift_e C e:
+    sub_prop C ->
+    inv_sub_prop C ->
+    inv_sub_prop
+      (<[BoundVarSugar.b0:=npatt_evar e]> (cache_incr_evar C)).
+  Proof.
+    intros Hsubp Hinv.
+    intros p np Hp.
+    destruct p; try exact I.
+    {
+      intros np' nq' Hnp' Hnq'.
+      rewrite lookup_insert_ne in Hp.
+      { discriminate. }
+      unfold cache_incr_evar in Hp.
+      replace (patt_app p1 p2) with (incr_one_evar (patt_app p1 p2)) in Hp by reflexivity.
+      rewrite lookup_kmap in Hp.
+      specialize (Hinv (patt_app p1 p2) np Hp). simpl in Hinv.
+      rewrite lookup_insert_Some in Hnp'.
+      rewrite lookup_insert_Some in Hnq'.
+      destruct Hnp',Hnq'; destruct_and!; subst.
+      {
+        Print inv_sub_prop.
+        admit.
+      }
+      admit. admit. admit.
+    }
+  Abort.
+
   Lemma inv_sub_prop_step C p evs svs:
   sub_prop C ->
   cache_continuous_prop C ->
@@ -5667,7 +5696,7 @@ Proof.
       lazymatch type of Heqp2 with
       | (to_NamedPattern2' ?p2 ?g0 ?e0 ?s0 = (?n1, ?g, ?e, ?s)) => (
         assert (HdngCp1: dangling_vars_cached C p1);
-        [(eapply dangling_vars_cached_imp_proj1; apply Hdngl)|];
+        [((eapply dangling_vars_cached_imp_proj1 + eapply dangling_vars_cached_app_proj1); apply Hdngl)|];
         assert (Hsubpg0: sub_prop g0);
         [(
           epose proof (Htmp := sub_prop_step _ _ _ _);
@@ -5694,14 +5723,14 @@ Proof.
           erewrite Heqp2 in Htmp; simpl in Htmp;
           exact Htmp
         )|];
-        assert (Hdnglg0: dangling_vars_cached g0 (patt_app p1 p2));
+        assert (Hdnglg0: dangling_vars_cached g0 app_or_imp);
         [(
           eapply dangling_vars_subcache;
           [apply Hdngl
           |exact HCsubg0
           ]
         )|];
-        assert (Hdnglg: dangling_vars_cached g (patt_app p1 p2));
+        assert (Hdnglg: dangling_vars_cached g app_or_imp);
         [(
           eapply dangling_vars_subcache;
           [apply Hdnglg0
@@ -6053,6 +6082,90 @@ Proof.
         simpl in Hinv'; apply Hinv'; assumption.
       }
     }
+  - 
+  (*
+  Local Ltac ex_mu_prepare Heqo IHp1 Hdngl Heqp1 Hcont Hsubp Hinvsub :=
+  lazymatch type of Heqo with
+  | (?C !! ?ex_or_mu = None) => (
+    lazymatch type of Heqp1 with
+    | (to_NamedPattern2' ?p1 ?C ?evs ?svs = (?n0, ?g0, ?e0, ?s0)) => (
+        assert (HdngCp1: dangling_vars_cached C p1);
+        [(eapply dangling_vars_cached_imp_proj1; apply Hdngl)|];
+        assert (Hsubpg0: sub_prop g0);
+        [(
+          epose proof (Htmp := sub_prop_step _ _ _ _);
+          erewrite Heqp1 in Htmp; simpl in Htmp;
+          specialize (Htmp HdngCp1 Hcont Hsubp);
+          exact Htmp
+        )|];
+        assert (Hcontg0: cache_continuous_prop g0);
+        [(
+          epose proof (Htmp := cache_continuous_step _ _ _ _);
+          erewrite Heqp1 in Htmp; simpl in Htmp;
+          specialize (Htmp HdngCp1 Hcont);
+          exact Htmp
+        )|];
+        assert (HCsubg0: C ⊆ g0);
+        [(
+          epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _);
+          erewrite Heqp1 in Htmp; simpl in Htmp;
+          exact Htmp
+        )|];
+        assert (Hdnglg0: dangling_vars_cached g0 ex_or_mu);
+        [(
+          eapply dangling_vars_subcache;
+          [apply Hdngl
+          |exact HCsubg0
+          ]
+        )|];
+        epose proof (IH1 := IHp1 _ _ _);
+        erewrite Heqp1 in IH1; simpl in IH1;
+        specialize (IH1 Hsubp Hcont HdngCp1 Hinvsub);
+        clear IHp1;
+        assert (Hg0p1n0: g0 !! p1 = Some n0);
+        [(
+          epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _);
+          erewrite Heqp1 in Htmp; simpl in Htmp;
+          exact Htmp
+        )|];
+        assert(Hg0appp1p2: g0 !! ex_or_mu = None);
+        [(
+          let Hg0app := fresh "Hg0app" in
+          destruct (g0 !! ex_or_mu) eqn:Hg0app;[exfalso|reflexivity];
+          pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs ex_or_mu Heqo);
+          feed specialize Htmp;
+          [(
+            eexists; erewrite Heqp1; simpl; apply Hg0app
+          )|];
+          (eapply not_is_subformula_of_ex + eapply not_is_subformula_of_mu); apply Htmp
+        )|]
+    )end)
+  end.*)
+  intros p0 np0 Hp0.
+    destruct p0; try exact I.
+    + repeat case_match. subst. invert_tuples. simpl in *.
+      intros np' nq' Hnp' Hnq'.
+      (*ex_mu_prepare Heqo IHp Hdngl Heqp3 Hcont Hsubp H.*)
+      
+      epose proof (IH := IHp _ _ _).
+      erewrite Heqp3 in IH. simpl in IH.
+      feed specialize IH.
+      {
+        apply sub_prop_shift_e. exact Hsubp.
+      }
+      {
+        apply cache_continuous_shift_e. exact Hcont.
+      }
+      {
+        apply dangling_vars_cached_shift_e. apply Hdngl.
+      }
+      {
+        apply inv_sub_prop_shift_e.
+      }
+      
+      rewrite lookup_insert_ne in Hp0.
+      { discriminate. }
+
 Qed.
 
   Lemma consistency_pqp
