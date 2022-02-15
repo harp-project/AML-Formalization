@@ -5689,6 +5689,13 @@ Proof.
         exact Htmp.
       }
 
+      assert (Hg0subg: g0 ⊆ g).
+      {
+        epose proof (Htmp := to_NamedPattern2'_extends_cache _ _ _ _).
+        erewrite Heqp2 in Htmp. simpl in Htmp.
+        exact Htmp.
+      }
+
       assert (Hdnglg0: dangling_vars_cached g0 (patt_app p1 p2)).
       {
         eapply dangling_vars_subcache.
@@ -5710,10 +5717,68 @@ Proof.
       erewrite Heqp2 in IH2. simpl in IH2.
       specialize (IH2 Hsubpg0 Hcontg0 Hdnglg0p2 IH1).
       
+      assert (Hg0p1n0: g0 !! p1 = Some n0).
+      {
+        epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _).
+        erewrite Heqp1 in Htmp. simpl in Htmp.
+        exact Htmp.
+      }
+
+      assert (Hgp1n0: g !! p1 = Some n0).
+      {
+        eapply lookup_weaken.
+        { apply Hg0p1n0. }
+        { apply Hg0subg. }
+      }
+
+      assert (Hgp2n1: g !! p2 = Some n1).
+      {
+        epose proof (Htmp := to_NamedPattern2'_ensures_present _ _ _ _).
+        erewrite Heqp2 in Htmp. simpl in Htmp.
+        exact Htmp.
+      }
+
+      assert(Hg0appp1p2: g0 !! patt_app p1 p2 = None).
+      {
+        destruct (g0 !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity].
+        pose proof (Htmp := onlyAddsSubpatterns2 C p1 evs svs (patt_app p1 p2) Heqo).
+        feed specialize Htmp.
+        {
+          eexists. erewrite Heqp1. simpl. apply Hg0app.
+        }
+        eapply not_is_subformula_of_app_l. apply Htmp.
+      }
+
+      assert(Hgappp1p2: g !! patt_app p1 p2 = None).
+      {
+        destruct (g !! patt_app p1 p2) eqn:Hg0app;[exfalso|reflexivity].
+        pose proof (Htmp := onlyAddsSubpatterns2 g0 p2 e0 s0 (patt_app p1 p2) Hg0appp1p2).
+        feed specialize Htmp.
+        {
+          eexists. erewrite Heqp2. simpl. apply Hg0app.
+        }
+        eapply not_is_subformula_of_app_r. apply Htmp.
+      }
+
+      (** end of preparation phase. **)
+
       rewrite lookup_insert_Some in Hp.
       destruct Hp as [Hp|Hp].
       {
         destruct Hp as [Hp1 Hp2]. inversion Hp1. subst. clear Hp1.
+        rewrite lookup_insert_ne in Hnp'.
+        { apply app_neq1. }
+        rewrite lookup_insert_ne in Hnq'.
+        { apply app_neq2. }
+        congruence.
+      }
+      {
+        destruct Hp as [Hp1 Hp2].
+        rewrite lookup_insert_Some in Hnp' Hnq'.
+        destruct Hnp',Hnq'; destruct_and!; subst.
+        {
+
+        }
       }
     + solve_app_imp Hsubp H Hdngl Heqo Hp.
     + solve_app_imp Hsubp H Hdngl Heqo Hp.
