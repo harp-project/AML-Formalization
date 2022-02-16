@@ -289,40 +289,6 @@ Section proof_system_translation.
     unfold sub_prop; intros; inversion H.
   Qed.
 
-  Definition inv_sub_prop (C : Cache) :=
-    forall (p : Pattern) (np : NamedPattern),
-    C !! p = Some np ->
-    match p with
-    | patt_free_evar _ => True
-    | patt_free_svar _ => True
-    | patt_bound_evar _ => True
-    | patt_bound_svar _ => True
-    | patt_bott => True
-    | patt_sym _ => True
-    | patt_imp p' q' =>
-      (forall np' nq',
-        C !! p' = Some np' ->
-        C !! q' = Some nq' ->
-        np = npatt_imp np' nq')
-    | patt_app p' q' => 
-      (forall np' nq',
-      C !! p' = Some np' ->
-      C !! q' = Some nq' ->
-      np = npatt_app np' nq')
-    | patt_exists p' =>
-      (forall np' e,
-        C !! p' = Some np' ->
-        C !! (patt_bound_evar 0) = Some (npatt_evar e) ->
-        np = npatt_exists e np'
-      )
-    | patt_mu p' =>
-      (forall np' s,
-        C !! p' = Some np' ->
-        C !! (patt_bound_svar 0) = Some (npatt_svar s) ->
-        np = npatt_mu s np'
-      )    
-    end.
-
 
   Lemma app_neq1 : forall x y, patt_app x y <> x.
   Proof.
@@ -2962,10 +2928,7 @@ Qed.
         }
   Qed.
 
-  Lemma inv_sub_prop_empty: inv_sub_prop ∅.
-  Proof.
-    intros p np H. rewrite lookup_empty in H. inversion H.
-  Qed.
+
 
 
    #[global]
@@ -5570,7 +5533,57 @@ Qed.
     exact Hcp.
   Qed.
 
+
+  Definition inv_sub_prop (C : Cache) :=
+    forall (p : Pattern) (np : NamedPattern),
+    (* dangling_vars_cached C p -> *)
+    C !! p = Some np ->
+    match p with
+    | patt_free_evar _ => True
+    | patt_free_svar _ => True
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | patt_bott => True
+    | patt_sym _ => True
+    | patt_imp p' q' =>
+(*      ~ is_bound_var p' ->
+      ~ is_bound_var q' -> *)
+      (forall np' nq',
+        C !! p' = Some np' ->
+        C !! q' = Some nq' -> (*
+        dangling_vars_cached C p' /\ dangling_vars_cached C q' /\ *)
+        np = npatt_imp np' nq')
+    | patt_app p' q' => 
+(*      ~ is_bound_var p' ->
+      ~ is_bound_var q' -> *)
+      (forall np' nq',
+      C !! p' = Some np' ->
+      C !! q' = Some nq' -> (*
+      dangling_vars_cached C p' /\ dangling_vars_cached C q' /\ *)
+      np = npatt_app np' nq')
+    | patt_exists p' =>
+(*      ~ is_bound_var p' -> *)
+      (forall np' e,
+        C !! p' = Some np' ->
+        C !! (patt_bound_evar 0) = Some (npatt_evar e) ->
+        np = npatt_exists e np'
+      )
+    | patt_mu p' =>
+(*      ~ is_bound_var p' -> *)
+      (forall np' s,
+        C !! p' = Some np' ->
+        C !! (patt_bound_svar 0) = Some (npatt_svar s) ->
+        np = npatt_mu s np'
+      )    
+    end.
+
+  Lemma inv_sub_prop_empty: inv_sub_prop ∅.
+  Proof.
+    intros p np (*Hcached*) H. rewrite lookup_empty in H. inversion H.
+  Qed.
+
   (* This does not hold as is. *)
+  
   Lemma inv_sub_prop_shift_e C e:
     sub_prop C ->
     inv_sub_prop C ->
@@ -5578,16 +5591,21 @@ Qed.
       (<[BoundVarSugar.b0:=npatt_evar e]> (cache_incr_evar C)).
   Proof.
     intros Hsubp Hinv.
-    intros p np Hp.
+    intros p np (*Hcached*) Hp.
     destruct p; try exact I.
     {
       intros np' nq' Hnp' Hnq'.
       rewrite lookup_insert_ne in Hp.
       { discriminate. }
+      (*Check dangling_vars_cached_shift_e.
+      apply dangling_vars_cached_shift_e in Hdngl. *)
       unfold cache_incr_evar in Hp.
       replace (patt_app p1 p2) with (incr_one_evar (patt_app p1 p2)) in Hp by reflexivity.
       rewrite lookup_kmap in Hp.
-      specialize (Hinv (patt_app p1 p2) np Hp). simpl in Hinv.
+      specialize (Hinv (patt_app p1 p2) np). simpl in Hinv.
+      specialize (Hinv Hp).
+      (*pose proof (Hsub' := Hsubp _ _ Hp). simpl in Hsub'.*)
+
       rewrite lookup_insert_Some in Hnp'.
       rewrite lookup_insert_Some in Hnq'.
       destruct Hnp',Hnq'; destruct_and!; subst.
@@ -6166,7 +6184,7 @@ Proof.
       rewrite lookup_insert_ne in Hp0.
       { discriminate. }
 
-Qed.
+Qed.*)
 
   Lemma consistency_pqp
         (p q : Pattern)
@@ -6177,12 +6195,13 @@ Qed.
     CES_prop cache evs svs ->
     History_generator cache evs svs ->
     sub_prop cache ->
+    inv_sub_prop cache ->
     dangling_vars_cached cache (patt_imp p (patt_imp q p)) ->
       exists np nq,
         (to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs).1.1.1
     = npatt_imp np (npatt_imp nq np).
   Proof.
-    intros HCES Hhist Hsubp Hdngcached.
+    intros HCES Hhist Hsubp Hisp Hdngcached.
     remember ((to_NamedPattern2' (patt_imp p (patt_imp q p)) cache evs svs)) as Call.
     simpl in HeqCall.
     destruct (cache !! patt_imp p (patt_imp q p)) eqn:Hcachepqp.
@@ -6250,7 +6269,6 @@ Qed.
           rewrite Heqp14 in Heqp7. inversion Heqp7. subst. clear Heqp7.
           rewrite Heqo0 in Heqo'. inversion Heqo'. subst. clear Heqo'.
           clear HC''qp. (*duplicate of Heqo.*)
-          assert(Hisp: inv_sub_prop cache) by admit.
           pose proof (H' := Hsubp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2)) Hcachepqp).
           simpl in H'.
           destruct H' as [Hbocp Hbocqp].
@@ -6285,14 +6303,28 @@ Qed.
             }
             assumption.
           }
+
           destruct Hnp1 as [np1 Hnp1].
+          destruct Hnq1 as [nq1 Hnq1].
+
+          destruct (decide (is_bound_var p)) as [Hboundp|Hnboundp].
+          {
+            assert (Hpcached: dangling_vars_cached cache p).
+            {
+              apply dangling_vars_cached_imp_proj1 in Hdngcached.
+              exact Hdngcached.
+            }
+            unfold dangling_vars_cached in Hpcached.
+            destruct Hpcached as [Hpcachede Hpcacheds].
+            unfold dangling_evars_cached in Hpcachede.
+          }
           pose proof (H := Hisp (patt_imp p (patt_imp q p)) (npatt_imp n (npatt_imp n5 n2)) Hcachepqp).
           simpl in H.
           pose proof (Htmp := H _ _ Hnp1 Hnqp).
           inversion Htmp; subst. clear Htmp.
           clear H.
 
-          destruct Hnq1 as [nq1 Hnq1].
+          
           pose proof (H := Hisp (patt_imp q p) (npatt_imp n5 n2) Hnqp).
           simpl in H.
           pose proof (Htmp := H  _ _ Hnq1 Hnp1).
