@@ -8,9 +8,6 @@ From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
 
 From MatchingLogicProver Require Import Named Metamath.
 
-Locate foldr.
-
-Import MetaMath.
 Section gen.
   Context
     {signature : Signature}

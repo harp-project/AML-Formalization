@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From stdpp Require Import base pmap gmap fin_maps.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Syntax extralibrary.
 
 Require Import String.
 
@@ -450,6 +450,48 @@ Section named.
     | npatt_mu X psi => named_no_negative_occurrence X psi && named_well_formed_positive psi
     end.
 
+  Lemma named_well_formed_positive_app_proj1 (p q : NamedPattern):
+    named_well_formed_positive (npatt_app p q) = true ->
+    named_well_formed_positive p = true.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_well_formed_positive_app_proj2 (p q : NamedPattern):
+    named_well_formed_positive (npatt_app p q) = true ->
+    named_well_formed_positive q = true.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_well_formed_positive_imp_proj1 (p q : NamedPattern):
+    named_well_formed_positive (npatt_imp p q) = true ->
+    named_well_formed_positive p = true.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_well_formed_positive_imp_proj2 (p q : NamedPattern):
+    named_well_formed_positive (npatt_imp p q) = true ->
+    named_well_formed_positive q = true.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_well_formed_positive_exists_proj (e : evar) (p : NamedPattern):
+    named_well_formed_positive (npatt_exists e p) = true ->
+    named_well_formed_positive p = true.
+  Proof.
+    intros H. simpl in H. assumption.
+  Qed.
+
+  Lemma named_well_formed_positive_mu_proj (s : svar) (p : NamedPattern):
+    named_well_formed_positive (npatt_mu s p) = true ->
+    named_well_formed_positive p = true.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+  
   Definition named_well_formed := named_well_formed_positive.
 
   Inductive Named_Application_context : Type :=
