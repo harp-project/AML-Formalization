@@ -596,7 +596,7 @@ Section proof_system_translation.
       }
     }
   Qed.
-
+  
   Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index):
     well_formed_closed_ex_aux ϕ elevel ->
     well_formed_closed_mu_aux ϕ slevel ->
@@ -753,8 +753,8 @@ Section proof_system_translation.
       | patt_sym _ => True
       | patt_imp p' q' => is_cached C p' /\ is_cached C q'
       | patt_app p' q' => is_cached C p' /\ is_cached C q'
-      | patt_exists p' => is_cached C p'
-      | patt_mu p' => is_cached C p'
+      | patt_exists p' => is_cached C p' (* TODO probably remove *)
+      | patt_mu p' => is_cached C p' (* TODO probably remove *)
       end.
 
   Lemma sub_prop_empty: sub_prop ∅.
