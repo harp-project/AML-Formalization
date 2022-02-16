@@ -176,8 +176,13 @@ Section proof_system_translation.
   Definition only_closed_enough_prop (C : Cache) (elevel : db_index) (slevel : db_index) :=
     ∀ (ϕ : Pattern) (nϕ : NamedPattern),
     C !! ϕ = Some nϕ ->
-    ~ is_bound_var ϕ ->
-    well_formed_closed_ex_aux ϕ elevel /\ well_formed_closed_mu_aux ϕ slevel.
+    (
+      ~ is_bound_evar ϕ ->
+      well_formed_closed_ex_aux ϕ elevel
+     ) /\ (
+      ~ is_bound_svar ϕ ->
+       well_formed_closed_mu_aux ϕ slevel
+     ).
   
   Lemma only_closed_enough_empty: only_closed_enough_prop ∅ 0 0.
   Proof.
@@ -280,7 +285,7 @@ Section proof_system_translation.
       destruct Hϕ' as [H|H]; destruct_and!; subst.
       {
         simpl. split; [|reflexivity].
-        case_match;[reflexivity|assumption].
+        case_match; auto.
       }
       {
         eapply Hocep. eassumption.
@@ -342,14 +347,14 @@ Section proof_system_translation.
       erewrite Heqp3 in IH2. simpl in IH2.
       specialize (IH2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       clear IHϕ2.
-      intros ϕ' nϕ' Hϕ' Hb.
+      intros ϕ' nϕ' Hϕ'.
       rewrite lookup_insert_Some in Hϕ'.
       destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
       {
-        simpl. split_and!; assumption.
+        simpl. split; intros Hb; split_and!; auto.
       }
       {
-        split; eapply IH2; eassumption.
+        split; intros Hb; eapply IH2; eassumption.
       }
     }
     {
@@ -362,14 +367,14 @@ Section proof_system_translation.
       erewrite Heqp3 in IH2. simpl in IH2.
       specialize (IH2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       clear IHϕ2.
-      intros ϕ' nϕ' Hϕ' Hb.
+      intros ϕ' nϕ' Hϕ'.
       rewrite lookup_insert_Some in Hϕ'.
       destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
       {
-        simpl. split_and!; assumption.
+        simpl. split; intros Hb; split_and!; auto.
       }
       {
-        split; eapply IH2; eassumption.
+        split; intros Hb; eapply IH2; eassumption.
       }
     }
     {
@@ -379,29 +384,30 @@ Section proof_system_translation.
       specialize (IH ltac:(assumption) ltac:(assumption)).
       feed specialize IH.
       {
-        intros ϕ' nϕ' Hϕ' Hb.
+        intros ϕ' nϕ' Hϕ'.
         rewrite lookup_insert_Some in Hϕ'.
         destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
         {
           simpl. split; reflexivity.
         }
         {
-          unfold cache_incr_evar in H0.
-          replace ϕ' with (incr_one_evar ϕ') in H0.
-          2: {
-            destruct ϕ'; simpl; try reflexivity.
-            simpl in Hb. contradiction Hb. exact I.
-          }
-          rewrite lookup_kmap in H0.
-          specialize (Hocep _ _ H0 Hb).
-          destruct Hocep as [Hocepe Hoceps].
-          split.
+          split; intros Hb.
           {
+            unfold cache_incr_evar in H0.
+            replace ϕ' with (incr_one_evar ϕ') in H0.
+            2: {
+              destruct ϕ'; simpl; try reflexivity.
+              exfalso. apply Hb. exists n0. reflexivity.
+            }
+            rewrite lookup_kmap in H0.
+            specialize (Hocep _ _ H0).
+            destruct Hocep as [Hocepe Hoceps].
             eapply well_formed_closed_ex_aux_ind.
             2: apply Hocepe.
             lia.
+            apply Hb.
           }
-          apply Hoceps.
+          eapply Hocep;[|eassumption].
         }
       }
       intros ϕ' nϕ' Hϕ' Hb.
@@ -505,22 +511,51 @@ Section proof_system_translation.
   Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index):
     well_formed_closed_ex_aux ϕ elevel ->
     well_formed_closed_mu_aux ϕ slevel ->
+    only_closed_enough_prop C elevel slevel ->
     C ⊆ (to_NamedPattern2' ϕ C evs svs elevel slevel).1.1.2.
   Proof.
     move: C evs svs elevel slevel.
-    induction ϕ; intros C evs svs elevel slevel Hwfcex Hwfcmu; simpl; case_match; simpl; auto; repeat case_match; simpl;
+    induction ϕ; intros C evs svs elevel slevel Hwfcex Hwfcmu Hocep; simpl; case_match; simpl; auto; repeat case_match; simpl;
       apply insert_subseteq_r; try apply reflexivity; try assumption; subst.
     - inversion Heqp; subst; clear Heqp.
       simpl in Hwfcex, Hwfcmu. destruct_and!.
-      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption)).
+      assert (only_closed_enough_prop g elevel slevel).
+      {
+        epose proof (Htmp := only_closed_enough_step _ _ _ _ _ _).
+        erewrite Heqp0 in Htmp.
+        specialize (Htmp ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        simpl in Htmp. exact Htmp.
+      }
+      assert (only_closed_enough_prop g1 elevel slevel).
+      {
+        epose proof (Htmp := only_closed_enough_step _ _ _ _ _ _).
+        erewrite Heqp3 in Htmp.
+        specialize (Htmp ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        simpl in Htmp. exact Htmp.
+      }
+      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
-      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption)).
+      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
       simpl in Hwfcex, Hwfcmu. destruct_and!.
-      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption)).
+      assert (only_closed_enough_prop g elevel slevel).
+      {
+        epose proof (Htmp := only_closed_enough_step _ _ _ _ _ _).
+        erewrite Heqp0 in Htmp.
+        specialize (Htmp ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        simpl in Htmp. exact Htmp.
+      }
+      assert (only_closed_enough_prop g1 elevel slevel).
+      {
+        epose proof (Htmp := only_closed_enough_step _ _ _ _ _ _).
+        erewrite Heqp3 in Htmp.
+        specialize (Htmp ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+        simpl in Htmp. exact Htmp.
+      }
+      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
-      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption)).
+      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption) ltac:(assumption)).
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
       simpl in Hwfcex,Hwfcmu.
@@ -548,7 +583,8 @@ Section proof_system_translation.
             rewrite map_subseteq_spec in IHϕ.
             unfold keep_wfcex.
             rewrite map_filter_lookup_Some.
-            split. 2: { simpl.  }
+            split.
+            2: { simpl. Print only_closed_enough_prop.  eapply Hocep;[eassumption|]. intros HContra. apply n0. apply bound_evar_  }
             apply IHϕ.
             apply lookup_insert_Some.
             right.
