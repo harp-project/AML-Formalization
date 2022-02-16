@@ -264,8 +264,8 @@ Section proof_system_translation.
     | _ => False
     end.
 
-  Definition bound_or_cached (C : Cache) (p : Pattern) : Prop
-    := is_bound_var p \/ exists np, C !! p = Some np.
+  Definition is_cached (C : Cache) (p : Pattern) : Prop
+    := (*is_bound_var p \/ *) exists np, C !! p = Some np.
 
   (* A subpattern property of the cache: with any pattern it contains its direct subpatterns. *)
   Definition sub_prop (C : Cache) :=
@@ -278,10 +278,10 @@ Section proof_system_translation.
       | patt_bound_svar _ => True
       | patt_bott => True
       | patt_sym _ => True
-      | patt_imp p' q' => bound_or_cached C p' /\ bound_or_cached C q'
-      | patt_app p' q' => bound_or_cached C p' /\ bound_or_cached C q'
-      | patt_exists p' => bound_or_cached C p'
-      | patt_mu p' => bound_or_cached C p'
+      | patt_imp p' q' => is_cached C p' /\ is_cached C q'
+      | patt_app p' q' => is_cached C p' /\ is_cached C q'
+      | patt_exists p' => is_cached C p'
+      | patt_mu p' => is_cached C p'
       end.
 
   Lemma sub_prop_empty: sub_prop ∅.
@@ -2224,12 +2224,13 @@ Qed.
   Qed.
 
   Lemma sub_prop_shift_e C e:
+    cache_continuous_prop C ->
     sub_prop C ->
     sub_prop (<[BoundVarSugar.b0:=npatt_evar e]> (cache_incr_evar C)).
   Proof.
     remember (<[BoundVarSugar.b0:=npatt_evar e]> (cache_incr_evar C)) as C'.
     unfold sub_prop.
-    intros Hsub p1 np1 Hnp1.
+    intros Hcont Hsub p1 np1 Hnp1.
     rewrite HeqC' in Hnp1.
 
     Local Ltac destruct_lookup_in_C' Hnp :=
@@ -2246,9 +2247,9 @@ Qed.
 
       Local Ltac propagate_cached_into_C' HeqC' Hcp1_1 Hnbound :=
         match goal with
-        | [ |- bound_or_cached _ ?p1_1] =>
+        | [ |- is_cached _ ?p1_1] =>
           destruct Hcp1_1 as [np1_1 Hnp1_1];
-          right;
+          (*right;*)
           exists np1_1;
           rewrite HeqC';
           rewrite lookup_insert_ne;
@@ -2265,14 +2266,13 @@ Qed.
           exact Hnp1_1
         end.
 
-        Local Ltac propagate_bound p1_1 Hnbound :=
+        Local Ltac propagate_bound Hsub Hnp1 p1_1 Hnbound :=
           destruct (decide (is_bound_evar p1_1)) as [Hbound|Hnbound];
           [(
-            left;
-            unfold is_bound_evar in Hbound;
-            destruct Hbound as [b Hbound];
-            subst p1_1;
-            reflexivity
+            subst;
+            specialize (Hsub _ _ Hnp1); simpl in Hsub;
+            destruct Hsub as [Hsub1 Hsub2];
+            apply bound_evar_cont_cache_shift; try assumption; eexists; eassumption
           )|].
 
           Local Ltac make_subpattern_boc Hsub Hnp1 subpattern Hsubcached :=
@@ -2280,22 +2280,22 @@ Qed.
             | (?C !! ?big_pattern = Some ?np1) =>
               pose proof (Hsub1 := Hsub big_pattern np1 Hnp1);
               simpl in Hsub1;
-              assert (Hsubboc: bound_or_cached C subpattern) by (destruct_and?; assumption);
-              destruct Hsubboc as [Hsubbound|Hsubcached];
-              [(left; exact Hsubbound)|]
+              assert (Hsubboc: is_cached C subpattern) by (destruct_and?; assumption);
+              rename Hsubboc into Hsubcached
             end.
 
     Local Ltac subpattern_boc HeqC' Hsub Hnp1 p1_1 :=
-      let Hnbound := fresh "Hnbound" in
-      propagate_bound p1_1 Hnbound;
       destruct_lookup_in_C' Hnp1;
+      let Hnbound := fresh "Hnbound" in
+      propagate_bound Hsub Hnp1 p1_1 Hnbound;
       let Hsubcached := fresh "Hsubcached" in
       make_subpattern_boc Hsub Hnp1 p1_1 Hsubcached;
       propagate_cached_into_C' HeqC' Hsubcached Hnbound.
 
     
     destruct p1; try exact I.
-    {            
+    {
+      (*pose proof (Hcont' := cache_continuous_shift_e C e Hcont).*)
       split.
       { subpattern_boc HeqC' Hsub Hnp1 p1_1. }
       { subpattern_boc HeqC' Hsub Hnp1 p1_2. }
@@ -2332,7 +2332,7 @@ Qed.
 
             Local Ltac mu_propagate_cached_into_C' HeqC' Hcp1_1 Hnbound :=
               match goal with
-              | [ |- bound_or_cached _ ?p1_1] =>
+              | [ |- is_cached _ ?p1_1] =>
                 destruct Hcp1_1 as [np1_1 Hnp1_1];
                 right;
                 exists np1_1;
@@ -2366,7 +2366,7 @@ Qed.
                   | (?C !! ?big_pattern = Some ?np1) =>
                     pose proof (Hsub1 := Hsub big_pattern np1 Hnp1);
                     simpl in Hsub1;
-                    assert (Hsubboc: bound_or_cached C subpattern) by (destruct_and?; assumption);
+                    assert (Hsubboc: is_cached C subpattern) by (destruct_and?; assumption);
                     destruct Hsubboc as [Hsubbound|Hsubcached];
                     [(left; exact Hsubbound)|]
                   end.
@@ -2634,7 +2634,7 @@ Qed.
           | (?g0 !! ?large_pattern = Some ?np) =>
             pose proof (IH1 large_pattern np Hg0large);
             simpl in H;
-            assert(Hbocsubpattern: bound_or_cached g0 subpattern);
+            assert(Hbocsubpattern: is_cached g0 subpattern);
             [(destruct_and?; assumption)|];
             destruct Hbocsubpattern as [Hboundsubpattern|Hcachedsubpattern];
             [(left; exact Hboundsubpattern)|];
@@ -2812,7 +2812,7 @@ Qed.
           | (?g0 !! ?large_pattern = Some ?np) =>
             pose proof (IH1 large_pattern np Hg0large);
             simpl in H;
-            assert(Hbocsubpattern: bound_or_cached g0 subpattern);
+            assert(Hbocsubpattern: is_cached g0 subpattern);
             [(destruct_and?; assumption)|];
             destruct Hbocsubpattern as [Hboundsubpattern|Hcachedsubpattern];
             [(left; exact Hboundsubpattern)|];
@@ -5496,7 +5496,7 @@ Qed.
 
   Lemma cached_anyway C p:
     dangling_vars_cached C p ->
-    bound_or_cached C p ->
+    is_cached C p ->
     exists np1, C !! p = Some np1.
   Proof.
     intros Hdngcached Hbocp.
@@ -6286,7 +6286,7 @@ Qed.*)
             }
             assumption.
           }
-          assert (Hbocq: bound_or_cached cache q).
+          assert (Hbocq: is_cached cache q).
           {
             pose proof (Htmp := Hsubp (patt_imp q p) nqp Hnqp).
             simpl in Htmp.
