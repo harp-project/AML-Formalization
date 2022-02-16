@@ -2310,89 +2310,91 @@ Qed.
   Qed.
 
   Lemma sub_prop_shift_s C s:
-    sub_prop C ->
-    sub_prop (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar C)).
-  Proof.
-    intros Hsub.
-    remember (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar C)) as C'.
-    intros p1 np1 Hnp1.
-          rewrite HeqC' in Hnp1.
+  cache_continuous_prop C ->
+  sub_prop C ->
+  sub_prop (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar C)).
+Proof.
+  remember (<[BoundVarSugar.B0:=npatt_svar s]> (cache_incr_svar C)) as C'.
+  unfold sub_prop.
+  intros Hcont Hsub p1 np1 Hnp1.
+  rewrite HeqC' in Hnp1.
 
-          Local Ltac mu_destruct_lookup_in_C' Hnp :=
-            match type of Hnp with
-            | ((_ !! ?P) = _) =>
-            (rewrite lookup_insert_ne in Hnp;[discriminate|]);
-            unfold cache_incr_svar in Hnp;
-            rewrite lookup_kmap_Some in Hnp;
-            destruct Hnp as [pincr [Hpincr1 Hpincr2]];
-            assert (Hpincreq: pincr = P);
-            [(destruct pincr; simpl in Hpincr1; inversion Hpincr1; reflexivity)|];
-            subst pincr; clear Hpincr1; rename Hpincr2 into Hnp
-            end.
+  Local Ltac mu_destruct_lookup_in_C' Hnp :=
+    match type of Hnp with
+    | ((_ !! ?P) = _) =>
+    (rewrite lookup_insert_ne in Hnp;[discriminate|]);
+    unfold cache_incr_svar in Hnp;
+    rewrite lookup_kmap_Some in Hnp;
+    destruct Hnp as [pincr [Hpincr1 Hpincr2]];
+    assert (Hpincreq: pincr = P);
+    [(destruct pincr; simpl in Hpincr1; inversion Hpincr1; reflexivity)|];
+    subst pincr; clear Hpincr1; rename Hpincr2 into Hnp
+    end.
 
-            Local Ltac mu_propagate_cached_into_C' HeqC' Hcp1_1 Hnbound :=
-              match goal with
-              | [ |- is_cached _ ?p1_1] =>
-                destruct Hcp1_1 as [np1_1 Hnp1_1];
-                right;
-                exists np1_1;
-                rewrite HeqC';
-                rewrite lookup_insert_ne;
-                [(
-                  intros HContra; subst p1_1;
-                  apply Hnbound; exists 0; reflexivity
-                )|];
-                unfold cache_incr_svar;
-                replace (p1_1) with (incr_one_svar p1_1);
-                [|(destruct p1_1; try reflexivity;
-                  exfalso; apply Hnbound; eexists; reflexivity)
-                ];
-                rewrite lookup_kmap;
-                exact Hnp1_1
-              end.
+    Local Ltac mu_propagate_cached_into_C' HeqC' Hcp1_1 Hnbound :=
+      match goal with
+      | [ |- is_cached _ ?p1_1] =>
+        destruct Hcp1_1 as [np1_1 Hnp1_1];
+        (*right;*)
+        exists np1_1;
+        rewrite HeqC';
+        rewrite lookup_insert_ne;
+        [(
+          intros HContra; subst p1_1;
+          apply Hnbound; exists 0; reflexivity
+        )|];
+        unfold cache_incr_svar;
+        replace (p1_1) with (incr_one_svar p1_1);
+        [|(destruct p1_1; try reflexivity;
+          exfalso; apply Hnbound; eexists; reflexivity)
+        ];
+        rewrite lookup_kmap;
+        exact Hnp1_1
+      end.
 
-              Local Ltac mu_propagate_bound p1_1 Hnbound :=
-                destruct (decide (is_bound_svar p1_1)) as [Hbound|Hnbound];
-                [(
-                  left;
-                  unfold is_bound_svar in Hbound;
-                  destruct Hbound as [b Hbound];
-                  subst p1_1;
-                  reflexivity
-                )|].
+      Local Ltac mu_propagate_bound Hsub Hnp1 p1_1 Hnbound :=
+        destruct (decide (is_bound_svar p1_1)) as [Hbound|Hnbound];
+        [(
+          subst;
+          specialize (Hsub _ _ Hnp1); simpl in Hsub;
+          destruct Hsub as [Hsub1 Hsub2];
+          apply bound_svar_cont_cache_shift; try assumption; eexists; eassumption
+        )|].
 
-                Local Ltac mu_make_subpattern_boc Hsub Hnp1 subpattern Hsubcached :=
-                  match type of Hnp1 with
-                  | (?C !! ?big_pattern = Some ?np1) =>
-                    pose proof (Hsub1 := Hsub big_pattern np1 Hnp1);
-                    simpl in Hsub1;
-                    assert (Hsubboc: is_cached C subpattern) by (destruct_and?; assumption);
-                    destruct Hsubboc as [Hsubbound|Hsubcached];
-                    [(left; exact Hsubbound)|]
-                  end.
+        Local Ltac mu_make_subpattern_boc Hsub Hnp1 subpattern Hsubcached :=
+          match type of Hnp1 with
+          | (?C !! ?big_pattern = Some ?np1) =>
+            pose proof (Hsub1 := Hsub big_pattern np1 Hnp1);
+            simpl in Hsub1;
+            assert (Hsubboc: is_cached C subpattern) by (destruct_and?; assumption);
+            rename Hsubboc into Hsubcached
+          end.
 
-          Local Ltac mu_subpattern_boc HeqC' Hsub Hnp1 p1_1 :=
-            let Hnbound := fresh "Hnbound" in
-            mu_propagate_bound p1_1 Hnbound;
-            mu_destruct_lookup_in_C' Hnp1;
-            let Hsubcached := fresh "Hsubcached" in
-            mu_make_subpattern_boc Hsub Hnp1 p1_1 Hsubcached;
-            mu_propagate_cached_into_C' HeqC' Hsubcached Hnbound.
+  Local Ltac mu_subpattern_boc HeqC' Hsub Hnp1 p1_1 :=
+    mu_destruct_lookup_in_C' Hnp1;
+    let Hnbound := fresh "Hnbound" in
+    mu_propagate_bound Hsub Hnp1 p1_1 Hnbound;
+    let Hsubcached := fresh "Hsubcached" in
+    mu_make_subpattern_boc Hsub Hnp1 p1_1 Hsubcached;
+    mu_propagate_cached_into_C' HeqC' Hsubcached Hnbound.
 
-          destruct p1; try exact I.
-          {            
-            split.
-            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
-            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
-          }
-          {
-            split.
-            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
-            { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
-          }
-          { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
-          { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
-  Qed.
+  
+  destruct p1; try exact I.
+  {
+    (*pose proof (Hcont' := cache_continuous_shift_e C e Hcont).*)
+    split.
+    { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
+    { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
+  }
+  {
+    split.
+    { mu_subpattern_boc HeqC' Hsub Hnp1 p1_1. }
+    { mu_subpattern_boc HeqC' Hsub Hnp1 p1_2. }
+  }
+  { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
+  { mu_subpattern_boc HeqC' Hsub Hnp1 p1. }
+Qed.
+
 
   Lemma sub_prop_step (C : Cache) (p : Pattern) (evs : EVarSet) (svs : SVarSet):
     dangling_vars_cached C p ->
