@@ -9,6 +9,8 @@ From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
 
+From MatchingLogic Require Import extralibrary.
+
 Import ProofSystem.Notations.
 
 (* TODO: move this near to the definition of Pattern *)
@@ -47,18 +49,20 @@ Section proof_system_translation.
    (* If ϕ is in cache, then to_NamedPattern2' just returns the cached value
      and does not update anything.
    *)
-  Lemma to_NamedPattern2'_lookup (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
+  Lemma to_NamedPattern2'_lookup (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet)
+    (elevel : db_index) (slevel : db_index):
     forall (nϕ : NamedPattern),
       C !! ϕ = Some nϕ ->
-      to_NamedPattern2' ϕ C evs svs = (nϕ, C, evs, svs).
+      to_NamedPattern2' ϕ C evs svs elevel slevel = (nϕ, C, evs, svs).
   Proof.
     intros nϕ H.
     destruct ϕ; simpl; case_match; rewrite H in Heqo; inversion Heqo; reflexivity.
   Qed.
 
   (* `to_NamedPattern2' ensures that the resulting cache is contains the given pattern *)
-  Lemma to_NamedPattern2'_ensures_present (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet):
-    (to_NamedPattern2' ϕ C evs svs).1.1.2 !! ϕ = Some ((to_NamedPattern2' ϕ C evs svs).1.1.1).
+  Lemma to_NamedPattern2'_ensures_present (ϕ : Pattern) (C : Cache) (evs : EVarSet) (svs : SVarSet)
+    (elevel : db_index) (slevel : db_index):
+    (to_NamedPattern2' ϕ C evs svs elevel slevel).1.1.2 !! ϕ = Some ((to_NamedPattern2' ϕ C evs svs elevel slevel).1.1.1).
   Proof.
     destruct ϕ; simpl; repeat case_match; simpl;
       try (rewrite Heqo; reflexivity);
@@ -157,23 +161,369 @@ Section proof_system_translation.
       exists nϕ. eapply lookup_weaken. apply Hnϕ. assumption.
   Qed.
 
-  Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs:
-    C ⊆ (to_NamedPattern2' ϕ C evs svs).1.1.2.
+  Ltac invert_tuples :=
+    repeat (match goal with
+            | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
+            end).
+
+  Definition is_bound_var (p : Pattern) :=
+    match p with
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | _ => False
+    end.
+
+  Definition only_closed_enough_prop (C : Cache) (elevel : db_index) (slevel : db_index) :=
+    ∀ (ϕ : Pattern) (nϕ : NamedPattern),
+    C !! ϕ = Some nϕ ->
+    ~ is_bound_var ϕ ->
+    well_formed_closed_ex_aux ϕ elevel /\ well_formed_closed_mu_aux ϕ slevel.
+  
+  Lemma only_closed_enough_empty: only_closed_enough_prop ∅ 0 0.
   Proof.
-    move: C evs svs.
-    induction ϕ; intros C evs svs; simpl; case_match; simpl; auto; repeat case_match; simpl;
+    intros ϕ nϕ Hϕ. rewrite lookup_empty in Hϕ. inversion Hϕ.
+  Qed.
+
+
+  Lemma remove_disjoint_keep_e C1 C2:
+    remove_bound_evars C1 ##ₘ keep_bound_evars C2.
+  Proof.
+    unfold remove_bound_evars.
+    unfold keep_bound_evars.
+    rewrite map_disjoint_spec.
+    intros i x y H1 H2.
+    rewrite map_filter_lookup_Some in H1.
+    destruct H1 as [H11 H12].
+    unfold is_bound_evar_entry in H12. simpl in H12.
+    rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+    unfold is_bound_evar_entry in H22. simpl in H22.
+    contradiction.
+  Qed.
+
+  Lemma remove_disjoint_keep_s C1 C2:
+    remove_bound_svars C1 ##ₘ keep_bound_svars C2.
+  Proof.
+    unfold remove_bound_svars.
+    unfold keep_bound_svars.
+    rewrite map_disjoint_spec.
+    intros i x y H1 H2.
+    rewrite map_filter_lookup_Some in H1.
+    destruct H1 as [H11 H12].
+    unfold is_bound_svar_entry in H12. simpl in H12.
+    rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
+    unfold is_bound_svar_entry in H22. simpl in H22.
+    contradiction.
+  Qed.
+
+  Lemma bound_evar_is_bound_var p:
+    is_bound_evar p ->
+    is_bound_var p.
+  Proof.
+    intros [b H]. subst p. simpl. exact I.
+  Qed.
+
+  Lemma bound_svar_is_bound_var p:
+    is_bound_svar p ->
+    is_bound_var p.
+  Proof.
+    intros [b H]. subst p. simpl. exact I.
+  Qed.
+
+
+  Lemma only_closed_enough_step (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index) :
+    well_formed_closed_ex_aux ϕ elevel ->
+    well_formed_closed_mu_aux ϕ slevel ->
+    only_closed_enough_prop C elevel slevel ->
+    only_closed_enough_prop ((to_NamedPattern2' ϕ C evs svs elevel slevel).1.1.2) elevel slevel.
+  Proof.
+    intros Hwfcex Hwfcmu Hocep.
+    move: C evs svs elevel slevel Hwfcex Hwfcmu Hocep.
+    induction ϕ; intros C evs svs elevel slevel Hwfcex Hwfcmu Hocep; simpl in *;
+      repeat case_match; simpl; try exact Hocep.
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; reflexivity.
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; reflexivity.
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; [|reflexivity].
+        case_match;[reflexivity|lia].
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; [|reflexivity].
+        case_match;[reflexivity|assumption].
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; [reflexivity|].
+        case_match;[reflexivity|lia].
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; [reflexivity|].
+        inversion Hwfcmu.
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; reflexivity.
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    2: {
+      intros ϕ' nϕ' Hϕ'.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [H|H]; destruct_and!; subst.
+      {
+        simpl. split; reflexivity.
+      }
+      {
+        eapply Hocep. eassumption.
+      }
+    }
+    {
+      subst. invert_tuples. destruct_and!.
+      epose proof (IH1 := IHϕ1 _ _ _ _ _).
+      erewrite Heqp0 in IH1. simpl in IH1.
+      specialize (IH1 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      clear IHϕ1.
+      epose proof (IH2 := IHϕ2 _ _ _ _ _).
+      erewrite Heqp3 in IH2. simpl in IH2.
+      specialize (IH2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      clear IHϕ2.
+      intros ϕ' nϕ' Hϕ' Hb.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+      {
+        simpl. split_and!; assumption.
+      }
+      {
+        split; eapply IH2; eassumption.
+      }
+    }
+    {
+      subst. invert_tuples. destruct_and!.
+      epose proof (IH1 := IHϕ1 _ _ _ _ _).
+      erewrite Heqp0 in IH1. simpl in IH1.
+      specialize (IH1 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      clear IHϕ1.
+      epose proof (IH2 := IHϕ2 _ _ _ _ _).
+      erewrite Heqp3 in IH2. simpl in IH2.
+      specialize (IH2 ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      clear IHϕ2.
+      intros ϕ' nϕ' Hϕ' Hb.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+      {
+        simpl. split_and!; assumption.
+      }
+      {
+        split; eapply IH2; eassumption.
+      }
+    }
+    {
+      subst. invert_tuples.
+      epose proof (IH := IHϕ _ _ _ _ _).
+      erewrite Heqp0 in IH. simpl in IH.
+      specialize (IH ltac:(assumption) ltac:(assumption)).
+      feed specialize IH.
+      {
+        intros ϕ' nϕ' Hϕ' Hb.
+        rewrite lookup_insert_Some in Hϕ'.
+        destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+        {
+          simpl. split; reflexivity.
+        }
+        {
+          unfold cache_incr_evar in H0.
+          replace ϕ' with (incr_one_evar ϕ') in H0.
+          2: {
+            destruct ϕ'; simpl; try reflexivity.
+            simpl in Hb. contradiction Hb. exact I.
+          }
+          rewrite lookup_kmap in H0.
+          specialize (Hocep _ _ H0 Hb).
+          destruct Hocep as [Hocepe Hoceps].
+          split.
+          {
+            eapply well_formed_closed_ex_aux_ind.
+            2: apply Hocepe.
+            lia.
+          }
+          apply Hoceps.
+        }
+      }
+      intros ϕ' nϕ' Hϕ' Hb.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+      {
+        simpl. split; assumption.
+      }
+      {
+        epose proof (Hepr := to_NamedPattern2'_ensures_present _ _ _ _ _ _).
+        erewrite Heqp0 in Hepr. simpl in Hepr.
+
+        rewrite lookup_union_Some in H0.
+        2: { apply remove_disjoint_keep_e. }
+        destruct H0 as [H0|H0].
+        2: {
+          unfold keep_bound_evars in H0.
+          rewrite map_filter_lookup_Some in H0.
+          destruct H0 as [_ H0].
+          unfold is_bound_evar_entry in H0. simpl in H0.
+          exfalso. apply Hb. apply bound_evar_is_bound_var.
+          apply H0.
+        }
+        unfold remove_bound_evars in H0.
+        rewrite map_filter_lookup_Some in H0.
+        destruct H0 as [H0 _].
+        unfold keep_wfcex in H0.
+        rewrite map_filter_lookup_Some in H0.
+        destruct H0 as [H01 H02].
+        split;[apply H02|].
+        specialize (IH _ _ H01 Hb).
+        apply IH.
+      }
+    }
+    {
+      subst. invert_tuples.
+      epose proof (IH := IHϕ _ _ _ _ _).
+      erewrite Heqp0 in IH. simpl in IH.
+      specialize (IH ltac:(assumption) ltac:(assumption)).
+      feed specialize IH.
+      {
+        intros ϕ' nϕ' Hϕ' Hb.
+        rewrite lookup_insert_Some in Hϕ'.
+        destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+        {
+          simpl. split; reflexivity.
+        }
+        {
+          unfold cache_incr_svar in H0.
+          replace ϕ' with (incr_one_svar ϕ') in H0.
+          2: {
+            destruct ϕ'; simpl; try reflexivity.
+            simpl in Hb. contradiction Hb. exact I.
+          }
+          rewrite lookup_kmap in H0.
+          specialize (Hocep _ _ H0 Hb).
+          destruct Hocep as [Hocepe Hoceps].
+          split.
+          { apply Hocepe. }
+          {
+            eapply well_formed_closed_mu_aux_ind.
+            2: apply Hoceps.
+            lia.
+          }
+        }
+      }
+      intros ϕ' nϕ' Hϕ' Hb.
+      rewrite lookup_insert_Some in Hϕ'.
+      destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
+      {
+        simpl. split; assumption.
+      }
+      {
+        epose proof (Hepr := to_NamedPattern2'_ensures_present _ _ _ _ _ _).
+        erewrite Heqp0 in Hepr. simpl in Hepr.
+
+        rewrite lookup_union_Some in H0.
+        2: { apply remove_disjoint_keep_s. }
+        destruct H0 as [H0|H0].
+        2: {
+          unfold keep_bound_svars in H0.
+          rewrite map_filter_lookup_Some in H0.
+          destruct H0 as [_ H0].
+          unfold is_bound_svar_entry in H0. simpl in H0.
+          exfalso. apply Hb. apply bound_svar_is_bound_var.
+          apply H0.
+        }
+        unfold remove_bound_evars in H0.
+        rewrite map_filter_lookup_Some in H0.
+        destruct H0 as [H0 _].
+        unfold keep_wfcmu in H0.
+        rewrite map_filter_lookup_Some in H0.
+        destruct H0 as [H01 H02].
+        split;[|apply H02].
+        specialize (IH _ _ H01 Hb).
+        apply IH.
+      }
+    }
+  Qed.
+
+  Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index):
+    well_formed_closed_ex_aux ϕ elevel ->
+    well_formed_closed_mu_aux ϕ slevel ->
+    C ⊆ (to_NamedPattern2' ϕ C evs svs elevel slevel).1.1.2.
+  Proof.
+    move: C evs svs elevel slevel.
+    induction ϕ; intros C evs svs elevel slevel Hwfcex Hwfcmu; simpl; case_match; simpl; auto; repeat case_match; simpl;
       apply insert_subseteq_r; try apply reflexivity; try assumption; subst.
     - inversion Heqp; subst; clear Heqp.
-      specialize (IHϕ2 g e s0).
+      simpl in Hwfcex, Hwfcmu. destruct_and!.
+      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption)).
       rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
-      specialize (IHϕ1 C evs svs).
+      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption)).
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
-      specialize (IHϕ2 g e s0).
+      simpl in Hwfcex, Hwfcmu. destruct_and!.
+      specialize (IHϕ2 g e s0 elevel slevel ltac:(assumption) ltac:(assumption)).
       rewrite Heqp3 in IHϕ2. simpl in IHϕ2. eapply transitivity;[|eassumption].
-      specialize (IHϕ1 C evs svs).
+      specialize (IHϕ1 C evs svs elevel slevel ltac:(assumption) ltac:(assumption)).
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
+      simpl in Hwfcex,Hwfcmu.
       replace g with (n, g, e0, s0).1.1.2 by reflexivity.
       rewrite -Heqp0. clear Heqp0.
       rewrite map_subseteq_spec.
@@ -193,7 +543,12 @@ Section proof_system_translation.
         { unfold remove_bound_evars.
           unfold is_Some. exists nψ.
           apply map_filter_lookup_Some_2.
-          { setoid_rewrite map_subseteq_spec in IHϕ.
+          { 
+            specialize (IHϕ (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ)]> (cache_incr_evar C)) (evs ∪ {[evs_fresh evs ϕ]}) s (S elevel) slevel ltac:(assumption) ltac:(assumption)).
+            rewrite map_subseteq_spec in IHϕ.
+            unfold keep_wfcex.
+            rewrite map_filter_lookup_Some.
+            split. 2: { simpl.  }
             apply IHϕ.
             apply lookup_insert_Some.
             right.
@@ -257,13 +612,6 @@ Section proof_system_translation.
         { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
   Qed. 
 
-  Definition is_bound_var (p : Pattern) :=
-    match p with
-    | patt_bound_evar _ => True
-    | patt_bound_svar _ => True
-    | _ => False
-    end.
-
   Definition is_cached (C : Cache) (p : Pattern) : Prop
     := (*is_bound_var p \/ *) exists np, C !! p = Some np.
 
@@ -317,13 +665,6 @@ Section proof_system_translation.
     induction y; try discriminate.
     inversion Hcontra; subst. apply IHy2; assumption.
   Qed.
-
-
-  Ltac invert_tuples :=
-    repeat (match goal with
-            | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
-            end).
-
             
   Lemma dangling_vars_cached_ex_proj C p:
     dangling_vars_cached C (patt_exists p) ->
@@ -395,36 +736,6 @@ Section proof_system_translation.
       rewrite H. apply orb_comm.
     + apply Hcacheds. simpl. rewrite H. apply orb_comm.
   Qed.
-
-  Lemma remove_disjoint_keep_e C1 C2:
-  remove_bound_evars C1 ##ₘ keep_bound_evars C2.
-Proof.
-  unfold remove_bound_evars.
-  unfold keep_bound_evars.
-  rewrite map_disjoint_spec.
-  intros i x y H1 H2.
-  rewrite map_filter_lookup_Some in H1.
-  destruct H1 as [H11 H12].
-  unfold is_bound_evar_entry in H12. simpl in H12.
-  rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
-  unfold is_bound_evar_entry in H22. simpl in H22.
-  contradiction.
-Qed.
-
-Lemma remove_disjoint_keep_s C1 C2:
-remove_bound_svars C1 ##ₘ keep_bound_svars C2.
-Proof.
-unfold remove_bound_svars.
-unfold keep_bound_svars.
-rewrite map_disjoint_spec.
-intros i x y H1 H2.
-rewrite map_filter_lookup_Some in H1.
-destruct H1 as [H11 H12].
-unfold is_bound_svar_entry in H12. simpl in H12.
-rewrite map_filter_lookup_Some in H2. destruct H2 as [H21 H22].
-unfold is_bound_svar_entry in H22. simpl in H22.
-contradiction.
-Qed.
 
 
 
@@ -2207,20 +2518,6 @@ Qed.
     }
     rewrite -Hk.
     lia.
-  Qed.
-
-  Lemma bound_evar_is_bound_var p:
-    is_bound_evar p ->
-    is_bound_var p.
-  Proof.
-    intros [b H]. subst p. simpl. exact I.
-  Qed.
-
-  Lemma bound_svar_is_bound_var p:
-    is_bound_svar p ->
-    is_bound_var p.
-  Proof.
-    intros [b H]. subst p. simpl. exact I.
   Qed.
 
   Lemma sub_prop_shift_e C e:
