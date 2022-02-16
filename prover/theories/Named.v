@@ -625,4 +625,7 @@ Section named_test.
   Compute to_NamedPattern phi_mu.
   Compute to_NamedPattern2 phi_mu.
 
+  Definition phi_3 : (@Pattern sig) := (patt_imp (patt_exists (patt_exists (patt_bound_evar 1))) (patt_exists (patt_imp (patt_bound_evar 0) (patt_exists (patt_bound_evar 1))))).
+  Compute (to_NamedPattern phi_3).
+  Compute (to_NamedPattern2 phi_3).
 End named_test.

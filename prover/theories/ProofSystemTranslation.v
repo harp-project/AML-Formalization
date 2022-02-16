@@ -2422,35 +2422,33 @@ Qed.
         apply Hsub in H4;
         destruct H4 as [H4 H5];
         split;[rename H4 into HBoC; rename p0_1 into pcached|rename H5 into HBoC;rename p0_2 into pcached];
-           (destruct HBoC as [HBound|HCached];[
-               (left; exact HBound)|
-               (right; destruct HCached as [npcached HCached];
+           (rename HBoC into HCached;
+               (destruct HCached as [npcached HCached];
                 destruct (decide (P = pcached));
                 [(subst; exists NP; apply lookup_insert)
                 |(exists npcached; rewrite -HCached; apply lookup_insert_ne; assumption)]
-          )]));
+          )));
       try (rewrite lookup_insert_Some in H;
       destruct H as [[H1 H2] | [H3 H4]]; subst; auto; try inversion H1;
            apply Hsub in H4; rename H4 into HBoC; rename p0 into pcached;
-           (destruct HBoC as [HBound|HCached];[
-               (left; exact HBound)|
-               (right; destruct HCached as [npcached HCached];
+           (rename HBoC into HCached;
+               (destruct HCached as [npcached HCached];
                 destruct (decide (P = pcached));
                 [(subst; exists NP; apply lookup_insert)
                 |(exists npcached; rewrite -HCached; apply lookup_insert_ne; assumption)]
-          )]))
+          )))
           end.
 
             Local Ltac reuse_Hboc Hboc lhs rhs pcached :=
-          destruct Hboc as [Hbound|Hcached];
-          [(left; exact Hbound)
-          |(right;
+            let Hcached := fresh "Hcached" in
+          rename Hboc into Hcached;
+          (
             destruct (decide (lhs = pcached));
             [(exists rhs; subst; apply lookup_insert)
             |(destruct Hcached as [npcached Hnpcached];
               exists npcached; rewrite lookup_insert_ne; assumption;
               exact Hnpcached)])
-          ].
+          .
 
         Local Ltac if_equal_then_cached H Heqp0 Heqp1 :=
           lazymatch type of H with
@@ -2467,7 +2465,7 @@ Qed.
                       pose proof (Htmp2 := to_NamedPattern2'_ensures_present p0_2 g0 e0 s0);
                       rewrite Heqp1 in Htmp2; simpl in Htmp2;
                       eapply lookup_weaken with (m2 := g) in Htmp;[|assumption];
-                      split; right;
+                      split; (*right;*)
                       [(exists n0; rewrite -Htmp; apply lookup_insert_ne)
                       |(exists n1; rewrite -Htmp2; apply lookup_insert_ne)
                       ]; auto using app_neq1,app_neq2,imp_neq1,imp_neq2
@@ -2593,7 +2591,7 @@ Qed.
 
         (* need to show sub_prop C' holds *)
         assert(HsubC' : sub_prop C').
-        { subst C'. apply sub_prop_shift_e. apply Hsub. }
+        { subst C'. apply sub_prop_shift_e. apply Hcont. apply Hsub. }
         epose proof (IH1 := IHp C' HdanglingC'p0 HcontC' HsubC' _ _).
         erewrite Heqp0 in IH1. simpl in IH1.
 
@@ -2605,7 +2603,7 @@ Qed.
         Ltac ex_propagate_same subpattern largepattern nlargepattern :=
           destruct (decide (subpattern = largepattern)) as [Hsame|Hnsame];
           [
-            (right;
+            ((*right;*)
             exists nlargepattern;
             subst;
             apply lookup_insert)
@@ -2638,15 +2636,15 @@ Qed.
             simpl in H;
             assert(Hbocsubpattern: is_cached g0 subpattern);
             [(destruct_and?; assumption)|];
-            destruct Hbocsubpattern as [Hboundsubpattern|Hcachedsubpattern];
-            [(left; exact Hboundsubpattern)|];
+            let Hcachedsubpattern := fresh "Hcachedsubpattern" in
+            rename Hbocsubpattern into Hcachedsubpattern;
             destruct Hcachedsubpattern as [nsubpattern Hnsubpattern]
           end.
 
         Ltac ex_finish_cached Hnsame Hnsubpattern Hnbound :=
           lazymatch type of Hnsubpattern with
           | ((?g0 !! ?subpattern) = Some ?nsubpattern) =>
-            right;
+            (*right;*)
             exists nsubpattern;
             rewrite lookup_insert_ne;
             [(apply not_eq_sym; apply Hnsame)|];
@@ -2667,11 +2665,20 @@ Qed.
         {
           split.
           {
-            ex_propagate_bound p00_1 Hnbound.
-            ex_propagate_same p00_1 (patt_exists p0) (npatt_exists (evs_fresh evs p0) n0).  
+            ex_propagate_same p00_1 (patt_exists p0) (npatt_exists (evs_fresh evs p0) n0).
             ex_extract_Hg0large H Hg0large.
             ex_extract_cached_subpattern H IH1 Hg0large p00_1.
-            ex_finish_cached Hnsame Hnsubpattern Hnbound.
+            destruct (decide (is_bound_evar p00_1)) as [Hbound|Hnbound].
+            2: {
+              ex_finish_cached Hnsame Hnsubpattern Hnbound.
+            }
+            (* need to show that p00_1 is in C.
+              Either C !! patt_app p00_1 p00_2 = Some _,
+              and then by [sub_prop C] the goal holds.
+              Or C !! patt_app p00_1 p00_2 = None,
+              and therefore patt_app p00_1 p00_2 is a subpattern of p0.
+              (For example, it may be exactly p0.)
+            *)
           }
           {
             ex_propagate_bound p00_2 Hnbound.
