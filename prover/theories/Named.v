@@ -226,7 +226,6 @@ Section named.
       apply R. exists x. reflexivity.
   Defined.
 
-  
   Definition keep_bound_evars (cache : gmap Pattern NamedPattern) :=
     filter is_bound_evar_entry cache.
 
@@ -235,10 +234,21 @@ Section named.
 
   Definition keep_bound_svars (cache : gmap Pattern NamedPattern) :=
     filter is_bound_svar_entry cache.
-
+  
   Definition remove_bound_svars (cache : gmap Pattern NamedPattern) :=
     filter (fun e => ~ is_bound_svar_entry e) cache.
+
+  Definition keep_wfcex (elevel : db_index) (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => (well_formed_closed_ex_aux e.1 elevel) = true) cache.
+
+  Definition remove_wfcex (elevel : db_index) (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ (well_formed_closed_ex_aux e.1 elevel) = true) cache.
+
+  Definition keep_wfcmu (slevel : db_index) (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => (well_formed_closed_mu_aux e.1 slevel) = true) cache.
   
+  Definition remove_wfcmu (slevel : db_index) (cache : gmap Pattern NamedPattern) :=
+    filter (fun e => ~ (well_formed_closed_mu_aux e.1 slevel) = true) cache.
   
   (* pre: all dangling variables of [\phi] are in [cache].  *)
   Fixpoint to_NamedPattern2'
@@ -246,6 +256,8 @@ Section named.
            (cache : gmap Pattern NamedPattern)
            (used_evars : EVarSet)
            (used_svars : SVarSet)
+           (elevel : db_index)
+           (slevel : db_index)
     : (NamedPattern * (gmap Pattern NamedPattern) * EVarSet * SVarSet)%type :=
     if cache !! ϕ is Some ψ
     then (ψ, cache, used_evars, used_svars)
@@ -265,38 +277,38 @@ Section named.
            => (npatt_sym s, cache, used_evars, used_svars)
          | patt_imp ϕ₁ ϕ₂
            => let: (nϕ₁, cache', used_evars', used_svars')
-                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars in
+                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars elevel slevel in
               let: (nϕ₂, cache'', used_evars'', used_svars'')
-                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' in
+                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' elevel slevel in
               ((npatt_imp nϕ₁ nϕ₂), cache'', used_evars'', used_svars'')
          | patt_app ϕ₁ ϕ₂
            => let: (nϕ₁, cache', used_evars', used_svars')
-                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars in
+                 := to_NamedPattern2' ϕ₁ cache used_evars used_svars elevel slevel in
               let: (nϕ₂, cache'', used_evars'', used_svars'')
-                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' in
+                 := to_NamedPattern2' ϕ₂ cache' used_evars' used_svars' elevel slevel in
               ((npatt_app nϕ₁ nϕ₂), cache'', used_evars'', used_svars'')
          | patt_exists phi
            => let: x := evs_fresh used_evars phi in
               let: used_evars_ex := used_evars ∪ {[x]} in
               let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr_evar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                := to_NamedPattern2' phi cache_ex used_evars_ex used_svars in
-              let: cache'' := (remove_bound_evars cache') ∪ (keep_bound_evars cache) in
+                := to_NamedPattern2' phi cache_ex used_evars_ex used_svars (S elevel) slevel in
+              let: cache'' := (remove_bound_evars (keep_wfcex elevel cache')) ∪ (keep_bound_evars cache) in
               (npatt_exists x nphi, cache'', used_evars', used_svars)
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
               let: used_svars_ex := used_svars ∪ {[X]} in
               let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr_svar cache) in
               let: (nphi, cache', used_evars', used_svars')
-                := to_NamedPattern2' phi cache_ex used_evars used_svars_ex in
-              let: cache'' := (remove_bound_svars cache') ∪ (keep_bound_svars cache) in
+                := to_NamedPattern2' phi cache_ex used_evars used_svars_ex elevel (S slevel) in
+              let: cache'' := (remove_bound_svars (keep_wfcmu slevel cache')) ∪ (keep_bound_svars cache) in
               (npatt_mu X nphi, cache'', used_evars', used_svars)
          end
       in
       (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
 
   Definition to_NamedPattern2 (ϕ : Pattern) : NamedPattern :=
-    (to_NamedPattern2' ϕ gmap_empty ∅ ∅).1.1.1.
+    (to_NamedPattern2' ϕ gmap_empty ∅ ∅ 0 0).1.1.1.
   
   Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
