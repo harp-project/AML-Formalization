@@ -865,7 +865,7 @@ Section proof_system_translation.
 
 
   Lemma onlyAddsSubpatterns (C : Cache) (p : Pattern) (evs : EVarSet) (svs: SVarSet):
-    dangling_vars_cached C p ->
+    dangling_vars_cached C p -> (* TODO move this before the bound [es]var conclusions *)
     forall (p' : Pattern),
       C !! p' = None ->
       (exists (np' : NamedPattern),

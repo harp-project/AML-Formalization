@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From stdpp Require Import base pmap gmap fin_maps.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Syntax IndexManipulation.
 
 Require Import String.
 
@@ -127,12 +127,12 @@ Section named.
     | patt_bound_svar n => patt_bound_svar (S n)
     | x => x
     end.
-  
+
   Definition cache_incr_evar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
-    kmap incr_one_evar cache.
+    kmap nest_ex (* incr_one_evar *) cache.
 
   Definition cache_incr_svar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
-    kmap incr_one_svar cache.
+    kmap nest_mu (*incr_one_svar*) cache.
 
   Definition evm_fresh (evm : EVarMap) (ϕ : Pattern) : evar
     := evar_fresh (elements (free_evars ϕ ∪ (list_to_set (map snd (map_to_list evm))))).
@@ -294,7 +294,7 @@ Section named.
               let: (nphi, cache', used_evars', used_svars')
                 := to_NamedPattern2' phi cache_ex used_evars_ex used_svars (S elevel) slevel in
               let: cache'' := (remove_bound_evars (keep_wfcex elevel cache')) ∪ (keep_bound_evars cache) in
-              (npatt_exists x nphi, cache'', used_evars', used_svars)
+              (npatt_exists x nphi, cache'', used_evars', used_svars')
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
               let: used_svars_ex := used_svars ∪ {[X]} in
@@ -302,10 +302,11 @@ Section named.
               let: (nphi, cache', used_evars', used_svars')
                 := to_NamedPattern2' phi cache_ex used_evars used_svars_ex elevel (S slevel) in
               let: cache'' := (remove_bound_svars (keep_wfcmu slevel cache')) ∪ (keep_bound_svars cache) in
-              (npatt_mu X nphi, cache'', used_evars', used_svars)
+              (npatt_mu X nphi, cache'', used_evars', used_svars')
          end
       in
-      (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars).
+      (ψ, <[ϕ:=ψ]>cache', used_evars', used_svars').
+  (* (ex , 0 -> X -> (ex, 1 -> X))  *)
 
   Definition to_NamedPattern2 (ϕ : Pattern) : NamedPattern :=
     (to_NamedPattern2' ϕ gmap_empty ∅ ∅ 0 0).1.1.1.
@@ -594,21 +595,24 @@ Section named_test.
        svar := string;
     |}.
 
-  Inductive Symbols : Set := a.
+  Inductive Symbols : Set := sym (s : string).
   Instance Symbols_dec : EqDecision Symbols.
+  Proof. solve_decision. Defined.
+
+  Instance Symbols_countable : Countable Symbols.
   Proof.
-    unfold EqDecision. intros x y. unfold Decision.
-    repeat decide equality.
+    eapply inj_countable' with (f := (fun x => match x with sym x' => x' end)) (g := sym).
+    intros x. destruct x. reflexivity.
   Defined.
 
-  Definition sig : Signature :=
+  Instance sig : Signature :=
     {| variables := StringMLVariables;
        symbols := Symbols;
        sym_eqdec := Symbols_dec;
     |}.
 
   (* Consider the following pattern in locally nameless representation:
-       ex, ex, 0 ---> ex, 0
+       (ex, (ex, 0)) ---> (ex, 0)
      When we convert this to a named pattern, we want to maintain the invariant
      that identical subterms are equivalent using normal equalty. Specifically,
      the `ex, 0` terms appearing on both sides of the implication should be
@@ -624,13 +628,41 @@ Section named_test.
   Definition phi_ex1 := (@patt_exists sig (patt_exists (patt_bound_evar 0))).
   Definition phi_ex2 := (@patt_exists sig (patt_bound_evar 0)).
   Definition phi_ex := (patt_imp phi_ex1 phi_ex2).
-  Compute to_NamedPattern phi_ex.
-  Compute to_NamedPattern2 phi_ex.
+  
+  Goal (to_NamedPattern phi_ex)
+  = (npatt_imp
+         (npatt_exists "0"%string
+            (npatt_exists "1"%string (npatt_evar "1"%string)))
+         (npatt_exists "0"%string (npatt_evar "0"%string))).
+  Proof. reflexivity. Qed.
 
-  Compute to_NamedPattern2 (@patt_mu sig (patt_mu (patt_bound_svar 1))).
+  Goal (to_NamedPattern2 phi_ex)
+  = (npatt_imp
+      (npatt_exists "0"%string
+        (npatt_exists "1"%string (npatt_evar "1"%string)))
+      (npatt_exists "1"%string (npatt_evar "1"%string))).
+  Proof. reflexivity. Qed.
 
-  Compute to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))).
+  Goal (to_NamedPattern2 (@patt_mu sig (patt_mu (patt_bound_svar 1))))
+    = (npatt_mu "0"%string (npatt_mu "1"%string (npatt_svar "0"%string))).
+  Proof. reflexivity. Qed.
 
+  Goal (to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))))
+    = (npatt_mu "0"%string
+        (npatt_imp (npatt_mu "1"%string (npatt_svar "0"%string))
+          (npatt_svar "0"%string)
+        )
+    ).
+  Proof. reflexivity. Qed. 
+
+  Compute to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
+                                                       (patt_exists (patt_imp (patt_bound_evar 1) patt_bott)))).
+
+
+  (* Another problem *)
+  Compute to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
+                                                       (patt_exists (patt_imp (patt_bound_evar 0) patt_bott)))).
+    (* (ex ,( 0 -> X) -> (ex, 1 -> X))  *)
   Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
   Definition phi_mu2 := (@patt_mu sig (patt_bound_svar 0)).
   Definition phi_mu := (patt_imp phi_mu1 phi_mu2).
