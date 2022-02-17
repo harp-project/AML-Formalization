@@ -185,6 +185,7 @@ Section proof_system_translation.
     unfold nest_mu. apply _.
   Qed.
 
+  (*
   Lemma cache_incr_evar_lookup_None (ϕ : Pattern) (C : Cache):
     (forall b, ϕ <> patt_bound_evar b) ->
     cache_incr_evar C !! ϕ = None ->
@@ -199,7 +200,8 @@ Section proof_system_translation.
     exfalso.
     subst. eapply Hbv. reflexivity.
   Qed.
-
+*)
+(*
   Lemma cache_incr_evar_lookup_Some (ϕ : Pattern) (nϕ : NamedPattern) (C : Cache):
     ~ is_bound_evar ϕ ->
     C !! ϕ = Some nϕ ->
@@ -227,7 +229,7 @@ Section proof_system_translation.
       exfalso. apply Hbv. exists n. reflexivity.
     - assumption.
   Qed.
-
+*)
   
   (* TODO: rename [bevar_occur] to [bevar_dangling] *)
   Definition evar_is_dangling (ϕ : Pattern) (b : db_index) :=
@@ -281,10 +283,10 @@ Section proof_system_translation.
     ∀ (ϕ : Pattern) (nϕ : NamedPattern),
     C !! ϕ = Some nϕ ->
     (
-      ~ is_bound_evar ϕ ->
+      (* ~ is_bound_evar ϕ -> *)
       well_formed_closed_ex_aux ϕ elevel
      ) /\ (
-      ~ is_bound_svar ϕ ->
+      (* ~ is_bound_svar ϕ -> *)
        well_formed_closed_mu_aux ϕ slevel
      ).
   
@@ -338,6 +340,31 @@ Section proof_system_translation.
     intros [b H]. subst p. simpl. exact I.
   Qed.
 
+  Lemma wfcexaux_nestexaux_S p elevel from:
+    well_formed_closed_ex_aux p elevel = true ->
+    well_formed_closed_ex_aux (nest_ex_aux from 1 p) (S elevel) = true.
+  Proof.
+    intros H. move: from elevel H.
+    induction p; intros from elevel H; simpl in *; try reflexivity.
+    { repeat case_match; try reflexivity; try lia; try assumption. }
+    { destruct_and!. split_and!; auto. }
+    { destruct_and!. split_and!; auto. }
+    { auto. }
+    { auto. }
+  Qed.
+
+  Lemma wfcmuaux_nestmuaux_S p elevel from:
+    well_formed_closed_mu_aux p elevel = true ->
+    well_formed_closed_mu_aux (nest_mu_aux from 1 p) (S elevel) = true.
+  Proof.
+    intros H. move: from elevel H.
+    induction p; intros from elevel H; simpl in *; try reflexivity.
+    { repeat case_match; try reflexivity; try lia; try assumption. }
+    { destruct_and!. split_and!; auto. }
+    { destruct_and!. split_and!; auto. }
+    { auto. }
+    { auto. }
+  Qed.
 
   Lemma only_closed_enough_step (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index) :
     well_formed_closed_ex_aux ϕ elevel ->
@@ -455,10 +482,10 @@ Section proof_system_translation.
       rewrite lookup_insert_Some in Hϕ'.
       destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
       {
-        simpl. split; intros Hb; split_and!; auto.
+        simpl. split_and!; assumption.
       }
       {
-        split; intros Hb; eapply IH2; eassumption.
+        split; eapply IH2; eassumption.
       }
     }
     {
@@ -475,10 +502,10 @@ Section proof_system_translation.
       rewrite lookup_insert_Some in Hϕ'.
       destruct Hϕ' as [Hϕ'|Hϕ']; destruct_and!; subst.
       {
-        simpl. split; intros Hb; split_and!; auto.
+        simpl. split_and!; assumption.
       }
       {
-        split; intros Hb; eapply IH2; eassumption.
+        split; eapply IH2; eassumption.
       }
     }
     {
@@ -495,10 +522,13 @@ Section proof_system_translation.
           simpl. split; reflexivity.
         }
         {
-          split; intros Hb.
+          split.
           {
             unfold cache_incr_evar in H0.
             rewrite lookup_kmap_Some in H0.
+            destruct H0 as [i [Hi1 Hi2]]. subst ϕ'.
+            Search well_formed_closed_ex_aux nest_ex_aux.
+            unfold nest_ex.
             replace ϕ' with (incr_one_evar ϕ') in H0.
             2: {
               destruct ϕ'; simpl; try reflexivity.
