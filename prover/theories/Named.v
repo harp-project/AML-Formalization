@@ -655,23 +655,57 @@ Section named_test.
     ).
   Proof. reflexivity. Qed. 
 
-  Compute to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
-                                                       (patt_exists (patt_imp (patt_bound_evar 1) patt_bott)))).
+  Goal (to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
+  (patt_exists (patt_imp (patt_bound_evar 1) patt_bott)))))
+  = (npatt_exists "0"%string
+         (npatt_imp (npatt_imp (npatt_evar "0"%string) npatt_bott)
+            (npatt_exists "1"%string
+               (npatt_imp (npatt_evar "0"%string) npatt_bott)))).
+  Proof. reflexivity. Qed.
 
+  Goal (to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
+  (patt_exists (patt_imp (patt_bound_evar 0) patt_bott)))))
+  = (npatt_exists "0"%string
+         (npatt_imp (npatt_imp (npatt_evar "0"%string) npatt_bott)
+            (npatt_exists "1"%string
+               (npatt_imp (npatt_evar "1"%string) npatt_bott)))).
+  Proof. reflexivity. Qed.
 
-  (* Another problem *)
-  Compute to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
-                                                       (patt_exists (patt_imp (patt_bound_evar 0) patt_bott)))).
-    (* (ex ,( 0 -> X) -> (ex, 1 -> X))  *)
   Definition phi_mu1 := (@patt_mu sig (patt_mu (patt_bound_svar 0))).
   Definition phi_mu2 := (@patt_mu sig (patt_bound_svar 0)).
   Definition phi_mu := (patt_imp phi_mu1 phi_mu2).
-  Compute to_NamedPattern phi_mu.
-  Compute to_NamedPattern2 phi_mu.
+  
+  Goal (to_NamedPattern phi_mu)
+  = (npatt_imp
+  (npatt_mu "0"%string (npatt_mu "1"%string (npatt_svar "1"%string)))
+  (npatt_mu "0"%string (npatt_svar "0"%string))).
+  Proof. reflexivity. Qed.
+
+  Goal (to_NamedPattern2 phi_mu)
+  = (npatt_imp
+         (npatt_mu "0"%string (npatt_mu "1"%string (npatt_svar "1"%string)))
+         (npatt_mu "1"%string (npatt_svar "1"%string))).
+  Proof. reflexivity. Qed.
 
   (* (ex, ex, 1) -> (ex, (0 -> (ex, 1)))  *)
   Definition phi_3 : (@Pattern sig) := (patt_imp (patt_exists (patt_exists (patt_bound_evar 1))) (patt_exists (patt_imp (patt_bound_evar 0) (patt_exists (patt_bound_evar 1))))).
-  Compute (to_NamedPattern phi_3).
-  Compute (to_NamedPattern2 phi_3).
+  
+  Goal (to_NamedPattern phi_3)
+  = (npatt_imp
+         (npatt_exists "0"%string
+            (npatt_exists "1"%string (npatt_evar "0"%string)))
+         (npatt_exists "0"%string
+            (npatt_imp (npatt_evar "0"%string)
+               (npatt_exists "1"%string (npatt_evar "0"%string))))).
+  Proof. reflexivity. Qed.
+
+  Goal (to_NamedPattern2 phi_3)
+  = (npatt_imp
+         (npatt_exists "0"%string
+            (npatt_exists "1"%string (npatt_evar "0"%string)))
+         (npatt_exists "2"%string
+            (npatt_imp (npatt_evar "2"%string)
+               (npatt_exists "3"%string (npatt_evar "2"%string))))).
+  Proof. reflexivity. Qed.
 
 End named_test.
