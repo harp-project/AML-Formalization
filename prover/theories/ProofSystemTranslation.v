@@ -279,6 +279,7 @@ Section proof_system_translation.
     | _ => False
     end.
 
+  (* The cache contains only patterns which are 'closed enough' with respect to the current levels. *)
   Definition only_closed_enough_prop (C : Cache) (elevel : db_index) (slevel : db_index) :=
     ∀ (ϕ : Pattern) (nϕ : NamedPattern),
     C !! ϕ = Some nϕ ->
@@ -356,6 +357,32 @@ Section proof_system_translation.
   Lemma wfcmuaux_nestmuaux_S p elevel from:
     well_formed_closed_mu_aux p elevel = true ->
     well_formed_closed_mu_aux (nest_mu_aux from 1 p) (S elevel) = true.
+  Proof.
+    intros H. move: from elevel H.
+    induction p; intros from elevel H; simpl in *; try reflexivity.
+    { repeat case_match; try reflexivity; try lia; try assumption. }
+    { destruct_and!. split_and!; auto. }
+    { destruct_and!. split_and!; auto. }
+    { auto. }
+    { auto. }
+  Qed.
+
+  Lemma wfcmuaux_nestexaux p elevel from:
+    well_formed_closed_mu_aux p elevel = true ->
+    well_formed_closed_mu_aux (nest_ex_aux from 1 p) elevel = true.
+  Proof.
+    intros H. move: from elevel H.
+    induction p; intros from elevel H; simpl in *; try reflexivity.
+    { repeat case_match; try reflexivity; try lia; try assumption. }
+    { destruct_and!. split_and!; auto. }
+    { destruct_and!. split_and!; auto. }
+    { auto. }
+    { auto. }
+  Qed.
+
+  Lemma wfcexaux_nestmuaux p elevel from:
+    well_formed_closed_ex_aux p elevel = true ->
+    well_formed_closed_ex_aux (nest_mu_aux from 1 p) elevel = true.
   Proof.
     intros H. move: from elevel H.
     induction p; intros from elevel H; simpl in *; try reflexivity.
@@ -529,43 +556,13 @@ Section proof_system_translation.
             destruct H0 as [i [Hi1 Hi2]]. subst ϕ'.
             Search well_formed_closed_ex_aux nest_ex_aux.
             unfold nest_ex.
-            replace ϕ' with (incr_one_evar ϕ') in H0.
-            2: {
-              destruct ϕ'; simpl; try reflexivity.
-              exfalso. apply Hb. exists n0. reflexivity.
-            }
-            rewrite lookup_kmap in H0.
-            specialize (Hocep _ _ H0).
-            destruct Hocep as [Hocepe Hoceps].
-            eapply well_formed_closed_ex_aux_ind.
-            2: apply Hocepe.
-            lia.
-            apply Hb.
+            apply wfcexaux_nestexaux_S. eapply Hocep. eassumption.
           }
           {
             unfold cache_incr_evar in H0.
             rewrite lookup_kmap_Some in H0.
             destruct H0 as [i [Hi1 Hi2]].
-            subst. destruct i; simpl in *; auto.
-            {
-              exfalso. apply Hb. exists n0. reflexivity.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
+            subst. apply wfcmuaux_nestexaux. eapply Hocep. eassumption.
           }
         }
       }
@@ -585,25 +582,11 @@ Section proof_system_translation.
         2: {
           unfold keep_bound_evars in H0.
           rewrite map_filter_lookup_Some in H0.
-          destruct H0 as [_ H0].
+          destruct H0 as [H00 H0].
           unfold is_bound_evar_entry in H0. simpl in H0.
-          split; intros H'. contradiction.
-          destruct ϕ'; simpl in *; auto.
-          {
-            exfalso. apply H'. exists n0. reflexivity.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
+          destruct H0 as [dbi Hdbi]. subst. simpl.
+          pose proof (IH' := Hocep _ _ H00). simpl in IH'.
+          apply IH'.
         }
         unfold remove_bound_evars in H0.
         rewrite map_filter_lookup_Some in H0.
@@ -611,13 +594,13 @@ Section proof_system_translation.
         unfold keep_wfcex in H01.
         rewrite map_filter_lookup_Some in H01.
         destruct H01 as [H011 H012].
-        split; intros Hb.
+        split.
         {
           apply H012.
         }
         {
           specialize (IH _ _ H011).
-          apply IH. apply Hb.
+          apply IH.
         }
       }
     }
@@ -635,46 +618,19 @@ Section proof_system_translation.
           simpl. split; reflexivity.
         }
         {
-          split; intros Hb.
+          split.
           {
             unfold cache_incr_svar in H0.
             rewrite lookup_kmap_Some in H0.
-            destruct H0 as [i [Hi1 Hi2]].
-            subst. destruct i; simpl in *; auto.
-            {
-              exfalso. apply Hb. exists n0. reflexivity.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
-            {
-              pose proof (Htmp := Hocep _ _ Hi2).
-              apply Htmp. intros [x Hx]. inversion Hx.
-            }
+            destruct H0 as [i [Hi1 Hi2]]. subst ϕ'.
+            unfold nest_mu.
+            apply wfcexaux_nestmuaux. eapply Hocep. eassumption.
           }
           {
-            unfold cache_incr_svar in H0.
-            replace ϕ' with (incr_one_svar ϕ') in H0.
-            2: {
-              destruct ϕ'; simpl; try reflexivity.
-              exfalso. apply Hb. exists n0. reflexivity.
-            }
-            rewrite lookup_kmap in H0.
-            specialize (Hocep _ _ H0).
-            destruct Hocep as [Hocepe Hoceps].
-            eapply well_formed_closed_mu_aux_ind.
-            2: apply Hoceps.
-            lia.
-            apply Hb.
+            unfold cache_incr_evar in H0.
+            rewrite lookup_kmap_Some in H0.
+            destruct H0 as [i [Hi1 Hi2]].
+            subst. apply wfcmuaux_nestmuaux_S. eapply Hocep. eassumption.
           }
         }
       }
@@ -692,38 +648,24 @@ Section proof_system_translation.
         2: { apply remove_disjoint_keep_s. }
         destruct H0 as [H0|H0].
         2: {
-          unfold keep_bound_svars in H0.
+          unfold keep_bound_evars in H0.
           rewrite map_filter_lookup_Some in H0.
-          destruct H0 as [_ H0].
-          unfold is_bound_svar_entry in H0. simpl in H0.
-          split; intros H'. 2: contradiction.
-          destruct ϕ'; simpl in *; auto.
-          {
-            exfalso. apply H'. exists n0. reflexivity.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
-          {
-            destruct H0 as [x Hx]. inversion Hx.
-          }
+          destruct H0 as [H00 H0].
+          unfold is_bound_evar_entry in H0. simpl in H0.
+          destruct H0 as [dbi Hdbi]. subst. simpl.
+          pose proof (IH' := Hocep _ _ H00). simpl in IH'.
+          apply IH'.
         }
         unfold remove_bound_svars in H0.
         rewrite map_filter_lookup_Some in H0.
         destruct H0 as [H01 H02].
-        unfold keep_wfcmu in H01.
+        unfold keep_wfcex in H01.
         rewrite map_filter_lookup_Some in H01.
         destruct H01 as [H011 H012].
-        split; intros Hb.
+        split.
         {
           specialize (IH _ _ H011).
-          apply IH. apply Hb.
+          apply IH.
         }
         {
           apply H012.
