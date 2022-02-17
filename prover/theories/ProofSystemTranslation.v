@@ -718,90 +718,17 @@ Section proof_system_translation.
       rewrite -Heqp0. clear Heqp0.
       rewrite map_subseteq_spec.
       intros ψ nψ Hψ.
-      destruct (decide (is_bound_evar ψ)).
-      + rewrite lookup_union_r.
-        { unfold remove_bound_evars.
-          apply map_filter_lookup_None_2.
-          right. intros nψ'. intros _.
-          unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
-        }
-        unfold keep_bound_evars.
-        apply map_filter_lookup_Some_2.
-        { exact Hψ. }
-        { unfold is_bound_evar_entry. simpl. assumption. }
-      + rewrite lookup_union_l.
-        { unfold remove_bound_evars.
-          unfold is_Some. exists nψ.
-          apply map_filter_lookup_Some_2.
-          { 
-            specialize (IHϕ (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ)]> (cache_incr_evar C)) (evs ∪ {[evs_fresh evs ϕ]}) svs (S elevel) slevel ltac:(assumption) ltac:(assumption)).
-            rewrite map_subseteq_spec in IHϕ.
-            unfold keep_wfcex.
-            rewrite map_filter_lookup_Some.
-            split.
-            2: { simpl. eapply Hocep. eassumption. }
-            apply IHϕ.
-            { apply only_closed_enough_prop_shift_e. apply Hocep. }
-            apply lookup_insert_Some.
-            right.
-            split.
-            * intros Hcontra. apply n0. exists 0. subst. reflexivity.
-            * apply cache_incr_evar_lookup_Some; assumption.
-          }
-          { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
-        }
-        unfold remove_bound_evars.
-        apply map_filter_lookup_Some_2.
-        { setoid_rewrite map_subseteq_spec in IHϕ.
-          apply IHϕ.
-          apply lookup_insert_Some.
-          right.
-          split.
-          * intros Hcontra. apply n0. exists 0. subst. reflexivity.
-          * apply cache_incr_evar_lookup_Some; assumption.
-        }
-        { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
+      rewrite lookup_union_l.
+      { rewrite Hψ. auto. }
+      { exact Hψ. }
     - inversion Heqp; subst; clear Heqp.
-      replace g with (n, g, e0, s0).1.1.2 by reflexivity.
+      replace g with (n, g, e0, s).1.1.2 by reflexivity.
       rewrite -Heqp0. clear Heqp0.
       rewrite map_subseteq_spec.
       intros ψ nψ Hψ.
-      destruct (decide (is_bound_svar ψ)).
-      + rewrite lookup_union_r.
-        { unfold remove_bound_evars.
-          apply map_filter_lookup_None_2.
-          right. intros nψ'. intros _.
-          unfold is_bound_evar_entry. simpl. intros HCC. apply HCC. assumption.
-        }
-        unfold keep_bound_svars.
-        apply map_filter_lookup_Some_2.
-        { exact Hψ. }
-        { unfold is_bound_svar_entry. simpl. assumption. }
-      + rewrite lookup_union_l.
-        { unfold remove_bound_svars.
-          unfold is_Some. exists nψ.
-          apply map_filter_lookup_Some_2.
-          { setoid_rewrite map_subseteq_spec in IHϕ.
-            apply IHϕ.
-            apply lookup_insert_Some.
-            right.
-            split.
-            * intros Hcontra. apply n0. exists 0. subst. reflexivity.
-            * apply cache_incr_svar_lookup_Some; assumption.
-          }
-          { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
-        }
-        unfold remove_bound_svars.
-        apply map_filter_lookup_Some_2.
-        { setoid_rewrite map_subseteq_spec in IHϕ.
-          apply IHϕ.
-          apply lookup_insert_Some.
-          right.
-          split.
-          * intros Hcontra. apply n0. exists 0. subst. reflexivity.
-          * apply cache_incr_svar_lookup_Some; assumption.
-        }
-        { intros Hcontra. apply n0. destruct Hcontra. simpl in H. subst ψ. exists x. reflexivity. }
+      rewrite lookup_union_l.
+      { rewrite Hψ. auto. }
+      { exact Hψ. }
   Qed. 
 
   Definition is_cached (C : Cache) (p : Pattern) : Prop
