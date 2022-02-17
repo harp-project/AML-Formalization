@@ -8,6 +8,8 @@ From MatchingLogic Require Import Syntax IndexManipulation.
 
 Require Import String.
 
+Import BoundVarSugar.
+
 Section named.
   Context
     {Σ : Signature}
@@ -293,7 +295,11 @@ Section named.
               let: cache_ex := <[patt_bound_evar 0:=npatt_evar x]>(cache_incr_evar cache) in
               let: (nphi, cache', used_evars', used_svars')
                 := to_NamedPattern2' phi cache_ex used_evars_ex used_svars (S elevel) slevel in
-              let: cache'' := (remove_bound_evars (keep_wfcex elevel cache')) ∪ (keep_bound_evars cache) in
+              (* let: cache'' := (remove_bound_evars (keep_wfcex elevel cache')) ∪ (keep_bound_evars cache) in *)
+              (* The old cache has to be on the left side of the union in order to preserve all elements from it.
+                 That is what we want: the new cache [cache'] will contain shifted bound variables
+               *)
+              let: cache'' := cache ∪ (keep_wfcex elevel cache') in
               (npatt_exists x nphi, cache'', used_evars', used_svars')
          | patt_mu phi
            => let: X := svs_fresh used_svars phi in
@@ -301,7 +307,8 @@ Section named.
               let: cache_ex := <[patt_bound_svar 0:=npatt_svar X]>(cache_incr_svar cache) in
               let: (nphi, cache', used_evars', used_svars')
                 := to_NamedPattern2' phi cache_ex used_evars used_svars_ex elevel (S slevel) in
-              let: cache'' := (remove_bound_svars (keep_wfcmu slevel cache')) ∪ (keep_bound_svars cache) in
+              (* let: cache'' := (remove_bound_svars (keep_wfcmu slevel cache')) ∪ (keep_bound_svars cache) in *)
+              let: cache'' := cache ∪ (keep_wfcmu slevel cache') in
               (npatt_mu X nphi, cache'', used_evars', used_svars')
          end
       in
@@ -647,13 +654,14 @@ Section named_test.
     = (npatt_mu "0"%string (npatt_mu "1"%string (npatt_svar "0"%string))).
   Proof. reflexivity. Qed.
 
+  Compute (to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0)))).
   Goal (to_NamedPattern2 (@patt_mu sig (patt_imp (patt_mu (patt_bound_svar 1)) (patt_bound_svar 0))))
     = (npatt_mu "0"%string
         (npatt_imp (npatt_mu "1"%string (npatt_svar "0"%string))
           (npatt_svar "0"%string)
         )
     ).
-  Proof. reflexivity. Qed. 
+  Proof. reflexivity. Qed.
 
   Goal (to_NamedPattern2 (@patt_exists sig (patt_imp (patt_imp (patt_bound_evar 0) patt_bott)
   (patt_exists (patt_imp (patt_bound_evar 1) patt_bott)))))

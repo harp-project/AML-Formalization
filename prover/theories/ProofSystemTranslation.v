@@ -786,7 +786,7 @@ Section proof_system_translation.
             split.
             2: { simpl. eapply Hocep. eassumption. }
             apply IHϕ.
-            {  }
+            { apply only_closed_enough_prop_shift_e. apply Hocep. }
             apply lookup_insert_Some.
             right.
             split.
