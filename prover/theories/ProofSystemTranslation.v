@@ -673,7 +673,41 @@ Section proof_system_translation.
       }
     }
   Qed.
+
+  Lemma only_closed_enough_prop_shift_e elevel slevel C e:
+    only_closed_enough_prop C elevel slevel ->
+    only_closed_enough_prop (<[b0:=npatt_evar e]> (cache_incr_evar C)) (S elevel) slevel.
+  Proof.
+    intros Hocep. intros ϕ nϕ Hϕ.
+    rewrite lookup_insert_Some in Hϕ.
+    destruct Hϕ as [Hϕ|Hϕ].
+    { destruct Hϕ. subst. simpl. split; reflexivity. }
+    destruct Hϕ as [Hϕ1 Hϕ2].
+    unfold cache_incr_evar in Hϕ2.
+    rewrite lookup_kmap_Some in Hϕ2.
+    destruct Hϕ2 as [i [Hi1 Hi2]]. subst.
+    split.
+    { apply wfcexaux_nestexaux_S. eapply Hocep. eassumption. }
+    { apply wfcmuaux_nestexaux. eapply Hocep. eassumption. }
+  Qed.
   
+  Lemma only_closed_enough_prop_shift_s elevel slevel C s:
+    only_closed_enough_prop C elevel slevel ->
+    only_closed_enough_prop (<[B0:=npatt_svar s]> (cache_incr_svar C)) elevel (S slevel).
+  Proof.
+    intros Hocep. intros ϕ nϕ Hϕ.
+    rewrite lookup_insert_Some in Hϕ.
+    destruct Hϕ as [Hϕ|Hϕ].
+    { destruct Hϕ. subst. simpl. split; reflexivity. }
+    destruct Hϕ as [Hϕ1 Hϕ2].
+    unfold cache_incr_evar in Hϕ2.
+    rewrite lookup_kmap_Some in Hϕ2.
+    destruct Hϕ2 as [i [Hi1 Hi2]]. subst.
+    split.
+    { apply wfcexaux_nestmuaux. eapply Hocep. eassumption. }
+    { apply wfcmuaux_nestmuaux_S. eapply Hocep. eassumption. }
+  Qed.
+
   Lemma to_NamedPattern2'_extends_cache (C : Cache) ϕ evs svs (elevel : db_index) (slevel : db_index):
     well_formed_closed_ex_aux ϕ elevel ->
     well_formed_closed_mu_aux ϕ slevel ->
@@ -725,7 +759,7 @@ Section proof_system_translation.
       rewrite Heqp0 in IHϕ1. simpl in IHϕ1. assumption.
     - inversion Heqp; subst; clear Heqp.
       simpl in Hwfcex,Hwfcmu.
-      replace g with (n, g, e0, s0).1.1.2 by reflexivity.
+      replace g with (n, g, e0, s).1.1.2 by reflexivity.
       rewrite -Heqp0. clear Heqp0.
       rewrite map_subseteq_spec.
       intros ψ nψ Hψ.
@@ -745,13 +779,14 @@ Section proof_system_translation.
           unfold is_Some. exists nψ.
           apply map_filter_lookup_Some_2.
           { 
-            specialize (IHϕ (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ)]> (cache_incr_evar C)) (evs ∪ {[evs_fresh evs ϕ]}) s (S elevel) slevel ltac:(assumption) ltac:(assumption)).
+            specialize (IHϕ (<[BoundVarSugar.b0:=npatt_evar (evs_fresh evs ϕ)]> (cache_incr_evar C)) (evs ∪ {[evs_fresh evs ϕ]}) svs (S elevel) slevel ltac:(assumption) ltac:(assumption)).
             rewrite map_subseteq_spec in IHϕ.
             unfold keep_wfcex.
             rewrite map_filter_lookup_Some.
             split.
-            2: { simpl. Print only_closed_enough_prop.  eapply Hocep;[eassumption|]. intros HContra. apply n0. apply bound_evar_  }
+            2: { simpl. eapply Hocep. eassumption. }
             apply IHϕ.
+            {  }
             apply lookup_insert_Some.
             right.
             split.
