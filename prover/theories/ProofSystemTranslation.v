@@ -4,7 +4,7 @@ From Coq Require Import Strings.String.
 From Equations Require Import Equations.
 
 From stdpp Require Export base.
-From MatchingLogic Require Import Syntax Semantics SignatureHelper ProofSystem ProofMode.
+From MatchingLogic Require Import Syntax Semantics SignatureHelper ProofSystem ProofMode IndexManipulation.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
@@ -12,7 +12,7 @@ From stdpp Require Import base finite gmap mapset listset_nodup numbers propset 
 From MatchingLogic Require Import extralibrary.
 
 Import ProofSystem.Notations.
-
+Import BoundVarSugar.
 (* TODO: move this near to the definition of Pattern *)
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
@@ -80,7 +80,111 @@ Section proof_system_translation.
     unfold Inj. intros x y H.
     induction x,y; simpl in *; congruence.
   Qed.
+
+  Instance nest_ex_aux_inj level amount : Inj eq eq (nest_ex_aux level amount).
+  Proof.
+    unfold Inj. intros x y H.
+    remember (size' x + size' y) as sz.
+    assert (Hsz: size' x + size' y <= sz) by lia.
+    clear Heqsz.
+    move: level amount x y H Hsz.
+    induction sz;
+      intros level amount x y H Hsz;
+      destruct x,y; simpl in *; try lia; try assumption; try congruence.
+    {
+      repeat case_match; inversion H; subst.
+      { reflexivity. }
+      { assert (amount = 0) by lia. subst. replace (n0 + 0) with n0 by lia. reflexivity. }
+      { assert (amount = 0) by lia. subst. replace (n + 0) with n by lia. reflexivity. }
+      { assert (n = n0) by lia. subst. reflexivity. }
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      pose proof (IH2 := IHsz _ _ _ _ H0).
+      rewrite -> IH1 by lia.
+      rewrite -> IH2 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      pose proof (IH2 := IHsz _ _ _ _ H0).
+      rewrite -> IH1 by lia.
+      rewrite -> IH2 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      rewrite -> IH1 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      rewrite -> IH1 by lia.
+      reflexivity.
+    }
+  Qed.
+
+  Instance nest_ex_inj : Inj eq eq nest_ex.
+  Proof.
+    unfold nest_ex. apply _.
+  Qed.
   
+  Instance nest_mu_aux_inj level amount : Inj eq eq (nest_mu_aux level amount).
+  Proof.
+    unfold Inj. intros x y H.
+    remember (size' x + size' y) as sz.
+    assert (Hsz: size' x + size' y <= sz) by lia.
+    clear Heqsz.
+    move: level amount x y H Hsz.
+    induction sz;
+      intros level amount x y H Hsz;
+      destruct x,y; simpl in *; try lia; try assumption; try congruence.
+    {
+      repeat case_match; inversion H; subst.
+      { reflexivity. }
+      { assert (amount = 0) by lia. subst. replace (n0 + 0) with n0 by lia. reflexivity. }
+      { assert (amount = 0) by lia. subst. replace (n + 0) with n by lia. reflexivity. }
+      { assert (n = n0) by lia. subst. reflexivity. }
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      pose proof (IH2 := IHsz _ _ _ _ H0).
+      rewrite -> IH1 by lia.
+      rewrite -> IH2 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      pose proof (IH2 := IHsz _ _ _ _ H0).
+      rewrite -> IH1 by lia.
+      rewrite -> IH2 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      rewrite -> IH1 by lia.
+      reflexivity.
+    }
+    {
+      simplify_eq.
+      pose proof (IH1 := IHsz _ _ _ _ H).
+      rewrite -> IH1 by lia.
+      reflexivity.
+    }
+  Qed.
+
+  Instance nest_mu_inj : Inj eq eq nest_mu.
+  Proof.
+    unfold nest_mu. apply _.
+  Qed.
+
   Lemma cache_incr_evar_lookup_None (ϕ : Pattern) (C : Cache):
     (forall b, ϕ <> patt_bound_evar b) ->
     cache_incr_evar C !! ϕ = None ->
@@ -394,6 +498,7 @@ Section proof_system_translation.
           split; intros Hb.
           {
             unfold cache_incr_evar in H0.
+            rewrite lookup_kmap_Some in H0.
             replace ϕ' with (incr_one_evar ϕ') in H0.
             2: {
               destruct ϕ'; simpl; try reflexivity.
