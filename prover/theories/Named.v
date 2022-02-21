@@ -451,43 +451,43 @@ Section named.
     end.
 
   Lemma named_well_formed_positive_app_proj1 (p q : NamedPattern):
-    named_well_formed_positive (npatt_app p q) = true ->
-    named_well_formed_positive p = true.
+    named_well_formed_positive (npatt_app p q) ->
+    named_well_formed_positive p.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
 
   Lemma named_well_formed_positive_app_proj2 (p q : NamedPattern):
-    named_well_formed_positive (npatt_app p q) = true ->
-    named_well_formed_positive q = true.
+    named_well_formed_positive (npatt_app p q) ->
+    named_well_formed_positive q.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
 
   Lemma named_well_formed_positive_imp_proj1 (p q : NamedPattern):
-    named_well_formed_positive (npatt_imp p q) = true ->
-    named_well_formed_positive p = true.
+    named_well_formed_positive (npatt_imp p q) ->
+    named_well_formed_positive p.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
 
   Lemma named_well_formed_positive_imp_proj2 (p q : NamedPattern):
-    named_well_formed_positive (npatt_imp p q) = true ->
-    named_well_formed_positive q = true.
+    named_well_formed_positive (npatt_imp p q) ->
+    named_well_formed_positive q.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
 
   Lemma named_well_formed_positive_exists_proj (e : evar) (p : NamedPattern):
-    named_well_formed_positive (npatt_exists e p) = true ->
-    named_well_formed_positive p = true.
+    named_well_formed_positive (npatt_exists e p) ->
+    named_well_formed_positive p.
   Proof.
     intros H. simpl in H. assumption.
   Qed.
 
   Lemma named_well_formed_positive_mu_proj (s : svar) (p : NamedPattern):
-    named_well_formed_positive (npatt_mu s p) = true ->
-    named_well_formed_positive p = true.
+    named_well_formed_positive (npatt_mu s p) ->
+    named_well_formed_positive p.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.

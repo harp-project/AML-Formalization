@@ -1,6 +1,8 @@
 From Coq Require Import Strings.String Strings.Ascii.
 
-From MatchingLogicProver Require Import Named Metamath.
+From Equations Require Import Equations.
+
+From MatchingLogicProver Require Import Named Metamath NamedProofSystem.
 From MatchingLogic Require Import Syntax ProofSystem.
 
 From stdpp Require Import base countable listset_nodup.
@@ -174,34 +176,34 @@ Section gen.
  (* Solve All Obligations with intros; subst; reflexivity. *)
 
 
-  Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
+  Fixpoint proof_size' Γ (ϕ : NamedPattern) (pf : NP_ML_proof_system Γ ϕ) : nat :=
     match pf with
-    | hypothesis _ _ _ _ => 1
-    | P1 _ _ _ _ _ => 1
-    | P2 _ _ _ _ _ _ _ => 1
-    | P3 _ _ _ => 1
-    | Modus_ponens _ _ _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
-    | Ex_quan _ _ _ _ => 1
-    | Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
-    | Prop_bott_left _ _ _ => 1
-    | Prop_bott_right _ _ _ => 1
-    | Prop_disj_left _ _ _ _ _ _ _ => 1
-    | Prop_disj_right _ _ _ _ _ _ _ => 1
-    | Prop_ex_left _ _ _ _ _ => 1
-    | Prop_ex_right _ _ _ _ _ => 1
-    | Framing_left _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Framing_right _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Pre_fixp _ _ _ => 1
-    | Knaster_tarski _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Existence _ => 1
-    | Singleton_ctx _ _ _ _ _ _ => 1
+    | N_hypothesis _ _ _ _ => 1
+    | N_P1 _ _ _ _ _ => 1
+    | N_P2 _ _ _ _ _ _ _ => 1
+    | N_P3 _ _ _ => 1
+    | N_Modus_ponens _ _ _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
+    | N_Ex_quan _ _ _ _ _ => 1
+    | N_Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
+    | N_Prop_bott_left _ _ _ => 1
+    | N_Prop_bott_right _ _ _ => 1
+    | N_Prop_disj_left _ _ _ _ _ _ _ => 1
+    | N_Prop_disj_right _ _ _ _ _ _ _ => 1
+    | N_Prop_ex_left _ _ _ _ _ _ _ => 1
+    | N_Prop_ex_right _ _ _ _ _ _ _ => 1
+    | N_Framing_left _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | N_Framing_right _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | N_Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | N_Pre_fixp _ _ _ => 1
+    | N_Knaster_tarski _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | N_Existence _ _ => 1
+    | N_Singleton_ctx _ _ _ _ _ => 1
     end.
 
-  Definition proof_size'' Γ (x : {ϕ : Pattern & ML_proof_system Γ ϕ}) :=
+  Definition proof_size'' Γ (x : {ϕ : NamedPattern & NP_ML_proof_system Γ ϕ}) :=
     proof_size' Γ (projT1 x) (projT2 x).
 
-  Definition proof2proof'_stack Γ := list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label).
+  Definition proof2proof'_stack Γ := list ({ϕ : NamedPattern & NP_ML_proof_system Γ ϕ} + Label).
   
   Definition proof2proof'_stack_size Γ (s : proof2proof'_stack Γ)
     := (fold_right
@@ -222,89 +224,118 @@ Section gen.
   (* (exists, 0) -> (exists, exists, 0)  *)
   (* (exists x, x) -> (phi -> (exists y, y)) *)
 
-  Print Ex_quan.
-
  Equations? proof2proof'
             Γ
             (acc : list Label)
-            (pfs : list ({ϕ : Pattern & ML_proof_system Γ ϕ} + Label))
-    : list Label
-    by wf (proof2proof'_stack_size Γ pfs) lt :=
+            (pfs : list ({ϕ : NamedPattern & NP_ML_proof_system Γ ϕ} + Label))
+   : list Label
+   by wf (proof2proof'_stack_size Γ pfs) lt :=
+
     
     proof2proof' Γ acc [] := reverse acc ;
     
     proof2proof' Γ acc ((inr l)::pfs')
       := proof2proof' Γ (l::acc) pfs' ;
     
-    proof2proof' Γ acc ((inl (existT ϕ (P1 _ p q _ _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (N_P1 _ p q wfp _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-1"]
-              ++ (reverse (pattern2proof (to_NamedPattern2 q)))
-              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ (reverse (pattern2proof q _))
+              ++ (reverse (pattern2proof p _))
               ++ acc)
            pfs' ;
-    
-    proof2proof' Γ acc ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs')
+
+    proof2proof' Γ acc ((inl (existT ϕ (N_P2 _ p q r _ _ _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-2"]
-              ++ (reverse (pattern2proof (to_NamedPattern2 r)))
-              ++ (reverse (pattern2proof (to_NamedPattern2 q)))
-              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ (reverse (pattern2proof r _))
+              ++ (reverse (pattern2proof q _))
+              ++ (reverse (pattern2proof p _))
               ++ acc)
            pfs' ;
-    
-    proof2proof' Γ acc ((inl (existT ϕ (P3 _ p _)))::pfs')
+
+    proof2proof' Γ acc ((inl (existT ϕ (N_P3 _ p _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-3"]
-              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ (reverse (pattern2proof p _))
               ++ acc)
            pfs' ;
 
-    proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
+    proof2proof' Γ acc ((inl (existT _ (N_Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
-           ((reverse (pattern2proof (to_NamedPattern2 q)))
-              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+           ((reverse (pattern2proof q _))
+              ++ (reverse (pattern2proof p _))
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
-    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (N_Ex_quan _ p x y _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-exists"]
-              ++ (reverse (pattern2proof (to_NamedPattern2 (instantiate p (patt_free_evar y)))))
-              ++ (reverse (pattern2proof (to_NamedPattern2 p)))
+              ++ (reverse (pattern2proof p _))
               ++ acc)
            pfs' ;
 
+    proof2proof' Γ acc ((inl (existT _ (N_Ex_gen _ p q x _ _ pfpiq _)))::pfs')
+      := proof2proof'
+           Γ
+           ((reverse (pattern2proof p _))
+              ++ (reverse (pattern2proof q _))
+              ++ acc)
+           ((inl (existT _ pfpiq))::(inr (lbl "proof-rule-gen"))::pfs') ;
+    
     proof2proof' Γ prefix ((inl _)::_) := []
   .
   Proof.
+    - apply Is_true_eq_true. assumption.
+    - apply Is_true_eq_true. assumption.
     - unfold proof2proof'_stack_size. simpl. lia.
+    - apply Is_true_eq_true. assumption.
+    - apply Is_true_eq_true. assumption.
+    - apply Is_true_eq_true. assumption.
     - unfold proof2proof'_stack_size. simpl. lia.
+    - apply Is_true_eq_true. assumption.
     - unfold proof2proof'_stack_size. simpl. lia.
+    - eapply named_well_formed_positive_imp_proj2. apply Is_true_eq_true. eassumption.
+    - apply Is_true_eq_true. assumption.
     - unfold proof2proof'_stack_size.
       rewrite !map_cons. simpl.
       unfold proof_size''. simpl.
-      simpl.
-      remember (proof_size' Γ (patt_imp p q) pfpiq) as A.
+      remember (proof_size' Γ (npatt_imp p q) pfpiq) as A.
       remember (proof_size' Γ p pfp) as B.
       remember ((foldr Init.Nat.add 0
                        (map
-                          (λ it : {ϕ : Pattern & ML_proof_system Γ ϕ} + Label,
+                          (λ it : {ϕ : NamedPattern & NP_ML_proof_system Γ ϕ} + Label,
                                   match it with
                                   | inl p0 => proof_size' Γ (projT1 p0) (projT2 p0) + (proof_size' Γ (projT1 p0) (projT2 p0) + 0)
                                   | inr _ => 1
                                   end) pfs'))) as C.
       lia.
+    - apply Is_true_eq_true. assumption.
     - unfold proof2proof'_stack_size. simpl. lia.
+    - apply Is_true_eq_true. assumption.
+    - apply Is_true_eq_true. assumption.
+    - unfold proof2proof'_stack_size. rewrite !map_cons. simpl.
+      unfold proof_size''. simpl.
+      remember (proof_size' Γ (npatt_imp p q) pfpiq) as A.
+      remember (foldr Init.Nat.add 0
+                       (map
+                          (λ it : {ϕ : NamedPattern & NP_ML_proof_system Γ ϕ} + Label,
+                              match it with
+                              | inl p0 =>
+                                  proof_size' Γ (projT1 p0) (projT2 p0) +
+                                    (proof_size' Γ (projT1 p0) (projT2 p0) + 0)
+                              | inr _ => 1
+                              end) pfs')) as B.
+      lia.
     - unfold proof2proof'_stack_size. simpl. lia.
   Defined.
 
-  Definition proof2proof Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : list Label :=
+  Definition proof2proof Γ (ϕ : NamedPattern) (pf : NP_ML_proof_system Γ ϕ) : list Label :=
     proof2proof' Γ [] [(inl (existT ϕ pf))].
   
   
@@ -325,14 +356,13 @@ Section gen.
     end.
    *)
   
-  Definition proof2database Γ (ϕ : Pattern) (proof : ML_proof_system Γ ϕ) : Database :=
-    let named := to_NamedPattern2 ϕ in
+  Definition proof2database Γ (ϕ : NamedPattern) (proof : NP_ML_proof_system Γ ϕ) : Database :=
     [oss_inc (include_stmt "mm/matching-logic.mm")] ++
-    (dependenciesForPattern named)
+    (dependenciesForPattern ϕ)
       ++ [oss_s (stmt_assert_stmt (as_provable (ps
                                                   (lbl "the-proof")
                                                   (tc (constant (ms "|-")))
-                                                  (pattern2mm named)
+                                                  (pattern2mm ϕ)
                                                   (pf (proof2proof Γ ϕ proof))
          )))].
   

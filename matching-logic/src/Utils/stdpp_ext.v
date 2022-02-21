@@ -445,7 +445,7 @@ Proof.
     }
     rewrite -> H2 at 4.
 
-    rewrite zip_with_take_r.
+    rewrite zip_with_take_r;
     reflexivity.
 Qed.
 

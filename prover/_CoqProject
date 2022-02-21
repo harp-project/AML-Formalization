@@ -1,4 +1,5 @@
 -R theories MatchingLogicProver
+-R ../matching-logic/src MatchingLogic
 
 theories/Metamath.v
 theories/Matchers.v
@@ -6,7 +7,5 @@ theories/NMatchers.v
 theories/MLTauto.v
 theories/Named.v
 theories/NamedProofSystem.v
-theories/MMProofExtractor.v
-theories/TEST_MMProofExtractor.v
 theories/ProofSystemTranslation.v
 theories/MetamathTranslation.v
