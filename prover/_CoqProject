@@ -9,3 +9,4 @@ theories/Named.v
 theories/NamedProofSystem.v
 theories/ProofSystemTranslation.v
 theories/MetamathTranslation.v
+theories/TEST_MetamathTranslation.v

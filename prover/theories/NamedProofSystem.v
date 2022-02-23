@@ -6,7 +6,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Export base.
 From MatchingLogic Require Import Syntax SignatureHelper ProofSystem ProofMode.
-From MatchingLogicProver Require Import MMProofExtractor Named.
+From MatchingLogicProver Require Import Named.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset.
 
