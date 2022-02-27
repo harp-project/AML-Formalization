@@ -135,8 +135,25 @@ Section gen.
       [(ms "("); (ms "\mu")] ++ msX ++ msp' ++ [(ms ")")]
     end.
 
+  Print npatt_mu.
+  Program Fixpoint pattern2pos (X : svar) (p : NamedPattern)
+          (wfp : named_well_formed_positive (npatt_mu X p) = true) : list Label :=
+    match p with
+    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (lbl "positive-in-var")]
+    | _ => []
+    end.
   (* Converts NamedPattern p to Metamath proof that p is a Pattern *)
   (* TODO: need to make sure mu is positive *)
+  (* svar-X-is-set-var set-var-is-var svar-X-is-set-var set-var-is-var positive-in-var *)
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H0. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H0. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H1. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H1. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H1. Defined.
+  Next Obligation. intros. unfold wildcard'. unfold not; intros. inversion H1. Defined.
+
+  Print named_well_formed_positive.
  Program Fixpoint pattern2proof (p : NamedPattern) (wfp : named_well_formed_positive p = true) : list Label :=
     match p with
     | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-pattern"))]
@@ -164,15 +181,17 @@ Section gen.
       let wfp' := @named_well_formed_positive_mu_proj _ X p' wfp in
       let lsX := [(isSetVar X)] in
       let lsp' := pattern2proof p' wfp' in
-      lsp' ++ lsX ++ [(lbl "mu-is-pattern")]
+      let lsPos := pattern2pos X p' wfp' in
+      lsp' ++ lsX ++ [(isSetVar X); (lbl "set-var-is-var")] ++ lsPos ++ [(lbl "mu-is-pattern")]
     end.
- Next Obligation. intros; subst; reflexivity. Defined.
- Next Obligation. intros; subst; reflexivity. Defined.
- Next Obligation. intros; subst; reflexivity. Defined.
- Next Obligation. intros; subst; reflexivity. Defined.
- Next Obligation. intros; subst; reflexivity. Defined.
- Next Obligation. intros; subst; reflexivity. Defined.
-
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst; reflexivity. Defined.
+  Next Obligation. intros; subst. rewrite wfp. rewrite wfp'. reflexivity. Defined.
+  
  (* Solve All Obligations with intros; subst; reflexivity. *)
 
 
