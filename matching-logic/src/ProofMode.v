@@ -7892,6 +7892,129 @@ Proof.
 Defined.
 
 #[local]
+Lemma app_bot_r_equiv {Σ : Signature} (Γ : Theory) (a : Pattern) :
+  well_formed a ->
+  Γ ⊢ ((a $ ⊥) <---> ⊥).
+Proof.
+  intros wfa.
+  pose (prf_prop_bott_iff Γ (ctx_app_r box wfa)).
+  now simpl in m.
+Defined.
+
+#[local]
+Lemma app_bot_l_equiv {Σ : Signature} (Γ : Theory) (a : Pattern) :
+  well_formed a ->
+  Γ ⊢ ((⊥ $ a) <---> ⊥).
+Proof.
+  intros wfa.
+  pose (prf_prop_bott_iff Γ (ctx_app_l box wfa)).
+  now simpl in m.
+Defined.
+
+Lemma pf_impl_refl {Σ : Signature} Γ A :
+    well_formed A ->
+    Γ ⊢ (A ---> A).
+Proof.
+    intros WFA.
+    auto.
+Defined.
+
+Lemma app_bot_l_meta {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ !a ->
+    Γ ⊢ !(a $ b).
+Proof.
+    intros wfa wfb.
+    intro.
+    toMyGoal.
+    { wf_auto2. }
+    pose (not_phi_iff_phi_bott Γ wfa).
+    assert (Γ ⊢ a <---> ⊥).
+    toMyGoal. {wf_auto2. }
+    mgAssert ((! a ---> ((a) <---> (⊥)))). wf_auto2.
+    {
+      mgRewrite m at 1.
+      (* mgAdd (@pf_iff_equiv_refl Σ Γ (a <---> ⊥) ltac:(wf_auto2)). *)
+      mgAdd (@pf_impl_refl Σ Γ (a <---> ⊥) ltac:(wf_auto2)).
+      mgExactn 0.
+    }
+    mgApply 0. mgClear 0.
+    fromMyGoal. wf_auto2. clear H.
+    mgRewrite (H0) at 1.
+    mgIntro.
+    pose proof (@Prop_bott_left Σ Γ (b) ltac:(wf_auto2)).
+    mgApplyMeta H. mgExactn 0.
+Qed.
+
+Lemma app_bot_l {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( !a ---> !(a $ b) ).
+Proof.
+    intros wfa wfb.
+(*
+    assert (
+      ∀ (Σ : Signature) (Γ : Theory) (a b : Pattern),
+      well_formed a → well_formed b → (Γ ⊢ a → Γ ⊢ b) → Γ ⊢ a ---> b
+    ).
+    {
+      (* It would be great to be able to take meta-level implications to the object level,
+         but it is more than a concern if this is true at all and whether it can be proved
+         without the completeness of the calculus. *)
+      admit.
+    }
+    apply X. wf_auto2. wf_auto2.
+    apply app_bot_l_meta. auto. auto.
+*)
+    toMyGoal. { wf_auto2. }
+    mgRewrite ((not_phi_iff_phi_bott Γ wfa)) at 1.
+    mgIntro.
+    pose proof (@Prop_bott_left Σ Γ (b) ltac:(wf_auto2)).
+    pose (app_bot_l_equiv Γ wfb).
+    mgIntro.
+    mgAssert (((((a) <---> (⊥)) and (a $ b)) ---> (⊥ $ b))). wf_auto2.
+    mgIntro. mgDestructAnd 2.
+    mgClear 0. mgClear 0.
+    fromMyGoal. wf_auto2.
+    pose prf_add_proved_to_assumptions_meta.
+    {
+      (*
+      Can't we prove Γ ⊢ a <---> ⊥ ---> a $ b ---> ⊥ $ b by
+      using a meta-level rewrite tactic?
+      *)
+      admit.
+    }
+    mgRewrite <- m at 1.
+    mgApply 2. mgClear 2. mgSplitAnd. mgExactn 0. mgExactn 1.
+Admitted.
+
+Lemma app_bot_r {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( !b ---> !(a $ b) ).
+Admitted.
+
+#[local]
+Lemma app_bot {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢ ( (!a or !b) ---> !(a $ b) ).
+  Proof.
+    intros wfa wfb.
+    toMyGoal.
+    { wf_auto2. }
+    repeat mgIntro.
+    mgDestructOr 0.
+    * mgRevert.
+      pose (@app_bot_l Σ Γ a b wfa wfb).
+      mgApplyMeta m. mgExactn 0.
+    * mgRevert.
+      pose (@app_bot_r Σ Γ a b wfa wfb).
+      mgApplyMeta m. mgExactn 0.
+Qed.
+
+#[local]
 Ltac convertToNNF_rewrite_pat Ctx p :=
   lazymatch p with
     | (! ! ?x) =>
@@ -7939,59 +8062,6 @@ Ltac toNNF :=
         convertToNNF_rewrite_pat Ctx (!g)
   end.
 
-#[local]
-Ltac rfindContradictionTo a ll k n:=
-  match ll with
-    | ((! a) :: ?m) =>
-        mgApply n; mgExactn k
-    | (?b :: ?m) => 
-        let nn := eval compute in ( n + 1 ) in
-         (rfindContradictionTo a m k nn)
-    | _ => fail
-  end.
-
-#[local]
-Ltac findContradiction l k:=
-    match l with
-       | (?a :: ?m) => 
-             match goal with
-                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
-                  =>
-                     try rfindContradictionTo a ll k 0;
-                     let kk := eval compute in ( k + 1 ) in
-                     (findContradiction m kk)
-             end
-       | _ => fail
-    end.
-
-#[local]
-Ltac findContradiction_start :=
-  match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        match goal with
-          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-            =>
-              findContradiction l 0
-        end
-  end.
-
-#[local]
-Ltac breakHyps l n:=
-  let nn := eval compute in ( n + 1)
-  in
-  (
-    match l with
-    | ((?x and ?y) :: ?m) => 
-        mgDestructAnd n
-    | ((?x or ?y) :: ?m) => 
-        mgDestructOr n
-    | (?x :: ?m)  =>
-        breakHyps m nn
-    end
-  )
-.
-
 #[global]
 Ltac mgTauto :=
   try (
@@ -8007,7 +8077,78 @@ Ltac mgTauto :=
         end
   end;
   findContradiction_start)
-.
+with
+breakHyps l n:=
+  let nn := eval compute in ( n + 1)
+  in
+  (
+    match l with
+    | ((?x and ?y) :: ?m) => 
+        mgDestructAnd n
+    | ((?x or ?y) :: ?m) => 
+        mgDestructOr n
+    | (?x :: ?m)  =>
+        breakHyps m nn
+    end
+  )
+with
+findContradiction_start :=
+  match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+      =>
+        match goal with
+          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+            =>
+              findContradiction l 0
+        end
+  end
+with
+findContradiction l k:=
+    match l with
+       | (?a :: ?m) => 
+             try proveFalse a k;
+             match goal with
+                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+                  =>
+                     try rfindContradictionTo a ll k 0;
+                     let kk := eval compute in ( k + 1 ) in
+                     (findContradiction m kk)
+             end
+       | _ => fail
+    end
+with
+rfindContradictionTo a ll k n:=
+  match ll with
+    | ((! a) :: ?m) =>
+        mgApply n; mgExactn k
+    | (?b :: ?m) => 
+        let nn := eval compute in ( n + 1 ) in
+         (rfindContradictionTo a m k nn)
+    | _ => fail
+  end
+with
+proveFalse a k :=
+  match a with
+    | ⊥ => mgExactn k
+    | ?b $ ?c =>
+        mgAssert ( ((b $ c) ---> ⊥) );
+        [> wf_auto2
+        |  mgApplyMeta (@app_bot _ _ b c ltac:(wf_auto2) ltac:(wf_auto2));
+           mgIntro; mgIntro; mgClear 0;
+           mgTauto_cont
+        |  mgApply 1; mgExactn 0
+        ]
+    | _ => fail
+  end
+with mgTauto_cont :=
+  try (
+    toNNF;
+    repeat mgIntro;
+    repeat match goal with
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] => breakHyps l 0
+    end;
+    findContradiction_start
+  ).
 
 #[local]
 Lemma conj_right {Σ : Signature} Γ a b:
@@ -8078,4 +8219,79 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgTauto.
+Qed.
+
+#[local]
+Lemma neg_bot_taut {Σ : Signature} Γ:
+   Γ ⊢ !⊥.
+Proof.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_1 {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ ! (a $ ⊥).
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_2 {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ ! (⊥ $ a).
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_3 {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ !(a $ (⊥ and a)).
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_4 {Σ : Signature} Γ a:
+  well_formed a ->
+  Γ ⊢ !(⊥ $ a) and (!⊥ or a). 
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_5 {Σ : Signature} Γ a:
+  well_formed a ->
+   Γ ⊢ !((!a) $ (⊥ and a)).
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
+Qed.
+
+#[local]
+Lemma app_taut_6 {Σ : Signature} Γ a:
+  well_formed a ->
+   Γ ⊢ !(⊥ $ a) and !((!a) $ (⊥ and a)) and (!⊥ or a).
+Proof.
+  intro.
+  toMyGoal.
+  * wf_auto2.
+  * mgTauto.
 Qed.
