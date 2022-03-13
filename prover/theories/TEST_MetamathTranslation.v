@@ -88,6 +88,9 @@ Module MMTest.
   Definition C := npatt_sym c.
 
   Definition muBot := npatt_mu "X"%string (npatt_svar "X"%string).
+  Definition muSym := npatt_mu "X"%string A.
+  Definition muEvar := npatt_mu "X"%string (npatt_evar "y"%string).
+  Definition muApp := npatt_mu "X"%string (npatt_app A B).
   
   Definition ϕ₁ := npatt_imp A (npatt_imp B A).
 
@@ -125,6 +128,59 @@ Module MMTest.
           muBot_const_holds
     )).
 
+  Definition muSym_const := npatt_imp muSym (npatt_imp B muSym).
+  
+  Lemma muSym_const_holds: NP_ML_proof_system empty muSym_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muSym_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muSym_const_holds
+    )).
+
+  Definition muEvar_const := npatt_imp muEvar (npatt_imp B muEvar).
+  
+  Lemma muEvar_const_holds: NP_ML_proof_system empty muEvar_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muEvar_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muEvar_const_holds
+    )).
+
+  Definition muApp_const := npatt_imp muApp (npatt_imp B muApp).
+  
+  Lemma muApp_const_holds: NP_ML_proof_system empty muApp_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muApp_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muApp_const_holds
+    )).
 
   (*
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
@@ -352,6 +408,9 @@ Extraction Language Haskell.
 
 Extraction "named_proof_1_mm.hs" MMTest.named_proof_1.
 Extraction "named_muBot_proof_mm.hs" MMTest.named_muBot_proof.
+Extraction "named_muSym_proof_mm.hs" MMTest.named_muSym_proof.
+Extraction "named_muEvar_proof_mm.hs" MMTest.named_muEvar_proof.
+Extraction "named_muApp_proof_mm.hs" MMTest.named_muApp_proof.
 (* Extraction "proof_2_mm.hs" MMTest.proof_2. *)
 (* Extraction "proof_3_mm.hs" MMTest.proof_3. *)
 (* Extraction "proof_4_mm.hs" MMTest.proof_4. *)

@@ -491,7 +491,28 @@ Section named.
   Proof.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
-  
+
+  Lemma named_no_negative_occurrence_wfp_proj (s : svar) (p : NamedPattern):
+    named_well_formed_positive (npatt_mu s p) ->
+    named_no_negative_occurrence s p.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_negative_occurrence_app_proj1 (s : svar) (p q : NamedPattern):
+    named_no_negative_occurrence s (npatt_app p q) ->
+    named_no_negative_occurrence s p.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_negative_occurrence_app_proj2 (s : svar) (p q : NamedPattern):
+    named_no_negative_occurrence s (npatt_app p q) ->
+    named_no_negative_occurrence s q.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
   Definition named_well_formed := named_well_formed_positive.
 
   Inductive Named_Application_context : Type :=
