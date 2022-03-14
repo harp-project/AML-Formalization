@@ -137,41 +137,33 @@ Section gen.
 
   (* Converts Coq positivity proof to Metamath *)
   Program Fixpoint pattern2pos (X : svar) (p : NamedPattern)
-          (nno : named_no_negative_occurrence X p = true) : list Label :=
+          (wfp : named_well_formed_positive (npatt_mu X p) = true) : list Label :=
     match p with
-    | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-symbol")); (lbl "positive-in-symbol")]
-    | npatt_evar x => [(isElementVar x); (lbl "element-var-is-var"); (lbl "positive-in-var")]
-    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (lbl "positive-in-var")]
+    | npatt_sym s => [(isSetVar X); (lbl "set-var-is-var");
+                       (lbl (symbolPrinter s ++ "-is-symbol")); (lbl "positive-in-symbol")]
+    | npatt_evar x =>  [(isSetVar X); (lbl "set-var-is-var"); (isElementVar x);
+                        (lbl "element-var-is-var"); (lbl "positive-in-var")]
+    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (isSetVar X);
+                       (lbl "set-var-is-var"); (lbl "positive-in-var")]
     | npatt_app p1 p2 =>
         let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
-        (* TODO: need mutual recursion with pattern2pos and pattern2proof *)
-        (* let ms1 := pattern2proof p1 in *)
-        (* let ms2 := pattern2proof p2 in *)
+        let wf_app := @named_well_formed_positive_mu_proj _ X p wfp in 
+        let wfp1 := @named_well_formed_positive_app_proj1 _ p1 p2 wf_app in
+        let wfp2 := @named_well_formed_positive_app_proj2 _ p1 p2 wf_app in
+        let ms1 := pattern2proof p1 wfp1 in
+        let ms2 := pattern2proof p2 wfp2 in
+        let nno := @named_no_negative_occurrence_wfp_proj _ X p wfp in
         let nno1 := @named_no_negative_occurrence_app_proj1 _ X p1 p2 nno in
         let nno2 := @named_no_negative_occurrence_app_proj2 _ X p1 p2 nno in
         let lsPos1 := pattern2pos X p1 nno1 in
         let lsPos2 := pattern2pos X p2 nno2 in
-        (* ms1 ++ ms2 ++ *) lsX ++ lsPos1 ++ lsX ++ lsPos2 ++ [(lbl "positive-in-app")]
+        ms1 ++ ms2 ++ lsX ++ lsPos1 ++ lsPos2 ++ [(lbl "positive-in-app")]
     | _ => []
-    end.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-
+    end
+  with
   (* Converts NamedPattern p to Metamath proof that p is a Pattern *)
   (* TODO: need to make sure mu is positive *)
-  Program Fixpoint pattern2proof (p : NamedPattern) (wfp : named_well_formed_positive p = true) : list Label :=
+  pattern2proof (p : NamedPattern) (wfp : named_well_formed_positive p = true) : list Label :=
     match p with
     | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-symbol")); (lbl "symbol-is-pattern")]
     | npatt_evar x => [(isElementVar x); (lbl "element-var-is-var"); (lbl "var-is-pattern")]
@@ -196,12 +188,49 @@ Section gen.
         lsp' ++ lsx ++ [(lbl "exists-is-pattern")]
     | npatt_mu X p' =>
         let wfp' := @named_well_formed_positive_mu_proj _ X p' wfp in
-        let nno := @named_no_negative_occurrence_wfp_proj _ X p' wfp in
         let lsX := [(isSetVar X)] in
         let lsp' := pattern2proof p' wfp' in
-        let lsPos := pattern2pos X p' nno in
-        lsp' ++ lsX ++ [(isSetVar X); (lbl "set-var-is-var")] ++ lsPos ++ [(lbl "mu-is-pattern")]
+        let lsPos := pattern2pos X p' wfp in
+        lsp' ++ lsX ++ lsPos ++ [(lbl "mu-is-pattern")]
     end.
+  Next Obligation. intros. subst. reflexivity. Defined.
+  Next Obligation. intros. subst. reflexivity. Defined.
+  Next Obligation. intros. subst. reflexivity. Defined.
+  Next Obligation. intros. subst. reflexivity. Defined.
+  Next Obligation.
+    intros. subst. clear -wfp.
+    unfold named_well_formed_positive in *.
+    apply andb_prop in wfp.
+    destruct wfp as [Hnno Hwfp].
+    apply named_no_negative_occurrence_app_proj1 in Hnno. rewrite Hnno.
+    apply andb_prop in Hwfp.
+    destruct Hwfp as [Hwfp1 _].
+    rewrite Hwfp1.
+    reflexivity.
+  Defined.
+  Next Obligation.
+    intros. subst. clear -wfp.
+    unfold named_well_formed_positive in *.
+    apply andb_prop in wfp.
+    destruct wfp as [Hnno Hwfp].
+    apply named_no_negative_occurrence_app_proj2 in Hnno. rewrite Hnno.
+    apply andb_prop in Hwfp.
+    destruct Hwfp as [_ Hwfp2].
+    rewrite Hwfp2.
+    reflexivity.
+  Defined.
+  Next Obligation.
+    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H.
+  Defined.
+  Next Obligation.
+    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
+  Defined.
+  Next Obligation.
+    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
+  Defined.
+  Next Obligation.
+    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
+  Defined.
   Next Obligation. intros; subst; reflexivity. Defined.
   Next Obligation. intros; subst; reflexivity. Defined.
   Next Obligation. intros; subst; reflexivity. Defined.
