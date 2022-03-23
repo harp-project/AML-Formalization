@@ -137,33 +137,94 @@ Section gen.
 
   (* Converts Coq positivity proof to Metamath *)
   Program Fixpoint pattern2pos (X : svar) (p : NamedPattern)
-          (wfp : named_well_formed_positive (npatt_mu X p) = true) : list Label :=
+          (wfp : named_well_formed_positive p = true)
+          (nno : named_no_negative_occurrence X p = true) : list Label :=
+    let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
     match p with
-    | npatt_sym s => [(isSetVar X); (lbl "set-var-is-var");
-                       (lbl (symbolPrinter s ++ "-is-symbol")); (lbl "positive-in-symbol")]
-    | npatt_evar x =>  [(isSetVar X); (lbl "set-var-is-var"); (isElementVar x);
-                        (lbl "element-var-is-var"); (lbl "positive-in-var")]
-    | npatt_svar X => [(isSetVar X); (lbl "set-var-is-var"); (isSetVar X);
-                       (lbl "set-var-is-var"); (lbl "positive-in-var")]
+    | npatt_sym s => lsX ++ [(lbl (symbolPrinter s ++ "-is-symbol")); (lbl "positive-in-symbol")]
+    | npatt_evar x =>  lsX ++ [(isElementVar x); (lbl "element-var-is-var"); (lbl "positive-in-var")]
+    | npatt_svar X' => lsX ++ [(isSetVar X'); (lbl "set-var-is-var"); (lbl "positive-in-var")]
+    | npatt_bott => lsX ++ [(lbl "positive-in-bot")]
     | npatt_app p1 p2 =>
-        let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
-        let wf_app := @named_well_formed_positive_mu_proj _ X p wfp in 
-        let wfp1 := @named_well_formed_positive_app_proj1 _ p1 p2 wf_app in
-        let wfp2 := @named_well_formed_positive_app_proj2 _ p1 p2 wf_app in
+        let wfp1 := @named_well_formed_positive_app_proj1 _ p1 p2 wfp in
+        let wfp2 := @named_well_formed_positive_app_proj2 _ p1 p2 wfp in
         let ms1 := pattern2proof p1 wfp1 in
         let ms2 := pattern2proof p2 wfp2 in
-        let nno := @named_no_negative_occurrence_wfp_proj _ X p wfp in
         let nno1 := @named_no_negative_occurrence_app_proj1 _ X p1 p2 nno in
         let nno2 := @named_no_negative_occurrence_app_proj2 _ X p1 p2 nno in
-        let lsPos1 := pattern2pos X p1 nno1 in
-        let lsPos2 := pattern2pos X p2 nno2 in
+        let lsPos1 := pattern2pos X p1 wfp1 nno1 in
+        let lsPos2 := pattern2pos X p2 wfp2 nno2 in
         ms1 ++ ms2 ++ lsX ++ lsPos1 ++ lsPos2 ++ [(lbl "positive-in-app")]
-    | _ => []
+    | npatt_imp p1 p2 =>
+        let wfp1 := @named_well_formed_positive_imp_proj1 _ p1 p2 wfp in
+        let wfp2 := @named_well_formed_positive_imp_proj2 _ p1 p2 wfp in
+        let ms1 := pattern2proof p1 wfp1 in
+        let ms2 := pattern2proof p2 wfp2 in
+        let npo1 := @named_no_negative_occurrence_imp_proj1 _ X p1 p2 nno in
+        let nno2 := @named_no_negative_occurrence_imp_proj2 _ X p1 p2 nno in
+        let lsNeg1 := pattern2neg X p1 wfp1 npo1 in
+        let lsPos2 := pattern2pos X p2 wfp2 nno2 in
+        ms1 ++ ms2 ++ lsX ++ lsNeg1 ++ lsPos2 ++ [(lbl "positive-in-imp")]
+    | npatt_exists x p' =>
+        let wfp' := @named_well_formed_positive_exists_proj _ x p' wfp in
+        let ms := pattern2proof p' wfp' in
+        let nno' := @named_no_negative_occurrence_exists_proj _ X x p' nno in
+        let lsPos := pattern2pos X p' wfp' nno' in
+        ms ++ [(isElementVar x)] ++ lsX ++ lsPos ++ [(lbl "positive-in-exists")]
+    | npatt_mu X' p' =>
+        let wfp' := @named_well_formed_positive_mu_proj _ X' p' wfp in
+        let ms := pattern2proof p' wfp' in
+        let nno' := @named_no_negative_occurrence_mu_proj _ X X' p' nno in
+        let lsPos := pattern2pos X p' wfp' nno' in
+        ms ++ [(isSetVar X')] ++ lsX ++ lsPos ++ [(lbl "positive-in-mu")]
     end
-  with
+  with pattern2neg (X : svar) (p : NamedPattern)
+          (wfp : named_well_formed_positive p = true)
+          (npo : named_no_positive_occurrence X p = true) : list Label :=
+    let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
+    match p with
+    | npatt_sym s => lsX ++ [(lbl (symbolPrinter s ++ "-is-symbol")); (lbl "negative-in-symbol")]
+    | npatt_evar x =>  lsX ++ [(isElementVar x); (lbl "element-var-is-var"); (lbl "negative-in-var")]
+    | npatt_svar X' => lsX ++ [(isSetVar X'); (lbl "set-var-is-var"); (lbl "negative-in-var")]
+    | npatt_bott => lsX ++ [(lbl "negative-in-bot")]
+    | npatt_app p1 p2 =>
+        let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
+        let wfp1 := @named_well_formed_positive_app_proj1 _ p1 p2 wfp in
+        let wfp2 := @named_well_formed_positive_app_proj2 _ p1 p2 wfp in
+        let ms1 := pattern2proof p1 wfp1 in
+        let ms2 := pattern2proof p2 wfp2 in
+        let npo1 := @named_no_positive_occurrence_app_proj1 _ X p1 p2 npo in
+        let npo2 := @named_no_positive_occurrence_app_proj2 _ X p1 p2 npo in
+        let lsNeg1 := pattern2neg X p1 wfp1 npo1 in
+        let lsNeg2 := pattern2neg X p2 wfp2 npo2 in
+        ms1 ++ ms2 ++ lsX ++ lsNeg1 ++ lsNeg2 ++ [(lbl "negative-in-app")]
+    | npatt_imp p1 p2 =>
+        let lsX := [(isSetVar X); (lbl "set-var-is-var")] in
+        let wfp1 := @named_well_formed_positive_imp_proj1 _ p1 p2 wfp in
+        let wfp2 := @named_well_formed_positive_imp_proj2 _ p1 p2 wfp in
+        let ms1 := pattern2proof p1 wfp1 in
+        let ms2 := pattern2proof p2 wfp2 in
+        let nno1 := @named_no_positive_occurrence_imp_proj1 _ X p1 p2 npo in
+        let npo2 := @named_no_positive_occurrence_imp_proj2 _ X p1 p2 npo in
+        let lsPos1 := pattern2pos X p1 wfp1 nno1 in
+        let lsNeg2 := pattern2neg X p2 wfp2 npo2 in
+        ms1 ++ ms2 ++ lsX ++ lsPos1 ++ lsNeg2 ++ [(lbl "negative-in-imp")]
+    | npatt_exists x p' =>
+        let wfp' := @named_well_formed_positive_exists_proj _ x p' wfp in
+        let ms := pattern2proof p' wfp' in
+        let npo' := @named_no_positive_occurrence_exists_proj _ X x p' npo in
+        let lsNeg := pattern2neg X p' wfp' npo' in
+        ms ++ [(isElementVar x)] ++ lsX ++ lsNeg ++ [(lbl "negative-in-exists")]
+    | npatt_mu X' p' =>
+        let wfp' := @named_well_formed_positive_mu_proj _ X' p' wfp in
+        let ms := pattern2proof p' wfp' in
+        let npo' := @named_no_positive_occurrence_mu_proj _ X X' p' npo in
+        let lsNeg := pattern2neg X p' wfp' npo' in
+        ms ++ [(isSetVar X')] ++ lsX ++ lsNeg ++ [(lbl "negative-in-mu")]
+    end
   (* Converts NamedPattern p to Metamath proof that p is a Pattern *)
   (* TODO: need to make sure mu is positive *)
-  pattern2proof (p : NamedPattern) (wfp : named_well_formed_positive p = true) : list Label :=
+  with pattern2proof (p : NamedPattern) (wfp : named_well_formed_positive p = true) : list Label :=
     match p with
     | npatt_sym s => [(lbl (symbolPrinter s ++ "-is-symbol")); (lbl "symbol-is-pattern")]
     | npatt_evar x => [(isElementVar x); (lbl "element-var-is-var"); (lbl "var-is-pattern")]
@@ -188,58 +249,13 @@ Section gen.
         lsp' ++ lsx ++ [(lbl "exists-is-pattern")]
     | npatt_mu X p' =>
         let wfp' := @named_well_formed_positive_mu_proj _ X p' wfp in
+        let nno := @named_no_negative_occurrence_wfp_proj _ X p' wfp in
         let lsX := [(isSetVar X)] in
         let lsp' := pattern2proof p' wfp' in
-        let lsPos := pattern2pos X p' wfp in
+        let lsPos := pattern2pos X p' wfp' nno in
         lsp' ++ lsX ++ lsPos ++ [(lbl "mu-is-pattern")]
     end.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation. intros. subst. reflexivity. Defined.
-  Next Obligation.
-    intros. subst. clear -wfp.
-    unfold named_well_formed_positive in *.
-    apply andb_prop in wfp.
-    destruct wfp as [Hnno Hwfp].
-    apply named_no_negative_occurrence_app_proj1 in Hnno. rewrite Hnno.
-    apply andb_prop in Hwfp.
-    destruct Hwfp as [Hwfp1 _].
-    rewrite Hwfp1.
-    reflexivity.
-  Defined.
-  Next Obligation.
-    intros. subst. clear -wfp.
-    unfold named_well_formed_positive in *.
-    apply andb_prop in wfp.
-    destruct wfp as [Hnno Hwfp].
-    apply named_no_negative_occurrence_app_proj2 in Hnno. rewrite Hnno.
-    apply andb_prop in Hwfp.
-    destruct Hwfp as [_ Hwfp2].
-    rewrite Hwfp2.
-    reflexivity.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-  Next Obligation.
-    intros; repeat split; unfold wildcard'; unfold not; intros; inversion H1.
-  Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst; reflexivity. Defined.
-  Next Obligation. intros; subst. reflexivity. Defined.
-  
- (* Solve All Obligations with intros; subst; reflexivity. *)
+  Solve All Obligations with intros; subst; reflexivity.
 
 
   Fixpoint proof_size' Γ (ϕ : NamedPattern) (pf : NP_ML_proof_system Γ ϕ) : nat :=

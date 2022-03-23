@@ -513,6 +513,77 @@ Section named.
     intros H. simpl in H. destruct_and!. assumption.
   Qed.
 
+  Lemma named_no_negative_occurrence_imp_proj1 (s : svar) (p q : NamedPattern):
+    named_no_negative_occurrence s (npatt_imp p q) ->
+    named_no_positive_occurrence s p.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_negative_occurrence_imp_proj2 (s : svar) (p q : NamedPattern):
+    named_no_negative_occurrence s (npatt_imp p q) ->
+    named_no_negative_occurrence s q.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+    Lemma named_no_positive_occurrence_app_proj1 (s : svar) (p q : NamedPattern):
+    named_no_positive_occurrence s (npatt_app p q) ->
+    named_no_positive_occurrence s p.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_positive_occurrence_app_proj2 (s : svar) (p q : NamedPattern):
+    named_no_positive_occurrence s (npatt_app p q) ->
+    named_no_positive_occurrence s q.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_positive_occurrence_imp_proj1 (s : svar) (p q : NamedPattern):
+    named_no_positive_occurrence s (npatt_imp p q) ->
+    named_no_negative_occurrence s p.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_positive_occurrence_imp_proj2 (s : svar) (p q : NamedPattern):
+    named_no_positive_occurrence s (npatt_imp p q) ->
+    named_no_positive_occurrence s q.
+  Proof.
+    intros H. simpl in H. destruct_and!. assumption.
+  Qed.
+
+  Lemma named_no_positive_occurrence_exists_proj (s : svar) (x : evar) (p : NamedPattern):
+    named_no_positive_occurrence s (npatt_exists x p) ->
+    named_no_positive_occurrence s p.
+  Proof.
+    intros H. simpl in H. assumption.
+  Qed.
+
+  Lemma named_no_negative_occurrence_exists_proj (s : svar) (x: evar) (p : NamedPattern):
+    named_no_negative_occurrence s (npatt_exists x p) ->
+    named_no_negative_occurrence s p.
+  Proof.
+    intros H. simpl in H. assumption.
+  Qed.
+
+  Lemma named_no_positive_occurrence_mu_proj (s1 s2 : svar) (p : NamedPattern):
+    named_no_positive_occurrence s1 (npatt_mu s2 p) ->
+    named_no_positive_occurrence s1 p.
+  Proof.
+    intros H. simpl in H. assumption.
+  Qed.
+
+  Lemma named_no_negative_occurrence_mu_proj (s1 s2 : svar) (p : NamedPattern):
+    named_no_negative_occurrence s1 (npatt_mu s2 p) ->
+    named_no_negative_occurrence s1 p.
+  Proof.
+    intros H. simpl in H. assumption.
+  Qed.
+
+
   Definition named_well_formed := named_well_formed_positive.
 
   Inductive Named_Application_context : Type :=

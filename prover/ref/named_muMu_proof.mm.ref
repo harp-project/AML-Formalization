@@ -1,0 +1,1 @@
+( \imp ( \mu svar-X ( \mu svar-Y sym-b ) ) ( \imp sym-b ( \mu svar-X ( \mu svar-Y sym-b ) ) ) )

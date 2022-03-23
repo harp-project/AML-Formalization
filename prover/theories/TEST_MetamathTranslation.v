@@ -87,10 +87,14 @@ Module MMTest.
   Definition B := npatt_sym b.
   Definition C := npatt_sym c.
 
-  Definition muBot := npatt_mu "X"%string (npatt_svar "X"%string).
   Definition muSym := npatt_mu "X"%string A.
   Definition muEvar := npatt_mu "X"%string (npatt_evar "y"%string).
+  Definition muSvar := npatt_mu "X"%string (npatt_svar "Y"%string).
+  Definition muBott := npatt_mu "X"%string npatt_bott.
   Definition muApp := npatt_mu "X"%string (npatt_app A B).
+  Definition muImp := npatt_mu "X"%string (npatt_imp A B).
+  Definition muEx := npatt_mu "X"%string (npatt_exists "y"%string B).
+  Definition muMu := npatt_mu "X"%string (npatt_mu "Y"%string B).
   
   Definition ϕ₁ := npatt_imp A (npatt_imp B A).
 
@@ -108,24 +112,6 @@ Module MMTest.
           _
           _
           ϕ₁_holds
-    )).
-
-  Definition muBot_const := npatt_imp muBot (npatt_imp B muBot).
-  
-  Lemma muBot_const_holds: NP_ML_proof_system empty muBot_const.
-  Proof.
-    apply N_P1; auto.
-  Defined.
-
-  Definition named_muBot_proof : string :=
-    (Database_toString
-       (proof2database
-          symbolPrinter
-          id
-          id
-          _
-          _
-          muBot_const_holds
     )).
 
   Definition muSym_const := npatt_imp muSym (npatt_imp B muSym).
@@ -164,6 +150,42 @@ Module MMTest.
           muEvar_const_holds
     )).
 
+  Definition muSvar_const := npatt_imp muSvar (npatt_imp B muSvar).
+  
+  Lemma muSvar_const_holds: NP_ML_proof_system empty muSvar_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muSvar_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muSvar_const_holds
+    )).
+
+  Definition muBott_const := npatt_imp muBott (npatt_imp B muBott).
+  
+  Lemma muBott_const_holds: NP_ML_proof_system empty muBott_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muBott_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muBott_const_holds
+    )).
+  
   Definition muApp_const := npatt_imp muApp (npatt_imp B muApp).
   
   Lemma muApp_const_holds: NP_ML_proof_system empty muApp_const.
@@ -180,6 +202,60 @@ Module MMTest.
           _
           _
           muApp_const_holds
+    )).
+
+  Definition muImp_const := npatt_imp muImp (npatt_imp B muImp).
+  
+  Lemma muImp_const_holds: NP_ML_proof_system empty muImp_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muImp_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muImp_const_holds
+    )).
+
+  Definition muEx_const := npatt_imp muEx (npatt_imp B muEx).
+  
+  Lemma muEx_const_holds: NP_ML_proof_system empty muEx_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muEx_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muEx_const_holds
+    )).
+
+  Definition muMu_const := npatt_imp muMu (npatt_imp B muMu).
+  
+  Lemma muMu_const_holds: NP_ML_proof_system empty muMu_const.
+  Proof.
+    apply N_P1; auto.
+  Defined.
+
+  Definition named_muMu_proof : string :=
+    (Database_toString
+       (proof2database
+          symbolPrinter
+          id
+          id
+          _
+          _
+          muMu_const_holds
     )).
 
   (*
@@ -407,10 +483,14 @@ End MMTest.
 Extraction Language Haskell.
 
 Extraction "named_proof_1_mm.hs" MMTest.named_proof_1.
-Extraction "named_muBot_proof_mm.hs" MMTest.named_muBot_proof.
 Extraction "named_muSym_proof_mm.hs" MMTest.named_muSym_proof.
 Extraction "named_muEvar_proof_mm.hs" MMTest.named_muEvar_proof.
+Extraction "named_muSvar_proof_mm.hs" MMTest.named_muSvar_proof.
+Extraction "named_muBott_proof_mm.hs" MMTest.named_muBott_proof.
 Extraction "named_muApp_proof_mm.hs" MMTest.named_muApp_proof.
+Extraction "named_muImp_proof_mm.hs" MMTest.named_muImp_proof.
+Extraction "named_muEx_proof_mm.hs" MMTest.named_muEx_proof.
+Extraction "named_muMu_proof_mm.hs" MMTest.named_muMu_proof.
 (* Extraction "proof_2_mm.hs" MMTest.proof_2. *)
 (* Extraction "proof_3_mm.hs" MMTest.proof_3. *)
 (* Extraction "proof_4_mm.hs" MMTest.proof_4. *)
