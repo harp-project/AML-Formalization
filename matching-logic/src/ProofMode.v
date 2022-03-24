@@ -7441,7 +7441,7 @@ Proof.
 Defined.
 
 
-
+(* TODO document what does this lemma do *)
 Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->

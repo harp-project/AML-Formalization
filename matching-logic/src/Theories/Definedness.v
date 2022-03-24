@@ -2556,8 +2556,8 @@ Proof.
   { wf_auto2. }
   mgIntro.
   mgIntro. mgApply 0. mgClear 0.
-  fromMyGoal. intros _ _.
-  apply Framing_right.
+  fromMyGoal. intros _ _. (* TODO: we should not need this intros _ _. [fromMyGoal] was originally designed as it is to leave the wf hypotheses in case we need them, but (1) we rarely need them, and (2) if we need them, then *)
+  apply Framing_right. (* TODO: mgExactMeta  *)
   { wf_auto2. }
   apply not_def_phi_impl_not_phi; assumption.
 Defined.
