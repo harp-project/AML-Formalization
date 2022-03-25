@@ -7,7 +7,7 @@ let
   
   self = mkShell {
     name="ml-in-coq-dev-env";
-    buildInputs = [deps.coq deps.stdpp deps.equations];
+    buildInputs = [deps.coq deps.stdpp deps.equations deps.dpdgraph];
   };
 
 in

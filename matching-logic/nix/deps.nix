@@ -30,6 +30,27 @@ let
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
 
+  dpdgraph = ncoqPackages.callPackage
+    ( { coq, stdenv, fetchFromGithub }:
+      stdenv.mkDerivation {
+        name = "coq${coq.coq-version}-dpdgraph";
+
+        src = fetchGit {
+          url = "https://github.com/coq-community/coq-dpdgraph.git";
+          ref = "coq-v8.14";
+          rev = lib.strings.fileContents ../deps/dpdgraph.rev;
+        };
+        buildInputs = [autoconf] ++ (with coq.ocamlPackages; [ ocaml camlp5 findlib ocamlgraph zarith]);
+        propagatedBuildInputs = [ coq ];
+        enableParallelBuilding = true;
+
+        preConfigure = ''autoconf'';
+        preInstall = ''
+          mkdir -p $out/bin
+        '';
+        installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" "BINDIR=$(out)/bin" ];
+      } ) { } ;
+
    equations = ncoqPackages.callPackage
     ( { coq, stdenv, fetchFromGithub }:
       stdenv.mkDerivation {
@@ -113,4 +134,5 @@ let
         installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
       } ) { } ;
 
-in { inherit stdpp; coq = ncoq; inherit equations; inherit mtac2; }
+
+in { inherit stdpp; coq = ncoq; inherit equations; inherit mtac2; inherit dpdgraph; }
