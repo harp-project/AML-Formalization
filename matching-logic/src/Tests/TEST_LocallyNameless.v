@@ -9,7 +9,7 @@ Require Import Coq.Logic.Classical_Prop.
 From stdpp Require Import base fin_sets sets propset.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators SignatureHelper.
-From MatchingLogic.Theories Require Import Definedness Sorts.
+From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
@@ -74,15 +74,15 @@ End test_1.
 (* Here we show how to use the Definedness module. *)
 Module test_2.
   Section test_2.
-    Import Definedness.
+    Import Definedness_Syntax.
 
     (* We must include all the symbols from the Definedness module into our signature.
        We do this by defining a constructor `sym_import_definedness : Definedness.Symbols -> Symbols`.
        And we also define a bunch of other symbols.
      *)
     Inductive Symbols :=
-    | sym_import_definedness (d : Definedness.Symbols)
-    | sym_import_sorts (s : Sorts.Symbols)
+    | sym_import_definedness (d : Definedness_Syntax.Symbols)
+    | sym_import_sorts (s : Sorts_Syntax.Symbols)
     | sym_SortNat
     | sym_zero | sym_succ (* constructors for Nats *)
     | sym_c (* some constant that we make functional *)
