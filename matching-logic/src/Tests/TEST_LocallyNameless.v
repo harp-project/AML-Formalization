@@ -96,15 +96,15 @@ Module test_2.
          symbols := Symbols ;
       |}.
 
-    Instance definedness_syntax : Definedness.Syntax :=
+    Instance definedness_syntax : Definedness_Syntax.Syntax :=
       {|
-         Definedness.inj := sym_import_definedness;
+         Definedness_Syntax.inj := sym_import_definedness;
       |}.
 
-    Instance sorts_syntax : Sorts.Syntax :=
+    Instance sorts_syntax : Sorts_Syntax.Syntax :=
       {|
-      Sorts.inj := sym_import_sorts;
-      Sorts.imported_definedness := definedness_syntax;
+      Sorts_Syntax.inj := sym_import_sorts;
+      Sorts_Syntax.imported_definedness := definedness_syntax;
       |}.
     
     Example test_pattern_0 : Pattern := patt_sym sym_c.
@@ -163,7 +163,7 @@ Module test_2.
     Arguments Domain : simpl never.
 
     (* TODO a tactic that solves this, or a parameterized lemma. *)
-    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
+    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness_Syntax.axiom Definedness_Syntax.AxDefinedness).
     Proof.
       unfold satisfies_model. intros.
       unfold axiom.

@@ -30,12 +30,12 @@
 (* We have only one symbol *)
 Inductive Symbols := definedness.
 
-Instance Symbols_eqdec : EqDecision Symbols.
+Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
   Class Syntax {Σ : Signature} :=
     {
-    (* 'Symbols' are a 'subset' of all the symbols from the Σnature *)
+    (* 'Symbols' are a 'subset' of all the symbols from the signature *)
     inj: Symbols -> symbols;
     (* TODO make it injective? *)
     (* for convenience *)
@@ -145,9 +145,6 @@ Section definedness.
   #[local]
    Hint Resolve well_formed_in : core.
 
-  
-  Let sym (s : Symbols) : Pattern :=
-    @patt_sym Σ (inj s).
 
   Definition ev_x := (evar_fresh []).
   Definition p_x := patt_free_evar ev_x.
