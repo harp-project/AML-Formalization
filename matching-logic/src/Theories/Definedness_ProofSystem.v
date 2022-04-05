@@ -15,7 +15,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators ProofSystem ProofMode IndexManipulation.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation.
 From MatchingLogic.Theories Require Import Definedness_Syntax.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -27,7 +27,7 @@ Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
 

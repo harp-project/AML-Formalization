@@ -11,7 +11,7 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem IndexManipulation wftactics.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
 From stdpp Require Import list tactics fin_sets.
 
@@ -21,7 +21,7 @@ Import extralibrary.
 
 Import
   MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators.Notations
+  MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
 .
 
