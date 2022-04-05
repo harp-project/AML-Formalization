@@ -13,7 +13,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators.
+From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators IndexManipulation.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
@@ -27,18 +27,16 @@ Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 
+Import Definedness_Syntax.Notations.
+
 Section definedness.
   Context
     {Σ : Signature}
     {syntax : Syntax}
   .
 
-  Import Definedness_Syntax.Notations.
-  (* Existing Instance Σ. Existing Instance syntax. *)
-
   Let sym (s : Symbols) : Pattern :=
     @patt_sym Σ (inj s).
-
   
   Lemma definedness_model_application :
     forall (M : @Model Σ) (evar_val : @EVarVal Σ M) (svar_val : @SVarVal (Σ) M),
@@ -434,5 +432,166 @@ Section definedness.
   Qed.
 
   Hint Resolve T_predicate_in : core.
+
+
+  Lemma T_predicate_eq_inversion : forall ϕ₁ ϕ₂,
+    T_predicate theory (patt_eq_inversion_of ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂ M Hm.
+    unfold patt_eq_inversion_of.
+    apply M_predicate_forall.
+    match goal with
+    | |- context G [fresh_evar ?t] => remember (fresh_evar t) as X
+    end.
+    
+    unfold evar_open.
+    simpl_bevar_subst.
+    apply T_predicate_equals.
+    apply Hm.
+  Qed.
+
+  Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
+    M ⊨ᵀ theory ->
+    @pattern_interpretation Σ M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
+    <-> (forall m₁ m₂,
+            m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁ <-> m₁ ∈ rel_of ρₑ ρₛ ϕ₂ m₂ (* TODO make rel_of take one more parameter. *)
+        ).
+  Proof.
+    intros Htheory.
+    rewrite pattern_interpretation_forall_predicate.
+    2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
+    apply all_iff_morphism. intros m₁.
+    remember ((fresh_evar
+          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
+             (ex ,
+              (BoundVarSugar.b0
+                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
+    unfold evar_open.
+    simpl_bevar_subst.
+    rewrite equal_iff_interpr_same.
+    2: { apply Htheory. }
+
+    rewrite pattern_interpretation_set_builder.
+    { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
+
+    assert (Hpi: ∀ M ev sv phi rhs,
+               @pattern_interpretation _ M ev sv phi = rhs
+               <-> (∀ m, m ∈ @pattern_interpretation _ M ev sv phi <-> m ∈ rhs)).
+    { split; intros H.
+      + rewrite H. auto.
+      + rewrite -> set_eq_subseteq. repeat rewrite elem_of_subseteq.
+        split.
+        * intros x0. specialize (H x0). destruct H as [H1 H2].
+          apply H1.
+        * intros x0. specialize (H x0). destruct H as [H1 H2].
+          apply H2.
+    }
+    rewrite Hpi.
+    apply all_iff_morphism. intros m₂.
+    rewrite pattern_interpretation_app_simpl.
+
+    rewrite nest_ex_same.
+(*     {
+      subst x.
+      eapply evar_is_fresh_in_richer.
+      2: { apply set_evar_fresh_is_fresh. }
+      solve_free_evars_inclusion 5.
+    } *)
+    unfold evar_open, nest_ex.
+    remember (fresh_evar
+                (patt_free_evar x
+                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂)).[evar:1↦patt_free_evar x] $ b0)) as y.
+    rewrite fuse_nest_ex_same.
+    rewrite nest_ex_same_general. 1-2: lia.
+    simpl_bevar_subst. simpl. rewrite nest_ex_same.
+(*
+    do 3 rewrite evar_open_bound_evar.
+    repeat case_match; try lia.
+*)
+(*
+    rewrite simpl_evar_open.
+    rewrite evar_open_free_evar.
+*)
+    repeat rewrite elem_of_PropSet.
+   (*  rewrite <- free_evar_in_patt.
+    2: { apply Htheory. } *)
+    rewrite pattern_interpretation_free_evar_simpl.
+    rewrite update_evar_val_same.
+    fold (m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁).
+
+    (*rewrite simpl_evar_open.*)
+    rewrite <- free_evar_in_patt; auto.
+    rewrite pattern_interpretation_app_simpl.
+    repeat rewrite pattern_interpretation_free_evar_simpl.
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'. unfold nest_ex.
+      rewrite fuse_nest_ex_same. simpl.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite pattern_interpretation_free_evar_independent.
+    {
+      subst.
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh'.
+      solve_free_evars_inclusion 5.
+    }
+    rewrite update_evar_val_comm.
+    { solve_fresh_neq. }
+
+    rewrite update_evar_val_same.
+    rewrite update_evar_val_comm.
+    { solve_fresh_neq. }
+
+    rewrite update_evar_val_same.
+    unfold app_ext.
+    rewrite elem_of_PropSet.
+    fold (rel_of ρₑ ρₛ ϕ₂ m₂).
+    auto.
+  Qed.
+
+  Lemma single_element_definedness_impl_satisfies_definedness (M : @Model Σ) :
+    (exists (hashdef : Domain M),
+        sym_interp M (inj definedness) = {[hashdef]}
+        /\ forall x, app_interp hashdef x = ⊤
+    ) ->
+        satisfies_model M (axiom AxDefinedness).
+  Proof.
+    intros [hashdef [Hhashdefsym Hhashdeffull] ].
+    unfold satisfies_model. intros.
+    unfold axiom.
+    unfold sym.
+    unfold patt_defined.
+    unfold p_x.
+    rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> pattern_interpretation_sym_simpl.
+    rewrite -> set_eq_subseteq.
+    split.
+    { apply top_subseteq. }
+    rewrite -> elem_of_subseteq.
+    intros x _.
+    intros.
+    unfold Ensembles.In.
+    unfold app_ext.
+    exists hashdef.
+    rewrite Hhashdefsym.
+    rewrite -> pattern_interpretation_free_evar_simpl.
+    exists (evar_val ev_x).
+    split.
+    { constructor. }
+    split.
+    { constructor. }
+    rewrite Hhashdeffull.
+    constructor.
+  Qed.
 
 End definedness.
