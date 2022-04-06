@@ -2089,4 +2089,25 @@ split.
   + apply evar_quantify_closed_ex. assumption.
 Qed.
 
+
+Lemma free_evars_evar_quantify x n p:
+  free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.
+Proof.
+  move: n.
+  induction p; intros n'; simpl; try set_solver.
+  destruct (decide (x = x0)).
+    + subst. simpl. set_solver.
+    + simpl. set_solver.
+Qed.
+
+Lemma free_svars_svar_quantify X n p:
+  free_svars (svar_quantify X n p) = free_svars p ∖ {[X]}.
+Proof.
+  move: n.
+  induction p; intros n'; simpl; try set_solver.
+  destruct (decide (X = x)).
+    + subst. simpl. set_solver.
+    + simpl. set_solver.
+Qed.
+
 End subst.

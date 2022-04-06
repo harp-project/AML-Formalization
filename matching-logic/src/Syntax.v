@@ -26,6 +26,7 @@ From MatchingLogic Require Export
   SyntaxLemmas.FreshnessSubstitution
   SyntaxLemmas.PatternCtxApplicationCtx
   SyntaxLemmas.FreshnessApplicationCtx
+  SyntaxLemmas.ApplicationCtxSubstitution
 .
 
 Import Substitution.Notations.
@@ -822,139 +823,12 @@ Section with_signature.
 
 End with_signature.
 
-Lemma wf_imp_wfc {Σ : Signature} ϕ:
-  well_formed ϕ -> well_formed_closed ϕ.
-Proof.
-  intros H. apply andb_prop in H. tauto.
-Qed.
 
 #[export]
  Hint Resolve wf_imp_wfc : core.
 
 #[export]
  Hint Resolve wfc_ex_implies_not_bevar_occur : core.
-
-
-Lemma free_evars_evar_quantify {Σ : Signature} x n p:
-  free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.
-Proof.
-  move: n.
-  induction p; intros n'; simpl; try set_solver.
-  destruct (decide (x = x0)).
-    + subst. simpl. set_solver.
-    + simpl. set_solver.
-Qed.
-
-Lemma free_svars_svar_quantify {Σ : Signature} X n p:
-  free_svars (svar_quantify X n p) = free_svars p ∖ {[X]}.
-Proof.
-  move: n.
-  induction p; intros n'; simpl; try set_solver.
-  destruct (decide (X = x)).
-    + subst. simpl. set_solver.
-    + simpl. set_solver.
-Qed.
-
-Lemma free_evar_subst_subst_ctx_independent {Σ : Signature} AC ϕ Xfr1 Xfr2:
-  Xfr1 ∉ free_evars_ctx AC ->
-  Xfr2 ∉ free_evars_ctx AC ->
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr1)) ϕ Xfr1 =
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr2)) ϕ Xfr2.
-Proof.
-  intros HXfr1 HXfr2.
-  induction AC.
-  - simpl.
-    destruct (decide (Xfr1 = Xfr1)), (decide (Xfr2 = Xfr2)); simpl; try contradiction.
-    reflexivity.
-  - simpl in HXfr1. simpl in HXfr2.
-    feed specialize IHAC.
-    { set_solver. }
-    { set_solver. }
-    simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
-    reflexivity.
-  - simpl in HXfr1. simpl in HXfr2.
-    feed specialize IHAC.
-    { set_solver. }
-    { set_solver. }
-    simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
-    reflexivity.
-Qed.
-
-
-Lemma emplace_subst_ctx {Σ : Signature} AC ϕ:
-  emplace (ApplicationContext2PatternCtx AC) ϕ = subst_ctx AC ϕ.
-Proof.
-  induction AC.
-  - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-    unfold emplace. simpl. unfold free_evar_subst. simpl.
-    destruct (decide (_ = _)); simpl.
-    + reflexivity.
-    + contradiction.
-  - simpl.
-    rewrite -IHAC.
-    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-    simpl.
-    unfold emplace. unfold free_evar_subst. simpl.
-    unfold ApplicationContext2Pattern.
-    f_equal.
-    2: { fold free_evar_subst.
-      rewrite free_evar_subst_no_occurrence.
-      2: { reflexivity. }
-      apply count_evar_occurrences_0.
-      eapply evar_is_fresh_in_richer'.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
-    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
-    apply free_evar_subst_subst_ctx_independent.
-    { subst.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-    { subst.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-  - simpl.
-    rewrite -IHAC.
-    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
-    simpl.
-    unfold emplace. unfold free_evar_subst. simpl.
-    unfold ApplicationContext2Pattern.
-    f_equal.
-    { fold free_evar_subst.
-      rewrite free_evar_subst_no_occurrence.
-      2: { reflexivity. }
-      apply count_evar_occurrences_0.
-      eapply evar_is_fresh_in_richer'.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
-    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
-    apply free_evar_subst_subst_ctx_independent.
-    { subst.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-    { subst.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear. set_solver.
-    }
-Qed.
 
 
 

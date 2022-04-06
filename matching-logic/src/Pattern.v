@@ -519,4 +519,11 @@ Qed.
   Qed.
 
 
+Lemma wf_imp_wfc ϕ:
+well_formed ϕ -> well_formed_closed ϕ.
+Proof.
+intros H. apply andb_prop in H. tauto.
+Qed.
+
+
 End syntax.

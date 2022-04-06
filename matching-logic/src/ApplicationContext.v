@@ -139,4 +139,4 @@ Section with_signature.
       exact (proj1 H).
   Qed.
 
-End with_signature.
+  End with_signature.

@@ -15,6 +15,7 @@ src/PatternContext.v
 src/SyntaxLemmas/FreshnessSubstitution.v
 src/SyntaxLemmas/PatternCtxApplicationCtx.v
 src/SyntaxLemmas/FreshnessApplicationCtx.v
+src/SyntaxLemmas/ApplicationCtxSubstitution.v
 src/Syntax.v
 src/wftactics.v
 src/IndexManipulation.v

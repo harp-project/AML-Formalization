@@ -10,6 +10,7 @@ From stdpp Require Import base tactics sets.
 From MatchingLogic.Utils
 Require Import
     extralibrary
+    stdpp_ext
 .
 
 From MatchingLogic
@@ -20,6 +21,7 @@ Require Import
     PatternContext
     ApplicationContext
     Freshness
+    SyntaxLemmas.ApplicationCtxSubstitution
 .
 
 Section with_signature.
@@ -206,3 +208,73 @@ is_implicative_context' (pcEvar C) (pcPattern C).
 
 
 End with_signature.
+
+
+
+Lemma emplace_subst_ctx {Σ : Signature} AC ϕ:
+  emplace (ApplicationContext2PatternCtx AC) ϕ = subst_ctx AC ϕ.
+Proof.
+  induction AC.
+  - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    unfold emplace. simpl. unfold free_evar_subst. simpl.
+    destruct (decide (_ = _)); simpl.
+    + reflexivity.
+    + contradiction.
+  - simpl.
+    rewrite -IHAC.
+    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    simpl.
+    unfold emplace. unfold free_evar_subst. simpl.
+    unfold ApplicationContext2Pattern.
+    f_equal.
+    2: { fold free_evar_subst.
+      rewrite free_evar_subst_no_occurrence.
+      2: { reflexivity. }
+      apply count_evar_occurrences_0.
+      eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
+    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
+    apply free_evar_subst_subst_ctx_independent.
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+  - simpl.
+    rewrite -IHAC.
+    unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
+    simpl.
+    unfold emplace. unfold free_evar_subst. simpl.
+    unfold ApplicationContext2Pattern.
+    f_equal.
+    { fold free_evar_subst.
+      rewrite free_evar_subst_no_occurrence.
+      2: { reflexivity. }
+      apply count_evar_occurrences_0.
+      eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    remember (evar_fresh (elements (free_evars_ctx AC ∪ free_evars p))) as Xfr1.
+    remember (evar_fresh (elements (free_evars_ctx AC))) as Xfr2.
+    apply free_evar_subst_subst_ctx_independent.
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    { subst.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+Qed.
+
