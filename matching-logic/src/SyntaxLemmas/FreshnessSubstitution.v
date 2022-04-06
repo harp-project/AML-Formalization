@@ -185,4 +185,59 @@ Qed.
   Qed.
 
 
+
+  Lemma fresh_evar_svar_open dbi X phi :
+    fresh_evar (svar_open dbi X phi) = fresh_evar phi.
+  Proof.
+    unfold fresh_evar.
+    apply f_equal.
+    apply f_equal.
+    apply free_evars_svar_open.
+  Qed.
+
+  Lemma fresh_svar_evar_open dbi x phi :
+    fresh_svar (evar_open dbi x phi) = fresh_svar phi.
+  Proof.
+    unfold fresh_svar.
+    apply f_equal.
+    apply f_equal.
+    apply free_svars_evar_open.
+  Qed.
+
+  Corollary svar_is_fresh_in_svar_open X Y dbi ϕ:
+  X <> Y ->
+  svar_is_fresh_in X ϕ ->
+  svar_is_fresh_in X (svar_open dbi Y ϕ).
+Proof.
+  unfold svar_is_fresh_in.
+  move=> Hneq Hfr.
+  pose proof (H := @free_svars_svar_open Σ ϕ Y dbi).
+  intros Contra.
+  rewrite -> elem_of_subseteq in H.
+  specialize (H X Contra). clear Contra.
+  apply elem_of_union in H.
+  destruct H.
+  - apply elem_of_singleton_1 in H.
+    contradiction.
+  - contradiction.
+Qed.
+
+Corollary evar_is_fresh_in_evar_open x y dbi ϕ:
+  x <> y ->
+  evar_is_fresh_in x ϕ ->
+  evar_is_fresh_in x (evar_open dbi y ϕ).
+Proof.
+  unfold evar_is_fresh_in.
+  move=> Hneq Hfr.
+  pose proof (H := @free_evars_evar_open Σ ϕ y dbi).
+  intros Contra.
+  rewrite -> elem_of_subseteq in H.
+  specialize (H x Contra). clear Contra.
+  apply elem_of_union in H.
+  destruct H.
+  - apply elem_of_singleton_1 in H.
+    contradiction.
+  - contradiction.
+Qed.
+
 End lemmas.

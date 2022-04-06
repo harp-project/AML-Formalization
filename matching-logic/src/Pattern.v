@@ -417,4 +417,61 @@ Qed.
     now rewrite -> Hcl12, -> Hcl22.
   Qed.
 
+  Lemma free_svars_exists : forall (ϕ : Pattern),
+    free_svars (patt_exists ϕ) = free_svars ϕ.
+  Proof. done. Qed.
+
+
+
+
+  Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
+    match p with
+    | patt_free_evar x' => if decide (x' = x) is left _ then 1 else 0 
+    | patt_free_svar _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_sym _ => 0
+    | patt_app phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_bott => 0
+    | patt_imp phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_exists phi' => count_evar_occurrences x phi'
+    | patt_mu phi' => count_evar_occurrences x phi'
+    end.
+
+  Lemma count_evar_occurrences_0 (x : evar) (p : Pattern) :
+    x ∉ free_evars p ->
+    count_evar_occurrences x p = 0.
+  Proof.
+    intros H.
+    induction p; simpl in H; simpl; auto.
+    - apply not_elem_of_singleton_1 in H.
+      destruct (decide (x0 = x)). subst. contradiction. reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+  Qed.
+
+
+  Lemma wfc_impl_no_neg_pos_occ p m:
+    well_formed_closed_mu_aux p m ->
+    (no_negative_occurrence_db_b m p && no_positive_occurrence_db_b m p) = true.
+  Proof.
+    intros H.
+    move: m H.
+    induction p; intros m H; simpl; simpl in H; cbn; auto.
+    - repeat case_match; try reflexivity; try lia. congruence.
+    - apply andb_prop in H. destruct H as [H1 H2].
+      specialize (IHp1 m H1). specialize (IHp2 m H2).
+      destruct_and!. split_and!; assumption.
+    - apply andb_prop in H. destruct H as [H1 H2].
+      specialize (IHp1 m H1). specialize (IHp2 m H2).
+      destruct_and!. split_and!; assumption.
+  Qed.
+
+
 End syntax.
