@@ -721,4 +721,413 @@ rewrite wfc_mu_aux_body_ex_imp1. auto.
 reflexivity.
 Qed.
 
+
+
+Lemma no_neg_occ_db_bevar_subst phi psi dbi1 dbi2:
+well_formed_closed_mu_aux psi 0 = true ->
+no_negative_occurrence_db_b dbi1 phi = true ->
+no_negative_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true
+with no_pos_occ_db_bevar_subst  phi psi dbi1 dbi2:
+   well_formed_closed_mu_aux psi 0 = true ->
+   no_positive_occurrence_db_b dbi1 phi = true ->
+   no_positive_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true.
+Proof.
+- move: dbi1 dbi2.
+induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
++ case_match; auto. now apply wfc_impl_no_neg_occ.
++ destruct_and!.
+rewrite -> IHphi1, -> IHphi2; auto.
++ destruct_and!.
+fold (no_positive_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+rewrite no_pos_occ_db_bevar_subst; auto.
+rewrite -> IHphi2; auto.
+- move: dbi1 dbi2.
+induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
++ repeat case_match; auto.
+apply wfc_impl_no_pos_occ. assumption.
++ destruct_and!.
+rewrite -> IHphi1, -> IHphi2; auto.
++ destruct_and!.
+fold (no_negative_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+rewrite no_neg_occ_db_bevar_subst; auto.
+rewrite -> IHphi2; auto.
+Qed.
+
+Lemma bevar_subst_positive_2 :
+forall φ ψ n,
+well_formed_closed_mu_aux ψ 0 = true ->
+well_formed_positive φ = true ->
+well_formed_positive ψ = true ->
+well_formed_positive (bevar_subst φ ψ n) = true.
+Proof.
+induction φ; intros ψ n' H0 H1 H2; cbn in *; auto.
+* break_match_goal; auto.
+* destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
+* destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
+* destruct_and!.
+rewrite IHφ; auto.
+rewrite no_neg_occ_db_bevar_subst; auto.
+Qed.
+
+Corollary wfp_evar_open : forall phi x n,
+well_formed_positive phi = true ->
+well_formed_positive (evar_open n x phi) = true.
+Proof.
+intros phi x n WF. apply bevar_subst_positive_2; auto.
+Qed.
+
+(* Additional lemmas: evar_open, svar_open, freshness, well_formedness, etc. *)
+
+(* evar_open and evar_quantify are inverses *)
+Lemma evar_open_evar_quantify x n phi:
+well_formed_closed_ex_aux phi n ->
+(evar_open n x (evar_quantify x n phi)) = phi.
+Proof.
+intros H.
+(*apply wfc_wfc_ind in H.*)
+move: n H.
+induction phi; intros n' H; cbn; auto.
+- destruct (decide (x = x0)); subst; simpl.
++ break_match_goal; auto; lia.
++ reflexivity.
+- simpl in *. repeat case_match; simpl; auto; try lia; congruence.
+- cbn in H. simpl. unfold evar_open, evar_quantify in IHphi1, IHphi2.
+apply andb_true_iff in H.
+destruct H as [H1 H2].
+erewrite -> IHphi1, IHphi2 by eassumption.
+reflexivity.
+- simpl in H. unfold evar_open, evar_quantify in IHphi1, IHphi2.
+apply andb_true_iff in H.
+destruct H as [H1 H2].
+erewrite -> IHphi1, IHphi2 by eassumption.
+reflexivity.
+- simpl in H. unfold evar_open, evar_quantify in IHphi.
+erewrite -> IHphi by eassumption. reflexivity.
+- simpl in H. apply IHphi in H. unfold evar_open in H. rewrite H. reflexivity.
+Qed.
+
+Lemma svar_open_svar_quantify X n phi:
+well_formed_closed_mu_aux phi n ->
+(svar_open n X (svar_quantify X n phi)) = phi.
+Proof.
+intros H.
+(*apply wfc_wfc_ind in H.*)
+move: n H.
+induction phi; intros n' H; cbn; auto.
+- destruct (decide (X = x)); subst; simpl.
++ break_match_goal; auto; lia.
++ reflexivity.
+- simpl in *. repeat case_match; simpl; auto; subst; try lia; try congruence.
+- cbn in H. simpl. unfold svar_open in IHphi1, IHphi2.
+apply andb_true_iff in H.
+destruct H as [H1 H2].
+erewrite -> IHphi1, IHphi2 by eassumption.
+reflexivity.
+- simpl in H. unfold svar_open in IHphi1, IHphi2.
+apply andb_true_iff in H.
+destruct H as [H1 H2].
+erewrite -> IHphi1, IHphi2 by eassumption.
+reflexivity.
+- simpl in H. unfold svar_open in IHphi.
+erewrite -> IHphi by eassumption. reflexivity.
+- simpl in H. apply IHphi in H. unfold svar_open in H. rewrite H. reflexivity.
+Qed.
+
+Lemma evar_quantify_evar_open x n phi:
+x ∉ free_evars phi -> well_formed_closed_ex_aux phi (S n) ->
+(evar_quantify x n (evar_open n x phi)) = phi.
+Proof.
+revert n.
+induction phi; intros n' H0 H1; simpl; auto.
+- destruct (decide (x = x0)); simpl.
++ subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
++ reflexivity.
+- simpl in *. unfold evar_quantify,evar_open. simpl.
+repeat case_match; auto; try congruence. lia.
+- unfold evar_open in IHphi1, IHphi2.
+rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+rewrite -> IHphi1, IHphi2.
+reflexivity.
+all: auto; apply andb_true_iff in H1; apply H1.
+- unfold evar_open in IHphi1, IHphi2.
+rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+rewrite -> IHphi1, IHphi2.
+reflexivity.
+all: auto; apply andb_true_iff in H1; apply H1.
+- simpl in H0. unfold evar_open in IHphi.
+rewrite -> IHphi by assumption. reflexivity.
+- simpl in H0. unfold evar_open in IHphi.
+rewrite -> IHphi by assumption. reflexivity.
+Qed.
+
+Lemma svar_quantify_svar_open X n phi:
+X ∉ free_svars phi -> well_formed_closed_mu_aux phi (S n) ->
+(svar_quantify X n (svar_open n X phi)) = phi.
+Proof.
+revert n.
+induction phi; intros n' H0 H1; simpl; auto.
+- destruct (decide (X = x)); simpl.
++ subst. simpl in H0. apply sets.not_elem_of_singleton_1 in H0. congruence.
++ reflexivity.
+- simpl in *. unfold svar_quantify,svar_open,bsvar_subst.
+repeat case_match; auto; try congruence. lia.
+- unfold svar_open in IHphi1, IHphi2.
+rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+rewrite -> IHphi1, IHphi2.
+reflexivity.
+all: auto; apply andb_true_iff in H1; apply H1.
+- unfold svar_open in IHphi1, IHphi2.
+rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+rewrite -> IHphi1, IHphi2.
+reflexivity.
+all: auto; apply andb_true_iff in H1; apply H1.
+- simpl in H0. unfold svar_open in IHphi.
+erewrite -> IHphi by assumption. reflexivity.
+- simpl in H0. unfold svar_open in IHphi.
+erewrite -> IHphi by assumption. reflexivity.
+Qed.
+
+Lemma double_evar_quantify φ : forall x n,
+evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
+Proof.
+induction φ; intros x' n'; simpl; auto.
+* unfold evar_quantify. repeat case_match; auto. contradiction.
+* now rewrite -> IHφ1, -> IHφ2.
+* now rewrite -> IHφ1, -> IHφ2.
+* now rewrite IHφ.
+* now rewrite IHφ.
+Qed.
+
+Lemma double_svar_quantify φ : forall X n,
+svar_quantify X n (svar_quantify X n φ) = svar_quantify X n φ.
+Proof.
+induction φ; intros x' n'; simpl; auto.
+* unfold svar_quantify. repeat case_match; auto. contradiction.
+* now rewrite -> IHφ1, -> IHφ2.
+* now rewrite -> IHφ1, -> IHφ2.
+* now rewrite IHφ.
+* now rewrite IHφ.
+Qed.
+
+Lemma well_formed_bevar_subst φ : forall ψ n m,
+m >= n -> well_formed_closed_ex_aux φ n ->
+bevar_subst φ ψ m = φ.
+Proof.
+induction φ; intros ψ n' m' H H0; simpl; auto.
+* simpl in H0. repeat case_match; auto; try lia; congruence.
+* simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+3: apply eq_sym, H1.
+4: apply eq_sym, H0. all: auto.
+* simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+3: apply eq_sym, H1.
+4: apply eq_sym, H0. all: auto.
+* simpl in H0. erewrite IHφ. 3: apply H0. auto. lia.
+* simpl in H0. erewrite IHφ. 3: apply H0. all: auto.
+Qed.
+
+Lemma well_formed_bsvar_subst φ : forall ψ k m,
+m >= k -> well_formed_closed_mu_aux φ k ->
+bsvar_subst φ ψ m = φ.
+Proof.
+induction φ; intros ψ k' m' H H0; simpl; auto.
+* simpl in H0. repeat case_match; auto; try lia; congruence.
+* simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+3: apply eq_sym, H1.
+4: apply eq_sym, H0. all: auto.
+* simpl in H0. apply eq_sym, andb_true_eq in H0. destruct H0. erewrite IHφ1, IHφ2.
+3: apply eq_sym, H1.
+4: apply eq_sym, H0. all: auto.
+* simpl in H0. erewrite IHφ. 3: apply H0. auto. lia.
+* simpl in H0. erewrite IHφ. 3: apply H0. all: auto. lia.
+Qed.
+
+(* bevar_subst is identity if n does not occur in phi *)
+Corollary bevar_subst_not_occur n ψ ϕ :
+well_formed_closed_ex_aux ϕ n ->
+bevar_subst ϕ ψ n = ϕ.
+Proof.
+intro H. eapply well_formed_bevar_subst; eauto.
+Qed.
+
+(* evar_open is identity if n does not occur in phi *)
+Corollary evar_open_not_occur n x ϕ :
+well_formed_closed_ex_aux ϕ n ->
+evar_open n x ϕ = ϕ.
+Proof.
+apply bevar_subst_not_occur.
+Qed.
+
+(* bsvar_subst is identity if n does not occur in phi *)
+Corollary bsvar_subst_not_occur n ψ ϕ :
+well_formed_closed_mu_aux ϕ n ->
+bsvar_subst ϕ ψ n = ϕ.
+Proof.
+intro H. eapply well_formed_bsvar_subst; eauto.
+Qed.
+
+(* evar_open is identity if n does not occur in phi *)
+Corollary svar_open_not_occur n x ϕ :
+well_formed_closed_mu_aux ϕ n ->
+svar_open n x ϕ = ϕ.
+Proof.
+apply bsvar_subst_not_occur.
+Qed.
+
+(* opening on closed patterns is identity *)
+Lemma evar_open_closed :
+forall phi,
+well_formed_closed_ex_aux phi 0 ->
+forall n v,
+  evar_open n v phi = phi.
+Proof.
+intros phi H n v. unfold evar_open. erewrite well_formed_bevar_subst. 3: exact H.
+auto. lia.
+Qed.
+
+Lemma svar_open_closed :
+forall phi,
+well_formed_closed_mu_aux phi 0 ->
+forall n v,
+  svar_open n v phi = phi.
+Proof. 
+intros phi H n v. unfold svar_open. erewrite well_formed_bsvar_subst. 3: exact H.
+auto. lia.
+Qed.
+
+Lemma bevar_subst_comm_higher :
+forall phi psi1 psi2 n m, 
+n > m -> well_formed_closed_ex_aux psi1 0 -> well_formed_closed_ex_aux psi2 0 ->
+bevar_subst (bevar_subst phi psi1 n) psi2 m = 
+bevar_subst (bevar_subst phi psi2 m) psi1 (pred n).
+Proof.
+induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
+- repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
+all:  repeat case_match; try lia; auto.
+1-2: subst; erewrite well_formed_bevar_subst; try eassumption; auto; lia.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi; auto; try lia.
+replace (pred (S n0)) with n0 by lia.
+now replace (S (pred n0)) with n0 by lia.
+- rewrite -> IHphi; auto.
+Qed.
+
+Lemma bevar_subst_comm_lower :
+forall phi psi1 psi2 n m, 
+n < m -> well_formed_closed_ex_aux psi1 0 -> well_formed_closed_ex_aux psi2 0 ->
+bevar_subst (bevar_subst phi psi1 n) psi2 m = 
+bevar_subst (bevar_subst phi psi2 (S m)) psi1 n.
+Proof.
+induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
+- repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
+all:  repeat case_match; try lia; auto.
+1-2: subst; erewrite well_formed_bevar_subst; try eassumption; auto. 2: lia.
+eapply well_formed_closed_ex_aux_ind. 2: exact Hwf1. lia.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi; auto; try lia.
+- rewrite -> IHphi; auto.
+Qed.
+
+Lemma bsvar_subst_comm_higher :
+forall phi psi1 psi2 n m, 
+n > m -> well_formed_closed_mu_aux psi1 0 -> well_formed_closed_mu_aux psi2 0 ->
+bsvar_subst (bsvar_subst phi psi1 n) psi2 m = 
+bsvar_subst (bsvar_subst phi psi2 m) psi1 (pred n).
+Proof.
+induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
+- repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
+all:  repeat case_match; try lia; auto.
+1-2: subst; erewrite well_formed_bsvar_subst; try eassumption; auto; lia.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi; auto.
+- rewrite -> IHphi; auto. 2: lia.
+replace (pred (S n0)) with n0 by lia.
+now replace (S (pred n0)) with n0 by lia.
+Qed.
+
+Lemma bsvar_subst_comm_lower :
+forall phi psi1 psi2 n m, 
+n < m -> well_formed_closed_mu_aux psi1 0 -> well_formed_closed_mu_aux psi2 0 ->
+bsvar_subst (bsvar_subst phi psi1 n) psi2 m = 
+bsvar_subst (bsvar_subst phi psi2 (S m)) psi1 n.
+Proof.
+induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
+- repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
+all:  repeat case_match; try lia; auto.
+1-2: subst; erewrite well_formed_bsvar_subst; try eassumption; auto. 2: lia.
+eapply well_formed_closed_mu_aux_ind. 2: exact Hwf1. lia.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi1, -> IHphi2; auto.
+- rewrite -> IHphi; auto.
+- rewrite -> IHphi; auto. lia.
+Qed.
+
+Corollary evar_open_comm_higher:
+forall n m,
+n < m 
+->
+forall x y phi,
+  evar_open n x (evar_open m y phi) = evar_open (pred m) y (evar_open n x phi).
+Proof.
+intros n m Hneqnm x y phi. apply bevar_subst_comm_higher; auto.
+Qed.
+
+Corollary evar_open_comm_lower:
+forall n m,
+n > m 
+->
+forall x y phi,
+  evar_open n x (evar_open m y phi) = evar_open m y (evar_open (S n) x phi).
+Proof.
+intros n m Hneqnm x y phi. apply bevar_subst_comm_lower; auto.
+Qed.
+
+Corollary svar_open_comm_higher:
+forall n m,
+n < m 
+->
+forall X Y phi,
+  svar_open n X (svar_open m Y phi) = svar_open (pred m) Y (svar_open n X phi).
+Proof.
+intros n m Hneqnm x y phi. apply bsvar_subst_comm_higher; auto.
+Qed.
+
+Corollary svar_open_comm_lower:
+forall n m,
+n > m
+->
+forall X Y phi,
+  svar_open n X (svar_open m Y phi) = svar_open m Y (svar_open (S n) X phi).
+Proof.
+intros n m Hneqnm x y phi. apply bsvar_subst_comm_lower; auto.
+Qed.
+
+Lemma bevar_subst_bsvar_subst phi psi1 psi2 dbi1 dbi2
+: well_formed_closed psi1 -> well_formed_closed psi2 ->
+bevar_subst (bsvar_subst phi psi1 dbi1) psi2 dbi2
+= bsvar_subst (bevar_subst phi psi2 dbi2) psi1 dbi1.
+Proof.
+generalize dependent dbi1. generalize dependent dbi2.
+induction phi; intros dbi1 dbi2 Hwf1 Hwf2; simpl; auto.
+* break_match_goal; auto. erewrite well_formed_bsvar_subst; auto.
+unfold well_formed_closed in *. destruct_and!.
+eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+* break_match_goal; auto. erewrite well_formed_bevar_subst; auto.
+unfold well_formed_closed in *. destruct_and!.
+eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+* simpl. rewrite -> IHphi1, -> IHphi2; auto.
+* simpl. rewrite -> IHphi1, -> IHphi2; auto.
+* simpl. rewrite IHphi; auto.
+* simpl. rewrite IHphi; auto.
+Qed.
+
+Corollary svar_open_evar_open_comm
+: forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
+evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
+Proof.
+intros phi dbi1 x dbi2 X. apply bevar_subst_bsvar_subst; auto.
+Qed.
+
 End subst.

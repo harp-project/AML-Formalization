@@ -124,4 +124,22 @@ Section freshness.
   Hint Resolve evar_is_fresh_in_richer : core.
 
 
+  Lemma not_free_implies_positive_negative_occurrence :
+    forall (phi : Pattern) (X : svar),
+      X ∉ (free_svars phi) ->
+      svar_has_positive_occurrence X phi = false /\ svar_has_negative_occurrence X phi = false.
+  Proof.
+    induction phi; simpl; intros Y H; split; try auto; cbn.
+    * case_match; auto. set_solver.
+    * now erewrite -> (proj1 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)).
+    * now erewrite -> (proj2 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)).
+    * now erewrite -> (proj2 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)).
+    * now erewrite -> (proj1 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)).
+    * now erewrite -> (proj1 (IHphi _ _)).
+    * now erewrite -> (proj2 (IHphi _ _)).
+    * now erewrite -> (proj1 (IHphi _ _)).
+    * now erewrite -> (proj2 (IHphi _ _)).
+    Unshelve. all: set_solver.
+  Qed.
+
 End freshness.

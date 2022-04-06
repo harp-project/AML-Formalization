@@ -389,4 +389,32 @@ Qed.
     apply HX2.
   Qed.
 
+
+
+  Lemma well_formed_app_1 : forall (phi1 phi2 : Pattern),
+      well_formed (patt_app phi1 phi2) -> well_formed phi1.
+  Proof.
+    unfold well_formed. simpl. intros phi1 phi2 H.
+    apply andb_true_iff in H as [Hpos Hclos].
+    apply andb_true_iff in Hclos as [Hcl1 Hcl2]. simpl in Hcl1, Hcl2.
+    apply andb_true_iff in Hpos as [Hpos1 Hpos2].
+    apply andb_true_iff in Hcl1 as [Hcl11 Hcl12].
+    apply andb_true_iff in Hcl2 as [Hcl21 Hcl22].
+    rewrite -> Hpos1. unfold well_formed_closed. simpl.
+    now rewrite -> Hcl11, -> Hcl21.
+  Qed.
+
+  Lemma well_formed_app_2 : forall (phi1 phi2 : Pattern),
+      well_formed (patt_app phi1 phi2) -> well_formed phi2.
+  Proof.
+    unfold well_formed. simpl. intros phi1 phi2 H.
+    apply andb_true_iff in H as [Hpos Hclos].
+    apply andb_true_iff in Hclos as [Hcl1 Hcl2]. simpl in Hcl1, Hcl2.
+    apply andb_true_iff in Hpos as [Hpos1 Hpos2].
+    apply andb_true_iff in Hcl1 as [Hcl11 Hcl12].
+    apply andb_true_iff in Hcl2 as [Hcl21 Hcl22].
+    rewrite -> Hpos2. unfold well_formed_closed. simpl.
+    now rewrite -> Hcl12, -> Hcl22.
+  Qed.
+
 End syntax.
