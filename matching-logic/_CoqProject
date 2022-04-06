@@ -10,7 +10,10 @@ src/Pattern.v
 src/Substitution.v
 src/Freshness.v
 src/SyntacticConstruct.v
+src/ApplicationContext.v
+src/PatternContext.v
 src/SyntaxLemmas/FreshnessSubstitution.v
+src/SyntaxLemmas/PatternCtxApplicationCtx.v
 src/Syntax.v
 src/wftactics.v
 src/IndexManipulation.v
