@@ -259,6 +259,227 @@ Section subst.
     rewrite (IHp (S k)); reflexivity.
   Qed.
 
+
+ 
+   (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
+   Definition wfc_body_ex phi  := forall x, 
+   ~ elem_of x (free_evars phi) -> well_formed_closed (evar_open 0 x phi) = true.
+
+
+   Lemma positive_negative_occurrence_evar_open_and : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
+   (*le db1 db2 ->*)
+   (no_positive_occurrence_db_b db1 phi -> no_positive_occurrence_db_b db1 (evar_open db2 x phi))
+   /\ (no_negative_occurrence_db_b db1 phi -> no_negative_occurrence_db_b db1 (evar_open db2 x phi)).
+Proof.
+ induction phi; intros db1 db2 x'; cbn; split; intro H; try lia; auto.
+ * case_match; auto.
+ * case_match; auto.
+ * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
+ * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
+ * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
+ * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
+ * rewrite -> (proj1 (IHphi db1 (S db2) x')); auto.
+ * rewrite -> (proj2 (IHphi db1 (S db2) x')); auto.
+ * rewrite -> (proj1 (IHphi (S db1) db2 x')); auto.
+ * rewrite -> (proj2 (IHphi (S db1) db2 x')); auto.
+Qed.
+
+Lemma no_negative_occurrence_evar_open phi db1 db2 x:
+ no_negative_occurrence_db_b db1 phi = true ->
+ no_negative_occurrence_db_b db1 (evar_open db2 x phi) = true.
+Proof.
+ apply positive_negative_occurrence_evar_open_and.
+Qed.
+
+Lemma no_positive_occurrence_evar_open phi db1 db2 x:
+ no_positive_occurrence_db_b db1 phi = true ->
+ no_positive_occurrence_db_b db1 (evar_open db2 x phi) = true.
+Proof.
+ apply positive_negative_occurrence_evar_open_and.
+Qed.
+
+
+(*Helper lemma for wf_body_to_wf_ex*)
+Lemma wfc_ex_aux_body_ex_imp2:
+ forall phi n x,
+   well_formed_closed_ex_aux (evar_open n x phi) n = true
+   ->
+   well_formed_closed_ex_aux phi (S n) = true.
+Proof using .
+ induction phi; firstorder.
+ - simpl. cbn in H. unfold well_formed_closed_ex_aux.
+   repeat case_match; simpl; auto; try lia.
+   unfold well_formed_closed_ex_aux in H. case_match; auto. lia.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+Qed.
+
+(*Helper lemma for wf_body_to_wf_ex*)
+Lemma wfc_mu_aux_body_ex_imp2:
+ forall phi n n' x,
+   well_formed_closed_mu_aux (evar_open n x phi) n' = true
+   ->
+   well_formed_closed_mu_aux phi n' = true.
+Proof using .
+ induction phi; firstorder.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+Qed.
+
+Lemma wfc_ex_aux_body_mu_imp2:
+ forall phi n n' X,
+   well_formed_closed_ex_aux (svar_open n X phi) n' = true
+   ->
+   well_formed_closed_ex_aux phi n' = true.
+Proof using .
+ induction phi; firstorder.
+ - simpl in H. simpl.
+   destruct_and!.
+   erewrite IHphi1. 2: eassumption.
+   erewrite IHphi2. 2: eassumption.
+   reflexivity.
+ - simpl in H. simpl.
+   destruct_and!.
+   erewrite IHphi1. 2: eassumption.
+   erewrite IHphi2. 2: eassumption.
+   reflexivity.
+Qed.
+
+Lemma wfc_mu_aux_body_mu_imp2:
+ forall phi n X,
+   well_formed_closed_mu_aux (svar_open n X phi) n = true
+   ->
+   well_formed_closed_mu_aux phi (S n) = true.
+Proof using .
+ induction phi; firstorder.
+ - simpl. cbn in H. unfold well_formed_closed_mu_aux.
+   repeat case_match; simpl; auto; try lia.
+   unfold well_formed_closed_mu_aux in H. case_match; auto. lia.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+ - simpl in H. simpl.
+   apply andb_true_iff in H. destruct H as [H1 H2].
+   erewrite IHphi1. 2: apply H1.
+   erewrite IHphi2. 2: apply H2.
+   reflexivity.
+Qed.
+
+
+  (* The following lemmas are trivial but useful for [rewrite !simpl_evar_open]. *)
+
+  Lemma bevar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
+    bevar_subst (patt_free_evar x) ψ n = patt_free_evar x.
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_free_svar ψ (pf : well_formed_closed ψ) n X :
+    bevar_subst (patt_free_svar X) ψ n = patt_free_svar X.
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_bound_evar ψ (pf : well_formed_closed ψ) n x :
+    bevar_subst (patt_bound_evar x) ψ n = match compare_nat x n with
+                                          | Nat_less _ _ _ => patt_bound_evar x
+                                          | Nat_equal _ _ _ => ψ
+                                          | Nat_greater _ _ _ => patt_bound_evar (pred x)
+                                          end.
+  Proof.
+    cbn. case_match; done.
+  Qed.
+
+  Lemma bevar_subst_bound_svar ψ (pf : well_formed_closed ψ) n X :
+    bevar_subst (patt_bound_svar X) ψ n = patt_bound_svar X.
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_sym ψ (pf : well_formed_closed ψ) n s :
+    bevar_subst (patt_sym s) ψ n = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_app ψ (pf : well_formed_closed ψ) n ls rs :
+    bevar_subst (patt_app ls rs) ψ n = patt_app (bevar_subst ls ψ n) (bevar_subst rs ψ n).
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_bott ψ (pf : well_formed_closed ψ) n:
+    bevar_subst patt_bott ψ n = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_imp ψ (pf : well_formed_closed ψ) n ls rs :
+    bevar_subst (patt_imp ls rs) ψ n = patt_imp (bevar_subst ls ψ n) (bevar_subst rs ψ n).
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_exists ψ (pf : well_formed_closed ψ) n ϕ :
+    bevar_subst (patt_exists ϕ) ψ n = patt_exists (bevar_subst ϕ ψ (S n)).
+  Proof. reflexivity. Qed.
+
+  Lemma bevar_subst_mu ψ (pf : well_formed_closed ψ) n ϕ :
+    bevar_subst (patt_mu ϕ) ψ n = patt_mu (bevar_subst ϕ ψ n).
+  Proof. reflexivity. Qed.
+
+  (* More trivial but useful lemmas *)
+  Lemma bsvar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
+    bsvar_subst (patt_free_evar x) ψ n = patt_free_evar x.
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_free_svar ψ (pf : well_formed_closed ψ) n X :
+    bsvar_subst (patt_free_svar X) ψ n = patt_free_svar X.
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_bound_evar ψ (pf : well_formed_closed ψ) n x :
+    bsvar_subst (patt_bound_evar x) ψ n = patt_bound_evar x.
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_bound_svar ψ (pf : well_formed_closed ψ) n X :
+    bsvar_subst (patt_bound_svar X) ψ n = match compare_nat X n with
+                                          | Nat_less _ _ _ => patt_bound_svar X
+                                          | Nat_equal _ _ _ => ψ
+                                          | Nat_greater _ _ _ => patt_bound_svar (pred X)
+                                          end.
+  Proof.
+    reflexivity.
+  Qed.
+
+  Lemma bsvar_subst_sym ψ (pf : well_formed_closed ψ) n s :
+    bsvar_subst (patt_sym s) ψ n = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_app ψ (pf : well_formed_closed ψ) n ls rs :
+    bsvar_subst (patt_app ls rs) ψ n = patt_app (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_bott ψ (pf : well_formed_closed ψ) n :
+    bsvar_subst patt_bott ψ n = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_imp ψ (pf : well_formed_closed ψ) n ls rs:
+    bsvar_subst (patt_imp ls rs) ψ n = patt_imp (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_exists ψ (pf : well_formed_closed ψ) n ϕ :
+    bsvar_subst (patt_exists ϕ) ψ n = patt_exists (bsvar_subst ϕ ψ n).
+  Proof. reflexivity. Qed.
+
+  Lemma bsvar_subst_mu ψ (pf : well_formed_closed ψ) n ϕ :
+    bsvar_subst (patt_mu ϕ) ψ n = patt_mu (bsvar_subst ϕ ψ (S n)).
+  Proof. reflexivity. Qed.
+
+
 End subst.
 
 Module Notations.
