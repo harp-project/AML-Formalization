@@ -473,5 +473,50 @@ Qed.
       destruct_and!. split_and!; assumption.
   Qed.
 
+    
+  Fixpoint mu_free (p : Pattern) : bool :=
+  match p with
+   | patt_free_evar x => true
+   | patt_free_svar x => true
+   | patt_bound_evar n => true
+   | patt_bound_svar n => true
+   | patt_sym sigma => true
+   | patt_app phi1 phi2 => mu_free phi1 && mu_free phi2
+   | patt_bott => true
+   | patt_imp phi1 phi2 => mu_free phi1 && mu_free phi2
+   | patt_exists phi => mu_free phi
+   | patt_mu phi => false
+  end.
+
+  (* Fragment of matching logic without set variables and mu *)
+  Fixpoint set_free (p : Pattern) : bool :=
+  match p with
+   | patt_free_evar x => true
+   | patt_free_svar x => false
+   | patt_bound_evar n => true
+   | patt_bound_svar n => false
+   | patt_sym sigma => true
+   | patt_app phi1 phi2 => set_free phi1 && set_free phi2
+   | patt_bott => true
+   | patt_imp phi1 phi2 => set_free phi1 && set_free phi2
+   | patt_exists phi => set_free phi
+   | patt_mu phi => false
+  end.
+
+  Lemma set_free_implies_mu_free p:
+    set_free p = true -> mu_free p = true.
+  Proof.
+    intros H.
+    induction p; simpl in *; destruct_and?; split_and?; auto.
+  Qed.
+
+
+  Theorem mu_free_wfp φ :
+    mu_free φ -> well_formed_positive φ.
+  Proof.
+    induction φ; intros Hmf; simpl; auto.
+    all: simpl in Hmf; destruct_and!; rewrite -> IHφ1, -> IHφ2; auto.
+  Qed.
+
 
 End syntax.

@@ -11,7 +11,12 @@ From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax NamedAxioms IndexManipulation.
+From MatchingLogic Require Import
+  Syntax
+  Freshness
+  NamedAxioms
+  IndexManipulation
+.
 
 Import MatchingLogic.Syntax.Notations.
 (** ** Matching Logic Semantics *)

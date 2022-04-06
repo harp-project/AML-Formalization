@@ -142,4 +142,301 @@ Section freshness.
     Unshelve. all: set_solver.
   Qed.
 
+
+  Corollary evar_is_fresh_in_app_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Corollary svar_is_fresh_in_app_l X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in X ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+  
+  (*Hint Resolve evar_is_fresh_in_app_l : core.*)
+
+  Corollary evar_is_fresh_in_app_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Corollary svar_is_fresh_in_app_r X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_app ϕ₁ ϕ₂) -> svar_is_fresh_in X ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+  
+  Lemma evar_is_fresh_in_app x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_app ϕ₁ ϕ₂)
+    <-> (evar_is_fresh_in x ϕ₁ /\ evar_is_fresh_in x ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply evar_is_fresh_in_app_l. apply H.
+      + eapply evar_is_fresh_in_app_r. apply H.
+    - unfold evar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.
+
+  Lemma svar_is_fresh_in_app X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_app ϕ₁ ϕ₂)
+    <-> (svar_is_fresh_in X ϕ₁ /\ svar_is_fresh_in X ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply svar_is_fresh_in_app_l. apply H.
+      + eapply svar_is_fresh_in_app_r. apply H.
+    - unfold svar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.
+  
+  (*Hint Resolve evar_is_fresh_in_app_r : core.*)
+
+  Corollary evar_is_fresh_in_imp_l x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₁.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Corollary svar_is_fresh_in_imp_l X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in X ϕ₁.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+  
+  (*Hint Resolve evar_is_fresh_in_imp_l : core.*)
+
+  Corollary evar_is_fresh_in_imp_r x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂) -> evar_is_fresh_in x ϕ₂.
+  Proof.
+    unfold evar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Corollary svar_is_fresh_in_imp_r X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_imp ϕ₁ ϕ₂) -> svar_is_fresh_in X ϕ₂.
+  Proof.
+    unfold svar_is_fresh_in. simpl.
+    move/not_elem_of_union => [H1 H2].
+    done.
+  Qed.
+
+  Lemma evar_is_fresh_in_imp x ϕ₁ ϕ₂ :
+    evar_is_fresh_in x (patt_imp ϕ₁ ϕ₂)
+    <-> (evar_is_fresh_in x ϕ₁ /\ evar_is_fresh_in x ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply evar_is_fresh_in_imp_l. apply H.
+      + eapply evar_is_fresh_in_imp_r. apply H.
+    - unfold evar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.
+
+  Lemma svar_is_fresh_in_imp X ϕ₁ ϕ₂ :
+    svar_is_fresh_in X (patt_imp ϕ₁ ϕ₂)
+    <-> (svar_is_fresh_in X ϕ₁ /\ svar_is_fresh_in X ϕ₂).
+  Proof.
+    split; intros H.
+    - split.
+      + eapply svar_is_fresh_in_imp_l. apply H.
+      + eapply svar_is_fresh_in_imp_r. apply H.
+    - unfold svar_is_fresh_in in *.
+      simpl.
+      set_solver.
+  Qed.
+
+  
+  (*Hint Resolve evar_is_fresh_in_imp_r : core.*)
+
+  Corollary evar_is_fresh_in_exists x ϕ :
+    evar_is_fresh_in x (patt_exists ϕ) <-> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  (*Hint Resolve evar_is_fresh_in_exists : core.*)
+
+  Corollary evar_is_fresh_in_mu x ϕ :
+    evar_is_fresh_in x (patt_mu ϕ) <-> evar_is_fresh_in x ϕ.
+  Proof.
+    unfold evar_is_fresh_in. simpl. done.
+  Qed.
+
+  (*Hint Resolve evar_is_fresh_in_mu : core.*)
+
+  Corollary svar_is_fresh_in_exists x ϕ :
+    svar_is_fresh_in x (patt_exists ϕ) <-> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
+  Corollary svar_is_fresh_in_mu x ϕ :
+    svar_is_fresh_in x (patt_mu ϕ) <-> svar_is_fresh_in x ϕ.
+  Proof.
+    unfold svar_is_fresh_in. simpl. done.
+  Qed.
+
+    
+  Lemma X_eq_fresh_impl_X_notin_free_svars X ϕ:
+    X = fresh_svar ϕ ->
+    X ∉ free_svars ϕ.
+  Proof.
+    intros H.
+    rewrite H.
+    unfold fresh_svar.
+    apply set_svar_fresh_is_fresh'.
+  Qed.
+
+  Lemma X_eq_evar_fresh_impl_X_notin_S X (S:EVarSet):
+    X = evar_fresh (elements S) ->
+    X ∉ S.
+  Proof.
+    intros H.
+    rewrite H.
+    apply set_evar_fresh_is_fresh'.
+  Qed.
+  
+  Lemma X_eq_svar_fresh_impl_X_notin_S X (S:SVarSet):
+    X = svar_fresh (elements S) ->
+    X ∉ S.
+  Proof.
+    intros H.
+    rewrite H.
+    apply set_svar_fresh_is_fresh'.
+  Qed.
+
+  Hint Resolve X_eq_fresh_impl_X_notin_free_svars : core.
+
+
+  Definition simpl_free_evars :=
+    (
+      (@left_id_L EVarSet  ∅ (@union _ _)),
+      (@right_id_L EVarSet ∅ (@union _ _))
+    ).
+
+
+
+  Definition simpl_free_svars :=
+      (
+        (@left_id_L SVarSet  ∅ (@union _ _)),
+        (@right_id_L SVarSet ∅ (@union _ _))
+      ).
+    
+
 End freshness.
+
+
+Ltac remember_fresh_svars :=
+  unfold fresh_svar in *;
+  repeat(
+      match goal with
+      | |- context G [svar_fresh ?Y] =>
+        match goal with
+        | H: ?X = svar_fresh Y |- _ => fail 2
+        | _ => remember (svar_fresh Y)
+        end
+      | H1: context G [svar_fresh ?Y] |- _ =>
+        match goal with
+        | H2: ?X = svar_fresh Y |- _ => fail 2
+        | _ => remember (svar_fresh Y)
+        end
+      end
+    ).
+
+Ltac remember_fresh_evars :=
+  unfold fresh_evar in *;
+  repeat(
+      match goal with
+      | |- context G [evar_fresh ?Y] =>
+        match goal with
+        | H: ?X = evar_fresh Y |- _ => fail 2
+        | _ => remember (evar_fresh Y)
+        end
+      | H1: context G [evar_fresh ?Y] |- _ =>
+        match goal with
+        | H2: ?X = evar_fresh Y |- _ => fail 2
+        | _ => remember (evar_fresh Y)
+        end
+      end
+    ).
+
+
+(* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
+     or `x₂ = fresh_evar ...`
+ *)
+Ltac solve_fresh_neq :=
+  subst; remember_fresh_evars;
+  repeat (
+      match goal with
+      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+      end
+    );
+  (idtac + apply nesym);
+  match goal with
+  | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
+    simpl in H;
+    (do ? rewrite simpl_free_evars/= in H);
+    auto;
+    rewrite -?union_assoc_L in H;
+    repeat (
+        match goal with
+        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+          apply not_elem_of_singleton_1 in H;
+          first [ exact H | clear H]
+        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+        end
+      );
+    fail
+  end.
+
+
+Ltac solve_fresh_svar_neq :=
+  subst; remember_fresh_svars;
+  repeat (
+      match goal with
+      | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+      | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+      end
+    );
+  (idtac + apply nesym);
+  match goal with
+  | H: not (elem_of ?x ?S) |- not (eq ?x ?y) =>
+    simpl in H;
+    (do ? rewrite simpl_free_svars/= in H);
+    auto;
+    rewrite -?union_assoc_L in H;
+    repeat (
+        match goal with
+        | H: (not (elem_of ?x (singleton ?y))) |- _ =>
+          apply not_elem_of_singleton_1 in H;
+          first [ exact H | clear H]
+        | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
+        end
+      );
+    fail
+  end.
