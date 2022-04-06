@@ -495,3 +495,230 @@ format "e .[[ 'svar:' X ↦ e' ]]" ).
 Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity).
 
 End Notations.
+
+Import Notations.
+
+Section subst.
+    Context {Σ : Signature}.
+
+
+Lemma wfc_ex_aux_bevar_subst :
+forall phi psi n,
+  well_formed_closed_ex_aux phi (S n) = true
+  -> well_formed_closed_ex_aux psi n = true
+  -> well_formed_closed_ex_aux (bevar_subst phi psi n) n = true.
+Proof.
+intros phi psi n H H0. 
+generalize dependent n. generalize dependent psi.
+induction phi; intros psi n' H H0; try lia; auto.
+- simpl in *. unfold well_formed_closed_ex_aux. repeat case_match; simpl; auto. lia.
+- simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+  rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+  reflexivity.
+- simpl. simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+  rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+  reflexivity.
+- simpl. simpl in H. rewrite IHphi. assumption. 2: reflexivity.
+  eapply well_formed_closed_ex_aux_ind. 2: apply H0. lia.
+- simpl. simpl in H.
+  rewrite IHphi. apply H.
+  eapply well_formed_closed_ex_aux_ind. 2: apply H0. lia.
+  reflexivity.
+Qed.
+
+Lemma wfc_mu_aux_bevar_subst :
+forall phi psi n n',
+  well_formed_closed_mu_aux phi n' = true
+  -> well_formed_closed_mu_aux psi n' = true
+  -> well_formed_closed_mu_aux (bevar_subst phi psi n) n' = true.
+Proof.
+intros phi psi n n' H H0. 
+generalize dependent n. generalize dependent n'. generalize dependent psi.
+induction phi; intros psi n' H n'' H0; try lia; auto.
+- simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto.
+- simpl. simpl in H.
+  rewrite IHphi1; auto. 2: rewrite IHphi2; auto. all: destruct_and!; auto.
+- simpl. simpl in H. destruct_and!.
+  rewrite IHphi1; auto. rewrite IHphi2; auto.
+- simpl. simpl in H. rewrite IHphi. assumption. 2: reflexivity.
+  eauto using well_formed_closed_ex_aux_ind.
+- simpl. simpl in H.
+  rewrite IHphi. apply H. 2: reflexivity.
+  eapply well_formed_closed_mu_aux_ind.
+  2: eassumption. lia.
+Qed.
+
+
+Lemma wfc_ex_aux_bsvar_subst :
+forall phi psi n n',
+  well_formed_closed_ex_aux phi n = true
+  -> well_formed_closed_ex_aux psi n = true
+  -> well_formed_closed_ex_aux (bsvar_subst phi psi n') n = true.
+Proof.
+intros phi psi n n' H H0. 
+generalize dependent n. generalize dependent n'. generalize dependent psi.
+induction phi; intros psi n' n'' H H0; try lia; auto.
+- simpl in *. unfold well_formed_closed_ex_aux. repeat case_match; simpl; auto.
+- simpl. simpl in H. destruct_and!. split_and; auto.
+- simpl. simpl in H. destruct_and!. split_and; auto.
+- simpl. simpl in H. rewrite IHphi. assumption.
+  eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. reflexivity.
+- simpl. simpl in H.
+  rewrite IHphi. apply H.
+  eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. reflexivity.
+Qed.
+
+Lemma wfc_mu_aux_bsvar_subst :
+forall phi psi n',
+  well_formed_closed_mu_aux phi (S n') = true
+  -> well_formed_closed_mu_aux psi n' = true
+  -> well_formed_closed_mu_aux (bsvar_subst phi psi n') n' = true.
+Proof.
+intros phi psi n' H H0. 
+generalize dependent n'. generalize dependent psi.
+induction phi; intros psi n' H H0; try lia; auto.
+- simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto. lia.
+- simpl. simpl in H. destruct_and!.
+  rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+  reflexivity.
+- simpl. simpl in H. destruct_and!.
+  rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
+  reflexivity.
+- simpl. simpl in H. rewrite IHphi. assumption.
+  assumption. reflexivity.
+- simpl. simpl in H.
+  rewrite IHphi. apply H.
+  eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia. reflexivity.
+Qed.
+
+
+(*Helper lemma for wf_ex_to_wf_body *)
+Corollary wfc_ex_aux_body_ex_imp1:
+forall phi n x,
+  well_formed_closed_ex_aux phi (S n) = true
+  ->
+  well_formed_closed_ex_aux (evar_open n x phi) n = true.
+Proof using .
+intros. apply wfc_ex_aux_bevar_subst; auto.
+Qed.
+
+Corollary wfc_mu_aux_body_ex_imp1:
+forall phi n n' x,
+  well_formed_closed_mu_aux phi n' = true
+  ->
+  well_formed_closed_mu_aux (evar_open n x phi) n' = true.
+Proof using .
+intros. now apply wfc_mu_aux_bevar_subst.
+Qed.
+
+Corollary wfc_ex_aux_body_mu_imp1:
+forall phi n n' X,
+  well_formed_closed_ex_aux phi n' = true
+  ->
+  well_formed_closed_ex_aux (svar_open n X phi) n' = true.
+Proof using .
+intros. now apply wfc_ex_aux_bsvar_subst.
+Qed.
+
+Corollary wfc_mu_aux_body_mu_imp1:
+forall phi n X,
+  well_formed_closed_mu_aux phi (S n) = true
+  ->
+  well_formed_closed_mu_aux (svar_open n X phi) n = true.
+Proof using .
+intros. now apply wfc_mu_aux_bsvar_subst.
+Qed.
+
+Lemma wfc_mu_aux_bsvar_subst_le :
+forall phi psi n n', n' <= n ->
+  well_formed_closed_mu_aux phi (S n) = true ->
+  well_formed_closed_mu_aux psi n
+  ->
+  well_formed_closed_mu_aux (phi.[svar:n' ↦ psi]) n = true.
+Proof using .
+induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
+- simpl. case_match; auto. simpl. case_match; try lia.
+  simpl in Hwf1. case_match; try lia. simpl. case_match; lia.
+- simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
+  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+- simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
+  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+- simpl. simpl in Hwf1. rewrite (IHphi _ _ n'); auto.
+- simpl. simpl in Hwf1. rewrite (IHphi _ _ (S n')); auto. lia.
+  eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+Qed.
+
+Lemma wfc_ex_aux_bsvar_subst_le:
+forall phi psi n n', n' <= n ->
+  well_formed_closed_ex_aux phi (S n) = true ->
+  well_formed_closed_ex_aux psi n = true
+  ->
+  well_formed_closed_ex_aux (phi.[evar:n'↦psi]) n = true.
+Proof using .
+induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
+- simpl. case_match; auto. simpl. case_match; try lia.
+  simpl in Hwf1. case_match; try lia. simpl. case_match; lia.
+- simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
+  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+- simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
+  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+- simpl. simpl in Hwf1. rewrite (IHphi _ _ (S n')); auto. lia.
+  eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+- simpl. simpl in Hwf1. rewrite (IHphi _ _ n'); auto.
+Qed.
+
+Corollary wfc_mu_aux_body_mu_imp3:
+forall phi n n' X, n' <= n ->
+  well_formed_closed_mu_aux phi (S n) = true
+  ->
+  well_formed_closed_mu_aux (svar_open n' X phi) n = true.
+Proof using .
+intros. now apply wfc_mu_aux_bsvar_subst_le.
+Qed.
+
+Corollary wfc_mu_aux_body_ex_imp3:
+forall phi n n' X, n' <= n ->
+  well_formed_closed_ex_aux phi (S n) = true
+  ->
+  well_formed_closed_ex_aux (evar_open n' X phi) n = true.
+Proof using .
+intros. now apply wfc_ex_aux_bsvar_subst_le.
+Qed.
+
+Corollary wfc_ex_aux_body_iff: 
+forall phi n x,
+  well_formed_closed_ex_aux phi (S n) = true
+  <->
+  well_formed_closed_ex_aux (evar_open n x phi) n = true.
+Proof.
+split.
+apply wfc_ex_aux_body_ex_imp1.
+apply wfc_ex_aux_body_ex_imp2.
+Qed.
+
+Corollary wfc_mu_aux_body_iff: 
+forall phi n X,
+  well_formed_closed_mu_aux phi (S n) = true
+  <->
+  well_formed_closed_mu_aux (svar_open n X phi) n = true.
+Proof.
+split.
+apply wfc_mu_aux_body_mu_imp1.
+apply wfc_mu_aux_body_mu_imp2.
+Qed.
+
+
+(*If (ex, phi) is closed, then its body is closed too*)
+Corollary wfc_ex_to_wfc_body:
+forall phi, well_formed_closed (patt_exists phi) = true -> wfc_body_ex phi.
+Proof.
+intros phi WFE.
+unfold wfc_body_ex. intros x H.
+unfold well_formed_closed in *. simpl in WFE.
+apply andb_prop in WFE. destruct WFE as [WFE1 WFE2].
+rewrite wfc_ex_aux_body_ex_imp1. auto.
+rewrite wfc_mu_aux_body_ex_imp1. auto.
+reflexivity.
+Qed.
+
+End subst.

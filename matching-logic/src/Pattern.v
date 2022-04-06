@@ -278,4 +278,115 @@ Fixpoint size' (p : Pattern) : nat :=
 
 
 
+  Lemma well_formed_bott:
+    well_formed patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma well_formed_sym s:
+    well_formed (patt_sym s).
+  Proof. reflexivity. Qed.
+
+Lemma well_formed_imp ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  well_formed (patt_imp ϕ₁ ϕ₂) = true.
+Proof.
+  unfold well_formed. unfold well_formed_closed. simpl.
+  intros H1 H2.
+  destruct_and!.
+  split_and!; auto.
+Qed.
+
+Lemma well_formed_app ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  well_formed (patt_app ϕ₁ ϕ₂) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  naive_bsolver.
+Qed.
+
+Lemma well_formed_ex_app ϕ₁ ϕ₂:
+  well_formed (patt_exists ϕ₁) = true ->
+  well_formed (patt_exists ϕ₂) = true ->
+  well_formed (patt_exists (patt_app ϕ₁ ϕ₂)) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  naive_bsolver.
+Qed.
+
+Lemma well_formed_impl_well_formed_ex ϕ:
+  well_formed ϕ = true ->
+  well_formed (patt_exists ϕ) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  intros. destruct_and!. split_and!; auto.
+  eapply well_formed_closed_ex_aux_ind in H2. simpl. eassumption. lia.
+Qed.
+
+
+  (* TODO: why is this Private? It can be useful for not only 0 dbi *)
+  Lemma Private_wfc_impl_no_neg_pos_occ psi maxsvar dbi:
+    well_formed_closed_mu_aux psi maxsvar = true ->
+    maxsvar <= dbi ->
+    no_negative_occurrence_db_b dbi psi = true
+    /\ no_positive_occurrence_db_b dbi psi = true.
+  Proof.
+    move: dbi maxsvar.
+    induction psi; intros dbi maxsvar Hwfc Hleq; simpl; auto; cbn.
+    - split.
+      { auto. }
+      simpl in Hwfc.
+      unfold no_positive_occurrence_db_b.
+      repeat case_match; auto.
+      subst. lia.
+    - split.
+      + simpl in Hwfc.
+        destruct_and!.
+        unfold no_negative_occurrence_db_b.
+        split_and!; naive_bsolver auto.
+      + simpl in Hwfc.
+        destruct_and!.
+        unfold no_positive_occurrence_db_b.
+        split_and!; naive_bsolver auto.
+    - split.
+      + simpl in Hwfc.
+        destruct_and!. split_and!; naive_bsolver auto.
+      + simpl in Hwfc.
+        destruct_and!. split_and!; naive_bsolver auto.
+    - simpl in Hwfc.
+      split_and!; naive_bsolver auto.
+    - simpl in Hwfc.
+      split_and!; eapply IHpsi.
+      1,3: eassumption. all: lia.
+  Qed.
+
+  Corollary wfc_impl_no_neg_occ psi dbi:
+    well_formed_closed_mu_aux psi 0 = true ->
+    no_negative_occurrence_db_b dbi psi = true.
+  Proof.
+    intros H.
+    unfold well_formed_closed in H.
+    pose proof (HX := Private_wfc_impl_no_neg_pos_occ).
+    specialize (HX psi 0 dbi H).
+    simpl in HX.
+    specialize (HX ltac:(lia)).
+    destruct HX as [HX1 HX2].
+    apply HX1.
+  Qed.
+
+  Corollary wfc_impl_no_pos_occ psi dbi:
+    well_formed_closed_mu_aux psi 0 = true ->
+    no_positive_occurrence_db_b dbi psi = true.
+  Proof.
+    intros H.
+    unfold well_formed_closed in H.
+    pose proof (HX := Private_wfc_impl_no_neg_pos_occ).
+    specialize (HX psi 0 dbi H).
+    simpl in HX.
+    specialize (HX ltac:(lia)).
+    destruct HX as [HX1 HX2].
+    apply HX2.
+  Qed.
+
 End syntax.
