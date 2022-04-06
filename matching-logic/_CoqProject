@@ -8,6 +8,7 @@ src/Utils/wflexprod.v
 src/Signature.v
 src/Pattern.v
 src/Substitution.v
+src/Freshness.v
 src/Syntax.v
 src/wftactics.v
 src/IndexManipulation.v

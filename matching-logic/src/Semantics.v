@@ -1958,7 +1958,7 @@ Section semantics.
            if we deal with nest_mu properly
    *)
   Lemma Private_free_svar_subst_update_exchange {m : Model}: ∀ sz phi psi X svar_val evar_val,
-      le (Syntax.size phi) sz → well_formed psi → well_formed_closed phi → 
+      le (Pattern.size phi) sz → well_formed psi → well_formed_closed phi → 
       pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) =
       pattern_interpretation evar_val
                              (@update_svar_val m X (pattern_interpretation evar_val svar_val psi) svar_val)
