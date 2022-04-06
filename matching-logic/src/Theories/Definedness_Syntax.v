@@ -180,6 +180,7 @@ Section definedness.
    Instance Unary_defined : Unary patt_defined :=
     {| unary_bevar_subst := bevar_subst_defined ;
        unary_bsvar_subst := bsvar_subst_defined ;
+       unary_wf := well_formed_defined ;
     |}.
   
 
@@ -195,6 +196,7 @@ Section definedness.
    Instance Unary_total : Unary patt_total :=
     {| unary_bevar_subst := bevar_subst_total ;
        unary_bsvar_subst := bsvar_subst_total ;
+       unary_wf := well_formed_total ;
     |}.
   
   
@@ -210,6 +212,7 @@ Section definedness.
    Instance Binary_equal : Binary patt_equal :=
     {| binary_bevar_subst := bevar_subst_equal ;
        binary_bsvar_subst := bsvar_subst_equal ;
+       binary_wf := well_formed_equal ;
     |}.
   
   Lemma bevar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
@@ -224,6 +227,7 @@ Section definedness.
    Instance Binary_subseteq : Binary patt_subseteq :=
     {| binary_bevar_subst := bevar_subst_subseteq ;
        binary_bsvar_subst := bsvar_subst_subseteq ;
+       binary_wf := well_formed_subseteq ;
     |}.
   
 
@@ -239,6 +243,7 @@ Section definedness.
    Instance Binary_in : Binary patt_in :=
     {| binary_bevar_subst := bevar_subst_in ;
        binary_bsvar_subst := bsvar_subst_in ;
+       binary_wf := well_formed_in ;
     |}.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)

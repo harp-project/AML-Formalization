@@ -213,9 +213,7 @@ Proof.
     unfold patt_and in Htmp at 1.
     apply not_not_elim_meta in Htmp.
     3: { wf_auto2. }
-    2: {
-        wf_auto2.
-    }
+    2: { wf_auto2. }
     replace (patt_sym (inj definedness) $ (patt_free_evar x' and ! ϕ))
       with (patt_defined (patt_free_evar x' and ! ϕ)) in Htmp by reflexivity.
     

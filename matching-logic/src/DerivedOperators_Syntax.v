@@ -59,6 +59,9 @@ Import MatchingLogic.Syntax.Notations.
       destruct_and!. split_and!; auto.
     Qed.
 
+    Lemma well_formed_top : well_formed patt_top.
+    Proof. reflexivity. Qed.
+
     Lemma well_formed_or (phi1 phi2 : Pattern) :
       well_formed phi1 = true ->
       well_formed phi2 = true ->
@@ -213,6 +216,7 @@ Import MatchingLogic.Syntax.Notations.
       {|
       unary_bevar_subst := bevar_subst_not ;
       unary_bsvar_subst := bsvar_subst_not ;
+      unary_wf := well_formed_not ;
       |}.
 
     #[global]
@@ -220,6 +224,7 @@ Import MatchingLogic.Syntax.Notations.
       {|
       nvnullary_bevar_subst := bevar_subst_top ;
       nvnullary_bsvar_subst := bsvar_subst_top ;
+      nvnullary_wf := well_formed_top ;
       |}.
 
     #[global]
@@ -227,6 +232,7 @@ Import MatchingLogic.Syntax.Notations.
       {|
       binary_bevar_subst := bevar_subst_or ;
       binary_bsvar_subst := bsvar_subst_or ;
+      binary_wf := well_formed_or ;
       |}.
 
     #[global]
@@ -234,6 +240,7 @@ Import MatchingLogic.Syntax.Notations.
       {|
       binary_bevar_subst := bevar_subst_and ;
       binary_bsvar_subst := bsvar_subst_and ;
+      binary_wf := well_formed_and ;
       |}.
 
     #[global]
@@ -241,6 +248,7 @@ Import MatchingLogic.Syntax.Notations.
       {|
       binary_bevar_subst := bevar_subst_iff ;
       binary_bsvar_subst := bsvar_subst_iff ;
+      binary_wf := well_formed_iff ;
       |}.
 
     #[global]

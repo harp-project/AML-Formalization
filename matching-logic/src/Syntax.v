@@ -48,6 +48,7 @@ Inductive Pattern {Σ : Signature} : Set :=
 | patt_mu (phi : Pattern)
 .
 
+Global
 Instance Pattern_eqdec {Σ : Signature} : EqDecision Pattern.
 Proof. solve_decision. Defined.
 
@@ -842,6 +843,8 @@ Section syntax.
         well_formed_closed ψ ->
         forall n,
           bevar_subst nvnullary ψ n = nvnullary ;
+    
+    nvnullary_wf : well_formed nvnullary = true ;
     }.
 
   Class Unary (patt : Pattern -> Pattern) :=
@@ -856,6 +859,8 @@ Section syntax.
         well_formed_closed ψ ->
         forall n ϕ,
           bsvar_subst (patt ϕ) ψ n = patt (bsvar_subst ϕ ψ n) ;
+    
+    unary_wf : forall ψ, well_formed ψ -> well_formed (patt ψ) ;
     }.
 
   Class Binary (binary : Pattern -> Pattern -> Pattern) :=
@@ -870,6 +875,8 @@ Section syntax.
         well_formed_closed ψ ->
         forall n ϕ₁ ϕ₂,
           bsvar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bsvar_subst ϕ₁ ψ n) (bsvar_subst ϕ₂ ψ n) ;
+
+    binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> well_formed (binary ψ1 ψ2) ;
     }.
 
   Definition simpl_bevar_subst' :=
@@ -903,11 +910,59 @@ Section syntax.
     |}.
 
 
+
+  Lemma well_formed_bott:
+    well_formed patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma well_formed_sym s:
+    well_formed (patt_sym s).
+  Proof. reflexivity. Qed.
+
+Lemma well_formed_imp ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  well_formed (patt_imp ϕ₁ ϕ₂) = true.
+Proof.
+  unfold well_formed. unfold well_formed_closed. simpl.
+  intros H1 H2.
+  destruct_and!.
+  split_and!; auto.
+Qed.
+
+Lemma well_formed_app ϕ₁ ϕ₂:
+  well_formed ϕ₁ = true ->
+  well_formed ϕ₂ = true ->
+  well_formed (patt_app ϕ₁ ϕ₂) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  naive_bsolver.
+Qed.
+
+Lemma well_formed_ex_app ϕ₁ ϕ₂:
+  well_formed (patt_exists ϕ₁) = true ->
+  well_formed (patt_exists ϕ₂) = true ->
+  well_formed (patt_exists (patt_app ϕ₁ ϕ₂)) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  naive_bsolver.
+Qed.
+
+Lemma well_formed_impl_well_formed_ex ϕ:
+  well_formed ϕ = true ->
+  well_formed (patt_exists ϕ) = true.
+Proof.
+  unfold well_formed,well_formed_closed.
+  intros. destruct_and!. split_and!; auto.
+  eapply well_formed_closed_ex_aux_ind in H2. simpl. eassumption. lia.
+Qed.
+
   #[global]
-   Instance NVNullary_bott : NVNullary patt_bott :=
+   Program Instance NVNullary_bott : NVNullary patt_bott :=
     {|
     nvnullary_bevar_subst := bevar_subst_bott ;
     nvnullary_bsvar_subst := bsvar_subst_bott ;
+    nvnullary_wf := well_formed_bott ;
     |}.
 
   #[global]
@@ -915,6 +970,7 @@ Section syntax.
     {|
     nvnullary_bevar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bevar_subst_sym ψ wfcψ n s ;
     nvnullary_bsvar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bsvar_subst_sym ψ wfcψ n s;
+    nvnullary_wf := (well_formed_sym s) ;
     |}.
 
   #[global]
@@ -922,6 +978,7 @@ Section syntax.
     {|
     binary_bevar_subst := bevar_subst_app ;
     binary_bsvar_subst := bsvar_subst_app ;
+    binary_wf := well_formed_app ;
     |}.
 
   #[global]
@@ -929,55 +986,8 @@ Section syntax.
     {|
     binary_bevar_subst := bevar_subst_imp ;
     binary_bsvar_subst := bsvar_subst_imp ;
+    binary_wf := well_formed_imp ;
     |}.
-
-
-
-  Lemma well_formed_bott:
-    well_formed patt_bott.
-  Proof.
-    unfold well_formed. simpl.
-    unfold well_formed_closed. simpl.
-    reflexivity.
-  Qed.
-
-  Lemma well_formed_imp ϕ₁ ϕ₂:
-    well_formed ϕ₁ = true ->
-    well_formed ϕ₂ = true ->
-    well_formed (patt_imp ϕ₁ ϕ₂) = true.
-  Proof.
-    unfold well_formed. unfold well_formed_closed. simpl.
-    intros H1 H2.
-    destruct_and!.
-    split_and!; auto.
-  Qed.
-
-  Lemma well_formed_app ϕ₁ ϕ₂:
-    well_formed ϕ₁ = true ->
-    well_formed ϕ₂ = true ->
-    well_formed (patt_app ϕ₁ ϕ₂) = true.
-  Proof.
-    unfold well_formed,well_formed_closed.
-    naive_bsolver.
-  Qed.
-
-  Lemma well_formed_ex_app ϕ₁ ϕ₂:
-    well_formed (patt_exists ϕ₁) = true ->
-    well_formed (patt_exists ϕ₂) = true ->
-    well_formed (patt_exists (patt_app ϕ₁ ϕ₂)) = true.
-  Proof.
-    unfold well_formed,well_formed_closed.
-    naive_bsolver.
-  Qed.
-
-  Lemma well_formed_impl_well_formed_ex ϕ:
-    well_formed ϕ = true ->
-    well_formed (patt_exists ϕ) = true.
-  Proof.
-    unfold well_formed,well_formed_closed.
-    intros. destruct_and!. split_and!; auto.
-    eapply well_formed_closed_ex_aux_ind in H2. simpl. eassumption. lia.
-  Qed.
 
   (* fresh variables *)
   

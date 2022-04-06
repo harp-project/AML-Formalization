@@ -304,17 +304,6 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
       all: fold free_svar_subst.
       apply wfc_mu_free_svar_subst; auto.
       apply wfc_ex_free_svar_subst; auto.
-    - apply well_formed_not.
-      apply well_formed_and.
-      + apply wf_sctx.
-        apply well_formed_and.
-        * reflexivity.
-        * assumption.
-      + apply wf_sctx.
-        apply well_formed_and.
-        * reflexivity.
-        * apply well_formed_not.
-          assumption.
   Qed.
 
 End ml_proof_system.

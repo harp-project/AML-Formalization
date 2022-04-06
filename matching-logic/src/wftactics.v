@@ -10,7 +10,8 @@ Require Import stdpp_ext.
 From MatchingLogic Require Import Utils.extralibrary Syntax.
 
 Ltac wf_auto2 := unfold is_true in *;
-repeat (try assumption; try (solve [wf_auto]);
+repeat (try assumption; try reflexivity; try (solve [wf_auto]); (* TODO: get rid of [wf_auto] *)
+apply nvnullary_wf || apply unary_wf || apply binary_wf ||
 match goal with
 | [ |- ?H -> ?G ]
   => intro
@@ -30,11 +31,11 @@ match goal with
 | [ |- size' _ < size' (patt_exists _) ]
   => simpl; lia
 
-| [ |- well_formed (patt_imp ?p ?q) = true]
-  => apply well_formed_imp
+| [ |- well_formed (patt_free_evar _) = true]
+  => reflexivity
 
-| [ |- well_formed (patt_app ?p ?q) = true]
-  => apply well_formed_app
+| [ |- well_formed (patt_free_svar _) = true]
+  => reflexivity
 
 | [ H : well_formed (patt_app ?p ?q) = true |- _]
   => assert (well_formed p = true);
@@ -69,7 +70,7 @@ match goal with
 | [ |- well_formed (evar_open _ _ _) = true]
   => apply wf_evar_open_from_wf_ex
 
-| [ |- well_formed (subst_ctx _ _) = true]
+| [ |- well_formed (@subst_ctx _ _ _) = true]
   => apply wf_sctx
 
   (* fallback *)
