@@ -221,109 +221,6 @@ Qed.
     binary_wf := well_formed_imp ;
     |}.
 
-  (* fresh variables *)
-  
-  Definition evar_fresh (l : list evar) : evar := fresh l.
-  Definition svar_fresh (l : list svar) : svar := fresh l.
-  
-  Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
-  Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
-
-  Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
-  Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
-
-  (* Lemmas about fresh variables *)
-
-  Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
-  Proof.
-    intros H.
-    pose proof (Hf := @infinite_is_fresh _ evar_infinite (elements S)).
-    unfold elements in H. unfold gset_elements in H.
-    apply gset_to_list_elem_of in H.
-    unfold elements in Hf. unfold gset_elements in Hf.
-    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
-  Qed.
-  
-  Lemma set_evar_fresh_is_fresh ϕ : evar_is_fresh_in (fresh_evar ϕ) ϕ.
-  Proof.
-    unfold evar_is_fresh_in.
-    unfold fresh_evar.
-    apply set_evar_fresh_is_fresh'.
-  Qed.
-
-  Hint Resolve set_evar_fresh_is_fresh : core.
-
-  Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
-  Proof.
-    intros H.
-    pose proof (Hf := @infinite_is_fresh _ svar_infinite (elements S)).
-    unfold elements in H. unfold gset_elements in H.
-    apply gset_to_list_elem_of in H.
-    unfold elements in Hf. unfold gset_elements in Hf.
-    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
-  Qed.
-  
-  Lemma set_svar_fresh_is_fresh ϕ : svar_is_fresh_in (fresh_svar ϕ) ϕ.
-  Proof.
-    unfold svar_is_fresh_in.
-    unfold fresh_svar.
-    apply set_svar_fresh_is_fresh'.
-  Qed.
-
-  Hint Resolve set_svar_fresh_is_fresh : core.
-  
-  Lemma evar_is_fresh_in_richer' x ϕ B:
-    free_evars ϕ ⊆ B ->
-    x ∉ B ->
-    evar_is_fresh_in x ϕ.
-  Proof.
-    intros Hsub.
-    unfold evar_is_fresh_in.
-    intros Hnotin.
-    eauto using not_elem_of_larger_impl_not_elem_of.
-  Qed.
-  
-  Lemma evar_is_fresh_in_richer x ϕ₁ ϕ₂:
-    free_evars ϕ₁ ⊆ free_evars ϕ₂ ->
-    evar_is_fresh_in x ϕ₂ ->
-    evar_is_fresh_in x ϕ₁.
-  Proof.
-    intros Hsub Hnotin.
-    eapply evar_is_fresh_in_richer'; auto.
-  Qed.
-
-  Lemma svar_is_fresh_in_richer' X ϕ B:
-    free_svars ϕ ⊆ B ->
-    X ∉ B ->
-    svar_is_fresh_in X ϕ.
-  Proof.
-    intros Hsub.
-    unfold svar_is_fresh_in.
-    intros Hnotin.
-    eauto using not_elem_of_larger_impl_not_elem_of.
-  Qed.
-
-  Lemma svar_is_fresh_in_richer X ϕ₁ ϕ₂:
-    free_svars ϕ₁ ⊆ free_svars ϕ₂ ->
-    svar_is_fresh_in X ϕ₂ ->
-    svar_is_fresh_in X ϕ₁.
-  Proof.
-    intros Hsub Hnotin.
-    eapply svar_is_fresh_in_richer'; auto.
-  Qed.
-
-  (*
-  Lemma fresh_neq_fresh_l ϕ₁ ϕ₂ :
-    (*~ evar_is_fresh_in (fresh_evar ϕ₁) ϕ₂ ->*)
-    free_evars ϕ₁ ⊈
-    fresh_evar ϕ₁ ≠ fresh_evar ϕ₂.
-  Proof.
-    intros H.
-    unfold fresh_evar at 2.
-   *)
-
-  Hint Resolve evar_is_fresh_in_richer : core.
-
   Lemma evar_is_fresh_in_free_evar_subst x phi psi:
     evar_is_fresh_in x psi ->
     evar_is_fresh_in x (phi.[[evar: x ↦ psi]]).
@@ -2013,7 +1910,7 @@ Qed.
 
   Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
     let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
-    @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' _).
+    @ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' Σ _).
 
   Lemma AC2PC_wf AC: PC_wf (ApplicationContext2PatternCtx AC).
   Proof.
@@ -3269,7 +3166,7 @@ Qed.
       reflexivity.
     - remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
                                                                               (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
-      simpl. unfold svar_open in *. rewrite -> bsvar_subst_exists by reflexivity. remember (@evar_fresh (elements B)) as x.
+      simpl. unfold svar_open in *. rewrite -> bsvar_subst_exists by reflexivity. remember (@evar_fresh Σ (elements B)) as x.
       assert(x ∉ B).
       {
         subst. apply set_evar_fresh_is_fresh'.
@@ -3286,7 +3183,7 @@ Qed.
       apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
     - remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
                             (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
-      simpl. remember (@svar_fresh (elements B)) as X'.
+      simpl. remember (@svar_fresh Σ (elements B)) as X'.
       assert(X' ∉ B).
       {
         subst. apply set_svar_fresh_is_fresh'.
