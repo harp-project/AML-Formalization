@@ -36,6 +36,7 @@ Set Default Proof Mode "Classic".
 Close Scope equations_scope. (* Because of [!] *)
 
 Import Notations.
+Open Scope ml_scope.
 
 Section ProofSystemTheorems.
 
@@ -214,7 +215,7 @@ Proof.
     apply not_not_elim_meta in Htmp.
     3: { wf_auto2. }
     2: { wf_auto2. }
-    replace (patt_sym (inj definedness) $ (patt_free_evar x' and ! ϕ))
+    replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x' and ! ϕ))%ml
       with (patt_defined (patt_free_evar x' and ! ϕ)) in Htmp by reflexivity.
     
     toMyGoal.
@@ -230,7 +231,8 @@ Proof.
   {
     eapply syllogism_intro.
     5: apply S7.
-    all: auto 10.
+    4: auto.
+    1-3: wf_auto2.
   }
   assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
   {
@@ -262,7 +264,7 @@ Proof.
     rewrite <- Heq.
     apply Ex_gen.
     4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    1,2: auto.
+    1,2: wf_auto2.
     assumption.
   }
 
@@ -341,7 +343,8 @@ Proof.
     }
     eapply syllogism_intro.
     5: { apply Htmp. }
-    all: auto.
+    4: assumption.
+    1-3: wf_auto2.
   }
 
   assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ)))).
@@ -391,7 +394,8 @@ Proof.
 
   eapply syllogism_intro.
   5: apply S14.
-  all: auto.
+  4: assumption.
+  1-3: wf_auto2.
 Defined.
 
 Lemma phi_impl_defined_phi Γ ϕ:
@@ -411,8 +415,12 @@ Lemma total_phi_impl_phi Γ ϕ:
 Proof.
   intros HΓ wfϕ.
   unfold patt_total.
-  pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(auto)).
-  apply A_impl_not_not_B_meta; auto.
+  pose proof (Htmp := @phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(wf_auto2)).
+  apply A_impl_not_not_B_meta.
+  1,2: wf_auto2.
+  apply modus_tollens.
+  1,2: wf_auto2.
+  exact Htmp.
 Defined.
 
 Lemma total_phi_impl_phi_meta Γ ϕ:
@@ -424,7 +432,9 @@ Proof.
   intros HΓ wfϕ H.
   eapply Modus_ponens.
   4: apply total_phi_impl_phi.
-  all: auto.
+  1,2,5: wf_auto2.
+  2: exact HΓ.
+  exact H.
 Defined.
   
 
@@ -440,6 +450,7 @@ Defined.
     intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
     induction pf.
     - (* hypothesis *)
+      rename axiom into axiom0.
       (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
          when building Set, which is prohibited. *)
       destruct (decide (axiom0 = ψ)).
@@ -506,7 +517,10 @@ Defined.
       apply reorder_meta in IHpf; auto.
       apply reorder_meta; auto.
       { wf_auto2. }
-      apply Ex_gen with (x0 := x) in IHpf; auto.
+      { wf_auto2. }
+      apply Ex_gen with (x0 := x) in IHpf.
+      2,3,5: wf_auto2.
+      { exact IHpf. }
       { simpl. clear -n n0. set_solver. }
     - (* Propagation of ⊥, left *)
       toMyGoal.
@@ -560,7 +574,7 @@ Defined.
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)).
+        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -585,13 +599,14 @@ Defined.
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { auto. }
-        { auto. }
+        { wf_auto2. }
+        { wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp; auto.
         eapply syllogism_intro.
         5: apply Htmp.
-        all: auto 10.
+        4: assumption.
+        all: wf_auto2.
       }
       
       assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
@@ -658,7 +673,7 @@ Defined.
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(auto)).
+        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -683,13 +698,14 @@ Defined.
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { auto. }
-        { auto. }
+        { wf_auto2. }
+        { wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp; auto.
         eapply syllogism_intro.
         5: apply Htmp.
-        all: auto 10.
+        4: assumption.
+        all: wf_auto2.
       }
       
       assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
@@ -746,7 +762,9 @@ Defined.
            { assumption. }
            reflexivity.
       }
-      apply Svar_subst; auto.
+      apply Svar_subst.
+      3: auto.
+      1,2: wf_auto2.
     - (* Prefixpoint *)
       toMyGoal.
       { wf_auto2. }
