@@ -9,11 +9,11 @@ From Equations Require Import Equations.
 From stdpp Require Import base option.
 
 From MatchingLogic Require Import
-     Utils.wflexprod Syntax Semantics DerivedOperators ProofSystem ProofMode
+     Utils.wflexprod Syntax Semantics DerivedOperators_Syntax ProofSystem ProofMode
      Utils.extralibrary
 .
 
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
 
 From MatchingLogicProver Require Import Named.
 
