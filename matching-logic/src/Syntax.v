@@ -15,89 +15,12 @@ Require Import stdpp_ext.
 
 Require Import extralibrary.
 
-Class MLVariables := {
-  evar : Set;
-  svar : Set;
-  evar_eqdec :> EqDecision evar;
-  evar_countable :> Countable evar;
-  evar_infinite :> Infinite evar;
-  svar_eqdec :> EqDecision svar;
-  svar_countable :> Countable svar;
-  svar_infinite :> Infinite svar;
-}.
+From MatchingLogic Require Export
+  Signature
+  Pattern
+  Substitution.
 
-Class Signature := {
-  variables :> MLVariables;
-  symbols : Set;
-  sym_eqdec :> EqDecision symbols;
-}.
-
-(* TODO have different type for element variable and for set variable index *)
-Definition db_index := nat.
-
-Inductive Pattern {Σ : Signature} : Set :=
-| patt_free_evar (x : evar)
-| patt_free_svar (x : svar)
-| patt_bound_evar (n : db_index)
-| patt_bound_svar (n : db_index)
-| patt_sym (sigma : symbols) :  Pattern
-| patt_app (phi1 phi2 : Pattern)
-| patt_bott
-| patt_imp (phi1 phi2 : Pattern)
-| patt_exists (phi : Pattern)
-| patt_mu (phi : Pattern)
-.
-
-Global
-Instance Pattern_eqdec {Σ : Signature} : EqDecision Pattern.
-Proof. solve_decision. Defined.
-
-Global Instance Pattern_countable {Σ : Signature} (sc : Countable symbols) : Countable Pattern.
-Proof.
-  set (enc :=
-         fix go p : gen_tree (unit
-                              + ((@symbols Σ)
-                                 + (((@evar variables) + db_index)
-                                    + ((@svar variables) + db_index))))%type :=
-           match p with
-           | patt_bott => GenLeaf (inl ())
-           | patt_sym s => GenLeaf (inr (inl s))
-           | patt_free_evar x => GenLeaf (inr (inr (inl (inl x))))
-           | patt_free_svar X => GenLeaf (inr (inr (inr (inl X))))
-           | patt_bound_evar n => GenLeaf (inr (inr (inl (inr n))))
-           | patt_bound_svar n => GenLeaf (inr (inr (inr (inr n))))
-           | patt_app p1 p2 => GenNode 0 [go p1; go p2]
-           | patt_imp p1 p2 => GenNode 1 [go p1; go p2]
-           | patt_exists p' => GenNode 2 [go p']
-           | patt_mu p' => GenNode 3 [go p']
-           end
-      ).
-
-  set (dec :=
-         fix go (p : gen_tree (unit
-                              + ((@symbols Σ)
-                                 + (((@evar variables) + db_index)
-                                    + ((@svar variables) + db_index))))%type) : Pattern :=
-           match p with
-           | GenLeaf (inl ()) => patt_bott
-           | GenLeaf (inr (inl s)) => patt_sym s
-           | GenLeaf (inr (inr (inl (inl x)))) => patt_free_evar x
-           | GenLeaf (inr (inr (inr (inl X)))) => patt_free_svar X
-           | GenLeaf (inr (inr (inl (inr n)))) => patt_bound_evar n
-           | GenLeaf (inr (inr (inr (inr n)))) => patt_bound_svar n
-           | GenNode 0 [p1; p2] => patt_app (go p1) (go p2)
-           | GenNode 1 [p1; p2] => patt_imp (go p1) (go p2)
-           | GenNode 2 [p'] => patt_exists (go p')
-           | GenNode 3 [p'] => patt_mu (go p')
-           | _ => patt_bott (* dummy *)
-           end
-      ).
-
-  refine (inj_countable' enc dec _).
-  intros x.
-  induction x; simpl; congruence.
-Defined.
-
+Import Substitution.Notations.
 
 Definition Theory {Σ : Signature} := propset Pattern.
 
@@ -106,314 +29,7 @@ Close Scope boolean_if_scope.
 Section syntax.
   Context {Σ : Signature}.
   
-  (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
-  (* substitute bound variable x for psi in phi *)
-  Fixpoint bevar_subst (phi psi : Pattern) (x : db_index) :=
-    match phi with
-    | patt_free_evar x' => patt_free_evar x'
-    | patt_free_svar x' => patt_free_svar x'
-    | patt_bound_evar n => match compare_nat n x with
-                           | Nat_less _ _ _ => patt_bound_evar n
-                           | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_evar (pred n)
-                           end
-    | patt_bound_svar n => patt_bound_svar n
-    | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (bevar_subst phi1 psi x)
-                                     (bevar_subst phi2 psi x)
-    | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (bevar_subst phi1 psi x) (bevar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (bevar_subst phi' psi (S x))
-    | patt_mu phi' => patt_mu (bevar_subst phi' psi x)
-    end.
-
-  Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
-    match phi with
-    | patt_free_evar x' => patt_free_evar x'
-    | patt_free_svar x' => patt_free_svar x'
-    | patt_bound_evar n => patt_bound_evar n
-    | patt_bound_svar n => match compare_nat n x with
-                           | Nat_less _ _ _ => patt_bound_svar n
-                           | Nat_equal _ _ _ => psi
-                           | Nat_greater _ _ _ => patt_bound_svar (pred n)
-                           end
-    | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
-                                     (bsvar_subst phi2 psi x)
-    | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (bsvar_subst phi1 psi x) (bsvar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (bsvar_subst phi' psi x)
-    | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
-    end.
-
-  Notation "e .[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-   format "e .[ 'evar:' dbi ↦ e' ]" ).
-  Notation "e .[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-   format "e .[ 'svar:' dbi ↦ e' ]" ).
-
-  Fixpoint bevar_occur (phi : Pattern) (x : db_index) : bool :=
-    match phi with
-    | patt_free_evar x' => false
-    | patt_free_svar x' => false
-    | patt_bound_evar n => if decide (n = x) is left _ then true else false
-    | patt_bound_svar n => false
-    | patt_sym sigma => false
-    | patt_app phi1 phi2 => orb (bevar_occur phi1 x)
-                                (bevar_occur phi2 x)
-    | patt_bott => false
-    | patt_imp phi1 phi2 => orb (bevar_occur phi1 x) (bevar_occur phi2 x)
-    | patt_exists phi' => bevar_occur phi' (S x)
-    | patt_mu phi' => bevar_occur phi' x
-    end.
-
-  Fixpoint bsvar_occur (phi : Pattern) (x : db_index) : bool :=
-    match phi with
-    | patt_free_evar x' => false
-    | patt_free_svar x' => false
-    | patt_bound_evar n => false
-    | patt_bound_svar n => if (decide (n = x)) is left _ then true else false
-    | patt_sym sigma => false
-    | patt_app phi1 phi2 => orb (bsvar_occur phi1 x)
-                                (bsvar_occur phi2 x)
-    | patt_bott => false
-    | patt_imp phi1 phi2 => orb (bsvar_occur phi1 x) (bsvar_occur phi2 x)
-    | patt_exists phi' => bsvar_occur phi' x
-    | patt_mu phi' => bsvar_occur phi' (S x)
-    end.
-  
-  (* substitute free element variable x for psi in phi *)
-  Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
-    match phi with
-    | patt_free_evar x' => if decide (x = x') is left _ then psi else patt_free_evar x'
-    | patt_free_svar X => patt_free_svar X
-    | patt_bound_evar x' => patt_bound_evar x'
-    | patt_bound_svar X => patt_bound_svar X
-    | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
-                                     (free_evar_subst phi2 psi x)
-    | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
-    | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
-    end.
-
-  (* substitute free set variable X for psi in phi *)
-  Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) : Pattern :=
-    match phi with
-    | patt_free_evar x => patt_free_evar x
-    | patt_free_svar X' => if decide (X = X') is left _ then psi else patt_free_svar X'
-    | patt_bound_evar x => patt_bound_evar x
-    | patt_bound_svar X' => patt_bound_svar X'
-    | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
-                                     (free_svar_subst phi2 psi X)
-    | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
-    | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
-    | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
-    end.
-
-  (* instantiate exists x. p or mu x. p with psi for p *)
-  Definition instantiate (phi psi : Pattern) :=
-    match phi with
-    | patt_exists phi' => bevar_subst phi' psi 0
-    | patt_mu phi' => bsvar_subst phi' psi 0
-    | _ => phi
-    end.
-
-  Notation "e .[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
-   format "e .[[ 'evar:' x ↦ e' ]]" ).
-  Notation "e .[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
-   format "e .[[ 'svar:' X ↦ e' ]]" ).
-  Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity).
-
-  (** The free names of a type are defined as follow.  Notice the
-  [exists] and [mu] cases: they do not bind any name. *)
-
-  Definition EVarSet := gset evar.
-  Definition SVarSet := gset svar.
-
-  Fixpoint free_evars (phi : Pattern)
-    : EVarSet :=
-    match phi with
-    | patt_free_evar x => singleton x
-    | patt_free_svar X => empty
-    | patt_bound_evar x => empty
-    | patt_bound_svar X => empty
-    | patt_sym sigma => empty
-    | patt_app phi1 phi2 => union (free_evars phi1) (free_evars phi2)
-    | patt_bott => empty
-    | patt_imp phi1 phi2 => union (free_evars phi1) (free_evars phi2)
-    | patt_exists phi => free_evars phi
-    | patt_mu phi => free_evars phi
-    end.
-
-  Fixpoint free_svars (phi : Pattern)
-    : SVarSet :=
-    match phi with
-    | patt_free_evar x => empty
-    | patt_free_svar X => singleton X
-    | patt_bound_evar x => empty
-    | patt_bound_svar X => empty
-    | patt_sym sigma => empty
-    | patt_app phi1 phi2 => union (free_svars phi1) (free_svars phi2)
-    | patt_bott => empty
-    | patt_imp phi1 phi2 => union (free_svars phi1) (free_svars phi2)
-    | patt_exists phi => free_svars phi
-    | patt_mu phi => free_svars phi
-    end.
-
-  (* replace element variable x with de Bruijn index level *)
-  Fixpoint evar_quantify (x : evar) (level : db_index)
-           (p : Pattern) : Pattern :=
-    match p with
-    | patt_free_evar x' => if decide (x = x') is left _ then patt_bound_evar level else patt_free_evar x'
-    | patt_free_svar x' => patt_free_svar x'
-    | patt_bound_evar x' => patt_bound_evar x'
-    | patt_bound_svar X => patt_bound_svar X
-    | patt_sym s => patt_sym s
-    | patt_app ls rs => patt_app (evar_quantify x level ls) (evar_quantify x level rs)
-    | patt_bott => patt_bott
-    | patt_imp ls rs => patt_imp (evar_quantify x level ls) (evar_quantify x level rs)
-    | patt_exists p' => patt_exists (evar_quantify x (S level) p')
-    | patt_mu p' => patt_mu (evar_quantify x level p')
-    end.
-
-  (* replace set variable X with de Bruijn index level *)
-  Fixpoint svar_quantify (X : svar) (level : db_index)
-           (p : Pattern) : Pattern :=
-    match p with
-    | patt_free_evar x' => patt_free_evar x'
-    | patt_free_svar X' => if decide (X = X') is left _ then patt_bound_svar level else patt_free_svar X'
-    | patt_bound_evar x' => patt_bound_evar x'
-    | patt_bound_svar X => patt_bound_svar X
-    | patt_sym s => patt_sym s
-    | patt_app ls rs => patt_app (svar_quantify X level ls) (svar_quantify X level rs)
-    | patt_bott => patt_bott
-    | patt_imp ls rs => patt_imp (svar_quantify X level ls) (svar_quantify X level rs)
-    | patt_exists p' => patt_exists (svar_quantify X level p')
-    | patt_mu p' => patt_mu (svar_quantify X (S level) p')
-    end.
-
-  Definition exists_quantify (x : evar)
-             (p : Pattern) : Pattern :=
-    patt_exists (evar_quantify x 0 p).
-
-  Definition mu_quantify (X : svar)
-             (p : Pattern) : Pattern :=
-    patt_mu (svar_quantify X 0 p).
-
-  Fixpoint size (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size ls) + (size rs)
-    | patt_imp ls rs => 1 + (size ls) + (size rs)
-    | patt_exists p' => 1 + size p'
-    | patt_mu p' => 1 + size p'
-    | _ => 0
-    end.
-
-
-  Fixpoint size' (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size' ls) + (size' rs)
-    | patt_imp ls rs => 1 + (size' ls) + (size' rs)
-    | patt_exists p' => 1 + size' p'
-    | patt_mu p' => 1 + size' p'
-    | _ => 1
-    end.
-  
-  (* replace de Bruijn index k with element variable n *)
-  Definition evar_open (k : db_index) (x : evar) (p : Pattern) : Pattern :=
-    bevar_subst p (patt_free_evar x) k.
-
-
-  (* replace de Bruijn index k with set variable n *)
-  Definition svar_open (k : db_index) (X : svar) (p : Pattern) : Pattern :=
-    bsvar_subst p (patt_free_svar X) k.
-
-  Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = 
-                           match compare_nat x k with
-                           | Nat_less _ _ _ => patt_bound_evar x
-                           | Nat_equal _ _ _ => patt_free_evar n
-                           | Nat_greater _ _ _ => patt_bound_evar (pred x)
-                           end.
-  Proof.
-    cbn. case_match; done.
-  Qed.
-  Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_sym k n s: evar_open k n (patt_sym s) = patt_sym s.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_app k n ls rs: evar_open k n (patt_app ls rs) = patt_app (evar_open k n ls) (evar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma evar_open_bott k n: evar_open k n patt_bott = patt_bott.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (S k) n p').
-  Proof. reflexivity. Qed.
-  Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
-  Proof. reflexivity. Qed.
-
-  (* More trivial but useful lemmas *)
-  Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = 
-                                    match compare_nat X k with
-                                    | Nat_less _ _ _ => patt_bound_svar X
-                                    | Nat_equal _ _ _ => patt_free_svar n
-                                    | Nat_greater _ _ _ => patt_bound_svar (pred X)
-                                    end.
-  Proof.
-    reflexivity.
-  Qed.
-  Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_app k n ls rs: svar_open k n (patt_app ls rs) = patt_app (svar_open k n ls) (svar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bott k n: svar_open k n patt_bott = patt_bott.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_imp k n ls rs: svar_open k n (patt_imp ls rs) = patt_imp (svar_open k n ls) (svar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
-  Proof. reflexivity. Qed.
-  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (S k) n p').
-  Proof. reflexivity. Qed.
-
-
-  Lemma evar_open_size :
-    forall (k : db_index) (n : evar) (p : Pattern),
-      size p = size (evar_open k n p).
-  Proof.
-    intros k n p. generalize dependent k.
-    induction p; intros k; cbn; try reflexivity.
-    break_match_goal; reflexivity.
-    rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-    rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-    rewrite (IHp (S k)); reflexivity.
-    rewrite (IHp k); reflexivity.
-  Qed.
-
-  Lemma svar_open_size :
-    forall (k : db_index) (n : svar) (p : Pattern),
-      size p = size (svar_open k n p).
-  Proof.
-    intros k n p. generalize dependent k.
-    induction p; intros k; cbn; try reflexivity.
-    break_match_goal; reflexivity.
-    rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-    rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-    rewrite (IHp k); reflexivity.
-    rewrite (IHp (S k)); reflexivity.
-  Qed.
+ 
 
   (* for bound set variables *)
   Fixpoint no_negative_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=
@@ -1061,7 +677,6 @@ Qed.
 
   Hint Resolve evar_is_fresh_in_richer : core.
 
-
   Lemma evar_is_fresh_in_free_evar_subst x phi psi:
     evar_is_fresh_in x psi ->
     evar_is_fresh_in x (phi.[[evar: x ↦ psi]]).
@@ -1519,12 +1134,12 @@ Qed.
     - simpl in *. unfold evar_quantify,evar_open. simpl.
       repeat case_match; auto; try congruence. lia.
     - unfold evar_open in IHphi1, IHphi2.
-      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
       rewrite -> IHphi1, IHphi2.
       reflexivity.
       all: auto; apply andb_true_iff in H1; apply H1.
     - unfold evar_open in IHphi1, IHphi2.
-      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
       rewrite -> IHphi1, IHphi2.
       reflexivity.
       all: auto; apply andb_true_iff in H1; apply H1.
@@ -1546,12 +1161,12 @@ Qed.
     - simpl in *. unfold svar_quantify,svar_open,bsvar_subst.
       repeat case_match; auto; try congruence. lia.
     - unfold svar_open in IHphi1, IHphi2.
-      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
       rewrite -> IHphi1, IHphi2.
       reflexivity.
       all: auto; apply andb_true_iff in H1; apply H1.
     - unfold svar_open in IHphi1, IHphi2.
-      apply sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
+      rewrite sets.not_elem_of_union in H0. destruct H0 as [E1 E2].
       rewrite -> IHphi1, IHphi2.
       reflexivity.
       all: auto; apply andb_true_iff in H1; apply H1.

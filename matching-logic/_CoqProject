@@ -5,6 +5,9 @@ src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
 src/Utils/wflexprod.v
 
+src/Signature.v
+src/Pattern.v
+src/Substitution.v
 src/Syntax.v
 src/wftactics.v
 src/IndexManipulation.v
