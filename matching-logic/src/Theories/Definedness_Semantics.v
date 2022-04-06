@@ -595,3 +595,15 @@ Section definedness.
   Qed.
 
 End definedness.
+
+
+#[export]
+Hint Resolve T_predicate_defined : core.
+#[export]
+Hint Resolve T_predicate_total : core.
+#[export]
+Hint Resolve T_predicate_subseteq : core.
+#[export]
+Hint Resolve T_predicate_equals : core.
+#[export]
+Hint Resolve T_predicate_in : core.

@@ -840,10 +840,13 @@ Defined.
 
     assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ).
     {
-      eapply Modus_ponens. 4: apply S6. all: auto 15.
+      eapply Modus_ponens. 4: apply S6.
+      3: assumption.
+      1,2: wf_auto2.
     }
 
-    eapply universal_generalization with (x0 := x) in S9; auto.
+    eapply universal_generalization with (x0 := x) in S9.
+    2: { wf_auto2. }
     simpl in S9. case_match;[|congruence]. exact S9.
   Defined.
 
@@ -871,19 +874,17 @@ Defined.
       2: {
         simpl. case_match;[|congruence]. reflexivity.
       }
-      apply forall_variable_substitution; auto.
+      apply forall_variable_substitution.
+      { wf_auto2. }
     }
 
-    assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)).
-    {
-      unfold well_formed,well_formed_closed in *. simpl.
-      destruct_and!. split_and!; auto.
-    }
-    
+    assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)) by wf_auto2.
     
     assert(S3: Γ ⊢ patt_free_evar x ∈ml ϕ).
     {
-      eapply Modus_ponens. 4: apply S2. all: auto.
+      eapply Modus_ponens. 4: apply S2.
+      3: assumption.
+      1,2: wf_auto2.
     }
 
     pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x ltac:(wf_auto2)).
@@ -895,11 +896,11 @@ Defined.
       { wf_auto2. }
       mgIntro. mgIntro.
       mgAdd S5. unfold patt_and at 1. unfold patt_or at 1.
-      mgAssert((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+      mgAssert((! ! patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
       using first 1.
       { wf_auto2. }
       {
-        remember ((! ! patt_sym (inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
+        remember ((! ! patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
           as A.
         fromMyGoal. intros _ _. apply not_not_elim; subst; auto 10.
       }
@@ -930,7 +931,9 @@ Defined.
 
     assert (S7: Γ ⊢ patt_free_evar x ---> ϕ).
     {
-      eapply Modus_ponens. 4: apply S6. all: auto.
+      eapply Modus_ponens. 4: apply S6.
+      3: assumption.
+      1,2: wf_auto2.
     }
 
     pose proof (S8 := S7).
@@ -968,10 +971,10 @@ Defined.
     assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
     {
 
-      replace (patt_sym (inj definedness) $ (patt_free_evar x and ϕ))
+      replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ))
         with (⌈ patt_free_evar x and ϕ ⌉) in S1 by reflexivity.
 
-      replace (patt_sym (inj definedness) $ (patt_free_evar x and ! ϕ))
+      replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! ϕ))
         with (⌈ patt_free_evar x and ! ϕ ⌉) in S1 by reflexivity.
       
       toMyGoal.
@@ -992,7 +995,7 @@ Defined.
                using first 1.
       { wf_auto2. }
       {
-        mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(auto)).
+        mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft. mgApply 1. mgExactn 0.
@@ -1000,7 +1003,7 @@ Defined.
       mgClear 0.
 
       mgApply 0. mgClear 0. fromMyGoal. intros _ _.
-      apply not_not_intro; auto 10.
+      apply not_not_intro. wf_auto2.
     }
     apply S2.
   Qed.
@@ -1033,16 +1036,19 @@ Defined.
           mgApply 2. mgIntro. mgApply 3. mgExactn 1.
       }
       eapply Framing_right in H.
-      eapply Modus_ponens. 4: apply H. all: auto 10.
+      eapply Modus_ponens. 4: apply H.
+      3: assumption.
+      1-3: wf_auto2.
     }
 
     pose proof (Htmp := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
-                                        ltac:(auto) ltac:(auto)).
+                                        ltac:(wf_auto2) ltac:(wf_auto2)).
     simpl in Htmp.
     apply pf_iff_proj1 in Htmp; auto 10.
     eapply Modus_ponens.
     4: apply Htmp.
-    all: auto 10.
+    3: assumption.
+    1,2: wf_auto2.
   Defined.
 
   Lemma membership_not_iff Γ ϕ x:
@@ -1051,9 +1057,10 @@ Defined.
     Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ).
   Proof.
     intros Hwf HΓ.
-    apply pf_iff_split; auto 10.
-    - apply membership_not_1; auto 10.
-    - apply membership_not_2; auto 10.
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    - apply membership_not_1; assumption.
+    - apply membership_not_2; assumption.
   Defined.
   
   Lemma membership_or_1 Γ x ϕ₁ ϕ₂:
@@ -1065,8 +1072,8 @@ Defined.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
     eapply syllogism_intro.
-    5: apply Prop_disj_right; auto 10.
-    all: auto 10.
+    5: apply Prop_disj_right.
+    1,2,3,5,6,7: wf_auto2.
     apply Framing_right. wf_auto2.
     toMyGoal.
     { wf_auto2. }
@@ -1095,7 +1102,7 @@ Defined.
     apply pf_iff_proj2 in H1; auto 10.
     eapply syllogism_intro.
     4: apply H1.
-    all: auto.
+    1-3: wf_auto2.
     simpl.
     apply Framing_right. wf_auto2.
 
@@ -1117,9 +1124,10 @@ Defined.
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    apply pf_iff_split; auto.
-    + apply membership_or_1; auto 10.
-    + apply membership_or_2; auto 10.
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    + apply membership_or_1; assumption.
+    + apply membership_or_2; assumption.
   Defined.
 
   Lemma membership_and_1 Γ x ϕ₁ ϕ₂:
@@ -1174,10 +1182,11 @@ Defined.
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    apply pf_iff_split; auto.
-    + apply membership_and_1; auto 10.
-    + apply membership_and_2; auto 10.
-  Defined.       
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    + apply membership_and_1; assumption.
+    + apply membership_and_2; assumption.
+  Defined.
 
   Lemma equality_elimination_basic Γ φ1 φ2 C :
     theory ⊆ Γ ->
@@ -1237,7 +1246,6 @@ Defined.
           [(clear; set_solver)|reflexivity|reflexivity]
       ).
     }
-   
   Defined.
 
   Lemma equality_elimination_basic_iter_1 Γ ϕ₁ ϕ₂ l C :
@@ -1368,7 +1376,8 @@ Defined.
   Proof.
     intros HΓ WF1 WF2.
     unshelve (eapply deduction_theorem_noKT).
-    2,3,4: auto.
+    4: exact HΓ.
+    2,3: wf_auto.
     remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
     assert (Γ' ⊢ (φ1 <---> φ2)). {
       apply hypothesis. apply well_formed_iff; auto.
@@ -1395,7 +1404,7 @@ Defined.
                                    assert (Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')). {
       pose proof (SYM1 := @patt_eq_sym Γ φ' Z ltac:(auto) ltac:(auto) WFZ).
       pose proof (SYM2 := @patt_eq_sym Γ Z φ' ltac:(assumption) WFZ ltac:(auto)).
-      apply pf_iff_split; auto. 
+      apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2.  
     }
     assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
       unfold instantiate.
@@ -1429,21 +1438,21 @@ Defined.
                                                  ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
                                                  (ex , φ) _ _ _).
       eapply Modus_ponens. 4: apply and_impl.
-      all: auto.
-      { wf_auto2. }
+      1,2,4,5,6: wf_auto2.
       eapply Modus_ponens. 4: eapply Modus_ponens.
       7: exact PSP.
       1,2,4,5: wf_auto2.
       * unshelve (epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _)).
-        1,2,3: auto.
+        1,2,3: wf_auto2.
         unfold instantiate. eapply Modus_ponens. 4: exact AI.
         1, 2: unfold patt_equal, patt_iff, patt_total, patt_defined; wf_auto2.
         rewrite <- HeqZ in PC.
         exact PC.
-      * apply and_drop. 1-3: auto.
-        unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)); auto.
+      * apply and_drop. 1-3: wf_auto2.
+        unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)).
+        1-3: wf_auto2.
         eapply Modus_ponens. 4: exact AI. 3: apply EE.
-        all: auto 10.
+        all: wf_auto2.
     }
     eapply Modus_ponens. 4: apply and_impl'; auto.
     1,2,4: unfold instantiate,patt_equal,patt_total,patt_defined in *; wf_auto2.
@@ -1452,7 +1461,7 @@ Defined.
     eapply (Ex_gen Γ _ _ Zvar) in HSUB. unfold exists_quantify in HSUB.
     rewrite evar_quantify_equal_simpl in HSUB.
     rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
-    2-3: auto.
+    2-3: wf_auto2.
     2: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
@@ -1478,6 +1487,7 @@ Defined.
     5: { unfold instantiate. simpl.
          apply set_evar_fresh_is_fresh'.
     }
+
     1-4: wf_auto2.
   Qed.
 
@@ -1535,23 +1545,10 @@ Defined.
     }
     eapply syllogism_intro in H2. exact H2. all: auto.
     Unshelve.
-    all: unfold patt_not; auto.
-    all: repeat apply well_formed_imp; auto.
+    all: wf_auto2.
   Qed.
 
 End ProofSystemTheorems.
-
-
-#[export]
-Hint Resolve T_predicate_defined : core.
-#[export]
-Hint Resolve T_predicate_total : core.
-#[export]
-Hint Resolve T_predicate_subseteq : core.
-#[export]
-Hint Resolve T_predicate_equals : core.
-#[export]
-Hint Resolve T_predicate_in : core.
 
 
 Lemma MyGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
@@ -1741,8 +1738,8 @@ Proof.
 intros HΓ wfϕ.
 eapply (cast_proof).
 { 
-  remember (@ctx_app_r _ (patt_sym (inj definedness)) box ltac:(wf_auto2)) as AC1.
-  remember (@ctx_app_r _ (patt_sym (inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
+  remember (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box ltac:(wf_auto2)) as AC1.
+  remember (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
   replace (⌈ ⌈ ϕ ⌉ ⌉) with (subst_ctx AC2 ϕ) by (subst; reflexivity).
   subst. reflexivity.
 }
@@ -2122,7 +2119,7 @@ eapply cast_proof.
           with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ))
                by reflexivity.
   replace (⌈ ⌈ patt_free_evar x and ! ϕ ⌉ ⌉)
-          with (subst_ctx (@ctx_app_r Σ ((@patt_sym Σ (@inj Σ syntax definedness))) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! ϕ))
+          with (subst_ctx (@ctx_app_r Σ ((@patt_sym Σ (@Definedness_Syntax.inj Σ syntax definedness))) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! ϕ))
     by reflexivity.
   reflexivity.
 }
@@ -2140,13 +2137,13 @@ intros HΓ wfϕ₁ wfϕ₂.
 toMyGoal.
 { wf_auto2. }
 mgSplitAnd; mgIntro.
-- mgApplyMeta (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ).
+- mgApplyMeta (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ).
   mgExactn 0.
 - mgDestructOr 0.
-  + unshelve (mgApplyMeta (Framing_right Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+  + unshelve (mgApplyMeta (Framing_right Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _)).
     { toMyGoal. wf_auto2. mgIntro. mgLeft. mgExactn 0. }
     mgExactn 0.
-  + unshelve (mgApplyMeta (Framing_right Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (inj definedness)) ltac:(wf_auto2) _)).
+  + unshelve (mgApplyMeta (Framing_right Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _)).
     { toMyGoal. wf_auto2. mgIntro. mgRight. mgExactn 0. }
     mgExactn 0.
 Defined.
