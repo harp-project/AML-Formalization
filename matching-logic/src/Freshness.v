@@ -28,9 +28,6 @@ Section freshness.
   Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
   Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
 
-  Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
-  Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
-
   (* Lemmas about fresh variables *)
 
   Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.

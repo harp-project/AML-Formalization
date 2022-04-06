@@ -140,3 +140,13 @@ Section with_signature.
   Qed.
 
   End with_signature.
+
+
+Lemma free_evars_subst_ctx {Σ : Signature} AC ϕ:
+free_evars (subst_ctx AC ϕ) = AC_free_evars AC ∪ free_evars ϕ.
+Proof.
+induction AC; simpl.
+- set_solver.
+- rewrite IHAC. clear. set_solver.
+- rewrite IHAC. clear. set_solver.
+Qed.

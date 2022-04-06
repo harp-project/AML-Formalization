@@ -526,4 +526,7 @@ intros H. apply andb_prop in H. tauto.
 Qed.
 
 
+Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
+Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
+
 End syntax.
