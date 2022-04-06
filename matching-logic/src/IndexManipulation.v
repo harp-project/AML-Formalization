@@ -10,8 +10,8 @@ From Coq.Program Require Import Wf.
 From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax NamedAxioms.
+From MatchingLogic.Utils Require Import stdpp_ext extralibrary.
+From MatchingLogic Require Import Syntax.
 
 Import MatchingLogic.Syntax.Notations.
 

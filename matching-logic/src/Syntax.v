@@ -127,17 +127,6 @@ Section syntax.
     | patt_mu phi' => patt_mu (bevar_subst phi' psi x)
     end.
 
-  (* In the Leroy's PoplMark paper (https://xavierleroy.org/publi/POPLmark-locally-nameless.pdf),
-     the substitution for bounded variables (called `vsubst` decrements the index of bound variables)
-     that are greater than `x`. I have no idea why. Here we want  bsvar_subst to have the property
-     that if `x` is not present in the formula, then the substitution is no-op (see the lemma
-     `bsvar_subst_not_occur_is_noop`).
-     Therefore,
-     our version keeps the greater indices intact. If someone needs the original behavior,
-     she may write a standalone operation that only decrements high indices.
-
-     The function `bevar_subst` is also changed.
-   *)
   Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
     match phi with
     | patt_free_evar x' => patt_free_evar x'
@@ -306,15 +295,6 @@ Section syntax.
     | patt_mu p' => patt_mu (svar_quantify X (S level) p')
     end.
 
-  Inductive PatCtx : Type :=
-  | pctx_box
-  | pctx_app_l (C : PatCtx) (r : Pattern)
-  | pctx_app_r (l : Pattern) (C : PatCtx)
-  | pctx_imp_l (C : PatCtx) (r : Pattern)
-  | pctx_imp_r (l : Pattern) (C : PatCtx)
-  | pctx_exists (x : evar) (C : PatCtx)
-  (* | ctx_mu (C : PatCtx) <--- restriction *).
-
   Definition exists_quantify (x : evar)
              (p : Pattern) : Pattern :=
     patt_exists (evar_quantify x 0 p).
@@ -322,17 +302,6 @@ Section syntax.
   Definition mu_quantify (X : svar)
              (p : Pattern) : Pattern :=
     patt_mu (svar_quantify X 0 p).
-
-  Fixpoint subst_patctx (C : PatCtx) (p : Pattern) : Pattern :=
-  match C with
-   | pctx_box => p
-   | pctx_app_l C r => patt_app (subst_patctx C p) r
-   | pctx_app_r l C => patt_app l (subst_patctx C p)
-   | pctx_imp_l C r => patt_imp (subst_patctx C p) r
-   | pctx_imp_r l C => patt_imp l (subst_patctx C p)
-   | pctx_exists x C => exists_quantify x (subst_patctx C p)
-   (* | ctx_mu C => patt_mu (subst_patctx C p) *)
-  end.
 
   Fixpoint size (p : Pattern) : nat :=
     match p with
@@ -4536,31 +4505,6 @@ Qed.
   Proof.
     induction φ; intros x' n'; simpl; try set_solver.
     case_match; simpl; set_solver.
-  Qed.
-
-  Fixpoint wf_PatCtx (C : PatCtx) : bool :=
-  match C with
-   | pctx_box => true
-   | pctx_app_l C r => well_formed r && wf_PatCtx C
-   | pctx_app_r l C => well_formed l && wf_PatCtx C
-   | pctx_imp_l C r => well_formed r && wf_PatCtx C
-   | pctx_imp_r l C => well_formed l && wf_PatCtx C
-   | pctx_exists x C => wf_PatCtx C
-  end.
-
-
-  Theorem subst_patctx_wf :
-    forall C φ, wf_PatCtx C -> well_formed φ
-  ->
-    well_formed (subst_patctx C φ) = true.
-  Proof.
-    induction C; intros φ WFC WFφ; simpl; auto.
-    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
-    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
-    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
-    * apply andb_true_iff in WFC as [E1 E2]. apply well_formed_app; auto.
-    * simpl in WFC. eapply IHC in WFC; eauto.
-      now apply evar_quantify_well_formed.
   Qed.
 
   (* FIXME: rename! *)
