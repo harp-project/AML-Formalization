@@ -10,7 +10,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax Utils.extralibrary.
+From MatchingLogic Require Import Syntax DerivedOperators_Syntax Utils.extralibrary wftactics.
 Require Import MatchingLogic.Theories.Definedness_Syntax.
 
 Import MatchingLogic.Syntax.Notations.
@@ -54,6 +54,7 @@ Section sorts.
    Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
     {| unary_bevar_subst := bevar_subst_inhabitant_set ;
        unary_bsvar_subst := bsvar_subst_inhabitant_set ;
+       unary_wf := ltac:(wf_auto2) ;
     |}.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=

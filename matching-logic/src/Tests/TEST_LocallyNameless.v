@@ -8,12 +8,12 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators SignatureHelper.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics SignatureHelper.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.IndexManipulation.
 
 (* In this module we show how to define a signature and build patterns *)
