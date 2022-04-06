@@ -1,10 +1,14 @@
 From MatchingLogic Require Export Logic 
-                                  Theories.Definedness
-                                  DerivedOperators
-                                  Theories.Sorts
+                                  Theories.Definedness_Syntax
+                                  Theories.Definedness_ProofSystem
+                                  DerivedOperators_Syntax
+                                  Theories.Sorts_Syntax
+                                  Theories.Sorts_ProofSystem
                                   NamedAxioms
-                                  ProofMode.
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators.Notations.
+                                  ProofMode
+                                  wftactics
+                                  .
+Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
 From Coq Require Import ssreflect ssrfun ssrbool.
 Require Export Coq.Program.Wf 
                Lia 
@@ -505,7 +509,7 @@ Section FOL_ML_correspondence.
   Inductive Symbols : Set :=
   | sym_fun   (name : funs)
   | sym_pred  (name : preds)
-  | sym_import_definedness (d : Definedness.Symbols).
+  | sym_import_definedness (d : Definedness_Syntax.Symbols).
 
   Instance Symbols_dec : EqDecision Symbols.
   Proof.
@@ -513,13 +517,12 @@ Section FOL_ML_correspondence.
     repeat decide equality.
     apply Σ_funcs.
     apply Σ_preds.
-    apply Definedness.Symbols_eqdec.
   Defined.
 
   Instance FOLVars : MLVariables := 
   {|
-    Syntax.evar := vars;
-    Syntax.svar := vars;
+    Signature.evar := vars;
+    Signature.svar := vars;
     evar_eqdec := var_eqdec;
     svar_eqdec := var_eqdec;
     evar_countable := var_countable;
@@ -533,9 +536,9 @@ Section FOL_ML_correspondence.
     symbols := Symbols;
   |}.
 
-  Instance definedness_syntax : Definedness.Syntax :=
+  Instance definedness_syntax : Definedness_Syntax.Syntax :=
   {|
-     Definedness.inj := sym_import_definedness;
+     Definedness_Syntax.inj := sym_import_definedness;
   |}.
 
   Fixpoint convert_term (t : term) : Pattern :=
@@ -556,7 +559,7 @@ Section FOL_ML_correspondence.
   end.
 
   Inductive AxName :=
-  | AxDefinedness (name : Definedness.AxiomName)
+  | AxDefinedness (name : Definedness_Syntax.AxiomName)
   | AxFun (f : funs)
   | AxPred (p : preds).
 
@@ -580,7 +583,7 @@ Section FOL_ML_correspondence.
 
   Definition axiom (name : AxName) : Pattern :=
   match name with 
-  | AxDefinedness name' => Definedness.axiom name'
+  | AxDefinedness name' => Definedness_Syntax.axiom name'
   | AxFun f             => add_forall_prefix (ar_funs f) (patt_exists (patt_equal 
                           (List.fold_left
                             (fun Acc (x : nat) => patt_app Acc (patt_bound_evar x)) 
@@ -807,7 +810,7 @@ Section FOL_ML_correspondence.
     
     unfold axiom. intros F.
     break_match_goal.
-    - unfold Definedness.axiom. destruct name. simpl. constructor.
+    - unfold Definedness_Syntax.axiom. destruct name. simpl. constructor.
     - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
       + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list. auto.
         auto.
@@ -849,10 +852,10 @@ Section FOL_ML_correspondence.
   Qed.
 
   Lemma have_definedness Γ:
-    Definedness.theory ⊆ from_FOL_theory Γ.
+    Definedness_Syntax.theory ⊆ from_FOL_theory Γ.
   Proof.
     simpl.
-    assert (Definedness.theory ⊆ base_FOL_theory).
+    assert (Definedness_Syntax.theory ⊆ base_FOL_theory).
     { 
       unfold theory.
       unfold base_FOL_theory.
@@ -1353,12 +1356,12 @@ Section tests.
   Context {Σ_vars : FOL_variables}.
   Instance FOLVars2 : MLVariables := 
   {|
-    Syntax.evar := vars;
+    Signature.evar := vars;
     evar_eqdec := var_eqdec;
     svar_eqdec := var_eqdec;
     evar_countable := var_countable;
     svar_countable := var_countable;
-    Syntax.svar := vars;
+    Signature.svar := vars;
     evar_infinite := var_infinite;
     svar_infinite := var_infinite;
 
@@ -1370,9 +1373,9 @@ Section tests.
     sym_eqdec := Symbols_dec
   |}.
 
-  Instance definedness_syntax2 : Definedness.Syntax :=
+  Instance definedness_syntax2 : Definedness_Syntax.Syntax :=
   {|
-     Definedness.inj := sym_import_definedness;
+     Definedness_Syntax.inj := sym_import_definedness;
   |}.
 
   Goal axiom (AxFun Mult) = patt_forall (patt_forall (patt_exists (patt_equal 
