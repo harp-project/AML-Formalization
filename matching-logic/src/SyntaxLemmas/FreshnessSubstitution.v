@@ -589,4 +589,50 @@ Proof.
 intros. apply well_formed_free_evar_subst; assumption.
 Qed.
 
+
+Lemma evar_quantify_fresh x n phi:
+evar_is_fresh_in x phi ->
+(evar_quantify x n phi) = phi.
+Proof.
+intros H.
+move: n H.
+induction phi; intros n' H; cbn; auto.
+- destruct (decide (x = x0)); subst; simpl.
+  + unfold evar_is_fresh_in in H. simpl in H. set_solver.
+  + reflexivity.
+- apply evar_is_fresh_in_app in H. destruct H as [H1 H2].
+  rewrite IHphi1; auto.
+  rewrite IHphi2; auto.
+- apply evar_is_fresh_in_imp in H. destruct H as [H1 H2].
+  rewrite IHphi1; auto.
+  rewrite IHphi2; auto.
+- apply evar_is_fresh_in_exists in H.
+  rewrite IHphi; auto.
+- apply evar_is_fresh_in_mu in H.
+  rewrite IHphi; auto.
+Qed.
+
+Lemma svar_quantify_fresh X n phi:
+svar_is_fresh_in X phi ->
+(svar_quantify X n phi) = phi.
+Proof.
+intros H.
+move: n H.
+induction phi; intros n' H; cbn; auto.
+- destruct (decide (X = x)); subst; simpl.
+  + unfold svar_is_fresh_in in H. simpl in H. set_solver.
+  + reflexivity.
+- apply svar_is_fresh_in_app in H. destruct H as [H1 H2].
+  rewrite IHphi1; auto.
+  rewrite IHphi2; auto.
+- apply svar_is_fresh_in_imp in H. destruct H as [H1 H2].
+  rewrite IHphi1; auto.
+  rewrite IHphi2; auto.
+- apply svar_is_fresh_in_exists in H.
+  rewrite IHphi; auto.
+- apply svar_is_fresh_in_mu in H.
+  rewrite IHphi; auto.
+Qed.
+
+
 End lemmas.

@@ -25,6 +25,7 @@ From MatchingLogic Require Export
   ApplicationContext
   SyntaxLemmas.FreshnessSubstitution
   SyntaxLemmas.PatternCtxApplicationCtx
+  SyntaxLemmas.FreshnessApplicationCtx
 .
 
 Import Substitution.Notations.
@@ -817,135 +818,7 @@ End BoundVarSugar.
 Section with_signature.
   Context {Σ : Signature}.
 
-  Lemma evar_is_fresh_in_subst_ctx x AC p:
-    evar_is_fresh_in x (subst_ctx AC p)
-    <-> (evar_is_fresh_in x p /\ x ∉ AC_free_evars AC).
-  Proof.
-    induction AC.
-    - simpl. split; set_solver.
-    - simpl. split; intros H.
-      + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
-        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
-        assert (Hfr2: evar_is_fresh_in x p0).
-        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
-        rewrite -> IHAC in Hfr1.
-        split; [apply Hfr1|].
-        clear -Hfr1 Hfr2.
-        unfold evar_is_fresh_in in Hfr2.
-        set_solver.
-      + destruct H as [H1 H2].
-        rewrite -> evar_is_fresh_in_app.
-        split.
-        * rewrite -> IHAC. set_solver.
-        * unfold evar_is_fresh_in. set_solver.
-    - simpl. split; intros H.
-      + assert (Hfr1: evar_is_fresh_in x (subst_ctx AC p)).
-        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
-        assert (Hfr2: evar_is_fresh_in x p0).
-        { eapply evar_is_fresh_in_richer. 2: apply H. cbn. set_solver. }
-        rewrite -> IHAC in Hfr1.
-        split; [apply Hfr1|].
-        clear -Hfr1 Hfr2.
-        unfold evar_is_fresh_in in Hfr2.
-        set_solver.
-      + destruct H as [H1 H2].
-        rewrite -> evar_is_fresh_in_app.
-        split.
-        * unfold evar_is_fresh_in. set_solver.
-        * rewrite -> IHAC. set_solver.
-  Qed.
-
-  Lemma wf_ex_evar_quantify x p:
-    well_formed p = true ->
-    well_formed (patt_exists (evar_quantify x 0 p)) = true.
-  Proof.
-    intros Hwf.
-    unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
-    apply andb_prop in Hwf.
-    destruct Hwf as [Hwfp Hwfc].
-    simpl in Hwfp.
-    unfold well_formed,well_formed_closed. simpl.
-    apply andb_true_intro.
-    split.
-    - simpl. apply evar_quantify_positive. apply Hwfp.
-    - unfold well_formed_closed.
-      simpl.
-      destruct_and!.
-      split_and!.
-      + apply evar_quantify_closed_mu. assumption.
-      + apply evar_quantify_closed_ex. assumption.
-  Qed.
-
-  Lemma wf_ex_eq_sctx_eo AC x p:
-    well_formed (patt_exists p) = true ->
-    well_formed (patt_exists (evar_quantify x 0 (subst_ctx AC (evar_open 0 x p)))) = true.
-  Proof.
-    intros Hwf.
-    unfold well_formed in Hwf.
-    apply andb_prop in Hwf.
-    destruct Hwf as [Hwfp Hwfc].
-    simpl in Hwfp.
-    unfold well_formed.
-    apply andb_true_intro.
-    split.
-    - simpl. apply evar_quantify_positive.
-      apply wp_sctx.
-      apply wfp_evar_open.
-      apply Hwfp.
-    - unfold well_formed_closed.
-      simpl.
-      unfold well_formed_closed in *.
-      destruct_and!.
-      split_and!; simpl.
-      + apply evar_quantify_closed_mu. apply wcmu_sctx.
-        apply wfc_mu_aux_body_ex_imp1. simpl in *. assumption.
-      + apply evar_quantify_closed_ex. apply wcex_sctx.
-        apply wfc_ex_aux_body_ex_imp1. simpl in *. assumption.
-  Qed.
-
-  Lemma evar_quantify_fresh x n phi:
-    evar_is_fresh_in x phi ->
-    (evar_quantify x n phi) = phi.
-  Proof.
-    intros H.
-    move: n H.
-    induction phi; intros n' H; cbn; auto.
-    - destruct (decide (x = x0)); subst; simpl.
-      + unfold evar_is_fresh_in in H. simpl in H. set_solver.
-      + reflexivity.
-    - apply evar_is_fresh_in_app in H. destruct H as [H1 H2].
-      rewrite IHphi1; auto.
-      rewrite IHphi2; auto.
-    - apply evar_is_fresh_in_imp in H. destruct H as [H1 H2].
-      rewrite IHphi1; auto.
-      rewrite IHphi2; auto.
-    - apply evar_is_fresh_in_exists in H.
-      rewrite IHphi; auto.
-    - apply evar_is_fresh_in_mu in H.
-      rewrite IHphi; auto.
-  Qed.
-
-  Lemma svar_quantify_fresh X n phi:
-    svar_is_fresh_in X phi ->
-    (svar_quantify X n phi) = phi.
-  Proof.
-    intros H.
-    move: n H.
-    induction phi; intros n' H; cbn; auto.
-    - destruct (decide (X = x)); subst; simpl.
-      + unfold svar_is_fresh_in in H. simpl in H. set_solver.
-      + reflexivity.
-    - apply svar_is_fresh_in_app in H. destruct H as [H1 H2].
-      rewrite IHphi1; auto.
-      rewrite IHphi2; auto.
-    - apply svar_is_fresh_in_imp in H. destruct H as [H1 H2].
-      rewrite IHphi1; auto.
-      rewrite IHphi2; auto.
-    - apply svar_is_fresh_in_exists in H.
-      rewrite IHphi; auto.
-    - apply svar_is_fresh_in_mu in H.
-      rewrite IHphi; auto.
-  Qed.
+  
 
 End with_signature.
 
@@ -961,24 +834,6 @@ Qed.
 #[export]
  Hint Resolve wfc_ex_implies_not_bevar_occur : core.
 
-Lemma subst_ctx_bevar_subst {Σ : Signature} AC p q n:
-  subst_ctx AC (bevar_subst p q n) = bevar_subst (subst_ctx AC p) q n.
-Proof.
-  induction AC.
-  - reflexivity.
-  - simpl. rewrite IHAC. clear IHAC.
-    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
-    2: { reflexivity. }
-    unfold well_formed,well_formed_closed in Prf.
-    destruct_and!.
-    auto. eapply well_formed_closed_ex_aux_ind. 2: exact H2. lia.
-  - simpl. rewrite IHAC. clear IHAC.
-    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
-    2: { reflexivity. }
-    unfold well_formed,well_formed_closed in Prf.
-    destruct_and!.
-    auto. eapply well_formed_closed_ex_aux_ind. 2: exact H2. lia.
-Qed.
 
 Lemma free_evars_evar_quantify {Σ : Signature} x n p:
   free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.

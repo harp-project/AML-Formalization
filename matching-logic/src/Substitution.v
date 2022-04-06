@@ -2067,4 +2067,26 @@ induction φ; intros x' n' H; simpl; auto.
 - simpl in H. rewrite IHφ. lia. reflexivity.
 Qed.
 
+
+Lemma wf_ex_evar_quantify x p:
+well_formed p = true ->
+well_formed (patt_exists (evar_quantify x 0 p)) = true.
+Proof.
+intros Hwf.
+unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
+apply andb_prop in Hwf.
+destruct Hwf as [Hwfp Hwfc].
+simpl in Hwfp.
+unfold well_formed,well_formed_closed. simpl.
+apply andb_true_intro.
+split.
+- simpl. apply evar_quantify_positive. apply Hwfp.
+- unfold well_formed_closed.
+  simpl.
+  destruct_and!.
+  split_and!.
+  + apply evar_quantify_closed_mu. assumption.
+  + apply evar_quantify_closed_ex. assumption.
+Qed.
+
 End subst.
