@@ -8,6 +8,7 @@ Require Import
     base
     decidable
     propset
+    fin_maps
 .
 
 From MatchingLogic
@@ -19,6 +20,8 @@ Require Import
     Theories.Definedness_Syntax
     Theories.Sorts_Syntax
 .
+
+Import MatchingLogic.Semantics.Notations.
 
 Section with_syntax.
     Context
@@ -100,7 +103,7 @@ Section with_syntax.
 
     Instance Carrier_inhabited : Inhabited Carrier := populate cdef.
     
-    Definition interp (x y : Carrier) : propset Carrier :=
+    Definition new_app_interp (x y : Carrier) : propset Carrier :=
         match x with
         | cdef =>
             ⊤
@@ -133,17 +136,114 @@ Section with_syntax.
                 end
             end
         end.
-    .
-    Proof.
-        destruct x.
-        {
+    
+    Definition new_sym_interp (s : symbols) : Power Carrier :=
+        cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s)).
+    
+    Definition Mext : Model :=
+        {|
+            Domain := Carrier ;
+            Domain_inhabited := Carrier_inhabited ;
+            app_interp := new_app_interp ;
+            sym_interp := new_sym_interp ;
+        |}.
 
-        }
-    Defined.
+    Definition lift_value (x : Domain M) : (Domain Mext)
+    := cel (inl x).
 
-    Print Model.
+    Definition lift_set (xs : Power (Domain M)) : (Power (Domain Mext))
+    := cel <$> (@fmap propset _ _ _ inl xs).
 
-    End ext.
-        : Model .
+    (* Valuations lifted from the original model to the extended model. *)
+    Definition lift_val_e (ρₑ : @EVarVal _ M) : (@EVarVal _ Mext)
+    := λ (x : evar), (lift_value (ρₑ x)).
+
+    Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
+    := λ (X : svar), lift_set (ρₛ X).
+
+    Section semantic_preservation.
+       Context
+            (M_def : M ⊨ᵀ Definedness_Syntax.theory)
+            (ρₑ : @EVarVal _ M)
+            (ρₛ : @SVarVal _ M)
+        .    
+    
+
+        Check pattern_interpretation.
+        Lemma semantics_preservation_data
+            (ϕ : Pattern)
+            :
+            is_SData ϕ ->
+            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
+            = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
+        with semantics_preservation_pred
+            (ψ : Pattern)
+            :
+            is_SPredicate ψ ->
+            (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
+             <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
+            /\
+            (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
+             <-> pattern_interpretation ρₑ ρₛ ψ = ⊤).
+        Proof.
+            {
+                (* preservation of data patterns *)
+                intros HSData. induction HSData.
+                {
+                    (* patt_bott *)
+                    do 2 rewrite pattern_interpretation_bott_simpl.
+                    unfold lift_set.
+                    unfold fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear.
+                    unfold_leibniz.
+                    set_solver.
+                }
+                {
+                    (* free_evar x*)
+                    do 2 rewrite pattern_interpretation_free_evar_simpl.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear. unfold_leibniz. set_solver.
+                }
+                {
+                    (* free_svar X *)
+                    do 2 rewrite pattern_interpretation_free_svar_simpl.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear. unfold_leibniz. set_solver.
+                }
+                {
+                    (* bound_evar X *)
+                    do 2 rewrite pattern_interpretation_bound_evar_simpl.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear. unfold_leibniz. set_solver.
+                }
+                {
+                    (* bound_svar X *)
+                    do 2 rewrite pattern_interpretation_bound_svar_simpl.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear. unfold_leibniz. set_solver.
+                }
+                {
+                    (* sym s *)
+                    do 2 rewrite pattern_interpretation_sym_simpl.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    clear. unfold_leibniz. set_solver.
+                }
+                {
+                    
+                }
+                admit.
+            }
+            {   (* preservation of predicates *)
+                intros HSPred. induction HSPred.
+            }
+        Qed.
+
+    End semantic_preservation.
 
 End with_syntax.
