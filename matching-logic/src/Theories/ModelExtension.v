@@ -7,6 +7,7 @@ From stdpp
 Require Import
     base
     decidable
+    propset
 .
 
 From MatchingLogic
@@ -65,10 +66,84 @@ Section with_syntax.
         : is_SData (patt_bound_evar dbi)
     | sdata_bsvar (dbi : db_index)
         : is_SData (patt_bound_svar dbi)
-    | spred_sym (s : symbols)
+    | sdata_sym (s : symbols)
         : is_not_core_symbol s -> is_SData (patt_sym s)
-    | spred_inh (s : symbols)
+    | sdata_inh (s : symbols)
         : is_not_core_symbol s -> is_SData (patt_inhabitant_set (patt_sym s))
+    | sdata_sneg (ϕ : Pattern) (s : symbols)
+        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_sorted_neg (patt_sym s) ϕ)
+    | sdata_app (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SData (patt_app ϕ₁ ϕ₂)
+    | sdata_or (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SData (patt_or ϕ₁ ϕ₂)
+    | sdata_filter (ϕ ψ : Pattern)
+        : is_SData ϕ -> is_SPredicate ψ -> is_SData (patt_and ϕ ψ)
+    | sdata_ex (ϕ : Pattern) (s : symbols)
+        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_exists_of_sort (patt_sym s) ϕ)
+    | sdata_all (ϕ : Pattern) (s : symbols)
+        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_forall_of_sort (patt_sym s) ϕ)
+    | sdata_mu (ϕ : Pattern)
+        : is_SData ϕ -> is_SData (patt_mu ϕ)
     .
+
+    Section ext.
+        Context
+            (M : Model)
+            (R : Type)
+            (fRM : R -> (Domain M) -> propset (Domain M + R)%type)
+            (fMR : (Domain M) -> R -> propset (Domain M + R)%type)
+            (fRR : R -> R -> propset (Domain M + R)%type)
+            (finh : R -> propset (Domain M + R)%type)
+        .
+
+    Inductive Carrier := cdef | cinh | cel (el: (Domain M + R)%type).
+
+    Instance Carrier_inhabited : Inhabited Carrier := populate cdef.
+    
+    Definition interp (x y : Carrier) : propset Carrier :=
+        match x with
+        | cdef =>
+            ⊤
+        | cinh =>
+            match y with
+            | cdef => ∅
+            | cinh => ∅
+            | cel el =>
+                match el with
+                | inl m =>
+                    cel <$> (@fmap propset _ _ _ inl (@app_ext _ M (sym_interp M (Sorts_Syntax.inj inhabitant)) {[m]}))
+                | inr r =>
+                    cel <$> finh r
+                end
+            end
+        | cel elx =>
+            match y with
+            | cdef => ∅
+            | cinh => ∅
+            | cel ely =>
+                match elx,ely with
+                | (inl mx),(inl my) =>
+                    cel <$> (@fmap propset _ _ _ inl (@app_interp _ M mx my))
+                | (inl mx),(inr ry) =>
+                    cel <$> (fMR mx ry)
+                | (inr rx),(inl my) =>
+                    cel <$> (fRM rx my)
+                | (inr rx),(inr ry) =>
+                    cel <$> (fRR rx ry)
+                end
+            end
+        end.
+    .
+    Proof.
+        destruct x.
+        {
+
+        }
+    Defined.
+
+    Print Model.
+
+    End ext.
+        : Model .
 
 End with_syntax.
