@@ -11,7 +11,7 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators ProofSystem IndexManipulation.
+From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
 From stdpp Require Import list tactics fin_sets.
 
@@ -21,7 +21,7 @@ Import extralibrary.
 
 Import
   MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators.Notations
+  MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
 .
 
@@ -5361,100 +5361,6 @@ Section FOL_helpers.
     := ProofProperty1 P (@weird_lemma_meta Γ a b p q wfa wfb wfp wfq) _.
   Next Obligation. solve_indif; assumption. Qed.
 
-(*
-  Theorem congruence_iff :
-    forall C φ1 φ2 Γ, well_formed φ1 -> well_formed φ2 ->
-     Γ ⊢ (φ1 <---> φ2)
-    ->
-     (* well_formed (subst_patctx C φ1) -> well_formed (subst_patctx C φ2) -> *)
-     wf_PatCtx C ->
-     Γ ⊢ (subst_patctx C φ1 <---> subst_patctx C φ2).
-  Proof.
-    induction C; intros φ1 φ2 Γ WF1 WF2 H WFC.
-    * apply H.
-    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
-      specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC as [m m0].
-      pose proof (Framing_left Γ (subst_patctx C φ1) (subst_patctx C φ2) r m).
-      pose proof (Framing_left Γ (subst_patctx C φ2) (subst_patctx C φ1) r m0).
-      apply pf_iff_iff; auto.
-      all: auto. 1-2: apply well_formed_app; auto.
-      all: apply subst_patctx_wf; auto.
-    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
-      specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. destruct IHC as [m m0].
-      pose proof (Framing_right Γ (subst_patctx C φ1) (subst_patctx C φ2) l m).
-      pose proof (Framing_right Γ (subst_patctx C φ2) (subst_patctx C φ1) l m0).
-      apply pf_iff_iff; auto.
-      all: auto. 1-2: apply well_formed_app; auto.
-      all: apply subst_patctx_wf; auto.
-    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
-      specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. 2-3: now apply subst_patctx_wf.
-      destruct IHC as [m m0].
-      simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
-      apply pf_iff_iff; auto.
-      1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
-           now apply subst_patctx_wf.
-      split.
-      - epose proof (@syllogism Σ Γ B A r _ _ _).
-        epose proof (Modus_ponens Γ (B ---> A) ((A ---> r) ---> B ---> r)
-                    ltac:(auto) ltac:(auto) _ _). auto.
-      - epose proof (@syllogism Σ Γ A B r _ _ _).
-        epose proof (Modus_ponens Γ (A ---> B) ((B ---> r) ---> A ---> r)
-                    ltac:(auto) ltac:(auto) _ _). auto.
-      Unshelve.
-       all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
-       all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
-       all: auto.
-    * simpl. simpl in WFC. apply andb_true_iff in WFC as [E1 E2].
-      specialize (IHC φ1 φ2 Γ).
-      apply pf_iff_iff in IHC. all: auto. all: auto. 2-3: now apply subst_patctx_wf.
-      destruct IHC as [m m0].
-      simpl. remember (subst_patctx C φ1) as A. remember (subst_patctx C φ2) as B.
-      apply pf_iff_iff; auto.
-      1-2: try rewrite HeqA; try rewrite HeqB; apply well_formed_imp; auto;
-           now apply subst_patctx_wf.
-      split.
-      - epose proof (@prf_weaken_conclusion Σ Γ l A B _ _ _).
-        epose proof (Modus_ponens Γ (A ---> B) ((l ---> A) ---> l ---> B)
-                    ltac:(auto) ltac:(auto) _ _). auto.
-      - epose proof (@prf_weaken_conclusion Σ Γ l B A _ _ _).
-        epose proof (Modus_ponens Γ (B ---> A) ((l ---> B) ---> l ---> A)
-                    ltac:(auto) ltac:(auto) _ _). auto.
-      Unshelve.
-       all: assert (well_formed A) by (rewrite HeqA; now apply subst_patctx_wf).
-       all: assert (well_formed B) by (rewrite HeqB; now apply subst_patctx_wf).
-       all: auto.
-    * simpl. simpl in WFC.
-      specialize (IHC _ _ Γ WF1 WF2 H).
-      simpl. unfold exists_quantify.
-      pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ1)) x).
-      pose proof (Ex_quan Γ (evar_quantify x 0 (subst_patctx C φ2)) x).
-      unfold instantiate in H0, H1.
-      fold (evar_open 0 x (evar_quantify x 0 (subst_patctx C φ1))) in H0.
-      fold (evar_open 0 x (evar_quantify x 0 (subst_patctx C φ2))) in H1.
-      erewrite -> evar_open_evar_quantify in H0, H1. 2-3: shelve.
-      apply pf_iff_proj1 in IHC as IH1. apply pf_iff_proj2 in IHC as IH2.
-      all: auto.
-      eapply syllogism_intro in H0. 5: exact IH2. all: auto.
-      eapply syllogism_intro in H1. 5: exact IH1. all: auto.
-      apply (Ex_gen _ _ _ x) in H0. apply (Ex_gen _ _ _ x) in H1.
-      all: auto. 2-3: shelve.
-      unfold exists_quantify in H0, H1.
-      apply pf_iff_iff; auto.
-     Unshelve.
-     all: try apply evar_quantify_well_formed; auto.
-     all: try apply subst_patctx_wf; auto.
-     1-2: simpl; apply evar_quantify_not_free.
-     + eapply subst_patctx_wf in WFC. 2: exact WF2.
-       apply andb_true_iff in WFC as [E1 E2].
-       unfold well_formed_closed in *. destruct_and!. assumption.
-     + eapply subst_patctx_wf in WFC. 2: exact WF1.
-       apply andb_true_iff in WFC as [E1 E2].
-       unfold well_formed_closed in *. destruct_and!. assumption.
-  Defined.
-*)
   Lemma imp_trans_mixed_meta Γ A B C D :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (C ---> A) -> Γ ⊢ (B ---> D)

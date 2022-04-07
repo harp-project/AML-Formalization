@@ -11,7 +11,12 @@ From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax NamedAxioms IndexManipulation.
+From MatchingLogic Require Import
+  Syntax
+  Freshness
+  NamedAxioms
+  IndexManipulation
+.
 
 Import MatchingLogic.Syntax.Notations.
 (** ** Matching Logic Semantics *)
@@ -1958,7 +1963,7 @@ Section semantics.
            if we deal with nest_mu properly
    *)
   Lemma Private_free_svar_subst_update_exchange {m : Model}: ∀ sz phi psi X svar_val evar_val,
-      le (Syntax.size phi) sz → well_formed psi → well_formed_closed phi → 
+      le (Pattern.size phi) sz → well_formed psi → well_formed_closed phi → 
       pattern_interpretation evar_val svar_val (free_svar_subst phi psi X) =
       pattern_interpretation evar_val
                              (@update_svar_val m X (pattern_interpretation evar_val svar_val psi) svar_val)
@@ -2434,6 +2439,9 @@ Section semantics.
     rewrite Hm in Hm₂. inversion Hm₂. subst. clear Hm₂.
     reflexivity.
   Qed.
+
+
+
 
 End semantics.
 

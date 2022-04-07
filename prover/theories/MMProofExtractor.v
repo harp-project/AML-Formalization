@@ -4,7 +4,7 @@ From Equations Require Import Equations.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers.
 
-From MatchingLogic Require Import Syntax DerivedOperators ProofSystem.
+From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem.
 
 From MatchingLogicProver Require Import Named.
 

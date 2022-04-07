@@ -5,19 +5,38 @@ src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
 src/Utils/wflexprod.v
 
+src/Signature.v
+src/Pattern.v
+src/Substitution.v
+src/Freshness.v
+src/SyntacticConstruct.v
+src/ApplicationContext.v
+src/PatternContext.v
+src/SyntaxLemmas/FreshnessSubstitution.v
+src/SyntaxLemmas/PatternCtxApplicationCtx.v
+src/SyntaxLemmas/FreshnessApplicationCtx.v
+src/SyntaxLemmas/ApplicationCtxSubstitution.v
 src/Syntax.v
+src/wftactics.v
 src/IndexManipulation.v
 src/NamedAxioms.v
 src/Semantics.v
 src/monotonic.v
-src/DerivedOperators.v
+src/DerivedOperators_Syntax.v
+src/DerivedOperators_Semantics.v
 src/ProofSystem.v
+src/ProofSystemSoundness.v
 src/FixpointReasoning.v
 src/SignatureHelper.v
 src/Logic.v
 src/ProofMode.v
 
-src/Theories/Definedness.v
-src/Theories/Sorts.v
+src/Theories/Definedness_Syntax.v
+src/Theories/Definedness_Semantics.v
+src/Theories/Definedness_ProofSystem.v
+
+src/Theories/Sorts_Syntax.v
+src/Theories/Sorts_Semantics.v
+src/Theories/Sorts_ProofSystem.v
 
 src/Tests/TEST_LocallyNameless.v

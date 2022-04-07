@@ -8,12 +8,12 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators SignatureHelper.
-From MatchingLogic.Theories Require Import Definedness Sorts.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics SignatureHelper.
+From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.DerivedOperators.Notations.
+Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.IndexManipulation.
 
 (* In this module we show how to define a signature and build patterns *)
@@ -74,15 +74,15 @@ End test_1.
 (* Here we show how to use the Definedness module. *)
 Module test_2.
   Section test_2.
-    Import Definedness.
+    Import Definedness_Syntax.
 
     (* We must include all the symbols from the Definedness module into our signature.
        We do this by defining a constructor `sym_import_definedness : Definedness.Symbols -> Symbols`.
        And we also define a bunch of other symbols.
      *)
     Inductive Symbols :=
-    | sym_import_definedness (d : Definedness.Symbols)
-    | sym_import_sorts (s : Sorts.Symbols)
+    | sym_import_definedness (d : Definedness_Syntax.Symbols)
+    | sym_import_sorts (s : Sorts_Syntax.Symbols)
     | sym_SortNat
     | sym_zero | sym_succ (* constructors for Nats *)
     | sym_c (* some constant that we make functional *)
@@ -96,15 +96,15 @@ Module test_2.
          symbols := Symbols ;
       |}.
 
-    Instance definedness_syntax : Definedness.Syntax :=
+    Instance definedness_syntax : Definedness_Syntax.Syntax :=
       {|
-         Definedness.inj := sym_import_definedness;
+         Definedness_Syntax.inj := sym_import_definedness;
       |}.
 
-    Instance sorts_syntax : Sorts.Syntax :=
+    Instance sorts_syntax : Sorts_Syntax.Syntax :=
       {|
-      Sorts.inj := sym_import_sorts;
-      Sorts.imported_definedness := definedness_syntax;
+      Sorts_Syntax.inj := sym_import_sorts;
+      Sorts_Syntax.imported_definedness := definedness_syntax;
       |}.
     
     Example test_pattern_0 : Pattern := patt_sym sym_c.
@@ -163,7 +163,7 @@ Module test_2.
     Arguments Domain : simpl never.
 
     (* TODO a tactic that solves this, or a parameterized lemma. *)
-    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness.axiom Definedness.AxDefinedness).
+    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness_Syntax.axiom Definedness_Syntax.AxDefinedness).
     Proof.
       unfold satisfies_model. intros.
       unfold axiom.
