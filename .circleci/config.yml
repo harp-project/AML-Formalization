@@ -16,7 +16,7 @@ jobs:
           command: |
             nix-channel --update
             nix-env --upgrade
-            nix-env -iA nixpkgs.git
+#            nix-env -iA nixpkgs.git
       - checkout
       - run:
           name: "Build"
