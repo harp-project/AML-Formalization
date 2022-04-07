@@ -494,9 +494,6 @@ Section index_manipulation.
 
 End index_manipulation.
 
-Ltac simpl_bevar_subst := repeat (rewrite simpl_bevar_subst';[reflexivity|]).
-Ltac simpl_bsvar_subst := repeat (rewrite simpl_bsvar_subst';[reflexivity|]).
-
 Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
   simpl;
   (do ? [rewrite simpl_free_evars/=]) ;
