@@ -67,8 +67,6 @@ Section sorts.
   Lemma bsvar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
     bsvar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bsvar_subst s ψ x) (bsvar_subst ϕ ψ x).
   Proof. unfold patt_sorted_neg.
-    Set Typeclasses Debug.
-    rewrite binary_bsvar_subst.
     simpl_bsvar_subst.
     reflexivity.
   Qed.

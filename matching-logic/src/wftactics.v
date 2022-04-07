@@ -164,6 +164,8 @@ Ltac try_wfauto2 :=
 lazymatch goal with
 | [|- is_true (well_formed _)] => wf_auto2
 | [|- well_formed _ = true ] => wf_auto2
+| [|- is_true (well_formed_closed _)] => wf_auto2
+| [|- well_formed_closed _ = true ] => wf_auto2
 | [|- is_true (wf _)] => wf_auto2
 | [|- wf _ = true ] => wf_auto2
 | _ => idtac
@@ -171,6 +173,6 @@ end.
 
 
 Ltac simpl_bevar_subst :=
-  repeat (rewrite simpl_bevar_subst';try_wfauto2; [reflexivity|]).
+  repeat (rewrite simpl_bevar_subst';try_wfauto2).
 Ltac simpl_bsvar_subst :=
-  repeat (rewrite simpl_bsvar_subst';try_wfauto2; [reflexivity|]).
+  repeat (rewrite simpl_bsvar_subst';try_wfauto2).
