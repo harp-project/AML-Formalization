@@ -274,40 +274,37 @@ Section with_syntax.
                         clear e Heqs1 Heqs0 n.
                         unfold app_ext at 1.
                         unfold app_interp at 1. simpl. unfold new_app_interp.
-                        set_solver.
-                    }
-                    
-                    
-                    
-
-
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    set_unfold.
-                    intros. split.
-                    {
-                        intros [x0 [x1 H]].
-                        repeat case_match; try set_solver.
-                    }
-                    {
-                        unfold is_not_core_symbol,is_core_symbol in Hnc.
-                        intros [x0 H].
-                        destruct_and!. subst. destruct H1. destruct_and!.
-                        destruct H1. destruct H. destruct_and!. subst.
-                        do 2 eexists. repeat case_match; try set_solver.
-                        2: { inversion Heqc0. }
-                        2: { 
-                            split_and!.
-                            3: { set_solver. }
+                        set_unfold. intros x. split.
+                        {
+                            intros [x0 [x1 H]]. destruct_and!. subst.
+                            repeat case_match.
+                            { exfalso. clear -H2. set_solver. }
+                            { exfalso. clear -H2. set_solver. }
+                            { subst. set_solver. }
+                            { subst. set_solver. }
+                        }
+                        {
+                            intros [y H]. destruct_and!. subst.
+                            destruct H1 as [y0 H]. destruct_and!. subst.
+                            destruct H1 as [x [x0 H]].
+                            clear Heqps.
+                            destruct_and!.
+                            exists cinh.
+                            eexists (cel (inl x0)).
+                            split.
+                            { reflexivity. }
+                            split.
                             {
-                                exfalso.
-                                exists (inl x3).
+                                exists (inl x0). split. reflexivity. exists x0. split.
+                                reflexivity. assumption.
+                            }
+                            {
+                                unfold fmap.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap.                                
+                                set_solver.
                             }
                         }
-
-                        unfold app_ext. simpl.
                     }
-                    set_solver. by ((repeat case_match); auto).
                 }
                 admit.
             }
