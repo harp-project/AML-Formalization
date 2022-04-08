@@ -2574,3 +2574,57 @@ Proof.
   { reflexivity. }
   { simpl. rewrite IHl. reflexivity. }
 Qed.
+
+
+Lemma wfc_ex_aux_S_bevar_subst_fe {Σ : Signature} k ϕ x:
+  well_formed_closed_ex_aux ϕ.[evar:k↦patt_free_evar x] k = true ->
+  well_formed_closed_ex_aux ϕ (S k) = true.  
+Proof.
+  intros H. move: k H.
+  induction ϕ; intros k H; simpl in *; auto.
+  { repeat case_match; auto; try lia. simpl in H. case_match; lia. }
+  { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
+  { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
+Qed.
+
+Lemma wfc_ex_aux_evar_open_neq {Σ : Signature} dbi x k ϕ:
+  k <> dbi ->
+  well_formed_closed_ex_aux (evar_open dbi x ϕ) k = well_formed_closed_ex_aux ϕ k.
+Proof.
+  unfold evar_open.
+  intros H.
+  move: k dbi H.
+  induction ϕ; intros k dbi H; simpl in *; auto.
+  { 
+    repeat case_match; simpl; repeat case_match; auto; try lia.
+  }
+Qed.
+
+Lemma wfc_ex_aux_bcmcloseex {Σ : Signature} l k ϕ:
+  well_formed_closed_ex_aux (bcmcloseex l (patt_exists ϕ)) k = true ->
+  well_formed_closed_ex_aux (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) (S k) = true.
+Proof.
+  intros H.
+  move: k H.
+  induction l; intros k H.
+  { simpl. simpl in H. apply H. }
+  {
+    destruct a as [dbi x].
+    simpl. simpl in H.
+    destruct (decide (dbi = k)).
+    {
+      subst. unfold evar_open. apply wfc_ex_aux_bevar_subst.
+      {
+        apply IHl.
+        unfold evar_open in H.
+        eapply wfc_ex_aux_S_bevar_subst_fe.
+        apply H.
+      }
+      reflexivity.
+    }
+    {
+      remember (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) as ϕ'.
+      Search well_formed_closed_ex_aux evar_open not eq.
+    }
+  }
+Qed.
