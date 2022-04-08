@@ -2503,15 +2503,14 @@ Qed.
 
 Definition bcmcloseex
     {Σ : Signature}
-    (from : db_index)
-    (l : list evar)
+    (l : list (prod db_index evar))
     (ϕ : Pattern) : Pattern
-:= foldr (λ e ϕ', evar_open from e ϕ') ϕ l.
+:= foldr (λ p ϕ', evar_open p.1 p.2 ϕ') ϕ l.
 
+(*
 Lemma bmcloseex_wfcex
   {Σ : Signature}
-  (from : db_index)
-  (l : list evar)
+  (l : list (prod db_index evar))
   (ϕ : Pattern)
   : well_formed_closed_ex_aux ϕ from ->
   (bcmcloseex from l ϕ) = ϕ.
@@ -2521,12 +2520,11 @@ Proof.
   { reflexivity. }
   { simpl. rewrite IHl. by rewrite evar_open_not_occur. }
 Qed.
-
+*)
 Lemma bcmcloseex_bott
   {Σ : Signature}
-  (from : db_index)
-  (l : list evar)
-  : bcmcloseex from l patt_bott = patt_bott.
+  (l : list (prod db_index evar))
+  : bcmcloseex l patt_bott = patt_bott.
 Proof.
   induction l.
   { reflexivity. }
@@ -2535,10 +2533,9 @@ Qed.
 
 Lemma bcmcloseex_sym
   {Σ : Signature}
-  (from : db_index)
+  (l : list (prod db_index evar))
   (s : symbols)
-  (l : list evar)
-  : bcmcloseex from l (patt_sym s) = (patt_sym s).
+  : bcmcloseex l (patt_sym s) = (patt_sym s).
 Proof.
   induction l.
   { reflexivity. }
@@ -2547,10 +2544,9 @@ Qed.
 
 Lemma bcmcloseex_imp
   {Σ : Signature}
-  (from : db_index)
-  (l : list evar)
+  (l : list (prod db_index evar))
   (p q : Pattern)
-  : bcmcloseex from l (patt_imp p q) = patt_imp (bcmcloseex from l p) (bcmcloseex from l q).
+  : bcmcloseex l (patt_imp p q) = patt_imp (bcmcloseex l p) (bcmcloseex l q).
 Proof.
   induction l.
   { reflexivity. }
@@ -2559,10 +2555,9 @@ Qed.
 
 Lemma bcmcloseex_app
   {Σ : Signature}
-  (from : db_index)
-  (l : list evar)
+  (l : list (prod db_index evar))
   (p q : Pattern)
-  : bcmcloseex from l (patt_app p q) = patt_app (bcmcloseex from l p) (bcmcloseex from l q).
+  : bcmcloseex l (patt_app p q) = patt_app (bcmcloseex l p) (bcmcloseex l q).
 Proof.
   induction l.
   { reflexivity. }
@@ -2571,10 +2566,9 @@ Qed.
 
 Lemma bcmcloseex_ex
   {Σ : Signature}
-  (from : db_index)
-  (l : list evar)
-  (p : Pattern)
-  : bcmcloseex from l (patt_exists p) = patt_exists (bcmcloseex (S from) l p).
+  (l : list (prod db_index evar))
+  (q : Pattern)
+  : bcmcloseex l (patt_exists q) = patt_exists (bcmcloseex (map (λ p, (S p.1,p.2)) l) q).
 Proof.
   induction l.
   { reflexivity. }
