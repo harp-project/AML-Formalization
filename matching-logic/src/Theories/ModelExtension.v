@@ -13,10 +13,12 @@ Require Import
 
 From MatchingLogic
 Require Import
+    Utils.extralibrary
     Pattern
     Syntax
     Semantics
     DerivedOperators_Syntax
+    DerivedOperators_Semantics
     Theories.Definedness_Syntax
     Theories.Sorts_Syntax
 .
@@ -316,6 +318,92 @@ Section with_syntax.
                     (* patt_inhabitant_set (patt_sym s) *)
                     apply semantics_preservation_inhabitant_set.
                     { assumption. }
+                }
+                {
+                    (* patt_sorted_neg (patt_sym s) ϕ *)
+                    unfold patt_sorted_neg.
+                    do 2 rewrite pattern_interpretation_and_simpl.
+                    rewrite semantics_preservation_inhabitant_set;[assumption|].
+                    do 2 rewrite pattern_interpretation_not_simpl.
+                    rewrite IHHSData.
+                    remember (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
+                    remember (pattern_interpretation ρₑ ρₛ ϕ) as Xϕ.
+                    clear HeqXinh HeqXϕ IHHSData semantics_preservation_data semantics_preservation_pred.
+                    unfold_leibniz.
+                    set_solver.
+                }
+                {
+                    (* patt_app ϕ₁ ϕ₂ *)
+                    do 2 rewrite pattern_interpretation_app_simpl.
+                    rewrite IHHSData1 IHHSData2.
+                    unfold app_ext.
+                    clear. unfold_leibniz.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    unfold Mext. simpl. unfold new_app_interp.
+                    set_unfold.
+                    intros x. split.
+                    {
+                        intros [x0 [x1 H]].
+                        destruct_and!.
+                        destruct H0 as [xH0 H0].
+                        destruct H as [xH H].
+                        destruct_and!. subst.
+                        destruct H4 as [xH4 H4].
+                        destruct H3 as [xH3 H3].
+                        destruct_and!. subst.
+                        destruct x.
+                        {
+                            exfalso.
+                            unfold fmap in H2.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
+                            clear -H2. set_solver.
+                        }
+                        {
+                            exfalso.
+                            unfold fmap in H2.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
+                            clear -H2. set_solver.
+                        }
+                        {
+                            inversion H2. clear H2. destruct_and!. subst.
+                            inversion H2. clear H2. destruct_and!. subst.
+                            inversion H1. clear H1. subst.
+                            exists (inl x0).
+                            split;[reflexivity|].
+                            exists x0.
+                            split;[reflexivity|].
+                            exists xH4,xH3.
+                            repeat split; assumption.
+                        }
+                    }
+                    {
+                        intros H.
+                        destruct_and_ex!. subst.
+                        exists (cel (inl x2)).
+                        exists (cel (inl x3)).
+                        split.
+                        {
+                            exists (inl x2).
+                            split;[reflexivity|].
+                            exists x2.
+                            split;[reflexivity|].
+                            assumption.
+                        }
+                        split.
+                        {
+                            exists (inl x3).
+                            split;[reflexivity|].
+                            exists x3.
+                            split;[reflexivity|].
+                            assumption.
+                        }
+                        {
+                            unfold fmap.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap.   
+                            set_solver.
+                        }  
+                    }
                 }
                 admit.
             }
