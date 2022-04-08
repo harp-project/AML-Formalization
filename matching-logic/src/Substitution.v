@@ -2499,3 +2499,23 @@ Proof.
   rewrite (IHp k); reflexivity.
   rewrite (IHp (S k)); reflexivity.
 Qed.
+
+
+Definition bcmcloseex
+    {Σ : Signature}
+    (l : list evar)
+    (ϕ : Pattern) : Pattern
+:= foldr (λ e ϕ', evar_open 0 e ϕ') ϕ l.
+
+Lemma bmcloseex_wfcex
+  {Σ : Signature}
+  (l : list evar)
+  (ϕ : Pattern)
+  : well_formed_closed_ex_aux ϕ 0 ->
+  (bcmcloseex l ϕ) = ϕ.
+Proof.
+  intros H.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. by rewrite evar_open_wfc. }
+Qed.

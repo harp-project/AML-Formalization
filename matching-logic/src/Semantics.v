@@ -435,7 +435,7 @@ Section semantics.
 
   End with_model.
 
-  (* model predicate *)
+  (* Model predicate. Useful mainly if the pattern is well-formed. *)
   Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρ,
       @pattern_interpretation M ρₑ ρ ϕ = ⊤ \/ pattern_interpretation ρₑ ρ ϕ = ∅.
 
@@ -2479,3 +2479,19 @@ End Notations.
 #[export]
  Hint Resolve T_predicate_bot : core.
 (*End Hints.*)
+
+Definition M_pre_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) : Prop :=
+    forall (l : list evar),
+      well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
+      M_predicate M (bcmcloseex l ϕ).
+
+Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) :
+  well_formed_closed_ex_aux ϕ 0 ->
+  M_pre_predicate M ϕ ->
+  M_predicate M ϕ.
+Proof.
+  intros Hwfcex Hpp.
+  unfold M_pre_predicate in Hpp.
+  specialize (Hpp []). simpl in Hpp.
+  apply Hpp. apply Hwfcex.
+Qed.

@@ -20,7 +20,9 @@ Require Import
     DerivedOperators_Syntax
     DerivedOperators_Semantics
     Theories.Definedness_Syntax
+    Theories.Definedness_Semantics
     Theories.Sorts_Syntax
+    Theories.Sorts_Semantics
 .
 
 Import MatchingLogic.Semantics.Notations.
@@ -28,8 +30,10 @@ Import MatchingLogic.Semantics.Notations.
 Section with_syntax.
     Context
         {Σ : Signature}
+        (* TODO: maybe remove and use the imported one from Sorts_Syntax? *)
         {ds : Definedness_Syntax.Syntax}
         {ss : Sorts_Syntax.Syntax}
+        (HSortImptDef : imported_definedness = ds)
         (HDefNeqInh : Definedness_Syntax.inj definedness <> Sorts_Syntax.inj inhabitant)
     .
 
@@ -176,8 +180,40 @@ Section with_syntax.
             (M_def : M ⊨ᵀ Definedness_Syntax.theory)
             (ρₑ : @EVarVal _ M)
             (ρₛ : @SVarVal _ M)
-        .    
+        .
+        
+        Lemma SPred_is_predicate (ψ : Pattern) :
+            is_SPredicate ψ ->
+            M_predicate M ψ.
+        Proof.
+            intros HSPred.
+            induction HSPred.
+            { apply M_predicate_bott. }
+            { apply T_predicate_defined. exact M_def. }
+            { apply M_predicate_impl. exact IHHSPred1. exact IHHSPred2. }
+            { apply M_predicate_exists_of_sort.
+              { rewrite HSortImptDef. apply M_def. }
+              Print M_predicate.
+              unfold M_predicate in IHHSPred. intros ρₑ0 ρₛ0.
+              Search "shadow".
+              unfold evar_open.
+              rewrite -> element_substitution_lemma with (x := fresh_evar ϕ).
+              Search update_evar_val.
+              rewrite update_evar_val_same_2.
+              apply IHHSPred.
+              Check element_substitution_lemma.
+              specialize (IHHSPred ρₑ0 ρₛ0).
+              Search pattern_interpretation evar_open.
+              Check M_predicate_exists_of_sort.
+              Search M_predicate evar_open.
+
+        Qed.
     
+        Lemma SPred_is_predicate (ψ : Pattern) :
+            is_SPredicate ψ ->
+            M_predicate M ψ.
+        Proof. Qed.
+
 
         Lemma semantics_preservation_sym (s : symbols) :
             is_not_core_symbol s ->
