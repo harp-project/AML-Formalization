@@ -2519,3 +2519,46 @@ Proof.
   { reflexivity. }
   { simpl. rewrite IHl. by rewrite evar_open_wfc. }
 Qed.
+
+Lemma bcmcloseex_bott
+  {Σ : Signature}
+  (l : list evar)
+  : bcmcloseex l patt_bott = patt_bott.
+Proof.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.
+
+Lemma bcmcloseex_sym
+  {Σ : Signature}
+  (s : symbols)
+  (l : list evar)
+  : bcmcloseex l (patt_sym s) = (patt_sym s).
+Proof.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.
+
+Lemma bcmcloseex_imp
+  {Σ : Signature}
+  (l : list evar)
+  (p q : Pattern)
+  : bcmcloseex l (patt_imp p q) = patt_imp (bcmcloseex l p) (bcmcloseex l q).
+Proof.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.
+
+Lemma bcmcloseex_app
+  {Σ : Signature}
+  (l : list evar)
+  (p q : Pattern)
+  : bcmcloseex l (patt_app p q) = patt_app (bcmcloseex l p) (bcmcloseex l q).
+Proof.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.

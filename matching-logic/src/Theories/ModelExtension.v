@@ -182,15 +182,15 @@ Section with_syntax.
             (ρₛ : @SVarVal _ M)
         .
         
-        Lemma SPred_is_predicate (ψ : Pattern) :
+        Lemma SPred_is_pre_predicate (ψ : Pattern) :
             is_SPredicate ψ ->
-            M_predicate M ψ.
+            M_pre_predicate M ψ.
         Proof.
             intros HSPred.
             induction HSPred.
-            { apply M_predicate_bott. }
-            { apply T_predicate_defined. exact M_def. }
-            { apply M_predicate_impl. exact IHHSPred1. exact IHHSPred2. }
+            { apply M_pre_predicate_bott. }
+            { apply T_pre_predicate_defined. exact M_def. }
+            { apply M_pre_predicate_imp. exact IHHSPred1. exact IHHSPred2. }
             { apply M_predicate_exists_of_sort.
               { rewrite HSortImptDef. apply M_def. }
               Print M_predicate.

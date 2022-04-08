@@ -401,6 +401,15 @@ Section definedness.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
   Qed.
 
+  Lemma T_pre_predicate_defined : forall ϕ, T_pre_predicate theory (patt_defined ϕ).
+  Proof.
+    intros ϕ. unfold T_pre_predicate. intros M HM.
+    unfold M_pre_predicate. intros l Hwf.
+    unfold patt_defined. rewrite bcmcloseex_app.
+    rewrite bcmcloseex_sym. apply T_predicate_defined.
+    exact HM.
+  Qed.
+
   Hint Resolve T_predicate_defined : core.
 
   Lemma T_predicate_total : forall ϕ, T_predicate theory (patt_total ϕ).

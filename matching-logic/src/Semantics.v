@@ -2495,3 +2495,31 @@ Proof.
   specialize (Hpp []). simpl in Hpp.
   apply Hpp. apply Hwfcex.
 Qed.
+
+Lemma M_pre_predicate_bott {Σ : Signature} (M : Model) :
+  M_pre_predicate M patt_bott.
+Proof.
+  intros l H.
+  rewrite bcmcloseex_bott.
+  apply M_predicate_bott.
+Qed.
+
+Lemma M_pre_predicate_imp
+  {Σ : Signature} (M : Model) (p q : Pattern) :
+  M_pre_predicate M p ->
+  M_pre_predicate M q ->
+  M_pre_predicate M (patt_imp p q).
+Proof.
+  intros Hp Hq.
+  intros l H.
+  rewrite bcmcloseex_imp.
+  rewrite bcmcloseex_imp in H.
+  simpl in H.
+  destruct_and!.
+  apply M_predicate_impl.
+  { apply Hp. assumption. }
+  { apply Hq. assumption. }
+Qed.
+
+Definition T_pre_predicate {Σ : Signature} Γ ϕ :=
+  forall M, satisfies_theory M Γ -> M_pre_predicate M ϕ.
