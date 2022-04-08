@@ -28,6 +28,7 @@ Section with_syntax.
         {Σ : Signature}
         {ds : Definedness_Syntax.Syntax}
         {ss : Sorts_Syntax.Syntax}
+        (HDefNeqInh : Definedness_Syntax.inj definedness <> Sorts_Syntax.inj inhabitant)
     .
 
     Definition is_core_symbol (s : symbols) : Prop
@@ -138,7 +139,14 @@ Section with_syntax.
         end.
     
     Definition new_sym_interp (s : symbols) : Power Carrier :=
-        cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s)).
+        match (decide (s = Definedness_Syntax.inj definedness)) with
+        | left _ => {[ cdef ]}
+        | right _ =>
+            match (decide (s = Sorts_Syntax.inj inhabitant)) with
+            | left _ => {[ cinh ]}
+            | right _ => cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s))
+            end
+        end.
     
     Definition Mext : Model :=
         {|
@@ -169,7 +177,22 @@ Section with_syntax.
         .    
     
 
-        Check pattern_interpretation.
+        Lemma semantics_preservation_sym (s : symbols) :
+            is_not_core_symbol s ->
+            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) (patt_sym s) =
+            lift_set (pattern_interpretation ρₑ ρₛ (patt_sym s)).
+        Proof.
+            intros H.
+            do 2 rewrite pattern_interpretation_sym_simpl.
+            clear -H. unfold_leibniz.
+            unfold is_not_core_symbol,is_core_symbol in H.
+            unfold sym_interp at 1. simpl. unfold new_sym_interp.
+            repeat case_match; subst.
+            { exfalso. tauto. }
+            { exfalso. tauto. }
+            unfold lift_set,fmap. reflexivity.
+        Qed.
+        
         Lemma semantics_preservation_data
             (ϕ : Pattern)
             :
@@ -229,13 +252,62 @@ Section with_syntax.
                 }
                 {
                     (* sym s *)
-                    do 2 rewrite pattern_interpretation_sym_simpl.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear. unfold_leibniz. set_solver.
+                    apply semantics_preservation_sym.
+                    { assumption. }
                 }
                 {
+                    clear -H M_def HDefNeqInh. rename H into Hnc.
+                    (* For some reason, the tactic [unfold_leibniz] performed later
+                       in the proof script does nothing. *)
+                    unfold_leibniz. 
+                    unfold patt_inhabitant_set.
+                    do 2 rewrite pattern_interpretation_app_simpl.
+                    rewrite semantics_preservation_sym;[assumption|].
+                    remember (pattern_interpretation ρₑ ρₛ (patt_sym s)) as ps.
+                    unfold Sorts_Syntax.sym.
+                    do 2 rewrite pattern_interpretation_sym_simpl.
+                    unfold sym_interp at 1. simpl. unfold new_sym_interp.
+                    repeat case_match.
+                    { exfalso. clear -e HDefNeqInh. congruence. }
+                    2: { contradiction n0. reflexivity. }
+                    {
+                        clear e Heqs1 Heqs0 n.
+                        unfold app_ext at 1.
+                        unfold app_interp at 1. simpl. unfold new_app_interp.
+                        set_solver.
+                    }
                     
+                    
+                    
+
+
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    set_unfold.
+                    intros. split.
+                    {
+                        intros [x0 [x1 H]].
+                        repeat case_match; try set_solver.
+                    }
+                    {
+                        unfold is_not_core_symbol,is_core_symbol in Hnc.
+                        intros [x0 H].
+                        destruct_and!. subst. destruct H1. destruct_and!.
+                        destruct H1. destruct H. destruct_and!. subst.
+                        do 2 eexists. repeat case_match; try set_solver.
+                        2: { inversion Heqc0. }
+                        2: { 
+                            split_and!.
+                            3: { set_solver. }
+                            {
+                                exfalso.
+                                exists (inl x3).
+                            }
+                        }
+
+                        unfold app_ext. simpl.
+                    }
+                    set_solver. by ((repeat case_match); auto).
                 }
                 admit.
             }
