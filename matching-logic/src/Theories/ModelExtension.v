@@ -193,6 +193,63 @@ Section with_syntax.
             unfold lift_set,fmap. reflexivity.
         Qed.
         
+        Lemma semantics_preservation_inhabitant_set (s : symbols) :
+            is_not_core_symbol s ->
+            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) (patt_inhabitant_set (patt_sym s))
+            = lift_set (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
+        Proof.
+            intros H.
+            rename H into Hnc.
+            (* For some reason, the tactic [unfold_leibniz] performed later
+               in the proof script does nothing. *)
+            unfold_leibniz. 
+            unfold patt_inhabitant_set.
+            do 2 rewrite pattern_interpretation_app_simpl.
+            rewrite semantics_preservation_sym;[assumption|].
+            remember (pattern_interpretation ρₑ ρₛ (patt_sym s)) as ps.
+            unfold Sorts_Syntax.sym.
+            do 2 rewrite pattern_interpretation_sym_simpl.
+            unfold sym_interp at 1. simpl. unfold new_sym_interp.
+            repeat case_match.
+            { exfalso. clear -e HDefNeqInh. congruence. }
+            2: { contradiction n0. reflexivity. }
+            {
+                clear e Heqs1 Heqs0 n.
+                unfold app_ext at 1.
+                unfold app_interp at 1. simpl. unfold new_app_interp.
+                set_unfold. intros x. split.
+                {
+                    intros [x0 [x1 H]]. destruct_and!. subst.
+                    repeat case_match.
+                    { exfalso. clear -H2. set_solver. }
+                    { exfalso. clear -H2. set_solver. }
+                    { subst. set_solver. }
+                    { subst. set_solver. }
+                }
+                {
+                    intros [y H]. destruct_and!. subst.
+                    destruct H1 as [y0 H]. destruct_and!. subst.
+                    destruct H1 as [x [x0 H]].
+                    clear Heqps.
+                    destruct_and!.
+                    exists cinh.
+                    eexists (cel (inl x0)).
+                    split.
+                    { reflexivity. }
+                    split.
+                    {
+                        exists (inl x0). split. reflexivity. exists x0. split.
+                        reflexivity. assumption.
+                    }
+                    {
+                        unfold fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.                                
+                        set_solver.
+                    }
+                }
+            }
+        Qed.
+
         Lemma semantics_preservation_data
             (ϕ : Pattern)
             :
@@ -256,55 +313,9 @@ Section with_syntax.
                     { assumption. }
                 }
                 {
-                    clear -H M_def HDefNeqInh. rename H into Hnc.
-                    (* For some reason, the tactic [unfold_leibniz] performed later
-                       in the proof script does nothing. *)
-                    unfold_leibniz. 
-                    unfold patt_inhabitant_set.
-                    do 2 rewrite pattern_interpretation_app_simpl.
-                    rewrite semantics_preservation_sym;[assumption|].
-                    remember (pattern_interpretation ρₑ ρₛ (patt_sym s)) as ps.
-                    unfold Sorts_Syntax.sym.
-                    do 2 rewrite pattern_interpretation_sym_simpl.
-                    unfold sym_interp at 1. simpl. unfold new_sym_interp.
-                    repeat case_match.
-                    { exfalso. clear -e HDefNeqInh. congruence. }
-                    2: { contradiction n0. reflexivity. }
-                    {
-                        clear e Heqs1 Heqs0 n.
-                        unfold app_ext at 1.
-                        unfold app_interp at 1. simpl. unfold new_app_interp.
-                        set_unfold. intros x. split.
-                        {
-                            intros [x0 [x1 H]]. destruct_and!. subst.
-                            repeat case_match.
-                            { exfalso. clear -H2. set_solver. }
-                            { exfalso. clear -H2. set_solver. }
-                            { subst. set_solver. }
-                            { subst. set_solver. }
-                        }
-                        {
-                            intros [y H]. destruct_and!. subst.
-                            destruct H1 as [y0 H]. destruct_and!. subst.
-                            destruct H1 as [x [x0 H]].
-                            clear Heqps.
-                            destruct_and!.
-                            exists cinh.
-                            eexists (cel (inl x0)).
-                            split.
-                            { reflexivity. }
-                            split.
-                            {
-                                exists (inl x0). split. reflexivity. exists x0. split.
-                                reflexivity. assumption.
-                            }
-                            {
-                                unfold fmap.
-                                with_strategy transparent [propset_fmap] unfold propset_fmap.                                
-                                set_solver.
-                            }
-                        }
-                    }
+                    (* patt_inhabitant_set (patt_sym s) *)
+                    apply semantics_preservation_inhabitant_set.
+                    { assumption. }
                 }
                 admit.
             }
