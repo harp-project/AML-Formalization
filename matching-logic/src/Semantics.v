@@ -505,7 +505,7 @@ Section semantics.
   Qed.
 
   Hint Resolve M_predicate_exists : core.
-
+  
   Lemma predicate_not_empty_iff_full M ϕ ρₑ ρ :
     M_predicate M ϕ ->
     @pattern_interpretation M ρₑ ρ ϕ <> ∅ <->
@@ -2481,9 +2481,9 @@ End Notations.
 (*End Hints.*)
 
 Definition M_pre_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) : Prop :=
-    forall (l : list evar),
-      well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
-      M_predicate M (bcmcloseex l ϕ).
+    forall (l : list evar) (from : db_index),
+      well_formed_closed_ex_aux (bcmcloseex from l ϕ) 0 ->
+      M_predicate M (bcmcloseex from l ϕ).
 
 Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
@@ -2492,14 +2492,14 @@ Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (M : Model) (ϕ : P
 Proof.
   intros Hwfcex Hpp.
   unfold M_pre_predicate in Hpp.
-  specialize (Hpp []). simpl in Hpp.
+  specialize (Hpp [] 0). simpl in Hpp.
   apply Hpp. apply Hwfcex.
 Qed.
 
 Lemma M_pre_predicate_bott {Σ : Signature} (M : Model) :
   M_pre_predicate M patt_bott.
 Proof.
-  intros l H.
+  intros l from H.
   rewrite bcmcloseex_bott.
   apply M_predicate_bott.
 Qed.
@@ -2511,7 +2511,7 @@ Lemma M_pre_predicate_imp
   M_pre_predicate M (patt_imp p q).
 Proof.
   intros Hp Hq.
-  intros l H.
+  intros l from H.
   rewrite bcmcloseex_imp.
   rewrite bcmcloseex_imp in H.
   simpl in H.
@@ -2520,6 +2520,105 @@ Proof.
   { apply Hp. assumption. }
   { apply Hq. assumption. }
 Qed.
+
+Lemma evar_open_bcmcloseex_S {Σ : Signature} l x from ϕ:
+  evar_open from x (bcmcloseex (S from) l ϕ) = bcmcloseex from (l++[x]) ϕ.
+Proof.
+  induction l.
+  { reflexivity. }
+  {
+    simpl. unfold evar_open.
+    rewrite bevar_subst_comm_higher.
+    { lia. }
+    { reflexivity. }
+    { reflexivity. }
+    simpl.
+    unfold bcmcloseex.
+    rewrite foldr_app.
+    simpl.
+    unfold evar_open. simpl.
+    unfold evar_open in IHl.
+    rewrite IHl. simpl.
+    unfold bcmcloseex.
+    rewrite foldr_app.
+    simpl.
+    unfold evar_open.
+    reflexivity.
+  }
+Qed.
+
+Lemma evar_open_bcmcloseex_S_2 {Σ : Signature} l x dbi from ϕ:
+  dbi < S from ->
+  evar_open dbi x (bcmcloseex (S from) l ϕ) = bcmcloseex from l (evar_open dbi x ϕ).
+Proof.
+  intros Hdbi.
+  induction l.
+  { reflexivity. }
+  {
+    simpl.
+    unfold evar_open. rewrite bevar_subst_comm_higher.
+    { lia. }
+    { reflexivity. }
+    { reflexivity. }
+    simpl.
+    unfold evar_open in IHl.
+    rewrite IHl.
+    reflexivity.
+  }
+Qed.
+
+Lemma M_pre_predicate_exists {Σ : Signature} M ϕ :
+  M_pre_predicate M ϕ ->
+  M_pre_predicate M (patt_exists ϕ).
+Proof.
+  simpl. unfold M_pre_predicate. intros H.
+  intros l from Hwfc.
+  rewrite bcmcloseex_ex.
+  apply M_predicate_exists.
+  remember (evar_fresh (elements (free_evars (bcmcloseex (S from) l ϕ)))) as x.
+  rewrite evar_open_bcmcloseex_S_2.
+  { lia. }
+  apply H.
+  remember 0 as from.
+  rewrite evar_open_bcmcloseex_S.
+rewrite -> pattern_interpretation_ex_simpl.
+simpl.
+pose proof (H' := classic
+                    (exists e : Domain M,
+                        (pattern_interpretation
+                           (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρₑ)
+                           ρ
+                           (evar_open 0 (evar_fresh (elements (free_evars ϕ))) ϕ))
+                        = ⊤)).
+destruct H'.
+- (* For some member, the subformula evaluates to full set. *)
+  left.
+  apply set_eq_subseteq.
+  split.
+  { set_solver by fail. }
+  apply elem_of_subseteq.
+  intros x _.
+  destruct H0 as [x0 H0]. unfold fresh_evar.
+  unfold propset_fa_union. rewrite -> elem_of_PropSet.
+  exists x0. rewrite H0. apply elem_of_top'.
+- (* The subformula does not evaluate to full set for any member. *)
+  right.
+  apply set_eq_subseteq.
+  split.
+  2: { apply empty_subseteq. }
+  apply elem_of_subseteq.
+  intros x H1.
+  unfold propset_fa_union in H1.
+  rewrite -> elem_of_PropSet in H1.
+  destruct H1 as [c H1].
+  unfold not in H0.
+  specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) c ρₑ) ρ).
+  destruct H.
+  + exfalso. apply H0. exists c. apply H.
+  + apply set_eq_subseteq in H. destruct H as [H _].
+    rewrite ->  elem_of_subseteq in H. auto.
+Qed.
+
 
 Definition T_pre_predicate {Σ : Signature} Γ ϕ :=
   forall M, satisfies_theory M Γ -> M_pre_predicate M ϕ.

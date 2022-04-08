@@ -2503,27 +2503,30 @@ Qed.
 
 Definition bcmcloseex
     {Σ : Signature}
+    (from : db_index)
     (l : list evar)
     (ϕ : Pattern) : Pattern
-:= foldr (λ e ϕ', evar_open 0 e ϕ') ϕ l.
+:= foldr (λ e ϕ', evar_open from e ϕ') ϕ l.
 
 Lemma bmcloseex_wfcex
   {Σ : Signature}
+  (from : db_index)
   (l : list evar)
   (ϕ : Pattern)
-  : well_formed_closed_ex_aux ϕ 0 ->
-  (bcmcloseex l ϕ) = ϕ.
+  : well_formed_closed_ex_aux ϕ from ->
+  (bcmcloseex from l ϕ) = ϕ.
 Proof.
   intros H.
   induction l.
   { reflexivity. }
-  { simpl. rewrite IHl. by rewrite evar_open_wfc. }
+  { simpl. rewrite IHl. by rewrite evar_open_not_occur. }
 Qed.
 
 Lemma bcmcloseex_bott
   {Σ : Signature}
+  (from : db_index)
   (l : list evar)
-  : bcmcloseex l patt_bott = patt_bott.
+  : bcmcloseex from l patt_bott = patt_bott.
 Proof.
   induction l.
   { reflexivity. }
@@ -2532,9 +2535,10 @@ Qed.
 
 Lemma bcmcloseex_sym
   {Σ : Signature}
+  (from : db_index)
   (s : symbols)
   (l : list evar)
-  : bcmcloseex l (patt_sym s) = (patt_sym s).
+  : bcmcloseex from l (patt_sym s) = (patt_sym s).
 Proof.
   induction l.
   { reflexivity. }
@@ -2543,9 +2547,10 @@ Qed.
 
 Lemma bcmcloseex_imp
   {Σ : Signature}
+  (from : db_index)
   (l : list evar)
   (p q : Pattern)
-  : bcmcloseex l (patt_imp p q) = patt_imp (bcmcloseex l p) (bcmcloseex l q).
+  : bcmcloseex from l (patt_imp p q) = patt_imp (bcmcloseex from l p) (bcmcloseex from l q).
 Proof.
   induction l.
   { reflexivity. }
@@ -2554,9 +2559,22 @@ Qed.
 
 Lemma bcmcloseex_app
   {Σ : Signature}
+  (from : db_index)
   (l : list evar)
   (p q : Pattern)
-  : bcmcloseex l (patt_app p q) = patt_app (bcmcloseex l p) (bcmcloseex l q).
+  : bcmcloseex from l (patt_app p q) = patt_app (bcmcloseex from l p) (bcmcloseex from l q).
+Proof.
+  induction l.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.
+
+Lemma bcmcloseex_ex
+  {Σ : Signature}
+  (from : db_index)
+  (l : list evar)
+  (p : Pattern)
+  : bcmcloseex from l (patt_exists p) = patt_exists (bcmcloseex (S from) l p).
 Proof.
   induction l.
   { reflexivity. }
