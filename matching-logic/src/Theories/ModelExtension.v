@@ -405,6 +405,29 @@ Section with_syntax.
                         }  
                     }
                 }
+                {
+                    (* patt_or ϕ₁ ϕ₂ *)
+                    do 2 rewrite pattern_interpretation_or_simpl.
+                    rewrite IHHSData1 IHHSData2.
+                    clear.
+                    unfold_leibniz.
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    set_solver.
+                }
+                {
+                    (* patt_and ϕ ψ *)
+                    do 2 rewrite pattern_interpretation_and_simpl.
+                    rewrite IHHSData.
+                    clear semantics_preservation_data.
+                    specialize (semantics_preservation_pred ψ ltac:(assumption)).
+                    clear H HSData IHHSData.
+                    unfold_leibniz.
+                    (* TODO we have to destruct on whether the data pattern is empty or not *)
+                    unfold lift_set,fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    set_solver.
+                }
                 admit.
             }
             {   (* preservation of predicates *)
