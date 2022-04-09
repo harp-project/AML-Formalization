@@ -2655,12 +2655,13 @@ Proof.
 Qed.
 
 Lemma wfc_ex_aux_bcmcloseex {Σ : Signature} l k ϕ:
+  Forall (λ p : nat * evar, p.1 ≤ k) l ->
   well_formed_closed_ex_aux (bcmcloseex l (patt_exists ϕ)) k = true ->
   well_formed_closed_ex_aux (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) (S k) = true.
 Proof.
-  intros H.
-  move: k H.
-  induction l; intros k H.
+  intros Hk H.
+  move: k Hk H.
+  induction l; intros k Hk H.
   { simpl. simpl in H. apply H. }
   {
     destruct a as [dbi x].
@@ -2668,7 +2669,20 @@ Proof.
     destruct (compare_nat dbi k).
     {
       apply wfc_ex_aux_evar_open_gt in H;[|lia].
-      specialize (IHl (S k) H).
+      inversion Hk. subst. simpl in *.
+      specialize (IHl (S k)).
+      feed specialize IHl.
+      {
+        clear -H3. induction l.
+        { apply Forall_nil. exact I. }
+        { 
+          inversion H3. subst.  
+          apply Forall_cons. split. lia. apply IHl. assumption.
+        }
+      }
+      {
+        exact H.
+      }
       (* FIXME this lemma has wrong name *)
       apply wfc_mu_aux_body_ex_imp3;[lia|].
       apply IHl.
@@ -2677,6 +2691,15 @@ Proof.
       subst. unfold evar_open. apply wfc_ex_aux_bevar_subst.
       {
         apply IHl.
+        {
+          inversion Hk. subst.
+          clear -H3. induction l.
+          { apply Forall_nil. exact I. }
+          { 
+            inversion H3. subst.  
+            apply Forall_cons. split. lia. apply IHl. assumption.
+          }
+        }
         unfold evar_open in H.
         eapply wfc_ex_aux_S_bevar_subst_fe.
         apply H.
@@ -2684,11 +2707,7 @@ Proof.
       reflexivity.
     }
     {
-      apply wfc_ex_aux_evar_open_lt in H;[|lia].
-      specialize (IHl (S dbi) H).
-      remember (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) as ϕ'.
-      Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
-      Search well_formed_closed_ex_aux evar_open not eq.
+      inversion Hk. subst. simpl in *. lia.
     }
   }
 Qed.

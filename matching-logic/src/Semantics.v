@@ -2480,45 +2480,48 @@ End Notations.
  Hint Resolve T_predicate_bot : core.
 (*End Hints.*)
 
-Definition M_pre_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) : Prop :=
+Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) : Prop :=
     forall (l : list (prod db_index evar)),
+      Forall (λ p, p.1 <= k) l ->
       well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
       M_predicate M (bcmcloseex l ϕ).
 
-Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) :
+Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
-  M_pre_predicate M ϕ ->
+  M_pre_predicate k M ϕ ->
   M_predicate M ϕ.
 Proof.
   intros Hwfcex Hpp.
   unfold M_pre_predicate in Hpp.
   specialize (Hpp []). simpl in Hpp.
-  apply Hpp. apply Hwfcex.
+  apply Hpp.
+  apply Forall_nil. exact I.
+  apply Hwfcex.
 Qed.
 
-Lemma M_pre_predicate_bott {Σ : Signature} (M : Model) :
-  M_pre_predicate M patt_bott.
+Lemma M_pre_predicate_bott {Σ : Signature} (k : db_index) (M : Model) :
+  M_pre_predicate k M patt_bott.
 Proof.
-  intros l H.
+  intros l Hk H.
   rewrite bcmcloseex_bott.
   apply M_predicate_bott.
 Qed.
 
 Lemma M_pre_predicate_imp
-  {Σ : Signature} (M : Model) (p q : Pattern) :
-  M_pre_predicate M p ->
-  M_pre_predicate M q ->
-  M_pre_predicate M (patt_imp p q).
+  {Σ : Signature} (k : db_index) (M : Model) (p q : Pattern) :
+  M_pre_predicate k M p ->
+  M_pre_predicate k M q ->
+  M_pre_predicate k M (patt_imp p q).
 Proof.
   intros Hp Hq.
-  intros l H.
+  intros l Hk H.
   rewrite bcmcloseex_imp.
   rewrite bcmcloseex_imp in H.
   simpl in H.
   destruct_and!.
   apply M_predicate_impl.
-  { apply Hp. assumption. }
-  { apply Hq. assumption. }
+  { apply Hp. assumption. assumption. }
+  { apply Hq. assumption. assumption. }
 Qed.
 (*
 Lemma evar_open_bcmcloseex_S {Σ : Signature} l dbi x ϕ:
@@ -2571,12 +2574,12 @@ Qed.
 Search well_formed_closed_ex_aux bevar_subst.
 
 
-Lemma M_pre_predicate_exists {Σ : Signature} M ϕ :
-  M_pre_predicate M ϕ ->
-  M_pre_predicate M (patt_exists ϕ).
+Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
+  M_pre_predicate (S k) M ϕ ->
+  M_pre_predicate k M (patt_exists ϕ).
 Proof.
   simpl. unfold M_pre_predicate. intros H.
-  intros l Hwfc.
+  intros l Hk Hwfc.
   rewrite bcmcloseex_ex.
   apply M_predicate_exists.
   remember (evar_fresh
@@ -2585,6 +2588,17 @@ Proof.
   with (bcmcloseex ((pair 0 x)::(map (λ p : nat * evar, (S p.1, p.2)) l)) ϕ)
   by reflexivity.
   apply H.
+  {
+    apply Forall_cons. split.
+    {
+      simpl. lia.
+    }
+    {
+      clear -Hk. induction l.
+      { apply Forall_nil. exact I. }
+      { simpl. inversion Hk. subst. apply Forall_cons. simpl. split. lia. apply IHl. apply H2. }
+    }
+  }
   simpl.
   unfold evar_open.
   
