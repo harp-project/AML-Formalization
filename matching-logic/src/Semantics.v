@@ -2486,6 +2486,89 @@ Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pat
       well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
       M_predicate M (bcmcloseex l ϕ).
 
+Lemma pre_predicate_S {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
+  M_pre_predicate (S k) M ϕ ->
+  M_pre_predicate k M ϕ.
+Proof.
+  unfold M_pre_predicate.
+  intros H l Hl Hwf.
+  apply H.
+  { clear -Hl. induction l. apply Forall_nil. exact I. inversion Hl. subst.
+    apply Forall_cons. split;[lia|]. apply IHl. assumption.
+  }
+  apply Hwf.
+Qed.
+
+Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
+:= (map (λ p, (Nat.pred p.1, p.2)) l) ++ [(0,x)].
+
+Lemma lower_closing_list_app {Σ : Signature} (x : evar) (l1 l2 : list (prod db_index evar))
+: lower_closing_list x (l1 ++ l2) = (map (λ p, (Nat.pred p.1, p.2)) l1) ++ (lower_closing_list x l2).
+Proof.
+  unfold lower_closing_list.
+  rewrite map_app. rewrite app_assoc. reflexivity.
+Qed.
+
+Lemma lower_closing_list_same
+  {Σ : Signature}
+  (x : evar)
+  (l : list (prod db_index evar))
+  (ϕ : Pattern)
+  :
+  bevar_occur ϕ 0 = false ->
+  Forall (λ p, p.1 > 0) l ->
+  well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
+  bcmcloseex (lower_closing_list x l) ϕ = bcmcloseex l ϕ.
+Proof.
+  intros Hocc Hagt0 Hwfc.
+  move: ϕ Hocc Hwfc.
+  induction l using rev_ind; intros ϕ Hocc Hwfc.
+  { simpl in *. apply evar_open_closed. apply Hwfc. }
+  {
+    destruct x0 as [dbi y].
+    simpl in *.
+    rewrite Forall_app in Hagt0. destruct Hagt0 as [Hl Hrest].
+    inversion Hrest. subst. clear H2. simpl in H1.
+    rewrite lower_closing_list_app.
+    do 2 rewrite bcmcloseex_append. simpl.
+    unfold lower_closing_list in IHl.
+
+    setoid_rewrite bcmcloseex_append in IHl. simpl in IHl.
+    destruct dbi.
+    { lia. }
+    simpl. clear H1 Hrest.
+    rewrite bcmcloseex_append in Hwfc. simpl in Hwfc.
+    rewrite -IHl.
+    { assumption. }
+    {  Search (bevar_occur (evar_open _ _ _) _).
+      Search not eq false.
+      apply bevar_occur_evar_open.
+      { assumption. }
+      { lia. }
+    }
+    { assumption. }
+    f_equal.
+    Search (evar_open _ _ (evar_open _ _ _)).
+
+    destruct dbi.
+    {
+      
+    }
+  }
+Qed.
+
+Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
+  M_pre_predicate 0 M ϕ ->
+  M_pre_predicate k M ϕ.
+Proof.
+  unfold M_pre_predicate.
+  intros H l Hl Hwf.
+  (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
+     containing only zeros as indices
+  *)
+
+Qed.
+
 Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
   M_pre_predicate k M ϕ ->
@@ -2523,56 +2606,6 @@ Proof.
   { apply Hp. assumption. assumption. }
   { apply Hq. assumption. assumption. }
 Qed.
-(*
-Lemma evar_open_bcmcloseex_S {Σ : Signature} l dbi x ϕ:
-  evar_open dbi x (bcmcloseex l ϕ) = bcmcloseex from (l++[x]) ϕ.
-Proof.
-  induction l.
-  { reflexivity. }
-  {
-    simpl. unfold evar_open.
-    rewrite bevar_subst_comm_higher.
-    { lia. }
-    { reflexivity. }
-    { reflexivity. }
-    simpl.
-    unfold bcmcloseex.
-    rewrite foldr_app.
-    simpl.
-    unfold evar_open. simpl.
-    unfold evar_open in IHl.
-    rewrite IHl. simpl.
-    unfold bcmcloseex.
-    rewrite foldr_app.
-    simpl.
-    unfold evar_open.
-    reflexivity.
-  }
-Qed.
-
-Lemma evar_open_bcmcloseex_S_2 {Σ : Signature} l x dbi from ϕ:
-  dbi < S from ->
-  evar_open dbi x (bcmcloseex (S from) l ϕ) = bcmcloseex from l (evar_open dbi x ϕ).
-Proof.
-  intros Hdbi.
-  induction l.
-  { reflexivity. }
-  {
-    simpl.
-    unfold evar_open. rewrite bevar_subst_comm_higher.
-    { lia. }
-    { reflexivity. }
-    { reflexivity. }
-    simpl.
-    unfold evar_open in IHl.
-    rewrite IHl.
-    reflexivity.
-  }
-Qed.
-*)
-
-Search well_formed_closed_ex_aux bevar_subst.
-
 
 Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
   M_pre_predicate (S k) M ϕ ->
@@ -2604,13 +2637,9 @@ Proof.
   
   apply wfc_ex_aux_bevar_subst.
   2: { simpl. reflexivity. }
-  Search well_formed_closed_ex_aux evar_open.
-  rewrite evar_open_bcmcloseex_S_2.
-  { lia. }
-  apply H.
-  remember 0 as from.
-  rewrite evar_open_bcmcloseex_S.
-
+  apply wfc_ex_aux_bcmcloseex.
+  { clear. induction l. apply Forall_nil. exact I. apply Forall_cons. split.   }
+  { assumption. }
 Qed.
 
 

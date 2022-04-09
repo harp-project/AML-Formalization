@@ -2507,6 +2507,12 @@ Definition bcmcloseex
     (ϕ : Pattern) : Pattern
 := foldr (λ p ϕ', evar_open p.1 p.2 ϕ') ϕ l.
 
+Lemma bcmcloseex_append {Σ : Signature} (l₁ l₂ : list (prod db_index evar)) (ϕ : Pattern) :
+  bcmcloseex (l₁ ++ l₂) ϕ = bcmcloseex l₁ (bcmcloseex l₂ ϕ).
+Proof.
+  unfold bcmcloseex. rewrite foldr_app. reflexivity.
+Qed.
+
 (*
 Lemma bmcloseex_wfcex
   {Σ : Signature}
@@ -2651,6 +2657,40 @@ Proof.
   }
   {
     eapply IHϕ;[|eassumption]. lia.
+  }
+Qed.
+
+Lemma evar_open_twice_not_occur {Σ : Signature} n x y ϕ:
+  bevar_occur ϕ n = false ->
+  evar_open n y (evar_open n x ϕ) = evar_open n x (evar_open (S n) y ϕ).
+Proof.
+  unfold evar_open.
+  move: n.
+  induction ϕ; intros n' Hnoc; simpl in *; auto.
+  {
+    repeat case_match; simpl; auto; try lia; repeat case_match; auto; try congruence; lia.
+  }
+  {
+    apply orb_false_elim in Hnoc.
+    destruct_and!.
+    rewrite (IHϕ1 n'); [assumption|].
+    rewrite (IHϕ2 n'); [assumption|].
+    reflexivity.
+  }
+  {
+    apply orb_false_elim in Hnoc.
+    destruct_and!.
+    rewrite (IHϕ1 n'); [assumption|].
+    rewrite (IHϕ2 n'); [assumption|].
+    reflexivity.
+  }
+  {
+    rewrite (IHϕ (S n'));[assumption|].
+    reflexivity.
+  }
+  {
+    rewrite IHϕ;[assumption|].
+    reflexivity.
   }
 Qed.
 
