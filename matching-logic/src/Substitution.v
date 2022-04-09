@@ -2621,6 +2621,39 @@ Proof.
   }
 Qed.
 
+Lemma wfc_ex_aux_evar_open_lt {Σ : Signature} dbi x k ϕ:
+  k < dbi ->
+  well_formed_closed_ex_aux (evar_open dbi x ϕ) k = true ->
+  well_formed_closed_ex_aux ϕ (S dbi) = true.
+Proof.
+  intros H1 H2.
+  move: k dbi H1 H2.
+  induction ϕ; intros k dbi H1 H2; simpl in *; auto.
+  {
+    unfold evar_open in H2. simpl in H2. repeat case_match; auto; try lia.
+    simpl in H2. case_match; lia.
+  }
+  {
+    destruct_and!.
+    rewrite (IHϕ1 k dbi);[assumption|assumption|].
+    rewrite (IHϕ2 k dbi);[assumption|assumption|].
+    reflexivity.
+  }
+  {
+    destruct_and!.
+    rewrite (IHϕ1 k dbi);[assumption|assumption|].
+    rewrite (IHϕ2 k dbi);[assumption|assumption|].
+    reflexivity.
+  }
+  {
+    rewrite (IHϕ (S k) (S dbi));[lia|assumption|].
+    reflexivity.
+  }
+  {
+    eapply IHϕ;[|eassumption]. lia.
+  }
+Qed.
+
 Lemma wfc_ex_aux_bcmcloseex {Σ : Signature} l k ϕ:
   well_formed_closed_ex_aux (bcmcloseex l (patt_exists ϕ)) k = true ->
   well_formed_closed_ex_aux (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) (S k) = true.
@@ -2636,7 +2669,6 @@ Proof.
     {
       apply wfc_ex_aux_evar_open_gt in H;[|lia].
       specialize (IHl (S k) H).
-      Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
       (* FIXME this lemma has wrong name *)
       apply wfc_mu_aux_body_ex_imp3;[lia|].
       apply IHl.
@@ -2652,8 +2684,10 @@ Proof.
       reflexivity.
     }
     {
-      
+      apply wfc_ex_aux_evar_open_lt in H;[|lia].
+      specialize (IHl (S dbi) H).
       remember (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) as ϕ'.
+      Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
       Search well_formed_closed_ex_aux evar_open not eq.
     }
   }
