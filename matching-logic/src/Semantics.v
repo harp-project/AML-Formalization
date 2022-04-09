@@ -2539,16 +2539,14 @@ Proof.
     simpl. clear H1 Hrest.
     rewrite bcmcloseex_append in Hwfc. simpl in Hwfc.
     rewrite -IHl.
-    { assumption. }
-    {  Search (bevar_occur (evar_open _ _ _) _).
-      Search not eq false.
+    { exact Hl. }
+    { 
       apply bevar_occur_evar_open.
-      { assumption. }
+      { exact Hocc. }
       { lia. }
     }
-    { assumption. }
+    { exact Hwfc. }
     f_equal.
-    Search (evar_open _ _ (evar_open _ _ _)).
 
     destruct dbi.
     {
@@ -2559,6 +2557,23 @@ Proof.
     lia.
   }
 Qed.
+
+Fixpoint lower_closing_list_iter {Σ : Signature} (k : nat) (x : evar) (l : list (prod db_index evar))
+:=
+match k with
+| 0 => l
+| (S k') => lower_closing_list_iter k' x (lower_closing_list x l)
+end.
+
+Lemma lower_closing_list_iter_same
+  {Σ : Signature}
+  (k : nat)
+  (x : evar)
+  (l : list (prod db_index evar))
+  (ϕ : Pattern)
+:
+  bcmcloseex (lower_closing_list_iter k x l) ϕ = bcmcloseex l ϕ.
+Proof. Abort.
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
