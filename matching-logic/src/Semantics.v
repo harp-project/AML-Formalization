@@ -2552,8 +2552,11 @@ Proof.
 
     destruct dbi.
     {
-      
+      apply evar_open_twice_not_occur.
+      apply Hocc.
     }
+    apply evar_open_comm_lower.
+    lia.
   }
 Qed.
 
