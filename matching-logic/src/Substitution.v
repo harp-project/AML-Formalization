@@ -2587,16 +2587,37 @@ Proof.
   { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
 Qed.
 
-Lemma wfc_ex_aux_evar_open_neq {Σ : Signature} dbi x k ϕ:
-  k <> dbi ->
-  well_formed_closed_ex_aux (evar_open dbi x ϕ) k = well_formed_closed_ex_aux ϕ k.
+Lemma wfc_ex_aux_evar_open_gt {Σ : Signature} dbi x k ϕ:
+  k > dbi ->
+  well_formed_closed_ex_aux (evar_open dbi x ϕ) k ->
+  well_formed_closed_ex_aux ϕ (S k).
 Proof.
   unfold evar_open.
-  intros H.
-  move: k dbi H.
-  induction ϕ; intros k dbi H; simpl in *; auto.
+  intros H1 H2.
+  move: k dbi H1 H2.
+  induction ϕ; intros k dbi H1 H2; simpl in *; auto.
   { 
     repeat case_match; simpl; repeat case_match; auto; try lia.
+    simpl in H2. case_match; try lia. apply H2.
+  }
+  {
+    destruct_and!.
+    rewrite (IHϕ1 k dbi);[assumption|assumption|].
+    rewrite (IHϕ2 k dbi);[assumption|assumption|].
+    reflexivity.
+  }
+  {
+    destruct_and!.
+    rewrite (IHϕ1 k dbi);[assumption|assumption|].
+    rewrite (IHϕ2 k dbi);[assumption|assumption|].
+    reflexivity.
+  }
+  {
+    rewrite (IHϕ (S k) (S dbi));[lia|assumption|].
+    reflexivity.
+  }
+  {
+    eapply IHϕ;[|eassumption]. lia.
   }
 Qed.
 
@@ -2611,7 +2632,15 @@ Proof.
   {
     destruct a as [dbi x].
     simpl. simpl in H.
-    destruct (decide (dbi = k)).
+    destruct (compare_nat dbi k).
+    {
+      apply wfc_ex_aux_evar_open_gt in H;[|lia].
+      specialize (IHl (S k) H).
+      Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
+      (* FIXME this lemma has wrong name *)
+      apply wfc_mu_aux_body_ex_imp3;[lia|].
+      apply IHl.
+    }
     {
       subst. unfold evar_open. apply wfc_ex_aux_bevar_subst.
       {
@@ -2623,6 +2652,7 @@ Proof.
       reflexivity.
     }
     {
+      
       remember (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) as ϕ'.
       Search well_formed_closed_ex_aux evar_open not eq.
     }

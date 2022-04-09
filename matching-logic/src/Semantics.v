@@ -2587,9 +2587,9 @@ Proof.
   apply H.
   simpl.
   unfold evar_open.
-  Search well_formed_closed_ex_aux bevar_subst.
+  
   apply wfc_ex_aux_bevar_subst.
-  { simpl. }
+  2: { simpl. reflexivity. }
   Search well_formed_closed_ex_aux evar_open.
   rewrite evar_open_bcmcloseex_S_2.
   { lia. }
