@@ -7,6 +7,8 @@ From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classi
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
+From Equations Require Import Equations.
+
 From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
 
@@ -57,17 +59,41 @@ Qed.
 Definition closing_list_weight {Σ : Signature} (l : list (prod db_index evar)) : nat :=
   sum_list_with fst l.
 
+Lemma drop_weight {Σ : Signature} (dummy_x : evar) (idx : nat) (l : list (prod db_index evar)) :
+    closing_list_weight l >= closing_list_weight (drop idx l).
+Proof.
+    unfold closing_list_weight.
+    move: l.
+    induction idx; intros l.
+    {
+        rewrite drop_0. lia.
+    }
+    {
+        destruct l; simpl.
+        {
+            lia.
+        }
+        {
+            specialize (IHidx l). lia.
+        }
+    }
+Qed.
+
 Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
 := (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
 
-(*
-Lemma lower_closing_list_app {Σ : Signature} (x : evar) (l1 l2 : list (prod db_index evar))
-: lower_closing_list x (l1 ++ l2) = (map (λ p, (Nat.pred p.1, p.2)) l1) ++ (lower_closing_list x l2).
+Lemma lower_closing_list_weight {Σ : Signature} (x : evar) (l : list (prod db_index evar)) :
+    closing_list_weight l >= closing_list_weight (lower_closing_list x l).
 Proof.
-  unfold lower_closing_list.
-  rewrite map_app. rewrite app_assoc. reflexivity.
+    unfold closing_list_weight.
+    unfold lower_closing_list.
+    simpl.
+    Search sum_list_with map.
+    induction l.
+    { simpl. unfold sum_list_with. lia. }
+    { simpl. lia. }
 Qed.
-*)
+
 Lemma lower_closing_list_same
   {Σ : Signature}
   (x : evar)
@@ -125,6 +151,56 @@ Lemma lower_closing_list_iter_same
   bcmcloseex (lower_closing_list_iter k x l) ϕ = bcmcloseex l ϕ.
 Proof. Abort.
 *)
+
+Lemma list_find_dep {A} P `{∀ x, Decision (P x)} (l : list A) :
+    ({p : (nat*A)%type & (l !! p.1 = Some p.2 ∧ P p.2 ∧ ∀ j y, l !! j = Some y → j < p.1 → ¬P y) }
+    + (Forall (λ x, ¬P x) l))%type.
+Proof.
+    remember (list_find P l) as f.
+    symmetry in Heqf.
+    destruct f.
+    {
+        left.
+        destruct p as [n a].
+        apply list_find_Some in Heqf.
+        exists (n,a). apply Heqf.
+    }
+    {
+        right. 
+        apply list_find_None in Heqf.
+        exact Heqf.
+    }
+Defined.
+
+Equations? make_zero_list
+    {Σ : Signature}
+    (dummy_x : evar)
+    (l : list (prod db_index evar))
+    : (list (prod db_index evar))
+    by wf (closing_list_weight l) lt
+:=
+    make_zero_list dummy_x l
+        with (@list_find_dep _ (λ p, p.1 <> 0) _ l) => {
+        | inr _ => l
+        | inl (existT p pf) =>
+            let idx := p.1 in
+            (firstn idx l) ++ (make_zero_list dummy_x (lower_closing_list dummy_x (skipn idx l)))
+        }.
+Proof.
+    destruct_and!. destruct p. simpl in *. unfold idx. clear idx.
+    destruct p as [dbi x]. simpl in *.
+    destruct dbi.
+    { contradiction. }
+    rewrite <- (take_drop_middle l n (S dbi, x) H) at 2.
+    unfold closing_list_weight.
+    rewrite sum_list_with_app.
+    rewrite -> (drop_S l (S dbi, x) n H) at 1.
+    simpl. clear H1 make_zero_list.
+    pose proof (Htmp1 := lower_closing_list_weight dummy_x (drop (S n) l)).
+    unfold closing_list_weight, lower_closing_list in Htmp1. simpl in Htmp1.
+    lia.
+Defined.
+
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
