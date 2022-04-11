@@ -241,7 +241,7 @@ Proof.
      containing only zeros as indices
   *)
 
-Qed.
+Abort.
 
 Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
@@ -252,14 +252,15 @@ Proof.
   unfold M_pre_predicate in Hpp.
   specialize (Hpp []). simpl in Hpp.
   apply Hpp.
-  apply Forall_nil. exact I.
+  { apply Forall_nil. exact I. }
+  { apply ci_nil. }
   apply Hwfcex.
 Qed.
 
 Lemma M_pre_predicate_bott {Σ : Signature} (k : db_index) (M : Model) :
   M_pre_predicate k M patt_bott.
 Proof.
-  intros l Hk H.
+  intros l Hk Hci H.
   rewrite bcmcloseex_bott.
   apply M_predicate_bott.
 Qed.
@@ -271,14 +272,14 @@ Lemma M_pre_predicate_imp
   M_pre_predicate k M (patt_imp p q).
 Proof.
   intros Hp Hq.
-  intros l Hk H.
+  intros l Hk Hci H.
   rewrite bcmcloseex_imp.
   rewrite bcmcloseex_imp in H.
   simpl in H.
   destruct_and!.
   apply M_predicate_impl.
-  { apply Hp. assumption. assumption. }
-  { apply Hq. assumption. assumption. }
+  { apply Hp. assumption. assumption. assumption. }
+  { apply Hq. assumption. assumption. assumption. }
 Qed.
 
 Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
@@ -286,29 +287,39 @@ Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
   M_pre_predicate k M (patt_exists ϕ).
 Proof.
   simpl. unfold M_pre_predicate. intros H.
-  intros l Hk Hwfc.
+  intros l Hk Hci Hwfc.
   rewrite bcmcloseex_ex.
   apply M_predicate_exists.
   remember (evar_fresh
   (elements (free_evars (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ)))) as x.
+  
   replace (evar_open 0 x (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ))
-  with (bcmcloseex ((pair 0 x)::(map (λ p : nat * evar, (S p.1, p.2)) l)) ϕ)
-  by reflexivity.
+  with (bcmcloseex ((map (λ p : nat * evar, (S p.1, p.2)) l)++[(pair 0 x)]) ϕ).
+  2: {
+      simpl. unfold bcmcloseex. rewrite fold_left_app. simpl. reflexivity.
+  }
   apply H.
   {
-    apply Forall_cons. split.
-    {
-      simpl. lia.
-    }
+    apply Forall_app. split.
     {
       clear -Hk. induction l.
       { apply Forall_nil. exact I. }
       { simpl. inversion Hk. subst. apply Forall_cons. simpl. split. lia. apply IHl. apply H2. }
     }
+    {
+        apply Forall_cons. simpl. split.
+        { lia. }
+        { apply Forall_nil. exact I. }
+    }
+  }
+  {
+      admit.
   }
   simpl.
   unfold evar_open.
+
   
+
   apply wfc_ex_aux_bevar_subst.
   2: { simpl. reflexivity. }
   apply wfc_ex_aux_bcmcloseex.
