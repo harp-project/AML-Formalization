@@ -201,6 +201,34 @@ Proof.
     lia.
 Defined.
 
+Lemma make_zero_list_zeroes {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) :
+    (Forall (λ p, p.1 = 0) (make_zero_list dummy_x l)).
+Proof.
+    eapply make_zero_list_elim.
+    {
+        clear. intros. destruct p as [dbi x]. simpl in *.
+        destruct_and!.
+        apply Forall_app. split.
+        {
+            apply Forall_forall.
+            intros.
+            clear Heq.
+            apply elem_of_take in H1.
+            destruct H1 as [i Hi].
+            destruct Hi as [Hi1 Hi2].
+            specialize (H3 i x0 Hi1 Hi2).
+            tauto.
+         }
+         apply H.
+    }
+    {
+        clear. intros. clear Heq.
+        rewrite Forall_forall in f.
+        rewrite Forall_forall.
+        intros. specialize (f x H). tauto.
+    }
+Qed.
+
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
