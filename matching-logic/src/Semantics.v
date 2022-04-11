@@ -8,7 +8,7 @@ From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
 From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset.
+From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
 
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 From MatchingLogic Require Import
@@ -2480,21 +2480,21 @@ End Notations.
  Hint Resolve T_predicate_bot : core.
 (*End Hints.*)
 
-Inductive closure_decreasing {Σ : Signature} : (list (prod db_index evar)) -> Prop :=
-| cd_nil : closure_decreasing []
-| cd_cons
+Inductive closure_increasing {Σ : Signature} : (list (prod db_index evar)) -> Prop :=
+| ci_nil : closure_increasing []
+| ci_cons
   (k0 k1 : db_index)
   (x0 x1 : evar)
   (l : list (prod db_index evar)) :
-  k0 >= k1 ->
-  closure_decreasing ((k1,x1)::l) ->
-  closure_decreasing ((k0,x0)::(k1,x1)::l)
+  k0 <= k1 ->
+  closure_increasing ((k1,x1)::l) ->
+  closure_increasing ((k0,x0)::(k1,x1)::l)
 .
 
 Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) : Prop :=
     forall (l : list (prod db_index evar)),
       Forall (λ p, p.1 <= k) l ->
-      closure_decreasing l ->
+      closure_increasing l ->
       well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
       M_predicate M (bcmcloseex l ϕ).
 
@@ -2503,25 +2503,29 @@ Lemma pre_predicate_S {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern)
   M_pre_predicate k M ϕ.
 Proof.
   unfold M_pre_predicate.
-  intros H l Hl Hcd Hwf.
+  intros H l Hl Hci Hwf.
   apply H.
   { clear -Hl. induction l. apply Forall_nil. exact I. inversion Hl. subst.
     apply Forall_cons. split;[lia|]. apply IHl. assumption.
   }
-  { exact Hcd. }
-  {exact Hwf. }
+  { exact Hci. }
+  { exact Hwf. }
 Qed.
 
-Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
-:= (map (λ p, (Nat.pred p.1, p.2)) l) ++ [(0,x)].
+Definition closing_list_weight {Σ : Signature} (l : list (prod db_index evar)) : nat :=
+  sum_list_with fst l.
 
+Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
+:= (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
+
+(*
 Lemma lower_closing_list_app {Σ : Signature} (x : evar) (l1 l2 : list (prod db_index evar))
 : lower_closing_list x (l1 ++ l2) = (map (λ p, (Nat.pred p.1, p.2)) l1) ++ (lower_closing_list x l2).
 Proof.
   unfold lower_closing_list.
   rewrite map_app. rewrite app_assoc. reflexivity.
 Qed.
-
+*)
 Lemma lower_closing_list_same
   {Σ : Signature}
   (x : evar)
@@ -2535,24 +2539,14 @@ Lemma lower_closing_list_same
 Proof.
   intros Hocc Hagt0 Hwfc.
   move: ϕ Hocc Hwfc.
-  induction l using rev_ind; intros ϕ Hocc Hwfc.
+  induction l; intros ϕ Hocc Hwfc.
   { simpl in *. apply evar_open_closed. apply Hwfc. }
   {
-    destruct x0 as [dbi y].
+    destruct a as [dbi y].
     simpl in *.
-    rewrite Forall_app in Hagt0. destruct Hagt0 as [Hl Hrest].
-    inversion Hrest. subst. clear H2. simpl in H1.
-    rewrite lower_closing_list_app.
-    do 2 rewrite bcmcloseex_append. simpl.
-    unfold lower_closing_list in IHl.
-
-    setoid_rewrite bcmcloseex_append in IHl. simpl in IHl.
-    destruct dbi.
-    { lia. }
-    simpl. clear H1 Hrest.
-    rewrite bcmcloseex_append in Hwfc. simpl in Hwfc.
+    inversion Hagt0. subst. simpl in *.
     rewrite -IHl.
-    { exact Hl. }
+    { assumption. }
     { 
       apply bevar_occur_evar_open.
       { exact Hocc. }
@@ -2562,15 +2556,16 @@ Proof.
     f_equal.
 
     destruct dbi.
-    {
-      apply evar_open_twice_not_occur.
-      apply Hocc.
-    }
+    { lia. }
+    destruct dbi.
+    { simpl. apply evar_open_twice_not_occur. apply Hocc. }
     apply evar_open_comm_lower.
     lia.
   }
 Qed.
 
+
+(*
 Fixpoint lower_closing_list_iter {Σ : Signature} (k : nat) (x : evar) (l : list (prod db_index evar))
 :=
 match k with
@@ -2587,6 +2582,7 @@ Lemma lower_closing_list_iter_same
 :
   bcmcloseex (lower_closing_list_iter k x l) ϕ = bcmcloseex l ϕ.
 Proof. Abort.
+*)
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
@@ -2594,6 +2590,7 @@ Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern)
 Proof.
   unfold M_pre_predicate.
   intros H l Hl Hcd Hwf.
+  Search list_find.
   (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
      containing only zeros as indices
   *)
