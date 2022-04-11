@@ -2500,17 +2500,17 @@ Proof.
   rewrite (IHp (S k)); reflexivity.
 Qed.
 
-
+Check fold_left.
 Definition bcmcloseex
     {Σ : Signature}
     (l : list (prod db_index evar))
     (ϕ : Pattern) : Pattern
-:= foldr (λ p ϕ', evar_open p.1 p.2 ϕ') ϕ l.
+:= fold_left (λ ϕ' p, evar_open p.1 p.2 ϕ') l ϕ.
 
 Lemma bcmcloseex_append {Σ : Signature} (l₁ l₂ : list (prod db_index evar)) (ϕ : Pattern) :
-  bcmcloseex (l₁ ++ l₂) ϕ = bcmcloseex l₁ (bcmcloseex l₂ ϕ).
+  bcmcloseex (l₁ ++ l₂) ϕ = bcmcloseex l₂ (bcmcloseex l₁ ϕ).
 Proof.
-  unfold bcmcloseex. rewrite foldr_app. reflexivity.
+  unfold bcmcloseex. rewrite fold_left_app. reflexivity.
 Qed.
 
 (*
@@ -2554,9 +2554,10 @@ Lemma bcmcloseex_imp
   (p q : Pattern)
   : bcmcloseex l (patt_imp p q) = patt_imp (bcmcloseex l p) (bcmcloseex l q).
 Proof.
-  induction l.
+  move: p q.
+  induction l; intros p q.
   { reflexivity. }
-  { simpl. rewrite IHl. reflexivity. }
+  { simpl. unfold evar_open. simpl. rewrite IHl. reflexivity. }
 Qed.
 
 Lemma bcmcloseex_app
@@ -2565,9 +2566,10 @@ Lemma bcmcloseex_app
   (p q : Pattern)
   : bcmcloseex l (patt_app p q) = patt_app (bcmcloseex l p) (bcmcloseex l q).
 Proof.
-  induction l.
+  move: p q.
+  induction l; intros p q.
   { reflexivity. }
-  { simpl. rewrite IHl. reflexivity. }
+  { simpl. unfold evar_open. simpl. rewrite IHl. reflexivity. }
 Qed.
 
 Lemma bcmcloseex_ex
@@ -2576,7 +2578,8 @@ Lemma bcmcloseex_ex
   (q : Pattern)
   : bcmcloseex l (patt_exists q) = patt_exists (bcmcloseex (map (λ p, (S p.1,p.2)) l) q).
 Proof.
-  induction l.
+  move: q.
+  induction l; intros q.
   { reflexivity. }
   { simpl. rewrite IHl. reflexivity. }
 Qed.
@@ -2700,54 +2703,14 @@ Lemma wfc_ex_aux_bcmcloseex {Σ : Signature} l k ϕ:
   well_formed_closed_ex_aux (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) (S k) = true.
 Proof.
   intros Hk H.
-  move: k Hk H.
-  induction l; intros k Hk H.
+  move: ϕ k Hk H.
+  induction l; intros ϕ k Hk H.
   { simpl. simpl in H. apply H. }
   {
     destruct a as [dbi x].
     simpl. simpl in H.
-    destruct (compare_nat dbi k).
-    {
-      apply wfc_ex_aux_evar_open_gt in H;[|lia].
-      inversion Hk. subst. simpl in *.
-      specialize (IHl (S k)).
-      feed specialize IHl.
-      {
-        clear -H3. induction l.
-        { apply Forall_nil. exact I. }
-        { 
-          inversion H3. subst.  
-          apply Forall_cons. split. lia. apply IHl. assumption.
-        }
-      }
-      {
-        exact H.
-      }
-      (* FIXME this lemma has wrong name *)
-      apply wfc_mu_aux_body_ex_imp3;[lia|].
-      apply IHl.
-    }
-    {
-      subst. unfold evar_open. apply wfc_ex_aux_bevar_subst.
-      {
-        apply IHl.
-        {
-          inversion Hk. subst.
-          clear -H3. induction l.
-          { apply Forall_nil. exact I. }
-          { 
-            inversion H3. subst.  
-            apply Forall_cons. split. lia. apply IHl. assumption.
-          }
-        }
-        unfold evar_open in H.
-        eapply wfc_ex_aux_S_bevar_subst_fe.
-        apply H.
-      }
-      reflexivity.
-    }
-    {
-      inversion Hk. subst. simpl in *. lia.
-    }
+    apply IHl.
+    { inversion Hk. subst. assumption. }
+    { apply H. }
   }
 Qed.

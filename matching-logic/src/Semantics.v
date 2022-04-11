@@ -2480,9 +2480,21 @@ End Notations.
  Hint Resolve T_predicate_bot : core.
 (*End Hints.*)
 
+Inductive closure_decreasing {Σ : Signature} : (list (prod db_index evar)) -> Prop :=
+| cd_nil : closure_decreasing []
+| cd_cons
+  (k0 k1 : db_index)
+  (x0 x1 : evar)
+  (l : list (prod db_index evar)) :
+  k0 >= k1 ->
+  closure_decreasing ((k1,x1)::l) ->
+  closure_decreasing ((k0,x0)::(k1,x1)::l)
+.
+
 Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) : Prop :=
     forall (l : list (prod db_index evar)),
       Forall (λ p, p.1 <= k) l ->
+      closure_decreasing l ->
       well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
       M_predicate M (bcmcloseex l ϕ).
 
@@ -2491,12 +2503,13 @@ Lemma pre_predicate_S {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern)
   M_pre_predicate k M ϕ.
 Proof.
   unfold M_pre_predicate.
-  intros H l Hl Hwf.
+  intros H l Hl Hcd Hwf.
   apply H.
   { clear -Hl. induction l. apply Forall_nil. exact I. inversion Hl. subst.
     apply Forall_cons. split;[lia|]. apply IHl. assumption.
   }
-  apply Hwf.
+  { exact Hcd. }
+  {exact Hwf. }
 Qed.
 
 Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
@@ -2580,7 +2593,7 @@ Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern)
   M_pre_predicate k M ϕ.
 Proof.
   unfold M_pre_predicate.
-  intros H l Hl Hwf.
+  intros H l Hl Hcd Hwf.
   (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
      containing only zeros as indices
   *)
