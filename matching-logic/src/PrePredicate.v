@@ -329,12 +329,12 @@ Proof.
   }
 Qed.
 
-Lemma wfcexaux_bcmcloseex_evar_open_change_evar {Σ : Signature} l x x' dbi ϕ:
-  well_formed_closed_ex_aux (bcmcloseex l (evar_open dbi x ϕ)) dbi
-  = well_formed_closed_ex_aux (bcmcloseex l (evar_open dbi x' ϕ)) dbi.
+Lemma wfcexaux_bcmcloseex_evar_open_change_evar {Σ : Signature} l x x' dbi dbi' ϕ:
+  well_formed_closed_ex_aux (bcmcloseex l (evar_open dbi x ϕ)) dbi'
+  = well_formed_closed_ex_aux (bcmcloseex l (evar_open dbi x' ϕ)) dbi'.
 Proof.
-  move: dbi x x' l.
-  induction ϕ; intros dbi x' x'' l; unfold evar_open; simpl; try reflexivity.
+  move: dbi dbi' x x' l.
+  induction ϕ; intros dbi dbi' x' x'' l; unfold evar_open; simpl; try reflexivity.
   {
     repeat case_match; auto.
     clear.
@@ -401,6 +401,23 @@ Proof.
   }
 Qed.
 
+Lemma wfcexaux_bcmcloseex_evar_open_change_evar_2
+  {Σ : Signature}
+  l ϕ dbi (f : prod db_index evar -> evar):
+  well_formed_closed_ex_aux (bcmcloseex (map (λ p, (p.1, (f p))) l) ϕ) dbi
+  = well_formed_closed_ex_aux (bcmcloseex l ϕ) dbi.
+Proof.
+  move: ϕ.
+  induction l; intros ϕ.
+  {
+    simpl. reflexivity.
+  }
+  {
+    simpl. rewrite IHl. clear IHl.
+    apply wfcexaux_bcmcloseex_evar_open_change_evar.
+  }
+Qed.
+
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
     well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
@@ -422,11 +439,54 @@ Proof.
         {
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          clear -Hwfc.
+          clear -Hwfc H3.
           induction idx.
           {
             rewrite take_0. rewrite drop_0.
             rewrite [_ ++ _]/=.
+            apply wfcexaux_bcmcloseex_lower_closing_list.
+            exact Hwfc.
+          }
+          {
+            feed specialize IHidx.
+            {
+              intros.
+              eapply H3. apply H. lia.
+            }
+            
+            destruct l.
+            {
+              simpl in *. rewrite take_nil in IHidx. rewrite drop_nil in IHidx.
+              simpl in IHidx.
+              exact IHidx.
+            }
+            {
+              destruct p as [dbi x].
+              destruct dbi.
+              2: {
+                specialize (H3 0 (S dbi, x) erefl ltac:(lia)).
+                simpl in H3.
+                lia.
+              }
+              simpl in *.
+              replace (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l))
+              (evar_open 0 x ϕ))
+              with (bcmcloseex ((0,x)::(take idx l ++ lower_closing_list dummy_x (drop idx l))) ϕ)
+              by reflexivity.
+              destruct idx.
+              {
+                rewrite take_0 in IHidx. rewrite take_0.
+                rewrite drop_0 in IHidx. rewrite drop_0.
+                rewrite [[] ++ _]/= in IHidx. rewrite [[] ++ _]/=.
+                simpl in *.
+                Search
+              }
+              (evar_open p.1 p.2 ϕ)).
+              rewrite bcmcloseex_append in IHidx.
+              rewrite bcmcloseex_append.
+              simpl in *.
+              apply IHidx.
+            }
           }
             apply lower_closing_list_same.
             Search bcmcloseex lower_closing_list.
