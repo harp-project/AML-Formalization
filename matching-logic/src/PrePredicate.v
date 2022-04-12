@@ -368,60 +368,6 @@ Proof.
   }
 Qed.
 
-Check wfcexaux_bcmcloseex_evar_open_change_evar.
-Lemma helper {Σ : Signature} l x dbi ϕ:
-  Forall (λ p, p.1 >= dbi) l ->
-  well_formed_closed_ex_aux (bcmcloseex l (evar_open dbi x ϕ)) dbi = true ->
-  well_formed_closed_ex_aux (bcmcloseex l ϕ) (S dbi) = true.
-Proof.
-  move: x dbi ϕ.
-  induction l; intros x dbi ϕ Hl H.
-  {
-    simpl in *.
-    rewrite -wfc_ex_aux_body_iff in H.
-    exact H.
-  }
-  {
-    simpl in *.
-    destruct a as [dbi' x'].
-    rewrite [_.1]/= in H.
-    rewrite [_.2]/= in H.
-    replace (bcmcloseex l (evar_open dbi' x' (evar_open dbi x ϕ)))
-    with (bcmcloseex ((dbi',x')::l) ((evar_open dbi x ϕ)))
-    in H
-    by reflexivity.
-    rewrite -> wfcexaux_bcmcloseex_evar_open_change_evar with (x'0 := x') in H.
-    simpl in *.
-
-    destruct (compare_nat dbi' dbi).
-    {
-      inversion Hl. subst. simpl in *. lia.
-    }
-    {
-      subst. eapply IHl.
-      {
-        inversion Hl. subst. simpl in *. assumption.
-      }
-      eapply H.
-    }
-    {
-      eapply IHl.
-      {
-        inversion Hl. subst. assumption.
-      }
-      rewrite evar_open_comm_lower in H.
-      { lia. }
-      eapply IHl.
-      {
-        inversion Hl. subst. assumption.
-      }
-      eapply H.
-    }
-    eapply IHl.
-    apply H.
-  }
-Qed.
-
 Lemma wfcexaux_bcmcloseex_lower_closing_list
   {Σ : Signature}
   (dummy_x : evar)
@@ -431,8 +377,8 @@ Lemma wfcexaux_bcmcloseex_lower_closing_list
   well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 = true ->
   well_formed_closed_ex_aux (bcmcloseex (lower_closing_list dummy_x l) ϕ) 0 = true.
 Proof.
-  move: ϕ.
-  induction l; intros ϕ H.
+  move: ϕ dummy_x.
+  induction l; intros ϕ dummy_x H.
   {
     simpl in *.
     apply wfc_mu_aux_body_ex_imp3.
@@ -446,17 +392,14 @@ Proof.
     simpl in *.
     destruct dbi.
     {
-      simpl in *.
-      rewrite wfcexaux_bcmcloseex_evar_open_change_evar in H.
-      Search well_formed_closed_ex_aux bcmcloseex evar_open.
-      apply IHl.
+      simpl in *. apply IHl.
+      erewrite wfcexaux_bcmcloseex_evar_open_change_evar. apply H.
     }
-    apply IHl.
-    simpl in *.
-    apply IHl.
+    rewrite -evar_open_comm_higher.
+    { lia. }
+    apply IHl. exact H.
   }
 Qed.
-
 
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
@@ -477,16 +420,30 @@ Proof.
             exact Hci.
         }
         {
-          Search bcmcloseex app.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          Search lower_closing_list well_formed_closed_ex_aux.
           clear -Hwfc.
           induction idx.
           {
-            Search take 0.
             rewrite take_0. rewrite drop_0.
             rewrite [_ ++ _]/=.
+          }
+            apply lower_closing_list_same.
+            Search bcmcloseex lower_closing_list.
+
+            admit.
+          }
+        }
+        {
+          rewrite -bcmcloseex_append.
+          destruct p as [idx x]. simpl in *.
+          clear.
+          induction idx.
+          {
+            rewrite take_0. rewrite drop_0.
+            rewrite [_ ++ _]/=.
+            apply lower_closing_list_same.
+            Search bcmcloseex lower_closing_list.
 
             admit.
           }
