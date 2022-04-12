@@ -2584,6 +2584,17 @@ Proof.
   { simpl. rewrite IHl. reflexivity. }
 Qed.
 
+Lemma bcmcloseex_mu
+  {Σ : Signature}
+  (l : list (prod db_index evar))
+  (q : Pattern)
+  : bcmcloseex l (patt_mu q) = patt_mu (bcmcloseex l q).
+Proof.
+  move: q.
+  induction l; intros q.
+  { reflexivity. }
+  { simpl. rewrite IHl. reflexivity. }
+Qed.
 
 Lemma wfc_ex_aux_S_bevar_subst_fe {Σ : Signature} k ϕ x:
   well_formed_closed_ex_aux ϕ.[evar:k↦patt_free_evar x] k = true ->
