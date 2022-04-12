@@ -638,18 +638,18 @@ Proof.
           clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          clear -H2 H3 Hci.
+          clear -H0 H2 H3 Hci.
           induction idx.
           {
             rewrite take_0. rewrite drop_0.
             rewrite [_ ++ _]/=.
-            Check wfcex_and_increasing_first_not_k_impl_wfcex.
             apply lower_closing_list_same.
             {
               eapply wfcex_and_increasing_first_not_k_impl_wfcex.
               { apply Hci. }
               {
-                intros. specialize (H3 0 p H).
+                intros.
+                rewrite H in H0. inversion H0. subst. lia.
               }
             }
             {
