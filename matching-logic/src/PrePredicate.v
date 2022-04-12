@@ -26,6 +26,10 @@ Import MatchingLogic.Syntax.Notations.
 
 Inductive closure_increasing {Σ : Signature} : (list (prod db_index evar)) -> Prop :=
 | ci_nil : closure_increasing []
+| ci_single
+  (k0 : db_index)
+  (x0 : evar) :
+  closure_increasing [(k0,x0)]
 | ci_cons
   (k0 k1 : db_index)
   (x0 x1 : evar)
@@ -229,6 +233,67 @@ Proof.
     }
 Qed.
 
+Lemma closure_increasing_lower_closing_list
+  {Σ : Signature}
+  (dummy_x : evar)
+  (l : list (prod db_index evar))
+  :
+  closure_increasing l ->
+  closure_increasing (lower_closing_list dummy_x l).
+Proof.
+  unfold lower_closing_list.
+  intros H.
+
+  induction H.
+  {
+    simpl. constructor.
+  }
+  {
+    simpl. constructor.
+    { lia. }
+    { constructor. }
+  }
+  {
+    simpl in *.
+    constructor.
+    { lia. }
+    constructor.
+    { lia. }
+    inversion IHclosure_increasing; subst.
+    assumption.
+  }
+Qed.
+
+Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
+    closure_increasing l ->
+    well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
+    bcmcloseex (make_zero_list dummy_x l) ϕ = bcmcloseex l ϕ.
+Proof.
+    intros Hci Hwfc.
+    funelim (make_zero_list dummy_x l).
+    {
+        rewrite -Heqcall. clear Heqcall.
+        destruct_and!. clear Heq.
+        rewrite bcmcloseex_append.
+        rewrite H.
+        {
+            simpl.
+        }
+        clear H.
+        destruct p as [idx [dbi x] ]. simpl in *|-.
+        rewrite lower_closing_list_same.
+        {
+            simpl.
+            destruct idx.
+            {
+                simpl.
+            }
+
+        }
+    }
+
+
+Qed.
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
@@ -292,7 +357,7 @@ Proof.
   apply M_predicate_exists.
   remember (evar_fresh
   (elements (free_evars (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ)))) as x.
-  
+
   replace (evar_open 0 x (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ))
   with (bcmcloseex ((map (λ p : nat * evar, (S p.1, p.2)) l)++[(pair 0 x)]) ϕ).
   2: {
