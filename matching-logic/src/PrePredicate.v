@@ -638,12 +638,29 @@ Proof.
           clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          clear -H2 H3.
+          clear -H2 H3 Hci.
           induction idx.
           {
             rewrite take_0. rewrite drop_0.
             rewrite [_ ++ _]/=.
+            Check wfcex_and_increasing_first_not_k_impl_wfcex.
             apply lower_closing_list_same.
+            {
+              eapply wfcex_and_increasing_first_not_k_impl_wfcex.
+              { apply Hci. }
+              {
+                intros. specialize (H3 0 p H).
+              }
+            }
+            {
+              admit.
+            }
+            {
+              
+            }
+              apply wfc_ex_aux_implies_not_bevar_occur.
+              apply wfcex_and_increasing_first_not_k_impl_wfcex.
+            }
             Search bcmcloseex lower_closing_list.
 
             admit.
