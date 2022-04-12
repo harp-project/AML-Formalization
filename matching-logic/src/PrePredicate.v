@@ -418,6 +418,114 @@ Proof.
   }
 Qed.
 
+  Lemma wfcex_and_increasing_first_not_k_impl_wfcex
+    {Σ : Signature}
+    (l : list (prod db_index evar))
+    (k : db_index)
+    (ϕ : Pattern)
+    :
+    closure_increasing l ->
+    (forall p, l !! 0 = Some p -> p.1 > k) ->
+    well_formed_closed_ex_aux (bcmcloseex l ϕ) k = true ->
+    bevar_occur ϕ k = false.
+  Proof.
+    intros Hci Hnk Hwfc.
+
+    destruct l.
+    {
+      simpl in *.
+      apply wfc_ex_aux_implies_not_bevar_occur.
+      exact Hwfc.
+    }
+    specialize (Hnk p erefl).
+
+    move: p k l Hnk Hwfc Hci.
+    induction ϕ; intros p k l Hnk Hwfc Hci; simpl in *; auto.
+    {
+      unfold evar_open in Hwfc. simpl in Hwfc.
+      repeat case_match; simpl in *; auto; inversion Hci; subst; simpl in *; try lia;
+        repeat case_match; try lia.
+      unfold evar_open in Hwfc. simpl in Hwfc. case_match; try lia.
+      exfalso. clear Heqc Heqs Hci Heqc0.
+      induction l1; simpl in Hwfc.
+      {
+        case_match. lia. congruence.
+      }
+      {
+        destruct a. inversion H2; subst.
+        unfold evar_open in Hwfc. simpl in Hwfc. case_match; subst; auto; try lia.
+        apply IHl1. apply Hwfc.
+        destruct l1.
+        {
+          constructor.
+        }
+        {
+          destruct p.
+          inversion H7. subst.
+          apply ci_cons. lia. assumption.
+        }
+      }
+    }
+    {
+      unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_app in Hwfc.
+      simpl in Hwfc. destruct_and!.
+      specialize (IHϕ1 p k l Hnk ltac:(assumption) Hci).
+      specialize (IHϕ2 p k l Hnk ltac:(assumption) Hci).
+      rewrite IHϕ1.
+      rewrite IHϕ2.
+      reflexivity.
+    }
+    {
+      unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_imp in Hwfc.
+      simpl in Hwfc. destruct_and!.
+      specialize (IHϕ1 p k l Hnk ltac:(assumption) Hci).
+      specialize (IHϕ2 p k l Hnk ltac:(assumption) Hci).
+      rewrite IHϕ1.
+      rewrite IHϕ2.
+      reflexivity.
+    }
+    {
+      unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_ex in Hwfc.
+      simpl in Hwfc.
+      destruct p as [dbi x]. simpl in *.
+      specialize (IHϕ (S dbi,x) (S k) ((map (λ p : nat * evar, (S p.1, p.2)) l)) ltac:(simpl;lia) Hwfc).
+      feed specialize IHϕ.
+      {
+        clear -Hci. induction l.
+        {
+          simpl. apply ci_single.
+        }
+        {
+          simpl in *. inversion Hci. subst. apply ci_cons.
+          { simpl. lia. }
+          {
+            inversion H4; subst.
+            {
+              simpl. apply ci_single.
+            }
+            {
+              simpl in *. apply ci_cons. lia.
+              feed specialize IHl.
+              {
+                apply ci_cons. lia. assumption.
+              }
+              inversion IHl. subst. assumption.
+            }
+          }
+        }
+      }
+      {
+        apply IHϕ.
+      }
+    }
+    {
+      unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_mu in Hwfc.
+      simpl in *.
+      specialize (IHϕ p k l Hnk Hwfc Hci).
+      exact IHϕ.
+    }
+  Qed.
+
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
     well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
@@ -527,9 +635,10 @@ Proof.
           }
         }
         {
+          clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          clear.
+          clear -H2 H3.
           induction idx.
           {
             rewrite take_0. rewrite drop_0.
