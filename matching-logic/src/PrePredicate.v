@@ -120,6 +120,29 @@ Qed.
 Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
 := (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
 
+Lemma closure_increasing_lower_closing_list
+  {Σ : Signature} (x : evar) (l : list (prod db_index evar))
+  :
+  Forall (λ p, p.1 > 0) l ->
+  closure_increasing l ->
+  closure_increasing (lower_closing_list x l).
+Proof.
+  intros Hfa H.
+  unfold lower_closing_list.
+  pose proof (Hm := closure_increasing_map_pred Hfa H).
+  remember (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l) as l'.
+  inversion Hm; subst.
+  {
+    apply ci_single.
+  }
+  {
+    apply ci_cons. lia. apply ci_single.
+  }
+  {
+    apply ci_cons. lia. rewrite H2. apply Hm.
+  }
+Qed.
+
 Lemma lower_closing_list_weight {Σ : Signature} (x : evar) (l : list (prod db_index evar)) :
     closing_list_weight l >= closing_list_weight (lower_closing_list x l).
 Proof.
