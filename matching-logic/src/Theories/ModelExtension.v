@@ -184,7 +184,7 @@ Section with_syntax.
         
         Lemma SPred_is_pre_predicate (ψ : Pattern) :
             is_SPredicate ψ ->
-            M_pre_predicate M ψ.
+            M_pre_pre_predicate M ψ.
         Proof.
             intros HSPred.
             induction HSPred.

@@ -1051,5 +1051,20 @@ Proof.
 Qed.
 
 
+Definition T_pre_pre_predicate {Σ : Signature} k Γ ϕ :=
+  forall M, satisfies_theory M Γ -> M_pre_pre_predicate k M ϕ.
+
 Definition T_pre_predicate {Σ : Signature} Γ ϕ :=
   forall M, satisfies_theory M Γ -> M_pre_predicate M ϕ.
+
+Lemma T_pre_pre_predicate_impl_T_pre_predicate
+  {Σ : Signature} k Γ ϕ:
+  T_pre_pre_predicate k Γ ϕ ->
+  T_pre_predicate Γ ϕ.
+Proof.
+  intros H M HΓ.
+  apply (@M_pre_pre_predicate_impl_M_pre_predicate _ k).
+  apply H.
+  exact HΓ.
+Qed.
+

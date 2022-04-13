@@ -13,7 +13,16 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms Semantics DerivedOperators_Syntax DerivedOperators_Semantics IndexManipulation.
+From MatchingLogic
+Require Import
+  Syntax
+  NamedAxioms
+  Semantics
+  DerivedOperators_Syntax
+  DerivedOperators_Semantics
+  IndexManipulation
+  PrePredicate
+.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
@@ -405,6 +414,7 @@ Section definedness.
   Proof.
     intros ϕ. unfold T_pre_predicate. intros M HM.
     unfold M_pre_predicate. intros l Hwf.
+    intros Hfa Hci Hwf'.
     unfold patt_defined. rewrite bcmcloseex_app.
     rewrite bcmcloseex_sym. apply T_predicate_defined.
     exact HM.
