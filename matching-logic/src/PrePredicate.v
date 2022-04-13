@@ -1092,3 +1092,15 @@ Proof.
   apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
   apply M_pre_pre_predicate_bott.
 Qed.
+
+Lemma M_pre_predicate_exists
+  {Σ : Signature} (M : Model) (p : Pattern) :
+  M_pre_predicate M p ->
+  M_pre_predicate M (patt_exists p).
+Proof.
+  intros H.
+  apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
+  apply M_pre_pre_predicate_exists.
+  apply pre_predicate_0.
+  apply H.
+Qed.

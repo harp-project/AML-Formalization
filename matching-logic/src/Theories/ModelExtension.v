@@ -191,27 +191,27 @@ Section with_syntax.
             induction HSPred.
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_bott. }
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_defined. exact M_def. }
-            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_imp. exact IHHSPred1. exact IHHSPred2. }
-            { unfold patt_exists_of_sort.
-              apply M_pre_pre_predicate_exists.
-              apply pre_predicate_0.
-                intros l Hfa Hci Hwf'.
-                apply M_predicate_exists_of_sort.
-              { rewrite HSortImptDef. apply M_def. }
-              Print M_predicate.
-              unfold M_predicate in IHHSPred. intros ρₑ0 ρₛ0.
-              Search "shadow".
-              unfold evar_open.
-              rewrite -> element_substitution_lemma with (x := fresh_evar ϕ).
-              Search update_evar_val.
-              rewrite update_evar_val_same_2.
-              apply IHHSPred.
-              Check element_substitution_lemma.
-              specialize (IHHSPred ρₑ0 ρₛ0).
-              Search pattern_interpretation evar_open.
-              Check M_predicate_exists_of_sort.
-              Search M_predicate evar_open.
-
+            { apply M_pre_predicate_imp; assumption. }
+            { 
+                unfold patt_exists_of_sort.
+                apply M_pre_predicate_exists.
+                apply M_pre_predicate_and.
+                2: { exact IHHSPred. }
+                unfold patt_in.
+                apply T_pre_predicate_defined.
+                rewrite HSortImptDef.
+                exact M_def.
+            }
+            {
+                unfold patt_forall_of_sort.
+                apply M_pre_predicate_forall.
+                apply M_pre_predicate_imp.
+                2: { exact IHHSPred. }
+                unfold patt_in.
+                apply T_pre_predicate_defined.
+                rewrite HSortImptDef.
+                exact M_def.                
+            }
         Qed.
     
         Lemma SPred_is_predicate (ψ : Pattern) :

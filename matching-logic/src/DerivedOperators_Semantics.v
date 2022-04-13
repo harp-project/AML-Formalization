@@ -457,3 +457,13 @@ Proof.
   { assumption. }
   { apply M_pre_pre_predicate_bott. }
 Qed.
+
+Lemma M_pre_predicate_forall {Σ : Signature} M ϕ :
+  M_pre_predicate M ϕ ->
+  M_pre_predicate M (patt_forall ϕ).
+Proof.
+  intros H.
+  apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
+  apply M_pre_pre_predicate_forall.
+  apply H.
+Qed.
