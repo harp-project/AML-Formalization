@@ -625,6 +625,86 @@ Proof.
   }
 Qed.
 
+Lemma bcmcloseex_take_lower_drop
+  {Σ : Signature}
+  (dummy_x : evar)
+  (l : list (db_index * evar))
+  (idx : nat)
+  (ϕ : Pattern)
+  (x : nat * evar)
+  :
+  closure_increasing l ->
+  well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 = true ->
+  l !! idx = Some x ->
+  x.1 ≠ 0 ->
+  (∀ (j : nat) (y : nat * evar), l !! j = Some y → j < idx → ¬ y.1 ≠ 0) ->
+    (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l)) ϕ) = (bcmcloseex l ϕ).
+Proof.
+  intros Hci Hwfc H0 H2 H3.
+  move: x H0 H2.
+  induction idx; intros x H0 H2.
+  {
+    rewrite take_0. rewrite drop_0.
+    rewrite [_ ++ _]/=.
+    apply lower_closing_list_same.
+    {
+      eapply wfcex_and_increasing_first_not_k_impl_wfcex.
+      { apply Hci. }
+      {
+        intros.
+        rewrite H in H0. inversion H0. subst. lia.
+      }
+      { exact Hwfc. }
+    }
+    {
+      (* follows from Hci and H0 and H2*)
+      clear -Hci H0 H2.
+      move: x H0 H2.
+      induction l; intros x H0 H2.
+      {
+        inversion H0.
+      }
+      {
+        simpl in H0.
+        inversion Hci; subst.
+        {
+          apply Forall_cons. split.
+          simpl. inversion H0. subst. simpl in *.
+          lia. apply Forall_nil. exact I.
+        }
+        {
+          specialize (IHl ltac:(assumption)).
+          inversion H0. subst. clear H0. simpl in *.
+          specialize (IHl (k1,x1) erefl). simpl in IHl.
+          specialize (IHl ltac:(lia)).
+          apply Forall_cons. split.
+          {
+            simpl. lia.
+          }
+          {
+            apply IHl.
+          }
+        }
+      }
+    }
+    {
+      exact Hwfc.
+    }
+  }
+  {
+    destruct l.
+    {
+      inversion H0.
+    }
+    feed specialize IHidx.
+    {
+      intros. eapply H3. apply H. lia.
+    }
+    
+    simpl in *.
+  }
+Qed.*)
+
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
     well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
@@ -654,68 +734,10 @@ Proof.
           clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
+          (* HERE *)
+          Check wfcexaux_bcmcloseex_take_lower_drop.
           move: x H0 H2.
-          induction idx; intros x H0 H2.
-          {
-            rewrite take_0. rewrite drop_0.
-            rewrite [_ ++ _]/=.
-            apply lower_closing_list_same.
-            {
-              eapply wfcex_and_increasing_first_not_k_impl_wfcex.
-              { apply Hci. }
-              {
-                intros.
-                rewrite H in H0. inversion H0. subst. lia.
-              }
-              { exact Hwfc. }
-            }
-            {
-              (* follows from Hci and H0 and H2*)
-              clear -Hci H0 H2.
-              move: x H0 H2.
-              induction l; intros x H0 H2.
-              {
-                inversion H0.
-              }
-              {
-                simpl in H0.
-                inversion Hci; subst.
-                {
-                  apply Forall_cons. split.
-                  simpl. inversion H0. subst. simpl in *.
-                  lia. apply Forall_nil. exact I.
-                }
-                {
-                  specialize (IHl ltac:(assumption)).
-                  inversion H0. subst. clear H0. simpl in *.
-                  specialize (IHl (k1,x1) erefl). simpl in IHl.
-                  specialize (IHl ltac:(lia)).
-                  apply Forall_cons. split.
-                  {
-                    simpl. lia.
-                  }
-                  {
-                    apply IHl.
-                  }
-                }
-              }
-            }
-            {
-              exact Hwfc.
-            }
-          }
-          {
-            destruct l.
-            {
-              inversion H0.
-            }
-            feed specialize IHidx.
-            {
-              intros. eapply H3. apply H. lia.
-            }
-            
-            simpl in *.
-          }
+          
           
         }
         clear H.
