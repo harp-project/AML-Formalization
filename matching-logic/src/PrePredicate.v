@@ -1006,7 +1006,15 @@ Proof.
     }
   }
   {
-    admit.
+    clear -Hci.
+    destruct l.
+    {
+      apply ci_single.
+    }
+    {
+      destruct p.
+      apply ci_cons. lia. apply Hci.
+    }
   }
   {
     apply wfc_ex_aux_bcmcloseex in Hwfc.
@@ -1020,54 +1028,6 @@ Proof.
     { lia. }
     apply Hwfc.
   }
-    {
-      simpl in Hwfc. simpl.
-      destruct a as [dbi' x']. simpl in *.
-      apply IHl.
-    }
-    Search well_formed_closed_ex_aux bcmcloseex.
-    Search well_formed_closed_ex_aux patt_exists bcmcloseex.
-    rewrite wfc_ex_aux_bcmcloseex in Hwfc.
-  }
-  Check make_zero_list_equiv.
-  rewrite bcmcloseex_append.
-  apply H.
-  rewrite -[(bcmcloseex (map _ l) ϕ)](make_zero_list_equiv (evar_fresh [])).
-  {
-    apply closure_increasing_map_S. exact Hci.
-  }
-  {
-    rewrite bcmcloseex_ex in Hwfc. simpl in Hwfc.
-    Search bcmcloseex patt_exists.
-  }
-  Search bcmcloseex.
-  apply H.
-  {
-    apply Forall_app. split.
-    {
-      clear -Hk. induction l.
-      { apply Forall_nil. exact I. }
-      { simpl. inversion Hk. subst. apply Forall_cons. simpl. split. lia. apply IHl. apply H2. }
-    }
-    {
-        apply Forall_cons. simpl. split.
-        { lia. }
-        { apply Forall_nil. exact I. }
-    }
-  }
-  {
-      admit.
-  }
-  simpl.
-  unfold evar_open.
-
-  
-
-  apply wfc_ex_aux_bevar_subst.
-  2: { simpl. reflexivity. }
-  apply wfc_ex_aux_bcmcloseex.
-  { clear. induction l. apply Forall_nil. exact I. apply Forall_cons. split.   }
-  { assumption. }
 Qed.
 
 
