@@ -116,6 +116,35 @@ Proof.
   }
 Qed.
 
+Lemma closure_increasing_map_S
+  {Σ : Signature}
+  (l : list (prod db_index evar))
+  :
+  closure_increasing l ->
+  closure_increasing (map (λ p, (S p.1, p.2)) l).
+Proof.
+  intros H.
+  induction l.
+  {
+    apply ci_nil.
+  }
+  {
+    inversion H; subst.
+    {
+      apply ci_single.
+    }
+    {
+      apply ci_cons.
+      {
+        simpl. lia.
+      }
+      {
+        apply IHl. assumption.
+      }
+    }
+  }
+Qed.
+
 
 Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
 := (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
@@ -920,11 +949,38 @@ Proof.
   { apply Hq. assumption. assumption. assumption. }
 Qed.
 
+Lemma bcmcloseex_propagate_last_zero
+  {Σ : Signature}
+  l x ϕ
+  :
+  bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l ++ [(0, x)]) ϕ
+  = bcmcloseex ((0,x)::l) ϕ.
+Proof.
+  move: x ϕ.
+  induction l using rev_ind; intros x' ϕ.
+  {
+    simpl. reflexivity.
+  }
+  {
+    rewrite map_app. simpl. rewrite -app_assoc. rewrite bcmcloseex_append. simpl.
+    rewrite evar_open_comm_higher.
+    { lia. }
+    simpl.
+    rewrite bcmcloseex_append. simpl.
+    f_equal.
+    simpl in IHl. rewrite -IHl. clear IHl.
+    rewrite bcmcloseex_append. simpl.
+    reflexivity.
+  }
+Qed.
+
 Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
   M_pre_predicate (S k) M ϕ ->
   M_pre_predicate k M (patt_exists ϕ).
 Proof.
-  simpl. unfold M_pre_predicate. intros H.
+  intros H.
+  apply pre_predicate_0.
+  unfold M_pre_predicate in *. 
   intros l Hk Hci Hwfc.
   rewrite bcmcloseex_ex.
   apply M_predicate_exists.
@@ -936,6 +992,18 @@ Proof.
   2: {
       simpl. unfold bcmcloseex. rewrite fold_left_app. simpl. reflexivity.
   }
+  Check make_zero_list_equiv.
+  rewrite bcmcloseex_append.
+  apply H.
+  rewrite -[(bcmcloseex (map _ l) ϕ)](make_zero_list_equiv (evar_fresh [])).
+  {
+    apply closure_increasing_map_S. exact Hci.
+  }
+  {
+    rewrite bcmcloseex_ex in Hwfc. simpl in Hwfc.
+    Search bcmcloseex patt_exists.
+  }
+  Search bcmcloseex.
   apply H.
   {
     apply Forall_app. split.
