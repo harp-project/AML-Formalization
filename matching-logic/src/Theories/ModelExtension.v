@@ -215,9 +215,18 @@ Section with_syntax.
         Qed.
     
         Lemma SPred_is_predicate (ψ : Pattern) :
+            well_formed_closed_ex_aux ψ 0 ->
             is_SPredicate ψ ->
             M_predicate M ψ.
-        Proof. Qed.
+        Proof.
+            intros Hwfc Hspred.
+            apply SPred_is_pre_predicate in Hspred.
+            unfold M_pre_predicate in Hspred.
+            specialize (Hspred 0).
+            eapply closed_M_pre_pre_predicate_is_M_predicate.
+            2: { apply Hspred. }
+            apply Hwfc.
+        Qed.
 
 
         Lemma semantics_preservation_sym (s : symbols) :
