@@ -526,6 +526,105 @@ Qed.
     }
   Qed.
 
+Lemma wfcexaux_bcmcloseex_take_lower_drop
+  {Σ : Signature}
+  (dummy_x : evar)
+  (l : list (db_index * evar))
+  (idx : nat)
+  (ϕ : Pattern) :
+  (∀ (j : nat) (y : nat * evar), l !! j = Some y → j < idx → ¬ y.1 ≠ 0) ->
+  well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
+  well_formed_closed_ex_aux
+    (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l)) ϕ) 0.
+Proof.
+  intros H3 Hwfc.
+  induction idx.
+  {
+    rewrite take_0. rewrite drop_0.
+    rewrite [_ ++ _]/=.
+    apply wfcexaux_bcmcloseex_lower_closing_list.
+    exact Hwfc.
+  }
+  {
+    feed specialize IHidx.
+    {
+      intros.
+      eapply H3. apply H. lia.
+    }
+    
+    clear Hwfc.
+    move: idx ϕ H3 IHidx.
+    induction l; intros idx ϕ H3 IHidx.
+    {
+      simpl in *. rewrite take_nil in IHidx. rewrite drop_nil in IHidx.
+      simpl in IHidx.
+      exact IHidx.
+    }
+    {
+      simpl in *.
+      destruct a as [dbi x].
+      destruct dbi.
+      2: {
+        specialize (H3 0 (S dbi, x) erefl ltac:(lia)).
+        simpl in H3.
+        lia.
+      }
+      simpl in *.
+      replace (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l))
+      (evar_open 0 x ϕ))
+      with (bcmcloseex ((0,x)::(take idx l ++ lower_closing_list dummy_x (drop idx l))) ϕ)
+      by reflexivity.
+      
+      rename IHidx into IHidx'.
+      destruct idx.
+      {
+        rewrite take_0 in IHidx'. rewrite take_0.
+        rewrite drop_0 in IHidx'. rewrite drop_0.
+        rewrite [[] ++ _]/= in IHidx'. rewrite [[] ++ _]/=.
+        simpl in *.
+        replace (bcmcloseex (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)
+        (evar_open 0 dummy_x (evar_open 0 x ϕ)))
+        with (bcmcloseex ((0,x)::(0,dummy_x)::(map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)) ϕ)
+        by reflexivity.
+        replace (bcmcloseex (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)
+        (evar_open 0 x (evar_open 0 dummy_x ϕ)))
+        with (bcmcloseex ((0,dummy_x)::(0,x)::(map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)) ϕ)
+        in IHidx'
+        by reflexivity.
+        rewrite <- wfcexaux_bcmcloseex_evar_open_change_evar_2
+        with (f := (λ p, x)).
+        rewrite <- wfcexaux_bcmcloseex_evar_open_change_evar_2
+        with (f := (λ p, x)) in IHidx'.
+        simpl. simpl in IHidx'.
+        apply IHidx'.
+      }
+      {
+        simpl in *.
+        destruct l.
+        {
+          simpl in *. rewrite take_nil in IHidx'. rewrite drop_nil in IHidx'.
+          simpl in IHidx'. apply IHidx'.
+        }
+        {
+          simpl in *.
+          apply IHl.
+          {
+            intros.
+            apply H3 with (j := (S j)).
+            {
+              simpl. assumption.
+            }
+            { lia. }
+          }
+          {
+            apply IHidx'.
+          }
+        }
+      }
+    }
+  }
+Qed.
+
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
     well_formed_closed_ex_aux (bcmcloseex l ϕ) 0 ->
@@ -548,91 +647,8 @@ Proof.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
           clear -Hwfc H3.
-          induction idx.
-          {
-            rewrite take_0. rewrite drop_0.
-            rewrite [_ ++ _]/=.
-            apply wfcexaux_bcmcloseex_lower_closing_list.
-            exact Hwfc.
-          }
-          {
-            feed specialize IHidx.
-            {
-              intros.
-              eapply H3. apply H. lia.
-            }
-            
-            clear Hwfc.
-            move: idx ϕ H3 IHidx.
-            induction l; intros idx ϕ H3 IHidx.
-            {
-              simpl in *. rewrite take_nil in IHidx. rewrite drop_nil in IHidx.
-              simpl in IHidx.
-              exact IHidx.
-            }
-            {
-              simpl in *.
-              destruct a as [dbi x].
-              destruct dbi.
-              2: {
-                specialize (H3 0 (S dbi, x) erefl ltac:(lia)).
-                simpl in H3.
-                lia.
-              }
-              simpl in *.
-              replace (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l))
-              (evar_open 0 x ϕ))
-              with (bcmcloseex ((0,x)::(take idx l ++ lower_closing_list dummy_x (drop idx l))) ϕ)
-              by reflexivity.
-              
-              rename IHidx into IHidx'.
-              destruct idx.
-              {
-                rewrite take_0 in IHidx'. rewrite take_0.
-                rewrite drop_0 in IHidx'. rewrite drop_0.
-                rewrite [[] ++ _]/= in IHidx'. rewrite [[] ++ _]/=.
-                simpl in *.
-                replace (bcmcloseex (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)
-                (evar_open 0 dummy_x (evar_open 0 x ϕ)))
-                with (bcmcloseex ((0,x)::(0,dummy_x)::(map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)) ϕ)
-                by reflexivity.
-                replace (bcmcloseex (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)
-                (evar_open 0 x (evar_open 0 dummy_x ϕ)))
-                with (bcmcloseex ((0,dummy_x)::(0,x)::(map (λ p : nat * evar, (Nat.pred p.1, p.2)) l)) ϕ)
-                in IHidx'
-                by reflexivity.
-                rewrite <- wfcexaux_bcmcloseex_evar_open_change_evar_2
-                with (f := (λ p, x)).
-                rewrite <- wfcexaux_bcmcloseex_evar_open_change_evar_2
-                with (f := (λ p, x)) in IHidx'.
-                simpl. simpl in IHidx'.
-                apply IHidx'.
-              }
-              {
-                simpl in *.
-                destruct l.
-                {
-                  simpl in *. rewrite take_nil in IHidx'. rewrite drop_nil in IHidx'.
-                  simpl in IHidx'. apply IHidx'.
-                }
-                {
-                  simpl in *.
-                  apply IHl.
-                  {
-                    intros.
-                    apply H3 with (j := (S j)).
-                    {
-                      simpl. assumption.
-                    }
-                    { lia. }
-                  }
-                  {
-                    apply IHidx'.
-                  }
-                }
-              }
-            }
-          }
+          apply wfcexaux_bcmcloseex_take_lower_drop.
+          apply H3. apply Hwfc.
         }
         {
           clear H.
