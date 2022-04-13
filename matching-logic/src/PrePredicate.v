@@ -772,26 +772,26 @@ Proof.
           clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          (* HERE *)
-          Check wfcexaux_bcmcloseex_take_lower_drop.
-          move: x H0 H2.
-          
-          
-        }
-        clear H.
-        destruct p as [idx [dbi x] ]. simpl in *|-.
-        rewrite lower_closing_list_same.
-        {
-            simpl.
-            destruct idx.
-            {
-                simpl.
-            }
-
+          eapply bcmcloseex_take_lower_drop.
+          { apply Hci. }
+          {
+            apply Hwfc.
+          }
+          {
+            apply H0.
+          }
+          {
+            apply H2.
+          }
+          {
+            apply H3.
+          }
         }
     }
-
-
+    {
+      rewrite <- Heqcall at 1.
+      reflexivity.
+    }
 Qed.
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
