@@ -625,6 +625,23 @@ Proof.
   }
 Qed.
 
+Lemma closure_increasing_tail
+  {Σ : Signature}
+  p l
+  :
+  closure_increasing (p :: l) ->
+  closure_increasing l.
+Proof.
+  intros H.
+  inversion H; subst.
+  {
+    apply ci_nil.
+  }
+  {
+    assumption.
+  }
+Qed.
+
 Lemma bcmcloseex_take_lower_drop
   {Σ : Signature}
   (dummy_x : evar)
@@ -641,8 +658,8 @@ Lemma bcmcloseex_take_lower_drop
     (bcmcloseex (take idx l ++ lower_closing_list dummy_x (drop idx l)) ϕ) = (bcmcloseex l ϕ).
 Proof.
   intros Hci Hwfc H0 H2 H3.
-  move: x H0 H2.
-  induction idx; intros x H0 H2.
+  move: ϕ x l Hci Hwfc H0 H2 H3.
+  induction idx; intros ϕ x l Hci Hwfc H0 H2 H3.
   {
     rewrite take_0. rewrite drop_0.
     rewrite [_ ++ _]/=.
@@ -696,14 +713,35 @@ Proof.
     {
       inversion H0.
     }
-    feed specialize IHidx.
+    simpl in H0.
+    simpl.
+    erewrite IHidx.
     {
-      intros. eapply H3. apply H. lia.
+      reflexivity.
     }
-    
-    simpl in *.
+    {
+      apply closure_increasing_tail in Hci. exact Hci.
+    }
+    {
+      apply Hwfc.
+    }
+    {
+      apply H0.
+    }
+    {
+      apply H2.
+    }
+    {
+      intros. apply H3 with (j := (S j)).
+      {
+        simpl. apply H.
+      }
+      {
+        lia.
+      }
+    }
   }
-Qed.*)
+Qed.
 
 Lemma make_zero_list_equiv {Σ : Signature} (dummy_x : evar) (l : list (prod db_index evar)) ϕ:
     closure_increasing l ->
