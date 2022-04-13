@@ -827,10 +827,6 @@ Proof.
     }
 Qed.
 
-
-Lemma closure_increasing_make_zero_list
-closure_increasing (make_zero_list (evar_fresh []) l)
-
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
   M_pre_predicate k M ϕ.
@@ -841,9 +837,9 @@ Proof.
      containing only zeros as indices
   *)
   specialize (H (make_zero_list (evar_fresh []) l)).
+  pose proof (Hzeros := make_zero_list_zeroes (evar_fresh []) l).
   feed specialize H.
   {
-    pose proof (Hzeros := make_zero_list_zeroes (evar_fresh []) l).
     clear -Hzeros.
     induction Hzeros.
     {
@@ -856,11 +852,34 @@ Proof.
     }
   }
   {
-    Search make_zero_list closure_increasing.
+    remember ((make_zero_list (evar_fresh []) l)) as l'.
+    clear -Hzeros.
+    induction l'.
+    {
+      apply ci_nil.
+    }
+    {
+      inversion Hzeros. subst. specialize (IHl' ltac:(assumption)).
+      inversion IHl'; subst.
+      {
+        destruct a.
+        apply ci_single.
+      }
+      {
+        destruct a.
+        simpl in *. subst. 
+        apply ci_cons.
+        lia. apply ci_single.
+      }
+      {
+        destruct a. simpl in *. subst.
+        apply ci_cons. lia. apply ci_cons. lia. assumption.
+      }
+    }
   }
-  Search list_find.
-
-Abort.
+  { rewrite make_zero_list_equiv; assumption. }
+  { rewrite make_zero_list_equiv in H; assumption. }
+Qed.
 
 Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
