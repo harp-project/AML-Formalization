@@ -39,7 +39,7 @@ Inductive closure_increasing {Σ : Signature} : (list (prod db_index evar)) -> P
   closure_increasing ((k0,x0)::(k1,x1)::l)
 .
 
-Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) : Prop :=
+Definition M_pre_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) : Prop :=
     forall (l : list (prod db_index evar)),
       Forall (λ p, p.1 <= k) l ->
       closure_increasing l ->
@@ -47,10 +47,10 @@ Definition M_pre_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pat
       M_predicate M (bcmcloseex l ϕ).
 
 Lemma pre_predicate_S {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
-  M_pre_predicate (S k) M ϕ ->
-  M_pre_predicate k M ϕ.
+  M_pre_pre_predicate (S k) M ϕ ->
+  M_pre_pre_predicate k M ϕ.
 Proof.
-  unfold M_pre_predicate.
+  unfold M_pre_pre_predicate.
   intros H l Hl Hci Hwf.
   apply H.
   { clear -Hl. induction l. apply Forall_nil. exact I. inversion Hl. subst.
@@ -857,10 +857,10 @@ Proof.
 Qed.
 
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
-  M_pre_predicate 0 M ϕ ->
-  M_pre_predicate k M ϕ.
+  M_pre_pre_predicate 0 M ϕ ->
+  M_pre_pre_predicate k M ϕ.
 Proof.
-  unfold M_pre_predicate.
+  unfold M_pre_pre_predicate.
   intros H l Hl Hcd Hwf.
     (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
      containing only zeros as indices
@@ -910,13 +910,13 @@ Proof.
   { rewrite make_zero_list_equiv in H; assumption. }
 Qed.
 
-Lemma closed_M_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
+Lemma closed_M_pre_pre_predicate_is_M_predicate {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   well_formed_closed_ex_aux ϕ 0 ->
-  M_pre_predicate k M ϕ ->
+  M_pre_pre_predicate k M ϕ ->
   M_predicate M ϕ.
 Proof.
   intros Hwfcex Hpp.
-  unfold M_pre_predicate in Hpp.
+  unfold M_pre_pre_predicate in Hpp.
   specialize (Hpp []). simpl in Hpp.
   apply Hpp.
   { apply Forall_nil. exact I. }
@@ -924,19 +924,19 @@ Proof.
   apply Hwfcex.
 Qed.
 
-Lemma M_pre_predicate_bott {Σ : Signature} (k : db_index) (M : Model) :
-  M_pre_predicate k M patt_bott.
+Lemma M_pre_pre_predicate_bott {Σ : Signature} (k : db_index) (M : Model) :
+  M_pre_pre_predicate k M patt_bott.
 Proof.
   intros l Hk Hci H.
   rewrite bcmcloseex_bott.
   apply M_predicate_bott.
 Qed.
 
-Lemma M_pre_predicate_imp
+Lemma M_pre_pre_predicate_imp
   {Σ : Signature} (k : db_index) (M : Model) (p q : Pattern) :
-  M_pre_predicate k M p ->
-  M_pre_predicate k M q ->
-  M_pre_predicate k M (patt_imp p q).
+  M_pre_pre_predicate k M p ->
+  M_pre_pre_predicate k M q ->
+  M_pre_pre_predicate k M (patt_imp p q).
 Proof.
   intros Hp Hq.
   intros l Hk Hci H.
@@ -974,13 +974,13 @@ Proof.
   }
 Qed.
 
-Lemma M_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
-  M_pre_predicate (S k) M ϕ ->
-  M_pre_predicate k M (patt_exists ϕ).
+Lemma M_pre_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
+  M_pre_pre_predicate (S k) M ϕ ->
+  M_pre_pre_predicate k M (patt_exists ϕ).
 Proof.
   intros H.
   apply pre_predicate_0.
-  unfold M_pre_predicate in *. 
+  unfold M_pre_pre_predicate in *. 
   intros l Hk Hci Hwfc.
   rewrite bcmcloseex_ex.
   apply M_predicate_exists.
@@ -1027,6 +1027,26 @@ Proof.
     apply wfc_mu_aux_body_ex_imp3.
     { lia. }
     apply Hwfc.
+  }
+Qed.
+
+Definition M_pre_predicate {Σ : Signature} (M : Model) (ϕ : Pattern) : Prop
+:= forall k, M_pre_pre_predicate k M ϕ.
+
+Lemma M_pre_pre_predicate_impl_M_pre_predicate
+  {Σ : Signature} (k : nat) (M : Model) (ϕ : Pattern)
+  :
+  M_pre_pre_predicate k M ϕ ->
+  M_pre_predicate M ϕ.
+Proof.
+  intros H k'.
+  apply pre_predicate_0.
+  induction k.
+  {
+    assumption.
+  }
+  {
+    apply pre_predicate_S in H. apply IHk. exact H.
   }
 Qed.
 
