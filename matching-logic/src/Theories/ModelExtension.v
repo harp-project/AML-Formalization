@@ -529,17 +529,27 @@ Section with_syntax.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         clear.
-                        Search "⊤". unfold top.
-                        with_strategy transparent [propset_top] unfold propset_top.
-                        unfold intersection.
-                        with_strategy transparent [propset_intersection] unfold propset_intersection.
-                        set_solver.
-                        Search pattern_interpretation "∅".
+                        set_unfold.
+                        split; intros H.
+                        {
+                            destruct_and_ex!.
+                            subst.
+                            exists (inl x1).
+                            split.
+                            { reflexivity. }
+                            exists x1. split;[reflexivity|].
+                            split; done.
+                        }
+                        {
+                            destruct_and_ex!.
+                            subst.
+                            split;[|exact I].
+                            exists (inl x1).
+                            split;[reflexivity|].
+                            exists x1.
+                            split; done.
+                        }
                     }
-                    (* TODO we have to destruct on whether the data pattern is empty or not *)
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    set_solver.
                 }
                 admit.
             }
