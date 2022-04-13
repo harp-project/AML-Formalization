@@ -3,12 +3,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Logic.Classical_Prop.
+
 From stdpp
 Require Import
     base
     decidable
     propset
     fin_maps
+    fin_sets
 .
 
 From MatchingLogic
@@ -306,12 +309,14 @@ Section with_syntax.
             (ϕ : Pattern)
             :
             is_SData ϕ ->
+            well_formed ϕ ->
             pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
             = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
         with semantics_preservation_pred
             (ψ : Pattern)
             :
             is_SPredicate ψ ->
+            well_formed ψ ->
             (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
              <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
             /\
@@ -320,7 +325,7 @@ Section with_syntax.
         Proof.
             {
                 (* preservation of data patterns *)
-                intros HSData. induction HSData.
+                intros HSData Hwf. induction HSData.
                 {
                     (* patt_bott *)
                     do 2 rewrite pattern_interpretation_bott_simpl.
@@ -376,6 +381,9 @@ Section with_syntax.
                     rewrite semantics_preservation_inhabitant_set;[assumption|].
                     do 2 rewrite pattern_interpretation_not_simpl.
                     rewrite IHHSData.
+                    {
+                        wf_auto2.
+                    }
                     remember (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
                     remember (pattern_interpretation ρₑ ρₛ ϕ) as Xϕ.
                     clear HeqXinh HeqXϕ IHHSData semantics_preservation_data semantics_preservation_pred.
@@ -385,7 +393,10 @@ Section with_syntax.
                 {
                     (* patt_app ϕ₁ ϕ₂ *)
                     do 2 rewrite pattern_interpretation_app_simpl.
-                    rewrite IHHSData1 IHHSData2.
+                    rewrite IHHSData1.
+                    { wf_auto2. }
+                    rewrite IHHSData2.
+                    { wf_auto2. }
                     unfold app_ext.
                     clear. unfold_leibniz.
                     unfold lift_set,fmap.
@@ -458,7 +469,10 @@ Section with_syntax.
                 {
                     (* patt_or ϕ₁ ϕ₂ *)
                     do 2 rewrite pattern_interpretation_or_simpl.
-                    rewrite IHHSData1 IHHSData2.
+                    rewrite IHHSData1.
+                    { wf_auto2. }
+                    rewrite IHHSData2.
+                    { wf_auto2. }
                     clear.
                     unfold_leibniz.
                     unfold lift_set,fmap.
@@ -468,11 +482,60 @@ Section with_syntax.
                 {
                     (* patt_and ϕ ψ *)
                     do 2 rewrite pattern_interpretation_and_simpl.
-                    rewrite IHHSData.
-                    clear semantics_preservation_data.
+
                     specialize (semantics_preservation_pred ψ ltac:(assumption)).
-                    clear H HSData IHHSData.
-                    unfold_leibniz.
+                    rename H into Hspred.
+                    
+                    destruct (classic (pattern_interpretation ρₑ ρₛ ψ = ∅)).
+                    {
+                        rewrite IHHSData.
+                        { wf_auto2. }
+                        clear semantics_preservation_data.
+                        clear HSData IHHSData. 
+                        unfold_leibniz.
+                        specialize (semantics_preservation_pred ltac:(wf_auto2)).
+                        destruct semantics_preservation_pred as [Hsp1 Hsp2].
+                        clear Hsp2.
+                        destruct Hsp1 as [Hsp11 Hsp12].
+                        specialize (Hsp12 H). clear Hsp11.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        set_solver.
+                    }
+                    {
+                        apply predicate_not_empty_iff_full in H.
+                        2: {
+                            apply SPred_is_predicate.
+                            2: { assumption. }
+                            {
+                                clear -Hwf.
+                                unfold patt_and,patt_or,patt_not in Hwf.
+                                apply well_formed_imp_proj1 in Hwf.
+                                apply well_formed_imp_proj2 in Hwf.
+                                apply well_formed_imp_proj1 in Hwf.
+                                wf_auto2.
+                            }
+                        }
+                        specialize (semantics_preservation_pred ltac:(wf_auto2)).
+                        specialize (semantics_preservation_data ϕ HSData ltac:(wf_auto2)).
+
+                        destruct semantics_preservation_pred as [Hsp1 Hsp2].
+                        clear Hsp1.
+                        destruct Hsp2 as [Hsp21 Hsp22]. clear Hsp21.
+                        specialize (Hsp22 H).
+                        specialize (IHHSData ltac:(wf_auto2)).
+                        rewrite IHHSData.
+                        rewrite H. rewrite Hsp22.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear.
+                        Search "⊤". unfold top.
+                        with_strategy transparent [propset_top] unfold propset_top.
+                        unfold intersection.
+                        with_strategy transparent [propset_intersection] unfold propset_intersection.
+                        set_solver.
+                        Search pattern_interpretation "∅".
+                    }
                     (* TODO we have to destruct on whether the data pattern is empty or not *)
                     unfold lift_set,fmap.
                     with_strategy transparent [propset_fmap] unfold propset_fmap.
