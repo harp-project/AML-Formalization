@@ -794,16 +794,37 @@ Proof.
     }
 Qed.
 
+Lemma closure_increasing_make_zero_list
+closure_increasing (make_zero_list (evar_fresh []) l)
+
 Lemma pre_predicate_0 {Σ : Signature} (k : db_index) (M : Model) (ϕ : Pattern) :
   M_pre_predicate 0 M ϕ ->
   M_pre_predicate k M ϕ.
 Proof.
   unfold M_pre_predicate.
   intros H l Hl Hcd Hwf.
-  Search list_find.
-  (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
+    (* we want to give [H] a list [l'] such that [bcmcloseex l' ϕ = bcmcloseex l ϕ]
      containing only zeros as indices
   *)
+  specialize (H (make_zero_list (evar_fresh []) l)).
+  feed specialize H.
+  {
+    pose proof (Hzeros := make_zero_list_zeroes (evar_fresh []) l).
+    clear -Hzeros.
+    induction Hzeros.
+    {
+      apply Forall_nil. exact I.
+    }
+    {
+      apply Forall_cons. split.
+      { lia. }
+      apply IHHzeros.
+    }
+  }
+  {
+    Search make_zero_list closure_increasing.
+  }
+  Search list_find.
 
 Abort.
 
