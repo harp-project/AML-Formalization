@@ -992,6 +992,43 @@ Proof.
   2: {
       simpl. unfold bcmcloseex. rewrite fold_left_app. simpl. reflexivity.
   }
+  rewrite bcmcloseex_propagate_last_zero.
+  apply H.
+  {
+    apply Forall_cons. split. simpl;lia.
+    clear -Hk.
+    induction Hk.
+    {
+      apply Forall_nil. exact I.
+    }
+    {
+      apply Forall_cons. split. lia. assumption.
+    }
+  }
+  {
+    admit.
+  }
+  {
+    apply wfc_ex_aux_bcmcloseex in Hwfc.
+    2: { assumption. }
+    simpl in Hwfc.
+    rewrite -bcmcloseex_propagate_last_zero.
+    rewrite bcmcloseex_append. simpl.
+    Search well_formed_closed_ex_aux evar_open.
+    Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
+    apply wfc_mu_aux_body_ex_imp3.
+    { lia. }
+    apply Hwfc.
+  }
+    {
+      simpl in Hwfc. simpl.
+      destruct a as [dbi' x']. simpl in *.
+      apply IHl.
+    }
+    Search well_formed_closed_ex_aux bcmcloseex.
+    Search well_formed_closed_ex_aux patt_exists bcmcloseex.
+    rewrite wfc_ex_aux_bcmcloseex in Hwfc.
+  }
   Check make_zero_list_equiv.
   rewrite bcmcloseex_append.
   apply H.
