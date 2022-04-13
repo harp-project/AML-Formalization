@@ -6,7 +6,14 @@ Unset Printing Implicit Defensive.
 From stdpp Require Import base sets propset.
 From Coq Require Import Logic.Classical_Prop.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax Semantics IndexManipulation DerivedOperators_Syntax.
+From MatchingLogic
+Require Import
+  Syntax
+  Semantics
+  IndexManipulation
+  PrePredicate
+  DerivedOperators_Syntax
+.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.

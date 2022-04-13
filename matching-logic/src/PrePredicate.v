@@ -1068,3 +1068,27 @@ Proof.
   exact HΓ.
 Qed.
 
+Lemma M_pre_predicate_imp
+  {Σ : Signature} (M : Model) (p q : Pattern) :
+  M_pre_predicate M p ->
+  M_pre_predicate M q ->
+  M_pre_predicate M (patt_imp p q).
+Proof.
+  intros Hp Hq.
+  apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
+  apply M_pre_pre_predicate_imp.
+  {
+    apply Hp.
+  }
+  {
+    apply Hq.
+  }
+Qed.
+
+Lemma M_pre_predicate_bott
+  {Σ : Signature} (M : Model) :
+  M_pre_predicate M patt_bott.
+Proof.
+  apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
+  apply M_pre_pre_predicate_bott.
+Qed.

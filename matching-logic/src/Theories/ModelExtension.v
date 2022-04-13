@@ -19,6 +19,7 @@ Require Import
     Semantics
     DerivedOperators_Syntax
     DerivedOperators_Semantics
+    PrePredicate
     Theories.Definedness_Syntax
     Theories.Definedness_Semantics
     Theories.Sorts_Syntax
@@ -184,14 +185,18 @@ Section with_syntax.
         
         Lemma SPred_is_pre_predicate (ψ : Pattern) :
             is_SPredicate ψ ->
-            M_pre_pre_predicate M ψ.
+            M_pre_predicate M ψ.
         Proof.
             intros HSPred.
             induction HSPred.
-            { apply M_pre_predicate_bott. }
-            { apply T_pre_predicate_defined. exact M_def. }
-            { apply M_pre_predicate_imp. exact IHHSPred1. exact IHHSPred2. }
-            { apply M_predicate_exists_of_sort.
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_bott. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_defined. exact M_def. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_imp. exact IHHSPred1. exact IHHSPred2. }
+            { unfold patt_exists_of_sort.
+              apply M_pre_pre_predicate_exists.
+              apply pre_predicate_0.
+                intros l Hfa Hci Hwf'.
+                apply M_predicate_exists_of_sort.
               { rewrite HSortImptDef. apply M_def. }
               Print M_predicate.
               unfold M_predicate in IHHSPred. intros ρₑ0 ρₛ0.
