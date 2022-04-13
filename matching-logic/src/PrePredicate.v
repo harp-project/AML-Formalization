@@ -638,8 +638,8 @@ Proof.
           clear H.
           rewrite -bcmcloseex_append.
           destruct p as [idx x]. simpl in *.
-          clear -H0 H2 H3 Hci.
-          induction idx.
+          move: x H0 H2.
+          induction idx; intros x H0 H2.
           {
             rewrite take_0. rewrite drop_0.
             rewrite [_ ++ _]/=.
@@ -651,28 +651,54 @@ Proof.
                 intros.
                 rewrite H in H0. inversion H0. subst. lia.
               }
+              { exact Hwfc. }
             }
             {
-              admit.
+              (* follows from Hci and H0 and H2*)
+              clear -Hci H0 H2.
+              move: x H0 H2.
+              induction l; intros x H0 H2.
+              {
+                inversion H0.
+              }
+              {
+                simpl in H0.
+                inversion Hci; subst.
+                {
+                  apply Forall_cons. split.
+                  simpl. inversion H0. subst. simpl in *.
+                  lia. apply Forall_nil. exact I.
+                }
+                {
+                  specialize (IHl ltac:(assumption)).
+                  inversion H0. subst. clear H0. simpl in *.
+                  specialize (IHl (k1,x1) erefl). simpl in IHl.
+                  specialize (IHl ltac:(lia)).
+                  apply Forall_cons. split.
+                  {
+                    simpl. lia.
+                  }
+                  {
+                    apply IHl.
+                  }
+                }
+              }
             }
             {
-              
+              exact Hwfc.
             }
-              apply wfc_ex_aux_implies_not_bevar_occur.
-              apply wfcex_and_increasing_first_not_k_impl_wfcex.
-            }
-            Search bcmcloseex lower_closing_list.
-
-            admit.
           }
           {
             destruct l.
             {
-              simpl in *. rewrite take_nil in IHidx.
-              rewrite drop_nil in IHidx.
-              simpl in IHidx.
-              exact IHidx.
+              inversion H0.
             }
+            feed specialize IHidx.
+            {
+              intros. eapply H3. apply H. lia.
+            }
+            
+            simpl in *.
           }
           
         }
