@@ -121,25 +121,33 @@ Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_ind
 := (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
 
 Lemma closure_increasing_lower_closing_list
-  {Σ : Signature} (x : evar) (l : list (prod db_index evar))
+  {Σ : Signature}
+  (dummy_x : evar)
+  (l : list (prod db_index evar))
   :
-  Forall (λ p, p.1 > 0) l ->
   closure_increasing l ->
-  closure_increasing (lower_closing_list x l).
+  closure_increasing (lower_closing_list dummy_x l).
 Proof.
-  intros Hfa H.
   unfold lower_closing_list.
-  pose proof (Hm := closure_increasing_map_pred Hfa H).
-  remember (map (λ p : nat * evar, (Nat.pred p.1, p.2)) l) as l'.
-  inversion Hm; subst.
+  intros H.
+
+  induction H.
   {
-    apply ci_single.
+    simpl. constructor.
   }
   {
-    apply ci_cons. lia. apply ci_single.
+    simpl. constructor.
+    { lia. }
+    { constructor. }
   }
   {
-    apply ci_cons. lia. rewrite H2. apply Hm.
+    simpl in *.
+    constructor.
+    { lia. }
+    constructor.
+    { lia. }
+    inversion IHclosure_increasing; subst.
+    assumption.
   }
 Qed.
 
@@ -287,37 +295,6 @@ Proof.
         rewrite Forall_forall.
         intros. specialize (f x H). tauto.
     }
-Qed.
-
-Lemma closure_increasing_lower_closing_list
-  {Σ : Signature}
-  (dummy_x : evar)
-  (l : list (prod db_index evar))
-  :
-  closure_increasing l ->
-  closure_increasing (lower_closing_list dummy_x l).
-Proof.
-  unfold lower_closing_list.
-  intros H.
-
-  induction H.
-  {
-    simpl. constructor.
-  }
-  {
-    simpl. constructor.
-    { lia. }
-    { constructor. }
-  }
-  {
-    simpl in *.
-    constructor.
-    { lia. }
-    constructor.
-    { lia. }
-    inversion IHclosure_increasing; subst.
-    assumption.
-  }
 Qed.
 
 Lemma closure_increasing_app_proj1
