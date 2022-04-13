@@ -83,6 +83,40 @@ Proof.
     }
 Qed.
 
+
+Lemma closure_increasing_map_pred
+  {Σ : Signature}
+  (l : list (prod db_index evar))
+  :
+  Forall (λ p, p.1 > 0) l ->
+  closure_increasing l ->
+  closure_increasing (map (λ p, (Nat.pred p.1, p.2)) l).
+Proof.
+  intros Hfa H.
+  induction l.
+  {
+    apply ci_nil.
+  }
+  {
+    inversion Hfa. subst.
+    specialize (IHl ltac:(assumption)).
+    inversion H; subst.
+    {
+      apply ci_single.
+    }
+    {
+      apply ci_cons.
+      {
+        simpl. lia.
+      }
+      {
+        apply IHl. assumption.
+      }
+    }
+  }
+Qed.
+
+
 Definition lower_closing_list {Σ : Signature} (x : evar) (l : list (prod db_index evar))
 := (0,x)::(map (λ p, (Nat.pred p.1, p.2)) l).
 
@@ -92,7 +126,6 @@ Proof.
     unfold closing_list_weight.
     unfold lower_closing_list.
     simpl.
-    Search sum_list_with map.
     induction l.
     { simpl. unfold sum_list_with. lia. }
     { simpl. lia. }
@@ -793,6 +826,7 @@ Proof.
       reflexivity.
     }
 Qed.
+
 
 Lemma closure_increasing_make_zero_list
 closure_increasing (make_zero_list (evar_fresh []) l)
