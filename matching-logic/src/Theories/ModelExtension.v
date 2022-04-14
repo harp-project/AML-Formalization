@@ -530,6 +530,48 @@ Section with_syntax.
             case_match; reflexivity.
         Qed.
  
+        Lemma lift_set_fa_union (C : Type) (f : C -> propset (Domain M)) :
+            lift_set (stdpp_ext.propset_fa_union f) = stdpp_ext.propset_fa_union (λ k, lift_set (f k)).
+        Proof.
+            unfold stdpp_ext.propset_fa_union, lift_set.
+            unfold lift_set,fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear. unfold_leibniz. set_solver.
+        Qed.
+
+        Lemma lift_set_fa_intersection (C : Type) {_ : Inhabited C} (f : C -> propset (Domain M)) :
+            lift_set (stdpp_ext.propset_fa_intersection f) = stdpp_ext.propset_fa_intersection (λ k, lift_set (f k)).
+        Proof.
+            unfold stdpp_ext.propset_fa_intersection, lift_set.
+            unfold lift_set,fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            unfold_leibniz. set_unfold.
+            intros x.
+            split; intros H.
+            {
+                destruct_and_ex!.  subst. intros.
+                exists (inl x1).
+                split;[reflexivity|].
+                exists x1.
+                split;[reflexivity|].
+                apply H2.
+            }
+            {
+                pose proof (Htmp := H (@stdpp.base.inhabitant C X)).
+                destruct_and_ex!. subst.
+                exists (inl x1).
+                split;[reflexivity|].
+                exists x1.
+                split;[reflexivity|].
+                intros x.
+                pose proof (Htmp2 := H x).
+                destruct_and_ex!. subst.
+                inversion H0. subst.
+                assumption.
+            }
+        Qed.
+
+
         Lemma semantics_preservation
             (sz : nat)
             :
@@ -813,12 +855,18 @@ Section with_syntax.
                     }
                     {
                         (* patt_exists_of_sort (patt_sym s) ϕ *)
-                        rewrite pattern_interpretation_exists_of_sort.
-                        
+                        unshelve(erewrite pattern_interpretation_exists_of_sort).
+                        3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
+                        { intros. apply Mext_indec. assumption. }
+                        unshelve(erewrite pattern_interpretation_exists_of_sort).
+                        3: { rewrite HSortImptDef. assumption. }
+                        { intros. apply indec. assumption. }
 
-                        under [fun e => _]functional_extensionality => e.
+                        simpl.
+                        unfold lift_set. unfold stdpp_ext.propset_fa_union.
+                        under [fun e => _]functional_extensionality => m.
                         {
-                            
+                            over.
                             rewrite HSortImptDef.
                             (*erewrite ex_helper_1.*)
                             simpl.
