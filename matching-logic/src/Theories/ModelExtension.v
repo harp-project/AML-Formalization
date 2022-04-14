@@ -251,9 +251,9 @@ Section with_syntax.
         Qed.
 
 
-        Lemma semantics_preservation_sym (s : symbols) :
+        Lemma semantics_preservation_sym (s : symbols) ρe0 ρs0:
             is_not_core_symbol s ->
-            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) (patt_sym s) =
+            pattern_interpretation ρe0 ρs0 (patt_sym s) =
             lift_set (pattern_interpretation ρₑ ρₛ (patt_sym s)).
         Proof.
             intros H.
@@ -267,9 +267,9 @@ Section with_syntax.
             unfold lift_set,fmap. reflexivity.
         Qed.
         
-        Lemma semantics_preservation_inhabitant_set (s : symbols) :
+        Lemma semantics_preservation_inhabitant_set (s : symbols) ρe0 ρs0 :
             is_not_core_symbol s ->
-            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) (patt_inhabitant_set (patt_sym s))
+            pattern_interpretation ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
             = lift_set (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
         Proof.
             intros H.
@@ -322,6 +322,35 @@ Section with_syntax.
                     }
                 }
             }
+        Qed.
+
+        (*
+        Lemma top_cap_x_eq_x {A : Type} {_ : Equiv A} {_ : @Intersection A} {_ : @Top A} (x : propset A) : ⊤ ∩ x ≡ x.
+        Proof.
+            set_solver.
+        Qed.
+        *)
+        (*
+        Lemma top_cap_x_eq_x
+        {A : Type}
+        `{_ : LeibnizEquiv A} {_ : @Intersection A} {_ : @Top A} (x : A) : ⊤ ∩ x = x.
+        Proof.
+            Set Typeclasses Debug.
+            rewrite -leibniz_equiv_iff.
+            unfold_leibniz.
+            set_solver.
+        Qed.
+        *)
+
+
+        Lemma update_evar_val_lift_val_e_comm (x : evar) (d : Domain M) :
+            (@update_evar_val Σ Mext x (cel (inl d)) (lift_val_e ρₑ))
+            = lift_val_e (@update_evar_val Σ M x d ρₑ).
+        Proof.
+            apply functional_extensionality.
+            intros x'.
+            unfold update_evar_val, lift_val_e,lift_value.
+            case_match; reflexivity.
         Qed.
 
         Lemma semantics_preservation
@@ -629,12 +658,49 @@ Section with_syntax.
                             (lift_val_s ρₛ)
                             (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤)) as [Hin|Hnin].
                             {
+                                rewrite HSortImptDef.
+                                rewrite Hin.
                                 apply free_evar_in_patt in Hin.
-                                2: {
-                                    Search Mext.
-                                    rewrite HDefNeqInh.
+                                2: { apply Mext_satisfies_definedness. }
+                                unfold lift_val_e in Hin at 1. unfold update_evar_val in Hin at 1.
+                                case_match;[|congruence]. clear e0 Heqs0.
+                                rewrite semantics_preservation_inhabitant_set in Hin.
+                                { assumption. }
+                                unfold lift_set,fmap in Hin.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                destruct e.
+                                {
+                                    exfalso. clear -Hin.
+                                    set_solver.
                                 }
+                                {
+                                    exfalso. clear -Hin.
+                                    set_solver.
+                                }
+                                destruct el.
+                                2: {
+                                    exfalso. clear -Hin.
+                                    set_solver.
+                                }
+                                unfold Mext. simpl.
+                                unfold patt_inhabitant_set in Hin.
+                                rewrite pattern_interpretation_app_simpl in Hin.
+                                do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                Search is_not_core_symbol.
+                                destruct e.
+                                {
+                                    exfalso. clear -Hin H.
+                                }
+                                rewrite semantics_preservation_inhabitant_set in Hin.
+                                Search pattern_interpretation patt_inhabitant_set.
+                                destruct e.
+                                over.
                             }
+                            {
+                                over.
+                            }
+                            over.
+
 
                             (* [patt_in x s] either evaluates to ⊤, or to ⊥.
                                 In the first case, we use the lemma [free_evar_in_patt]
@@ -642,7 +708,7 @@ Section with_syntax.
                                 In the second case, the whole thing is bottom,
                                 which we 
                             *)
-                            rewrite IHszpred.
+                            (*rewrite IHszpred.*)
                             over.
                         }
                         do rewrite IHszdata.
