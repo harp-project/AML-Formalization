@@ -396,6 +396,74 @@ Section with_syntax.
             unfold update_evar_val, lift_val_e,lift_value.
             case_match; reflexivity.
         Qed.
+        (*
+        Hin: cel (inl d)
+      ∈ {[ b | ∃ a : Domain M + R,
+                 b = cel a
+                 ∧ a
+                   ∈ {[ b0 | ∃ a0 : Domain M,
+                               b0 = inl a0
+                               ∧ a0
+                                 ∈ pattern_interpretation ρₑ ρₛ
+                                     (patt_inhabitant_set (patt_sym s)) ]} ]}
+1/1
+'Under[ ⊤
+        ∩ lift_set
+            (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
+               (bevar_subst ϕ (patt_free_evar x) 0)) ]
+        *)
+
+        Lemma ex_helper_1 ρₑ ρₛ ϕ x (e : Domain Mext) s d:
+        is_not_core_symbol s ->
+        e = cel (inl d) ->
+
+        pattern_interpretation (lift_val_e (update_evar_val x d ρₑ))
+        (lift_val_s ρₛ) (bevar_subst ϕ (patt_free_evar x) 0) =
+    lift_set
+      (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
+         (bevar_subst ϕ (patt_free_evar x) 0)) ->
+
+        (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
+            (lift_val_s ρₛ)
+            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤) ->
+        (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
+            (lift_val_s ρₛ)
+            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s)))
+          ∩ pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
+              (lift_val_s ρₛ) (bevar_subst ϕ (patt_free_evar x) 0)) =
+              lift_set
+              (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
+                 (bevar_subst ϕ (patt_free_evar x) 0)).
+        Proof. 
+            intros Hs He Hind Hin.
+            rewrite Hin.
+            apply free_evar_in_patt in Hin.
+            2: { apply Mext_satisfies_definedness. }
+            unfold lift_val_e in Hin at 1. unfold update_evar_val in Hin at 1.
+            case_match;[|congruence]. clear e0 Heqs0.
+            rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ) in Hin.
+            { assumption. }
+            unfold lift_set,fmap in Hin.
+            with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+            destruct e.
+            {
+                exfalso. clear -Hin.
+                set_solver.
+            }
+            {
+                exfalso. clear -Hin.
+                set_solver.
+            }
+            destruct el.
+            2: {
+                exfalso. clear -Hin.
+                set_solver.
+            }
+            inversion He. subst.
+            rewrite (update_evar_val_lift_val_e_comm ρₑ ρₛ).
+            rewrite Hind.
+            clear. unfold_leibniz. set_solver.
+        Qed.
 
         Lemma semantics_preservation
             (sz : nat)
@@ -696,13 +764,14 @@ Section with_syntax.
 
                         under [fun e => _]functional_extensionality => e.
                         {
+                            rewrite HSortImptDef.
+                            (*erewrite ex_helper_1.*)
                             simpl.
                             unfold IndexManipulation.nest_ex. simpl.
                             destruct (classic (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
                             (lift_val_s ρₛ)
                             (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤)) as [Hin|Hnin].
                             {
-                                rewrite HSortImptDef.
                                 rewrite Hin.
                                 apply free_evar_in_patt in Hin.
                                 2: { apply Mext_satisfies_definedness. }
@@ -726,26 +795,14 @@ Section with_syntax.
                                     exfalso. clear -Hin.
                                     set_solver.
                                 }
+                                over.
                                 rewrite (update_evar_val_lift_val_e_comm ρₑ ρₛ).
                                 rewrite IHszdata.
-                                {
-                                    rewrite evar_open_size'. lia.
-                                }
-                                {
-                                    Search is_SData evar_open.
-                                }
+                                { rewrite evar_open_size'. lia. }
+                                { apply is_SData_evar_open. assumption. }
+                                { wf_auto2. }
                                 unfold Mext. simpl.
                                 unfold patt_inhabitant_set in Hin.
-                                rewrite pattern_interpretation_app_simpl in Hin.
-                                do 2 rewrite pattern_interpretation_sym_simpl in Hin.
-                                Search is_not_core_symbol.
-                                destruct e.
-                                {
-                                    exfalso. clear -Hin H.
-                                }
-                                rewrite semantics_preservation_inhabitant_set in Hin.
-                                Search pattern_interpretation patt_inhabitant_set.
-                                destruct e.
                                 over.
                             }
                             {
