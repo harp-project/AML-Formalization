@@ -734,6 +734,89 @@ Section with_model.
       clear. set_solver.
     Qed.
 
+    
+
+    Check Minterp_inhabitant.
+    Lemma pattern_interpretation_exists_of_sort
+      (s : Pattern)
+      (ρₑ : EVarVal)
+      (ρₛ : SVarVal)
+      (indec : forall (m : Domain M), Decision (m ∈ Minterp_inhabitant s ρₑ ρₛ))
+      (ϕ : Pattern):
+    pattern_interpretation ρₑ ρₛ (patt_exists_of_sort s ϕ)
+    = stdpp_ext.propset_fa_union (λ (m : Domain M),
+      match (indec m) with
+      | left _ => pattern_interpretation (update_evar_val (fresh_evar ϕ) m ρₑ) ρₛ (evar_open 0 (fresh_evar ϕ) ϕ)
+      | right _ => ∅
+      end
+    ).
+    Proof.
+      unfold patt_exists_of_sort.
+      rewrite pattern_interpretation_ex_simpl. simpl.
+      f_equal. apply functional_extensionality.
+      intros m.
+      remember (fresh_evar (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ)) as x.
+      case_match.
+      {
+        clear Heqd.
+        rename e into Hinh.
+        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold nest_ex. rewrite nest_ex_same.
+        rewrite pattern_interpretation_and_simpl.
+        unfold Minterp_inhabitant in Hinh.
+        replace m with ((update_evar_val x m ρₑ) x) in Hinh.
+        2: { apply update_evar_val_same. }
+        rewrite -(@pattern_interpretation_free_evar_independent _ _ ρₑ ρₛ x m) in Hinh.
+        {
+          eapply evar_is_fresh_in_richer.
+          2: { subst. apply set_evar_fresh_is_fresh. }
+          simpl. clear. unfold nest_ex. rewrite free_evars_nest_ex_aux. set_solver.
+        }
+        rewrite free_evar_in_patt  in Hinh.
+        2: { apply M_satisfies_theory. }
+        rewrite Hinh.
+        remember (fresh_evar ϕ) as x'.
+        assert (Htmp: pattern_interpretation (update_evar_val x m ρₑ) ρₛ
+          ϕ.[evar:0↦patt_free_evar x] =
+          pattern_interpretation (update_evar_val x' m ρₑ) ρₛ
+          ϕ.[evar:0↦patt_free_evar x']).
+        {
+          apply interpretation_fresh_evar_open.
+          { subst x.
+            eapply evar_is_fresh_in_richer.
+            2: { apply set_evar_fresh_is_fresh. }
+            simpl. clear. set_solver.
+          }
+          {
+            subst. apply set_evar_fresh_is_fresh.
+          }
+        }
+        rewrite Htmp. clear. unfold_leibniz. set_solver.
+      }
+      {
+        clear Heqd.
+        rename n into Hinh.
+        unfold evar_open. simpl_bevar_subst.
+        rewrite pattern_interpretation_and_simpl. simpl.
+        replace m with ((update_evar_val x m ρₑ) x) in Hinh.
+        2: { apply update_evar_val_same. }
+        unfold nest_ex. rewrite nest_ex_same.
+        unfold Minterp_inhabitant in Hinh.
+        rewrite -(@pattern_interpretation_free_evar_independent _ _ ρₑ ρₛ x m) in Hinh.
+        {
+          eapply evar_is_fresh_in_richer.
+          2: { subst. apply set_evar_fresh_is_fresh. }
+          simpl. clear. unfold nest_ex. rewrite free_evars_nest_ex_aux. set_solver.
+        }
+        rewrite free_evar_in_patt  in Hinh.
+        2:{ apply M_satisfies_theory. }
+        rewrite predicate_not_full_iff_empty in Hinh.
+        2: { apply T_predicate_in. apply M_satisfies_theory. }
+        rewrite Hinh. clear. set_solver.
+      }
+    Qed.
+
+    
 
   End with_model.
     
