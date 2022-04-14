@@ -832,19 +832,18 @@ Section with_model.
     ).
     Proof.
       unfold patt_forall_of_sort.
-      unfold patt_forall.
-      rewrite pattern_interpretation_not_simpl.
-      rewrite pattern_interpretation_ex_simpl. simpl.
+      rewrite pattern_interpretation_all_simpl.
+      simpl.
       f_equal. apply functional_extensionality.
       intros m.
-      remember (fresh_evar (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ)) as x.
+      remember (fresh_evar
+      (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ)) as x.
       case_match.
       {
         clear Heqd.
         rename e into Hinh.
         unfold evar_open. simpl_bevar_subst. simpl.
         unfold nest_ex. rewrite nest_ex_same.
-        rewrite pattern_interpretation_and_simpl.
         unfold Minterp_inhabitant in Hinh.
         replace m with ((update_evar_val x m ρₑ) x) in Hinh.
         2: { apply update_evar_val_same. }
@@ -854,8 +853,12 @@ Section with_model.
           2: { subst. apply set_evar_fresh_is_fresh. }
           simpl. clear. unfold nest_ex. rewrite free_evars_nest_ex_aux. set_solver.
         }
-        rewrite free_evar_in_patt  in Hinh.
+        rewrite free_evar_in_patt in Hinh.
         2: { apply M_satisfies_theory. }
+        unfold patt_inhabitant_set.
+        unfold Sorts_Syntax.sym.
+        unfold sym in Hinh.
+        rewrite pattern_interpretation_imp_simpl.
         rewrite Hinh.
         remember (fresh_evar ϕ) as x'.
         assert (Htmp: pattern_interpretation (update_evar_val x m ρₑ) ρₛ
@@ -879,7 +882,7 @@ Section with_model.
         clear Heqd.
         rename n into Hinh.
         unfold evar_open. simpl_bevar_subst.
-        rewrite pattern_interpretation_and_simpl. simpl.
+        rewrite pattern_interpretation_imp_simpl. simpl.
         replace m with ((update_evar_val x m ρₑ) x) in Hinh.
         2: { apply update_evar_val_same. }
         unfold nest_ex. rewrite nest_ex_same.
