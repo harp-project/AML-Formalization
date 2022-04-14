@@ -151,6 +151,10 @@ Section with_syntax.
     Section ext.
         Context
             (M : Model)
+            (indec : forall (s : symbols),
+              is_not_core_symbol s ->
+              forall (m : Domain M) ρₑ ρₛ,
+              Decision (m ∈ Minterp_inhabitant (patt_sym s) ρₑ ρₛ))
             (R : Type)
             (fRM : R -> (Domain M) -> propset (Domain M + R)%type)
             (fMR : (Domain M) -> R -> propset (Domain M + R)%type)
@@ -245,6 +249,135 @@ Section with_syntax.
 
     Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
     := λ (X : svar), lift_set (ρₛ X).
+
+    Lemma Mext_indec :
+        forall (s : symbols),
+            is_not_core_symbol s ->
+            forall (m : Domain Mext) ρₑ ρₛ,
+            Decision (m ∈ Minterp_inhabitant (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
+    Proof.
+        intros. unfold Minterp_inhabitant.
+        rewrite pattern_interpretation_app_simpl.
+        unfold app_ext,lift_val_e,lift_val_s. simpl.
+        destruct m.
+        {
+            right. intros HContra.
+            rewrite elem_of_PropSet in HContra.
+            destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
+            rewrite pattern_interpretation_sym_simpl in HContra1.
+            rewrite pattern_interpretation_sym_simpl in HContra2.
+            simpl in HContra1.
+            simpl in HContra2.
+            unfold new_sym_interp in HContra1, HContra2.
+            unfold new_app_interp in HContra3.
+            repeat case_match; subst; auto; try set_solver.
+        }
+        {
+            right. intros HContra.
+            rewrite elem_of_PropSet in HContra.
+            destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
+            rewrite pattern_interpretation_sym_simpl in HContra1.
+            rewrite pattern_interpretation_sym_simpl in HContra2.
+            simpl in HContra1.
+            simpl in HContra2.
+            unfold new_sym_interp in HContra1, HContra2.
+            unfold new_app_interp in HContra3.
+            repeat case_match; subst; auto; try set_solver.
+        }
+        destruct el.
+        2: {
+            right. intros HContra.
+            rewrite elem_of_PropSet in HContra.
+            destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
+            rewrite pattern_interpretation_sym_simpl in HContra1.
+            rewrite pattern_interpretation_sym_simpl in HContra2.
+            simpl in HContra1.
+            simpl in HContra2.
+            unfold new_sym_interp in HContra1, HContra2.
+            unfold new_app_interp in HContra3.
+            repeat case_match; subst; auto; try set_solver.
+        }
+        destruct (indec H d ρₑ ρₛ) as [Hin|Hnotin].
+        {
+            left.
+            unfold Minterp_inhabitant in Hin.
+            rewrite pattern_interpretation_app_simpl in Hin.
+            do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+            unfold app_ext in Hin.
+            rewrite elem_of_PropSet in Hin.
+            destruct Hin as [le [re [Hinle [Hinre Hin]]]].
+            rewrite elem_of_PropSet.
+            
+            do 2 rewrite pattern_interpretation_sym_simpl.
+            simpl.
+            unfold new_sym_interp.
+            repeat case_match; subst; auto; try contradiction; try congruence;
+            unfold lift_value.
+            { exfalso. apply H. unfold is_core_symbol. left. reflexivity. }
+            { exfalso. apply H. unfold is_core_symbol. right. reflexivity. }
+
+            exists cinh, (lift_value re).
+            split;[set_solver|].
+            unfold lift_value,new_app_interp.
+            split;[set_solver|].
+            unfold app_ext.
+            clear -Hinle Hinre Hin.
+            set_solver.
+        }
+        {
+            right.
+            unfold Minterp_inhabitant in Hnotin.
+            rewrite pattern_interpretation_app_simpl in Hnotin.
+            do 2 rewrite pattern_interpretation_sym_simpl in Hnotin.
+            unfold app_ext in Hnotin.
+            rewrite elem_of_PropSet in Hnotin.
+            rewrite elem_of_PropSet.
+            intro HContra. apply Hnotin.
+            do 2 rewrite pattern_interpretation_sym_simpl in HContra.
+            simpl in HContra. unfold new_sym_interp in HContra.
+            destruct HContra as [le [re [Hinle [Hinre Hin]]]].
+            
+            
+            repeat case_match; subst; auto; try contradiction; try congruence;
+            unfold lift_value.
+            { exfalso. apply H. unfold is_core_symbol. left. reflexivity. }
+            { exfalso. apply H. unfold is_core_symbol. right. reflexivity. }
+
+            unfold new_app_interp in Hin.
+            rewrite elem_of_PropSet in Hinre.
+            repeat case_match; subst; auto; try contradiction; try congruence.
+            {
+                unfold app_ext in Hin.
+                rewrite elem_of_PropSet in Hin.
+                destruct Hin as [a [Hin1 Hin2]].
+                inversion Hin1. subst. clear Hin1.
+                rewrite elem_of_PropSet in Hin2.
+                destruct Hin2 as [a [Hin2 Hin3]].
+                inversion Hin2. subst. clear Hin2.
+                rewrite elem_of_PropSet in Hin3.
+                destruct Hin3 as [le [lre [Hle [Hre HAlmost]]]].
+                rewrite elem_of_PropSet in Hre.
+                inversion Hre. clear Hre. subst.
+                destruct Hinre as [a' [Ha' Ha'']].
+                rewrite elem_of_PropSet in Ha''.
+                destruct_and_ex!. subst.
+                exists le, x.
+                split;[assumption|].
+                split;[assumption|].
+                inversion Ha'. subst.
+                assumption.
+            }
+            {
+                rewrite elem_of_PropSet in Hin.
+                destruct_and_ex!.
+                inversion H2. subst. clear H2.
+                inversion H0. subst. clear H0.
+                rewrite elem_of_PropSet in H3.
+                destruct H3 as [a [H3 H3']].
+                inversion H3.
+            }
+        }
+    Qed.
 
     Section semantic_preservation.
        Context
@@ -396,75 +529,7 @@ Section with_syntax.
             unfold update_evar_val, lift_val_e,lift_value.
             case_match; reflexivity.
         Qed.
-        (*
-        Hin: cel (inl d)
-      ∈ {[ b | ∃ a : Domain M + R,
-                 b = cel a
-                 ∧ a
-                   ∈ {[ b0 | ∃ a0 : Domain M,
-                               b0 = inl a0
-                               ∧ a0
-                                 ∈ pattern_interpretation ρₑ ρₛ
-                                     (patt_inhabitant_set (patt_sym s)) ]} ]}
-1/1
-'Under[ ⊤
-        ∩ lift_set
-            (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
-               (bevar_subst ϕ (patt_free_evar x) 0)) ]
-        *)
-
-        Lemma ex_helper_1 ρₑ ρₛ ϕ x (e : Domain Mext) s d:
-        is_not_core_symbol s ->
-        e = cel (inl d) ->
-
-        pattern_interpretation (lift_val_e (update_evar_val x d ρₑ))
-        (lift_val_s ρₛ) (bevar_subst ϕ (patt_free_evar x) 0) =
-    lift_set
-      (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
-         (bevar_subst ϕ (patt_free_evar x) 0)) ->
-
-        (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
-            (lift_val_s ρₛ)
-            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤) ->
-        (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
-            (lift_val_s ρₛ)
-            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s)))
-          ∩ pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
-              (lift_val_s ρₛ) (bevar_subst ϕ (patt_free_evar x) 0)) =
-              lift_set
-              (pattern_interpretation (update_evar_val x d ρₑ) ρₛ
-                 (bevar_subst ϕ (patt_free_evar x) 0)).
-        Proof. 
-            intros Hs He Hind Hin.
-            rewrite Hin.
-            apply free_evar_in_patt in Hin.
-            2: { apply Mext_satisfies_definedness. }
-            unfold lift_val_e in Hin at 1. unfold update_evar_val in Hin at 1.
-            case_match;[|congruence]. clear e0 Heqs0.
-            rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ) in Hin.
-            { assumption. }
-            unfold lift_set,fmap in Hin.
-            with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
-            destruct e.
-            {
-                exfalso. clear -Hin.
-                set_solver.
-            }
-            {
-                exfalso. clear -Hin.
-                set_solver.
-            }
-            destruct el.
-            2: {
-                exfalso. clear -Hin.
-                set_solver.
-            }
-            inversion He. subst.
-            rewrite (update_evar_val_lift_val_e_comm ρₑ ρₛ).
-            rewrite Hind.
-            clear. unfold_leibniz. set_solver.
-        Qed.
-
+ 
         Lemma semantics_preservation
             (sz : nat)
             :
@@ -748,22 +813,12 @@ Section with_syntax.
                     }
                     {
                         (* patt_exists_of_sort (patt_sym s) ϕ *)
-                        unfold patt_exists_of_sort.
-                        do 2 rewrite pattern_interpretation_ex_simpl.
-                        unfold evar_open.
-                        remember (fresh_evar
-                        (patt_and
-                           (patt_in BoundVarSugar.b0
-                              (patt_inhabitant_set
-                                 (IndexManipulation.nest_ex (patt_sym s)))) ϕ)) as x.
-                        simpl_bevar_subst.
-                        under [fun e => _]functional_extensionality => e
-                        do rewrite pattern_interpretation_and_simpl.
-                        under [fun (e : Domain M) => _]functional_extensionality => e
-                        do rewrite pattern_interpretation_and_simpl.
+                        rewrite pattern_interpretation_exists_of_sort.
+                        
 
                         under [fun e => _]functional_extensionality => e.
                         {
+                            
                             rewrite HSortImptDef.
                             (*erewrite ex_helper_1.*)
                             simpl.
