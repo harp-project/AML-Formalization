@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import Logic.Classical_Prop.
+Require Import Logic.Classical_Prop Coq.Logic.FunctionalExtensionality.
 
 From stdpp
 Require Import
@@ -552,15 +552,14 @@ Section with_syntax.
                                     wf_auto2.
                                 }
                             }
-                            specialize (semantics_preservation_pred ltac:(wf_auto2)).
-                            specialize (semantics_preservation_data ϕ HSData ltac:(wf_auto2)).
+                            specialize (IHszpred ψ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            specialize (IHszdata ϕ ltac:(lia) HSData ltac:(wf_auto2)).
 
-                            destruct semantics_preservation_pred as [Hsp1 Hsp2].
+                            destruct IHszpred as [Hsp1 Hsp2].
                             clear Hsp1.
                             destruct Hsp2 as [Hsp21 Hsp22]. clear Hsp21.
                             specialize (Hsp22 H).
-                            specialize (IHHSData ltac:(wf_auto2)).
-                            rewrite IHHSData.
+                            rewrite IHszdata.
                             rewrite H. rewrite Hsp22.
                             unfold lift_set,fmap.
                             with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -589,6 +588,27 @@ Section with_syntax.
                     }
                     {
                         (* patt_exists_of_sort (patt_sym s) ϕ *)
+                        unfold patt_exists_of_sort.
+                        do 2 rewrite pattern_interpretation_ex_simpl.
+                        unfold evar_open.
+                        remember (fresh_evar
+                        (patt_and
+                           (patt_in BoundVarSugar.b0
+                              (patt_inhabitant_set
+                                 (IndexManipulation.nest_ex (patt_sym s)))) ϕ)) as x.
+                        simpl_bevar_subst.
+                        Locate functional_extensionality.
+                        under [fun e => _]functional_extensionality.
+                        unfold_leibniz.
+                        rewrite pattern_interpretation_and_simpl.
+                        Locate set_unfold.
+
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        unfold stdpp_ext.propset_fa_union.
+                        simpl.
+                        Search pattern_interpretation patt_exists.
+                        Search patt_exists_of_sort.
                         (* FIXME we will no be able to specialize IHHSData *)
                     }
                 }
