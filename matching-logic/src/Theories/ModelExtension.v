@@ -305,250 +305,291 @@ Section with_syntax.
             }
         Qed.
 
-        Lemma semantics_preservation_data
-            (ϕ : Pattern)
+        Lemma semantics_preservation
+            (sz : nat)
             :
-            is_SData ϕ ->
-            well_formed ϕ ->
-            pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
-            = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
-        with semantics_preservation_pred
-            (ψ : Pattern)
-            :
-            is_SPredicate ψ ->
-            well_formed ψ ->
-            (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
-             <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
+            (
+                forall (ϕ : Pattern),
+                size' ϕ < sz ->
+                is_SData ϕ ->
+                well_formed ϕ ->
+                pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
+                = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
+            )
             /\
-            (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
-             <-> pattern_interpretation ρₑ ρₛ ψ = ⊤).
+            (
+                forall (ψ : Pattern),
+                 size' ψ < sz ->
+                is_SPredicate ψ ->
+                well_formed ψ ->
+                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
+                <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
+                /\
+                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
+                <-> pattern_interpretation ρₑ ρₛ ψ = ⊤)
+            ).
         Proof.
+            induction sz.
             {
-                (* preservation of data patterns *)
-                intros HSData Hwf. induction HSData.
+                split.
                 {
-                    (* patt_bott *)
-                    do 2 rewrite pattern_interpretation_bott_simpl.
-                    unfold lift_set.
-                    unfold fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear.
-                    unfold_leibniz.
-                    set_solver.
+                    intros ϕ Hsz.
+                    destruct ϕ; simpl in Hsz; lia.
                 }
                 {
-                    (* free_evar x*)
-                    do 2 rewrite pattern_interpretation_free_evar_simpl.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear. unfold_leibniz. set_solver.
+                    intros ψ Hsz.
+                    destruct ψ; simpl in Hsz; lia.
                 }
+            }
+            {
+                destruct IHsz as [IHszdata IHszpred].
+                split.
                 {
-                    (* free_svar X *)
-                    do 2 rewrite pattern_interpretation_free_svar_simpl.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear. unfold_leibniz. set_solver.
-                }
-                {
-                    (* bound_evar X *)
-                    do 2 rewrite pattern_interpretation_bound_evar_simpl.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear. unfold_leibniz. set_solver.
-                }
-                {
-                    (* bound_svar X *)
-                    do 2 rewrite pattern_interpretation_bound_svar_simpl.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    clear. unfold_leibniz. set_solver.
-                }
-                {
-                    (* sym s *)
-                    apply semantics_preservation_sym.
-                    { assumption. }
-                }
-                {
-                    (* patt_inhabitant_set (patt_sym s) *)
-                    apply semantics_preservation_inhabitant_set.
-                    { assumption. }
-                }
-                {
-                    (* patt_sorted_neg (patt_sym s) ϕ *)
-                    unfold patt_sorted_neg.
-                    do 2 rewrite pattern_interpretation_and_simpl.
-                    rewrite semantics_preservation_inhabitant_set;[assumption|].
-                    do 2 rewrite pattern_interpretation_not_simpl.
-                    rewrite IHHSData.
+                    (* preservation of data patterns *)
+                    intros ϕ Hszϕ HSData Hwf.
+                    destruct HSData; simpl in Hszϕ.
                     {
-                        wf_auto2.
-                    }
-                    remember (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
-                    remember (pattern_interpretation ρₑ ρₛ ϕ) as Xϕ.
-                    clear HeqXinh HeqXϕ IHHSData semantics_preservation_data semantics_preservation_pred.
-                    unfold_leibniz.
-                    set_solver.
-                }
-                {
-                    (* patt_app ϕ₁ ϕ₂ *)
-                    do 2 rewrite pattern_interpretation_app_simpl.
-                    rewrite IHHSData1.
-                    { wf_auto2. }
-                    rewrite IHHSData2.
-                    { wf_auto2. }
-                    unfold app_ext.
-                    clear. unfold_leibniz.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    unfold Mext. simpl. unfold new_app_interp.
-                    set_unfold.
-                    intros x. split.
-                    {
-                        intros [x0 [x1 H]].
-                        destruct_and!.
-                        destruct H0 as [xH0 H0].
-                        destruct H as [xH H].
-                        destruct_and!. subst.
-                        destruct H4 as [xH4 H4].
-                        destruct H3 as [xH3 H3].
-                        destruct_and!. subst.
-                        destruct x.
-                        {
-                            exfalso.
-                            unfold fmap in H2.
-                            with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
-                            clear -H2. set_solver.
-                        }
-                        {
-                            exfalso.
-                            unfold fmap in H2.
-                            with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
-                            clear -H2. set_solver.
-                        }
-                        {
-                            inversion H2. clear H2. destruct_and!. subst.
-                            inversion H2. clear H2. destruct_and!. subst.
-                            inversion H1. clear H1. subst.
-                            exists (inl x0).
-                            split;[reflexivity|].
-                            exists x0.
-                            split;[reflexivity|].
-                            exists xH4,xH3.
-                            repeat split; assumption.
-                        }
-                    }
-                    {
-                        intros H.
-                        destruct_and_ex!. subst.
-                        exists (cel (inl x2)).
-                        exists (cel (inl x3)).
-                        split.
-                        {
-                            exists (inl x2).
-                            split;[reflexivity|].
-                            exists x2.
-                            split;[reflexivity|].
-                            assumption.
-                        }
-                        split.
-                        {
-                            exists (inl x3).
-                            split;[reflexivity|].
-                            exists x3.
-                            split;[reflexivity|].
-                            assumption.
-                        }
-                        {
-                            unfold fmap.
-                            with_strategy transparent [propset_fmap] unfold propset_fmap.   
-                            set_solver.
-                        }  
-                    }
-                }
-                {
-                    (* patt_or ϕ₁ ϕ₂ *)
-                    do 2 rewrite pattern_interpretation_or_simpl.
-                    rewrite IHHSData1.
-                    { wf_auto2. }
-                    rewrite IHHSData2.
-                    { wf_auto2. }
-                    clear.
-                    unfold_leibniz.
-                    unfold lift_set,fmap.
-                    with_strategy transparent [propset_fmap] unfold propset_fmap.
-                    set_solver.
-                }
-                {
-                    (* patt_and ϕ ψ *)
-                    do 2 rewrite pattern_interpretation_and_simpl.
-
-                    specialize (semantics_preservation_pred ψ ltac:(assumption)).
-                    rename H into Hspred.
-                    
-                    destruct (classic (pattern_interpretation ρₑ ρₛ ψ = ∅)).
-                    {
-                        rewrite IHHSData.
-                        { wf_auto2. }
-                        clear semantics_preservation_data.
-                        clear HSData IHHSData. 
+                        (* patt_bott *)
+                        do 2 rewrite pattern_interpretation_bott_simpl.
+                        unfold lift_set.
+                        unfold fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear.
                         unfold_leibniz.
-                        specialize (semantics_preservation_pred ltac:(wf_auto2)).
-                        destruct semantics_preservation_pred as [Hsp1 Hsp2].
-                        clear Hsp2.
-                        destruct Hsp1 as [Hsp11 Hsp12].
-                        specialize (Hsp12 H). clear Hsp11.
+                        set_solver.
+                    }
+                    {
+                        (* free_evar x*)
+                        do 2 rewrite pattern_interpretation_free_evar_simpl.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear. unfold_leibniz. set_solver.
+                    }
+                    {
+                        (* free_svar X *)
+                        do 2 rewrite pattern_interpretation_free_svar_simpl.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear. unfold_leibniz. set_solver.
+                    }
+                    {
+                        (* bound_evar X *)
+                        do 2 rewrite pattern_interpretation_bound_evar_simpl.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear. unfold_leibniz. set_solver.
+                    }
+                    {
+                        (* bound_svar X *)
+                        do 2 rewrite pattern_interpretation_bound_svar_simpl.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        clear. unfold_leibniz. set_solver.
+                    }
+                    {
+                        (* sym s *)
+                        apply semantics_preservation_sym.
+                        { assumption. }
+                    }
+                    {
+                        (* patt_inhabitant_set (patt_sym s) *)
+                        apply semantics_preservation_inhabitant_set.
+                        { assumption. }
+                    }
+                    {
+                        (* patt_sorted_neg (patt_sym s) ϕ *)
+                        unfold patt_sorted_neg.
+                        do 2 rewrite pattern_interpretation_and_simpl.
+                        rewrite semantics_preservation_inhabitant_set;[assumption|].
+                        do 2 rewrite pattern_interpretation_not_simpl.
+                        rewrite IHszdata.
+                        {
+                            lia.
+                        }
+                        {
+                            exact HSData.
+                        }
+                        {
+                            wf_auto2.
+                        }
+                        remember (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
+                        remember (pattern_interpretation ρₑ ρₛ ϕ) as Xϕ.
+                        clear HeqXinh HeqXϕ IHszpred IHszdata.
+                        unfold_leibniz.
+                        set_solver.
+                    }
+                    {
+                        (* patt_app ϕ₁ ϕ₂ *)
+                        do 2 rewrite pattern_interpretation_app_simpl.
+                        rewrite IHszdata.
+                        { lia. }
+                        { exact HSData1. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { exact HSData2. }
+                        { wf_auto2. }
+                        unfold app_ext.
+                        clear. unfold_leibniz.
+                        unfold lift_set,fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        unfold Mext. simpl. unfold new_app_interp.
+                        set_unfold.
+                        intros x. split.
+                        {
+                            intros [x0 [x1 H]].
+                            destruct_and!.
+                            destruct H0 as [xH0 H0].
+                            destruct H as [xH H].
+                            destruct_and!. subst.
+                            destruct H4 as [xH4 H4].
+                            destruct H3 as [xH3 H3].
+                            destruct_and!. subst.
+                            destruct x.
+                            {
+                                exfalso.
+                                unfold fmap in H2.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
+                                clear -H2. set_solver.
+                            }
+                            {
+                                exfalso.
+                                unfold fmap in H2.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
+                                clear -H2. set_solver.
+                            }
+                            {
+                                inversion H2. clear H2. destruct_and!. subst.
+                                inversion H2. clear H2. destruct_and!. subst.
+                                inversion H1. clear H1. subst.
+                                exists (inl x0).
+                                split;[reflexivity|].
+                                exists x0.
+                                split;[reflexivity|].
+                                exists xH4,xH3.
+                                repeat split; assumption.
+                            }
+                        }
+                        {
+                            intros H.
+                            destruct_and_ex!. subst.
+                            exists (cel (inl x2)).
+                            exists (cel (inl x3)).
+                            split.
+                            {
+                                exists (inl x2).
+                                split;[reflexivity|].
+                                exists x2.
+                                split;[reflexivity|].
+                                assumption.
+                            }
+                            split.
+                            {
+                                exists (inl x3).
+                                split;[reflexivity|].
+                                exists x3.
+                                split;[reflexivity|].
+                                assumption.
+                            }
+                            {
+                                unfold fmap.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap.   
+                                set_solver.
+                            }  
+                        }
+                    }
+                    {
+                        (* patt_or ϕ₁ ϕ₂ *)
+                        do 2 rewrite pattern_interpretation_or_simpl.
+                        rewrite IHszdata.
+                        { lia. }
+                        { exact HSData1. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { exact HSData2. }
+                        { wf_auto2. }
+                        clear.
+                        unfold_leibniz.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         set_solver.
                     }
                     {
-                        apply predicate_not_empty_iff_full in H.
-                        2: {
-                            apply SPred_is_predicate.
-                            2: { assumption. }
+                        (* patt_and ϕ ψ *)
+                        do 2 rewrite pattern_interpretation_and_simpl.
+
+                        rename H into Hspred.
+                    
+                        destruct (classic (pattern_interpretation ρₑ ρₛ ψ = ∅)).
+                        {
+                            rewrite IHszdata.
+                            { lia. }
+                            { exact HSData. }
+                            { wf_auto2. }
+                            clear HSData IHszdata. 
+                            unfold_leibniz.
+                            specialize (IHszpred ψ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            destruct IHszpred as [Hsp1 Hsp2].
+                            clear Hsp2.
+                            destruct Hsp1 as [Hsp11 Hsp12].
+                            specialize (Hsp12 H). clear Hsp11.
+                            unfold lift_set,fmap.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap.
+                            set_solver.
+                        }
+                        {
+                            apply predicate_not_empty_iff_full in H.
+                            2: {
+                                apply SPred_is_predicate.
+                                2: { assumption. }
+                                {
+                                    clear -Hwf.
+                                    unfold patt_and,patt_or,patt_not in Hwf.
+                                    apply well_formed_imp_proj1 in Hwf.
+                                    apply well_formed_imp_proj2 in Hwf.
+                                    apply well_formed_imp_proj1 in Hwf.
+                                    wf_auto2.
+                                }
+                            }
+                            specialize (semantics_preservation_pred ltac:(wf_auto2)).
+                            specialize (semantics_preservation_data ϕ HSData ltac:(wf_auto2)).
+
+                            destruct semantics_preservation_pred as [Hsp1 Hsp2].
+                            clear Hsp1.
+                            destruct Hsp2 as [Hsp21 Hsp22]. clear Hsp21.
+                            specialize (Hsp22 H).
+                            specialize (IHHSData ltac:(wf_auto2)).
+                            rewrite IHHSData.
+                            rewrite H. rewrite Hsp22.
+                            unfold lift_set,fmap.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap.
+                            clear.
+                            set_unfold.
+                            split; intros H.
                             {
-                                clear -Hwf.
-                                unfold patt_and,patt_or,patt_not in Hwf.
-                                apply well_formed_imp_proj1 in Hwf.
-                                apply well_formed_imp_proj2 in Hwf.
-                                apply well_formed_imp_proj1 in Hwf.
-                                wf_auto2.
+                                destruct_and_ex!.
+                                subst.
+                                exists (inl x1).
+                                split.
+                                { reflexivity. }
+                                exists x1. split;[reflexivity|].
+                                split; done.
+                            }
+                            {
+                                destruct_and_ex!.
+                                subst.
+                                split;[|exact I].
+                                exists (inl x1).
+                                split;[reflexivity|].
+                                exists x1.
+                                split; done.
                             }
                         }
-                        specialize (semantics_preservation_pred ltac:(wf_auto2)).
-                        specialize (semantics_preservation_data ϕ HSData ltac:(wf_auto2)).
-
-                        destruct semantics_preservation_pred as [Hsp1 Hsp2].
-                        clear Hsp1.
-                        destruct Hsp2 as [Hsp21 Hsp22]. clear Hsp21.
-                        specialize (Hsp22 H).
-                        specialize (IHHSData ltac:(wf_auto2)).
-                        rewrite IHHSData.
-                        rewrite H. rewrite Hsp22.
-                        unfold lift_set,fmap.
-                        with_strategy transparent [propset_fmap] unfold propset_fmap.
-                        clear.
-                        set_unfold.
-                        split; intros H.
-                        {
-                            destruct_and_ex!.
-                            subst.
-                            exists (inl x1).
-                            split.
-                            { reflexivity. }
-                            exists x1. split;[reflexivity|].
-                            split; done.
-                        }
-                        {
-                            destruct_and_ex!.
-                            subst.
-                            split;[|exact I].
-                            exists (inl x1).
-                            split;[reflexivity|].
-                            exists x1.
-                            split; done.
-                        }
+                    }
+                    {
+                        (* patt_exists_of_sort (patt_sym s) ϕ *)
+                        (* FIXME we will no be able to specialize IHHSData *)
                     }
                 }
                 admit.
