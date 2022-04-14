@@ -100,6 +100,54 @@ Section with_syntax.
         : is_SData ϕ -> is_SData (patt_mu ϕ)
     .
 
+    Lemma is_SData_bevar_subst ϕ₁ ϕ₂ dbi:
+        is_SData ϕ₁ ->
+        is_SData ϕ₂ ->
+        is_SData (bevar_subst ϕ₁ ϕ₂ dbi)
+    with is_SPredicate_bevar_subst ψ ϕ₂ dbi:
+        is_SPredicate ψ ->
+        is_SData ϕ₂ ->
+        is_SPredicate (bevar_subst ψ ϕ₂ dbi)
+    .
+    Proof.
+        {
+            intros H1 H2.
+            induction H1; simpl; try constructor; auto.
+            {
+                case_match.
+                { constructor. }
+                { assumption. }
+                { constructor. }
+            }
+        }
+        {
+            intros H1 H2.
+            induction H1; try (solve [simpl; try constructor; auto]).
+        }
+    Qed.
+
+    Lemma is_SData_evar_open x ϕ:
+        is_SData ϕ ->
+        is_SData (evar_open 0 x ϕ).
+    Proof.
+        intros H.
+        unfold evar_open.
+        apply is_SData_bevar_subst.
+        { assumption. }
+        constructor.
+    Qed.
+
+    Lemma is_SPredicate_evar_open x ϕ:
+        is_SPredicate ϕ ->
+        is_SPredicate (evar_open 0 x ϕ).
+    Proof.
+        intros H.
+        unfold evar_open.
+        apply is_SPredicate_bevar_subst.
+        { assumption. }
+        constructor.
+    Qed.
+
     Section ext.
         Context
             (M : Model)
@@ -201,11 +249,11 @@ Section with_syntax.
     Section semantic_preservation.
        Context
             (M_def : M ⊨ᵀ Definedness_Syntax.theory)
-            (ρₑ : @EVarVal _ M)
-            (ρₛ : @SVarVal _ M)
         .
         
-        Lemma SPred_is_pre_predicate (ψ : Pattern) :
+        Lemma SPred_is_pre_predicate
+            (ψ : Pattern)
+            :
             is_SPredicate ψ ->
             M_pre_predicate M ψ.
         Proof.
@@ -236,7 +284,9 @@ Section with_syntax.
             }
         Qed.
     
-        Lemma SPred_is_predicate (ψ : Pattern) :
+        Lemma SPred_is_predicate
+            (ψ : Pattern)
+            :
             well_formed_closed_ex_aux ψ 0 ->
             is_SPredicate ψ ->
             M_predicate M ψ.
@@ -251,7 +301,11 @@ Section with_syntax.
         Qed.
 
 
-        Lemma semantics_preservation_sym (s : symbols) ρe0 ρs0:
+        Lemma semantics_preservation_sym (s : symbols)
+            (ρₑ : @EVarVal _ M)
+            (ρₛ : @SVarVal _ M)
+            ρe0 ρs0
+            :
             is_not_core_symbol s ->
             pattern_interpretation ρe0 ρs0 (patt_sym s) =
             lift_set (pattern_interpretation ρₑ ρₛ (patt_sym s)).
@@ -267,7 +321,11 @@ Section with_syntax.
             unfold lift_set,fmap. reflexivity.
         Qed.
         
-        Lemma semantics_preservation_inhabitant_set (s : symbols) ρe0 ρs0 :
+        Lemma semantics_preservation_inhabitant_set (s : symbols)
+            (ρₑ : @EVarVal _ M)
+            (ρₛ : @SVarVal _ M)
+            ρe0 ρs0
+            :
             is_not_core_symbol s ->
             pattern_interpretation ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
             = lift_set (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
@@ -279,7 +337,7 @@ Section with_syntax.
             unfold_leibniz. 
             unfold patt_inhabitant_set.
             do 2 rewrite pattern_interpretation_app_simpl.
-            rewrite semantics_preservation_sym;[assumption|].
+            rewrite (semantics_preservation_sym ρₑ ρₛ);[assumption|].
             remember (pattern_interpretation ρₑ ρₛ (patt_sym s)) as ps.
             unfold Sorts_Syntax.sym.
             do 2 rewrite pattern_interpretation_sym_simpl.
@@ -324,26 +382,12 @@ Section with_syntax.
             }
         Qed.
 
-        (*
-        Lemma top_cap_x_eq_x {A : Type} {_ : Equiv A} {_ : @Intersection A} {_ : @Top A} (x : propset A) : ⊤ ∩ x ≡ x.
-        Proof.
-            set_solver.
-        Qed.
-        *)
-        (*
-        Lemma top_cap_x_eq_x
-        {A : Type}
-        `{_ : LeibnizEquiv A} {_ : @Intersection A} {_ : @Top A} (x : A) : ⊤ ∩ x = x.
-        Proof.
-            Set Typeclasses Debug.
-            rewrite -leibniz_equiv_iff.
-            unfold_leibniz.
-            set_solver.
-        Qed.
-        *)
-
-
-        Lemma update_evar_val_lift_val_e_comm (x : evar) (d : Domain M) :
+        Lemma update_evar_val_lift_val_e_comm
+            (ρₑ : @EVarVal _ M)
+            (ρₛ : @SVarVal _ M)
+            (x : evar)
+            (d : Domain M)
+            :
             (@update_evar_val Σ Mext x (cel (inl d)) (lift_val_e ρₑ))
             = lift_val_e (@update_evar_val Σ M x d ρₑ).
         Proof.
@@ -357,7 +401,7 @@ Section with_syntax.
             (sz : nat)
             :
             (
-                forall (ϕ : Pattern),
+                forall (ϕ : Pattern) (ρₑ : @EVarVal _ M) (ρₛ : @SVarVal _ M),
                 size' ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
@@ -366,8 +410,8 @@ Section with_syntax.
             )
             /\
             (
-                forall (ψ : Pattern),
-                 size' ψ < sz ->
+                forall (ψ : Pattern) (ρₑ : @EVarVal _ M) (ρₛ : @SVarVal _ M),
+                size' ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
                 (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
@@ -394,7 +438,7 @@ Section with_syntax.
                 split.
                 {
                     (* preservation of data patterns *)
-                    intros ϕ Hszϕ HSData Hwf.
+                    intros ϕ ρₑ ρₛ Hszϕ HSData Hwf.
                     destruct HSData; simpl in Hszϕ.
                     {
                         (* patt_bott *)
@@ -448,7 +492,7 @@ Section with_syntax.
                         (* patt_sorted_neg (patt_sym s) ϕ *)
                         unfold patt_sorted_neg.
                         do 2 rewrite pattern_interpretation_and_simpl.
-                        rewrite semantics_preservation_inhabitant_set;[assumption|].
+                        rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ);[assumption|].
                         do 2 rewrite pattern_interpretation_not_simpl.
                         rewrite IHszdata.
                         {
@@ -577,7 +621,7 @@ Section with_syntax.
                             { wf_auto2. }
                             clear HSData IHszdata. 
                             unfold_leibniz.
-                            specialize (IHszpred ψ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            specialize (IHszpred ψ ρₑ ρₛ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
                             destruct IHszpred as [Hsp1 Hsp2].
                             clear Hsp2.
                             destruct Hsp1 as [Hsp11 Hsp12].
@@ -600,8 +644,8 @@ Section with_syntax.
                                     wf_auto2.
                                 }
                             }
-                            specialize (IHszpred ψ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
-                            specialize (IHszdata ϕ ltac:(lia) HSData ltac:(wf_auto2)).
+                            specialize (IHszpred ψ ρₑ ρₛ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            specialize (IHszdata ϕ ρₑ ρₛ ltac:(lia) HSData ltac:(wf_auto2)).
 
                             destruct IHszpred as [Hsp1 Hsp2].
                             clear Hsp1.
@@ -664,7 +708,7 @@ Section with_syntax.
                                 2: { apply Mext_satisfies_definedness. }
                                 unfold lift_val_e in Hin at 1. unfold update_evar_val in Hin at 1.
                                 case_match;[|congruence]. clear e0 Heqs0.
-                                rewrite semantics_preservation_inhabitant_set in Hin.
+                                rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ) in Hin.
                                 { assumption. }
                                 unfold lift_set,fmap in Hin.
                                 with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
@@ -681,6 +725,14 @@ Section with_syntax.
                                 2: {
                                     exfalso. clear -Hin.
                                     set_solver.
+                                }
+                                rewrite (update_evar_val_lift_val_e_comm ρₑ ρₛ).
+                                rewrite IHszdata.
+                                {
+                                    rewrite evar_open_size'. lia.
+                                }
+                                {
+                                    Search is_SData evar_open.
                                 }
                                 unfold Mext. simpl.
                                 unfold patt_inhabitant_set in Hin.
