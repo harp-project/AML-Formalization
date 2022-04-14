@@ -166,6 +166,25 @@ Section with_syntax.
             sym_interp := new_sym_interp ;
         |}.
 
+    Lemma Mext_satisfies_definedness : Mext ⊨ᵀ Definedness_Syntax.theory.
+    Proof.
+        unfold theory.
+        Search NamedAxioms.theory_of_NamedAxioms.
+        apply satisfies_theory_iff_satisfies_named_axioms.
+        intros na. destruct na.
+        apply single_element_definedness_impl_satisfies_definedness.
+        exists cdef.
+        simpl. split.
+        {
+            unfold new_sym_interp. case_match.
+            { reflexivity. }
+            contradiction n. reflexivity.
+        }
+        {
+            auto.
+        }
+    Qed.
+
     Definition lift_value (x : Domain M) : (Domain Mext)
     := cel (inl x).
 
@@ -597,8 +616,39 @@ Section with_syntax.
                               (patt_inhabitant_set
                                  (IndexManipulation.nest_ex (patt_sym s)))) ϕ)) as x.
                         simpl_bevar_subst.
-                        Locate functional_extensionality.
-                        under [fun e => _]functional_extensionality.
+                        under [fun e => _]functional_extensionality => e
+                        do rewrite pattern_interpretation_and_simpl.
+                        under [fun (e : Domain M) => _]functional_extensionality => e
+                        do rewrite pattern_interpretation_and_simpl.
+
+                        under [fun e => _]functional_extensionality => e.
+                        {
+                            simpl.
+                            unfold IndexManipulation.nest_ex. simpl.
+                            destruct (classic (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
+                            (lift_val_s ρₛ)
+                            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤)) as [Hin|Hnin].
+                            {
+                                apply free_evar_in_patt in Hin.
+                                2: {
+                                    Search Mext.
+                                    rewrite HDefNeqInh.
+                                }
+                            }
+
+                            (* [patt_in x s] either evaluates to ⊤, or to ⊥.
+                                In the first case, we use the lemma [free_evar_in_patt]
+                                to get [e ∈ [s]], and TODO.
+                                In the second case, the whole thing is bottom,
+                                which we 
+                            *)
+                            rewrite IHszpred.
+                            over.
+                        }
+                        do rewrite IHszdata.
+                        Search pattern_interpretation patt_in.
+
+                        .
                         unfold_leibniz.
                         rewrite pattern_interpretation_and_simpl.
                         Locate set_unfold.
