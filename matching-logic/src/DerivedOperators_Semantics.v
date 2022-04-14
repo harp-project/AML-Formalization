@@ -3,8 +3,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Setoid.
 From stdpp Require Import base sets propset.
-From Coq Require Import Logic.Classical_Prop.
+From Coq Require Import Logic.Classical_Prop Logic.FunctionalExtensionality.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 From MatchingLogic
 Require Import
@@ -466,4 +467,71 @@ Proof.
   apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
   apply M_pre_pre_predicate_forall.
   apply H.
+Qed.
+
+Lemma pattern_interpretation_all_simpl
+  {Σ : Signature}
+  (M : Model)
+  (ρₑ : EVarVal)
+  (ρₛ : SVarVal)
+  (ϕ : Pattern)
+  :
+  pattern_interpretation ρₑ ρₛ (patt_forall ϕ) =
+  (let x := fresh_evar ϕ in
+   propset_fa_intersection (λ e : Domain M,
+    @pattern_interpretation _ M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x ϕ)
+   )
+  ).
+Proof.
+  unfold patt_forall.
+  rewrite pattern_interpretation_not_simpl.
+  rewrite pattern_interpretation_ex_simpl.
+  simpl.
+  unfold evar_open.
+  simpl_bevar_subst.
+  under [fun e => _]functional_extensionality => e
+  do rewrite pattern_interpretation_not_simpl.
+  unfold propset_fa_union,propset_fa_intersection.
+  remember (fresh_evar (! ϕ)%ml) as x.
+  remember (fresh_evar ϕ) as x'.
+  fold (evar_open 0 x ϕ).
+  fold (evar_open 0 x' ϕ).
+  under [fun e => _]functional_extensionality => e.
+  {
+    under [λ c, _]functional_extensionality => c.
+    {
+      rewrite (@interpretation_fresh_evar_open Σ M ϕ x x').
+      {
+        subst x. eapply evar_is_fresh_in_richer.
+        2: { apply set_evar_fresh_is_fresh. }
+        simpl. clear. set_solver.
+      }
+      {
+        subst x'. apply set_evar_fresh_is_fresh.
+      }
+      over.
+    }
+    over.
+  }
+  clear.
+  unfold_leibniz.
+  set_unfold.
+  intros x.
+  split; intros H.
+  {
+    destruct_and!.
+    intros x0.
+    apply NNPP.
+    intros HContra.
+    apply H1.
+    exists x0.
+    split;[exact I|].
+    apply HContra.
+  }
+  {
+    split;[exact I|].
+    intros [y [_ Hy] ]. 
+    specialize (H y).
+    contradiction.
+  }
 Qed.

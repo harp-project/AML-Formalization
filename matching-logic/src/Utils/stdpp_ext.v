@@ -821,6 +821,9 @@ Proof.
   eauto.
 Qed.
 
+Definition propset_fa_intersection {T C : Type} (f : C -> propset T) : propset T
+  := PropSet (fun (x : T) => forall (c : C), x ∈ f c).
+
 
 Lemma Not_Empty_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
   S <> ∅ -> exists x : T, x ∈ S.
