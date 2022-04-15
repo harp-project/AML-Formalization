@@ -958,7 +958,7 @@ Section with_syntax.
                                 2: {
                                     exfalso.
                                     clear -Hc.
-                                    set_solver.
+                                     set_solver.
                                 }
 
                                 rewrite IHszdata in Hin.
@@ -1015,9 +1015,9 @@ Section with_syntax.
                             2: {
                                 exfalso. clear -Ha'. set_solver.
                             }
-                            exists (lift_value a).
+                            exists (lift_value c).
                             rewrite update_evar_val_lift_val_e_comm.
-                            destruct (Mext_indec H (lift_value a) ρₑ ρₛ) as [Hin | Hnotin].
+                            destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin | Hnotin].
                             {
                                 rewrite IHszdata.
                                 4: { wf_auto2. }
@@ -1026,94 +1026,29 @@ Section with_syntax.
                                 unfold lift_set,fmap.
                                 with_strategy transparent [propset_fmap] unfold propset_fmap.
                                 rewrite elem_of_PropSet.
-                                clear -Ha'. set_solver.
+                                exists (inl a).
+                                split;[reflexivity|].
+                                rewrite elem_of_PropSet.
+                                exists a.
+                                split;[reflexivity|].
+                                apply Ha'.
                             }
                             {
-
+                                exfalso. rename e into Hin.
+                                unfold Minterp_inhabitant in Hin, Hnotin.
+                                rewrite IHszdata in Hnotin.
+                                4: { wf_auto2. }
+                                3: { constructor. assumption. }
+                                2: { simpl. lia. }
+                                clear -Hin Hnotin.
+                                unfold lift_value,lift_set,fmap in Hnotin.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hnotin.
+                                set_solver.
                             }
-                            
                         }
-                        unfold stdpp_ext.propset_fa_union.
-                        f_equal. apply functional_extensionality.
-                        intros x. simpl. Locate propositional_extensionality. Set Printing All.  f_equal.
-                        f_equal.
-
-                        simpl.
-                        unfold lift_set. unfold stdpp_ext.propset_fa_union.
-                        under [fun e => _]functional_extensionality => m.
-                        {
-                            over.
-                            rewrite HSortImptDef.
-                            (*erewrite ex_helper_1.*)
-                            simpl.
-                            unfold IndexManipulation.nest_ex. simpl.
-                            destruct (classic (pattern_interpretation (update_evar_val x e (lift_val_e ρₑ))
-                            (lift_val_s ρₛ)
-                            (patt_in (patt_free_evar x) (patt_inhabitant_set (patt_sym s))) = ⊤)) as [Hin|Hnin].
-                            {
-                                rewrite Hin.
-                                apply free_evar_in_patt in Hin.
-                                2: { apply Mext_satisfies_definedness. }
-                                unfold lift_val_e in Hin at 1. unfold update_evar_val in Hin at 1.
-                                case_match;[|congruence]. clear e0 Heqs0.
-                                rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ) in Hin.
-                                { assumption. }
-                                unfold lift_set,fmap in Hin.
-                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
-                                destruct e.
-                                {
-                                    exfalso. clear -Hin.
-                                    set_solver.
-                                }
-                                {
-                                    exfalso. clear -Hin.
-                                    set_solver.
-                                }
-                                destruct el.
-                                2: {
-                                    exfalso. clear -Hin.
-                                    set_solver.
-                                }
-                                over.
-                                rewrite (update_evar_val_lift_val_e_comm ρₑ ρₛ).
-                                rewrite IHszdata.
-                                { rewrite evar_open_size'. lia. }
-                                { apply is_SData_evar_open. assumption. }
-                                { wf_auto2. }
-                                unfold Mext. simpl.
-                                unfold patt_inhabitant_set in Hin.
-                                over.
-                            }
-                            {
-                                over.
-                            }
-                            over.
-
-
-                            (* [patt_in x s] either evaluates to ⊤, or to ⊥.
-                                In the first case, we use the lemma [free_evar_in_patt]
-                                to get [e ∈ [s]], and TODO.
-                                In the second case, the whole thing is bottom,
-                                which we 
-                            *)
-                            (*rewrite IHszpred.*)
-                            over.
-                        }
-                        do rewrite IHszdata.
-                        Search pattern_interpretation patt_in.
-
-                        .
-                        unfold_leibniz.
-                        rewrite pattern_interpretation_and_simpl.
-                        Locate set_unfold.
-
-                        unfold lift_set,fmap.
-                        with_strategy transparent [propset_fmap] unfold propset_fmap.
-                        unfold stdpp_ext.propset_fa_union.
-                        simpl.
-                        Search pattern_interpretation patt_exists.
-                        Search patt_exists_of_sort.
-                        (* FIXME we will no be able to specialize IHHSData *)
+                    }
+                    {
+                        (* patt_forall_of_sort (patt_sym s) ϕ *)
                     }
                 }
                 admit.
