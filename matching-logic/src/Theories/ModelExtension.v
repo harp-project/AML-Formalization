@@ -517,7 +517,6 @@ Section with_syntax.
 
         Lemma update_evar_val_lift_val_e_comm
             (ρₑ : @EVarVal _ M)
-            (ρₛ : @SVarVal _ M)
             (x : evar)
             (d : Domain M)
             :
@@ -872,6 +871,7 @@ Section with_syntax.
                             destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
                             {
                                 unfold Minterp_inhabitant in Hin.
+                                (* [c] comes from [Domain M] *)
                                 destruct c.
                                 {
                                     exfalso.
@@ -934,20 +934,53 @@ Section with_syntax.
                                         clear -H2. set_solver.
                                     }
                                 }
-                                rewrite -(@pattern_interpretation_free_evar_independent _ _ (lift_val_e ρₑ) (lift_val_s ρₛ) (evar_fresh []) c) in Hin.
+                                rewrite update_evar_val_lift_val_e_comm in Hc.
+                                rewrite IHszdata in Hc.
+                                4: { wf_auto2. }
+                                3: { apply is_SData_evar_open. assumption. }
+                                2: { rewrite evar_open_size'. lia. }
+
+                                (* [x] comes from [Domain M] *)
+                                unfold lift_set,fmap in Hc.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hc.
+                                destruct x.
                                 {
-                                    unfold evar_is_fresh_in.
-                                    simpl. clear. set_solver.
+                                    exfalso.
+                                    clear -Hc.
+                                    set_solver.
                                 }
-                                replace c with (update_evar_val (evar_fresh []) c (lift_val_e ρₑ) (evar_fresh [])) in Hin at 1.
+                                {
+                                    exfalso.
+                                    clear -Hc.
+                                    set_solver.
+                                }
+                                destruct el.
                                 2: {
-                                    rewrite update_evar_val_same. reflexivity.
+                                    exfalso.
+                                    clear -Hc.
+                                    set_solver.
                                 }
-                                apply free_evar_in_patt in Hin.
-                                2: { apply Mext_satisfies_definedness. }
+
+                                rewrite IHszdata in Hin.
+                                4: { wf_auto2. }
+                                3: { constructor. assumption. }
+                                2: { simpl. lia. }
+
+                                exists d.
+                                destruct (indec H d ρₑ ρₛ) as [Hin'|Hnotin'].
+                                2: {
+                                    exfalso.
+                                    unfold Minterp_inhabitant in Hnotin'.
+                                    unfold lift_set,fmap in Hin.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                    clear -Hin Hnotin'.
+                                    set_solver.
+                                }
+                                apply Hc.
+                            }
+                            {
                                 
                             }
-                            rewrite elem_of_PropSet in Hc.
                         }
                         {
 
