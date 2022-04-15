@@ -1049,6 +1049,78 @@ Section with_syntax.
                     }
                     {
                         (* patt_forall_of_sort (patt_sym s) ϕ *)
+                        unshelve(erewrite pattern_interpretation_forall_of_sort).
+                        3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
+                        { intros. apply Mext_indec. assumption. }
+                        unshelve(erewrite pattern_interpretation_forall_of_sort).
+                        3: { rewrite HSortImptDef. assumption. }
+                        { intros. apply indec. assumption. }
+                        erewrite lift_set_fa_intersection.
+                        2: { apply Domain_inhabited. }
+                        unfold_leibniz.
+                        unfold stdpp_ext.propset_fa_intersection.
+                        apply set_subseteq_antisymm.
+                        {
+                            apply elem_of_subseteq. intros x Hx.
+                            rewrite elem_of_PropSet. rewrite elem_of_PropSet in Hx.
+                            intros c. specialize (Hx (lift_value c)).
+                            destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin|Hnotin].
+                            {
+                                unfold Minterp_inhabitant in Hin.
+                                rewrite update_evar_val_lift_val_e_comm in Hx.
+                                rewrite IHszdata in Hx.
+                                4: { wf_auto2. }
+                                3: { apply is_SData_evar_open. assumption. }
+                                2: { rewrite evar_open_size'. lia. }
+                                unfold lift_set,fmap in Hx.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hx.
+                                destruct x.
+                                {
+                                    exfalso.
+                                    clear -Hx.
+                                    set_solver.
+                                }
+                                {
+                                    exfalso.
+                                    clear -Hx.
+                                    set_solver.
+                                }
+                                destruct el.
+                                2: {
+                                    exfalso.
+                                    clear -Hx.
+                                    set_solver.
+                                }
+
+                                destruct (indec H c ρₑ ρₛ) as [Hin'|Hnotin'].
+                                {
+                                    unfold lift_set,fmap.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                    rewrite elem_of_PropSet.
+                                    exists (inl d).
+                                    split;[reflexivity|].
+                                    rewrite elem_of_PropSet.
+                                    exists d.
+                                    split;[reflexivity|].
+                                    rewrite elem_of_PropSet in Hx.
+                                    destruct Hx as [a [Ha1 Ha2]].
+                                    inversion Ha1. clear Ha1. subst.
+                                    rewrite elem_of_PropSet in Ha2.
+                                    destruct Ha2 as [a [Ha1 Ha2]].
+                                    inversion Ha1. clear Ha1. subst.
+                                    exact Ha2.
+                                }
+                                {
+                                    unfold lift_set,fmap.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                    clear. set_solver.
+                                }
+                            }
+                            {
+                                
+                            }
+                        }
+
                     }
                 }
                 admit.
