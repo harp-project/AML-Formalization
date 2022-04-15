@@ -979,11 +979,59 @@ Section with_syntax.
                                 apply Hc.
                             }
                             {
-                                
+                                exfalso. clear -Hc. set_solver.
                             }
                         }
                         {
+                            rewrite elem_of_subseteq.
+                            intros x Hx.
+                            rewrite elem_of_PropSet in Hx.
+                            destruct Hx as [c Hc].
+                            unfold lift_set,fmap in Hc.
+                            with_strategy transparent [propset_fmap] unfold propset_fmap in Hc.
+                            destruct x.
+                            {
+                                exfalso. clear -Hc. set_solver.
+                            }
+                            {
+                                exfalso. clear -Hc. set_solver.
+                            }
+                            destruct el.
+                            2: {
+                                exfalso. clear -Hc. set_solver.
+                            }
+                            rewrite elem_of_PropSet in Hc.
+                            destruct Hc as [a [Ha Ha']].
+                            destruct a.
+                            2: {
+                                inversion Ha.
+                            }
+                            inversion Ha. clear Ha. subst.
+                            rewrite elem_of_PropSet in Ha'.
+                            destruct Ha' as [a [Ha Ha']].
+                            inversion Ha. clear Ha. subst.
+                            rewrite elem_of_PropSet.
+                            destruct (indec H c ρₑ ρₛ).
+                            2: {
+                                exfalso. clear -Ha'. set_solver.
+                            }
+                            exists (lift_value a).
+                            rewrite update_evar_val_lift_val_e_comm.
+                            destruct (Mext_indec H (lift_value a) ρₑ ρₛ) as [Hin | Hnotin].
+                            {
+                                rewrite IHszdata.
+                                4: { wf_auto2. }
+                                3: { apply is_SData_evar_open. assumption. }
+                                2: { rewrite evar_open_size'. lia. }
+                                unfold lift_set,fmap.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                rewrite elem_of_PropSet.
+                                clear -Ha'. set_solver.
+                            }
+                            {
 
+                            }
+                            
                         }
                         unfold stdpp_ext.propset_fa_union.
                         f_equal. apply functional_extensionality.
