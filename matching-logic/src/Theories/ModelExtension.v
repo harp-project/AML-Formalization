@@ -1063,7 +1063,9 @@ Section with_syntax.
                         {
                             apply elem_of_subseteq. intros x Hx.
                             rewrite elem_of_PropSet. rewrite elem_of_PropSet in Hx.
-                            intros c. specialize (Hx (lift_value c)).
+                            intros c.
+                            pose proof (Hx' := Hx).
+                            specialize (Hx (lift_value c)).
                             destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin|Hnotin].
                             {
                                 unfold Minterp_inhabitant in Hin.
@@ -1117,7 +1119,27 @@ Section with_syntax.
                                 }
                             }
                             {
-                                
+                                destruct (indec H c ρₑ ρₛ) as [Hin'|Hnotin'].
+                                {
+                                    admit.
+                                }
+                                {
+                                    clear Hx.
+                                    unfold lift_set,fmap.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                    rewrite elem_of_PropSet.
+                                    simpl in x. simpl in Hx'.
+                                    specialize (Hx' (lift_value c)).
+                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin''|Hnotin''].
+                                    {
+                                        rewrite IHszdata in Hx''.
+                                    }
+                                    destruct x.
+                                    {
+
+                                    }
+                                    clear. set_solver.
+                                }
                             }
                         }
 
