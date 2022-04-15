@@ -861,6 +861,101 @@ Section with_syntax.
                         unshelve(erewrite pattern_interpretation_exists_of_sort).
                         3: { rewrite HSortImptDef. assumption. }
                         { intros. apply indec. assumption. }
+                        rewrite lift_set_fa_union.
+                        unfold_leibniz.
+                        unfold stdpp_ext.propset_fa_union.
+                        apply set_subseteq_antisymm.
+                        {
+                            apply elem_of_subseteq. intros x Hx.
+                            rewrite elem_of_PropSet. rewrite elem_of_PropSet in Hx.
+                            destruct Hx as [c Hc].
+                            destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                            {
+                                unfold Minterp_inhabitant in Hin.
+                                destruct c.
+                                {
+                                    exfalso.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin. simpl in Hin.
+                                    unfold new_sym_interp,new_app_interp in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct_and_ex!. repeat case_match; subst; auto; try congruence.
+                                    {
+                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        unfold fmap in H3.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
+                                        clear -H3. set_solver.
+                                    }
+                                    {
+                                        unfold fmap in H3.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
+                                        clear -H3. set_solver.
+                                    }
+                                }
+                                {
+                                    exfalso.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin. simpl in Hin.
+                                    unfold new_sym_interp,new_app_interp in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct_and_ex!. repeat case_match; subst; auto; try congruence.
+                                    {
+                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        unfold fmap in H3.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
+                                        clear -H3. set_solver.
+                                    }
+                                    {
+                                        unfold fmap in H3.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
+                                        clear -H3. set_solver.
+                                    }
+                                }
+                                destruct el.
+                                2: {
+                                    exfalso.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin. simpl in Hin.
+                                    unfold new_sym_interp,new_app_interp in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct_and_ex!. repeat case_match; subst; auto; try congruence.
+                                    {
+                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        unfold fmap in H3.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
+                                        clear -H3. set_solver.
+                                    }
+                                    {
+                                        unfold fmap in H2.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
+                                        clear -H2. set_solver.
+                                    }
+                                }
+                                rewrite -(@pattern_interpretation_free_evar_independent _ _ (lift_val_e ρₑ) (lift_val_s ρₛ) (evar_fresh []) c) in Hin.
+                                {
+                                    unfold evar_is_fresh_in.
+                                    simpl. clear. set_solver.
+                                }
+                                replace c with (update_evar_val (evar_fresh []) c (lift_val_e ρₑ) (evar_fresh [])) in Hin at 1.
+                                2: {
+                                    rewrite update_evar_val_same. reflexivity.
+                                }
+                                apply free_evar_in_patt in Hin.
+                                2: { apply Mext_satisfies_definedness. }
+                                
+                            }
+                            rewrite elem_of_PropSet in Hc.
+                        }
+                        {
+
+                        }
+                        unfold stdpp_ext.propset_fa_union.
+                        f_equal. apply functional_extensionality.
+                        intros x. simpl. Locate propositional_extensionality. Set Printing All.  f_equal.
+                        f_equal.
 
                         simpl.
                         unfold lift_set. unfold stdpp_ext.propset_fa_union.
