@@ -1299,7 +1299,78 @@ Section with_syntax.
                     }
                 }
                 {   (* preservation of predicates *)
-                    intros HSPred. induction HSPred.
+                    intros ψ ρₑ ρₛ Hszϕ HSPred Hwf.
+                    destruct HSPred; simpl in Hszϕ.
+                    {
+                        (* patt_bott *)
+                        rewrite pattern_interpretation_bott_simpl.
+                        rewrite pattern_interpretation_bott_simpl.
+                        split.
+                        {
+                            split; auto.
+                        }
+                        {
+                            split; intros H; exfalso; clear -H.
+                            {
+                                apply full_impl_not_empty in H; unfold Empty in H; contradiction.
+                            }
+                            {
+                                apply full_impl_not_empty in H; unfold Empty in H; contradiction.
+                            }
+                        }
+                    }
+                    {
+                        unfold patt_defined.
+                        do 2 rewrite pattern_interpretation_app_simpl.
+                        do 2 rewrite pattern_interpretation_sym_simpl.
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        unfold app_ext.
+                        simpl.
+                        assert (Htmp: new_sym_interp (Definedness_Syntax.inj definedness) = {[cdef]}).
+                        {
+                            unfold new_sym_interp.
+                            repeat case_match.
+                            { reflexivity. }
+                            { contradiction. }
+                            { contradiction. }
+                        }
+                        rewrite Htmp.
+                        unfold new_app_interp.
+                        unfold_leibniz.
+                        destruct (classic (pattern_interpretation ρₑ ρₛ ϕ = ∅)) as [Hempty|Hnonempty].
+                        {
+                            rewrite Hempty.
+                            split.
+                            {
+                                split.
+                                {
+                                    
+                                    intros H'.
+                                    apply set_subseteq_antisymm.
+                                    2: {
+                                        clear. set_solver.
+                                    }
+                                    {
+                                        unfold Power in *.
+                                        unshelve (eapply leibniz_equiv_iff in H').
+                                        3: { apply _. }
+                                        2: { apply _. }
+                                        1: {
+                                            replace Carrier with (@Domain _ Mext) by reflexivity. 
+                                            apply propset_leibniz_equiv.
+                                        }
+                                        unshelve (eapply antisymmetry in H').
+                                        Check @set_subseteq_antisymm.
+                                        rewrite  @set_subseteq_antisymm in H'.
+                                    }
+                                }
+                            }
+                            pose proof (empty_impl_not_full).
+                        }
+                    }
                 }
             }
         Qed.
