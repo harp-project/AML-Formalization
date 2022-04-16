@@ -1327,6 +1327,7 @@ Section with_syntax.
                         { lia. }
                         { assumption. }
                         { wf_auto2. }
+                        Arguments Domain : simpl never.
                         unfold app_ext.
                         simpl.
                         assert (Htmp: new_sym_interp (Definedness_Syntax.inj definedness) = {[cdef]}).
@@ -1354,21 +1355,107 @@ Section with_syntax.
                                         clear. set_solver.
                                     }
                                     {
-                                        unfold Power in *.
-                                        unshelve (eapply leibniz_equiv_iff in H').
-                                        3: { apply _. }
-                                        2: { apply _. }
-                                        1: {
-                                            replace Carrier with (@Domain _ Mext) by reflexivity. 
-                                            apply propset_leibniz_equiv.
+                                        rewrite set_equiv_subseteq in H'.
+                                        destruct H' as [H' _].
+                                        rewrite elem_of_subseteq in H'.
+                                        rewrite elem_of_subseteq.
+                                        intros x.
+                                        rewrite elem_of_PropSet.
+                                        intros [le [re H'']].
+                                        specialize (H' (lift_value x)).
+                                        exfalso.
+                                        rewrite elem_of_PropSet in H'.
+                                        cut (@elem_of _ (Power (@Domain Σ Mext)) _ (lift_value x) (@empty (propset (@Domain _ Mext)) _)).
+                                        {
+                                            intros Hcontra. clear -Hcontra. set_solver.
                                         }
-                                        unshelve (eapply antisymmetry in H').
-                                        Check @set_subseteq_antisymm.
-                                        rewrite  @set_subseteq_antisymm in H'.
+                                        apply H'. clear H'.
+                                        exists cdef.
+                                        destruct H'' as [H''1 [H''2 H''3]].
+                                        exfalso. clear -H''2.
+                                        set_solver.
+                                    }
+                                }
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq.
+                                    rewrite elem_of_subseteq.
+                                    split.
+                                    2: {
+                                        clear. set_solver.
+                                    }
+                                    intros x.
+                                    rewrite elem_of_PropSet.
+                                    rewrite set_equiv_subseteq in H'.
+                                    destruct H' as [H' _].
+                                    rewrite elem_of_subseteq in H'.
+                                    intros HContra.
+                                    destruct HContra as [le [re [Hle [HContra Hrest]]]].
+                                    exfalso. clear -HContra.
+                                    unfold lift_set in HContra.
+                                    unfold fmap in HContra.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in HContra.
+                                    set_solver.
+                                }
+                            }
+                            {
+                                split.
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq.
+                                    split.
+                                    {
+                                        clear. set_solver.
+                                    }
+                                    rewrite elem_of_subseteq.
+                                    intros x Hx.
+                                    rewrite set_equiv_subseteq in H'.
+                                    destruct H' as [_ H'2].
+                                    rewrite elem_of_subseteq in H'2.
+                                    specialize (H'2 (lift_value x)).
+                                    feed specialize H'2.
+                                    {
+                                        clear. set_solver.
+                                    }
+                                    rewrite elem_of_PropSet in H'2.
+                                    destruct H'2 as [le [re [Hle [Hre Hmatch]]]].
+                                    exfalso. clear -Hre.
+                                    unfold lift_set in Hre.
+                                    unfold fmap in Hre.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                    set_solver.
+                                }
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq.
+                                    rewrite set_equiv_subseteq in H'.
+                                    destruct H' as [_ H'].
+                                    rewrite elem_of_subseteq in H'.
+                                    rewrite elem_of_subseteq.
+                                    split.
+                                    {
+                                        intros x H''.
+                                        clear. set_solver.
+                                    }
+                                    {
+                                        rewrite elem_of_subseteq.
+                                        intros x Hx.
+                                        rewrite elem_of_PropSet.
+                                        specialize (H' (@stdpp.base.inhabitant (@Domain _ M) (@Domain_inhabited _ M))).
+                                        feed specialize H'.
+                                        {
+                                            clear. set_solver.
+                                        }
+                                        rewrite elem_of_PropSet in H'.
+                                        destruct H' as [le [re [H'1 [H'2 H'3]]]].
+                                        exfalso. clear -H'2.
+                                        set_solver.
                                     }
                                 }
                             }
-                            pose proof (empty_impl_not_full).
+                        }
+                        {
+                            
                         }
                     }
                 }
