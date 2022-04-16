@@ -23,6 +23,7 @@ Require Import
     DerivedOperators_Syntax
     DerivedOperators_Semantics
     PrePredicate
+    monotonic
     Theories.Definedness_Syntax
     Theories.Definedness_Semantics
     Theories.Sorts_Syntax
@@ -149,6 +150,54 @@ Section with_syntax.
         intros H.
         unfold evar_open.
         apply is_SPredicate_bevar_subst.
+        { assumption. }
+        constructor.
+    Qed.
+
+    Lemma is_SData_bsvar_subst ϕ₁ ϕ₂ dbi:
+        is_SData ϕ₁ ->
+        is_SData ϕ₂ ->
+        is_SData (bsvar_subst ϕ₁ ϕ₂ dbi)
+    with is_SPredicate_bsvar_subst ψ ϕ₂ dbi:
+        is_SPredicate ψ ->
+        is_SData ϕ₂ ->
+        is_SPredicate (bsvar_subst ψ ϕ₂ dbi)
+    .
+    Proof.
+        {
+            intros H1 H2.
+            induction H1; simpl; try constructor; auto.
+            {
+                case_match.
+                { constructor. }
+                { assumption. }
+                { constructor. }
+            }
+        }
+        {
+            intros H1 H2.
+            induction H1; try (solve [simpl; try constructor; auto]).
+        }
+    Qed.
+
+    Lemma is_SData_svar_open x ϕ:
+        is_SData ϕ ->
+        is_SData (svar_open 0 x ϕ).
+    Proof.
+        intros H.
+        unfold evar_open.
+        apply is_SData_bsvar_subst.
+        { assumption. }
+        constructor.
+    Qed.
+
+    Lemma is_SPredicate_svar_open x ϕ:
+        is_SPredicate ϕ ->
+        is_SPredicate (svar_open 0 x ϕ).
+    Proof.
+        intros H.
+        unfold evar_open.
+        apply is_SPredicate_bsvar_subst.
         { assumption. }
         constructor.
     Qed.
@@ -534,6 +583,20 @@ Section with_syntax.
             case_match; reflexivity.
         Qed.
  
+        Lemma update_svar_val_lift_set_comm
+            (ρₛ : @SVarVal _ M)
+            (X : svar)
+            (D : propset (Domain M))
+            :
+        (@update_svar_val Σ Mext X (lift_set D) (lift_val_s ρₛ))
+        = lift_val_s (@update_svar_val Σ M X D ρₛ).
+        Proof.
+            apply functional_extensionality.
+            intros X'.
+            unfold update_svar_val,lift_val_s,lift_set.
+            case_match; reflexivity.
+        Qed.
+
         Lemma lift_set_fa_union (C : Type) (f : C -> propset (Domain M)) :
             lift_set (stdpp_ext.propset_fa_union f) = stdpp_ext.propset_fa_union (λ k, lift_set (f k)).
         Proof.
@@ -1062,8 +1125,56 @@ Section with_syntax.
                         end.
                         Search Lattice.LeastFixpointOf.
                         symmetry.
-                        apply Lattice.LeastFixpoint_unique.
+                        assert (HmonoF: @Lattice.MonotonicFunction
+                            (propset Carrier)
+                            (Lattice.PropsetOrderedSet Carrier) F).
                         {
+                            subst F.
+                            replace Carrier with (Domain Mext) by reflexivity.
+                            pose proof (Hmono := @is_monotonic Σ Mext).
+                            simpl in Hmono.
+                            apply Hmono.
+                            {
+                                unfold well_formed in Hwf. simpl in Hwf.
+                                destruct_and!. split_and!; assumption.
+                            }
+                            {
+                                apply set_svar_fresh_is_fresh.
+                            }                            
+                        }
+                        assert (HmonoG: @Lattice.MonotonicFunction
+                            (propset (Domain M))
+                            (Lattice.PropsetOrderedSet (Domain M)) G).
+                        {
+                            subst G.
+                            apply is_monotonic.
+                            { unfold well_formed in Hwf. simpl in Hwf. wf_auto2. }
+                            { apply set_svar_fresh_is_fresh. }
+                        }
+                        set (Lattice.PowersetLattice (Domain M)) as L in |-.
+                        assert (HGmuG: G (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L G)).
+                        {
+                            apply Lattice.LeastFixpoint_fixpoint. apply HmonoG.
+                        }
+                        apply Lattice.LeastFixpoint_unique_2.
+                        {
+                            exact HmonoF.
+                        }
+                        {
+                            fold L.
+                            rewrite <- HGmuG at 2.
+                            rewrite HeqF.
+                            rewrite update_svar_val_lift_set_comm.
+                            rewrite IHszdata.
+                            {
+                                rewrite svar_open_size'. lia.
+                            }
+                            {
+                                apply is_SData_svar_open.
+                            }
+
+
+                            rewrite HeqG
                             
                         }
                         {
