@@ -1128,7 +1128,7 @@ Section with_syntax.
                     {
                         (* patt_mu (patt_sym s) ϕ *)
                         do 2 rewrite pattern_interpretation_mu_simpl.
-                        simpl.
+                        cbn zeta.
                         match goal with
                         | [ |- (Lattice.LeastFixpointOf ?fF = lift_set (Lattice.LeastFixpointOf ?fG))] =>
                             remember fF as F; remember fG as G
@@ -1224,7 +1224,7 @@ Section with_syntax.
                                 apply Hxy.
                             }
 
-                            assert (lift_set (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L' G')).
+                            assert (Hls: lift_set (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L' G')).
                             {
                                 assert (G'liftlfpG: G' (lift_set (@Lattice.LeastFixpointOf _ _ L G)) =
                                     lift_set (@Lattice.LeastFixpointOf _ _ L G)).
@@ -1247,16 +1247,60 @@ Section with_syntax.
                                     intros A HA.
                                     rewrite -HA.
                                     unfold G'.
-                                    
+                                    simpl.
+                                    apply lift_set_mono.
+                                    unfold Power.
+                                    pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
+                                    simpl in Htmp. apply Htmp. clear Htmp.
+                                    replace (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
+                                    (svar_open 0 (fresh_svar ϕ) ϕ))
+                                    with (G (strip A)) by (subst; reflexivity).
+                                    apply HmonoG. simpl.
+                                    rewrite <- HA at 2.
+                                    unfold G'.
+                                    rewrite HeqG.
+                                    rewrite Hstriplift.
+                                    apply reflexivity.
                                 }
                             }
+                            replace (propset Carrier) with (propset (Domain Mext)) by reflexivity.
+                            intros A HA.
+                            rewrite Hls.
+                            apply Lattice.LeastFixpoint_LesserThanPrefixpoint.
+                            simpl.
+                            rewrite <- HA at 2.
+                            unfold G'.
+                            rewrite HeqF.
+                            assert (Hliftstrip: lift_set (strip A) ⊆ A).
+                            {
+                                clear.
+                                unfold lift_set,strip,lift_value,fmap.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                set_solver.
+                            }
+                            
+                            assert (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)
+                            ⊆  @pattern_interpretation Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) A (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
+                            {
+                                apply is_monotonic.
+                                { unfold well_formed in Hwf. destruct_and!. assumption. }
+                                { apply set_svar_fresh_is_fresh. }
+                                apply Hliftstrip.
+                            }
+                            eapply transitivity.
+                            2: { apply H. }
+                            rewrite update_svar_val_lift_set_comm.
+                            rewrite IHszdata.
+                            { rewrite svar_open_size'. lia. }
+                            { apply is_SData_svar_open. assumption. }
+                            { wf_auto2. }
+                            apply reflexivity.
                         }
                     }
                 }
-                admit.
-            }
-            {   (* preservation of predicates *)
-                intros HSPred. induction HSPred.
+                {   (* preservation of predicates *)
+                    intros HSPred. induction HSPred.
+                }
             }
         Qed.
 
