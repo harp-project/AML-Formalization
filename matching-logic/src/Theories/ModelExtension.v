@@ -304,6 +304,16 @@ Section with_syntax.
     Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
     := λ (X : svar), lift_set (ρₛ X).
 
+    Lemma lift_set_mono (xs ys : Power (Domain M)) :
+        xs ⊆ ys ->
+        lift_set xs ⊆ lift_set ys.
+    Proof.
+        intros H.
+        unfold lift_set,fmap.
+        with_strategy transparent [propset_fmap] unfold propset_fmap.
+        clear -H. set_solver.
+    Qed.
+
     Lemma Mext_indec :
         forall (s : symbols),
             is_not_core_symbol s ->
@@ -1152,6 +1162,7 @@ Section with_syntax.
                             { apply set_svar_fresh_is_fresh. }
                         }
                         set (Lattice.PowersetLattice (Domain M)) as L in |-.
+                        set (Lattice.PowersetLattice (Domain Mext)) as L' in |-.
                         assert (HGmuG: G (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L G)).
                         {
                             apply Lattice.LeastFixpoint_fixpoint. apply HmonoG.
@@ -1170,15 +1181,41 @@ Section with_syntax.
                                 rewrite svar_open_size'. lia.
                             }
                             {
-                                apply is_SData_svar_open.
+                                apply is_SData_svar_open. assumption.
                             }
-
-
-                            rewrite HeqG
-                            
+                            {
+                                wf_auto2.
+                            }
+                            rewrite HeqG.
+                            reflexivity.
                         }
                         {
+                            set (λ (A : propset (Domain Mext)), PropSet (λ (m : Domain M), lift_value m ∈ A)) as strip.
+                            set (λ A, lift_set (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) ϕ)) as G'.
 
+                            Set Printing Implicit.
+                            assert (HmonoG' : @Lattice.MonotonicFunction _ (Lattice.PropsetOrderedSet (Domain Mext)) G').
+                            {
+                                unfold Lattice.MonotonicFunction.
+                                intros x y Hxy.
+                                unfold G'.
+                                simpl.
+                                simpl in Hxy.
+                                rewrite HeqG in HmonoG.
+                                unfold Lattice.MonotonicFunction in HmonoG.
+                                simpl in HmonoG.
+                                specialize (HmonoG (strip x) (strip y)).
+                                Search lift_set.
+                                apply HmonoG.
+                            }
+
+                            assert (lift_set (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L' G')).
+                            {
+                                apply Lattice.LeastFixpoint_unique_2.
+                        {
+                            exact HmonoF.
+                        }
+                            }
                         }
                     }
                 }
