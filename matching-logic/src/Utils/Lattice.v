@@ -366,7 +366,7 @@ Proposition LeastFixpoint_unique_2 :
     (Sfix : A),
     (MonotonicFunction f) ->
     (f Sfix) = Sfix ->
-    (forall x, (f x) = x -> Sfix = x) ->
+    (forall x, (f x) = x -> leq Sfix x) ->
     Sfix = LeastFixpointOf f.
 Proof.
   intros A OS L f Sfix Hmono Hfix Hleast.
@@ -378,8 +378,7 @@ Proof.
       apply LeastFixpoint_fixpoint.
       apply Hmono.
     }
-    rewrite Hleast.
-    apply (@ord_refl _ _ leq_order).
+    apply Hleast.
   }
   {
     apply LeastFixpoint_LesserThanFixpoint.

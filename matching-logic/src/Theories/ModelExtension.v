@@ -1200,6 +1200,13 @@ Section with_syntax.
                                 clear -Hxy. set_solver.
                             }
 
+                            assert (Hstriplift: forall X, strip (lift_set X) = X).
+                            {
+                                intros X. unfold strip,lift_set,lift_value,fmap.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                clear. set_solver.
+                            }
+
                             assert (HmonoG' : @Lattice.MonotonicFunction _ (Lattice.PropsetOrderedSet (Domain Mext)) G').
                             {
                                 unfold Lattice.MonotonicFunction.
@@ -1219,10 +1226,29 @@ Section with_syntax.
 
                             assert (lift_set (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L' G')).
                             {
+                                assert (G'liftlfpG: G' (lift_set (@Lattice.LeastFixpointOf _ _ L G)) =
+                                    lift_set (@Lattice.LeastFixpointOf _ _ L G)).
+                                {
+                                    rewrite <- HGmuG at 2.
+                                    unfold G'.
+                                    rewrite Hstriplift.
+                                    f_equal.
+                                    rewrite HeqG.
+                                    reflexivity.                                    
+                                }
                                 apply Lattice.LeastFixpoint_unique_2.
-                        {
-                            exact HmonoF.
-                        }
+                                {
+                                    exact HmonoG'.
+                                }
+                                {
+                                    apply G'liftlfpG.
+                                }
+                                {
+                                    intros A HA.
+                                    rewrite -HA.
+                                    unfold G'.
+                                    
+                                }
                             }
                         }
                     }
