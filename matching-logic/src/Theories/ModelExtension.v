@@ -1191,22 +1191,30 @@ Section with_syntax.
                         }
                         {
                             set (λ (A : propset (Domain Mext)), PropSet (λ (m : Domain M), lift_value m ∈ A)) as strip.
-                            set (λ A, lift_set (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) ϕ)) as G'.
+                            set (λ A, lift_set (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
 
-                            Set Printing Implicit.
+                            assert (Hstripmono: forall x y, x ⊆ y -> strip x ⊆ strip y).
+                            {
+                                intros x y Hxy.
+                                unfold strip. unfold lift_value.
+                                clear -Hxy. set_solver.
+                            }
+
                             assert (HmonoG' : @Lattice.MonotonicFunction _ (Lattice.PropsetOrderedSet (Domain Mext)) G').
                             {
                                 unfold Lattice.MonotonicFunction.
                                 intros x y Hxy.
                                 unfold G'.
                                 simpl.
+                                apply lift_set_mono.
                                 simpl in Hxy.
                                 rewrite HeqG in HmonoG.
                                 unfold Lattice.MonotonicFunction in HmonoG.
                                 simpl in HmonoG.
                                 specialize (HmonoG (strip x) (strip y)).
-                                Search lift_set.
                                 apply HmonoG.
+                                apply Hstripmono.
+                                apply Hxy.
                             }
 
                             assert (lift_set (@Lattice.LeastFixpointOf _ _ L G) = (@Lattice.LeastFixpointOf _ _ L' G')).
