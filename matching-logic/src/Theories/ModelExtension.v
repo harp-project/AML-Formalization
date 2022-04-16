@@ -1455,7 +1455,96 @@ Section with_syntax.
                             }
                         }
                         {
-                            
+                            split.
+                            {
+                                split.
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq in H'.
+                                    rewrite elem_of_subseteq in H'.
+                                    destruct H' as [H'1 _].
+                                    rewrite set_equiv_subseteq.
+                                    split.
+                                    {
+                                        rewrite elem_of_subseteq.
+                                        intros x Hx.
+                                        cut (@elem_of (@Domain Σ Mext) (Power (@Domain Σ Mext))
+                                        (@propset_elem_of (@Domain Σ Mext)) (lift_value x)
+                                        (@empty (Power (@Domain Σ Mext)) (@propset_empty (@Domain Σ Mext)))).
+                                        {
+                                            intros HContra.
+                                            clear -HContra.
+                                            set_solver.
+                                        }
+                                        apply H'1.
+                                        rewrite elem_of_PropSet in Hx.
+                                        destruct Hx as [le [re [Hx1 [Hx2 Hx3]]]].
+                                        rewrite elem_of_PropSet.
+                                        exists cdef. exists (lift_value re).
+                                        split.
+                                        { clear. set_solver. }
+                                        split.
+                                        2: { clear. set_solver. }
+                                        clear -Hx2.
+                                        unfold lift_value,lift_set,fmap.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                        set_solver.
+                                    }
+                                    {
+                                        clear. set_solver.
+                                    }
+                                }
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq.
+                                    split.
+                                    {
+                                        rewrite elem_of_subseteq.
+                                        intros x Hx.
+                                        rewrite elem_of_PropSet in Hx.
+                                        destruct Hx as [le [re [Hx1 [Hx2 Hx3]]]].
+                                        rewrite set_equiv_subseteq in H'.
+                                        destruct H' as [H' _].
+                                        rewrite elem_of_subseteq in H'.
+                                        rewrite elem_of_singleton in Hx1. subst.
+                                        repeat case_match; subst; auto.
+                                        destruct re.
+                                        {
+                                            unfold lift_set,fmap in Hx2.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap in Hx2.
+                                            exfalso. clear -Hx2. set_solver.
+                                        }
+                                        {
+                                            unfold lift_set,fmap in Hx2.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap in Hx2.
+                                            exfalso. clear -Hx2. set_solver.
+                                        }
+                                        destruct el.
+                                        2: {
+                                            unfold lift_set,fmap in Hx2.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap in Hx2.
+                                            exfalso. clear -Hx2. set_solver.
+                                        }
+                                        exfalso. specialize (H' d).
+                                        feed specialize H'.
+                                        {
+                                            clear H' Hx3.
+                                            rewrite elem_of_PropSet.
+                                            Search elem_of subseteq not eq.
+                                            exists d.
+                                        }
+                                        set_solver.
+                                        Set Printing All.
+                                        2: {  }
+                                    }
+                                    {
+
+                                    }
+                                }
+                            }
+                            {
+
+                            }
                         }
                     }
                 }
