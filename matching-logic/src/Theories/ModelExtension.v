@@ -1954,7 +1954,61 @@ Section with_syntax.
                             }
                         }
                         {
-                            Check propset_fa_union_full.
+                            do 2 rewrite stdpp_ext.propset_fa_union_full.
+                            split; intros H' t.
+                            {
+                                specialize (H' stdpp.base.inhabitant).
+                                destruct H' as [c Hc].
+                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                {
+                                    unfold Minterp_inhabitant in Hin.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    simpl in Hin.
+                                    destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                    unfold is_not_core_symbol,is_core_symbol in H.
+                                    unfold new_sym_interp in Hle,Hre.
+                                    unfold new_app_interp in Hin.
+                                    repeat case_match; subst; try contradiction; try congruence;
+                                    unfold fmap in Hre;
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hre;
+                                    rewrite elem_of_PropSet in Hre;
+                                    destruct Hre as [amr [Hamr Hamr']];
+                                    inversion Hamr; clear Hamr; subst;
+                                    rewrite elem_of_PropSet in Hamr';
+                                    destruct Hamr' as [amr' [Hamr'' Hamr']];
+                                    inversion Hamr''; clear Hamr''; subst.
+                                    unfold fmap in Hin.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [a [Htmp Ha]].
+                                    subst.
+                                    rewrite elem_of_PropSet in Ha.
+                                    destruct Ha as [a0 [Htmp Ha0]].
+                                    subst.
+                                    unfold app_ext in Ha0.
+                                    rewrite elem_of_PropSet in Ha0.
+                                    destruct Ha0 as [le' [re' [Hle' [Hre' Hle're']]]].
+                                    rewrite elem_of_singleton in Hre'. subst re'.
+                                    exists a0.
+                                    destruct (indec H a0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    2: {
+                                        exfalso. apply Hnotin'.
+                                        unfold Minterp_inhabitant.
+                                        rewrite pattern_interpretation_app_simpl.
+                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        unfold app_ext.
+                                        rewrite elem_of_PropSet.
+                                        exists le'. exists amr'.
+                                        repeat split; try assumption.
+                                    }
+                                    {
+                                        clear Heqs3 Heqs4 Heqs2 Heqs1.
+                                    }
+                                }
+                            }
                         }
 
 
