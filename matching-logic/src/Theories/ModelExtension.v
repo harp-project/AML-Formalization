@@ -1784,7 +1784,6 @@ Section with_syntax.
                         }
                     }
                     {
-                        Search pattern_interpretation patt_exists_of_sort.
                         unshelve (erewrite pattern_interpretation_exists_of_sort).
                         3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
                         1: { intros m. apply Mext_indec. assumption. }
@@ -1868,6 +1867,94 @@ Section with_syntax.
                                     assumption.
                                 }
                             }
+                            {
+                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                {
+                                    unfold Minterp_inhabitant in Hin.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                    simpl in Hle,Hre,Hin.
+                                    unfold is_not_core_symbol,is_core_symbol in H.
+                                    unfold new_app_interp in Hin.
+                                    unfold new_sym_interp in Hle,Hre.
+                                    repeat case_match; subst; try contradiction; try congruence.
+                                    2: {
+                                        exfalso. clear -Hre.
+                                        unfold fmap in Hre.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                        set_solver.
+                                    }
+                                    unfold fmap in Hin.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                    destruct c.
+                                    {
+                                        exfalso. clear -Hin.  set_solver.
+                                    }
+                                    {
+                                        exfalso. clear -Hin.  set_solver.
+                                    }
+                                    destruct el.
+                                    2: {
+                                        exfalso. clear -Hin.  set_solver.
+                                    }
+                                    rewrite update_evar_val_lift_val_e_comm.
+                                    clear Heqs1 Heqs2 Heqs4 Heqs3 Hle e n1.
+                                    specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρₑ) ρₛ).
+                                    feed specialize IHszpred.
+                                    {
+                                        rewrite evar_open_size'. lia.
+                                    }
+                                    {
+                                        apply is_SPredicate_evar_open. assumption.
+                                    }
+                                    {
+                                        wf_auto2.
+                                    }
+                                    destruct IHszpred as [IH1 IH2].
+                                    rewrite IH1.
+                                    specialize (H' d0).
+                                    destruct (indec H d0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    {
+                                        apply H'.
+                                    }
+                                    {
+                                        exfalso. apply Hnotin'. clear Hnotin'.
+                                        unfold Minterp_inhabitant.
+                                        rewrite pattern_interpretation_app_simpl.
+                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite elem_of_PropSet in Hin.
+                                        destruct Hin as [a [Ha Hin]].
+                                        inversion Ha. clear Ha. subst.
+                                        rewrite elem_of_PropSet in Hin.
+                                        destruct Hin as [a [Ha Hin]].
+                                        inversion Ha. clear Ha. subst.
+                                        unfold app_ext in Hin.
+                                        rewrite elem_of_PropSet in Hin.
+                                        destruct Hin as [le [re [Hle' [Hre' Hin]]]].
+                                        rewrite elem_of_singleton in Hre'. subst re.
+                                        unfold app_ext.
+                                        rewrite elem_of_PropSet.
+                                        unfold fmap in Hre.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                        rewrite elem_of_PropSet in Hre.
+                                        destruct Hre as [a' [Ha' Hre']].
+                                        rewrite elem_of_PropSet in Hre'.
+                                        destruct Hre' as [a'' [Ha'' Hre']].
+                                        subst.
+                                        inversion Ha'. clear Ha'. subst.
+                                        exists le. exists a''.
+                                        split;[assumption|].
+                                        split;assumption.
+                                    }
+                                }
+                                reflexivity.
+                            }
+                        }
+                        {
+                            
                         }
 
 
