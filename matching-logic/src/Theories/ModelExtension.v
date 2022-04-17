@@ -1954,7 +1954,7 @@ Section with_syntax.
                             }
                         }
                         {
-                            
+                            Check propset_fa_union_full.
                         }
 
 

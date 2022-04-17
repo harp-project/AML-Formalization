@@ -818,6 +818,13 @@ Proof.
   set_solver.
 Qed.
 
+Lemma propset_fa_union_full {T C : Type} {LE : LeibnizEquiv (propset T)} (f : C -> propset T) :
+  (propset_fa_union f = ⊤) <-> (∀ (t : T), ∃ (c : C), t ∈ (f c)).
+Proof.
+  unfold propset_fa_union.
+  set_solver.
+Qed.
+
 Lemma propset_fa_union_included : forall T C : Type, forall f f' : C -> propset T,
       (forall c, (f c) ⊆ (f' c)) ->
       (propset_fa_union f) ⊆ (propset_fa_union f').
