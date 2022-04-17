@@ -2154,6 +2154,14 @@ Section with_syntax.
                         unshelve (erewrite pattern_interpretation_forall_of_sort).
                         3: { rewrite HSortImptDef. assumption. }
                         1: { intros m. apply indec. assumption. }
+
+                        do 2 rewrite stdpp_ext.propset_fa_intersection_full.
+                        rewrite stdpp_ext.propset_fa_intersection_empty.
+                        unshelve (erewrite @stdpp_ext.propset_fa_intersection_empty).
+                        3: { apply _. }
+                        2: { apply Domain_inhabited. }
+
+                        
                     }
                 }
             }
