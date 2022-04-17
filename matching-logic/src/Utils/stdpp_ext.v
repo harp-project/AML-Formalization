@@ -841,6 +841,32 @@ Qed.
 Definition propset_fa_intersection {T C : Type} (f : C -> propset T) : propset T
   := PropSet (fun (x : T) => forall (c : C), x ∈ f c).
 
+Lemma propset_fa_intersection_empty {T C : Type} {INH : Inhabited C} {LE : LeibnizEquiv (propset T)} (f : C -> propset T) :
+  (propset_fa_intersection f = ∅) <-> (∀ (t : T), ∃ (c : C), t ∉ (f c)).
+Proof.
+  unfold propset_fa_intersection.
+  rewrite set_eq_subseteq.
+  do 2 rewrite elem_of_subseteq.
+  setoid_rewrite elem_of_PropSet.
+  split.
+  2: {
+    firstorder.
+  }
+  intros [H1 _].
+  intros t. specialize (H1 t).
+  apply NNPP.
+  intros H.
+  Search not ex.
+  pose proof (H' := not_ex_not_all _ _ H).
+  firstorder.
+Qed.
+
+Lemma propset_fa_intersection_full {T C : Type} {LE : LeibnizEquiv (propset T)} (f : C -> propset T) :
+  (propset_fa_intersection f = ⊤) <-> (∀ (c : C), (f c) = ⊤).
+Proof.
+  unfold propset_fa_intersection.
+  set_solver.
+Qed.
 
 Lemma Not_Empty_Contains_Elements {T : Type} {LE : LeibnizEquiv (propset T)} (S : propset T):
   S <> ∅ -> exists x : T, x ∈ S.

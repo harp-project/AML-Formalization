@@ -2147,7 +2147,13 @@ Section with_syntax.
                         }
                     }
                     {
-                        
+                        unshelve (erewrite pattern_interpretation_forall_of_sort).
+                        3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
+                        1: { intros m. apply Mext_indec. assumption. }
+
+                        unshelve (erewrite pattern_interpretation_forall_of_sort).
+                        3: { rewrite HSortImptDef. assumption. }
+                        1: { intros m. apply indec. assumption. }
                     }
                 }
             }
