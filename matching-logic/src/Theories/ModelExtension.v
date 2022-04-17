@@ -1530,7 +1530,7 @@ Section with_syntax.
                                         {
                                             clear H' Hx3.
                                             rewrite elem_of_PropSet.
-                                            Search elem_of subseteq not eq.
+                                            (* definedness has to be interpreted as at least one element. Prove this separately. *)
                                             exists d.
                                         }
                                         set_solver.

@@ -613,6 +613,44 @@ Section definedness.
     constructor.
   Qed.
 
+  Lemma satisfies_definedness_implies_has_element_for_every_element
+    (M : @Model Σ):
+    M ⊨ᵀ theory ->
+    forall (x y : Domain M),
+      exists (z : Domain M),
+        z ∈ sym_interp M (inj definedness)
+        /\ y ∈ app_interp z x.
+  Proof.
+    intros HM x y.
+    unfold theory in HM.
+    rewrite satisfies_theory_iff_satisfies_named_axioms in HM.
+    Print NamedAxioms.
+    specialize (HM AxDefinedness). simpl in HM.
+    unfold satisfies_model in HM.
+    remember (λ (ev : evar), x) as ρₑ.
+    specialize (HM ρₑ).
+    specialize (HM (λ (sv : svar), ∅)).
+    unfold patt_defined in HM.
+    rewrite pattern_interpretation_app_simpl in HM.
+    rewrite pattern_interpretation_sym_simpl in HM.
+    rewrite pattern_interpretation_free_evar_simpl in HM.
+    unfold app_ext in HM.
+    rewrite set_eq_subseteq in HM.
+    destruct HM as [_ HM].
+    rewrite elem_of_subseteq in HM.
+    specialize (HM y).
+    feed specialize HM.
+    {
+      unfold Full. clear. set_solver.
+    }
+    rewrite elem_of_PropSet in HM.
+    destruct HM as [le [re [HM1 [HM2 HM3] ] ] ].
+    subst ρₑ.
+    rewrite elem_of_singleton in HM2. subst re.
+    exists le.
+    split; assumption.
+  Qed.
+
 End definedness.
 
 
