@@ -1530,15 +1530,36 @@ Section with_syntax.
                                         {
                                             clear H' Hx3.
                                             rewrite elem_of_PropSet.
-                                            (* definedness has to be interpreted as at least one element. Prove this separately. *)
-                                            exists d.
+
+                                            unfold lift_set,fmap in Hx2.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap in Hx2.
+                                            rewrite elem_of_PropSet in Hx2.
+                                            destruct Hx2 as [a [Hx21 Hx22]].
+                                            inversion Hx21. clear Hx21. subst.
+                                            rewrite elem_of_PropSet in Hx22.
+                                            destruct Hx22 as [a [Hx21 Hx22]].
+                                            inversion Hx21. clear Hx21. subst.
+
+                                            pose proof (Hel := @satisfies_definedness_implies_has_element_for_every_element Σ _ M).
+                                            feed specialize Hel.
+                                            {
+                                                assumption.
+                                            }
+                                            specialize (Hel a a).
+                                            destruct Hel as [z [Hz1 Hz2] ].
+                                            exists z. exists a.
+                                            split.
+                                            { exact Hz1. }
+                                            split.
+                                            { exact Hx22. }
+                                            exact Hz2.
                                         }
-                                        set_solver.
-                                        Set Printing All.
-                                        2: {  }
+                                        {
+                                            clear -H'. set_solver.
+                                        }
                                     }
                                     {
-
+                                        clear. set_solver.
                                     }
                                 }
                             }
