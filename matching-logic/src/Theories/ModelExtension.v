@@ -1957,6 +1957,17 @@ Section with_syntax.
                             do 2 rewrite stdpp_ext.propset_fa_union_full.
                             split; intros H' t.
                             {
+
+                                pose proof (HSPred' := HSPred).
+                                apply SPred_is_pre_predicate in HSPred'.
+                                apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
+                                specialize (HSPred' 0).
+                                apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
+                                2: {
+                                    unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
+                                    destruct_and!.
+                                    wf_auto2.
+                                }
                                 specialize (H' stdpp.base.inhabitant).
                                 destruct H' as [c Hc].
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
@@ -2020,10 +2031,30 @@ Section with_syntax.
                                         }
                                         destruct IHszpred as [IH1 IH2].
                                         clear Hle e.
-                                        pose proof (HSPred' := HSPred).
-                                        apply SPred_is_pre_predicate in HSPred'.
-                                        apply M_pre_predicate_evar_open in HSPred'.
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        destruct HSPred' as [HFull|HEmpty].
+                                        {
+                                            rewrite HFull. clear. set_solver.
+                                        }
+                                        {
+                                            apply IH1 in HEmpty.
+                                            exfalso.
+                                            rewrite HEmpty in Hc.
+                                            clear -Hc.
+                                            set_solver.
+                                        }
                                     }
+                                }
+                                {
+                                    exfalso. clear -Hc. set_solver.
+                                }
+                            }
+                            {
+                                specialize (H' (@stdpp.base.inhabitant _ (Domain_inhabited M))).
+                                destruct H' as [c Hc].
+                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                {
+                                    
                                 }
                             }
                         }
