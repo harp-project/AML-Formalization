@@ -1778,7 +1778,42 @@ Section with_syntax.
                         }
                     }
                     {
-                        
+                        Search pattern_interpretation patt_exists_of_sort.
+                        unshelve (erewrite pattern_interpretation_exists_of_sort).
+                        3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
+                        1: { intros m. apply Mext_indec. assumption. }
+
+                        unshelve (erewrite pattern_interpretation_exists_of_sort).
+                        3: { rewrite HSortImptDef. assumption. }
+                        1: { intros m. apply indec. assumption. }
+
+                        specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ)).
+                        split.
+                        {
+                            Search stdpp_ext.propset_fa_union ∅.
+                        }
+
+
+                        rewrite pattern_interpretation_exists_predicate_full.
+
+                        2: {
+                            unfold evar_open. simpl_bevar_subst.
+                            apply M_predicate_and.
+                            {
+                                apply T_predicate_in.
+                                rewrite HSortImptDef.
+                                apply Mext_satisfies_definedness.
+                            }
+                            {
+                                Search M_predicate evar_open.
+                                apply SPred_is_pre_predicate in HSPred.
+                                apply M_pre_predicate_exists in HSPred.
+                                unfold M_pre_predicate in HSPred.
+                                unfold M_pre_pre_predicate in HSPred.
+                                simpl in HSPred.
+                                apply HSPred.
+                            }
+                        }
                     }
                 }
             }

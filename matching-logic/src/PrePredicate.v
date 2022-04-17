@@ -974,6 +974,10 @@ Proof.
   }
 Qed.
 
+(*
+Lemma M_predicate_evar_open {Σ : Signature} (k : db_index) M ϕ x :
+  M_predicate M (evar_open 0 x)
+*)
 Lemma M_pre_pre_predicate_exists {Σ : Signature} (k : db_index) M ϕ :
   M_pre_pre_predicate (S k) M ϕ ->
   M_pre_pre_predicate k M (patt_exists ϕ).
@@ -1022,8 +1026,6 @@ Proof.
     simpl in Hwfc.
     rewrite -bcmcloseex_propagate_last_zero.
     rewrite bcmcloseex_append. simpl.
-    Search well_formed_closed_ex_aux evar_open.
-    Search (well_formed_closed_ex_aux (evar_open _ _ _) _).
     apply wfc_mu_aux_body_ex_imp3.
     { lia. }
     apply Hwfc.

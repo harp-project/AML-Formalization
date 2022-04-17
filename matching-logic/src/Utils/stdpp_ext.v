@@ -808,6 +808,16 @@ Proof.
   - rewrite -> H. exact Hc.
 Qed.
 
+Lemma propset_fa_union_empty {T C : Type} {LE : LeibnizEquiv (propset T)} (f : C -> propset T) :
+  (propset_fa_union f = ∅) <-> (∀ (c : C), (f c) = ∅).
+Proof.
+  unfold propset_fa_union.
+  rewrite set_eq_subseteq.
+  do 2 rewrite elem_of_subseteq.
+  setoid_rewrite elem_of_PropSet.
+  set_solver.
+Qed.
+
 Lemma propset_fa_union_included : forall T C : Type, forall f f' : C -> propset T,
       (forall c, (f c) ⊆ (f' c)) ->
       (propset_fa_union f) ⊆ (propset_fa_union f').
