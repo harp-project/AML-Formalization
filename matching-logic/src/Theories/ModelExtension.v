@@ -647,8 +647,14 @@ Section with_syntax.
                 assumption.
             }
         Qed.
+(*
+        Check @Mext_indec.
+        Lemma Mext_indec_lift_value
+            (s : symbol)
+            (pf : is_not_core_symbol s)
 
-
+        Mext_indec H (lift_value c) ρₑ ρₛ
+*)
         Lemma semantics_preservation
             (sz : nat)
             :
@@ -1787,10 +1793,81 @@ Section with_syntax.
                         3: { rewrite HSortImptDef. assumption. }
                         1: { intros m. apply indec. assumption. }
 
+                        do 2 rewrite stdpp_ext.propset_fa_union_empty.
+
                         specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ)).
                         split.
                         {
-                            Search stdpp_ext.propset_fa_union ∅.
+                            split; intros H'; intros c.
+                            {
+                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                2: { reflexivity. }
+                                specialize (H' (lift_value c)).
+                                rewrite update_evar_val_lift_val_e_comm in H'.
+                                specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                feed specialize IHszpred.
+                                {
+                                    rewrite evar_open_size'. lia.
+                                }
+                                {
+                                    apply is_SPredicate_evar_open. assumption.
+                                }
+                                {
+                                    wf_auto2.
+                                }
+                                destruct IHszpred as [IH1 IH2].
+                                destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                {
+                                    apply IH1 in H'. apply H'.
+                                }
+                                {
+                                    exfalso.
+                                    unfold Minterp_inhabitant in Hin,Hnotin'.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    rewrite pattern_interpretation_app_simpl in Hnotin'.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hnotin'.
+                                    unfold app_ext in Hin,Hnotin'.
+                                    unfold lift_value in Hnotin'. simpl in Hnotin'.
+                                    unfold new_sym_interp in Hnotin'.
+                                    rewrite elem_of_PropSet in Hnotin'.
+                                    unfold is_not_core_symbol,is_core_symbol in H.
+                                    repeat case_match; subst; auto; try contradiction.
+                                    apply Hnotin'. clear Hnotin' Heqs3 Heqs2 Heqs1 Heqs0.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                    exists cinh. exists (cel (inl re)).
+                                    split.
+                                    { clear. set_solver. }
+                                    split.
+                                    {
+                                        unfold fmap.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                        rewrite elem_of_PropSet.
+                                        exists (inl re).
+                                        split;[reflexivity|].
+                                        rewrite elem_of_PropSet.
+                                        exists re.
+                                        split;[reflexivity|].
+                                        assumption.
+                                    }
+                                    unfold new_app_interp.
+                                    unfold fmap.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                    rewrite elem_of_PropSet.
+                                    exists (inl c).
+                                    split;[reflexivity|].
+                                    rewrite elem_of_PropSet.
+                                    exists c.
+                                    split;[reflexivity|].
+                                    unfold app_ext.
+                                    rewrite elem_of_PropSet.
+                                    exists le. exists re.
+                                    split;[assumption|].
+                                    split;[(clear; set_solver)|].
+                                    assumption.
+                                }
+                            }
                         }
 
 

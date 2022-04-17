@@ -624,7 +624,6 @@ Section definedness.
     intros HM x y.
     unfold theory in HM.
     rewrite satisfies_theory_iff_satisfies_named_axioms in HM.
-    Print NamedAxioms.
     specialize (HM AxDefinedness). simpl in HM.
     unfold satisfies_model in HM.
     remember (λ (ev : evar), x) as ρₑ.
