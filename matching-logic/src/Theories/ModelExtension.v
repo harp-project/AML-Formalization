@@ -1609,10 +1609,42 @@ Section with_syntax.
                                     }
                                 }
                                 {
-                                    
+                                    intros H'.
+                                    rewrite set_equiv_subseteq in H'.
+                                    destruct H' as [_ H'].
+                                    rewrite elem_of_subseteq in H'.
+                                    rewrite set_equiv_subseteq.
+                                    split.
+                                    {
+                                        clear. set_solver.
+                                    }
+                                    {
+                                        rewrite elem_of_subseteq.
+                                        intros x Hx.
+                                        rewrite elem_of_PropSet.
+                                        exists cdef.
+                                        assert (Hex : exists el, el ∈ pattern_interpretation ρₑ ρₛ ϕ).
+                                        {
+                                            clear -Hnonempty.
+                                            apply NNPP. intros HContra.
+                                            set_solver.
+                                        }
+                                        destruct Hex as [el Hel].
+                                        exists (lift_value el).
+                                        split.
+                                        { clear. set_solver. }
+                                        split.
+                                        2: { clear. set_solver. }
+                                        unfold lift_value,lift_set,fmap.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                        clear -Hel. set_solver.
+                                    }
                                 }
                             }
                         }
+                    }
+                    {
+                        
                     }
                 }
             }
