@@ -1564,7 +1564,53 @@ Section with_syntax.
                                 }
                             }
                             {
-
+                                split.
+                                {
+                                    intros H'.
+                                    rewrite set_equiv_subseteq in H'.
+                                    rewrite set_equiv_subseteq.
+                                    split.
+                                    {
+                                        clear. set_solver.
+                                    }
+                                    {
+                                        rewrite elem_of_subseteq.
+                                        rewrite elem_of_subseteq in H'.
+                                        intros x Hx.
+                                        rewrite elem_of_PropSet.
+                                        destruct H' as [_ H'].
+                                        rewrite elem_of_subseteq in H'.
+                                        specialize (H' (lift_value x)).
+                                        specialize (H' I).
+                                        rewrite elem_of_PropSet in H'.
+                                        destruct H' as [le [re [Hle [Hre H']]]].
+                                        rewrite elem_of_singleton in Hle. subst le.
+                                        unfold lift_set,fmap in Hre.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                        rewrite elem_of_PropSet in Hre.
+                                        destruct Hre as [a [Ha Hre]].
+                                        subst re.
+                                        rewrite elem_of_PropSet in Hre.
+                                        destruct Hre as [a0 [Ha0 Hre]].
+                                        subst a.
+                                        pose proof (Hel := @satisfies_definedness_implies_has_element_for_every_element Σ _ M).
+                                        feed specialize Hel.
+                                        {
+                                            assumption.
+                                        }
+                                        specialize (Hel a0 x).
+                                        destruct Hel as [z [Hz1 Hz2]].
+                                        exists z. exists a0.
+                                        split.
+                                        { exact Hz1. }
+                                        split.
+                                        { exact Hre. }
+                                        exact Hz2.
+                                    }
+                                }
+                                {
+                                    
+                                }
                             }
                         }
                     }
