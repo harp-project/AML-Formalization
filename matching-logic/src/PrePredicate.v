@@ -1106,3 +1106,24 @@ Proof.
   apply pre_predicate_0.
   apply H.
 Qed.
+
+Lemma M_pre_predicate_evar_open
+  {Σ : Signature} (M : Model) (ϕ : Pattern) (x : evar) :
+  M_pre_predicate M ϕ ->
+  M_pre_predicate M (evar_open 0 x ϕ).
+Proof.
+  intros H dbi' l HFA HCI Hwfc.
+  unfold M_pre_predicate,M_pre_pre_predicate in H.
+  replace (bcmcloseex l (evar_open 0 x ϕ))
+  with (bcmcloseex ((0,x)::l) ϕ) by reflexivity.
+  apply H with (k := dbi').
+  { apply Forall_cons. simpl. split. lia. assumption. }
+  {
+    destruct l.
+    { apply ci_single. }
+    { destruct p. apply ci_cons. lia. assumption. }
+  }
+  {
+    simpl. apply Hwfc.
+  }
+Qed.

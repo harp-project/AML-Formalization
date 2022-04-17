@@ -2006,6 +2006,23 @@ Section with_syntax.
                                     }
                                     {
                                         clear Heqs3 Heqs4 Heqs2 Heqs1.
+                                        rewrite update_evar_val_lift_val_e_comm in Hc.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        feed specialize IHszpred.
+                                        {
+                                            rewrite evar_open_size'. lia.
+                                        }
+                                        {
+                                            apply is_SPredicate_evar_open. assumption.
+                                        }
+                                        {
+                                            wf_auto2.
+                                        }
+                                        destruct IHszpred as [IH1 IH2].
+                                        clear Hle e.
+                                        pose proof (HSPred' := HSPred).
+                                        apply SPred_is_pre_predicate in HSPred'.
+                                        apply M_pre_predicate_evar_open in HSPred'.
                                     }
                                 }
                             }
