@@ -1955,19 +1955,18 @@ Section with_syntax.
                         }
                         {
                             do 2 rewrite stdpp_ext.propset_fa_union_full.
+                            pose proof (HSPred' := HSPred).
+                            apply SPred_is_pre_predicate in HSPred'.
+                            apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
+                            specialize (HSPred' 0).
+                            apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
+                            2: {
+                                unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
+                                destruct_and!.
+                                wf_auto2.
+                            }
                             split; intros H' t.
                             {
-
-                                pose proof (HSPred' := HSPred).
-                                apply SPred_is_pre_predicate in HSPred'.
-                                apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
-                                specialize (HSPred' 0).
-                                apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
-                                2: {
-                                    unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
-                                    destruct_and!.
-                                    wf_auto2.
-                                }
                                 specialize (H' stdpp.base.inhabitant).
                                 destruct H' as [c Hc].
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
@@ -2054,32 +2053,101 @@ Section with_syntax.
                                 destruct H' as [c Hc].
                                 destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 {
-                                    
+                                    exists (lift_value c).
+                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    {
+                                        rewrite update_evar_val_lift_val_e_comm.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        feed specialize IHszpred.
+                                        {
+                                            rewrite evar_open_size'. lia.
+                                        }
+                                        {
+                                            apply is_SPredicate_evar_open. assumption.
+                                        }
+                                        {
+                                            wf_auto2.
+                                        }
+                                        destruct IHszpred as [IH1 IH2].
+
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        destruct HSPred' as [HFull|HEmpty].
+                                        {
+                                            apply IH2 in HFull.
+                                            rewrite HFull.
+                                            clear.
+                                            set_solver.
+                                        }
+                                        {
+                                            rewrite HEmpty in Hc.
+                                            exfalso. clear -Hc.
+                                            set_solver.
+                                        }
+                                    }
+                                    {
+                                        exfalso. apply Hnotin'. clear Hnotin'.
+                                        unfold Minterp_inhabitant.
+                                        rewrite pattern_interpretation_app_simpl.
+                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        simpl.
+                                        unfold app_ext.
+                                        rewrite elem_of_PropSet.
+                                        unfold Minterp_inhabitant in Hin.
+                                        rewrite pattern_interpretation_app_simpl in Hin.
+                                        do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                        unfold app_ext in Hin.
+                                        rewrite elem_of_PropSet in Hin.
+                                        destruct Hin as [le [re [Hle [Hre Hlere]]]].
+                                        simpl.
+                                        exists cinh.
+                                        exists (lift_value re).
+                                        split.
+                                        {
+                                            unfold new_sym_interp.
+                                            repeat case_match; try congruence.
+                                        }
+                                        simpl.
+                                        split.
+                                        {
+                                            unfold new_sym_interp,lift_value.
+                                            simpl in *.
+                                            unfold is_not_core_symbol,is_core_symbol in H.
+                                            repeat case_match; subst; try tauto.
+                                            unfold fmap.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                            rewrite elem_of_PropSet.
+                                            exists (inl re).
+                                            split;[reflexivity|].
+                                            rewrite elem_of_PropSet.
+                                            exists re.
+                                            split;[reflexivity|].
+                                            assumption.
+                                        }
+                                        {
+                                            unfold fmap,lift_value.
+                                            with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                            rewrite elem_of_PropSet.
+                                            exists (inl c).
+                                            split;[reflexivity|].
+                                            rewrite elem_of_PropSet.
+                                            exists c.
+                                            split;[reflexivity|].
+                                            rewrite elem_of_PropSet.
+                                            exists le. exists re.
+                                            split;[assumption|].
+                                            split;[(clear;set_solver)|].
+                                            assumption.
+                                        }
+                                    }
+                                }
+                                {
+                                    exfalso. clear -Hc. set_solver.
                                 }
                             }
                         }
-
-
-                        rewrite pattern_interpretation_exists_predicate_full.
-
-                        2: {
-                            unfold evar_open. simpl_bevar_subst.
-                            apply M_predicate_and.
-                            {
-                                apply T_predicate_in.
-                                rewrite HSortImptDef.
-                                apply Mext_satisfies_definedness.
-                            }
-                            {
-                                Search M_predicate evar_open.
-                                apply SPred_is_pre_predicate in HSPred.
-                                apply M_pre_predicate_exists in HSPred.
-                                unfold M_pre_predicate in HSPred.
-                                unfold M_pre_pre_predicate in HSPred.
-                                simpl in HSPred.
-                                apply HSPred.
-                            }
-                        }
+                    }
+                    {
+                        
                     }
                 }
             }
