@@ -1644,6 +1644,140 @@ Section with_syntax.
                         }
                     }
                     {
+                        do 2 rewrite pattern_interpretation_imp_simpl.
+                        pose proof (IH1 := IHszpred ϕ₁ ρₑ ρₛ).
+                        feed specialize IH1.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        destruct IH1 as [IH11 IH12].
+                        pose proof (IH2 := IHszpred ϕ₂ ρₑ ρₛ).
+                        feed specialize IH2.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        destruct IH2 as [IH21 IH22].
+                        split.
+                        {
+                            split; intros H.
+                            {
+                                rewrite empty_union_L in H.
+                                destruct H as [H1 H2].
+                                rewrite empty_union_L.
+                                split.
+                                {
+                                    rewrite stdpp_ext.complement_empty_iff_full in H1.
+                                    rewrite stdpp_ext.complement_empty_iff_full.
+                                    rewrite -IH12.
+                                    assumption.
+                                }
+                                {
+                                    rewrite -IH21.
+                                    assumption.
+                                }
+                            }
+                            {
+                                rewrite empty_union_L in H.
+                                destruct H as [H1 H2].
+                                rewrite empty_union_L.
+                                split.
+                                {
+                                    rewrite stdpp_ext.complement_empty_iff_full.
+                                    rewrite stdpp_ext.complement_empty_iff_full in H1.
+                                    rewrite IH12.
+                                    exact H1.
+                                }
+                                {
+                                    rewrite IH21.
+                                    exact H2.
+                                }
+                            }
+                        }
+                        {
+                            apply SPred_is_predicate in HSPred1.
+                            2: {
+                                unfold well_formed,well_formed_closed in Hwf.
+                                simpl in Hwf.
+                                destruct_and!.
+                                assumption.
+                            }
+                            apply SPred_is_predicate in HSPred2.
+                            2: {
+                                unfold well_formed,well_formed_closed in Hwf.
+                                simpl in Hwf.
+                                destruct_and!.
+                                assumption.
+                            }
+                            specialize (HSPred1 ρₑ ρₛ).
+                            specialize (HSPred2 ρₑ ρₛ).
+                            split; intros H.
+                            {
+                                destruct HSPred1 as [H1T|H1B],
+                                HSPred2 as [H2T|H2B].
+                                {
+                                    rewrite H2T.
+                                    clear.
+                                    set_solver.
+                                }
+                                {
+                                    rewrite H2B.
+                                    apply IH21 in H2B.
+                                    rewrite H2B in H.
+                                    assert (H': pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ₁  = ∅).
+                                    {
+                                        clear -H. set_solver.
+                                    }
+                                    rewrite IH11 in H'.
+                                    rewrite H'.
+                                    clear. set_solver.
+                                }
+                                {
+                                    rewrite H1B. rewrite H2T.
+                                    clear. set_solver.
+                                }
+                                {
+                                    rewrite H1B. rewrite H2B. clear. set_solver.
+                                }
+                            }
+                            {
+                                destruct HSPred1 as [H1T|H1B],
+                                HSPred2 as [H2T|H2B].
+                                {
+                                    apply IH12 in H1T.
+                                    rewrite H1T.
+                                    apply IH22 in H2T.
+                                    rewrite H2T.
+                                    clear.
+                                    set_solver.
+                                }
+                                {
+                                    rewrite H1T in H.
+                                    rewrite H2B in H.
+                                    exfalso. clear -H.
+                                    pose proof (Hinh := Domain_inhabited M).
+                                    inversion Hinh.
+                                    set_solver.
+                                }
+                                {
+                                    apply IH11 in H1B.
+                                    rewrite H1B.
+                                    apply IH22 in H2T.
+                                    rewrite H2T.
+                                    clear.
+                                    set_solver.
+                                }
+                                {
+                                    apply IH11 in H1B.
+                                    rewrite H1B.
+                                    apply IH21 in H2B.
+                                    rewrite H2B.
+                                    clear.
+                                    set_solver.
+                                }
+                            }
+                        }
+                    }
+                    {
                         
                     }
                 }
