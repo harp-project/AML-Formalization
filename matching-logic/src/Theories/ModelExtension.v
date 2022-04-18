@@ -2393,7 +2393,84 @@ Section with_syntax.
                             }
                         }
                         {
-                            
+                            split;
+                            intros H'.
+                            {
+                                intros c.
+                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                {
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                    feed specialize IHszpred.
+                                    {
+                                        rewrite evar_open_size'.
+                                        lia.
+                                    }
+                                    {
+                                        apply is_SPredicate_evar_open.
+                                        assumption.
+                                    }
+                                    {
+                                        wf_auto2.
+                                    }
+                                    destruct IHszpred as [IH1 IH2].
+                                    specialize (H' (lift_value c)).
+                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    {
+                                        rewrite update_evar_val_lift_val_e_comm in H'.
+                                        apply IH2 in H'.
+                                        exact H'.
+                                    }
+                                    {
+                                        exfalso. apply Hnotin'. clear Hnotin' H'.
+                                        unfold Minterp_inhabitant in Hin.
+                                        rewrite pattern_interpretation_app_simpl in Hin.
+                                        do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                        unfold app_ext in Hin.
+                                        rewrite elem_of_PropSet in Hin.
+                                        destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                        unfold Minterp_inhabitant.
+                                        rewrite pattern_interpretation_app_simpl.
+                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        unfold app_ext.
+                                        rewrite elem_of_PropSet.
+                                        exists cinh.
+                                        exists (lift_value re).
+                                        simpl.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                        unfold new_sym_interp.
+                                        unfold is_not_core_symbol,is_core_symbol in H.
+                                        repeat case_match; subst; try congruence; try contradiction; try tauto.
+                                        split;[(clear; set_solver)|].
+                                        unfold fmap.
+                                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                                        unfold lift_value.
+                                        repeat setoid_rewrite elem_of_PropSet.
+                                        split.
+                                        {
+                                            exists (inl re).
+                                            split;[reflexivity|].
+                                            exists re.
+                                            split;[reflexivity|].
+                                            assumption.
+                                        }
+                                        {
+                                            exists (inl c).
+                                            split;[reflexivity|].
+                                            exists c.
+                                            split;[reflexivity|].
+                                            exists le.
+                                            exists re.
+                                            split;[assumption|].
+                                            split;[(clear;set_solver)|].
+                                            assumption.
+                                        }
+                                    }
+                                }
+                                { reflexivity. }
+                            }
+                            {
+                                
+                            }
                         }
                     }
                 }
