@@ -2469,7 +2469,83 @@ Section with_syntax.
                                 { reflexivity. }
                             }
                             {
-                                
+                                intros c.
+                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                2: { reflexivity. }
+                                unfold Minterp_inhabitant in Hin.
+                                rewrite pattern_interpretation_app_simpl in Hin.
+                                do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                unfold app_ext in Hin.
+                                rewrite elem_of_PropSet in Hin.
+                                simpl in Hin.
+                                unfold new_sym_interp,new_app_interp in Hin.
+                                destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                unfold is_not_core_symbol,is_core_symbol in H.
+                                repeat case_match; subst; try congruence; try contradiction.
+                                2: { 
+                                    unfold fmap in Hre.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                    rewrite elem_of_PropSet in Hre.
+                                    destruct Hre as [a [Ha Hre]].
+                                    inversion Ha. clear Ha. subst.
+                                    rewrite elem_of_PropSet in Hre.
+                                    destruct Hre as [a [Ha Hre]].
+                                    inversion Ha.
+                                 }
+                                unfold fmap in Hre.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                rewrite elem_of_PropSet in Hre.
+                                destruct Hre as [a [Ha Hre]].
+                                inversion Ha. clear Ha. subst.
+                                rewrite elem_of_PropSet in Hre.
+                                destruct Hre as [a [Ha Hre]].
+                                inversion Ha. clear Ha. subst.
+
+                                unfold fmap in Hin.
+                                with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                rewrite elem_of_PropSet in Hin.
+                                destruct Hin as [a0 [Ha0 Hin]].
+                                subst.
+                                rewrite elem_of_PropSet in Hin.
+                                destruct Hin as [a1 [Ha1 Hin]].
+                                subst.
+                                unfold app_ext in Hin.
+                                rewrite elem_of_PropSet in Hin.
+                                destruct Hin as [le' [re' [Hle' [Hre' Hin]]]].
+                                rewrite elem_of_singleton in Hre'. subst.
+                                rewrite update_evar_val_lift_val_e_comm.
+
+                                specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a1 ρₑ) ρₛ).
+                                feed specialize IHszpred.
+                                {
+                                    rewrite evar_open_size'.
+                                    lia.
+                                }
+                                {
+                                    apply is_SPredicate_evar_open.
+                                    assumption.
+                                }
+                                {
+                                    wf_auto2.
+                                }
+                                destruct IHszpred as [IH1 IH2].
+                                specialize (H' a1).
+                                destruct (indec H a1 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                {
+                                    apply IH2 in H'.
+                                    apply H'.
+                                }
+                                {
+                                    exfalso.
+                                    apply Hnotin'. clear Hnotin'.
+                                    unfold Minterp_inhabitant.
+                                    rewrite pattern_interpretation_app_simpl.
+                                    do 2 rewrite pattern_interpretation_sym_simpl.
+                                    unfold app_ext.
+                                    rewrite elem_of_PropSet.
+                                    exists le'. exists a.
+                                    repeat split; assumption.
+                                }
                             }
                         }
                     }
