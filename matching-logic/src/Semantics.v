@@ -28,8 +28,9 @@ Section semantics.
 
   (* Model of AML ref. snapshot: Definition 2 *)
 
+  Polymorphic
   Record Model := {
-    Domain : Type;
+    Domain :> Type;
     Domain_inhabited : Inhabited Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;

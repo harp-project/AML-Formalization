@@ -282,7 +282,8 @@ Section with_syntax.
             | right _ => cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s))
             end
         end.
-    
+
+    Polymorphic
     Definition Mext : Model :=
         {|
             Domain := Carrier ;
@@ -294,7 +295,6 @@ Section with_syntax.
     Lemma Mext_satisfies_definedness : Mext ⊨ᵀ Definedness_Syntax.theory.
     Proof.
         unfold theory.
-        Search NamedAxioms.theory_of_NamedAxioms.
         apply satisfies_theory_iff_satisfies_named_axioms.
         intros na. destruct na.
         apply single_element_definedness_impl_satisfies_definedness.
@@ -523,8 +523,8 @@ Section with_syntax.
             ρe0 ρs0
             :
             is_not_core_symbol s ->
-            pattern_interpretation ρe0 ρs0 (patt_sym s) =
-            lift_set (pattern_interpretation ρₑ ρₛ (patt_sym s)).
+            @pattern_interpretation Σ Mext ρe0 ρs0 (patt_sym s) =
+            lift_set (@pattern_interpretation Σ M ρₑ ρₛ (patt_sym s)).
         Proof.
             intros H.
             do 2 rewrite pattern_interpretation_sym_simpl.
@@ -543,8 +543,8 @@ Section with_syntax.
             ρe0 ρs0
             :
             is_not_core_symbol s ->
-            pattern_interpretation ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
-            = lift_set (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
+            @pattern_interpretation Σ Mext ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
+            = lift_set (@pattern_interpretation Σ M ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
         Proof.
             intros H.
             rename H into Hnc.
@@ -666,14 +666,7 @@ Section with_syntax.
                 assumption.
             }
         Qed.
-(*
-        Check @Mext_indec.
-        Lemma Mext_indec_lift_value
-            (s : symbol)
-            (pf : is_not_core_symbol s)
 
-        Mext_indec H (lift_value c) ρₑ ρₛ
-*)
         Lemma semantics_preservation
             (sz : nat)
             :
@@ -1158,14 +1151,13 @@ Section with_syntax.
                         | [ |- (Lattice.LeastFixpointOf ?fF = lift_set (Lattice.LeastFixpointOf ?fG))] =>
                             remember fF as F; remember fG as G
                         end.
-                        Search Lattice.LeastFixpointOf.
+                        
                         symmetry.
                         assert (HmonoF: @Lattice.MonotonicFunction
                             (propset Carrier)
                             (Lattice.PropsetOrderedSet Carrier) F).
                         {
                             subst F.
-                            replace Carrier with (Domain Mext) by reflexivity.
                             pose proof (Hmono := @is_monotonic Σ Mext).
                             simpl in Hmono.
                             apply Hmono.
@@ -1288,7 +1280,7 @@ Section with_syntax.
                                     apply reflexivity.
                                 }
                             }
-                            replace (propset Carrier) with (propset (Domain Mext)) by reflexivity.
+                            (*replace (propset Carrier) with (propset (Domain Mext)) by reflexivity.*)
                             intros A HA.
                             rewrite Hls.
                             apply Lattice.LeastFixpoint_LesserThanPrefixpoint.
@@ -2555,4 +2547,5 @@ Section with_syntax.
 
     End semantic_preservation.
 
+    End ext.
 End with_syntax.
