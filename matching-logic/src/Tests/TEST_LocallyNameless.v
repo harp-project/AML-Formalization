@@ -13,6 +13,7 @@ From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semant
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.IndexManipulation.
 
@@ -25,6 +26,7 @@ Module test_1.
   Instance Symbols_eqdec : EqDecision Symbols.
   Proof. solve_decision. Defined.
 
+  #[local]
   Instance signature : Signature :=
     {| variables := StringMLVariables ;
        symbols := Symbols ;
@@ -126,7 +128,7 @@ Module test_2.
     Instance CustomElements_eqdec : EqDecision CustomElements.
     Proof. solve_decision. Defined.
     
-    Inductive domain : Type :=
+    Inductive domain : Set :=
     | dom_nat (n:nat)
     | dom_custom (c:CustomElements)
     .    
@@ -163,24 +165,19 @@ Module test_2.
     Arguments Domain : simpl never.
 
     (* TODO a tactic that solves this, or a parameterized lemma. *)
-    Lemma M1_satisfies_definedness1 : satisfies_model M1 (Definedness_Syntax.axiom Definedness_Syntax.AxDefinedness).
+    
+    Lemma M1_satisfies_definedness1 : @satisfies_model signature M1 (Definedness_Syntax.axiom Definedness_Syntax.AxDefinedness).
     Proof.
-      unfold satisfies_model. intros.
-      unfold axiom.
-      unfold patt_defined.
-      rewrite -> pattern_interpretation_app_simpl.
-      rewrite -> pattern_interpretation_sym_simpl.
-      simpl.
-      rewrite -> set_eq_subseteq.
-      split.
-      { apply top_subseteq. }
-      rewrite -> elem_of_subseteq.
-      intros x _.
-      unfold app_ext.
+      apply single_element_definedness_impl_satisfies_definedness.
       exists (dom_custom m_def).
-      unfold p_x.
-      rewrite -> pattern_interpretation_free_evar_simpl.
-      eexists. firstorder.
+      simpl.
+      split.
+      {
+        reflexivity.
+      }
+      {
+        auto.
+      }
     Qed.
     
   End test_2.

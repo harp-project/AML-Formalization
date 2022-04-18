@@ -1190,7 +1190,7 @@ Section with_syntax.
                         }
                         {
                             fold L.
-                            rewrite <- HGmuG at 2.
+                            rewrite -[x in (_ = (lift_set x))]HGmuG.
                             rewrite HeqF.
                             rewrite update_svar_val_lift_set_comm.
                             rewrite IHszdata.

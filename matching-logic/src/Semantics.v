@@ -28,7 +28,7 @@ Section semantics.
 
   (* Model of AML ref. snapshot: Definition 2 *)
 
-  Polymorphic
+  Polymorphic Cumulative
   Record Model := {
     Domain :> Type;
     Domain_inhabited : Inhabited Domain;
