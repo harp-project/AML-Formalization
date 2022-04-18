@@ -636,3 +636,152 @@ Qed.
 
 
 End lemmas.
+
+
+Lemma svar_hno_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+  (svar_has_negative_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
+  (svar_has_positive_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
+  svar_has_negative_occurrence X ϕ = false ->
+  svar_has_negative_occurrence X (bsvar_subst ϕ ψ dbi) = false
+with svar_hpo_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+       (svar_has_negative_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
+       (svar_has_positive_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
+       svar_has_positive_occurrence X ϕ = false ->
+       svar_has_positive_occurrence X (bsvar_subst ϕ ψ dbi) = false.
+Proof.
+  -
+    move: dbi.
+    induction ϕ; intros dbi H1 H2 H3; cbn in *; auto.
+    + case_match; auto. case_match; try lia.
+      destruct (decide (svar_has_negative_occurrence X ψ = false)); auto.
+      apply not_false_is_true in n0. specialize (H1 n0). congruence. case_match; auto. congruence.
+    + apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite IHϕ1; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+    + fold svar_has_positive_occurrence in *.
+      fold no_positive_occurrence_db_b in *.
+      fold no_negative_occurrence_db_b in *.
+      apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite svar_hpo_bsvar_subst; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+  -
+    move: dbi.
+    induction ϕ; intros dbi H1 H2 H3; cbn in *; auto.
+    + case_match; auto. case_match; try lia.
+      destruct (decide (svar_has_positive_occurrence X ψ = false)); auto.
+      apply not_false_is_true in n0. specialize (H2 n0). congruence. case_match; auto. congruence.
+    + apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite IHϕ1; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+    + fold svar_has_positive_occurrence in *.
+      fold svar_has_negative_occurrence in *.
+      fold no_positive_occurrence_db_b in *.
+      fold no_negative_occurrence_db_b in *.
+      apply orb_false_iff in H3.
+      destruct_and!.
+      rewrite svar_hno_bsvar_subst; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+      rewrite IHϕ2; auto.
+      { naive_bsolver. }
+      { naive_bsolver. }
+Qed.
+
+Lemma svar_hno_false_if_fresh {Σ : Signature} X ϕ:
+  svar_is_fresh_in X ϕ ->
+  svar_has_negative_occurrence X ϕ = false
+with svar_hpo_false_if_fresh {Σ : Signature} X ϕ:
+       svar_is_fresh_in X ϕ ->
+       svar_has_positive_occurrence X ϕ = false.
+Proof.
+  - unfold svar_is_fresh_in.
+    induction ϕ; intros H; cbn in *; auto.
+    + rewrite -> IHϕ1, -> IHϕ2; try reflexivity; set_solver.
+    + fold svar_has_positive_occurrence.
+      rewrite -> svar_hpo_false_if_fresh, -> IHϕ2; try reflexivity.
+      * set_solver.
+      * unfold svar_is_fresh_in. set_solver.
+  - unfold svar_is_fresh_in.
+    induction ϕ; intros H; cbn in *; auto.
+    + case_match; auto. set_solver.
+    + rewrite -> IHϕ1, -> IHϕ2; try reflexivity; set_solver.
+    + fold svar_has_negative_occurrence.
+      rewrite -> svar_hno_false_if_fresh, -> IHϕ2; try reflexivity.
+      * set_solver.
+      * unfold svar_is_fresh_in. set_solver.
+Qed.
+
+
+(* TODO remove the no-negative-ocurrence assumption from the svar version *)
+Lemma wfp_free_evar_subst {Σ : Signature} ϕ ψ x:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->
+  well_formed_positive (free_evar_subst ϕ ψ x) = true
+with wfp_neg_free_evar_subst {Σ : Signature} ϕ ψ x:
+  well_formed_closed_mu_aux ψ 0 ->
+  well_formed_positive ψ = true ->
+  well_formed_positive ϕ = true ->
+  well_formed_positive (free_evar_subst ϕ ψ x) = true.
+Proof.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ. (* Hnoneg.*)
+    induction ϕ; simpl; auto.
+    + case_match; [|reflexivity].
+      assumption.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      pose proof (IH1 := wfp_neg_free_evar_subst Σ ϕ1 ψ x ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. split_and!; auto.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+  -
+    intros Hwfcψ Hwfpψ Hwfpϕ.
+    induction ϕ; simpl; auto.
+    + case_match; [|reflexivity].
+      assumption.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ.
+      destruct_and!.
+      pose proof (IH1 := wfp_free_evar_subst Σ ϕ1 ψ x ltac:(assumption)).
+      feed specialize IH1.
+      { assumption. }
+      { assumption. }
+      specialize (IHϕ2 ltac:(assumption)).
+      split_and!; auto.
+    + cbn in Hwfpϕ. destruct_and!.
+      rewrite IHϕ. assumption. split_and!; auto.
+      rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
+Qed.
+
+#[export]
+ Hint Resolve wfp_free_evar_subst : core.

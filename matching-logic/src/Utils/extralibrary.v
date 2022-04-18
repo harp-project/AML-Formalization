@@ -288,11 +288,30 @@ Tactic Notation "destruct_and" "?" ident(H) :=
   destruct_and_go H.
 Tactic Notation "destruct_and" "!" ident(H) :=
   hnf in H; progress (destruct_and? H).
-
 Tactic Notation "destruct_and" "?" :=
   repeat match goal with H : _ |- _ => progress (destruct_and? H) end.
 Tactic Notation "destruct_and" "!" :=
   progress destruct_and?.
+
+Ltac destruct_ex_go H :=
+  try lazymatch type of H with
+  | True => clear H
+  | (ex _) => let x := fresh "x" in let H' := fresh "H" in destruct H as [ x H ]
+  end.
+Tactic Notation "destruct_ex" "?" ident(H) :=
+  destruct_ex_go H.
+Tactic Notation "destruct_ex" "!" ident(H) :=
+  hnf in H; progress (destruct_ex? H).
+
+Tactic Notation "destruct_ex" "?" :=
+  repeat match goal with H : _ |- _ => progress (destruct_ex? H) end.
+Tactic Notation "destruct_ex" "!" :=
+  progress destruct_ex?.
+
+Tactic Notation "destruct_and_ex" "?" :=
+  repeat (destruct_and? || destruct_ex?).
+Tactic Notation "destruct_and_ex" "!" :=
+  progress destruct_and_ex?.
 
 
 Tactic Notation "destruct_or" "?" ident(H) :=

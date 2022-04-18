@@ -1682,14 +1682,7 @@ apply total_phi_impl_phi_meta in H.
 Defined.
 
 
-Ltac wfauto' :=
-lazymatch goal with
-| [|- is_true (well_formed _)] => wf_auto2
-| [|- well_formed _ = true ] => wf_auto2
-| [|- is_true (wf _)] => wf_auto2
-| [|- wf _ = true ] => wf_auto2
-| _ => idtac
-end.
+Ltac wfauto' := try_wfauto2.
 
 Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
 theory ⊆ Γ ->

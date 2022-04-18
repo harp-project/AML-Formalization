@@ -530,3 +530,44 @@ Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
 Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
 
 End syntax.
+
+
+Lemma well_formed_app_proj1 {Σ : Signature} p q:
+  well_formed (patt_app p q) ->
+  well_formed p.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_app_proj2 {Σ : Signature} p q:
+  well_formed (patt_app p q) ->
+  well_formed q.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_imp_proj1 {Σ : Signature} p q:
+  well_formed (patt_imp p q) ->
+  well_formed p.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.
+
+Lemma well_formed_imp_proj2 {Σ : Signature} p q:
+  well_formed (patt_imp p q) ->
+  well_formed q.
+Proof.
+  intros H.
+  unfold well_formed,well_formed_closed in *. simpl in *.
+  destruct_and!.
+  unfold well_formed,well_formed_closed. split_and!; assumption.
+Qed.

@@ -57,6 +57,27 @@ Section sorts.
        unary_wf := ltac:(wf_auto2) ;
     |}.
 
+  Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
+    (patt_inhabitant_set sort) and (patt_not phi).
+
+  Lemma bevar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
+    bevar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bevar_subst s ψ x) (bevar_subst ϕ ψ x).
+  Proof. unfold patt_sorted_neg. simpl_bevar_subst. reflexivity. Qed.
+
+  Lemma bsvar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
+    bsvar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bsvar_subst s ψ x) (bsvar_subst ϕ ψ x).
+  Proof. unfold patt_sorted_neg.
+    simpl_bsvar_subst.
+    reflexivity.
+  Qed.
+
+  #[global]
+   Instance Binary_sorted_neg : Binary patt_sorted_neg :=
+    {| binary_bevar_subst := bevar_subst_sorted_neg ;
+       binary_bsvar_subst := bsvar_subst_sorted_neg ;
+       binary_wf := ltac:(wf_auto2) ;
+    |}.
+
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
 

@@ -8,7 +8,7 @@ From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
 From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset.
+From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
 
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 From MatchingLogic Require Import
@@ -28,8 +28,9 @@ Section semantics.
 
   (* Model of AML ref. snapshot: Definition 2 *)
 
+  Polymorphic Cumulative
   Record Model := {
-    Domain : Type;
+    Domain :> Type;
     Domain_inhabited : Inhabited Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;
@@ -435,7 +436,7 @@ Section semantics.
 
   End with_model.
 
-  (* model predicate *)
+  (* Model predicate. Useful mainly if the pattern is well-formed. *)
   Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρ,
       @pattern_interpretation M ρₑ ρ ϕ = ⊤ \/ pattern_interpretation ρₑ ρ ϕ = ∅.
 
@@ -505,7 +506,7 @@ Section semantics.
   Qed.
 
   Hint Resolve M_predicate_exists : core.
-
+  
   Lemma predicate_not_empty_iff_full M ϕ ρₑ ρ :
     M_predicate M ϕ ->
     @pattern_interpretation M ρₑ ρ ϕ <> ∅ <->

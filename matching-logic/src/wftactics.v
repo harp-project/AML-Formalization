@@ -7,13 +7,26 @@ From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
 Require Import stdpp_ext.
 
-From MatchingLogic Require Import Utils.extralibrary Syntax.
+From MatchingLogic
+Require Import
+  Utils.extralibrary
+  Pattern
+  Substitution
+  ApplicationContext
+  SyntaxLemmas.FreshnessSubstitution
+  SyntacticConstruct
+.
+
+
+Tactic Notation "wf_auto" int_or_var(n)
+  := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
+Tactic Notation "wf_auto" := wf_auto 5.
 
 Ltac wf_auto2 := unfold is_true in *;
 repeat (try assumption; try reflexivity; try (solve [wf_auto]); (* TODO: get rid of [wf_auto] *)
 apply nvnullary_wf || apply unary_wf || apply binary_wf ||
 match goal with
-| [ |- ?H -> ?G ]
+| [ |- (forall _, _) ]
   => intro
 
 | [ |- size' (evar_open _ _ _) < _ ]
@@ -146,3 +159,20 @@ match goal with
 
 end; unfold is_true in *
 ).
+
+Ltac try_wfauto2 :=
+lazymatch goal with
+| [|- is_true (well_formed _)] => wf_auto2
+| [|- well_formed _ = true ] => wf_auto2
+| [|- is_true (well_formed_closed _)] => wf_auto2
+| [|- well_formed_closed _ = true ] => wf_auto2
+| [|- is_true (wf _)] => wf_auto2
+| [|- wf _ = true ] => wf_auto2
+| _ => idtac
+end.
+
+
+Ltac simpl_bevar_subst :=
+  repeat (rewrite simpl_bevar_subst';try_wfauto2).
+Ltac simpl_bsvar_subst :=
+  repeat (rewrite simpl_bsvar_subst';try_wfauto2).

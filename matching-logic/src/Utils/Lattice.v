@@ -360,6 +360,33 @@ Proof.
   apply Hleast. apply H.
 Qed.
 
+Proposition LeastFixpoint_unique_2 :
+  forall (A : Type) (OS : OrderedSet A) (L : CompleteLattice A)
+    (f : A -> A)
+    (Sfix : A),
+    (MonotonicFunction f) ->
+    (f Sfix) = Sfix ->
+    (forall x, (f x) = x -> leq Sfix x) ->
+    Sfix = LeastFixpointOf f.
+Proof.
+  intros A OS L f Sfix Hmono Hfix Hleast.
+  apply (@ord_antisym _ _ leq_order).
+  {
+    specialize (Hleast (LeastFixpointOf f)).
+    feed specialize Hleast.
+    {
+      apply LeastFixpoint_fixpoint.
+      apply Hmono.
+    }
+    apply Hleast.
+  }
+  {
+    apply LeastFixpoint_LesserThanFixpoint.
+    symmetry.
+    apply Hfix.
+  }
+Qed.
+
 Lemma lfp_preserves_order {A : Type} (OS : OrderedSet A) (L : CompleteLattice A) (f g : A -> A) :
   MonotonicFunction f -> MonotonicFunction g ->
   (forall (x : A), leq (f x) (g x)) ->

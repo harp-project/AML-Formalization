@@ -3,10 +3,18 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Setoid.
 From stdpp Require Import base sets propset.
-From Coq Require Import Logic.Classical_Prop.
+From Coq Require Import Logic.Classical_Prop Logic.FunctionalExtensionality.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax Semantics IndexManipulation DerivedOperators_Syntax.
+From MatchingLogic
+Require Import
+  Syntax
+  Semantics
+  IndexManipulation
+  PrePredicate
+  DerivedOperators_Syntax
+.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
@@ -195,7 +203,41 @@ Section with_signature.
 
     Hint Resolve M_predicate_iff : core.
 
-    (* TODO forall *)
+    Lemma M_pre_predicate_not ϕ :
+      M_pre_predicate M ϕ ->
+      M_pre_predicate M (patt_not ϕ).
+    Proof.
+      intros H.
+      unfold patt_not.
+      apply M_pre_predicate_imp.
+      { exact H. }
+      { apply M_pre_predicate_bott. }
+    Qed.
+
+    Lemma M_pre_predicate_or ϕ₁ ϕ₂ :
+      M_pre_predicate M ϕ₁ ->
+      M_pre_predicate M ϕ₂ ->
+      M_pre_predicate M (patt_or ϕ₁ ϕ₂).
+    Proof.
+      intros H1 H2. unfold patt_or.
+      apply M_pre_predicate_imp.
+      { apply M_pre_predicate_not. exact H1. }
+      { exact H2. }
+    Qed.
+
+    Lemma M_pre_predicate_and ϕ₁ ϕ₂ :
+      M_pre_predicate M ϕ₁ ->
+      M_pre_predicate M ϕ₂ ->
+      M_pre_predicate M (patt_and ϕ₁ ϕ₂).
+    Proof.
+      intros H1 H2. unfold patt_and.
+      apply M_pre_predicate_not.
+      apply M_pre_predicate_or.
+      { apply M_pre_predicate_not. exact H1. }
+      { apply M_pre_predicate_not. exact H2. }
+    Qed.
+
+    
 
     (* ML's 'set comprehension'/'set building' scheme.
  Pattern `∃ x. x ∧ P(x)` gets interpreted as {m ∈ M | P(m) holds}
@@ -294,6 +336,7 @@ Section with_signature.
         reflexivity.
     Qed.
 
+
     Lemma pattern_interpretation_and_full ρₑ ρₛ ϕ₁ ϕ₂:
       @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = ⊤
       <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = ⊤
@@ -379,3 +422,116 @@ Hint Resolve T_predicate_not : core.
 Hint Resolve T_predicate_or : core.
 #[export]
 Hint Resolve T_predicate_or : core.
+
+Lemma bcmcloseex_not {Σ : Signature} (l : list (db_index * evar)) (p : Pattern):
+  bcmcloseex l (patt_not p) = patt_not (bcmcloseex l p).
+Proof.
+  unfold patt_not.
+  rewrite bcmcloseex_imp.
+  rewrite bcmcloseex_bott.
+  reflexivity.
+Qed.
+
+Lemma bcmcloseex_all {Σ : Signature} (l : list (db_index * evar)) (q : Pattern) :
+  bcmcloseex l (all , q)%ml =
+  (all , bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) q)%ml.
+Proof.
+  unfold patt_forall.
+  rewrite bcmcloseex_not.
+  rewrite bcmcloseex_ex.
+  rewrite bcmcloseex_not.
+  reflexivity.
+Qed.
+
+Lemma M_pre_pre_predicate_forall {Σ : Signature} (k : db_index) M ϕ :
+  M_pre_pre_predicate (S k) M ϕ ->
+  M_pre_pre_predicate k M (patt_forall ϕ).
+Proof.
+  intros H.
+  unfold patt_forall.
+  apply M_pre_pre_predicate_imp.
+  2: {
+    apply M_pre_predicate_bott.
+  }
+  apply M_pre_pre_predicate_exists.
+  apply M_pre_pre_predicate_imp.
+  { assumption. }
+  { apply M_pre_pre_predicate_bott. }
+Qed.
+
+Lemma M_pre_predicate_forall {Σ : Signature} M ϕ :
+  M_pre_predicate M ϕ ->
+  M_pre_predicate M (patt_forall ϕ).
+Proof.
+  intros H.
+  apply M_pre_pre_predicate_impl_M_pre_predicate with (k := 0).
+  apply M_pre_pre_predicate_forall.
+  apply H.
+Qed.
+
+Lemma pattern_interpretation_all_simpl
+  {Σ : Signature}
+  (M : Model)
+  (ρₑ : EVarVal)
+  (ρₛ : SVarVal)
+  (ϕ : Pattern)
+  :
+  pattern_interpretation ρₑ ρₛ (patt_forall ϕ) =
+  (let x := fresh_evar ϕ in
+   propset_fa_intersection (λ e : Domain M,
+    @pattern_interpretation _ M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x ϕ)
+   )
+  ).
+Proof.
+  unfold patt_forall.
+  rewrite pattern_interpretation_not_simpl.
+  rewrite pattern_interpretation_ex_simpl.
+  simpl.
+  unfold evar_open.
+  simpl_bevar_subst.
+  under [fun e => _]functional_extensionality => e
+  do rewrite pattern_interpretation_not_simpl.
+  unfold propset_fa_union,propset_fa_intersection.
+  remember (fresh_evar (! ϕ)%ml) as x.
+  remember (fresh_evar ϕ) as x'.
+  fold (evar_open 0 x ϕ).
+  fold (evar_open 0 x' ϕ).
+  under [fun e => _]functional_extensionality => e.
+  {
+    under [λ c, _]functional_extensionality => c.
+    {
+      rewrite (@interpretation_fresh_evar_open Σ M ϕ x x').
+      {
+        subst x. eapply evar_is_fresh_in_richer.
+        2: { apply set_evar_fresh_is_fresh. }
+        simpl. clear. set_solver.
+      }
+      {
+        subst x'. apply set_evar_fresh_is_fresh.
+      }
+      over.
+    }
+    over.
+  }
+  clear.
+  unfold_leibniz.
+  set_unfold.
+  intros x.
+  split; intros H.
+  {
+    destruct_and!.
+    intros x0.
+    apply NNPP.
+    intros HContra.
+    apply H1.
+    exists x0.
+    split;[exact I|].
+    apply HContra.
+  }
+  {
+    split;[exact I|].
+    intros [y [_ Hy] ]. 
+    specialize (H y).
+    contradiction.
+  }
+Qed.
