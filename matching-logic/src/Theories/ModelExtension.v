@@ -202,6 +202,25 @@ Section with_syntax.
         constructor.
     Qed.
 
+    Lemma is_SPredicate_patt_not (ϕ : Pattern) :
+        is_SPredicate ϕ ->
+        is_SPredicate (patt_not ϕ).
+    Proof.
+        intros H.
+        unfold patt_not.
+        apply spred_imp.
+        { assumption. }
+        { apply spred_bott. }
+    Qed.
+
+(*
+    Lemma is_SPredicate_forall_of_sort (s : symbols) (ϕ : Pattern)  :
+        is_SPredicate (patt_forall_of_sort (patt_sym s) ϕ).
+    Proof.
+        unfold patt_forall_of_sort,patt_forall.
+        apply is_SPredicate_patt_not.
+    Qed.
+*)
     Section ext.
         Context
             (M : Model)
@@ -2161,7 +2180,113 @@ Section with_syntax.
                         3: { apply _. }
                         2: { apply Domain_inhabited. }
 
-                        
+                        split.
+                        {
+                            split.
+                            {
+                                intros H'.
+                                intros t.
+                                specialize (H' (stdpp.base.inhabitant)).
+                                destruct H' as [c Hc].
+                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                {
+                                    unfold Minterp_inhabitant in Hin.
+                                    rewrite pattern_interpretation_app_simpl in Hin.
+                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    unfold app_ext in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    simpl in Hin.
+                                    destruct Hin as [le [re [Hle [Hre Hin]]]].
+                                    unfold is_not_core_symbol,is_core_symbol in H.
+                                    unfold new_sym_interp in Hle,Hre.
+                                    repeat case_match; subst; try contradiction; try congruence; try (solve [exfalso;tauto]).
+                                    unfold fmap in Hre.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hre.
+                                    rewrite elem_of_PropSet in Hre.
+                                    destruct Hre as [amr [Hamr Hre]].
+                                    subst re.
+                                    rewrite elem_of_PropSet in Hre.
+                                    destruct Hre as [a [Ha Hre]].
+                                    subst amr.
+                                    rewrite elem_of_singleton in Hle. subst le.
+                                    unfold new_app_interp in Hin.
+                                    repeat case_match; subst.
+                                    unfold fmap in Hin.
+                                    with_strategy transparent [propset_fmap] unfold propset_fmap in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [amr [Hamr Hin]].
+                                    subst c.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [a0 [Hamr Hin]].
+                                    subst amr.
+                                    unfold app_ext in Hin.
+                                    rewrite elem_of_PropSet in Hin.
+                                    destruct Hin as [le [re [Hle [Hre' Hin]]]].
+                                    rewrite elem_of_singleton in Hre'. subst re.
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                    feed specialize IHszpred.
+                                    {
+                                        rewrite evar_open_size'.
+                                        lia.
+                                    }
+                                    {
+                                        apply is_SPredicate_evar_open.
+                                        assumption.
+                                    }
+                                    {
+                                        wf_auto2.
+                                    }
+                                    destruct IHszpred as [IH1 IH2].
+                                    pose proof (HSPred' := HSPred).
+                                    apply SPred_is_pre_predicate in HSPred'.
+                                    apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
+                                    exists a0.
+                                    destruct (indec H a0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    {
+                                        rewrite update_evar_val_lift_val_e_comm in Hc.
+                                        intros HContra. apply Hc. clear Hc.
+                                        unfold M_pre_predicate in HSPred'.
+                                        specialize (HSPred' 0).
+                                        apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
+                                        2: {
+                                            unfold well_formed,well_formed_closed in Hwf.
+                                            simpl in Hwf.
+                                            destruct_and!.
+                                            wf_auto2.
+                                        }
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        destruct HSPred' as [HFull|HEmpty].
+                                        {
+                                            apply IH2 in HFull.
+                                            rewrite HFull.
+                                            clear.
+                                            set_solver.
+                                        }
+                                        {
+                                            rewrite HEmpty in HContra.
+                                            exfalso. clear -HContra.
+                                            set_solver.
+                                        }
+                                    }
+                                    {
+                                        exfalso. apply Hnotin'.
+                                        unfold Minterp_inhabitant.
+                                        rewrite pattern_interpretation_app_simpl.
+                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        unfold app_ext.
+                                        rewrite elem_of_PropSet.
+                                        exists le. exists a.
+                                        repeat split; assumption.
+                                    }
+                                }
+                                {
+                                    exfalso. clear -Hc. set_solver.
+                                }
+                            }
+                            {
+                                
+                            }
+                        }
                     }
                 }
             }
