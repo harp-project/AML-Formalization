@@ -508,15 +508,7 @@ Proof.
                 rewrite elem_of_PropSet in Hx.
                 destruct Hx as [c Hc].
 
-                (*
-                under propset_fa_union_proper => e.
-                {
-                    Set Typeclasses Debug.
-                    over.
-                }*)
-                (*do (rewrite -[e](@surj'_pf)).*)
                 under [fun e => _]functional_extensionality => e.
-                (* do (replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)) by apply surj'_pf). *)
                 {
                     rewrite -{1}[e](@surj'_pf _ _ (=) _ (i)).
                     rewrite update_evar_val_compose.
@@ -525,9 +517,51 @@ Proof.
 
                 setoid_rewrite <- IHsz.
                 2: { rewrite evar_open_size'. simpl in Hsz. lia. }
-                
+                unfold propset_fa_union.
+                rewrite elem_of_PropSet.
+                exists (mi_f i c).
+                apply elem_of_fmap_2.
+                replace (surj'_inv (mi_f i c)) with c.
+                2: {
+                    apply (@mi_inj Σ M₁ M₂ i).
+                    rewrite surj'_pf.
+                    reflexivity.
+                }
+                exact Hc.
             }
-            rewrite IHsz.
+            {
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                with_strategy transparent [propset_fmap] unfold propset_fmap.
+                rewrite elem_of_PropSet.
+                unfold propset_fa_union in Hx.
+                rewrite elem_of_PropSet in Hx.
+                destruct Hx as [c Hc].
+                exists (@surj'_inv _ _ _ _ (mi_surj i) x).
+                split.
+                {
+                    rewrite surj'_pf. reflexivity.
+                }
+                rewrite elem_of_PropSet.
+                exists (@surj'_inv _ _ _ _ (mi_surj i) c).
+                replace c with ((mi_f i) (@surj'_inv _ _ _ _ (mi_surj i) c)) in Hc by apply surj'_pf.
+                rewrite update_evar_val_compose in Hc.
+                rewrite -IHsz in Hc.
+                2: { rewrite evar_open_size'. simpl in Hsz. lia. }
+                apply elem_of_fmap in Hc.
+                destruct Hc as [y [Hy Hc]]. subst.
+                replace (surj'_inv (mi_f i y)) with y.
+                2: {
+                    apply (@mi_inj Σ M₁ M₂ i).
+                    rewrite surj'_pf.
+                    reflexivity.
+                }
+                exact Hc.
+            }
+        }
+        {
+            (* patt_mu ϕ *)
+            simpl in Hsz.
         }
     }
 
