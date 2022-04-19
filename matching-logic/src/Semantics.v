@@ -31,7 +31,7 @@ Section semantics.
   Polymorphic Cumulative
   Record Model := {
     Domain :> Type;
-    Domain_inhabited : Inhabited Domain;
+    Domain_inhabited :> Inhabited Domain;
     app_interp : Domain -> Domain -> Power Domain;
     sym_interp (sigma : symbols) : Power Domain;
   }.
@@ -178,7 +178,8 @@ Section semantics.
 
 
   (* We use propositional extensionality here. *)
-  Global Instance propset_leibniz_equiv {m : Model} : LeibnizEquiv (Power (Domain m)).
+  #[export]
+  Instance propset_leibniz_equiv {m : Model} : LeibnizEquiv (propset (Domain m)).
   Proof.
     intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
     unfold Power in x,y. destruct x,y.
