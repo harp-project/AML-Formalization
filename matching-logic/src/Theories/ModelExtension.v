@@ -337,7 +337,7 @@ Section with_syntax.
         forall (s : symbols),
             is_not_core_symbol s ->
             forall (m : Domain Mext) ρₑ ρₛ,
-            Decision (m ∈ Minterp_inhabitant (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
+            Decision (m ∈ @Minterp_inhabitant Σ _ Mext (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
     Proof.
         intros. unfold Minterp_inhabitant.
         rewrite pattern_interpretation_app_simpl.
@@ -675,8 +675,8 @@ Section with_syntax.
                 size' ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
-                pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
-                = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
+                @pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
+                = lift_set (@pattern_interpretation Σ M ρₑ ρₛ ϕ)
             )
             /\
             (
@@ -684,11 +684,11 @@ Section with_syntax.
                 size' ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
-                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
-                <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
+                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
+                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ∅)
                 /\
-                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
-                <-> pattern_interpretation ρₑ ρₛ ψ = ⊤)
+                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
+                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ⊤)
             ).
         Proof.
             induction sz.
@@ -1266,7 +1266,6 @@ Section with_syntax.
                                     unfold G'.
                                     simpl.
                                     apply lift_set_mono.
-                                    unfold Power.
                                     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
                                     simpl in Htmp. apply Htmp. clear Htmp.
                                     replace (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
