@@ -295,6 +295,19 @@ Qed.
 #[local]
 Hint Transparent Power : core.
 
+Lemma update_evar_val_compose
+    {Σ : Signature} (M₁ M₂ : Model) (ρₑ : @EVarVal Σ M₁) (x : evar) (m : Domain M₁)
+    (f : Domain M₁ -> Domain M₂)
+    :
+    update_evar_val x (f m) (f ∘ ρₑ) = f ∘ (update_evar_val x m ρₑ).
+Proof.
+    apply functional_extensionality.
+    intros y.
+    unfold update_evar_val.
+    simpl.
+    case_match; auto.
+Qed.
+
 Theorem isomorphism_preserves_semantics
     {Σ : Signature}
     (M₁ M₂ : Model)
@@ -414,7 +427,6 @@ Proof.
             2: { lia. }
             rewrite -IHsz.
             2: { lia. }
-            Search fmap difference.
             remember (pattern_interpretation ρₑ ρₛ ϕ1) as X1.
             remember (pattern_interpretation ρₑ ρₛ ϕ2) as X2.
             unfold fmap.
@@ -484,7 +496,28 @@ Proof.
             }
         }
         {
-            
+            do 2 rewrite pattern_interpretation_ex_simpl.
+            simpl.
+            rewrite set_equiv_subseteq.
+            split.
+            {
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                with_strategy transparent [propset_fmap] unfold propset_fmap in Hx.
+                rewrite elem_of_PropSet in Hx.
+                destruct Hx as [a [Ha Hx]].
+                subst.
+                rewrite elem_of_PropSet in Hx.
+                destruct Hx as [c Hc].
+                under [fun e => _]functional_extensionality => e.
+                {
+                    replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)).
+                    2: { apply surj'_pf. }
+                    rewrite update_evar_val_compose.
+                    rewrite -IHsz.
+                }
+            }
+            rewrite IHsz.
         }
     }
 
