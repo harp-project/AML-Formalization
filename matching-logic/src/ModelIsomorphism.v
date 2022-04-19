@@ -248,32 +248,21 @@ Proof.
         (* reflexive *)
         unfold Reflexive.
         intros M.
-        unshelve (eexists (@mkModelIsomorphism Σ M M Datatypes.id _ _ _ _)).
-        {
-            intros s.
-            unfold fmap.
-            with_strategy transparent [propset_fmap] unfold propset_fmap.
-            unfold Datatypes.id.
-            set_solver.
-        }
-        {
-            intros x y.
-            unfold fmap.
-            with_strategy transparent [propset_fmap] unfold propset_fmap.
-            unfold Datatypes.id.
-            set_solver.
-        }
-        {
-            exact I.
-        }
+        exists (ModelIsomorphism_refl M).
+        exact I.
     }
     {
         (* Symmetric *)
         unfold Symmetric.
-        intros M1 M2 [j].
-        destruct j.
-        constructor.
-        Search Inj Surj.
-        Print Opaque Dependencies constructive_definite_description.
+        intros M1 M2 [j _].
+        exists (ModelIsomorphism_sym j).
+        exact I.
     }
-Defined.
+    {
+        (* Transitive *)
+        unfold Transitive.
+        intros M1 M2 M3 [i _] [j _].
+        exists (ModelIsomorphism_trans i j).
+        exact I.
+    }
+Qed.
