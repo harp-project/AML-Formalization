@@ -149,7 +149,50 @@ Proof.
         }
     }
     {
-        
+        intros x y.
+        unfold fmap in *.
+        with_strategy transparent [propset_fmap] unfold propset_fmap in *.
+        specialize (mi_app0 (surj'_inv0 x) (surj'_inv0 y)).
+        do 2 rewrite surj'_pf0 in mi_app0.
+        rewrite set_equiv_subseteq in mi_app0.
+        rewrite elem_of_subseteq in mi_app0.
+        rewrite elem_of_subseteq in mi_app0.
+        setoid_rewrite elem_of_PropSet in mi_app0.
+        destruct mi_app0 as [mi_app1 mi_app2].
+        rewrite set_equiv_subseteq.
+        do 2 rewrite elem_of_subseteq.
+        setoid_rewrite elem_of_PropSet.
+        split.
+        {
+            intros a [b [Hb1 Hb2]].
+            subst.
+            specialize (mi_app2 b Hb2).
+            destruct mi_app2 as [a [Ha1 Ha2]].
+            subst.
+            cut (surj'_inv0 (mi_f0 a) = a).
+            {
+                intros Htmp. rewrite Htmp. exact Ha2.
+            }
+            apply mi_inj0.
+            rewrite surj'_pf0.
+            reflexivity.
+        }
+        {
+            intros a Ha.
+            exists (mi_f0 a).
+            split.
+            {
+                apply mi_inj0.
+                rewrite surj'_pf0.
+                reflexivity.
+            }
+            {
+                apply mi_app1.
+                exists a.
+                split;[reflexivity|].
+                exact Ha.
+            }
+        }
     }
 Defined.
 
