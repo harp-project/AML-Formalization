@@ -615,7 +615,6 @@ Proof.
                 rewrite update_svar_val_compose in He.
                 rewrite -IHsz in He.
                 2: { rewrite svar_open_size'. lia. }
-                Search fmap subseteq.
                 specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
                 feed specialize Hx.
                 {
