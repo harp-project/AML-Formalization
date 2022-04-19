@@ -23,7 +23,9 @@ Require Import
     monotonic
 .
 
-Class Surj' {A B} (R : relation B) (f : A -> B) :=
+Set Printing Universes. Print relation.
+(* Polymorphic Cumulative *)
+Class Surj' {A B} (R : relation B) (f : A -> B) : Type :=
     {
         surj'_inv : B -> A ;
         surj'_pf: ∀ (b : B), R (f (surj'_inv b)) b
@@ -47,10 +49,11 @@ Defined.
 
 #[export]
 Instance compose_surj' {A B C} R (f : A → B) (g : B → C) :
-  Surj' (=) f -> Surj' R g -> Surj R (g ∘ f).
+  Surj' (=) f -> Surj' R g -> Surj' R (g ∘ f).
 Proof.
-  intros [sf Hsf] [sg Hsg] x. unfold compose.
-  exists (sf (sg x)).
+  intros [sf Hsf] [sg Hsg].
+  exists (sf ∘ sg).
+  intros x. unfold compose.
   rewrite Hsf.
   apply Hsg.
 Qed.
@@ -204,6 +207,37 @@ Proof.
             }
         }
     }
+Defined.
+
+Program Definition ModelIsomorphism_trans {Σ : Signature} (M₁ M₂ M₃ : Model)
+    (i : ModelIsomorphism M₁ M₂)
+    (j : ModelIsomorphism M₂ M₃)
+    : ModelIsomorphism M₁ M₃
+    :=
+    {|
+        mi_f := (mi_f j) ∘ (mi_f i)
+    |}.
+Next Obligation.
+    intros. destruct i,j. simpl. apply _.
+Defined.
+Next Obligation.
+    intros. pose proof (mi_surj i). pose proof (mi_surj j). apply _.
+Defined.
+Next Obligation.
+    intros.
+    pose proof (Hi := mi_sym i s).
+    pose proof (Hj := mi_sym j s).
+    rewrite -Hj.
+    rewrite -Hi.
+    apply set_fmap_compose.
+Defined.
+Next Obligation.
+    intros.
+    pose proof (Hi := mi_app i).
+    pose proof (Hj := mi_app j).
+    rewrite -Hj.
+    rewrite -Hi.
+    apply set_fmap_compose.
 Defined.
 
 #[global]
