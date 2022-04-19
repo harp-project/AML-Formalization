@@ -39,7 +39,8 @@ Section with_model.
     Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
-    Definition Minterp_inhabitant ϕ ρₑ ρₛ := @pattern_interpretation Σ M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
+    Definition Minterp_inhabitant (ϕ : Pattern) (ρₑ : EVarVal) (ρₛ : SVarVal)
+      := @pattern_interpretation Σ M ρₑ ρₛ (patt_app (sym inhabitant) ϕ).
     
     Lemma pattern_interpretation_forall_of_sort_predicate s ϕ ρₑ ρₛ:
       let x := fresh_evar ϕ in
