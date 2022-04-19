@@ -23,8 +23,6 @@ Require Import
     monotonic
 .
 
-Set Printing Universes. Print relation.
-(* Polymorphic Cumulative *)
 Class Surj' {A B} (R : relation B) (f : A -> B) : Type :=
     {
         surj'_inv : B -> A ;
@@ -58,7 +56,8 @@ Proof.
   apply Hsg.
 Qed.
 
-Record ModelIsomorphism {Σ : Signature} (M₁ M₂ : Model) : Set := mkModelIsomorphism
+Polymorphic Cumulative
+Record ModelIsomorphism {Σ : Signature} (M₁ M₂ : Model) : Type := mkModelIsomorphism
     {
         mi_f : (Domain M₁) -> (Domain M₂) ;
         mi_inj :> Inj (=) (=) mi_f ;
@@ -265,4 +264,47 @@ Proof.
         exists (ModelIsomorphism_trans i j).
         exact I.
     }
+Qed.
+
+Theorem isomorphism_preserves_semantics
+    {Σ : Signature}
+    (M₁ M₂ : Model)
+    (i : ModelIsomorphism M₁ M₂)
+    :
+    forall (ϕ : Pattern) (ρₑ : @EVarVal _ M₁) (ρₛ : @SVarVal _ M₁),
+        ((mi_f i) <$> (@pattern_interpretation Σ M₁ ρₑ ρₛ ϕ))
+        ≡@{propset (Domain M₂)} (@pattern_interpretation Σ M₂ ((mi_f i) ∘ ρₑ) (λ X, (mi_f i) <$> (ρₛ X)) ϕ).
+Proof.
+    intros ϕ.
+    remember (size' ϕ) as sz.
+    assert (Hsz: size' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; intros ϕ Hsz.
+    {
+        destruct ϕ; simpl in Hsz; lia.
+    }
+    {
+        destruct ϕ; intros ρₑ ρₛ.
+        {
+            (* patt_free_evar x *)
+            do 2 rewrite pattern_interpretation_free_evar_simpl.
+            simpl.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear. set_solver.
+        }
+        {
+            (* patt_free_svar X *)
+            do 2 rewrite pattern_interpretation_free_svar_simpl.
+            simpl.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear. set_solver.
+        }
+        {
+            
+        }
+    }
+
 Qed.

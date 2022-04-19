@@ -65,7 +65,9 @@ Section semantics.
   Qed.
 
   (* element and set variable valuations *)
+  Polymorphic
   Definition EVarVal {m : Model} : Type := evar -> Domain m.
+  Polymorphic
   Definition SVarVal {m : Model} : Type := svar -> Power (Domain m).
 
   Definition update_evar_val {m : Model} 
@@ -190,6 +192,7 @@ Section semantics.
   Qed.
   
   (* extending pointwise application *)
+  Polymorphic
   Definition app_ext {m : Model}
              (l r : Power (Domain m)) :
     Power (Domain m) :=
