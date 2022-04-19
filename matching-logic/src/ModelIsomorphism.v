@@ -16,6 +16,7 @@ Require Import
 
 From MatchingLogic
 Require Import
+    Utils.stdpp_ext
     Utils.extralibrary
     Pattern
     Syntax
@@ -506,15 +507,25 @@ Proof.
                 subst.
                 rewrite elem_of_PropSet in Hx.
                 destruct Hx as [c Hc].
-                under [fun e => _]functional_extensionality => e
-                do (replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)) by apply surj'_pf).
+
+                (*
+                under propset_fa_union_proper => e.
                 {
-                    replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)).
-                    2: { apply surj'_pf. }
+                    Set Typeclasses Debug.
+                    over.
+                }*)
+                (*do (rewrite -[e](@surj'_pf)).*)
+                under [fun e => _]functional_extensionality => e.
+                (* do (replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)) by apply surj'_pf). *)
+                {
+                    rewrite -{1}[e](@surj'_pf _ _ (=) _ (i)).
                     rewrite update_evar_val_compose.
                     over.
-                    rewrite -IHsz.
                 }
+
+                setoid_rewrite <- IHsz.
+                2: { rewrite evar_open_size'. simpl in Hsz. lia. }
+                
             }
             rewrite IHsz.
         }
