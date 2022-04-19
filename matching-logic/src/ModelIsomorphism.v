@@ -648,7 +648,89 @@ Proof.
                 exact Hx.
             }
             {
-                
+                intros x Hx.
+                exists (@surj'_inv _ _ _ _ (mi_surj i) x).
+                split.
+                {
+                    rewrite surj'_pf. reflexivity.
+                }
+                {
+                    intros e He.
+                    specialize (Hx ((mi_f i) <$> e)).
+                    rewrite update_svar_val_compose in Hx.
+                    rewrite -IHsz in Hx.
+                    2: { rewrite svar_open_size'. lia. }
+                    clear IHsz.
+
+                    replace e with (((@surj'_inv _ _ _ _ (mi_surj i)) <$> ((mi_f i) <$> e))).
+                    2: {
+                        clear.
+                        unfold_leibniz.
+                        rewrite -(set_fmap_compose (mi_f i) (surj'_inv)).
+                        unfold fmap.
+                        with_strategy transparent [propset_fmap] unfold propset_fmap.
+                        rewrite set_equiv_subseteq.
+                        do 2 rewrite elem_of_subseteq.
+                        split; intros x Hx.
+                        {
+                            rewrite elem_of_PropSet in Hx.
+                            destruct Hx as [a [Ha Hx]]. subst.
+                            unfold compose.
+                            replace (surj'_inv (mi_f i a)) with a.
+                            2: {
+                                apply (@mi_inj _ _ _ i).
+                                rewrite surj'_pf.
+                                reflexivity.
+                            }
+                            exact Hx.
+                        }
+                        {
+                            unfold compose.
+                            rewrite elem_of_PropSet.
+                            exists x.
+                            replace (surj'_inv (mi_f i x)) with x.
+                            2: {
+                                apply (@mi_inj _ _ _ i).
+                                rewrite surj'_pf.
+                                reflexivity.
+                            }
+                            split;[reflexivity|assumption].
+                        } 
+                    }
+                    apply elem_of_fmap.
+                    exists x.
+                    split;[reflexivity|].
+                    apply Hx. clear Hx.
+                    rewrite elem_of_subseteq.
+                    intros x0.
+                    rewrite elem_of_subseteq in He.
+                    intros H.
+                    specialize (He ((@surj'_inv _ _ _ _ (mi_surj i)) x0)).
+                    apply (elem_of_fmap_2 (mi_f i)) in He.
+                    {
+                        rewrite surj'_pf in He. exact He.
+                    }
+                    apply (elem_of_fmap_2 ((@surj'_inv _ _ _ _ (mi_surj i)))) in H.
+                    rewrite -(set_fmap_compose (mi_f i) (surj'_inv)) in H.
+                    unfold compose in H. simpl in H.
+                    move: H.
+                    under [fun x => _]functional_extensionality => x1.
+                    {
+                        replace (surj'_inv (mi_f i x1)) with x1.
+                        2: {
+                            apply (@mi_inj _ _ _ i).
+                            rewrite surj'_pf.
+                            reflexivity.
+                        }
+                        over.
+                    }
+                    move=> H.
+                    unfold fmap in H.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap in H.
+                    rewrite elem_of_PropSet in H.
+                    destruct H as [a [Ha H]]. subst.
+                    exact H.
+                }
             }
         }
     }
