@@ -3,15 +3,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import Logic.IndefiniteDescription.
+Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms Coq.Relations.Relations.
+Require Import Logic.IndefiniteDescription Coq.Logic.FunctionalExtensionality.
 
 From stdpp
 Require Import
     base
     decidable
     propset
-    fin_maps
-    fin_sets
+    sets
 .
 
 From MatchingLogic
@@ -266,6 +266,19 @@ Proof.
     }
 Qed.
 
+Lemma fmap_app_ext {Σ : Signature} (M : Model) (X Y : propset (Domain M))
+    (B : Type) (f : (Domain M) -> B)
+    :
+    f <$> app_ext X Y ≡ {[ e | ∃ le re : M, le ∈ X ∧ re ∈ Y ∧ e ∈ (f <$> (app_interp le re)) ]}.
+Proof.
+    unfold fmap at 1.
+    with_strategy transparent [propset_fmap] unfold propset_fmap at 1.
+    set_solver.
+Qed.
+
+#[local]
+Hint Transparent Power : core.
+
 Theorem isomorphism_preserves_semantics
     {Σ : Signature}
     (M₁ M₂ : Model)
@@ -303,7 +316,62 @@ Proof.
             clear. set_solver.
         }
         {
+            (* patt_bound_evar n *)
+            do 2 rewrite pattern_interpretation_bound_evar_simpl.
+            simpl.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear. set_solver.
+        }
+        {
+            (* patt_bound_svar n *)
+            do 2 rewrite pattern_interpretation_bound_svar_simpl.
+            simpl.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear. set_solver.
+        }
+        {
+            (* patt_sym s *)
+            do 2 rewrite pattern_interpretation_sym_simpl.
+            apply mi_sym.
+        }
+        {
+            (* patt_app ϕ1 ϕ2 *)
+            do 2 rewrite pattern_interpretation_app_simpl.
+            rewrite fmap_app_ext.
+            rewrite set_equiv_subseteq.
+            do 2 rewrite elem_of_subseteq.
+            split.
+            {
+                intros x Hx.
+                rewrite elem_of_PropSet in Hx.
+                destruct Hx as [le [re [Hle [Hre Hx]]]].
+                rewrite mi_app in Hx.
+                Print Instances Proper.
+                Check @app_ext.
+                rewrite -IHsz.
+            }
             
+            under [fun e => _]functional_extensionality => e.
+            {
+                under [fun e => _]functional_extensionality => le.
+                {
+                    under [fun e => _]functional_extensionality => re.
+                    {
+                        remember (mi_f i <$> app_interp le re) as X.
+                        rewrite mi_app in HeqX.
+                        rewrite [mi_f i <$> app_interp le re]mi_app.
+                    }
+                }
+            }
+            Check mi_app.
+            setoid_rewrite mi_app.
+            Check mi_app.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            under [fun e => _]functional_extensionality => e
+            do rewrite IHsz.
         }
     }
 

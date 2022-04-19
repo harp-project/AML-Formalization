@@ -2484,3 +2484,36 @@ End Notations.
 #[export]
  Hint Resolve T_predicate_bot : core.
 (*End Hints.*)
+
+Global Instance app_ext_proper {Σ : Signature} (M : Model)
+: Proper ((≡) ==> (≡) ==> (≡)) (@app_ext Σ M).
+Proof.
+  intros X X' HXX' Y Y' HYY'.
+  unfold app_ext.
+  rewrite set_equiv_subseteq.
+  split.
+  {
+    rewrite elem_of_subseteq.
+    intros x Hx.
+    rewrite elem_of_PropSet in Hx.
+    rewrite elem_of_PropSet.
+    destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
+    exists le. exists re. split.
+    { rewrite -HXX'. assumption. }
+    split.
+    { rewrite -HYY'. assumption. }
+    assumption.
+  }
+  {
+    rewrite elem_of_subseteq.
+    intros x Hx.
+    rewrite elem_of_PropSet in Hx.
+    rewrite elem_of_PropSet.
+    destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
+    exists le. exists re. split.
+    { rewrite HXX'. assumption. }
+    split.
+    { rewrite HYY'. assumption. }
+    assumption.
+  }
+Qed.
