@@ -306,6 +306,19 @@ Proof.
     case_match; auto.
 Qed.
 
+Lemma update_svar_val_compose
+    {Σ : Signature} (M₁ M₂ : Model) (ρₛ : @SVarVal Σ M₁) (X : svar) (ms : propset (Domain M₁))
+    (f : Domain M₁ -> Domain M₂)
+    :
+    update_svar_val X (f <$> ms) (fmap f ∘ ρₛ) = fmap f ∘ (update_svar_val X ms ρₛ).
+Proof.
+    apply functional_extensionality.
+    intros Y.
+    unfold update_svar_val.
+    simpl.
+    case_match; auto.
+Qed.
+
 Theorem isomorphism_preserves_semantics
     {Σ : Signature}
     (M₁ M₂ : Model)
@@ -562,6 +575,81 @@ Proof.
         {
             (* patt_mu ϕ *)
             simpl in Hsz.
+            do 2 rewrite pattern_interpretation_mu_simpl. simpl.
+            unfold Lattice.LeastFixpointOf,Lattice.meet,Lattice.PrefixpointsOf.
+            simpl.
+            unfold Lattice.propset_Meet.
+            rewrite set_equiv_subseteq.
+            do 2 rewrite elem_of_subseteq.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            do 3 setoid_rewrite elem_of_PropSet.
+            split.
+            {
+                intros x [a [Ha Hx]]. subst.
+                intros e He.
+                replace e with ((mi_f i) <$> ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)) in He at 1.
+                2: {
+                    clear.
+                    unfold_leibniz.
+                    rewrite -(set_fmap_compose (surj'_inv) (mi_f i)).
+                    unfold fmap.
+                    with_strategy transparent [propset_fmap] unfold propset_fmap.
+                    rewrite set_equiv_subseteq.
+                    do 2 rewrite elem_of_subseteq.
+                    split; intros x Hx.
+                    {
+                        rewrite elem_of_PropSet in Hx.
+                        destruct Hx as [a [Ha Hx]]. subst.
+                        unfold compose. rewrite surj'_pf.
+                        exact Hx.
+                    }
+                    {
+                        unfold compose.
+                        rewrite elem_of_PropSet.
+                        exists x.
+                        rewrite surj'_pf.
+                        split;[reflexivity|assumption].
+                    }
+                }
+
+                rewrite update_svar_val_compose in He.
+                rewrite -IHsz in He.
+                2: { rewrite svar_open_size'. lia. }
+                Search fmap subseteq.
+                specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
+                feed specialize Hx.
+                {
+                    clear -He.
+                    rewrite elem_of_subseteq in He.
+                    rewrite elem_of_subseteq.
+                    intros x.
+                    specialize (He (mi_f i x)).
+                    remember (pattern_interpretation ρₑ
+                    (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρₛ)
+                    (svar_open 0 (fresh_svar ϕ) ϕ)) as PI.
+                    intros Hx.
+                    apply (elem_of_fmap_2 (mi_f i)) in Hx.
+                    specialize (He Hx). clear Hx.
+                    apply elem_of_fmap.
+                    exists (mi_f i x).
+                    split.
+                    {
+                        apply (@mi_inj _ _ _ i).
+                        rewrite surj'_pf.
+                        reflexivity.
+                    }
+                    {
+                        exact He.
+                    }
+                }
+                apply elem_of_fmap in Hx.
+                destruct Hx as [y [Hy Hx]]. subst.
+                rewrite surj'_pf.
+                exact Hx.
+            }
+            {
+                
+            }
         }
     }
 
