@@ -340,6 +340,8 @@ Proof.
             (* patt_app ϕ1 ϕ2 *)
             do 2 rewrite pattern_interpretation_app_simpl.
             rewrite fmap_app_ext.
+            
+            simpl in Hsz.
             rewrite set_equiv_subseteq.
             do 2 rewrite elem_of_subseteq.
             split.
@@ -348,30 +350,37 @@ Proof.
                 rewrite elem_of_PropSet in Hx.
                 destruct Hx as [le [re [Hle [Hre Hx]]]].
                 rewrite mi_app in Hx.
-                Print Instances Proper.
-                Check @app_ext.
                 rewrite -IHsz.
+                2: { lia. }
+                rewrite -IHsz.
+                2: { lia. }
+                unfold app_ext.
+                rewrite elem_of_PropSet.
+                exists (mi_f i le).
+                exists (mi_f i re).
+                repeat split.
+                3: { exact Hx. }
+                { apply elem_of_fmap_2. assumption. }
+                { apply elem_of_fmap_2. assumption. }
             }
-            
-            under [fun e => _]functional_extensionality => e.
             {
-                under [fun e => _]functional_extensionality => le.
-                {
-                    under [fun e => _]functional_extensionality => re.
-                    {
-                        remember (mi_f i <$> app_interp le re) as X.
-                        rewrite mi_app in HeqX.
-                        rewrite [mi_f i <$> app_interp le re]mi_app.
-                    }
-                }
+                intros x Hx.
+                rewrite elem_of_PropSet in Hx.
+                rewrite elem_of_PropSet.
+                destruct Hx as [le [re [Hle [Hre Hx]]]].
+                rewrite -IHsz in Hle.
+                2: { lia. }
+                rewrite -IHsz in Hre.
+                2: { lia. }
+                apply elem_of_fmap_1 in Hle.
+                apply elem_of_fmap_1 in Hre.
+                destruct Hle as [x1 [Hx1 Hle]].
+                destruct Hre as [x2 [Hx2 Hre]].
+                subst.
+                rewrite -(mi_app i) in Hx.
+                exists x1. exists x2.
+                repeat split; assumption.
             }
-            Check mi_app.
-            setoid_rewrite mi_app.
-            Check mi_app.
-            unfold fmap.
-            with_strategy transparent [propset_fmap] unfold propset_fmap.
-            under [fun e => _]functional_extensionality => e
-            do rewrite IHsz.
         }
     }
 
