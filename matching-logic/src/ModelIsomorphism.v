@@ -45,6 +45,16 @@ Proof.
     intros b. reflexivity.
 Defined.
 
+#[export]
+Instance compose_surj' {A B C} R (f : A → B) (g : B → C) :
+  Surj' (=) f -> Surj' R g -> Surj R (g ∘ f).
+Proof.
+  intros [sf Hsf] [sg Hsg] x. unfold compose.
+  exists (sf (sg x)).
+  rewrite Hsf.
+  apply Hsg.
+Qed.
+
 Record ModelIsomorphism {Σ : Signature} (M₁ M₂ : Model) : Set := mkModelIsomorphism
     {
         mi_f : (Domain M₁) -> (Domain M₂) ;
