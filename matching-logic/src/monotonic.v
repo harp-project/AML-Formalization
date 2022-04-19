@@ -233,7 +233,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         forall (Bp Bn : Ensemble svar),
           respects_blacklist phi Bp Bn ->
           forall (evar_val : evar -> Domain M)
-                 (svar_val : svar -> Power (Domain M))
+                 (svar_val : svar -> propset (Domain M))
                  (X : svar),
             (Bp X ->
              @AntiMonotonicFunction A OS (fun (S : propset (Domain M)) =>

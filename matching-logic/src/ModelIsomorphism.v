@@ -292,9 +292,6 @@ Proof.
     set_solver.
 Qed.
 
-#[local]
-Hint Transparent Power : core.
-
 Lemma update_evar_val_compose
     {Σ : Signature} (M₁ M₂ : Model) (ρₑ : @EVarVal Σ M₁) (x : evar) (m : Domain M₁)
     (f : Domain M₁ -> Domain M₂)

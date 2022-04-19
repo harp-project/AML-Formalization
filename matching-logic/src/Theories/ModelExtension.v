@@ -273,7 +273,7 @@ Section with_syntax.
             end
         end.
     
-    Definition new_sym_interp (s : symbols) : Power Carrier :=
+    Definition new_sym_interp (s : symbols) : propset Carrier :=
         match (decide (s = Definedness_Syntax.inj definedness)) with
         | left _ => {[ cdef ]}
         | right _ =>
@@ -313,7 +313,7 @@ Section with_syntax.
     Definition lift_value (x : Domain M) : (Domain Mext)
     := cel (inl x).
 
-    Definition lift_set (xs : Power (Domain M)) : (Power (Domain Mext))
+    Definition lift_set (xs : propset (Domain M)) : (propset (Domain Mext))
     := cel <$> (@fmap propset _ _ _ inl xs).
 
     (* Valuations lifted from the original model to the extended model. *)
@@ -323,7 +323,7 @@ Section with_syntax.
     Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
     := λ (X : svar), lift_set (ρₛ X).
 
-    Lemma lift_set_mono (xs ys : Power (Domain M)) :
+    Lemma lift_set_mono (xs ys : propset (Domain M)) :
         xs ⊆ ys ->
         lift_set xs ⊆ lift_set ys.
     Proof.
@@ -1382,7 +1382,7 @@ Section with_syntax.
                                         specialize (H' (lift_value x)).
                                         exfalso.
                                         rewrite elem_of_PropSet in H'.
-                                        cut (@elem_of _ (Power (@Domain Σ Mext)) _ (lift_value x) (@empty (propset (@Domain _ Mext)) _)).
+                                        cut (@elem_of _ (propset (@Domain Σ Mext)) _ (lift_value x) (@empty (propset (@Domain _ Mext)) _)).
                                         {
                                             intros Hcontra. clear -Hcontra. set_solver.
                                         }
@@ -1485,9 +1485,9 @@ Section with_syntax.
                                     {
                                         rewrite elem_of_subseteq.
                                         intros x Hx.
-                                        cut (@elem_of (@Domain Σ Mext) (Power (@Domain Σ Mext))
+                                        cut (@elem_of (@Domain Σ Mext) (propset (@Domain Σ Mext))
                                         (@propset_elem_of (@Domain Σ Mext)) (lift_value x)
-                                        (@empty (Power (@Domain Σ Mext)) (@propset_empty (@Domain Σ Mext)))).
+                                        (@empty (propset (@Domain Σ Mext)) (@propset_empty (@Domain Σ Mext)))).
                                         {
                                             intros HContra.
                                             clear -HContra.

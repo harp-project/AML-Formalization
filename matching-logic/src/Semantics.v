@@ -24,23 +24,21 @@ Section semantics.
   
   Context {signature : Signature}.
 
-  Definition Power (Sigma : Type) := propset Sigma.
-
   (* Model of AML ref. snapshot: Definition 2 *)
 
   Polymorphic Cumulative
   Record Model := {
     Domain :> Type;
     Domain_inhabited :> Inhabited Domain;
-    app_interp : Domain -> Domain -> Power Domain;
-    sym_interp (sigma : symbols) : Power Domain;
+    app_interp : Domain -> Domain -> propset Domain;
+    sym_interp (sigma : symbols) : propset Domain;
   }.
 
-  Definition Empty {M : Model} : Power (Domain M) := @empty (Power (Domain M)) _.
-  Definition Full {M : Model} : Power (Domain M) := @top (Power (Domain M)) _.
+  Definition Empty {M : Model} : propset (Domain M) := @empty (propset (Domain M)) _.
+  Definition Full {M : Model} : propset (Domain M) := @top (propset (Domain M)) _.
 
   (* full set and empty set are distinct *)
-  Lemma empty_impl_not_full : forall {M : Model} (S : Power (Domain M)),
+  Lemma empty_impl_not_full : forall {M : Model} (S : propset (Domain M)),
       S = Empty -> S <> Full.
   Proof.
     intros M S H.
@@ -52,7 +50,7 @@ Section semantics.
     apply not_elem_of_empty in Hw1. exact Hw1.
   Qed.
 
-  Lemma full_impl_not_empty : forall {M : Model} (S : Power (Domain M)),
+  Lemma full_impl_not_empty : forall {M : Model} (S : propset (Domain M)),
       S = Full -> S <> Empty.
   Proof.
     intros M S H HContra.
@@ -68,18 +66,18 @@ Section semantics.
   Polymorphic
   Definition EVarVal {m : Model} : Type := evar -> Domain m.
   Polymorphic
-  Definition SVarVal {m : Model} : Type := svar -> Power (Domain m).
+  Definition SVarVal {m : Model} : Type := svar -> propset (Domain m).
 
   Definition update_evar_val {m : Model} 
              (v : evar) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
     fun v' : evar => if decide (v = v') is left _ then x else evar_val v'.
 
   Definition update_svar_val {m : Model}
-             (v : svar) (X : Power (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
+             (v : svar) (X : propset (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
     fun v' : svar => if decide (v = v') is left _ then X else svar_val v'.
 
   Lemma update_svar_val_comm M :
-    forall (X1 X2 : svar) (S1 S2 : Power (Domain M)) (svar_val : @SVarVal M),
+    forall (X1 X2 : svar) (S1 S2 : propset (Domain M)) (svar_val : @SVarVal M),
       X1 <> X2 ->
       update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
       = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
@@ -96,7 +94,7 @@ Section semantics.
   Qed.
 
   Lemma update_svar_val_shadow M : forall (X : svar)
-                                          (S1 S2 : Power (Domain M))
+                                          (S1 S2 : propset (Domain M))
                                           (svar_val : @SVarVal M),
       update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
   Proof.
@@ -184,7 +182,7 @@ Section semantics.
   Instance propset_leibniz_equiv {m : Model} : LeibnizEquiv (propset (Domain m)).
   Proof.
     intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
-    unfold Power in x,y. destruct x,y.
+    destruct x,y.
     apply f_equal. apply functional_extensionality.
     intros x. apply propositional_extensionality.
     specialize (H x). destruct H as [H1 H2].
@@ -194,12 +192,12 @@ Section semantics.
   (* extending pointwise application *)
   Polymorphic
   Definition app_ext {m : Model}
-             (l r : Power (Domain m)) :
-    Power (Domain m) :=
+             (l r : propset (Domain m)) :
+    propset (Domain m) :=
     PropSet (fun (e : (Domain m)) => exists (le re : (Domain m)), le ∈ l /\ re ∈ r /\ e ∈ (@app_interp m) le re).
 
   Lemma app_ext_bot_r : forall (m : Model),
-      forall S : Power (Domain m),
+      forall S : propset (Domain m),
         app_ext S ∅ = ∅.
   Proof.
     intros m S. unfold app_ext.
@@ -210,7 +208,7 @@ Section semantics.
   Qed.
 
   Lemma app_ext_bot_l : forall (m : Model),
-      forall S : Power (Domain m),
+      forall S : propset (Domain m),
         app_ext ∅ S = ∅.
   Proof.
     intros m S. unfold app_ext.
@@ -221,7 +219,7 @@ Section semantics.
   Qed.
 
   Lemma app_ext_monotonic_l : forall (m : Model),
-      forall (S1 S2 S : Power (Domain m)),
+      forall (S1 S2 S : propset (Domain m)),
         S1 ⊆ S2 -> (app_ext S1 S) ⊆ (app_ext S2 S).
   Proof.
     intros m S1 S2 S H. rewrite -> elem_of_subseteq in H.
@@ -235,7 +233,7 @@ Section semantics.
   Qed.
 
   Lemma app_ext_monotonic_r : forall (m : Model),
-      forall (S S1 S2 : Power (Domain m)),
+      forall (S S1 S2 : propset (Domain m)),
         S1 ⊆ S2 -> (app_ext S S1) ⊆ (app_ext S S2).
   Proof.
     intros m S1 S2 S H. rewrite -> elem_of_subseteq in H.
@@ -257,7 +255,7 @@ Section semantics.
     Let  L := PowersetLattice (@Domain m).
 
     Program Fixpoint pattern_interpretation
-            (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+            (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
             (p : Pattern) {measure (size p)} :=
       match p with
       | patt_free_evar x => {[evar_val x]}
@@ -298,7 +296,7 @@ Section semantics.
     (* TODO: Need to be able to simplify Program Fixpoint definitions *)
 
     Lemma pattern_interpretation_free_evar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (x : evar) :
       pattern_interpretation evar_val svar_val (patt_free_evar x) = {[ evar_val x ]}.
     Proof.
@@ -306,7 +304,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_free_svar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (X : svar) :
       pattern_interpretation evar_val svar_val (patt_free_svar X) = svar_val X.
     Proof.
@@ -314,7 +312,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_bound_evar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (x : db_index) :
       pattern_interpretation evar_val svar_val (patt_bound_evar x) = ∅.
     Proof.
@@ -322,7 +320,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_bound_svar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (X : db_index) :
       pattern_interpretation evar_val svar_val (patt_bound_svar X) = ∅.
     Proof.
@@ -338,7 +336,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_app_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (ls rs : Pattern) :
       pattern_interpretation evar_val svar_val (patt_app ls rs) =
       app_ext (pattern_interpretation evar_val svar_val ls)
@@ -355,14 +353,14 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_bott_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)) :
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)) :
       pattern_interpretation evar_val svar_val patt_bott = ∅.
     Proof.
       auto.
     Qed.
 
     Lemma pattern_interpretation_imp_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (ls rs : Pattern) :
       pattern_interpretation evar_val svar_val (patt_imp ls rs) =
       (difference ⊤ (pattern_interpretation evar_val svar_val ls)) ∪
@@ -379,7 +377,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_ex_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (p : Pattern) :
       pattern_interpretation evar_val svar_val (patt_exists p) =
       let x := fresh_evar p in
@@ -399,7 +397,7 @@ Section semantics.
     Qed.
 
     Lemma pattern_interpretation_mu_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m))
+          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
           (p : Pattern) :
       pattern_interpretation evar_val svar_val (patt_mu p) =
       let X := fresh_svar p in
@@ -656,7 +654,7 @@ Section semantics.
 
   
   Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
-    forall (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)),
+    forall (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)),
       pattern_interpretation (m := m) evar_val svar_val phi = Full.
 
   Definition satisfies_theory (m : Model) (theory : Theory)
