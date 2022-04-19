@@ -506,11 +506,13 @@ Proof.
                 subst.
                 rewrite elem_of_PropSet in Hx.
                 destruct Hx as [c Hc].
-                under [fun e => _]functional_extensionality => e.
+                under [fun e => _]functional_extensionality => e
+                do (replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)) by apply surj'_pf).
                 {
                     replace e with (@mi_f Σ M₁ M₂ i (@surj'_inv _ _ (=) _ (mi_surj i) e)).
                     2: { apply surj'_pf. }
                     rewrite update_evar_val_compose.
+                    over.
                     rewrite -IHsz.
                 }
             }
