@@ -266,6 +266,22 @@ Proof.
     }
 Qed.
 
+(*
+#[global]
+Instance ModelIsomorphism_sym_cancel
+    {Σ : Signature}
+    (M₁ M₂ : Model)
+    (i : ModelIsomorphism M₁ M₂)
+    :
+    Cancel (=) (mi_f i) (mi_f (ModelIsomorphism_sym i)).
+Proof.
+    unfold Cancel.
+    intros x.
+    unfold ModelIsomorphism_sym.
+    simpl.
+Qed.
+*)
+
 Lemma fmap_app_ext {Σ : Signature} (M : Model) (X Y : propset (Domain M))
     (B : Type) (f : (Domain M) -> B)
     :
@@ -381,6 +397,94 @@ Proof.
                 exists x1. exists x2.
                 repeat split; assumption.
             }
+        }
+        {
+            (* patt_bott *)
+            do 2 rewrite pattern_interpretation_bott_simpl.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            clear.
+            set_solver.
+        }
+        {
+            (* patt_imp ϕ1 ϕ2 *)
+            do 2 rewrite pattern_interpretation_imp_simpl.
+            simpl in Hsz.
+            rewrite -IHsz.
+            2: { lia. }
+            rewrite -IHsz.
+            2: { lia. }
+            Search fmap difference.
+            remember (pattern_interpretation ρₑ ρₛ ϕ1) as X1.
+            remember (pattern_interpretation ρₑ ρₛ ϕ2) as X2.
+            unfold fmap.
+            with_strategy transparent [propset_fmap] unfold propset_fmap.
+            rewrite set_equiv_subseteq.
+            split.
+            {
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                rewrite elem_of_PropSet in Hx.
+                destruct Hx as [a [Ha Hx]].
+                subst.
+                destruct Hx as [Hx1|Hx2].
+                {
+                    left.
+                    rewrite elem_of_PropSet.
+                    split.
+                    { clear. set_solver. }
+                    intros HContra.
+                    rewrite elem_of_PropSet in Hx1.
+                    apply Hx1. clear Hx1.
+                    rewrite elem_of_PropSet in HContra.
+                    destruct HContra as [a0 [Ha0 HContra]].
+                    apply (mi_inj) in Ha0. subst.
+                    exact HContra.
+                }
+                {
+                    right.
+                    rewrite elem_of_PropSet.
+                    exists a.
+                    split;[reflexivity|assumption].
+                }
+            }
+            {
+                pose (j := ModelIsomorphism_sym i).
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                rewrite elem_of_PropSet.
+                destruct Hx as [Hx|Hx].
+                {
+                    rewrite elem_of_PropSet in Hx.
+                    destruct Hx as [_ Hx].
+                    pose (mi_surj i) as i'.
+                    pose (@surj'_inv _ _ (=) _ i') as d.
+                    exists (d x).
+                    rewrite surj'_pf.
+                    split;[reflexivity|].
+                    left.
+                    rewrite elem_of_PropSet.
+                    split;[(clear;set_solver)|].
+                    rewrite elem_of_PropSet in Hx.
+                    intros HContra.
+                    apply Hx. clear Hx.
+                    exists (d x).
+                    rewrite surj'_pf.
+                    split;[reflexivity|assumption].
+                }
+                {
+                    rewrite elem_of_PropSet in Hx.
+                    destruct Hx as [a [Ha Hx]].
+                    subst.
+                    exists a.
+                    split;[reflexivity|].
+                    right.
+                    exact Hx.
+                }
+            }
+        }
+        {
+            
         }
     }
 
