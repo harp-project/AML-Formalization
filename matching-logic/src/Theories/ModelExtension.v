@@ -1742,21 +1742,8 @@ Section with_syntax.
                         { lia. }
                         { assumption. }
                         { wf_auto2. }
-                        unfold lift_set.
-                        split.
-                        {
-                            split.
-                            {
-                                intros H'.
-                                congruence.
-                            }
-                            {
-                                intros H' HContra.
-                                apply H'. clear H'.
-                                inversion HContra.
-                                congruence.
-                            }
-                        }
+                        rewrite lift_set_injective.
+                        tauto.
                     }
                     {
                         (* patt_impl ψ₁ ψ₂*)
