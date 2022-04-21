@@ -69,6 +69,8 @@ Section with_syntax.
      *)
     | spred_eq (ϕ₁ ϕ₂ : Pattern)
         : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SPredicate (patt_equal ϕ₁ ϕ₂)
+    | spred_subseteq (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SPredicate (patt_subseteq ϕ₁ ϕ₂)
     | spred_imp (ϕ₁ ϕ₂ : Pattern)
         : is_SPredicate ϕ₁ -> is_SPredicate ϕ₂ -> is_SPredicate (patt_imp ϕ₁ ϕ₂)
     | spred_ex (ϕ : Pattern) (s : symbols)
@@ -330,13 +332,40 @@ Section with_syntax.
     := λ (X : svar), lift_set (ρₛ X).
 
     Lemma lift_set_mono (xs ys : propset (Domain M)) :
-        xs ⊆ ys ->
+        xs ⊆ ys <->
         lift_set xs ⊆ lift_set ys.
     Proof.
-        intros H.
         unfold lift_set,fmap.
         with_strategy transparent [propset_fmap] unfold propset_fmap.
-        clear -H. set_solver.
+        split.
+        {
+            intros H.
+            clear -H. set_solver.
+        }
+        {
+            intros H.
+            rewrite elem_of_subseteq in H.
+            rewrite elem_of_subseteq.
+            intros x Hx.
+            specialize (H (lift_value x)).
+            unfold lift_value in H.
+            do 2 rewrite elem_of_PropSet in H.
+            feed specialize H.
+            {
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                exact Hx.
+            }
+            destruct H as [a [Ha H]].
+            inversion Ha. clear Ha. subst.
+            rewrite elem_of_PropSet in H.
+            destruct H as [a [Ha H]].
+            inversion Ha. clear Ha. subst.
+            exact H.
+        }
     Qed.
 
     Lemma lift_set_injective (xs ys : propset (Domain M)) :
@@ -542,6 +571,7 @@ Section with_syntax.
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_bott. }
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_defined. exact M_def. }
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_equal. exact M_def. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_subseteq. exact M_def. }
             { apply M_pre_predicate_imp; assumption. }
             { 
                 unfold patt_exists_of_sort.
@@ -1726,6 +1756,7 @@ Section with_syntax.
                         }
                     }
                     {
+                        (* patt_equal ϕ₁ ϕ₂ *)
                         rewrite equal_iff_interpr_same.
                         2: { apply Mext_satisfies_definedness. }
                         rewrite equal_iff_interpr_same.
@@ -1743,6 +1774,27 @@ Section with_syntax.
                         { assumption. }
                         { wf_auto2. }
                         rewrite lift_set_injective.
+                        tauto.
+                    }
+                    {
+                        (* patt_subseteq ϕ₁ ϕ₂ *)
+                        rewrite subseteq_iff_interpr_subseteq.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite subseteq_iff_interpr_subseteq.
+                        2: { apply M_def. }
+                        rewrite not_subseteq_iff_not_interpr_subseteq_1.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite not_subseteq_iff_not_interpr_subseteq_1.
+                        2: { apply M_def. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite lift_set_mono.
                         tauto.
                     }
                     {
