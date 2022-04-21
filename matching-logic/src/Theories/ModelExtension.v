@@ -339,6 +339,64 @@ Section with_syntax.
         clear -H. set_solver.
     Qed.
 
+    Lemma lift_set_injective (xs ys : propset (Domain M)) :
+        xs = ys <-> lift_set xs = lift_set ys.
+    Proof.
+        split;[congruence|].
+        intros H.
+        unfold lift_set,fmap in H.
+        with_strategy transparent [propset_fmap] unfold propset_fmap in H.
+        unfold_leibniz.
+        rewrite set_equiv_subseteq in H.
+        do 2 rewrite elem_of_subseteq in H.
+        destruct H as [H1 H2].
+        rewrite set_equiv_subseteq.
+        do 2 rewrite elem_of_subseteq.
+        split; intros x Hx.
+        {
+            specialize (H1 (lift_value x)).
+            do 2 rewrite elem_of_PropSet in H1.
+            feed specialize H1.
+            {
+                unfold lift_value.
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                apply Hx.
+            }
+            destruct H1 as [a [Ha H1]].
+            unfold lift_value in Ha.
+            inversion Ha. clear Ha. subst. 
+            rewrite elem_of_PropSet in H1.
+            destruct H1 as [a [Ha H1]].
+            inversion Ha. clear Ha. subst.
+            exact H1.
+        }
+        {
+            specialize (H2 (lift_value x)).
+            do 2 rewrite elem_of_PropSet in H2.
+            feed specialize H2.
+            {
+                unfold lift_value.
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                apply Hx.
+            }
+            destruct H2 as [a [Ha H2]].
+            unfold lift_value in Ha.
+            inversion Ha. clear Ha. subst. 
+            rewrite elem_of_PropSet in H2.
+            destruct H2 as [a [Ha H2]].
+            inversion Ha. clear Ha. subst.
+            exact H2.
+        }
+    Qed.
+
     Lemma Mext_indec :
         forall (s : symbols),
             is_not_core_symbol s ->
@@ -1672,6 +1730,33 @@ Section with_syntax.
                         2: { apply Mext_satisfies_definedness. }
                         rewrite equal_iff_interpr_same.
                         2: { apply M_def. }
+                        rewrite not_equal_iff_not_interpr_same_1.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite not_equal_iff_not_interpr_same_1.
+                        2: { apply M_def. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        unfold lift_set.
+                        split.
+                        {
+                            split.
+                            {
+                                intros H'.
+                                congruence.
+                            }
+                            {
+                                intros H' HContra.
+                                apply H'. clear H'.
+                                inversion HContra.
+                                congruence.
+                            }
+                        }
                     }
                     {
                         (* patt_impl ψ₁ ψ₂*)
