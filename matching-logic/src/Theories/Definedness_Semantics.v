@@ -429,6 +429,15 @@ Section definedness.
     apply T_predicate_defined.
   Qed.
 
+  Lemma T_pre_predicate_total : forall ϕ, T_pre_predicate theory (patt_total ϕ).
+  Proof.
+    intros ϕ. unfold patt_total.
+    unfold T_pre_predicate. intros M HM.
+    apply M_pre_predicate_not.
+    apply T_pre_predicate_defined.
+    exact HM.
+  Qed.
+
   Hint Resolve T_predicate_total : core.
 
   Lemma T_predicate_subseteq : forall ϕ₁ ϕ₂, T_predicate theory (patt_subseteq ϕ₁ ϕ₂).
@@ -436,11 +445,21 @@ Section definedness.
     intros ϕ₁ ϕ₂. unfold patt_subseteq. apply T_predicate_total.
   Qed.
 
+  Lemma T_pre_predicate_subseteq : forall ϕ₁ ϕ₂, T_pre_predicate theory (patt_subseteq ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂. apply T_pre_predicate_total.
+  Qed.
+
   Hint Resolve T_predicate_subseteq : core.
   
   Lemma T_predicate_equals : forall ϕ₁ ϕ₂, T_predicate theory (patt_equal ϕ₁ ϕ₂).
   Proof.
     intros ϕ₁ ϕ₂. unfold patt_equal. apply T_predicate_total.
+  Qed.
+
+  Lemma T_pre_predicate_equal : forall ϕ₁ ϕ₂, T_pre_predicate theory (patt_equal ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂. apply T_pre_predicate_total.
   Qed.
 
   Hint Resolve T_predicate_equals : core.
@@ -648,6 +667,36 @@ Section definedness.
     rewrite elem_of_singleton in HM2. subst re.
     exists le.
     split; assumption.
+  Qed.
+
+  Lemma not_equal_iff_not_interpr_same_1 : forall (M : @Model (Σ)),
+    M ⊨ᵀ theory ->
+    forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (Σ) M) (svar_val : @SVarVal (Σ) M),
+      @pattern_interpretation (Σ) M evar_val svar_val (patt_equal phi1 phi2) = ∅ <->
+      @pattern_interpretation (Σ) M evar_val svar_val phi1
+      <> @pattern_interpretation (Σ) M evar_val svar_val phi2.
+  Proof.
+    intros M H phi1 phi2 evar_val svar_val.
+    rewrite -predicate_not_full_iff_empty.
+    2: { apply T_predicate_equals. apply H. }
+    rewrite equal_iff_interpr_same.
+    2: { apply H. }
+    split; intros H'; exact H'.
+  Qed.
+
+  Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : @Model (Σ)),
+    M ⊨ᵀ theory ->
+    forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (Σ) M) (svar_val : @SVarVal (Σ) M),
+      @pattern_interpretation (Σ) M evar_val svar_val (patt_subseteq phi1 phi2) = ∅ <->
+      ~(@pattern_interpretation (Σ) M evar_val svar_val phi1)
+        ⊆ (@pattern_interpretation (Σ) M evar_val svar_val phi2).
+  Proof.
+    intros M H phi1 phi2 evar_val svar_val.
+    rewrite -predicate_not_full_iff_empty.
+    2: { apply T_predicate_subseteq. apply H. }
+    rewrite subseteq_iff_interpr_subseteq.
+    2: { apply H. }
+    split; intros H'; exact H'.
   Qed.
 
 End definedness.
