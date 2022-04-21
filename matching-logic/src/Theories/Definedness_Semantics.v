@@ -669,6 +669,36 @@ Section definedness.
     split; assumption.
   Qed.
 
+  Lemma not_equal_iff_not_interpr_same_1 : forall (M : @Model (Σ)),
+    M ⊨ᵀ theory ->
+    forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (Σ) M) (svar_val : @SVarVal (Σ) M),
+      @pattern_interpretation (Σ) M evar_val svar_val (patt_equal phi1 phi2) = ∅ <->
+      @pattern_interpretation (Σ) M evar_val svar_val phi1
+      <> @pattern_interpretation (Σ) M evar_val svar_val phi2.
+  Proof.
+    intros M H phi1 phi2 evar_val svar_val.
+    rewrite -predicate_not_full_iff_empty.
+    2: { apply T_predicate_equals. apply H. }
+    rewrite equal_iff_interpr_same.
+    2: { apply H. }
+    split; intros H'; exact H'.
+  Qed.
+
+  Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : @Model (Σ)),
+    M ⊨ᵀ theory ->
+    forall (phi1 phi2 : Pattern) (evar_val : @EVarVal (Σ) M) (svar_val : @SVarVal (Σ) M),
+      @pattern_interpretation (Σ) M evar_val svar_val (patt_subseteq phi1 phi2) = ∅ <->
+      ~(@pattern_interpretation (Σ) M evar_val svar_val phi1)
+        ⊆ (@pattern_interpretation (Σ) M evar_val svar_val phi2).
+  Proof.
+    intros M H phi1 phi2 evar_val svar_val.
+    rewrite -predicate_not_full_iff_empty.
+    2: { apply T_predicate_subseteq. apply H. }
+    rewrite subseteq_iff_interpr_subseteq.
+    2: { apply H. }
+    split; intros H'; exact H'.
+  Qed.
+
 End definedness.
 
 
