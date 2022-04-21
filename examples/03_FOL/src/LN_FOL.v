@@ -468,8 +468,74 @@ Section soundness_completeness.
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
 
   Definition valid A phi :=
-    forall (D : Set) (fail : D) (I : interp D) (rho : vars -> D),(forall Phi, List.In Phi A -> sat D fail rho Phi)
+    forall (D : Set) (fail : D) (I : interp D) (rho : vars -> D),
+    (forall Phi rho', List.In Phi A -> sat D fail rho' Phi)
       -> sat D fail rho phi.
+
+  Theorem plugging_terms :
+    forall t0 t D (I : interp D) fail rho x dbi,
+    ~List.In x (term_vars t0) ->
+    eval D fail rho (bsubst_term t0 t dbi) =
+    eval D fail (update_env D rho x (eval D fail rho t)) (bsubst_term t0 (fvar x) dbi).
+  Proof.
+    induction t0; intros t D I fail rho x0 dbi Fresh; simpl.
+    * unfold update_env. destruct decide; simpl in *; subst; auto. intuition.
+    * case_match; simpl; auto.
+      subst. unfold update_env. destruct decide; simpl; auto. congruence.
+    * do 2 rewrite map_map. f_equal. Search map eq.
+      apply map_ext_in. intros. apply IH. exact H.
+      simpl in *.
+      clear IH. induction v. inversion H.
+      inversion H; subst.
+      - simpl_existT. subst. simpl in Fresh.
+        now apply notin_app_l in Fresh.
+      - simpl_existT. subst. simpl in Fresh.
+        apply notin_app_r in Fresh. apply IHv; intros; auto.
+  Qed.
+
+  Theorem plugging_forms :
+    forall φ t D (I : interp D) fail rho x dbi,
+    ~List.In x (form_vars φ) ->
+    sat D fail rho (bsubst_form φ t dbi) <->
+    sat D fail (update_env D rho x (eval D fail rho t)) (bsubst_form φ (fvar x) dbi).
+  Proof.
+    induction φ; intros t D I fail rho x dbi Fresh; simpl in *.
+    * split; intro Sat; now rewrite sat_fal in Sat.
+    * split; intro Sat;
+      rewrite sat_atom in Sat; rewrite sat_atom;
+      rewrite map_map in Sat; rewrite map_map.
+      - erewrite map_ext_in. exact Sat. intros. simpl.
+        symmetry. apply plugging_terms.
+        clear Sat.
+        induction v. inversion H.
+        inversion H; subst.
+        + simpl_existT. subst. simpl in Fresh.
+          now apply notin_app_l in Fresh.
+        + simpl_existT. subst. simpl in Fresh.
+          apply notin_app_r in Fresh. apply IHv; intros; auto.
+
+      - erewrite map_ext_in. exact Sat. intros. simpl.
+        apply plugging_terms.
+        clear Sat.
+        induction v. inversion H.
+        inversion H; subst.
+        + simpl_existT. subst. simpl in Fresh.
+          now apply notin_app_l in Fresh.
+        + simpl_existT. subst. simpl in Fresh.
+          apply notin_app_r in Fresh. apply IHv; intros; auto.
+    * do 2 rewrite sat_impl. intros. apply notin_app_l in Fresh as Fresh2.
+      apply notin_app_r in Fresh.
+      split; intros H H0.
+      - apply (proj1 (IHφ2 t D I fail rho x dbi Fresh)).
+        apply H. now apply (proj2 (IHφ1 t D I fail rho x dbi Fresh2)).
+      - apply (proj2 (IHφ2 t D I fail rho x dbi Fresh)).
+        apply H. now apply (proj1 (IHφ1 t D I fail rho x dbi Fresh2)).
+    * do 2 rewrite sat_exs.
+      simpl. split; intro H; destruct H; exists x0;
+      remember (var_fresh (form_vars (bsubst_form φ (fvar x) (S dbi)))) as F1;
+      remember (var_fresh (form_vars (bsubst_form φ t (S dbi)))) as F2.
+      (* TODO: fresh variable operations should be supported here too! *)
+  Admitted.
 
   Theorem soundness :
     forall φ Γ, Γ ⊢_FOL φ -> valid Γ φ.
@@ -479,26 +545,31 @@ Section soundness_completeness.
     * do 2 rewrite sat_impl. intros. auto.
     * repeat rewrite sat_impl. intros. apply H0; auto.
     * repeat rewrite sat_impl. intros.
-      admit.
+      rewrite sat_fal in H0.
+      now apply Classical_Prop.NNPP. (* depends on ClassicalProp.classic axiom *)
     * unfold valid in *.
-      apply IHHilbert_proof_sys1 in H1 as IH1.
-      apply IHHilbert_proof_sys2 in H1 as IH2. rewrite sat_impl in IH2. now apply IH2.
+      eapply IHHilbert_proof_sys1 in H1 as IH1.
+      eapply IHHilbert_proof_sys2 in H1 as IH2. rewrite sat_impl in IH2.
+      apply IH2. exact IH1.
     * rewrite -> sat_impl, -> sat_exs. intros.
-      exists (eval D fail rho t). clear H.
-      generalize dependent φ. induction φ; intros; auto.
-      - admit.
-      - admit.
-      - admit.
-      (* TODO... *)
+      exists (eval D fail rho t).
+      eapply (proj1 (plugging_forms _ _ _ _ _ _ _ _ _)). exact H0.
+      Unshelve. admit. (* TODO: fresh variable operations should be supported here too! *)
     * rewrite -> sat_impl, -> sat_exs. intros. unfold valid in *.
-      apply IHHilbert_proof_sys in H0. rewrite sat_impl in H0. apply H0.
-      destruct H1. simpl in H1.
+      destruct H1.
       remember (var_fresh (form_vars (quantify_form φ x 0))) as FF.
-      admit. (* TODO... *)
+      apply IHHilbert_proof_sys with (rho := (update_env D rho x x0)) in H0.
+      rewrite sat_impl in H0.
+      (* TODO: fresh variable does not affect the evaluation of ψ *)
+      (* TODO: apply H0. *)
+      (* TODO: variable replacement is consistent with update replacement *)
   Admitted.
 
   Theorem completeness :
-    forall φ Γ, valid Γ φ -> Γ ⊢_FOL φ. Admitted.
+    forall φ Γ, valid Γ φ -> Γ ⊢_FOL φ.
+  Proof.
+  Admitted.
+
 End soundness_completeness.
 
 Section FOL_ML_correspondence.
