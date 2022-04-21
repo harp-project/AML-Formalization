@@ -63,6 +63,12 @@ Section with_syntax.
         : is_SPredicate patt_bott
     | spred_def (ϕ : Pattern)
         : is_SData ϕ -> is_SPredicate (patt_defined ϕ)
+    (* note that we have to add equality and subseteq manually,
+       since they are usually defined using totality,
+       and we do not have totality in the fragment!
+     *)
+    | spred_eq (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SPredicate (patt_equal ϕ₁ ϕ₂)
     | spred_imp (ϕ₁ ϕ₂ : Pattern)
         : is_SPredicate ϕ₁ -> is_SPredicate ϕ₂ -> is_SPredicate (patt_imp ϕ₁ ϕ₂)
     | spred_ex (ϕ : Pattern) (s : symbols)
@@ -477,6 +483,7 @@ Section with_syntax.
             induction HSPred.
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_bott. }
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_defined. exact M_def. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_equal. exact M_def. }
             { apply M_pre_predicate_imp; assumption. }
             { 
                 unfold patt_exists_of_sort.
@@ -1336,6 +1343,7 @@ Section with_syntax.
                         }
                     }
                     {
+                        (* patt_defined ϕ *)
                         unfold patt_defined.
                         do 2 rewrite pattern_interpretation_app_simpl.
                         do 2 rewrite pattern_interpretation_sym_simpl.
@@ -1660,6 +1668,13 @@ Section with_syntax.
                         }
                     }
                     {
+                        rewrite equal_iff_interpr_same.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite equal_iff_interpr_same.
+                        2: { apply M_def. }
+                    }
+                    {
+                        (* patt_impl ψ₁ ψ₂*)
                         do 2 rewrite pattern_interpretation_imp_simpl.
                         pose proof (IH1 := IHszpred ϕ₁ ρₑ ρₛ).
                         feed specialize IH1.

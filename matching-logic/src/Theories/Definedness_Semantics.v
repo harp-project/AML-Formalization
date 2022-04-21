@@ -429,6 +429,15 @@ Section definedness.
     apply T_predicate_defined.
   Qed.
 
+  Lemma T_pre_predicate_total : forall ϕ, T_pre_predicate theory (patt_total ϕ).
+  Proof.
+    intros ϕ. unfold patt_total.
+    unfold T_pre_predicate. intros M HM.
+    apply M_pre_predicate_not.
+    apply T_pre_predicate_defined.
+    exact HM.
+  Qed.
+
   Hint Resolve T_predicate_total : core.
 
   Lemma T_predicate_subseteq : forall ϕ₁ ϕ₂, T_predicate theory (patt_subseteq ϕ₁ ϕ₂).
@@ -436,11 +445,21 @@ Section definedness.
     intros ϕ₁ ϕ₂. unfold patt_subseteq. apply T_predicate_total.
   Qed.
 
+  Lemma T_pre_predicate_subseteq : forall ϕ₁ ϕ₂, T_pre_predicate theory (patt_subseteq ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂. apply T_pre_predicate_total.
+  Qed.
+
   Hint Resolve T_predicate_subseteq : core.
   
   Lemma T_predicate_equals : forall ϕ₁ ϕ₂, T_predicate theory (patt_equal ϕ₁ ϕ₂).
   Proof.
     intros ϕ₁ ϕ₂. unfold patt_equal. apply T_predicate_total.
+  Qed.
+
+  Lemma T_pre_predicate_equal : forall ϕ₁ ϕ₂, T_pre_predicate theory (patt_equal ϕ₁ ϕ₂).
+  Proof.
+    intros ϕ₁ ϕ₂. apply T_pre_predicate_total.
   Qed.
 
   Hint Resolve T_predicate_equals : core.
