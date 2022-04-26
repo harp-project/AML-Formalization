@@ -239,7 +239,7 @@ Section definedness.
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
         @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
         (
-          @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ1 ϕ2) = ⊤ /\
+          @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ /\
           @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ2 ϕ1) = ⊤).
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
@@ -274,7 +274,7 @@ Section definedness.
   Lemma subseteq_iff_interpr_subseteq : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ1 ϕ2) = ⊤ <->
+        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ <->
         (@pattern_interpretation Σ M ρₑ ρₛ ϕ1)
           ⊆ (@pattern_interpretation Σ M ρₑ ρₛ ϕ2).
   Proof.
@@ -687,7 +687,7 @@ Section definedness.
   Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : @Model Σ),
     M ⊨ᵀ theory ->
     forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ1 ϕ2) = ∅ <->
+      @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ∅ <->
       ~(@pattern_interpretation Σ M ρₑ ρₛ ϕ1)
         ⊆ (@pattern_interpretation Σ M ρₑ ρₛ ϕ2).
   Proof.
