@@ -96,7 +96,7 @@ Section definedness.
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
         (@pattern_interpretation Σ M ρₑ ρₛ ϕ) <> ∅ ->
-        (@pattern_interpretation Σ M ρₑ ρₛ (patt_defined ϕ)) = ⊤.
+        (@pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
   Proof.
     intros.
     pose (H' := stdpp_ext.Not_Empty_Contains_Elements (pattern_interpretation ρₑ ρₛ ϕ) H0).
@@ -158,7 +158,7 @@ Section definedness.
   Lemma definedness_not_empty_2 : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_defined ϕ) = ⊤ ->
+        @pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ⊤ ->
         @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ∅.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
@@ -401,7 +401,7 @@ Section definedness.
       inversion H1. subst. assumption.
   Qed.
   
-  Lemma T_predicate_defined : forall ϕ, T_predicate theory (patt_defined ϕ).
+  Lemma T_predicate_defined : forall ϕ, T_predicate theory ⌈ ϕ ⌉.
   Proof.
     intros ϕ. unfold T_predicate. intros. unfold M_predicate. intros.
     pose proof (Hlr := classic ( pattern_interpretation ρₑ ρ ϕ = ∅ )).
@@ -410,7 +410,7 @@ Section definedness.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
   Qed.
 
-  Lemma T_pre_predicate_defined : forall ϕ, T_pre_predicate theory (patt_defined ϕ).
+  Lemma T_pre_predicate_defined : forall ϕ, T_pre_predicate theory ⌈ ϕ ⌉.
   Proof.
     intros ϕ. unfold T_pre_predicate. intros M HM.
     unfold M_pre_predicate. intros l Hwf.
