@@ -237,7 +237,7 @@ Section definedness.
   Lemma equal_iff_both_subseteq : forall (M : @Model Σ),        
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ2) = ⊤ <->
+        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
         (
           @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ1 ϕ2) = ⊤ /\
           @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ2 ϕ1) = ⊤).
@@ -312,7 +312,7 @@ Section definedness.
   Lemma equal_iff_interpr_same : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ2) = ⊤ <->
+        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
         @pattern_interpretation Σ M ρₑ ρₛ ϕ1
         = @pattern_interpretation Σ M ρₑ ρₛ ϕ2.
   Proof.
@@ -346,7 +346,7 @@ Section definedness.
   Lemma equal_sym : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ2) = ⊤ ->
+        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
         @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ1) = ⊤.
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ H0.
@@ -358,7 +358,7 @@ Section definedness.
   Lemma equal_trans : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 ϕ3 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ2) = ⊤ ->
+        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
         @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ3) = ⊤ ->
         @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ3) = ⊤.
   Proof.
@@ -672,7 +672,7 @@ Section definedness.
   Lemma not_equal_iff_not_interpr_same_1 : forall (M : @Model Σ),
     M ⊨ᵀ theory ->
     forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ2) = ∅ <->
+      @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ∅ <->
       @pattern_interpretation Σ M ρₑ ρₛ ϕ1
       <> @pattern_interpretation Σ M ρₑ ρₛ ϕ2.
   Proof.
