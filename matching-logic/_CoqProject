@@ -31,7 +31,7 @@ src/DerivedOperators_Semantics.v
 src/ProofSystem.v
 src/ProofSystemSoundness.v
 src/FixpointReasoning.v
-src/SignatureHelper.v
+src/StringSignature.v
 src/Logic.v
 src/ProofMode.v
 
