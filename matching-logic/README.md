@@ -1,6 +1,8 @@
-# A Locally-Nameless Formalization of Matching logic 
+# A Coq Formalization of Matching logic 
 
-This library includes an embedding of matching logic in the Coq proof system.
+This library contains an embedding of matching logic in the Coq proof system, using the locally-nameless representation.
+
+[Generated html files of the latest version.](https://harp-project.github.io/AML-Formalization/toc.html)
 
 ## Structure of the source files
 
