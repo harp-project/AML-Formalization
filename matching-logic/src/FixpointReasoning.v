@@ -28,17 +28,17 @@ Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Section with_signature.
   Context {Σ : Signature}.
 
-  Lemma pattern_interpretation_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
+  Lemma eval_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
-    let Sfix := @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ) in
+    let Sfix := @eval Σ M ρₑ ρₛ (patt_mu ϕ) in
     F Sfix = Sfix.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
+    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -53,7 +53,7 @@ Section with_signature.
     }
 
     unfold isFixpoint in Ffix.
-    rewrite pattern_interpretation_mu_simpl in HeqSfix.
+    rewrite eval_mu_simpl in HeqSfix.
     simpl in HeqSfix.
     unfold Fassoc in HeqF.
     rewrite HeqX in HeqF.
@@ -63,18 +63,18 @@ Section with_signature.
   Qed.
 
 
-  Lemma pattern_interpretation_mu_lfp_least M ρₑ ρₛ ϕ S:
+  Lemma eval_mu_lfp_least M ρₑ ρₛ ϕ S:
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
-    let Sfix := @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ) in
+    let Sfix := @eval Σ M ρₑ ρₛ (patt_mu ϕ) in
     (F S) ⊆ S ->
     Sfix ⊆ S.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
+    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -85,7 +85,7 @@ Section with_signature.
     }
 
     assert (Hlfp: LeastFixpointOf F = Sfix).
-    { subst. rewrite pattern_interpretation_mu_simpl. simpl. unfold Fassoc. reflexivity. }
+    { subst. rewrite eval_mu_simpl. simpl. unfold Fassoc. reflexivity. }
 
     intros Hincl.
 
@@ -94,47 +94,47 @@ Section with_signature.
     rewrite Hlfp in Hleast. apply Hleast.
   Qed.
 
-  Lemma pattern_interpretation_mu_if_lfp M ρₑ ρₛ ϕ Sfix :
+  Lemma eval_mu_if_lfp M ρₑ ρₛ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
     (F Sfix) ⊆ Sfix ->
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S) ->
-    Sfix = @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ).
+    Sfix = @eval Σ M ρₑ ρₛ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
     intros Hprefix Hleast.
-    rewrite pattern_interpretation_mu_simpl. simpl.
+    rewrite eval_mu_simpl. simpl.
     unfold Fassoc in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
     apply LeastFixpoint_unique. { apply Hprefix. } apply Hleast.
   Qed.
 
-  Lemma pattern_interpretation_mu_lfp_iff M ρₑ ρₛ ϕ Sfix :
+  Lemma eval_mu_lfp_iff M ρₑ ρₛ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
     let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
     (
     (F Sfix) ⊆ Sfix /\
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S)
-    ) <-> Sfix = @pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ).
+    ) <-> Sfix = @eval Σ M ρₑ ρₛ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@pattern_interpretation Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix'.
+    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix'.
     split.
     - intros [H1 H2]. subst.
-      auto using pattern_interpretation_mu_if_lfp.
+      auto using eval_mu_if_lfp.
     - intros H. split.
       + subst.
         match goal with
         | |- ?L ⊆ ?R => assert (H: L = R)
         end.
-        apply pattern_interpretation_mu_lfp_fixpoint. apply Hwfp.
+        apply eval_mu_lfp_fixpoint. apply Hwfp.
         rewrite H. apply reflexivity.
-      + intros S. subst. apply pattern_interpretation_mu_lfp_least. apply Hwfp.
+      + intros S. subst. apply eval_mu_lfp_least. apply Hwfp.
   Qed.
 
   (* mu X. base \/ step X *)
@@ -170,8 +170,8 @@ Section with_signature.
 
     Lemma svar_open_patt_ind_gen_body_simpl M ρₑ ρₛ X:
       svar_is_fresh_in X patt_ind_gen_body ->
-      @pattern_interpretation Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body)
-      = @pattern_interpretation Σ M ρₑ ρₛ (patt_or base (patt_app step (patt_free_svar X))).
+      @eval Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body)
+      = @eval Σ M ρₑ ρₛ (patt_or base (patt_app step (patt_free_svar X))).
     Proof.
       intros Hfr.
       unfold svar_is_fresh_in in Hfr. simpl in Hfr.
@@ -182,13 +182,13 @@ Section with_signature.
       rewrite /patt_ind_gen_body.
       unfold svar_open.
       simpl_bsvar_subst. simpl.
-      rewrite 2!pattern_interpretation_or_simpl.
+      rewrite 2!eval_or_simpl.
       unfold nest_mu. rewrite 2!nest_mu_same.
       reflexivity.
     Qed.
     
     
-    Section with_interpretation.
+    Section with_eval.
       Context (M : @Model Σ).
       Context (ρₑ : @EVarVal Σ M).
       Context (ρₛ : @SVarVal Σ M).
@@ -199,7 +199,7 @@ Section with_signature.
       (*
       Lemma svar_open_patt_ind_gen_body_assoc S:
         let X := fresh_svar patt_ind_gen_body in
-        pattern_interpretation ρₑ (update_svar_val X S ρₛ) (svar_open 0 X patt_ind_gen_body)
+        eval ρₑ (update_svar_val X S ρₛ) (svar_open 0 X patt_ind_gen_body)
         = F S.
       Proof. reflexivity.
              (*
@@ -214,24 +214,24 @@ Section with_signature.
        *)
 
       (* I can imagine this lemma to be proven automatically. *)
-      Lemma F_interp: F = λ A, (pattern_interpretation ρₑ ρₛ base)
-                                 ∪ (app_ext (pattern_interpretation ρₑ ρₛ step) A).
+      Lemma F_interp: F = λ A, (eval ρₑ ρₛ base)
+                                 ∪ (app_ext (eval ρₑ ρₛ step) A).
       Proof.
         unfold F. unfold Fassoc. apply functional_extensionality.
         intros A. rewrite svar_open_patt_ind_gen_body_simpl.
         { apply set_svar_fresh_is_fresh. }
 
-        rewrite pattern_interpretation_or_simpl.
-        rewrite pattern_interpretation_app_simpl.
-        rewrite pattern_interpretation_free_svar_simpl.
+        rewrite eval_or_simpl.
+        rewrite eval_app_simpl.
+        rewrite eval_free_svar_simpl.
         rewrite update_svar_val_same.
-        rewrite pattern_interpretation_free_svar_independent.
+        rewrite eval_free_svar_independent.
         {
           eapply svar_is_fresh_in_richer.
           2: { apply set_svar_fresh_is_fresh. }
           solve_free_svars_inclusion 5.
         }
-        rewrite pattern_interpretation_free_svar_independent.
+        rewrite eval_free_svar_independent.
         {
           eapply svar_is_fresh_in_richer.
           2: { apply set_svar_fresh_is_fresh. }
@@ -244,13 +244,13 @@ Section with_signature.
         (last l = Some m) /\
         (match l with
          | [] => False
-         | m₀::ms => (m₀ ∈ @pattern_interpretation Σ M ρₑ ρₛ base)
+         | m₀::ms => (m₀ ∈ @eval Σ M ρₑ ρₛ base)
                      /\  (@Forall _
                                   (λ (x : (Domain M) * (Domain M)),
                                    let (old, new) := x in
                                    new ∈ 
                                   app_ext
-                                    (@pattern_interpretation Σ M ρₑ ρₛ step)
+                                    (@eval Σ M ρₑ ρₛ step)
                                     {[ old ]}
                                  )
                                  (zip (m₀::ms) ms)
@@ -259,14 +259,14 @@ Section with_signature.
          end).
 
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
-        (∃ lst, last l = Some lst /\ lst ∈ @pattern_interpretation Σ M ρₑ ρₛ base)
+        (∃ lst, last l = Some lst /\ lst ∈ @eval Σ M ρₑ ρₛ base)
           /\
           hd_error l = Some m
           /\
           ((@Forall _ (uncurry (λ new old,
                               new ∈
                      app_ext
-                       (@pattern_interpretation Σ M ρₑ ρₛ step)
+                       (@eval Σ M ρₑ ρₛ step)
                        {[old]}
                     ))
                     (zip l (tail l))
@@ -278,7 +278,7 @@ Section with_signature.
       Lemma witnessing_sequence_middle (m : Domain M) (l : list (Domain M)) (n : nat) (m' : Domain M) :
         is_witnessing_sequence m l ->
         l !! n = Some m' ->
-        m' ∈ @pattern_interpretation Σ M ρₑ ρₛ base ->
+        m' ∈ @eval Σ M ρₑ ρₛ base ->
         is_witnessing_sequence m' (drop n l).
       Proof.
         intros [[lst [Hlst Hbase] ] [Hhd Hfa] ] Hm' Hbase'.
@@ -332,14 +332,14 @@ Section with_signature.
                            (λ new old : Domain M,
                                         new ∈
                                         app_ext
-                                          (pattern_interpretation ρₑ ρₛ step)
+                                          (eval ρₑ ρₛ step)
                                           {[old]})
                      ))
                      =  (λ x : Domain M * Domain M,
                                let (old, new) := x in
                                new ∈
                                app_ext
-                                 (pattern_interpretation ρₑ ρₛ step)
+                                 (eval ρₑ ρₛ step)
                                  {[old]})).
         
         { apply functional_extensionality. intros [x₁ x₂].
@@ -421,7 +421,7 @@ Section with_signature.
             apply Hlast.
           }
 
-          assert (Hfeq': (λ new old : Domain M, new ∈ app_ext (pattern_interpretation ρₑ ρₛ step) {[old]}) = flip (flip (λ new old : Domain M, new ∈ app_ext (pattern_interpretation ρₑ ρₛ step) {[old]}))).
+          assert (Hfeq': (λ new old : Domain M, new ∈ app_ext (eval ρₑ ρₛ step) {[old]}) = flip (flip (λ new old : Domain M, new ∈ app_ext (eval ρₑ ρₛ step) {[old]}))).
           { apply functional_extensionality. intros x0.
             apply functional_extensionality. intros x1.
             reflexivity.
@@ -435,7 +435,7 @@ Section with_signature.
 
       Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence m l
-         /\ (∃ step', step' ∈ pattern_interpretation ρₑ ρₛ step /\ m' ∈ app_interp step' m)
+         /\ (∃ step', step' ∈ eval ρₑ ρₛ step /\ m' ∈ app_interp step' m)
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
@@ -488,7 +488,7 @@ Section with_signature.
       Lemma witnessing_sequence_old_extend
             (m x m' : Domain M) (l : list (Domain M)):
         (is_witnessing_sequence_old m (x::l) /\
-        ∃ step', (step' ∈ pattern_interpretation ρₑ ρₛ step /\
+        ∃ step', (step' ∈ eval ρₑ ρₛ step /\
         m' ∈ app_interp step' m)) <->
         (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
@@ -606,7 +606,7 @@ Section with_signature.
       Proof.
         rewrite elem_of_subseteq. intros x Hx.
         unfold F in Hx. unfold Fassoc in Hx. unfold svar_open in Hx. simpl in Hx.
-        rewrite pattern_interpretation_or_simpl in Hx.
+        rewrite eval_or_simpl in Hx.
         fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu base)) in Hx.
         fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu step)) in Hx.
         destruct Hx.
@@ -618,7 +618,7 @@ Section with_signature.
           { reflexivity. }
           split.
           2: { constructor. }
-          rewrite pattern_interpretation_free_svar_independent in H.
+          rewrite eval_free_svar_independent in H.
           {
             eapply svar_is_fresh_in_richer. 2: { subst. auto. }
             unfold svar_open.
@@ -627,8 +627,8 @@ Section with_signature.
           simpl. unfold svar_open in H.
           rewrite nest_mu_same in H. auto.
         - unfold Ensembles.In in H.
-          rewrite pattern_interpretation_app_simpl in H.
-          rewrite pattern_interpretation_free_svar_simpl in H.
+          rewrite eval_app_simpl in H.
+          rewrite eval_free_svar_simpl in H.
           rewrite update_svar_val_same in H.
           unfold app_ext in H.
           destruct H as [step' [m [H1 [H2 Happ] ] ] ].
@@ -643,7 +643,7 @@ Section with_signature.
           { unfold is_witnessing_sequence in Hl. destruct Hl. simpl in H. inversion H. }
 
           unfold svar_open in H1. rewrite nest_mu_same in H1.
-          rewrite pattern_interpretation_free_svar_independent in H1.
+          rewrite eval_free_svar_independent in H1.
           {
             eapply svar_is_fresh_in_richer.
             2: { apply set_svar_fresh_is_fresh. }
@@ -657,18 +657,18 @@ Section with_signature.
       Qed.
 
       Lemma interp_included_in_witnessed_elements_old:
-        (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen) ⊆ witnessed_elements_old.
+        (@eval Σ M ρₑ ρₛ patt_ind_gen) ⊆ witnessed_elements_old.
       Proof.
-        apply pattern_interpretation_mu_lfp_least.
+        apply eval_mu_lfp_least.
         { apply patt_ind_gen_wfp. }
         apply witnessed_elements_old_prefixpoint.
       Qed.
 
-      Lemma pattern_interpretation_patt_ind_gen_fix :
-        let Sfix := pattern_interpretation ρₑ ρₛ patt_ind_gen in
+      Lemma eval_patt_ind_gen_fix :
+        let Sfix := eval ρₑ ρₛ patt_ind_gen in
         F Sfix = Sfix.
       Proof.
-        apply pattern_interpretation_mu_lfp_fixpoint.
+        apply eval_mu_lfp_fixpoint.
         apply patt_ind_gen_wfp.
       Qed.
       
@@ -677,11 +677,11 @@ Section with_signature.
         PropSet (λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len).
 
       Lemma witnessed_elements_old_of_max_len_included_in_interp len:
-        (witnessed_elements_old_of_max_len (S len)) ⊆ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+        (witnessed_elements_old_of_max_len (S len)) ⊆ (@eval Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         induction len.
         - unfold Included. intros m.
-          rewrite -pattern_interpretation_patt_ind_gen_fix.
+          rewrite -eval_patt_ind_gen_fix.
           unfold Ensembles.In.
           intros H.
           unfold witnessed_elements_old_of_max_len.
@@ -697,7 +697,7 @@ Section with_signature.
           destruct Hm as [Hm _].
           left. unfold Ensembles.In. apply Hm.
         - unfold Included. intros m.
-          rewrite -pattern_interpretation_patt_ind_gen_fix.
+          rewrite -eval_patt_ind_gen_fix.
           unfold Ensembles.In. intros H.
           destruct H as [l [Hwit Hlen] ].
           unfold Included in IHlen. unfold Ensembles.In in IHlen.
@@ -842,7 +842,7 @@ Section with_signature.
       Qed.
 
       Lemma witnessed_elements_old_included_in_interp:
-        witnessed_elements_old ⊆ (@pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen).
+        witnessed_elements_old ⊆ (@eval Σ M ρₑ ρₛ patt_ind_gen).
       Proof.
         intros x H.
         unfold Ensembles.In in H. unfold witnessed_elements_old in H.
@@ -876,7 +876,7 @@ Section with_signature.
       Qed.
       
       Lemma patt_ind_gen_simpl:
-        @pattern_interpretation Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
+        @eval Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
       Proof.
         rewrite -witnessed_elements_old_eq_witnessed_elements.
         rewrite -> set_eq_subseteq.
@@ -891,8 +891,8 @@ Section with_signature.
         Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
 
         Hypothesis (Hbase_step_no_confusion
-                    : (pattern_interpretation ρₑ ρₛ base)
-                        ∩ (app_ext (pattern_interpretation ρₑ ρₛ step) witnessed_elements) = ∅).
+                    : (eval ρₑ ρₛ base)
+                        ∩ (app_ext (eval ρₑ ρₛ step) witnessed_elements) = ∅).
 
         Lemma witnessed_elements_unique_seq :
           ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
@@ -985,7 +985,7 @@ Section with_signature.
               
               simpl in Hma. simpl in Hmb.
 
-              assert (Ham: app_ext (pattern_interpretation ρₑ ρₛ step) {[a]} = {[m]}).
+              assert (Ham: app_ext (eval ρₑ ρₛ step) {[a]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwita).
@@ -995,7 +995,7 @@ Section with_signature.
                 apply Ha'.
               }
 
-              assert (Hbm: app_ext (pattern_interpretation ρₑ ρₛ step) {[b]} = {[m]}).
+              assert (Hbm: app_ext (eval ρₑ ρₛ step) {[b]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwitb).
@@ -1048,7 +1048,7 @@ Section with_signature.
             lia.
           }
 
-          (*assert (Hbasem': pattern_interpretation ρₑ ρₛ base lst).*)          
+          (*assert (Hbasem': eval ρₑ ρₛ base lst).*)          
           
           assert (~ (length l₁ > length l₂)).
           {
@@ -1110,9 +1110,9 @@ Section with_signature.
             }
             subst m'.
 
-            (* `m'=d` matches `app_ext (pattern_interpretation ρₑ ρₛ step) d0` *)
+            (* `m'=d` matches `app_ext (eval ρₑ ρₛ step) d0` *)
             assert (d ∈ app_ext
-                      (pattern_interpretation ρₑ ρₛ step)
+                      (eval ρₑ ρₛ step)
                       {[d0]}).
             {
               unfold is_witnessing_sequence in Hwsm.
@@ -1150,7 +1150,7 @@ Section with_signature.
         
       End injective.
       
-    End with_interpretation.
+    End with_eval.
 
   End inductive_generation.
 

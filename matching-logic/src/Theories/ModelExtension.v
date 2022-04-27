@@ -433,15 +433,15 @@ Section with_syntax.
             Decision (m ∈ @Minterp_inhabitant Σ _ Mext (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
     Proof.
         intros. unfold Minterp_inhabitant.
-        rewrite pattern_interpretation_app_simpl.
+        rewrite eval_app_simpl.
         unfold app_ext,lift_val_e,lift_val_s. simpl.
         destruct m.
         {
             right. intros HContra.
             rewrite elem_of_PropSet in HContra.
             destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
-            rewrite pattern_interpretation_sym_simpl in HContra1.
-            rewrite pattern_interpretation_sym_simpl in HContra2.
+            rewrite eval_sym_simpl in HContra1.
+            rewrite eval_sym_simpl in HContra2.
             simpl in HContra1.
             simpl in HContra2.
             unfold new_sym_interp in HContra1, HContra2.
@@ -452,8 +452,8 @@ Section with_syntax.
             right. intros HContra.
             rewrite elem_of_PropSet in HContra.
             destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
-            rewrite pattern_interpretation_sym_simpl in HContra1.
-            rewrite pattern_interpretation_sym_simpl in HContra2.
+            rewrite eval_sym_simpl in HContra1.
+            rewrite eval_sym_simpl in HContra2.
             simpl in HContra1.
             simpl in HContra2.
             unfold new_sym_interp in HContra1, HContra2.
@@ -465,8 +465,8 @@ Section with_syntax.
             right. intros HContra.
             rewrite elem_of_PropSet in HContra.
             destruct HContra as [le [re [HContra1 [HContra2 HContra3]]]].
-            rewrite pattern_interpretation_sym_simpl in HContra1.
-            rewrite pattern_interpretation_sym_simpl in HContra2.
+            rewrite eval_sym_simpl in HContra1.
+            rewrite eval_sym_simpl in HContra2.
             simpl in HContra1.
             simpl in HContra2.
             unfold new_sym_interp in HContra1, HContra2.
@@ -477,14 +477,14 @@ Section with_syntax.
         {
             left.
             unfold Minterp_inhabitant in Hin.
-            rewrite pattern_interpretation_app_simpl in Hin.
-            do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+            rewrite eval_app_simpl in Hin.
+            do 2 rewrite eval_sym_simpl in Hin.
             unfold app_ext in Hin.
             rewrite elem_of_PropSet in Hin.
             destruct Hin as [le [re [Hinle [Hinre Hin]]]].
             rewrite elem_of_PropSet.
             
-            do 2 rewrite pattern_interpretation_sym_simpl.
+            do 2 rewrite eval_sym_simpl.
             simpl.
             unfold new_sym_interp.
             repeat case_match; subst; auto; try contradiction; try congruence;
@@ -503,13 +503,13 @@ Section with_syntax.
         {
             right.
             unfold Minterp_inhabitant in Hnotin.
-            rewrite pattern_interpretation_app_simpl in Hnotin.
-            do 2 rewrite pattern_interpretation_sym_simpl in Hnotin.
+            rewrite eval_app_simpl in Hnotin.
+            do 2 rewrite eval_sym_simpl in Hnotin.
             unfold app_ext in Hnotin.
             rewrite elem_of_PropSet in Hnotin.
             rewrite elem_of_PropSet.
             intro HContra. apply Hnotin.
-            do 2 rewrite pattern_interpretation_sym_simpl in HContra.
+            do 2 rewrite eval_sym_simpl in HContra.
             simpl in HContra. unfold new_sym_interp in HContra.
             destruct HContra as [le [re [Hinle [Hinre Hin]]]].
             
@@ -618,11 +618,11 @@ Section with_syntax.
             ρe0 ρs0
             :
             is_not_core_symbol s ->
-            @pattern_interpretation Σ Mext ρe0 ρs0 (patt_sym s) =
-            lift_set (@pattern_interpretation Σ M ρₑ ρₛ (patt_sym s)).
+            @eval Σ Mext ρe0 ρs0 (patt_sym s) =
+            lift_set (@eval Σ M ρₑ ρₛ (patt_sym s)).
         Proof.
             intros H.
-            do 2 rewrite pattern_interpretation_sym_simpl.
+            do 2 rewrite eval_sym_simpl.
             clear -H. unfold_leibniz.
             unfold is_not_core_symbol,is_core_symbol in H.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
@@ -638,8 +638,8 @@ Section with_syntax.
             ρe0 ρs0
             :
             is_not_core_symbol s ->
-            @pattern_interpretation Σ Mext ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
-            = lift_set (@pattern_interpretation Σ M ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
+            @eval Σ Mext ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
+            = lift_set (@eval Σ M ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
         Proof.
             intros H.
             rename H into Hnc.
@@ -647,11 +647,11 @@ Section with_syntax.
                in the proof script does nothing. *)
             unfold_leibniz. 
             unfold patt_inhabitant_set.
-            do 2 rewrite pattern_interpretation_app_simpl.
+            do 2 rewrite eval_app_simpl.
             rewrite (semantics_preservation_sym ρₑ ρₛ);[assumption|].
-            remember (pattern_interpretation ρₑ ρₛ (patt_sym s)) as ps.
+            remember (eval ρₑ ρₛ (patt_sym s)) as ps.
             unfold Sorts_Syntax.sym.
-            do 2 rewrite pattern_interpretation_sym_simpl.
+            do 2 rewrite eval_sym_simpl.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
             repeat case_match.
             { exfalso. clear -e HDefNeqInh. congruence. }
@@ -770,8 +770,8 @@ Section with_syntax.
                 size' ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
-                @pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
-                = lift_set (@pattern_interpretation Σ M ρₑ ρₛ ϕ)
+                @eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
+                = lift_set (@eval Σ M ρₑ ρₛ ϕ)
             )
             /\
             (
@@ -779,11 +779,11 @@ Section with_syntax.
                 size' ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
-                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
-                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ∅)
+                (@eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
+                <-> @eval Σ M ρₑ ρₛ ψ = ∅)
                 /\
-                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
-                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ⊤)
+                (@eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
+                <-> @eval Σ M ρₑ ρₛ ψ = ⊤)
             ).
         Proof.
             induction sz.
@@ -807,7 +807,7 @@ Section with_syntax.
                     destruct HSData; simpl in Hszϕ.
                     {
                         (* patt_bott *)
-                        do 2 rewrite pattern_interpretation_bott_simpl.
+                        do 2 rewrite eval_bott_simpl.
                         unfold lift_set.
                         unfold fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -817,28 +817,28 @@ Section with_syntax.
                     }
                     {
                         (* free_evar x*)
-                        do 2 rewrite pattern_interpretation_free_evar_simpl.
+                        do 2 rewrite eval_free_evar_simpl.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         clear. unfold_leibniz. set_solver.
                     }
                     {
                         (* free_svar X *)
-                        do 2 rewrite pattern_interpretation_free_svar_simpl.
+                        do 2 rewrite eval_free_svar_simpl.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         clear. unfold_leibniz. set_solver.
                     }
                     {
                         (* bound_evar X *)
-                        do 2 rewrite pattern_interpretation_bound_evar_simpl.
+                        do 2 rewrite eval_bound_evar_simpl.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         clear. unfold_leibniz. set_solver.
                     }
                     {
                         (* bound_svar X *)
-                        do 2 rewrite pattern_interpretation_bound_svar_simpl.
+                        do 2 rewrite eval_bound_svar_simpl.
                         unfold lift_set,fmap.
                         with_strategy transparent [propset_fmap] unfold propset_fmap.
                         clear. unfold_leibniz. set_solver.
@@ -856,9 +856,9 @@ Section with_syntax.
                     {
                         (* patt_sorted_neg (patt_sym s) ϕ *)
                         unfold patt_sorted_neg.
-                        do 2 rewrite pattern_interpretation_and_simpl.
+                        do 2 rewrite eval_and_simpl.
                         rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ);[assumption|].
-                        do 2 rewrite pattern_interpretation_not_simpl.
+                        do 2 rewrite eval_not_simpl.
                         rewrite IHszdata.
                         {
                             lia.
@@ -869,15 +869,15 @@ Section with_syntax.
                         {
                             wf_auto2.
                         }
-                        remember (pattern_interpretation ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
-                        remember (pattern_interpretation ρₑ ρₛ ϕ) as Xϕ.
+                        remember (eval ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
+                        remember (eval ρₑ ρₛ ϕ) as Xϕ.
                         clear HeqXinh HeqXϕ IHszpred IHszdata.
                         unfold_leibniz.
                         set_solver.
                     }
                     {
                         (* patt_app ϕ₁ ϕ₂ *)
-                        do 2 rewrite pattern_interpretation_app_simpl.
+                        do 2 rewrite eval_app_simpl.
                         rewrite IHszdata.
                         { lia. }
                         { exact HSData1. }
@@ -957,7 +957,7 @@ Section with_syntax.
                     }
                     {
                         (* patt_or ϕ₁ ϕ₂ *)
-                        do 2 rewrite pattern_interpretation_or_simpl.
+                        do 2 rewrite eval_or_simpl.
                         rewrite IHszdata.
                         { lia. }
                         { exact HSData1. }
@@ -974,11 +974,11 @@ Section with_syntax.
                     }
                     {
                         (* patt_and ϕ ψ *)
-                        do 2 rewrite pattern_interpretation_and_simpl.
+                        do 2 rewrite eval_and_simpl.
 
                         rename H into Hspred.
                     
-                        destruct (classic (pattern_interpretation ρₑ ρₛ ψ = ∅)).
+                        destruct (classic (eval ρₑ ρₛ ψ = ∅)).
                         {
                             rewrite IHszdata.
                             { lia. }
@@ -1045,10 +1045,10 @@ Section with_syntax.
                     }
                     {
                         (* patt_exists_of_sort (patt_sym s) ϕ *)
-                        unshelve(erewrite pattern_interpretation_exists_of_sort).
+                        unshelve(erewrite eval_exists_of_sort).
                         3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
                         { intros. apply Mext_indec. assumption. }
-                        unshelve(erewrite pattern_interpretation_exists_of_sort).
+                        unshelve(erewrite eval_exists_of_sort).
                         3: { rewrite HSortImptDef. assumption. }
                         { intros. apply indec. assumption. }
                         rewrite lift_set_fa_union.
@@ -1066,8 +1066,8 @@ Section with_syntax.
                                 destruct c.
                                 {
                                     exfalso.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin. simpl in Hin.
                                     unfold new_sym_interp,new_app_interp in Hin.
                                     rewrite elem_of_PropSet in Hin.
@@ -1086,8 +1086,8 @@ Section with_syntax.
                                 }
                                 {
                                     exfalso.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin. simpl in Hin.
                                     unfold new_sym_interp,new_app_interp in Hin.
                                     rewrite elem_of_PropSet in Hin.
@@ -1107,8 +1107,8 @@ Section with_syntax.
                                 destruct el.
                                 2: {
                                     exfalso.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin. simpl in Hin.
                                     unfold new_sym_interp,new_app_interp in Hin.
                                     rewrite elem_of_PropSet in Hin.
@@ -1240,7 +1240,7 @@ Section with_syntax.
                     }
                     {
                         (* patt_mu (patt_sym s) ϕ *)
-                        do 2 rewrite pattern_interpretation_mu_simpl.
+                        do 2 rewrite eval_mu_simpl.
                         cbn zeta.
                         match goal with
                         | [ |- (Lattice.LeastFixpointOf ?fF = lift_set (Lattice.LeastFixpointOf ?fG))] =>
@@ -1303,7 +1303,7 @@ Section with_syntax.
                         }
                         {
                             set (λ (A : propset (Domain Mext)), PropSet (λ (m : Domain M), lift_value m ∈ A)) as strip.
-                            set (λ A, lift_set (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
+                            set (λ A, lift_set (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
 
                             assert (Hstripmono: forall x y, x ⊆ y -> strip x ⊆ strip y).
                             {
@@ -1363,7 +1363,7 @@ Section with_syntax.
                                     apply lift_set_mono.
                                     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
                                     simpl in Htmp. apply Htmp. clear Htmp.
-                                    replace (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
+                                    replace (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
                                     (svar_open 0 (fresh_svar ϕ) ϕ))
                                     with (G (strip A)) by (subst; reflexivity).
                                     apply HmonoG. simpl.
@@ -1390,8 +1390,8 @@ Section with_syntax.
                                 set_solver.
                             }
                             
-                            assert (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)
-                            ⊆  @pattern_interpretation Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) A (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
+                            assert (@eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)
+                            ⊆  @eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) A (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
                             {
                                 apply is_monotonic.
                                 { unfold well_formed in Hwf. destruct_and!. assumption. }
@@ -1414,8 +1414,8 @@ Section with_syntax.
                     destruct HSPred; simpl in Hszϕ.
                     {
                         (* patt_bott *)
-                        rewrite pattern_interpretation_bott_simpl.
-                        rewrite pattern_interpretation_bott_simpl.
+                        rewrite eval_bott_simpl.
+                        rewrite eval_bott_simpl.
                         split.
                         {
                             split; auto.
@@ -1433,8 +1433,8 @@ Section with_syntax.
                     {
                         (* patt_defined ϕ *)
                         unfold patt_defined.
-                        do 2 rewrite pattern_interpretation_app_simpl.
-                        do 2 rewrite pattern_interpretation_sym_simpl.
+                        do 2 rewrite eval_app_simpl.
+                        do 2 rewrite eval_sym_simpl.
                         rewrite IHszdata.
                         { lia. }
                         { assumption. }
@@ -1453,7 +1453,7 @@ Section with_syntax.
                         rewrite Htmp.
                         unfold new_app_interp.
                         unfold_leibniz.
-                        destruct (classic (pattern_interpretation ρₑ ρₛ ϕ = ∅)) as [Hempty|Hnonempty].
+                        destruct (classic (eval ρₑ ρₛ ϕ = ∅)) as [Hempty|Hnonempty].
                         {
                             rewrite Hempty.
                             split.
@@ -1735,7 +1735,7 @@ Section with_syntax.
                                         intros x Hx.
                                         rewrite elem_of_PropSet.
                                         exists cdef.
-                                        assert (Hex : exists el, el ∈ pattern_interpretation ρₑ ρₛ ϕ).
+                                        assert (Hex : exists el, el ∈ eval ρₑ ρₛ ϕ).
                                         {
                                             clear -Hnonempty.
                                             apply NNPP. intros HContra.
@@ -1799,7 +1799,7 @@ Section with_syntax.
                     }
                     {
                         (* patt_impl ψ₁ ψ₂*)
-                        do 2 rewrite pattern_interpretation_imp_simpl.
+                        do 2 rewrite eval_imp_simpl.
                         pose proof (IH1 := IHszpred ϕ₁ ρₑ ρₛ).
                         feed specialize IH1.
                         { lia. }
@@ -1878,7 +1878,7 @@ Section with_syntax.
                                     rewrite H2B.
                                     apply IH21 in H2B.
                                     rewrite H2B in H.
-                                    assert (H': pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ₁  = ∅).
+                                    assert (H': eval (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ₁  = ∅).
                                     {
                                         clear -H. set_solver.
                                     }
@@ -1933,11 +1933,11 @@ Section with_syntax.
                         }
                     }
                     {
-                        unshelve (erewrite pattern_interpretation_exists_of_sort).
+                        unshelve (erewrite eval_exists_of_sort).
                         3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
                         1: { intros m. apply Mext_indec. assumption. }
 
-                        unshelve (erewrite pattern_interpretation_exists_of_sort).
+                        unshelve (erewrite eval_exists_of_sort).
                         3: { rewrite HSortImptDef. assumption. }
                         1: { intros m. apply indec. assumption. }
 
@@ -1971,10 +1971,10 @@ Section with_syntax.
                                 {
                                     exfalso.
                                     unfold Minterp_inhabitant in Hin,Hnotin'.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    rewrite pattern_interpretation_app_simpl in Hnotin'.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hnotin'.
+                                    rewrite eval_app_simpl in Hin.
+                                    rewrite eval_app_simpl in Hnotin'.
+                                    do 2 rewrite eval_sym_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hnotin'.
                                     unfold app_ext in Hin,Hnotin'.
                                     unfold lift_value in Hnotin'. simpl in Hnotin'.
                                     unfold new_sym_interp in Hnotin'.
@@ -2020,8 +2020,8 @@ Section with_syntax.
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre Hin]]]].
@@ -2072,8 +2072,8 @@ Section with_syntax.
                                     {
                                         exfalso. apply Hnotin'. clear Hnotin'.
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         rewrite elem_of_PropSet in Hin.
                                         destruct Hin as [a [Ha Hin]].
                                         inversion Ha. clear Ha. subst.
@@ -2121,8 +2121,8 @@ Section with_syntax.
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin.
                                     rewrite elem_of_PropSet in Hin.
                                     simpl in Hin.
@@ -2156,8 +2156,8 @@ Section with_syntax.
                                     2: {
                                         exfalso. apply Hnotin'.
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         unfold app_ext.
                                         rewrite elem_of_PropSet.
                                         exists le'. exists amr'.
@@ -2236,14 +2236,14 @@ Section with_syntax.
                                     {
                                         exfalso. apply Hnotin'. clear Hnotin'.
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         simpl.
                                         unfold app_ext.
                                         rewrite elem_of_PropSet.
                                         unfold Minterp_inhabitant in Hin.
-                                        rewrite pattern_interpretation_app_simpl in Hin.
-                                        do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                        rewrite eval_app_simpl in Hin.
+                                        do 2 rewrite eval_sym_simpl in Hin.
                                         unfold app_ext in Hin.
                                         rewrite elem_of_PropSet in Hin.
                                         destruct Hin as [le [re [Hle [Hre Hlere]]]].
@@ -2296,11 +2296,11 @@ Section with_syntax.
                         }
                     }
                     {
-                        unshelve (erewrite pattern_interpretation_forall_of_sort).
+                        unshelve (erewrite eval_forall_of_sort).
                         3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
                         1: { intros m. apply Mext_indec. assumption. }
 
-                        unshelve (erewrite pattern_interpretation_forall_of_sort).
+                        unshelve (erewrite eval_forall_of_sort).
                         3: { rewrite HSortImptDef. assumption. }
                         1: { intros m. apply indec. assumption. }
 
@@ -2321,8 +2321,8 @@ Section with_syntax.
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin.
                                     rewrite elem_of_PropSet in Hin.
                                     simpl in Hin.
@@ -2401,8 +2401,8 @@ Section with_syntax.
                                     {
                                         exfalso. apply Hnotin'.
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         unfold app_ext.
                                         rewrite elem_of_PropSet.
                                         exists le. exists a.
@@ -2421,8 +2421,8 @@ Section with_syntax.
                                 destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
-                                    rewrite pattern_interpretation_app_simpl in Hin.
-                                    do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                    rewrite eval_app_simpl in Hin.
+                                    do 2 rewrite eval_sym_simpl in Hin.
                                     unfold app_ext in Hin.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre Hin]]]].
@@ -2475,8 +2475,8 @@ Section with_syntax.
                                         exfalso.
                                         apply Hnotin'. clear Hnotin'.
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         unfold app_ext.
                                         rewrite elem_of_PropSet.
                                         exists cinh.
@@ -2553,14 +2553,14 @@ Section with_syntax.
                                     {
                                         exfalso. apply Hnotin'. clear Hnotin' H'.
                                         unfold Minterp_inhabitant in Hin.
-                                        rewrite pattern_interpretation_app_simpl in Hin.
-                                        do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                        rewrite eval_app_simpl in Hin.
+                                        do 2 rewrite eval_sym_simpl in Hin.
                                         unfold app_ext in Hin.
                                         rewrite elem_of_PropSet in Hin.
                                         destruct Hin as [le [re [Hle [Hre Hin]]]].
                                         unfold Minterp_inhabitant.
-                                        rewrite pattern_interpretation_app_simpl.
-                                        do 2 rewrite pattern_interpretation_sym_simpl.
+                                        rewrite eval_app_simpl.
+                                        do 2 rewrite eval_sym_simpl.
                                         unfold app_ext.
                                         rewrite elem_of_PropSet.
                                         exists cinh.
@@ -2603,8 +2603,8 @@ Section with_syntax.
                                 destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
                                 2: { reflexivity. }
                                 unfold Minterp_inhabitant in Hin.
-                                rewrite pattern_interpretation_app_simpl in Hin.
-                                do 2 rewrite pattern_interpretation_sym_simpl in Hin.
+                                rewrite eval_app_simpl in Hin.
+                                do 2 rewrite eval_sym_simpl in Hin.
                                 unfold app_ext in Hin.
                                 rewrite elem_of_PropSet in Hin.
                                 simpl in Hin.
@@ -2669,8 +2669,8 @@ Section with_syntax.
                                     exfalso.
                                     apply Hnotin'. clear Hnotin'.
                                     unfold Minterp_inhabitant.
-                                    rewrite pattern_interpretation_app_simpl.
-                                    do 2 rewrite pattern_interpretation_sym_simpl.
+                                    rewrite eval_app_simpl.
+                                    do 2 rewrite eval_sym_simpl.
                                     unfold app_ext.
                                     rewrite elem_of_PropSet.
                                     exists le'. exists a.

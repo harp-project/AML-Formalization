@@ -26,13 +26,13 @@ Section soundness.
     (∀ axiom : Pattern,
         axiom ∈ theory
         → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-          pattern_interpretation evar_val svar_val axiom = ⊤) ->
-    pattern_interpretation evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
+          eval evar_val svar_val axiom = ⊤) ->
+    eval evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
-    rewrite -> pattern_interpretation_imp_simpl.
+    rewrite -> eval_imp_simpl.
 
-    remember (pattern_interpretation evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
+    remember (eval evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
     assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
     { clear.
       set_unfold. intros x. split; intros H. exact I.
@@ -45,7 +45,7 @@ Section soundness.
       inversion H1.
       + left. rewrite -> Huxex in H2. exact H2.
       + rewrite Huxex. apply elem_of_top'.
-    - rewrite -> pattern_interpretation_ex_simpl. simpl.
+    - rewrite -> eval_ex_simpl. simpl.
       rewrite -> elem_of_subseteq.
       intros x _.
       destruct (classic (x ∈ Xex)).
@@ -53,7 +53,7 @@ Section soundness.
       right. unfold stdpp_ext.propset_fa_union.
       rewrite -> elem_of_PropSet.
       rewrite -> HeqXex in H1.
-      rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H1.
+      rewrite -> eval_app_simpl, eval_ex_simpl in H1.
       simpl in H1.
       unfold stdpp_ext.propset_fa_union in H1.
       unfold app_ext in H1.
@@ -61,11 +61,11 @@ Section soundness.
       destruct H1 as [le [re [Hunion [Hext_le Happ] ] ] ].
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
-      exists c. rewrite -> evar_open_app, -> pattern_interpretation_app_simpl. unfold app_ext.
+      exists c. rewrite -> evar_open_app, -> eval_app_simpl. unfold app_ext.
       rewrite -> elem_of_PropSet.
       exists le, re.
       split.
-      + erewrite -> (@interpretation_fresh_evar_open Σ m) in Hext_re. exact Hext_re.
+      + erewrite -> (@eval_fresh_evar_open Σ m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
         {
           unfold fresh_evar. simpl. 
@@ -74,7 +74,7 @@ Section soundness.
         }
       + unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!.
-        erewrite -> pattern_interpretation_free_evar_independent.
+        erewrite -> eval_free_evar_independent.
         erewrite -> evar_open_closed.
         split.
         2: { exact Happ. }
@@ -97,13 +97,13 @@ Section soundness.
     (∀ axiom : Pattern,
         axiom ∈ theory
         → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-          pattern_interpretation evar_val svar_val axiom = ⊤) ->
-    pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
+          eval evar_val svar_val axiom = ⊤) ->
+    eval evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
-    rewrite -> pattern_interpretation_imp_simpl.
+    rewrite -> eval_imp_simpl.
 
-    remember (pattern_interpretation evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
+    remember (eval evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
     assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
     { clear.
       set_unfold. intros x. split; intros H. exact I.
@@ -114,7 +114,7 @@ Section soundness.
     - rewrite <- Huxex.
       rewrite -> elem_of_subseteq. intros x H1.
       rewrite Huxex. apply elem_of_top'.
-    - rewrite -> pattern_interpretation_ex_simpl. simpl.
+    - rewrite -> eval_ex_simpl. simpl.
       rewrite -> elem_of_subseteq.
       intros x _.
       destruct (classic (x ∈ Xex)).
@@ -122,7 +122,7 @@ Section soundness.
       right. unfold stdpp_ext.propset_fa_union.
       rewrite -> elem_of_PropSet.
       rewrite -> HeqXex in H1.
-      rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_ex_simpl in H1.
+      rewrite -> eval_app_simpl, eval_ex_simpl in H1.
       simpl in H1.
       unfold stdpp_ext.propset_fa_union in H1.
       unfold app_ext in H1.
@@ -131,11 +131,11 @@ Section soundness.
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
 
-      exists c. rewrite -> evar_open_app, -> pattern_interpretation_app_simpl. unfold app_ext.
+      exists c. rewrite -> evar_open_app, -> eval_app_simpl. unfold app_ext.
       exists le, re.
       split.
       + erewrite -> evar_open_closed.
-        erewrite -> pattern_interpretation_free_evar_independent. exact Hext_le.
+        erewrite -> eval_free_evar_independent. exact Hext_le.
         unfold well_formed in H0.
         apply andb_true_iff in H0.
         destruct H0. 
@@ -148,7 +148,7 @@ Section soundness.
         destruct_and!.
         assumption.
       + split; try assumption.
-        erewrite -> (@interpretation_fresh_evar_open Σ m) in Hext_re. exact Hext_re.
+        erewrite -> (@eval_fresh_evar_open Σ m) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
         {
           pose(@set_evar_fresh_is_fresh' Σ (free_evars psi ∪ free_evars phi)).
@@ -160,13 +160,13 @@ Section soundness.
 Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
   well_formed_closed phi → well_formed psi →
   (∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-      pattern_interpretation evar_val svar_val phi = Full)
+      eval evar_val svar_val phi = Full)
   →
   ∀ X evar_val svar_val,
-    @pattern_interpretation Σ m evar_val svar_val (free_svar_subst phi psi X) = Full.
+    @eval Σ m evar_val svar_val (free_svar_subst phi psi X) = Full.
 Proof.
   intros. pose (H1 evar_val (update_svar_val X 
-                                  (pattern_interpretation evar_val svar_val psi) svar_val)).
+                                  (eval evar_val svar_val psi) svar_val)).
   erewrite <- free_svar_subst_update_exchange in e. exact e. assumption. unfold well_formed in H. assumption.
 Qed.
 
@@ -186,9 +186,9 @@ Proof.
 
   (* FOL reasoning - P1 *)
   - intros Hv evar_val svar_val.
-    repeat rewrite -> pattern_interpretation_imp_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
+    repeat rewrite -> eval_imp_simpl.
+    remember (eval evar_val svar_val phi) as Xphi.
+    remember (eval evar_val svar_val psi) as Xpsi.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -208,10 +208,10 @@ Proof.
 
   (* FOL reasoning - P2 *)
   - intros Hv evar_val svar_val.
-    repeat rewrite -> pattern_interpretation_imp_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
-    remember (pattern_interpretation evar_val svar_val xi) as Xxi.
+    repeat rewrite -> eval_imp_simpl.
+    remember (eval evar_val svar_val phi) as Xphi.
+    remember (eval evar_val svar_val psi) as Xpsi.
+    remember (eval evar_val svar_val xi) as Xxi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -221,8 +221,8 @@ Proof.
 
   (* FOL reasoning - P3 *)
   - intros Hv evar_val svar_val. 
-    repeat rewrite -> pattern_interpretation_imp_simpl; rewrite -> pattern_interpretation_bott_simpl.
-    remember (pattern_interpretation evar_val svar_val phi) as Xphi.
+    repeat rewrite -> eval_imp_simpl; rewrite -> eval_bott_simpl.
+    remember (eval evar_val svar_val phi) as Xphi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -233,7 +233,7 @@ Proof.
   - intros Hv evar_val svar_val.
     rename i into wfphi1. rename i0 into wfphi1impphi2.
     pose (IHHp2 wfphi1impphi2 Hv evar_val svar_val) as e.
-    rewrite -> pattern_interpretation_iff_subset in e.
+    rewrite -> eval_iff_subset in e.
     unfold Full.
     pose proof (H1 := (IHHp1 wfphi1 Hv evar_val svar_val)).
     unfold Full in H1.
@@ -243,8 +243,8 @@ Proof.
   (* Existential quantifier *)
   - intros Hv evar_val svar_val.
     simpl.
-    rewrite -> pattern_interpretation_imp_simpl.
-    rewrite -> pattern_interpretation_ex_simpl.
+    rewrite -> eval_imp_simpl.
+    rewrite -> eval_ex_simpl.
     simpl.
 
     rewrite -> element_substitution_lemma with (x := fresh_evar phi).
@@ -253,7 +253,7 @@ Proof.
     { apply top_subseteq. }
     rewrite -> elem_of_subseteq. intros x _.
     destruct (classic (x ∈ (⊤ ∖
-                              (pattern_interpretation
+                              (eval
                                  (update_evar_val (fresh_evar phi) (evar_val y) evar_val)
                                  svar_val
                                  (evar_open 0 (fresh_evar phi) phi))))).
@@ -264,7 +264,7 @@ Proof.
        rewrite -> elem_of_PropSet.
        exists (evar_val y).
        assert (x
-                 ∉ pattern_interpretation (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
+                 ∉ eval (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
                  (evar_open 0 (fresh_evar phi) phi) → False).
        { intros Hcontra. apply H. split. apply elem_of_top'. apply Hcontra. }
        apply NNPP in H0. exact H0.
@@ -273,7 +273,7 @@ Proof.
   (* Existential generalization *)
   - intros Hv evar_val svar_val.
     rename i into H. rename i0 into H0.
-    rewrite pattern_interpretation_iff_subset.
+    rewrite eval_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
     { unfold well_formed. simpl. unfold well_formed in H, H0.
       unfold well_formed_closed. unfold well_formed_closed in H, H0.
@@ -286,28 +286,28 @@ Proof.
     }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
     assert (H2: forall evar_val svar_val,
-               (@pattern_interpretation _ m evar_val svar_val phi1)
+               (@eval _ m evar_val svar_val phi1)
                  ⊆
-                 (pattern_interpretation evar_val svar_val phi2)
+                 (eval evar_val svar_val phi2)
            ).
-    { intros. apply pattern_interpretation_iff_subset. apply IHHp. }
-    apply pattern_interpretation_subset_union
+    { intros. apply eval_iff_subset. apply IHHp. }
+    apply eval_subset_union
       with (evar_val0 := evar_val) (svar_val0 := svar_val) (x0 := x) in H2.
     rewrite -> elem_of_subseteq. intros x0 Hphi1.
     rewrite -> elem_of_subseteq in H2.
     destruct H2 with (x0 := x0).
     -- assert (Hinc:
-                              (pattern_interpretation evar_val svar_val (exists_quantify x phi1))
+                              (eval evar_val svar_val (exists_quantify x phi1))
                               ⊆
                               (propset_fa_union
-                                 (λ e : Domain m, pattern_interpretation
+                                 (λ e : Domain m, eval
                                                     (update_evar_val x e evar_val) svar_val phi1))).
-       { unfold exists_quantify. rewrite pattern_interpretation_ex_simpl. simpl.
+       { unfold exists_quantify. rewrite eval_ex_simpl. simpl.
          apply propset_fa_union_included.
          setoid_rewrite -> elem_of_subseteq.
          intros c x1 H3.
          remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
-         erewrite interpretation_fresh_evar_open with (y := x) in H3.
+         erewrite eval_fresh_evar_open with (y := x) in H3.
          3: { apply evar_is_fresh_in_evar_quantify. }
          2: { subst x2. apply set_evar_fresh_is_fresh. }
          unfold well_formed in H.
@@ -324,13 +324,13 @@ Proof.
        apply Hinc. apply Hphi1.
 
     -- simpl.
-       rewrite pattern_interpretation_free_evar_independent in H1.
+       rewrite eval_free_evar_independent in H1.
        { auto. }
        apply H1.
 
   (* Propagation bottom - left *)
   - intros Hv evar_val svar_val. 
-    rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    rewrite -> eval_imp_simpl, eval_app_simpl, eval_bott_simpl.
     unfold Full.
     rewrite right_id_L.
     rewrite -> complement_full_iff_empty.
@@ -338,19 +338,19 @@ Proof.
     
   (* Propagation bottom - right *)
   - intros Hv evar_val svar_val. 
-    rewrite -> pattern_interpretation_imp_simpl, pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
+    rewrite -> eval_imp_simpl, eval_app_simpl, eval_bott_simpl.
     rewrite right_id_L.
     rewrite -> complement_full_iff_empty.
     apply app_ext_bot_r.
 
   (* Propagation disjunction - left *)
   - intros Hv evar_val svar_val. 
-    unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
-    repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
-    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
-    remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
+    unfold patt_or, patt_not. repeat rewrite -> eval_imp_simpl.
+    repeat rewrite -> eval_app_simpl, eval_imp_simpl.
+    rewrite -> eval_app_simpl, eval_bott_simpl.
+    remember (eval evar_val svar_val phi1) as Xphi1.
+    remember (eval evar_val svar_val phi2) as Xphi2.
+    remember (eval evar_val svar_val psi) as Xpsi.
     unfold Full.
     rewrite [_ ∪ ∅]right_id_L.
     rewrite [_ ∪ ∅]right_id_L.
@@ -373,12 +373,12 @@ Proof.
 
   (* Propagation disjunction - right *)
   - intros Hv evar_val svar_val. 
-    unfold patt_or, patt_not. repeat rewrite -> pattern_interpretation_imp_simpl.
-    repeat rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_imp_simpl.
-    rewrite -> pattern_interpretation_app_simpl, pattern_interpretation_bott_simpl.
-    remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
-    remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
-    remember (pattern_interpretation evar_val svar_val psi) as Xpsi.
+    unfold patt_or, patt_not. repeat rewrite -> eval_imp_simpl.
+    repeat rewrite -> eval_app_simpl, eval_imp_simpl.
+    rewrite -> eval_app_simpl, eval_bott_simpl.
+    remember (eval evar_val svar_val phi1) as Xphi1.
+    remember (eval evar_val svar_val phi2) as Xphi2.
+    remember (eval evar_val svar_val psi) as Xpsi.
     unfold Full.
     rewrite [_ ∪ ∅]right_id_L.
     rewrite [_ ∪ ∅]right_id_L.
@@ -409,10 +409,10 @@ Proof.
 
   (* Framing - left *)
   - intros Hv evar_val svar_val. 
-    rewrite -> pattern_interpretation_iff_subset.
+    rewrite -> eval_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
-    rewrite -> pattern_interpretation_iff_subset in e.
-    repeat rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> eval_iff_subset in e.
+    repeat rewrite -> eval_app_simpl.
     rewrite -> elem_of_subseteq. intros.
     destruct H as [le [re [Hphi1 [Hpsi Happ] ] ] ].
     unfold app_ext.
@@ -442,10 +442,10 @@ Proof.
 
   (* Framing - right *)
   - intros Hv evar_val svar_val.
-    rewrite -> pattern_interpretation_iff_subset.
+    rewrite -> eval_iff_subset.
     epose (IHHp _ Hv evar_val svar_val) as e.
-    rewrite -> pattern_interpretation_iff_subset in e.
-    repeat rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> eval_iff_subset in e.
+    repeat rewrite -> eval_app_simpl.
     rewrite -> elem_of_subseteq. intros.
     destruct H as [le [re [Hphi1 [Hpsi Happ] ] ] ].
     unfold app_ext.
@@ -479,11 +479,11 @@ Proof.
 
   (* Pre-Fixpoint *)
   - intros Hv evar_val svar_val.
-    apply pattern_interpretation_iff_subset. simpl.
-    rewrite -> pattern_interpretation_mu_simpl.
+    apply eval_iff_subset. simpl.
+    rewrite -> eval_mu_simpl.
     simpl.
     remember (fun S : propset (Domain m) =>
-                pattern_interpretation evar_val
+                eval evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
     pose (OS := Lattice.PropsetOrderedSet (@Domain Σ m)).
@@ -508,7 +508,7 @@ Proof.
     eapply transitivity.
     2: { apply H. }
     rewrite -> HeqF.
-    epose proof (Hsimpl := pattern_interpretation_mu_simpl).
+    epose proof (Hsimpl := eval_mu_simpl).
     specialize (Hsimpl evar_val svar_val phi).
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
@@ -521,10 +521,10 @@ Proof.
 
   (* Knaster-Tarski *)
   - intros Hv evar_val svar_val.
-    rewrite -> pattern_interpretation_imp_simpl. rewrite -> pattern_interpretation_mu_simpl.
+    rewrite -> eval_imp_simpl. rewrite -> eval_mu_simpl.
     simpl.
     remember (fun S : propset (Domain m) =>
-                pattern_interpretation evar_val
+                eval evar_val
                                        (update_svar_val (fresh_svar phi) S svar_val)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
 
@@ -592,7 +592,7 @@ Proof.
 
     unfold instantiate in Hp.
     apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
-    apply pattern_interpretation_iff_subset in Hv.
+    apply eval_iff_subset in Hv.
     
     subst F.
     rewrite <- set_substitution_lemma.
@@ -606,12 +606,12 @@ Proof.
 
   (* Existence *)
   - intros Hv evar_val svar_val.
-    assert (pattern_interpretation evar_val svar_val (ex , BoundVarSugar.b0)
-            = pattern_interpretation evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
-    { repeat rewrite pattern_interpretation_ex_simpl. simpl.
+    assert (eval evar_val svar_val (ex , BoundVarSugar.b0)
+            = eval evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
+    { repeat rewrite eval_ex_simpl. simpl.
       apply propset_fa_union_same. intros.
-      repeat rewrite pattern_interpretation_imp_simpl.
-      repeat rewrite pattern_interpretation_bott_simpl.
+      repeat rewrite eval_imp_simpl.
+      repeat rewrite eval_bott_simpl.
       rewrite [_ ∪ ∅]right_id_L.
       rewrite [_ ∪ ∅]right_id_L.
       rewrite [_ ∪ ∅]right_id_L.
@@ -626,9 +626,9 @@ Proof.
     }
     unfold Full.
     rewrite H.
-    rewrite pattern_interpretation_set_builder.
-    { unfold M_predicate. left. simpl. rewrite pattern_interpretation_imp_simpl.
-      rewrite pattern_interpretation_bott_simpl.
+    rewrite eval_set_builder.
+    { unfold M_predicate. left. simpl. rewrite eval_imp_simpl.
+      rewrite eval_bott_simpl.
       clear. set_solver.
     }
     simpl.
@@ -637,39 +637,39 @@ Proof.
     { apply top_subseteq. }
     rewrite -> elem_of_subseteq. intros x _.
     rewrite -> elem_of_PropSet.
-    rewrite pattern_interpretation_imp_simpl.
+    rewrite eval_imp_simpl.
     clear. set_solver.
     
   (* Singleton *)
   - assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
-               pattern_interpretation
+               eval
                  evar_val svar_val
                  (subst_ctx C1 (patt_free_evar x and phi)
                             and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
                = ∅).
     { intros evar_val svar_val.
-      rewrite -> pattern_interpretation_and_simpl.
-      destruct (classic (evar_val x ∈ pattern_interpretation evar_val svar_val phi)).
-      - rewrite [(pattern_interpretation
+      rewrite -> eval_and_simpl.
+      destruct (classic (evar_val x ∈ eval evar_val svar_val phi)).
+      - rewrite [(eval
                     evar_val svar_val
                     (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
                 propagate_context_empty.
         2: { unfold Semantics.Empty. rewrite intersection_empty_r_L. reflexivity. }
-        rewrite pattern_interpretation_and_simpl.
-        rewrite pattern_interpretation_free_evar_simpl.
-        rewrite pattern_interpretation_imp_simpl.
-        rewrite pattern_interpretation_bott_simpl.
+        rewrite eval_and_simpl.
+        rewrite eval_free_evar_simpl.
+        rewrite eval_imp_simpl.
+        rewrite eval_bott_simpl.
         unfold Semantics.Empty.
         rewrite right_id_L.
         clear -H. set_solver.
       - rewrite propagate_context_empty.
         2: { unfold Semantics.Empty. rewrite intersection_empty_l_L. reflexivity. }
-        rewrite pattern_interpretation_and_simpl.
-        rewrite pattern_interpretation_free_evar_simpl.
+        rewrite eval_and_simpl.
+        rewrite eval_free_evar_simpl.
         clear -H. set_solver.
     }
     intros Hv evar_val svar_val.
-    rewrite pattern_interpretation_predicate_not.
+    rewrite eval_predicate_not.
     + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
     + unfold M_predicate. right. apply Hemp.
 Qed.

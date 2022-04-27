@@ -325,8 +325,8 @@ Theorem isomorphism_preserves_semantics
     (i : ModelIsomorphism M₁ M₂)
     :
     forall (ϕ : Pattern) (ρₑ : @EVarVal _ M₁) (ρₛ : @SVarVal _ M₁),
-        ((mi_f i) <$> (@pattern_interpretation Σ M₁ ρₑ ρₛ ϕ))
-        ≡@{propset (Domain M₂)} (@pattern_interpretation Σ M₂ ((mi_f i) ∘ ρₑ) (λ X, (mi_f i) <$> (ρₛ X)) ϕ).
+        ((mi_f i) <$> (@eval Σ M₁ ρₑ ρₛ ϕ))
+        ≡@{propset (Domain M₂)} (@eval Σ M₂ ((mi_f i) ∘ ρₑ) (λ X, (mi_f i) <$> (ρₛ X)) ϕ).
 Proof.
     intros ϕ.
     remember (size' ϕ) as sz.
@@ -341,7 +341,7 @@ Proof.
         destruct ϕ; intros ρₑ ρₛ.
         {
             (* patt_free_evar x *)
-            do 2 rewrite pattern_interpretation_free_evar_simpl.
+            do 2 rewrite eval_free_evar_simpl.
             simpl.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -349,7 +349,7 @@ Proof.
         }
         {
             (* patt_free_svar X *)
-            do 2 rewrite pattern_interpretation_free_svar_simpl.
+            do 2 rewrite eval_free_svar_simpl.
             simpl.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -357,7 +357,7 @@ Proof.
         }
         {
             (* patt_bound_evar n *)
-            do 2 rewrite pattern_interpretation_bound_evar_simpl.
+            do 2 rewrite eval_bound_evar_simpl.
             simpl.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -365,7 +365,7 @@ Proof.
         }
         {
             (* patt_bound_svar n *)
-            do 2 rewrite pattern_interpretation_bound_svar_simpl.
+            do 2 rewrite eval_bound_svar_simpl.
             simpl.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
@@ -373,12 +373,12 @@ Proof.
         }
         {
             (* patt_sym s *)
-            do 2 rewrite pattern_interpretation_sym_simpl.
+            do 2 rewrite eval_sym_simpl.
             apply mi_sym.
         }
         {
             (* patt_app ϕ1 ϕ2 *)
-            do 2 rewrite pattern_interpretation_app_simpl.
+            do 2 rewrite eval_app_simpl.
             rewrite fmap_app_ext.
             
             simpl in Hsz.
@@ -424,7 +424,7 @@ Proof.
         }
         {
             (* patt_bott *)
-            do 2 rewrite pattern_interpretation_bott_simpl.
+            do 2 rewrite eval_bott_simpl.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
             clear.
@@ -432,14 +432,14 @@ Proof.
         }
         {
             (* patt_imp ϕ1 ϕ2 *)
-            do 2 rewrite pattern_interpretation_imp_simpl.
+            do 2 rewrite eval_imp_simpl.
             simpl in Hsz.
             rewrite -IHsz.
             2: { lia. }
             rewrite -IHsz.
             2: { lia. }
-            remember (pattern_interpretation ρₑ ρₛ ϕ1) as X1.
-            remember (pattern_interpretation ρₑ ρₛ ϕ2) as X2.
+            remember (eval ρₑ ρₛ ϕ1) as X1.
+            remember (eval ρₑ ρₛ ϕ2) as X2.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
             rewrite set_equiv_subseteq.
@@ -507,7 +507,7 @@ Proof.
             }
         }
         {
-            do 2 rewrite pattern_interpretation_ex_simpl.
+            do 2 rewrite eval_ex_simpl.
             simpl.
             rewrite set_equiv_subseteq.
             split.
@@ -575,7 +575,7 @@ Proof.
         {
             (* patt_mu ϕ *)
             simpl in Hsz.
-            do 2 rewrite pattern_interpretation_mu_simpl. simpl.
+            do 2 rewrite eval_mu_simpl. simpl.
             unfold Lattice.LeastFixpointOf,Lattice.meet,Lattice.PrefixpointsOf.
             simpl.
             unfold Lattice.propset_Meet.
@@ -623,7 +623,7 @@ Proof.
                     rewrite elem_of_subseteq.
                     intros x.
                     specialize (He (mi_f i x)).
-                    remember (pattern_interpretation ρₑ
+                    remember (eval ρₑ
                     (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρₛ)
                     (svar_open 0 (fresh_svar ϕ) ϕ)) as PI.
                     intros Hx.

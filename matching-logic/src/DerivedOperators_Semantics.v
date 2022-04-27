@@ -25,86 +25,86 @@ Section with_signature.
   Section with_model.
     Context {M : Model}.
     
-    Lemma pattern_interpretation_not_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal) (phi : Pattern),
-        @pattern_interpretation Σ M evar_val svar_val (patt_not phi) = ⊤ ∖ (pattern_interpretation evar_val svar_val phi).
+    Lemma eval_not_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal) (phi : Pattern),
+        @eval Σ M evar_val svar_val (patt_not phi) = ⊤ ∖ (eval evar_val svar_val phi).
     Proof.
       intros. unfold patt_not.
-      rewrite -> pattern_interpretation_imp_simpl.
-      rewrite -> pattern_interpretation_bott_simpl.
+      rewrite -> eval_imp_simpl.
+      rewrite -> eval_bott_simpl.
       set_solver by fail.
     Qed.
 
-    Lemma pattern_interpretation_or_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_or_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                    (phi1 phi2 : Pattern),
-        pattern_interpretation evar_val svar_val (patt_or phi1 phi2)
-        = (pattern_interpretation evar_val svar_val phi1) ∪ (@pattern_interpretation _ M evar_val svar_val phi2).
+        eval evar_val svar_val (patt_or phi1 phi2)
+        = (eval evar_val svar_val phi1) ∪ (@eval _ M evar_val svar_val phi2).
     Proof.
       intros. unfold patt_or.
-      rewrite -> pattern_interpretation_imp_simpl.
-      rewrite -> pattern_interpretation_not_simpl.
-      assert (H: ⊤ ∖ (⊤ ∖ (pattern_interpretation evar_val svar_val phi1)) = pattern_interpretation evar_val svar_val phi1).
+      rewrite -> eval_imp_simpl.
+      rewrite -> eval_not_simpl.
+      assert (H: ⊤ ∖ (⊤ ∖ (eval evar_val svar_val phi1)) = eval evar_val svar_val phi1).
       { apply Compl_Compl_propset. }
       rewrite -> H. reflexivity.
     Qed.
 
-    Lemma pattern_interpretation_or_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_or_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                   (phi1 phi2 : Pattern),
-        @pattern_interpretation Σ M evar_val svar_val (patt_or phi1 phi2)
-        = pattern_interpretation evar_val svar_val (patt_or phi2 phi1).
+        @eval Σ M evar_val svar_val (patt_or phi1 phi2)
+        = eval evar_val svar_val (patt_or phi2 phi1).
     Proof.
       intros.
-      repeat rewrite -> pattern_interpretation_or_simpl.
+      repeat rewrite -> eval_or_simpl.
       set_solver by fail.
     Qed.
 
-    Lemma pattern_interpretation_and_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_and_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                     (phi1 phi2 : Pattern),
-        pattern_interpretation evar_val svar_val (patt_and phi1 phi2)
-        = (pattern_interpretation evar_val svar_val phi1) ∩ (@pattern_interpretation _ M evar_val svar_val phi2).
+        eval evar_val svar_val (patt_and phi1 phi2)
+        = (eval evar_val svar_val phi1) ∩ (@eval _ M evar_val svar_val phi2).
     Proof.
       intros. unfold patt_and.
-      rewrite -> pattern_interpretation_not_simpl.
-      rewrite -> pattern_interpretation_or_simpl.
-      repeat rewrite -> pattern_interpretation_not_simpl.
+      rewrite -> eval_not_simpl.
+      rewrite -> eval_or_simpl.
+      repeat rewrite -> eval_not_simpl.
       apply Compl_Union_Compl_Inters_propset_alt.
     Qed.
 
-    Lemma pattern_interpretation_and_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_and_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                    (phi1 phi2 : Pattern),
-        @pattern_interpretation Σ M evar_val svar_val (patt_and phi1 phi2)
-        = pattern_interpretation evar_val svar_val (patt_and phi2 phi1).
+        @eval Σ M evar_val svar_val (patt_and phi1 phi2)
+        = eval evar_val svar_val (patt_and phi2 phi1).
     Proof.
       intros.
-      repeat rewrite -> pattern_interpretation_and_simpl.
+      repeat rewrite -> eval_and_simpl.
       set_solver by fail.
     Qed.
 
-    Lemma pattern_interpretation_top_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal),
-        @pattern_interpretation Σ M evar_val svar_val patt_top = ⊤.
+    Lemma eval_top_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal),
+        @eval Σ M evar_val svar_val patt_top = ⊤.
     Proof.
       intros. unfold patt_top.
-      rewrite -> pattern_interpretation_not_simpl.
-      rewrite -> pattern_interpretation_bott_simpl.
+      rewrite -> eval_not_simpl.
+      rewrite -> eval_bott_simpl.
       set_solver by fail.
     Qed.
 
     (* TODO prove. Maybe some de-morgan laws could be helpful in proving this? *)
-    Lemma pattern_interpretation_iff_or : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_or : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                  (phi1 phi2 : Pattern),
-        @pattern_interpretation Σ M evar_val svar_val (patt_iff phi1 phi2)
-        = pattern_interpretation evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
+        @eval Σ M evar_val svar_val (patt_iff phi1 phi2)
+        = eval evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
     Proof.
 
     Abort.
 
-    Lemma pattern_interpretation_iff_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
                                                    (phi1 phi2 : Pattern),
-        @pattern_interpretation Σ M evar_val svar_val (patt_iff phi1 phi2)
-        = pattern_interpretation evar_val svar_val (patt_iff phi2 phi1).
+        @eval Σ M evar_val svar_val (patt_iff phi1 phi2)
+        = eval evar_val svar_val (patt_iff phi2 phi1).
     Proof.
       intros.
       unfold patt_iff.
-      rewrite -> pattern_interpretation_and_comm.
+      rewrite -> eval_and_comm.
       reflexivity.
     Qed.
 
@@ -112,19 +112,19 @@ Section with_signature.
 
 
 
-        (* if pattern_interpretation (phi1 ---> phi2) = Full_set,
-           then pattern_interpretation phi1 subset pattern_interpretation phi2
+        (* if eval (phi1 ---> phi2) = Full_set,
+           then eval phi1 subset eval phi2
         *)
-    Lemma pattern_interpretation_iff_subset (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_subset (evar_val : EVarVal) (svar_val : SVarVal)
           (phi1 : Pattern) (phi2 : Pattern) :
-      pattern_interpretation evar_val svar_val (phi1 ---> phi2)%ml = ⊤ <->
-      (pattern_interpretation evar_val svar_val phi1) ⊆
-               (@pattern_interpretation _ M evar_val svar_val phi2).
+      eval evar_val svar_val (phi1 ---> phi2)%ml = ⊤ <->
+      (eval evar_val svar_val phi1) ⊆
+               (@eval _ M evar_val svar_val phi2).
     Proof.
       rewrite -> elem_of_subseteq.
-      rewrite -> pattern_interpretation_imp_simpl.
-      remember (pattern_interpretation evar_val svar_val phi1) as Xphi1.
-      remember (pattern_interpretation evar_val svar_val phi2) as Xphi2.
+      rewrite -> eval_imp_simpl.
+      remember (eval evar_val svar_val phi1) as Xphi1.
+      remember (eval evar_val svar_val phi2) as Xphi2.
       split; intros.
       - assert (x ∈ ((⊤ ∖ Xphi1) ∪ Xphi2)).
         { rewrite H. apply elem_of_top'. }
@@ -244,16 +244,16 @@ Section with_signature.
      *)
     (* ϕ is expected to have dangling evar indices *)
 
-    Lemma pattern_interpretation_set_builder ϕ ρₑ ρₛ :
+    Lemma eval_set_builder ϕ ρₑ ρₛ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      (pattern_interpretation ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
+      (eval ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
       = PropSet
-          (fun m : (Domain M) => pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤).
+          (fun m : (Domain M) => eval (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤).
     
     Proof.
       simpl. intros Hmp.
-      rewrite -> pattern_interpretation_ex_simpl.
+      rewrite -> eval_ex_simpl.
       unfold fresh_evar. simpl free_evars.
       repeat rewrite -> union_empty_r_L.
       rewrite -> union_empty_l_L.
@@ -265,7 +265,7 @@ Section with_signature.
       - unfold propset_fa_union in H.
         rewrite -> elem_of_PropSet in H.
         destruct H as [m' H].
-        rewrite -> pattern_interpretation_and_simpl in H.
+        rewrite -> eval_and_simpl in H.
         set_unfold in H.
         destruct H as [Hbound Hϕ].
         assert (Heqmm' : m = m').
@@ -273,7 +273,7 @@ Section with_signature.
           simpl in Hbound.
           rewrite -> evar_open_bound_evar in Hbound.
           case_match; try lia.
-          rewrite -> pattern_interpretation_free_evar_simpl in Hbound.
+          rewrite -> eval_free_evar_simpl in Hbound.
           apply elem_of_singleton in Hbound. subst m.
           rewrite update_evar_val_same. reflexivity.
         }
@@ -288,11 +288,11 @@ Section with_signature.
       - unfold propset_fa_union.
         apply elem_of_PropSet.
         exists m.
-        rewrite -> pattern_interpretation_and_simpl. constructor.
+        rewrite -> eval_and_simpl. constructor.
         +
           rewrite -> evar_open_bound_evar.
           case_match; try lia.
-          rewrite -> pattern_interpretation_free_evar_simpl.
+          rewrite -> eval_free_evar_simpl.
           rewrite -> update_evar_val_same. constructor.
         + rewrite -> elem_of_PropSet in H.
           rewrite -> set_eq_subseteq in H. destruct H as [H1 H2].
@@ -300,19 +300,19 @@ Section with_signature.
           specialize (H2 m). apply H2. apply elem_of_top'.
     Qed.
     
-    Lemma pattern_interpretation_forall_predicate ϕ ρₑ ρₛ :
+    Lemma eval_forall_predicate ϕ ρₑ ρₛ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      pattern_interpretation ρₑ ρₛ (patt_forall ϕ) = ⊤ <->
-      ∀ (m : Domain M), pattern_interpretation (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤.
+      eval ρₑ ρₛ (patt_forall ϕ) = ⊤ <->
+      ∀ (m : Domain M), eval (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤.
     Proof.
       intros x H.
       unfold patt_forall.
-      rewrite -> pattern_interpretation_not_simpl.
+      rewrite -> eval_not_simpl.
       
       assert (Hscfie : ⊤ ∖ ⊤ = @empty (propset (Domain M)) _) by apply difference_diag_L.
       rewrite -> complement_full_iff_empty.
-      rewrite -> pattern_interpretation_exists_empty.
+      rewrite -> eval_exists_empty.
       
       assert (Hfr: fresh_evar (! ϕ)%ml = fresh_evar ϕ).
       { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
@@ -325,25 +325,25 @@ Section with_signature.
       split; intros H'.
       - intros m.
         specialize (H' m).
-        rewrite -> pattern_interpretation_not_simpl in H'.
+        rewrite -> eval_not_simpl in H'.
         rewrite -> complement_empty_iff_full in H'.
         exact H'.
       - intros m.
         specialize (H' m).
-        rewrite -> pattern_interpretation_not_simpl.
+        rewrite -> eval_not_simpl.
         rewrite -> H'.
         rewrite Hscfie.
         reflexivity.
     Qed.
 
 
-    Lemma pattern_interpretation_and_full ρₑ ρₛ ϕ₁ ϕ₂:
-      @pattern_interpretation Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = ⊤
-      <-> (@pattern_interpretation Σ M ρₑ ρₛ ϕ₁ = ⊤
-           /\ @pattern_interpretation Σ M ρₑ ρₛ ϕ₂ = ⊤).
+    Lemma eval_and_full ρₑ ρₛ ϕ₁ ϕ₂:
+      @eval Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = ⊤
+      <-> (@eval Σ M ρₑ ρₛ ϕ₁ = ⊤
+           /\ @eval Σ M ρₑ ρₛ ϕ₂ = ⊤).
     Proof.
       unfold Full.
-      rewrite -> pattern_interpretation_and_simpl.
+      rewrite -> eval_and_simpl.
       split.
       - intros H.
         apply intersection_full_iff_both_full in H.
@@ -352,13 +352,13 @@ Section with_signature.
         rewrite H1. rewrite H2. set_solver.
     Qed.
 
-    Lemma pattern_interpretation_predicate_not ρₑ ρₛ ϕ :
+    Lemma eval_predicate_not ρₑ ρₛ ϕ :
       M_predicate M ϕ ->
-      pattern_interpretation ρₑ ρₛ (patt_not ϕ) = ⊤
-      <-> @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤.
+      eval ρₑ ρₛ (patt_not ϕ) = ⊤
+      <-> @eval Σ M ρₑ ρₛ ϕ <> ⊤.
     Proof.
       intros Hpred.
-      rewrite pattern_interpretation_not_simpl.
+      rewrite eval_not_simpl.
       split; intros H.
       - apply predicate_not_full_iff_empty.
         { apply Hpred. }
@@ -469,28 +469,28 @@ Proof.
   apply H.
 Qed.
 
-Lemma pattern_interpretation_all_simpl
+Lemma eval_all_simpl
   {Σ : Signature}
   (M : Model)
   (ρₑ : EVarVal)
   (ρₛ : SVarVal)
   (ϕ : Pattern)
   :
-  pattern_interpretation ρₑ ρₛ (patt_forall ϕ) =
+  eval ρₑ ρₛ (patt_forall ϕ) =
   (let x := fresh_evar ϕ in
    propset_fa_intersection (λ e : Domain M,
-    @pattern_interpretation _ M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x ϕ)
+    @eval _ M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x ϕ)
    )
   ).
 Proof.
   unfold patt_forall.
-  rewrite pattern_interpretation_not_simpl.
-  rewrite pattern_interpretation_ex_simpl.
+  rewrite eval_not_simpl.
+  rewrite eval_ex_simpl.
   simpl.
   unfold evar_open.
   simpl_bevar_subst.
   under [fun e => _]functional_extensionality => e
-  do rewrite pattern_interpretation_not_simpl.
+  do rewrite eval_not_simpl.
   unfold propset_fa_union,propset_fa_intersection.
   remember (fresh_evar (! ϕ)%ml) as x.
   remember (fresh_evar ϕ) as x'.
@@ -500,7 +500,7 @@ Proof.
   {
     under [λ c, _]functional_extensionality => c.
     {
-      rewrite (@interpretation_fresh_evar_open Σ M ϕ x x').
+      rewrite (@eval_fresh_evar_open Σ M ϕ x x').
       {
         subst x. eapply evar_is_fresh_in_richer.
         2: { apply set_evar_fresh_is_fresh. }

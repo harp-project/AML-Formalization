@@ -51,7 +51,7 @@ Section definedness.
     forall (M : @Model Σ) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
       M ⊨ᵀ theory ->
       forall (m: Domain M),
-                 (app_ext (pattern_interpretation ρₑ ρₛ (sym definedness)) {[m]}) = ⊤.
+                 (app_ext (eval ρₑ ρₛ (sym definedness)) {[m]}) = ⊤.
   Proof.
     intros.
     unfold app_ext.
@@ -75,11 +75,11 @@ Section definedness.
     feed specialize H.
     { apply elem_of_top'. }
     unfold patt_defined in H.
-    rewrite -> pattern_interpretation_app_simpl in H.
-    rewrite -> pattern_interpretation_sym_simpl in H.
+    rewrite -> eval_app_simpl in H.
+    rewrite -> eval_sym_simpl in H.
     unfold sym.
     unfold p_x in H.
-    rewrite -> pattern_interpretation_free_evar_simpl in H.
+    rewrite -> eval_free_evar_simpl in H.
     rewrite -> Heqρₑ' in H.
     unfold update_evar_val in H. simpl in H.
     destruct (decide (ev_x = ev_x)).
@@ -89,34 +89,34 @@ Section definedness.
     destruct Hm1m2. destruct H0.
     inversion H0. clear H0. simpl in H2. subst.
     exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
-    rewrite -> pattern_interpretation_sym_simpl. apply H.
+    rewrite -> eval_sym_simpl. apply H.
   Qed.
 
   Lemma definedness_not_empty_1 : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        (@pattern_interpretation Σ M ρₑ ρₛ ϕ) <> ∅ ->
-        (@pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
+        (@eval Σ M ρₑ ρₛ ϕ) <> ∅ ->
+        (@eval Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
   Proof.
     intros.
-    pose (H' := stdpp_ext.Not_Empty_Contains_Elements (pattern_interpretation ρₑ ρₛ ϕ) H0).
+    pose (H' := stdpp_ext.Not_Empty_Contains_Elements (eval ρₑ ρₛ ϕ) H0).
     destruct H'.
     unfold patt_defined.
-    rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> eval_app_simpl.
     
     pose proof (H'' := @definedness_model_application M ρₑ ρₛ H x).
     unfold sym in H''.
     rewrite -> set_eq_subseteq in H''.
     destruct H'' as [_ H''].
-    assert (Hincl: {[x]} ⊆ (pattern_interpretation ρₑ ρₛ ϕ) ).
+    assert (Hincl: {[x]} ⊆ (eval ρₑ ρₛ ϕ) ).
     { rewrite -> elem_of_subseteq. intros.  inversion H2. subst. assumption. }
 
     pose proof (Hincl' := @app_ext_monotonic_r
                             Σ
                             M
-                            (pattern_interpretation ρₑ ρₛ (patt_sym (inj definedness)))
+                            (eval ρₑ ρₛ (patt_sym (inj definedness)))
                             {[x]}
-                            (pattern_interpretation ρₑ ρₛ ϕ)
+                            (eval ρₑ ρₛ ϕ)
                             Hincl
                ).
 
@@ -131,11 +131,11 @@ Section definedness.
   Lemma definedness_empty_1 : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      @pattern_interpretation Σ M ρₑ ρₛ ϕ = ∅ ->
-      @pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ∅.
+      @eval Σ M ρₑ ρₛ ϕ = ∅ ->
+      @eval Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ∅.
   Proof.
     intros M H ϕ ρₑ ρₛ H0. unfold patt_defined.
-    rewrite -> pattern_interpretation_app_simpl.
+    rewrite -> eval_app_simpl.
     rewrite -> H0.
     apply app_ext_bot_r.
   Qed.
@@ -146,8 +146,8 @@ Section definedness.
   Lemma definedness_empty_2 : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ∅ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ = ∅.
+        @eval Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ∅ ->
+        @eval Σ M ρₑ ρₛ ϕ = ∅.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
     pose proof (H1 := @empty_impl_not_full Σ M _ H0).
@@ -158,8 +158,8 @@ Section definedness.
   Lemma definedness_not_empty_2 : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ∅.
+        @eval Σ M ρₑ ρₛ ⌈ ϕ ⌉ = ⊤ ->
+        @eval Σ M ρₑ ρₛ ϕ <> ∅.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
     pose proof (H1 := full_impl_not_empty H0).
@@ -169,8 +169,8 @@ Section definedness.
   Lemma definedness_not_empty_iff : forall (M : @Model Σ),
     M ⊨ᵀ theory ->
     forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      (@pattern_interpretation Σ M ρₑ ρₛ ϕ) <> ∅ <->
-      (@pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
+      (@eval Σ M ρₑ ρₛ ϕ) <> ∅ <->
+      (@eval Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
   Proof.
     intros M HM ϕ ρₑ ρₛ.
     split; intros H'.
@@ -185,12 +185,12 @@ Section definedness.
   Lemma totality_not_full : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅.
+        @eval Σ M ρₑ ρₛ ϕ <> ⊤ ->
+        @eval Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅.
   Proof.
     intros.
-    assert (Hnonempty : pattern_interpretation ρₑ ρₛ (patt_not ϕ) <> ∅).
-    { unfold not. unfold not in H0. intros. rewrite -> pattern_interpretation_not_simpl in H1.
+    assert (Hnonempty : eval ρₑ ρₛ (patt_not ϕ) <> ∅).
+    { unfold not. unfold not in H0. intros. rewrite -> eval_not_simpl in H1.
       apply H0. clear H0.
       rewrite -> set_eq_subseteq.
       split.
@@ -199,7 +199,7 @@ Section definedness.
       rewrite H1.
       apply top_subseteq.
     }
-    unfold patt_total. rewrite -> pattern_interpretation_not_simpl.
+    unfold patt_total. rewrite -> eval_not_simpl.
     rewrite -> complement_empty_iff_full.
 
     apply definedness_not_empty_1.
@@ -210,14 +210,14 @@ Section definedness.
   Lemma totality_full : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ = ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ⊤.
+        @eval Σ M ρₑ ρₛ ϕ = ⊤ ->
+        @eval Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ⊤.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
     unfold patt_total.
-    rewrite -> pattern_interpretation_not_simpl.
-    assert(H1: pattern_interpretation ρₑ ρₛ (patt_not ϕ) = ∅).
-    { rewrite -> pattern_interpretation_not_simpl.
+    rewrite -> eval_not_simpl.
+    assert(H1: eval ρₑ ρₛ (patt_not ϕ) = ∅).
+    { rewrite -> eval_not_simpl.
       rewrite -> H0.
       clear. set_solver.
     }
@@ -230,8 +230,8 @@ Section definedness.
   Lemma totality_result_empty : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤.
+        @eval Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅ ->
+        @eval Σ M ρₑ ρₛ ϕ <> ⊤.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
     pose proof (H1 := empty_impl_not_full H0).
@@ -242,8 +242,8 @@ Section definedness.
   Lemma totality_not_full_iff : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤ <->
-        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅.
+        @eval Σ M ρₑ ρₛ ϕ <> ⊤ <->
+        @eval Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅.
   Proof.
     intros M HM ϕ ρₑ ρₛ.
     split; intros H'.
@@ -258,8 +258,8 @@ Section definedness.
   Lemma totality_result_nonempty : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ <> ∅ ->
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ = ⊤.
+        @eval Σ M ρₑ ρₛ ⌊ ϕ ⌋ <> ∅ ->
+        @eval Σ M ρₑ ρₛ ϕ = ⊤.
   Proof.
     intros M H ϕ ρₑ ρₛ H0.
     pose proof (H2 := @modus_tollens _ _ (@totality_not_full M H ϕ ρₑ ρₛ) H0).
@@ -269,10 +269,10 @@ Section definedness.
   Lemma equal_iff_both_subseteq : forall (M : @Model Σ),        
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
+        @eval Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
         (
-          @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ /\
-          @pattern_interpretation Σ M ρₑ ρₛ (patt_subseteq ϕ2 ϕ1) = ⊤).
+          @eval Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ /\
+          @eval Σ M ρₑ ρₛ (patt_subseteq ϕ2 ϕ1) = ⊤).
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
     split.
@@ -281,7 +281,7 @@ Section definedness.
       apply full_impl_not_empty in H0.
       apply (@totality_result_nonempty _ H) in H0.
       unfold "<--->" in H0.
-      rewrite -> pattern_interpretation_and_simpl in H0.
+      rewrite -> eval_and_simpl in H0.
       rewrite -> intersection_full_iff_both_full in H0.
       destruct H0 as [H1 H2].
       unfold patt_subseteq.
@@ -297,7 +297,7 @@ Section definedness.
       unfold patt_equal.
       apply (@totality_full _ H).
       unfold "<--->".
-      rewrite -> pattern_interpretation_and_simpl.
+      rewrite -> eval_and_simpl.
       rewrite -> H0.
       rewrite -> H1.
       clear. set_solver.
@@ -306,9 +306,9 @@ Section definedness.
   Lemma subseteq_iff_interpr_subseteq : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ <->
-        (@pattern_interpretation Σ M ρₑ ρₛ ϕ1)
-          ⊆ (@pattern_interpretation Σ M ρₑ ρₛ ϕ2).
+        @eval Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ⊤ <->
+        (@eval Σ M ρₑ ρₛ ϕ1)
+          ⊆ (@eval Σ M ρₑ ρₛ ϕ2).
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
     split.
@@ -316,27 +316,27 @@ Section definedness.
       unfold patt_subseteq in H0.
       apply full_impl_not_empty in H0.
       apply (@totality_result_nonempty _ H) in H0.
-      rewrite -> pattern_interpretation_imp_simpl in H0.
+      rewrite -> eval_imp_simpl in H0.
       rewrite -> set_eq_subseteq in H0.
       destruct H0 as [_ H0].
       rewrite -> elem_of_subseteq in H0.
       intros x H1. specialize (H0 x).
       feed specialize H0.
       { apply elem_of_top'. }
-      remember (pattern_interpretation ρₑ ρₛ ϕ1) as Xϕ1.
-      remember (pattern_interpretation ρₑ ρₛ ϕ2) as Xϕ2.
+      remember (eval ρₑ ρₛ ϕ1) as Xϕ1.
+      remember (eval ρₑ ρₛ ϕ2) as Xϕ2.
       clear -H0 H1.
       set_solver.
     - intros H0.
       unfold patt_subseteq.
       apply (@totality_full _ H).
-      rewrite -> pattern_interpretation_imp_simpl.
+      rewrite -> eval_imp_simpl.
       rewrite -> set_eq_subseteq.
       split.
       { apply top_subseteq. }
       rewrite -> elem_of_subseteq.
       intros x _. specialize (H0 x).
-      destruct (classic (x ∈ (pattern_interpretation ρₑ ρₛ ϕ1))).
+      destruct (classic (x ∈ (eval ρₑ ρₛ ϕ1))).
       + right. auto.
       + left. apply elem_of_compl. assumption.
   Qed.
@@ -344,9 +344,9 @@ Section definedness.
   Lemma equal_iff_interpr_same : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
-        @pattern_interpretation Σ M ρₑ ρₛ ϕ1
-        = @pattern_interpretation Σ M ρₑ ρₛ ϕ2.
+        @eval Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ <->
+        @eval Σ M ρₑ ρₛ ϕ1
+        = @eval Σ M ρₑ ρₛ ϕ2.
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
     split.
@@ -368,7 +368,7 @@ Section definedness.
   Lemma equal_refl : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ ϕ) = ⊤.
+        @eval Σ M ρₑ ρₛ (patt_equal ϕ ϕ) = ⊤.
   Proof.
     intros M H ϕ ρₑ ρₛ.
     apply (@equal_iff_interpr_same _ H).
@@ -378,8 +378,8 @@ Section definedness.
   Lemma equal_sym : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ1) = ⊤.
+        @eval Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
+        @eval Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ1) = ⊤.
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ H0.
     apply (@equal_iff_interpr_same _ H).
@@ -390,9 +390,9 @@ Section definedness.
   Lemma equal_trans : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ1 ϕ2 ϕ3 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ3) = ⊤ ->
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ3) = ⊤.
+        @eval Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ⊤ ->
+        @eval Σ M ρₑ ρₛ (patt_equal ϕ2 ϕ3) = ⊤ ->
+        @eval Σ M ρₑ ρₛ (patt_equal ϕ1 ϕ3) = ⊤.
   Proof.
     intros M H ϕ1 ϕ2 ϕ3 ρₑ ρₛ H0 H1.
     apply (@equal_iff_interpr_same _ H).
@@ -404,8 +404,8 @@ Section definedness.
   Lemma free_evar_in_patt : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (x : evar)(ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-        ((ρₑ x) ∈ (@pattern_interpretation Σ M ρₑ ρₛ ϕ)) <->
-        @pattern_interpretation Σ M ρₑ ρₛ (patt_in (patt_free_evar x) ϕ) = ⊤.
+        ((ρₑ x) ∈ (@eval Σ M ρₑ ρₛ ϕ)) <->
+        @eval Σ M ρₑ ρₛ (patt_in (patt_free_evar x) ϕ) = ⊤.
   Proof.
     intros M H x ϕ ρₑ ρₛ.
     split.
@@ -415,28 +415,28 @@ Section definedness.
       intros Contra.
       apply Contains_Elements_Not_Empty in Contra. exact Contra.
       exists (ρₑ x).
-      rewrite -> pattern_interpretation_and_simpl.
+      rewrite -> eval_and_simpl.
       split.
-      + rewrite -> pattern_interpretation_free_evar_simpl. constructor.
+      + rewrite -> eval_free_evar_simpl. constructor.
       + assumption.
     - intros H0.
       unfold patt_in in H0.
       apply (@definedness_not_empty_2 _ H) in H0.
       unfold not in H0.
-      assert (H0': (pattern_interpretation ρₑ ρₛ (patt_free_evar x and ϕ)) = ∅ -> False).
+      assert (H0': (eval ρₑ ρₛ (patt_free_evar x and ϕ)) = ∅ -> False).
       { intros Contra. apply H0. auto. }
       apply Not_Empty_Contains_Elements in H0'.
       destruct H0' as [x0 H0'].
-      rewrite -> pattern_interpretation_and_simpl in H0'.
+      rewrite -> eval_and_simpl in H0'.
       destruct H0'.
-      rewrite -> pattern_interpretation_free_evar_simpl in H1.
+      rewrite -> eval_free_evar_simpl in H1.
       inversion H1. subst. assumption.
   Qed.
   
   Lemma T_predicate_defined : forall ϕ, T_predicate theory ⌈ ϕ ⌉.
   Proof.
     intros ϕ. unfold T_predicate. intros. unfold M_predicate. intros.
-    pose proof (Hlr := classic ( pattern_interpretation ρₑ ρ ϕ = ∅ )).
+    pose proof (Hlr := classic ( eval ρₑ ρ ϕ = ∅ )).
     destruct Hlr.
     + apply definedness_empty_1 in H0. right. apply H0. apply H.
     + apply definedness_not_empty_1 in H0. left. apply H0. apply H.
@@ -520,15 +520,15 @@ Section definedness.
     apply Hm.
   Qed.
 
-  Lemma pattern_interpretation_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
+  Lemma eval_eq_inversion_of ϕ₁ ϕ₂ M ρₑ ρₛ :
     M ⊨ᵀ theory ->
-    @pattern_interpretation Σ M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
+    @eval Σ M ρₑ ρₛ (patt_eq_inversion_of ϕ₁ ϕ₂) = ⊤
     <-> (forall m₁ m₂,
             m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁ <-> m₁ ∈ rel_of ρₑ ρₛ ϕ₂ m₂ (* TODO make rel_of take one more parameter. *)
         ).
   Proof.
     intros Htheory.
-    rewrite pattern_interpretation_forall_predicate.
+    rewrite eval_forall_predicate.
     2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
@@ -541,12 +541,12 @@ Section definedness.
     rewrite equal_iff_interpr_same.
     2: { apply Htheory. }
 
-    rewrite pattern_interpretation_set_builder.
+    rewrite eval_set_builder.
     { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
 
     assert (Hpi: ∀ M ev sv ϕ rhs,
-               @pattern_interpretation _ M ev sv ϕ = rhs
-               <-> (∀ m, m ∈ @pattern_interpretation _ M ev sv ϕ <-> m ∈ rhs)).
+               @eval _ M ev sv ϕ = rhs
+               <-> (∀ m, m ∈ @eval _ M ev sv ϕ <-> m ∈ rhs)).
     { split; intros H.
       + rewrite H. auto.
       + rewrite -> set_eq_subseteq. repeat rewrite elem_of_subseteq.
@@ -558,7 +558,7 @@ Section definedness.
     }
     rewrite Hpi.
     apply all_iff_morphism. intros m₂.
-    rewrite pattern_interpretation_app_simpl.
+    rewrite eval_app_simpl.
 
     rewrite nest_ex_same.
 (*     {
@@ -585,22 +585,22 @@ Section definedness.
     repeat rewrite elem_of_PropSet.
    (*  rewrite <- free_evar_in_patt.
     2: { apply Htheory. } *)
-    rewrite pattern_interpretation_free_evar_simpl.
+    rewrite eval_free_evar_simpl.
     rewrite update_evar_val_same.
     fold (m₂ ∈ rel_of ρₑ ρₛ ϕ₁ m₁).
 
     (*rewrite simpl_evar_open.*)
     rewrite <- free_evar_in_patt; auto.
-    rewrite pattern_interpretation_app_simpl.
-    repeat rewrite pattern_interpretation_free_evar_simpl.
-    rewrite pattern_interpretation_free_evar_independent.
+    rewrite eval_app_simpl.
+    repeat rewrite eval_free_evar_simpl.
+    rewrite eval_free_evar_independent.
     {
       subst.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh'.
       solve_free_evars_inclusion 5.
     }
-    rewrite pattern_interpretation_free_evar_independent.
+    rewrite eval_free_evar_independent.
     {
       subst.
       eapply evar_is_fresh_in_richer'.
@@ -608,7 +608,7 @@ Section definedness.
       rewrite fuse_nest_ex_same. simpl.
       solve_free_evars_inclusion 5.
     }
-    rewrite pattern_interpretation_free_evar_independent.
+    rewrite eval_free_evar_independent.
     {
       subst.
       eapply evar_is_fresh_in_richer'.
@@ -642,8 +642,8 @@ Section definedness.
     unfold sym.
     unfold patt_defined.
     unfold p_x.
-    rewrite -> pattern_interpretation_app_simpl.
-    rewrite -> pattern_interpretation_sym_simpl.
+    rewrite -> eval_app_simpl.
+    rewrite -> eval_sym_simpl.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -654,7 +654,7 @@ Section definedness.
     unfold app_ext.
     exists hashdef.
     rewrite Hhashdefsym.
-    rewrite -> pattern_interpretation_free_evar_simpl.
+    rewrite -> eval_free_evar_simpl.
     exists (ρₑ ev_x).
     split.
     { constructor. }
@@ -681,9 +681,9 @@ Section definedness.
     specialize (HM ρₑ).
     specialize (HM (λ (sv : svar), ∅)).
     unfold patt_defined in HM.
-    rewrite pattern_interpretation_app_simpl in HM.
-    rewrite pattern_interpretation_sym_simpl in HM.
-    rewrite pattern_interpretation_free_evar_simpl in HM.
+    rewrite eval_app_simpl in HM.
+    rewrite eval_sym_simpl in HM.
+    rewrite eval_free_evar_simpl in HM.
     unfold app_ext in HM.
     rewrite set_eq_subseteq in HM.
     destruct HM as [_ HM].
@@ -704,9 +704,9 @@ Section definedness.
   Lemma not_equal_iff_not_interpr_same_1 : forall (M : @Model Σ),
     M ⊨ᵀ theory ->
     forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ∅ <->
-      @pattern_interpretation Σ M ρₑ ρₛ ϕ1
-      <> @pattern_interpretation Σ M ρₑ ρₛ ϕ2.
+      @eval Σ M ρₑ ρₛ (ϕ1 =ml ϕ2) = ∅ <->
+      @eval Σ M ρₑ ρₛ ϕ1
+      <> @eval Σ M ρₑ ρₛ ϕ2.
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
     rewrite -predicate_not_full_iff_empty.
@@ -719,9 +719,9 @@ Section definedness.
   Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : @Model Σ),
     M ⊨ᵀ theory ->
     forall (ϕ1 ϕ2 : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
-      @pattern_interpretation Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ∅ <->
-      ~(@pattern_interpretation Σ M ρₑ ρₛ ϕ1)
-        ⊆ (@pattern_interpretation Σ M ρₑ ρₛ ϕ2).
+      @eval Σ M ρₑ ρₛ (ϕ1 ⊆ml ϕ2) = ∅ <->
+      ~(@eval Σ M ρₑ ρₛ ϕ1)
+        ⊆ (@eval Σ M ρₑ ρₛ ϕ2).
   Proof.
     intros M H ϕ1 ϕ2 ρₑ ρₛ.
     rewrite -predicate_not_full_iff_empty.
@@ -749,10 +749,6 @@ Module equivalence_insufficient.
      symbols := exampleSymbols;
      sym_eqdec := exampleSymbols_eqdec
   |}.
-
-  Definition examplePattern : Pattern :=
-    ex , (patt_sym sym_f $ patt_free_evar "X"%string <---> b0).
-  Print examplePattern.
 
   Inductive exampleDomain : Set :=
   | one | two | f.
@@ -783,99 +779,97 @@ Module equivalence_insufficient.
   Qed.
 
   Example equiv_not_eq :
-    forall ρₑ ρₛ, @pattern_interpretation _ exampleModel ρₑ ρₛ examplePattern = ⊤.
+    forall ρₑ ρₛ, @eval _ exampleModel ρₑ ρₛ (ex , (patt_sym sym_f $ patt_free_evar "x"%string <---> b0)) = ⊤.
   Proof.
     intros ρₑ ρₛ. unfold_leibniz.
     rewrite set_equiv_subseteq. split.
     apply top_subseteq.
-
-    unfold examplePattern.
-    rewrite pattern_interpretation_simpl. simpl.
+    rewrite eval_simpl. simpl.
     unfold evar_open. simpl.
     unfold propset_fa_union.
 
     apply elem_of_subseteq. intros x _.
     rewrite elem_of_PropSet.
-    destruct (ρₑ "X"%string) eqn:EqX.
+    destruct (ρₑ "x"%string) eqn:Eqx.
     * destruct x.
       - exists one.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
       - exists two.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
       - exists f.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
     * destruct x.
       - exists two.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
       - exists one.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
       - exists two.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
    * destruct x.
       - exists two.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
       - exists one.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
       - exists two.
-        repeat rewrite pattern_interpretation_simpl. simpl.
+        repeat rewrite eval_simpl. simpl.
         rewrite update_evar_val_same.
         rewrite app_ext_singleton.
         rewrite update_evar_val_neq.
         { set_solver. }
-        simpl. rewrite EqX.
+        simpl. rewrite Eqx.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
   Qed.
