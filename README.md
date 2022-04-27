@@ -1,16 +1,6 @@
 # AML-Formalization
 
 In this project we attempt to fully implement the "Applicative Matching Logic" framework in Coq, with example intances.
-The project has two parts:
-1.  A matching logic library for Coq, in which various Matching Logic theories can be defined and reasoned about.
-    (see the directory `matching-logic`)
-2.  An interactive prover / proof mode for matching logic, built inside Coq (see `prover`). This prover uses the matching logic library, and additionally provides some other features, like proof extraction into Metamath (WIP).
-
-
-
-## For users
-
-TODO lets have an example project here in this repository
 
 ## For developers
 
@@ -38,19 +28,18 @@ $ nix-shell
 $ make
 ```
 
+We currently depend on Stdpp and Equations.
+
 ### IDE setup
+
 If you have ProofGeneral or CoqIde installed, just run them inside the `nix-shell`.
 It will detect the nix-provided coq and libraries automatically.
 
 ### Structure
 
-- `MatchingLogic.Utils` - A collection of generally usefull definitions and lemmas, independent of Matching Logic.
-- `MatchingLogic.Syntax`, `MatchingLogic.Semantics`, `MatchingLogic.ProofSystem` -
-  define syntax, semantics, proof system, respectively, and its properties.
-  The user of the library is supposed to import these three.
-- `MatchingLogic.ProofMode` - a proof mode for matching logic, together with a collection with results about the proof system
-
-
+- `matching-logic` library contains a locally-nameless encoding of matching logic in Coq.
+- `examples` folder contain a set of examples about using the matching logic embedding.
+- `prover` defines a proof of concept about extracting matching logic proofs to Metamath.
 
 
 ## References
