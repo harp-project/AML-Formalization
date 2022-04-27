@@ -733,6 +733,155 @@ Section definedness.
 
 End definedness.
 
+From MatchingLogic Require Import StringSignature.
+
+Module equivalence_insufficient.
+
+  Inductive exampleSymbols : Set :=
+  | sym_f.
+
+  Instance exampleSymbols_eqdec : EqDecision exampleSymbols.
+  Proof. unfold EqDecision. intros x y. unfold Decision. decide equality. Defined.
+
+  #[local]
+  Instance mySignature : Signature :=
+  {| variables := StringMLVariables;
+     symbols := exampleSymbols;
+     sym_eqdec := exampleSymbols_eqdec
+  |}.
+
+  Definition examplePattern : Pattern :=
+    ex , (patt_sym sym_f $ patt_free_evar "X"%string <---> b0).
+  Print examplePattern.
+
+  Inductive exampleDomain : Set :=
+  | one | two | f.
+
+  Theorem exampleDomain_Inhabited : Inhabited exampleDomain.
+  Proof. constructor. apply one. Defined.
+
+  Definition example_app_interp (d1 d2 : exampleDomain) : propset exampleDomain :=
+  match d1, d2 with
+  | f, one => ⊤
+  | f, two => ∅
+  | _, _ => ∅
+  end.
+
+  Definition exampleModel : @Model mySignature :=
+  {|
+    Domain := exampleDomain;
+    Domain_inhabited := exampleDomain_Inhabited;
+    sym_interp := fun (x : symbols) =>
+                      {[ f ]};
+    app_interp := example_app_interp;
+  |}.
+
+  Theorem app_ext_singleton : forall x y,
+    app_ext {[x]} {[y]} ≡ @app_interp mySignature exampleModel x y.
+  Proof.
+    intros x y. unfold app_ext. set_solver.
+  Qed.
+
+  Example equiv_not_eq :
+    forall ρₑ ρₛ, @pattern_interpretation _ exampleModel ρₑ ρₛ examplePattern = ⊤.
+  Proof.
+    intros ρₑ ρₛ. unfold_leibniz.
+    rewrite set_equiv_subseteq. split.
+    apply top_subseteq.
+
+    unfold examplePattern.
+    rewrite pattern_interpretation_simpl. simpl.
+    unfold evar_open. simpl.
+    unfold propset_fa_union.
+
+    apply elem_of_subseteq. intros x _.
+    rewrite elem_of_PropSet.
+    destruct (ρₑ "X"%string) eqn:EqX.
+    * destruct x.
+      - exists one.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+      - exists two.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+      - exists f.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+    * destruct x.
+      - exists two.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+      - exists one.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+      - exists two.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+   * destruct x.
+      - exists two.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+      - exists one.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+      - exists two.
+        repeat rewrite pattern_interpretation_simpl. simpl.
+        rewrite update_evar_val_same.
+        rewrite app_ext_singleton.
+        rewrite update_evar_val_neq.
+        { set_solver. }
+        simpl. rewrite EqX.
+        set_unfold. intuition.
+        left. intuition. apply H. intro. congruence.
+  Qed.
+
+End equivalence_insufficient.
+
 
 #[export]
 Hint Resolve T_predicate_defined : core.
