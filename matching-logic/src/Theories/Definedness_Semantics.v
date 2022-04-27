@@ -223,6 +223,22 @@ Section definedness.
     apply H2.
   Qed.
 
+  Lemma totality_not_full_iff : forall (M : @Model Σ),
+      M ⊨ᵀ theory ->
+      forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
+        @pattern_interpretation Σ M ρₑ ρₛ ϕ <> ⊤ <->
+        @pattern_interpretation Σ M ρₑ ρₛ ⌊ ϕ ⌋ = ∅.
+  Proof.
+    intros M HM ϕ ρₑ ρₛ.
+    split; intros H'.
+    {
+      apply totality_not_full. exact HM. exact H'.
+    }
+    {
+      apply totality_result_empty. exact HM. exact H'.
+    }
+  Qed.
+
   Lemma totality_result_nonempty : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
