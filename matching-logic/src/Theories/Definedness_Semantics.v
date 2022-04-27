@@ -166,6 +166,22 @@ Section definedness.
     exact (@modus_tollens _ _ (@definedness_empty_1 M H ϕ ρₑ ρₛ) H1).
   Qed.
 
+  Lemma definedness_not_empty_iff : forall (M : @Model Σ),
+    M ⊨ᵀ theory ->
+    forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
+      (@pattern_interpretation Σ M ρₑ ρₛ ϕ) <> ∅ <->
+      (@pattern_interpretation Σ M ρₑ ρₛ ⌈ ϕ ⌉ ) = ⊤.
+  Proof.
+    intros M HM ϕ ρₑ ρₛ.
+    split; intros H'.
+    {
+      apply definedness_not_empty_1. exact HM. exact H'.
+    }
+    {
+      apply definedness_not_empty_2. exact HM. exact H'.
+    }
+  Qed.
+
   Lemma totality_not_full : forall (M : @Model Σ),
       M ⊨ᵀ theory ->
       forall (ϕ : Pattern) (ρₑ : @EVarVal Σ M) (ρₛ : @SVarVal Σ M),
