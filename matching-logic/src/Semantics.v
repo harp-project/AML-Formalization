@@ -7,6 +7,8 @@ From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classi
 From Coq.micromega Require Import Lia.
 From Coq.Program Require Import Wf.
 
+From Equations Require Import Equations.
+
 From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
 
@@ -277,114 +279,81 @@ Section semantics.
   (* Semantics of AML ref. snapshot: Definition 3 *)
 
   Section with_model.
-    Context {m : Model}.
-    Let OS := PropsetOrderedSet (@Domain m).
-    Let  L := PowersetLattice (@Domain m).
+    Context {M : Model}.
+    Let OS := PropsetOrderedSet (@Domain M).
+    Let  L := PowersetLattice (@Domain M).
 
-    Program Fixpoint eval
-            (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-            (p : Pattern) {measure (size p)} :=
-      match p with
-      | patt_free_evar x => {[evar_val x]}
-      | patt_free_svar X => svar_val X
-      | patt_bound_evar x => ∅
-      | patt_bound_svar X => ∅
-      | patt_sym s => (@sym_interp m) s
-      | patt_app ls rs => app_ext (eval evar_val svar_val ls)
-                                  (eval evar_val svar_val rs)
-      | patt_bott => ∅
-      | patt_imp ls rs => (difference ⊤ (eval evar_val svar_val ls)) ∪
-                                          (eval evar_val svar_val rs)
-      | patt_exists p' =>
-        let x := fresh_evar p' in
-        propset_fa_union
-          (fun e => eval (update_evar_val x e evar_val)
-                                           svar_val
-                                           (evar_open 0 x p'))
-      | patt_mu p' =>
-        let X := fresh_svar p' in
-        @LeastFixpointOf _ OS L
-                         (fun S => eval evar_val
-                                                          (update_svar_val X S svar_val)
-                                                          (svar_open 0 X p'))
-      end.
-    Next Obligation. intros. subst. simpl; lia. Defined.
-    Next Obligation. intros. subst. simpl; lia. Defined.
-    Next Obligation. intros. subst. simpl; lia. Defined.
-    Next Obligation. intros. subst. simpl; lia. Defined.
-    Next Obligation. intros. subst. simpl; rewrite <- evar_open_size. lia. Defined.
-    Next Obligation. intros. subst. simpl; rewrite <- svar_open_size. lia. Defined.
-    Next Obligation. Tactics.program_simpl. Defined.
-
-
-    Definition Fassoc ρₑ ρₛ ϕ X :=
-      λ S, eval ρₑ (update_svar_val X S ρₛ) ϕ.
-    
-    (* TODO: Need to be able to simplify Program Fixpoint definitions *)
-
-    Lemma eval_free_evar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-          (x : evar) :
-      eval evar_val svar_val (patt_free_evar x) = {[ evar_val x ]}.
+    Equations? eval (ρ : @Valuation M) (ϕ : Pattern)
+      : propset (@Domain M) by wf (size ϕ) :=
+    eval ρ (patt_free_evar x)  := {[ evar_valuation ρ x ]} ;
+    eval ρ (patt_free_svar X)  := svar_valuation ρ X ;
+    eval ρ (patt_bound_evar n) := ∅ ;
+    eval ρ (patt_bound_svar n) := ∅ ;
+    eval ρ (patt_sym s)        := @sym_interp M s ;
+    eval ρ (patt_app ϕ₁ ϕ₂)    := app_ext (eval ρ ϕ₁) (eval ρ ϕ₂) ;
+    eval ρ (patt_bott)         := ∅ ;
+    eval ρ (patt_imp ϕ₁ ϕ₂)    := (difference ⊤ (eval ρ ϕ₁)) ∪ (eval ρ ϕ₂) ;
+    eval ρ (patt_exists ϕ')    := let x := fresh_evar ϕ' in
+                                  propset_fa_union
+                                  (fun e =>
+                                    let ρ' := (update_evar_val x e ρ) in
+                                    eval ρ' (evar_open 0 x ϕ')
+                                  ) ;
+    eval ρ (patt_mu ϕ')        := let X := fresh_svar ϕ' in
+                                  @LeastFixpointOf _ OS L
+                                  (fun S =>
+                                    let ρ' := (update_svar_val X S ρ) in
+                                    eval ρ' (svar_open 0 X ϕ')
+                                  ) .
     Proof.
-      auto.
-    Qed.
+      all: simpl; try lia.
+      { rewrite -evar_open_size. lia. }
+      { rewrite -svar_open_size. lia. }
+    Defined.
+
+    Definition Fassoc ρ ϕ X :=
+      λ S, eval (update_svar_val X S ρ) ϕ.
+    
+    Lemma eval_free_evar_simpl
+          (ρ : @Valuation M)
+          (x : evar) :
+      eval ρ (patt_free_evar x) = {[ evar_valuation ρ x ]}.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_free_svar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
+          (ρ : @Valuation M)
           (X : svar) :
-      eval evar_val svar_val (patt_free_svar X) = svar_val X.
-    Proof.
-      auto.
-    Qed.
+      eval ρ (patt_free_svar X) = svar_valuation ρ X.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_bound_evar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
+          (ρ : Valuation)
           (x : db_index) :
-      eval evar_val svar_val (patt_bound_evar x) = ∅.
-    Proof.
-      auto.
-    Qed.
+      eval ρ (patt_bound_evar x) = ∅.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_bound_svar_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
+          (ρ : Valuation)
           (X : db_index) :
-      eval evar_val svar_val (patt_bound_svar X) = ∅.
-    Proof.
-      auto.
-    Qed.
+      eval ρ (patt_bound_svar X) = ∅.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_sym_simpl
-          (evar_val : @EVarVal m) (svar_val : @SVarVal m)
+          (ρ : Valuation)
           (s : symbols) :
-      eval evar_val svar_val (patt_sym s) = @sym_interp m s.
-    Proof.
-      auto.
-    Qed.
+      eval ρ (patt_sym s) = @sym_interp M s.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_app_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-          (ls rs : Pattern) :
-      eval evar_val svar_val (patt_app ls rs) =
-      app_ext (eval evar_val svar_val ls)
-              (eval evar_val svar_val rs).
-    Proof.
-      unfold eval, eval_func.
-      rewrite fix_sub_eq.
-      intros x f g Heq.
-      destruct x. Tactics.program_simpl. unfold projT1, projT2.
-      destruct X; auto with f_equal.
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. }
-    Qed.
+          (ρ : Valuation)
+          (ϕ₁ ϕ₂ : Pattern) :
+      eval ρ (patt_app ϕ₁ ϕ₂) = app_ext (eval ρ ϕ₁) (eval ρ ϕ₂).
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_bott_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)) :
-      eval evar_val svar_val patt_bott = ∅.
-    Proof.
-      auto.
-    Qed.
+          (ρ : @Valuation M) :
+      eval ρ patt_bott = ∅.
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_imp_simpl
           (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
