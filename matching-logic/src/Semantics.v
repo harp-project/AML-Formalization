@@ -826,27 +826,27 @@ Section semantics.
   Qed.
 
   (* Can change updated/opened fresh variable variable *)
-  Lemma Private_eval_fresh_var_open M sz ϕ dbi ρₑ ρ:
+  Lemma Private_eval_fresh_var_open M sz ϕ dbi ρ:
     size ϕ <= sz ->
     (
       forall X Y S,
         svar_is_fresh_in X ϕ ->
         svar_is_fresh_in Y ϕ ->
-        @eval M ρₑ (update_svar_val X S ρ) (svar_open dbi X ϕ)
-        = @eval M ρₑ (update_svar_val Y S ρ) (svar_open dbi Y ϕ)
+        @eval M (update_svar_val X S ρ) (svar_open dbi X ϕ)
+        = @eval M (update_svar_val Y S ρ) (svar_open dbi Y ϕ)
     ) /\
     (
       forall x y c,
         evar_is_fresh_in x ϕ ->
         evar_is_fresh_in y ϕ ->
-        @eval M (update_evar_val x c ρₑ) ρ (evar_open dbi x ϕ)
-        = @eval M (update_evar_val y c ρₑ) ρ (evar_open dbi y ϕ)
+        @eval M (update_evar_val x c ρ) (evar_open dbi x ϕ)
+        = @eval M (update_evar_val y c ρ) (evar_open dbi y ϕ)
     )
   .
   Proof.
-    move: ϕ dbi ρₑ ρ.
+    move: ϕ dbi ρ.
     induction sz.
-    - move=> ϕ dbi ρₑ ρ Hsz.
+    - move=> ϕ dbi ρ Hsz.
       split.
       {
         (* base case - svar *)
@@ -858,8 +858,8 @@ Section semantics.
           apply not_elem_of_singleton_1 in HfrX.
           apply not_elem_of_singleton_1 in HfrY.
           unfold update_svar_val.
-          destruct (decide (X = x)),(decide (Y = x)); simpl; try contradiction.
-          reflexivity.
+          destruct ρ as [ρₑ ρₛ]. simpl.
+          destruct (decide (X = x)),(decide (Y = x)); simpl; congruence.
         + rewrite 2!eval_bound_evar_simpl. reflexivity.
         + unfold svar_open. simpl. case_match.
           * rewrite 2!eval_bound_svar_simpl.
@@ -882,8 +882,8 @@ Section semantics.
           apply not_elem_of_singleton_1 in Hfrx.
           apply not_elem_of_singleton_1 in Hfry.
           apply f_equal. unfold update_evar_val.
-          destruct (decide (x = x0)),(decide (y = x0)); simpl; try contradiction.
-          reflexivity.
+          destruct ρ as [ρₑ ρₛ]. simpl.
+          destruct (decide (x = x0)),(decide (y = x0)); simpl; congruence.
         + rewrite 2!eval_free_svar_simpl.
           reflexivity.
         + unfold evar_open. simpl. case_match.
@@ -899,28 +899,28 @@ Section semantics.
         + rewrite 2!eval_bott_simpl.
           reflexivity.
       }
-    - move=> ϕ dbi ρₑ ρ Hsz.
+    - move=> ϕ dbi ρ Hsz.
       split.
       {
         (* inductive case - svar *)
         move=> X Y S HfrX HfrY.
         destruct ϕ; simpl in Hsz.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
         + rewrite 2!eval_app_simpl. fold svar_open.
-          rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _ _) X Y). lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _) X Y). lia.
           eapply svar_is_fresh_in_app_l. apply HfrX.
           eapply svar_is_fresh_in_app_l. apply HfrY.
           lia.
           eapply svar_is_fresh_in_app_r. apply HfrX.
           eapply svar_is_fresh_in_app_r. apply HfrY.
           reflexivity.
-        + rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
         + rewrite 2!eval_imp_simpl. fold svar_open.
-          rewrite (proj1 (IHsz _ _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _ _) X Y). lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _) X Y). lia.
           eapply svar_is_fresh_in_app_l. apply HfrX.
           eapply svar_is_fresh_in_app_l. apply HfrY.
           lia.
@@ -930,16 +930,25 @@ Section semantics.
         + rewrite 2!eval_ex_simpl. fold svar_open. simpl.
           apply f_equal. apply functional_extensionality. intros e.
           rewrite 2!svar_open_evar_open_comm.
-          rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -evar_open_size. lia.
-          apply svar_is_fresh_in_exists in HfrX.
-          apply svar_is_fresh_in_exists in HfrY.
-          apply svar_fresh_evar_open. apply HfrX.
-          apply svar_fresh_evar_open. apply HfrY.
+          fold bsvar_subst.
+          simpl. rewrite 2!update_evar_val_svar_val_comm.
+          rewrite (proj1 (IHsz _ _ _ _) X Y).
+          { rewrite -evar_open_size. lia. }
+          { apply svar_is_fresh_in_exists in HfrX.
+            apply svar_is_fresh_in_exists in HfrY.
+            apply svar_fresh_evar_open. apply HfrX.
+          }
+          { apply svar_fresh_evar_open. apply HfrY. 
+          }
           rewrite -2!svar_open_evar_open_comm.
-          rewrite (proj2 (IHsz _ _ _ _ _) _ (fresh_evar (svar_open dbi Y ϕ))). rewrite -svar_open_size. lia.
+          rewrite -2!update_evar_val_svar_val_comm.
+          rewrite (proj2 (IHsz _ _ _ _) _ (fresh_evar (svar_open dbi Y ϕ))). rewrite -svar_open_size. lia.
           rewrite fresh_evar_svar_open.
           apply evar_fresh_svar_open. apply set_evar_fresh_is_fresh.
           apply set_evar_fresh_is_fresh.
+          repeat rewrite update_evar_val_svar_val_comm.
+          fold bsvar_subst.
+          unfold svar_open.
           reflexivity.
         + rewrite 2!svar_open_mu.
           rewrite 2!eval_mu_simpl. fold svar_open. simpl.
@@ -992,9 +1001,9 @@ Section semantics.
           destruct HB as [HnotinFree2 HnotinFree].
           fold bsvar_subst.
           
-          rewrite (proj1 (IHsz _ _ _ _ _) X' fresh3). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) X' fresh3). rewrite -svar_open_size. lia.
           rewrite HeqX'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree1.
-          rewrite (proj1 (IHsz _ _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
           rewrite HeqY'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree2.
           rewrite (@svar_open_comm_higher signature 0 (Datatypes.S dbi) _ fresh3 X ϕ). lia.
           rewrite (@svar_open_comm_higher signature 0 (Datatypes.S dbi) _ fresh3 Y ϕ). lia.
@@ -1003,7 +1012,7 @@ Section semantics.
           rewrite (@update_svar_val_comm _ fresh3 Y). apply Hneqfr2.
           apply svar_is_fresh_in_exists in HfrX.
           apply svar_is_fresh_in_exists in HfrY.
-          rewrite (proj1 (IHsz _ _ _ _ _) X Y). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y). rewrite -svar_open_size. lia.
           unfold svar_is_fresh_in.
           apply svar_open_fresh_notin.
           apply HfrX. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
@@ -1015,22 +1024,22 @@ Section semantics.
         (* inductive case - evar *)
         move=> x y c Hfrx Hfry.
         destruct ϕ; simpl in Hsz.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
         + rewrite 2!eval_app_simpl. fold evar_open.
-          rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _ _) x y). lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _) x y). lia.
           eapply evar_is_fresh_in_app_l. apply Hfrx.
           eapply evar_is_fresh_in_app_l. apply Hfry.
           lia.
           eapply evar_is_fresh_in_app_r. apply Hfrx.
           eapply evar_is_fresh_in_app_r. apply Hfry.
           reflexivity.
-        + rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
         + rewrite 2!eval_imp_simpl. fold evar_open.
-          rewrite (proj2 (IHsz _ _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _ _) x y). lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _) x y). lia.
           eapply evar_is_fresh_in_app_l. apply Hfrx.
           eapply evar_is_fresh_in_app_l. apply Hfry.
           lia.
@@ -1084,9 +1093,9 @@ Section semantics.
           apply i3 in HB. clear i3. destruct HB as [HnotinFree1 HB].
           apply not_elem_of_union in HB.
           destruct HB as [HnotinFree2 HnotinFree].
-          rewrite (proj2 (IHsz _ _ _ _ _) x' fresh3). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) x' fresh3). rewrite -evar_open_size. lia.
           rewrite Heqx'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree1.
-          rewrite (proj2 (IHsz _ _ _ _ _) y' fresh3). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) y' fresh3). rewrite -evar_open_size. lia.
           rewrite Heqy'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree2.
           rewrite (@evar_open_comm_higher signature 0 (Datatypes.S dbi) _ fresh3 x ϕ). lia.
           rewrite (@evar_open_comm_higher signature 0 (Datatypes.S dbi) _ fresh3 y ϕ). lia.
@@ -1095,7 +1104,7 @@ Section semantics.
           rewrite (@update_evar_val_comm _ fresh3 y). apply Hneqfr2.
           apply evar_is_fresh_in_exists in Hfrx.
           apply evar_is_fresh_in_exists in Hfry.
-          rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -evar_open_size. lia.
           unfold evar_is_fresh_in.
           apply evar_open_fresh_notin.
           apply Hfrx. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
@@ -1106,13 +1115,16 @@ Section semantics.
           apply f_equal. apply functional_extensionality.
           intros S'.
           rewrite -2!svar_open_evar_open_comm.
-          rewrite (proj2 (IHsz _ _ _ _ _) x y). rewrite -svar_open_size. lia.
+          fold bevar_subst.
+          rewrite -2!update_evar_val_svar_val_comm.
+          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -svar_open_size. lia.
           apply evar_is_fresh_in_mu in Hfrx.
           apply evar_is_fresh_in_mu in Hfry.
           apply evar_fresh_svar_open. apply Hfrx.
           apply evar_fresh_svar_open. apply Hfry.
           rewrite 2!svar_open_evar_open_comm.
-          rewrite (proj1 (IHsz _ _ _ _ _) _ (fresh_svar (evar_open dbi y ϕ))). rewrite -evar_open_size. lia.
+          rewrite 2!update_evar_val_svar_val_comm.
+          rewrite (proj1 (IHsz _ _ _ _) _ (fresh_svar (evar_open dbi y ϕ))). rewrite -evar_open_size. lia.
           apply svar_fresh_evar_open.
           rewrite fresh_svar_evar_open. apply set_svar_fresh_is_fresh.
           apply set_svar_fresh_is_fresh.
