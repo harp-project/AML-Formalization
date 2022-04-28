@@ -761,95 +761,68 @@ Section semantics.
       reflexivity.
   Qed.
 
-  
-  (* eval unchanged when using fresh set varaiable *)
-  Lemma Private_eval_free_svar_independent M ρₑ ρₛ X S sz ϕ:
-    size ϕ <= sz ->
+  Lemma eval_free_svar_independent M ρ X S ϕ:
     svar_is_fresh_in X ϕ ->
-    @eval M ρₑ (update_svar_val X S ρₛ) ϕ
-    = @eval M ρₑ ρₛ ϕ.
+    @eval M (update_svar_val X S ρ) ϕ = @eval M ρ ϕ.
   Proof.
-    generalize dependent S. generalize dependent X.
-    generalize dependent ρₛ. generalize dependent ρₑ. generalize dependent ϕ.
-    induction sz; intros ϕ ρₑ ρₛ X S; destruct ϕ; simpl; intros Hsz Hnotin; unfold svar_is_fresh_in in Hnotin;
-      simpl in Hnotin.
-    - repeat rewrite -> eval_free_evar_simpl.
-      reflexivity.
-    - repeat rewrite eval_free_svar_simpl.
-      unfold update_svar_val.
-      destruct (decide (X = x)); simpl.
+    intros Hfr. unfold svar_is_fresh_in in Hfr.
+    funelim (eval (update_svar_val X S ρ) ϕ);
+      try simp eval; try reflexivity;
+      simpl in Hfr.
+    {
+      unfold update_svar_val. simpl.
+      destruct (decide (X0 = X)); simpl.
       + subst.
-        apply not_elem_of_singleton_1 in Hnotin.
+        destruct ρ0 as [ρₑ ρₛ]. simpl.
+        apply not_elem_of_singleton_1 in Hfr.
         contradiction.
       + reflexivity.
-    - repeat rewrite -> eval_free_svar_simpl.
+    }
+    {
+      rewrite H.
+      { set_solver. }
+      rewrite H0.
+      { set_solver. }
       reflexivity.
-    - repeat rewrite -> eval_bound_evar_simpl.
+    }
+    {
+      rewrite H.
+      { set_solver. }
+      rewrite H0.
+      { set_solver. }
       reflexivity.
-    - repeat rewrite -> eval_bound_svar_simpl.
-      reflexivity.
-    - lia.
-    - repeat rewrite -> eval_bott_simpl.
-      reflexivity.
-    - lia.
-    - lia.
-    - lia.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - repeat rewrite -> eval_app_simpl.
-      simpl in Hnotin.
-      apply not_elem_of_union in Hnotin. destruct Hnotin as [Hnotin1 Hnotin2].
-      rewrite -> IHsz. 3: apply Hnotin1. 2: lia.
-      rewrite -> IHsz. 3: apply Hnotin2. 2: lia.
-      reflexivity.
-    - apply IHsz. 2: { simpl. apply Hnotin. } simpl. lia.
-    - repeat rewrite -> eval_imp_simpl.
-      simpl in Hnotin.
-      apply not_elem_of_union in Hnotin. destruct Hnotin as [Hnotin1 Hnotin2].
-      rewrite -> IHsz. 3: apply Hnotin1. 2: lia.
-      rewrite -> IHsz. 3: apply Hnotin2. 2: lia.
-      reflexivity.
-    - repeat rewrite -> eval_ex_simpl.
+    }
+    {
       simpl.
       apply f_equal. apply functional_extensionality. intros e.
-      rewrite IHsz.
-      { rewrite -evar_open_size. lia. }
-      { apply svar_fresh_evar_open. apply Hnotin. }
-      reflexivity.
-    - repeat rewrite eval_mu_simpl. simpl.
+      rewrite update_evar_val_svar_val_comm.
+      rewrite -> H with (e := e).
+      { reflexivity. }
+      { apply svar_fresh_evar_open. apply Hfr. }
+      { reflexivity. }
+      { rewrite update_evar_val_svar_val_comm. reflexivity. }
+    }
+    {
       apply f_equal. apply functional_extensionality.
-      intros e.
-      destruct (decide ((fresh_svar ϕ) = X)).
-      + rewrite e0. rewrite update_svar_val_shadow. reflexivity.
+      intros e. simpl.
+      destruct (decide ((fresh_svar ϕ') = X)) as [Heq|Hneq].
+      + rewrite Heq. rewrite update_svar_val_shadow. reflexivity.
       + rewrite update_svar_val_comm.
-        { apply n.  }
-        rewrite IHsz.
-        { rewrite -svar_open_size. lia.  }
-
+        { apply Hneq.  }
+        rewrite -> H with (S0 := e).
+        { reflexivity. }
         { intros Contra.
-          pose proof (Hfeeo := @free_svars_svar_open signature ϕ (fresh_svar ϕ) 0).
+          pose proof (Hfeeo := @free_svars_svar_open signature ϕ' (fresh_svar ϕ') 0).
           rewrite -> elem_of_subseteq in Hfeeo.
           specialize (Hfeeo X Contra).
           apply elem_of_union in Hfeeo.
-          destruct Hfeeo as [H|H].
-          * apply elem_of_singleton_1 in H. symmetry in H. contradiction.
+          destruct Hfeeo as [H'|H'].
+          * apply elem_of_singleton_1 in H'. symmetry in H'. contradiction.
           * contradiction.
         }
-        reflexivity.
-  Qed.
-
-  Lemma eval_free_svar_independent M ρₑ ρ X S ϕ:
-    svar_is_fresh_in X ϕ ->
-    @eval M ρₑ (update_svar_val X S ρ) ϕ
-    = @eval M ρₑ ρ ϕ.
-  Proof.
-    intros.
-    apply Private_eval_free_svar_independent with (sz := size ϕ).
-    * lia.
-    * assumption.
+        { f_equal. rewrite update_svar_val_comm. apply Hneq. reflexivity. }
+        { f_equal. rewrite update_svar_val_comm. apply Hneq. reflexivity. }
+    }
   Qed.
 
   (* Can change updated/opened fresh variable variable *)
