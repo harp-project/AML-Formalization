@@ -63,27 +63,46 @@ Section semantics.
   Qed.
 
   (* element and set variable valuations *)
-  Polymorphic
-  Definition EVarVal {m : Model} : Type := evar -> Domain m.
-  Polymorphic
-  Definition SVarVal {m : Model} : Type := svar -> propset (Domain m).
+  Polymorphic Record Valuation {M : Model} : Type := mkValuation
+  { evar_valuation : evar -> Domain M ;
+    svar_valuation : svar -> propset (Domain M) ;
+  }.
 
-  Definition update_evar_val {m : Model} 
-             (v : evar) (x : Domain m) (evar_val : @EVarVal m) : EVarVal :=
-    fun v' : evar => if decide (v = v') is left _ then x else evar_val v'.
-
-  Definition update_svar_val {m : Model}
-             (v : svar) (X : propset (Domain m)) (svar_val : @SVarVal m)  : SVarVal :=
-    fun v' : svar => if decide (v = v') is left _ then X else svar_val v'.
+  Definition update_evar_val {M : Model}
+    (ev : evar) (x : Domain M) (val : @Valuation M) : @Valuation M :=
+    {|
+    evar_valuation := fun ev' : evar =>
+      if decide (ev = ev') is left _ then x else evar_valuation val ev' ;
+    svar_valuation := (svar_valuation val)
+    |}.
+  
+  Definition update_svar_val {M : Model}
+    (sv : svar) (X : propset (Domain M)) (val : @Valuation M) : @Valuation M :=
+    {| 
+    evar_valuation := (evar_valuation val);
+    svar_valuation := fun sv' : svar =>
+      if decide (sv = sv') is left _ then X else svar_valuation val sv' ;
+    |}.
+    
+  Lemma update_evar_val_svar_val_comm {M : Model}
+    (ev : evar) (x : Domain M)
+    (sv : svar) (X : propset (Domain M))
+    (ρ : @Valuation M) :
+    update_evar_val ev x (update_svar_val sv X ρ)
+    = update_svar_val sv X (update_evar_val ev x ρ).
+  Proof.
+    unfold update_evar_val, update_svar_val. simpl.
+    reflexivity.
+  Qed.
 
   Lemma update_svar_val_comm M :
-    forall (X1 X2 : svar) (S1 S2 : propset (Domain M)) (svar_val : @SVarVal M),
+    forall (X1 X2 : svar) (S1 S2 : propset (Domain M)) (ρ : @Valuation M),
       X1 <> X2 ->
-      update_svar_val X1 S1 (update_svar_val X2 S2 svar_val)
-      = update_svar_val X2 S2 (update_svar_val X1 S1 svar_val).
+      update_svar_val X1 S1 (update_svar_val X2 S2 ρ)
+      = update_svar_val X2 S2 (update_svar_val X1 S1 ρ).
   Proof.
     intros.
-    unfold update_svar_val.
+    unfold update_svar_val. simpl. f_equal.
     apply functional_extensionality.
     intros.
     destruct (decide (X1 = x)),(decide (X2 = x)); subst.
@@ -95,30 +114,32 @@ Section semantics.
 
   Lemma update_svar_val_shadow M : forall (X : svar)
                                           (S1 S2 : propset (Domain M))
-                                          (svar_val : @SVarVal M),
-      update_svar_val X S1 (update_svar_val X S2 svar_val) = update_svar_val X S1 svar_val.
+                                          (ρ : @Valuation M),
+      update_svar_val X S1 (update_svar_val X S2 ρ) = update_svar_val X S1 ρ.
   Proof.
-    intros. unfold update_svar_val. apply functional_extensionality.
+    intros. unfold update_svar_val. simpl.
+    f_equal.
+    apply functional_extensionality.
     intros. destruct (decide (X = x)); reflexivity.
   Qed.
 
-  Lemma update_svar_val_neq M (ρₛ : @SVarVal M) X1 S X2 :
-    X1 <> X2 -> update_svar_val X1 S ρₛ X2 = ρₛ X2.
+  Lemma update_svar_val_neq M (ρ : @Valuation M) X1 S X2 :
+    X1 <> X2 -> svar_valuation (update_svar_val X1 S ρ) X2 = svar_valuation ρ X2.
   Proof.
-    unfold update_svar_val. intros.
+    unfold update_svar_val. intros. simpl.
     destruct (decide (X1 = X2)); simpl.
     - contradiction.
     - auto.
   Qed.
   
   Lemma update_evar_val_comm M :
-    forall (x1 x2 : evar) (m1 m2 : Domain M) (evar_val : @EVarVal M),
+    forall (x1 x2 : evar) (m1 m2 : Domain M) (ρ : @Valuation M),
       x1 <> x2 ->
-      update_evar_val x1 m1 (update_evar_val x2 m2 evar_val)
-      = update_evar_val x2 m2 (update_evar_val x1 m1 evar_val).
+      update_evar_val x1 m1 (update_evar_val x2 m2 ρ)
+      = update_evar_val x2 m2 (update_evar_val x1 m1 ρ).
   Proof.
     intros.
-    unfold update_evar_val.
+    unfold update_evar_val. simpl. f_equal.
     apply functional_extensionality.
     intros.
     destruct (decide (x1 = x)),(decide (x2 = x)); subst.
@@ -130,46 +151,52 @@ Section semantics.
 
   Lemma update_evar_val_shadow M : forall (x : evar)
                                           (m1 m2 : Domain M)
-                                          (evar_val : @EVarVal M),
-      update_evar_val x m1 (update_evar_val x m2 evar_val) = update_evar_val x m1 evar_val.
+                                          (ρ : @Valuation M),
+      update_evar_val x m1 (update_evar_val x m2 ρ) = update_evar_val x m1 ρ.
   Proof.
-    intros. unfold update_evar_val. apply functional_extensionality.
+    intros. unfold update_evar_val. simpl. f_equal. apply functional_extensionality.
     intros. destruct (decide (x = x0)); reflexivity.
   Qed.
 
-  Lemma update_evar_val_same M x m ρₑ : @update_evar_val M x m ρₑ x = m.
+  Lemma update_evar_val_same M x m ρ :
+    evar_valuation (@update_evar_val M x m ρ) x = m.
   Proof.
-    unfold update_evar_val. destruct (decide (x = x)); simpl.
+    unfold update_evar_val. simpl. destruct (decide (x = x)); simpl.
     + reflexivity.
     + contradiction.
   Qed.
 
-  Lemma update_evar_val_neq M (ρₑ : @EVarVal M) x1 e x2 :
-    x1 <> x2 -> update_evar_val x1 e ρₑ x2 = ρₑ x2.
+  Lemma update_evar_val_neq M (ρ : @Valuation M) x1 e x2 :
+    x1 <> x2 -> evar_valuation (update_evar_val x1 e ρ) x2 = evar_valuation ρ x2.
   Proof.
-    unfold update_evar_val. intros.
+    unfold update_evar_val. simpl. intros.
     destruct (decide (x1 = x2)); simpl.
     - contradiction.
     - auto.
   Qed.
 
-  Lemma update_evar_val_same_2 M x ρₑ : @update_evar_val M x (ρₑ x) ρₑ = ρₑ.
+  Lemma update_evar_val_same_2 M x ρ :
+    @update_evar_val M x (evar_valuation ρ x) ρ = ρ.
   Proof.
+    destruct ρ as [ρₑ ρₛ]. simpl. unfold update_evar_val. simpl. f_equal.
     apply functional_extensionality. intros x0.
     unfold update_evar_val. destruct (decide (x = x0)); simpl.
     - subst. reflexivity.
     - reflexivity.
   Qed.
 
-  Lemma update_svar_val_same M x m ρₑ : @update_svar_val M x m ρₑ x = m.
+  Lemma update_svar_val_same M X S ρ :
+    svar_valuation (@update_svar_val M X S ρ) X = S.
   Proof.
-    unfold update_svar_val. destruct (decide (x = x)); simpl.
+    unfold update_svar_val. simpl. destruct (decide (X = X)); simpl.
     + reflexivity.
     + contradiction.
   Qed.
 
-  Lemma update_svar_val_same_2 M x ρₑ : @update_svar_val M x (ρₑ x) ρₑ = ρₑ.
+  Lemma update_svar_val_same_2 M x ρ :
+    @update_svar_val M x (svar_valuation ρ x) ρ = ρ.
   Proof.
+    destruct ρ as [ρₑ ρₛ]. simpl. unfold update_svar_val. simpl. f_equal.
     apply functional_extensionality. intros x0.
     unfold update_svar_val. destruct (decide (x = x0)); simpl.
     - subst. reflexivity.
