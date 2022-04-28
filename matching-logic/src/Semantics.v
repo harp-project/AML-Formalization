@@ -407,8 +407,8 @@ Section semantics.
 
   Lemma M_predicate_impl M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_imp ϕ₁ ϕ₂).
   Proof.
-    unfold M_predicate. intros Hp1 Hp2 ρₑ ρ.
-    specialize (Hp1 ρₑ ρ). specialize (Hp2 ρₑ ρ).
+    unfold M_predicate. intros Hp1 Hp2 ρ.
+    specialize (Hp1 ρ). specialize (Hp2 ρ).
     rewrite -> eval_imp_simpl.
     destruct Hp1, Hp2; rewrite -> H; rewrite -> H0.
     + left. set_solver by fail.
@@ -437,8 +437,7 @@ Section semantics.
     pose proof (H' := classic
                         (exists e : Domain M,
                             (eval
-                               (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρₑ)
-                               ρ
+                               (update_evar_val (evar_fresh (elements (free_evars ϕ))) e ρ)
                                (evar_open 0 (evar_fresh (elements (free_evars ϕ))) ϕ))
                             = ⊤)).
     destruct H'.
@@ -463,7 +462,7 @@ Section semantics.
       rewrite -> elem_of_PropSet in H1.
       destruct H1 as [c H1].
       unfold not in H0.
-      specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) c ρₑ) ρ).
+      specialize (H (update_evar_val (evar_fresh (elements (free_evars ϕ))) c ρ)).
       destruct H.
       + exfalso. apply H0. exists c. apply H.
       + apply set_eq_subseteq in H. destruct H as [H _].
@@ -472,14 +471,14 @@ Section semantics.
 
   Hint Resolve M_predicate_exists : core.
   
-  Lemma predicate_not_empty_iff_full M ϕ ρₑ ρ :
+  Lemma predicate_not_empty_iff_full M ϕ ρ :
     M_predicate M ϕ ->
-    @eval M ρₑ ρ ϕ <> ∅ <->
-    @eval M ρₑ ρ ϕ = ⊤.
+    @eval M ρ ϕ <> ∅ <->
+    @eval M ρ ϕ = ⊤.
   Proof.
     intros Hmp.
     split.
-    - intros Hne. specialize (Hmp ρₑ ρ).
+    - intros Hne. specialize (Hmp ρ).
       destruct Hmp.
       + assumption.
       + contradiction.
@@ -488,14 +487,14 @@ Section semantics.
       assumption.
   Qed.
 
-  Lemma predicate_not_full_iff_empty M ϕ ρₑ ρ :
+  Lemma predicate_not_full_iff_empty M ϕ ρ :
     M_predicate M ϕ ->
-    @eval M ρₑ ρ ϕ <> ⊤ <->
-    @eval M ρₑ ρ ϕ = ∅.
+    @eval M ρ ϕ <> ⊤ <->
+    @eval M ρ ϕ = ∅.
   Proof.
     intros Hmp.
     split.
-    - intros Hne. specialize (Hmp ρₑ ρ).
+    - intros Hne. specialize (Hmp ρ).
       destruct Hmp.
       + contradiction.
       + assumption.
@@ -504,10 +503,10 @@ Section semantics.
       assumption.
   Qed.
 
-  Lemma eval_impl_MP M ϕ₁ ϕ₂ ρₑ ρ :
-    @eval M ρₑ ρ (patt_imp ϕ₁ ϕ₂) = ⊤ ->
-    @eval M ρₑ ρ ϕ₁ = ⊤ ->
-    @eval M ρₑ ρ ϕ₂ = ⊤.
+  Lemma eval_impl_MP M ϕ₁ ϕ₂ ρ :
+    @eval M ρ (patt_imp ϕ₁ ϕ₂) = ⊤ ->
+    @eval M ρ ϕ₁ = ⊤ ->
+    @eval M ρ ϕ₂ = ⊤.
   Proof.
     unfold Full.
     rewrite eval_imp_simpl.
@@ -516,11 +515,11 @@ Section semantics.
     set_solver by auto.
   Qed.
 
-  Lemma eval_predicate_impl M ϕ₁ ϕ₂ ρₑ ρ :
+  Lemma eval_predicate_impl M ϕ₁ ϕ₂ ρ :
     M_predicate M ϕ₁ ->
-    eval ρₑ ρ (patt_imp ϕ₁ ϕ₂) = ⊤
-    <-> (eval ρₑ ρ ϕ₁ = ⊤
-         -> @eval M ρₑ ρ ϕ₂ = ⊤).
+    eval ρ (patt_imp ϕ₁ ϕ₂) = ⊤
+    <-> (eval ρ ϕ₁ = ⊤
+         -> @eval M ρ ϕ₂ = ⊤).
   Proof.
     intros Hpred.
     split.
@@ -528,7 +527,7 @@ Section semantics.
       apply (eval_impl_MP H H1).
     - intros H.
       rewrite -> eval_imp_simpl.
-      destruct (classic (eval ρₑ ρ ϕ₁ = ⊤)).
+      destruct (classic (eval ρ ϕ₁ = ⊤)).
       + specialize (H H0).
         rewrite -> H. rewrite -> H0.
         set_solver by fail.
@@ -538,15 +537,15 @@ Section semantics.
   Qed.
   
   (* ϕ is a well-formed body of ex *)
-  Lemma eval_exists_predicate_full M ϕ ρₑ ρ :
+  Lemma eval_exists_predicate_full M ϕ ρ :
     let x := fresh_evar ϕ in
     M_predicate M (evar_open 0 x ϕ) ->
-    eval ρₑ ρ (patt_exists ϕ) = ⊤ <->
-    ∃ (m : Domain M), eval (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = ⊤.
+    eval ρ (patt_exists ϕ) = ⊤ <->
+    ∃ (m : Domain M), eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ⊤.
   Proof.
     intros x Hpred.
     pose proof (Hpredex := M_predicate_exists Hpred).
-    rewrite -[eval _ _ _ = ⊤]predicate_not_empty_iff_full. 2: auto.
+    rewrite -[eval _ _ = ⊤]predicate_not_empty_iff_full. 2: auto.
     
     (*
         (* TODO: I would like to simplify the RHS, but cannot find a way. *)
@@ -578,10 +577,10 @@ Section semantics.
       exists m. assumption.
   Qed.
 
-  Lemma eval_exists_empty M ϕ ρₑ ρ :
+  Lemma eval_exists_empty M ϕ ρ :
     let x := fresh_evar ϕ in
-    eval ρₑ ρ (patt_exists ϕ) = ∅ <->
-    ∀ (m : Domain M), eval (update_evar_val x m ρₑ) ρ (evar_open 0 x ϕ) = ∅.
+    eval ρ (patt_exists ϕ) = ∅ <->
+    ∀ (m : Domain M), eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ∅.
   Proof.
     intros x.
     rewrite -> eval_ex_simpl. simpl.
@@ -616,9 +615,9 @@ Section semantics.
   (* Theory,axiom ref. snapshot: Definition 5 *)
 
   
-  Definition satisfies_model (m : Model) (phi : Pattern) : Prop :=
-    forall (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)),
-      eval (m := m) evar_val svar_val phi = Full.
+  Definition satisfies_model (M : Model) (ϕ : Pattern) : Prop :=
+    forall (ρ : @Valuation M),
+      eval (M := M) ρ ϕ = ⊤.
 
   Definition satisfies_theory (m : Model) (theory : Theory)
     : Prop := forall axiom : Pattern, axiom ∈ theory -> (satisfies_model m axiom).
@@ -693,22 +692,15 @@ Section semantics.
 
 
   (* If phi1 \subseteq phi2, then U_x phi1 \subseteq U_x phi2 *)
-  Lemma eval_subset_union M x phi1 phi2 :
-    (forall evar_val svar_val,
-        (@eval M evar_val svar_val phi1)
-          ⊆ (eval evar_val svar_val phi2)
-    )
-    -> (forall evar_val svar_val,
-                    (propset_fa_union (fun e => eval (update_evar_val x e evar_val)
-                                                               svar_val
-                                                               phi1))
+  Lemma eval_subset_union M x ϕ₁ ϕ₂ :
+    (forall ρ, (@eval M ρ ϕ₁) ⊆ (@eval M ρ ϕ₂) )
+    -> (forall ρ,
+                    (propset_fa_union (fun e => eval (update_evar_val x e ρ) ϕ₁))
                     ⊆
-                    (propset_fa_union (fun e => @eval M (update_evar_val x e evar_val)
-                                                               svar_val
-                                                               phi2))
+                    (propset_fa_union (fun e => @eval M (update_evar_val x e ρ) ϕ₂))
        ).
   Proof.
-    intros H. induction phi1; intros; apply propset_fa_union_included; auto.
+    intros H. induction ϕ₁; intros; apply propset_fa_union_included; auto.
   Qed.
 
   (* eval unchanged when using fresh element varaiable *)
