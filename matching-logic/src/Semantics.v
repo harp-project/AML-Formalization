@@ -356,61 +356,34 @@ Section semantics.
     Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_imp_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-          (ls rs : Pattern) :
-      eval evar_val svar_val (patt_imp ls rs) =
-      (difference ⊤ (eval evar_val svar_val ls)) ∪
-                      (eval evar_val svar_val rs).
-    Proof.
-      unfold eval, eval_func.
-      rewrite fix_sub_eq.
-      intros x f g Heq.
-      destruct x. Tactics.program_simpl. unfold projT1, projT2.
-      destruct X; auto with f_equal.
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. }
-    Qed.
+          (ρ : @Valuation M)
+          (ϕ₁ ϕ₂ : Pattern) :
+      eval ρ (patt_imp ϕ₁ ϕ₂) = (difference ⊤ (eval ρ ϕ₁)) ∪ (eval ρ ϕ₂).
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_ex_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-          (p : Pattern) :
-      eval evar_val svar_val (patt_exists p) =
-      let x := fresh_evar p in
-      propset_fa_union 
-        (fun e => eval (update_evar_val x e evar_val)
-                                         svar_val
-                                         (evar_open 0 x p)).
-    Proof.
-      unfold eval, eval_func.
-      rewrite fix_sub_eq.
-      intros x f g Heq.
-      destruct x. Tactics.program_simpl. unfold projT1, projT2.
-      destruct X; auto with f_equal.
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. }
-    Qed.
+          (ρ : @Valuation M)
+          (ϕ' : Pattern) :
+      eval ρ (patt_exists ϕ') =
+      let x := fresh_evar ϕ' in
+      propset_fa_union
+      (fun e =>
+        let ρ' := (update_evar_val x e ρ) in
+        eval ρ' (evar_open 0 x ϕ')
+      ).
+    Proof. simp eval. reflexivity. Qed.
 
     Lemma eval_mu_simpl
-          (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m))
-          (p : Pattern) :
-      eval evar_val svar_val (patt_mu p) =
-      let X := fresh_svar p in
+          (ρ : @Valuation M)
+          (ϕ' : Pattern) :
+      eval ρ (patt_mu ϕ') =
+      let X := fresh_svar ϕ' in
       @LeastFixpointOf _ OS L
-                       (fun S => eval evar_val
-                                                        (update_svar_val X S svar_val)
-                                                        (svar_open 0 X p)).
-    Proof.
-      unfold eval, eval_func.
-      rewrite fix_sub_eq.
-      intros x f g Heq.
-      destruct x. Tactics.program_simpl. unfold projT1, projT2.
-      destruct X; auto with f_equal.
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. apply functional_extensionality; auto. }
-      { f_equal. }
-    Qed.
+      (fun S =>
+        let ρ' := (update_svar_val X S ρ) in
+        eval ρ' (svar_open 0 X ϕ')
+      ).
+    Proof. simp eval. reflexivity. Qed.
 
     (* TODO extend with derived constructs using typeclasses *)
     Definition eval_simpl :=
@@ -426,17 +399,11 @@ Section semantics.
         eval_mu_simpl
       ).
 
-
-  (**
-   Proof of correct semantics for the derived operators
-   ref. snapshot: Proposition 4
-   *)
-
   End with_model.
 
   (* Model predicate. Useful mainly if the pattern is well-formed. *)
-  Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρₑ ρ,
-      @eval M ρₑ ρ ϕ = ⊤ \/ eval ρₑ ρ ϕ = ∅.
+  Definition M_predicate (M : Model) (ϕ : Pattern) : Prop := forall ρ,
+      @eval M ρ ϕ = ⊤ \/ eval ρ ϕ = ∅.
 
   Lemma M_predicate_impl M ϕ₁ ϕ₂ : M_predicate M ϕ₁ -> M_predicate M ϕ₂ -> M_predicate M (patt_imp ϕ₁ ϕ₂).
   Proof.
