@@ -1133,25 +1133,25 @@ Section semantics.
   Qed.
 
 
-  Lemma eval_fresh_evar_open M ϕ x y c dbi ρₑ ρ:
+  Lemma eval_fresh_evar_open M ϕ x y c dbi ρ:
     evar_is_fresh_in x ϕ ->
     evar_is_fresh_in y ϕ ->
-    @eval M (update_evar_val x c ρₑ) ρ (evar_open dbi x ϕ)
-    = @eval M (update_evar_val y c ρₑ) ρ (evar_open dbi y ϕ).
+    @eval M (update_evar_val x c ρ) (evar_open dbi x ϕ)
+    = @eval M (update_evar_val y c ρ) (evar_open dbi y ϕ).
   Proof.
     move=> Hfrx Hfry.
-    eapply (proj2 (@Private_eval_fresh_var_open M (size ϕ) ϕ dbi ρₑ ρ _) x y c); assumption.
+    eapply (proj2 (@Private_eval_fresh_var_open M (size ϕ) ϕ dbi ρ _) x y c); assumption.
     Unshelve. lia.
   Qed.
 
-  Lemma eval_fresh_svar_open M ϕ X Y S dbi ρₑ ρ:
+  Lemma eval_fresh_svar_open M ϕ X Y S dbi ρ:
     svar_is_fresh_in X ϕ ->
     svar_is_fresh_in Y ϕ ->
-    @eval M ρₑ (update_svar_val X S ρ) (svar_open dbi X ϕ)
-    = @eval M ρₑ (update_svar_val Y S ρ) (svar_open dbi Y ϕ).
+    @eval M (update_svar_val X S ρ) (svar_open dbi X ϕ)
+    = @eval M (update_svar_val Y S ρ) (svar_open dbi Y ϕ).
   Proof.
     move=> HfrX HfrY.
-    eapply (proj1 (@Private_eval_fresh_var_open M (size ϕ) ϕ dbi ρₑ ρ _) X Y S); assumption.
+    eapply (proj1 (@Private_eval_fresh_var_open M (size ϕ) ϕ dbi ρ _) X Y S); assumption.
     Unshelve. lia.
   Qed.
 
@@ -1160,16 +1160,14 @@ Section semantics.
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
   *)
   Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (M : Model) (phi1 phi2 : Pattern),
-      size phi1 <= sz -> forall (evar_val : EVarVal)
-                                (svar_val : SVarVal) (X : svar),
+      size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
         well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
-        @eval M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
-        = @eval M evar_val
-                                  (update_svar_val X (@eval M evar_val svar_val phi2) svar_val)
+        @eval M ρ (bsvar_subst phi1 phi2 dbi)
+        = @eval M (update_svar_val X (@eval M ρ phi2) ρ)
                                   (svar_open dbi X phi1).
   Proof.
-    induction sz; intros dbi M phi1 phi2 Hsz evar_val svar_val X Hwfc2 Hwfphi1 H.
+    induction sz; intros dbi M phi1 phi2 Hsz ρ X Hwfc2 Hwfphi1 H.
     - (* sz == 0 *)
       destruct phi1; simpl in Hsz; simpl.
       + (* free_evar *)
@@ -1177,7 +1175,9 @@ Section semantics.
       + (* free_svar *)
         unfold svar_open. simpl.
         do 2 rewrite -> eval_free_svar_simpl.
-        unfold update_svar_val. destruct (decide (X = x)).
+        unfold update_svar_val.
+        destruct ρ as [ρₑ ρₛ]. simpl.
+        destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1188,6 +1188,7 @@ Section semantics.
         unfold svar_open. simpl.  case_match; simpl.
         * repeat rewrite -> eval_bound_svar_simpl; auto.
         * rewrite eval_free_svar_simpl. unfold update_svar_val.
+          destruct ρ as [ρₑ ρₛ]. simpl.
           destruct (decide (X = X)). auto. contradiction.
         * repeat rewrite -> eval_bound_svar_simpl; auto.
       + (* sym *)
@@ -1210,7 +1211,9 @@ Section semantics.
       + (* free_svar *)
         unfold svar_open. simpl.
         do 2 rewrite -> eval_free_svar_simpl.
-        unfold update_svar_val. destruct (decide (X = x)).
+        unfold update_svar_val.
+        destruct ρ as [ρₑ ρₛ]. simpl.
+        destruct (decide (X = x)).
         * simpl in H. simpl. unfold not in H. exfalso. apply H.
           apply elem_of_singleton_2. auto.
         * auto.
@@ -1220,6 +1223,7 @@ Section semantics.
         unfold svar_open. simpl. case_match.
         * repeat rewrite -> eval_bound_evar_simpl; auto.
         * rewrite eval_free_svar_simpl. unfold update_svar_val.
+          destruct ρ as [ρₑ ρₛ]. simpl.
           destruct (decide (X = X)). simpl. auto. contradiction.
         * repeat rewrite -> eval_bound_svar_simpl; auto.
       + (* sym *)
@@ -1268,8 +1272,8 @@ Section semantics.
         remember (bsvar_subst phi1 (patt_free_svar X) dbi) as phi1'.
         remember (fresh_evar phi1') as Xfr2'.
         remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
-        remember (update_svar_val X (eval evar_val svar_val phi2) svar_val) as svar_val2'.
-        pose proof (Hfresh_subst := @eval_fresh_evar_open M phi1' Xfr2' Xu c 0 evar_val svar_val2').
+        remember (update_svar_val X (eval ρ phi2) ρ) as ρ2'.
+        pose proof (Hfresh_subst := @eval_fresh_evar_open M phi1' Xfr2' Xu c 0 ρ2').
 
         rewrite -> Hfresh_subst.
         2: { subst Xfr2'. apply set_evar_fresh_is_fresh. }
@@ -1279,8 +1283,8 @@ Section semantics.
              apply not_elem_of_union in Hfr. destruct Hfr as [Hfr _]. auto.
         }
 
-        remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c evar_val) as evar_val1'.
-        remember (update_evar_val Xu c evar_val) as evar_val2'.
+        remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c ρ) as ρe1'.
+        remember (update_evar_val Xu c ρ) as ρe2'.
         rewrite -> evar_open_bsvar_subst. 2: auto.
         remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
 
@@ -1296,20 +1300,21 @@ Section semantics.
           pose proof (HXfr1Fresh2 := evar_fresh_in_subformula Hsub HXfr1Fresh).
 
           assert (Hinterp:
-                    (eval evar_val1' svar_val phi2) =
-                    (eval evar_val svar_val phi2)
+                    (eval ρe1' phi2) =
+                    (eval ρ phi2)
                  ).
           { subst. apply eval_free_evar_independent. auto. }
           
           assert (He1e1':
-                    (update_svar_val X (eval evar_val1' svar_val phi2) svar_val) =
-                    (update_svar_val X (eval evar_val svar_val phi2) svar_val)
+                    (update_svar_val X (eval ρe1' phi2) ρ) =
+                    (update_svar_val X (eval ρ phi2) ρ)
                  ).
           { congruence. }
-          subst svar_val2'.
+          subst ρ2'.
           rewrite <- He1e1'.
           subst phi1'.
           rewrite -> evar_open_bsvar_subst.
+          2: { wf_auto2. }
 
           assert (HXu: (Xfr1 = Xu)).
           { subst Xfr1. subst Xu. unfold fresh_evar.
@@ -1319,36 +1324,42 @@ Section semantics.
             rewrite -> free_evars_svar_open. auto. auto.
           }
           rewrite -> HXu in *.
-          assert (He1e2 : evar_val1' = evar_val2').
+          (*
+          assert (He1e2 : ρe1' = ρe2').
           { subst. auto. }
-          rewrite <- He1e2.
+          rewrite <- He1e2. *)
+          rewrite update_evar_val_svar_val_comm.
+          rewrite -Heqρe1'.
           rewrite <- IHsz.
         * reflexivity.
         * rewrite <- evar_open_size. lia. 
         * auto.
         * now apply wfc_mu_aux_body_ex_imp1.
         * rewrite -> free_svars_evar_open. auto.
-        * auto.
           -- (* dbi does not occur in phi1 *)
             pose proof (HeqHoc' := HeqHoc).
             rewrite -> bsvar_subst_not_occur.
+            2: { apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_lower in Hwfphi1; wf_auto2. }
             (* Now svar_open does nothing to phi1, since it does not contain dbi (see HeqHoc). *)
             symmetry in HeqHoc. simpl in Hwfphi1. apply wfc_mu_lower in Hwfphi1; auto.
             apply svar_open_not_occur with (x:=X) in Hwfphi1 as HWF.
             (* X is not free in phi1, so the fact that in svar_val2' it is updated to some 
            value is irrelevant. *)
-            assert (Hpi: eval evar_val2' svar_val2' (evar_open 0 Xu phi1')
-                         = eval evar_val2' svar_val (evar_open 0 Xu phi1')).
-            { subst svar_val2'. apply eval_free_svar_independent.
+            subst ρ2' ρe1' ρe2'.
+            replace (eval (update_evar_val Xu c (update_svar_val X (eval ρ phi2) ρ)) (evar_open 0 Xu phi1'))
+            with (eval (update_evar_val Xu c ρ) (evar_open 0 Xu phi1')).
+            2: {
+              rewrite update_evar_val_svar_val_comm.
+              symmetry.
+              apply eval_free_svar_independent.
               unfold svar_is_fresh_in. rewrite -> free_svars_evar_open. subst phi1'.
               replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
                       (svar_open dbi X phi1) by reflexivity.
               rewrite -> HWF. auto.
             }
-            rewrite -> Hpi. subst phi1'. unfold svar_open in HWF. rewrite -> HWF.
-            subst evar_val1'. subst evar_val2'.
+            subst phi1'. unfold svar_open in HWF. rewrite -> HWF.
             rewrite -> eval_fresh_evar_open with (y := Xu).
-            reflexivity.
+            { reflexivity. }
             { subst Xfr1.
               symmetry in HeqHoc'.
               pose proof (Hsubst := @bsvar_subst_not_occur _ dbi phi2 _ Hwfphi1).
@@ -1360,9 +1371,6 @@ Section semantics.
               apply not_elem_of_union in Hfr. destruct Hfr as [Hfr _].
               rewrite free_evars_svar_open in Hfr.
               rewrite free_evars_svar_open. auto.
-            }
-            {
-              apply wfc_mu_aux_body_ex_imp1. apply wfc_mu_lower in Hwfphi1; auto.
             }
 
       + (* Mu case *)
@@ -1427,15 +1435,11 @@ Section semantics.
           { lia. }
           replace (pred (S dbi)) with dbi by lia.
 
-          remember ((update_svar_val Y E svar_val)) as svar_val'.
-
-          assert (Hpieq: (eval evar_val svar_val' phi2) = (eval evar_val svar_val phi2)).
-          { subst svar_val'.
+          replace (eval ρ phi2) with (eval (update_svar_val Y E ρ) phi2).
+          2: {
             apply eval_free_svar_independent.
             apply Hfreshy''''.
           }
-          rewrite -Hpieq.
-          clear Hpieq.
 
           rewrite <- IHsz.
           4: { apply wfc_mu_aux_body_mu_imp3. lia. auto. }
@@ -1448,7 +1452,6 @@ Section semantics.
           3: { apply Hwfc2. }
           2: { rewrite -svar_open_size. simpl in Hsz. lia. }
           
-          subst svar_val'.
           rewrite svar_open_bsvar_subst_higher.
           { apply Hwfc2. }
           { lia. }
@@ -1507,9 +1510,9 @@ Section semantics.
       forall (evar_val : EVarVal) (svar_val : SVarVal) (X : svar),
         well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
-        @eval M evar_val svar_val (bsvar_subst phi1 phi2 dbi)
+        @eval M ρ (bsvar_subst phi1 phi2 dbi)
         = @eval M evar_val
-                                  (update_svar_val X (@eval M evar_val svar_val phi2) svar_val)
+                                  (update_svar_val X (@eval M ρ phi2) svar_val)
                                   (svar_open dbi X phi1).
   Proof.
     intros.
@@ -1521,7 +1524,7 @@ Section semantics.
       size phi <= sz -> forall (evar_val : EVarVal)
                                (svar_val : SVarVal) (x : evar),
         evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi (S dbi) ->
-        @eval M evar_val svar_val (bevar_subst phi (patt_free_evar y) dbi)
+        @eval M ρ (bevar_subst phi (patt_free_evar y) dbi)
         = @eval M
                                   (update_evar_val x (evar_val y) evar_val)
                                   svar_val
