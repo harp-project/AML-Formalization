@@ -2305,9 +2305,9 @@ Section semantics.
   Qed.
 
   (* rho(psi) = empty then C[rho(psi)] = empty *)
-  Lemma propagate_context_empty M psi evar_val svar_val C :
-    @eval M evar_val svar_val psi = Empty ->
-    @eval M evar_val svar_val (subst_ctx C psi) = Empty.
+  Lemma propagate_context_empty M psi ρ C :
+    @eval M ρ psi = ∅ ->
+    @eval M ρ (subst_ctx C psi) = ∅.
   Proof.
     intro Hpsi. induction C.
     * auto.
@@ -2316,33 +2316,33 @@ Section semantics.
   Qed.
 
   (* application to a singleton *)
-  Definition rel_of M ρₑ ρ ϕ: Domain M -> propset (Domain M) :=
+  Definition rel_of M ρ ϕ: Domain M -> propset (Domain M) :=
     λ m₁,
-    (app_ext (@eval M ρₑ ρ ϕ) {[ m₁ ]}).
+    (app_ext (@eval M ρ ϕ) {[ m₁ ]}).
 
-  Definition is_total_function M f (d c : propset (Domain M)) ρₑ ρ :=
+  Definition is_total_function M f (d c : propset (Domain M)) ρ :=
     ∀ (m₁ : Domain M),
       m₁ ∈ d ->
       ∃ (m₂ : Domain M),
         m₂ ∈ c /\
-        app_ext (@eval M ρₑ ρ f) {[ m₁ ]}
+        app_ext (@eval M ρ f) {[ m₁ ]}
         = {[ m₂ ]}.
 
-  Definition total_function_is_injective M f (d : propset (Domain M)) ρₑ ρ :=
+  Definition total_function_is_injective M f (d : propset (Domain M)) ρ :=
     ∀ (m₁ : Domain M),
       m₁ ∈ d ->
       ∀ (m₂ : Domain M),
         m₂ ∈ d ->
-        (rel_of ρₑ ρ f) m₁ = (rel_of ρₑ ρ f) m₂ ->
+        (rel_of ρ f) m₁ = (rel_of ρ f) m₂ ->
         m₁ = m₂.
 
-  Definition is_functional_pattern ϕ M ρₑ ρₛ :=
-    ∃ (m : Domain M), @eval M ρₑ ρₛ ϕ = {[ m ]}.
+  Definition is_functional_pattern ϕ M ρ :=
+    ∃ (m : Domain M), @eval M ρ ϕ = {[ m ]}.
 
-  Lemma functional_pattern_inj ϕ M ρₑ ρ m₁ m₂ :
-    @is_functional_pattern ϕ M ρₑ ρ ->
-    m₁ ∈ @eval M ρₑ ρ ϕ ->
-    m₂ ∈ @eval M ρₑ ρ ϕ ->
+  Lemma functional_pattern_inj ϕ M ρ m₁ m₂ :
+    @is_functional_pattern ϕ M ρ ->
+    m₁ ∈ @eval M ρ ϕ ->
+    m₂ ∈ @eval M ρ ϕ ->
     m₁ = m₂.
   Proof.
     intros [m Hm] Hm₁ Hm₂.
