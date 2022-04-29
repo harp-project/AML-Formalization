@@ -1835,10 +1835,10 @@ Section semantics.
   Qed.
 
   (* eval unchanged within subformula over fresh element variable *)
-  Lemma eval_fresh_evar_subterm M ϕ₁ ϕ₂ c dbi ρₑ ρ :
+  Lemma eval_fresh_evar_subterm M ϕ₁ ϕ₂ c dbi ρ :
     is_subformula_of_ind ϕ₁ ϕ₂ ->
-    @eval M (update_evar_val (fresh_evar ϕ₂) c ρₑ) ρ (evar_open dbi (fresh_evar ϕ₂) ϕ₁)
-    = @eval M (update_evar_val (fresh_evar ϕ₁) c ρₑ) ρ (evar_open dbi (fresh_evar ϕ₁) ϕ₁).
+    @eval M (update_evar_val (fresh_evar ϕ₂) c ρ) (evar_open dbi (fresh_evar ϕ₂) ϕ₁)
+    = @eval M (update_evar_val (fresh_evar ϕ₁) c ρ) (evar_open dbi (fresh_evar ϕ₁) ϕ₁).
   Proof.
     intros Hsub.
     apply eval_fresh_evar_open; auto.
@@ -1856,8 +1856,8 @@ Section semantics.
     intros Hfr1 Hfr2.
     unfold evar_is_fresh_in in *.
     unfold M_predicate.
-    intros H ρₑ ρₛ.
-    rewrite -(@update_evar_val_same_2 M x₂ ρₑ).
+    intros H ρ.
+    rewrite -(@update_evar_val_same_2 M x₂ ρ).
     rewrite (@eval_fresh_evar_open M _ x₂ x₁); auto.
   Qed.
 
@@ -1875,21 +1875,21 @@ Section semantics.
      TODO: we may be able to gneeralize this lemma to non-closed psi,
            if we deal with nest_mu properly
    *)
-  Lemma Private_free_svar_subst_update_exchange {m : Model}: ∀ sz phi psi X svar_val evar_val,
+  Lemma Private_free_svar_subst_update_exchange {m : Model}:
+    ∀ sz phi psi X ρ,
       le (Pattern.size phi) sz → well_formed psi → well_formed_closed phi → 
-      eval evar_val svar_val (free_svar_subst phi psi X) =
-      eval evar_val
-                             (@update_svar_val m X (eval evar_val svar_val psi) svar_val)
-                             phi.
+      eval ρ (free_svar_subst phi psi X) =
+      eval (@update_svar_val m X (eval ρ psi) ρ) phi.
   Proof.
     unfold free_svar_subst.
-    induction sz; destruct phi; intros psi X svar_val evar_val Hsz Hwf Hwfc ; simpl in *; try inversion Hsz; auto.
+    induction sz; destruct phi; intros psi X ρ Hsz Hwf Hwfc ; simpl in *; try inversion Hsz; auto.
     - rewrite -> eval_free_svar_simpl. unfold update_svar_val.
       simpl.
       destruct (decide (X = x)); simpl.
       + reflexivity.
       + rewrite -> eval_free_svar_simpl. reflexivity.
     -  rewrite -> eval_free_svar_simpl. unfold update_svar_val.
+      destruct ρ as [ρₑ ρₛ]. simpl.
       destruct (decide (X = x)); simpl.
       + reflexivity.
       + rewrite -> eval_free_svar_simpl. reflexivity.
@@ -1977,25 +1977,27 @@ Section semantics.
         {
           apply set_evar_fresh_is_fresh.
         }
-        epose (eval_fresh_evar_open c 0 evar_val (update_svar_val X (eval evar_val svar_val psi) svar_val) _ _) as HFresh.
+        Check eval_fresh_evar_open.
+        epose (eval_fresh_evar_open c 0 (update_svar_val X (eval ρ psi) ρ) _ _) as HFresh.
         rewrite -> HFresh.
         clear HFresh.
-        epose (IHsz (evar_open 0 fresh phi) 
-                    psi X svar_val 
-                    (update_evar_val fresh c evar_val) _ _ ).
-        pose (@eval_free_evar_independent m evar_val svar_val fresh c psi).
-        rewrite -> e0 in e. clear e0.
+        fold free_svar_subst in *.
+        epose proof (IHsz (evar_open 0 fresh phi) 
+                    psi X
+                    (update_evar_val fresh c ρ) _ _ ) as H8.
+        feed specialize H8.
+        {
+          wf_auto2.
+        }
+        pose proof (@eval_free_evar_independent m ρ fresh c psi) as H9.
+        rewrite -> H9 in H8. clear H9.
         unfold free_svar_subst in *.
         rewrite -> (@evar_open_free_svar_subst_comm) in H.
         unfold free_svar_subst in *.
-        rewrite -> e in H.
+        rewrite -> H8 in H.
         all: auto.
         * exact H.
-        * apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
-          apply andb_true_iff. split.
-          -- now apply wfc_mu_aux_body_ex_imp1.
-          -- now apply wfc_ex_aux_body_ex_imp1.
-        * apply andb_true_iff in Hwf as [_ Hwf]. apply andb_true_iff in Hwf as [_ Hwf]. apply Hwf.
+        * wf_auto2.
       + intros.
         remember ((free_evars (free_svar_subst phi psi X)) ∪ (free_evars phi) ∪ (free_evars psi)) as B.
         remember (evar_fresh (elements B)) as fresh.
@@ -2026,13 +2028,13 @@ Section semantics.
         {
           apply set_evar_fresh_is_fresh.
         }
-        epose (eval_fresh_evar_open c 0 evar_val (update_svar_val X (eval evar_val svar_val psi) svar_val) _ _) as HFresh.
+        epose (eval_fresh_evar_open c 0 (update_svar_val X (eval ρ psi) ρ) _ _) as HFresh.
         rewrite -> HFresh in H.
         clear HFresh.
         epose (IHsz (evar_open 0 fresh phi) 
-                    psi X svar_val 
-                    (update_evar_val fresh c evar_val) _ _ ).
-        pose (@eval_free_evar_independent m evar_val svar_val fresh c psi).
+                    psi X
+                    (update_evar_val fresh c ρ) _ _ ).
+        pose (@eval_free_evar_independent m ρ fresh c psi).
         rewrite -> e0 in e. clear e0. fold free_svar_subst.
         
         rewrite -> (evar_open_free_svar_subst_comm).
@@ -2070,7 +2072,7 @@ Section semantics.
           unfold evar_is_fresh_in. assumption.
         }
         
-        epose proof (eval_fresh_evar_open c 0 evar_val svar_val
+        epose proof (eval_fresh_evar_open c 0 ρ
                                                     H2 H3) as HFresh.
         unfold free_svar_subst in HFresh.
         rewrite -> HFresh in H1.
@@ -2083,13 +2085,13 @@ Section semantics.
         {
           apply set_evar_fresh_is_fresh.
         }
-        epose (eval_fresh_evar_open c 0 evar_val (update_svar_val X (eval evar_val svar_val psi) svar_val) _ _) as HFresh.
+        epose (eval_fresh_evar_open c 0 (update_svar_val X (eval ρ psi) ρ) _ _) as HFresh.
         rewrite -> HFresh.
         clear HFresh.
         epose (IHsz (evar_open 0 fresh phi) 
-                    psi X svar_val 
-                    (update_evar_val fresh c evar_val) _ _ ).
-        pose (@eval_free_evar_independent m evar_val svar_val fresh c psi).
+                    psi X
+                    (update_evar_val fresh c ρ) _ _ ).
+        pose (@eval_free_evar_independent m ρ fresh c psi).
         rewrite -> e0 in e. clear e0. fold free_svar_subst in H1.
         
         rewrite -> (evar_open_free_svar_subst_comm) in H1.
@@ -2121,7 +2123,7 @@ Section semantics.
         {
           unfold evar_is_fresh_in. assumption.
         }
-        epose (eval_fresh_evar_open c 0 evar_val svar_val
+        epose (eval_fresh_evar_open c 0 ρ
                                               H2 H3) as HFresh.
         fold free_svar_subst.
         rewrite -> HFresh.
@@ -2134,13 +2136,13 @@ Section semantics.
         {
           apply set_evar_fresh_is_fresh.
         }
-        epose proof (eval_fresh_evar_open c 0 evar_val (update_svar_val X (eval evar_val svar_val psi) svar_val) _ _) as HFresh.
+        epose proof (eval_fresh_evar_open c 0 (update_svar_val X (eval ρ psi) ρ) _ _) as HFresh.
         rewrite -> HFresh in H1.
         clear HFresh.
         epose (IHsz (evar_open 0 fresh phi) 
-                    psi X svar_val 
-                    (update_evar_val fresh c evar_val) _ _ ).
-        pose (@eval_free_evar_independent m evar_val svar_val fresh c psi).
+                    psi X 
+                    (update_evar_val fresh c ρ) _ _ ).
+        pose (@eval_free_evar_independent m ρ fresh c psi).
         rewrite -> e0 in e. clear e0.
         rewrite -> (evar_open_free_svar_subst_comm).
         unfold free_svar_subst.
@@ -2153,14 +2155,13 @@ Section semantics.
           -- now apply wfc_ex_aux_body_ex_imp1.
         * apply andb_true_iff in Hwf as [_ Hwf]. apply andb_true_iff in Hwf as [_ Hwf]. apply Hwf.
     - repeat rewrite -> eval_mu_simpl. simpl.
+      fold free_svar_subst in *.
       assert ((λ S : propset (Domain m),
-                     eval evar_val
-                                            (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
-                                            (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
+                     eval (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S ρ)
+                          (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)))
+              =
               (λ S : propset (Domain m),
-                     eval evar_val
-                                            (update_svar_val (fresh_svar phi) S
-                                                             (update_svar_val X (eval evar_val svar_val psi) svar_val))
+                     eval (update_svar_val (fresh_svar phi) S (update_svar_val X (eval ρ psi) ρ))
                                             (svar_open 0 (fresh_svar phi) phi))).
       apply functional_extensionality. intros.
       + (*Create a common fresh var.*)
@@ -2184,9 +2185,9 @@ Section semantics.
           simpl in H1. apply not_elem_of_singleton_1 in H1. assumption.
         }
         epose (IHsz (svar_open 0 MuZ phi) psi X 
-                    (update_svar_val MuZ x svar_val) evar_val _ _ _).
-        rewrite e. 
-        erewrite (@eval_free_svar_independent m _ _ MuZ x psi).
+                    (update_svar_val MuZ x ρ) _ _ _).
+        rewrite e.
+        erewrite (@eval_free_svar_independent m _ MuZ x psi).
         reflexivity.
         all: auto.
         {
@@ -2208,15 +2209,14 @@ Section semantics.
         { unfold well_formed,well_formed_closed in Hwf. destruct_and!. assumption. }
         rewrite H. reflexivity. *)
     - repeat rewrite -> eval_mu_simpl. simpl.
+      fold free_svar_subst in *.
       assert ((λ S : propset (Domain m),
-                     eval evar_val
-                                            (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S svar_val)
-                                            (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X))) =
+                     eval (update_svar_val (fresh_svar (free_svar_subst phi psi X)) S ρ)
+                          (svar_open 0 (fresh_svar (free_svar_subst phi psi X)) (free_svar_subst phi psi X)))
+             =
               (λ S : propset (Domain m),
-                     eval evar_val
-                                            (update_svar_val (fresh_svar phi) S
-                                                             (update_svar_val X (eval evar_val svar_val psi) svar_val))
-                                            (svar_open 0 (fresh_svar phi) phi))).
+                     eval (update_svar_val (fresh_svar phi) S (update_svar_val X (eval ρ psi) ρ))
+                          (svar_open 0 (fresh_svar phi) phi))).
       apply functional_extensionality. intros.
       + (*Create a common fresh var.*)
         remember ((free_svars phi) ∪ (free_svars psi) ∪ (free_svars (free_svar_subst phi psi X)) ∪ 
@@ -2240,7 +2240,7 @@ Section semantics.
           simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
         }
         epose (IHsz (svar_open 0 MuZ phi) psi X 
-                    (update_svar_val MuZ x svar_val) evar_val _ _ ).
+                    (update_svar_val MuZ x ρ) _ _ ).
         rewrite e. 
         {
           apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
@@ -2248,7 +2248,7 @@ Section semantics.
           -- now apply wfc_mu_aux_body_mu_imp1.
           -- now apply wfc_ex_aux_body_mu_imp1.
         }
-        erewrite (@eval_free_svar_independent m _ _ MuZ x psi); try assumption.
+        erewrite (@eval_free_svar_independent m _ MuZ x psi); try assumption.
         reflexivity.
         unfold well_formed,well_formed_closed in Hwf.
         destruct_and!. all: try assumption.
@@ -2295,12 +2295,10 @@ Section semantics.
         assumption.
   Qed.
 
-  Lemma free_svar_subst_update_exchange {m : Model}: ∀ phi psi X svar_val evar_val,
+  Lemma free_svar_subst_update_exchange {m : Model}: ∀ phi psi X ρ,
       well_formed psi → well_formed_closed phi → 
-      eval evar_val svar_val (free_svar_subst phi psi X) =
-      eval evar_val (@update_svar_val m X 
-                                                        (eval evar_val svar_val psi) svar_val) 
-                             phi.
+      eval ρ (free_svar_subst phi psi X) =
+      eval (@update_svar_val m X (eval ρ psi) ρ) phi.
   Proof. 
     intros. apply Private_free_svar_subst_update_exchange with (sz := size phi). 
     lia. assumption. assumption.
