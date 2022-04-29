@@ -25,8 +25,8 @@ Section with_signature.
   Section with_model.
     Context {M : Model}.
     
-    Lemma eval_not_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal) (phi : Pattern),
-        @eval Σ M evar_val svar_val (patt_not phi) = ⊤ ∖ (eval evar_val svar_val phi).
+    Lemma eval_not_simpl : forall (ρ : Valuation) (phi : Pattern),
+        @eval Σ M ρ (patt_not phi) = ⊤ ∖ (eval ρ phi).
     Proof.
       intros. unfold patt_not.
       rewrite -> eval_imp_simpl.
@@ -34,33 +34,31 @@ Section with_signature.
       set_solver by fail.
     Qed.
 
-    Lemma eval_or_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
-                                                   (phi1 phi2 : Pattern),
-        eval evar_val svar_val (patt_or phi1 phi2)
-        = (eval evar_val svar_val phi1) ∪ (@eval _ M evar_val svar_val phi2).
+    Lemma eval_or_simpl : forall (ρ : Valuation) (phi1 phi2 : Pattern),
+        eval ρ (patt_or phi1 phi2)
+        = (eval ρ phi1) ∪ (@eval _ M ρ phi2).
     Proof.
       intros. unfold patt_or.
       rewrite -> eval_imp_simpl.
       rewrite -> eval_not_simpl.
-      assert (H: ⊤ ∖ (⊤ ∖ (eval evar_val svar_val phi1)) = eval evar_val svar_val phi1).
+      assert (H: ⊤ ∖ (⊤ ∖ (eval ρ phi1)) = eval ρ phi1).
       { apply Compl_Compl_propset. }
       rewrite -> H. reflexivity.
     Qed.
 
-    Lemma eval_or_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
-                                                  (phi1 phi2 : Pattern),
-        @eval Σ M evar_val svar_val (patt_or phi1 phi2)
-        = eval evar_val svar_val (patt_or phi2 phi1).
+    Lemma eval_or_comm : forall (ρ : Valuation) (phi1 phi2 : Pattern),
+        @eval Σ M ρ (patt_or phi1 phi2)
+        = eval ρ (patt_or phi2 phi1).
     Proof.
       intros.
       repeat rewrite -> eval_or_simpl.
       set_solver by fail.
     Qed.
 
-    Lemma eval_and_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_and_simpl : forall (ρ : Valuation)
                                                     (phi1 phi2 : Pattern),
-        eval evar_val svar_val (patt_and phi1 phi2)
-        = (eval evar_val svar_val phi1) ∩ (@eval _ M evar_val svar_val phi2).
+        eval ρ (patt_and phi1 phi2)
+        = (eval ρ phi1) ∩ (@eval _ M ρ phi2).
     Proof.
       intros. unfold patt_and.
       rewrite -> eval_not_simpl.
@@ -69,18 +67,18 @@ Section with_signature.
       apply Compl_Union_Compl_Inters_propset_alt.
     Qed.
 
-    Lemma eval_and_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_and_comm : forall (ρ : Valuation)
                                                    (phi1 phi2 : Pattern),
-        @eval Σ M evar_val svar_val (patt_and phi1 phi2)
-        = eval evar_val svar_val (patt_and phi2 phi1).
+        @eval Σ M ρ (patt_and phi1 phi2)
+        = eval ρ (patt_and phi2 phi1).
     Proof.
       intros.
       repeat rewrite -> eval_and_simpl.
       set_solver by fail.
     Qed.
 
-    Lemma eval_top_simpl : forall (evar_val : EVarVal) (svar_val : SVarVal),
-        @eval Σ M evar_val svar_val patt_top = ⊤.
+    Lemma eval_top_simpl : forall (ρ : Valuation),
+        @eval Σ M ρ patt_top = ⊤.
     Proof.
       intros. unfold patt_top.
       rewrite -> eval_not_simpl.
@@ -89,18 +87,18 @@ Section with_signature.
     Qed.
 
     (* TODO prove. Maybe some de-morgan laws could be helpful in proving this? *)
-    Lemma eval_iff_or : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_or : forall (ρ : Valuation)
                                                  (phi1 phi2 : Pattern),
-        @eval Σ M evar_val svar_val (patt_iff phi1 phi2)
-        = eval evar_val svar_val (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
+        @eval Σ M ρ (patt_iff phi1 phi2)
+        = eval ρ (patt_or (patt_and phi1 phi2) (patt_and (patt_not phi1) (patt_not phi2))).
     Proof.
 
     Abort.
 
-    Lemma eval_iff_comm : forall (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_comm : forall (ρ : Valuation)
                                                    (phi1 phi2 : Pattern),
-        @eval Σ M evar_val svar_val (patt_iff phi1 phi2)
-        = eval evar_val svar_val (patt_iff phi2 phi1).
+        @eval Σ M ρ (patt_iff phi1 phi2)
+        = eval ρ (patt_iff phi2 phi1).
     Proof.
       intros.
       unfold patt_iff.
@@ -115,16 +113,16 @@ Section with_signature.
         (* if eval (phi1 ---> phi2) = Full_set,
            then eval phi1 subset eval phi2
         *)
-    Lemma eval_iff_subset (evar_val : EVarVal) (svar_val : SVarVal)
+    Lemma eval_iff_subset (ρ : Valuation)
           (phi1 : Pattern) (phi2 : Pattern) :
-      eval evar_val svar_val (phi1 ---> phi2)%ml = ⊤ <->
-      (eval evar_val svar_val phi1) ⊆
-               (@eval _ M evar_val svar_val phi2).
+      eval ρ (phi1 ---> phi2)%ml = ⊤ <->
+      (eval ρ phi1) ⊆
+               (@eval _ M ρ phi2).
     Proof.
       rewrite -> elem_of_subseteq.
       rewrite -> eval_imp_simpl.
-      remember (eval evar_val svar_val phi1) as Xphi1.
-      remember (eval evar_val svar_val phi2) as Xphi2.
+      remember (eval ρ phi1) as Xphi1.
+      remember (eval ρ phi2) as Xphi2.
       split; intros.
       - assert (x ∈ ((⊤ ∖ Xphi1) ∪ Xphi2)).
         { rewrite H. apply elem_of_top'. }
@@ -244,12 +242,12 @@ Section with_signature.
      *)
     (* ϕ is expected to have dangling evar indices *)
 
-    Lemma eval_set_builder ϕ ρₑ ρₛ :
+    Lemma eval_set_builder ϕ ρ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      (eval ρₑ ρₛ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
+      (eval ρ (patt_exists (patt_and (patt_bound_evar 0) ϕ)))
       = PropSet
-          (fun m : (Domain M) => eval (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤).
+          (fun m : (Domain M) => eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ⊤).
     
     Proof.
       simpl. intros Hmp.
@@ -300,11 +298,11 @@ Section with_signature.
           specialize (H2 m). apply H2. apply elem_of_top'.
     Qed.
     
-    Lemma eval_forall_predicate ϕ ρₑ ρₛ :
+    Lemma eval_forall_predicate ϕ ρ :
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->
-      eval ρₑ ρₛ (patt_forall ϕ) = ⊤ <->
-      ∀ (m : Domain M), eval (update_evar_val x m ρₑ) ρₛ (evar_open 0 x ϕ) = ⊤.
+      eval ρ (patt_forall ϕ) = ⊤ <->
+      ∀ (m : Domain M), eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ⊤.
     Proof.
       intros x H.
       unfold patt_forall.
@@ -337,10 +335,10 @@ Section with_signature.
     Qed.
 
 
-    Lemma eval_and_full ρₑ ρₛ ϕ₁ ϕ₂:
-      @eval Σ M ρₑ ρₛ (patt_and ϕ₁ ϕ₂) = ⊤
-      <-> (@eval Σ M ρₑ ρₛ ϕ₁ = ⊤
-           /\ @eval Σ M ρₑ ρₛ ϕ₂ = ⊤).
+    Lemma eval_and_full ρ ϕ₁ ϕ₂:
+      @eval Σ M ρ (patt_and ϕ₁ ϕ₂) = ⊤
+      <-> (@eval Σ M ρ ϕ₁ = ⊤
+           /\ @eval Σ M ρ ϕ₂ = ⊤).
     Proof.
       unfold Full.
       rewrite -> eval_and_simpl.
@@ -352,10 +350,10 @@ Section with_signature.
         rewrite H1. rewrite H2. set_solver.
     Qed.
 
-    Lemma eval_predicate_not ρₑ ρₛ ϕ :
+    Lemma eval_predicate_not ρ ϕ :
       M_predicate M ϕ ->
-      eval ρₑ ρₛ (patt_not ϕ) = ⊤
-      <-> @eval Σ M ρₑ ρₛ ϕ <> ⊤.
+      eval ρ (patt_not ϕ) = ⊤
+      <-> @eval Σ M ρ ϕ <> ⊤.
     Proof.
       intros Hpred.
       rewrite eval_not_simpl.
@@ -472,14 +470,13 @@ Qed.
 Lemma eval_all_simpl
   {Σ : Signature}
   (M : Model)
-  (ρₑ : EVarVal)
-  (ρₛ : SVarVal)
+  (ρ : Valuation)
   (ϕ : Pattern)
   :
-  eval ρₑ ρₛ (patt_forall ϕ) =
+  eval ρ (patt_forall ϕ) =
   (let x := fresh_evar ϕ in
    propset_fa_intersection (λ e : Domain M,
-    @eval _ M (update_evar_val x e ρₑ) ρₛ (evar_open 0 x ϕ)
+    @eval _ M (update_evar_val x e ρ) (evar_open 0 x ϕ)
    )
   ).
 Proof.
