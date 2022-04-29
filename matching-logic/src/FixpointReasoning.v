@@ -28,17 +28,17 @@ Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Section with_signature.
   Context {Σ : Signature}.
 
-  Lemma eval_mu_lfp_fixpoint M ρₑ ρₛ ϕ :
+  Lemma eval_mu_lfp_fixpoint M ρ ϕ :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
-    let Sfix := @eval Σ M ρₑ ρₛ (patt_mu ϕ) in
+    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let Sfix := @eval Σ M ρ (patt_mu ϕ) in
     F Sfix = Sfix.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
+    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -63,18 +63,18 @@ Section with_signature.
   Qed.
 
 
-  Lemma eval_mu_lfp_least M ρₑ ρₛ ϕ S:
+  Lemma eval_mu_lfp_least M ρ ϕ S:
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
-    let Sfix := @eval Σ M ρₑ ρₛ (patt_mu ϕ) in
+    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let Sfix := @eval Σ M ρ (patt_mu ϕ) in
     (F S) ⊆ S ->
     Sfix ⊆ S.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix.
+    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -94,36 +94,36 @@ Section with_signature.
     rewrite Hlfp in Hleast. apply Hleast.
   Qed.
 
-  Lemma eval_mu_if_lfp M ρₑ ρₛ ϕ Sfix :
+  Lemma eval_mu_if_lfp M ρ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (svar_open 0 X ϕ) X in
     (F Sfix) ⊆ Sfix ->
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S) ->
-    Sfix = @eval Σ M ρₑ ρₛ (patt_mu ϕ).
+    Sfix = @eval Σ M ρ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
+    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
     intros Hprefix Hleast.
     rewrite eval_mu_simpl. simpl.
     unfold Fassoc in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
     apply LeastFixpoint_unique. { apply Hprefix. } apply Hleast.
   Qed.
 
-  Lemma eval_mu_lfp_iff M ρₑ ρₛ ϕ Sfix :
+  Lemma eval_mu_lfp_iff M ρ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (svar_open 0 X ϕ) X in
     (
     (F Sfix) ⊆ Sfix /\
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S)
-    ) <-> Sfix = @eval Σ M ρₑ ρₛ (patt_mu ϕ).
+    ) <-> Sfix = @eval Σ M ρ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
-    remember (@eval Σ M ρₑ ρₛ (patt_mu ϕ)) as Sfix'.
+    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix'.
     split.
     - intros [H1 H2]. subst.
       auto using eval_mu_if_lfp.
@@ -168,10 +168,10 @@ Section with_signature.
       auto.
     Qed.
 
-    Lemma svar_open_patt_ind_gen_body_simpl M ρₑ ρₛ X:
+    Lemma svar_open_patt_ind_gen_body_simpl M ρ X:
       svar_is_fresh_in X patt_ind_gen_body ->
-      @eval Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body)
-      = @eval Σ M ρₑ ρₛ (patt_or base (patt_app step (patt_free_svar X))).
+      @eval Σ M ρ (svar_open 0 X patt_ind_gen_body)
+      = @eval Σ M ρ (patt_or base (patt_app step (patt_free_svar X))).
     Proof.
       intros Hfr.
       unfold svar_is_fresh_in in Hfr. simpl in Hfr.
@@ -190,12 +190,11 @@ Section with_signature.
     
     Section with_eval.
       Context (M : @Model Σ).
-      Context (ρₑ : @EVarVal Σ M).
-      Context (ρₛ : @SVarVal Σ M).
+      Context (ρ : @Valuation Σ M).
 
 
       Let F := let X := fresh_svar patt_ind_gen_body in
-               @Fassoc Σ M ρₑ ρₛ (svar_open 0 X patt_ind_gen_body) X.
+               @Fassoc Σ M ρ (svar_open 0 X patt_ind_gen_body) X.
       (*
       Lemma svar_open_patt_ind_gen_body_assoc S:
         let X := fresh_svar patt_ind_gen_body in
@@ -214,8 +213,8 @@ Section with_signature.
        *)
 
       (* I can imagine this lemma to be proven automatically. *)
-      Lemma F_interp: F = λ A, (eval ρₑ ρₛ base)
-                                 ∪ (app_ext (eval ρₑ ρₛ step) A).
+      Lemma F_interp: F = λ A, (eval ρ base)
+                                 ∪ (app_ext (eval ρ step) A).
       Proof.
         unfold F. unfold Fassoc. apply functional_extensionality.
         intros A. rewrite svar_open_patt_ind_gen_body_simpl.
@@ -244,13 +243,13 @@ Section with_signature.
         (last l = Some m) /\
         (match l with
          | [] => False
-         | m₀::ms => (m₀ ∈ @eval Σ M ρₑ ρₛ base)
+         | m₀::ms => (m₀ ∈ @eval Σ M ρ base)
                      /\  (@Forall _
                                   (λ (x : (Domain M) * (Domain M)),
                                    let (old, new) := x in
                                    new ∈ 
                                   app_ext
-                                    (@eval Σ M ρₑ ρₛ step)
+                                    (@eval Σ M ρ step)
                                     {[ old ]}
                                  )
                                  (zip (m₀::ms) ms)
@@ -259,14 +258,14 @@ Section with_signature.
          end).
 
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
-        (∃ lst, last l = Some lst /\ lst ∈ @eval Σ M ρₑ ρₛ base)
+        (∃ lst, last l = Some lst /\ lst ∈ @eval Σ M ρ base)
           /\
           hd_error l = Some m
           /\
           ((@Forall _ (uncurry (λ new old,
                               new ∈
                      app_ext
-                       (@eval Σ M ρₑ ρₛ step)
+                       (@eval Σ M ρ step)
                        {[old]}
                     ))
                     (zip l (tail l))
@@ -278,7 +277,7 @@ Section with_signature.
       Lemma witnessing_sequence_middle (m : Domain M) (l : list (Domain M)) (n : nat) (m' : Domain M) :
         is_witnessing_sequence m l ->
         l !! n = Some m' ->
-        m' ∈ @eval Σ M ρₑ ρₛ base ->
+        m' ∈ @eval Σ M ρ base ->
         is_witnessing_sequence m' (drop n l).
       Proof.
         intros [[lst [Hlst Hbase] ] [Hhd Hfa] ] Hm' Hbase'.
@@ -332,14 +331,14 @@ Section with_signature.
                            (λ new old : Domain M,
                                         new ∈
                                         app_ext
-                                          (eval ρₑ ρₛ step)
+                                          (eval ρ step)
                                           {[old]})
                      ))
                      =  (λ x : Domain M * Domain M,
                                let (old, new) := x in
                                new ∈
                                app_ext
-                                 (eval ρₑ ρₛ step)
+                                 (eval ρ step)
                                  {[old]})).
         
         { apply functional_extensionality. intros [x₁ x₂].
@@ -421,7 +420,7 @@ Section with_signature.
             apply Hlast.
           }
 
-          assert (Hfeq': (λ new old : Domain M, new ∈ app_ext (eval ρₑ ρₛ step) {[old]}) = flip (flip (λ new old : Domain M, new ∈ app_ext (eval ρₑ ρₛ step) {[old]}))).
+          assert (Hfeq': (λ new old : Domain M, new ∈ app_ext (eval ρ step) {[old]}) = flip (flip (λ new old : Domain M, new ∈ app_ext (eval ρ step) {[old]}))).
           { apply functional_extensionality. intros x0.
             apply functional_extensionality. intros x1.
             reflexivity.
@@ -435,7 +434,7 @@ Section with_signature.
 
       Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence m l
-         /\ (∃ step', step' ∈ eval ρₑ ρₛ step /\ m' ∈ app_interp step' m)
+         /\ (∃ step', step' ∈ eval ρ step /\ m' ∈ app_interp step' m)
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
@@ -488,7 +487,7 @@ Section with_signature.
       Lemma witnessing_sequence_old_extend
             (m x m' : Domain M) (l : list (Domain M)):
         (is_witnessing_sequence_old m (x::l) /\
-        ∃ step', (step' ∈ eval ρₑ ρₛ step /\
+        ∃ step', (step' ∈ eval ρ step /\
         m' ∈ app_interp step' m)) <->
         (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
@@ -657,7 +656,7 @@ Section with_signature.
       Qed.
 
       Lemma interp_included_in_witnessed_elements_old:
-        (@eval Σ M ρₑ ρₛ patt_ind_gen) ⊆ witnessed_elements_old.
+        (@eval Σ M ρ patt_ind_gen) ⊆ witnessed_elements_old.
       Proof.
         apply eval_mu_lfp_least.
         { apply patt_ind_gen_wfp. }
@@ -665,7 +664,7 @@ Section with_signature.
       Qed.
 
       Lemma eval_patt_ind_gen_fix :
-        let Sfix := eval ρₑ ρₛ patt_ind_gen in
+        let Sfix := eval ρ patt_ind_gen in
         F Sfix = Sfix.
       Proof.
         apply eval_mu_lfp_fixpoint.
@@ -677,7 +676,7 @@ Section with_signature.
         PropSet (λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len).
 
       Lemma witnessed_elements_old_of_max_len_included_in_interp len:
-        (witnessed_elements_old_of_max_len (S len)) ⊆ (@eval Σ M ρₑ ρₛ patt_ind_gen).
+        (witnessed_elements_old_of_max_len (S len)) ⊆ (@eval Σ M ρ patt_ind_gen).
       Proof.
         induction len.
         - unfold Included. intros m.
@@ -842,7 +841,7 @@ Section with_signature.
       Qed.
 
       Lemma witnessed_elements_old_included_in_interp:
-        witnessed_elements_old ⊆ (@eval Σ M ρₑ ρₛ patt_ind_gen).
+        witnessed_elements_old ⊆ (@eval Σ M ρ patt_ind_gen).
       Proof.
         intros x H.
         unfold Ensembles.In in H. unfold witnessed_elements_old in H.
@@ -876,7 +875,7 @@ Section with_signature.
       Qed.
       
       Lemma patt_ind_gen_simpl:
-        @eval Σ M ρₑ ρₛ patt_ind_gen = witnessed_elements.
+        @eval Σ M ρ patt_ind_gen = witnessed_elements.
       Proof.
         rewrite -witnessed_elements_old_eq_witnessed_elements.
         rewrite -> set_eq_subseteq.
@@ -887,12 +886,12 @@ Section with_signature.
       
       Section injective.
         Hypothesis (Domain_eq_dec : EqDecision (Domain M)).
-        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρₑ ρₛ).
-        Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρₑ ρₛ).
+        Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρ).
+        Hypothesis (Hstep_injective : @total_function_is_injective _ M step witnessed_elements ρ).
 
         Hypothesis (Hbase_step_no_confusion
-                    : (eval ρₑ ρₛ base)
-                        ∩ (app_ext (eval ρₑ ρₛ step) witnessed_elements) = ∅).
+                    : (eval ρ base)
+                        ∩ (app_ext (eval ρ step) witnessed_elements) = ∅).
 
         Lemma witnessed_elements_unique_seq :
           ∀ m l₁ l₂, is_witnessing_sequence m l₁ -> is_witnessing_sequence m l₂ -> l₁ = l₂.
@@ -985,7 +984,7 @@ Section with_signature.
               
               simpl in Hma. simpl in Hmb.
 
-              assert (Ham: app_ext (eval ρₑ ρₛ step) {[a]} = {[m]}).
+              assert (Ham: app_ext (eval ρ step) {[a]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwita).
@@ -995,7 +994,7 @@ Section with_signature.
                 apply Ha'.
               }
 
-              assert (Hbm: app_ext (eval ρₑ ρₛ step) {[b]} = {[m]}).
+              assert (Hbm: app_ext (eval ρ step) {[b]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
                 pose proof (Hstep_total_function Hwitb).
@@ -1048,7 +1047,7 @@ Section with_signature.
             lia.
           }
 
-          (*assert (Hbasem': eval ρₑ ρₛ base lst).*)          
+          (*assert (Hbasem': eval ρ base lst).*)          
           
           assert (~ (length l₁ > length l₂)).
           {
@@ -1110,9 +1109,9 @@ Section with_signature.
             }
             subst m'.
 
-            (* `m'=d` matches `app_ext (eval ρₑ ρₛ step) d0` *)
+            (* `m'=d` matches `app_ext (eval ρ step) d0` *)
             assert (d ∈ app_ext
-                      (eval ρₑ ρₛ step)
+                      (eval ρ step)
                       {[d0]}).
             {
               unfold is_witnessing_sequence in Hwsm.
