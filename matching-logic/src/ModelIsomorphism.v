@@ -218,7 +218,10 @@ Program Definition ModelIsomorphism_trans {Σ : Signature} (M₁ M₂ M₃ : Mod
         mi_f := (mi_f j) ∘ (mi_f i)
     |}.
 Next Obligation.
-    intros. destruct i,j. simpl. apply _.
+    intros. destruct i,j. simpl. simpl in H.
+    apply (inj mi_f1) in H.
+    apply (inj mi_f0) in H.
+    exact H.
 Defined.
 Next Obligation.
     intros. pose proof (mi_surj i). pose proof (mi_surj j). apply _.
@@ -293,30 +296,52 @@ Proof.
     set_solver.
 Qed.
 
+
 Lemma update_evar_val_compose
-    {Σ : Signature} (M₁ M₂ : Model) (ρₑ : @EVarVal Σ M₁) (x : evar) (m : Domain M₁)
+    {Σ : Signature} (M₁ M₂ : Model) (ρ : @Valuation Σ M₁) (x : evar) (m : Domain M₁)
     (f : Domain M₁ -> Domain M₂)
     :
-    update_evar_val x (f m) (f ∘ ρₑ) = f ∘ (update_evar_val x m ρₑ).
+    (update_evar_val x (f m)
+             {|
+               evar_valuation := f ∘ evar_valuation ρ;
+               svar_valuation := λ X : svar, f <$> svar_valuation ρ X
+             |})
+    =
+    {|
+    evar_valuation := f ∘ evar_valuation (update_evar_val x m ρ);
+    svar_valuation := λ X : svar, f <$> svar_valuation (update_evar_val x m ρ) X ;
+    |}.
 Proof.
+    destruct ρ as [ρₑ ρₛ]. simpl.
+    unfold update_evar_val. simpl.
+    f_equal.
     apply functional_extensionality.
     intros y.
-    unfold update_evar_val.
     simpl.
     case_match; auto.
 Qed.
 
 Lemma update_svar_val_compose
-    {Σ : Signature} (M₁ M₂ : Model) (ρₛ : @SVarVal Σ M₁) (X : svar) (ms : propset (Domain M₁))
+    {Σ : Signature} (M₁ M₂ : Model) (ρ : @Valuation Σ M₁) (X : svar) (ms : propset (Domain M₁))
     (f : Domain M₁ -> Domain M₂)
     :
-    update_svar_val X (f <$> ms) (fmap f ∘ ρₛ) = fmap f ∘ (update_svar_val X ms ρₛ).
+    (update_svar_val X (f <$> ms)
+    {| evar_valuation := f ∘ evar_valuation ρ ;
+       svar_valuation := λ X : svar, (f <$> (svar_valuation ρ X)) ;
+    |})
+    =
+    {|
+      evar_valuation := f ∘ evar_valuation (update_svar_val X ms ρ) ;
+      svar_valuation := λ Y : svar, f <$> (svar_valuation (update_svar_val X ms ρ) Y) ;
+    |}.
 Proof.
+    destruct ρ as [ρₑ ρₛ]. simpl.
+    unfold update_svar_val. simpl.
+    f_equal.
     apply functional_extensionality.
-    intros Y.
-    unfold update_svar_val.
+    intros y.
     simpl.
-    case_match; auto.
+    repeat case_match; auto.
 Qed.
 
 Theorem isomorphism_preserves_semantics
@@ -324,9 +349,9 @@ Theorem isomorphism_preserves_semantics
     (M₁ M₂ : Model)
     (i : ModelIsomorphism M₁ M₂)
     :
-    forall (ϕ : Pattern) (ρₑ : @EVarVal _ M₁) (ρₛ : @SVarVal _ M₁),
-        ((mi_f i) <$> (@eval Σ M₁ ρₑ ρₛ ϕ))
-        ≡@{propset (Domain M₂)} (@eval Σ M₂ ((mi_f i) ∘ ρₑ) (λ X, (mi_f i) <$> (ρₛ X)) ϕ).
+    forall (ϕ : Pattern) (ρ : @Valuation _ M₁),
+        ((mi_f i) <$> (@eval Σ M₁ ρ ϕ))
+        ≡@{propset (Domain M₂)} (@eval Σ M₂ (mkValuation ((mi_f i) ∘ (evar_valuation ρ)) (λ X, (mi_f i) <$> (svar_valuation ρ X))) ϕ).
 Proof.
     intros ϕ.
     remember (size' ϕ) as sz.
@@ -338,7 +363,7 @@ Proof.
         destruct ϕ; simpl in Hsz; lia.
     }
     {
-        destruct ϕ; intros ρₑ ρₛ.
+        destruct ϕ; intros ρ.
         {
             (* patt_free_evar x *)
             do 2 rewrite eval_free_evar_simpl.
@@ -438,8 +463,8 @@ Proof.
             2: { lia. }
             rewrite -IHsz.
             2: { lia. }
-            remember (eval ρₑ ρₛ ϕ1) as X1.
-            remember (eval ρₑ ρₛ ϕ2) as X2.
+            remember (eval ρ ϕ1) as X1.
+            remember (eval ρ ϕ2) as X2.
             unfold fmap.
             with_strategy transparent [propset_fmap] unfold propset_fmap.
             rewrite set_equiv_subseteq.
@@ -623,8 +648,8 @@ Proof.
                     rewrite elem_of_subseteq.
                     intros x.
                     specialize (He (mi_f i x)).
-                    remember (eval ρₑ
-                    (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρₛ)
+                    remember (eval
+                    (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρ)
                     (svar_open 0 (fresh_svar ϕ) ϕ)) as PI.
                     intros Hx.
                     apply (elem_of_fmap_2 (mi_f i)) in Hx.

@@ -20,19 +20,19 @@ Section soundness.
 
   (* soundness for prop_ex_right *)
   Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)
-        (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)):
+        (ρ : @Valuation Σ m):
     (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
     (well_formed (ex, phi)%ml) -> (@well_formed Σ psi) ->
     (∀ axiom : Pattern,
         axiom ∈ theory
-        → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-          eval evar_val svar_val axiom = ⊤) ->
-    eval evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
+        → ∀ (ρ : @Valuation Σ m),
+          eval ρ axiom = ⊤) ->
+    eval ρ ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
     rewrite -> eval_imp_simpl.
 
-    remember (eval evar_val svar_val (patt_app (patt_exists phi) psi)) as Xex.
+    remember (eval ρ (patt_app (patt_exists phi) psi)) as Xex.
     assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
     { clear.
       set_unfold. intros x. split; intros H. exact I.
@@ -91,19 +91,19 @@ Section soundness.
 
 (* soundness for prop_ex_left *)
   Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)
-        (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)):
+        (ρ : @Valuation Σ m):
     (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
     (well_formed (ex, phi)%ml) -> (@well_formed Σ psi) ->
     (∀ axiom : Pattern,
         axiom ∈ theory
-        → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-          eval evar_val svar_val axiom = ⊤) ->
-    eval evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
+        → ∀ (ρ : @Valuation Σ m),
+          eval ρ axiom = ⊤) ->
+    eval ρ (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
     rewrite -> eval_imp_simpl.
 
-    remember (eval evar_val svar_val (patt_app psi (patt_exists phi))) as Xex.
+    remember (eval ρ (patt_app psi (patt_exists phi))) as Xex.
     assert (Huxex: (⊤ ∖ Xex) ∪ Xex = ⊤).
     { clear.
       set_unfold. intros x. split; intros H. exact I.
@@ -159,14 +159,14 @@ Section soundness.
 (* free_svar_subst maintains soundness *)
 Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
   well_formed_closed phi → well_formed psi →
-  (∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
-      eval evar_val svar_val phi = Full)
+  (∀ (ρ : @Valuation Σ m),
+      eval ρ phi = ⊤)
   →
-  ∀ X evar_val svar_val,
-    @eval Σ m evar_val svar_val (free_svar_subst phi psi X) = Full.
+  ∀ X ρ,
+    @eval Σ m ρ (free_svar_subst phi psi X) = ⊤.
 Proof.
-  intros. pose (H1 evar_val (update_svar_val X 
-                                  (eval evar_val svar_val psi) svar_val)).
+  intros. pose (H1 (update_svar_val X 
+                                  (eval ρ psi) ρ)).
   erewrite <- free_svar_subst_update_exchange in e. exact e. assumption. unfold well_formed in H. assumption.
 Qed.
 
@@ -177,18 +177,18 @@ Theorem Soundness :
   well_formed phi -> (theory ⊢ phi) -> (theory ⊨ phi).
 Proof.
   intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
-  intros m Hv evar_val svar_val. 
-  generalize dependent svar_val. generalize dependent evar_val. generalize dependent Hv.
+  intros m Hv ρ. 
+  generalize dependent ρ. generalize dependent Hv.
   induction Hp.
 
   (* hypothesis *)
-  - intros Hv evar_val svar_val. apply Hv. assumption.
+  - intros Hv ρ. apply Hv. assumption.
 
   (* FOL reasoning - P1 *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     repeat rewrite -> eval_imp_simpl.
-    remember (eval evar_val svar_val phi) as Xphi.
-    remember (eval evar_val svar_val psi) as Xpsi.
+    remember (eval ρ phi) as Xphi.
+    remember (eval ρ psi) as Xpsi.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -207,11 +207,11 @@ Proof.
     + left. clear -H0. set_solver.
 
   (* FOL reasoning - P2 *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     repeat rewrite -> eval_imp_simpl.
-    remember (eval evar_val svar_val phi) as Xphi.
-    remember (eval evar_val svar_val psi) as Xpsi.
-    remember (eval evar_val svar_val xi) as Xxi.
+    remember (eval ρ phi) as Xphi.
+    remember (eval ρ psi) as Xpsi.
+    remember (eval ρ xi) as Xxi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -220,9 +220,9 @@ Proof.
       set_solver.
 
   (* FOL reasoning - P3 *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     repeat rewrite -> eval_imp_simpl; rewrite -> eval_bott_simpl.
-    remember (eval evar_val svar_val phi) as Xphi.
+    remember (eval ρ phi) as Xphi.
     clear.
     apply set_eq_subseteq. split.
     { apply top_subseteq. }
@@ -230,18 +230,18 @@ Proof.
     destruct (classic (x ∈ Xphi)); set_solver.
 
   (* Modus ponens *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     rename i into wfphi1. rename i0 into wfphi1impphi2.
-    pose (IHHp2 wfphi1impphi2 Hv evar_val svar_val) as e.
+    pose (IHHp2 wfphi1impphi2 Hv ρ) as e.
     rewrite -> eval_iff_subset in e.
     unfold Full.
-    pose proof (H1 := (IHHp1 wfphi1 Hv evar_val svar_val)).
+    pose proof (H1 := (IHHp1 wfphi1 Hv ρ)).
     unfold Full in H1.
     clear -e H1.
     set_solver.
 
   (* Existential quantifier *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     simpl.
     rewrite -> eval_imp_simpl.
     rewrite -> eval_ex_simpl.
@@ -254,24 +254,23 @@ Proof.
     rewrite -> elem_of_subseteq. intros x _.
     destruct (classic (x ∈ (⊤ ∖
                               (eval
-                                 (update_evar_val (fresh_evar phi) (evar_val y) evar_val)
-                                 svar_val
+                                 (update_evar_val (fresh_evar phi) (evar_valuation ρ y) ρ)
                                  (evar_open 0 (fresh_evar phi) phi))))).
     -- left. apply H.
     -- right. unfold not in H.
        rewrite -> elem_of_difference in H.
        unfold stdpp_ext.propset_fa_union.
        rewrite -> elem_of_PropSet.
-       exists (evar_val y).
+       exists (evar_valuation ρ y).
        assert (x
-                 ∉ eval (update_evar_val (fresh_evar phi) (evar_val y) evar_val) svar_val
+                 ∉ eval (update_evar_val (fresh_evar phi) (evar_valuation ρ y) ρ)
                  (evar_open 0 (fresh_evar phi) phi) → False).
        { intros Hcontra. apply H. split. apply elem_of_top'. apply Hcontra. }
        apply NNPP in H0. exact H0.
     -- apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [_ i]. auto.
        
   (* Existential generalization *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     rename i into H. rename i0 into H0.
     rewrite eval_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
@@ -285,23 +284,23 @@ Proof.
       split_and!; assumption.
     }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
-    assert (H2: forall evar_val svar_val,
-               (@eval _ m evar_val svar_val phi1)
+    assert (H2: forall ρ,
+               (@eval _ m ρ phi1)
                  ⊆
-                 (eval evar_val svar_val phi2)
+                 (eval ρ phi2)
            ).
     { intros. apply eval_iff_subset. apply IHHp. }
     apply eval_subset_union
-      with (evar_val0 := evar_val) (svar_val0 := svar_val) (x0 := x) in H2.
+      with (ρ0 := ρ) (x0 := x) in H2.
     rewrite -> elem_of_subseteq. intros x0 Hphi1.
     rewrite -> elem_of_subseteq in H2.
     destruct H2 with (x0 := x0).
     -- assert (Hinc:
-                              (eval evar_val svar_val (exists_quantify x phi1))
+                              (eval ρ (exists_quantify x phi1))
                               ⊆
                               (propset_fa_union
                                  (λ e : Domain m, eval
-                                                    (update_evar_val x e evar_val) svar_val phi1))).
+                                                    (update_evar_val x e ρ) phi1))).
        { unfold exists_quantify. rewrite eval_ex_simpl. simpl.
          apply propset_fa_union_included.
          setoid_rewrite -> elem_of_subseteq.
@@ -329,7 +328,7 @@ Proof.
        apply H1.
 
   (* Propagation bottom - left *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     rewrite -> eval_imp_simpl, eval_app_simpl, eval_bott_simpl.
     unfold Full.
     rewrite right_id_L.
@@ -337,20 +336,20 @@ Proof.
     apply app_ext_bot_l.
     
   (* Propagation bottom - right *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     rewrite -> eval_imp_simpl, eval_app_simpl, eval_bott_simpl.
     rewrite right_id_L.
     rewrite -> complement_full_iff_empty.
     apply app_ext_bot_r.
 
   (* Propagation disjunction - left *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     unfold patt_or, patt_not. repeat rewrite -> eval_imp_simpl.
     repeat rewrite -> eval_app_simpl, eval_imp_simpl.
     rewrite -> eval_app_simpl, eval_bott_simpl.
-    remember (eval evar_val svar_val phi1) as Xphi1.
-    remember (eval evar_val svar_val phi2) as Xphi2.
-    remember (eval evar_val svar_val psi) as Xpsi.
+    remember (eval ρ phi1) as Xphi1.
+    remember (eval ρ phi2) as Xphi2.
+    remember (eval ρ psi) as Xpsi.
     unfold Full.
     rewrite [_ ∪ ∅]right_id_L.
     rewrite [_ ∪ ∅]right_id_L.
@@ -372,13 +371,13 @@ Proof.
     + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation disjunction - right *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     unfold patt_or, patt_not. repeat rewrite -> eval_imp_simpl.
     repeat rewrite -> eval_app_simpl, eval_imp_simpl.
     rewrite -> eval_app_simpl, eval_bott_simpl.
-    remember (eval evar_val svar_val phi1) as Xphi1.
-    remember (eval evar_val svar_val phi2) as Xphi2.
-    remember (eval evar_val svar_val psi) as Xpsi.
+    remember (eval ρ phi1) as Xphi1.
+    remember (eval ρ phi2) as Xphi2.
+    remember (eval ρ psi) as Xpsi.
     unfold Full.
     rewrite [_ ∪ ∅]right_id_L.
     rewrite [_ ∪ ∅]right_id_L.
@@ -400,17 +399,17 @@ Proof.
     + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation exists - left *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     eauto using proof_rule_prop_ex_right_sound.
 
   (* Propagation exists - right *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     eauto using proof_rule_prop_ex_left_sound.
 
   (* Framing - left *)
-  - intros Hv evar_val svar_val. 
+  - intros Hv ρ. 
     rewrite -> eval_iff_subset.
-    epose (IHHp _ Hv evar_val svar_val) as e.
+    epose (IHHp _ Hv ρ) as e.
     rewrite -> eval_iff_subset in e.
     repeat rewrite -> eval_app_simpl.
     rewrite -> elem_of_subseteq. intros.
@@ -441,9 +440,9 @@ Proof.
     }
 
   (* Framing - right *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     rewrite -> eval_iff_subset.
-    epose (IHHp _ Hv evar_val svar_val) as e.
+    epose (IHHp _ Hv ρ) as e.
     rewrite -> eval_iff_subset in e.
     repeat rewrite -> eval_app_simpl.
     rewrite -> elem_of_subseteq. intros.
@@ -478,13 +477,13 @@ Proof.
     eauto using proof_rule_set_var_subst_sound.
 
   (* Pre-Fixpoint *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     apply eval_iff_subset. simpl.
     rewrite -> eval_mu_simpl.
     simpl.
     remember (fun S : propset (Domain m) =>
-                eval evar_val
-                                       (update_svar_val (fresh_svar phi) S svar_val)
+                eval
+                                       (update_svar_val (fresh_svar phi) S ρ)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
     pose (OS := Lattice.PropsetOrderedSet (@Domain Σ m)).
     pose (L := Lattice.PowersetLattice (@Domain Σ m)).
@@ -509,7 +508,7 @@ Proof.
     2: { apply H. }
     rewrite -> HeqF.
     epose proof (Hsimpl := eval_mu_simpl).
-    specialize (Hsimpl evar_val svar_val phi).
+    specialize (Hsimpl ρ phi).
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
     
@@ -520,12 +519,12 @@ Proof.
     apply reflexivity.
 
   (* Knaster-Tarski *)
-  - intros Hv evar_val svar_val.
+  - intros Hv ρ.
     rewrite -> eval_imp_simpl. rewrite -> eval_mu_simpl.
     simpl.
     remember (fun S : propset (Domain m) =>
-                eval evar_val
-                                       (update_svar_val (fresh_svar phi) S svar_val)
+                eval 
+                                       (update_svar_val (fresh_svar phi) S ρ)
                                        (svar_open 0 (fresh_svar phi) phi)) as F.
 
     pose (OS := Lattice.PropsetOrderedSet (@Domain Σ m)).
@@ -591,7 +590,7 @@ Proof.
    (*  subst psi0. subst phi0. *)
 
     unfold instantiate in Hp.
-    apply IHHp with (evar_val:=evar_val) (svar_val:=svar_val) in Hv.
+    apply IHHp with (ρ:=ρ) in Hv.
     apply eval_iff_subset in Hv.
     
     subst F.
@@ -605,9 +604,9 @@ Proof.
 
 
   (* Existence *)
-  - intros Hv evar_val svar_val.
-    assert (eval evar_val svar_val (ex , BoundVarSugar.b0)
-            = eval evar_val svar_val (ex , (BoundVarSugar.b0 and Top))).
+  - intros Hv ρ.
+    assert (eval ρ (ex , BoundVarSugar.b0)
+            = eval ρ (ex , (BoundVarSugar.b0 and Top))).
     { repeat rewrite eval_ex_simpl. simpl.
       apply propset_fa_union_same. intros.
       repeat rewrite eval_imp_simpl.
@@ -641,17 +640,17 @@ Proof.
     clear. set_solver.
     
   (* Singleton *)
-  - assert (Hemp: forall (evar_val : evar -> Domain m) svar_val,
+  - assert (Hemp: forall (ρ : @Valuation Σ m),
                eval
-                 evar_val svar_val
+                 ρ
                  (subst_ctx C1 (patt_free_evar x and phi)
                             and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
                = ∅).
-    { intros evar_val svar_val.
+    { intros ρ.
       rewrite -> eval_and_simpl.
-      destruct (classic (evar_val x ∈ eval evar_val svar_val phi)).
+      destruct (classic (evar_valuation ρ x ∈ eval ρ phi)).
       - rewrite [(eval
-                    evar_val svar_val
+                    ρ
                     (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
                 propagate_context_empty.
         2: { unfold Semantics.Empty. rewrite intersection_empty_r_L. reflexivity. }
@@ -668,7 +667,7 @@ Proof.
         rewrite eval_free_evar_simpl.
         clear -H. set_solver.
     }
-    intros Hv evar_val svar_val.
+    intros Hv ρ.
     rewrite eval_predicate_not.
     + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
     + unfold M_predicate. right. apply Hemp.

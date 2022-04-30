@@ -232,17 +232,16 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         le (size phi) n -> well_formed_positive phi ->
         forall (Bp Bn : Ensemble svar),
           respects_blacklist phi Bp Bn ->
-          forall (evar_val : evar -> Domain M)
-                 (svar_val : svar -> propset (Domain M))
+          forall (ρ : @Valuation _ M)
                  (X : svar),
             (Bp X ->
              @AntiMonotonicFunction A OS (fun (S : propset (Domain M)) =>
-                                            (@eval Σ M evar_val (update_svar_val X S svar_val) phi)
+                                            (@eval Σ M (update_svar_val X S ρ) phi)
                                          )
             ) /\
             (Bn X ->
              @MonotonicFunction A OS (fun S : propset (Domain M) =>
-                                        (@eval Σ M evar_val (update_svar_val X S svar_val) phi))
+                                        (@eval Σ M (update_svar_val X S ρ) phi))
             )
     .
     Proof.
@@ -263,9 +262,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             destruct H1 as [Hneg Hpos].
             specialize (Hneg H2).
             inversion Hneg. subst. cbn in H5. case_match; congruence.
-          * assumption.
-          * simpl. simpl in H4. auto.
-          * assumption.
+          * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
+          * simpl. simpl in H4. destruct (decide (x = x)). auto. apply H4.
+          * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
             
         + (* EVar bound *)
           unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
@@ -287,7 +286,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           split; intros; rewrite -> eval_bott_simpl;
             setoid_rewrite -> elem_of_subseteq; intros; inversion H4.
       - (* S n *)
-        intros phi Hsz Hwfp Bp Bn Hrb evar_val svar_val V.
+        intros phi Hsz Hwfp Bp Bn Hrb ρ V.
         destruct phi.
         * apply IHn. simpl. lia. assumption. assumption.
         * apply IHn. simpl. lia. assumption. assumption.
@@ -321,11 +320,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             
             exists x1. exists x2.
             split.
-            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 evar_val svar_val V).
+            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ V).
               destruct IHn as [IHam IHmo].
               apply (IHam HBp x y H x1). assumption.
             - split.
-              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
                 destruct IHn as [IHam IHmo].
                 apply (IHam HBp x y H x2). assumption.
               + assumption.
@@ -342,11 +341,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             
             exists x1. exists x2.
             split.
-            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 evar_val svar_val V).
+            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ V).
               destruct IHn as [IHam IHmo].
               apply (IHmo HBp x y H x1). assumption.
             - split.
-              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
                 destruct IHn as [IHam IHmo].
                 apply (IHmo HBp x y H x2). assumption.
               + assumption.
@@ -372,8 +371,8 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
           remember IHn as IHn1. clear HeqIHn1.
           rename IHn into IHn2.
-          specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 evar_val svar_val V).
-          specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 evar_val svar_val V).
+          specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 ρ V).
+          specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
           unfold AntiMonotonicFunction in *.
           unfold MonotonicFunction in *.
           
@@ -446,13 +445,13 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           unfold stdpp_ext.propset_fa_union; intros m; rewrite -> elem_of_PropSet;
             intros [c Hc]; rewrite -> eval_ex_simpl; simpl;
               unfold stdpp_ext.propset_fa_union; rewrite -> elem_of_PropSet; exists c;
-              remember (update_evar_val fresh c evar_val) as evar_val';
-              specialize (IHn Hrb'' evar_val' svar_val V);
+              remember (update_evar_val fresh c ρ) as ρ';
+              specialize (IHn Hrb'' ρ' V);
               destruct IHn as [IHn1 IHn2].
           {
             specialize (IHn1 HBp S1 S2 Hincl).
             remember (evar_open 0 fresh phi) as phi'.
-            remember (update_svar_val V S1 svar_val) as svar_val1.
+            remember (update_svar_val V S1 ρ') as ρ''.
             unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
             subst.
             apply IHn1. apply Hc.
@@ -460,7 +459,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           {
             specialize (IHn2 HBp S1 S2 Hincl).
             remember (evar_open 0 fresh phi) as phi'.
-            remember (update_svar_val V S1 svar_val) as svar_val1.
+            remember (update_svar_val V S1 ρ') as ρ''.
             unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
             subst.
             apply IHn2. apply Hc.
@@ -495,11 +494,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             { subst. apply wfp_svar_open. exact Hwfpphi. }
 
             remember IHn as IHn'. clear HeqIHn'.
-            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb' evar_val).
+            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
             remember IHn' as Hy. clear HeqHy.
             rename IHn' into Hx.
-            specialize (Hx (update_svar_val V x svar_val) X').
-            specialize (Hy (update_svar_val V y svar_val) X').
+            specialize (Hx (update_svar_val V x ρ) X').
+            specialize (Hy (update_svar_val V y ρ) X').
 
             apply lfp_preserves_order.
             - apply Hy. constructor.
@@ -512,9 +511,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x ρ n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y ρ n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar V) (Empty_set svar)).
@@ -539,7 +538,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 }
 
                 specialize (IHn Hwfp' (Ensembles.Singleton svar V) (Empty_set svar) HrbV).
-                specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
+                specialize (IHn (update_svar_val X' x0 ρ) V).
                 destruct IHn as [IHam IHmo].
                 apply IHam. constructor. assumption.
           }
@@ -568,11 +567,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             { subst. apply wfp_svar_open. exact Hwfpphi. }
 
             remember IHn as IHn'. clear HeqIHn'.
-            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb' evar_val).
+            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
             remember IHn' as Hy. clear HeqHy.
             rename IHn' into Hx.
-            specialize (Hx (update_svar_val V x svar_val) X').
-            specialize (Hy (update_svar_val V y svar_val) X').
+            specialize (Hx (update_svar_val V x ρ) X').
+            specialize (Hy (update_svar_val V y ρ) X').
 
             apply lfp_preserves_order.
             - apply Hx. constructor.
@@ -585,9 +584,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 repeat rewrite -> update_svar_val_shadow.
                 unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
               + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x svar_val n0).
+                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x ρ n0).
                 rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y svar_val n0).
+                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y ρ n0).
                 rewrite -> Uhsvcy.
 
                 assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar V)).
@@ -612,7 +611,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
                 }
 
                 specialize (IHn Hwfp' (Empty_set svar) (Ensembles.Singleton svar V) HrbV).
-                specialize (IHn evar_val (update_svar_val X' x0 svar_val) V).
+                specialize (IHn (update_svar_val X' x0 ρ) V).
                 destruct IHn as [IHam IHmo].
                 apply IHmo. constructor. assumption.
           }
@@ -620,16 +619,15 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
 
     Lemma is_monotonic : forall (phi : Pattern)
                                 (X : svar)
-                                (evar_val : EVarVal)
-                                (svar_val : SVarVal),
+                                (ρ : Valuation),
         well_formed_positive (mu, phi) ->
         svar_is_fresh_in X phi ->
         @MonotonicFunction A OS
                            (fun S : propset (Domain M) =>
-                              (@eval Σ M evar_val (update_svar_val X S svar_val)
+                              (@eval Σ M (update_svar_val X S ρ)
                                                        (svar_open 0 X phi))).
     Proof.
-      simpl. intros phi X evar_val svar_val Hwfp Hfr.
+      simpl. intros phi X ρ Hwfp Hfr.
       pose proof (Hrb := mu_wellformed_respects_blacklist phi X Hwfp Hfr).
       simpl in Hrb.
       inversion Hwfp.
@@ -644,7 +642,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       }
       specialize (Hmono Hsz Hwfp').
       specialize (Hmono (Empty_set svar) (Ensembles.Singleton svar X)).
-      specialize (Hmono Hrb evar_val svar_val X).
+      specialize (Hmono Hrb ρ X).
       destruct Hmono as [Hantimono Hmono].
       apply Hmono.
       constructor.

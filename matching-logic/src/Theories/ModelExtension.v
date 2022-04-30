@@ -234,8 +234,8 @@ Section with_syntax.
             (M : Model)
             (indec : forall (s : symbols),
               is_not_core_symbol s ->
-              forall (m : Domain M) ρₑ ρₛ,
-              Decision (m ∈ Minterp_inhabitant (patt_sym s) ρₑ ρₛ))
+              forall (m : Domain M) ρ,
+              Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ))
             (R : Type)
             (fRM : R -> (Domain M) -> propset (Domain M + R)%type)
             (fMR : (Domain M) -> R -> propset (Domain M + R)%type)
@@ -325,11 +325,10 @@ Section with_syntax.
     := cel <$> (@fmap propset _ _ _ inl xs).
 
     (* Valuations lifted from the original model to the extended model. *)
-    Definition lift_val_e (ρₑ : @EVarVal _ M) : (@EVarVal _ Mext)
-    := λ (x : evar), (lift_value (ρₑ x)).
-
-    Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
-    := λ (X : svar), lift_set (ρₛ X).
+    Definition lift_val (ρ : @Valuation _ M) : (@Valuation _ Mext)
+    := mkValuation
+        (λ (x : evar), (lift_value (evar_valuation ρ x)))
+        (λ (X : svar), lift_set (svar_valuation ρ X)).
 
     Lemma lift_set_mono (xs ys : propset (Domain M)) :
         xs ⊆ ys <->
@@ -429,12 +428,12 @@ Section with_syntax.
     Lemma Mext_indec :
         forall (s : symbols),
             is_not_core_symbol s ->
-            forall (m : Domain Mext) ρₑ ρₛ,
-            Decision (m ∈ @Minterp_inhabitant Σ _ Mext (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
+            forall (m : Domain Mext) ρ,
+            Decision (m ∈ @Minterp_inhabitant Σ _ Mext (patt_sym s) (lift_val ρ)).
     Proof.
         intros. unfold Minterp_inhabitant.
         rewrite eval_app_simpl.
-        unfold app_ext,lift_val_e,lift_val_s. simpl.
+        unfold app_ext,lift_val. simpl.
         destruct m.
         {
             right. intros HContra.
@@ -473,7 +472,7 @@ Section with_syntax.
             unfold new_app_interp in HContra3.
             repeat case_match; subst; auto; try set_solver.
         }
-        destruct (indec H d ρₑ ρₛ) as [Hin|Hnotin].
+        destruct (indec H d ρ) as [Hin|Hnotin].
         {
             left.
             unfold Minterp_inhabitant in Hin.
@@ -613,13 +612,12 @@ Section with_syntax.
 
 
         Lemma semantics_preservation_sym (s : symbols)
-            (ρₑ : @EVarVal _ M)
-            (ρₛ : @SVarVal _ M)
-            ρe0 ρs0
+            (ρ : @Valuation _ M)
+            ρ0
             :
             is_not_core_symbol s ->
-            @eval Σ Mext ρe0 ρs0 (patt_sym s) =
-            lift_set (@eval Σ M ρₑ ρₛ (patt_sym s)).
+            @eval Σ Mext ρ0 (patt_sym s) =
+            lift_set (@eval Σ M ρ (patt_sym s)).
         Proof.
             intros H.
             do 2 rewrite eval_sym_simpl.
@@ -633,13 +631,12 @@ Section with_syntax.
         Qed.
         
         Lemma semantics_preservation_inhabitant_set (s : symbols)
-            (ρₑ : @EVarVal _ M)
-            (ρₛ : @SVarVal _ M)
-            ρe0 ρs0
+            (ρ : @Valuation _ M)
+            ρ0
             :
             is_not_core_symbol s ->
-            @eval Σ Mext ρe0 ρs0 (patt_inhabitant_set (patt_sym s))
-            = lift_set (@eval Σ M ρₑ ρₛ (patt_inhabitant_set (patt_sym s))).
+            @eval Σ Mext ρ0 (patt_inhabitant_set (patt_sym s))
+            = lift_set (@eval Σ M ρ (patt_inhabitant_set (patt_sym s))).
         Proof.
             intros H.
             rename H into Hnc.
@@ -648,8 +645,8 @@ Section with_syntax.
             unfold_leibniz. 
             unfold patt_inhabitant_set.
             do 2 rewrite eval_app_simpl.
-            rewrite (semantics_preservation_sym ρₑ ρₛ);[assumption|].
-            remember (eval ρₑ ρₛ (patt_sym s)) as ps.
+            rewrite (semantics_preservation_sym ρ);[assumption|].
+            remember (eval ρ (patt_sym s)) as ps.
             unfold Sorts_Syntax.sym.
             do 2 rewrite eval_sym_simpl.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
@@ -693,31 +690,33 @@ Section with_syntax.
             }
         Qed.
 
-        Lemma update_evar_val_lift_val_e_comm
-            (ρₑ : @EVarVal _ M)
+        Lemma update_evar_val_lift_val_comm
+            (ρ : @Valuation _ M)
             (x : evar)
             (d : Domain M)
             :
-            (@update_evar_val Σ Mext x (cel (inl d)) (lift_val_e ρₑ))
-            = lift_val_e (@update_evar_val Σ M x d ρₑ).
+            (@update_evar_val Σ Mext x (cel (inl d)) (lift_val ρ))
+            = lift_val (@update_evar_val Σ M x d ρ).
         Proof.
+            destruct ρ as [ρₑ ρₛ]. unfold update_evar_val. simpl.
+            unfold lift_val. simpl. f_equal.
             apply functional_extensionality.
             intros x'.
-            unfold update_evar_val, lift_val_e,lift_value.
             case_match; reflexivity.
         Qed.
  
         Lemma update_svar_val_lift_set_comm
-            (ρₛ : @SVarVal _ M)
+            (ρ : @Valuation _ M)
             (X : svar)
             (D : propset (Domain M))
             :
-        (@update_svar_val Σ Mext X (lift_set D) (lift_val_s ρₛ))
-        = lift_val_s (@update_svar_val Σ M X D ρₛ).
+        (@update_svar_val Σ Mext X (lift_set D) (lift_val ρ))
+        = lift_val (@update_svar_val Σ M X D ρ).
         Proof.
+            destruct ρ as [ρₑ ρₛ]. unfold update_svar_val. simpl.
+            unfold lift_val. simpl. f_equal.
             apply functional_extensionality.
             intros X'.
-            unfold update_svar_val,lift_val_s,lift_set.
             case_match; reflexivity.
         Qed.
 
@@ -766,24 +765,24 @@ Section with_syntax.
             (sz : nat)
             :
             (
-                forall (ϕ : Pattern) (ρₑ : @EVarVal _ M) (ρₛ : @SVarVal _ M),
+                forall (ϕ : Pattern) (ρ : @Valuation _ M),
                 size' ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
-                @eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
-                = lift_set (@eval Σ M ρₑ ρₛ ϕ)
+                @eval Σ Mext (lift_val ρ) ϕ
+                = lift_set (@eval Σ M ρ ϕ)
             )
             /\
             (
-                forall (ψ : Pattern) (ρₑ : @EVarVal _ M) (ρₛ : @SVarVal _ M),
+                forall (ψ : Pattern) (ρ : @Valuation _ M),
                 size' ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
-                (@eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
-                <-> @eval Σ M ρₑ ρₛ ψ = ∅)
+                (@eval Σ Mext (lift_val ρ) ψ = ∅
+                <-> @eval Σ M ρ ψ = ∅)
                 /\
-                (@eval Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
-                <-> @eval Σ M ρₑ ρₛ ψ = ⊤)
+                (@eval Σ Mext (lift_val ρ) ψ = ⊤
+                <-> @eval Σ M ρ ψ = ⊤)
             ).
         Proof.
             induction sz.
@@ -803,7 +802,7 @@ Section with_syntax.
                 split.
                 {
                     (* preservation of data patterns *)
-                    intros ϕ ρₑ ρₛ Hszϕ HSData Hwf.
+                    intros ϕ ρ Hszϕ HSData Hwf.
                     destruct HSData; simpl in Hszϕ.
                     {
                         (* patt_bott *)
@@ -857,7 +856,7 @@ Section with_syntax.
                         (* patt_sorted_neg (patt_sym s) ϕ *)
                         unfold patt_sorted_neg.
                         do 2 rewrite eval_and_simpl.
-                        rewrite (semantics_preservation_inhabitant_set ρₑ ρₛ);[assumption|].
+                        rewrite (semantics_preservation_inhabitant_set ρ);[assumption|].
                         do 2 rewrite eval_not_simpl.
                         rewrite IHszdata.
                         {
@@ -869,8 +868,8 @@ Section with_syntax.
                         {
                             wf_auto2.
                         }
-                        remember (eval ρₑ ρₛ (patt_inhabitant_set (patt_sym s))) as Xinh.
-                        remember (eval ρₑ ρₛ ϕ) as Xϕ.
+                        remember (eval ρ (patt_inhabitant_set (patt_sym s))) as Xinh.
+                        remember (eval ρ ϕ) as Xϕ.
                         clear HeqXinh HeqXϕ IHszpred IHszdata.
                         unfold_leibniz.
                         set_solver.
@@ -978,7 +977,7 @@ Section with_syntax.
 
                         rename H into Hspred.
                     
-                        destruct (classic (eval ρₑ ρₛ ψ = ∅)).
+                        destruct (classic (eval ρ ψ = ∅)).
                         {
                             rewrite IHszdata.
                             { lia. }
@@ -986,7 +985,7 @@ Section with_syntax.
                             { wf_auto2. }
                             clear HSData IHszdata. 
                             unfold_leibniz.
-                            specialize (IHszpred ψ ρₑ ρₛ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            specialize (IHszpred ψ ρ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
                             destruct IHszpred as [Hsp1 Hsp2].
                             clear Hsp2.
                             destruct Hsp1 as [Hsp11 Hsp12].
@@ -1009,8 +1008,8 @@ Section with_syntax.
                                     wf_auto2.
                                 }
                             }
-                            specialize (IHszpred ψ ρₑ ρₛ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
-                            specialize (IHszdata ϕ ρₑ ρₛ ltac:(lia) HSData ltac:(wf_auto2)).
+                            specialize (IHszpred ψ ρ ltac:(lia) ltac:(assumption) ltac:(wf_auto2)).
+                            specialize (IHszdata ϕ ρ ltac:(lia) HSData ltac:(wf_auto2)).
 
                             destruct IHszpred as [Hsp1 Hsp2].
                             clear Hsp1.
@@ -1059,7 +1058,7 @@ Section with_syntax.
                             apply elem_of_subseteq. intros x Hx.
                             rewrite elem_of_PropSet. rewrite elem_of_PropSet in Hx.
                             destruct Hx as [c Hc].
-                            destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                            destruct (Mext_indec H c ρ) as [Hin|Hnotin].
                             {
                                 unfold Minterp_inhabitant in Hin.
                                 (* [c] comes from [Domain M] *)
@@ -1125,7 +1124,7 @@ Section with_syntax.
                                         clear -H2. set_solver.
                                     }
                                 }
-                                rewrite update_evar_val_lift_val_e_comm in Hc.
+                                rewrite update_evar_val_lift_val_comm in Hc.
                                 rewrite IHszdata in Hc.
                                 4: { wf_auto2. }
                                 3: { apply is_SData_evar_open. assumption. }
@@ -1158,7 +1157,7 @@ Section with_syntax.
                                 2: { simpl. lia. }
 
                                 exists d.
-                                destruct (indec H d ρₑ ρₛ) as [Hin'|Hnotin'].
+                                destruct (indec H d ρ) as [Hin'|Hnotin'].
                                 2: {
                                     exfalso.
                                     unfold Minterp_inhabitant in Hnotin'.
@@ -1202,13 +1201,13 @@ Section with_syntax.
                             destruct Ha' as [a [Ha Ha']].
                             inversion Ha. clear Ha. subst.
                             rewrite elem_of_PropSet.
-                            destruct (indec H c ρₑ ρₛ).
+                            destruct (indec H c ρ).
                             2: {
                                 exfalso. clear -Ha'. set_solver.
                             }
                             exists (lift_value c).
-                            rewrite update_evar_val_lift_val_e_comm.
-                            destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin | Hnotin].
+                            rewrite update_evar_val_lift_val_comm.
+                            destruct (Mext_indec H (lift_value c) ρ) as [Hin | Hnotin].
                             {
                                 rewrite IHszdata.
                                 4: { wf_auto2. }
@@ -1303,7 +1302,7 @@ Section with_syntax.
                         }
                         {
                             set (λ (A : propset (Domain Mext)), PropSet (λ (m : Domain M), lift_value m ∈ A)) as strip.
-                            set (λ A, lift_set (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
+                            set (λ A, lift_set (eval (update_svar_val (fresh_svar ϕ) (strip A) ρ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
 
                             assert (Hstripmono: forall x y, x ⊆ y -> strip x ⊆ strip y).
                             {
@@ -1363,7 +1362,7 @@ Section with_syntax.
                                     apply lift_set_mono.
                                     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
                                     simpl in Htmp. apply Htmp. clear Htmp.
-                                    replace (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
+                                    replace (eval (update_svar_val (fresh_svar ϕ) (strip A) ρ)
                                     (svar_open 0 (fresh_svar ϕ) ϕ))
                                     with (G (strip A)) by (subst; reflexivity).
                                     apply HmonoG. simpl.
@@ -1390,8 +1389,8 @@ Section with_syntax.
                                 set_solver.
                             }
                             
-                            assert (@eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)
-                            ⊆  @eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) A (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
+                            assert (@eval Σ Mext (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val ρ)) (svar_open 0 (fresh_svar ϕ) ϕ)
+                            ⊆  @eval Σ Mext (update_svar_val (fresh_svar ϕ) A (lift_val ρ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
                             {
                                 apply is_monotonic.
                                 { unfold well_formed in Hwf. destruct_and!. assumption. }
@@ -1410,7 +1409,7 @@ Section with_syntax.
                     }
                 }
                 {   (* preservation of predicates *)
-                    intros ψ ρₑ ρₛ Hszϕ HSPred Hwf.
+                    intros ψ ρ Hszϕ HSPred Hwf.
                     destruct HSPred; simpl in Hszϕ.
                     {
                         (* patt_bott *)
@@ -1453,7 +1452,7 @@ Section with_syntax.
                         rewrite Htmp.
                         unfold new_app_interp.
                         unfold_leibniz.
-                        destruct (classic (eval ρₑ ρₛ ϕ = ∅)) as [Hempty|Hnonempty].
+                        destruct (classic (eval ρ ϕ = ∅)) as [Hempty|Hnonempty].
                         {
                             rewrite Hempty.
                             split.
@@ -1735,7 +1734,7 @@ Section with_syntax.
                                         intros x Hx.
                                         rewrite elem_of_PropSet.
                                         exists cdef.
-                                        assert (Hex : exists el, el ∈ eval ρₑ ρₛ ϕ).
+                                        assert (Hex : exists el, el ∈ eval ρ ϕ).
                                         {
                                             clear -Hnonempty.
                                             apply NNPP. intros HContra.
@@ -1800,13 +1799,13 @@ Section with_syntax.
                     {
                         (* patt_impl ψ₁ ψ₂*)
                         do 2 rewrite eval_imp_simpl.
-                        pose proof (IH1 := IHszpred ϕ₁ ρₑ ρₛ).
+                        pose proof (IH1 := IHszpred ϕ₁ ρ).
                         feed specialize IH1.
                         { lia. }
                         { assumption. }
                         { wf_auto2. }
                         destruct IH1 as [IH11 IH12].
-                        pose proof (IH2 := IHszpred ϕ₂ ρₑ ρₛ).
+                        pose proof (IH2 := IHszpred ϕ₂ ρ).
                         feed specialize IH2.
                         { lia. }
                         { assumption. }
@@ -1863,8 +1862,8 @@ Section with_syntax.
                                 destruct_and!.
                                 assumption.
                             }
-                            specialize (HSPred1 ρₑ ρₛ).
-                            specialize (HSPred2 ρₑ ρₛ).
+                            specialize (HSPred1 ρ).
+                            specialize (HSPred2 ρ).
                             split; intros H.
                             {
                                 destruct HSPred1 as [H1T|H1B],
@@ -1878,7 +1877,7 @@ Section with_syntax.
                                     rewrite H2B.
                                     apply IH21 in H2B.
                                     rewrite H2B in H.
-                                    assert (H': eval (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ₁  = ∅).
+                                    assert (H': eval (lift_val ρ) ϕ₁  = ∅).
                                     {
                                         clear -H. set_solver.
                                     }
@@ -1948,11 +1947,11 @@ Section with_syntax.
                         {
                             split; intros H'; intros c.
                             {
-                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (indec H c ρ) as [Hin|Hnotin].
                                 2: { reflexivity. }
                                 specialize (H' (lift_value c)).
-                                rewrite update_evar_val_lift_val_e_comm in H'.
-                                specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                rewrite update_evar_val_lift_val_comm in H'.
+                                specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                 feed specialize IHszpred.
                                 {
                                     rewrite evar_open_size'. lia.
@@ -1964,7 +1963,7 @@ Section with_syntax.
                                     wf_auto2.
                                 }
                                 destruct IHszpred as [IH1 IH2].
-                                destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                 {
                                     apply IH1 in H'. apply H'.
                                 }
@@ -2017,7 +2016,7 @@ Section with_syntax.
                                 }
                             }
                             {
-                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (Mext_indec H c ρ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
                                     rewrite eval_app_simpl in Hin.
@@ -2049,9 +2048,9 @@ Section with_syntax.
                                     2: {
                                         exfalso. clear -Hin.  set_solver.
                                     }
-                                    rewrite update_evar_val_lift_val_e_comm.
+                                    rewrite update_evar_val_lift_val_comm.
                                     clear Heqs1 Heqs2 Heqs4 Heqs3 Hle e n1.
-                                    specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρₑ) ρₛ).
+                                    specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'. lia.
@@ -2065,7 +2064,7 @@ Section with_syntax.
                                     destruct IHszpred as [IH1 IH2].
                                     rewrite IH1.
                                     specialize (H' d0).
-                                    destruct (indec H d0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (indec H d0 ρ) as [Hin'|Hnotin'].
                                     {
                                         apply H'.
                                     }
@@ -2118,7 +2117,7 @@ Section with_syntax.
                             {
                                 specialize (H' stdpp.base.inhabitant).
                                 destruct H' as [c Hc].
-                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (Mext_indec H c ρ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
                                     rewrite eval_app_simpl in Hin.
@@ -2152,7 +2151,7 @@ Section with_syntax.
                                     destruct Ha0 as [le' [re' [Hle' [Hre' Hle're']]]].
                                     rewrite elem_of_singleton in Hre'. subst re'.
                                     exists a0.
-                                    destruct (indec H a0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (indec H a0 ρ) as [Hin'|Hnotin'].
                                     2: {
                                         exfalso. apply Hnotin'.
                                         unfold Minterp_inhabitant.
@@ -2165,8 +2164,8 @@ Section with_syntax.
                                     }
                                     {
                                         clear Heqs3 Heqs4 Heqs2 Heqs1.
-                                        rewrite update_evar_val_lift_val_e_comm in Hc.
-                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        rewrite update_evar_val_lift_val_comm in Hc.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         feed specialize IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
@@ -2179,7 +2178,7 @@ Section with_syntax.
                                         }
                                         destruct IHszpred as [IH1 IH2].
                                         clear Hle e.
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             rewrite HFull. clear. set_solver.
@@ -2200,13 +2199,13 @@ Section with_syntax.
                             {
                                 specialize (H' (@stdpp.base.inhabitant _ (Domain_inhabited M))).
                                 destruct H' as [c Hc].
-                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (indec H c ρ) as [Hin|Hnotin].
                                 {
                                     exists (lift_value c).
-                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm.
-                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        rewrite update_evar_val_lift_val_comm.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                         feed specialize IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
@@ -2219,7 +2218,7 @@ Section with_syntax.
                                         }
                                         destruct IHszpred as [IH1 IH2].
 
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             apply IH2 in HFull.
@@ -2318,7 +2317,7 @@ Section with_syntax.
                                 intros t.
                                 specialize (H' (stdpp.base.inhabitant)).
                                 destruct H' as [c Hc].
-                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (Mext_indec H c ρ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
                                     rewrite eval_app_simpl in Hin.
@@ -2353,7 +2352,7 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre' Hin]]]].
                                     rewrite elem_of_singleton in Hre'. subst re.
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2371,9 +2370,9 @@ Section with_syntax.
                                     apply SPred_is_pre_predicate in HSPred'.
                                     apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
                                     exists a0.
-                                    destruct (indec H a0 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (indec H a0 ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm in Hc.
+                                        rewrite update_evar_val_lift_val_comm in Hc.
                                         intros HContra. apply Hc. clear Hc.
                                         unfold M_pre_predicate in HSPred'.
                                         specialize (HSPred' 0).
@@ -2384,7 +2383,7 @@ Section with_syntax.
                                             destruct_and!.
                                             wf_auto2.
                                         }
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             apply IH2 in HFull.
@@ -2418,7 +2417,7 @@ Section with_syntax.
                                 intros t.
                                 specialize (H' (@stdpp.base.inhabitant _ (Domain_inhabited M))).
                                 destruct H' as [c Hc].
-                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (indec H c ρ) as [Hin|Hnotin].
                                 {
                                     unfold Minterp_inhabitant in Hin.
                                     rewrite eval_app_simpl in Hin.
@@ -2427,7 +2426,7 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre Hin]]]].
                                     
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2446,9 +2445,9 @@ Section with_syntax.
                                     apply (@M_pre_predicate_evar_open Σ M ϕ (fresh_evar ϕ)) in HSPred'.
 
                                     exists (lift_value c).
-                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm.
+                                        rewrite update_evar_val_lift_val_comm.
                                         unfold M_pre_predicate in HSPred'.
                                         specialize (HSPred' 0).
                                         apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
@@ -2458,7 +2457,7 @@ Section with_syntax.
                                             destruct_and!.
                                             wf_auto2.
                                         }
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             intros HContra. apply Hc. clear Hc.
@@ -2527,9 +2526,9 @@ Section with_syntax.
                             intros H'.
                             {
                                 intros c.
-                                destruct (indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (indec H c ρ) as [Hin|Hnotin].
                                 {
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2544,9 +2543,9 @@ Section with_syntax.
                                     }
                                     destruct IHszpred as [IH1 IH2].
                                     specialize (H' (lift_value c)).
-                                    destruct (Mext_indec H (lift_value c) ρₑ ρₛ) as [Hin'|Hnotin'].
+                                    destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm in H'.
+                                        rewrite update_evar_val_lift_val_comm in H'.
                                         apply IH2 in H'.
                                         exact H'.
                                     }
@@ -2600,7 +2599,7 @@ Section with_syntax.
                             }
                             {
                                 intros c.
-                                destruct (Mext_indec H c ρₑ ρₛ) as [Hin|Hnotin].
+                                destruct (Mext_indec H c ρ) as [Hin|Hnotin].
                                 2: { reflexivity. }
                                 unfold Minterp_inhabitant in Hin.
                                 rewrite eval_app_simpl in Hin.
@@ -2643,9 +2642,9 @@ Section with_syntax.
                                 rewrite elem_of_PropSet in Hin.
                                 destruct Hin as [le' [re' [Hle' [Hre' Hin]]]].
                                 rewrite elem_of_singleton in Hre'. subst.
-                                rewrite update_evar_val_lift_val_e_comm.
+                                rewrite update_evar_val_lift_val_comm.
 
-                                specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a1 ρₑ) ρₛ).
+                                specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a1 ρ)).
                                 feed specialize IHszpred.
                                 {
                                     rewrite evar_open_size'.
@@ -2660,7 +2659,7 @@ Section with_syntax.
                                 }
                                 destruct IHszpred as [IH1 IH2].
                                 specialize (H' a1).
-                                destruct (indec H a1 ρₑ ρₛ) as [Hin'|Hnotin'].
+                                destruct (indec H a1 ρ) as [Hin'|Hnotin'].
                                 {
                                     apply IH2 in H'.
                                     apply H'.
