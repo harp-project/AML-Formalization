@@ -719,7 +719,7 @@ Section with_syntax.
             intros X'.
             case_match; reflexivity.
         Qed.
-*)
+
         Lemma lift_set_fa_union (C : Type) (f : C -> propset (Domain M)) :
             lift_set (stdpp_ext.propset_fa_union f) = stdpp_ext.propset_fa_union (λ k, lift_set (f k)).
         Proof.
@@ -1124,7 +1124,7 @@ Section with_syntax.
                                         clear -H2. set_solver.
                                     }
                                 }
-                                rewrite update_evar_val_lift_val_e_comm in Hc.
+                                rewrite update_evar_val_lift_val_comm in Hc.
                                 rewrite IHszdata in Hc.
                                 4: { wf_auto2. }
                                 3: { apply is_SData_evar_open. assumption. }
@@ -1206,7 +1206,7 @@ Section with_syntax.
                                 exfalso. clear -Ha'. set_solver.
                             }
                             exists (lift_value c).
-                            rewrite update_evar_val_lift_val_e_comm.
+                            rewrite update_evar_val_lift_val_comm.
                             destruct (Mext_indec H (lift_value c) ρ) as [Hin | Hnotin].
                             {
                                 rewrite IHszdata.
@@ -1302,7 +1302,7 @@ Section with_syntax.
                         }
                         {
                             set (λ (A : propset (Domain Mext)), PropSet (λ (m : Domain M), lift_value m ∈ A)) as strip.
-                            set (λ A, lift_set (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
+                            set (λ A, lift_set (eval (update_svar_val (fresh_svar ϕ) (strip A) ρ) (svar_open 0 (fresh_svar ϕ) ϕ))) as G'.
 
                             assert (Hstripmono: forall x y, x ⊆ y -> strip x ⊆ strip y).
                             {
@@ -1362,7 +1362,7 @@ Section with_syntax.
                                     apply lift_set_mono.
                                     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
                                     simpl in Htmp. apply Htmp. clear Htmp.
-                                    replace (eval ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
+                                    replace (eval (update_svar_val (fresh_svar ϕ) (strip A) ρ)
                                     (svar_open 0 (fresh_svar ϕ) ϕ))
                                     with (G (strip A)) by (subst; reflexivity).
                                     apply HmonoG. simpl.
@@ -1389,8 +1389,8 @@ Section with_syntax.
                                 set_solver.
                             }
                             
-                            assert (@eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)
-                            ⊆  @eval Σ Mext (lift_val_e ρₑ) (update_svar_val (fresh_svar ϕ) A (lift_val_s ρₛ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
+                            assert (@eval Σ Mext (update_svar_val (fresh_svar ϕ) (lift_set (strip A)) (lift_val ρ)) (svar_open 0 (fresh_svar ϕ) ϕ)
+                            ⊆  @eval Σ Mext (update_svar_val (fresh_svar ϕ) A (lift_val ρ)) (svar_open 0 (fresh_svar ϕ) ϕ)).
                             {
                                 apply is_monotonic.
                                 { unfold well_formed in Hwf. destruct_and!. assumption. }
@@ -1877,7 +1877,7 @@ Section with_syntax.
                                     rewrite H2B.
                                     apply IH21 in H2B.
                                     rewrite H2B in H.
-                                    assert (H': eval (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ₁  = ∅).
+                                    assert (H': eval (lift_val ρ) ϕ₁  = ∅).
                                     {
                                         clear -H. set_solver.
                                     }
@@ -1950,8 +1950,8 @@ Section with_syntax.
                                 destruct (indec H c ρ) as [Hin|Hnotin].
                                 2: { reflexivity. }
                                 specialize (H' (lift_value c)).
-                                rewrite update_evar_val_lift_val_e_comm in H'.
-                                specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                rewrite update_evar_val_lift_val_comm in H'.
+                                specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                 feed specialize IHszpred.
                                 {
                                     rewrite evar_open_size'. lia.
@@ -2048,9 +2048,9 @@ Section with_syntax.
                                     2: {
                                         exfalso. clear -Hin.  set_solver.
                                     }
-                                    rewrite update_evar_val_lift_val_e_comm.
+                                    rewrite update_evar_val_lift_val_comm.
                                     clear Heqs1 Heqs2 Heqs4 Heqs3 Hle e n1.
-                                    specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρₑ) ρₛ).
+                                    specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'. lia.
@@ -2164,8 +2164,8 @@ Section with_syntax.
                                     }
                                     {
                                         clear Heqs3 Heqs4 Heqs2 Heqs1.
-                                        rewrite update_evar_val_lift_val_e_comm in Hc.
-                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        rewrite update_evar_val_lift_val_comm in Hc.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         feed specialize IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
@@ -2178,7 +2178,7 @@ Section with_syntax.
                                         }
                                         destruct IHszpred as [IH1 IH2].
                                         clear Hle e.
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             rewrite HFull. clear. set_solver.
@@ -2204,8 +2204,8 @@ Section with_syntax.
                                     exists (lift_value c).
                                     destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm.
-                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        rewrite update_evar_val_lift_val_comm.
+                                        specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                         feed specialize IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
@@ -2218,7 +2218,7 @@ Section with_syntax.
                                         }
                                         destruct IHszpred as [IH1 IH2].
 
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             apply IH2 in HFull.
