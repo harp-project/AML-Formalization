@@ -690,7 +690,6 @@ Section with_syntax.
             }
         Qed.
 
-        (*
         Lemma update_evar_val_lift_val_comm
             (ρ : @Valuation _ M)
             (x : evar)
@@ -700,23 +699,24 @@ Section with_syntax.
             = lift_val (@update_evar_val Σ M x d ρ).
         Proof.
             destruct ρ as [ρₑ ρₛ]. unfold update_evar_val. simpl.
+            unfold lift_val. simpl. f_equal.
             apply functional_extensionality.
             intros x'.
-            unfold update_evar_val, lift_val_e,lift_value.
             case_match; reflexivity.
         Qed.
  
         Lemma update_svar_val_lift_set_comm
-            (ρₛ : @SVarVal _ M)
+            (ρ : @Valuation _ M)
             (X : svar)
             (D : propset (Domain M))
             :
-        (@update_svar_val Σ Mext X (lift_set D) (lift_val_s ρₛ))
-        = lift_val_s (@update_svar_val Σ M X D ρₛ).
+        (@update_svar_val Σ Mext X (lift_set D) (lift_val ρ))
+        = lift_val (@update_svar_val Σ M X D ρ).
         Proof.
+            destruct ρ as [ρₑ ρₛ]. unfold update_svar_val. simpl.
+            unfold lift_val. simpl. f_equal.
             apply functional_extensionality.
             intros X'.
-            unfold update_svar_val,lift_val_s,lift_set.
             case_match; reflexivity.
         Qed.
 *)
