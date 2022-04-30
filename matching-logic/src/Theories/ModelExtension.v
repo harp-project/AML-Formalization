@@ -2352,7 +2352,7 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre' Hin]]]].
                                     rewrite elem_of_singleton in Hre'. subst re.
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2372,7 +2372,7 @@ Section with_syntax.
                                     exists a0.
                                     destruct (indec H a0 ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm in Hc.
+                                        rewrite update_evar_val_lift_val_comm in Hc.
                                         intros HContra. apply Hc. clear Hc.
                                         unfold M_pre_predicate in HSPred'.
                                         specialize (HSPred' 0).
@@ -2383,7 +2383,7 @@ Section with_syntax.
                                             destruct_and!.
                                             wf_auto2.
                                         }
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             apply IH2 in HFull.
@@ -2426,7 +2426,7 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre Hin]]]].
                                     
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2447,7 +2447,7 @@ Section with_syntax.
                                     exists (lift_value c).
                                     destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm.
+                                        rewrite update_evar_val_lift_val_comm.
                                         unfold M_pre_predicate in HSPred'.
                                         specialize (HSPred' 0).
                                         apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
@@ -2457,7 +2457,7 @@ Section with_syntax.
                                             destruct_and!.
                                             wf_auto2.
                                         }
-                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                        specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {
                                             intros HContra. apply Hc. clear Hc.
@@ -2528,7 +2528,7 @@ Section with_syntax.
                                 intros c.
                                 destruct (indec H c ρ) as [Hin|Hnotin].
                                 {
-                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρₑ) ρₛ).
+                                    specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     feed specialize IHszpred.
                                     {
                                         rewrite evar_open_size'.
@@ -2545,7 +2545,7 @@ Section with_syntax.
                                     specialize (H' (lift_value c)).
                                     destruct (Mext_indec H (lift_value c) ρ) as [Hin'|Hnotin'].
                                     {
-                                        rewrite update_evar_val_lift_val_e_comm in H'.
+                                        rewrite update_evar_val_lift_val_comm in H'.
                                         apply IH2 in H'.
                                         exact H'.
                                     }
@@ -2642,9 +2642,9 @@ Section with_syntax.
                                 rewrite elem_of_PropSet in Hin.
                                 destruct Hin as [le' [re' [Hle' [Hre' Hin]]]].
                                 rewrite elem_of_singleton in Hre'. subst.
-                                rewrite update_evar_val_lift_val_e_comm.
+                                rewrite update_evar_val_lift_val_comm.
 
-                                specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a1 ρₑ) ρₛ).
+                                specialize (IHszpred (evar_open 0 (fresh_evar ϕ) ϕ) (update_evar_val (fresh_evar ϕ) a1 ρ)).
                                 feed specialize IHszpred.
                                 {
                                     rewrite evar_open_size'.
