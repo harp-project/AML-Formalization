@@ -485,6 +485,7 @@ Section FOL_helpers.
     := ProofProperty0 P _ (syllogism_indifferent Γ wfA wfB wfC).
 
   
+  (* TODO rename to syllogism_meta *)
   Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
   Proof.
@@ -565,18 +566,6 @@ Section FOL_helpers.
   Defined.
 
   #[local] Hint Resolve not_not_intro : core.
-
-  (* FIXME this has a very wrong name. Do we need it at all? *)
-  Lemma deduction (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
-  Proof.
-    intros WFA WFB H H0.
-    eapply (Modus_ponens _ _ _ _ _).
-    - exact H0.
-    - eapply (P1 _ B A _ _).
-      Unshelve.
-      all: auto.
-  Defined.
 
   Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
@@ -1000,66 +989,6 @@ Section FOL_helpers.
     := ProofProperty1 P (@double_neg_elim_meta Γ a b wfa wfb) _.
   Next Obligation. intros. solve_indif; assumption. Qed.
 
-
-  Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (!B ---> !A)).
-  Proof.
-    intros WFA WFB H.
-    eapply (@deduction _ _ _ _ _).
-    - exact H.
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (@syllogism_intro _ _ _ _ _ _ _).
-        * eapply (@syllogism_intro _ _ _ _ _ _ _).
-          -- eapply (@not_not_elim _ A _).
-          -- exact H.
-        * eapply (@not_not_intro _ B _).
-      + eapply (@P4 _ (!A) (!B) _ _).
-        Unshelve.
-        all: auto 10.
-  Defined.
-
-  Program Canonical Structure P4_rev_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@P4_rev_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (!B ---> !A).
-  Proof.
-    intros wfA wfB AimpB.
-    pose proof (H := @P4_rev_meta Γ A B wfA wfB AimpB).
-    eapply Modus_ponens.
-    4: apply H.
-    all: auto.
-  Defined.
-
-  #[local] Hint Resolve P4_rev_meta' : core.
-  
-  Program Canonical Structure P4_rev_meta'_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@P4_rev_meta' Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
-  Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ ((!B ---> !A) ---> (A ---> !B) --->  !A).
-  Proof.
-    intros WFA WFB.
-    epose proof (PT := (@P4 Γ B A _ _)).
-    eapply (@syllogism_intro _ _ _ _ _ _ _).
-    - exact PT.
-    - eapply (@P4m _ _ _ _ _).
-      Unshelve.
-      all: auto.
-  Defined.
-
-  Program Canonical Structure P4m_neg_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@P4m_neg Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
@@ -1954,7 +1883,6 @@ End FOL_helpers.
 #[export] Hint Resolve disj_left_intro : core.
 #[export] Hint Resolve not_not_elim : core.
 #[export] Hint Resolve not_not_elim_meta : core.
-#[export] Hint Resolve P4_rev_meta' : core.
 #[export] Hint Resolve A_impl_not_not_B : core.
 #[export] Hint Resolve well_formed_foldr : core.
 #[export] Hint Resolve wf_take : core.
@@ -4134,67 +4062,6 @@ Section FOL_helpers.
     := ProofProperty2 P (@exd Γ a b p q c wfa wfb wfp wfq wfc) _.
   Next Obligation. solve_indif; assumption. Qed.
 
-  Lemma conclusion_anyway_meta Γ A B:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (! A ---> B) ->
-    Γ ⊢ B.
-  Proof.
-    intros wfA wfB AimpB nAimpB.
-    assert (H1: Γ ⊢ (B ---> ! ! B)) by auto.
-    assert (H2: Γ ⊢ (! A ---> ! ! B)).
-    { eapply syllogism_intro. 5: apply H1. all: auto. }
-    clear H1.
-    assert (H3: Γ ⊢ (! B ---> ! A)) by auto.
-    epose proof (H4 := @P4m_neg Σ Γ (!B) A _ _).
-    assert (H5: Γ ⊢ ((! B ---> ! A) ---> ! ! B)).
-    { eapply Modus_ponens. 4: apply H4. all: auto 10. }
-    assert (H6: Γ ⊢ (! ! B)).
-    { eapply Modus_ponens. 4: apply H5. all: auto. }
-    auto.
-    Unshelve. all: auto.
-  Defined.
-
-  Program Canonical Structure conclusion_anyway_meta_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty2 P (@conclusion_anyway_meta Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-    
-  Lemma pf_or_elim Γ A B C :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢ A ---> C ->
-    Γ ⊢ B ---> C ->
-    Γ ⊢ A or B ->
-    Γ ⊢ C.
-  Proof.
-    intros wfA wfB wfC AimpC BimpC AorB.
-    unfold patt_or.
-    assert (H1: Γ ⊢ ((! A ---> B) ---> (B ---> C) ---> (! A ---> C))).
-    { eapply syllogism; auto. }
-    apply reorder_meta in H1; auto.
-    assert (H2: Γ ⊢ ((! A ---> B) ---> (! A ---> C))).
-    { eapply Modus_ponens. 4: apply H1. all: auto 10. }
-    unfold patt_or in AorB.
-    assert (H3: Γ ⊢ (! A ---> C)).
-    { eapply Modus_ponens. 4: apply H2. all: auto. }
-    eapply conclusion_anyway_meta. 4: apply H3. all: auto.
-  Defined.
-
-  Program Canonical Structure pf_or_elim_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-    := ProofProperty3 P (@pf_or_elim Γ a b c wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
-  
   Lemma pf_iff_split Γ A B:
     well_formed A ->
     well_formed B ->
@@ -5960,6 +5827,7 @@ Section FOL_helpers.
     | right pf => pf2 pf
     end.
 
+  (* EvS, SvS - sets used for generating fresh variables *)
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
