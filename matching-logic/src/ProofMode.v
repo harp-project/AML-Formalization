@@ -567,46 +567,24 @@ Section FOL_helpers.
 
   #[local] Hint Resolve not_not_intro : core.
 
-  Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
-    well_formed A -> well_formed B -> 
-    Γ ⊢ ((! B) ---> (! A)) -> Γ ⊢ (A ---> B).
-  Proof.
-    intros H H0 H1.
-    epose (@Modus_ponens _ Γ _ _ _ _ H1 (@P4m Γ (! B) (! A) _ _)).
-    epose (P1 Γ (! !A) (! B) _ _).
-    epose (@syllogism_intro Γ (! (! A)) (! B ---> ! (! A)) (! (! B)) _ _ _ m0 m).
-    epose (@not_not_intro Γ A _).
-    epose (@not_not_intro Γ B _).
-    epose (@syllogism_intro Γ A (! (! A)) (! (! B)) _ _ _ m2 m1).
-    unfold patt_not in m4.
-    epose (P3 Γ B _).
-    epose (@syllogism_intro Γ A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
-    exact m6.
-
-    Unshelve.
-    all: auto.
-    auto 10.
-  Defined.
-
-
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
     Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A)).
   Proof.
     intros WFA WFB.
-    epose (P3 Γ A _).
-    epose (P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
-    epose (P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
-    epose (Modus_ponens Γ _ _ _ _ m m0).
-    epose (Modus_ponens Γ _ _ _ _ m2 m1).
-    epose (P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
-    epose (Modus_ponens Γ _ _ _ _ m3 m4).
-    epose (P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
-    epose (Modus_ponens Γ _ _ _ _ m5 m6).
-    epose (@reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
+    epose proof (m := P3 Γ A _).
+    epose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
+    epose proof (m1 := P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
+    epose proof (m2 := Modus_ponens Γ _ _ _ _ m m0).
+    epose proof (m3 := Modus_ponens Γ _ _ _ _ m2 m1).
+    epose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
+    epose proof (m5 := Modus_ponens Γ _ _ _ _ m3 m4).
+    epose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
+    epose proof (m7 := Modus_ponens Γ _ _ _ _ m5 m6).
+    epose proof (m8 := @reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
     eapply (Modus_ponens Γ _ _ _ _ m8 m7).
     Unshelve.
-    all: auto 10.
+    all: wf_auto2.
   Defined.
 
   Lemma P4_indifferent
