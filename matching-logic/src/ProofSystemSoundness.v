@@ -231,7 +231,8 @@ Proof.
 
   (* Modus ponens *)
   - intros Hv ρ.
-    rename i into wfphi1. rename i0 into wfphi1impphi2.
+    pose proof (wfphi1 := proved_impl_wf _ _ Hp1).
+    pose proof (wfphi1impphi2 := proved_impl_wf _ _ Hp2).
     pose (IHHp2 wfphi1impphi2 Hv ρ) as e.
     rewrite -> eval_iff_subset in e.
     unfold Full.
