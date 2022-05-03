@@ -686,10 +686,6 @@ Section FOL_helpers.
           (wfA : well_formed A) (wfB : well_formed B)
     := ProofProperty2 P _ (@conj_intro_meta_indifferent P _ Γ _ _ wfA wfB).
 
-  
-  (* Lemma conj_intro_meta_e (Γ : Theory) (A B : Pattern) : *) 
-  Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
-
   Lemma disj (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A or B)).
   Proof.
