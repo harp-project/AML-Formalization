@@ -131,149 +131,76 @@ Open Scope ml_scope.
 
   #[local] Hint Resolve wf_app : core.
 
+Record ProofInfo {Σ : Signature} :=
+  mkProofInfo
+  {
+    pi_generalized_evars : EVarSet ;
+    pi_substituted_svars : SVarSet ;
+    pi_uses_kt : bool ;
+  }.
 
-Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
+  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
 
-Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
+(* Currently, there is no difference between the definitions of
+   [PropositionalReasoning] and [BasicReasoning];
+   However, the intended meaning is that [PropositionalReasoning ⊂ BasicReasoning]
+ *)
+Definition PropositionalReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
+Definition BasicReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
 
-Notation "[ S , G ⊢ l ==> g ]" := (@mkMyGoal S G l g).
+(* A proof together with some properties of it. *)
+Record ProofWithInfo
+  {Σ : Signature}
+  (Γ : Theory)
+  (ϕ : Pattern)
+  (pi : ProofInfo)
+  :=
+mkProofWithInfo
+{
+  pwi_pf : Γ ⊢ ϕ ;
+  
+  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (pi_generalized_evars pi) ;
+  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (pi_substituted_svars pi) ;
+  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+}.
+
+Notation "Γ ⊢ ϕ 'using' pi"
+:= (@ProofWithInfo _ Γ ϕ pi) (at level 95, no associativity).
+
+
+Record MyGoal {Σ : Signature} : Type := mkMyGoal
+  { mgTheory : Theory;
+    mgHypotheses: list Pattern;
+    mgConclusion : Pattern ;
+    mgInfo : ProofInfo ;
+  }.
+
+Definition MyGoal_from_goal
+  {Σ : Signature} (Γ : Theory) (goal : Pattern) (pi : ProofInfo)
+  :
+  MyGoal
+  := @mkMyGoal Σ Γ nil goal pi.
+
+Notation "[ S , G ⊢ l ==> g ] 'using' pi"
+  := (@mkMyGoal S G l g pi) (at level 95, no associativity).
 
 
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
   wf (mgHypotheses MG) ->
-  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
+  using (mgInfo MG).
 
 Ltac toMyGoal :=
   lazymatch goal with
-  | [ |- ?G ⊢ ?phi ]
-    => cut (of_MyGoal (MyGoal_from_goal G phi));
+  | [ |- ?G ⊢ ?phi using ?pi]
+    => cut (of_MyGoal (MyGoal_from_goal G phi pi));
        unfold MyGoal_from_goal;
        [(unfold of_MyGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
   end.
 
-Ltac fromMyGoal := unfold of_MyGoal; simpl.
-
-Class IndifCast {Σ : Signature} (P : proofbpred)
-  := mkIndifCast { cast_indif : indifferent_to_cast P }.
-
-Class IndifProp {Σ : Signature} (P : proofbpred)
-  := mkIndifProp { prop_indif : indifferent_to_prop P }.
-
-#[export]
- Instance uses_svar_subst_IndifCast {Σ : Signature} (SvS : SVarSet) : IndifCast (@uses_svar_subst Σ SvS)
-  := mkIndifCast (indifferent_to_cast_uses_svar_subst SvS).
-
-#[export]
- Instance uses_svar_subst_IndifProp {Σ : Signature} (SvS : SVarSet) : IndifProp (@uses_svar_subst Σ SvS)
-  := mkIndifProp (indifferent_to_prop_uses_svar_subst SvS).
-
-#[export]
- Instance uses_ex_gen_IndifCast {Σ : Signature} (EvS : EVarSet) : IndifCast (@uses_ex_gen Σ EvS)
-  := mkIndifCast (indifferent_to_cast_uses_ex_gen EvS).
-
-#[export]
- Instance uses_ex_gen_IndifProp {Σ : Signature} (EvS : EVarSet) : IndifProp (@uses_ex_gen Σ EvS)
-  := mkIndifProp (indifferent_to_prop_uses_ex_gen EvS).
-
-#[export]
- Instance uses_kt_IndifCast {Σ : Signature} : IndifCast (@uses_kt Σ)
-  := mkIndifCast (indifferent_to_cast_uses_kt).
-
-#[export]
- Instance uses_kt_IndifProp {Σ : Signature} : IndifProp (@uses_kt Σ)
-  := mkIndifProp (indifferent_to_prop_uses_kt).
-
-
-Structure proofProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
-  := ProofProperty0 { pp0_proof : Γ ⊢ ϕ; pp0_proof_property : P Γ ϕ pp0_proof = false  }.
-
-Arguments ProofProperty0 [Σ] P [Γ ϕ] pp0_proof _.
-
-Structure proofProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ : Pattern)
-  := ProofProperty1 {
-      pp1_proof : Γ ⊢ ψ₁ -> Γ ⊢ ϕ;
-      pp1_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ϕ (pp1_proof pf₁) = false;
-    }.
-
-Arguments ProofProperty1 [Σ] P [Γ ϕ ψ₁] pp1_proof%function_scope _%function_scope.
-
-Structure proofProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ ψ₂ : Pattern)
-  := ProofProperty2 {
-      pp2_proof : Γ ⊢ ψ₁ -> Γ ⊢ ψ₂ -> Γ ⊢ ϕ;
-      pp2_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁) (pf₂ : Γ ⊢ ψ₂),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ψ₂ pf₂ = false ->
-        P Γ ϕ (pp2_proof pf₁ pf₂) = false;
-    }.
-
-Arguments ProofProperty2 [Σ] P [Γ ϕ ψ₁ ψ₂] pp2_proof%function_scope _%function_scope.
-
-Structure proofProperty3 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ ψ₂ ψ₃ : Pattern)
-  := ProofProperty3 {
-      pp3_proof : Γ ⊢ ψ₁ -> Γ ⊢ ψ₂ -> Γ ⊢ ψ₃ -> Γ ⊢ ϕ;
-      pp3_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁) (pf₂ : Γ ⊢ ψ₂) (pf₃ : Γ ⊢ ψ₃),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ψ₂ pf₂ = false ->
-        P Γ ψ₃ pf₃ = false ->
-        P Γ ϕ (pp3_proof pf₁ pf₂ pf₃) = false;
-    }.
-
-Arguments ProofProperty3 [Σ] P [Γ ϕ ψ₁ ψ₂ ψ₃] pp3_proof%function_scope _%function_scope.
-
-
-Ltac2 mutable solve_indif () := ltac1:(repeat (
-                        eapply pp0_proof_property
-                        || eapply pp1_proof_property
-                        || eapply pp2_proof_property)).
-
-Ltac solve_indif := ltac2:(solve_indif ()).
-
-
-Program Canonical Structure P1_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-:= ProofProperty0 P (@P1 Σ Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₂) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ?????.
-  apply Hp1.
-Qed.
-
-Program Canonical Structure P2_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ : Pattern)
-          (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
-:= ProofProperty0 P (@P2 Σ Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ???????.
-  apply Hp2.
-Qed.
-
-Program Canonical Structure P3_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ : Pattern) (wfϕ₁ : well_formed ϕ₁)
-:= ProofProperty0 P (@P3 Σ Γ ϕ₁ wfϕ₁) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ???.
-  apply Hp3.
-Qed.
-
-Program Canonical Structure MP_pp2 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₁₂ : well_formed (ϕ₁ ---> ϕ₂))
-:= ProofProperty2 P (fun pf1 pf2 => @Modus_ponens Σ Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₁₂ pf1 pf2) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ??????? H1 H2.
-  rewrite Hmp. apply orb_false_intro. exact H1. exact H2.
-Qed.
-
-Program Canonical Structure cast_proof_indifferent_S
-        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
-        (ϕ ψ : Pattern) (e : ψ = ϕ)
-  := ProofProperty1 P (@cast_proof Σ Γ ϕ ψ e) _.
-Next Obligation. intros. destruct Pic as [hic]. rewrite hic. exact H. Qed.
-
+Ltac fromMyGoal := unfold of_MyGoal; simpl; intros _ _.
 
 Section FOL_helpers.
 
@@ -281,18 +208,21 @@ Section FOL_helpers.
 
 
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
-    (well_formed A) -> Γ ⊢ (A ---> A).
+    (well_formed A) ->
+    Γ ⊢ (A ---> A)
+    using PropositionalReasoning.
   Proof. 
     intros WFA.
-    epose proof (_1 := P2 Γ A (A ---> A) A _ _ _).
-    epose proof (_2 := P1 Γ A (A ---> A) _ _).
-
-    epose proof (_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
-    
-    epose proof (_4 := P1 Γ A A _ _).
-    
-    epose proof (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
-    exact _5.
+    Check P2. Check Modus_ponens.
+    epose (_1 := P2 Γ A (A ---> A) A _ _ _).
+    epose (_2 := P1 Γ A (A ---> A) _ _).
+    epose (_3 := Modus_ponens _ _ _ _ _ _2 _1).
+    epose (_4 := P1 Γ A A _ _).
+    epose (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
+    exists _5.
+    { simpl; set_solver. }
+    { simpl; set_solver. }
+    { simpl; set_solver. }
     Unshelve.
 
     all: auto 10.
@@ -485,6 +415,7 @@ Section FOL_helpers.
     := ProofProperty0 P _ (syllogism_indifferent Γ wfA wfB wfC).
 
   
+  (* TODO rename to syllogism_meta *)
   Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
   Proof.
@@ -566,58 +497,24 @@ Section FOL_helpers.
 
   #[local] Hint Resolve not_not_intro : core.
 
-  (* FIXME this has a very wrong name. Do we need it at all? *)
-  Lemma deduction (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A ---> B).
-  Proof.
-    intros WFA WFB H H0.
-    eapply (Modus_ponens _ _ _ _ _).
-    - exact H0.
-    - eapply (P1 _ B A _ _).
-      Unshelve.
-      all: auto.
-  Defined.
-
-  Lemma P4_intro (Γ : Theory) (A B : Pattern)  :
-    well_formed A -> well_formed B -> 
-    Γ ⊢ ((! B) ---> (! A)) -> Γ ⊢ (A ---> B).
-  Proof.
-    intros H H0 H1.
-    epose (@Modus_ponens _ Γ _ _ _ _ H1 (@P4m Γ (! B) (! A) _ _)).
-    epose (P1 Γ (! !A) (! B) _ _).
-    epose (@syllogism_intro Γ (! (! A)) (! B ---> ! (! A)) (! (! B)) _ _ _ m0 m).
-    epose (@not_not_intro Γ A _).
-    epose (@not_not_intro Γ B _).
-    epose (@syllogism_intro Γ A (! (! A)) (! (! B)) _ _ _ m2 m1).
-    unfold patt_not in m4.
-    epose (P3 Γ B _).
-    epose (@syllogism_intro Γ A ((B ---> Bot) ---> Bot) B _ _ _ m4 m5).
-    exact m6.
-
-    Unshelve.
-    all: auto.
-    auto 10.
-  Defined.
-
-
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
     well_formed A -> well_formed B -> 
     Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A)).
   Proof.
     intros WFA WFB.
-    epose (P3 Γ A _).
-    epose (P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
-    epose (P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
-    epose (Modus_ponens Γ _ _ _ _ m m0).
-    epose (Modus_ponens Γ _ _ _ _ m2 m1).
-    epose (P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
-    epose (Modus_ponens Γ _ _ _ _ m3 m4).
-    epose (P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
-    epose (Modus_ponens Γ _ _ _ _ m5 m6).
-    epose (@reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
+    epose proof (m := P3 Γ A _).
+    epose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
+    epose proof (m1 := P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
+    epose proof (m2 := Modus_ponens Γ _ _ _ _ m m0).
+    epose proof (m3 := Modus_ponens Γ _ _ _ _ m2 m1).
+    epose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
+    epose proof (m5 := Modus_ponens Γ _ _ _ _ m3 m4).
+    epose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
+    epose proof (m7 := Modus_ponens Γ _ _ _ _ m5 m6).
+    epose proof (m8 := @reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
     eapply (Modus_ponens Γ _ _ _ _ m8 m7).
     Unshelve.
-    all: auto 10.
+    all: wf_auto2.
   Defined.
 
   Lemma P4_indifferent
@@ -719,39 +616,6 @@ Section FOL_helpers.
           (wfA : well_formed A) (wfB : well_formed B)
     := ProofProperty2 P _ (@conj_intro_meta_indifferent P _ Γ _ _ wfA wfB).
 
-  
-  (* Lemma conj_intro_meta_e (Γ : Theory) (A B : Pattern) : *) 
-  Definition conj_intro_meta_e := conj_intro_meta.    (*The same as conj_intro_meta*)
-
-  Lemma disj (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A or B)).
-  Proof.
-    intros WFA WFV. unfold patt_or.
-    
-    epose proof (t1 := (P1 Γ B (!A) _ _)).
-    
-    epose proof (t2 := (P1 Γ (B ---> (!A ---> B)) A _ _)).
-    
-    epose proof (t3 := Modus_ponens Γ _ _ _ _ t1 t2).
-    
-    exact t3.
-    Unshelve.
-    all: auto 10.
-  Defined.
-
-  Lemma disj_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A or B).
-  Proof.
-    intros WFA WFB H H0.
-    eapply (Modus_ponens _ _ _ _ _).
-    - exact H0.
-    - eapply (Modus_ponens _ _ _ _ _).
-      + exact H.
-      + exact (@disj _ A B WFA WFB).
-        Unshelve.
-        all: auto.
-  Defined.
-
   Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (C ---> D) -> Γ ⊢ (A ---> B ---> D).
@@ -769,8 +633,15 @@ Section FOL_helpers.
         * eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
       + eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
         Unshelve.
-        all: auto 10.
+        all: wf_auto2.
   Defined.
+
+  (* I would like the lemmas proved using tactics, and other lemmas too,
+    to carry with them an information about
+     what evars they generalize on.
+     There will be a record for it, together with a coercion/projection of the proof itself.
+     There will be a variant of Deduction theorem that takes the record as its input.
+   *)
 
   Lemma syllogism_4_meta_indifferent
         P {Pip : IndifProp P} Γ a b c d
@@ -949,6 +820,7 @@ Section FOL_helpers.
         P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
     := ProofProperty0 P _ (@not_not_elim_indifferent P _ Γ _ wfa).
 
+    (* Now I think that MyGoal has to be aware *)
   Lemma not_not_elim_meta Γ A :
     well_formed A ->
     Γ ⊢ (! ! A) ->
@@ -1000,66 +872,6 @@ Section FOL_helpers.
     := ProofProperty1 P (@double_neg_elim_meta Γ a b wfa wfb) _.
   Next Obligation. intros. solve_indif; assumption. Qed.
 
-
-  Lemma P4_rev_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((A ---> B) ---> (!B ---> !A)).
-  Proof.
-    intros WFA WFB H.
-    eapply (@deduction _ _ _ _ _).
-    - exact H.
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (@syllogism_intro _ _ _ _ _ _ _).
-        * eapply (@syllogism_intro _ _ _ _ _ _ _).
-          -- eapply (@not_not_elim _ A _).
-          -- exact H.
-        * eapply (@not_not_intro _ B _).
-      + eapply (@P4 _ (!A) (!B) _ _).
-        Unshelve.
-        all: auto 10.
-  Defined.
-
-  Program Canonical Structure P4_rev_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@P4_rev_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma P4_rev_meta' (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (!B ---> !A).
-  Proof.
-    intros wfA wfB AimpB.
-    pose proof (H := @P4_rev_meta Γ A B wfA wfB AimpB).
-    eapply Modus_ponens.
-    4: apply H.
-    all: auto.
-  Defined.
-
-  #[local] Hint Resolve P4_rev_meta' : core.
-  
-  Program Canonical Structure P4_rev_meta'_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@P4_rev_meta' Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
-  Lemma P4m_neg (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ ((!B ---> !A) ---> (A ---> !B) --->  !A).
-  Proof.
-    intros WFA WFB.
-    epose proof (PT := (@P4 Γ B A _ _)).
-    eapply (@syllogism_intro _ _ _ _ _ _ _).
-    - exact PT.
-    - eapply (@P4m _ _ _ _ _).
-      Unshelve.
-      all: auto.
-  Defined.
-
-  Program Canonical Structure P4m_neg_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@P4m_neg Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
@@ -1954,7 +1766,6 @@ End FOL_helpers.
 #[export] Hint Resolve disj_left_intro : core.
 #[export] Hint Resolve not_not_elim : core.
 #[export] Hint Resolve not_not_elim_meta : core.
-#[export] Hint Resolve P4_rev_meta' : core.
 #[export] Hint Resolve A_impl_not_not_B : core.
 #[export] Hint Resolve well_formed_foldr : core.
 #[export] Hint Resolve wf_take : core.
@@ -4134,67 +3945,6 @@ Section FOL_helpers.
     := ProofProperty2 P (@exd Γ a b p q c wfa wfb wfp wfq wfc) _.
   Next Obligation. solve_indif; assumption. Qed.
 
-  Lemma conclusion_anyway_meta Γ A B:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (! A ---> B) ->
-    Γ ⊢ B.
-  Proof.
-    intros wfA wfB AimpB nAimpB.
-    assert (H1: Γ ⊢ (B ---> ! ! B)) by auto.
-    assert (H2: Γ ⊢ (! A ---> ! ! B)).
-    { eapply syllogism_intro. 5: apply H1. all: auto. }
-    clear H1.
-    assert (H3: Γ ⊢ (! B ---> ! A)) by auto.
-    epose proof (H4 := @P4m_neg Σ Γ (!B) A _ _).
-    assert (H5: Γ ⊢ ((! B ---> ! A) ---> ! ! B)).
-    { eapply Modus_ponens. 4: apply H4. all: auto 10. }
-    assert (H6: Γ ⊢ (! ! B)).
-    { eapply Modus_ponens. 4: apply H5. all: auto. }
-    auto.
-    Unshelve. all: auto.
-  Defined.
-
-  Program Canonical Structure conclusion_anyway_meta_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty2 P (@conclusion_anyway_meta Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-    
-  Lemma pf_or_elim Γ A B C :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢ A ---> C ->
-    Γ ⊢ B ---> C ->
-    Γ ⊢ A or B ->
-    Γ ⊢ C.
-  Proof.
-    intros wfA wfB wfC AimpC BimpC AorB.
-    unfold patt_or.
-    assert (H1: Γ ⊢ ((! A ---> B) ---> (B ---> C) ---> (! A ---> C))).
-    { eapply syllogism; auto. }
-    apply reorder_meta in H1; auto.
-    assert (H2: Γ ⊢ ((! A ---> B) ---> (! A ---> C))).
-    { eapply Modus_ponens. 4: apply H1. all: auto 10. }
-    unfold patt_or in AorB.
-    assert (H3: Γ ⊢ (! A ---> C)).
-    { eapply Modus_ponens. 4: apply H2. all: auto. }
-    eapply conclusion_anyway_meta. 4: apply H3. all: auto.
-  Defined.
-
-  Program Canonical Structure pf_or_elim_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-    := ProofProperty3 P (@pf_or_elim Γ a b c wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
-  
   Lemma pf_iff_split Γ A B:
     well_formed A ->
     well_formed B ->
@@ -5960,6 +5710,7 @@ Section FOL_helpers.
     | right pf => pf2 pf
     end.
 
+  (* EvS, SvS - sets used for generating fresh variables *)
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)

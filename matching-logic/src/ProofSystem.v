@@ -41,7 +41,6 @@ Section ml_proof_system.
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
       theory ⊢ phi1 ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ phi2
@@ -142,7 +141,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_ex_gen EvS _ _ m0
          || uses_ex_gen EvS _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -162,13 +161,70 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
+      match pf with
+      | hypothesis _ _ _ _ => ∅
+      | P1 _ _ _ _ _ => ∅
+      | P2 _ _ _ _ _ _ _ => ∅
+      | P3 _ _ _ => ∅
+      | Modus_ponens _ _ _ m0 m1
+        => uses_of_ex_gen _ _ m0
+           ∪ uses_of_ex_gen _ _ m1
+      | Ex_quan _ _ _ _ => ∅
+      | Ex_gen _ _ _ x _ _ pf _ => {[x]} ∪ uses_of_ex_gen _ _ pf
+      | Prop_bott_left _ _ _ => ∅
+      | Prop_bott_right _ _ _ => ∅
+      | Prop_disj_left _ _ _ _ _ _ _ => ∅
+      | Prop_disj_right _ _ _ _ _ _ _ => ∅
+      | Prop_ex_left _ _ _ _ _ => ∅
+      | Prop_ex_right _ _ _ _ _ => ∅
+      | Framing_left _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Framing_right _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Svar_subst _ _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Pre_fixp _ _ _ => ∅
+      | Knaster_tarski _ _ phi psi m0 => uses_of_ex_gen _ _ m0
+      | Existence _ => ∅
+      | Singleton_ctx _ _ _ _ _ _ => ∅
+      end.
+  
+  Lemma uses_of_ex_gen_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (x : evar) :
+    x ∈ uses_of_ex_gen Γ ϕ pf <-> uses_ex_gen {[x]} Γ ϕ pf = true.
+  Proof.
+    induction pf; simpl; try set_solver.
+    {
+      rewrite orb_true_iff. set_solver.
+    }
+    {
+      rewrite elem_of_union. rewrite IHpf.
+      destruct (decide (x0 ∈ {[x]})) as [Hin|Hnotin].
+      {
+        rewrite elem_of_singleton in Hin. subst.
+        split; intros H. reflexivity. left. rewrite elem_of_singleton.
+        reflexivity.
+      }
+      {
+        split; intros H.
+        {
+          destruct H as [H|H].
+          {
+            exfalso. set_solver.
+          }
+          exact H.
+        }
+        {
+          right. exact H.
+        }
+      }
+    }
+  Qed.
+
   Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
     match pf with
     | hypothesis _ _ _ _ => false
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_svar_subst S _ _ m0
          || uses_svar_subst S _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -188,6 +244,62 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) : SVarSet :=
+      match pf with
+      | hypothesis _ _ _ _ => ∅
+      | P1 _ _ _ _ _ => ∅
+      | P2 _ _ _ _ _ _ _ => ∅
+      | P3 _ _ _ => ∅
+      | Modus_ponens _ _ _ m0 m1
+        => uses_of_svar_subst _ _ m0
+           ∪ uses_of_svar_subst _ _ m1
+      | Ex_quan _ _ _ _ => ∅
+      | Ex_gen _ _ _ _ _ _ pf' _ => uses_of_svar_subst _ _ pf'
+      | Prop_bott_left _ _ _ => ∅
+      | Prop_bott_right _ _ _ => ∅
+      | Prop_disj_left _ _ _ _ _ _ _ => ∅
+      | Prop_disj_right _ _ _ _ _ _ _ => ∅
+      | Prop_ex_left _ _ _ _ _ => ∅
+      | Prop_ex_right _ _ _ _ _ => ∅
+      | Framing_left _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Framing_right _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Svar_subst _ _ _ X _ _ m0 => {[X]} ∪ uses_of_svar_subst _ _ m0
+      | Pre_fixp _ _ _ => ∅
+      | Knaster_tarski _ _ phi psi m0 => uses_of_svar_subst _ _ m0
+      | Existence _ => ∅
+      | Singleton_ctx _ _ _ _ _ _ => ∅
+      end.
+
+  Lemma uses_of_svar_subst_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (X : svar) :
+    X ∈ uses_of_svar_subst Γ ϕ pf <-> uses_svar_subst {[X]} Γ ϕ pf = true.
+  Proof.
+    induction pf; simpl; try set_solver.
+    {
+      rewrite orb_true_iff. set_solver.
+    }
+    {
+      rewrite elem_of_union. rewrite IHpf. clear IHpf.
+      destruct (decide (X0 ∈ {[X]})) as [Hin|Hnotin].
+      {
+        rewrite elem_of_singleton in Hin. subst.
+        split; intros H. reflexivity. left. rewrite elem_of_singleton.
+        reflexivity.
+      }
+      {
+        split; intros H.
+        {
+          destruct H as [H|H].
+          {
+            exfalso. set_solver.
+          }
+          exact H.
+        }
+        {
+          right. exact H.
+        }
+      }
+    }
+  Qed.
 
   Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
     match pf with
@@ -195,7 +307,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_kt _ _ m0 || uses_kt _ _ m1
     | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
@@ -261,8 +373,8 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
       (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
    /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
    /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
-   /\ (forall Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2,
-        P Γ _ (Modus_ponens Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2)
+   /\ (forall Γ phi1 phi2 pf1 pf2,
+        P Γ _ (Modus_ponens Γ phi1 phi2 pf1 pf2)
         = P Γ _ pf1 || P Γ _ pf2
       ).
 
