@@ -20,12 +20,12 @@ Section soundness.
 
   (* soundness for prop_ex_right *)
   Lemma proof_rule_prop_ex_right_sound {m : Model} (theory : Theory) (phi psi : Pattern)
-        (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+        (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)):
     (well_formed (patt_imp (patt_app (patt_exists phi) psi) (patt_exists (patt_app phi psi)))) ->
     (well_formed (ex, phi)%ml) -> (@well_formed Σ psi) ->
     (∀ axiom : Pattern,
         axiom ∈ theory
-        → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+        → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
           pattern_interpretation evar_val svar_val axiom = ⊤) ->
     pattern_interpretation evar_val svar_val ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
   Proof.
@@ -91,12 +91,12 @@ Section soundness.
 
 (* soundness for prop_ex_left *)
   Lemma proof_rule_prop_ex_left_sound {m : Model} (theory : Theory) (phi psi : Pattern)
-        (evar_val : evar -> Domain m) (svar_val : svar -> Power (Domain m)):
+        (evar_val : evar -> Domain m) (svar_val : svar -> propset (Domain m)):
     (well_formed (patt_imp (patt_app psi (patt_exists phi)) (patt_exists (patt_app psi phi)))) ->
     (well_formed (ex, phi)%ml) -> (@well_formed Σ psi) ->
     (∀ axiom : Pattern,
         axiom ∈ theory
-        → ∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+        → ∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
           pattern_interpretation evar_val svar_val axiom = ⊤) ->
     pattern_interpretation evar_val svar_val (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
   Proof.
@@ -159,7 +159,7 @@ Section soundness.
 (* free_svar_subst maintains soundness *)
 Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
   well_formed_closed phi → well_formed psi →
-  (∀ (evar_val : evar → Domain m) (svar_val : svar → Power (Domain m)),
+  (∀ (evar_val : evar → Domain m) (svar_val : svar → propset (Domain m)),
       pattern_interpretation evar_val svar_val phi = Full)
   →
   ∀ X evar_val svar_val,

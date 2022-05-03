@@ -8,7 +8,7 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics SignatureHelper.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -138,7 +138,7 @@ Module test_2.
     Instance domain_eqdec : EqDecision domain.
     Proof. solve_decision. Defined.
 
-    Definition my_sym_interp(s: Symbols) : Power domain :=
+    Definition my_sym_interp(s: Symbols) : propset domain :=
       match s with
       | sym_import_definedness s_def => {[ (dom_custom m_def) ]}
       | sym_zero => {[ (dom_nat 0) ]}
@@ -146,7 +146,7 @@ Module test_2.
       | _ => ∅
       end.
 
-    Definition my_app_interp(m1 m2 : domain) : Power domain :=
+    Definition my_app_interp(m1 m2 : domain) : propset domain :=
       match m1, m1 with
       | dom_custom m_def, _ => ⊤ (* definedness *)
       | dom_custom m_succ, dom_nat n => {[ (dom_nat (n+1)) ]}

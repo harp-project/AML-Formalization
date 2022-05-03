@@ -808,6 +808,27 @@ Proof.
   - rewrite -> H. exact Hc.
 Qed.
 
+Global Instance propset_fa_union_proper {T C : Type}
+: Proper (pointwise_relation C (≡) ==> (≡)) (@propset_fa_union T C).
+Proof.
+  intros f f' Hff'.
+  unfold pointwise_relation in Hff'.
+  unfold propset_fa_union.
+  rewrite set_equiv_subseteq.
+  do 2 rewrite elem_of_subseteq.
+  split; intros x H'; rewrite elem_of_PropSet; rewrite elem_of_PropSet in H'.
+  {
+    destruct H' as [c HC].
+    rewrite Hff' in HC.
+    exists c. exact HC.
+  }
+  {
+    destruct H' as [c HC].
+    rewrite -Hff' in HC.
+    exists c. exact HC.
+  }
+Qed.
+
 Lemma propset_fa_union_empty {T C : Type} {LE : LeibnizEquiv (propset T)} (f : C -> propset T) :
   (propset_fa_union f = ∅) <-> (∀ (c : C), (f c) = ∅).
 Proof.

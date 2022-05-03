@@ -63,6 +63,14 @@ Section with_syntax.
         : is_SPredicate patt_bott
     | spred_def (ϕ : Pattern)
         : is_SData ϕ -> is_SPredicate (patt_defined ϕ)
+    (* note that we have to add equality and subseteq manually,
+       since they are usually defined using totality,
+       and we do not have totality in the fragment!
+     *)
+    | spred_eq (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SPredicate (patt_equal ϕ₁ ϕ₂)
+    | spred_subseteq (ϕ₁ ϕ₂ : Pattern)
+        : is_SData ϕ₁ -> is_SData ϕ₂ -> is_SPredicate (patt_subseteq ϕ₁ ϕ₂)
     | spred_imp (ϕ₁ ϕ₂ : Pattern)
         : is_SPredicate ϕ₁ -> is_SPredicate ϕ₂ -> is_SPredicate (patt_imp ϕ₁ ϕ₂)
     | spred_ex (ϕ : Pattern) (s : symbols)
@@ -273,7 +281,7 @@ Section with_syntax.
             end
         end.
     
-    Definition new_sym_interp (s : symbols) : Power Carrier :=
+    Definition new_sym_interp (s : symbols) : propset Carrier :=
         match (decide (s = Definedness_Syntax.inj definedness)) with
         | left _ => {[ cdef ]}
         | right _ =>
@@ -313,7 +321,7 @@ Section with_syntax.
     Definition lift_value (x : Domain M) : (Domain Mext)
     := cel (inl x).
 
-    Definition lift_set (xs : Power (Domain M)) : (Power (Domain Mext))
+    Definition lift_set (xs : propset (Domain M)) : (propset (Domain Mext))
     := cel <$> (@fmap propset _ _ _ inl xs).
 
     (* Valuations lifted from the original model to the extended model. *)
@@ -323,21 +331,106 @@ Section with_syntax.
     Definition lift_val_s (ρₛ : @SVarVal _ M) : (@SVarVal _ Mext)
     := λ (X : svar), lift_set (ρₛ X).
 
-    Lemma lift_set_mono (xs ys : Power (Domain M)) :
-        xs ⊆ ys ->
+    Lemma lift_set_mono (xs ys : propset (Domain M)) :
+        xs ⊆ ys <->
         lift_set xs ⊆ lift_set ys.
     Proof.
-        intros H.
         unfold lift_set,fmap.
         with_strategy transparent [propset_fmap] unfold propset_fmap.
-        clear -H. set_solver.
+        split.
+        {
+            intros H.
+            clear -H. set_solver.
+        }
+        {
+            intros H.
+            rewrite elem_of_subseteq in H.
+            rewrite elem_of_subseteq.
+            intros x Hx.
+            specialize (H (lift_value x)).
+            unfold lift_value in H.
+            do 2 rewrite elem_of_PropSet in H.
+            feed specialize H.
+            {
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                exact Hx.
+            }
+            destruct H as [a [Ha H]].
+            inversion Ha. clear Ha. subst.
+            rewrite elem_of_PropSet in H.
+            destruct H as [a [Ha H]].
+            inversion Ha. clear Ha. subst.
+            exact H.
+        }
+    Qed.
+
+    Lemma lift_set_injective (xs ys : propset (Domain M)) :
+        xs = ys <-> lift_set xs = lift_set ys.
+    Proof.
+        split;[congruence|].
+        intros H.
+        unfold lift_set,fmap in H.
+        with_strategy transparent [propset_fmap] unfold propset_fmap in H.
+        unfold_leibniz.
+        rewrite set_equiv_subseteq in H.
+        do 2 rewrite elem_of_subseteq in H.
+        destruct H as [H1 H2].
+        rewrite set_equiv_subseteq.
+        do 2 rewrite elem_of_subseteq.
+        split; intros x Hx.
+        {
+            specialize (H1 (lift_value x)).
+            do 2 rewrite elem_of_PropSet in H1.
+            feed specialize H1.
+            {
+                unfold lift_value.
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                apply Hx.
+            }
+            destruct H1 as [a [Ha H1]].
+            unfold lift_value in Ha.
+            inversion Ha. clear Ha. subst. 
+            rewrite elem_of_PropSet in H1.
+            destruct H1 as [a [Ha H1]].
+            inversion Ha. clear Ha. subst.
+            exact H1.
+        }
+        {
+            specialize (H2 (lift_value x)).
+            do 2 rewrite elem_of_PropSet in H2.
+            feed specialize H2.
+            {
+                unfold lift_value.
+                exists (inl x).
+                split;[reflexivity|].
+                rewrite elem_of_PropSet.
+                exists x.
+                split;[reflexivity|].
+                apply Hx.
+            }
+            destruct H2 as [a [Ha H2]].
+            unfold lift_value in Ha.
+            inversion Ha. clear Ha. subst. 
+            rewrite elem_of_PropSet in H2.
+            destruct H2 as [a [Ha H2]].
+            inversion Ha. clear Ha. subst.
+            exact H2.
+        }
     Qed.
 
     Lemma Mext_indec :
         forall (s : symbols),
             is_not_core_symbol s ->
             forall (m : Domain Mext) ρₑ ρₛ,
-            Decision (m ∈ Minterp_inhabitant (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
+            Decision (m ∈ @Minterp_inhabitant Σ _ Mext (patt_sym s) (lift_val_e ρₑ) (lift_val_s ρₛ)).
     Proof.
         intros. unfold Minterp_inhabitant.
         rewrite pattern_interpretation_app_simpl.
@@ -477,6 +570,8 @@ Section with_syntax.
             induction HSPred.
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply M_pre_pre_predicate_bott. }
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_defined. exact M_def. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_equal. exact M_def. }
+            { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_subseteq. exact M_def. }
             { apply M_pre_predicate_imp; assumption. }
             { 
                 unfold patt_exists_of_sort.
@@ -675,8 +770,8 @@ Section with_syntax.
                 size' ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
-                pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
-                = lift_set (pattern_interpretation ρₑ ρₛ ϕ)
+                @pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ϕ
+                = lift_set (@pattern_interpretation Σ M ρₑ ρₛ ϕ)
             )
             /\
             (
@@ -684,11 +779,11 @@ Section with_syntax.
                 size' ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
-                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
-                <-> pattern_interpretation ρₑ ρₛ ψ = ∅)
+                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ∅
+                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ∅)
                 /\
-                (pattern_interpretation (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
-                <-> pattern_interpretation ρₑ ρₛ ψ = ⊤)
+                (@pattern_interpretation Σ Mext (lift_val_e ρₑ) (lift_val_s ρₛ) ψ = ⊤
+                <-> @pattern_interpretation Σ M ρₑ ρₛ ψ = ⊤)
             ).
         Proof.
             induction sz.
@@ -1266,7 +1361,6 @@ Section with_syntax.
                                     unfold G'.
                                     simpl.
                                     apply lift_set_mono.
-                                    unfold Power.
                                     pose proof (Htmp := Lattice.LeastFixpoint_LesserThanPrefixpoint _ _ L G).
                                     simpl in Htmp. apply Htmp. clear Htmp.
                                     replace (pattern_interpretation ρₑ (update_svar_val (fresh_svar ϕ) (strip A) ρₛ)
@@ -1337,6 +1431,7 @@ Section with_syntax.
                         }
                     }
                     {
+                        (* patt_defined ϕ *)
                         unfold patt_defined.
                         do 2 rewrite pattern_interpretation_app_simpl.
                         do 2 rewrite pattern_interpretation_sym_simpl.
@@ -1382,7 +1477,7 @@ Section with_syntax.
                                         specialize (H' (lift_value x)).
                                         exfalso.
                                         rewrite elem_of_PropSet in H'.
-                                        cut (@elem_of _ (Power (@Domain Σ Mext)) _ (lift_value x) (@empty (propset (@Domain _ Mext)) _)).
+                                        cut (@elem_of _ (propset (@Domain Σ Mext)) _ (lift_value x) (@empty (propset (@Domain _ Mext)) _)).
                                         {
                                             intros Hcontra. clear -Hcontra. set_solver.
                                         }
@@ -1485,9 +1580,9 @@ Section with_syntax.
                                     {
                                         rewrite elem_of_subseteq.
                                         intros x Hx.
-                                        cut (@elem_of (@Domain Σ Mext) (Power (@Domain Σ Mext))
+                                        cut (@elem_of (@Domain Σ Mext) (propset (@Domain Σ Mext))
                                         (@propset_elem_of (@Domain Σ Mext)) (lift_value x)
-                                        (@empty (Power (@Domain Σ Mext)) (@propset_empty (@Domain Σ Mext)))).
+                                        (@empty (propset (@Domain Σ Mext)) (@propset_empty (@Domain Σ Mext)))).
                                         {
                                             intros HContra.
                                             clear -HContra.
@@ -1661,6 +1756,49 @@ Section with_syntax.
                         }
                     }
                     {
+                        (* patt_equal ϕ₁ ϕ₂ *)
+                        rewrite equal_iff_interpr_same.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite equal_iff_interpr_same.
+                        2: { apply M_def. }
+                        rewrite not_equal_iff_not_interpr_same_1.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite not_equal_iff_not_interpr_same_1.
+                        2: { apply M_def. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite lift_set_injective.
+                        tauto.
+                    }
+                    {
+                        (* patt_subseteq ϕ₁ ϕ₂ *)
+                        rewrite subseteq_iff_interpr_subseteq.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite subseteq_iff_interpr_subseteq.
+                        2: { apply M_def. }
+                        rewrite not_subseteq_iff_not_interpr_subseteq_1.
+                        2: { apply Mext_satisfies_definedness. }
+                        rewrite not_subseteq_iff_not_interpr_subseteq_1.
+                        2: { apply M_def. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite IHszdata.
+                        { lia. }
+                        { assumption. }
+                        { wf_auto2. }
+                        rewrite lift_set_mono.
+                        tauto.
+                    }
+                    {
+                        (* patt_impl ψ₁ ψ₂*)
                         do 2 rewrite pattern_interpretation_imp_simpl.
                         pose proof (IH1 := IHszpred ϕ₁ ρₑ ρₛ).
                         feed specialize IH1.

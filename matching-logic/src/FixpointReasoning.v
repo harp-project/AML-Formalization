@@ -107,7 +107,7 @@ Section with_signature.
     remember (Fassoc ρₑ ρₛ (svar_open 0 X ϕ) X) as F.
     intros Hprefix Hleast.
     rewrite pattern_interpretation_mu_simpl. simpl.
-    unfold Fassoc in HeqF. unfold Power in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
+    unfold Fassoc in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
     apply LeastFixpoint_unique. { apply Hprefix. } apply Hleast.
   Qed.
 

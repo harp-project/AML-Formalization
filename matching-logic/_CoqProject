@@ -22,6 +22,7 @@ src/IndexManipulation.v
 src/NamedAxioms.v
 
 src/Semantics.v
+src/ModelIsomorphism.v
 src/PrePredicate.v
 src/monotonic.v
 src/DerivedOperators_Syntax.v
@@ -30,7 +31,7 @@ src/DerivedOperators_Semantics.v
 src/ProofSystem.v
 src/ProofSystemSoundness.v
 src/FixpointReasoning.v
-src/SignatureHelper.v
+src/StringSignature.v
 src/Logic.v
 src/ProofMode.v
 
