@@ -686,35 +686,6 @@ Section FOL_helpers.
           (wfA : well_formed A) (wfB : well_formed B)
     := ProofProperty2 P _ (@conj_intro_meta_indifferent P _ Γ _ _ wfA wfB).
 
-  Lemma disj (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A or B)).
-  Proof.
-    intros WFA WFV. unfold patt_or.
-    
-    epose proof (t1 := (P1 Γ B (!A) _ _)).
-    
-    epose proof (t2 := (P1 Γ (B ---> (!A ---> B)) A _ _)).
-    
-    epose proof (t3 := Modus_ponens Γ _ _ _ _ t1 t2).
-    
-    exact t3.
-    Unshelve.
-    all: auto 10.
-  Defined.
-
-  Lemma disj_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A or B).
-  Proof.
-    intros WFA WFB H H0.
-    eapply (Modus_ponens _ _ _ _ _).
-    - exact H0.
-    - eapply (Modus_ponens _ _ _ _ _).
-      + exact H.
-      + exact (@disj _ A B WFA WFB).
-        Unshelve.
-        all: auto.
-  Defined.
-
   Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
     Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (C ---> D) -> Γ ⊢ (A ---> B ---> D).
