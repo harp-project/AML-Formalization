@@ -571,3 +571,91 @@ Proof.
   destruct_and!.
   unfold well_formed,well_formed_closed. split_and!; assumption.
 Qed.
+
+Definition wf {Σ : Signature} (l : list Pattern) := fold_right andb true (map well_formed l).
+
+(* TODO: maybe generalize to any connective? *)
+Lemma well_formed_foldr {Σ : Signature} g xs :
+  well_formed g = true ->
+  wf xs = true ->
+  well_formed (foldr patt_imp g xs) = true.
+Proof.
+  intros wfg wfxs.
+  induction xs.
+  - simpl. exact wfg.
+  - simpl. unfold wf in wfxs. simpl in wfxs.
+    apply andb_prop in wfxs. destruct wfxs.
+    apply well_formed_imp.
+    { assumption. }
+    { apply IHxs. assumption. }
+Qed.
+
+Lemma wf_take {Σ : Signature} n xs :
+  wf xs = true ->
+  wf (take n xs) = true.
+Proof.
+  unfold wf. intros H.
+  rewrite map_take.
+  rewrite foldr_andb_true_take; auto.
+Qed.
+
+Lemma wf_drop {Σ : Signature} n xs:
+  wf xs = true ->
+  wf (drop n xs) = true.
+Proof.
+  unfold wf. intros H.
+  rewrite map_drop.
+  rewrite foldr_andb_true_drop; auto.
+Qed.
+
+Lemma wf_insert {Σ : Signature} n p xs:
+  wf xs = true ->
+  well_formed p = true ->
+  wf (<[n := p]> xs) = true.
+Proof.
+  intros wfxs wfp.
+  move: xs wfxs.
+  induction n; intros xs wfxs; destruct xs; simpl; auto.
+  - unfold wf in wfxs. simpl in wfxs. apply andb_prop in wfxs.
+    destruct wfxs as [wfp0 wfxs].
+    unfold wf. simpl. rewrite wfp. rewrite wfxs.
+    reflexivity.
+  - unfold wf in wfxs. simpl in wfxs. apply andb_prop in wfxs.
+    destruct wfxs as [wfp0 wfxs].
+    unfold wf. simpl.
+    unfold wf in IHn.
+    rewrite wfp0.
+    rewrite IHn; auto.
+Qed.
+
+Lemma wf_tail' {Σ : Signature} p xs:
+  wf (p :: xs) = true ->
+  wf xs = true.
+Proof.
+  unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
+Qed.
+
+Lemma wf_cons {Σ : Signature} x xs:
+  well_formed x = true ->
+  wf xs = true ->
+  wf (x :: xs) = true.
+Proof.
+  intros wfx wfxs.
+  unfold wf. simpl. rewrite wfx.
+  unfold wf in wfxs. rewrite wfxs.
+  reflexivity.
+Qed.
+
+ Lemma wf_app {Σ : Signature} xs ys:
+  wf xs = true ->
+  wf ys = true ->
+  wf (xs ++ ys) = true.
+Proof.
+  intros wfxs wfys.
+  unfold wf in *.
+  rewrite map_app.
+  rewrite foldr_app.
+  rewrite wfys.
+  rewrite wfxs.
+  reflexivity.
+Qed.

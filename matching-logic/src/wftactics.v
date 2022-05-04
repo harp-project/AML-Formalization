@@ -44,6 +44,24 @@ match goal with
 | [ |- size' _ < size' (patt_exists _) ]
   => simpl; lia
 
+| [ |- well_formed (foldr patt_imp ?g ?xs) = true ]
+  => apply well_formed_foldr
+
+| [ |- wf (take ?n ?xs) = true ]
+  => apply wf_take
+
+| [ |- wf (drop ?n ?xs) = true ]
+  => apply wf_drop
+
+| [ |- wf (<[?n := ?p]> ?xs) = true ]
+  => apply wf_insert
+
+| [ |- wf (?x :: ?xs) = true ]
+  => apply wf_cons
+
+| [ |- wf (?xs ++ ?ys) = true ]
+  => apply wf_app
+
 | [ |- well_formed (patt_free_evar _) = true]
   => reflexivity
 

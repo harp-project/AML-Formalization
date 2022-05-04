@@ -986,3 +986,13 @@ Lemma elem_of_compl {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T) (
 Proof.
   split; intros H; set_solver.
 Qed.
+
+Lemma elem_of_singleton_sym
+  {A C : Type} {H : ElemOf A C} {H0 : Empty C} {H1 : Singleton A C} 
+	{H2 : Union C} {H3 :  SemiSet A C} : 
+  forall (x y : A), x ∈ (@singleton A C H1 y) <-> y ∈ (@singleton A C H1 x).
+Proof.
+  intros x y.
+  do 2 rewrite elem_of_singleton.
+  split; intros H'; symmetry; exact H'.
+Qed.

@@ -1518,4 +1518,3 @@ Proof.
   - rewrite IHϕ; auto.
   - rewrite IHϕ; auto.
 Qed.
-
