@@ -41,7 +41,6 @@ Section ml_proof_system.
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
       theory ⊢ phi1 ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ phi2
@@ -142,7 +141,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_ex_gen EvS _ _ m0
          || uses_ex_gen EvS _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -168,7 +167,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
       | P1 _ _ _ _ _ => ∅
       | P2 _ _ _ _ _ _ _ => ∅
       | P3 _ _ _ => ∅
-      | Modus_ponens _ _ _ _ _ m0 m1
+      | Modus_ponens _ _ _ m0 m1
         => uses_of_ex_gen _ _ m0
            ∪ uses_of_ex_gen _ _ m1
       | Ex_quan _ _ _ _ => ∅
@@ -225,7 +224,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_svar_subst S _ _ m0
          || uses_svar_subst S _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -251,7 +250,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
       | P1 _ _ _ _ _ => ∅
       | P2 _ _ _ _ _ _ _ => ∅
       | P3 _ _ _ => ∅
-      | Modus_ponens _ _ _ _ _ m0 m1
+      | Modus_ponens _ _ _ m0 m1
         => uses_of_svar_subst _ _ m0
            ∪ uses_of_svar_subst _ _ m1
       | Ex_quan _ _ _ _ => ∅
@@ -308,7 +307,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_kt _ _ m0 || uses_kt _ _ m1
     | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
@@ -374,8 +373,8 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
       (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
    /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
    /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
-   /\ (forall Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2,
-        P Γ _ (Modus_ponens Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2)
+   /\ (forall Γ phi1 phi2 pf1 pf2,
+        P Γ _ (Modus_ponens Γ phi1 phi2 pf1 pf2)
         = P Γ _ pf1 || P Γ _ pf2
       ).
 

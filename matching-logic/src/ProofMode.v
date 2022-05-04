@@ -131,170 +131,76 @@ Open Scope ml_scope.
 
   #[local] Hint Resolve wf_app : core.
 
+Record ProofInfo {Σ : Signature} :=
+  mkProofInfo
+  {
+    pi_generalized_evars : EVarSet ;
+    pi_substituted_svars : SVarSet ;
+    pi_uses_kt : bool ;
+  }.
+
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
+  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
+
+(* Currently, there is no difference between the definitions of
+   [PropositionalReasoning] and [BasicReasoning];
+   However, the intended meaning is that [PropositionalReasoning ⊂ BasicReasoning]
+ *)
+Definition PropositionalReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
+Definition BasicReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
+
 (* A proof together with some properties of it. *)
 Record ProofWithInfo
   {Σ : Signature}
   (Γ : Theory)
   (ϕ : Pattern)
-  (pwi_generalized_evars : EVarSet)
-  (pwi_substituted_svars : SVarSet)
-  (pwi_uses_kt : bool )
+  (pi : ProofInfo)
   :=
 mkProofWithInfo
 {
   pwi_pf : Γ ⊢ ϕ ;
   
-  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ pwi_generalized_evars ;
-  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ pwi_substituted_svars ;
-  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) pwi_uses_kt ;
+  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (pi_generalized_evars pi) ;
+  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (pi_substituted_svars pi) ;
+  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
 }.
 
-Notation "Γ ⊢ ϕ 'using' 'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-:= (@ProofWithInfo _ Γ ϕ evs svs bkt) (at level 95, no associativity).
+Notation "Γ ⊢ ϕ 'using' pi"
+:= (@ProofWithInfo _ Γ ϕ pi) (at level 95, no associativity).
 
 
-Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
+Record MyGoal {Σ : Signature} : Type := mkMyGoal
+  { mgTheory : Theory;
+    mgHypotheses: list Pattern;
+    mgConclusion : Pattern ;
+    mgInfo : ProofInfo ;
+  }.
 
-Definition MyGoal_from_goal {Σ : Signature} (Γ : Theory) (goal : Pattern) : MyGoal := @mkMyGoal Σ Γ nil goal.
+Definition MyGoal_from_goal
+  {Σ : Signature} (Γ : Theory) (goal : Pattern) (pi : ProofInfo)
+  :
+  MyGoal
+  := @mkMyGoal Σ Γ nil goal pi.
 
-Notation "[ S , G ⊢ l ==> g ]" := (@mkMyGoal S G l g).
+Notation "[ S , G ⊢ l ==> g ] 'using' pi"
+  := (@mkMyGoal S G l g pi) (at level 95, no associativity).
 
 
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
   wf (mgHypotheses MG) ->
-  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG)).
+  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
+  using (mgInfo MG).
 
 Ltac toMyGoal :=
   lazymatch goal with
-  | [ |- ?G ⊢ ?phi ]
-    => cut (of_MyGoal (MyGoal_from_goal G phi));
+  | [ |- ?G ⊢ ?phi using ?pi]
+    => cut (of_MyGoal (MyGoal_from_goal G phi pi));
        unfold MyGoal_from_goal;
        [(unfold of_MyGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
   end.
 
-Ltac fromMyGoal := unfold of_MyGoal; simpl.
-
-Class IndifCast {Σ : Signature} (P : proofbpred)
-  := mkIndifCast { cast_indif : indifferent_to_cast P }.
-
-Class IndifProp {Σ : Signature} (P : proofbpred)
-  := mkIndifProp { prop_indif : indifferent_to_prop P }.
-
-#[export]
- Instance uses_svar_subst_IndifCast {Σ : Signature} (SvS : SVarSet) : IndifCast (@uses_svar_subst Σ SvS)
-  := mkIndifCast (indifferent_to_cast_uses_svar_subst SvS).
-
-#[export]
- Instance uses_svar_subst_IndifProp {Σ : Signature} (SvS : SVarSet) : IndifProp (@uses_svar_subst Σ SvS)
-  := mkIndifProp (indifferent_to_prop_uses_svar_subst SvS).
-
-#[export]
- Instance uses_ex_gen_IndifCast {Σ : Signature} (EvS : EVarSet) : IndifCast (@uses_ex_gen Σ EvS)
-  := mkIndifCast (indifferent_to_cast_uses_ex_gen EvS).
-
-#[export]
- Instance uses_ex_gen_IndifProp {Σ : Signature} (EvS : EVarSet) : IndifProp (@uses_ex_gen Σ EvS)
-  := mkIndifProp (indifferent_to_prop_uses_ex_gen EvS).
-
-#[export]
- Instance uses_kt_IndifCast {Σ : Signature} : IndifCast (@uses_kt Σ)
-  := mkIndifCast (indifferent_to_cast_uses_kt).
-
-#[export]
- Instance uses_kt_IndifProp {Σ : Signature} : IndifProp (@uses_kt Σ)
-  := mkIndifProp (indifferent_to_prop_uses_kt).
-
-
-Structure proofProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ : Pattern)
-  := ProofProperty0 { pp0_proof : Γ ⊢ ϕ; pp0_proof_property : P Γ ϕ pp0_proof = false  }.
-
-Arguments ProofProperty0 [Σ] P [Γ ϕ] pp0_proof _.
-
-Structure proofProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ : Pattern)
-  := ProofProperty1 {
-      pp1_proof : Γ ⊢ ψ₁ -> Γ ⊢ ϕ;
-      pp1_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ϕ (pp1_proof pf₁) = false;
-    }.
-
-Arguments ProofProperty1 [Σ] P [Γ ϕ ψ₁] pp1_proof%function_scope _%function_scope.
-
-Structure proofProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ ψ₂ : Pattern)
-  := ProofProperty2 {
-      pp2_proof : Γ ⊢ ψ₁ -> Γ ⊢ ψ₂ -> Γ ⊢ ϕ;
-      pp2_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁) (pf₂ : Γ ⊢ ψ₂),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ψ₂ pf₂ = false ->
-        P Γ ϕ (pp2_proof pf₁ pf₂) = false;
-    }.
-
-Arguments ProofProperty2 [Σ] P [Γ ϕ ψ₁ ψ₂] pp2_proof%function_scope _%function_scope.
-
-Structure proofProperty3 {Σ : Signature} (P : proofbpred) (Γ : Theory) (ϕ ψ₁ ψ₂ ψ₃ : Pattern)
-  := ProofProperty3 {
-      pp3_proof : Γ ⊢ ψ₁ -> Γ ⊢ ψ₂ -> Γ ⊢ ψ₃ -> Γ ⊢ ϕ;
-      pp3_proof_property :
-      forall (pf₁ : Γ ⊢ ψ₁) (pf₂ : Γ ⊢ ψ₂) (pf₃ : Γ ⊢ ψ₃),
-        P Γ ψ₁ pf₁ = false ->
-        P Γ ψ₂ pf₂ = false ->
-        P Γ ψ₃ pf₃ = false ->
-        P Γ ϕ (pp3_proof pf₁ pf₂ pf₃) = false;
-    }.
-
-Arguments ProofProperty3 [Σ] P [Γ ϕ ψ₁ ψ₂ ψ₃] pp3_proof%function_scope _%function_scope.
-
-
-Ltac2 mutable solve_indif () := ltac1:(repeat (
-                        eapply pp0_proof_property
-                        || eapply pp1_proof_property
-                        || eapply pp2_proof_property)).
-
-Ltac solve_indif := ltac2:(solve_indif ()).
-
-
-Program Canonical Structure P1_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-:= ProofProperty0 P (@P1 Σ Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₂) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ?????.
-  apply Hp1.
-Qed.
-
-Program Canonical Structure P2_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ : Pattern)
-          (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
-:= ProofProperty0 P (@P2 Σ Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ???????.
-  apply Hp2.
-Qed.
-
-Program Canonical Structure P3_pp0 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ : Pattern) (wfϕ₁ : well_formed ϕ₁)
-:= ProofProperty0 P (@P3 Σ Γ ϕ₁ wfϕ₁) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ???.
-  apply Hp3.
-Qed.
-
-Program Canonical Structure MP_pp2 {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₁₂ : well_formed (ϕ₁ ---> ϕ₂))
-:= ProofProperty2 P (fun pf1 pf2 => @Modus_ponens Σ Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₁₂ pf1 pf2) _.
-Next Obligation.
-  intros Σ P [[Hp1 [Hp2 [Hp3 Hmp] ] ] ] ??????? H1 H2.
-  rewrite Hmp. apply orb_false_intro. exact H1. exact H2.
-Qed.
-
-Program Canonical Structure cast_proof_indifferent_S
-        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
-        (ϕ ψ : Pattern) (e : ψ = ϕ)
-  := ProofProperty1 P (@cast_proof Σ Γ ϕ ψ e) _.
-Next Obligation. intros. destruct Pic as [hic]. rewrite hic. exact H. Qed.
-
+Ltac fromMyGoal := unfold of_MyGoal; simpl; intros _ _.
 
 Section FOL_helpers.
 
@@ -302,18 +208,21 @@ Section FOL_helpers.
 
 
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
-    (well_formed A) -> Γ ⊢ (A ---> A).
+    (well_formed A) ->
+    Γ ⊢ (A ---> A)
+    using PropositionalReasoning.
   Proof. 
     intros WFA.
-    epose proof (_1 := P2 Γ A (A ---> A) A _ _ _).
-    epose proof (_2 := P1 Γ A (A ---> A) _ _).
-
-    epose proof (_3 := Modus_ponens _ _ _ _ _ _2 _1). (*M_p th phi1 phi2 wf_phi1 wf_phi2 phi1_proved phi1->phi2_proved*)
-    
-    epose proof (_4 := P1 Γ A A _ _).
-    
-    epose proof (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
-    exact _5.
+    Check P2. Check Modus_ponens.
+    epose (_1 := P2 Γ A (A ---> A) A _ _ _).
+    epose (_2 := P1 Γ A (A ---> A) _ _).
+    epose (_3 := Modus_ponens _ _ _ _ _ _2 _1).
+    epose (_4 := P1 Γ A A _ _).
+    epose (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
+    exists _5.
+    { simpl; set_solver. }
+    { simpl; set_solver. }
+    { simpl; set_solver. }
     Unshelve.
 
     all: auto 10.
