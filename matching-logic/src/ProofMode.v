@@ -132,17 +132,25 @@ Open Scope ml_scope.
   #[local] Hint Resolve wf_app : core.
 
 (* A proof together with some properties of it. *)
-Record ProofWithInfo {Σ : Signature} (Γ : Theory) (ϕ : Pattern) := mkNiceProof
+Record ProofWithInfo
+  {Σ : Signature}
+  (Γ : Theory)
+  (ϕ : Pattern)
+  (pwi_generalized_evars : EVarSet)
+  (pwi_substituted_svars : SVarSet)
+  (pwi_uses_kt : bool )
+  :=
+mkProofWithInfo
 {
-  pwi_generalized_evars : EVarSet ;
-  pwi_substituted_svars : SVarSet ;
-  pwi_uses_kt : bool ;
   pwi_pf : Γ ⊢ ϕ ;
   
   pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ pwi_generalized_evars ;
   pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ pwi_substituted_svars ;
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) pwi_uses_kt ;
 }.
+
+Notation "Γ ⊢ ϕ 'using' 'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
+:= (@ProofWithInfo _ Γ ϕ evs svs bkt) (at level 95, no associativity).
 
 
 Record MyGoal {Σ : Signature} : Type := mkMyGoal { mgTheory : Theory; mgHypotheses: list Pattern; mgConclusion : Pattern }.
