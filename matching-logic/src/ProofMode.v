@@ -213,19 +213,15 @@ Section FOL_helpers.
     using PropositionalReasoning.
   Proof. 
     intros WFA.
-    Check P2. Check Modus_ponens.
-    epose (_1 := P2 Γ A (A ---> A) A _ _ _).
-    epose (_2 := P1 Γ A (A ---> A) _ _).
-    epose (_3 := Modus_ponens _ _ _ _ _ _2 _1).
-    epose (_4 := P1 Γ A A _ _).
-    epose (_5 := Modus_ponens Γ _ _ _ _ _4 _3).
+    pose (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_3 := Modus_ponens _ _ _ _2 _1).
+    pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_5 := Modus_ponens Γ _ _ _4 _3).
     exists _5.
-    { simpl; set_solver. }
-    { simpl; set_solver. }
-    { simpl; set_solver. }
-    Unshelve.
-
-    all: auto 10.
+    { abstract (simpl; set_solver). }
+    { abstract (simpl; set_solver). }
+    { abstract (simpl; set_solver). }
   Defined.
 
   #[local] Hint Resolve A_impl_A : core.
