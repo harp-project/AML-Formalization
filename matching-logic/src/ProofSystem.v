@@ -245,6 +245,62 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) : SVarSet :=
+      match pf with
+      | hypothesis _ _ _ _ => ∅
+      | P1 _ _ _ _ _ => ∅
+      | P2 _ _ _ _ _ _ _ => ∅
+      | P3 _ _ _ => ∅
+      | Modus_ponens _ _ _ _ _ m0 m1
+        => uses_of_svar_subst _ _ m0
+           ∪ uses_of_svar_subst _ _ m1
+      | Ex_quan _ _ _ _ => ∅
+      | Ex_gen _ _ _ _ _ _ pf' _ => uses_of_svar_subst _ _ pf'
+      | Prop_bott_left _ _ _ => ∅
+      | Prop_bott_right _ _ _ => ∅
+      | Prop_disj_left _ _ _ _ _ _ _ => ∅
+      | Prop_disj_right _ _ _ _ _ _ _ => ∅
+      | Prop_ex_left _ _ _ _ _ => ∅
+      | Prop_ex_right _ _ _ _ _ => ∅
+      | Framing_left _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Framing_right _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Svar_subst _ _ _ X _ _ m0 => {[X]} ∪ uses_of_svar_subst _ _ m0
+      | Pre_fixp _ _ _ => ∅
+      | Knaster_tarski _ _ phi psi m0 => uses_of_svar_subst _ _ m0
+      | Existence _ => ∅
+      | Singleton_ctx _ _ _ _ _ _ => ∅
+      end.
+
+  Lemma uses_of_svar_subst_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (X : svar) :
+    X ∈ uses_of_svar_subst Γ ϕ pf <-> uses_svar_subst {[X]} Γ ϕ pf = true.
+  Proof.
+    induction pf; simpl; try set_solver.
+    {
+      rewrite orb_true_iff. set_solver.
+    }
+    {
+      rewrite elem_of_union. rewrite IHpf. clear IHpf.
+      destruct (decide (X0 ∈ {[X]})) as [Hin|Hnotin].
+      {
+        rewrite elem_of_singleton in Hin. subst.
+        split; intros H. reflexivity. left. rewrite elem_of_singleton.
+        reflexivity.
+      }
+      {
+        split; intros H.
+        {
+          destruct H as [H|H].
+          {
+            exfalso. set_solver.
+          }
+          exact H.
+        }
+        {
+          right. exact H.
+        }
+      }
+    }
+  Qed.
 
   Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
     match pf with
