@@ -47,8 +47,6 @@ Open Scope ml_scope.
       apply andb_prop in wfxs. destruct wfxs. auto.
   Qed.
 
-  #[local] Hint Resolve well_formed_foldr : core.
-  
   Lemma wf_take {Σ : Signature} n xs :
     wf xs = true ->
     wf (take n xs) = true.
@@ -58,8 +56,6 @@ Open Scope ml_scope.
     rewrite foldr_andb_true_take; auto.
   Qed.
 
-  #[local] Hint Resolve wf_take : core.
-
   Lemma wf_drop {Σ : Signature} n xs:
     wf xs = true ->
     wf (drop n xs) = true.
@@ -68,8 +64,6 @@ Open Scope ml_scope.
     rewrite map_drop.
     rewrite foldr_andb_true_drop; auto.
   Qed.
-
-  #[local] Hint Resolve wf_drop : core.
 
   Lemma wf_insert {Σ : Signature} n p xs:
     wf xs = true ->
@@ -91,16 +85,12 @@ Open Scope ml_scope.
       rewrite IHn; auto.
   Qed.
 
-  #[local] Hint Resolve wf_insert : core.
-
   Lemma wf_tail' {Σ : Signature} p xs:
     wf (p :: xs) = true ->
     wf xs = true.
   Proof.
     unfold wf. intros H. simpl in H. apply andb_prop in H. rewrite (proj2 H). reflexivity.
   Qed.
-
-  #[local] Hint Resolve wf_tail' : core.
 
   Lemma wf_cons {Σ : Signature} x xs:
     well_formed x = true ->
@@ -113,9 +103,7 @@ Open Scope ml_scope.
     reflexivity.
   Qed.
 
-  #[local] Hint Resolve wf_cons : core.
-  
-  Lemma wf_app {Σ : Signature} xs ys:
+   Lemma wf_app {Σ : Signature} xs ys:
     wf xs = true ->
     wf ys = true ->
     wf (xs ++ ys) = true.
@@ -129,7 +117,6 @@ Open Scope ml_scope.
     reflexivity.
   Qed.
 
-  #[local] Hint Resolve wf_app : core.
 
 Record GenericProofInfo {Σ : Signature} :=
   mkGenericProofInfo
@@ -143,9 +130,6 @@ Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
   := (@mkGenericProofInfo _ evs svs bkt) (at level 95, no associativity).
 
 Inductive ProofInfo {Σ : Signature} := pi_Propositional | pi_Generic (gpi : GenericProofInfo).
-
-Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
-Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
 
 (* A proof together with some properties of it. *)
 Record ProofInfoMeaning
@@ -164,6 +148,35 @@ mkProofInfoMeaning
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
 }.
 
+Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
+{ pi_le :
+  forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ),
+    @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
+}.
+
+#[global]
+Instance pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
+Proof.
+  constructor. intros Γ ϕ pf H. exact H.
+Qed.
+
+#[global]
+Instance pile_trans {Σ : Signature}
+  (i₁ i₂ i₃ : ProofInfo) {PILE12 : ProofInfoLe i₁ i₂} {PILE23 : ProofInfoLe i₂ i₃}
+: ProofInfoLe i₁ i₃.
+Proof.
+  destruct PILE12 as [PILE12].
+  destruct PILE23 as [PILE23].
+  constructor. intros Γ ϕ pf.
+  specialize (PILE12 Γ ϕ pf).
+  specialize (PILE23 Γ ϕ pf).
+  tauto.
+Qed.
+
+Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
+Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
+
+
 Lemma propositional_pi
   {Σ : Signature}
   (Γ : Theory)
@@ -179,6 +192,24 @@ Proof.
   { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
+Qed.
+
+#[global]
+Instance pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
+Proof.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct i.
+  { apply Hpf. }
+  { destruct gpi; simpl;
+    destruct Hpf; simpl in *;
+    constructor; simpl;
+    [(exact I)
+    |(set_solver)
+    |(set_solver)
+    |(destruct (uses_kt pf); simpl in *; try congruence)
+    ].
+  }
 Qed.
 
 (* Originally, the notation was defined like this: *)
@@ -842,8 +873,14 @@ Section FOL_helpers.
     apply bot_elim.
   Defined.
 
-  
+  Check Framing_left.
+  Search SqSubsetEq.
 
+  Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo) :
+    well_formed ψ ->
+    (i ⊑ BasicReasoning) ->
+    True.
+*)
   (*Was an axiom in AML_definition.v*)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
