@@ -59,7 +59,7 @@ match goal with
 | [ |- wf (?x :: ?xs) = true ]
   => apply wf_cons
 
-| [ |- wf (xs ++ ys) = true ]
+| [ |- wf (?xs ++ ?ys) = true ]
   => apply wf_app
 
 | [ |- well_formed (patt_free_evar _) = true]
