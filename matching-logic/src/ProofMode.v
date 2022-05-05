@@ -247,45 +247,27 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
-  #[local] Hint Resolve A_impl_A : core.
-  
-  Lemma A_impl_A_indifferent
-        P {HP : IndifProp P} Γ A (wfA : well_formed A):
-    P _ _ (@A_impl_A Γ A wfA) = false.
-  Proof.
-    unfold A_impl_A.
-    solve_indif.
-  Qed.
-
-  Canonical Structure A_impl_A_indifferent_S P {HP : IndifProp P} Γ A (wfA : well_formed A)
-    := ProofProperty0 P _ (A_impl_A_indifferent Γ wfA).
-
   Lemma P4m (Γ : Theory) (A B : Pattern) :
-    (well_formed A) -> (well_formed B) -> Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A))
+    using PropositionalReasoning.
   Proof.
-    intros WFA WFB. eapply (Modus_ponens Γ _ _ _ _).
-    - eapply(P1 _ (A ---> B) (A ---> B ---> Bot) _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
-          -- eapply(P2 _ A B Bot _ _ _).
-          -- eapply(P2 _ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) _ _ _).
-        * eapply (P1 _ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
-                     (A ---> B) _ _).
-      + eapply (P2 _ (A ---> B)
-                   ((A ---> B ---> Bot) ---> A ---> B)
-                   ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _).
-        Unshelve.
-        all: auto 10.
+    intros WFA WFB.
+    pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H3 := Modus_ponens _ _ _ H1 H2).
+    pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+      (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H5 := Modus_ponens _ _ _ H3 H4).
+    pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+      ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H7 := Modus_ponens _ _ _ H5 H6).
+    pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H9 := Modus_ponens _ _ _ H8 H7).
+    exists H9.
+    apply propositional_pi. reflexivity.
   Defined.
-
-  Program Canonical Structure P4m_indifferent_S P {HP : IndifProp P}
-            Γ A B (wfA : well_formed A) (wfB: well_formed B)
-    := ProofProperty0 P (P4m Γ wfA wfB) _.
-  Next Obligation.
-    intros. unfold P4m. solve_indif.
-  Qed.
-
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A -> Γ ⊢ ((A ---> !A) ---> !A).
