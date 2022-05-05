@@ -563,261 +563,157 @@ Section FOL_helpers.
     all: wf_auto2.
   Defined.
 
-  Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A and B).
+  Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ A using i ->
+    Γ ⊢ B using i ->
+    Γ ⊢ (A and B) using i.
   Proof.
     intros WFA WFB H H0.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H0.
-    - eapply (Modus_ponens _ _ _ _ _).
+    - eapply MP.
       + exact H.
-      + exact (@conj_intro _ A B WFA WFB).
-        Unshelve.
-        all: auto.
+      + apply usePropositionalReasoning.
+        apply conj_intro; wf_auto2.
   Defined.
   
-  Lemma conj_intro_meta_indifferent
-        P {Pip : IndifProp P} Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (HA : Γ ⊢ A)
-        (HB : Γ ⊢ B):
-    P _ _ HA = false ->
-    P _ _ HB = false ->
-    P _ _ (@conj_intro_meta Γ A B wfA wfB HA HB) = false.
-  Proof. intros H1 H2. solve_indif; assumption. Qed.
-
-  Canonical Structure conj_intro_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (A B : Pattern)
-          (wfA : well_formed A) (wfB : well_formed B)
-    := ProofProperty2 P _ (@conj_intro_meta_indifferent P _ Γ _ _ wfA wfB).
-
-  Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (C ---> D) -> Γ ⊢ (A ---> B ---> D).
+  Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    well_formed D ->
+    Γ ⊢ (A ---> B ---> C) using i ->
+    Γ ⊢ (C ---> D) using i ->
+    Γ ⊢ (A ---> B ---> D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H.
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
-          -- eapply (Modus_ponens _ _ _ _ _).
+    - eapply MP.
+      + eapply MP.
+        * eapply MP.
+          -- eapply MP.
              ++ exact H0.
-             ++ eapply (P1 _ (C ---> D) B _ _).
-          -- eapply (P2 _ B C D _ _ _).
-        * eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
-      + eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
+             ++ apply usePropositionalReasoning. 
+                eapply (P1 _ (C ---> D) B _ _).
+          -- apply usePropositionalReasoning.  
+              eapply (P2 _ B C D _ _ _).
+        * apply usePropositionalReasoning. 
+          eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
+      + apply usePropositionalReasoning. 
+        eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
         Unshelve.
         all: wf_auto2.
   Defined.
 
-  (* I would like the lemmas proved using tactics, and other lemmas too,
-    to carry with them an information about
-     what evars they generalize on.
-     There will be a record for it, together with a coercion/projection of the proof itself.
-     There will be a variant of Deduction theorem that takes the record as its input.
-   *)
-
-  Lemma syllogism_4_meta_indifferent
-        P {Pip : IndifProp P} Γ a b c d
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (wfc : well_formed c = true)
-        (wfd : well_formed d = true)
-        (pf1 : Γ ⊢ a ---> b ---> c)
-        (pf2 : Γ ⊢ c ---> d):
-    P _ _ pf1 = false ->
-    P _ _ pf2 = false ->
-    P _ _ (@syllogism_4_meta Γ a b c d wfa wfb wfc wfd pf1 pf2) = false.
-  Proof. intros. solve_indif; assumption. Qed.
-
-  Canonical Structure syllogism_4_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b c d
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-        (wfc : well_formed c = true)
-        (wfd : well_formed d = true)
-    := ProofProperty2 P _ (@syllogism_4_meta_indifferent P _ Γ _ _ _ _ wfa wfb wfc wfd).
-
-
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ (Bot ---> A).
+    well_formed A ->
+    Γ ⊢ (Bot ---> A)
+    using PropositionalReasoning.
   Proof.
     intros WFA.
-    eapply (Modus_ponens _ _ _ _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
+    - eapply MP.
+      + eapply MP.
+        * eapply MP.
           -- eapply (P1 _ Bot Bot _ _).
           -- eapply (P2 _ Bot Bot Bot _ _ _).
         * eapply (@P4 _ Bot Bot _ _).
       + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
     - eapply (@P4 _ A Bot _ _).
       Unshelve.
-      all: auto.
+      all: wf_auto2.
   Defined.
-
-  Lemma bot_elim_indifferent
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
-    P _ _ (@bot_elim Γ a wfa) = false.
-  Proof. solve_indif. Qed.
-
-  Canonical Structure bot_elim_indifferent_S
-        P {Pip : IndifProp P} Γ a
-        (wfa : well_formed a = true)
-    := ProofProperty0 P _ (@bot_elim_indifferent P _ Γ _ wfa).
 
   Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> (!B ---> !A) ---> B).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> (!B ---> !A) ---> B)
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    assert(well_formed (! B ---> ! A)).
-    shelve.
-    exact (@reorder_meta Γ _ _ _ H WFA WFB (@P4 _ B A WFB WFA)).
-    Unshelve.
-    all: auto.
+    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+    apply P4; wf_auto2.
   Defined.
-
-  Program Canonical Structure modus_ponens'_indifferent_S
-            P {Pip : IndifProp P} Γ A B (wfA : well_formed A) (wfB : well_formed B)
-    := ProofProperty0 P (@modus_ponens' Γ A B wfA wfB) _.
-  Next Obligation. intros. solve_indif. Qed.
 
   Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (B ---> (A or B)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (B ---> (A or B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    assert(well_formed (!A)).
-    shelve.
-    exact (P1 _ B (!A) WFB H).
-    Unshelve.
-    all: auto.
+    apply usePropositionalReasoning.
+    apply P1; wf_auto2.
   Defined.
-
-  #[local] Hint Resolve disj_right_intro : core.
-
-  Lemma disj_right_intro_indifferent
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true) :
-    P _ _ (@disj_right_intro Γ a b wfa wfb) = false.
-  Proof. solve_indif. Qed.
-
-  Canonical Structure disj_right_intro_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-    := ProofProperty0 P _ (@disj_right_intro_indifferent P _ Γ a b wfa wfb).
-
   
   Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> (A or B)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> (A or B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    eapply (@syllogism_4_meta _ _ _ _ _ _ _ _ _ (@modus_ponens _ A Bot _ _) (@bot_elim _ B _)).
-    Unshelve.
-    all: auto.
+    eapply syllogism_4_meta.
+    5: { apply modus_ponens; wf_auto2. }
+    5: { apply bot_elim; wf_auto2. }
+    all: wf_auto2.
   Defined.
 
-  #[local] Hint Resolve disj_left_intro : core.
-
-  Lemma disj_left_intro_indifferent
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true) :
-    P _ _ (@disj_left_intro Γ a b wfa wfb) = false.
-  Proof. solve_indif. Qed.
-
-  Canonical Structure disj_left_intro_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-    := ProofProperty0 P _ (@disj_left_intro_indifferent P _ Γ a b wfa wfb).
-
-  Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) :
+  Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ B ->
-    Γ ⊢ (A or B).
+    Γ ⊢ B using i ->
+    Γ ⊢ (A or B) using i.
   Proof.
     intros HwfA HwfB HB.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     { exact HB. }
-    eapply disj_right_intro; assumption.
-    Unshelve.
-    all: auto.
+    {
+      apply usePropositionalReasoning.
+      apply disj_right_intro; wf_auto2.
+    }
   Defined.
 
-  Program Canonical Structure disj_right_intro_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-    := ProofProperty1 P (@disj_right_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) :
+  Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ->
-    Γ ⊢ (A or B).
+    Γ ⊢ A using i ->
+    Γ ⊢ (A or B) using i.
   Proof.
     intros HwfA HwfB HA.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     { exact HA. }
-    eapply disj_left_intro; assumption.
-    Unshelve.
-    all: auto.
+    apply usePropositionalReasoning.
+    apply disj_left_intro; assumption.
   Defined.
-
-  Program Canonical Structure disj_left_intro_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true)
-    := ProofProperty1 P (@disj_left_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ (!(!A) ---> A).
+    well_formed A ->
+    Γ ⊢ (!(!A) ---> A)
+    using PropositionalReasoning.
   Proof.
     intros WFA.
-    unfold patt_not.
-    exact (P3 Γ A WFA).
+    apply P3. exact WFA.
   Defined.
 
-  #[local] Hint Resolve not_not_elim : core.
-
-  Lemma not_not_elim_indifferent
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true):
-    P _ _ (@not_not_elim Γ a wfa) = false.
-  Proof. solve_indif. Qed.
-
-  Canonical Structure not_not_elim_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty0 P _ (@not_not_elim_indifferent P _ Γ _ wfa).
-
-    (* Now I think that MyGoal has to be aware *)
-  Lemma not_not_elim_meta Γ A :
+  Lemma not_not_elim_meta Γ A (i : ProofInfo) :
     well_formed A ->
-    Γ ⊢ (! ! A) ->
-    Γ ⊢ A.
+    Γ ⊢ (! ! A) using i ->
+    Γ ⊢ A using i.
   Proof.
     intros wfA nnA.
-    pose proof (H := @not_not_elim Γ A wfA).
-    eapply Modus_ponens. 4: apply H.
-    all: auto.
+    eapply MP.
+    { apply nnA. }
+    { apply usePropositionalReasoning. apply not_not_elim. exact wfA. }
   Defined.
 
-  #[local] Hint Resolve not_not_elim_meta : core.
-
-  Program Canonical Structure not_not_elim_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty1 P (@not_not_elim_meta Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
   Proof.
     intros WFA WFB.
     eapply (@syllogism_intro _ _ _ _ _ _ _).
