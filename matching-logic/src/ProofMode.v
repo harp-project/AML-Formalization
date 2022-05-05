@@ -446,160 +446,86 @@ Section FOL_helpers.
     apply reorder; wf_auto2.
   Defined.
 
-  Lemma reorder_meta_indifferent
-        P {HP : IndifProp P} Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C)
-        (AimpBimpC : Γ ⊢ A ---> B ---> C):
-    P _ _ AimpBimpC = false ->
-    P _ _ (@reorder_meta Γ A B C wfA wfB wfC AimpBimpC) = false.
-  Proof.
-    intros H. solve_indif. assumption.
-  Qed.
-
-  Program Canonical Structure reorder_meta_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (A B C : Pattern)
-          (wfA : well_formed A) (wfB : well_formed B) (wfC : well_formed C)
-    := ProofProperty1 P (fun pf1 => @reorder_meta Γ A B C wfA wfB wfC pf1) _.
-  Next Obligation.
-    intros. apply reorder_meta_indifferent; assumption.
-  Qed.
-
   Lemma syllogism (Γ : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C)).
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB WFC.
-    eapply (reorder_meta _ _ _).
-    eapply (Modus_ponens _ _ _ _ _).
-    - eapply(P1 _ (B ---> C) A _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (P2 _ A B C _ _ _).
-        * eapply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C) _ _).
-      + eapply (P2 _ (B ---> C) (A ---> B ---> C) ((A ---> B) ---> A ---> C) _ _ _).
-        Unshelve.
-        all: auto 10.
+    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+    eapply MP.
+    - apply(P1 _ (B ---> C) A); wf_auto2.
+    - eapply MP.
+      + eapply MP.
+        * apply (P2 _ A B C); wf_auto2.
+        * apply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C)); wf_auto2.
+      + apply P2; wf_auto2.
   Defined.
-
-  #[local] Hint Resolve syllogism : core.
-
-  Lemma syllogism_indifferent
-        P {Pip : IndifProp P} Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C):
-    P _ _ (@syllogism Γ A B C wfA wfB wfC) = false.
-  Proof.
-    unfold syllogism. solve_indif.
-  Qed.
-
-  Canonical Structure syllogism_indifferent_S P {HP : IndifProp P} Γ A B C
-            (wfA : well_formed A) (wfB : well_formed B) (wfC : well_formed C)
-    := ProofProperty0 P _ (syllogism_indifferent Γ wfA wfB wfC).
-
   
-  (* TODO rename to syllogism_meta *)
-  Lemma syllogism_intro (Γ : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ (A ---> B) -> Γ ⊢ (B ---> C) -> Γ ⊢ (A ---> C).
+  Lemma syllogism_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    Γ ⊢ (A ---> B) using i ->
+    Γ ⊢ (B ---> C) using i ->
+    Γ ⊢ (A ---> C) using i.
   Proof.
     intros H H0 H1 H2 H3.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H2.
-    - eapply (Modus_ponens _ _ _ _ _).
+    - eapply MP.
       + exact H3.
-      + eapply (reorder_meta _ _ _). exact (@syllogism _ A B C H H0 H1).
-        Unshelve.
-        all: auto.
+      + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+        apply usePropositionalReasoning.
+        apply syllogism; wf_auto2.
   Defined.
-
-  (* TODO: remove these hints *)
-  #[local] Hint Resolve syllogism_intro : core.
-
-  Lemma syllogism_intro_indifferent
-        P {Pip : IndifProp P} Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C)
-        (AimpB : Γ ⊢ A ---> B)
-        (BimpC : Γ ⊢ B ---> C):
-    P _ _ AimpB = false ->
-    P _ _ BimpC = false ->
-    P _ _ (@syllogism_intro Γ A B C wfA wfB wfC AimpB BimpC) = false.
-  Proof.
-    intros H1 H2. unfold syllogism_intro. solve_indif; assumption.
-  Qed.
-
-  Program Canonical Structure syllogism_intro_indifferent_S (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (A B C : Pattern)
-          (wfA : well_formed A)
-          (wfB : well_formed B)
-          (wfC : well_formed C)
-    := ProofProperty2 P (fun pf1 pf2 => @syllogism_intro Γ A B C wfA wfB wfC pf1 pf2) _.
-  Next Obligation.
-    intros. apply syllogism_intro_indifferent; assumption.
-  Qed.
   
-  Lemma modus_ponens (Γ : Theory) ( A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> (A ---> B) ---> B).
+  Lemma modus_ponens (Γ : Theory) (A B : Pattern) :
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> (A ---> B) ---> B)
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    eapply (Modus_ponens _ _ _ _ _).
-    - eapply (P1 _ A (A ---> B) _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (@A_impl_A _ (A ---> B) _).
-        * eapply (P2 _ (A ---> B) A B _ _ _).
-      + eapply (reorder_meta _ _ _).
-        * eapply (@syllogism _ A ((A ---> B) ---> A) ((A ---> B) ---> B) _ _ _).
-          Unshelve.
-          all: auto 10.
+    eapply MP.
+    - apply (P1 _ A (A ---> B) _ ltac:(wf_auto2) ltac:(wf_auto2)).
+    - eapply MP.
+      + eapply MP.
+        * apply (@A_impl_A _ (A ---> B) ltac:(wf_auto2)).
+        * eapply (P2 _ (A ---> B) A B _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+        apply syllogism; wf_auto2.
   Defined.
-
-  (* TODO: remove this hint *)
-  #[local] Hint Resolve modus_ponens : core.
-  
-  Lemma modus_ponens_indifferent
-        P {Pip : IndifProp P} Γ A B
-        (wfA : well_formed A)
-        (wfB : well_formed B):
-    P _ _ (@modus_ponens Γ A B wfA wfB) = false.
-  Proof.
-    unfold modus_ponens. solve_indif.
-  Qed.
 
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ (A ---> !(!A)).
+    well_formed A ->
+    Γ ⊢ (A ---> !(!A))
+    using PropositionalReasoning.
   Proof.
     intros WFA.
-    assert(@well_formed Σ Bot).
-    shelve.
-    exact (@modus_ponens _ A Bot WFA H).
-    Unshelve.
-    all: auto.
+    apply modus_ponens; wf_auto2.
   Defined.
 
-  #[local] Hint Resolve not_not_intro : core.
-
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
-    well_formed A -> well_formed B -> 
-    Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A)).
+    well_formed A ->
+    well_formed B -> 
+    Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    epose proof (m := P3 Γ A _).
-    epose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B _ _).
-    epose proof (m1 := P2 Γ (B) ((A ---> Bot) ---> Bot) (A) _ _ _).
-    epose proof (m2 := Modus_ponens Γ _ _ _ _ m m0).
-    epose proof (m3 := Modus_ponens Γ _ _ _ _ m2 m1).
-    epose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) _ _ ).
-    epose proof (m5 := Modus_ponens Γ _ _ _ _ m3 m4).
-    epose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) _ _ _).
-    epose proof (m7 := Modus_ponens Γ _ _ _ _ m5 m6).
-    epose proof (m8 := @reorder Γ (A ---> Bot) (B) (Bot) _ _ _).
-    eapply (Modus_ponens Γ _ _ _ _ m8 m7).
-    Unshelve.
-    all: wf_auto2.
+    pose proof (m := P3 Γ A PropositionalReasoning ltac:(wf_auto2)).
+    pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m2 := MP m m0).
+    pose proof (m3 := MP m2 m1).
+    pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ).
+    pose proof (m5 := MP m3 m4).
+    pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m7 := MP m5 m6).
+    pose proof (m8 := @reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    apply (MP m8 m7).
   Defined.
 
   Lemma P4_indifferent
