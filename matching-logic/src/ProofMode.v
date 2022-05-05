@@ -523,56 +523,45 @@ Section FOL_helpers.
   Defined.
 
   Lemma conj_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A and B)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A ---> B ---> (A and B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    epose(tB := (@A_impl_A Γ B _)).
-    epose(t1 := Modus_ponens Γ _ _ _ _ (P2 _ (!(!A) ---> !B) A Bot _ _ _)
-                             (P1 _ _ B _ _)).
-    epose(t2 := Modus_ponens Γ _ _ _ _  (reorder_meta _ _ _ (@P4 _ (!A) B _ _))
-                             (P1 _ _ B _ _)).
-    epose(t3'' := Modus_ponens Γ _ _ _ _ (P1 _ A (!(!A) ---> !B) _ _)
-                               (P1 _ _ B _ _)).
-    epose(t4 := Modus_ponens Γ _ _ _ _ tB
-                             (Modus_ponens Γ _ _ _ _ t2
-                                           (P2 _ B B _ _ _ _))).
-    epose(t5'' := 
-            Modus_ponens Γ _ _ _ _ t4
-                         (Modus_ponens Γ _ _ _ _ t1
+    pose proof (tB := (@A_impl_A Γ B ltac:(wf_auto2))).
+    epose proof (t1 := MP (P2 _ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _)).
+    epose proof (t2 := MP (reorder_meta _ _ _ (@P4 _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
+    epose proof (t3'' := MP (P1 _ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
+    epose proof (t4 := MP tB (MP t2 (P2 _ B B _ _ _ _))).
+    epose proof (t5'' := 
+            MP t4
+                         (MP t1
                                        (P2 _ B ((!(!A) ---> !B) ---> !A)
                                            (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _))).
     
-    epose(tA := (P1 Γ A B) _ _).
-    epose(tB' := Modus_ponens Γ _ _ _ _ tB
+    epose proof (tA := (P1 Γ A B) _ _).
+    epose proof (tB' := MP tB
                               (P1 _ (B ---> B) A _ _)).
-    epose(t3' := Modus_ponens Γ _ _ _ _ t3''
+    epose proof (t3' := MP t3''
                               (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _)).
-    epose(t3 := Modus_ponens Γ _ _ _ _ t3'
+    epose proof (t3 := MP t3'
                              (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _)).
-    epose(t5' := Modus_ponens Γ _ _ _ _ t5''
+    epose proof (t5' := MP t5''
                               (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _)).
-    epose(t5 := Modus_ponens Γ _ _ _ _ t5' 
+    epose proof (t5 := MP t5' 
                              (P1 _ ((B ---> (! (! A) ---> ! B) ---> A) ---> B ---> ! (! (! A) ---> ! B))
                                  A _ _)).
-    epose(t6 := Modus_ponens Γ _ _ _ _ tA
-                             (Modus_ponens Γ _ _ _ _ t3
+    epose proof (t6 := MP tA
+                             (MP t3
                                            (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _))).
-    epose(t7 := Modus_ponens Γ _ _ _ _ t6 
-                             (Modus_ponens Γ _ _ _ _ t5 
+    epose proof (t7 := MP t6 
+                             (MP t5 
                                            (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
-    unfold patt_and.  unfold patt_or.
-    exact t7.
+    apply t7.
     Unshelve.
-    all: auto 10.
+    all: wf_auto2.
   Defined.
-
-  Program Canonical Structure conj_intro_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (A B : Pattern)
-          (wfA : well_formed A) (wfB : well_formed B)
-    := ProofProperty0 P (@conj_intro Γ A B wfA wfB) _.
-  Next Obligation. intros. solve_indif. Qed.
-
 
   Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ A -> Γ ⊢ B -> Γ ⊢ (A and B).
