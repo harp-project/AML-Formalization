@@ -372,14 +372,14 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
   Qed.
   
-  Lemma propositional_implies_no_uses_ex_gen_2 Γ ϕ (pf : ML_proof_system Γ ϕ) (EvS : EVarSet) :
+  Lemma propositional_implies_no_uses_ex_gen_2 Γ ϕ (pf : ML_proof_system Γ ϕ) :
     propositional_only Γ ϕ pf = true -> uses_of_ex_gen Γ ϕ pf = ∅.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
 
-  Lemma propositional_implies_no_uses_svar_2 Γ ϕ (pf : ML_proof_system Γ ϕ) (EvS : EVarSet) :
+  Lemma propositional_implies_no_uses_svar_2 Γ ϕ (pf : ML_proof_system Γ ϕ)  :
     propositional_only Γ ϕ pf = true -> uses_of_svar_subst Γ ϕ pf = ∅.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.

@@ -171,12 +171,14 @@ Lemma propositional_pi
   (pf : Γ ⊢ ϕ)
   :
   propositional_only Γ ϕ pf = true ->
-  @ProofInfoMeaning Σ Γ ϕ pf pi_Propositional.
+  @ProofInfoMeaning Σ Γ ϕ pf PropositionalReasoning.
 Proof.
   intros H.
-  split.
-  { exact H. }
-  {  }
+  split; simpl.
+  { exact I. }
+  { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
+  { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
+  { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
 Qed.
 
 (* Originally, the notation was defined like this: *)
@@ -242,10 +244,7 @@ Section FOL_helpers.
     pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (_5 := Modus_ponens Γ _ _ _4 _3).
     exists _5.
-    split; simpl.
-    { abstract (simpl; set_solver). }
-    { abstract (simpl; set_solver). }
-    { abstract (simpl; set_solver). }
+    apply propositional_pi. reflexivity.
   Defined.
 
   #[local] Hint Resolve A_impl_A : core.
