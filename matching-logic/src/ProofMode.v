@@ -131,8 +131,8 @@ Open Scope ml_scope.
 
   #[local] Hint Resolve wf_app : core.
 
-Record ProofInfo {Σ : Signature} :=
-  mkProofInfo
+Record GenericProofInfo {Σ : Signature} :=
+  mkGenericProofInfo
   {
     pi_generalized_evars : EVarSet ;
     pi_substituted_svars : SVarSet ;
@@ -140,33 +140,56 @@ Record ProofInfo {Σ : Signature} :=
   }.
 
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
+  := (@mkGenericProofInfo _ evs svs bkt) (at level 95, no associativity).
 
-(* Currently, there is no difference between the definitions of
-   [PropositionalReasoning] and [BasicReasoning];
-   However, the intended meaning is that [PropositionalReasoning ⊂ BasicReasoning]
- *)
-Definition PropositionalReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
-Definition BasicReasoning {Σ} : ProofInfo := (@mkProofInfo Σ ∅ ∅ false).
+Inductive ProofInfo {Σ : Signature} := pi_Propositional | pi_Generic (gpi : GenericProofInfo).
+
+Definition PropositionalReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
+Definition BasicReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
 
 (* A proof together with some properties of it. *)
-Record ProofWithInfo
+Record ProofInfoMeaning
   {Σ : Signature}
   (Γ : Theory)
   (ϕ : Pattern)
+  (pwi_pf : Γ ⊢ ϕ)
   (pi : ProofInfo)
+  : Prop
   :=
-mkProofWithInfo
+mkProofInfoMeaning
 {
-  pwi_pf : Γ ⊢ ϕ ;
-  
-  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (pi_generalized_evars pi) ;
-  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (pi_substituted_svars pi) ;
-  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+  pwi_pf_prop : if pi is pi_Propositional then @propositional_only Σ Γ ϕ pwi_pf = true else True ;
+  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
+  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
+  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
 }.
 
+Lemma propositional_pi
+  {Σ : Signature}
+  (Γ : Theory)
+  (ϕ : Pattern)
+  (pf : Γ ⊢ ϕ)
+  :
+  propositional_only Γ ϕ pf = true ->
+  @ProofInfoMeaning Σ Γ ϕ pf pi_Propositional.
+Proof.
+  intros H.
+  split.
+  { exact H. }
+  {  }
+Qed.
+
+(* Originally, the notation was defined like this: *)
+(*
 Notation "Γ ⊢ ϕ 'using' pi"
 := (@ProofWithInfo _ Γ ϕ pi) (at level 95, no associativity).
+*)
+(* However, this overlaps with the old notation [Γ ⊢ ϕ] and makes it unusable alone.*)
+
+Notation "G 'using' pi"
+:= ({pf : G | @ProofInfoMeaning _ _ _ pf pi }) (at level 95, no associativity).
+
+
 
 
 Record MyGoal {Σ : Signature} : Type := mkMyGoal
@@ -185,7 +208,7 @@ Definition MyGoal_from_goal
 Notation "[ S , G ⊢ l ==> g ] 'using' pi"
   := (@mkMyGoal S G l g pi) (at level 95, no associativity).
 
-
+Set Printing All.
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
   wf (mgHypotheses MG) ->
@@ -219,6 +242,7 @@ Section FOL_helpers.
     pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (_5 := Modus_ponens Γ _ _ _4 _3).
     exists _5.
+    split; simpl.
     { abstract (simpl; set_solver). }
     { abstract (simpl; set_solver). }
     { abstract (simpl; set_solver). }
