@@ -768,135 +768,95 @@ Section FOL_helpers.
       all: wf_auto2.
   Defined.
 
-  Program Canonical Structure not_not_impl_intro_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@not_not_impl_intro Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
   Lemma contraposition (Γ : Theory) (A B : Pattern) : 
-    well_formed A -> well_formed B -> 
-    Γ ⊢ ((A ---> B) ---> ((! B) ---> (! A))).
+    well_formed A ->
+    well_formed B -> 
+    Γ ⊢ ((A ---> B) ---> ((! B) ---> (! A)))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
     epose proof (@P4 Γ (! A) (! B) _ _) as m.
-    apply syllogism_intro with (B := (! (! A) ---> ! (! B))).
+    apply syllogism_meta with (B := (! (! A) ---> ! (! B))).
     - shelve.
     - shelve.
     - shelve.
-    - eapply (@not_not_impl_intro _ _ _ _ _).
+    - apply @not_not_impl_intro; wf_auto2.
     - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
       Unshelve.
-      all: auto.
+      all: wf_auto2.
   Defined.
 
-  Program Canonical Structure contraposition_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@contraposition Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma or_comm_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B ->
-    Γ ⊢ (A or B) -> Γ ⊢ (B or A).
+  Lemma or_comm_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo):
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (A or B) using i ->
+    Γ ⊢ (B or A) using i.
   Proof.
-    intros WFA WFB H. unfold patt_or in *.
-    
+    intros WFA WFB H. unfold patt_or in *.    
     epose proof (P4 := (@P4 Γ A (!B) _ _)).
-    
     epose proof (NNI := @not_not_intro Γ B _).
-    
-    epose proof (SI := @syllogism_intro Γ _ _ _ _ _ _ H NNI).
-    
-    eapply (Modus_ponens _ _ _ _ _).
+    apply (usePropositionalReasoning i) in P4.
+    apply (usePropositionalReasoning i) in NNI.
+    epose proof (SI := @syllogism_meta Γ _ _ _ _ _ _ _ H NNI).
+    eapply MP.
     - exact SI.
     - exact P4.
       Unshelve.
-      all: auto 10.
+      all: wf_auto2.
   Defined.
 
-  Program Canonical Structure or_comm_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@or_comm_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
-  Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ A -> Γ ⊢ (!( !A )).
+  Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    Γ ⊢ A using i ->
+    Γ ⊢ (!( !A )) using i.
   Proof.
     intros WFA H. unfold patt_not.
-    epose proof (NN := @not_not_intro Γ A _).
-    
-    epose proof (MP := Modus_ponens _ _ _ _ _ H NN).
-    assumption.
-    Unshelve.
-    all: auto.
+    eapply MP.
+    { apply H. }
+    {
+      apply usePropositionalReasoning.
+      apply not_not_intro.
+      exact WFA.
+    }
   Defined.
-
-  Program Canonical Structure A_implies_not_not_A_alt_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty1 P (@A_implies_not_not_A_alt Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma P5i (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (! A ---> (A ---> B)).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ (! A ---> (A ---> B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    
-    epose proof (Ax1 := (P1 Γ (!A) (!B) _ _)).
-    
-    epose proof (Ax2 := (@P4 Γ B A _ _)).
-    
-    epose proof (TRANS := @syllogism_intro _ _ _ _ _ _ _ Ax1 Ax2).
-    assumption.
-    Unshelve.
-    all: auto.
+    eapply syllogism_meta.
+    5: apply P4.
+    4: apply P1.
+    all: wf_auto2.
   Defined.
 
-  Program Canonical Structure P5i_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@P5i Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+  Search (Bot ---> ?A).
 
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
-    well_formed phi -> Γ ⊢ (Bot ---> phi).
+    well_formed phi ->
+    Γ ⊢ (Bot ---> phi) using PropositionalReasoning.
   Proof.
-    intros WFA.
-    
-    epose proof (B_B := (@A_impl_A Γ Bot _)).
-    epose proof (P4 := @P5i Γ Bot phi _ _).
-    
-    eapply (Modus_ponens _ _ _ _ _) in P4.
-    - assumption.
-    - assumption.
-      Unshelve.
-      all: auto.
+    apply bot_elim.
   Defined.
 
-  Program Canonical Structure false_implies_everthing_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty0 P (@false_implies_everything Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
-  (* Goal  forall (A B : Pattern) (Γ : Theory) , well_formed A -> well_formed B ->
-  Γ ⊢ ((A $ Bot) $ B ---> Bot).
-Proof.
-  intros.
-  epose (Prop_bott_right Γ A H).
-  epose (Framing_left Γ (A $ Bot) (Bot) B (m)).
-  epose (Prop_bott_left Γ B H0).
-  epose (syllogism_intro Γ _ _ _ _ _ _ (m0) (m1)).
-  exact m2.
-  Unshelve.
-  all: auto.
-Defined. *)
+  
 
   (*Was an axiom in AML_definition.v*)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
-    Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott).
+    Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
+    using BasicReasoning.
   Proof.
-    induction C.
-    - simpl. eapply false_implies_everything. shelve.
-    - simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p Prf IHC).
+    induction C; simpl.
+    - apply usePropositionalReasoning.
+      apply false_implies_everything.
+      wf_auto2.
+    - eapply syllogism_meta.
+      5: { apply Prop_bott}
+    
+      simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p Prf IHC).
       epose proof (m1 := @syllogism_intro Γ _ _ _ _ _ _ (m0) (Prop_bott_left Γ p Prf)). exact m1.
     - simpl. epose proof (m2 := Framing_right Γ (subst_ctx C Bot) (Bot) p Prf IHC).
 
