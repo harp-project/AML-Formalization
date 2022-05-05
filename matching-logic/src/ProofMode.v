@@ -267,53 +267,47 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
-  Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) :
+  Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed ϕ ->
     well_formed ψ ->
-    Γ ⊢ ϕ ---> ψ ---> ϕ using i.
+    Γ ⊢ ϕ ---> ψ ---> ϕ 
+    using PropositionalReasoning.
   Proof.
     intros wfϕ wfψ.
     unshelve (eexists).
     { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
     { abstract (
-        destruct i;
-        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
-        ]
+        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
       ).
     }
   Defined.
 
-  Lemma P2 (Γ : Theory) (ϕ ψ ξ : Pattern) (i : ProofInfo) :
+  Lemma P2 (Γ : Theory) (ϕ ψ ξ : Pattern) :
     well_formed ϕ ->
     well_formed ψ ->
     well_formed ξ ->
-    Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ) using i.
+    Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
+    using PropositionalReasoning.
   Proof.
     intros wfϕ wfψ wfξ.
     unshelve (eexists).
     { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
     { abstract (
-        destruct i;
-        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
-        ]
+        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
       ).
     }
   Defined.
 
-  Lemma P3 (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
+  Lemma P3 (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->
-    Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ) using i.
+    Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
+    using PropositionalReasoning.
   Proof.
     intros wfϕ.
     unshelve (eexists).
     { apply ProofSystem.P3. exact wfϕ. }
     { abstract (
-        destruct i;
-        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
-        ]
+        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
       ).
     }
   Defined.
@@ -355,11 +349,10 @@ Section FOL_helpers.
     }
   Defined.
 
-  Arguments P1 _ (_%ml) (_%ml) _ _ _ : clear implicits.
-  Arguments P2 _ (_%ml) (_%ml) (_%ml) _ _ _ _ : clear implicits.
-  Arguments P3 _ (_%ml) _ _ : clear implicits.
+  Arguments P1 _ (_%ml) (_%ml) _ _ : clear implicits.
+  Arguments P2 _ (_%ml) (_%ml) (_%ml) _ _ _ : clear implicits.
+  Arguments P3 _ (_%ml) _ : clear implicits.
 
-  About MP.
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A ->
@@ -382,15 +375,15 @@ Section FOL_helpers.
     intros WFA WFB WFC.
    
     pose (t1 := (MP
-                    (P1 Γ ((A ---> B) ---> A ---> C) B PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2))
-                    (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2)))).
+                    (P1 Γ ((A ---> B) ---> A ---> C) B ltac:(wf_auto2) ltac:(wf_auto2))
+                    (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)))).
   
     pose(ABC := (A ---> B ---> C)).
     
     eapply MP.
     - eapply MP.
-      + apply(P1 _ B A _ ltac:(wf_auto2) ltac:(wf_auto2)).
-      + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) _ ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply(P1 _ B A ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)).
     - eapply MP.
       + eapply MP.
         * eapply MP.
@@ -398,20 +391,21 @@ Section FOL_helpers.
              ++ apply (@A_impl_A _ ABC ltac:(wf_auto2)).
              ++ eapply MP.
                 ** eapply MP.
-                   --- apply(P2 _ A B C _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-                   --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _ _)); wf_auto2.
+                   --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+                   --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)); wf_auto2.
                 ** apply P2; wf_auto2.
           -- eapply MP.
              ++ apply t1.
-             ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+             ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
         * eapply MP.
           -- eapply MP.
-             ++ apply(P2 _ B (A ---> B) (A ---> C) _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-             ++ apply(P1 _ _ ABC _); wf_auto2.
+             ++ apply(P2 _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+             ++ apply(P1 _ _ ABC); wf_auto2.
           -- apply P2; wf_auto2.
       + apply P2; wf_auto2.
   Defined.
 
+  (* This lemma is the reason why we could make P1,P2,P3 specialized to PropositionalReasoning *)
   Lemma usePropositionalReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
     Γ ⊢ ϕ using PropositionalReasoning ->
     Γ ⊢ ϕ using i.
@@ -490,11 +484,11 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB.
     eapply MP.
-    - apply (P1 _ A (A ---> B) _ ltac:(wf_auto2) ltac:(wf_auto2)).
+    - apply (P1 _ A (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2)).
     - eapply MP.
       + eapply MP.
         * apply (@A_impl_A _ (A ---> B) ltac:(wf_auto2)).
-        * eapply (P2 _ (A ---> B) A B _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+        * eapply (P2 _ (A ---> B) A B ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
       + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
         apply syllogism; wf_auto2.
   Defined.
@@ -515,35 +509,18 @@ Section FOL_helpers.
     using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    pose proof (m := P3 Γ A PropositionalReasoning ltac:(wf_auto2)).
-    pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m := P3 Γ A ltac:(wf_auto2)).
+    pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose proof (m2 := MP m m0).
     pose proof (m3 := MP m2 m1).
-    pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ).
+    pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) ltac:(wf_auto2) ltac:(wf_auto2) ).
     pose proof (m5 := MP m3 m4).
-    pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose proof (m7 := MP m5 m6).
     pose proof (m8 := @reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     apply (MP m8 m7).
   Defined.
-
-  Lemma P4_indifferent
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true)
-        (wfb : well_formed b = true):
-    P _ _ (@P4 Γ a b wfa wfb) = false.
-  Proof.
-    solve_indif.
-  Qed.
-
-  Program Canonical Structure P4_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P}
-          (Γ : Theory) (A B : Pattern)
-          (wfA : well_formed A) (wfB : well_formed B)
-    := ProofProperty0 P (@P4 Γ A B wfA wfB) _.
-  Next Obligation. intros. apply P4_indifferent; assumption. Qed.
-
 
   Lemma conj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B -> Γ ⊢ (A ---> B ---> (A and B)).
