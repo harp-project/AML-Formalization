@@ -269,6 +269,59 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
+  Check P1.
+
+  Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) :
+    well_formed ϕ ->
+    well_formed ψ ->
+    Γ ⊢ ϕ ---> ψ ---> ϕ using i.
+  Proof.
+    intros wfϕ wfψ.
+    unshelve (eexists).
+    { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
+    { abstract (
+        destruct i;
+        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
+        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
+        ]
+      ).
+    }
+  Defined.
+
+  Lemma P2 (Γ : Theory) (ϕ ψ ξ : Pattern) (i : ProofInfo) :
+    well_formed ϕ ->
+    well_formed ψ ->
+    well_formed ξ ->
+    Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ) using i.
+  Proof.
+    intros wfϕ wfψ wfξ.
+    unshelve (eexists).
+    { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
+    { abstract (
+        destruct i;
+        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
+        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
+        ]
+      ).
+    }
+  Defined.
+
+  Lemma P3 (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
+    well_formed ϕ ->
+    Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ) using i.
+  Proof.
+    intros wfϕ.
+    unshelve (eexists).
+    { apply ProofSystem.P3. exact wfϕ. }
+    { abstract (
+        destruct i;
+        [(constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
+        |(constructor; simpl; [(exact I)|(set_solver)|(set_solver)|(reflexivity)])
+        ]
+      ).
+    }
+  Defined.
+
   Lemma MP (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
     Γ ⊢ ϕ₁ using i ->
     Γ ⊢ (ϕ₁ ---> ϕ₂) using i ->
@@ -318,17 +371,22 @@ Section FOL_helpers.
   Defined.
 
   Lemma reorder (Γ : Theory) (A B C : Pattern) :
-    well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->
+    Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB WFC.
-    epose proof (t1 := (Modus_ponens Γ _ _ _ _
+   
+    epose proof (t1 := (Modus_ponens Γ _ _
                                      (P1 Γ ((A ---> B) ---> A ---> C) B _ _)
                                      (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
-    
+  
     pose(ABC := (A ---> B ---> C)).
     
-    eapply (Modus_ponens _ _ _ _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
+    - eapply MP.
       + eapply(P1 _ B A _ _).
       + eapply(P1 _ (B ---> A ---> B) (A ---> B ---> C) _ _).
     - eapply (Modus_ponens _ _ _ _ _).
