@@ -269,23 +269,53 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
-  Lemma P4i (Γ : Theory) (A : Pattern) :
-    well_formed A -> Γ ⊢ ((A ---> !A) ---> !A).
+  Lemma MP (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
+    Γ ⊢ ϕ₁ using i ->
+    Γ ⊢ (ϕ₁ ---> ϕ₂) using i ->
+    Γ ⊢ ϕ₂ using i.
   Proof.
-    intros WFA. eapply (Modus_ponens _ _ _ _ _).
-    - eapply (@A_impl_A _ A _). (*In the outdated: A_impl_A = P1*)
-    - eapply (@P4m _ A A _ _).
-      Unshelve.
-      all: auto 10.
+    intros H1 H2.
+    unshelve (eexists).
+    {
+      eapply (Modus_ponens _ _ _).
+      { apply H1. }
+      { apply H2. }
+    }
+    {
+      abstract(
+      simpl;
+      destruct H1 as [pf1 Hpf1];
+      destruct H2 as [pf2 Hpf2];
+      destruct Hpf1,Hpf2;
+      destruct i;
+      [(
+        constructor;
+        [(simpl; rewrite pwi_pf_prop0; rewrite pwi_pf_prop1; reflexivity)
+        | (simpl; set_solver)
+        | (simpl; set_solver)
+        | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+        ]
+      )|(
+        constructor;
+        [(exact I)
+        | (simpl; set_solver)
+        | (simpl; set_solver)
+        | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+        ]
+      )]).
+    }
   Defined.
 
-  Program Canonical Structure P4i_indifferent_S P {HP : IndifProp P}
-            Γ A (wfA : well_formed A)
-    := ProofProperty0 P (P4i Γ wfA) _.
-  Next Obligation.
-    intros. unfold P4m. solve_indif.
-  Qed.
-
+  Lemma P4i (Γ : Theory) (A : Pattern) :
+    well_formed A ->
+    Γ ⊢ ((A ---> !A) ---> !A)
+    using PropositionalReasoning.
+  Proof.
+    intros WFA.
+    eapply MP.
+    { apply (@A_impl_A _ A WFA). }
+    { apply (@P4m _ A A WFA WFA). }
+  Defined.
 
   Lemma reorder (Γ : Theory) (A B C : Pattern) :
     well_formed A -> well_formed B -> well_formed C -> Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C)).
