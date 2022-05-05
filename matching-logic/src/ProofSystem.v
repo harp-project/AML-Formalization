@@ -326,6 +326,53 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint propositional_only Γ ϕ (pf : Γ ⊢ ϕ) :=
+      match pf with
+      | hypothesis _ _ _ _ => true
+      | P1 _ _ _ _ _ => true
+      | P2 _ _ _ _ _ _ _ => true
+      | P3 _ _ _ => true
+      | Modus_ponens _ _ _ m0 m1
+        => propositional_only _ _ m0 && propositional_only _ _ m1
+      | Ex_quan _ _ _ _ => false
+      | Ex_gen _ _ _ _ _ _ pf' _ => false
+      | Prop_bott_left _ _ _ => false
+      | Prop_bott_right _ _ _ => false
+      | Prop_disj_left _ _ _ _ _ _ _ => false
+      | Prop_disj_right _ _ _ _ _ _ _ => false
+      | Prop_ex_left _ _ _ _ _ => false
+      | Prop_ex_right _ _ _ _ _ => false
+      | Framing_left _ _ _ _ _ m0 => false
+      | Framing_right _ _ _ _ _ m0 => false
+      | Svar_subst _ _ _ X _ _ m0 => false
+      | Pre_fixp _ _ _ => false
+      | Knaster_tarski _ _ phi psi m0 => false
+      | Existence _ => false
+      | Singleton_ctx _ _ _ _ _ _ => false
+      end.
+  
+  Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢ ϕ) :
+    propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+
+  Lemma propositional_implies_no_uses_svar Γ ϕ (pf : ML_proof_system Γ ϕ) (SvS : SVarSet) :
+    propositional_only Γ ϕ pf = true -> uses_svar_subst SvS Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+
+  Lemma propositional_implies_no_uses_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) (EvS : EVarSet) :
+    propositional_only Γ ϕ pf = true -> uses_ex_gen EvS Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+  
+
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
