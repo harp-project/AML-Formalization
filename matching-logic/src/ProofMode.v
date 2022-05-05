@@ -913,54 +913,23 @@ Section FOL_helpers.
       exact pf.
     }
     {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      constructor; simpl.
-      {
-        destruct i;[|exact I].
-        {
-
-        }
-        exact I.
-      }
-      {
-        destruct i. 2: {  }
-      }
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      constructor; simpl.
-      {
-        destruct pile as [pile].
-        destruct i.
-        {
-
-        }
-      }
       destruct i.
       {
-        apply pile.
-        unfold BasicReasoning.
-        constructor; simpl.
-        {
-          exact I.
-        }
-        {
-          exact Hpf2.
-        }
-        {
-          exact Hpf3.
-        }
-        {
-          exact Hpf4.
-        }
+        exfalso. apply not_basic_in_prop. apply pile.
       }
-      {
-        constructor; simpl.
-      }
-      constructor.
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      constructor; simpl.
       {
         exact I.
       }
       {
-        simpl.
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
       }
     }
   Defined.
