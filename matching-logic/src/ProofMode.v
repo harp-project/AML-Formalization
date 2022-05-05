@@ -269,8 +269,6 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
-  Check P1.
-
   Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) :
     well_formed ϕ ->
     well_formed ψ ->
@@ -359,6 +357,12 @@ Section FOL_helpers.
     }
   Defined.
 
+  Arguments P1 _ (_%ml) (_%ml) _ _ _ : clear implicits.
+  Arguments P2 _ (_%ml) (_%ml) (_%ml) _ _ _ _ : clear implicits.
+  Arguments P3 _ (_%ml) _ _ : clear implicits.
+
+  About MP.
+
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢ ((A ---> !A) ---> !A)
@@ -379,53 +383,39 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB WFC.
    
-    epose proof (t1 := (Modus_ponens Γ _ _
-                                     (P1 Γ ((A ---> B) ---> A ---> C) B _ _)
-                                     (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) _ _))).
+    pose (t1 := (MP
+                    (P1 Γ ((A ---> B) ---> A ---> C) B PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2))
+                    (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2)))).
   
     pose(ABC := (A ---> B ---> C)).
     
     eapply MP.
     - eapply MP.
-      + eapply(P1 _ B A _ _).
-      + eapply(P1 _ (B ---> A ---> B) (A ---> B ---> C) _ _).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
-          -- eapply (Modus_ponens _ _ _ _ _).
-             ++ eapply (@A_impl_A _ ABC _).
-             ++ eapply (Modus_ponens _ _ _ _ _).
-                ** eapply (Modus_ponens _ _ _ _ _).
-                   --- eapply(P2 _ A B C _ _ _).
-                   --- eapply(P1 _ _ (A ---> B ---> C) _ _).
-                ** eapply(P2 _ ABC ABC ((A ---> B) ---> (A ---> C)) _ _ _).
-          -- eapply (Modus_ponens _ _ _ _ _).
-             ++ eapply t1.
-             ++ eapply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
-          -- eapply (Modus_ponens _ _ _ _ _).
-             ++ eapply(P2 _ B (A ---> B) (A ---> C) _ _ _).
-             ++ eapply(P1 _ _ ABC _ _).
-          -- eapply(P2 _ ABC (B ---> (A ---> B) ---> A ---> C) ((B ---> A ---> B) ---> B ---> A ---> C) _ _ _).
-      + eapply(P2 _ ABC (B ---> A ---> B) (B ---> A ---> C) _ _ _).
-        Unshelve.
-        all: try unfold ABC; auto 10.
+      + apply(P1 _ B A _ ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) _ ltac:(wf_auto2) ltac:(wf_auto2)).
+    - eapply MP.
+      + eapply MP.
+        * eapply MP.
+          -- eapply MP.
+             ++ apply (@A_impl_A _ ABC ltac:(wf_auto2)).
+             ++ eapply MP.
+                ** eapply MP.
+                   --- apply(P2 _ A B C _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+                   --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _ _)); wf_auto2.
+                ** apply P2; wf_auto2.
+          -- eapply MP.
+             ++ apply t1.
+             ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+        * eapply MP.
+          -- eapply MP.
+             ++ apply(P2 _ B (A ---> B) (A ---> C) _ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+             ++ apply(P1 _ _ ABC _); wf_auto2.
+          -- apply P2; wf_auto2.
+      + apply P2; wf_auto2.
   Defined.
 
-  Lemma reorder_indifferent
-        P {HP : IndifProp P} Γ A B C
-        (wfA : well_formed A)
-        (wfB : well_formed B)
-        (wfC : well_formed C):
-    P _ _ (@reorder Γ A B C wfA wfB wfC) = false.
-  Proof.
-    unfold reorder. solve_indif.
-  Qed.
 
-  Canonical Structure reorder_indifferent_S P {HP : IndifProp P} Γ A B C
-            (wfA : well_formed A) (wfB : well_formed B) (wfC : well_formed C)
-    := ProofProperty0 P _ (reorder_indifferent Γ wfA wfB wfC).
-
+  (* TODO prove using the wrapper for meta *)
   Lemma reorder_meta (Γ : Theory) {A B C : Pattern} :
     well_formed A -> well_formed B -> well_formed C ->  
     Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (B ---> A ---> C).
