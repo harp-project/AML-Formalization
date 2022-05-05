@@ -713,86 +713,59 @@ Section FOL_helpers.
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B)).
+    Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    eapply (@syllogism_intro _ _ _ _ _ _ _).
-    - eapply (@P4 _ (!A) (!B) _ _).
-    - eapply (@P4 _ B A _ _).
-      Unshelve.
-      all: auto.
+    eapply syllogism_meta.
+    5: apply P4.
+    4: apply P4.
+    all: wf_auto2.
   Defined.
 
-  Program Canonical Structure double_neg_elim_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@double_neg_elim Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> 
-    Γ ⊢ ((!(!A)) ---> (!(!B))) -> Γ ⊢ (A ---> B).
+  Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    well_formed B -> 
+    Γ ⊢ ((!(!A)) ---> (!(!B))) using i ->
+    Γ ⊢ (A ---> B) using i.
   Proof.
     intros WFA WFB H.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H.
-    - exact (@double_neg_elim _ A B WFA WFB).
-      Unshelve.
-      all: auto 10.
+    - apply usePropositionalReasoning.
+      apply double_neg_elim; wf_auto2.
   Defined.
-
-  Program Canonical Structure double_neg_elim_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@double_neg_elim_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
-  Lemma not_not_impl_intro_meta (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((! ! A) ---> (! ! B)).
-  Proof.
-    intros WFA WFB H.
-    epose proof (NN1 := @not_not_elim Γ A _).
-    epose proof (NN2 := @not_not_intro Γ B _).
-    
-    epose proof (S1 := @syllogism_intro _ _ _ _ _ _ _ H NN2).
-    
-    epose proof (S2 := @syllogism_intro _ _ _ _ _ _ _ NN1 S1).
-    exact S2.
-    Unshelve.
-    all: auto.
-  Defined.
-
-  Program Canonical Structure not_not_impl_intro_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@not_not_impl_intro_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B))).
+    well_formed A ->
+    well_formed B ->
+    Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B)))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
     
     epose (S1 := @syllogism Γ (! ! A) A B _ _ _).
     
-    epose (MP1 := Modus_ponens _ (! (! A) ---> A) ((A ---> B) ---> ! (! A) ---> B) _ _ (@not_not_elim _ A _) S1).
+    epose (MP1 := MP (@not_not_elim _ A _) S1).
     
     epose(NNB := @not_not_intro Γ B _).
 
     epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
     
-    epose(MP2 := Modus_ponens _ _ _ _ _ NNB P1).
+    epose(MP2 := MP NNB P1).
     
-    epose(P2 := (P2 Γ (! ! A) B (! !B) _ _ _)).
+    epose(P2' := (P2 Γ (! ! A) B (! !B) _ _ _)).
     
-    epose(MP3 := Modus_ponens _ _ _ _ _ MP2 P2).
+    epose(MP3 := MP MP2 P2').
     
-    eapply @syllogism_intro with (B := (! (! A) ---> B)).
+    eapply @syllogism_meta with (B := (! (! A) ---> B)).
     - shelve.
     - shelve.
     - shelve.
     - assumption.
     - assumption.
       Unshelve.
-      all: auto 10.
+      all: wf_auto2.
   Defined.
 
   Program Canonical Structure not_not_impl_intro_indifferent_S
