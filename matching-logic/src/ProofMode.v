@@ -1158,80 +1158,85 @@ Defined.
     2: { apply usePropositionalReasoning. apply contraposition; wf_auto2. }
     apply H.
   Defined.
-
-  Program Canonical Structure modus_tollens_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@modus_tollens Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
   
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> ! !B) ---> (A ---> B)).
+    Γ ⊢ ((A ---> ! !B) ---> (A ---> B))
+    using PropositionalReasoning.
   Proof.
     intros WFA WFB.
-    assert (Γ ⊢ (! !B ---> B)) by auto.
-    assert (Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B))) by auto.
-    apply reorder_meta in H0; auto.
-    eapply Modus_ponens. 4: apply H0. all: auto 10.
+
+    assert (H0 : Γ ⊢ (! !B ---> B) using PropositionalReasoning).
+    {
+      apply not_not_elim. wf_auto2.
+    }
+
+    assert (H1 : Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using PropositionalReasoning).
+    {
+      apply syllogism; wf_auto2.
+    }
+
+    eapply MP.
+    2: { 
+      apply reorder_meta.
+      4: apply H1.
+      all: wf_auto2.
+    }
+    apply H0.
   Defined.
-
-  (* TODO remove this hint *)
-  #[local] Hint Resolve A_impl_not_not_B : core.
-
-  Program Canonical Structure A_impl_not_not_B_indifferent_S
-        P {Pip : IndifProp P} Γ a b (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@A_impl_not_not_B Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion Γ A B B' :
     well_formed A ->
     well_formed B ->
     well_formed B' ->
-    Γ ⊢ ((B ---> B') ---> ((A ---> B) ---> (A ---> B'))).
+    Γ ⊢ ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
+    using PropositionalReasoning.
   Proof.
     intros wfA wfB wfB'.
-    apply reorder_meta; auto.
+    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+    apply syllogism; wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_weaken_conclusion_indifferent_S
-        P {Pip : IndifProp P} Γ a b c
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty0 P (@prf_weaken_conclusion Γ a b c wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-  
-  Lemma prf_weaken_conclusion_meta Γ A B B' :
+  Lemma prf_weaken_conclusion_meta Γ A B B' (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed B' ->
-    Γ ⊢ (B ---> B') ->
-    Γ ⊢ ((A ---> B) ---> (A ---> B')).
+    Γ ⊢ (B ---> B') using i ->
+    Γ ⊢ ((A ---> B) ---> (A ---> B')) using i.
   Proof.
     intros wfA wfB wfB' BimpB'.
-    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B'))) by auto.
-    apply reorder_meta in H1; auto.
-    eapply Modus_ponens. 4: apply H1. all: auto 10.
+    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
+    {
+      apply usePropositionalReasoning. apply syllogism; wf_auto2.
+    }
+    apply reorder_meta in H1;[|wf_auto2|wf_auto2|wf_auto2].
+    eapply MP. 2: apply H1. apply BimpB'.
   Defined.
-
-  Program Canonical Structure prf_weaken_conclusion_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b c
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty1 P (@prf_weaken_conclusion_meta Γ a b c wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
-    Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l)).
+    Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
+    using PropositionalReasoning.
   Proof.
     induction l.
-    - apply A_impl_A; auto.
+    - apply A_impl_A. wf_auto2.
     - pose proof (wfl' := wfl).
-      apply andb_prop in wfl. destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      eapply syllogism_intro.
+      apply andb_prop in wfl.
+      fold (map well_formed) in wfl.
+      destruct wfl as [wfa wfl].
+      (* I do not know how to fold it, so I just assert & clear. *)
+      assert (wfl'' : wf l) by apply wfl.
+      clear wfl.
+      specialize (IHl wfl'').
+      simpl in *.
+      eapply syllogism_meta.
       5: eapply prf_weaken_conclusion.
       4: apply IHl.
-      all: auto.
+      { wf_auto2. }
+      { fold (fold_right patt_imp). }
+      {}
+      all: try (solve [wf_auto2]).
       apply well_formed_imp.
       all: apply well_formed_foldr; auto.
   Defined.
