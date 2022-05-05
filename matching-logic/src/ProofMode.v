@@ -934,7 +934,101 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+  {pile : ProofInfoLe BasicReasoning i}
+  :
+  well_formed ψ ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
+Proof.
+  intros wfψ [pf Hpf].
+  unshelve (eexists).
+  {
+    apply ProofSystem.Framing_right.
+    { exact wfψ. }
+    exact pf.
+  }
+  {
+    destruct i.
+    {
+      exfalso. apply not_basic_in_prop. apply pile.
+    }
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    constructor; simpl.
+    {
+      exact I.
+    }
+    {
+      assumption.
+    }
+    {
+      assumption.
+    }
+    {
+      assumption.
+    }
+  }
+Defined.
+
+  Lemma Prop_bott_left (Γ : Theory) (ϕ : Pattern) :
+    well_formed ϕ ->
+    Γ ⊢ ⊥ $ ϕ ---> ⊥ using BasicReasoning.
+  Proof.
+    intros wfϕ.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Prop_bott_left. exact wfϕ.
+    }
+    {
+      constructor; simpl.
+      {
+        exact I.
+      }
+      {
+        set_solver.
+      }
+      {
+        set_solver.
+      }
+      {
+        reflexivity.
+      }
+    }
+  Defined.
+
+  Lemma Prop_bott_right (Γ : Theory) (ϕ : Pattern) :
+    well_formed ϕ ->
+    Γ ⊢ ϕ $ ⊥ ---> ⊥ using BasicReasoning.
+  Proof.
+    intros wfϕ.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Prop_bott_right. exact wfϕ.
+    }
+    {
+      constructor; simpl.
+      {
+        exact I.
+      }
+      {
+        set_solver.
+      }
+      {
+        set_solver.
+      }
+      {
+        reflexivity.
+      }
+    }
+  Defined.
+
+  Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
+  Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
+
+
+
   (*Was an axiom in AML_definition.v*)
+  (* TODO rename into Prop_bot_ctx *)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
     using BasicReasoning.
@@ -944,16 +1038,13 @@ Section FOL_helpers.
       apply false_implies_everything.
       wf_auto2.
     - eapply syllogism_meta.
-      5: { apply Prop_bott}
-    
-      simpl. epose proof (m0 := Framing_left Γ (subst_ctx C Bot) (Bot) p Prf IHC).
-      epose proof (m1 := @syllogism_intro Γ _ _ _ _ _ _ (m0) (Prop_bott_left Γ p Prf)). exact m1.
-    - simpl. epose proof (m2 := Framing_right Γ (subst_ctx C Bot) (Bot) p Prf IHC).
-
-      epose proof (m3 := @syllogism_intro Γ _ _ _ _ _ _ (m2) (Prop_bott_right Γ p Prf)). exact m3.
-      
-      Unshelve.
-      all: auto 10.
+      5: { apply (Prop_bott_left Γ p ltac:(wf_auto2)). }
+      4: { apply Framing_left. apply _. wf_auto2. exact IHC. }
+      all: wf_auto2.
+    - eapply syllogism_meta.
+      5: { apply (Prop_bott_right Γ p ltac:(wf_auto2)). }
+      4: { apply Framing_right. apply _. wf_auto2. exact IHC. }
+      all: wf_auto2.
   Defined.
 
   (*Was an axiom in AML_definition.v*)
