@@ -144,8 +144,8 @@ Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
 
 Inductive ProofInfo {Σ : Signature} := pi_Propositional | pi_Generic (gpi : GenericProofInfo).
 
-Definition PropositionalReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
-Definition BasicReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
+Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
+Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
 
 (* A proof together with some properties of it. *)
 Record ProofInfoMeaning
@@ -175,7 +175,7 @@ Lemma propositional_pi
 Proof.
   intros H.
   split; simpl.
-  { exact I. }
+  { exact H. }
   { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
@@ -190,8 +190,6 @@ Notation "Γ ⊢ ϕ 'using' pi"
 
 Notation "G 'using' pi"
 := ({pf : G | @ProofInfoMeaning _ _ _ pf pi }) (at level 95, no associativity).
-
-
 
 
 Record MyGoal {Σ : Signature} : Type := mkMyGoal
@@ -414,30 +412,38 @@ Section FOL_helpers.
       + apply P2; wf_auto2.
   Defined.
 
+  Lemma usePropositionalReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
+    Γ ⊢ ϕ using PropositionalReasoning ->
+    Γ ⊢ ϕ using i.
+  Proof.
+    intros [pf Hpf].
+    exists pf.
+    (* [abstract] does not really work here *)
+    abstract(
+    destruct i;
+    [(unfold PropositionalReasoning in Hpf; simpl in Hpf; apply Hpf)
+    |(destruct gpi; simpl;
+      destruct Hpf; simpl in *;
+      constructor; simpl;
+      [(exact I)
+      |(set_solver)
+      |(set_solver)
+      |(destruct (uses_kt pf); simpl in *; try congruence)
+      ]
+    )]).
+  Qed.
 
-  (* TODO prove using the wrapper for meta *)
-  Lemma reorder_meta (Γ : Theory) {A B C : Pattern} :
-    well_formed A -> well_formed B -> well_formed C ->  
-    Γ ⊢ (A ---> B ---> C) -> Γ ⊢ (B ---> A ---> C).
+  Lemma reorder_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    well_formed B ->
+    well_formed C ->  
+    Γ ⊢ (A ---> B ---> C) using i ->
+    Γ ⊢ (B ---> A ---> C) using i.
   Proof.
     intros H H0 H1 H2.
-    eapply (Modus_ponens _ _ _ _ _).
-    - exact (P1 _ B A H0 H).
-    - eapply (Modus_ponens _ _ _ _ _).
-      + eapply (Modus_ponens _ _ _ _ _).
-        * eapply (Modus_ponens _ _ _ _ _).
-          -- exact H2.
-          -- eapply(P2 _ A B C _ _ _).
-        * assert (well_formed ((A ---> B) ---> A ---> C)).
-          -- shelve. 
-          -- exact (P1 _ ((A ---> B) ---> A ---> C) B H3 H0).
-      + assert(well_formed (A ---> B)).
-        * shelve.
-        * assert(well_formed (A ---> C)).
-          -- shelve.
-          -- exact (P2 _ B (A ---> B) (A ---> C) H0 H3 H4).
-             Unshelve.
-             all:auto 10.
+    eapply MP. apply H2.
+    apply usePropositionalReasoning.
+    apply reorder; wf_auto2.
   Defined.
 
   Lemma reorder_meta_indifferent
