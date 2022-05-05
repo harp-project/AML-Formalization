@@ -436,6 +436,19 @@ Section FOL_helpers.
       + apply P2; wf_auto2.
   Defined.
 
+  Lemma liftPi (Γ : Theory) (ϕ : Pattern) (i₁ i₂ : ProofInfo)
+    {pile : ProofInfoLe i₁ i₂}
+    :
+    Γ ⊢ ϕ using i₁ ->
+    Γ ⊢ ϕ using i₂.
+  Proof.
+      intros [pf Hpf].
+      apply pile in Hpf.
+      exists pf.
+      exact Hpf.
+  Qed.
+
+
   (* This lemma is the reason why we could make P1,P2,P3 specialized to PropositionalReasoning *)
   Lemma usePropositionalReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
     Γ ⊢ ϕ using PropositionalReasoning ->
@@ -1070,115 +1083,80 @@ Defined.
       apply IHC. wf_auto2. wf_auto2. exact H.
   Defined.
 
-  Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
-    well_formed A -> Γ ⊢ A -> Γ ⊢ (! (subst_ctx C ( !A ))).
+  Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
+    (i : ProofInfo) {pile : ProofInfoLe BasicReasoning i}
+    :
+    well_formed A ->
+    Γ ⊢ A using i ->
+    Γ ⊢ (! (subst_ctx C ( !A ))) using i.
   Proof.
     intros WFA H.
-    epose proof (ANNA := @A_implies_not_not_A_alt Γ _ _ H).
-    replace (! (! A)) with ((! A) ---> Bot) in ANNA. 2: auto.
+
+    epose proof (ANNA := @A_implies_not_not_A_alt Γ _ i _ H).
+    replace (! (! A)) with ((! A) ---> Bot) in ANNA by reflexivity.
     epose proof (EF := @Framing _ C (! A) Bot _ _ ANNA).
     epose proof (PB := Prop_bot Γ C).
+    apply liftPi with (i₂ := i) in PB. 2: apply _.
+    epose (TRANS := @syllogism_meta _ _ _ _ _ _ _ _ EF PB).
+    apply TRANS.
     
-    epose (TRANS := @syllogism_intro _ _ _ _ _ _ _ EF PB).
-    
-    unfold patt_not.
-    assumption.
     Unshelve.
-    2,4:assert (@well_formed Σ (! A)).
-    6,7:assert (@well_formed Σ (Bot)).
-    all: auto.
+    all: wf_auto2.
   Defined.
 
-
-  Lemma A_implies_not_not_A_alt_Γ (G : Theory) (A : Pattern) :
-    well_formed A -> G ⊢ A -> G ⊢ (!( !A )).
+  Lemma A_implies_not_not_A_alt_Γ (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    Γ ⊢ A using i ->
+    Γ ⊢ (!( !A )) using i.
   Proof.
     intros WFA H. unfold patt_not.
-    epose proof (NN := @not_not_intro G A _).
-    
-    epose proof (MP := Modus_ponens G _ _ _ _ H NN).
-    
-    assumption.
-    Unshelve.
-    all: auto.
+    eapply MP.
+    { apply H. }
+    { apply usePropositionalReasoning. apply not_not_intro. exact WFA. }
   Defined.
 
-
-  Program Canonical Structure A_implies_not_not_A_alt_Γ_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty1 P (@A_implies_not_not_A_alt_Γ Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  (* Lemma equiv_implies_eq (Γ : Theory) (A B : Pattern) :
-  well_formed A -> well_formed B -> Γ ⊢ (A <---> B) -> Γ ⊢ ()
-   *) (*Need equal*)
-  
-  (* Lemma equiv_implies_eq_Γ *)
-
-  (*...Missing some lemmas because of the lack of defidness definition...*)
-
-  Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) :
-    well_formed A -> Γ ⊢ (A ---> Bot) -> Γ ⊢ (subst_ctx C A ---> Bot).
+  Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
+    (i : ProofInfo)
+    {pile : ProofInfoLe BasicReasoning i}
+  :
+    well_formed A ->
+    Γ ⊢ (A ---> Bot) using i ->
+    Γ ⊢ (subst_ctx C A ---> Bot) using i.
   Proof.
     intros WFA H.
     epose proof (FR := @Framing Γ C A Bot _ _ H).
     epose proof (BPR := @Prop_bot Γ C).
-    
-    epose proof (TRANS := @syllogism_intro _ _ _ _ _ _ _ FR BPR).
-    
-    assumption.
+    apply liftPi with (i₂ := i) in BPR. 2: apply _.
+    epose proof (TRANS := @syllogism_meta _ _ _ _ _ _ _ _ FR BPR).
+    exact TRANS.
     Unshelve.
-    4: assert (@well_formed Σ (Bot)).
-    all: auto.
+    all: wf_auto2.
   Defined.
 
-  Lemma not_not_A_ctx_implies_A (Γ : Theory) (C : Application_context) (A : Pattern):
-    well_formed A -> Γ ⊢ (! (subst_ctx C ( !A ))) -> Γ ⊢ A.
-  Proof.
-    intros WFA H.
-    unfold patt_not in H at 1.
-    
-    epose (BIE := @false_implies_everything Γ (subst_ctx C Bot) _).
-    
-    epose (TRANS := @syllogism_intro _ _ _ _ _ _ _ H BIE).
-    
-    induction C.
-    - simpl in TRANS.
-      epose (NN := @not_not_elim Γ A _).
-      epose (MP := Modus_ponens _ _ _ _ _ TRANS NN). assumption.
-    - eapply IHC.
-      Unshelve.
-      all: auto.
-  Abort.
-
-  (* TODO remove *)
-  Definition empty_Γ := Empty_set (@Pattern Σ).
-
-  Lemma exclusion (G : Theory) (A : Pattern) :
-    well_formed A -> G ⊢ A -> G ⊢ (A ---> Bot) -> G ⊢ Bot.
+  Lemma exclusion (G : Theory) (A : Pattern) (i : ProofInfo) :
+    well_formed A ->
+    G ⊢ A using i ->
+    G ⊢ (A ---> Bot) using i ->
+    G ⊢ Bot using i.
   Proof.
     intros WFA H H0.
-    epose(Modus_ponens G A Bot _ _ H H0).
-    assumption.
-    Unshelve.
-    all: auto.
+    eapply MP.
+    apply H.
+    apply H0.
   Defined.
 
-  Program Canonical Structure exclusion_indifferent_S
-        P {Pip : IndifProp P} Γ a (wfa : well_formed a = true)
-    := ProofProperty2 P (@exclusion Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma modus_tollens Γ A B :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (!B ---> !A).
+  Lemma modus_tollens Γ A B (i : ProofInfo) :
+    Γ ⊢ (A ---> B) using i ->
+    Γ ⊢ (!B ---> !A) using i.
   Proof.
-    intros WFA WFB H.
-    eapply Modus_ponens.
-    4: apply contraposition.
-    all: auto.
+    intros H.
+    pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
+    assert (wfA : well_formed A) by wf_auto2.
+    assert (wfB : well_formed B) by wf_auto2.
+
+    eapply MP.
+    2: { apply usePropositionalReasoning. apply contraposition; wf_auto2. }
+    apply H.
   Defined.
 
   Program Canonical Structure modus_tollens_indifferent_S
