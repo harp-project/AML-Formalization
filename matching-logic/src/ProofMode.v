@@ -864,8 +864,6 @@ Section FOL_helpers.
     all: wf_auto2.
   Defined.
 
-  Search (Bot ---> ?A).
-
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi ->
     Γ ⊢ (Bot ---> phi) using PropositionalReasoning.
@@ -873,14 +871,100 @@ Section FOL_helpers.
     apply bot_elim.
   Defined.
 
-  Check Framing_left.
-  Search SqSubsetEq.
+  Lemma not_basic_in_prop : ~ProofInfoLe BasicReasoning pi_Propositional.
+  Proof.
+    intros [HContra].
+    remember (evar_fresh []) as x.
+    pose (pf := ProofSystem.P3 ∅ (patt_free_evar x) ltac:(wf_auto2)).
+    pose (pf' := ProofSystem.Framing_left _ _ _ (patt_free_evar x) ltac:(wf_auto2) pf).
+    specialize (HContra _ _ pf').
+    feed specialize HContra.
+    {
+      constructor.
+      {
+        simpl. exact I.
+      }
+      {
+        simpl. unfold pf'. set_solver.
+      }
+      {
+        simpl. unfold pf'. set_solver.
+      }
+      {
+        simpl. reflexivity.
+      }
+    }
+    destruct HContra as [Contra1 Contra2 Contra3 Contra4].
+    simpl in Contra1. congruence.
+  Qed.
 
-  Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo) :
+  Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+    {pile : ProofInfoLe BasicReasoning i}
+    :
     well_formed ψ ->
-    (i ⊑ BasicReasoning) ->
-    True.
-*)
+    Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
+  Proof.
+    intros wfψ [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Framing_left.
+      { exact wfψ. }
+      exact pf.
+    }
+    {
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      constructor; simpl.
+      {
+        destruct i;[|exact I].
+        {
+
+        }
+        exact I.
+      }
+      {
+        destruct i. 2: {  }
+      }
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      constructor; simpl.
+      {
+        destruct pile as [pile].
+        destruct i.
+        {
+
+        }
+      }
+      destruct i.
+      {
+        apply pile.
+        unfold BasicReasoning.
+        constructor; simpl.
+        {
+          exact I.
+        }
+        {
+          exact Hpf2.
+        }
+        {
+          exact Hpf3.
+        }
+        {
+          exact Hpf4.
+        }
+      }
+      {
+        constructor; simpl.
+      }
+      constructor.
+      {
+        exact I.
+      }
+      {
+        simpl.
+      }
+    }
+  Defined.
+
   (*Was an axiom in AML_definition.v*)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
