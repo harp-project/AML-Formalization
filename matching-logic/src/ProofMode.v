@@ -1048,15 +1048,26 @@ Defined.
   Defined.
 
   (*Was an axiom in AML_definition.v*)
-  Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern):
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> B) -> Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)).
+  Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
+    {pile : ProofInfoLe BasicReasoning i}
+    :
+    Γ ⊢ (A ---> B) using i ->
+    Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)) using i.
   Proof.
-    induction C; intros WFA WFB H.
-    - simpl. exact H.
-    - simpl. epose (Framing_left Γ (subst_ctx C A) (subst_ctx C B) p Prf (IHC _ _ H)). exact m.
-    - simpl. epose (Framing_right Γ (subst_ctx C A) (subst_ctx C B) p Prf (IHC _ _ H)). exact m.
-      Unshelve.
-      all: auto.
+    intros H.
+    pose proof H as [pf _].
+    pose proof (HWF := @proved_impl_wf _ _ _ pf).
+    assert (wfA: well_formed A) by wf_auto2.
+    assert (wfB: well_formed B) by wf_auto2.
+    clear pf HWF.
+    move: wfA wfB H.
+
+    induction C; intros WFA WFB H; simpl.
+    - exact H.
+    - apply Framing_left. apply _. wf_auto2.
+      apply IHC. wf_auto2. wf_auto2. exact H.
+    - apply Framing_right. apply _. wf_auto2.
+      apply IHC. wf_auto2. wf_auto2. exact H.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context) :
