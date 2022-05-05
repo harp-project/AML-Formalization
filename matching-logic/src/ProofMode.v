@@ -1337,46 +1337,38 @@ Defined.
   Lemma nested_const Γ a l:
     well_formed a ->
     wf l ->
-    Γ ⊢ (a ---> (fold_right patt_imp a l)).
+    Γ ⊢ (a ---> (fold_right patt_imp a l))
+    using PropositionalReasoning.
   Proof.
     intros wfa wfl.
     induction l; simpl.
-    - auto.
+    - apply A_impl_A. exact wfa.
     - pose proof (wfa0l := wfl).
       unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
-      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l)))) by auto using P1.
-      eapply syllogism_intro.
-      5: apply H1. all: auto.
+      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using PropositionalReasoning).
+      {
+        apply P1; wf_auto2.
+      }
+      eapply syllogism_meta.
+      5: apply H1. 4: assumption. all: wf_auto2.
   Defined.
-
-  Program Canonical Structure nested_const_indifferent_S
-        P {Pip : IndifProp P} Γ l a
-        (wfl : wf l)
-        (wfa : well_formed a = true)
-    := ProofProperty0 P (@nested_const Γ a l wfa wfl) _.
-  Next Obligation.
-    intros. induction l; simpl.
-    - solve_indif.
-    - case_match. solve_indif; apply IHl.
-  Qed.
 
   Lemma nested_const_middle Γ a l₁ l₂:
     well_formed a ->
     wf l₁ ->
     wf l₂ ->
-    Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂)).
+    Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂))
+    using PropositionalReasoning.
   Proof.
     intros wfa wfl₁ wfl₂.
     induction l₁; simpl.
-    - apply nested_const; auto.
+    - apply nested_const; wf_auto2.
     - pose proof (wfa0l₁ := wfl₁).
       unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁). simpl in IHl₁.
-
-      eapply Modus_ponens. 4: apply P1. all: auto 10.
+      eapply MP. 2: apply P1. 1: apply IHl₁. all: wf_auto2.
   Defined.
-
 
   Lemma prf_reorder_iter Γ a b g l₁ l₂:
     well_formed a ->
@@ -1384,177 +1376,128 @@ Defined.
     well_formed g ->
     wf l₁ ->
     wf l₂ ->
-    Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) ---> (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂))).
+    Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
+         (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
+    using PropositionalReasoning.
   Proof.
     intros wfa wfb wfg wfl₁ wfl₂.
     induction l₁; simpl in *.
-    - apply reorder; auto.
+    - apply reorder; wf_auto2.
     - pose proof (wfa0l₁ := wfl₁).
       unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁).
-      eapply prf_weaken_conclusion_meta; auto 10.
+      eapply prf_weaken_conclusion_meta.
+      4: apply IHl₁.
+      all: wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_reorder_iter_indifferent_S
-        P {Pip : IndifProp P} Γ l₁ l₂ a b c
-        (wfl₁ : wf l₁) (wfl₂ : wf l₂)
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty0 P (@prf_reorder_iter Γ a b c l₁ l₂ wfa wfb wfc wfl₁ wfl₂) _.
-  Next Obligation.
-    intros. induction l₁; simpl.
-    - solve_indif.
-    - case_match. solve_indif; apply IHl₁.
-  Qed.
-
-  Lemma prf_reorder_iter_meta Γ a b g l₁ l₂:
+  Lemma prf_reorder_iter_meta Γ a b g l₁ l₂ (i : ProofInfo):
     well_formed a ->
     well_formed b ->
     well_formed g ->
     wf l₁ ->
     wf l₂ ->
-    Γ ⊢ (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) ->
-    Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)).
+    Γ ⊢ (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
+    Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
   Proof.
     (* TODO we should have a function/lemma for creating these "meta" variants. *)
     intros WFa WFb WFg Wfl1 Wfl2 H.
-    eapply Modus_ponens.
-    4: { apply prf_reorder_iter; auto. }
-    all: auto 10.
+    eapply MP.
+    2: { apply usePropositionalReasoning. apply prf_reorder_iter; wf_auto2. }
+    exact H.
   Defined.
-
-  Program Canonical Structure prf_reorder_iter_meta_indifferent_S
-        P {Pip : IndifProp P} Γ l₁ l₂ a b c
-        (wfl₁ : wf l₁) (wfl₂ : wf l₂)
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty1 P (@prf_reorder_iter_meta Γ a b c l₁ l₂ wfa wfb wfc wfl₁ wfl₂) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
   
-  
-  (*
-  Lemma prf_reorder_move_to_top Γ a g l₁ l₂:
-    well_formed a ->
-    well_formed g ->
-    wf l₁ ->
-    wf l₂ ->
-    Γ ⊢ ((a --> (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂))) ---> (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂))).
-    *)
-  
-  Lemma A_impl_not_not_B_meta Γ A B :
+  Lemma A_impl_not_not_B_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> ! !B ->
-    Γ ⊢ A ---> B.
+    Γ ⊢ A ---> ! !B using i ->
+    Γ ⊢ A ---> B using i.
   Proof.
     intros WFA WFB H.
-    eapply Modus_ponens.
-    4: { apply A_impl_not_not_B; auto. }
-    all: auto 10.
+    eapply MP.
+    2: { apply usePropositionalReasoning. apply A_impl_not_not_B; wf_auto2. }
+    exact H.
   Defined.
-
-  Program Canonical Structure A_impl_not_not_B_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@A_impl_not_not_B_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> A.
+    Γ ⊢ A and B ---> A using PropositionalReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! A ---> (! A or ! B))) by auto.
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
-    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto 10. }
-    epose proof (reorder_meta _ _ _ H1).
-    apply A_impl_not_not_B_meta; auto.
-    Unshelve.
-    all: auto.
-  Defined.
+    assert (Γ ⊢ (! A ---> (! A or ! B)) using PropositionalReasoning).
+    { apply disj_left_intro; wf_auto2. }
 
-  Program Canonical Structure pf_conj_elim_l_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@pf_conj_elim_l Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using PropositionalReasoning).
+    {
+      apply modus_ponens; wf_auto2.
+    }
+    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using PropositionalReasoning).
+    { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
+    epose proof (reorder_meta _ _ _ H1).
+    apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
+    apply H2.
+    Unshelve.
+    all: wf_auto2.
+  Defined.
 
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> B.
+    Γ ⊢ A and B ---> B using PropositionalReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! B ---> (! A or ! B))) by auto.
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥)) by auto.
-    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥))).
-    { eapply syllogism_intro. 5: apply H0. 4: apply H. all: auto 10. }
+    assert (Γ ⊢ (! B ---> (! A or ! B)) using PropositionalReasoning).
+    { apply disj_right_intro; wf_auto2. }
+
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using PropositionalReasoning).
+    { apply modus_ponens; wf_auto2. }
+
+    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using PropositionalReasoning).
+    { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
     epose proof (reorder_meta  _ _ _ H1).
-    apply A_impl_not_not_B_meta; auto.
+    apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
+    apply H2.
     Unshelve.
-    all: auto.
+    all: wf_auto2.
   Defined.
 
-  Program Canonical Structure pf_conj_elim_r_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty0 P (@pf_conj_elim_r Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma pf_conj_elim_l_meta Γ A B :
+  Lemma pf_conj_elim_l_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ->
-    Γ ⊢ A.
+    Γ ⊢ A and B using i ->
+    Γ ⊢ A using i.
   Proof.
     intros WFA WFB H.
-    eapply Modus_ponens.
-    4: apply pf_conj_elim_l.
-    3: apply H.
-    all: auto.
+    eapply MP.
+    2: { apply usePropositionalReasoning. apply pf_conj_elim_l. wf_auto2. shelve. }
+    1: apply H.
+    Unshelve. all: wf_auto2.
   Defined.
-
-  Program Canonical Structure pf_conj_elim_l_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@pf_conj_elim_l_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
   
-  Lemma pf_conj_elim_r_meta Γ A B :
+  Lemma pf_conj_elim_r_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ->
-    Γ ⊢ B.
+    Γ ⊢ A and B using i ->
+    Γ ⊢ B using i.
   Proof.
     intros WFA WFB H.
-    eapply Modus_ponens.
-    4: apply pf_conj_elim_r.
-    3: apply H.
-    all: auto.
+    eapply MP.
+    2: apply usePropositionalReasoning; apply pf_conj_elim_r.
+    1: apply H.
+    all: wf_auto2.
   Defined.
-
-  Program Canonical Structure pf_conj_elim_r_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@pf_conj_elim_r_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma A_or_notA Γ A :
     well_formed A ->
-    Γ ⊢ A or ! A.
+    Γ ⊢ A or ! A using PropositionalReasoning.
   Proof.
     intros wfA.
     unfold patt_or.
-    auto. (* TODO be more explicit here *)
+    apply A_impl_A. wf_auto2.
   Defined.
-
-  Program Canonical Structure A_or_notA_indifferent_S
-        P {Pip : IndifProp P} Γ a
-        (wfa : well_formed a = true)
-    := ProofProperty0 P (@A_or_notA Γ a wfa) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
 
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
     well_formed A ->
