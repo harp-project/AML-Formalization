@@ -1235,92 +1235,72 @@ Defined.
       all: wf_auto2.
   Defined.
 
-  Lemma prf_strenghten_premise_meta Γ A A' B :
+  Lemma prf_strenghten_premise_meta Γ A A' B (i : ProofInfo) :
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ (A' ---> A) ->
-    Γ ⊢ ((A ---> B) ---> (A' ---> B)).
+    Γ ⊢ (A' ---> A) using i ->
+    Γ ⊢ ((A ---> B) ---> (A' ---> B)) using i.
   Proof.
     intros wfA wfA' wfB A'impA.
-    assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B))) by auto.
-    eapply Modus_ponens. 4: apply H1. all: auto 10.
+    assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
+    {
+      apply usePropositionalReasoning. apply syllogism; wf_auto2.
+    }
+    eapply MP. 2: apply H1. apply A'impA.
   Defined.
 
-  Program Canonical Structure prf_strenghten_premise_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b c
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty1 P (@prf_strenghten_premise_meta Γ a b c wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma prf_strenghten_premise_meta_meta Γ A A' B :
+  Lemma prf_strenghten_premise_meta_meta Γ A A' B (i : ProofInfo) :
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ (A' ---> A) ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (A' ---> B).
+    Γ ⊢ (A' ---> A) using i ->
+    Γ ⊢ (A ---> B) using i ->
+    Γ ⊢ (A' ---> B) using i.
   Proof.
     intros wfA wfA' wfB A'impA AimpB.
-    eapply Modus_ponens. 4: apply prf_strenghten_premise_meta. 3: apply AimpB. all: auto.
+    eapply MP. 2: apply prf_strenghten_premise_meta. 1: apply AimpB.
+    4: apply A'impA. all: wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_strenghten_premise_meta_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b c
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty2 P (@prf_strenghten_premise_meta_meta Γ a b c wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma prf_strenghten_premise_iter_meta Γ l₁ l₂ h h' g :
+  Lemma prf_strenghten_premise_iter_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
     wf l₁ -> wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    Γ ⊢ (h' ---> h) ->
+    Γ ⊢ (h' ---> h) using i ->
     Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) --->
-         foldr patt_imp g (l₁ ++ h'::l₂).  
+         foldr patt_imp g (l₁ ++ h'::l₂)
+    using i.  
   Proof.
     intros WFl₁ WFl₂ WFh WFh' WFg H.
-    eapply Modus_ponens.
-    4: apply prf_strenghten_premise_iter.
-    all: auto 10.
+    eapply MP.
+    2: { apply usePropositionalReasoning. apply prf_strenghten_premise_iter; wf_auto2. }
+    exact H.
   Defined.
 
-  Program Canonical Structure prf_strenghten_premise_iter_meta_indifferent_S
-        P {Pip : IndifProp P} Γ l₁ l₂ a b c
-        (wfl₁ : wf l₁) (wfl₂ : wf l₂)
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty1 P (@prf_strenghten_premise_iter_meta Γ l₁ l₂ a b c wfl₁ wfl₂ wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-  Lemma prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g :
+  Lemma prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
     wf l₁ -> wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    Γ ⊢ (h' ---> h) ->
-    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) ->
-    Γ ⊢ foldr patt_imp g (l₁ ++ h'::l₂).  
+    Γ ⊢ (h' ---> h) using i ->
+    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) using i ->
+    Γ ⊢ foldr patt_imp g (l₁ ++ h'::l₂) using i.  
   Proof.
     intros WFl₁ WFl₂ WFh WFh' WFg H H0.
-    eapply Modus_ponens.
-    4: eapply prf_strenghten_premise_iter_meta.
-    9: eassumption. all: auto 10.
+    eapply MP.
+    2: eapply prf_strenghten_premise_iter_meta.
+    7: eassumption. 1: assumption. all: wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_strenghten_premise_iter_meta_meta_indifferent_S
-        P {Pip : IndifProp P} Γ l₁ l₂ a b c
-        (wfl₁ : wf l₁) (wfl₂ : wf l₂)
-        (wfa : well_formed a = true) (wfb : well_formed b = true) (wfc : well_formed c = true)
-    := ProofProperty2 P (@prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ a b c wfl₁ wfl₂ wfa wfb wfc) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
+  (*
   (* TODO rename *)
-  Lemma rewrite_under_implication Γ g g':
+  Lemma rewrite_under_implication Γ g g' (i : ProofInfo):
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((g ---> g') ---> g) ->
-    Γ ⊢ ((g ---> g') ---> g').
+    Γ ⊢ ((g ---> g') ---> g) using i ->
+    Γ ⊢ ((g ---> g') ---> g') using i.
   Proof.
     intros wfg wfg' H.
     assert (H1 : Γ ⊢ ((g ---> g') ---> (g ---> g'))) by auto.
@@ -1331,26 +1311,26 @@ Defined.
     { eapply Modus_ponens. 4: apply H2. all: auto 10. }
     eapply Modus_ponens. 4: apply H3. all: auto.
   Defined.
-
-  Program Canonical Structure prf_rewrite_under_implication_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty1 P (@rewrite_under_implication Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
+*)
 
   Local Example example_nested_const Γ a b c:
     well_formed a ->
     well_formed b ->
     well_formed c ->
     (* like P2 but nested a bit *)
-    Γ ⊢ (a ---> (b ---> (c ---> a))).
+    Γ ⊢ (a ---> (b ---> (c ---> a)))
+    using PropositionalReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a)))) by auto using P1.
-    assert (H2: Γ ⊢ (a ---> (c ---> a))) by auto using P1.
-    eapply (@syllogism_intro _ _ _ _ _ _ _ H2 H1).
-    Unshelve. all: auto.
+    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a))) using PropositionalReasoning).
+    {
+      apply P1; wf_auto2.
+    }
+    assert (H2: Γ ⊢ (a ---> (c ---> a)) using PropositionalReasoning).
+    { apply P1; wf_auto2. }
+
+    eapply (@syllogism_meta _ _ _ _ _ _ _ _ H2 H1).
+    Unshelve. all: wf_auto2.
   Defined.
 
   (* This will form a base for the tactic 'exact 0' *)
