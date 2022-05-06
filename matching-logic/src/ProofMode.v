@@ -1746,17 +1746,22 @@ Proof.
 Qed.
 
 Lemma cast_proof_mg_goal_indifferent
-      Σ P Γ hyps goal goal' (e : goal = goal') (pf : @mkMyGoal Σ Γ hyps goal) wf1 wf2 wf3 wf4:
+      Σ P Γ hyps goal goal' (e : goal = goal') (i : ProofInfo)
+      (pf : @mkMyGoal Σ Γ hyps goal i) wf1 wf2 wf3 wf4:
   indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_goal Σ Γ hyps goal goal' e pf wf1 wf2) = P _ _ (pf wf3 wf4).
+  P _ _ (proj1_sig (@cast_proof_mg_goal Σ Γ hyps goal goal' e i pf wf1 wf2)) = P _ _ (proj1_sig (pf wf3 wf4)).
 Proof.
   intros Hp. simpl. unfold cast_proof_mg_goal.
+  unfold proj1_sig. unfold cast_proof'. destruct pf as [pf' Hpf'] eqn:Heqpf.
   rewrite Hp.
   apply f_equal. f_equal.
+  apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf. clear Heqpf. simpl.
+  case_match. simpl in *.
+  apply proj1_sig_eq in Heqs. simpl in Heqs. rewrite -Heqs.
+  f_equal. f_equal.
   { apply UIP_dec; apply bool_eqdec. }
   { apply UIP_dec. apply bool_eqdec. }
 Qed.
-
 
 Lemma cast_proof_trans {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ (pf : Γ ⊢ ϕ₁) (e₂₁ : ϕ₂ = ϕ₁) (e₃₂ : ϕ₃ = ϕ₂):
   @cast_proof Σ Γ ϕ₂ ϕ₃ e₃₂ (@cast_proof Σ Γ ϕ₁ ϕ₂ e₂₁ pf ) = (@cast_proof Σ Γ ϕ₁ ϕ₃ (eq_trans e₃₂ e₂₁) pf ).
@@ -1773,114 +1778,10 @@ Proof.
   reflexivity.
 Qed.
 
-Definition liftP {Σ : Signature} (P : proofbpred) (Γ : Theory) (l : list Pattern) (g : Pattern)
-           (pf : Γ ⊢ (foldr patt_imp g l)) := P _ _ pf.
-
-Arguments liftP {Σ} _ Γ l%list_scope g _.
-
-Lemma liftP_impl_P' {Σ : Signature} (P : proofbpred) (Γ : Theory) (p g : Pattern) (l : list Pattern)
-      (pf : Γ ⊢ p) (e : foldr patt_imp g l = p):
-  @liftP Σ P Γ l g (@cast_proof Σ Γ _ _ e pf) = false -> P Γ p pf = false.
-Proof.
-  intros H.
-  pose proof (e1 := e).
-  rewrite -[pf]cast_proof_refl.
-
-  unfold liftP in H.
-  move: e pf H.
-  rewrite -e1. intros.
-  replace e with (@eq_refl Pattern (foldr patt_imp g l)) in H.
-  2: { symmetry. apply UIP_dec; intros x' y'; apply Pattern_eqdec. }
-  apply H.
-Qed.
-
-Lemma liftP_impl_P {Σ : Signature} (P : proofbpred) (Γ : Theory) (p : Pattern)
-      (pf : Γ ⊢ p) :
-  @liftP Σ P Γ [] p pf = false -> P Γ p pf = false.
-Proof.
-  intros H. apply H.
-Qed.
-
-Structure tacticProperty0 {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l₁ : list Pattern) (g₁ : Pattern)
-  := TacticProperty0 {
-      tp0_tactic : @mkMyGoal Σ Γ l₁ g₁;
-      tp0_tactic_property :
-        (forall wf1 wf2, liftP P _ _ _ (tp0_tactic  wf1 wf2) = false)
-    }.
-
-Arguments TacticProperty0 [Σ] P [Γ] [l₁]%list_scope [g₁] tp0_tactic _%function_scope.
-
-Structure tacticProperty1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l₁ l₂ : list Pattern) (g₁ g₂ : Pattern)
-  := TacticProperty1 {
-      tp1_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ ;
-      tp1_tactic_property :
-      forall (pf : @mkMyGoal Σ Γ l₁ g₁),
-        (forall wf3 wf4, liftP P _ _ _ (pf wf3 wf4) = false) ->
-        (forall wf1 wf2, liftP P _ _ _ ((tp1_tactic pf) wf1 wf2) = false)
-    }.
-
-Arguments TacticProperty1 [Σ] P [Γ] [l₁ l₂]%list_scope [g₁ g₂] tp1_tactic%function_scope _%function_scope.
-
-Structure tacticProperty2 {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l₁ l₂ l₃ : list Pattern) (g₁ g₂ g₃ : Pattern)
-  := TacticProperty2 {
-      tp2_tactic : @mkMyGoal Σ Γ l₁ g₁ -> @mkMyGoal Σ Γ l₂ g₂ -> @mkMyGoal Σ Γ l₃ g₃ ;
-      tp2_tactic_property :
-      forall (pf₁ : @mkMyGoal Σ Γ l₁ g₁) (pf₂ : @mkMyGoal Σ Γ l₂ g₂),
-        (forall wf3 wf4, liftP P _ _ _ (pf₁ wf3 wf4) = false) ->
-        (forall wf5 wf6, liftP P _ _ _ (pf₂ wf5 wf6) = false) ->
-        (forall wf1 wf2, liftP P _ _ _ ((tp2_tactic pf₁ pf₂) wf1 wf2) = false)
-    }.
-
-Arguments TacticProperty2 [Σ] P [Γ] [l₁ l₂ l₃]%list_scope [g₁ g₂ g₃] tp2_tactic%function_scope _%function_scope.
-
-Structure tacticProperty1_1 {Σ : Signature} (P : proofbpred) (Γ : Theory)
-          (l₂ l₃ : list Pattern) (p₁ g₂ g₃ : Pattern)
-  := TacticProperty1_1 {
-      tp1_1_tactic : Γ ⊢ p₁ -> @mkMyGoal Σ Γ l₂ g₂ -> @mkMyGoal Σ Γ l₃ g₃ ;
-      tp1_1_tactic_property :
-      forall (pf₁ : Γ ⊢ p₁) (pf₂ : @mkMyGoal Σ Γ l₂ g₂),
-        (P Γ p₁ pf₁ = false) ->
-        (forall wf5 wf6, liftP P _ _ _ (pf₂ wf5 wf6) = false) ->
-        (forall wf1 wf2, liftP P _ _ _ ((tp1_1_tactic pf₁ pf₂) wf1 wf2) = false)
-    }.
-
-Arguments TacticProperty1_1 [Σ] P [Γ] [l₂ l₃]%list_scope [p₁ g₂ g₃] tp1_1_tactic%function_scope _%function_scope.
-
-
-
-Ltac2 Set solve_indif :=
-  (fun () =>
-     ltac1:(
-              repeat (
-                  intros;
-                  (
-                    lazymatch goal with
-                    | [ |- liftP _ _ _ _ _ = _ ] =>
-                        (
-                          eapply tp0_tactic_property
-                          || eapply tp1_tactic_property
-                          || eapply tp2_tactic_property
-                          || eapply tp1_1_tactic_property
-                        )
-                                                    
-                    | _ => (
-                            eapply pp0_proof_property
-                            || eapply pp1_proof_property
-                            || eapply pp2_proof_property
-                          )
-                    end
-                  )
-                )
-            )
-  ).
-
-
-Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern):
-  @mkMyGoal Σ Γ (l ++ [x]) g ->
-  @mkMyGoal Σ Γ l (x ---> g).
+Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern)
+  (i : ProofInfo) :
+  @mkMyGoal Σ Γ (l ++ [x]) g i ->
+  @mkMyGoal Σ Γ l (x ---> g) i.
 Proof.
   intros H.
   unfold of_MyGoal in H. simpl in H.
@@ -1891,49 +1792,13 @@ Proof.
   { abstract (unfold wf; unfold wf in wfl; rewrite map_app foldr_app; simpl;
               apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
   }
-  unshelve (eapply (cast_proof _ H)).
+  unshelve (eapply (cast_proof' _ H)).
   { rewrite foldr_app. reflexivity. }
 Defined.
 
-Lemma MyGoal_intro_indifferent {Σ : Signature} (P : proofbpred) {Hcast : IndifCast P} Γ l x g pf:
-  (forall wf3 wf4, P _ _ (pf wf3 wf4) = false) ->
-  (forall wf1 wf2, P _ _ (@MyGoal_intro Σ Γ l x g pf wf1 wf2) = false).
-Proof.
-  intros H wf1 wf2.
-  unfold MyGoal_intro. simpl.
-  destruct Hcast as [Hcast].
-  rewrite Hcast. simpl in H. apply H.
-Qed.
-
-Program Canonical Structure MyGoal_intro_indifferent_S 
-          {Σ : Signature} (P : proofbpred) {Pic : IndifCast P}
-          Γ l x g
-  := TacticProperty1 P (fun pf => @MyGoal_intro Σ Γ l x g pf) _.
-Next Obligation. intros. simpl. apply MyGoal_intro_indifferent. exact Pic. exact H. Qed.
-
-Program Canonical Structure cast_proof_mg_hyps_indifferent_S
-        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
-        (l₁ l₂ : list Pattern) (g : Pattern) (e : l₁ = l₂)
-  := TacticProperty1 P (@cast_proof_mg_hyps Σ Γ l₁ l₂ e g) _.
-Next Obligation.
-  intros. unfold liftP. simpl. unfold cast_proof_mg_hyps.
-  pose proof (Pic' := Pic). destruct Pic' as [cast_indif0].
-  rewrite cast_indif0. simpl in *. unfold liftP in H. apply H.
-Qed.
-
-Program Canonical Structure cast_proof_mg_goal_indifferent_S
-        {Σ : Signature} (P : proofbpred) {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern) (g₁ g₂ : Pattern) (e : g₁ = g₂)
-  := TacticProperty1 P (@cast_proof_mg_goal Σ Γ l g₁ g₂ e) _.
-Next Obligation.
-  intros. unfold liftP. simpl. unfold cast_proof_mg_goal.
-  pose proof (Pic' := Pic). destruct Pic' as [cast_indif0].
-  rewrite cast_indif0. simpl in *. unfold liftP in H. apply H.
-Qed.
-
 Ltac simplLocalContext :=
   match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ]
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) ]
       => eapply cast_proof_mg_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
@@ -1942,12 +1807,12 @@ Ltac simplLocalContext :=
 
 Local Example ex_mgIntro {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ a ---> a.
+  Γ ⊢ a ---> a using PropositionalReasoning.
 Proof.
   intros wfa.
   toMyGoal.
-  { auto. }
-  mgIntro. fromMyGoal. intros _ _. apply A_impl_A; assumption.
+  { wf_auto2. }
+  mgIntro. fromMyGoal. apply A_impl_A; assumption.
 Defined.
 
 Lemma MyGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g : Pattern):
