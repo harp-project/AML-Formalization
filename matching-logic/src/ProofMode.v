@@ -1863,6 +1863,7 @@ Proof.
 Defined.
 
 Tactic Notation "mgExactn" constr(n) :=
+  usePropositionalReasoning;
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
   apply MyGoal_exactn.
@@ -2620,37 +2621,30 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Definition Pattern_of {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (pf : Γ ⊢ ϕ) : Pattern := ϕ.
-
-Structure equals_pf {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ) := Pack_pf { unpack_pf : Γ ⊢ ϕ }.
-Canonical Structure equate_pf {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ) := Pack_pf pf pf.
-
-Structure equals_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat { unpack_pat : Pattern }.
-Canonical Structure equate_pat {Σ : Signature} (ϕ : Pattern) := Pack_pat ϕ ϕ.
-
 Tactic Notation "mgAdd" constr(n) :=
   match goal with
-  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
-    apply (@MyGoal_add Sgm Ctx l g _ n)
+  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) =>
+    apply (@MyGoal_add Sgm Ctx l g _ i n)
   end.
 
 Section FOL_helpers.
   
   Context {Σ : Signature}.
   
-  Local Example ex_mgAdd Γ l g h:
+  Local Example ex_mgAdd Γ l g h i:
     wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (h ---> g) ->
-    Γ ⊢ h ->
-    Γ ⊢ g.
+    Γ ⊢ (h ---> g) using i ->
+    Γ ⊢ h using i ->
+    Γ ⊢ g using i.
   Proof.
     intros WFl WFg WFh H H0. toMyGoal.
-    { auto. }
+    { wf_auto2. }
     mgAdd H0.
     mgAdd H.
-    mgApply 0. mgExactn 1.
+    mgApply 0.    
+    mgExactn 1.
   Defined.
 
 
