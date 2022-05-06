@@ -3350,8 +3350,44 @@ Section FOL_helpers.
   Check Prop_disj_left.
   Check Prop_bott_left.
 
-  Lemma Prop_disj_left
+  Lemma Prop_disj_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+    well_formed ϕ₁ ->
+    well_formed ϕ₂ ->
+    well_formed ψ ->
+    Γ ⊢ (ϕ₁ or ϕ₂) $ ψ ---> (ϕ₁ $ ψ) or (ϕ₂ $ ψ) using BasicReasoning.
+  Proof.
+    intros wfϕ₁ wfϕ₂ wfψ.
+    unshelve (eexists).
+    {
+      apply Prop_disj_left; assumption.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [(exact I)|(set_solver)|(set_solver)|(reflexivity)]
+      ).
+    }
+  Defined.
   
+  Lemma Prop_disj_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+    well_formed ϕ₁ ->
+    well_formed ϕ₂ ->
+    well_formed ψ ->
+    Γ ⊢ ψ $ (ϕ₁ or ϕ₂)  ---> (ψ $ ϕ₁) or (ψ $ ϕ₂) using BasicReasoning.
+  Proof.
+    intros wfϕ₁ wfϕ₂ wfψ.
+    unshelve (eexists).
+    {
+      apply Prop_disj_right; assumption.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [(exact I)|(set_solver)|(set_solver)|(reflexivity)]
+      ).
+    }
+  Defined.
+
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
@@ -3364,32 +3400,40 @@ Section FOL_helpers.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        eapply Framing_left in H.
+        eapply Framing_left in H. 2: apply _.
         eapply syllogism_meta. 4: apply H.
-        all: try_wfauto2. 2: apply _.
+        all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_left. all: subst; auto.
-      + eapply prf_disj_elim_meta_meta; auto.
-        * apply Framing_left; auto.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-        * apply Framing_left; auto.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-    - apply pf_iff_iff in IHAC; auto.
+        apply Prop_disj_left. all: subst; wf_auto2.
+      + eapply prf_disj_elim_meta_meta; try_wfauto2.
+        * apply Framing_left; try_wfauto2. apply _.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+          usePropositionalReasoning.
+          apply disj_left_intro; wf_auto2.
+        * apply Framing_left; try_wfauto2. apply _.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+          usePropositionalReasoning.
+          apply disj_right_intro; wf_auto2.
+    - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; auto.
+      apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
         eapply Framing_right in H.
-        eapply syllogism_intro. 4: apply H.
-        all:auto.
+        eapply syllogism_meta. 4: apply H.
+        all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_right. all: subst; auto.
-      + eapply prf_disj_elim_meta_meta; auto.
-        * apply Framing_right; auto.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
-        * apply Framing_right; auto.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: auto.
+        apply Prop_disj_right. all: subst; wf_auto2. apply _.
+      + eapply prf_disj_elim_meta_meta; try_wfauto2.
+        * apply Framing_right; try_wfauto2. apply _.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+          usePropositionalReasoning.
+          apply disj_left_intro; wf_auto2.
+        * apply Framing_right; try_wfauto2. apply _.
+          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+          usePropositionalReasoning.
+          apply disj_right_intro; wf_auto2.
   Defined.
 
   Lemma prf_prop_ex_iff Γ AC p x:
