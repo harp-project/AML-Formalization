@@ -3213,190 +3213,160 @@ Section FOL_helpers.
     - fromMyGoal. apply H0.
   Defined.
 
-  Lemma pf_iff_split Γ A B:
+  Lemma pf_iff_split Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> B ->
-    Γ ⊢ B ---> A ->
-    Γ ⊢ A <---> B.
+    Γ ⊢ A ---> B using i ->
+    Γ ⊢ B ---> A using i ->
+    Γ ⊢ A <---> B using i.
   Proof.
     intros wfA wfB AimplB BimplA.
     unfold patt_iff.
-    apply conj_intro_meta; auto.
+    apply conj_intro_meta; try_wfauto2; assumption.
   Defined.
-
-  Program Canonical Structure pf_iff_split_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty2 P (@pf_iff_split Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
   
-  Lemma pf_iff_proj1 Γ A B:
+  Lemma pf_iff_proj1 Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A <---> B ->
-    Γ ⊢ A ---> B.
+    Γ ⊢ A <---> B using i ->
+    Γ ⊢ A ---> B using i.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
-    apply pf_conj_elim_l_meta in H; auto.
+    apply pf_conj_elim_l_meta in H; try_wfauto2; assumption.
   Defined.
 
-  Program Canonical Structure pf_iff_proj1_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@pf_iff_proj1 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma pf_iff_proj2 Γ A B:
+  Lemma pf_iff_proj2 Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) ->
-    Γ ⊢ (B ---> A).
+    Γ ⊢ (A <---> B) using i ->
+    Γ ⊢ (B ---> A) using i.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
-    apply pf_conj_elim_r_meta in H; auto.
+    apply pf_conj_elim_r_meta in H; try_wfauto2; assumption.
   Defined.
 
-  Program Canonical Structure pf_iff_proj2_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@pf_iff_proj2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma pf_iff_iff Γ A B:
+  Lemma pf_iff_iff Γ A B i:
     well_formed A ->
     well_formed B ->
-    prod ((Γ ⊢ (A <---> B)) -> (prod (Γ ⊢ (A ---> B)) (Γ ⊢ (B ---> A))))
-    ( (prod (Γ ⊢ (A ---> B))  (Γ ⊢ (B ---> A))) -> (Γ ⊢ (A <---> B))).
+    prod ((Γ ⊢ (A <---> B) using i) -> (prod (Γ ⊢ (A ---> B) using i) (Γ ⊢ (B ---> A) using i)))
+    ( (prod (Γ ⊢ (A ---> B) using i)  (Γ ⊢ (B ---> A) using i)) -> (Γ ⊢ (A <---> B) using i)).
   Proof.
-    intros WFA WFB. firstorder using pf_iff_proj1,pf_iff_proj2,pf_iff_split.
+    intros WFA WFB.
+    split; intros H.
+    {
+      pose proof (H1 := pf_iff_proj1 WFA WFB H).
+      pose proof (H2 := pf_iff_proj2 WFA WFB H).
+      split; assumption.
+    }
+    {
+      destruct H as [H1 H2].
+      apply pf_iff_split; assumption.
+    }
   Defined.
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
-    Γ ⊢ (A <---> A).
+    Γ ⊢ (A <---> A) using PropositionalReasoning.
   Proof.
     intros WFA.
-    apply pf_iff_split; auto.
+    apply pf_iff_split; try_wfauto2; apply A_impl_A; assumption.
   Defined.
 
-  Program Canonical Structure pf_iff_equiv_refl_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-    := ProofProperty0 P (@pf_iff_equiv_refl Γ a wfa) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma pf_iff_equiv_sym Γ A B :
+  Lemma pf_iff_equiv_sym Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) ->
-    Γ ⊢ (B <---> A).
+    Γ ⊢ (A <---> B) using i ->
+    Γ ⊢ (B <---> A) using i.
   Proof.
     intros wfA wfB H.
     pose proof (H2 := H).
-    apply pf_iff_proj2 in H2; auto.
+    apply pf_iff_proj2 in H2; try_wfauto2.
     rename H into H1.
-    apply pf_iff_proj1 in H1; auto.
-    apply pf_iff_split; auto.
+    apply pf_iff_proj1 in H1; try_wfauto2.
+    apply pf_iff_split; try_wfauto2; assumption.
   Defined.
 
-  Program Canonical Structure pf_iff_equiv_sym_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@pf_iff_equiv_sym Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma pf_iff_equiv_trans Γ A B C :
+  Lemma pf_iff_equiv_trans Γ A B C i:
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ (A <---> B) ->
-    Γ ⊢ (B <---> C) ->
-    Γ ⊢ (A <---> C).
+    Γ ⊢ (A <---> B) using i ->
+    Γ ⊢ (B <---> C) using i ->
+    Γ ⊢ (A <---> C) using i.
   Proof.
     intros wfA wfB wfC AeqB BeqC.
-    apply pf_iff_iff in AeqB; auto. destruct AeqB as [AimpB BimpA].
-    apply pf_iff_iff in BeqC; auto. destruct BeqC as [BimpC CimpB].
-    apply pf_iff_iff; auto.
-    split; eauto.
+    apply pf_iff_iff in AeqB; try_wfauto2. destruct AeqB as [AimpB BimpA].
+    apply pf_iff_iff in BeqC; try_wfauto2. destruct BeqC as [BimpC CimpB].
+    apply pf_iff_iff; try_wfauto2.
+    split.
+    {
+      eapply syllogism_meta. 4,5: eassumption.
+      1-3: wf_auto2.
+    }
+    {
+      eapply syllogism_meta. 4,5: eassumption.
+      1-3: wf_auto2.
+    }
   Defined.
 
-  Program Canonical Structure pf_iff_equiv_trans_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-    := ProofProperty2 P (@pf_iff_equiv_trans Γ a b c wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma prf_conclusion Γ a b:
+  Lemma prf_conclusion Γ a b i:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ b ->
-    Γ ⊢ (a ---> b).
+    Γ ⊢ b using i ->
+    Γ ⊢ (a ---> b) using i.
   Proof.
-    intros WFa WFb H. eapply Modus_ponens. 4: apply P1. all: auto.
+    intros WFa WFb H. eapply MP.
+    apply H.
+    usePropositionalReasoning.
+    apply P1; wf_auto2.
   Defined.
-
-  Program Canonical Structure prf_conclusion_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@prf_conclusion Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
     
   Lemma prf_prop_bott_iff Γ AC:
-    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott).
+    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott) using BasicReasoning.
   Proof.
     induction AC; simpl.
-    - apply pf_iff_equiv_refl; auto.
+    - usePropositionalReasoning. apply pf_iff_equiv_refl; auto.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; auto.
+      apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
         eapply Framing_left in H.
-        eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥)).
+        eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥) using BasicReasoning).
         { apply Prop_bott_left. shelve. }
-        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3,4: auto.
-      + apply bot_elim; auto.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+      + usePropositionalReasoning. apply bot_elim; wf_auto2.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; auto.
+      apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
         eapply Framing_right in H.
-        eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥)).
+        eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥) using BasicReasoning).
         { apply Prop_bott_right. shelve. }
-        eapply syllogism_intro. 5: apply H0. 4: apply H. 1,2,3,4: auto.
-      + apply bot_elim; auto.
-        Unshelve. all: auto.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+      + usePropositionalReasoning. apply bot_elim; wf_auto2.
+        Unshelve. all: wf_auto2.
   Defined.
+
+  Check Prop_disj_left.
+  Check Prop_bott_left.
+
+  Lemma Prop_disj_left
   
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))).
+    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))) using BasicReasoning.
   Proof.
     intros wfp wfq.
     induction AC; simpl.
-    - apply pf_iff_equiv_refl; auto.
-    - apply pf_iff_iff in IHAC; auto.
+    - usePropositionalReasoning. apply pf_iff_equiv_refl; wf_auto2.
+    - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; auto.
+      apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
         eapply Framing_left in H.
-        eapply syllogism_intro. 4: apply H.
-        all:auto.
+        eapply syllogism_meta. 4: apply H.
+        all: try_wfauto2. 2: apply _.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
         apply Prop_disj_left. all: subst; auto.
