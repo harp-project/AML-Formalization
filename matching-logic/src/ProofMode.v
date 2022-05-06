@@ -148,15 +148,16 @@ Definition MyGoal_from_goal
   MyGoal
   := @mkMyGoal Σ Γ nil goal pi.
 
-Notation "[ S , G ⊢ l ==> g ] 'using' pi"
-  := (@mkMyGoal S G l g pi) (at level 95, no associativity).
-
-Set Printing All.
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
   wf (mgHypotheses MG) ->
   (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
   using (mgInfo MG).
+
+  (* This is useful only for printing. *)
+  Notation "[ S , G ⊢ l ==> g ]  'using' pi "
+  := (@mkMyGoal S G l g pi) (at level 95, no associativity).
+
 
 Ltac toMyGoal :=
   lazymatch goal with
@@ -1805,20 +1806,41 @@ Ltac simplLocalContext :=
 #[global]
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
 
-Local Example ex_mgIntro {Σ : Signature} Γ a:
+
+ Lemma mgUsePropositionalReasoning
+  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
+  @mkMyGoal Σ Γ l g PropositionalReasoning ->
+  @mkMyGoal Σ Γ l g i.
+Proof.
+  intros H wf1 wf2.
+  specialize (H wf1 wf2).
+  apply usePropositionalReasoning.
+  exact H.
+Defined.
+
+Ltac usePropositionalReasoning :=
+  lazymatch goal with
+  | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUsePropositionalReasoning
+  | [ |- _ ⊢ _ using _ ] => apply usePropositionalReasoning
+  end.
+
+Local Example ex_mgIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢ a ---> a using PropositionalReasoning.
+  Γ ⊢ a ---> a using i.
 Proof.
   intros wfa.
   toMyGoal.
   { wf_auto2. }
-  mgIntro. fromMyGoal. apply A_impl_A; assumption.
+  mgIntro.
+  usePropositionalReasoning.
+  fromMyGoal. apply A_impl_A; assumption.
 Defined.
 
 Lemma MyGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g : Pattern):
-  @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g.
+  @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g PropositionalReasoning.
 Proof.
-  fromMyGoal. intros wfg wfl₁gl₂.
+  mgExtractWF wfl₁gl₂ wfg.
+  fromMyGoal.
   apply nested_const_middle.
   { exact wfg. }
   { abstract (
@@ -1840,49 +1862,31 @@ Proof.
   }
 Defined.
 
-Lemma MyGoal_exactn_indifferent {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} Γ l₁ l₂ g:
-  (forall wf1 wf2, P _ _ (@MyGoal_exactn Σ Γ l₁ l₂ g wf1 wf2) = false).
-Proof.
-  intros wf1 wf2.
-  unfold MyGoal_exactn.
-  solve_indif.
-Qed.
-
-Program Canonical Structure MyGoal_exactn_indifferent_S {Σ : Signature} (P : proofbpred) {Pip : IndifProp P}
-          Γ l₁ l₂ g
-  := TacticProperty0 P (@MyGoal_exactn Σ Γ l₁ l₂ g) _.
-Next Obligation. intros. simpl. apply MyGoal_exactn_indifferent. exact Pip. Qed.
-
 Tactic Notation "mgExactn" constr(n) :=
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
   apply MyGoal_exactn.
 
+
+(*
+Lemma mgUsePropositionalReasoning
+  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
+  [ Σ , Γ ⊢ l ==> g using PropositionalReasoning ] -> True.
+*)
+
 Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
   well_formed c = true ->
-  Γ ⊢ a ---> b ---> c ---> b.
+  Γ ⊢ a ---> b ---> c ---> b using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   mgIntro. mgIntro. mgIntro.
+  Check usePropositionalReasoning.
   mgExactn 1.
 Defined.
-
-Local Example ex_mgExactn_indif_S {Σ : Signature} P {Pip : IndifProp P} {Pic : IndifCast P} Γ a b c
-  (wfa : well_formed a = true)
-  (wfb : well_formed b = true)
-  (wfc : well_formed c = true):
-  P _ _ (@ex_mgExactn Σ Γ a b c wfa wfb wfc) = false.
-Proof.
-  unfold ex_mgExactn.
-  apply liftP_impl_P.
-  solve_indif.
-Qed.
-
-
 
 Section FOL_helpers.
 
