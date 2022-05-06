@@ -2653,66 +2653,38 @@ Section FOL_helpers.
     wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2)).
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
+    using PropositionalReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
     induction l1; simpl.
-    - apply P1; auto.
+    - apply P1; wf_auto2.
     - unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
 
-      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2)).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using PropositionalReasoning).
       {
         toMyGoal.
-        { auto 10. }
+        { wf_auto2. }
         mgAdd IHl1.
         mgIntro. mgExactn 0.
       }
-      apply prf_impl_distr_meta; auto.
+      apply prf_impl_distr_meta; try_wfauto2. apply H1.
   Defined.
 
-  Program Canonical Structure prf_clear_hyp_indifferent_S
-    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-    (l₁ l₂ : list Pattern)
-    (g h : Pattern)
-    (wfl₁ : wf l₁)
-    (wfl₂ : wf l₂)
-    (wfg : well_formed g)
-    (wfh : well_formed h)
-    := ProofProperty0 P (@prf_clear_hyp Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
-  Next Obligation.
-    intros.
-    induction l₁.
-    - solve_indif.
-    - simpl.
-      case_match.
-      solve_indif.
-      apply IHl₁.
-  Qed.
-
-  Lemma prf_clear_hyp_meta Γ l1 l2 g h:
+  Lemma prf_clear_hyp_meta Γ l1 l2 g h i:
     wf l1 ->
     wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)).
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) using i ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
   Proof.
-    intros. eapply Modus_ponens.
-    4: { apply prf_clear_hyp; auto. }
-    all: auto 10.
+    intros. eapply MP.
+    apply H3.
+    usePropositionalReasoning.
+    apply prf_clear_hyp; wf_auto2.
   Defined.  
-
-  Program Canonical Structure prf_clear_hyp_meta_indifferent_S
-    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-    (l₁ l₂ : list Pattern)
-    (g h : Pattern)
-    (wfl₁ : wf l₁)
-    (wfl₂ : wf l₂)
-    (wfg : well_formed g)
-    (wfh : well_formed h)
-    := ProofProperty1 P (@prf_clear_hyp_meta Γ l₁ l₂ g h wfl₁ wfl₂ wfg wfh) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   (* TODO move somewhere else *)
   Lemma wfapp_proj_1 l₁ l₂:
@@ -2770,9 +2742,9 @@ Section FOL_helpers.
     apply wf_app; assumption.
   Qed.
 
-  Lemma myGoal_clear_hyp Γ l1 l2 g h:
-    @mkMyGoal Σ Γ (l1 ++ l2) g ->
-    @mkMyGoal Σ Γ (l1 ++ h::l2) g.
+  Lemma myGoal_clear_hyp Γ l1 l2 g h i:
+    @mkMyGoal Σ Γ (l1 ++ l2) g i ->
+    @mkMyGoal Σ Γ (l1 ++ h::l2) g i.
   Proof.
     intros H1.
     unfold of_MyGoal in *. simpl in *. intros wfg wfl1hl2.
@@ -2783,20 +2755,13 @@ Section FOL_helpers.
     { apply wfl₁hl₂_proj_h in wfl1hl2. exact wfl1hl2. }
     { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
   Defined.
-
-  Program Canonical Structure myGoal_clear_hyp_indifferent_S
-    (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-    (l₁ l₂ : list Pattern)
-    (g h : Pattern)
-    := TacticProperty1 P (@myGoal_clear_hyp Γ l₁ l₂ g h) _.
-  Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
   
 End FOL_helpers.
 
 
 Tactic Notation "mgClear" constr(n) :=
   match goal with
-  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) =>
     let l1 := fresh "l1" in
     let l2 := fresh "l2" in
     let Heql1 := fresh "Heql1" in
@@ -2827,30 +2792,16 @@ Local Example ex_mgClear {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> (b ---> (c ---> b)).
+  Γ ⊢ a ---> (b ---> (c ---> b)) using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   repeat mgIntro.
   mgClear 2.
   mgClear 0.
   mgExactn 0.
 Defined.
-
-Local Example ex_mgClear_indif {Σ : Signature} (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P}
-      (Γ : Theory)
-      (a b c : Pattern)
-      (wfa : well_formed a)
-      (wfb : well_formed b)
-      (wfc : well_formed c):
-  P _ _ (@ex_mgClear Σ Γ a b c wfa wfb wfc) = false.
-Proof.
-  unfold ex_mgClear. simpl.
-  apply liftP_impl_P.
-  solve_indif.
-Qed.
-
 
 Section FOL_helpers.
   
