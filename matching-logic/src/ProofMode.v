@@ -2062,9 +2062,9 @@ Section FOL_helpers.
     { usePropositionalReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
   Defined.
 
-  Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
-    @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
-    @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g'.
+  Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g' i:
+    @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g i ->
+    @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g' i.
   Proof.
     unfold of_MyGoal in *. simpl in *.
     intros H wfg' wfl₁gg'l₂.
@@ -2113,12 +2113,6 @@ Section FOL_helpers.
     exact wfl₁gg'l₂.
   Defined.
 
-  Program Canonical Structure MyGoal_weakenConclusion_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-    := TacticProperty1 P (@MyGoal_weakenConclusion Γ l₁ l₂ ϕ₁ ϕ₂) _.
-  Next Obligation. intros. unfold MyGoal_weakenConclusion. unfold liftP. solve_indif. apply H. Qed.
-
 End FOL_helpers.
 
 Tactic Notation "mgApply" constr(n) :=
@@ -2130,14 +2124,14 @@ Tactic Notation "mgApply" constr(n) :=
 Local Example ex_mgApply {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ a ---> (a ---> b) ---> b.
+  Γ ⊢ a ---> (a ---> b) ---> b using PropositionalReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   mgIntro. mgIntro.
   mgApply 1.
-  fromMyGoal. intros _ _. apply P1; auto.
+  fromMyGoal. apply P1; wf_auto2.
 Defined.
 
 Section FOL_helpers.
@@ -2149,13 +2143,13 @@ Section FOL_helpers.
     well_formed q ->
     well_formed r ->
     well_formed s ->
-    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)).
+    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using PropositionalReasoning.
   Proof.
     intros wfp wfq wfr wfs.
     unfold patt_or.
 
     toMyGoal.
-    { auto 10. }
+    { wf_auto2. }
 
     mgIntro. mgIntro. mgIntro. mgIntro.
     mgApply 1.
@@ -2166,60 +2160,39 @@ Section FOL_helpers.
     mgExactn 4.
   Defined.
 
-  Program Canonical Structure Constructive_dilemma_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-            (p q r s : Pattern)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-            (wfr : well_formed r)
-            (wfs : well_formed s)
-    := ProofProperty0 P (@Constructive_dilemma Γ p q r s wfp wfq wfr wfs) _.
-  Next Obligation. intros. apply liftP_impl_P. solve_indif. Qed.
-
-  Lemma prf_add_assumption Γ a b :
+  Lemma prf_add_assumption Γ a b i :
     well_formed a ->
     well_formed b ->
-    Γ ⊢ b ->
-    Γ ⊢ (a ---> b).
+    Γ ⊢ b using i ->
+    Γ ⊢ (a ---> b) using i.
   Proof.
     intros wfa wfb H.
-    eapply Modus_ponens.
-    4: apply P1. all: auto.
+    eapply MP.
+    { apply H. }
+    { usePropositionalReasoning. apply P1; wf_auto2. }
   Defined.
 
-  Program Canonical Structure prf_add_assumption_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (p q : Pattern)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty1 P (@prf_add_assumption Γ p q wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma prf_impl_distr_meta Γ a b c:
+  Lemma prf_impl_distr_meta Γ a b c i:
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> (b ---> c)) ->
-    Γ ⊢ ((a ---> b) ---> (a ---> c)).
+    Γ ⊢ (a ---> (b ---> c)) using i ->
+    Γ ⊢ ((a ---> b) ---> (a ---> c)) using i.
   Proof.
     intros wfa wfb wfc H.
-    eapply Modus_ponens. 4: apply P2. all: auto.
+    eapply MP.
+    { apply H. }
+    { usePropositionalReasoning. apply P2; wf_auto2. }
   Defined.
-
-  Program Canonical Structure prf_impl_distr_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (p q r : Pattern)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-            (wfr : well_formed r)
-    := ProofProperty1 P (@prf_impl_distr_meta Γ p q r wfp wfq wfr) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
     wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ ((foldr patt_imp h l) ---> ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l))).
+    Γ ⊢ ((foldr patt_imp h l) --->
+         ((foldr patt_imp g (l ++ [h])) --->
+          (foldr patt_imp g l)))
+    using PropositionalReasoning.
   Proof.
     intros wfl wfg wfh.
     induction l; simpl.
@@ -2227,32 +2200,27 @@ Section FOL_helpers.
     - pose proof (wfal := wfl).
       unfold wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
-      assert (H1: Γ ⊢ a ---> foldr patt_imp h l ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l).
-      { apply prf_add_assumption; auto 10. }
-      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) ---> (a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)).
-      { apply prf_impl_distr_meta; auto 10. }
+      assert (H1: Γ ⊢ a --->
+                      foldr patt_imp h l --->
+                      foldr patt_imp g (l ++ [h]) --->
+                      foldr patt_imp g l
+              using PropositionalReasoning).
+      { apply prf_add_assumption; wf_auto2. }
+
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) --->
+                       (a ---> foldr patt_imp g (l ++ [h]) --->
+                       foldr patt_imp g l)
+              using PropositionalReasoning).
+      { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
+
       assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
-                          ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))).
-      { auto 10 using P2. }
+                          ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
+              using PropositionalReasoning).
+      { apply P2; wf_auto2. }
 
       eapply prf_weaken_conclusion_meta_meta.
-      4: apply H3. all: auto 10.
+      4: apply H3. 4: apply H2. all: wf_auto2.
   Defined.
-
-  Program Canonical Structure prf_add_lemma_under_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern)
-            (p q : Pattern)
-            (wfl : wf l)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty0 P (@prf_add_lemma_under_implication Γ l p q wfl wfp wfq) _.
-  Next Obligation.
-    intros.
-    induction l.
-    - solve_indif.
-    - simpl. case_match. solve_indif. apply IHl.
-  Qed.
 
   Lemma prf_add_lemma_under_implication_meta Γ l g h:
     wf l ->
