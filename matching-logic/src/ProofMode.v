@@ -1611,12 +1611,13 @@ Abort.
 
 Local Example ex_toMyGoal {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p.
+  Γ ⊢ p ---> p using PropositionalReasoning.
 Proof.
   intros wfp.
   toMyGoal.
-  { auto. }
-  fromMyGoal. intros _ _. apply A_impl_A. exact wfp.
+  { wf_auto2. }
+  fromMyGoal. 
+  apply A_impl_A. exact wfp.
 Qed.
 
 Tactic Notation "mgExtractWF" ident(wfl) ident(wfg) :=
@@ -1635,53 +1636,111 @@ end.
 
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p.
+  Γ ⊢ p ---> p using PropositionalReasoning.
 Proof.
   intros wfp.
   toMyGoal.
   { auto. }
   mgExtractWF wfl wfg.
+  (* These two asserts by assumption only test presence of the two hypotheses *)
   assert (wf []) by assumption.
   assert (well_formed (p ---> p)) by assumption.
 Abort.
-  
 
-Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal:
-  @mkMyGoal Σ Γ hyps goal ->
-  @mkMyGoal Σ Γ hyps' goal.
+Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ψ using i.
+Proof.
+  intros [pf Hpf].
+  unshelve (eexists).
+  {
+    apply (cast_proof e).
+    exact pf.
+  }
+  { abstract(
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4];
+    constructor; [
+    (
+      destruct i;[|exact I];
+      rewrite indifferent_to_cast_propositional_only;
+      exact Hpf1
+    )|
+    (
+      rewrite elem_of_subseteq in Hpf2;
+      rewrite elem_of_subseteq;
+      intros x Hx;
+      specialize (Hpf2 x);
+      apply Hpf2; clear Hpf2;
+      rewrite uses_of_ex_gen_correct in Hx;
+      rewrite uses_of_ex_gen_correct;
+      rewrite indifferent_to_cast_uses_ex_gen in Hx;
+      exact Hx
+    )|
+    (
+      rewrite elem_of_subseteq in Hpf3;
+      rewrite elem_of_subseteq;
+      intros x Hx;
+      specialize (Hpf3 x);
+      apply Hpf3; clear Hpf3;
+      rewrite uses_of_svar_subst_correct in Hx;
+      rewrite uses_of_svar_subst_correct;
+      rewrite indifferent_to_cast_uses_svar_subst in Hx;
+      exact Hx
+    )|
+    (
+      rewrite indifferent_to_cast_uses_kt;
+      apply Hpf4
+    )]).
+  }
+Defined.
+
+Lemma cast_proof_mg_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal (i : ProofInfo) :
+  @mkMyGoal Σ Γ hyps goal i ->
+  @mkMyGoal Σ Γ hyps' goal i.
 Proof.
   unfold of_MyGoal. simpl. intros H.
   intros wfg wfhyps'.
   feed specialize H.
   { exact wfg. }
   { rewrite e. exact wfhyps'. }
-  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+  unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
   rewrite e.
   reflexivity.
 Defined.
 
-Lemma cast_proof_mg_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal'):
-  @mkMyGoal Σ Γ hyps goal ->
-  @mkMyGoal Σ Γ hyps goal'.
+Lemma cast_proof_mg_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
+  @mkMyGoal Σ Γ hyps goal i ->
+  @mkMyGoal Σ Γ hyps goal' i .
 Proof.
   unfold of_MyGoal. simpl. intros H.
   intros wfgoal' wfhyps.
   feed specialize H.
   { rewrite e. exact wfgoal'. }
   { exact wfhyps. }
-  unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+  unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
   rewrite e.
   reflexivity.
 Defined.
 
-Lemma cast_proof_mg_hyps_indifferent
-      Σ P Γ hyps hyps' (e : hyps = hyps') goal (pf : @mkMyGoal Σ Γ hyps goal) wf1 wf2 wf3 wf4:
+Lemma cast_proof_mg_hyps_indifferent'
+      Σ P Γ hyps hyps' (e : hyps = hyps') goal (i : ProofInfo)
+      (pf : @mkMyGoal Σ Γ hyps goal i) wf1 wf2 wf3 wf4:
   indifferent_to_cast P ->
-  P _ _ (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal pf wf1 wf2) = P _ _ (pf wf3 wf4).
+  P _ _ (proj1_sig (@cast_proof_mg_hyps Σ Γ hyps hyps' e goal i pf wf1 wf2)) = P _ _ (proj1_sig (pf wf3 wf4)).
 Proof.
   intros Hp. simpl. unfold cast_proof_mg_hyps.
+  unfold proj1_sig. unfold cast_proof'. destruct pf as [pf' Hpf'] eqn:Heqpf.
   rewrite Hp.
-  apply f_equal. f_equal.
+  apply f_equal. simpl in *.
+  case_match. simpl in *.
+  remember (pf wf1
+  (eq_ind_r (λ pv : list Pattern, wf pv)
+     wf2 e)).
+  simpl in *.
+  apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf.
+  apply proj1_sig_eq in Heqs0. rewrite Heqs0.
+  apply proj1_sig_eq in Heqs. simpl in Heqs. rewrite -Heqs.
+  f_equal. f_equal.
   { apply UIP_dec; apply bool_eqdec. }
   { apply UIP_dec. apply bool_eqdec. }
 Qed.
