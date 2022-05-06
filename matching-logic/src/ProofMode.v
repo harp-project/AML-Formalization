@@ -2222,53 +2222,38 @@ Section FOL_helpers.
       4: apply H3. 4: apply H2. all: wf_auto2.
   Defined.
 
-  Lemma prf_add_lemma_under_implication_meta Γ l g h:
+  Lemma prf_add_lemma_under_implication_meta Γ l g h i:
     wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l) ->
-    Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)).
+    Γ ⊢ (foldr patt_imp h l) using i ->
+    Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
   Proof.
-    intros WFl WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication. all: auto 7.
+    intros WFl WFg WGh H.
+    eapply MP.
+    { apply H. }
+    { usePropositionalReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
   Defined.
 
-  Program Canonical Structure prf_add_lemma_under_implication_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern)
-            (p q : Pattern)
-            (wfl : wf l)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty1 P (@prf_add_lemma_under_implication_meta Γ l p q wfl wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma prf_add_lemma_under_implication_meta_meta Γ l g h:
+  Lemma prf_add_lemma_under_implication_meta_meta Γ l g h i:
     wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l) ->
-    Γ ⊢ (foldr patt_imp g (l ++ [h])) ->
-    Γ ⊢ (foldr patt_imp g l).
+    Γ ⊢ (foldr patt_imp h l) using i ->
+    Γ ⊢ (foldr patt_imp g (l ++ [h])) using i ->
+    Γ ⊢ (foldr patt_imp g l) using i.
   Proof.
-    intros WFl WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_meta.
-    3: apply H0. all: auto 7.
+    intros WFl WFg WGh H H0.
+    eapply MP.
+    { apply H0. }
+    { apply prf_add_lemma_under_implication_meta. 4: apply H. all: wf_auto2. }
   Defined.
 
-  Program Canonical Structure prf_add_lemma_under_implication_meta_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern)
-            (p q : Pattern)
-            (wfl : wf l)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty2 P (@prf_add_lemma_under_implication_meta_meta Γ l p q wfl wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma myGoal_assert Γ l g h:
+  Lemma myGoal_assert Γ l g h i:
     well_formed h ->
-    @mkMyGoal Σ Γ l h ->
-    @mkMyGoal Σ Γ (l ++ [h]) g ->
-    @mkMyGoal Σ Γ l g.
+    @mkMyGoal Σ Γ l h i ->
+    @mkMyGoal Σ Γ (l ++ [h]) g i ->
+    @mkMyGoal Σ Γ l g i.
   Proof.
     intros wfh H1 H2.
     unfold of_MyGoal in *. simpl in *.
@@ -2287,111 +2272,70 @@ Section FOL_helpers.
     }
   Defined.
 
-  Program Canonical Structure myGoal_assert_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern)
-            (p q : Pattern)
-            (wfq : well_formed q)
-    := TacticProperty2 P (@myGoal_assert Γ l p q wfq) _.
-  Next Obligation.
-    intros. unfold myGoal_assert. unfold liftP.
-    solve_indif.
-    - apply H.
-    - apply H0.
-  Qed.
-
   Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
     wf l1 ->
     wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2)))).
+    Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
+    using PropositionalReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
     induction l1; simpl.
-    - apply modus_ponens; auto.
+    - apply modus_ponens; wf_auto2.
     - pose proof (wfal1 := wfl1).
       unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
-      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)).
-      { apply prf_add_assumption; auto 10. }
-      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))).
-      { apply prf_impl_distr_meta; auto 10. }
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using PropositionalReasoning).
+      { apply prf_add_assumption; wf_auto2. }
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using PropositionalReasoning).
+      { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
       assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
-                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2))))).
-      { auto 10 using P2. }
+                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using PropositionalReasoning).
+      { apply P2; wf_auto2. }
 
       eapply prf_weaken_conclusion_meta_meta.
-      4: apply H3. all: auto 10.
+      4: apply H3. 4: assumption. all: wf_auto2.
   Defined.
   
-  Program Canonical Structure prf_add_lemma_under_implication_generalized_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l₁ l₂ : list Pattern)
-            (p q : Pattern)
-            (wfl₁ : wf l₁)
-            (wfl₂ : wf l₂)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty0 P (@prf_add_lemma_under_implication_generalized Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
-  Next Obligation.
-    intros.
-    induction l₁.
-    - solve_indif.
-    - simpl. case_match. solve_indif. apply IHl₁.
-  Qed.
-
-  Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h:
+  Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h i:
     wf l1 ->
     wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l1) ->
-    Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))).
+    Γ ⊢ (foldr patt_imp h l1) using i ->
+    Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))) using i.
   Proof.
-    intros WFl1 WFl2 WFg WGh H. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized. all: auto 10.
+    intros WFl1 WFl2 WFg WGh H.
+    eapply MP.
+    { apply H. }
+    { usePropositionalReasoning.
+      apply prf_add_lemma_under_implication_generalized; wf_auto2.
+    }
   Defined.
-
-  Program Canonical Structure prf_add_lemma_under_implication_generalized_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l₁ l₂ : list Pattern)
-            (p q : Pattern)
-            (wfl₁ : wf l₁)
-            (wfl₂ : wf l₂)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty1 P (@prf_add_lemma_under_implication_generalized_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
   
-  Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h:
+  Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h i:
     wf l1 ->
     wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l1) ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)).
+    Γ ⊢ (foldr patt_imp h l1) using i ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) using i ->
+    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) using i.
   Proof.
-    intros WFl1 WFl2 WFg WGh H H0. eapply Modus_ponens. 4: apply prf_add_lemma_under_implication_generalized_meta.
-    3: apply H0. all: auto 7.
+    intros WFl1 WFl2 WFg WGh H H0.
+    eapply MP.
+    { apply H0. }
+    { apply prf_add_lemma_under_implication_generalized_meta.
+      5: apply H. all: wf_auto2.
+    }
   Defined.
 
-  Program Canonical Structure prf_add_lemma_under_implication_generalized_meta_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l₁ l₂ : list Pattern)
-            (p q : Pattern)
-            (wfl₁ : wf l₁)
-            (wfl₂ : wf l₂)
-            (wfp : well_formed p)
-            (wfq : well_formed q)
-    := ProofProperty2 P (@prf_add_lemma_under_implication_generalized_meta_meta Γ l₁ l₂ p q wfl₁ wfl₂ wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma myGoal_assert_generalized Γ l1 l2 g h:
+  Lemma myGoal_assert_generalized Γ l1 l2 g h i:
     well_formed h ->
-    @mkMyGoal Σ Γ l1 h ->
-    @mkMyGoal Σ Γ (l1 ++ [h] ++ l2) g ->
-    @mkMyGoal Σ Γ (l1 ++ l2) g.
+    @mkMyGoal Σ Γ l1 h i ->
+    @mkMyGoal Σ Γ (l1 ++ [h] ++ l2) g i ->
+    @mkMyGoal Σ Γ (l1 ++ l2) g i.
   Proof.
     intros wfh H1 H2.
     unfold of_MyGoal in *. simpl in *.
@@ -2429,45 +2373,37 @@ Section FOL_helpers.
     }
   Defined.
 
-  Program Canonical Structure myGoal_assert_generalized_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l₁ l₂ : list Pattern)
-            (p q : Pattern)
-            (wfq : well_formed q)
-    := TacticProperty2 P (@myGoal_assert_generalized Γ l₁ l₂ p q wfq) _.
-  Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
-  
 End FOL_helpers.
 
 Tactic Notation "mgAssert" "(" constr(t) ")" :=
   match goal with
-  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) =>
     let Hwf := fresh "Hwf" in
     assert (Hwf : well_formed t);
     [idtac|
       let H := fresh "H" in
-      assert (H : @mkMyGoal Sgm Ctx l t);
-      [ | (eapply (@myGoal_assert Sgm Ctx l g t Hwf H); rewrite [_ ++ _]/=; clear H)]
+      assert (H : @mkMyGoal Sgm Ctx l t i);
+      [ | (eapply (@myGoal_assert Sgm Ctx l g t i Hwf H); rewrite [_ ++ _]/=; clear H)]
     ]
   end.
 
 Local Example ex_mgAssert {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ (a ---> a ---> a).
+  Γ ⊢ (a ---> a ---> a) using PropositionalReasoning.
 Proof.
   intros wfa.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   mgIntro. mgIntro.
   mgAssert (a).
-  { auto. }
+  { wf_auto2. }
   { mgExactn 1. }
   { mgExactn 2. }
 Qed.
 
 Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
   lazymatch goal with
-  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) =>
+  | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) =>
     let l1 := fresh "l1" in
     let l2 := fresh "l2" in
     let Heql1 := fresh "Heql1" in
@@ -2484,11 +2420,11 @@ Tactic Notation "mgAssert" "(" constr(t) ")" "using" "first" constr(n) :=
     assert (Hwf : well_formed t);
     [idtac|
       let H := fresh "H" in
-      assert (H : @mkMyGoal Sgm Ctx l1 t) ;
+      assert (H : @mkMyGoal Sgm Ctx l1 t i) ;
       [
         (eapply cast_proof_mg_hyps; [(rewrite Heql1; reflexivity)|]);  clear l1 l2 Heql1 Heql2
       | apply (cast_proof_mg_hyps Heql1) in H;
-        eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t Hwf H);
+        eapply (@myGoal_assert_generalized Sgm Ctx (take n l) (drop n l) g t i Hwf H);
         rewrite [_ ++ _]/=; clear l1 l2 Heql1 Heql2 H] 
     ]
   end.
@@ -2498,14 +2434,14 @@ Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed b = true ->
   well_formed p = true ->
   well_formed q = true ->
-  Γ ⊢ a ---> p and q ---> b ---> ! ! q.
+  Γ ⊢ a ---> p and q ---> b ---> ! ! q using PropositionalReasoning.
 Proof.
   intros wfa wfb wfp wfq.
   toMyGoal.
-  { auto 10. }
+  { wf_auto2. }
   do 3 mgIntro.
   mgAssert (p) using first 2.
-  { auto. }
+  { wf_auto2. }
   { admit. }
   { admit. }
 Abort.
