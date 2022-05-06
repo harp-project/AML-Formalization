@@ -1499,49 +1499,21 @@ Defined.
     apply A_impl_A. wf_auto2.
   Defined.
 
-  Lemma P4m_meta (Γ : Theory) (A B : Pattern) :
+  Lemma P4m_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> B ->
-    Γ ⊢ A ---> !B ->
-    Γ ⊢ !A.
+    Γ ⊢ A ---> B using i ->
+    Γ ⊢ A ---> !B using i ->
+    Γ ⊢ !A using i.
   Proof.
     intros wfA wfB AimpB AimpnB.
     pose proof (H1 := @P4m Γ A B wfA wfB).
-    assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A).
-    { eapply Modus_ponens. 4: apply H1. all: auto 10. }
-    eapply Modus_ponens. 4: apply H2. all: auto.
+    assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A using i).
+    { eapply MP. 2: { apply usePropositionalReasoning; apply H1. } exact AimpB. }
+    eapply MP. 2: { apply H2. } exact AimpnB.
   Defined.
 
-  Program Canonical Structure P4m_meta_indifferent_S
-        P {Pip : IndifProp P} Γ a b
-        (wfa : well_formed a = true) (wfb : well_formed b = true)
-    := ProofProperty2 P (@P4m_meta Γ a b wfa wfb) _.
-  Next Obligation. intros. solve_indif; assumption. Qed.
-
-
 End FOL_helpers.
-
-(* TODO remove these hints *)
-#[export] Hint Resolve A_impl_A : core.
-#[export] Hint Resolve syllogism : core.
-#[export] Hint Resolve syllogism_intro : core.
-#[export] Hint Resolve modus_ponens : core.
-#[export] Hint Resolve not_not_intro : core.
-#[export] Hint Resolve disj_right_intro : core.
-#[export] Hint Resolve disj_left_intro : core.
-#[export] Hint Resolve not_not_elim : core.
-#[export] Hint Resolve not_not_elim_meta : core.
-#[export] Hint Resolve A_impl_not_not_B : core.
-#[export] Hint Resolve well_formed_foldr : core.
-#[export] Hint Resolve wf_take : core.
-#[export] Hint Resolve wf_drop : core.
-#[export] Hint Resolve wf_insert : core.
-#[export] Hint Resolve wf_tail' : core.
-#[export] Hint Resolve wf_cons : core.
-#[export] Hint Resolve wf_app : core.
-
-
 
 Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
 
@@ -1574,15 +1546,54 @@ Next Obligation.
 Qed.
 
 
-Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) :
+Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) (i : ProofInfo) :
   forall (r : ImpReshapeS g (xs)),
-     Γ ⊢ foldr (patt_imp) g (xs) ->
-     Γ ⊢ (untagPattern (irs_flattened r)).
+     Γ ⊢ foldr (patt_imp) g (xs) using i ->
+     Γ ⊢ (untagPattern (irs_flattened r)) using i.
 Proof.
-  intros r H.
-  eapply cast_proof.
-  { rewrite irs_pf; reflexivity. }
-  exact H.
+  intros r [pf Hpf].
+  unshelve (eexists).
+  {
+    eapply cast_proof.
+    { rewrite irs_pf; reflexivity. }
+    exact pf.
+  }
+  {
+    simpl.
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    constructor.
+    {
+      destruct i;[|exact I].
+      rewrite indifferent_to_cast_propositional_only.
+      exact Hpf1.
+    }
+    {
+      rewrite elem_of_subseteq in Hpf2.
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      specialize (Hpf2 x).
+      apply Hpf2. clear Hpf2.
+      rewrite uses_of_ex_gen_correct in Hx.
+      rewrite uses_of_ex_gen_correct.
+      rewrite indifferent_to_cast_uses_ex_gen in Hx.
+      exact Hx.
+    }
+    {
+      rewrite elem_of_subseteq in Hpf3.
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      specialize (Hpf3 x).
+      apply Hpf3. clear Hpf3.
+      rewrite uses_of_svar_subst_correct in Hx.
+      rewrite uses_of_svar_subst_correct.
+      rewrite indifferent_to_cast_uses_svar_subst in Hx.
+      exact Hx.
+    }
+    {
+      rewrite indifferent_to_cast_uses_kt.
+      apply Hpf4.
+    }
+  }
 Defined.
 
 
@@ -1591,7 +1602,7 @@ Local Example ex_reshape {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)).
+  Γ ⊢ a ---> (b ---> (c ---> d)) using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply reshape.

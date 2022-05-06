@@ -429,6 +429,18 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
      end; simpl; try reflexivity.
   Qed.
 
+  Lemma indifferent_to_cast_propositional_only :
+    indifferent_to_cast propositional_only.
+  Proof.
+    unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+    induction pf; unfold cast_proof; unfold eq_rec_r;
+      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+      match type of e with
+      | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+      end; simpl; try reflexivity.
+  Qed.
+
   Definition indifferent_to_prop (P : proofbpred) :=
       (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
    /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
