@@ -1868,12 +1868,6 @@ Tactic Notation "mgExactn" constr(n) :=
   apply MyGoal_exactn.
 
 
-(*
-Lemma mgUsePropositionalReasoning
-  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
-  [ Σ , Γ ⊢ l ==> g using PropositionalReasoning ] -> True.
-*)
-
 Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
@@ -1884,7 +1878,6 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgIntro. mgIntro. mgIntro.
-  Check usePropositionalReasoning.
   mgExactn 1.
 Defined.
 
@@ -1892,163 +1885,143 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Lemma MyGoal_weakenConclusion' Γ l g g':
-    Γ ⊢ g ---> g' ->
-    @mkMyGoal Σ Γ l g ->
-    @mkMyGoal Σ Γ l g'.
+  Lemma MyGoal_weakenConclusion' Γ l g g' (i : ProofInfo):
+    Γ ⊢ g ---> g' using i ->
+    @mkMyGoal Σ Γ l g i ->
+    @mkMyGoal Σ Γ l g' i.
   Proof.
-    intros H.
+    intros Hgg' Hlg.
+    (*mgExtractWF wfl wfgp.*)
     unfold of_MyGoal in *. simpl in *.
-    intros Hg wfg' wfl.
-    pose proof (wfimp := proved_impl_wf _ _ H).
+    intros wfg' wfl.
+    pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
     apply well_formed_imp_proj1 in wfimp.
     eapply prf_weaken_conclusion_iter_meta_meta.
-    5: apply Hg.
+    5: apply Hlg.
+    4: apply Hgg'.
     all: assumption.
   Defined.
 
-(*
-  Program Canonical Structure MyGoal_weakenConclusion'_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-          (l : list Pattern) (g₁ g₂ : Pattern)
-    := TacticProperty1 P (@MyGoal_weakenConclusion Γ l g₁ g₂) _.
-  Next Obligation.
-*)
-  
   Lemma prf_contraction Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)).
+    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)) using PropositionalReasoning.
   Proof.
     intros wfa wfb.
-    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b))) by auto.
-    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b)))) by auto using P2.
-    eapply Modus_ponens. 4: apply H2. all: auto 10.
+    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b)) using PropositionalReasoning).
+    {
+      apply modus_ponens; assumption.
+    }
+    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using PropositionalReasoning).
+    {
+      apply P2; wf_auto2.
+    }
+    eapply MP. 2: apply H2. apply H1.
   Defined.
-
-  #[local] Hint Resolve prf_contraction : core.
-
-  Program Canonical Structure prf_contraction_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (ϕ₁ ϕ₂ : Pattern) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := ProofProperty0 P (@prf_contraction Γ ϕ₁ ϕ₂ wfϕ₁ wfϕ₂) _.
-  Next Obligation. solve_indif. Qed.
 
   Lemma prf_weaken_conclusion_under_implication Γ a b c:
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))).
+    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using PropositionalReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c)))) by auto using reorder.
-    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c)))).
-    { apply prf_strenghten_premise_meta; auto. }
+    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using PropositionalReasoning).
+    {
+      apply reorder; wf_auto2.
+    }
+    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using PropositionalReasoning).
+    {
+      apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
+      apply H1.
+    }
     eapply prf_weaken_conclusion_meta_meta.
-    4: apply H2. all: auto. clear H1 H2.
-    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c))))) by auto.
-    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c))) by auto.
+    4: apply H2. 1-3: wf_auto2. clear H1 H2.
+
+    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using PropositionalReasoning).
+    {
+      apply syllogism; wf_auto2.
+    }
+    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c)) using PropositionalReasoning).
+    {
+      apply prf_contraction; wf_auto2.
+    }
     assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
                    = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
-    rewrite Hiter. 
+    
+    eapply (@cast_proof' _ _ _ _ _ Hiter).
+    
     eapply prf_weaken_conclusion_iter_meta_meta.
-    4: apply H4. all: auto 10.
+    5: apply H3. 4: apply H4. all: wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_weaken_conclusion_under_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (ϕ₁ ϕ₂ ϕ₃ : Pattern)
-            (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
-    := ProofProperty0 P (@prf_weaken_conclusion_under_implication Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif. Qed.
-
-  Lemma prf_weaken_conclusion_under_implication_meta Γ a b c:
+  Lemma prf_weaken_conclusion_under_implication_meta Γ a b c (i : ProofInfo):
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> b) ->
-    Γ ⊢ ((a ---> (b ---> c)) ---> (a ---> c)).
+    Γ ⊢ (a ---> b) using i ->
+    Γ ⊢ ((a ---> (b ---> c)) ---> (a ---> c)) using i.
   Proof.
     intros wfa wfb wfc H.
-    eapply Modus_ponens.
-    4: apply prf_weaken_conclusion_under_implication.
-    all: auto 10.
+    eapply MP.
+    2: { usePropositionalReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
+    exact H.
   Defined.
 
-  Program Canonical Structure prf_weaken_conclusion_under_implication_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (ϕ₁ ϕ₂ ϕ₃ : Pattern)
-            (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
-    := ProofProperty1 P (@prf_weaken_conclusion_under_implication_meta Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-
-  Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c:
+  Lemma prf_weaken_conclusion_under_implication_meta_meta Γ a b c i:
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ a ---> b ->
-    Γ ⊢ a ---> b ---> c ->
-    Γ ⊢ a ---> c.
+    Γ ⊢ a ---> b using i ->
+    Γ ⊢ a ---> b ---> c using i ->
+    Γ ⊢ a ---> c using i.
   Proof.
     intros wfa wfb wfc H1 H2.
-    eapply Modus_ponens.
-    4: apply prf_weaken_conclusion_under_implication_meta. 3: apply H2.
-    all: auto.
+    eapply MP.
+    { apply H2. }
+    { apply prf_weaken_conclusion_under_implication_meta.
+      4: { apply H1. }
+      all: wf_auto2.
+    }
   Defined.
-
-  Program Canonical Structure prf_weaken_conclusion_under_implication_meta_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (ϕ₁ ϕ₂ ϕ₃ : Pattern)
-            (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂) (wfϕ₃ : well_formed ϕ₃)
-    := ProofProperty2 P (@prf_weaken_conclusion_under_implication_meta_meta Γ ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
     wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l))).
+    Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
+    using PropositionalReasoning.
   Proof.
     intros wfl wfg wfg'.
     pose proof (H1 := @prf_weaken_conclusion_iter Σ Γ l g g' wfl wfg wfg').
     remember ((g ---> g')) as a.
     remember (foldr patt_imp g l) as b.
     remember (foldr patt_imp g' l) as c.
-    pose proof (H2 := @prf_weaken_conclusion_under_implication Γ a b c ltac:(subst;auto) ltac:(subst;auto) ltac:(subst; auto)).
-    apply reorder_meta in H2. 2,3,4: subst;auto.
-    eapply Modus_ponens. 4: apply H2. all: subst;auto 10.
+    assert (well_formed a) by (subst; wf_auto2).
+    assert (well_formed b) by (subst; wf_auto2).
+    assert (well_formed c) by (subst; wf_auto2).
+    Check @prf_weaken_conclusion_under_implication.
+    pose proof (H2' := @prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+    apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
+    eapply MP. 2: apply H2'. apply H1.
   Defined.
 
-  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-            (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := ProofProperty0 P (@prf_weaken_conclusion_iter_under_implication Γ l ϕ₁ ϕ₂ wfl wfϕ₁ wfϕ₂) _.
-  Next Obligation. intros. solve_indif. Defined.
-
-  Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g':
+  Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g' (i : ProofInfo):
     wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g l)) ->
-    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g' l)).
+    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g l)) using i->
+    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g' l)) using i.
   Proof.
     intros wfl wfg wfg' H.
-    eapply Modus_ponens. 4: apply prf_weaken_conclusion_iter_under_implication.
-    all: auto.
+    eapply MP.
+    2: { usePropositionalReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
+    { exact H. }
   Defined.
-
-  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} (Γ : Theory)
-            (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-            (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := ProofProperty1 P (@prf_weaken_conclusion_iter_under_implication_meta Γ l ϕ₁ ϕ₂ wfl wfϕ₁ wfϕ₂) _.
-  Next Obligation. intros. solve_indif; assumption. Defined.
   
-  Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g':
-    @mkMyGoal Σ Γ ((g ---> g') :: l) g ->
-    @mkMyGoal Σ Γ ((g ---> g') :: l) g'.
+  Lemma MyGoal_weakenConclusion_under_first_implication Γ l g g' i:
+    @mkMyGoal Σ Γ ((g ---> g') :: l) g i ->
+    @mkMyGoal Σ Γ ((g ---> g') :: l) g' i .
   Proof.
     intros H. unfold of_MyGoal in *. simpl in *.
     intros wfg' wfgg'l.
@@ -2058,64 +2031,36 @@ Section FOL_helpers.
     apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
   Defined.
 
-  Program Canonical Structure MyGoal_weakenConclusion_under_first_implication_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-            (l : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-            (wfl : wf l) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := TacticProperty1 P (@MyGoal_weakenConclusion_under_first_implication Γ l ϕ₁ ϕ₂) _.
-  Next Obligation.
-    intros. simpl. 
-    unfold MyGoal_weakenConclusion_under_first_implication.
-    case_match. unfold liftP. solve_indif. apply H.
-  Qed.
-
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
     wf l₁ ->
     wf l₂ ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) ---> (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂))).
+    Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
+         (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
+    using PropositionalReasoning.
   Proof.
     intros wfl₁ wfl₂ wfg wfg'.
     induction l₁; simpl.
     - apply prf_weaken_conclusion_iter_under_implication; auto.
     - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
       destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
-      eapply prf_weaken_conclusion_meta. all: auto 10.
+      eapply prf_weaken_conclusion_meta. 4: assumption. all: wf_auto2.
   Defined.
 
-  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_iter_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-            (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := ProofProperty0 P (@prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
-  Next Obligation.
-    intros.
-    induction l₁.
-    - solve_indif.
-    - simpl. case_match. solve_indif. apply IHl₁.
-  Qed.
-
-  Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g':
+  Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g' i:
     wf l₁ ->
     wf l₂ ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) ->
-    Γ ⊢ (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)).
+    Γ ⊢ (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
+    Γ ⊢ (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
   Proof.
     intros wfl₁ wfl₂ wfg wfg' H.
-    eapply Modus_ponens.
-    4: apply prf_weaken_conclusion_iter_under_implication_iter.
-    all: auto 10.
+    eapply MP.
+    { apply H. }
+    { usePropositionalReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
   Defined.
-
-  Program Canonical Structure prf_weaken_conclusion_iter_under_implication_iter_meta_indifferent_S
-            (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-            (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern)
-            (wfl₁ : wf l₁) (wfl₂ : wf l₂) (wfϕ₁ : well_formed ϕ₁) (wfϕ₂ : well_formed ϕ₂)
-    := ProofProperty1 P (@prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ ϕ₁ ϕ₂ wfl₁ wfl₂ wfϕ₁ wfϕ₂) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g':
     @mkMyGoal Σ Γ (l₁ ++ (g ---> g') :: l₂) g ->
