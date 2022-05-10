@@ -824,6 +824,32 @@ Section FOL_helpers.
     simpl in Contra1. congruence.
   Qed.
 
+  Lemma not_exgen_x_in_prop (x : evar) :
+    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) pi_Propositional.
+  Proof.
+    intros [HContra].
+
+    remember (fresh_evar (patt_free_evar x)) as y.
+    pose (pf1 := @A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
+    pose (pf2 := @Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+    specialize (HContra _ _ pf2).
+    feed specialize HContra.
+    {
+      unfold pf2.
+      constructor.
+      { exact I. }
+      { simpl. clear. set_solver. }
+      { simpl. clear. set_solver. }
+      { simpl. reflexivity. }
+    }
+    destruct HContra as [Hprop Hgen Hsvs Hkt].
+    clear -Hgen.
+    unfold pf2 in Hgen.
+    simpl in Hgen.
+    clear -Hgen.
+    set_solver.
+  Qed.
+
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     {pile : ProofInfoLe BasicReasoning i}
     :
@@ -3435,6 +3461,134 @@ Section FOL_helpers.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
   Defined.
+
+  Lemma Ex_quan (Γ : Theory) (ϕ : Pattern) (y : evar) :
+    well_formed (patt_exists ϕ) ->
+    Γ ⊢ (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
+    using BasicReasoning.
+  Proof.
+    intros Hwf.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Ex_quan. apply Hwf.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
+  Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
+    {pile : ProofInfoLe (pi_Generic
+            {| pi_generalized_evars := {[x]};
+               pi_substituted_svars := ∅;
+               pi_uses_kt := false ;
+            |}) i} :
+    x ∉ free_evars ϕ₂ ->
+    Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢ (exists_quantify x ϕ₁ ---> ϕ₂) using i.
+  Proof.
+    intros Hfev [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Ex_gen.
+      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
+      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
+      { exact pf. }
+      { exact Hfev. }
+    }
+    {
+      simpl.
+      Check not_basic_in_prop.
+      assert (Hnot : ~ ProofInfoLe i pi_Propositional).
+      {
+        intros HContra.
+        assert (Htrans : ProofInfoLe (pi_Generic
+        (ExGen := {[x]}, SVSubst := ∅, KT := false)) pi_Propositional).
+        {
+          eapply transitivity.
+          { apply pile. }
+          { apply HContra. }
+        }
+        apply HContra in Hpf.
+        Print ProofInfoLe.
+        destruct i.
+        {
+          apply pile.
+          intros HContra.
+          apply not_basic_in_prop.
+        }
+        intros HContra.
+        apply not_basic_in_prop.
+        eapply transitivity.
+        2: { apply pile. }
+        constructor.
+        intros Γ' ϕ' pf' Meaning'.
+        destruct Meaning' as [Hprop' Hge' Hsvs' Hkt'].
+        simpl in Hprop', Hge', Hsvs', Hkt'.
+        constructor.
+        {
+          exact I.
+        }
+        {
+          simpl. clear -Hge'. set_solver.
+        }
+        {
+          simpl. exact Hsvs'.
+        }
+        {
+          simpl. exact Hkt'.
+        }
+
+      }
+      constructor; simpl.
+      {
+        destruct i;[|exact I].
+        exfalso.
+        apply not_basic_in_prop.
+        eapply transitivity.
+        2: { apply pile. }
+        constructor.
+        intros Γ' ϕ' pf' Meaning'.
+        destruct Meaning' as [Hprop' Hge' Hsvs' Hkt'].
+        simpl in Hprop', Hge', Hsvs', Hkt'.
+        constructor.
+        {
+          exact I.
+        }
+        {
+          simpl. clear -Hge'. set_solver.
+        }
+        {
+          simpl. exact Hsvs'.
+        }
+        {
+          simpl. exact Hkt'.
+        }
+      }
+      {
+        destruct Hpf as [Hprop Hge Hsvs Hkt].
+        destruct i; simpl in *.
+      }
+    }
+  Defined.
+
+  (* Existential generalization *)
+  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
+      well_formed phi1 -> well_formed phi2 ->
+      theory ⊢ (phi1 ---> phi2) ->
+      x ∉ (free_evars phi2) ->
+      theory ⊢ (exists_quantify x phi1 ---> phi2)
+
+  Set Printing All.
+  Check Ex_quan.
+
 
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
