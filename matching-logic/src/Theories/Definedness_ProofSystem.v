@@ -15,7 +15,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation Substitution.
 From MatchingLogic.Theories Require Import Definedness_Syntax.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -1873,7 +1873,6 @@ apply Framing_right.
 exact H.
 Defined.
 
-
 Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
@@ -3116,3 +3115,98 @@ toMyGoal.
 { wf_auto2. }
 mgIntro. mgLeft. mgExactn 0.
 Defined.
+
+Lemma and_defined {Σ : Signature} {syntax : Syntax} :
+  forall Γ φ1 φ2, theory ⊆ Γ -> well_formed φ1 -> well_formed φ2 ->
+  Γ ⊢ ⌈ φ1 and φ2 ⌉ ---> ⌈ φ1 ⌉ and ⌈ φ2 ⌉.
+Proof.
+  intros Γ φ1 φ2 HΓ Wf1 Wf2. unfold patt_and.
+  toMyGoal. wf_auto2.
+  repeat mgIntro. Search patt_in ML_proof_system.
+  Search patt_not patt_or ML_proof_system.
+Abort.
+
+Lemma bott_not_total {Σ : Signature} {syntax : Syntax}:
+  forall Γ, theory ⊆ Γ ->
+  Γ ⊢ ! ⌊ ⊥ ⌋.
+Proof.
+  intros Γ SubTheory.
+  toMyGoal. wf_auto2.
+  mgIntro. mgApply 0.
+  mgApplyMeta (@phi_impl_defined_phi _ _ _ (! ⊥) SubTheory ltac:(wf_auto2)).
+  mgIntro. mgExactn 1.
+Qed.
+
+Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (ϕ : Pattern),
+  theory ⊆ Γ → well_formed ϕ → Γ ⊢ ⌈ ! ϕ ⌉ <---> ! ⌊ ϕ ⌋.
+Proof.
+  intros Γ φ HΓ Wf. toMyGoal. wf_auto2.
+  mgSplitAnd.
+  * mgIntro. mgApplyMeta (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf). mgExactn 0.
+  * unfold patt_total.
+    pose proof (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)).
+    mgRewrite <- H at 1. mgIntro. mgExactn 0.
+Defined.
+
+Lemma ceil_monotonic_obj {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+theory ⊆ Γ ->
+well_formed ϕ₁ ->
+well_formed ϕ₂ ->
+Γ ⊢ (ϕ₁ ---> ϕ₂) ---> ⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉.
+Proof. Search patt_total ML_proof_system.
+  (* intros HΓ Wf1 Wf2.
+  toMyGoal. wf_auto2.
+  pose proof (@impl_iff_notp_or_q _ Γ ϕ₁ ϕ₂ Wf1 Wf2).
+  mgRewrite H at 1.
+  pose proof (@impl_iff_notp_or_q _ Γ ⌈ϕ₁⌉ ⌈ϕ₂⌉ ltac:(wf_auto2) ltac:(wf_auto2)).
+  mgRewrite H0 at 1.
+  Search patt_defined patt_imp.
+  mgIntro. mgDestructOr 0.
+  * mgLeft. mgIntro. mgApply 0.
+  
+
+  mgAssert ((⌈ ϕ₁ ---> ϕ₂ ⌉)). wf_auto2.
+  mgApplyMeta (@phi_impl_defined_phi _ _ Γ (ϕ₁ ---> ϕ₂) HΓ ltac:(wf_auto2)).
+  mgExactn 0. mgClear 0.
+  mgIntro. Search "cong" patt_iff.
+  Check (@P4 _ Γ (⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉) _ ltac:(wf_auto2) Hwf).
+  pose proof (@impl_iff_notp_or_q _ Γ ⌈ϕ₁⌉ ⌈ϕ₂⌉ ltac:(wf_auto2) ltac:(wf_auto2)).
+  Search patt_imp ML_proof_system.
+  
+  apply pf_iff_proj2 in H. 2-3: wf_auto2.
+  mgRevert. mgApplyMeta H.
+  Search patt_total. Print patt_defined.
+  pose proof (@impl_iff_notp_or_q _ Γ ϕ₁ ϕ₂ Wf1 Wf2).
+  mgRevert.
+  (* mgRewrite H0 at 2. <- TODO: does not work! *)
+  Search "cong" patt_iff.
+  Print PatternCtx.
+  Search fresh_evar.
+  remember ({| pcEvar    := fresh_evar (ϕ₁ ---> ϕ₂);
+           pcPattern := ⌈ patt_free_evar (fresh_evar (ϕ₁ ---> ϕ₂)) ⌉ 
+                         ---> ! ⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉ |}) as C.
+  epose proof (@prf_equiv_congruence _ Γ (ϕ₁ ---> ϕ₂) (! ϕ₁ or ϕ₂) C ltac:(wf_auto2) H0).
+  apply pf_iff_proj2 in H1. 2-3: rewrite HeqC; wf_auto2; case_match; wf_auto2.
+  rewrite HeqC in H1. cbn in H1. case_match. 2: congruence.
+  Search free_evar_subst.
+  repeat rewrite free_evar_subst_no_occurrence in H1.
+  1-4: apply count_evar_occurrences_0; eapply evar_is_fresh_in_richer';
+      [ |apply set_evar_fresh_is_fresh'];
+      solve_free_evars_inclusion 5.
+  mgApplyMeta H1.
+  replace (patt_sym (Definedness_Syntax.inj definedness) $ (! ϕ₁ or ϕ₂)) with
+          (⌈! ϕ₁ or ϕ₂ ⌉) by auto.
+  replace (((patt_sym (Definedness_Syntax.inj definedness) $ ϕ₁ ---> ⊥) ---> ⊥) --->
+patt_sym (Definedness_Syntax.inj definedness) $ ϕ₂) with (! ⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉) by auto.
+  clear H1 HeqC Heqs C e.
+  mgIntro. mgAssert ((⌈ ! ϕ₁ ⌉ or ⌈ ϕ₂ ⌉)). wf_auto2.
+  pose proof (Prop_disj_right Γ (! ϕ₁) ϕ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) Wf2 ltac:(wf_auto2)).
+  mgApplyMeta H1. mgExactn 0.
+  mgClear 0.
+  mgDestructOr 0.
+  * mgLeft. Search patt_defined ML_proof_system.
+  * mgRight. mgExactn 0.
+  Unshelve.
+  rewrite HeqC. unfold PC_wf. wf_auto2. *)
+Abort.

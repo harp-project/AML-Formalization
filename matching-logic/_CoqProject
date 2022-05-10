@@ -42,6 +42,7 @@ src/Theories/Definedness_ProofSystem.v
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
+src/Theories/Unification.v
 
 src/Theories/ModelExtension.v
 

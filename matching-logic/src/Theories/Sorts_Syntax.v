@@ -17,6 +17,7 @@ Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.IndexManipulation.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 
 Inductive Symbols := inhabitant.
@@ -24,7 +25,7 @@ Inductive Symbols := inhabitant.
 Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
-Section sorts.
+Section sorts_syntax.
 
   Context {Σ : Signature}.
 
@@ -41,15 +42,27 @@ Section sorts.
   Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
+  Definition patt_element_of (φ ψ : Pattern) := ⌈ φ and ψ ⌉.
+
+End sorts_syntax.
+
+Module Notations.
+  Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+End Notations.
+
+Section sorts.
+  Import Notations.
+  Context {Σ : Signature}.
+  Context {self : Syntax}.
 
   Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bevar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bevar_subst ϕ ψ x).
+    〚ϕ〛.[evar: x ↦ ψ] = 〚ϕ.[evar: x ↦ ψ]〛.
   Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
-  
-  Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bsvar_subst (patt_inhabitant_set ϕ) ψ x = patt_inhabitant_set (bsvar_subst ϕ ψ x).
+
+  Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) X ϕ :
+    〚ϕ〛.[svar: X ↦ ψ] = 〚ϕ.[svar: X ↦ ψ]〛.
   Proof. unfold patt_inhabitant_set. simpl_bsvar_subst. reflexivity. Qed.
-  
+
   #[global]
    Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
     {| unary_bevar_subst := bevar_subst_inhabitant_set ;
@@ -58,7 +71,7 @@ Section sorts.
     |}.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
-    (patt_inhabitant_set sort) and (patt_not phi).
+    〚sort〛 and ! phi. Print patt_sorted_neg.
 
   Lemma bevar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
     bevar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bevar_subst s ψ x) (bevar_subst ϕ ψ x).
@@ -163,5 +176,5 @@ Section sorts.
          (patt_imp
             (patt_not (patt_equal (patt_app (nest_ex (nest_ex f)) b1) patt_bott ))
             (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0)))).
-  
+
 End sorts.
