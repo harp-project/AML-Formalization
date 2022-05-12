@@ -3505,74 +3505,20 @@ Section FOL_helpers.
     }
     {
       simpl.
-      Check not_basic_in_prop.
-      assert (Hnot : ~ ProofInfoLe i pi_Propositional).
-      {
-        intros HContra.
-        assert (Htrans : ProofInfoLe (pi_Generic
-        (ExGen := {[x]}, SVSubst := ∅, KT := false)) pi_Propositional).
-        {
-          eapply transitivity.
-          { apply pile. }
-          { apply HContra. }
-        }
-        apply HContra in Hpf.
-        Print ProofInfoLe.
-        destruct i.
-        {
-          apply pile.
-          intros HContra.
-          apply not_basic_in_prop.
-        }
-        intros HContra.
-        apply not_basic_in_prop.
-        eapply transitivity.
-        2: { apply pile. }
-        constructor.
-        intros Γ' ϕ' pf' Meaning'.
-        destruct Meaning' as [Hprop' Hge' Hsvs' Hkt'].
-        simpl in Hprop', Hge', Hsvs', Hkt'.
-        constructor.
-        {
-          exact I.
-        }
-        {
-          simpl. clear -Hge'. set_solver.
-        }
-        {
-          simpl. exact Hsvs'.
-        }
-        {
-          simpl. exact Hkt'.
-        }
-
-      }
+      pose proof (Hnot := not_exgen_x_in_prop).
+      specialize (Hnot x).
       constructor; simpl.
       {
         destruct i;[|exact I].
-        exfalso.
-        apply not_basic_in_prop.
-        eapply transitivity.
-        2: { apply pile. }
-        constructor.
-        intros Γ' ϕ' pf' Meaning'.
-        destruct Meaning' as [Hprop' Hge' Hsvs' Hkt'].
-        simpl in Hprop', Hge', Hsvs', Hkt'.
-        constructor.
-        {
-          exact I.
-        }
-        {
-          simpl. clear -Hge'. set_solver.
-        }
-        {
-          simpl. exact Hsvs'.
-        }
-        {
-          simpl. exact Hkt'.
-        }
+        contradiction.
       }
       {
+        destruct i;[contradiction|].
+        clear Hnot.
+        destruct Hpf as [Hprop Hgen Hsvs Hkt].
+        destruct pile as [pile'].
+        destruct gpi. simpl in *.
+        apply pile in Hpf.
         destruct Hpf as [Hprop Hge Hsvs Hkt].
         destruct i; simpl in *.
       }
