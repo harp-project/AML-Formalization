@@ -117,7 +117,61 @@ Section ProofSystemTheorems.
       - mgRevert. mgExactn 1.
   Defined.
 
-  Lemma membership_in :
+  Lemma defined_variables_equal :
+    forall x y Γ,
+    theory ⊆ Γ ->
+    Γ ⊢ ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x.
+  Proof.
+    intros x y Γ HΓ.
+    toMyGoal. wf_auto2.
+    unfold patt_equal, patt_iff.
+    pose proof (@patt_total_and _ (patt_free_evar y ---> patt_free_evar x)
+                                  (patt_free_evar x ---> patt_free_evar y) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    apply pf_iff_proj2 in H. 2-3: wf_auto2.
+    mgIntro.
+    mgApplyMeta H. clear H.
+    mgIntro. mgDestructOr 1.
+    * mgApply 1. mgClear 1. mgIntro.
+      pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
+                    ltac:(wf_auto2) ltac:(wf_auto2)).
+      epose proof (H0 := @prf_equiv_congruence _ Γ 
+      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
+      cbn in H0. case_match. 2: congruence.
+      apply pf_iff_proj1 in H0. 2-3: wf_auto2.
+      mgApplyMeta H0 in 1.
+      (* TODO: it is increadibly inconvienient to define concrete contexts *)
+      pose proof (H1 := @Singleton_ctx _ Γ 
+             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
+                  ltac:(wf_auto2))
+             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
+                  ltac:(wf_auto2)) (patt_free_evar x) y ltac:(wf_auto2)).
+      mgApplyMeta H1. simpl. mgSplitAnd. mgExactn 0. mgExactn 1.
+    * mgApply 1. mgClear 1. mgIntro.
+      pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
+                    ltac:(wf_auto2) ltac:(wf_auto2)).
+      epose proof (H0 := @prf_equiv_congruence _ Γ 
+      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
+      cbn in H0. case_match. 2: congruence.
+      apply pf_iff_proj1 in H0. 2-3: wf_auto2.
+      mgApplyMeta H0 in 1.
+      (* TODO: mgRewriteBy does not work for free evars :( *)
+      pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
+      epose proof (H2 := @prf_equiv_congruence _ Γ 
+      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H1).
+      cbn in H2. case_match. 2: congruence.
+      apply pf_iff_proj1 in H2. 2-3: wf_auto2.
+      mgAssert (⌈ patt_free_evar x and patt_free_evar y ⌉). wf_auto2.
+      mgClear 1. mgApplyMeta H2. mgExactn 0.
+      (* TODO: it is increadibly inconvienient to define concrete contexts *)
+      pose proof (@Singleton_ctx _ Γ 
+             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
+                  ltac:(wf_auto2))
+             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
+                  ltac:(wf_auto2)) (patt_free_evar y) x ltac:(wf_auto2)) as H3.
+      mgApplyMeta H3. simpl. mgSplitAnd. mgExactn 2. mgExactn 1.
+  Defined.
+
+  Lemma membership_imp_equal :
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
       well_formed φ -> well_formed φ' ->
@@ -125,55 +179,100 @@ Section ProofSystemTheorems.
       Γ ⊢ (ex , (φ' =ml b0)) ->
       Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ').
   Proof.
-    intros Γ φ φ' SubTheory Mufree Wf1 Wf2 Funφ Funφ'.
+    intros Γ φ φ' HΓ Mufree Wf1 Wf2 Funφ Funφ'.
     unfold patt_in, patt_equal.
     toMyGoal. wf_auto2.
+
+    (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
+                       free variable *)
     Check forall_functional_subst.
     epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
-                    Γ SubTheory ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)).
+                    Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve. 2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
                    apply andb_true_iff in Wf2 as [_ Wf2].
-                   eapply well_formed_closed_ex_aux_ind in Wf2.
+                   (* NOTE: using eapply breaks the proof *)
+                   apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
                    rewrite Wf2. auto. lia. } (* TODO: this should be auto... *)
-    simpl in H. Search well_formed_closed_ex_aux bevar_subst.
+    simpl in H.
     repeat rewrite bevar_subst_not_occur in H. wf_auto2.
     mgApplyMeta H. clear H.
     mgSplitAnd. 2: fromMyGoal; wf_auto2.
     epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
-                    Γ SubTheory ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)).
-    Unshelve. 2: exact 0. 2: { cbn. do 2 case_match; auto; lia. }
+                    Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
+    Unshelve. 2: { cbn. do 2 case_match; auto; lia. }
     mgApplyMeta H. clear H.
-    (* TODO: mgIntro for supporting 'all' *)
+
     mgSplitAnd. 2: fromMyGoal; wf_auto2.
-    remember (evar_fresh []) as x.
-    remember (evar_fresh [x]) as y.
-    assert (x <> y) as XY. { intro. subst. admit. } (* TODO: this should be auto... *)
+    remember (fresh_evar patt_bott) as x.
+    remember (fresh_evar (patt_free_evar x)) as y.
+    assert (x <> y) as XY.
+    { intro. apply x_eq_fresh_impl_x_notin_free_evars in Heqy.
+      subst. set_solver. } (* TODO: this should be auto... *)
     fromMyGoal. wf_auto2.
-    pose proof (@universal_generalization _ Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x ltac:(wf_auto2)).
+
+
+   (* TODO: mgIntro for supporting 'all' *)
+
+
+    pose proof (@universal_generalization _ Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x ltac:(wf_auto2)) as H1.
     simpl in H1. case_match; auto. apply H1. clear H1.
-    pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y ltac:(wf_auto2)).
+    pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y ltac:(wf_auto2)) as H1.
     simpl in H1. clear H Heqs. do 2 case_match; auto; try congruence.
     2-3: exfalso; apply n; reflexivity. (* TODO: congruence does not work... *)
     apply H1. clear H1.
-    
-  Admitted.
+    now apply defined_variables_equal.
+  Defined.
 
-
-(*   Lemma functional_subst :
-    forall Γ φ x φ',
-      Γ ⊢ φ ---> φ.[[evar: x ↦ φ']].
+  Lemma functional_pattern_defined :
+    forall Γ φ, theory ⊆ Γ -> well_formed φ ->
+       Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
   Proof.
-    Search 
-  Qed. *)
+    intros Γ φ HΓ Wf.
+    toMyGoal. wf_auto2.
+    mgIntro.
+    mgApplyMeta (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+                 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    mgSplitAnd.
+    * mgClear 0. fromMyGoal. wf_auto2.
+      remember (fresh_evar patt_bott) as x.
+      pose proof (@universal_generalization _ Γ ⌈patt_free_evar x⌉ x ltac:(wf_auto2)) 
+        as H1.
+      cbn in H1. case_match. 2: congruence. apply H1.
+      now apply defined_evar.
+    * mgExactn 0.
+  Defined.
 
-  Lemma membership_in :
+  Lemma equal_imp_membership :
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
       well_formed φ -> well_formed φ' ->
       Γ ⊢ ⌈ φ' ⌉ ->
+      Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ').
+  Proof.
+    intros Γ φ φ' HΓ MF WF1 WF2 Def.
+    toMyGoal. wf_auto2.
+    mgIntro.
+    mgRewriteBy 0 at 1; cbn; wf_auto2.
+      mgClear 0. unfold patt_in.
+      assert (Γ ⊢ ( φ' and φ' <---> φ')) as H1.
+      {
+        toMyGoal. wf_auto2.
+        mgSplitAnd; mgIntro.
+        - mgDestructAnd 0. mgExactn 0.
+        - mgSplitAnd; mgExactn 0.
+      }
+      now mgRewrite H1 at 1.
+  Defined.
+
+  Lemma membership_equal_equal :
+    forall Γ φ φ',
+      theory ⊆ Γ -> mu_free φ' ->
+      well_formed φ -> well_formed φ' ->
+      Γ ⊢ (ex , (φ =ml b0)) ->
+      Γ ⊢ (ex , (φ' =ml b0)) ->
       Γ ⊢ (φ ∈ml φ') =ml (φ =ml φ').
   Proof.
-    intros Γ φ φ' SubTheory Mufree Wf1 Wf2 Def.
+    intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
     unfold patt_equal at 1.
     Search patt_in ML_proof_system.
 
@@ -188,65 +287,32 @@ Section ProofSystemTheorems.
     mgApplyMeta (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
                     ltac:(wf_auto2)).
     mgSplitAnd; mgIntro.
-    * 
-    * mgRewriteBy 0 at 1; cbn; wf_auto2.
-      mgClear 0. unfold patt_in.
-      assert (Γ ⊢ ( φ' and φ' <---> φ')).
-      {
-        toMyGoal. wf_auto2.
-        mgSplitAnd; mgIntro.
-        - mgDestructAnd 0. mgExactn 0.
-        - mgSplitAnd; mgExactn 0.
-      }
-      mgRewrite H1 at 1. fromMyGoal. wf_auto2.
-      
-   
-      Search patt_in ML_proof_system.
-    
-    * mgIntro.
-      Search patt_defined patt_total.
-      mgAssert ().
-      pose proof (@def_propagate_not _ _ Γ (φ <---> φ') SubTheory ltac:(wf_auto2)).
-      apply pf_iff_proj1 in H1. 2-3: wf_auto2.
-      
-    
-    Search patt_defined ML_proof_system.
-    fromMyGoal.
-    
-     unfold "and", patt_total.
-    Search patt_total ML_proof_system patt_not.
-    epose proof (@def_not_phi_impl_not_total_phi _ _ Γ (! φ or ! φ') SubTheory ltac:(wf_auto2)).
-    (* mgAssert ( ! ⌊ ! φ or ! φ' ⌋). <- why does this not work???? *)
-    mgAssert (( ! ⌊ ! φ or ! φ' ⌋)). (* why do we need double paretheses? *)
-    wf_auto2. mgApplyMeta H. mgExactn 0.
-    mgClear 0. unfold patt_total.
-    (* TODO: I would like to have mgApplyMeta ... in ... *)
-    epose proof (@not_not_elim _ Γ (⌈ ! (! φ or ! φ') ⌉) ltac:(wf_auto2)).
-    mgAssert ((⌈ ! (! φ or ! φ') ⌉)). wf_auto2.
-    mgApplyMeta H0. mgExactn 0. mgClear 0. clear H H0.
-    Search patt_defined ML_proof_system patt_not.
-    mgIntro.
-    Search patt_defined ML_proof_system.
-    Search patt_subseteq ML_proof_system.
-    unfold patt_total, patt_or.
-  Abort.
+    * mgApplyMeta (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mgExactn 0.
+    * mgApplyMeta (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mgExactn 0.
+      Unshelve.
+      toMyGoal. wf_auto2.
+      now mgApplyMeta (functional_pattern_defined HΓ Wf2).
+  Defined.
 
   Lemma Prop₃_right : forall Γ φ φ',
       theory ⊆ Γ ->
-      well_formed φ -> well_formed φ' ->
+      well_formed φ -> well_formed φ' -> mu_free φ' ->
+      Γ ⊢ (ex , (φ =ml b0)) ->
+      Γ ⊢ (ex , (φ' =ml b0)) ->
       Γ ⊢ (φ and φ') ---> (φ and (φ =ml φ')).
   Proof.
-    intros Γ φ φ' SubTheory Wf1 Wf2.
+    intros Γ φ φ' HΓ Wf1 Wf2 MF Func1 Func2.
     toMyGoal. wf_auto2.
     Search patt_free_evar ML_proof_system.
     mgIntro.
     mgAssert (⌈ φ and φ' ⌉). wf_auto2.
     Search patt_defined ML_proof_system.
     (* Why can we only mgApplyMeta here, and not after mgRevert? *)
-    mgApplyMeta (@phi_impl_defined_phi Σ syntax Γ (φ and φ') SubTheory ltac:(wf_auto2)).
+    mgApplyMeta (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2)).
     mgExactn 0.
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
     mgDestructAnd 0. mgSplitAnd.
     * mgExactn 0.
-    * 
-  Admitted.
+    * mgApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
+      mgExactn 2.
+  Defined.
