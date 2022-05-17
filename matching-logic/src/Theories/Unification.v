@@ -15,7 +15,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation Substitution.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -54,123 +54,6 @@ Section ProofSystemTheorems.
     mgSplitAnd; mgExactn 0.
   Defined.
 
-  Lemma patt_or_total :
-    forall Γ φ ψ,
-    theory ⊆ Γ ->
-    well_formed φ -> well_formed ψ ->
-    Γ ⊢  ⌊ φ ⌋ or ⌊ ψ ⌋ ---> ⌊ φ or ψ ⌋.
-  Proof.
-    intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
-    mgIntro. mgDestructOr 0.
-    * pose proof (@disj_left_intro _ Γ φ ψ Wf1 Wf2) as H.
-      apply floor_monotonic in H. 2-4: try wf_auto2.
-      mgApplyMeta H. mgExactn 0.
-    * pose proof (@disj_right_intro _ Γ φ ψ Wf1 Wf2) as H.
-      apply floor_monotonic in H. 2-4: try wf_auto2.
-      mgApplyMeta H. mgExactn 0.
-  Defined.
-
-  Lemma patt_defined_and:
-    forall Γ φ ψ,
-    theory ⊆ Γ ->
-    well_formed φ -> well_formed ψ ->
-    Γ ⊢ ⌈ φ and ψ ⌉ ---> ⌈ φ ⌉ and ⌈ ψ ⌉.
-  Proof.
-    intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
-    unfold patt_and.
-    mgRewrite (@defined_not_iff_not_total _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
-    do 2 mgIntro. mgApply 0. mgClear 0.
-    mgApplyMeta (@patt_or_total _ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
-    mgDestructOr 0.
-    * mgLeft. unfold patt_total.
-      mgRewrite <- (@not_not_iff _ Γ φ Wf1) at 1. mgExactn 0.
-    * mgRight. unfold patt_total.
-      mgRewrite <- (@not_not_iff _ Γ ψ Wf2) at 1. mgExactn 0.
-  Defined.
-
-  Lemma patt_total_and:
-    forall Γ φ ψ,
-    theory ⊆ Γ ->
-    well_formed φ -> well_formed ψ ->
-    Γ ⊢ ⌊ φ and ψ ⌋ <---> ⌊ φ ⌋ and ⌊ ψ ⌋.
-  Proof.
-    intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
-    mgSplitAnd.
-    * unfold patt_and.
-      mgRewrite <- (@def_propagate_not _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
-      mgIntro. mgIntro. mgApply 0.
-      mgClear 0.
-      mgRewrite (@ceil_compat_in_or _ _ Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-      mgDestructOr 0.
-      - mgLeft. mgRevert. unfold patt_total.
-        mgRewrite <- (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)) at 1.
-        mgIntro. mgExactn 0.
-      - mgRight. mgRevert. unfold patt_total.
-        mgRewrite <- (@not_not_iff _ Γ ⌈ ! ψ ⌉ ltac:(wf_auto2)) at 1.
-        mgIntro. mgExactn 0.
-    * mgIntro. mgDestructAnd 0.
-      unfold patt_and.
-      mgRewrite <- (@def_propagate_not _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
-      mgRewrite (@ceil_compat_in_or _ _ Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-      mgIntro. mgDestructOr 2.
-      - mgRevert. mgExactn 0.
-      - mgRevert. mgExactn 1.
-  Defined.
-
-  Lemma defined_variables_equal :
-    forall x y Γ,
-    theory ⊆ Γ ->
-    Γ ⊢ ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x.
-  Proof.
-    intros x y Γ HΓ.
-    toMyGoal. wf_auto2.
-    unfold patt_equal, patt_iff.
-    pose proof (@patt_total_and _ (patt_free_evar y ---> patt_free_evar x)
-                                  (patt_free_evar x ---> patt_free_evar y) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) as H.
-    apply pf_iff_proj2 in H. 2-3: wf_auto2.
-    mgIntro.
-    mgApplyMeta H. clear H.
-    mgIntro. mgDestructOr 1.
-    * mgApply 1. mgClear 1. mgIntro.
-      pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
-                    ltac:(wf_auto2) ltac:(wf_auto2)).
-      epose proof (H0 := @prf_equiv_congruence _ Γ 
-      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
-      cbn in H0. case_match. 2: congruence.
-      apply pf_iff_proj1 in H0. 2-3: wf_auto2.
-      mgApplyMeta H0 in 1.
-      (* TODO: it is increadibly inconvienient to define concrete contexts *)
-      pose proof (H1 := @Singleton_ctx _ Γ 
-             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                  ltac:(wf_auto2))
-             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                  ltac:(wf_auto2)) (patt_free_evar x) y ltac:(wf_auto2)).
-      mgApplyMeta H1. simpl. mgSplitAnd. mgExactn 0. mgExactn 1.
-    * mgApply 1. mgClear 1. mgIntro.
-      pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
-                    ltac:(wf_auto2) ltac:(wf_auto2)).
-      epose proof (H0 := @prf_equiv_congruence _ Γ 
-      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
-      cbn in H0. case_match. 2: congruence.
-      apply pf_iff_proj1 in H0. 2-3: wf_auto2.
-      mgApplyMeta H0 in 1.
-      (* TODO: mgRewriteBy does not work for free evars :( *)
-      pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
-      epose proof (H2 := @prf_equiv_congruence _ Γ 
-      _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H1).
-      cbn in H2. case_match. 2: congruence.
-      apply pf_iff_proj1 in H2. 2-3: wf_auto2.
-      mgAssert (⌈ patt_free_evar x and patt_free_evar y ⌉). wf_auto2.
-      mgClear 1. mgApplyMeta H2. mgExactn 0.
-      (* TODO: it is increadibly inconvienient to define concrete contexts *)
-      pose proof (@Singleton_ctx _ Γ 
-             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                  ltac:(wf_auto2))
-             (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                  ltac:(wf_auto2)) (patt_free_evar y) x ltac:(wf_auto2)) as H3.
-      mgApplyMeta H3. simpl. mgSplitAnd. mgExactn 2. mgExactn 1.
-  Defined.
-
   Lemma membership_imp_equal :
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
@@ -194,7 +77,7 @@ Section ProofSystemTheorems.
                    apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
                    rewrite Wf2. auto. lia. } (* TODO: this should be auto... *)
     simpl in H.
-    repeat rewrite bevar_subst_not_occur in H. wf_auto2.
+    repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
     mgApplyMeta H. clear H.
     mgSplitAnd. 2: fromMyGoal; wf_auto2.
     epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
@@ -316,3 +199,149 @@ Section ProofSystemTheorems.
     * mgApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
       mgExactn 2.
   Defined.
+
+  Corollary delete : forall φ φ' Γ,
+    well_formed φ -> well_formed φ'
+  ->
+    Γ ⊢ φ and φ' =ml φ' ---> φ.
+  Proof.
+    intros φ φ' Γ WF1 WF2.
+    toMyGoal. wf_auto2.
+    mgIntro. mgDestructAnd 0. mgExactn 0.
+  Defined.
+(*   Check universal_generalization.
+  Theorem universal_generalization_obj :
+    forall φ Γ,
+      Γ ⊢ *)
+
+(*   Lemma rewrite_helper :
+    forall φ ψ x Γ,
+      theory ⊆ Γ -> well_formed φ -> well_formed ψ ->
+      Γ ⊢ ψ =ml patt_free_evar x ---> φ ---> φ.[[evar: x ↦ ψ]].
+  Proof.
+    Search ML_proof_system free_evar_subst.
+    intros φ ψ x Γ HΓ WF1 WF2.
+    
+  Defined. *)
+
+  Lemma free_evar_subst_id :
+    forall φ x, φ.[[evar: x ↦ patt_free_evar x]] = φ.
+  Proof.
+    induction φ; intros x'; simpl; auto.
+    * case_match; subst; auto.
+    * rewrite IHφ1. now rewrite IHφ2.
+    * rewrite IHφ1. now rewrite IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Theorem elimination : forall φ φ' x Γ, x ∉ free_evars φ ->
+    theory ⊆ Γ -> mu_free φ ->
+    well_formed_closed_ex_aux φ 1 ->
+    well_formed_closed_mu_aux φ 0 ->
+    well_formed φ' ->
+    Γ ⊢ φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x ---> 
+        φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x.
+  Proof.
+    intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
+    assert (well_formed (φ.[evar:0↦φ'])) as WFF.
+    { wf_auto2. apply bevar_subst_positive; auto.
+        now apply mu_free_wfp. }
+    assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
+      wf_auto2. apply bevar_subst_positive; auto.
+        now apply mu_free_wfp. }
+    toMyGoal. wf_auto2.
+    mgIntro. mgDestructAnd 0. mgSplitAnd. 2: mgExactn 1.
+    epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
+            {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
+            HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    cbn in H.
+    pose proof (@bound_to_free_variable_subst _ φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
+    unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
+    rewrite free_evar_subst_id in H.
+    Search patt_iff ML_proof_system.
+    assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
+                φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ']) as Hiff. {
+      toMyGoal; wf_auto2.
+      mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 1.
+    }
+    epose proof (@syllogism_intro _ Γ _ _ _ _ _ _ H Hiff).
+    (* TODO: mgApplyMeta buggy?
+             Tries to match the longest conclusion, not the shortest *)
+    apply reorder_meta in H1.
+    mgRevert. mgApplyMeta H1. mgExactn 0.
+    Unshelve. all: wf_auto2.
+    cbn. rewrite mu_free_bevar_subst; wf_auto2.
+  Defined.
+
+  Theorem elimination_reverse : forall φ φ' x Γ, x ∉ free_evars φ ->
+    theory ⊆ Γ -> mu_free φ ->
+    well_formed_closed_ex_aux φ 1 ->
+    well_formed_closed_mu_aux φ 0 ->
+    well_formed φ' ->
+    Γ ⊢ φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x --->
+        φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x.
+  Proof.
+    intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
+    assert (well_formed (φ.[evar:0↦φ'])) as WFF.
+    { wf_auto2. apply bevar_subst_positive; auto.
+        now apply mu_free_wfp. }
+    assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
+      wf_auto2. apply bevar_subst_positive; auto.
+        now apply mu_free_wfp. }
+    toMyGoal. wf_auto2.
+    mgIntro. mgDestructAnd 0. mgSplitAnd. 2: mgAssumption.
+    epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
+            {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
+            HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    cbn in H.
+    pose proof (@bound_to_free_variable_subst _ φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
+    unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
+    rewrite free_evar_subst_id in H.
+    assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
+                φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x]) as Hiff. {
+      toMyGoal; wf_auto2.
+      mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 0.
+    }
+    epose proof (@syllogism_intro _ Γ _ _ _ _ _ _ H Hiff).
+    (* TODO: mgApplyMeta buggy?
+             Tries to match the longest conclusion, not the shortest *)
+    apply reorder_meta in H1.
+    mgRevert. mgApplyMeta H1. mgExactn 0.
+    Unshelve. all: wf_auto2.
+    cbn. rewrite mu_free_bevar_subst; wf_auto2.
+  Defined.
+
+
+  (**
+     Should be a consequence of the injectivity axiom:
+      f(t₁,...,tₙ) = f(t₁',...,tₙ') → t₁ = t₁' ∧ ... ∧ tₙ = tₙ'
+
+     The question is, why can we assume this axiom?
+  *)
+  Definition application_chain (φ : Pattern) (φs : list Pattern) : Pattern :=
+    fold_left (fun Acc φ => patt_app Acc φ) φs φ.
+
+  Theorem application_equal : forall φs ψ φ's Γ,
+    length φs = length φ's ->
+    well_formed ψ -> (* Forall well_formed φs -> Forall well_formed φ's *)
+    (forall i, i < length φs -> well_formed (nth i φs ⊥)) ->
+    (forall i, i < length φ's -> well_formed (nth i φ's ⊥))
+  ->
+    Γ ⊢ application_chain ψ φs =ml application_chain ψ φ's --->
+         fold_right (fun '(x, y) Acc => Acc and x =ml y) Top (zip φs φ's).
+  Proof.
+    induction φs;
+    intros ψ φ's Γ Len WF WFs1 WFs2.
+    * apply eq_sym, length_zero_iff_nil in Len. subst. cbn.
+      toMyGoal. wf_auto2. mgIntro. mgClear 0. (* TODO: mgExact for meta theorems *)
+      fromMyGoal. wf_auto2.
+      apply (top_holds Γ).
+    * destruct φ's. simpl in Len. congruence.
+      simpl in Len. inversion Len. clear Len.
+      cbn.
+      Search patt_equal ML_proof_system.
+      admit.
+  Abort.
+
+End ProofSystemTheorems.
