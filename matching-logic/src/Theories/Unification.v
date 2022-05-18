@@ -68,7 +68,6 @@ Section ProofSystemTheorems.
 
     (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
                        free variable *)
-    Check forall_functional_subst.
     epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve. 2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
@@ -157,9 +156,8 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
     unfold patt_equal at 1.
-    Search patt_in ML_proof_system.
 
-    toMyGoal. wf_auto2. Search "∈ml".
+    toMyGoal. wf_auto2.
     mgIntro.
     mgApplyMeta (@bott_not_defined _ _ Γ).
     fromMyGoal. wf_auto2.
@@ -186,10 +184,8 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' HΓ Wf1 Wf2 MF Func1 Func2.
     toMyGoal. wf_auto2.
-    Search patt_free_evar ML_proof_system.
     mgIntro.
     mgAssert (⌈ φ and φ' ⌉). wf_auto2.
-    Search patt_defined ML_proof_system.
     (* Why can we only mgApplyMeta here, and not after mgRevert? *)
     mgApplyMeta (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2)).
     mgExactn 0.
@@ -209,20 +205,6 @@ Section ProofSystemTheorems.
     toMyGoal. wf_auto2.
     mgIntro. mgDestructAnd 0. mgExactn 0.
   Defined.
-(*   Check universal_generalization.
-  Theorem universal_generalization_obj :
-    forall φ Γ,
-      Γ ⊢ *)
-
-(*   Lemma rewrite_helper :
-    forall φ ψ x Γ,
-      theory ⊆ Γ -> well_formed φ -> well_formed ψ ->
-      Γ ⊢ ψ =ml patt_free_evar x ---> φ ---> φ.[[evar: x ↦ ψ]].
-  Proof.
-    Search ML_proof_system free_evar_subst.
-    intros φ ψ x Γ HΓ WF1 WF2.
-    
-  Defined. *)
 
   Lemma free_evar_subst_id :
     forall φ x, φ.[[evar: x ↦ patt_free_evar x]] = φ.
@@ -259,7 +241,6 @@ Section ProofSystemTheorems.
     pose proof (@bound_to_free_variable_subst _ φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
-    Search patt_iff ML_proof_system.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
                 φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ']) as Hiff. {
       toMyGoal; wf_auto2.
@@ -313,9 +294,12 @@ Section ProofSystemTheorems.
   Defined.
 
 
+
+
   (**
      Should be a consequence of the injectivity axiom:
-      f(t₁,...,tₙ) = f(t₁',...,tₙ') → t₁ = t₁' ∧ ... ∧ tₙ = tₙ'
+
+      f(x₁,...,xₙ) = f(x₁',...,xₙ') → x₁ = x₁' ∧ ... ∧ xₙ = xₙ'
 
      The question is, why can we assume this axiom?
   *)
@@ -340,7 +324,6 @@ Section ProofSystemTheorems.
     * destruct φ's. simpl in Len. congruence.
       simpl in Len. inversion Len. clear Len.
       cbn.
-      Search patt_equal ML_proof_system.
       admit.
   Abort.
 

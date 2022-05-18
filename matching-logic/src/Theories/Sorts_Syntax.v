@@ -46,15 +46,10 @@ Section sorts_syntax.
 
 End sorts_syntax.
 
-Module Notations.
-  Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-End Notations.
-
 Section sorts.
-  Import Notations.
   Context {Σ : Signature}.
   Context {self : Syntax}.
-
+  Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
   Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
     〚ϕ〛.[evar: x ↦ ψ] = 〚ϕ.[evar: x ↦ ψ]〛.
   Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
@@ -71,7 +66,7 @@ Section sorts.
     |}.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
-    〚sort〛 and ! phi. Print patt_sorted_neg.
+    〚sort〛 and ! phi.
 
   Lemma bevar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
     bevar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bevar_subst s ψ x) (bevar_subst ϕ ψ x).
@@ -92,13 +87,18 @@ Section sorts.
     |}.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
-    patt_forall ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) ---> phi).
+    all , ((b0 ∈ml 〚nest_ex sort〛) ---> phi).
+
+  Local Notation "'all' s ,  phi" := 
+    (patt_forall_of_sort s phi) (at level 70) : ml_scope.
 
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
-    patt_exists ((patt_in (patt_bound_evar 0) (patt_inhabitant_set (nest_ex sort))) and phi).
+    ex , ((patt_bound_evar 0 ∈ml 〚nest_ex sort〛) and phi).
+  Local Notation "'ex' s ,  phi" := 
+    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
 
   Lemma bevar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    bevar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (S db)).
+    (all s , ϕ).[evar: db ↦ ψ] = all s.[evar: db ↦ ψ] , ϕ.[evar: S db ↦ ψ].
   Proof.
     unfold patt_forall_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
@@ -106,7 +106,7 @@ Section sorts.
   Qed.
 
   Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    bsvar_subst (patt_forall_of_sort s ϕ) ψ db = patt_forall_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
+    (all s , ϕ).[svar: db ↦ ψ] = all s.[svar: db ↦ ψ] , ϕ.[svar: db ↦ ψ].
   Proof.
     unfold patt_forall_of_sort.
     repeat (rewrite simpl_bsvar_subst';[assumption|]).
@@ -117,18 +117,17 @@ Section sorts.
   Qed.
 
   Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    bevar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bevar_subst s ψ db) (bevar_subst ϕ ψ (db+1)).
+    (ex s , ϕ).[evar: db ↦ ψ] = ex s.[evar: db ↦ ψ] , ϕ.[evar: S db ↦ ψ].
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
-    (* TODO rewrite all _+1 to 1+_ *)
-    rewrite PeanoNat.Nat.add_comm. simpl.
     unfold nest_ex.
-    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia. rewrite nest_ex_gt; auto. lia.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_gt; auto. lia.
   Qed.
 
   Lemma bsvar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    bsvar_subst (patt_exists_of_sort s ϕ) ψ db = patt_exists_of_sort (bsvar_subst s ψ db) (bsvar_subst ϕ ψ db).
+    (ex s , ϕ).[svar: db ↦ ψ] = ex s.[svar: db ↦ ψ] , ϕ.[svar: db ↦ ψ].
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bsvar_subst';[assumption|]).
@@ -137,7 +136,7 @@ Section sorts.
     { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
     reflexivity.
   Qed.
-    
+
   #[global]
    Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
     {|
@@ -157,24 +156,34 @@ Section sorts.
   (* TODO a lemma about patt_forall_of_sort *)
   
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_equal (patt_app (nest_ex (nest_ex phi)) b1) b0)).
+    all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) $ b1) =ml b0)).
 
   Definition patt_partial_function(phi from to : Pattern) : Pattern :=
-    patt_forall_of_sort from (patt_exists_of_sort (nest_ex to) (patt_subseteq (patt_app (nest_ex (nest_ex phi)) b1) b0)).
+    all from , (ex (nest_ex to), ((nest_ex (nest_ex phi) $ b1) ⊆ml b0)).
 
 
   (* Assuming `f` is a total function, says it is injective on given domain. Does not quite work for partial functions. *)
   Definition patt_total_function_injective f from : Pattern :=
-    patt_forall_of_sort from (patt_forall_of_sort (nest_ex from) (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0))).
+    all from , (all (nest_ex from) , 
+                (((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0)) ---> 
+                  (b1 =ml b0))).
 
   (* Assuming `f` is a partial function, says it is injective on given domain. Works for total functions, too. *)
   Definition patt_partial_function_injective f from : Pattern :=
-    patt_forall_of_sort
-      from
-      (patt_forall_of_sort
-         (nest_ex from)
-         (patt_imp
-            (patt_not (patt_equal (patt_app (nest_ex (nest_ex f)) b1) patt_bott ))
-            (patt_imp (patt_equal (patt_app (nest_ex (nest_ex f)) b1) (patt_app (nest_ex (nest_ex f)) b0)) (patt_equal b1 b0)))).
+    all
+      from ,
+      (all
+         (nest_ex from) ,
+         (
+            ! ((nest_ex (nest_ex f) $ b1) =ml ⊥ )
+            --->
+            ((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0))
+             ---> (b1 =ml b0))).
 
 End sorts.
+
+Module Notations.
+  Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 70) : ml_scope.
+  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+End Notations.

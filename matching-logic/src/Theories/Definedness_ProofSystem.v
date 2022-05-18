@@ -3116,16 +3116,6 @@ toMyGoal.
 mgIntro. mgLeft. mgExactn 0.
 Defined.
 
-Lemma and_defined {Σ : Signature} {syntax : Syntax} :
-  forall Γ φ1 φ2, theory ⊆ Γ -> well_formed φ1 -> well_formed φ2 ->
-  Γ ⊢ ⌈ φ1 and φ2 ⌉ ---> ⌈ φ1 ⌉ and ⌈ φ2 ⌉.
-Proof.
-  intros Γ φ1 φ2 HΓ Wf1 Wf2. unfold patt_and.
-  toMyGoal. wf_auto2.
-  repeat mgIntro. Search patt_in ML_proof_system.
-  Search patt_not patt_or ML_proof_system.
-Abort.
-
 Lemma bott_not_total {Σ : Signature} {syntax : Syntax}:
   forall Γ, theory ⊆ Γ ->
   Γ ⊢ ! ⌊ ⊥ ⌋.
@@ -3135,7 +3125,7 @@ Proof.
   mgIntro. mgApply 0.
   mgApplyMeta (@phi_impl_defined_phi _ _ _ (! ⊥) SubTheory ltac:(wf_auto2)).
   mgIntro. mgExactn 1.
-Qed.
+Defined.
 
 Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
   ∀ (Γ : Theory) (ϕ : Pattern),
@@ -3145,7 +3135,7 @@ Proof.
   mgSplitAnd.
   * mgIntro. mgApplyMeta (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf). mgExactn 0.
   * unfold patt_total.
-    pose proof (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)).
+    pose proof (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)) as H.
     mgRewrite <- H at 1. mgIntro. mgExactn 0.
 Defined.
 
@@ -3236,7 +3226,6 @@ Proof.
     apply pf_iff_proj1 in H0. 2-3: wf_auto2.
     mgApplyMeta H0 in 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
-    Check Singleton_ctx.
     pose proof (H1 := @Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2))
