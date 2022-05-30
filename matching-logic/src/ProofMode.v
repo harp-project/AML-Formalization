@@ -3893,44 +3893,39 @@ Section FOL_helpers.
   Lemma and_of_negated_iff_not_impl Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2).
+    Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2)
+    using PropositionalReasoning.
   Proof.
     intros wfp1 wfp2.
-    apply conj_intro_meta; auto 10.
+    apply conj_intro_meta.
+    { wf_auto2. }
+    { wf_auto2. }
     - toMyGoal.
-      { auto 10. }
+      { wf_auto2. }
       mgIntro. mgIntro.
       mgApply 0.
       mgIntro.
       unfold patt_or.
-      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)).
+      mgAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
       mgApply 0.
       mgApply 2.
-      mgAdd (@not_not_intro Σ Γ (! p1) ltac:(auto)).
+      mgAdd (@not_not_intro Σ Γ (! p1) ltac:(wf_auto2)).
       mgApply 0.
       mgExactn 4.
     - toMyGoal.
-      { auto 10. }
+      { wf_auto2. }
       mgIntro. mgIntro.
       unfold patt_and.
       mgApply 0.
       unfold patt_or.
       mgIntro.
-      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)).
+      mgAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
       mgApply 0.
       mgApply 2.
-      mgAdd (@not_not_elim Σ Γ (! p1) ltac:(auto)).
+      mgAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)).
       mgApply 0.
       mgExactn 4.
   Defined.
-
-  Program Canonical Structure and_of_negated_iff_not_impl_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty0 P (@and_of_negated_iff_not_impl Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
