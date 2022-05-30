@@ -3667,7 +3667,29 @@ Section FOL_helpers.
     }
   Qed.
 
-  Ltac useBasicReasoning := apply useBasicReasoning.
+  Lemma mgUseBasicReasoning
+    (Γ : Theory) (l : list Pattern) (g : Pattern) (gpi : GenericProofInfo) :
+    @mkMyGoal Σ Γ l g BasicReasoning ->
+    @mkMyGoal Σ Γ l g (pi_Generic gpi).
+  Proof.
+    intros H wf1 wf2.
+    specialize (H wf1 wf2).
+    apply useBasicReasoning.
+    exact H.
+  Defined.
+
+  End FOL_helpers.
+
+  Ltac useBasicReasoning :=
+    lazymatch goal with
+    | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
+    | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
+    end.
+
+Section FOL_helpers.
+  
+  Context {Σ : Signature}.
+    
 
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
@@ -4187,14 +4209,14 @@ Proof.
   mgExactn 0.
 Defined.
 
-Lemma MyGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y:
-    @mkMyGoal Σ Γ (l₁ ++ x::y::l₂ ) g ->
-    @mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂) g .
+Lemma MyGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y i:
+    @mkMyGoal Σ Γ (l₁ ++ x::y::l₂ ) g i ->
+    @mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂) g i .
 Proof.
   intros H.
   unfold of_MyGoal. intros wfg Hwf. pose proof (wfg' := wfg). pose proof (Hwf' := Hwf).
   revert wfg' Hwf'.
-  cut (of_MyGoal (@mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂ ) g)).
+  cut (of_MyGoal (@mkMyGoal Σ Γ (l₁ ++ (x and y)::l₂ ) g i)).
   { auto. }
   simpl in wfg, Hwf.
 
@@ -4225,6 +4247,7 @@ Proof.
         wf_auto2
       ).
     }
+    usePropositionalReasoning.
     mgApplyMeta (@pf_conj_elim_r Σ Γ x y ltac:(assumption) ltac:(assumption)).
     apply MyGoal_exactn.
   }
