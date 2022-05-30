@@ -4433,7 +4433,8 @@ Section FOL_helpers.
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((p ---> q) <---> (! p or q)).
+    Γ ⊢ ((p ---> q) <---> (! p or q))
+    using PropositionalReasoning.
   Proof.
     intros wfp wfq.
     apply conj_intro_meta; auto.
@@ -4455,19 +4456,10 @@ Section FOL_helpers.
       mgExactn 1.
   Defined.
 
-  Program Canonical Structure impl_iff_notp_or_q_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (p q : Pattern)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty0 P (@impl_iff_notp_or_q Γ p q wfp wfq) _.
-  Next Obligation.
-    intros. solve_indif.
-  Qed.
-
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
-    Γ ⊢ (⊥ <---> p and ! p).
+    Γ ⊢ (⊥ <---> p and ! p)
+    using PropositionalReasoning.
   Proof.
     intros wfp.
     apply conj_intro_meta; auto.
@@ -4477,23 +4469,17 @@ Section FOL_helpers.
       { wf_auto2. }
       mgIntro.
       mgApply 0.
-      mgAdd (@A_or_notA Σ Γ (! p) ltac:(auto)).
+      mgAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)).
       mgExactn 0.
   Defined.
-
-  Program Canonical Structure p_and_notp_is_bot_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (p : Pattern)
-          (wfp : well_formed p)
-    := ProofProperty0 P (@p_and_notp_is_bot Γ p wfp) _.
-  Next Obligation. solve_indif. Qed.
 
   Lemma weird_lemma Γ A B L R:
     well_formed A ->
     well_formed B ->
     well_formed L ->
     well_formed R ->
-    Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R))).
+    Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
+    using PropositionalReasoning.
   Proof.
     intros wfA wfB wfL wfR.
     toMyGoal.
@@ -4519,43 +4505,19 @@ Section FOL_helpers.
       mgApply 0. mgExactn 3.
   Defined.
 
-  Program Canonical Structure weird_lemma_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty0 P (@weird_lemma Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation.
-    intros. unfold weird_lemma. simpl.
-    apply liftP_impl_P.
-    solve_indif. intros. unfold liftP. solve_indif.
-  Qed.
-
-  Lemma weird_lemma_meta Γ A B L R:
+  Lemma weird_lemma_meta Γ A B L R i:
     well_formed A ->
     well_formed B ->
     well_formed L ->
     well_formed R ->
-    Γ ⊢ ((L and A) ---> (B or R)) ->
-    Γ ⊢ (L ---> ((A ---> B) or R)).
+    Γ ⊢ ((L and A) ---> (B or R)) using i ->
+    Γ ⊢ (L ---> ((A ---> B) or R)) using i.
   Proof.
     intros WFA WFB WFL WFR H.
-    eapply Modus_ponens.
-    4: apply weird_lemma.
-    all: auto 10.
+    eapply MP.
+    2: { usePropositionalReasoning. apply weird_lemma; assumption. }
+    exact H.
   Defined.
-
-  Program Canonical Structure weird_lemma_meta_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty1 P (@weird_lemma_meta Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma imp_trans_mixed_meta Γ A B C D :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
