@@ -4123,11 +4123,11 @@ Proof.
   mgLeft.
 Abort.
 
-Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r':
-  Γ ⊢ (r ---> r') ->
+Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r' i:
+  Γ ⊢ (r ---> r') using i ->
   forall l₁ l₂ g,
-    @mkMyGoal Σ Γ (l₁ ++ r'::l₂) g ->
-    @mkMyGoal Σ Γ (l₁ ++ r::l₂ ) g.
+    @mkMyGoal Σ Γ (l₁ ++ r'::l₂) g i ->
+    @mkMyGoal Σ Γ (l₁ ++ r::l₂ ) g i.
 Proof.
   intros Himp l₁ l₂ g H.
   unfold of_MyGoal in *. simpl in *.
@@ -4138,7 +4138,7 @@ Proof.
   6: apply H.
   { abstract (apply wfapp_proj_1 in Hwf; exact Hwf). }
   { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
-  { abstract (apply proved_impl_wf in Himp; wf_auto2). }
+  { abstract (pose proof (Himp' := proj1_sig Himp); apply proved_impl_wf in Himp'; wf_auto2). }
   { abstract (apply wfl₁hl₂_proj_h in Hwf; exact Hwf). }
   { exact wfg. }
   { abstract(
@@ -4149,9 +4149,10 @@ Proof.
       rewrite map_app;
       rewrite foldr_app;
       simpl;
-      apply proved_impl_wf in Himp;
-      apply well_formed_imp_proj2 in Himp;
-      rewrite Himp;
+      pose proof (Himp' := proj1_sig Himp);
+      apply proved_impl_wf in Himp';
+      apply well_formed_imp_proj2 in Himp';
+      rewrite Himp';
       simpl;
       unfold wf in H1;
       rewrite H1;
@@ -4159,13 +4160,6 @@ Proof.
     ).
  }
 Defined.
-
-Program Canonical Structure MyGoal_applyMetaIn_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l₁ l₂ : list Pattern)
-        (a b g : Pattern)
-  := TacticProperty1_1 P (fun pf => @MyGoal_applyMetaIn Σ Γ a b pf l₁ l₂ g) _.
-Next Obligation. intros. unfold liftP. solve_indif. apply H. apply H0. Qed.
 
 Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
   eapply cast_proof_mg_hyps;
@@ -4175,30 +4169,23 @@ Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
     rewrite [hyps in (_ ++ hyps)]/=;
     reflexivity
    )|];
-  eapply (@MyGoal_applyMetaIn _ _ _ _ t);
+  eapply (@MyGoal_applyMetaIn _ _ _ _ _ t);
   eapply cast_proof_mg_hyps;
   [(rewrite /app; reflexivity)|].
 
 Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
-  Γ ⊢ p ---> (p or q).
+  Γ ⊢ p ---> (p or q)
+  using PropositionalReasoning.
 Proof.
   intros wfp wfq.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   mgIntro.
-  mgApplyMeta (@disj_left_intro Σ Γ p q ltac:(auto) ltac:(auto)) in 0.
+  mgApplyMeta (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in 0.
   mgExactn 0.
 Defined.
-
-Local Program Canonical Structure Private_ex_mgApplyMetaIn_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty0 P (@Private_ex_mgApplyMetaIn Σ Γ a b wfa wfb) _.
-Next Obligation. solve_indif. Qed.
 
 Lemma MyGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y:
     @mkMyGoal Σ Γ (l₁ ++ x::y::l₂ ) g ->
