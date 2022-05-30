@@ -3484,6 +3484,56 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma pile_impl_allows_gen_x x gpi svs kt:
+    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
+    x ∈ pi_generalized_evars gpi.
+  Proof.
+    intros [H].
+    Check A_impl_A.
+    pose (H1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+    pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
+    pose (H3 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig H2) ltac:(simpl; set_solver)).
+    pose proof (H' := H ∅ _ H3).
+    feed specialize H'.
+    {
+      constructor; simpl.
+      {
+        exact I.
+      }
+      {
+        case_match.
+        cut ((uses_of_ex_gen ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0) = ∅).
+        {
+          set_solver.
+        }
+        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
+        apply propositional_implies_no_uses_ex_gen_2.
+        apply Hp1.
+      }
+      {
+        case_match.
+        cut (uses_of_svar_subst ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅).
+        {
+          set_solver.
+        }
+        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
+        apply propositional_implies_no_uses_svar_2.
+        apply Hp1.
+      }
+      {
+        case_match.
+        cut (uses_kt x0 = false).
+        {
+          intros H''. rewrite H''. simpl. reflexivity.
+        }
+        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
+        apply propositional_implies_noKT.
+        apply Hp1.
+      }
+    }
+    inversion H'. simpl in *. clear -pwi_pf_ge0. set_solver.
+  Qed.
+
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
     {pile : ProofInfoLe (pi_Generic
             {| pi_generalized_evars := {[x]};
@@ -3514,9 +3564,24 @@ Section FOL_helpers.
       }
       {
         destruct i;[contradiction|].
+        Search subseteq union.
+        rewrite union_subseteq.
+        split.
+        {
+          rewrite -elem_of_subseteq_singleton.
+          destruct pile as [pile'].
+        }
+        destruct pile as [pile'].
+        specialize (pile' _ _ pf).
+        feed specialize pile'.
+        {
+          destruct Hpf.
+          constructor; simpl.
+          { exact I. }
+          { simpl in *. }
+        }
         clear Hnot.
         destruct Hpf as [Hprop Hgen Hsvs Hkt].
-        destruct pile as [pile'].
         destruct gpi. simpl in *.
         apply pile in Hpf.
         destruct Hpf as [Hprop Hge Hsvs Hkt].
