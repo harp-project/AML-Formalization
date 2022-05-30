@@ -4589,31 +4589,29 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma and_drop A B C Γ:
+  Lemma and_drop A B C Γ i:
     well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢ ((A and B) ---> C)
-   ->
-    Γ ⊢ ((A and B) ---> (A and C)).
+    Γ ⊢ ((A and B) ---> C) using i ->
+    Γ ⊢ ((A and B) ---> (A and C)) using i.
   Proof.
     intros WFA WFB WFC H.
-    pose proof (@pf_conj_elim_l Σ Γ A B WFA WFB).
-    epose proof (@impl_and Γ (A and B) A (A and B) C _ _ _ _ H0 H).
-    epose proof (@and_impl _ _ _ _ _ _ _ _).
-    eapply Modus_ponens in H2. 4: exact H1. 2-3: shelve.
-    epose proof (@prf_contraction _ _ _ _ _ _).
-    eapply Modus_ponens in H3. 4: exact H2. auto.
-    Unshelve. all: unfold patt_and, patt_or, patt_not; auto 20.
+    toMyGoal.
+    { wf_auto2. }
+    mgAdd H.
+    mgIntro.
+    mgIntro.
+    mgDestructOr 2.
+    {
+      mgDestructAnd 1.
+      mgApply 3.
+      mgExactn 1.
+    }
+    {
+      mgApply 2.
+      mgApply 0.
+      mgExactn 1.
+    }
   Defined.
-
-  Program Canonical Structure and_drop_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-    := ProofProperty1 P (@and_drop a b p Γ wfa wfb wfp) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
 
   Lemma universal_generalization Γ ϕ x:
     well_formed ϕ ->
