@@ -3930,155 +3930,133 @@ Section FOL_helpers.
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (! (p1 ---> p2) <---> p1 and ! p2).
+    Γ ⊢ (! (p1 ---> p2) <---> p1 and ! p2)
+    using PropositionalReasoning.
   Proof.
     intros wfp1 wfp2.
-    apply conj_intro_meta; auto.
+    apply conj_intro_meta.
+    { wf_auto2. }
+    { wf_auto2. }
     - toMyGoal.
-      { auto 10. }
+      { wf_auto2. }
       mgIntro. mgIntro.
       mgApply 0.
       mgIntro.
       unfold patt_or.
-      mgAdd (@not_not_elim Σ Γ p2 ltac:(auto)).
+      mgAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
       mgApply 0.
       mgApply 2.
-      mgAdd (@not_not_intro Σ Γ p1 ltac:(auto)).
+      mgAdd (@not_not_intro Σ Γ p1 ltac:(wf_auto2)).
       mgApply 0.
       mgExactn 4.
     - toMyGoal.
-      { auto 10. }
+      { wf_auto2. }
       mgIntro. mgIntro.
       mgApply 0.
       unfold patt_or.
       mgIntro.
-      mgAdd (@not_not_intro Σ Γ p2 ltac:(auto)).
+      mgAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
       mgApply 0.
       mgApply 2.
-      mgAdd (@not_not_elim Σ Γ p1 ltac:(auto)).
+      mgAdd (@not_not_elim Σ Γ p1 ltac:(wf_auto2)).
       mgApply 0.
       mgExactn 4.
   Defined.
 
-  Program Canonical Structure and_impl_2_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty0 P (@and_impl_2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) :
-    well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (A and B).
+  Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+    well_formed A → well_formed B →
+    Γ ⊢ A using i →
+    Γ ⊢ B ---> (A and B) using i.
   Proof.
     intros WFA WFB H.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H.
-    - apply conj_intro; auto.
-    Unshelve. all: auto.
+    - usePropositionalReasoning. apply conj_intro.
+      { wf_auto2. }
+      { wf_auto2. }
   Defined.
 
-  Program Canonical Structure conj_intro_meta_partial_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@conj_intro_meta_partial Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma and_impl_patt (A B C : Pattern) Γ:
+  Lemma and_impl_patt (A B C : Pattern) Γ (i : ProofInfo):
     well_formed A → well_formed B → well_formed C →
-    Γ ⊢ A -> Γ ⊢ ((A and B) ---> C) -> Γ ⊢ (B ---> C).
+    Γ ⊢ A using i ->
+    Γ ⊢ ((A and B) ---> C) using i ->
+    Γ ⊢ (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
-    eapply syllogism_intro with (B0 := patt_and A B); auto.
-    apply conj_intro_meta_partial; auto.
+    eapply syllogism_meta with (B0 := patt_and A B).
+    { wf_auto2. }
+    { wf_auto2. }
+    { wf_auto2. }
+    2: { exact H0. }
+    apply conj_intro_meta_partial.
+    { wf_auto2. }
+    { wf_auto2. }
+    exact H.
   Defined.
-
-  Program Canonical Structure and_impl_patt_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-    := ProofProperty2 P (@and_impl_patt a b c Γ wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B -> Γ ⊢ (A ---> (B ---> (B and A))).
+    well_formed A -> well_formed B ->
+    Γ ⊢ (A ---> (B ---> (B and A)))
+    using PropositionalReasoning.
   Proof.
-    intros WFA WFB. eapply reorder_meta; auto.
-    apply conj_intro; auto.
+    intros WFA WFB. eapply reorder_meta.
+    { wf_auto2. }
+    { wf_auto2. }
+    { wf_auto2. }
+    apply conj_intro.
+    { wf_auto2. }
+    { wf_auto2. }
   Defined.
 
-  Program Canonical Structure conj_intro2_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty0 P (@conj_intro2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern):
-    well_formed A → well_formed B → Γ ⊢ A → Γ ⊢ B ---> (B and A).
+  Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern) (i : ProofInfo):
+    well_formed A → well_formed B →
+    Γ ⊢ A using i →
+    Γ ⊢ B ---> (B and A) using i.
   Proof.
     intros WFA WFB H.
-    eapply (Modus_ponens _ _ _ _ _).
+    eapply MP.
     - exact H.
-    - apply conj_intro2; auto.
-    Unshelve. all: auto.
+    - usePropositionalReasoning. apply conj_intro2.
+      { wf_auto2. }
+      { wf_auto2. }
   Defined.
 
-  Program Canonical Structure conj_intro_meta_partial2_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@conj_intro_meta_partial2 Γ a b wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma and_impl_patt2  (A B C : Pattern) Γ:
+  Lemma and_impl_patt2  (A B C : Pattern) Γ (i : ProofInfo):
     well_formed A → well_formed B → well_formed C →
-    Γ ⊢ A -> Γ ⊢ ((B and A) ---> C) -> Γ ⊢ (B ---> C).
+    Γ ⊢ A using i ->
+    Γ ⊢ ((B and A) ---> C) using i ->
+    Γ ⊢ (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
-    eapply syllogism_intro with (B0 := patt_and B A); auto.
-    pose conj_intro_meta_partial2; auto.
+    eapply syllogism_meta with (B0 := patt_and B A).
+    { wf_auto2. }
+    { wf_auto2. }
+    { wf_auto2. }
+    2: exact H0.
+    apply conj_intro_meta_partial2.
+    { wf_auto2. }
+    { wf_auto2. }
+    exact H.
   Defined.
 
-  Program Canonical Structure and_impl_patt2_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-    := ProofProperty2 P (@and_impl_patt2 a b c Γ wfa wfb wfc) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
-  Lemma patt_and_comm_meta (A B : Pattern) Γ:
+  Lemma patt_and_comm_meta (A B : Pattern) (Γ : Theory) (i : ProofInfo) :
     well_formed A → well_formed B
-  ->
-    Γ ⊢ A and B -> Γ ⊢ B and A.
+    ->
+    Γ ⊢ A and B using i ->
+    Γ ⊢ B and A using i.
   Proof.
     intros WFA WFB H.
     apply pf_conj_elim_r_meta in H as P1.
-    apply pf_conj_elim_l_meta in H as P2. all: auto.
-    apply conj_intro_meta; auto.
+    apply pf_conj_elim_l_meta in H as P2. all: try_wfauto2.
+    apply conj_intro_meta; assumption.
   Defined.
 
-  Program Canonical Structure patt_and_comm_meta_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-    := ProofProperty1 P (@patt_and_comm_meta a b Γ wfa wfb) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma MyGoal_applyMeta Γ r r':
-    Γ ⊢ (r' ---> r) ->
+  Lemma MyGoal_applyMeta Γ r r' i:
+    Γ ⊢ (r' ---> r) using i ->
     forall l,
-    @mkMyGoal Σ Γ l r' ->
-    @mkMyGoal Σ Γ l r.
+    @mkMyGoal Σ Γ l r' i ->
+    @mkMyGoal Σ Γ l r i.
   Proof.
     intros Himp l H.
     unfold of_MyGoal in *. simpl in *.
@@ -4087,17 +4065,8 @@ Section FOL_helpers.
     4: apply Himp.
     4: apply H.
     all: try assumption.
-    1,2: pose proof (wfrr' := proved_impl_wf _ _ Himp); wf_auto2.
+    1,2: pose proof (wfrr' := proved_impl_wf _ _ (proj1_sig Himp)); wf_auto2.
   Defined.
-
-  Program Canonical Structure MyGoal_applyMeta_indifferent_S
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-    := TacticProperty1_1 P (fun pf₁ => @MyGoal_applyMeta Γ a b pf₁ l) _.
-  Next Obligation.
-    intros. unfold liftP. solve_indif. assumption. apply H0.
-  Qed.
 
 End FOL_helpers.
 
