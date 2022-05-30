@@ -4519,199 +4519,75 @@ Section FOL_helpers.
     exact H.
   Defined.
 
-  Lemma imp_trans_mixed_meta Γ A B C D :
+  Lemma imp_trans_mixed_meta Γ A B C D i :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢ (C ---> A) -> Γ ⊢ (B ---> D)
-  ->
-    Γ ⊢ ((A ---> B) ---> C ---> D).
+    Γ ⊢ (C ---> A) using i ->
+    Γ ⊢ (B ---> D) using i ->
+    Γ ⊢ ((A ---> B) ---> C ---> D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
-    epose proof (@prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
-    eapply Modus_ponens in H1; auto.
-    epose proof (@prf_strenghten_premise Σ Γ A C D WFA WFC WFD).
-    eapply Modus_ponens in H2; auto.
-    epose proof (@syllogism_intro Σ Γ _ _ _ _ _ _ H1 H2). auto.
-    Unshelve. all: auto.
+    epose proof (H1 := @prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
+    eapply usePropositionalReasoning in H1.
+    eapply MP in H1.
+    2: { exact H0. }
+    epose proof (H2 := @prf_strenghten_premise Σ Γ A C D WFA WFC WFD).
+    eapply usePropositionalReasoning in H2.
+    eapply MP in H2.
+    2: { exact H. }
+    epose proof (H3 := @syllogism_meta Σ Γ _ _ _ i _ _ _ H1 H2).
+    exact H3.
+    Unshelve. all: wf_auto2.
   Defined.
 
-  Program Canonical Structure imp_trans_mixed_meta_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@imp_trans_mixed_meta Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-(*
-  Theorem congruence_iff_helper :
-    forall sz ψ more, le (Syntax.size ψ) sz ->
-     forall φ1 φ2 x Γ (MF : mu_free ψ), well_formed φ1 -> well_formed φ2 ->
-     Γ ⊢ (φ1 <---> φ2)
-    ->
-     well_formed ψ ->
-     Γ ⊢ (free_evar_subst' more ψ φ1 x <---> free_evar_subst' more ψ φ2 x).
-  Proof.
-    unfold free_evar_subst.
-    induction sz; destruct ψ; intros more Hsz φ1 φ2 x' Γ MF WF1 WF2 H WFψ.
-    6, 8, 9, 10: simpl in Hsz; lia.
-    all: try apply pf_iff_equiv_refl; auto.
-    1-2: cbn; break_match_goal; auto.
-    * rewrite nest_ex_aux_wfc_ex.
-      { unfold well_formed, well_formed_closed in WF1.
-        destruct_and!. assumption. }
-      rewrite nest_ex_aux_wfc_ex.
-      { unfold well_formed, well_formed_closed in WF2.
-        destruct_and!. assumption. }
-      assumption.
-
-    * apply pf_iff_equiv_refl; auto.
-    * rewrite nest_ex_aux_wfc_ex.
-      { unfold well_formed, well_formed_closed in WF1.
-        destruct_and!. assumption. }
-      rewrite nest_ex_aux_wfc_ex.
-      { unfold well_formed, well_formed_closed in WF2.
-        destruct_and!. assumption. }
-      assumption.
-    * apply pf_iff_equiv_refl; auto.
-    * simpl in MF, Hsz.
-      apply well_formed_app_1 in WFψ as WF1'.
-      apply well_formed_app_2 in WFψ as WF2'.
-      apply andb_true_iff in MF as [MF1 MF2].
-      specialize (IHsz ψ1 more ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
-      specialize (IHsz ψ2 more ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
-      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2.
-      destruct IHψ1 as [H0 H1], IHψ2 as [H2 H3].
-      pose proof (Framing_left Γ (free_evar_subst' more ψ1 φ1 x') (free_evar_subst' more ψ1 φ2 x') (free_evar_subst' more ψ2 φ1 x') H0) as Trans1.
-      pose proof (Framing_right Γ (free_evar_subst' more ψ2 φ1 x') (free_evar_subst' more ψ2 φ2 x') (free_evar_subst' more ψ1 φ2 x') H2) as Trans2.
-      epose proof (@syllogism_intro Σ Γ _ _ _ _ _ _ Trans1 Trans2).
-      clear Trans1 Trans2. 2-5: shelve.
-
-      pose proof (Framing_right Γ (free_evar_subst' more ψ2 φ2 x') (free_evar_subst' more ψ2 φ1 x') (free_evar_subst' more ψ1 φ2 x') H3) as Trans1.
-      pose proof (Framing_left Γ _ _ (free_evar_subst' more ψ2 φ1 x') H1) as Trans2.
-      epose proof (@syllogism_intro Σ Γ _ _ _ _ _ _ Trans1 Trans2).
-      apply pf_iff_iff; auto.
-      Unshelve.
-      1-3, 8-10: apply well_formed_app.
-      all: now apply well_formed_free_evar_subst.
-    * simpl in MF, Hsz.
-      apply well_formed_app_1 in WFψ as WF1'.
-      apply well_formed_app_2 in WFψ as WF2'.
-      apply andb_true_iff in MF as [MF1 MF2].
-      specialize (IHsz ψ1 more ltac:(lia) φ1 φ2 x' Γ MF1 WF1 WF2 H WF1') as IHψ1.
-      specialize (IHsz ψ2 more ltac:(lia) φ1 φ2 x' Γ MF2 WF1 WF2 H WF2') as IHψ2.
-      apply pf_iff_iff in IHψ1. apply pf_iff_iff in IHψ2. destruct IHψ1, IHψ2.
-      apply pf_iff_iff. 1, 2, 4-7: shelve.
-      split.
-      - simpl. apply imp_trans_mixed_meta; auto.
-      - simpl. apply imp_trans_mixed_meta; auto.
-      Unshelve.
-      1, 2: apply well_formed_imp.
-      all: now apply well_formed_free_evar_subst.
-    * simpl in MF, Hsz. apply wf_ex_to_wf_body in WFψ as H3'.
-      remember (fresh_evar (ψ $ φ1 $ φ2 $ patt_free_evar x')) as fx.
-      unfold fresh_evar in Heqfx. simpl in Heqfx.
-      pose (@set_evar_fresh_is_fresh' _ (free_evars ψ ∪ (free_evars φ1 ∪ (free_evars φ2 ∪ {[x']})))).
-      rewrite <- Heqfx in n.
-      apply sets.not_elem_of_union in n. destruct n as [n1 n2].
-      apply sets.not_elem_of_union in n2. destruct n2 as [n2 n3].
-      apply sets.not_elem_of_union in n3. destruct n3 as [n3 n4].
-      apply sets.not_elem_of_singleton_1 in n4.
-      epose proof (H3' fx _).
-      cbn.
-      epose proof (IHsz (evar_open 0 fx ψ) (S more) _ φ1 φ2 x' Γ _ WF1 WF2 H H0).
-      pose proof (Ex_quan Γ (free_evar_subst' (S more) ψ φ1 x') fx) as H2.
-      pose proof (Ex_quan Γ (free_evar_subst' (S more) ψ φ2 x') fx) as H3.
-      unfold instantiate in *.
-      fold (evar_open 0 fx (free_evar_subst ψ φ1 x')) in H2.
-      fold (evar_open 0 fx (free_evar_subst ψ φ2 x')) in H3.
-      do 2 rewrite <- evar_open_free_evar_subst_swap in H1; auto.
-      apply pf_iff_iff in H1; auto. 2-3: shelve. destruct H1 as [IH1 IH2].
-      eapply syllogism_intro in H2. 5: exact IH2. 2-4: shelve.
-      eapply syllogism_intro in H3. 5: exact IH1. 2-4: shelve.
-      apply (Ex_gen _ _ _ fx) in H2. apply (Ex_gen _ _ _ fx) in H3.
-      2-7: shelve.
-      unfold exists_quantify in H3, H2. simpl in H2, H3.
-      erewrite -> evar_quantify_evar_open in H2, H3; auto.
-      2-3: shelve.
-      apply pf_iff_iff; auto.
-      Unshelve.
-
-      all: auto.
-      simpl in WFψ.
-
-      all: try replace (ex , free_evar_subst' (S more) ψ φ1 x') with (free_evar_subst' more (ex, ψ) φ1 x') by reflexivity.
-      all: try replace (ex , free_evar_subst' (S more) ψ φ2 x') with (free_evar_subst' more (ex, ψ) φ2 x') by reflexivity.
-      all: try apply well_formed_free_evar_subst; auto.
-      
-      { rewrite <- evar_open_size. simpl in H. lia. }
-      { now apply mu_free_evar_open. }
-      1, 4, 5, 7: eapply well_formed_free_evar_subst with (x := x') (q := φ1) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
-      5-7, 9: eapply well_formed_free_evar_subst with (x := x') (q := φ2) in WFψ as HE1; auto; simpl in HE1; apply wf_ex_to_wf_body in HE1; apply (HE1 fx).
-      all: simpl; eapply not_elem_of_larger_impl_not_elem_of.
-      all: try apply free_evars_free_evar_subst.
-   all: apply sets.not_elem_of_union; auto.
-   * inversion MF.
-  Defined.
-*)
-  Lemma and_weaken A B C Γ:
+  Lemma and_weaken A B C Γ i:
     well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢ (B ---> C)
-   ->
-    Γ ⊢ ((A and B) ---> (A and C)).
+    Γ ⊢ (B ---> C) using i ->
+    Γ ⊢ ((A and B) ---> (A and C)) using i.
   Proof.
     intros WFA WFB WFC H.
-    epose proof (@and_impl' Σ Γ A B (A and C) _ _ _). eapply Modus_ponens. 4: exact H0.
-    1-2: shelve.
-    apply reorder_meta; auto.
-    epose proof (@prf_strenghten_premise Σ Γ C B (A ---> A and C) _ _ _).
-    eapply Modus_ponens. 4: eapply Modus_ponens. 7: exact H1. all: auto 10.
-    apply conj_intro2.
+    epose proof (H0 := @and_impl' Σ Γ A B (A and C) _ _ _).
+    eapply MP. 2: { usePropositionalReasoning. exact H0. }
+    apply reorder_meta.
+    1-3: wf_auto2.
+    epose proof (H1 := @prf_strenghten_premise Σ Γ C B (A ---> A and C) _ _ _).
+    eapply MP.
+    2: eapply MP.
+    3: { usePropositionalReasoning. exact H1. }
+    2: { exact H. }
+    usePropositionalReasoning.
+    apply conj_intro2; assumption.
     Unshelve.
-    all: unfold patt_and, patt_or, patt_not; auto 10.
+    all: wf_auto2.
   Defined.
 
-  Program Canonical Structure and_weaken_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-    := ProofProperty1 P (@and_weaken a b p Γ wfa wfb wfp) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma impl_and Γ A B C D: 
-    well_formed A -> well_formed B -> well_formed C -> well_formed D
-   ->
-    Γ ⊢ (A ---> B) ->
-    Γ ⊢ (C ---> D) ->
-    Γ ⊢ (A and C) ---> (B and D).
+  Lemma impl_and Γ A B C D i: 
+    well_formed A -> well_formed B -> well_formed C -> well_formed D ->
+    Γ ⊢ (A ---> B) using i ->
+    Γ ⊢ (C ---> D) using i ->
+    Γ ⊢ (A and C) ---> (B and D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
-    pose proof (@conj_intro Σ Γ B D WFB WFD).
-    epose proof (@prf_strenghten_premise Σ Γ B A (D ---> B and D) WFB WFA _).
-    eapply Modus_ponens in H2; auto. 2: shelve.
-    eapply Modus_ponens in H2; auto.
-    apply reorder_meta in H2; auto.
-    epose proof (@prf_strenghten_premise Σ Γ D C (A ---> B and D) WFD WFC _).
-    eapply Modus_ponens in H3; auto. 2: shelve.
-    eapply Modus_ponens in H3; auto.
-    apply reorder_meta in H3; auto.
-    epose proof (@and_impl' _ _ _ _ _ _ _ _).
-    eapply Modus_ponens in H4. 4: exact H3. all: auto.
-    Unshelve.
-    all: unfold patt_and, patt_or, patt_not; auto 10.
+    toMyGoal.
+    { wf_auto2. }
+    {
+      mgAdd H.
+      mgAdd H0.
+      mgIntro.
+      mgDestructAnd 2.
+      mgIntro.
+      mgDestructOr 4.
+      {
+        mgApply 4.
+        mgApply 1.
+        mgExactn 2.
+      }
+      {
+        mgApply 4.
+        mgApply 0.
+        mgExactn 3.
+      }
+    }
   Defined.
-
-  Program Canonical Structure impl_and_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@impl_and Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma and_drop A B C Γ:
     well_formed A -> well_formed B -> well_formed C ->
