@@ -3589,21 +3589,31 @@ Section FOL_helpers.
     }
   Defined.
 
-  (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
-      well_formed phi1 -> well_formed phi2 ->
-      theory ⊢ (phi1 ---> phi2) ->
-      x ∉ (free_evars phi2) ->
-      theory ⊢ (exists_quantify x phi1 ---> phi2)
-
-  Set Printing All.
-  Check Ex_quan.
-
+  Lemma pile_basic_generic eg svs kt:
+    ProofInfoLe BasicReasoning (pi_Generic (ExGen := eg, SVSubst := svs, KT := kt)).
+  Proof.
+    constructor.
+    intros Γ ϕ pf Hpf.
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4]. simpl in *.
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { unfold implb in Hpf4. case_match.
+      { inversion Hpf4. }
+      simpl. reflexivity.
+    }
+  Qed.
 
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
-    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p)))).
+    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
+    using (pi_Generic
+    {| pi_generalized_evars := {[x]};
+       pi_substituted_svars := ∅;
+       pi_uses_kt := false ;
+    |}).
   Proof.
     intros Hx Hwf.
 
@@ -3611,7 +3621,8 @@ Section FOL_helpers.
     - simpl in Hx.
       unfold exists_quantify.
       erewrite evar_quantify_evar_open; auto. 2: now do 2 apply andb_true_iff in Hwf as [_ Hwf].
-      apply pf_iff_equiv_refl; auto.
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl. exact Hwf.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
       { unfold well_formed. simpl.
@@ -3678,8 +3689,9 @@ Section FOL_helpers.
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
         eapply Framing_left in IH1.
-        eapply syllogism_intro. 4: apply IH1.
+        eapply syllogism_meta. 4: apply IH1.
         all:auto.
+        2: { Search ProofInfoLe. }
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
