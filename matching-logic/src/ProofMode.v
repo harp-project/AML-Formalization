@@ -4287,6 +4287,7 @@ Proof.
         wf_auto2
       ).
     }
+    usePropositionalReasoning.
     mgApplyMeta (@pf_conj_elim_l Σ Γ x y ltac:(assumption) ltac:(assumption)).
     apply MyGoal_exactn.
   }
@@ -4307,18 +4308,6 @@ Proof.
  exact H.
 Defined.
 
-Program Canonical Structure MyGoal_destructAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l₁ l₂ : list Pattern)
-        (a b g : Pattern)
-  := TacticProperty1 P (@MyGoal_destructAnd Σ Γ g l₁ l₂ a b) _.
-Next Obligation.
-  solve_indif.
-  intros. unfold liftP. solve_indif.
-  intros. unfold liftP. solve_indif.
-  intros. unfold liftP. apply H.
-Qed.
-
 Tactic Notation "mgDestructAnd" constr(n) :=
   eapply cast_proof_mg_hyps;
   [(let hyps := fresh "hyps" in
@@ -4336,40 +4325,29 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed b ->
   well_formed p ->
   well_formed q ->
-  Γ ⊢ p and q ---> a and b ---> q ---> a.
+  Γ ⊢ p and q ---> a and b ---> q ---> a
+  using PropositionalReasoning.
 Proof.
   intros. toMyGoal.
-  { auto. }
+  { wf_auto2. }
   do 3 mgIntro.
   mgDestructAnd 1.
   mgDestructAnd 0.
   mgExactn 2.
 Defined.
 
-Local Program Canonical Structure ex_mgDestructAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b p q : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfp : well_formed p)
-        (wfq : well_formed q)
-  := ProofProperty0 P (@ex_mgDestructAnd Σ Γ a b p q wfa wfb wfp wfq) _.
-Next Obligation.
-  intros. apply liftP_impl_P. solve_indif.
-Qed.
-
 Section FOL_helpers.
   
   Context {Σ : Signature}.
   
-  Lemma and_of_equiv_is_equiv Γ p q p' q':
+  Lemma and_of_equiv_is_equiv Γ p q p' q' i:
     well_formed p ->
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p and q) <---> (p' and q')).
+    Γ ⊢ (p <---> p') using i ->
+    Γ ⊢ (q <---> q') using i->
+    Γ ⊢ ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
@@ -4379,7 +4357,7 @@ Section FOL_helpers.
     
     apply conj_intro_meta; auto.
     - toMyGoal.
-      { auto. }
+      { wf_auto2. }
       mgIntro. unfold patt_and.
       mgIntro. mgApply 0.
       mgDestructOr 1.
@@ -4394,7 +4372,7 @@ Section FOL_helpers.
         mgApply 0.
         mgExactn 2.
     - toMyGoal.
-      { auto. }
+      { wf_auto2. }
       mgIntro. unfold patt_and.
       mgIntro. mgApply 0.
       mgDestructOr 1.
@@ -4408,38 +4386,17 @@ Section FOL_helpers.
         mgAdd q'iq.
         mgApply 0.
         mgExactn 2.
-  Defined.
+  Defined. 
 
-  Program Canonical Structure and_of_equiv_is_equiv_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@and_of_equiv_is_equiv Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation.
-    solve_indif. simpl.
-    apply (@liftP_impl_P' _ _ _ _ (! a or ! b) [! a or ! b ---> ⊥; ! p] _ ltac:(reflexivity)).
-    solve_indif. assumption. simpl.
-    apply (@liftP_impl_P' _ _ _ _ (! a or ! b) [! a or ! b ---> ⊥; ! q] _ ltac:(reflexivity)).
-    solve_indif. assumption. simpl.
-    apply (@liftP_impl_P' _ _ _ _ (! p) [! p or ! q ---> ⊥; ! a] _ ltac:(reflexivity)).
-    solve_indif. assumption. simpl.
-    apply (@liftP_impl_P' _ _ _ _ (! q) [! p or ! q ---> ⊥; ! b] _ ltac:(reflexivity)).
-    solve_indif. assumption.
-  Qed.
-  
-
-  Lemma or_of_equiv_is_equiv Γ p q p' q':
+  Lemma or_of_equiv_is_equiv Γ p q p' q' i:
     well_formed p ->
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p or q) <---> (p' or q')).
-  Proof with auto.
+    Γ ⊢ (p <---> p') using i ->
+    Γ ⊢ (q <---> q') using i ->
+    Γ ⊢ ((p or q) <---> (p' or q')) using i.
+  Proof with try_wfauto2.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
     pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip...
@@ -4451,27 +4408,15 @@ Section FOL_helpers.
       { auto. }
       mgIntro.
       mgDestructOr 0.
-      + mgLeft. fromMyGoal. intros _ _. assumption.
-      + mgRight. fromMyGoal. intros _ _. assumption.
+      + mgLeft. fromMyGoal. assumption.
+      + mgRight. fromMyGoal. assumption.
     - toMyGoal.
       { auto. }
       mgIntro.
       mgDestructOr 0.
-      + mgLeft. fromMyGoal. intros _ _. assumption.
-      + mgRight. fromMyGoal. intros _ _. assumption.
+      + mgLeft. fromMyGoal. assumption.
+      + mgRight. fromMyGoal. assumption.
   Defined.
-
-  Program Canonical Structure or_of_equiv_is_equiv_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@or_of_equiv_is_equiv Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation.
-    intros. solve_indif; assumption.
-  Qed.
 
 End FOL_helpers.
 
