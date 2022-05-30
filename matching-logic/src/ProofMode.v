@@ -3649,6 +3649,26 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (gpi : GenericProofInfo) :
+    Γ ⊢ ϕ using BasicReasoning ->
+    Γ ⊢ ϕ using (pi_Generic gpi).
+  Proof.
+    intros [pf Hpf].
+    exists pf.
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    simpl in *.
+    constructor.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { destruct (uses_kt pf); simpl in *.
+      { inversion Hpf4. }
+      reflexivity.
+    }
+  Qed.
+
+  Ltac useBasicReasoning := apply useBasicReasoning.
+
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
@@ -3740,15 +3760,16 @@ Section FOL_helpers.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
         { eapply evar_is_fresh_in_app_r. apply Hx. }
-        useBasicReasoning. (* TODO as usePropositionalReasoning. *)
-        apply Prop_ex_left. all: subst; auto.
+        useBasicReasoning.
+        apply Prop_ex_left. wf_auto2. wf_auto2.
       + clear IH1.
 
         eapply Framing_left in IH2.
-        eapply syllogism_intro. 5: eapply IH2. all: auto.
-
+        eapply syllogism_meta. 5: eapply IH2. all: auto.
+        2: { apply pile_basic_generic. }
         apply Ex_gen; auto.
-        2: {
+        { apply pile_refl. }
+        1: {
           unfold exists_quantify.
           simpl.
           rewrite free_evars_evar_quantify.
@@ -3757,12 +3778,16 @@ Section FOL_helpers.
         }
         
         apply Framing_left; auto.
+        1: {
+          apply pile_basic_generic.
+        }
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
         rewrite -> evar_quantify_evar_open; auto.
         2: now do 2 apply andb_true_iff in Hwfex as [_ Hwfex].
+        useBasicReasoning.
         apply Ex_quan; auto.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
@@ -3828,20 +3853,24 @@ Section FOL_helpers.
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
         eapply Framing_right in IH1.
-        eapply syllogism_intro. 4: apply IH1.
+        eapply syllogism_meta. 4: apply IH1.
         all:auto.
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
         { eapply evar_is_fresh_in_app_l. apply Hx. }
-        apply Prop_ex_right. all: subst; auto.
+        2: { apply pile_basic_generic. }
+        useBasicReasoning.
+        apply Prop_ex_right. wf_auto2. wf_auto2.
       + clear IH1.
 
         eapply Framing_right in IH2.
-        eapply syllogism_intro. 5: eapply IH2. all: auto.
+        eapply syllogism_meta. 5: eapply IH2. all: auto.
+        2: { apply pile_basic_generic. }
 
         apply Ex_gen; auto.
-        2: {
+        { apply pile_refl. }
+        1: {
           unfold exists_quantify.
           simpl.
           rewrite free_evars_evar_quantify.
@@ -3850,12 +3879,14 @@ Section FOL_helpers.
         }
         
         apply Framing_right; auto.
+        { apply pile_basic_generic. }
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
         fold (evar_open 0 x (subst_ctx AC p)).
         erewrite evar_quantify_evar_open; auto.
         2: now do 2 apply andb_true_iff in Hwfex as [_ Hwfex].
+        useBasicReasoning.
         apply Ex_quan; auto.
   Defined.
   
