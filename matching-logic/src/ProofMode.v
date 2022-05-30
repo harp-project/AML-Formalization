@@ -3605,6 +3605,50 @@ Section FOL_helpers.
     }
   Qed.
 
+  Lemma Prop_ex_left (Γ : Theory) (ϕ ψ : Pattern) :
+    well_formed (ex, ϕ) ->
+    well_formed ψ ->
+    Γ ⊢ (ex , ϕ) $ ψ ---> ex , ϕ $ ψ
+    using BasicReasoning.
+  Proof.
+    intros wfϕ wfψ.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Prop_ex_left.
+      { exact wfϕ. }
+      { exact wfψ. }
+    }
+    {
+      constructor; simpl.
+      { exact I. }
+      { set_solver. }
+      { set_solver. }
+      { reflexivity. }
+    }
+  Defined.
+
+  Lemma Prop_ex_right (Γ : Theory) (ϕ ψ : Pattern) :
+    well_formed (ex, ϕ) ->
+    well_formed ψ ->
+    Γ ⊢ ψ $ (ex , ϕ) ---> ex , ψ $ ϕ
+    using BasicReasoning.
+  Proof.
+    intros wfϕ wfψ.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Prop_ex_right.
+      { exact wfϕ. }
+      { exact wfψ. }
+    }
+    {
+      constructor; simpl.
+      { exact I. }
+      { set_solver. }
+      { set_solver. }
+      { reflexivity. }
+    }
+  Defined.
+
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
@@ -3691,11 +3735,12 @@ Section FOL_helpers.
         eapply Framing_left in IH1.
         eapply syllogism_meta. 4: apply IH1.
         all:auto.
-        2: { Search ProofInfoLe. }
+        2: { apply pile_basic_generic. }
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
         { eapply evar_is_fresh_in_app_r. apply Hx. }
+        useBasicReasoning. (* TODO as usePropositionalReasoning. *)
         apply Prop_ex_left. all: subst; auto.
       + clear IH1.
 
