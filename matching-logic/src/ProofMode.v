@@ -3564,28 +3564,27 @@ Section FOL_helpers.
       }
       {
         destruct i;[contradiction|].
-        Search subseteq union.
         rewrite union_subseteq.
         split.
         {
           rewrite -elem_of_subseteq_singleton.
-          destruct pile as [pile'].
+          eapply pile_impl_allows_gen_x.
+          apply pile.
         }
-        destruct pile as [pile'].
-        specialize (pile' _ _ pf).
-        feed specialize pile'.
         {
-          destruct Hpf.
-          constructor; simpl.
-          { exact I. }
-          { simpl in *. }
+          inversion Hpf.
+          apply pwi_pf_ge0.
         }
-        clear Hnot.
-        destruct Hpf as [Hprop Hgen Hsvs Hkt].
-        destruct gpi. simpl in *.
-        apply pile in Hpf.
-        destruct Hpf as [Hprop Hge Hsvs Hkt].
-        destruct i; simpl in *.
+      }
+      {
+        destruct i;[contradiction|].
+        inversion Hpf.
+        apply pwi_pf_svs0.
+      }
+      {
+        destruct i;[contradiction|].
+        inversion Hpf.
+        apply pwi_pf_kt0.
       }
     }
   Defined.
