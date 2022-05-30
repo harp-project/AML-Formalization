@@ -4072,60 +4072,53 @@ End FOL_helpers.
 
 
 Tactic Notation "mgApplyMeta" uconstr(t) :=
-  eapply (@MyGoal_applyMeta _ _ _ _ t).
+  eapply (@MyGoal_applyMeta _ _ _ _ _ t).
 
-Lemma MyGoal_left {Σ : Signature} Γ l x y:
-  @mkMyGoal Σ Γ l x ->
-  @mkMyGoal Σ Γ l (patt_or x y).
+Lemma MyGoal_left {Σ : Signature} Γ l x y i:
+  @mkMyGoal Σ Γ l x i ->
+  @mkMyGoal Σ Γ l (patt_or x y) i.
 Proof.
   intros H.
   unfold of_MyGoal in *. simpl in *.
   intros wfxy wfl.
   eapply prf_weaken_conclusion_iter_meta_meta.
-  4: apply disj_left_intro.
-  6: apply H.
+  4: { usePropositionalReasoning. apply disj_left_intro. wf_auto2. wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply H.
+  { wf_auto2. }
   { assumption. }
-  all: abstract (wf_auto2).
 Defined.
 
-Program Canonical Structure MyGoal_left_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-  := TacticProperty1 P (@MyGoal_left Σ Γ l a b) _.
-Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
-
-Lemma MyGoal_right {Σ : Signature} Γ l x y:
-  @mkMyGoal Σ Γ l y ->
-  @mkMyGoal Σ Γ l (patt_or x y).
+Lemma MyGoal_right {Σ : Signature} Γ l x y i:
+  @mkMyGoal Σ Γ l y i ->
+  @mkMyGoal Σ Γ l (patt_or x y) i.
 Proof.
   intros H.
   unfold of_MyGoal in *. simpl in *.
   intros wfxy wfl.
   eapply prf_weaken_conclusion_iter_meta_meta.
-  4: apply disj_right_intro.
-  6: apply H.
+  4: { usePropositionalReasoning. apply disj_right_intro. wf_auto2. wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply H.
+  { wf_auto2. }
   { assumption. }
-  all: abstract (wf_auto2).
 Defined.
-
-Program Canonical Structure MyGoal_right_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-  := TacticProperty1 P (@MyGoal_right Σ Γ l a b) _.
-Next Obligation. intros. unfold liftP. solve_indif. apply H. Qed.
 
 Ltac mgLeft := apply MyGoal_left.
 Ltac mgRight := apply MyGoal_right.
 
 Example ex_mgLeft {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ a ---> (a or a).
+  Γ ⊢ a ---> (a or a)
+  using PropositionalReasoning.
 Proof.
   intros wfa.
   toMyGoal.
-  { auto. }
+  { wf_auto2. }
   mgIntro.
   mgLeft.
 Abort.
