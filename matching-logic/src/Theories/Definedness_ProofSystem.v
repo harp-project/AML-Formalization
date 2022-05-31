@@ -44,39 +44,58 @@ Context
   {syntax : Syntax}
 .
 
-Lemma phi_impl_total_phi_meta Γ ϕ:
+Lemma phi_impl_total_phi_meta Γ ϕ i:
   well_formed ϕ ->
-  Γ ⊢ ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋.
+  ProofInfoLe BasicReasoning i ->
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ⌊ ϕ ⌋ using i.
 Proof.
-  intros wfϕ Hϕ.
+  intros wfϕ pile Hϕ.
   epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (ϕ) (ctx_app_r box _)).
-  apply ANNA; auto.
+  apply ANNA.
+  { exact pile. }
+  { apply wfϕ. }
+  exact Hϕ.
   Unshelve. wf_auto2.
 Defined.
 
 Lemma patt_iff_implies_equal :
-  forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
-                              Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ φ1 =ml φ2.
+  forall (φ1 φ2 : Pattern) Γ i,
+    well_formed φ1 ->
+    well_formed φ2 ->         
+    ProofInfoLe BasicReasoning i ->                 
+    Γ ⊢ (φ1 <---> φ2) using i ->
+    Γ ⊢ φ1 =ml φ2 using i .
 Proof.
-  intros φ1 φ2 Γ WF1 WF2 H.
+  intros φ1 φ2 Γ i WF1 WF2 pile H.
   epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)).
-  apply ANNA; auto.
+  apply ANNA.
+  { exact pile. }
+  { wf_auto2. }
+  { exact H. }
   Unshelve.
-  auto.
+  wf_auto2.
 Defined.
 
 Lemma patt_equal_refl :
-  forall φ Γ, well_formed φ ->
-              Γ ⊢ φ =ml φ.
+  forall φ Γ,
+  well_formed φ ->
+  Γ ⊢ φ =ml φ
+  using BasicReasoning.
 Proof.
   intros φ Γ WF. pose proof (IFF := @pf_iff_equiv_refl Σ Γ φ WF).
-  apply patt_iff_implies_equal in IFF; auto.
+  eapply usePropositionalReasoning in IFF.
+  apply patt_iff_implies_equal in IFF.
+  { apply IFF. }
+  { exact WF. }
+  { exact WF. }
+  { apply pile_refl. }
 Qed.
 
 Lemma use_defined_axiom Γ:
   theory ⊆ Γ ->
-  Γ ⊢ patt_defined p_x.
+  Γ ⊢ patt_defined p_x
+  using BasicReasoning.
 Proof.
   intros HΓ.
   apply hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
@@ -88,37 +107,74 @@ Proof.
   reflexivity.
 Defined.
 
+Definition BasicReasoningWithDefinedness := pi_Generic (ExGen := {[ev_x]}, SVSubst := ∅, KT := false).
+
 Lemma defined_evar Γ x:
   theory ⊆ Γ ->
-  Γ ⊢ ⌈ patt_free_evar x ⌉.
+  Γ ⊢ ⌈ patt_free_evar x ⌉
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false).
 Proof.
   intros HΓ.
-  assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+  assert(S1: Γ ⊢ patt_defined p_x using BasicReasoningWithDefinedness).
+  {
+    useBasicReasoning.
+    apply use_defined_axiom.
+    apply HΓ.
+  }
 
   pose proof (S1' := S1).
-  apply universal_generalization with (x0 := ev_x) in S1'; auto.
+  apply universal_generalization with (x0 := ev_x) in S1'.
+  3: { wf_auto2. }
+  2: { apply pile_refl. }
   replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
     with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
   2: { simpl. repeat case_match; auto; contradiction. }
-  
-  eapply Modus_ponens.
-  4: apply forall_variable_substitution.
-  3: apply S1'.
-  all: auto; simpl; case_match; auto.
+  eapply MP.
+  2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false).
+    apply pile_evs_svs_kt.
+    { clear. unfold ev_x.
+      rewrite elem_of_subseteq.
+      intros x0 Hx0. rewrite elem_of_singleton in Hx0. subst x0.
+      set_solver.
+    }
+    { apply reflexivity. }
+    { reflexivity. }
+    apply forall_variable_substitution with (x0 := x).
+    wf_auto2.
+  }
+  eapply useGenericReasoning.
+  2: { apply S1'. }
+  apply pile_evs_svs_kt.
+  { set_solver. }
+  { apply reflexivity. }
+  { reflexivity. }
 Defined.
-
   
 Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉.
+  Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false).
 Proof.
   intros HΓ Hwfϕ.
-  assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+  assert(S1: Γ ⊢ patt_defined p_x using BasicReasoning).
+  {
+    apply use_defined_axiom.
+    apply HΓ.
+  }
+
+  remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
   pose proof (S1' := S1).
-  apply universal_generalization with (x := ev_x) in S1'; auto.
-  remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
+  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) in S1'.
+  apply universal_generalization with (x := ev_x) in S1'.
+  3: { wf_auto2. }
+  2: {
+    apply pile_evs_svs_kt.
+    { set_solver. }
+    { apply reflexivity. }
+    { reflexivity. }
+  }
 
   assert (Hx1': evar_is_fresh_in x' ϕ).
   { rewrite Heqx'.
@@ -135,45 +191,58 @@ Proof.
     set_solver.
   }
   
-  assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
+  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) as i.
+  assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
     replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
       with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉) in S1'.
     2: { simpl. repeat case_match; auto; contradiction. }
         
-    eapply Modus_ponens.
-    4: apply forall_variable_substitution.
-    3: apply S1'.
-    all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
+    eapply MP.
+    { apply S1'. }
+    eapply useGenericReasoning.
+    2: apply forall_variable_substitution.
+    2: wf_auto2.
+    subst i.
+    apply pile_evs_svs_kt.
+    { set_solver. }
+    { apply reflexivity. }
+    { reflexivity. }
   }
   
-  assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉).
+  assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉ using i).
   {
     toMyGoal.
     { wf_auto2. }
     mgLeft.
-    fromMyGoal. intros _ _.
+    fromMyGoal.
     apply S1''.
   }
 
-  assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉).
+  assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉ using i).
   {
     pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x') ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
-    apply pf_conj_elim_r_meta in Htmp; auto.
-    eapply Modus_ponens. 4: apply Htmp.
-    all: auto.
+    apply pf_conj_elim_r_meta in Htmp.
+    2-3: wf_auto2.
+    eapply MP.
+    2: {
+      rewrite Heqi.
+      eapply useBasicReasoning.
+      apply Htmp.
+    }
+    apply S2.
   }
 
-  assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉).
+  assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉ using i).
   {
-    assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
+    assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ) using i).
     {
       toMyGoal.
       { wf_auto2. }
       mgIntro.
-      mgAdd (@A_or_notA Σ Γ ϕ Hwfϕ).
+      mgAdd (@usePropositionalReasoning Σ _ _ i (@A_or_notA Σ Γ ϕ Hwfϕ)).
       mgDestructOr 0.
       - mgRight. mgExactn 0.
       - mgLeft. mgIntro.
@@ -185,30 +254,41 @@ Proof.
           mgExactn 1.
     }
     
-    assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉)).
+    assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉) using i).
     {
-      apply Framing_right. wf_auto2. apply Htmp1.
+      apply Framing_right.
+      {  
+        subst i.
+        apply pile_evs_svs_kt.
+        { set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
+      wf_auto2. apply Htmp1.
     }
     
-    eapply Modus_ponens.
-    4: apply Htmp2.
-    3: auto.
-    1,2: wf_auto2.
+    eapply MP.
+    2: apply Htmp2.
+    1: apply S3.
   }
 
-  assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
+  assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉ using i).
   {
     pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x' and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
     apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
-    eapply Modus_ponens. 4: apply Htmp.
-    3: auto.
-    1,2: wf_auto2.
+    eapply MP.
+    2: {
+      subst i.
+      useBasicReasoning.
+      apply Htmp.
+    }
+    1: apply S4.
   }
 
-  assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉).
+  assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉ using i).
   {
-    pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x').
+    pose proof (Htmp := @Singleton_ctx Σ Γ AC AC_patt_defined ϕ x').
     simpl in Htmp.
     unfold patt_and in Htmp at 1.
     apply not_not_elim_meta in Htmp.
@@ -219,23 +299,32 @@ Proof.
     
     toMyGoal.
     { wf_auto2. }
-    mgIntro. mgAdd Htmp.
+    mgIntro.
+    remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) as gpi.
+    rewrite Heqi.
+    mgAdd (@useBasicReasoning _ _ _ gpi Htmp).
     mgApply 0. mgIntro. mgApply 2.
     mgExactn 1.
   }
 
   pose proof (S7 := S5). unfold patt_or in S7.
 
-  assert(S8: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉).
+  assert(S8: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉ using i).
   {
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: apply S7.
-    4: auto.
+    4: apply S6.
     1-3: wf_auto2.
   }
-  assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
+  assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉) using i).
   {
-    eapply universal_generalization with (x := x') in S8; auto.
+    eapply universal_generalization with (x := x') in S8.
+    3: { wf_auto2. }
+    2: { subst i. apply pile_evs_svs_kt.
+      { set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
     simpl in S8.
     
     rewrite evar_quantify_subst_ctx in S8;[assumption|].
@@ -246,7 +335,7 @@ Proof.
     apply S8.
   }
 
-  assert(S10: Γ ⊢ (ex, subst_ctx AC (b0 and ϕ)) ---> ⌈ ϕ ⌉).
+  assert(S10: Γ ⊢ (ex, subst_ctx AC (b0 and ϕ)) ---> ⌈ ϕ ⌉ using i).
   {
     unfold patt_forall in S9.
     unfold patt_not in S9 at 1.
@@ -262,22 +351,29 @@ Proof.
     }
     rewrite <- Heq.
     apply Ex_gen.
-    4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    1,2: wf_auto2.
+    2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+    1: {
+      subst i.
+      apply pile_evs_svs_kt.
+      { set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
     assumption.
   }
 
-  assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ)).
+  assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ) using i).
   {
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    mgAdd (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)).
+    mgAdd (@usePropositionalReasoning _ _ _ i (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto))).
     
     mgAssert ((ϕ ---> ex , b0 and ϕ)).
     { wf_auto2. }
     {  mgApply 0.
-       mgAdd (Existence Γ).
+        subst i.
+       mgAdd (@useBasicReasoning _ _ _ (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) (Existence Γ)).
        mgExactn 0.
     }
     mgApply 2. mgExactn 1.
@@ -291,7 +387,7 @@ Proof.
     eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
   }
   
-  assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ)).
+  assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ) using i).
   {
 
     assert(well_formed (ex , (evar_quantify x' 0 (patt_free_evar x') and ϕ))).
@@ -301,18 +397,25 @@ Proof.
       all: repeat case_match; auto.
     }
     
-    assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ)))).
+    assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ))) using i).
     {
       toMyGoal.
       { wf_auto2. }
       mgIntro.
       mgDestructAnd 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
       2: { simpl. case_match;[reflexivity|congruence]. }
-      apply Ex_gen; auto.
+      apply Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
            unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
+      }
+      1: {
+        subst i.
+        apply pile_evs_svs_kt.
+        { set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
       }
       toMyGoal.
       { wf_auto2. }
@@ -325,7 +428,7 @@ Proof.
         - mgApply 2. mgExactn 1.
       }
       mgClear 1. mgClear 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       case_match;[|congruence].
 
       replace (patt_free_evar x' and ϕ)
@@ -337,21 +440,30 @@ Proof.
         }
         reflexivity.
       }
+      subst i.
+      useBasicReasoning.
       apply Ex_quan.
       { wf_auto2. }
     }
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: { apply Htmp. }
     4: assumption.
     1-3: wf_auto2.
   }
 
-  assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ)))).
+  assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ))) using i).
   {
-    apply Framing; auto.
+    apply Framing.
+    {
+      subst i. apply pile_evs_svs_kt.
+      { set_solver. }
+      { set_solver. }
+      { reflexivity. }
+    }
+    apply S12.
   }
 
-  assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉)).
+  assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉) using i).
   {
     pose proof (Htmp := @prf_prop_ex_iff Σ Γ AC (b0 and ϕ) x').
     feed specialize Htmp.
@@ -383,34 +495,91 @@ Proof.
     rewrite -> evar_quantify_evar_open in Htmp.
     2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
     apply pf_iff_proj1 in Htmp; auto.
-    eapply syllogism_intro.
-    5: apply S10.
-    all: auto.
+    {
+      eapply syllogism_meta.
+      5: { apply S10. }
+      4: { subst i. eapply useGenericReasoning. 2: apply Htmp.
+        apply pile_evs_svs_kt.
+        {
+          set_solver.
+        }
+        {
+          apply reflexivity.
+        }
+        {
+          reflexivity.
+        }
+      }
+      1-3: wf_auto2.
+    }
+    unfold patt_and,patt_or,patt_not.
     simpl. split_and!; auto.
     apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0); auto.
-    unfold well_formed,well_formed_closed in *. destruct_and!. auto.
+    wf_auto2.
   }
 
-  eapply syllogism_intro.
+  eapply syllogism_meta.
   5: apply S14.
   4: assumption.
   1-3: wf_auto2.
 Defined.
 
+Lemma elements_union_empty ϕ:
+  elements (free_evars ϕ ∪ ∅) = elements (free_evars ϕ).
+Proof.
+  apply f_equal.
+  set_solver.
+Qed.
+
 Lemma phi_impl_defined_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ϕ ---> ⌈ ϕ ⌉.
+  Γ ⊢ ϕ ---> ⌈ ϕ ⌉
+  using pi_Generic
+                     (ExGen := {[ev_x;
+                               evar_fresh
+                                 (elements (free_evars ϕ) )]},
+                      SVSubst := ∅, KT := false).
 Proof.
   intros HΓ wfϕ.
-  replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
-  apply in_context_impl_defined; assumption.
+  eapply cast_proof'.
+  {
+    replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
+    reflexivity.
+  }
+  eapply useGenericReasoning.
+  2: {
+    apply in_context_impl_defined; assumption.  
+  }
+  {
+    simpl.
+    apply pile_evs_svs_kt.
+    { 
+      cut (elements (free_evars ϕ ∪ ∅) = elements (free_evars ϕ)).
+      {
+        intros H'. rewrite H'. apply reflexivity.
+      }
+      rewrite elements_union_empty.
+      reflexivity.
+    }
+    {
+      apply reflexivity.
+    }
+    {
+      reflexivity.
+    }
+  }
 Defined.
 
 Lemma total_phi_impl_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋ ---> ϕ.
+  Γ ⊢ ⌊ ϕ ⌋ ---> ϕ
+  using pi_Generic
+  (ExGen := {[ev_x;
+            evar_fresh
+              (elements (free_evars ϕ) )]},
+   SVSubst := ∅, KT := false).
 Proof.
   intros HΓ wfϕ.
   unfold patt_total.
@@ -418,48 +587,109 @@ Proof.
   apply A_impl_not_not_B_meta.
   1,2: wf_auto2.
   apply modus_tollens.
-  1,2: wf_auto2.
-  exact Htmp.
+  simpl in Htmp.
+  cut (free_evars ϕ ∪ ∅ = free_evars ϕ).
+  {
+    intros H'. rewrite H' in Htmp. apply Htmp.
+  }
+  set_solver.
 Defined.
 
-Lemma total_phi_impl_phi_meta Γ ϕ:
+Lemma total_phi_impl_phi_meta Γ ϕ i:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋ ->
-  Γ ⊢ ϕ.
+  ProofInfoLe (pi_Generic
+  (ExGen := {[ev_x;
+            evar_fresh
+              (elements (free_evars ϕ) )]},
+   SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ ⌊ ϕ ⌋ using i ->
+  Γ ⊢ ϕ using i.
 Proof.
-  intros HΓ wfϕ H.
-  eapply Modus_ponens.
-  4: apply total_phi_impl_phi.
-  1,2,5: wf_auto2.
-  2: exact HΓ.
-  exact H.
+  intros HΓ wfϕ pile H.
+  eapply MP.
+  1: exact H.
+  eapply useGenericReasoning.
+  2: apply total_phi_impl_phi.
+  {
+    eapply pile_trans. 2: apply pile.
+    apply pile_evs_svs_kt.
+    { apply reflexivity. }
+    { apply reflexivity. }
+    { reflexivity. }
+  }
+  1: exact HΓ.
+  exact wfϕ.
 Defined.
-  
 
-  Theorem deduction_theorem_noKT Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
+  Tactic Notation "remember_constraint" "as" ident(i') :=
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+  Theorem deduction_theorem_noKT Γ ϕ ψ
+    (gpi : GenericProofInfo)
+    (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
     well_formed ϕ ->
     well_formed ψ ->
     theory ⊆ Γ ->
-    uses_ex_gen (free_evars ψ) pf = false ->
-    uses_svar_subst (free_svars ψ) pf = false ->
-    uses_kt pf = false ->
-    Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
+    pi_generalized_evars gpi ## free_evars ψ ->
+    pi_substituted_svars gpi ## free_svars ψ ->
+    pi_uses_kt gpi = false ->
+    Γ ⊢ ⌊ ψ ⌋ ---> ϕ
+    using pi_Generic
+    (ExGen :=
+      (
+        {[ev_x; evar_fresh (elements (free_evars ψ))]}
+        ∪ pi_generalized_evars gpi
+        ∪ free_evars ψ
+        ∪ (list_to_set (map (fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))) (@framing_patterns Σ _ _ (proj1_sig pf)) ))
+      ),
+     SVSubst := (pi_substituted_svars gpi ∪ free_svars ψ),
+     KT := false
+    ).
   Proof.
     intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
+    destruct pf as [pf Hpf]. simpl.
     induction pf.
     - (* hypothesis *)
       rename axiom into axiom0.
       (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
          when building Set, which is prohibited. *)
       destruct (decide (axiom0 = ψ)).
-      + subst. apply total_phi_impl_phi; auto.
+      + subst.
+        eapply useGenericReasoning.
+        2: {
+          apply total_phi_impl_phi; assumption.
+        }
+        {
+          apply pile_evs_svs_kt.
+          {
+            clear. set_solver.
+          }
+          {
+            clear. set_solver.
+          }
+          { reflexivity. }
+        }
+        
       + assert (axiom0 ∈ Γ).
-        { set_solver. }
+        { clear -e n. set_solver. }
         toMyGoal.
         { wf_auto2. }
-        mgIntro. mgClear 0. fromMyGoal. intros _ _.
-        apply (hypothesis Γ axiom0 i H).
+        mgIntro. mgClear 0. fromMyGoal.
+        eapply useGenericReasoning.
+        2: apply (@hypothesis Σ Γ axiom0 i H).
+        apply pile_evs_svs_kt.
+        {
+          set_solver.
+        }
+        {
+          set_solver.
+        }
+        {
+          simpl. reflexivity.
+        }
     - (* P1 *)
       toMyGoal.
       { wf_auto2. }
@@ -467,27 +697,77 @@ Defined.
     - (* P2 *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
-      apply P2; auto.
+      mgIntro. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
+      apply P2; assumption.
     - (* P3 *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
-      apply P3; auto.
+      mgIntro. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
+      apply P3; assumption.
     - (* Modus Ponens *)
       assert (well_formed phi2).
       { unfold well_formed, well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto.
       }
-      simpl in HnoExGen. apply orb_false_iff in HnoExGen.
-      destruct HnoExGen as [HnoExGen1 HnoExGen2].
-      simpl in HnoSvarSubst. apply orb_false_iff in HnoSvarSubst.
-      destruct HnoSvarSubst as [HnoSvarSubst1 HnoSvarSubst2].
-      simpl in HnoKT. apply orb_false_iff in HnoKT.
-      destruct HnoKT as [HnoKT1 HnoKT2].
-      specialize (IHpf1 ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      specialize (IHpf2 ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      assert (well_formed phi1).
+      {
+        clear -pf1. apply proved_impl_wf in pf1. exact pf1.
+      }
+
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      feed specialize IHpf1.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+      }
+      { assumption. }
+      feed specialize IHpf2.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb.
+          rewrite orb_comm in H2. simpl in H2. inversion H2.     
+        }
+      }
+      { wf_auto2. }
       
+      (* simplify the constraint *)
+      simpl.
+      rewrite map_app.
+      rewrite list_to_set_app_L.
+      simpl.
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      (* weaken the induction hypotheses so that their constraint
+         matches the constraint of the goal *)
+      apply useGenericReasoning with (i := i') in IHpf1.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+      }
+
+      apply useGenericReasoning with (i := i') in IHpf2.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+      }
+
       toMyGoal.
       { wf_auto2. }
       mgIntro.
@@ -502,54 +782,73 @@ Defined.
     - (* Existential Quantifier *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      useBasicReasoning.
       apply Ex_quan. wf_auto2.
     - (* Existential Generalization *)
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      (*
       simpl in HnoExGen.
-      case_match;[congruence|].
+      case_match;[congruence|]. *)
       feed specialize IHpf.
-      { auto. }
-      { exact HnoExGen. }
-      { simpl in HnoSvarSubst. exact HnoSvarSubst. }
-      { simpl in HnoKT. exact HnoKT. }
+      {
+        constructor; simpl.
+        { exact I. }
+        { clear -Hpf2. set_solver. }
+        { clear -Hpf3. set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
 
-      apply reorder_meta in IHpf; auto.
-      apply reorder_meta; auto.
-      { wf_auto2. }
-      { wf_auto2. }
+      apply reorder_meta in IHpf.
+      2-4: wf_auto2.
       apply Ex_gen with (x0 := x) in IHpf.
-      2,3,5: wf_auto2.
-      { exact IHpf. }
-      { simpl. clear -n n0. set_solver. }
+      3: { simpl. set_solver. }
+      2: { apply pile_evs_svs_kt.
+        { set_solver. }
+        { set_solver. }
+        { reflexivity. }
+      }
+      apply reorder_meta in IHpf.
+      2-4: wf_auto2.
+      exact IHpf.
+      
     - (* Propagation of ⊥, left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_bott_left; assumption.
     - (* Propagation of ⊥, right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_bott_right; assumption.
     - (* Propagation of 'or', left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_disj_left; assumption.
     - (* Propagation of 'or', right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_disj_right; assumption.
     - (* Propagation of 'exists', left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_ex_left; assumption.
     - (* Propagation of 'exists', right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_ex_right; assumption.
     - (* Framing left *)
       assert (well_formed (phi1)).
@@ -567,13 +866,36 @@ Defined.
       assert (well_formed (phi1 ---> phi2)).
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
-      simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
+
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      apply useGenericReasoning with (i0 := i') in IHpf.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
+
+      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -583,43 +905,66 @@ Defined.
           mgApply 3. mgExactn 2.
       }
 
-      assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+      assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i').
       {
         replace (⌈ ! ψ ⌉ $ psi)
           with (subst_ctx (@ctx_app_l _ AC_patt_defined psi ltac:(assumption)) (! ψ))
           by reflexivity.
-        apply in_context_impl_defined; auto.
+        subst i'.
+        eapply useGenericReasoning.
+        2: apply in_context_impl_defined; auto.
+        apply pile_evs_svs_kt.
+        {
+          replace (free_evars (! ψ)) with (free_evars (ψ)).
+          2: {
+            simpl. set_solver.
+          }
+          simpl.
+          clear.
+          replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+          set_solver.
+        }
+        { clear. set_solver. }
+        { reflexivity. }
       }
 
-      assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
-      { apply Framing_left. wf_auto2. exact S2. }
+      assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
+      { apply Framing_left. 2: wf_auto2. 2: exact S2.
+        subst i'. apply pile_basic_generic.
+      }
 
-      assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+      assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i').
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
         { wf_auto2. }
         { wf_auto2. }
         simpl in Htmp.
-        apply pf_iff_proj1 in Htmp; auto.
-        eapply syllogism_intro.
-        5: apply Htmp.
+        apply pf_iff_proj1 in Htmp.
+        3: wf_auto2.
+        2: wf_auto2.
+        eapply syllogism_meta.
+        5: {
+          subst i'. useBasicReasoning.
+          apply Htmp.
+        }
         4: assumption.
         all: wf_auto2.
       }
       
-      assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+      assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
       {
         toMyGoal.
         { wf_auto2. }
         mgIntro. mgAdd S3.
-        mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)).
+        (* TODO we need a tactic for adding  something with stronger constraint. *)
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
       }
 
-      assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+      assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
       {
         toMyGoal.
         { wf_auto2. }
@@ -643,10 +988,10 @@ Defined.
       + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto)).
+        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
@@ -667,12 +1012,37 @@ Defined.
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
+
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      apply useGenericReasoning with (i0 := i') in IHpf.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
+
+      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -682,43 +1052,62 @@ Defined.
           mgApply 3. mgExactn 2.
       }
 
-      assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+      assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
       {
         replace (psi $ ⌈ ! ψ ⌉)
           with (subst_ctx (@ctx_app_r _ psi AC_patt_defined ltac:(assumption)) (! ψ))
           by reflexivity.
-        apply in_context_impl_defined; auto.
+          subst i'.
+          eapply useGenericReasoning.
+          2: apply in_context_impl_defined; auto.
+
+          apply pile_evs_svs_kt.
+          {
+            replace (free_evars (! ψ)) with (free_evars (ψ)).
+            2: {
+              simpl. set_solver.
+            }
+            simpl.
+            clear.
+            replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+            set_solver.
+          }
+          { clear. set_solver. }
+          { reflexivity. }
       }
 
-      assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
-      { apply Framing_right. wf_auto2. exact S2. }
+      assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
+      { apply Framing_right. 2: wf_auto2. 2: exact S2.
+        subst i'. apply pile_basic_generic.
+      }
 
-      assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+      assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i').
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
         { wf_auto2. }
         { wf_auto2. }
         simpl in Htmp.
-        apply pf_iff_proj1 in Htmp; auto.
-        eapply syllogism_intro.
-        5: apply Htmp.
+        apply pf_iff_proj1 in Htmp.
+        2,3: wf_auto2.
+        eapply syllogism_meta.
+        5: subst i'; useBasicReasoning; apply Htmp.
         4: assumption.
         all: wf_auto2.
       }
       
-      assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+      assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
       {
         toMyGoal.
         { wf_auto2. }
         mgIntro. mgAdd S3.
-        mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
       }
 
-      assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+      assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
       {
         toMyGoal.
         { wf_auto2. }
@@ -742,54 +1131,114 @@ Defined.
       + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@bot_elim Σ Γ (psi $ phi2) ltac:(auto)).
+        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (psi $ phi2) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
     - (* Set variable substitution *)
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
-      case_match.
-      { congruence. }
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1 , Hpf2, Hpf3, Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { exact Hpf2. }
+        { clear -Hpf3. set_solver. }
+        { exact Hpf4. }
+      }
+      {
+        wf_auto2.
+      }
+      
+      (* TODO tactic [remember_constraint as i'] *)
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
       replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
         with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
       2: {  simpl.
            rewrite [free_svar_subst ψ psi X]free_svar_subst_fresh.
-           { assumption. }
+           {
+             clear -HnoSvarSubst Hpf3. unfold svar_is_fresh_in. set_solver.
+           }
            reflexivity.
       }
       apply Svar_subst.
-      3: auto.
-      1,2: wf_auto2.
+      3: {
+        eapply useGenericReasoning.
+        2: { apply IHpf. }
+        subst i'.
+        apply pile_evs_svs_kt.
+        {
+          simpl.
+          apply reflexivity.
+        }
+        {
+          apply reflexivity.
+        }
+        {
+          reflexivity.
+        }
+      }
+      {
+        subst i'.
+        apply pile_evs_svs_kt.
+        {
+          clear. set_solver.
+        }
+        {
+          clear -Hpf3. set_solver.
+        }
+        {
+           reflexivity.
+        }
+      }
+      { wf_auto2. }
+
     - (* Prefixpoint *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Pre_fixp. wf_auto2.
     - (* Knaster-Tarski *)
-      simpl in HnoKT. congruence.
+      simpl in HnoKT.
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      clear -Hpf4 HnoKT.
+      exfalso. congruence.
     - (* Existence *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Existence.
     - (* Singleton *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Singleton_ctx. wf_auto2.
   Defined.
 
-  Lemma membership_introduction Γ ϕ:
+  Lemma membership_introduction Γ ϕ i:
+    ProofInfoLe (pi_Generic
+    (ExGen := {[ev_x; fresh_evar ϕ]},
+     SVSubst := ∅,
+     KT := false
+    )) i ->
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ϕ ->
-    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ).
+    Γ ⊢ ϕ using i ->
+    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ)
+    using i.
   Proof.
-    intros wfϕ HΓ Hϕ.
+    intros pile wfϕ HΓ Hϕ.
 
     remember (fresh_evar ϕ) as x.
 
@@ -799,23 +1248,27 @@ Defined.
       subst; auto. reflexivity.
     }
     
-    
-    assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ))).
+    assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ)) using i).
     {
-      apply P1; auto.
+      usePropositionalReasoning.
+      apply P1.
+      { wf_auto2. }
+      { wf_auto2. }
     }
 
-    assert(S3: Γ ⊢ patt_free_evar x ---> ϕ).
+    assert(S3: Γ ⊢ patt_free_evar x ---> ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S2. all: auto.
+      eapply MP. 2: apply S2. apply Hϕ.
     }
 
-    assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x).
+    assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x using i).
     {
-      apply A_impl_A; auto.
+      usePropositionalReasoning.
+      apply A_impl_A.
+      wf_auto2.
     }
 
-    assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ)).
+    assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ) using i).
     {
       toMyGoal.
       { wf_auto2. }
@@ -827,45 +1280,66 @@ Defined.
       mgAdd Hϕ. mgExactn 0.
     }
 
-    assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉).
+    assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉ using i).
     {
-      apply Framing_right. wf_auto2. assumption.
+      apply Framing_right.
+      { eapply pile_trans. 2: apply pile. apply pile_basic_generic. }
+      { wf_auto2. }
+      apply S5.
     }
     
-    assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉).
+    assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉ using i).
     {
-      apply defined_evar; assumption.
+      eapply useGenericReasoning.
+      2: apply defined_evar; assumption.
+      apply pile.
     }
 
-    assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ).
+    assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S6.
-      3: assumption.
-      1,2: wf_auto2.
+      eapply MP. 2: apply S6.
+      apply S7.
     }
 
     eapply universal_generalization with (x0 := x) in S9.
-    2: { wf_auto2. }
-    simpl in S9. case_match;[|congruence]. exact S9.
+    3: { wf_auto2. }
+    1: { simpl in S9. case_match;[|congruence]. exact S9. }
+    eapply pile_trans. 2: apply pile.
+    apply pile_evs_svs_kt.
+    {
+      clear. set_solver.
+    }
+    {
+      apply reflexivity.
+    }
+    {
+      reflexivity.
+    }
   Defined.
 
-  Lemma membership_elimination Γ ϕ:
+  Lemma membership_elimination Γ ϕ i:
+    ProofInfoLe (pi_Generic
+    (ExGen := {[ev_x; fresh_evar ϕ]},
+    SVSubst := ∅,
+     KT := false
+    )) i ->
+
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ) ->
-    Γ ⊢ ϕ.
+    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ) using i ->
+    Γ ⊢ ϕ using i.
   Proof.
-    intros wfϕ HΓ H.
+    intros pile wfϕ HΓ H.
 
     remember (fresh_evar ϕ) as x.
-    assert(S1: Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))).
+    assert(S1: Γ ⊢ all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)) using i).
     {
       rewrite evar_quantify_fresh.
       { subst x.  apply set_evar_fresh_is_fresh'. }
       assumption.
     }
     
-    assert(S2: Γ ⊢ (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ)).
+    assert(S2: Γ ⊢ (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ) using i).
     {
       replace (b0 ∈ml evar_quantify x 0 ϕ)
         with (evar_quantify x 0 (patt_free_evar x ∈ml ϕ))
@@ -873,23 +1347,37 @@ Defined.
       2: {
         simpl. case_match;[|congruence]. reflexivity.
       }
-      apply forall_variable_substitution.
-      { wf_auto2. }
+      eapply useGenericReasoning.
+      2: apply forall_variable_substitution.
+      2: { wf_auto2. }
+      eapply pile_trans. 2: apply pile.
+      apply pile_evs_svs_kt.
+      { clear. set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
     }
 
     assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)) by wf_auto2.
     
-    assert(S3: Γ ⊢ patt_free_evar x ∈ml ϕ).
+    assert(S3: Γ ⊢ patt_free_evar x ∈ml ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S2.
-      3: assumption.
-      1,2: wf_auto2.
+      eapply MP. 2: apply S2.
+      assumption.
     }
 
-    pose proof (S5 := Singleton_ctx Γ AC_patt_defined box ϕ x ltac:(wf_auto2)).
+    pose proof (S5 := @Singleton_ctx Σ Γ AC_patt_defined box ϕ x ltac:(wf_auto2)).
     simpl in S5.
 
-    assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) ).
+    eapply useGenericReasoning in S5.
+    2: {
+      eapply pile_trans. 2: apply pile.
+      apply pile_evs_svs_kt.
+      { clear. set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
+
+    assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) using i).
     {
       toMyGoal.
       { wf_auto2. }
@@ -901,7 +1389,9 @@ Defined.
       {
         remember ((! ! patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
           as A.
-        fromMyGoal. intros _ _. apply not_not_elim; subst; auto 10.
+        fromMyGoal.
+        usePropositionalReasoning.
+        apply not_not_elim. wf_auto2.
       }
       mgClear 0.
 
@@ -909,7 +1399,9 @@ Defined.
       { wf_auto2. }
       {
         mgApply 0. mgClear 0.
-        fromMyGoal. intros _ _. apply not_not_intro; auto 10.
+        fromMyGoal.
+        usePropositionalReasoning.
+        apply not_not_intro. wf_auto2.
       }
       mgClear 0. mgClear 0.
 
@@ -917,28 +1409,38 @@ Defined.
       mgAssert ((! patt_free_evar x or ! ! ϕ)) using first 1.
       { wf_auto2. }
       {
-        fromMyGoal. intros _ _. apply not_not_elim; auto 10.
+        fromMyGoal.
+        usePropositionalReasoning.
+        apply not_not_elim. wf_auto2.
       }
       mgClear 0.
 
       unfold patt_or.
-      mgApplyMeta (@not_not_elim Σ _ _ _).
+      (* TODO we probably want mgApplyMeta to implicitly perform the cast *)
+      mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_elim Σ _ _ _)).
       mgApply 0.
-      mgApplyMeta (@not_not_intro Σ _ _ _).
+      mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_intro Σ _ _ _)).
       mgExactn 1.
     }
 
-    assert (S7: Γ ⊢ patt_free_evar x ---> ϕ).
+    assert (S7: Γ ⊢ patt_free_evar x ---> ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S6.
-      3: assumption.
-      1,2: wf_auto2.
+      eapply MP. 2: apply S6.
+      1: assumption.
     }
 
     pose proof (S8 := S7).
-    apply universal_generalization with (x0 := x) in S8; auto.
+    apply universal_generalization with (x0 := x) in S8.
+    3: wf_auto2.
+    2: {
+      eapply pile_trans. 2: apply pile.
+      apply pile_evs_svs_kt.
+      { clear. set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
 
-    assert (S9: Γ ⊢ (ex, patt_bound_evar 0) ---> ϕ).
+    assert (S9: Γ ⊢ (ex, patt_bound_evar 0) ---> ϕ using i).
     {
       unfold patt_forall in S8.
       simpl in S8.
@@ -947,27 +1449,51 @@ Defined.
       replace b0 with (evar_quantify x 0 (patt_free_evar x)).
       2: { simpl. case_match; [|congruence]. reflexivity. }
       
-      apply Ex_gen; auto.
+      apply Ex_gen.
+      3: assumption.
+      2: {
+        subst x. apply set_evar_fresh_is_fresh'.
+      }
+      {
+        eapply pile_trans.
+        2: apply pile.
+        apply pile_evs_svs_kt.
+        {
+          clear. set_solver.
+        }
+        {
+          apply reflexivity.
+        }
+        {
+          reflexivity.
+        }
+      }
     }
 
-    eapply Modus_ponens.
-    4: apply S9.
-    3: apply Existence.
-    all: auto.
-    Unshelve. all: wf_auto2.
+    eapply MP.
+    2: apply S9.
+    
+    eapply useGenericReasoning.
+    2: apply Existence.
+    eapply pile_trans.
+    2: apply pile.
+    apply pile_basic_generic.
+    Unshelve.
+    all: wf_auto2.
   Defined.
 
   Lemma membership_not_1 Γ ϕ x:
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ).
+    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ)
+    using BasicReasoning.
   Proof.
     intros Hwf HΓ.
     
-    pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x ltac:(wf_auto2)).
+    pose proof (S1 := @Singleton_ctx Σ Γ AC_patt_defined AC_patt_defined ϕ x ltac:(wf_auto2)).
     simpl in S1.
 
-    assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
+    assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉ using BasicReasoning).
     {
 
       replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ))
@@ -984,8 +1510,10 @@ Defined.
                using first 1.
       { wf_auto2. }        
       {
-        fromMyGoal. intros _ _.
-        apply not_not_elim; auto 10.
+        fromMyGoal.
+        usePropositionalReasoning.
+        apply not_not_elim.
+        wf_auto2.
       }
       mgClear 0.
 
@@ -994,14 +1522,15 @@ Defined.
                using first 1.
       { wf_auto2. }
       {
-        mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ BasicReasoning (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft. mgApply 1. mgExactn 0.
       }
       mgClear 0.
 
-      mgApply 0. mgClear 0. fromMyGoal. intros _ _.
+      mgApply 0. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
       apply not_not_intro. wf_auto2.
     }
     apply S2.
@@ -1010,13 +1539,15 @@ Defined.
   Lemma membership_not_2 Γ (ϕ : Pattern) x:
     well_formed ϕ = true ->
     theory ⊆ Γ ->
-    Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml.
+    Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ HΓ.
     pose proof (S1 := @defined_evar Γ x HΓ).
-    assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉).
+    remember_constraint as i.
+    assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉ using i).
     {
-      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
+      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)))) using PropositionalReasoning).
       {
         toMyGoal.
         { wf_auto2. }
@@ -1026,7 +1557,7 @@ Defined.
           mgAssert ((! ϕ)).
           { wf_auto2. }
           {
-            mgApply 2. mgClear 0. mgClear 1. fromMyGoal. intros _ _.
+            mgApply 2. mgClear 0. mgClear 1. fromMyGoal.
             apply not_not_intro; auto.
           }
           mgApply 3. mgExactn 0.
@@ -1034,31 +1565,34 @@ Defined.
           mgApply 0. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
           mgApply 2. mgIntro. mgApply 3. mgExactn 1.
       }
+      apply usePropositionalReasoning with (i0 := i) in H.
       eapply Framing_right in H.
-      eapply Modus_ponens. 4: apply H.
-      3: assumption.
-      1-3: wf_auto2.
+      2: { subst i. apply pile_basic_generic. }
+      eapply MP. 2: apply H.
+      1: assumption.
+      wf_auto2.
     }
 
     pose proof (Htmp := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
                                         ltac:(wf_auto2) ltac:(wf_auto2)).
     simpl in Htmp.
-    apply pf_iff_proj1 in Htmp; auto 10.
-    eapply Modus_ponens.
-    4: apply Htmp.
-    3: assumption.
-    1,2: wf_auto2.
+    apply pf_iff_proj1 in Htmp.
+    2-3: wf_auto2.
+    eapply MP.
+    2: subst i; useBasicReasoning; apply Htmp.
+    assumption.
   Defined.
 
   Lemma membership_not_iff Γ ϕ x:
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ).
+    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ)
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros Hwf HΓ.
     apply pf_iff_split.
     1,2: wf_auto2.
-    - apply membership_not_1; assumption.
+    - useBasicReasoning; apply membership_not_1; assumption.
     - apply membership_not_2; assumption.
   Defined.
   
@@ -1066,14 +1600,16 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: apply Prop_disj_right.
     1,2,3,5,6,7: wf_auto2.
-    apply Framing_right. wf_auto2.
+    apply Framing_right. 2: wf_auto2.
+    { apply pile_refl. }
     toMyGoal.
     { wf_auto2. }
     mgIntro. mgDestructAnd 0.
@@ -1092,18 +1628,21 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)).
+    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
     pose proof (H1 := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
                                       ltac:(auto) ltac:(auto)).
-    apply pf_iff_proj2 in H1; auto 10.
-    eapply syllogism_intro.
+    apply pf_iff_proj2 in H1.
+    2,3: wf_auto2.
+    eapply syllogism_meta.
     4: apply H1.
     1-3: wf_auto2.
     simpl.
-    apply Framing_right. wf_auto2.
+    apply Framing_right. 2: wf_auto2.
+    { apply pile_refl. }
 
     toMyGoal.
     { wf_auto2. }
@@ -1120,7 +1659,8 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1133,22 +1673,33 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
+    remember_constraint as i.
+    destruct i; [inversion Heqi|].
+    injection Heqi as Heqgpi.
+
     unfold patt_and.
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    unshelve (mgApplyMeta (membership_not_1 _ _ _) in 0); auto.
+    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ gpi (@membership_not_1 _ _ _ _ HΓ)) in 0).
+    { wf_auto2. }
     mgIntro. mgApply 0. mgClear 0.
-    unshelve (mgApplyMeta (membership_or_2 _ _ _ _)); auto.
+    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ gpi (membership_or_2 _ _ _ HΓ))).
+    1,2: wf_auto2.
     mgDestructOr 0.
     - mgLeft.
-      unshelve (mgApplyMeta (membership_not_2 _ _ _) in 0); auto 10.
+      subst gpi.
+      unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ) in 0).
+      { wf_auto2. }
       mgExactn 0.
     - mgRight.
-      unshelve (mgApplyMeta (membership_not_2 _ _ _) in 0); auto 10.
+      subst gpi.
+      unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ) in 0).
+      { wf_auto2. }
       mgExactn 0.
   Defined.
   
@@ -1156,21 +1707,32 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)).
+    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂))
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
+    remember_constraint as i.
+    destruct i; [inversion Heqi|].
+    injection Heqi as Heqgpi.
+
     toMyGoal.
     { wf_auto2. }
     mgIntro.
     mgDestructAnd 0.
     unfold patt_and.
-    unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ _)); auto 10.
+
+    subst gpi.
+    unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
+    { wf_auto2. }
     mgIntro.
-    unshelve (mgApplyMeta (membership_or_1 _ _ _ _) in 2); auto 10.
+    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_or_1 _ _ _ _ _ _ HΓ)) in 2).
+    1,2: wf_auto2.
     mgDestructOr 2.
-    - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
+      { wf_auto2. }
       mgApply 2. mgExactn 0.
-    - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
+      { wf_auto2. }
       mgApply 2. mgExactn 1.
   Defined.
 
@@ -1178,7 +1740,8 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1187,51 +1750,177 @@ Defined.
     + apply membership_and_2; assumption.
   Defined.
 
+  (* Not so simple... *)
   Lemma equality_elimination_basic Γ φ1 φ2 C :
     theory ⊆ Γ ->
     well_formed φ1 -> well_formed φ2 ->
     PC_wf C ->
     mu_free (pcPattern C) ->
-    Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
-      (emplace C φ1) <---> (emplace C φ2).
+    Γ ⊢ (φ1 =ml φ2) --->
+      (emplace C φ1) <---> (emplace C φ2)
+    using (pi_Generic
+    (ExGen := {[ev_x]}
+              ∪ {[evar_fresh (elements (free_evars φ1 ∪ free_evars φ2))]}
+              ∪ (free_evars φ1)
+              ∪ (free_evars φ2)
+              ∪ list_to_set
+                (evar_fresh_seq
+                   (free_evars (pcPattern C) ∪ free_evars φ1 ∪ free_evars φ2
+                    ∪ {[pcEvar C]})
+                   (maximal_exists_depth_of_evar_in_pattern 
+                      (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set
+                  (svar_fresh_seq
+                     (free_svars (pcPattern C) ∪ free_svars φ1
+                      ∪ free_svars φ2)
+                     (maximal_mu_depth_of_evar_in_pattern 
+                        (pcEvar C) (pcPattern C))),
+     KT := (if
+             decide
+               (0 =
+                maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
+            is left _
+            then false
+            else true))).
   Proof.
     intros HΓ WF1 WF2 WFC Hmf.
 
-    unshelve(eapply deduction_theorem_noKT).
-    remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
-    assert (Γ' ⊢ (φ1 <---> φ2)). {
-      apply hypothesis.
-      - abstract (now apply well_formed_iff).
-      - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
-    }
-    eapply prf_equiv_congruence.
-    all: try assumption.
-    all: try (abstract auto).
+    eapply useGenericReasoning.
+    2: {
+      unshelve(eapply deduction_theorem_noKT).
+      2: {
+        remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
+        remember_constraint as i.
+        assert (Γ' ⊢ (φ1 <---> φ2) using i). {
+          subst i. useBasicReasoning.
+          apply hypothesis.
+          - abstract (now apply well_formed_iff).
+          - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
+        }
+        eapply prf_equiv_congruence.
+        2: apply WFC.
+        2: apply H.
+        subst i.
+        apply pile_refl.
+      }
+
     { 
       abstract (
         apply well_formed_and; apply well_formed_imp; unfold emplace;
         apply well_formed_free_evar_subst_0; auto
       ).
     }
-    3: {
-      abstract(
-        simpl; unfold prf_equiv_congruence; destruct C as [ψ E]; simpl;
-        rewrite uses_kt_nomu_eq_prf_equiv_congruence;[apply Hmf|reflexivity|reflexivity]
-      ).
+    { abstract (wf_auto2). }
+    { exact HΓ. }
+    {
+      simpl.
+      unfold PC_wf in WFC.
+      destruct C; simpl in *.
+      replace (free_evars φ1 ∪ free_evars φ2 ∪ ∅ ∪ ∅
+      ∪ (free_evars φ2 ∪ free_evars φ1 ∪ ∅) ∪ ∅)
+      with (free_evars φ1 ∪ free_evars φ2)
+      by set_solver.
+
+      pose proof (@evar_fresh_seq_disj Σ (free_evars pcPattern ∪ free_evars φ1 ∪ free_evars φ2 ∪ {[pcEvar]}) (maximal_exists_depth_of_evar_in_pattern pcEvar pcPattern)).
+      set_solver.
     }
-    2: {
-      abstract (
-        simpl;
-        unfold prf_equiv_congruence; destruct C as [ψ E];
-        simpl;
-        match goal with
-        | [ |- uses_svar_subst ?S _ = false ]
-          => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
-        end;
-        rewrite uses_svar_subst_eq_prf_equiv_congruence;
-        [(clear;set_solver)|reflexivity|reflexivity]
-      ).
+    {
+      simpl.
+      unfold PC_wf in WFC.
+      destruct C; simpl in *.
+
+      pose proof (@svar_fresh_seq_disj Σ (free_svars pcPattern ∪ free_svars φ1 ∪ free_svars φ2) (maximal_mu_depth_of_evar_in_pattern pcEvar pcPattern)).
+      set_solver.
     }
+    {
+      simpl.
+      case_match.
+      {
+        reflexivity.
+      }
+      {
+        exfalso.
+        unfold PC_wf in WFC.
+        destruct C; simpl in *.
+        clear -n Hmf.
+        unfold maximal_mu_depth_of_evar_in_pattern in *.
+        apply n.
+        cut (forall depth, depth >= maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern).
+        {
+          intros H.
+          specialize (H 0). lia.
+        }
+        clear n.
+        induction pcPattern; intros depth; simpl in *;
+        try lia.
+        {
+          case_match; subst; lia.
+        }
+        {
+          destruct_and!.
+          specialize (IHpcPattern1 ltac:(assumption) depth).
+          specialize (IHpcPattern2 ltac:(assumption) depth).
+          destruct (maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern1);
+          simpl in *; lia.
+        }
+        {
+          destruct_and!.
+          specialize (IHpcPattern1 ltac:(assumption) depth).
+          specialize (IHpcPattern2 ltac:(assumption) depth).
+          destruct (maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern1);
+          simpl in *; lia.
+        }
+        {
+          specialize (IHpcPattern ltac:(assumption) depth).
+          assumption.
+        }
+        {
+          inversion Hmf.
+        }
+      }
+    }
+  }
+  {
+    simpl.
+    apply pile_evs_svs_kt.
+    {
+      cbn.
+      repeat rewrite union_empty_r_L.
+      repeat apply union_least.
+      { set_solver. }
+      { 
+        replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
+        with (free_evars φ1 ∪ free_evars φ2)
+        by (clear; set_solver).
+        set_solver.
+      }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      {
+        (* TODO we probably need a lemma about Congrunce lemma,
+           about how it generates Framing rules.
+           It means that we still need it to abstract all irrelevant details,
+           like well-formedness etc.
+        *)
+        destruct C; simpl in *|-.
+        rewrite [PatternContext.pcPattern _]/=.
+        rewrite [PatternContext.pcEvar _]/=.
+
+        unfold prf_equiv_congruence.
+
+
+        lazymatch goal with
+        | [ |- context [mkGenericProofInfo ?ge ?se ?kt] ] =>
+          try remember (mkGenericProofInfo ge se kt)
+        end.
+      }
+      Search union subseteq.
+      rewrite union_subseteq_l.
+    }
+  }
     1: {
       abstract (
         simpl;

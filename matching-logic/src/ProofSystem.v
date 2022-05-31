@@ -134,6 +134,31 @@ Section ml_proof_system.
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
 
+Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
+  match pf with
+  | hypothesis _ _ _ _ => []
+  | P1 _ _ _ _ _ => []
+  | P2 _ _ _ _ _ _ _ => []
+  | P3 _ _ _ => []
+  | Modus_ponens _ _ _ m0 m1
+    => (@framing_patterns _ _ m0) ++ (@framing_patterns _ _ m1)
+  | Ex_quan _ _ _ _ => []
+  | Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
+  | Prop_bott_left _ _ _ => []
+  | Prop_bott_right _ _ _ => []
+  | Prop_disj_left _ _ _ _ _ _ _ => []
+  | Prop_disj_right _ _ _ _ _ _ _ => []
+  | Prop_ex_left _ _ _ _ _ => []
+  | Prop_ex_right _ _ _ _ _ => []
+  | Framing_left _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
+  | Framing_right _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
+  | Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
+  | Pre_fixp _ _ _ => []
+  | Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
+  | Existence _ => []
+  | Singleton_ctx _ _ _ _ _ _ => []
+  end.
+
 
   Fixpoint uses_ex_gen (EvS : EVarSet) Γ ϕ (pf : ML_proof_system Γ ϕ) :=
     match pf with
