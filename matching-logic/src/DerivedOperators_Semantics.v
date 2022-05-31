@@ -313,7 +313,7 @@ Section with_signature.
       rewrite -> eval_exists_empty.
       
       assert (Hfr: fresh_evar (! ϕ)%ml = fresh_evar ϕ).
-      { unfold fresh_evar. apply f_equal. apply f_equal. simpl.
+      { unfold fresh_evar,evar_fresh_s. apply f_equal. apply f_equal. simpl.
         rewrite -> union_empty_r_L. reflexivity.
       }
 

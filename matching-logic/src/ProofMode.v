@@ -66,15 +66,21 @@ Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
     @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
 }.
 
+(*
 #[global]
-Instance pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
+Instance
+*)
+Lemma pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
 Proof.
   constructor. intros Γ ϕ pf H. exact H.
 Qed.
 
+(*
 #[global]
-Instance pile_trans {Σ : Signature}
-  (i₁ i₂ i₃ : ProofInfo) {PILE12 : ProofInfoLe i₁ i₂} {PILE23 : ProofInfoLe i₂ i₃}
+Instance
+*)
+Lemma pile_trans {Σ : Signature}
+  (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
 : ProofInfoLe i₁ i₃.
 Proof.
   destruct PILE12 as [PILE12].
@@ -106,8 +112,11 @@ Proof.
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
 Qed.
 
+(*
 #[global]
-Instance pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
+Instance
+*)
+Lemma pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
 Proof.
   constructor.
   intros Γ ϕ pf Hpf.
@@ -991,11 +1000,11 @@ Defined.
       wf_auto2.
     - eapply syllogism_meta.
       5: { apply (Prop_bott_left Γ p ltac:(wf_auto2)). }
-      4: { apply Framing_left. apply _. wf_auto2. exact IHC. }
+      4: { apply Framing_left. apply pile_refl. wf_auto2. exact IHC. }
       all: wf_auto2.
     - eapply syllogism_meta.
       5: { apply (Prop_bott_right Γ p ltac:(wf_auto2)). }
-      4: { apply Framing_right. apply _. wf_auto2. exact IHC. }
+      4: { apply Framing_right. apply pile_refl. wf_auto2. exact IHC. }
       all: wf_auto2.
   Defined.
 
@@ -2027,7 +2036,6 @@ Section FOL_helpers.
     assert (well_formed a) by (subst; wf_auto2).
     assert (well_formed b) by (subst; wf_auto2).
     assert (well_formed c) by (subst; wf_auto2).
-    Check @prf_weaken_conclusion_under_implication.
     pose proof (H2' := @prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
     apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
     eapply MP. 2: apply H2'. apply H1.
@@ -3359,7 +3367,7 @@ Section FOL_helpers.
         eapply Framing_left in H.
         eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥) using BasicReasoning).
         { apply Prop_bott_left. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
       + usePropositionalReasoning. apply bot_elim; wf_auto2.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
@@ -3368,13 +3376,10 @@ Section FOL_helpers.
         eapply Framing_right in H.
         eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥) using BasicReasoning).
         { apply Prop_bott_right. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
       + usePropositionalReasoning. apply bot_elim; wf_auto2.
         Unshelve. all: wf_auto2.
   Defined.
-
-  Check Prop_disj_left.
-  Check Prop_bott_left.
 
   Lemma Prop_disj_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
     well_formed ϕ₁ ->
@@ -3426,18 +3431,18 @@ Section FOL_helpers.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        eapply Framing_left in H. 2: apply _.
+        eapply Framing_left in H. 2: apply pile_refl.
         eapply syllogism_meta. 4: apply H.
         all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
         apply Prop_disj_left. all: subst; wf_auto2.
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_left; try_wfauto2. apply _.
+        * apply Framing_left; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_left; try_wfauto2. apply _.
+        * apply Framing_left; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
@@ -3450,13 +3455,13 @@ Section FOL_helpers.
         all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_right. all: subst; wf_auto2. apply _.
+        apply Prop_disj_right. all: subst; wf_auto2. apply pile_refl.
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_right; try_wfauto2. apply _.
+        * apply Framing_right; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_right; try_wfauto2. apply _.
+        * apply Framing_right; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
@@ -3484,12 +3489,76 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma hypothesis (Γ : Theory) (axiom : Pattern) :
+    well_formed axiom ->
+    (axiom ∈ Γ) ->
+    Γ ⊢ axiom
+    using BasicReasoning.
+  Proof.
+    intros Hwf Hin.
+    unshelve (eexists).
+    {
+      apply ProofSystem.hypothesis. apply Hwf. apply Hin.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
+  Lemma Singleton_ctx (Γ : Theory) (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
+    well_formed ϕ ->
+    Γ ⊢ (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
+               (subst_ctx C2 (patt_free_evar x and (! ϕ)))))
+    using BasicReasoning.
+  Proof.
+    intros Hwf.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Singleton_ctx. apply Hwf.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
+  Lemma Existence (Γ : Theory) :
+    Γ ⊢ (ex , patt_bound_evar 0) using BasicReasoning.
+  Proof.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Existence.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
   Lemma pile_impl_allows_gen_x x gpi svs kt:
     ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
     x ∈ pi_generalized_evars gpi.
   Proof.
     intros [H].
-    Check A_impl_A.
     pose (H1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
     pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
     pose (H3 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig H2) ltac:(simpl; set_solver)).
@@ -4346,7 +4415,7 @@ Section FOL_helpers.
     well_formed p' ->
     well_formed q' ->
     Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i->
+    Γ ⊢ (q <---> q') using i ->
     Γ ⊢ ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
@@ -4634,11 +4703,12 @@ Section FOL_helpers.
     mgApply 1. mgExactn 0.
   Defined.
 
-  Hint Resolve evar_quantify_well_formed.
+  (*Hint Resolve evar_quantify_well_formed.*)
 
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
-    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ.
+    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
+    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ.
    
@@ -4646,7 +4716,9 @@ Section FOL_helpers.
     replace (! evar_quantify x 0 ϕ)
       with (evar_quantify x 0 (! ϕ))
       by reflexivity.
-    apply double_neg_elim_meta; auto 10.
+    apply double_neg_elim_meta.
+    { wf_auto2. }
+    { wf_auto2. }
     toMyGoal.
     { wf_auto2. }
     mgIntro.
@@ -4654,16 +4726,14 @@ Section FOL_helpers.
     mgApply 0.
     mgIntro.
     mgApply 2.
-    pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
+    pose proof (Htmp := @Ex_quan Σ Γ (evar_quantify x 0 (!ϕ)) x).
     rewrite /instantiate in Htmp.
     rewrite bevar_subst_evar_quantify_free_evar in Htmp.
     {
-      (* apply wfc_ex_implies_not_bevar_occur.
-      unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
-      split_and; auto. *)
-      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. auto.
+      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. reflexivity.
     }
     specialize (Htmp ltac:(wf_auto2)).
+    useBasicReasoning.
     mgAdd Htmp.
     mgApply 0.
     mgIntro.
@@ -4673,37 +4743,319 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
+Lemma not_kt_in_prop {Σ : Signature} :
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (HContra _ pf2).
+  feed specialize HContra.
+  {
+    unfold pf2. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  unfold pf2 in HC4.
+  simpl in HC4.
+  congruence.
+Qed.
+
+Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true)) (pi_Generic gpi) ->
+  pi_uses_kt gpi.
+Proof.
+  intros [H].
+  specialize (H ∅).
+  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (H _ pf2).
+  feed specialize H.
+  {
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    reflexivity.
+  }
+  destruct H as [H1 H2 H3 H4].
+  unfold pf2 in H4. simpl in H4. exact H4.
+Qed.
+
+
+Lemma Knaster_tarski {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
+  {pile : ProofInfoLe (pi_Generic
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := ∅;
+           pi_uses_kt := true ;
+        |}) i} :
+well_formed (mu, ϕ) ->
+Γ ⊢ (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+Γ ⊢ mu, ϕ ---> ψ using i.
+Proof.
+intros Hfev [pf Hpf].
+unshelve (eexists).
+{
+  apply ProofSystem.Knaster_tarski.
+  { exact Hfev. }
+  { exact pf. }
+}
+{
+  simpl.
+  pose proof (Hnot := not_kt_in_prop).
+  constructor; simpl.
+  {
+    destruct i;[|exact I].
+    contradiction.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf2.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf3.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ pile).
+    exact Hpile.
+  }
+}
+Defined.
+
+Lemma pile_evs_subseteq {Σ : Signature} evs1 evs2 svs kt:
+  evs1 ⊆ evs2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs1, SVSubst := svs, KT := kt))
+    (pi_Generic (ExGen := evs2, SVSubst := svs, KT := kt)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { clear -Hsub Hpf2. set_solver. }
+  { exact Hpf3. }
+  { exact Hpf4. }
+Qed.
+
+Lemma pile_svs_subseteq {Σ : Signature} evs svs1 svs2 kt:
+  svs1 ⊆ svs2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs, SVSubst := svs1, KT := kt))
+    (pi_Generic (ExGen := evs, SVSubst := svs2, KT := kt)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { exact Hpf2. }
+  { clear -Hsub Hpf3. set_solver. }
+  { exact Hpf4. }
+Qed.
+
+
+Lemma pile_kt_impl {Σ : Signature} evs svs kt1 kt2:
+  kt1 ==> kt2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt1))
+    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt2)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { exact Hpf2. }
+  { exact Hpf3. }
+  { unfold implb in *.  destruct (uses_kt pf),kt1; simpl in *; try reflexivity.
+    { exact Hsub. }
+    { inversion Hpf4. }
+  }
+Qed.
+
+Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (HContra _ pf2).
+  feed specialize HContra.
+  {
+    unfold pf2. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  simpl in *.
+  clear -HC1.
+  congruence.
+Qed.
+
+
+Lemma not_generic_in_prop {Σ : Signature} evs svs kt :
+  ~ ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
+  specialize (HContra _ pf).
+  feed specialize HContra.
+  {
+    unfold pf. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  simpl in *.
+  clear -HC1.
+  congruence.
+Qed.
+
+Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt)) (pi_Generic gpi) ->
+  X ∈ pi_substituted_svars gpi.
+Proof.
+  intros [H].
+  specialize (H ∅).
+  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (H _ pf2).
+  feed specialize H.
+  {
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    reflexivity.
+  }
+  destruct H as [H1 H2 H3 H4].
+  simpl in *.
+  clear -H3. set_solver.
+Qed.
+
+Lemma Svar_subst {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
+  {pile : ProofInfoLe (pi_Generic
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := {[X]};
+           pi_uses_kt := false ;
+        |}) i} :
+  well_formed ψ ->
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ (free_svar_subst ϕ ψ X) using i.
+Proof.
+  intros wfψ [pf Hpf].
+  unshelve (eexists).
+  {
+   apply ProofSystem.Svar_subst.
+   { pose proof (Hwf := @proved_impl_wf _ _ _ pf). exact Hwf. }
+   { exact wfψ. }
+   { exact pf. }
+  }
+{
+  simpl.
+  pose proof (Hnot := @not_svs_in_prop Σ X).
+  constructor; simpl.
+  {
+    destruct i;[|exact I].
+    contradiction.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf2.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ pile).
+    clear -Hpile Hpf3.
+    set_solver.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    exact Hpf4.
+  }
+}
+Defined.
+
+Lemma Pre_fixp {Σ : Signature}
+  (Γ : Theory) (ϕ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢ (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  {
+    apply ProofSystem.Pre_fixp.
+    { exact wfϕ. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+Defined.
 
 Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Lemma mu_monotone Γ ϕ₁ ϕ₂ X:
-    well_formed ϕ₁ ->
-    well_formed ϕ₂ ->
+  Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
-    Γ ⊢ ϕ₁ ---> ϕ₂ ->
-    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂)).
+    Γ ⊢ ϕ₁ ---> ϕ₂ using i->
+    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂))
+    using i.
   Proof.
-    intros wfϕ₁ wfϕ₂ nonegϕ₁ nonegϕ₂ Himp.
+    intros pile nonegϕ₁ nonegϕ₂ Himp.
+    pose proof (wfϕ12 := @proved_impl_wf _ _ _ (proj1_sig Himp)).
+    assert(wfϕ₁ : well_formed ϕ₁) by wf_auto2.
+    assert(wfϕ₂ : well_formed ϕ₂) by wf_auto2.
+
     apply Knaster_tarski.
+    { eapply pile_trans. 2: apply pile. apply pile_svs_subseteq. set_solver. }
     { wf_auto2. }
 
-    pose proof (Htmp := Svar_subst Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X).
+    pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X i).
     feed specialize Htmp.
-    { auto. }
-    { unfold well_formed, well_formed_closed in *. destruct_and!.
-      simpl. split_and!; auto.
-    }
-    { assumption. }
+    { eapply pile_trans. 2: apply pile. apply pile_kt_impl. simpl. reflexivity. }
+    { wf_auto2. }
+    { exact Himp. }
     unfold free_svar_subst in Htmp.
     simpl in Htmp.
+    fold free_svar_subst in Htmp.
 
-    pose proof (Hpf := Pre_fixp Γ (svar_quantify X 0 ϕ₂)).
+    pose proof (Hpf := @Pre_fixp Σ Γ (svar_quantify X 0 ϕ₂)).
     simpl in Hpf.
 
-    unshelve (eapply (@cast_proof Σ Γ _ _) in Hpf).
+    unshelve (eapply (@cast_proof' Σ Γ _ _) in Hpf).
     3: { 
     erewrite bound_to_free_set_variable_subst.
       5: { apply svar_quantify_not_free. }
@@ -4721,7 +5073,7 @@ Section FOL_helpers.
 
     2: abstract (wf_auto2).
 
-    eapply (@cast_proof Σ Γ) in Hpf.
+    eapply (@cast_proof' Σ Γ) in Hpf.
     2: {
       rewrite svar_open_svar_quantify.
       { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
@@ -4787,10 +5139,21 @@ Section FOL_helpers.
       apply svar_quantify_closed_ex. assumption.
     }
     
-    epose proof (Hsi := @syllogism_intro Σ _ _ _ _ _ _ _ Htmp Hpf).
+    (* i = pi_Generic gpi *)
+    destruct i.
+    {
+      exfalso.
+      apply not_kt_in_prop.
+      eapply pile_trans.
+      2: { apply pile. }
+      apply pile_svs_subseteq.
+      set_solver.
+    }
+    apply useBasicReasoning with (gpi0 := gpi) in Hpf.
+    epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
 
-    eapply (@cast_proof Σ Γ).
+    eapply (@cast_proof' Σ Γ).
     1: {
       erewrite bound_to_free_set_variable_subst with (X0 := X).
       5: { apply svar_quantify_not_free. }
@@ -4806,13 +5169,13 @@ Section FOL_helpers.
       reflexivity.
     }
 
-    eapply (@cast_proof Σ Γ).
+    eapply (@cast_proof' Σ Γ).
     1: {
       rewrite svar_open_svar_quantify.
       { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
       reflexivity.
     }
-    assumption.
+    apply Hsi.
     Unshelve.
     all: abstract(wf_auto2).
   Defined.
@@ -4824,24 +5187,34 @@ Section FOL_helpers.
    *)
 
 
-  Lemma prf_equiv_of_impl_of_equiv Γ a b a' b':
+  Lemma prf_equiv_of_impl_of_equiv Γ a b a' b' i:
     well_formed a = true ->
     well_formed b = true ->
     well_formed a' = true ->
     well_formed b' = true ->
-    Γ ⊢ (a <---> a') ->
-    Γ ⊢ (b <---> b') ->
-    Γ ⊢ (a ---> b) <---> (a' ---> b')
+    Γ ⊢ (a <---> a') using i ->
+    Γ ⊢ (b <---> b') using i ->
+    Γ ⊢ (a ---> b) <---> (a' ---> b') using i
   .
   Proof.
     intros wfa wfb wfa' wfb' Haa' Hbb'.
-    unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ Haa')); auto.
-    unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ Haa')); auto.
-    unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ Hbb')); auto.
-    unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ Hbb')); auto.
+    unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Haa')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Haa')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Hbb')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Hbb')).
+    { wf_auto2. }
+    { wf_auto2. }
 
-    apply pf_iff_equiv_trans with (B := (a ---> b')); auto.
-      + apply conj_intro_meta; subst; auto 10.
+    apply pf_iff_equiv_trans with (B := (a ---> b')).
+    1-3: wf_auto2.
+      + apply conj_intro_meta.
+        1-2: wf_auto2.
         * toMyGoal.
           { wf_auto2. }
           mgIntro. mgIntro.
@@ -4856,7 +5229,8 @@ Section FOL_helpers.
           mgApply 0.
           mgApply 1.
           mgExactn 2.
-      + apply conj_intro_meta; auto.
+      + apply conj_intro_meta.
+        1-2: wf_auto2.
         * toMyGoal.
           { wf_auto2. }
           mgIntro. mgIntro.
@@ -4873,45 +5247,28 @@ Section FOL_helpers.
           mgExactn 2.
   Defined.
 
-  Program Canonical Structure prf_equiv_of_impl_of_equiv_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@prf_equiv_of_impl_of_equiv Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
-
-  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
+  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E i:
     x <> E ->
     well_formed p = true ->
     well_formed q = true ->
-    Γ ⊢ free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E ->
-    Γ ⊢ evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E).
+    Γ ⊢ free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E using i ->
+    Γ ⊢ evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E) using i.
   Proof.
     intros Hx wfp wfq H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     rewrite -> evar_open_free_evar_subst_swap by assumption.
     rewrite -> evar_open_free_evar_subst_swap by assumption.
     reflexivity.
   Defined.
 
-
-  Definition evar_fresh_dep (S : EVarSet) : {x : evar & x ∉ S} :=
-    @existT evar (fun x => x ∉ S) (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' Σ S).
-
-  Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
-    @existT svar (fun x => x ∉ S) (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
-
-  Lemma strip_exists_quantify_l Γ x P Q :
+  Lemma strip_exists_quantify_l Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
-    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) ->
-    Γ ⊢ ex , P ---> Q.
+    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
+    Γ ⊢ ex , P ---> Q using i.
   Proof.
     intros Hx HwfcP H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     abstract (
       unfold exists_quantify;
       rewrite -> evar_quantify_evar_open by assumption;
@@ -4919,14 +5276,14 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma strip_exists_quantify_r Γ x P Q :
+  Lemma strip_exists_quantify_r Γ x P Q i :
     x ∉ free_evars Q ->
     well_formed_closed_ex_aux Q 1 ->
-    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) ->
-    Γ ⊢ P ---> ex, Q.
+    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
+    Γ ⊢ P ---> ex, Q using i.
   Proof.
     intros Hx HwfcP H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     abstract (
       unfold exists_quantify;
       rewrite -> evar_quantify_evar_open by assumption;
@@ -4934,15 +5291,15 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X:
+  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X i:
     well_formed_closed_mu_aux p 0 = true ->
     well_formed_closed_mu_aux q 0 = true ->
-    Γ ⊢ free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E ->
+    Γ ⊢ free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E using i ->
     Γ ⊢ bsvar_subst (free_evar_subst ϕ p E) (patt_free_svar X) 0 <--->
-        bsvar_subst (free_evar_subst ϕ q E) (patt_free_svar X) 0.
+        bsvar_subst (free_evar_subst ϕ q E) (patt_free_svar X) 0 using i.
   Proof.
     intros wfp wfq H.
-    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
+    unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
 
     abstract (
       unfold svar_open in H;
@@ -4954,17 +5311,17 @@ Section FOL_helpers.
    ).
   Defined.
 
-  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X:
+  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X i :
     well_formed_closed_mu_aux (free_evar_subst ϕ p E) 1 ->
     well_formed_closed_mu_aux (free_evar_subst ϕ q E) 1 ->
     X ∉ free_svars (free_evar_subst ϕ p E) ->
     X ∉ free_svars (free_evar_subst ϕ q E) ->
     Γ ⊢ mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E)) <--->
-        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) ->
-    Γ ⊢ mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E.
+        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) using i ->
+    Γ ⊢ mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E using i.
   Proof.
     intros wfp' wfq' Xfrp Xfrq H.
-    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
+    unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
     abstract (
       rewrite -{1}[free_evar_subst ϕ p E](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
       rewrite -{1}[free_evar_subst ϕ q E](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
@@ -4985,412 +5342,1487 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Definition pf_ite {P : Prop} (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
-    (pf1: P -> Γ ⊢ ϕ)
-    (pf2: (~P) -> Γ ⊢ ϕ) :
-    Γ ⊢ ϕ :=
+  Fixpoint maximal_exists_depth_of_evar_in_pattern' (depth : nat) (E : evar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_svar _ => 0
+    | patt_free_evar E' =>
+      match (decide (E' = E)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_exists ψ' =>
+      maximal_exists_depth_of_evar_in_pattern' (S depth) E ψ'
+    | patt_mu ψ' =>
+      maximal_exists_depth_of_evar_in_pattern' depth E ψ'
+    end.
+
+  Definition maximal_exists_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
+    maximal_exists_depth_of_evar_in_pattern' 0 E ψ.
+
+  Definition pf_ite {P : Prop} (i : ProofInfo) (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
+    (pf1: P -> Γ ⊢ ϕ using i)
+    (pf2: (~P) -> Γ ⊢ ϕ using i) :
+    Γ ⊢ ϕ using i :=
     match dec with
     | left pf => pf1 pf
     | right pf => pf2 pf
     end.
 
-  (* EvS, SvS - sets used for generating fresh variables *)
-  Equations? eq_prf_equiv_congruence
-               Γ p q
-               (wfp : well_formed p)
-               (wfq : well_formed q)
-               (EvS : EVarSet)
-               (SvS : SVarSet)
-               E ψ
-               (wfψ : well_formed ψ)
-               (pf : Γ ⊢ (p <---> q)) :
-                   Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E)))
-               by wf (size' ψ) lt
-  :=
-  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_bound_evar n) wfψ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_bound_svar n) wfψ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ pf
-  := @pf_ite _ (decide (E = x)) Γ
-      ((free_evar_subst (patt_free_evar x) p E) <---> (free_evar_subst (patt_free_evar x) q E))
-      (fun e => _)
-      (fun (_ : E <> x) => _ ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_free_svar X) wfψ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ pf
-  := (@pf_iff_equiv_refl Σ Γ patt_bott wfψ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_sym s) wfψ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
-    | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
-      | pf₂ := @prf_equiv_of_impl_of_equiv
-                 Σ Γ
-                 (free_evar_subst ϕ₁ p E)
-                 (free_evar_subst ϕ₂ p E)
-                 (free_evar_subst ϕ₁ q E)
-                 (free_evar_subst ϕ₂ q E)
-                 _ _ _ _ (*
-                 (@well_formed_free_evar_subst Σ _ _ wfp (well_formed_imp_proj1 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfp (well_formed_imp_proj2 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfq (well_formed_imp_proj1 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfq (well_formed_imp_proj2 _ _ wfψ)) *)
-                 pf₁ pf₂
-      }
-  } ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
-  | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
-    | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst ϕ₁ q E $ free_evar_subst ϕ₂ p E) _ _ _ _
-               (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₁))
-                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₁))
-               )
-               (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₂))
-                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₂))
-               )
-             )
+  Lemma evar_fresh_seq_max (EvS : EVarSet) (n1 n2 : nat) :
+    (@list_to_set evar EVarSet _ _ _ (evar_fresh_seq EvS n1)) ⊆ (list_to_set (evar_fresh_seq EvS (n1 `max` n2))).
+  Proof.
+    move: EvS n2.
+    induction n1; intros EvS n2.
+    {
+      simpl. set_solver.
     }
-  } ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ pf
-  with (evar_fresh_dep ((EvS ∪ (free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
-  | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
-    | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
-      | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
-        | (IH1, IH2) with ((@syllogism_intro Σ Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x _)),(@syllogism_intro Σ Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x _))) => {
-          | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
-            | (IH3', IH4')
-               :=
-                @pf_iff_split Σ Γ (ex, free_evar_subst ϕ' p E) (ex, free_evar_subst ϕ' q E) _ _
-                  (* (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' p q E wfψ wfp wfq *)
-                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH3')
-                  (* ) *)
-                  (* (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' q p E wfψ wfq wfp *)
-                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH4')
-                  (* ) *)
-            }
-          }
+    {
+      simpl.
+      destruct n2.
+      {
+        simpl. set_solver.
+      }
+      {
+        simpl.
+        cut (@list_to_set evar EVarSet _ _ _ (evar_fresh_seq ({[evar_fresh_s EvS]} ∪ EvS) n1)
+        ⊆ list_to_set (evar_fresh_seq ({[evar_fresh_s EvS]} ∪ EvS) (n1 `max` n2))).
+        {
+          set_solver.
         }
+        specialize (IHn1 ({[evar_fresh_s EvS]} ∪ EvS) n2).
+        apply IHn1.
       }
     }
-  } ;
+  Qed.
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ pf
-  with (svar_fresh_dep (SvS ∪ (free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
-                      ∪ (free_svars (free_evar_subst ϕ' p E))
-                      ∪ (free_svars (free_evar_subst ϕ' q E)))) => {
-  | (existT X frX ) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (svar_open 0 X ϕ') (@wf_svar_open_from_wf_mu Σ X ϕ' wfψ) pf) => {
-    | IH with (@pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Σ Γ ϕ' p q E X _ _ IH) => {
-      | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
-        | (IH1, IH2) :=
-            (@pf_iff_mu_remove_svar_quantify_svar_open Σ Γ ϕ' p q E X _ _ _ _
-              (@pf_iff_split Σ Γ _ _ _ _
-                (@mu_monotone Σ Γ _ _ X _ _ _ _ _)
-                (@mu_monotone Σ Γ _ _ X _ _ _ _ _)
-              )
-            )
-        }
+  Lemma medoeip_evar_open depth E n x ψ:
+    E <> x ->
+    maximal_exists_depth_of_evar_in_pattern' depth E (evar_open n x ψ)
+    = maximal_exists_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    intros HEnex.
+    unfold evar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+      case_match; try reflexivity. subst. contradiction.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
+  Lemma medoeip_svar_open depth E n X ψ:
+    maximal_exists_depth_of_evar_in_pattern' depth E (svar_open n X ψ)
+    = maximal_exists_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
+  Lemma medoeip_notin E ψ depth:
+    E ∉ free_evars ψ ->
+    maximal_exists_depth_of_evar_in_pattern' depth E ψ = 0.
+  Proof.
+    intros Hnotin.
+    move: E depth Hnotin.
+    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
+    { case_match. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+  Qed.
+
+  Lemma medoeip_S_in E ψ depth:
+    E ∈ free_evars ψ ->
+    maximal_exists_depth_of_evar_in_pattern' (S depth) E ψ
+    = S (maximal_exists_depth_of_evar_in_pattern' depth E ψ).
+  Proof.
+    intros Hin.
+    move: E depth Hin.
+    induction ψ; intros E depth Hin; simpl in *.
+    { case_match. reflexivity. set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
       }
+      {
+        rewrite IHψ1. assumption.
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ2]medoeip_notin.
+        { assumption. }
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ2]medoeip_notin.
+        { assumption. }
+        simpl.
+        rewrite Nat.max_comm.
+        simpl.
+        reflexivity.
+      }
+      {
+        rewrite IHψ2. assumption.
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ1]medoeip_notin.
+        { assumption. }
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ1]medoeip_notin.
+        { assumption. }
+        simpl.
+        reflexivity.
+      }
+      {
+        exfalso. set_solver.
+      }
+    }
+    { set_solver. }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+        rewrite IHψ1. assumption.
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ2]medoeip_notin.
+        { assumption. }
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ2]medoeip_notin.
+        { assumption. }
+        simpl.
+        rewrite Nat.max_comm.
+        simpl.
+        reflexivity.
+      }
+      {
+        rewrite IHψ2. assumption.
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ1]medoeip_notin.
+        { assumption. }
+        rewrite [maximal_exists_depth_of_evar_in_pattern' _ _ ψ1]medoeip_notin.
+        { assumption. }
+        simpl.
+        reflexivity.
+      }
+      {
+        exfalso. set_solver.
+      }     
+    }
+    {
+      rewrite IHψ. assumption. reflexivity.
+    }
+    {
+      rewrite IHψ. assumption. reflexivity.
+    }
+  Qed.
+
+
+  Fixpoint maximal_mu_depth_of_evar_in_pattern' (depth : nat) (E : evar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_svar _ => 0
+    | patt_free_evar E' =>
+      match (decide (E' = E)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_exists ψ' =>
+      maximal_mu_depth_of_evar_in_pattern' depth E ψ'
+    | patt_mu ψ' =>
+      maximal_mu_depth_of_evar_in_pattern' (S depth) E ψ'
+    end.
+
+  Definition maximal_mu_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
+    maximal_mu_depth_of_evar_in_pattern' 0 E ψ.
+
+
+
+  Lemma svar_fresh_seq_max (SvS : SVarSet) (n1 n2 : nat) :
+    (@list_to_set svar SVarSet _ _ _ (svar_fresh_seq SvS n1)) ⊆ (list_to_set (svar_fresh_seq SvS (n1 `max` n2))).
+  Proof.
+    move: SvS n2.
+    induction n1; intros SvS n2.
+    {
+      simpl. set_solver.
+    }
+    {
+      simpl.
+      destruct n2.
+      {
+        simpl. set_solver.
+      }
+      {
+        simpl.
+        cut (@list_to_set svar SVarSet _ _ _ (svar_fresh_seq ({[svar_fresh_s SvS]} ∪ SvS) n1)
+        ⊆ list_to_set (svar_fresh_seq ({[svar_fresh_s SvS]} ∪ SvS) (n1 `max` n2))).
+        {
+          set_solver.
+        }
+        specialize (IHn1 ({[svar_fresh_s SvS]} ∪ SvS) n2).
+        apply IHn1.
+      }
+    }
+  Qed.
+
+
+  Lemma pile_evs_svs_kt evs1 evs2 svs1 svs2 kt1 kt2:
+    evs1 ⊆ evs2 ->
+    svs1 ⊆ svs2 ->
+    kt1 ==> kt2 ->
+    ProofInfoLe
+      (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1))
+      (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2)).
+  Proof.
+    intros Hevs Hsvs Hkt.
+    eapply pile_trans.
+    {
+      apply pile_evs_subseteq. apply Hevs.
+    }
+    eapply pile_trans.
+    {
+      apply pile_svs_subseteq. apply Hsvs.
+    }
+    apply pile_kt_impl.
+    apply Hkt.
+  Qed.
+
+  Lemma mmdoeip_svar_open depth E n X ψ:
+    maximal_mu_depth_of_evar_in_pattern' depth E (svar_open n X ψ)
+    = maximal_mu_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
+  Lemma mmdoeip_evar_open depth E n x ψ:
+  E <> x ->
+  maximal_mu_depth_of_evar_in_pattern' depth E (evar_open n x ψ)
+  = maximal_mu_depth_of_evar_in_pattern' depth E ψ.
+Proof.
+  intros Hne.
+  unfold evar_open.
+  move: depth n.
+  induction ψ; intros depth n'; simpl; try reflexivity.
+  {
+    case_match; simpl; try reflexivity.
+    case_match; simpl; try reflexivity.
+    subst. contradiction.
+  }
+  {
+    rewrite IHψ1. rewrite IHψ2. reflexivity.
+  }
+  {
+    rewrite IHψ1. rewrite IHψ2. reflexivity.
+  }
+  {
+    rewrite IHψ. reflexivity.
+  }
+  {
+    rewrite IHψ. reflexivity.
+  }
+Qed.
+
+
+  Lemma mmdoeip_notin E ψ depth:
+    E ∉ free_evars ψ ->
+    maximal_mu_depth_of_evar_in_pattern' depth E ψ = 0.
+  Proof.
+    intros Hnotin.
+    move: E depth Hnotin.
+    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
+    { case_match. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+  Qed.
+
+  Lemma mmdoeip_S_in E ψ depth:
+    E ∈ free_evars ψ ->
+    maximal_mu_depth_of_evar_in_pattern' (S depth) E ψ
+    = S (maximal_mu_depth_of_evar_in_pattern' depth E ψ).
+  Proof.
+    intros Hin.
+    move: E depth Hin.
+    induction ψ; intros E depth Hin; simpl in *.
+    { case_match. reflexivity. set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+      rewrite IHψ1. assumption.
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+      { assumption. }
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+      { assumption. }
+      simpl.
+      rewrite Nat.max_comm.
+      simpl.
+      reflexivity.
+    }
+    {
+      rewrite IHψ2. assumption.
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+      { assumption. }
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+      { assumption. }
+      simpl.
+      reflexivity.
+    }
+    {
+      exfalso. set_solver.
     }
   }
-  .
+  { set_solver. }
+  {
+    destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+    {
+      rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+    }
+    {
+    rewrite IHψ1. assumption.
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+    { assumption. }
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+    { assumption. }
+    simpl.
+    rewrite Nat.max_comm.
+    simpl.
+    reflexivity.
+  }
+  {
+    rewrite IHψ2. assumption.
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+    { assumption. }
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+    { assumption. }
+    simpl.
+    reflexivity.
+  }
+  {
+    exfalso. set_solver.
+  }
+}
+{
+  rewrite IHψ. assumption. reflexivity.
+}
+{
+  rewrite IHψ. assumption. reflexivity.
+}
+Qed.
+
+
+  Lemma eq_prf_equiv_congruence
+  Γ p q
+  (wfp : well_formed p)
+  (wfq : well_formed q)
+  (EvS : EVarSet)
+  (SvS : SVarSet)
+  E ψ
+  (wfψ : well_formed ψ)
+  (p_sub_EvS : (free_evars p) ⊆ EvS)
+  (q_sub_EvS : (free_evars q) ⊆ EvS)
+  (ψ_sub_EvS : (free_evars ψ) ⊆ EvS)
+  (E_in_EvS : E ∈ EvS)
+  (p_sub_SvS : (free_svars p) ⊆ SvS)
+  (q_sub_SvS : (free_svars q) ⊆ SvS)
+  (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
+  (exdepth : nat)
+  (mudepth : nat)
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+   (pi_Generic
+     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
+     SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true)
+    )
+   i
+  )
+  (pf : Γ ⊢ (p <---> q) using i) :
+      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i.
   Proof.
-    2: {
-      unshelve (eapply (@cast_proof _ _ _ _ _ (@pf_iff_equiv_refl Σ Γ (patt_free_evar x) ltac:(auto)))).
-      abstract (
-        unfold free_evar_subst; case_match; [congruence|]; reflexivity
-      ).
+    remember (size' ψ) as sz.
+    assert (Hsz: size' ψ <= sz) by (abstract (lia)).
+    clear Heqsz.
+
+    move: ψ wfψ Hsz EvS SvS pile
+      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS
+      p_sub_SvS q_sub_SvS ψ_sub_SvS
+    .
+    induction sz; intros ψ wfψ Hsz EvS SvS pile
+      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
+      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl;
+      lazymatch type of pile with
+      | ProofInfoLe ?st _ => remember st as i'
+      end.
+    {
+      destruct (decide (E = x)).
+      {
+        exact pf.
+      }
+      {
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        abstract (wf_auto2).
+      }
     }
-    1: {
-      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
-      abstract (
-        unfold free_evar_subst; case_match; [|congruence];
-        (* rewrite !nest_ex_aux_0; *) reflexivity
-      ).
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      abstract (wf_auto2).
     }
-    all: try assumption.
-    all: unfold is_true in *.
-    all: abstract (wf_auto2).
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      abstract (wf_auto2).
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      abstract (wf_auto2).
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      abstract (wf_auto2).
+    }
+    {
+      pose proof (pf₁ := (IHsz ψ1)).
+      feed specialize pf₁.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₁ EvS SvS).
+      feed specialize pf₁.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        abstract (
+          subst i';
+        simpl;
+        apply pile_evs_svs_kt;
+        [
+        (
+          apply evar_fresh_seq_max
+        )|
+        (
+          apply svar_fresh_seq_max
+        )|
+        (
+          clear pf₁;
+          repeat case_match; simpl; try reflexivity; lia
+        )
+        ]).
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
+      { abstract(
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { abstract(
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
+      }
+      pose proof (pf₂ := (IHsz ψ2)).
+      feed specialize pf₂.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₂ EvS SvS).
+      feed specialize pf₂.
+      {
+        abstract (subst i';
+          eapply pile_trans;[|(apply pile)];
+          simpl;
+          apply pile_evs_svs_kt;
+          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
+          |(rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          |(clear pf₂; repeat case_match; simpl; try reflexivity; try lia)
+          ]
+        ).
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
+      {
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { 
+        abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
+      }
+
+      eapply pf_iff_equiv_trans.
+      5: { 
+        apply conj_intro_meta.
+        4: {
+          apply Framing_right.
+          {
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
+          }
+          {
+            abstract (wf_auto2).
+          }
+          {
+            eapply pf_conj_elim_r_meta in pf₂.
+            apply pf₂.
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
+          }
+        }
+        3: {
+          apply Framing_right.
+          {
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
+          }
+          {
+            abstract (wf_auto2).
+          }
+          {
+            eapply pf_conj_elim_l_meta in pf₂.
+            apply pf₂.
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
+          }
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          abstract (wf_auto2).
+        }
+       }
+       4: {
+        apply conj_intro_meta.
+        4: {
+          apply Framing_left.
+          {
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
+          }
+          {
+            abstract (wf_auto2).
+          }
+          {
+            eapply pf_conj_elim_r_meta in pf₁.
+            apply pf₁.
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
+          }
+        }
+        3: {
+          apply Framing_left.
+          {
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
+          }
+          {
+            abstract (wf_auto2).
+          }
+          {
+            eapply pf_conj_elim_l_meta in pf₁.
+            apply pf₁.
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
+          }
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          abstract (wf_auto2).
+        }         
+       }
+       { abstract (wf_auto2). }
+       { abstract (wf_auto2). }
+       { abstract (wf_auto2). }
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      abstract (wf_auto2).
+    }
+    {
+      pose proof (pf₁ := (IHsz ψ1)).
+      feed specialize pf₁.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₁ EvS SvS).
+      feed specialize pf₁.
+      {
+        abstract (
+          subst i';
+          eapply pile_trans;
+          [|apply pile];
+          apply pile_evs_svs_kt;
+          [(simpl; apply evar_fresh_seq_max)
+          |(simpl; apply svar_fresh_seq_max)
+          |(clear pf₁;repeat case_match; simpl; try reflexivity; simpl in *; lia)
+          ]
+        ).
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
+      {
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
+      }
+
+      pose proof (pf₂ := (IHsz ψ2)).
+      feed specialize pf₂.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₂ EvS SvS).
+      feed specialize pf₂.
+      {
+        abstract (
+          subst i';
+          eapply pile_trans;
+          [|apply pile];
+          apply pile_evs_svs_kt;
+          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
+          |(simpl; rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          |(clear pf₂; repeat case_match; simpl in *; try reflexivity; lia)
+          ]
+        ).
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
+      {
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { 
+        abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
+      }
+
+      apply prf_equiv_of_impl_of_equiv.
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      { apply pf₁. }
+      { apply pf₂. }
+    }
+    {
+      pose proof (frx := @set_evar_fresh_is_fresh' Σ EvS).
+      remember (evar_fresh (elements EvS)) as x.
+
+      (* i = pi_Generic gpi *)
+      destruct i.
+      {
+        abstract (
+          subst i';
+          exfalso;
+          eapply not_generic_in_prop;
+          apply pile
+        ).
+      }
+
+      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+      2: {
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        { abstract (wf_auto2). }
+      }
+
+      pose proof (IH := IHsz (evar_open 0 x ψ)).
+      feed specialize IH.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(rewrite evar_open_size'; lia).
+      }
+      specialize (IH ({[x]} ∪ EvS) SvS).
+      feed specialize IH.
+      {
+        subst i'.
+        simpl.
+        eapply pile_trans.
+        2: { apply pile. }
+        assert (HxneE: x <> E).
+        {
+          clear -frx E_in_EvS. abstract (set_solver).
+        }
+        apply pile_evs_svs_kt.
+        {
+          abstract (
+            simpl;
+            rewrite medoeip_evar_open;
+            [(apply not_eq_sym; exact HxneE)
+            |(simpl;
+              rewrite medoeip_S_in;
+              [(assumption)
+              |(remember (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ) as n;
+                simpl;
+                unfold evar_fresh_s;
+                rewrite -Heqx;
+                clear;
+                set_solver)
+              ]
+            )]
+          ).
+        }
+        {
+          abstract (
+            simpl;
+            rewrite mmdoeip_evar_open;
+            [(apply not_eq_sym; exact HxneE)
+            |(apply reflexivity)
+            ]
+          ).
+        }
+        {
+          abstract (
+            clear IH;
+            repeat case_match; simpl in *; try reflexivity;
+            pose proof (Htmp := n);
+            rewrite mmdoeip_evar_open in Htmp;
+            [(apply not_eq_sym; exact HxneE)|(lia)]
+          ).
+        }
+      }
+      { clear -p_sub_EvS. abstract (set_solver). }
+      { clear -q_sub_EvS. abstract (set_solver). }
+      { clear -E_in_EvS. abstract (set_solver). }
+      { clear -ψ_sub_EvS.
+        abstract (
+          rewrite elem_of_subseteq;
+          intros x0;
+          rewrite free_evars_evar_open'';
+          intros [[H1 H2]| H2];
+          [
+            (subst; clear; set_solver)
+            |(simpl in ψ_sub_EvS; set_solver)
+          ]
+        ).
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          rewrite free_svars_evar_open;
+          exact ψ_sub_SvS
+        ).
+      }
+      apply pf_evar_open_free_evar_subst_equiv_sides in IH.
+      2: { abstract (set_solver). }
+      2: { abstract (wf_auto2). }
+      2: { abstract (wf_auto2). }
+      unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+
+      (* TODO: remove the well-formedness constraints on this lemma*)
+      apply pf_iff_split.
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      {
+        eapply strip_exists_quantify_l.
+        3: {
+          apply Ex_gen.
+          3: {
+            eapply syllogism_meta.
+            5: {
+              useBasicReasoning.
+              apply Ex_quan.
+              wf_auto2.
+            }
+            4: {
+                apply IH1.
+              }
+            { abstract (wf_auto2). }
+            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
+            { abstract (wf_auto2). }
+          }
+          {
+            subst i'.
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_svs_kt.
+            {
+              simpl.
+              rewrite medoeip_S_in.
+              { assumption. }
+              simpl.
+              unfold evar_fresh_s.
+              rewrite -Heqx.
+              clear.
+              abstract (set_solver).
+            }
+            {
+              clear. abstract (set_solver).
+            }
+            {
+              reflexivity.
+            }
+          }
+          {
+            abstract (
+              simpl;
+              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+              set_solver
+            ).
+          }
+        }
+        {
+          abstract (
+            simpl;
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+            set_solver
+          ).
+        }
+        {
+          wf_auto2.
+        }
+      }
+      (* this block is a symmetric version of the previous block*)
+      {
+        eapply strip_exists_quantify_l.
+        3: {
+          apply Ex_gen.
+          3: {
+            eapply syllogism_meta.
+            5: {
+              useBasicReasoning.
+              apply Ex_quan.
+              wf_auto2.
+            }
+            4: {
+                apply IH2.
+              }
+            { wf_auto2. }
+            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
+            { wf_auto2. }
+          }
+          {
+            subst i'.
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_svs_kt.
+            {
+              simpl.
+              rewrite medoeip_S_in.
+              { assumption. }
+              simpl.
+              unfold evar_fresh_s.
+              rewrite -Heqx.
+              clear.
+              abstract (set_solver).
+            }
+            {
+              clear. abstract (set_solver).
+            }
+            {
+              reflexivity.
+            }
+          }
+          {
+            abstract (
+              simpl;
+              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+              set_solver
+            ).
+          }
+        }
+        {
+          abstract (
+            simpl;
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+            set_solver
+          ).
+        }
+        {
+          abstract (wf_auto2).
+        }
+      }
+    }
+    {
+      pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
+      remember (svar_fresh (elements SvS)) as X.
+
+      (* i = pi_Generic gpi *)
+      destruct i.
+      {
+        abstract (
+          subst i';
+          exfalso;
+          eapply not_generic_in_prop;
+          apply pile
+        ).
+      }
+
+      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+      2: {
+        eapply cast_proof'.
+        {
+          rewrite free_evar_subst_no_occurrence.
+          {
+            apply count_evar_occurrences_0.
+            assumption.
+          }
+          rewrite free_evar_subst_no_occurrence.
+          {
+            apply count_evar_occurrences_0.
+            assumption.
+          }
+          reflexivity.
+        }
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        { wf_auto2. }
+      }
+
+      pose proof (IH := IHsz (svar_open 0 X ψ)).
+      feed specialize IH.
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract(rewrite svar_open_size'; lia).
+      }
+      specialize (IH EvS ({[X]} ∪ SvS)).
+      feed specialize IH.
+      {
+        subst i'.
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_svs_kt.
+        {
+          abstract (
+            simpl;
+            rewrite medoeip_svar_open;
+            apply reflexivity
+          ).
+        }
+        {
+          abstract (
+            simpl;
+            rewrite mmdoeip_svar_open;
+            rewrite mmdoeip_S_in;[exact HEinψ|];
+            simpl;
+            unfold svar_fresh_s;
+            rewrite -HeqX;
+            clear;
+            set_solver
+          ).
+        }
+        {
+          abstract (
+            clear IH;
+            repeat case_match; simpl in *; try reflexivity;
+            pose proof (Htmp := n);
+            rewrite mmdoeip_svar_open in Htmp;
+            pose proof (Htmp2 := e);
+            rewrite mmdoeip_S_in in Htmp2;
+            [exact HEinψ|];
+            inversion Htmp2
+          ).
+        }
+      }
+      {
+        exact p_sub_EvS.
+      }
+      {
+        exact q_sub_EvS.
+      }
+      {
+        exact E_in_EvS.
+      }
+      {
+        abstract (
+          rewrite free_evars_svar_open;
+          simpl in ψ_sub_EvS;
+          apply ψ_sub_EvS
+        ).
+      }
+      {
+        clear -p_sub_SvS.
+        abstract (set_solver).
+      }
+      {
+        clear -q_sub_SvS.
+        abstract (set_solver).
+      }
+      {
+        rewrite elem_of_subseteq.
+        intros X'.
+        rewrite free_svars_svar_open''.
+        intros [[H1 H2]|H1].
+        {
+          abstract (subst X'; clear; set_solver).
+        }
+        {
+          abstract (
+            simpl in ψ_sub_SvS;
+            clear -H1 ψ_sub_SvS;
+            set_solver
+          ).
+        }
+      }
+
+      apply pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst in IH.
+      3: { abstract (wf_auto2). }
+      2: { abstract (wf_auto2). }
+
+      unshelve (epose proof (IH1 := @pf_iff_proj1 _ _ _ _ _ _ _ IH)).
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      unshelve (epose proof (IH2 := @pf_iff_proj2 _ _ _ _ _ _ _ IH)).
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+
+      eapply pf_iff_mu_remove_svar_quantify_svar_open.
+      5: {
+        apply pf_iff_split.
+        4: {
+          apply mu_monotone.
+          4: {
+            unfold svar_open.
+            apply IH2.
+          }
+          3: {
+            abstract (
+              wf_auto2;
+              simpl in *;
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              set_solver
+            ).
+          }
+          2: {
+            abstract (
+              wf_auto2;
+              simpl in *;
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+              set_solver
+            ).
+          }
+          {
+            abstract (
+              subst i';
+              eapply pile_trans;[|apply pile];
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(simpl;
+                rewrite mmdoeip_S_in;
+                [(exact HEinψ)|];
+                simpl;
+                unfold svar_fresh_s;
+                rewrite -HeqX;
+                clear;
+                set_solver
+              )|];
+              repeat case_match; simpl in *; try reflexivity;
+              pose proof (Htmp := e);
+              rewrite mmdoeip_S_in in Htmp;
+              [exact HEinψ|];
+              inversion Htmp
+            ).
+          }
+        }
+        3: {
+          apply mu_monotone.
+          4: {
+            unfold svar_open.
+            apply IH1.
+          }
+          3: {
+            abstract (
+              wf_auto2; simpl in *;
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+              set_solver
+            ).
+          }
+          2: {
+            abstract (
+              wf_auto2; simpl in *;
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              set_solver
+            ).
+          }
+          {
+            abstract (
+              subst i';
+              eapply pile_trans;[|apply pile];
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(simpl;
+                rewrite mmdoeip_S_in;
+                [(exact HEinψ)|];
+                simpl;
+                unfold svar_fresh_s;
+                rewrite -HeqX;
+                clear;
+                set_solver
+              )|];
+              repeat case_match; simpl in *; try reflexivity;
+              pose proof (Htmp := e);
+              rewrite mmdoeip_S_in in Htmp;
+              [exact HEinψ|];
+              inversion Htmp
+            ).
+          }          
+        }
+        {
+          cut (X ∉ free_svars ψ.[[evar:E↦p]]).
+          {
+            abstract (wf_auto2).
+          }
+          abstract (
+            pose proof (@free_svars_free_evar_subst Σ ψ E p);
+            clear -H frX ψ_sub_SvS p_sub_SvS;
+            set_solver
+          ).
+        }
+        {
+          cut (X ∉ free_svars ψ.[[evar:E↦q]]).
+          {
+            abstract (wf_auto2).
+          }
+          abstract (
+            pose proof (@free_svars_free_evar_subst Σ ψ E q);
+            clear -H frX ψ_sub_SvS q_sub_SvS;
+            set_solver
+          ).
+        }
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (
+          pose proof (@free_svars_free_evar_subst Σ ψ E p);
+          clear -H frX ψ_sub_SvS p_sub_SvS;
+          set_solver
+        ).
+      }
+      {
+        abstract (
+          pose proof (@free_svars_free_evar_subst Σ ψ E q);
+          clear -H frX ψ_sub_SvS q_sub_SvS;
+          set_solver
+        ).
+      }
+    }
   Defined.
 
-  Lemma prf_equiv_congruence Γ p q C:
+  Print eq_prf_equiv_congruence.
+
+  Lemma prf_equiv_congruence Γ p q C
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+   (pi_Generic
+     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+    )
+   i
+  ):
     PC_wf C ->
-    Γ ⊢ (p <---> q) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+    Γ ⊢ (p <---> q) using i ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))) using i.
   Proof.
     intros wfC Hiff.
-    pose proof (proved_impl_wf _ _ Hiff).
-    assert (well_formed p) by wf_auto2.
-    assert (well_formed q) by wf_auto2.
-    destruct C as [pcEvar pcPattern].
-    apply (
-        @eq_prf_equiv_congruence Γ p q ltac:(assumption) ltac:(assumption)
-          (free_evars pcPattern ∪ free_evars p ∪ free_evars q)
-          (free_svars pcPattern ∪ free_svars p ∪ free_svars q)
-      ); simpl;  assumption.
+    assert (well_formed (p <---> q)).
+    { abstract (
+        pose proof (proved_impl_wf _ _ (proj1_sig Hiff));
+        assumption
+      ).
+    }
+    assert (well_formed p) by (abstract (wf_auto2)).
+    assert (well_formed q) by (abstract (wf_auto2)).
+    
+    apply @eq_prf_equiv_congruence
+    with (EvS := (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}))
+         (SvS := (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q))
+         (exdepth := 0)
+         (mudepth := 0)
+    .
+    { assumption. }
+    { assumption. }
+    { abstract (simpl; wf_auto2). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (simpl; clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (simpl; clear; set_solver). }
+    { simpl. exact pile. }
+    { exact Hiff. }
   Defined.
 
-  Lemma uses_svar_subst_eq_prf_equiv_congruence
-        Γ p q E ψ EvS SvS SvS'
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    SvS ⊆ SvS' ->
-    uses_svar_subst SvS pf = false ->
-    uses_svar_subst SvS (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS' E ψ wfψ pf) = false.
+  Lemma framing_patterns_prf_equiv_congruence Γ p q C i pile wfC pf:
+    (@framing_patterns _ _ _ (proj1_sig (@prf_equiv_congruence Γ p q C i pile wfC pf))) = [].
   Proof.
-    intros Hsub H.
+    unfold prf_equiv_congruence.
+    destruct C; simpl in *.
 
-    apply (@eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS SvS' E ψ wfψ pf result
-      => SvS ⊆ SvS' ->
-         uses_svar_subst SvS pf = false ->
-         uses_svar_subst SvS result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS SvS' E x wfψ pf Hsub Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_svar_subst.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      subst pf₁. subst pf₂.
-      specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
-      pose proof (indifferent_to_prop_uses_svar_subst).
-      solve_indif; auto.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      solve_indif; subst; auto.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' x frx wfψ pf IH IH' IH1 IH2 IH3 IH4 IH3' IH4'.
-      intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      solve_indif; auto.
-    - clear. intros Γ p q wfp wfq EvS SvS' E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
-      intros.
-      unfold pf_iff_mu_remove_svar_quantify_svar_open.
-      rewrite indifferent_to_cast_uses_svar_subst.
-      inversion Heq; subst; clear Heq.
-      specialize (Hind ltac:(assumption) ltac:(assumption)).
-      solve_indif; auto.
-      + case_match.
-        { clear -frX e H. set_solver. }
-        solve_indif. apply Hind.
-      + case_match.
-        { clear -frX e H. set_solver. }
-        solve_indif. apply Hind.
-    - assumption.
-    - assumption.
-  Qed.
-
-
-  Lemma uses_ex_gen_eq_prf_equiv_congruence
-        Γ p q E ψ EvS EvS' SvS
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    EvS ⊆ EvS' ->
-    uses_ex_gen EvS pf = false ->
-    uses_ex_gen EvS (@eq_prf_equiv_congruence Γ p q wfp wfq EvS' SvS E ψ wfψ pf) = false.
-  Proof.
-    intros Hsub H.
-    apply  (@eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS' SvS E ψ wfψ pf result
-      => EvS ⊆ EvS' -> uses_ex_gen EvS pf = false -> uses_ex_gen EvS result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS' SvS E x wfψ pf Hsub Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_ex_gen.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E X wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E wfψ pf Hsub Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ₁ ϕ₂ wfψ pf pf₁ pf₂.
-      intros Heq1 Hind1 Heq2 Hind2 Hsub Hpf.
-      subst pf₁. subst pf₂.
-      specialize (Hind1 Hsub Hpf). specialize (Hind2 Hsub Hpf).
-      solve_indif; auto.
-    - clear. intros Γ p q wfp wfq EvS' SvS E ϕ' X frX wfψ pf Ih IH' IH1 IH2.
-      intros.
-      unfold pf_iff_mu_remove_svar_quantify_svar_open.
-      solve_indif; auto. rewrite -IH2. auto. rewrite -IH'. auto.
-    - clear. intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-      solve_indif; auto; simpl; case_match.
-      + exfalso. clear -frx H e. set_solver.
-      + rewrite !orbF.  solve_indif. auto.
-      + exfalso. clear -frx H e. set_solver.
-      + rewrite !orbF.  solve_indif. auto.
-    - clear. intros.
-      inversion Heq; subst; clear Heq.
-      solve_indif; auto.
-    - assumption.
-    - assumption.
-  Qed.
-
-  Lemma uses_kt_nomu_eq_prf_equiv_congruence
-        Γ p q E ψ EvS SvS
-        (wfp: well_formed p)
-        (wfq: well_formed q)
-        (wfψ: well_formed ψ)
-        (pf : Γ ⊢ (p <---> q)):
-    mu_free ψ ->
-    uses_kt pf = false ->
-    uses_kt (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ψ wfψ pf) = false.
-  Proof.
-    intros Hmfψ H.
-    apply  (@eq_prf_equiv_congruence_elim
-     (fun Γ p q wfp wfq EvS SvS E ψ wfψ pf result
-      => mu_free ψ -> uses_kt pf = false -> uses_kt result = false)
-    ).
-    - clear. intros Γ p q wfp wfq EvS SvS E x wfψ pf Hmfψ Hpf.
-      unfold pf_ite.
-      destruct (decide (E = x)).
-      + unfold eq_prf_equiv_congruence_obligation_1.
-        rewrite indifferent_to_cast_uses_kt.
-        exact Hpf.
-      + unfold eq_prf_equiv_congruence_obligation_2.
-        rewrite indifferent_to_cast_uses_kt.
-        reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E X wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - clear. intros Γ p q wfp wfq EvS SvS E wfψ pf Hmfψ Hpf.
-      reflexivity.
-    - intros. subst. simpl in * |-. destruct_and!.
-      solve_indif; fold (@uses_kt Σ Γ0); auto.
-    - intros. subst. simpl in * |-. destruct_and!.
-      solve_indif; auto.
-    - intros.
-      inversion Heq; subst; clear Heq.
-      inversion Heq0; subst; clear Heq0.
-      inversion Heq1; subst; clear Heq1.
-      simpl in * |-.
-      solve_indif; fold (@uses_kt Σ Γ0); auto; apply Hind.
-      + apply mu_free_evar_open; assumption.
-      + assumption.
-      + apply mu_free_evar_open; assumption.
-      + assumption.
-    - intros.
-      subst.
-      simpl in * |-.
-      congruence.
-    - assumption.
-    - assumption.
-  Qed.
-
+    (*
+    unfold eq_prf_equiv_congruence.
+    induction pcPattern.*)
+  Abort.
 
 
 End FOL_helpers.
 
-Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
-  well_formed ϕ₁ = true ->
-  well_formed ϕ₂ = true ->
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
+Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) :
+  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
-  intros wfϕ₁ wfϕ₂ H.
+  intros H.
+  pose proof (Hwf := @proved_impl_wf Σ Γ _ (proj1_sig H)).
+  assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
+  assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
   apply Ex_gen.
-  { assumption. }
-  { unfold exists_quantify. apply wf_ex_evar_quantify. assumption. }
-  2: { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
+  { exact pile. }
+  { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
 
   unfold exists_quantify.
-  eapply syllogism_intro. 4: apply H.
-  { auto. }
-  { auto. }
-  { apply wf_ex_evar_quantify. assumption. }
-  clear H wfϕ₁ ϕ₁.
+  eapply syllogism_meta. 4: apply H.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  clear H wfϕ₁ ϕ₁ Hwf.
 
-  replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
-  2: { unfold instantiate.
+  (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
+     however, without [cast_proof'] the [replace] tactics does not work,
+     maybe because of implicit parameters.
+   *)
+  eapply (cast_proof').
+  {
+    replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
+    2: { unfold instantiate.
        rewrite bevar_subst_evar_quantify_free_evar.
        now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
        reflexivity.
+    }
+    reflexivity.
   }
+        (* i = pi_Generic gpi *)
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  
+  useBasicReasoning.
   apply Ex_quan.
   abstract (wf_auto2).
-Defined.
-
-Lemma ex_quan_monotone_nowf {Σ : Signature} Γ x ϕ₁ ϕ₂:
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
-Proof.
-  intros H.
-  pose proof (Hwf := proved_impl_wf _ _ H).
-  pose proof (well_formed_imp_proj1 Hwf).
-  pose proof (well_formed_imp_proj2 Hwf).
-  apply ex_quan_monotone; assumption.
 Defined.
 
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁).
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
-  apply ex_quan_monotone; auto.
+  apply ex_quan_monotone.
+  { apply pile_refl. }
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  mgDestructAnd 0. auto. mgExactn 0; auto.
+  mgDestructAnd 0. mgExactn 0.
 Defined.
 
 Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂).
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
-  apply ex_quan_monotone; auto.
+  apply ex_quan_monotone.
+  { apply pile_refl. }
   toMyGoal.
   { wf_auto2. }
   mgIntro.
@@ -5398,35 +6830,30 @@ Proof.
   mgExactn 1.
 Defined.
 
-Lemma lhs_to_and {Σ : Signature} Γ a b c:
+Lemma lhs_to_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ (a and b) ---> c ->
-  Γ ⊢ a ---> b ---> c.
+  Γ ⊢ (a and b) ---> c using i ->
+  Γ ⊢ a ---> b ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
   { wf_auto2. }
-  do 2 mgIntro. mgApplyMeta H; auto.
-  fromMyGoal. intros _ _. apply conj_intro; auto.
+  do 2 mgIntro. mgApplyMeta H.
+  fromMyGoal.
+  usePropositionalReasoning.
+  apply conj_intro.
+  { wf_auto2. }
+  { wf_auto2. }
 Defined.
 
-Program Canonical Structure lhs_to_and_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty1 P (@lhs_to_and Σ Γ a b c wfa wfb wfc) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma lhs_from_and {Σ : Signature} Γ a b c:
+Lemma lhs_from_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c ->
-  Γ ⊢ (a and b) ---> c.
+  Γ ⊢ a ---> b ---> c using i ->
+  Γ ⊢ (a and b) ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
@@ -5434,10 +6861,12 @@ Proof.
   mgIntro.
   mgAssert (b).
   { wf_auto2. }
-  { fromMyGoal. intros _ _. apply pf_conj_elim_r; auto. }
+  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_r.
+    wf_auto2. wf_auto2.
+  }
   mgAssert (a) using first 1.
   { wf_auto2. }
-  { fromMyGoal. intros _ _. apply pf_conj_elim_l; auto. }
+  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_l; wf_auto2. }
   mgAdd H.
   mgAssert ((b ---> c)).
   { wf_auto2. }
@@ -5446,28 +6875,16 @@ Proof.
   mgExactn 3.
 Defined.
 
-Program Canonical Structure lhs_from_and_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty1 P (@lhs_from_and Σ Γ a b c wfa wfb wfc) _.
-Next Obligation.
-  solve_indif. simpl.
-  apply (@liftP_impl_P' Σ P Γ _ c [a and b] _ ltac:(reflexivity)).
-  solve_indif; auto; unfold liftP; solve_indif.
-Qed.
-
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb wfl.
   induction l.
-  - simpl. apply conj_intro; auto.
+  - simpl. apply conj_intro; assumption.
   - simpl. pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
     specialize (IHl wfl').
     toMyGoal.
@@ -5480,69 +6897,39 @@ Proof.
     { wf_auto2. }
     { mgApply 1. mgExactn 2. }
     mgClear 2. mgClear 1. mgClear 0.
-    fromMyGoal. intros _ _. apply IHl.
+    fromMyGoal. apply IHl.
 Defined.
 
-Program Canonical Structure prf_conj_split_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty0 P (@prf_conj_split Σ Γ a b l wfa wfb wfl) _.
-Next Obligation.
-  intros.
-  induction l.
-  - solve_indif.
-  - simpl. case_match. solve_indif. apply IHl.
-Qed.
-
-Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
+Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) -> 
-  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) using i -> 
+  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
 Proof.
-  intros. eapply Modus_ponens. 4: apply prf_conj_split. all: auto 10.
+  intros. eapply MP. 2: { usePropositionalReasoning. apply prf_conj_split; assumption. }
+  exact H2.
 Defined.
 
-Program Canonical Structure prf_conj_split_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty1 P (@prf_conj_split_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l:
+Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) -> 
-  Γ ⊢ (foldr patt_imp b l) ->
-  Γ ⊢ (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) using i -> 
+  Γ ⊢ (foldr patt_imp b l) using i ->
+  Γ ⊢ (foldr patt_imp (a and b) l) using i.
 Proof.
-  intros. eapply Modus_ponens. 4: apply prf_conj_split_meta. all: auto 10.
+  intros. eapply MP.
+  2: {
+    apply prf_conj_split_meta; assumption.
+  }
+  exact H3.
 Defined.
 
-Program Canonical Structure prf_conj_split_meta_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_conj_split_meta_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l:
-  @mkMyGoal Σ Γ l a ->
-  @mkMyGoal Σ Γ l b ->
-  @mkMyGoal Σ Γ l (a and b).
+Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l i:
+  @mkMyGoal Σ Γ l a i ->
+  @mkMyGoal Σ Γ l b i ->
+  @mkMyGoal Σ Γ l (a and b) i.
 Proof.
   intros Ha Hb.
   unfold of_MyGoal in *. simpl in *.
@@ -5558,20 +6945,14 @@ Proof.
   { abstract (wf_auto2). }
 Defined.
 
-Program Canonical Structure MyGoal_splitAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-  := TacticProperty2 P (@MyGoal_splitAnd Σ Γ a b l) _.
-Next Obligation. unfold liftP. solve_indif. apply H. apply H0. Qed.
-
 Ltac mgSplitAnd := apply MyGoal_splitAnd.
 
 Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c ---> (a and b).
+  Γ ⊢ a ---> b ---> c ---> (a and b)
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -5582,28 +6963,13 @@ Proof.
   - mgExactn 1.
 Defined.
 
-Local Program Canonical Structure ex_mgSplitAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b c : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty0 P (@ex_mgSplitAnd Σ Γ a b c wfa wfb wfc) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-(* Hints *)
-#[export]
- Hint Resolve A_impl_A : core.
-
-
 Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
-      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
+  using PropositionalReasoning.
 Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
@@ -5616,7 +6982,7 @@ Proof.
     + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       (* TODO we need some [mgRevert] tactic *)
-      fromMyGoal. intros _ _. toMyGoal.
+      fromMyGoal. toMyGoal.
       { wf_auto2. }
       unshelve(mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
@@ -5625,7 +6991,7 @@ Proof.
       mgExactn 0.
     + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
-      fromMyGoal. intros _ _. toMyGoal.
+      fromMyGoal. toMyGoal.
       { wf_auto2. }
       unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
@@ -5634,135 +7000,88 @@ Proof.
       mgExactn 1.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty0 P (@prf_local_goals_equiv_impl_full_equiv Σ Γ a b l wfa wfb wfl) _.
-Next Obligation.
-  intros.
-  induction l.
-  - solve_indif.
-  - simpl. case_match. solve_indif.
-    + apply liftP_impl_P.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
-        a0 ---> foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)) ((a0 --->
-        foldr (@patt_imp Σ) (a <---> b) l --->
-        foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)))).
-      { solve_indif. }
-      solve_indif.
-      intros.
-      simpl.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
-      { apply IHl. }
-      solve_indif.
-    + apply liftP_impl_P.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
-        a0 ---> foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)) ((a0 --->
-        foldr (@patt_imp Σ) (a <---> b) l --->
-        foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)))).
-      { solve_indif. }
-      solve_indif.
-      intros.
-      simpl.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
-      { apply IHl. }
-      solve_indif.
-Qed.
-
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H.
-  eapply Modus_ponens.
-  4: apply prf_local_goals_equiv_impl_full_equiv; auto.
-  all: auto.
+  eapply MP.
+  2: { usePropositionalReasoning. apply prf_local_goals_equiv_impl_full_equiv; assumption. }
+  exact H.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty1 P (@prf_local_goals_equiv_impl_full_equiv_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ (foldr patt_imp g₁ l) ->
-  Γ ⊢ (foldr patt_imp g₂ l).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ (foldr patt_imp g₁ l) using i ->
+  Γ ⊢ (foldr patt_imp g₂ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
-  eapply Modus_ponens.
-  4: eapply pf_iff_proj1.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
-  all: auto.
+  eapply MP.
+  2: eapply pf_iff_proj1.
+  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  7: apply H1.
+  1: exact H2.
+  all: wf_auto2.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj1_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj1 Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ (foldr patt_imp g₂ l) ->
-  Γ ⊢ (foldr patt_imp g₁ l).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ (foldr patt_imp g₂ l) using i ->
+  Γ ⊢ (foldr patt_imp g₁ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
-  eapply Modus_ponens.
-  4: eapply pf_iff_proj2.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
-  all: auto.
+  eapply MP.
+  2: eapply pf_iff_proj2.
+  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  7: apply H1.
+  1: exact H2.
+  all: wf_auto2.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj2_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj2 Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+  (pi_Generic
+    (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+    )
+    i
+  ):
   PC_wf C ->
   wf l ->
-  Γ ⊢ p <---> q ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l).
+  Γ ⊢ p <---> q using i ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using i.
 Proof.
   intros wfC wfl Himp.
   induction l; simpl in *.
   - apply prf_equiv_congruence; assumption.
-  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+  - pose proof (wfal := wfl).
+    unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
-    pose proof (proved_impl_wf _ _ IHl).
+    pose proof (Hwf1 := proved_impl_wf _ _ (proj1_sig IHl)).
+    pose proof (Hwf2 := proved_impl_wf _ _ (proj1_sig Himp)).
+    assert (well_formed (emplace C p)).
+    {
+      unfold emplace.
+      wf_auto2.
+    }
+    assert (well_formed (emplace C q)).
+    {
+      unfold emplace.
+      wf_auto2.
+    }
     toMyGoal.
-    { wf_auto2. }
+    { unfold emplace. wf_auto2. }
     unfold patt_iff.
     mgSplitAnd.
     + mgIntro. mgIntro.
@@ -5783,17 +7102,38 @@ Proof.
       mgExactn 2.
 Defined.
 
-Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
-  Γ ⊢ p <---> q ->
-  @mkMyGoal Σ Γ l (emplace C q) ->
-  @mkMyGoal Σ Γ l (emplace C p).
+Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (i : ProofInfo):
+  Γ ⊢ p <---> q using i ->
+  @mkMyGoal Σ Γ l (emplace C q) i ->
+  (ProofInfoLe
+  (pi_Generic
+     (ExGen := list_to_set
+                 (evar_fresh_seq
+                    (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q
+                     ∪ {[pcEvar C]})
+                    (maximal_exists_depth_of_evar_in_pattern 
+                       (pcEvar C) (pcPattern C))),
+      SVSubst := list_to_set
+                   (svar_fresh_seq
+                      (free_svars (pcPattern C) ∪ free_svars p
+                       ∪ free_svars q)
+                      (maximal_mu_depth_of_evar_in_pattern 
+                         (pcEvar C) (pcPattern C))),
+      KT := (if
+              decide
+                (0 =
+                 maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
+             is left _
+             then false
+             else true))) i) ->
+  @mkMyGoal Σ Γ l (emplace C p) i.
 Proof.
-  intros Hpiffq H.
+  intros Hpiffq H pile.
   unfold of_MyGoal in *. simpl in *.
   intros wfcp wfl.
   feed specialize H.
   { abstract (
-      pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
+      pose proof (Hwfiff := proved_impl_wf _ _ (proj1_sig Hpiffq));
       unfold emplace;
       apply well_formed_free_evar_subst_0;[wf_auto2|];
       fold (PC_wf C);
@@ -5803,17 +7143,18 @@ Proof.
   }
   { exact wfl. }
 
-  eapply Modus_ponens.
-  4: apply pf_iff_proj2.
-  4: abstract (wf_auto2).
-  5: apply prf_equiv_congruence_iter.
-  7: apply Hpiffq.
-  3: apply H.
-  5: exact wfl.
-  4: eapply wf_emplaced_impl_wf_context;
+  eapply MP.
+  2: apply pf_iff_proj2.
+  2: abstract (wf_auto2).
+  3: apply prf_equiv_congruence_iter.
+  3: exact pile.
+  5: apply Hpiffq.
+  1: apply H.
+  3: exact wfl.
+  2: eapply wf_emplaced_impl_wf_context;
      apply wfcp.
-  1,3: apply proved_impl_wf in H; exact H.
-  1: abstract (apply proved_impl_wf in H; wf_auto2).
+  pose proof (@proved_impl_wf _ _ _ (proj1_sig H)).
+  wf_auto2.
 Defined.
 
 Ltac2 mutable ml_debug_rewrite := false.
@@ -5873,7 +7214,7 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
         =>
           progress rewrite -> (@free_evar_subst_no_occurrence _ star p q) by (
             apply count_evar_occurrences_0;
-            unfold star;
+            subst star;
             eapply evar_is_fresh_in_richer';
             [|apply set_evar_fresh_is_fresh'];
             simpl; clear; set_solver
@@ -5884,14 +7225,21 @@ Local Ltac reduce_free_evar_subst_2 star :=
   (* unfold free_evar_subst; *)
   repeat (reduce_free_evar_subst_step_2 star).
 
+Local Tactic Notation "solve_fresh_contradictions_2'" constr(star) constr(x) constr(h) :=
+  let hcontra := fresh "Hcontra" in
+  assert (hcontra: x <> star) by (subst star; unfold fresh_evar,evar_fresh_s; try clear h; simpl; solve_fresh_neq);
+  rewrite -> h in hcontra;
+  contradiction.
+
 Local Ltac solve_fresh_contradictions_2 star :=
   unfold fresh_evar; simpl;
   match goal with
+  | h: ?x = star |- _ =>
+    let hprime := fresh "hprime" in
+    pose proof (hprime := eq_sym h);
+    solve_fresh_contradictions_2' star x hprime
   | h: star = ?x |- _
-    => let hcontra := fresh "Hcontra" in
-       assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
-       rewrite -> h in hcontra;
-       contradiction
+    => solve_fresh_contradictions_2' star x h
   end.
 
 Local Ltac clear_obvious_equalities_2 :=
@@ -5917,8 +7265,36 @@ Ltac simplify_emplace_2 star :=
    [emplace C a = phi].
  *)
 
+ 
+ Ltac simplify_pile_side_condition_helper star :=
+  subst star;
+  unfold fresh_evar,evar_fresh_s;
+  eapply evar_is_fresh_in_richer';
+  [|apply set_evar_fresh_is_fresh'];
+  clear; simpl; set_solver.
+
+ Ltac simplify_pile_side_condition star :=
+  cbn;
+  simplify_emplace_2 star;
+  repeat (rewrite (mmdoeip_notin, medoeip_notin);
+  [(simplify_pile_side_condition_helper star)|]);
+  simpl;
+  repeat (
+    lazymatch goal with
+    | [H: context [maximal_mu_depth_of_evar_in_pattern' _ _ _] |- _ ]
+      => rewrite mmdoeip_notin in H;
+         [(simplify_pile_side_condition_helper star)|]
+    | [H: context [maximal_exists_depth_of_evar_in_pattern' _ _ _] |- _ ]
+      => rewrite medoeip_notin in H;
+         [(simplify_pile_side_condition_helper star)|]
+    end
+  );
+  simpl in *;
+  try lia.
+
 Ltac2 Type HeatResult := {
   star_ident : ident ;
+  star_eq : ident ;
   pc : constr ;
   ctx : Pattern.context ;
   ctx_pat : constr ;
@@ -5938,7 +7314,9 @@ Ltac2 heat :=
       => (
          let fr := constr:(fresh_evar $phi) in
          let star_ident := Fresh.in_goal ident:(star) in
-         set ($star_ident := $fr);
+         let star_eq := Fresh.in_goal ident:(star_eq) in
+         (*set ($star_ident := $fr);*)
+         remember $fr as $star_ident eqn:star_eq;
          let star_hyp := Control.hyp star_ident in
          let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
          let pc := constr:((@Build_PatternCtx _ $star_hyp $ctxpat)) in
@@ -5950,17 +7328,17 @@ Ltac2 heat :=
              ))
            | ()
            ];
-         { star_ident := star_ident; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
+         { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
   lazy_match! Constr.type hiff with
-  | @ML_proof_system _ _ (?a <---> ?a')
+  | _ ⊢ (?a <---> ?a') using _
     =>
     lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p ?i)]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
@@ -5970,9 +7348,10 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
          eapply (@cast_proof_mg_goal _ $g) >
            [ rewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
-         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
-         lazy_match! goal with
-         | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $i $hiff)  >
+         [
+         (lazy_match! goal with
+         | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p _)]
            =>
              let heq2 := Fresh.in_goal ident:(heq2) in
              let plugged := Pattern.instantiate (hr.(ctx)) a' in
@@ -5986,8 +7365,10 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_mg_goal _ $g) >
                [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [heq2 ; (hr.(star_ident))]
-         end
+             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+         end)
+         | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
+         ]
     end
   end.
 
@@ -6006,60 +7387,55 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
-Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
-  Γ ⊢ (A <---> B) ->
-  Γ ⊢ (B <---> A).
+Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
+  Γ ⊢ (A <---> B) using i ->
+  Γ ⊢ (B <---> A) using i.
 Proof.
   intros H.
-  pose proof (wf := proved_impl_wf _ _ H).
+  pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
   assert (well_formed A) by wf_auto2.
   assert (well_formed B) by wf_auto2.
   apply pf_iff_equiv_sym; assumption.
 Defined.
 
-Program Canonical Structure pf_iff_equiv_sym_nowf_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-  := ProofProperty1 P (@pf_iff_equiv_sym_nowf Σ Γ a b) _.
-Next Obligation. solve_indif; assumption. Qed.
-
 Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
   mgRewrite Hiff at atn.
 
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
-  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
+  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+(* Ltac2 Set ml_debug_rewrite := true.*)
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x i
+  (pile : ProofInfoLe BasicReasoning i):
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+  Γ ⊢ a <---> a' using i ->
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using i.
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
+  2: { apply pile. }
   mgRewrite <- Hiff at 3.
-  fromMyGoal. intros _ _.
-  apply pf_iff_equiv_refl; abstract(wf_auto2).
+  2: { apply pile. }
+  fromMyGoal.
+  usePropositionalReasoning.
+  apply pf_iff_equiv_refl. abstract(wf_auto2).
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
-  Γ ⊢ Top.
+  Γ ⊢ Top using PropositionalReasoning.
 Proof.
   apply false_implies_everything.
   { wf_auto2. }
 Defined.
 
-Program Canonical Structure top_holds_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-  := ProofProperty0 P (@top_holds Σ Γ) _.
-Next Obligation. solve_indif; assumption. Qed.
-
 Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ ϕ <---> (ϕ <---> Top).
+  Γ ⊢ ϕ <---> (ϕ <---> Top)
+  using PropositionalReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -6067,32 +7443,22 @@ Proof.
   mgSplitAnd; mgIntro.
   - mgSplitAnd.
     + mgIntro. mgClear 0. mgClear 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       apply top_holds. (* TODO: we need something like [mgExactMeta top_holds] *)
-    + fromMyGoal. intros _ _.
+    + fromMyGoal.
       apply P1; wf_auto2.
   - mgDestructAnd 0.
     mgApply 1.
     mgClear 0.
     mgClear 0.
-    fromMyGoal. intros _ _.
+    fromMyGoal.
     apply top_holds.
 Defined.
 
-Program Canonical Structure phi_iff_phi_top_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@phi_iff_phi_top Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P.
-  unfold phi_iff_phi_top. simpl.
-  solve_indif; simpl; unfold liftP; solve_indif.
-Qed.
-
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥).
+  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥)
+  using PropositionalReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -6100,27 +7466,17 @@ Proof.
   mgSplitAnd; mgIntro.
   - mgSplitAnd.
     + mgExactn 0.
-    + mgClear 0. fromMyGoal. intros _ _.
+    + mgClear 0. fromMyGoal.
       apply false_implies_everything.
       { wf_auto2. }
   - mgDestructAnd 0.
     mgExactn 0.
 Defined.
 
-Program Canonical Structure not_phi_iff_phi_bott_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@not_phi_iff_phi_bott Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
-  solve_indif. unfold liftP. solve_indif.
-Qed.
-
-
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
-  Γ ⊢ A <---> ! ! A.
+  Γ ⊢ A <---> ! ! A
+  using PropositionalReasoning.
 Proof.
   intros wfA.
   apply pf_iff_split.
@@ -6130,29 +7486,20 @@ Proof.
     { wf_auto2. }
   - apply not_not_elim.
     { wf_auto2. }
-Defined.    
-
-Program Canonical Structure not_not_iff_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@not_not_iff Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
-  solve_indif. unfold liftP. solve_indif.
-Qed.
+Defined.
 
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂)).
+  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
+  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
   { wf_auto2. }
   mgIntro. mgDestructAnd 0.
-  fromMyGoal. intros _ _.
+  fromMyGoal.
 
   remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
   apply strip_exists_quantify_l with (x0 := x).
@@ -6162,16 +7509,15 @@ Proof.
   }
   { wf_auto2. }
   apply Ex_gen.
+  { apply pile_refl. }
   { wf_auto2. }
-  { wf_auto2. }
-  2: { subst x. apply set_evar_fresh_is_fresh. }
   
   apply lhs_to_and.
   { wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     replace (evar_open 0 x ϕ₁ and ϕ₂)
             with (evar_open 0 x (ϕ₁ and ϕ₂)).
@@ -6185,6 +7531,7 @@ Proof.
     }
     reflexivity.
   }
+  useBasicReasoning.
   apply Ex_quan.
   wf_auto2.
 Defined.
@@ -6193,14 +7540,15 @@ Defined.
 Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂).
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
+  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
   mgSplitAnd.
-  - fromMyGoal. intros _ _.
+  - fromMyGoal.
     remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
     apply strip_exists_quantify_l with (x0 := x).
     { subst x. apply set_evar_fresh_is_fresh. }
@@ -6216,8 +7564,8 @@ Proof.
     }
     { wf_auto2. }
     apply ex_quan_monotone.
-    { wf_auto2. }
-    { wf_auto2. }
+    { apply pile_refl. }
+
     unfold evar_open. simpl_bevar_subst.
     rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
     {
@@ -6226,9 +7574,9 @@ Proof.
     toMyGoal.
     { wf_auto2. }
     mgIntro. mgDestructAnd 0. mgExactn 0.
-  - fromMyGoal. intros _ _.
+  - fromMyGoal.
     remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
-    eapply cast_proof.
+    eapply cast_proof'.
     {
       rewrite -[ϕ₁ and ϕ₂](@evar_quantify_evar_open Σ x 0).
       { subst x. apply set_evar_fresh_is_fresh. }
@@ -6236,12 +7584,11 @@ Proof.
       reflexivity.
     }
     apply Ex_gen.
-    { wf_auto2. }
-    { wf_auto2. }
-    2: { subst x. eapply evar_is_fresh_in_richer'.
-         2: { apply set_evar_fresh_is_fresh. }
-         solve_free_evars_inclusion 0.
+    { apply pile_refl. }
+    { eapply evar_is_fresh_in_richer. 2: { subst x. apply set_evar_fresh_is_fresh'. }
+      simpl. clear. set_solver.
     }
+
     unfold evar_open.
     simpl_bevar_subst.
     rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
@@ -6258,20 +7605,26 @@ Defined.
 Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂).
+  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
+  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply conj_intro_meta.
   { wf_auto2. }
   { wf_auto2. }
   - apply prenex_exists_and_2; assumption.
-  - apply prenex_exists_and_1; assumption.
+  - (* TODO we need a tactic to automate this change *)
+    replace (fresh_evar (ϕ₁ and ϕ₂))
+    with (fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))).
+    2: { cbn. unfold fresh_evar. apply f_equal. simpl. set_solver. }
+   apply prenex_exists_and_1; assumption.
 Defined.
 
 Lemma patt_and_comm {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
-  Γ ⊢ (p and q) <---> (q and p).
+  Γ ⊢ (p and q) <---> (q and p)
+  using PropositionalReasoning.
 Proof.
   intros wfp wfq.
   toMyGoal.
@@ -6287,7 +7640,8 @@ Defined.
 Local Example ex_mt {Σ : Signature} Γ ϕ₁ ϕ₂:
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
-  Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁).
+  Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁)
+  using PropositionalReasoning.
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -6327,7 +7681,8 @@ Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
   wf xs ->
-  Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs)).
+  Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
+  using PropositionalReasoning.
 Proof.
   intros wfg wfx wfxs.
   induction xs; simpl.
@@ -6366,33 +7721,31 @@ Proof.
     + mgExactn 3.
 Defined.
 
-Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
   well_formed g ->
   well_formed x ->
   wf xs ->
-  Γ ⊢ (foldr patt_and x xs ---> g) ->
-  Γ ⊢ (foldr patt_imp g (x :: xs)).
+  Γ ⊢ (foldr patt_and x xs ---> g) using i ->
+  Γ ⊢ (foldr patt_imp g (x :: xs)) using i.
 Proof.
   intros wfg wfx wfxs H.
-  eapply Modus_ponens.
-  4: apply lhs_and_to_imp.
-  all: try assumption.
-  { apply proved_impl_wf in H. exact H. }
-  { apply proved_impl_wf in H. wf_auto2. }
+  eapply MP.
+  2: { usePropositionalReasoning. apply lhs_and_to_imp; assumption. }
+  exact H.
 Defined.
 
 
 
-Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i :
   well_formed g ->
   well_formed x ->
   wf xs ->
   forall (r : ImpReshapeS g (x::xs)),
-     Γ ⊢ ((foldr (patt_and) x xs) ---> g) ->
-     Γ ⊢ untagPattern (irs_flattened r) .
+     Γ ⊢ ((foldr (patt_and) x xs) ---> g) using i ->
+     Γ ⊢ untagPattern (irs_flattened r) using i .
 Proof.
   intros wfg wfx wfxs r H.
-  eapply cast_proof.
+  eapply cast_proof'.
   { rewrite irs_pf; reflexivity. }
   clear r.
   apply lhs_and_to_imp_meta; assumption.
@@ -6404,31 +7757,30 @@ Local Example ex_match {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)).
+  Γ ⊢ a ---> (b ---> (c ---> d)) using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply lhs_and_to_imp_r.
 Abort.
 
-Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x:
+Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂).
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
-  intros Hfr Himp.
-  pose proof (Hwf := proved_impl_wf _ _ Himp).
+  intros Hfr pile Himp.
+  pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
   pose proof (wfϕ₁ := well_formed_imp_proj1 Hwf).
   pose proof (wfϕ₂ := well_formed_imp_proj2 Hwf).
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  mgApplyMeta (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2)) in 0.
-  fromMyGoal. intros _ _.
+  mgApplyMeta (@usePropositionalReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in 0.
+  fromMyGoal.
   apply modus_tollens.
-  { wf_auto2. }
-  { wf_auto2. }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     replace (! evar_quantify x 0 ϕ₂)
             with (evar_quantify x 0 (! ϕ₂))
@@ -6436,34 +7788,175 @@ Proof.
     reflexivity.
   }
   apply Ex_gen.
-  { wf_auto2. }
-  { wf_auto2. }
-  2: { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
+  { exact pile. }
+  { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
   apply modus_tollens; assumption.
 Defined.
 
-Lemma forall_elim {Σ : Signature} Γ ϕ x:
-  well_formed (ex, ϕ) ->
-  evar_is_fresh_in x ϕ ->
-  Γ ⊢ (all, ϕ) ->
-  Γ ⊢ (evar_open 0 x ϕ).
+Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2:
+ProofInfoLe
+  (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1))
+  (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2)) ->
+  evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2.
 Proof.
-  intros wfϕ frϕ H.
-  eapply Modus_ponens.
-  4: apply (@forall_variable_substitution Σ Γ _ x).
-  { wf_auto2. }
-  { wf_auto2. }
-  2: { wf_auto2. }
-  rewrite evar_quantify_evar_open; try assumption. wf_auto2.
+  intros pile.
+  repeat split.
+  {
+    destruct pile as [pile].
+    rewrite elem_of_subseteq.
+    intros x Hx.
+    remember (fresh_evar (patt_free_evar x)) as y.
+    pose (pf1 := @A_impl_A Σ ∅ (patt_free_evar y) ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor.
+      { exact I. }
+      { simpl. clear -Hx. set_solver. }
+      { simpl. clear. set_solver. }
+      { simpl. reflexivity. }
+    }
+    destruct pile as [Hm1 Hm2 Hm3 Hm4].
+    simpl in *.
+    clear -Hm2.
+    set_solver.
+  }
+  {
+    destruct pile as [pile].
+    rewrite elem_of_subseteq.
+    intros X HX.
+    pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor; simpl.
+      { exact I. }
+      { clear. set_solver. }
+      { clear -HX. set_solver. }
+      { reflexivity. }
+    }
+    destruct pile as [Hp1 Hp2 Hp3 Hp4].
+    simpl in *.
+    clear -Hp3.
+    set_solver.
+  }
+  {
+    destruct pile as [pile].
+    pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+    destruct kt1.
+    2: { simpl. reflexivity. }
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor; simpl.
+      { exact I. }
+      { clear. set_solver. }
+      { clear. set_solver. }
+      { reflexivity. }
+    }
+    destruct pile as [Hp1 Hp2 Hp3 Hp4].
+    simpl in Hp4.
+    rewrite Hp4.
+    reflexivity.
+  }
+Qed.
+
+Lemma useGenericReasoning {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt i:
+  (ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) i) ->
+  Γ ⊢ ϕ using (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) ->
+  Γ ⊢ ϕ using i.
+Proof.
+  intros pile [pf Hpf].
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  exists pf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  simpl in *.
+  destruct gpi.
+  pose proof (Htmp := @pile_evs_svs_kt_back Σ).
+  specialize (Htmp evs pi_generalized_evars0 svs pi_substituted_svars0 kt pi_uses_kt0 pile).
+  destruct Htmp as [Hevs [Hsvs Hkt] ].
+  constructor; simpl.
+  { exact I. }
+  { clear -Hpf2 Hevs. set_solver. }
+  { clear -Hpf3 Hsvs. set_solver. }
+  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
+Qed.
+
+
+Lemma mgUseGenericReasoning
+{Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) evs svs kt :
+(ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) i) ->
+@mkMyGoal Σ Γ l g ((pi_Generic (ExGen := evs, SVSubst := svs, KT := kt))) ->
+@mkMyGoal Σ Γ l g i.
+Proof.
+intros Hpile H wf1 wf2.
+specialize (H wf1 wf2).
+eapply useGenericReasoning.
+2: exact H.
+apply Hpile.
 Defined.
 
-Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂:
+Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
+  well_formed ϕ ->
+  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) ->
+  Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
+Proof.
+  intros wfϕ pile.
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
+  eapply useGenericReasoning. apply pile. apply Htmp.
+Defined.
+
+Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
+  well_formed (ex, ϕ) ->
+  evar_is_fresh_in x ϕ ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ (all, ϕ) using i ->
+  Γ ⊢ (evar_open 0 x ϕ) using i.
+Proof.
+  intros wfϕ frϕ pile H.
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  destruct gpi.
+  eapply MP.
+  2: eapply forall_variable_substitution'.
+  2: wf_auto2.
+  2: apply pile.
+  eapply cast_proof'.
+  {
+    rewrite evar_quantify_evar_open.
+    { apply frϕ. }
+    { wf_auto2. }
+    reflexivity.
+  }
+  apply H.
+Defined.
+
+Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) ->
-  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂).
+  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
+  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
-  intros wfϕ₁ wfϕ₂ H.
+  intros wfϕ₁ wfϕ₂ pile H.
   remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
   apply (@strip_exists_quantify_l Σ Γ x).
   { subst x.
@@ -6473,15 +7966,15 @@ Proof.
   }
   { wf_auto2. }
   apply Ex_gen.
-  1,2: wf_auto2.
-  2: {
+  { apply pile. }
+  1: {
     subst x.
     eapply evar_is_fresh_in_richer'.
     2: { apply set_evar_fresh_is_fresh'. }
     simpl. set_solver.
   }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     rewrite -[HERE in evar_open _ _ _ ---> HERE](@evar_open_not_occur Σ 0 x ϕ₂).
     {
@@ -6490,6 +7983,7 @@ Proof.
     reflexivity.
   }
   eapply forall_elim with (x0 := x) in H.
+  4: { apply pile. }
   2: wf_auto2.
   2: { subst x. apply set_evar_fresh_is_fresh. }
   unfold evar_open in *. simpl in *. exact H.
@@ -6515,16 +8009,18 @@ Proof.
     set_solver.
 Qed.
 
-Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar):
+Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar)
+  (i : ProofInfo) :
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
   bevar_occur ϕ₁ 0 = false ->
-  @mkMyGoal Σ Γ (ϕ₁::l) g -> 
- @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g.
+  @mkMyGoal Σ Γ (ϕ₁::l) g i -> 
+ @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
 Proof.
-  intros xfrg xfrl Hno0 H.
+  intros xfrg xfrl pile Hno0 H.
   mgExtractWF H1 H2.
-  fromMyGoal. intros _ _.
+  fromMyGoal.
   pose proof (H1' := H1).
   unfold wf in H1. simpl in H1. apply andb_prop in H1. destruct H1 as [H11 H12].
   apply wf_ex_quan_impl_wf in H11. 2: assumption.
@@ -6535,23 +8031,23 @@ Proof.
     unfold wf. simpl. rewrite H11 H12. reflexivity.
   }
   apply Ex_gen.
-  { wf_auto2. }
-  { wf_auto2. }
-  { assumption. }
+  { apply pile. }
+  2: { assumption. }
   simpl.
   apply evar_fresh_in_foldr.
   split; assumption.
 Defined.
 
 (* Weakening under existential *)
-Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃:
+Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ i:
   well_formed (ex, ϕ₁) ->
   well_formed (ex, ϕ₂) ->
   well_formed ϕ₃ ->
-  Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) ->
-  Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂).
+  ProofInfoLe (pi_Generic (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
+  Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
 Proof.
-  intros wfϕ₁ wfϕ₂ wfϕ₃ H.
+  intros wfϕ₁ wfϕ₂ wfϕ₃ pile H.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
@@ -6559,7 +8055,8 @@ Proof.
   rewrite -[ϕ₁](@evar_quantify_evar_open Σ x 0).
   { subst x.
     eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
-  } wf_auto2.
+  }
+  wf_auto2.
   mgIntro.
   apply Ex_gen_lifted.
   { subst x. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver. }
@@ -6574,14 +8071,14 @@ Abort.
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
  *)
-   Lemma ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+   Lemma ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q' i:
     well_formed p ->
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p and q) <---> (p' and q')).
+    Γ ⊢ (p <---> p') using i ->
+    Γ ⊢ (q <---> q') using i ->
+    Γ ⊢ ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
@@ -6610,7 +8107,7 @@ Abort.
         mgApply 2.
         mgClear 2.
         mgClear 1.
-        fromMyGoal. intros _ _.
+        fromMyGoal.
         exact p'ip.
       + mgAdd q'iq.
         mgDestructAnd 1.
@@ -6632,7 +8129,7 @@ Ltac tryExact l idx :=
 #[global]
 Ltac mgAssumption :=
   match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) ] 
       =>
         tryExact l 0
   end.
@@ -6641,9 +8138,9 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Lemma MyGoal_revert (Γ : Theory) (l : list Pattern) (x g : Pattern):
-      @mkMyGoal Σ Γ l (x ---> g) ->
-      @mkMyGoal Σ Γ (l ++ [x]) g.
+  Lemma MyGoal_revert (Γ : Theory) (l : list Pattern) (x g : Pattern) i :
+      @mkMyGoal Σ Γ l (x ---> g) i ->
+      @mkMyGoal Σ Γ (l ++ [x]) g i.
     Proof.
       intros H.
       unfold of_MyGoal in H. simpl in H.
@@ -6663,7 +8160,7 @@ Section FOL_helpers.
         abstract (apply wfapp_proj_1 in wfl; exact wfl).
       }
 
-      eapply cast_proof.
+      eapply cast_proof'.
       { rewrite foldr_app. simpl. reflexivity. }
       exact H.
     Defined.
@@ -6673,21 +8170,21 @@ End FOL_helpers.
 #[global]
   Ltac mgRevert :=
     match goal with
-    | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g)
+    | |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i)
       => eapply cast_proof_mg_hyps;
          [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
          apply MyGoal_revert
     end.
 
 #[local]
-  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q':
+  Lemma ex_or_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q' i:
     well_formed p ->
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') ->
-    Γ ⊢ (q <---> q') ->
-    Γ ⊢ ((p or q) <---> (p' or q')).
+    Γ ⊢ (p <---> p') using i ->
+    Γ ⊢ (q <---> q') using i ->
+    Γ ⊢ ((p or q) <---> (p' or q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
 
@@ -6718,11 +8215,12 @@ End FOL_helpers.
         mgExactn 0. 
   Defined.
 
-#[local]
+
 Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢( (a ---> b) <---> ((! a) or b) ).
+  Γ ⊢( (a ---> b) <---> ((! a) or b) )
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -6737,14 +8235,15 @@ Proof.
     + mgApplyMeta (@false_implies_everything _ _ _ _).
       mgApply 0. mgAssumption.
     + mgAssumption.
-  Unshelve. all: auto.
+  Unshelve. all: assumption.
 Qed.
 
-#[local]
+
 Lemma nimpl_eq_and {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢( ! (a ---> b) <---> (a and !b) ).
+  Γ ⊢( ! (a ---> b) <---> (a and !b) )
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -6761,14 +8260,15 @@ Proof.
   - mgApply 0. repeat mgIntro.
     mgDestructAnd 1. mgApply 2. mgApply 3.
     mgAssumption.
-  Unshelve. all: auto.
+  Unshelve. all: assumption.
 Qed.
 
-#[local]
+
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ( !(a and b) <---> (!a or !b) ).
+    Γ ⊢ ( !(a and b) <---> (!a or !b) )
+    using PropositionalReasoning.
   Proof.
     intros wfa wfb.
     toMyGoal.
@@ -6787,11 +8287,11 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     Unshelve. all: auto.
   Qed.
 
-#[local]
 Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ( !(a or b) <---> (!a and !b)).
+    Γ ⊢ ( !(a or b) <---> (!a and !b))
+    using PropositionalReasoning.
   Proof.
     intros wfa wfb.
     toMyGoal.
@@ -6810,13 +8310,14 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
       mgDestructOr 2.
       + mgApply 0. mgAssumption.
       + mgApply 1. mgAssumption.
-    Unshelve. all: auto.
+    Unshelve. all: wf_auto2.
   Qed.
 
 #[local]
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
-  Γ ⊢ (!(!a) <---> a).
+  Γ ⊢ (!(!a) <---> a)
+  using PropositionalReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -6829,44 +8330,50 @@ Proof.
   - unfold patt_not. mgApply 0. repeat mgIntro.
     mgApply 2. mgAssumption.
   Unshelve.
-  all: auto.
+  all: assumption.
 Defined.
 
+Check @usePropositionalReasoning.
 #[local]
-Ltac convertToNNF_rewrite_pat Ctx p :=
+Ltac convertToNNF_rewrite_pat Ctx p i :=
   lazymatch p with
     | (! ! ?x) =>
         let H' := fresh "H" in
         pose proof (@not_not_eq _ Ctx x ltac:(wf_auto2)) as H';
+        apply (@usePropositionalReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
         clear H';
-        convertToNNF_rewrite_pat Ctx x
+        convertToNNF_rewrite_pat Ctx x i
     | patt_not (patt_and ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nand _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
+        apply (@usePropositionalReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
         clear H';
-        convertToNNF_rewrite_pat Ctx (!x or !y)
+        convertToNNF_rewrite_pat Ctx (!x or !y) i
     | patt_not (patt_or ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nor _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
+        apply (@usePropositionalReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
         clear H';
-        convertToNNF_rewrite_pat Ctx (!x and !y)
+        convertToNNF_rewrite_pat Ctx (!x and !y) i
     | patt_not (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@nimpl_eq_and _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
+        apply (@usePropositionalReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
         clear H';
-        convertToNNF_rewrite_pat Ctx (x and !y)
+        convertToNNF_rewrite_pat Ctx (x and !y) i
     | (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@impl_eq_or _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
+        apply (@usePropositionalReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
         clear H';
-        convertToNNF_rewrite_pat Ctx (!x or y)
-    | patt_and ?x ?y => convertToNNF_rewrite_pat Ctx x; convertToNNF_rewrite_pat Ctx y
-    | patt_or ?x ?y => convertToNNF_rewrite_pat Ctx x; convertToNNF_rewrite_pat Ctx y
+        convertToNNF_rewrite_pat Ctx (!x or y) i
+    | patt_and ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
+    | patt_or ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
     | _ => idtac
   end.
 
@@ -6874,11 +8381,23 @@ Ltac convertToNNF_rewrite_pat Ctx p :=
 Ltac toNNF := 
   repeat mgRevert;
   match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
       =>
-        mgApplyMeta (@not_not_elim Sgm Ctx g ltac:(wf_auto2));
-        convertToNNF_rewrite_pat Ctx (!g)
+        mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
+        convertToNNF_rewrite_pat Ctx (!g) i
   end.
+
+#[local] Example test_toNNF {Σ : Signature} Γ a b :
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
+  using BasicReasoning.
+Proof.
+  intros wfa wfb.
+  toMyGoal.
+  { wf_auto2. }
+  toNNF;[|try apply pile_refl].
+Abort.
 
 #[local]
 Ltac rfindContradictionTo a ll k n:=
@@ -6896,7 +8415,7 @@ Ltac findContradiction l k:=
     match l with
        | (?a :: ?m) => 
              match goal with
-                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g) ] 
+                | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
                   =>
                      try rfindContradictionTo a ll k 0;
                      let kk := eval compute in ( k + 1 ) in
@@ -6908,10 +8427,10 @@ Ltac findContradiction l k:=
 #[local]
 Ltac findContradiction_start :=
   match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) ] 
       =>
         match goal with
-          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
+          | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) ] 
             =>
               findContradiction l 0
         end
@@ -6932,41 +8451,55 @@ Ltac breakHyps l n:=
     end
   )
 .
+#[local]
+Ltac mgTautoBreak := repeat match goal with
+| [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g ?i) ] 
+  =>
+    lazymatch g with
+      | (⊥) =>
+              breakHyps l 0
+      | _ => mgApplyMeta (@usePropositionalReasoning _ _ _ i (@false_implies_everything _ _ g _))
+    end
+end.
+
+Ltac try_solve_pile fallthrough :=
+  lazymatch goal with
+  | [ |- ProofInfoLe _ _] => try apply pile_refl; fallthrough
+  | _ => idtac
+  end.
 
 #[global]
 Ltac mgTauto :=
-  try (
-  toNNF;
-  repeat mgIntro;
-  repeat match goal with
-    | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?l ?g) ] 
-      =>
-        lazymatch g with
-          | (⊥) =>
-                  breakHyps l 0
-          | _ => mgApplyMeta (@false_implies_everything _ _ g _)
-        end
-  end;
-  findContradiction_start)
+  unshelve(
+    try (
+      toNNF; (try_solve_pile shelve);
+      repeat mgIntro;
+      mgTautoBreak;
+      findContradiction_start
+    )
+  )
 .
 
 #[local]
 Lemma conj_right {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥).
+  Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
+  (* If we use mgTauto or mgRewrite, we cannot use the PropositionalReasoning annotation. *)
+  using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
   { wf_auto2. }
   mgTauto.
-Qed.
+Defined.
 
 #[local]
 Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢( a ---> ((! a) ---> b)).
+  Γ ⊢ (a ---> ((! a) ---> b))
+  using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -6979,18 +8512,20 @@ Lemma taut {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c))).
+  Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c)))
+  using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
   { wf_auto2. }
-  mgTauto.
+  mgTauto. (* Slow *)
 Qed.
 
 #[local]
 Lemma condtradict_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ !(a and !a).
+  Γ ⊢ !(a and !a)
+  using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -7001,7 +8536,8 @@ Qed.
 #[local]
 Lemma notnot_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ (! ! a ---> a).
+  Γ ⊢ (! ! a ---> a)
+  using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -7013,7 +8549,8 @@ Qed.
 Lemma Peirce_taut {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ ((((a ---> b) ---> a) ---> a)).
+  Γ ⊢ ((((a ---> b) ---> a) ---> a))
+  using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
