@@ -4634,11 +4634,12 @@ Section FOL_helpers.
     mgApply 1. mgExactn 0.
   Defined.
 
-  Hint Resolve evar_quantify_well_formed.
+  (*Hint Resolve evar_quantify_well_formed.*)
 
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
-    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ.
+    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
+    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ.
    
@@ -4646,7 +4647,9 @@ Section FOL_helpers.
     replace (! evar_quantify x 0 ϕ)
       with (evar_quantify x 0 (! ϕ))
       by reflexivity.
-    apply double_neg_elim_meta; auto 10.
+    apply double_neg_elim_meta.
+    { wf_auto2. }
+    { wf_auto2. }
     toMyGoal.
     { wf_auto2. }
     mgIntro.
@@ -4654,16 +4657,14 @@ Section FOL_helpers.
     mgApply 0.
     mgIntro.
     mgApply 2.
-    pose proof (Htmp := Ex_quan Γ (evar_quantify x 0 (!ϕ)) x).
+    pose proof (Htmp := @Ex_quan Σ Γ (evar_quantify x 0 (!ϕ)) x).
     rewrite /instantiate in Htmp.
     rewrite bevar_subst_evar_quantify_free_evar in Htmp.
     {
-      (* apply wfc_ex_implies_not_bevar_occur.
-      unfold well_formed,well_formed_closed in wfϕ. destruct_and!. simpl.
-      split_and; auto. *)
-      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. auto.
+      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. reflexivity.
     }
     specialize (Htmp ltac:(wf_auto2)).
+    useBasicReasoning.
     mgAdd Htmp.
     mgApply 0.
     mgIntro.
