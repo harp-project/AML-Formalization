@@ -4613,19 +4613,21 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma universal_generalization Γ ϕ x:
+  Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
+    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     well_formed ϕ ->
-    Γ ⊢ ϕ ->
-    Γ ⊢ patt_forall (evar_quantify x 0 ϕ).
+    Γ ⊢ ϕ using i ->
+    Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
   Proof.
-    intros wfϕ Hϕ.
+    intros pile wfϕ Hϕ.
     unfold patt_forall.
     unfold patt_not at 1.
     replace (! evar_quantify x 0 ϕ)
       with (evar_quantify x 0 (! ϕ))
       by reflexivity.
-    apply Ex_gen; auto.
-    2: { simpl. set_solver. }
+    apply Ex_gen.
+    { exact pile. }
+    { simpl. set_solver. }
     toMyGoal.
     { wf_auto2. }
     mgIntro. mgAdd Hϕ.
