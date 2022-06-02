@@ -4346,7 +4346,7 @@ Section FOL_helpers.
     well_formed p' ->
     well_formed q' ->
     Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i->
+    Γ ⊢ (q <---> q') using i ->
     Γ ⊢ ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
@@ -4674,6 +4674,96 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
+Lemma not_kt_in_prop {Σ : Signature} :
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (HContra _ pf2).
+  feed specialize HContra.
+  {
+    unfold pf2. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  unfold pf2 in HC4.
+  simpl in HC4.
+  congruence.
+Qed.
+
+Check pile_impl_allows_gen_x.
+
+Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true)) (pi_Generic gpi) ->
+  pi_uses_kt gpi.
+Proof.
+  intros [H].
+  specialize (H ∅).
+  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (H _ pf2).
+  feed specialize H.
+  {
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    reflexivity.
+  }
+  destruct H as [H1 H2 H3 H4].
+  unfold pf2 in H4. simpl in H4. exact H4.
+Qed.
+
+
+Lemma Knaster_tarski {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
+  {pile : ProofInfoLe (pi_Generic
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := ∅;
+           pi_uses_kt := true ;
+        |}) i} :
+well_formed (mu, ϕ) ->
+Γ ⊢ (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+Γ ⊢ mu, ϕ ---> ψ using i.
+Proof.
+intros Hfev [pf Hpf].
+unshelve (eexists).
+{
+  apply ProofSystem.Knaster_tarski.
+  { exact Hfev. }
+  { exact pf. }
+}
+{
+  simpl.
+  pose proof (Hnot := not_kt_in_prop).
+  constructor; simpl.
+  {
+    destruct i;[|exact I].
+    contradiction.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf2.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf3.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ pile).
+    exact Hpile.
+  }
+}
+Defined.
 
 Section FOL_helpers.
 
