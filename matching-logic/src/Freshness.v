@@ -24,9 +24,12 @@ Section freshness.
   
   Definition evar_fresh (l : list evar) : evar := fresh l.
   Definition svar_fresh (l : list svar) : svar := fresh l.
+
+  Definition evar_fresh_s (s : EVarSet) : evar := evar_fresh (elements s).
+  Definition svar_fresh_s (s : SVarSet) : svar := svar_fresh (elements s).
   
-  Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
-  Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
+  Definition fresh_evar ϕ := evar_fresh_s (free_evars ϕ).
+  Definition fresh_svar ϕ := svar_fresh_s (free_svars ϕ).
 
   (* Lemmas about fresh variables *)
 
@@ -438,3 +441,27 @@ Ltac solve_fresh_svar_neq :=
     fail
   end.
 
+
+
+Definition evar_fresh_dep {Σ : Signature} (S : EVarSet) : {x : evar & x ∉ S} :=
+  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (@set_evar_fresh_is_fresh' Σ S).
+
+Definition svar_fresh_dep {Σ : Signature} (S : SVarSet) : {X : svar & X ∉ S} :=
+  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (@set_svar_fresh_is_fresh' _ S).
+
+
+Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
+  match n with
+  | 0 => []
+  | S n' =>
+    let x := (evar_fresh_s avoid) in
+    x :: evar_fresh_seq ({[x]} ∪ avoid) (n')
+  end.
+
+Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar :=
+  match n with
+   | 0 => []
+   | S n' =>
+     let X := (svar_fresh_s avoid) in
+     X :: svar_fresh_seq ({[X]} ∪ avoid) (n')
+  end.

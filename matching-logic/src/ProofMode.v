@@ -5180,13 +5180,6 @@ Section FOL_helpers.
     reflexivity.
   Defined.
 
-
-  Definition evar_fresh_dep (S : EVarSet) : {x : evar & x ∉ S} :=
-    @existT evar (fun x => x ∉ S) (evar_fresh (elements S)) (@set_evar_fresh_is_fresh' Σ S).
-
-  Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
-    @existT svar (fun x => x ∉ S) (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
-
   Lemma strip_exists_quantify_l Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
