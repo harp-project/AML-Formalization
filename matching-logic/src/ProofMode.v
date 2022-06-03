@@ -3381,9 +3381,6 @@ Section FOL_helpers.
         Unshelve. all: wf_auto2.
   Defined.
 
-  Check Prop_disj_left.
-  Check Prop_bott_left.
-
   Lemma Prop_disj_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
@@ -3497,7 +3494,6 @@ Section FOL_helpers.
     x ∈ pi_generalized_evars gpi.
   Proof.
     intros [H].
-    Check A_impl_A.
     pose (H1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
     pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
     pose (H3 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig H2) ltac:(simpl; set_solver)).
@@ -5289,10 +5285,10 @@ Section FOL_helpers.
   Definition maximal_exists_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
     maximal_exists_depth_of_evar_in_pattern' 0 E ψ.
 
-  Definition pf_ite {P : Prop} (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
-    (pf1: P -> Γ ⊢ ϕ)
-    (pf2: (~P) -> Γ ⊢ ϕ) :
-    Γ ⊢ ϕ :=
+  Definition pf_ite {P : Prop} (i : ProofInfo) (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
+    (pf1: P -> Γ ⊢ ϕ using i)
+    (pf2: (~P) -> Γ ⊢ ϕ using i) :
+    Γ ⊢ ϕ using i :=
     match dec with
     | left pf => pf1 pf
     | right pf => pf2 pf
@@ -5311,7 +5307,7 @@ Section FOL_helpers.
                (i : ProofInfo)
                (pile : ProofInfoLe
                 (pi_Generic
-                  (ExGen := (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
+                  (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
                   SVSubst := ∅, KT := false))
                 i
                )
@@ -5319,28 +5315,28 @@ Section FOL_helpers.
                    Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i
                by wf (size' ψ) lt
   :=
-  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ pf
+  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ i pile pf
   := (@pf_iff_equiv_refl Σ Γ (patt_bound_evar n) wfψ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ i pile pf
   := (@pf_iff_equiv_refl Σ Γ (patt_bound_svar n) wfψ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ pf
-  := @pf_ite _ (decide (E = x)) Γ
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ i pile pf
+  := @pf_ite _ i (decide (E = x)) Γ
       ((free_evar_subst (patt_free_evar x) p E) <---> (free_evar_subst (patt_free_evar x) q E))
       (fun e => _)
       (fun (_ : E <> x) => _ ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ i pile pf
   := (@pf_iff_equiv_refl Σ Γ (patt_free_svar X) wfψ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ i pile pf
   := (@pf_iff_equiv_refl Σ Γ patt_bott wfψ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ i pile pf
   := (@pf_iff_equiv_refl Σ Γ (patt_sym s) wfψ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ i pile pf
   with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
     | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
       | pf₂ := @prf_equiv_of_impl_of_equiv
@@ -5358,7 +5354,7 @@ Section FOL_helpers.
       }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ i pile pf
   with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
   | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
     | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst ϕ₁ q E $ free_evar_subst ϕ₂ p E) _ _ _ _
@@ -5374,7 +5370,7 @@ Section FOL_helpers.
     }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ i pile pf
   with (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) => {
   | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
     | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
@@ -5397,7 +5393,7 @@ Section FOL_helpers.
     }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ i pile pf
   with (svar_fresh_dep (SvS ++ elements ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
                       ∪ (free_svars (free_evar_subst ϕ' p E))
                       ∪ (free_svars (free_evar_subst ϕ' q E))))) => {
