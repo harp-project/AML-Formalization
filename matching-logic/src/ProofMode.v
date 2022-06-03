@@ -5166,15 +5166,15 @@ Section FOL_helpers.
           mgExactn 2.
   Defined.
 
-  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
+  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E i:
     x <> E ->
     well_formed p = true ->
     well_formed q = true ->
-    Γ ⊢ free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E ->
-    Γ ⊢ evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E).
+    Γ ⊢ free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E using i ->
+    Γ ⊢ evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E) using i.
   Proof.
     intros Hx wfp wfq H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     rewrite -> evar_open_free_evar_subst_swap by assumption.
     rewrite -> evar_open_free_evar_subst_swap by assumption.
     reflexivity.
@@ -5187,14 +5187,14 @@ Section FOL_helpers.
   Definition svar_fresh_dep (S : SVarSet) : {X : svar & X ∉ S} :=
     @existT svar (fun x => x ∉ S) (svar_fresh (elements S)) (@set_svar_fresh_is_fresh' _ S).
 
-  Lemma strip_exists_quantify_l Γ x P Q :
+  Lemma strip_exists_quantify_l Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
-    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) ->
-    Γ ⊢ ex , P ---> Q.
+    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
+    Γ ⊢ ex , P ---> Q using i.
   Proof.
     intros Hx HwfcP H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     abstract (
       unfold exists_quantify;
       rewrite -> evar_quantify_evar_open by assumption;
@@ -5202,14 +5202,14 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma strip_exists_quantify_r Γ x P Q :
+  Lemma strip_exists_quantify_r Γ x P Q i :
     x ∉ free_evars Q ->
     well_formed_closed_ex_aux Q 1 ->
-    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) ->
-    Γ ⊢ P ---> ex, Q.
+    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
+    Γ ⊢ P ---> ex, Q using i.
   Proof.
     intros Hx HwfcP H.
-    unshelve (eapply (@cast_proof Σ Γ _ _ _ H)).
+    unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
     abstract (
       unfold exists_quantify;
       rewrite -> evar_quantify_evar_open by assumption;
@@ -5217,15 +5217,15 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X:
+  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X i:
     well_formed_closed_mu_aux p 0 = true ->
     well_formed_closed_mu_aux q 0 = true ->
-    Γ ⊢ free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E ->
+    Γ ⊢ free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E using i ->
     Γ ⊢ bsvar_subst (free_evar_subst ϕ p E) (patt_free_svar X) 0 <--->
-        bsvar_subst (free_evar_subst ϕ q E) (patt_free_svar X) 0.
+        bsvar_subst (free_evar_subst ϕ q E) (patt_free_svar X) 0 using i.
   Proof.
     intros wfp wfq H.
-    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
+    unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
 
     abstract (
       unfold svar_open in H;
@@ -5237,17 +5237,17 @@ Section FOL_helpers.
    ).
   Defined.
 
-  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X:
+  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X i :
     well_formed_closed_mu_aux (free_evar_subst ϕ p E) 1 ->
     well_formed_closed_mu_aux (free_evar_subst ϕ q E) 1 ->
     X ∉ free_svars (free_evar_subst ϕ p E) ->
     X ∉ free_svars (free_evar_subst ϕ q E) ->
     Γ ⊢ mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E)) <--->
-        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) ->
-    Γ ⊢ mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E.
+        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) using i ->
+    Γ ⊢ mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E using i.
   Proof.
     intros wfp' wfq' Xfrp Xfrq H.
-    unshelve (eapply (@cast_proof _ _ _ _ _ H)).
+    unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
     abstract (
       rewrite -{1}[free_evar_subst ϕ p E](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
       rewrite -{1}[free_evar_subst ϕ q E](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
