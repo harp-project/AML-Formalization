@@ -4970,10 +4970,10 @@ Section FOL_helpers.
     simpl in Htmp.
     fold free_svar_subst in Htmp.
 
-    pose proof (Hpf := Pre_fixp Γ (svar_quantify X 0 ϕ₂)).
+    pose proof (Hpf := @Pre_fixp Σ Γ (svar_quantify X 0 ϕ₂)).
     simpl in Hpf.
 
-    unshelve (eapply (@cast_proof Σ Γ _ _) in Hpf).
+    unshelve (eapply (@cast_proof' Σ Γ _ _) in Hpf).
     3: { 
     erewrite bound_to_free_set_variable_subst.
       5: { apply svar_quantify_not_free. }
@@ -4991,7 +4991,7 @@ Section FOL_helpers.
 
     2: abstract (wf_auto2).
 
-    eapply (@cast_proof Σ Γ) in Hpf.
+    eapply (@cast_proof' Σ Γ) in Hpf.
     2: {
       rewrite svar_open_svar_quantify.
       { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
@@ -5057,10 +5057,22 @@ Section FOL_helpers.
       apply svar_quantify_closed_ex. assumption.
     }
     
-    epose proof (Hsi := @syllogism_intro Σ _ _ _ _ _ _ _ Htmp Hpf).
+    (* i = pi_Generic gpi *)
+    destruct i.
+    {
+      exfalso.
+      apply not_kt_in_prop.
+      eapply pile_trans.
+      2: { apply pile. }
+      apply pile_svs_subseteq.
+      set_solver.
+    }
+    Check useBasicReasoning.
+    apply useBasicReasoning with (gpi0 := gpi) in Hpf.
+    epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
 
-    eapply (@cast_proof Σ Γ).
+    eapply (@cast_proof' Σ Γ).
     1: {
       erewrite bound_to_free_set_variable_subst with (X0 := X).
       5: { apply svar_quantify_not_free. }
@@ -5076,13 +5088,13 @@ Section FOL_helpers.
       reflexivity.
     }
 
-    eapply (@cast_proof Σ Γ).
+    eapply (@cast_proof' Σ Γ).
     1: {
       rewrite svar_open_svar_quantify.
       { unfold well_formed, well_formed_closed in *. destruct_and!. auto. }
       reflexivity.
     }
-    assumption.
+    apply Hsi.
     Unshelve.
     all: abstract(wf_auto2).
   Defined.
