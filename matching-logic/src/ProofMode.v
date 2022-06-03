@@ -66,15 +66,21 @@ Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
     @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
 }.
 
+(*
 #[global]
-Instance pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
+Instance
+*)
+Lemma pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
 Proof.
   constructor. intros Γ ϕ pf H. exact H.
 Qed.
 
+(*
 #[global]
-Instance pile_trans {Σ : Signature}
-  (i₁ i₂ i₃ : ProofInfo) {PILE12 : ProofInfoLe i₁ i₂} {PILE23 : ProofInfoLe i₂ i₃}
+Instance
+*)
+Lemma pile_trans {Σ : Signature}
+  (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
 : ProofInfoLe i₁ i₃.
 Proof.
   destruct PILE12 as [PILE12].
@@ -106,8 +112,11 @@ Proof.
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
 Qed.
 
+(*
 #[global]
-Instance pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
+Instance
+*)
+Lemma pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
 Proof.
   constructor.
   intros Γ ϕ pf Hpf.
@@ -991,11 +1000,11 @@ Defined.
       wf_auto2.
     - eapply syllogism_meta.
       5: { apply (Prop_bott_left Γ p ltac:(wf_auto2)). }
-      4: { apply Framing_left. apply _. wf_auto2. exact IHC. }
+      4: { apply Framing_left. apply pile_refl. wf_auto2. exact IHC. }
       all: wf_auto2.
     - eapply syllogism_meta.
       5: { apply (Prop_bott_right Γ p ltac:(wf_auto2)). }
-      4: { apply Framing_right. apply _. wf_auto2. exact IHC. }
+      4: { apply Framing_right. apply pile_refl. wf_auto2. exact IHC. }
       all: wf_auto2.
   Defined.
 
@@ -3359,7 +3368,7 @@ Section FOL_helpers.
         eapply Framing_left in H.
         eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥) using BasicReasoning).
         { apply Prop_bott_left. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
       + usePropositionalReasoning. apply bot_elim; wf_auto2.
     - apply pf_iff_iff in IHAC; auto.
       destruct IHAC as [IH1 IH2].
@@ -3368,7 +3377,7 @@ Section FOL_helpers.
         eapply Framing_right in H.
         eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥) using BasicReasoning).
         { apply Prop_bott_right. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply _.
+        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
       + usePropositionalReasoning. apply bot_elim; wf_auto2.
         Unshelve. all: wf_auto2.
   Defined.
@@ -3426,18 +3435,18 @@ Section FOL_helpers.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        eapply Framing_left in H. 2: apply _.
+        eapply Framing_left in H. 2: apply pile_refl.
         eapply syllogism_meta. 4: apply H.
         all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
         apply Prop_disj_left. all: subst; wf_auto2.
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_left; try_wfauto2. apply _.
+        * apply Framing_left; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_left; try_wfauto2. apply _.
+        * apply Framing_left; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
@@ -3450,13 +3459,13 @@ Section FOL_helpers.
         all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_right. all: subst; wf_auto2. apply _.
+        apply Prop_disj_right. all: subst; wf_auto2. apply pile_refl.
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_right; try_wfauto2. apply _.
+        * apply Framing_right; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_right; try_wfauto2. apply _.
+        * apply Framing_right; try_wfauto2. apply pile_refl.
           eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
@@ -4696,8 +4705,6 @@ Proof.
   congruence.
 Qed.
 
-Check pile_impl_allows_gen_x.
-
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
   ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true)) (pi_Generic gpi) ->
   pi_uses_kt gpi.
@@ -4765,20 +4772,80 @@ unshelve (eexists).
 }
 Defined.
 
+Lemma pile_evs_subseteq {Σ : Signature} evs1 evs2 svs kt:
+  evs1 ⊆ evs2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs1, SVSubst := svs, KT := kt))
+    (pi_Generic (ExGen := evs2, SVSubst := svs, KT := kt)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { clear -Hsub Hpf2. set_solver. }
+  { exact Hpf3. }
+  { exact Hpf4. }
+Qed.
+
+Lemma pile_svs_subseteq {Σ : Signature} evs svs1 svs2 kt:
+  svs1 ⊆ svs2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs, SVSubst := svs1, KT := kt))
+    (pi_Generic (ExGen := evs, SVSubst := svs2, KT := kt)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { exact Hpf2. }
+  { clear -Hsub Hpf3. set_solver. }
+  { exact Hpf4. }
+Qed.
+
+
+Lemma pile_kt_impl {Σ : Signature} evs svs kt1 kt2:
+  kt1 ==> kt2 ->
+  ProofInfoLe
+    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt1))
+    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt2)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  constructor; simpl in *.
+  { exact Hpf1. }
+  { exact Hpf2. }
+  { exact Hpf3. }
+  { unfold implb in *.  destruct (uses_kt pf),kt1; simpl in *; try reflexivity.
+    { exact Hsub. }
+    { inversion Hpf4. }
+  }
+Qed.
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Lemma mu_monotone Γ ϕ₁ ϕ₂ X:
-    well_formed ϕ₁ ->
-    well_formed ϕ₂ ->
+  Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
-    Γ ⊢ ϕ₁ ---> ϕ₂ ->
-    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂)).
+    Γ ⊢ ϕ₁ ---> ϕ₂ using i->
+    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂))
+    using i.
   Proof.
-    intros wfϕ₁ wfϕ₂ nonegϕ₁ nonegϕ₂ Himp.
+    intros pile nonegϕ₁ nonegϕ₂ Himp.
+    pose proof (wfϕ12 := @proved_impl_wf _ _ _ (proj1_sig Himp)).
+    assert(wfϕ₁ : well_formed ϕ₁) by wf_auto2.
+    assert(wfϕ₂ : well_formed ϕ₂) by wf_auto2.
+
     apply Knaster_tarski.
+    { Search ProofInfoLe. eapply pile_trans. 2: apply pile. }
     { wf_auto2. }
 
     pose proof (Htmp := Svar_subst Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X).
