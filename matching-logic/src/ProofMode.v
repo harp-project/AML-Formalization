@@ -2036,7 +2036,6 @@ Section FOL_helpers.
     assert (well_formed a) by (subst; wf_auto2).
     assert (well_formed b) by (subst; wf_auto2).
     assert (well_formed c) by (subst; wf_auto2).
-    Check @prf_weaken_conclusion_under_implication.
     pose proof (H2' := @prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
     apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
     eapply MP. 2: apply H2'. apply H1.
@@ -5261,6 +5260,35 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
+  Fixpoint maximal_exists_depth_of_evar_in_pattern' (depth : nat) (E : evar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_svar _ => 0
+    | patt_free_evar E' =>
+      match (decide (E' = E)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_exists_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_exists ψ' =>
+      maximal_exists_depth_of_evar_in_pattern' (S depth) E ψ'
+    | patt_mu ψ' =>
+      maximal_exists_depth_of_evar_in_pattern' depth E ψ'
+    end.
+
+  Definition maximal_exists_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
+    maximal_exists_depth_of_evar_in_pattern' 0 E ψ.
+
   Definition pf_ite {P : Prop} (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
     (pf1: P -> Γ ⊢ ϕ)
     (pf2: (~P) -> Γ ⊢ ϕ) :
@@ -5270,17 +5298,25 @@ Section FOL_helpers.
     | right pf => pf2 pf
     end.
 
+  (*Search gmap.gset list.*)
   (* EvS, SvS - sets used for generating fresh variables *)
   Equations? eq_prf_equiv_congruence
                Γ p q
                (wfp : well_formed p)
                (wfq : well_formed q)
-               (EvS : EVarSet)
-               (SvS : SVarSet)
+               (EvS : list evar)
+               (SvS : list svar)
                E ψ
                (wfψ : well_formed ψ)
-               (pf : Γ ⊢ (p <---> q)) :
-                   Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E)))
+               (i : ProofInfo)
+               (pile : ProofInfoLe
+                (pi_Generic
+                  (ExGen := (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
+                  SVSubst := ∅, KT := false))
+                i
+               )
+               (pf : Γ ⊢ (p <---> q) using i) :
+                   Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i
                by wf (size' ψ) lt
   :=
   @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ pf
@@ -5339,7 +5375,7 @@ Section FOL_helpers.
   } ;
 
   @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ pf
-  with (evar_fresh_dep ((EvS ∪ (free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q)))) => {
+  with (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) => {
   | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
     | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
       | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
@@ -5362,9 +5398,9 @@ Section FOL_helpers.
   } ;
 
   @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ pf
-  with (svar_fresh_dep (SvS ∪ (free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
+  with (svar_fresh_dep (SvS ++ elements ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
                       ∪ (free_svars (free_evar_subst ϕ' p E))
-                      ∪ (free_svars (free_evar_subst ϕ' q E)))) => {
+                      ∪ (free_svars (free_evar_subst ϕ' q E))))) => {
   | (existT X frX ) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (svar_open 0 X ϕ') (@wf_svar_open_from_wf_mu Σ X ϕ' wfψ) pf) => {
     | IH with (@pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Σ Γ ϕ' p q E X _ _ IH) => {
       | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
@@ -5411,8 +5447,8 @@ Section FOL_helpers.
     destruct C as [pcEvar pcPattern].
     apply (
         @eq_prf_equiv_congruence Γ p q ltac:(assumption) ltac:(assumption)
-          (free_evars pcPattern ∪ free_evars p ∪ free_evars q)
-          (free_svars pcPattern ∪ free_svars p ∪ free_svars q)
+          (elements (free_evars pcPattern ∪ free_evars p ∪ free_evars q))
+          (elements (free_svars pcPattern ∪ free_svars p ∪ free_svars q))
       ); simpl;  assumption.
   Defined.
 

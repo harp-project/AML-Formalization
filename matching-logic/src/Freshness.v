@@ -33,6 +33,13 @@ Section freshness.
 
   (* Lemmas about fresh variables *)
 
+  Lemma set_evar_fresh_is_fresh'' (S : list evar) : (evar_fresh S) ∉ S.
+  Proof.
+    intros H.
+    pose proof (Hf := @infinite_is_fresh _ evar_infinite S).
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
+  Qed.
+
   Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
   Proof.
     intros H.
@@ -51,6 +58,13 @@ Section freshness.
   Qed.
 
   Hint Resolve set_evar_fresh_is_fresh : core.
+
+  Lemma set_svar_fresh_is_fresh'' (S : list svar) : (svar_fresh S) ∉ S.
+  Proof.
+    intros H.
+    pose proof (Hf := @infinite_is_fresh _ svar_infinite S).
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
+  Qed.
 
   Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
   Proof.
@@ -347,7 +361,7 @@ End freshness.
 
 
 Ltac remember_fresh_svars :=
-  unfold fresh_svar in *;
+  unfold fresh_svar,svar_fresh_s in *;
   repeat(
       match goal with
       | |- context G [svar_fresh ?Y] =>
@@ -364,7 +378,7 @@ Ltac remember_fresh_svars :=
     ).
 
 Ltac remember_fresh_evars :=
-  unfold fresh_evar in *;
+  unfold fresh_evar,evar_fresh_s in *;
   repeat(
       match goal with
       | |- context G [evar_fresh ?Y] =>
@@ -443,11 +457,11 @@ Ltac solve_fresh_svar_neq :=
 
 
 
-Definition evar_fresh_dep {Σ : Signature} (S : EVarSet) : {x : evar & x ∉ S} :=
-  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (@set_evar_fresh_is_fresh' Σ S).
+Definition evar_fresh_dep {Σ : Signature} (S : list evar) : {x : evar & x ∉ S} :=
+  @existT evar (fun x => x ∉ S) (evar_fresh S) (@set_evar_fresh_is_fresh'' Σ S).
 
-Definition svar_fresh_dep {Σ : Signature} (S : SVarSet) : {X : svar & X ∉ S} :=
-  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (@set_svar_fresh_is_fresh' _ S).
+Definition svar_fresh_dep {Σ : Signature} (S : list svar) : {X : svar & X ∉ S} :=
+  @existT svar (fun x => x ∉ S) (svar_fresh S) (@set_svar_fresh_is_fresh'' _ S).
 
 
 Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
