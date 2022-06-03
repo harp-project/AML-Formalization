@@ -5304,6 +5304,7 @@ Section FOL_helpers.
                (SvS : list svar)
                E ψ
                (wfψ : well_formed ψ)
+               (depth : nat)
                (i : ProofInfo)
                (pile : ProofInfoLe
                 (pi_Generic
@@ -5315,62 +5316,68 @@ Section FOL_helpers.
                    Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i
                by wf (size' ψ) lt
   :=
-  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ i pile pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_bound_evar n) wfψ) ;
+  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ depth i pile pf
+  := (@usePropositionalReasoning _ _ _ _
+       (@pf_iff_equiv_refl Σ Γ (patt_bound_evar n) wfψ)
+     ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ i pile pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_bound_svar n) wfψ) ;
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ depth i pile pf
+  := (@usePropositionalReasoning _ _ _ _
+       (@pf_iff_equiv_refl Σ Γ (patt_bound_svar n) wfψ)
+      ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ i pile pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ depth i pile pf
   := @pf_ite _ i (decide (E = x)) Γ
       ((free_evar_subst (patt_free_evar x) p E) <---> (free_evar_subst (patt_free_evar x) q E))
       (fun e => _)
       (fun (_ : E <> x) => _ ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ i pile pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_free_svar X) wfψ) ;
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ depth i pile pf
+  := (@usePropositionalReasoning _ _ _ _
+      (@pf_iff_equiv_refl Σ Γ (patt_free_svar X) wfψ) 
+    ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ i pile pf
-  := (@pf_iff_equiv_refl Σ Γ patt_bott wfψ) ;
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ depth i pile pf
+  := (@usePropositionalReasoning _ _ _ _
+      (@pf_iff_equiv_refl Σ Γ patt_bott wfψ)
+    ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ i pile pf
-  := (@pf_iff_equiv_refl Σ Γ (patt_sym s) wfψ) ;
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ depth i pile pf
+  := (@usePropositionalReasoning _ _ _ _
+       (@pf_iff_equiv_refl Σ Γ (patt_sym s) wfψ)
+    ) ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ i pile pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
-    | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ depth i pile pf
+  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) depth i pile pf) => {
+    | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) depth i pile pf) => {
       | pf₂ := @prf_equiv_of_impl_of_equiv
                  Σ Γ
                  (free_evar_subst ϕ₁ p E)
                  (free_evar_subst ϕ₂ p E)
                  (free_evar_subst ϕ₁ q E)
                  (free_evar_subst ϕ₂ q E)
-                 _ _ _ _ (*
-                 (@well_formed_free_evar_subst Σ _ _ wfp (well_formed_imp_proj1 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfp (well_formed_imp_proj2 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfq (well_formed_imp_proj1 _ _ wfψ))
-                 (@well_formed_free_evar_subst Σ _ _ wfq (well_formed_imp_proj2 _ _ wfψ)) *)
+                 _ _ _ _
                  pf₁ pf₂
       }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ i pile pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) pf) => {
-  | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) pf) => {
-    | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst ϕ₁ q E $ free_evar_subst ϕ₂ p E) _ _ _ _
-               (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₁))
-                 (Framing_left Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₁))
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ depth i pile pf
+  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) depth i pile pf) => {
+  | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) depth i pile pf) => {
+    | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst ϕ₁ q E $ free_evar_subst ϕ₂ p E) _ i _ _ _
+               (@conj_intro_meta Σ Γ _ _ i _ _
+                 (@Framing_left Σ Γ _ _ _ i _ _ (@pf_conj_elim_l_meta Σ _ _ _ i _ _ pf₁))
+                 (@Framing_left Σ Γ _ _ _ i _ _ (@pf_conj_elim_r_meta Σ _ _ _ i _ _ pf₁))
                )
-               (@conj_intro_meta Σ Γ _ _ _ _
-                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_l_meta Σ _ _ _ _ _ pf₂))
-                 (Framing_right Γ _ _ _ _ (@pf_conj_elim_r_meta Σ _ _ _ _ _ pf₂))
+               (@conj_intro_meta Σ Γ _ _ i _ _
+                 (@Framing_right Σ Γ _ _ _ i _ _ (@pf_conj_elim_l_meta Σ _ _ _ i _ _ pf₂))
+                 (@Framing_right Σ Γ _ _ _ i _ _ (@pf_conj_elim_r_meta Σ _ _ _ i _ _ pf₂))
                )
              )
     }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ i pile pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ depth i pile pf
   with (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) => {
   | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
     | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
@@ -5393,7 +5400,7 @@ Section FOL_helpers.
     }
   } ;
 
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ i pile pf
+  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ depth i pile pf
   with (svar_fresh_dep (SvS ++ elements ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
                       ∪ (free_svars (free_evar_subst ϕ' p E))
                       ∪ (free_svars (free_evar_subst ϕ' q E))))) => {
