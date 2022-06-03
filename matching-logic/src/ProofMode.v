@@ -4918,6 +4918,27 @@ Proof.
 }
 Defined.
 
+Lemma Pre_fixp {Σ : Signature}
+  (Γ : Theory) (ϕ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢ (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  {
+    apply ProofSystem.Pre_fixp.
+    { exact wfϕ. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+Defined.
 
 Section FOL_helpers.
 
@@ -4937,18 +4958,17 @@ Section FOL_helpers.
     assert(wfϕ₂ : well_formed ϕ₂) by wf_auto2.
 
     apply Knaster_tarski.
-    { Search ProofInfoLe. eapply pile_trans. 2: apply pile. }
+    { eapply pile_trans. 2: apply pile. apply pile_svs_subseteq. set_solver. }
     { wf_auto2. }
 
-    pose proof (Htmp := Svar_subst Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X).
+    pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X i).
     feed specialize Htmp.
-    { auto. }
-    { unfold well_formed, well_formed_closed in *. destruct_and!.
-      simpl. split_and!; auto.
-    }
-    { assumption. }
+    { eapply pile_trans. 2: apply pile. apply pile_kt_impl. simpl. reflexivity. }
+    { wf_auto2. }
+    { exact Himp. }
     unfold free_svar_subst in Htmp.
     simpl in Htmp.
+    fold free_svar_subst in Htmp.
 
     pose proof (Hpf := Pre_fixp Γ (svar_quantify X 0 ϕ₂)).
     simpl in Hpf.
