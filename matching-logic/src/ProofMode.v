@@ -5294,6 +5294,171 @@ Section FOL_helpers.
     | right pf => pf2 pf
     end.
 
+  Lemma eq_prf_equiv_congruence
+  Γ p q
+  (wfp : well_formed p)
+  (wfq : well_formed q)
+  (EvS : list evar)
+  (SvS : list svar)
+  E ψ
+  (wfψ : well_formed ψ)
+  (depth : nat)
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+   (pi_Generic
+     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
+     SVSubst := ∅, KT := false))
+   i
+  )
+  (pf : Γ ⊢ (p <---> q) using i) :
+      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i.
+  Proof.
+    remember (size' ψ) as sz.
+    assert (Hsz: size' ψ <= sz) by lia.
+    clear Heqsz.
+
+    move: ψ wfψ Hsz.
+    induction sz; intros ψ wfψ Hsz; destruct ψ; simpl in Hsz; try lia; simpl.
+    {
+      destruct (decide (E = x)).
+      {
+        exact pf.
+      }
+      {
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        wf_auto2.
+      }
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      wf_auto2.
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      wf_auto2.
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      wf_auto2.
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      wf_auto2.
+    }
+    {
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia))).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia))).
+
+      eapply pf_iff_equiv_trans.
+      5: { 
+        apply conj_intro_meta.
+        4: {
+          apply Framing_right.
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            clear. set_solver.
+          }
+          {
+            wf_auto2.
+          }
+          {
+            eapply pf_conj_elim_r_meta in pf₂.
+            apply pf₂.
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+        }
+        3: {
+          apply Framing_right.
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            clear. set_solver.
+          }
+          {
+            wf_auto2.
+          }
+          {
+            eapply pf_conj_elim_l_meta in pf₂.
+            apply pf₂.
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+        }
+        {
+          wf_auto2.
+        }
+        {
+          wf_auto2.
+        }
+       }
+       4: {
+        apply conj_intro_meta.
+        4: {
+          apply Framing_left.
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            clear. set_solver.
+          }
+          {
+            wf_auto2.
+          }
+          {
+            eapply pf_conj_elim_r_meta in pf₁.
+            apply pf₁.
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+        }
+        3: {
+          apply Framing_left.
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            clear. set_solver.
+          }
+          {
+            wf_auto2.
+          }
+          {
+            eapply pf_conj_elim_l_meta in pf₁.
+            apply pf₁.
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+        }
+        {
+          wf_auto2.
+        }
+        {
+          wf_auto2.
+        }         
+       }
+       { wf_auto2. }
+       { wf_auto2. }
+       { wf_auto2. }
+    }
+    {
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      wf_auto2.
+    }
+    {
+      
+    }
+  Defined.
+
   (*Search gmap.gset list.*)
   (* EvS, SvS - sets used for generating fresh variables *)
   Equations? eq_prf_equiv_congruence
@@ -5356,7 +5521,7 @@ Section FOL_helpers.
                  (free_evar_subst ϕ₂ p E)
                  (free_evar_subst ϕ₁ q E)
                  (free_evar_subst ϕ₂ q E)
-                 _ _ _ _
+                 i _ _ _ _
                  pf₁ pf₂
       }
   } ;
@@ -5379,10 +5544,10 @@ Section FOL_helpers.
 
   @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ depth i pile pf
   with (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) => {
-  | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) pf) => {
-    | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E _ wfp wfq IH)=> {
-      | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
-        | (IH1, IH2) with ((@syllogism_intro Σ Γ _ _ _ _ _ _ IH1 (Ex_quan _ _ x _)),(@syllogism_intro Σ Γ _ _ _ _ _ _ IH2 (Ex_quan _ _ x _))) => {
+  | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) depth i _ pf) => {
+    | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E i _ wfp wfq IH)=> {
+      | IH' with ((@pf_iff_proj1 Σ _ _ _ i _ _ IH'),(@pf_iff_proj2 Σ _ _ _ i _ _ IH')) => {
+        | (IH1, IH2) with (@useBasicReasoning _ _ _ _ (@syllogism_meta Σ Γ _ _ _ BasicReasoning _ _ _ IH1 ((@Ex_quan Σ Γ _ x _))),(@syllogism_meta Σ Γ _ _ _ i _ _ _ IH2 (@Ex_quan Σ Γ _ x _))) => {
           | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
             | (IH3', IH4')
                :=
