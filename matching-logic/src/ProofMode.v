@@ -5106,24 +5106,34 @@ Section FOL_helpers.
    *)
 
 
-  Lemma prf_equiv_of_impl_of_equiv Γ a b a' b':
+  Lemma prf_equiv_of_impl_of_equiv Γ a b a' b' i:
     well_formed a = true ->
     well_formed b = true ->
     well_formed a' = true ->
     well_formed b' = true ->
-    Γ ⊢ (a <---> a') ->
-    Γ ⊢ (b <---> b') ->
-    Γ ⊢ (a ---> b) <---> (a' ---> b')
+    Γ ⊢ (a <---> a') using i ->
+    Γ ⊢ (b <---> b') using i ->
+    Γ ⊢ (a ---> b) <---> (a' ---> b') using i
   .
   Proof.
     intros wfa wfb wfa' wfb' Haa' Hbb'.
-    unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ Haa')); auto.
-    unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ Haa')); auto.
-    unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ Hbb')); auto.
-    unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ Hbb')); auto.
+    unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Haa')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Haa')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Hbb')).
+    { wf_auto2. }
+    { wf_auto2. }
+    unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Hbb')).
+    { wf_auto2. }
+    { wf_auto2. }
 
-    apply pf_iff_equiv_trans with (B := (a ---> b')); auto.
-      + apply conj_intro_meta; subst; auto 10.
+    apply pf_iff_equiv_trans with (B := (a ---> b')).
+    1-3: wf_auto2.
+      + apply conj_intro_meta.
+        1-2: wf_auto2.
         * toMyGoal.
           { wf_auto2. }
           mgIntro. mgIntro.
@@ -5138,7 +5148,8 @@ Section FOL_helpers.
           mgApply 0.
           mgApply 1.
           mgExactn 2.
-      + apply conj_intro_meta; auto.
+      + apply conj_intro_meta.
+        1-2: wf_auto2.
         * toMyGoal.
           { wf_auto2. }
           mgIntro. mgIntro.
@@ -5154,16 +5165,6 @@ Section FOL_helpers.
           mgApply 0.
           mgExactn 2.
   Defined.
-
-  Program Canonical Structure prf_equiv_of_impl_of_equiv_indifferent_S
-          (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-          (a b p q : Pattern)
-          (wfa : well_formed a)
-          (wfb : well_formed b)
-          (wfp : well_formed p)
-          (wfq : well_formed q)
-    := ProofProperty2 P (@prf_equiv_of_impl_of_equiv Γ a b p q wfa wfb wfp wfq) _.
-  Next Obligation. solve_indif; assumption. Qed.
 
   Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E:
     x <> E ->
