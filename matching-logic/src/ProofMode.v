@@ -4827,6 +4827,98 @@ Proof.
   }
 Qed.
 
+Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (HContra _ pf2).
+  feed specialize HContra.
+  {
+    unfold pf2. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  simpl in *.
+  clear -HC1.
+  congruence.
+Qed.
+
+Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt)) (pi_Generic gpi) ->
+  X ∈ pi_substituted_svars gpi.
+Proof.
+  intros [H].
+  specialize (H ∅).
+  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+  specialize (H _ pf2).
+  feed specialize H.
+  {
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    reflexivity.
+  }
+  destruct H as [H1 H2 H3 H4].
+  simpl in *.
+  clear -H3. set_solver.
+Qed.
+
+Lemma Svar_subst {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
+  {pile : ProofInfoLe (pi_Generic
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := {[X]};
+           pi_uses_kt := false ;
+        |}) i} :
+  well_formed ψ ->
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ (free_svar_subst ϕ ψ X) using i.
+Proof.
+  intros wfψ [pf Hpf].
+  unshelve (eexists).
+  {
+   apply ProofSystem.Svar_subst.
+   { pose proof (Hwf := @proved_impl_wf _ _ _ pf). exact Hwf. }
+   { exact wfψ. }
+   { exact pf. }
+  }
+{
+  simpl.
+  pose proof (Hnot := @not_svs_in_prop Σ X).
+  constructor; simpl.
+  {
+    destruct i;[|exact I].
+    contradiction.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    apply Hpf2.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ pile).
+    clear -Hpile Hpf3.
+    set_solver.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    exact Hpf4.
+  }
+}
+Defined.
+
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
