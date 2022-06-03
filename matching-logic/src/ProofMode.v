@@ -4844,6 +4844,28 @@ Proof.
   congruence.
 Qed.
 
+
+Lemma not_generic_in_prop {Σ : Signature} evs svs kt :
+  ~ ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) pi_Propositional.
+Proof.
+  intros [HContra].
+  specialize (HContra ∅).
+  pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
+  specialize (HContra _ pf).
+  feed specialize HContra.
+  {
+    unfold pf. simpl. constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { reflexivity. }
+  }
+  destruct HContra as [HC1 HC2 HC3 HC4].
+  simpl in *.
+  clear -HC1.
+  congruence.
+Qed.
+
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
   ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt)) (pi_Generic gpi) ->
   X ∈ pi_substituted_svars gpi.
@@ -5062,7 +5084,6 @@ Section FOL_helpers.
       apply pile_svs_subseteq.
       set_solver.
     }
-    Check useBasicReasoning.
     apply useBasicReasoning with (gpi0 := gpi) in Hpf.
     epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
@@ -5455,7 +5476,50 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia))).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia))).
+
+      apply prf_equiv_of_impl_of_equiv.
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+      { apply pf₁. }
+      { apply pf₂. }
+    }
+    {
+      pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) as xfrx.
+      destruct xfrx as [x frx].
+
+      (*
+      (* i = pi_Generic gpi *)
+      destruct i.
+      {
+        exfalso.
+        eapply pile_trans.
+        2: { apply pile. }
+        eapply pile_kt_impl.
+        set_solver.
+      }*)
+
+      apply pf_iff_split.
+      { wf_auto2. }
+      { wf_auto2. }
+      {
+        eapply strip_exists_quantify_l.
+        3: {
+          apply Ex_gen.
+          3: {
+            eapply syllogism_meta.
+            5: {
+              
+              Check useBasicReasoning.
+              Search ProofInfoLe pi_Generic pi_Propositional.
+              apply Ex_quan.
+            }
+          }
+        }
+      }
     }
   Defined.
 
