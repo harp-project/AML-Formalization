@@ -189,7 +189,7 @@ Qed.
   Lemma fresh_evar_svar_open dbi X phi :
     fresh_evar (svar_open dbi X phi) = fresh_evar phi.
   Proof.
-    unfold fresh_evar.
+    unfold fresh_evar,evar_fresh_s.
     apply f_equal.
     apply f_equal.
     apply free_evars_svar_open.
@@ -198,7 +198,7 @@ Qed.
   Lemma fresh_svar_evar_open dbi x phi :
     fresh_svar (evar_open dbi x phi) = fresh_svar phi.
   Proof.
-    unfold fresh_svar.
+    unfold fresh_svar,svar_fresh_s.
     apply f_equal.
     apply f_equal.
     apply free_svars_evar_open.
