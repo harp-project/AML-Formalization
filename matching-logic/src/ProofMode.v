@@ -5315,6 +5315,33 @@ Section FOL_helpers.
     | right pf => pf2 pf
     end.
 
+  Lemma evar_fresh_seq_max (EvS : EVarSet) (n1 n2 : nat) :
+    (@list_to_set evar EVarSet _ _ _ (evar_fresh_seq EvS n1)) ⊆ (list_to_set (evar_fresh_seq EvS (n1 `max` n2))).
+  Proof.
+    move: EvS n2.
+    induction n1; intros EvS n2.
+    {
+      simpl. set_solver.
+    }
+    {
+      simpl.
+      destruct n2.
+      {
+        simpl. set_solver.
+      }
+      {
+        simpl.
+        cut (@list_to_set evar EVarSet _ _ _ (evar_fresh_seq ({[evar_fresh_s EvS]} ∪ EvS) n1)
+        ⊆ list_to_set (evar_fresh_seq ({[evar_fresh_s EvS]} ∪ EvS) (n1 `max` n2))).
+        {
+          set_solver.
+        }
+        specialize (IHn1 ({[evar_fresh_s EvS]} ∪ EvS) n2).
+        apply IHn1.
+      }
+    }
+  Qed.
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
@@ -5331,7 +5358,7 @@ Section FOL_helpers.
   (i : ProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
-     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
+     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' depth E ψ)),
      SVSubst := ∅, KT := false))
    i
   )
@@ -5376,7 +5403,19 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
+      feed specialize pf₁.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_subseteq.
+        simpl.
+        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ1) as n1.
+        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ2) as n2.
+        unfold "`max`". simpl.
+        
+      }
+      pile p_sub_EvS q_sub_EvS E_in_EvS).
       feed specialize pf₁.
       {
         simpl in ψ_sub_EvS.
@@ -5516,7 +5555,7 @@ Section FOL_helpers.
       { apply pf₂. }
     }
     {
-      pose proof (evar_fresh_dep (elements EvS)) as xfrx.
+      pose proof (evar_fresh_dep EvS) as xfrx.
       destruct xfrx as [x frx].
 
       (* i = pi_Generic gpi *)
@@ -5527,7 +5566,16 @@ Section FOL_helpers.
         apply pile.
       }
 
-      pose proof (IH := IHsz (evar_open 0 x ϕ') EvS SvS  depth i _ pf)
+      pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(wf_auto2) ltac:(rewrite evar_open_size'; lia)).
+      specialize (IH ({[x]} ∪ EvS) SvS).
+      feed specialize IH.
+      {
+        simpl.
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_subseteq.
+      }
+      Search free_evars evar_open.
       Check wf_evar_open_from_wf_ex.
 
       apply pf_iff_split.
