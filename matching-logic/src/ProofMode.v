@@ -5637,6 +5637,15 @@ Section FOL_helpers.
           clear -frx E_in_EvS. set_solver.
         }
         simpl.
+        rewrite medoeip_evar_open.
+        { apply not_eq_sym. exact HxneE. }
+        simpl.
+        (* Two cases may happen: either E does not occur in ψ,
+           and then both [maximal_exists_depth_of_evar_in_pattern] terms are identically zero;
+           or E occurs in ψ, and then the first [maximal_exists_depth_of_evar_in_pattern] term
+           is smaller by one than the second one, and therefore the second one generates
+           one more fresh variable, and the inclusion holds.
+         *)
       }
       Search free_evars evar_open.
       Check wf_evar_open_from_wf_ex.
