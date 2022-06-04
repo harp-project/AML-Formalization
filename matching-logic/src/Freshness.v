@@ -457,11 +457,11 @@ Ltac solve_fresh_svar_neq :=
 
 
 
-Definition evar_fresh_dep {Σ : Signature} (S : list evar) : {x : evar & x ∉ S} :=
-  @existT evar (fun x => x ∉ S) (evar_fresh S) (@set_evar_fresh_is_fresh'' Σ S).
+Definition evar_fresh_dep {Σ : Signature} (S : EVarSet) : {x : evar & x ∉ S} :=
+  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (@set_evar_fresh_is_fresh' Σ S).
 
-Definition svar_fresh_dep {Σ : Signature} (S : list svar) : {X : svar & X ∉ S} :=
-  @existT svar (fun x => x ∉ S) (svar_fresh S) (@set_svar_fresh_is_fresh'' _ S).
+Definition svar_fresh_dep {Σ : Signature} (S : SVarSet) : {X : svar & X ∉ S} :=
+  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (@set_svar_fresh_is_fresh' _ S).
 
 
 Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
