@@ -5325,6 +5325,8 @@ Section FOL_helpers.
   (wfψ : well_formed ψ)
   (p_sub_EvS : (free_evars p) ⊆ EvS)
   (q_sub_EvS : (free_evars q) ⊆ EvS)
+  (ψ_sub_EvS : (free_evars ψ) ⊆ EvS)
+  (E_in_EvS : E ∈ EvS)
   (depth : nat)
   (i : ProofInfo)
   (pile : ProofInfoLe
@@ -5340,11 +5342,8 @@ Section FOL_helpers.
     assert (Hsz: size' ψ <= sz) by lia.
     clear Heqsz.
 
-
-    (*pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ )))) as xfrx.*)
-
-    move: ψ wfψ Hsz EvS SvS pile.
-    induction sz; intros ψ wfψ Hsz EvS SvS pile; destruct ψ; simpl in Hsz; try lia; simpl.
+    move: ψ wfψ Hsz EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS.
+    induction sz; intros ψ wfψ Hsz EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS; destruct ψ; simpl in Hsz; try lia; simpl.
     {
       destruct (decide (E = x)).
       {
@@ -5377,8 +5376,20 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      feed specialize pf₁.
+      {
+        simpl in ψ_sub_EvS.
+        clear -ψ_sub_EvS.
+        set_solver.
+      }
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      feed specialize pf₂.
+      {
+        simpl in ψ_sub_EvS.
+        clear -ψ_sub_EvS.
+        set_solver.
+      }
 
       eapply pf_iff_equiv_trans.
       5: { 
@@ -5481,8 +5492,20 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      feed specialize pf₁.
+      {
+        simpl in ψ_sub_EvS.
+        clear -ψ_sub_EvS.
+        set_solver.
+      }
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      feed specialize pf₂.
+      {
+        simpl in ψ_sub_EvS.
+        clear -ψ_sub_EvS.
+        set_solver.
+      }
 
       apply prf_equiv_of_impl_of_equiv.
       { wf_auto2. }
@@ -5493,7 +5516,8 @@ Section FOL_helpers.
       { apply pf₂. }
     }
     {
-      pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) as xfrx.      destruct xfrx as [x frx].
+      pose proof (evar_fresh_dep (elements EvS)) as xfrx.
+      destruct xfrx as [x frx].
 
       (* i = pi_Generic gpi *)
       destruct i.
