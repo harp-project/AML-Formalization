@@ -5410,20 +5410,29 @@ Section FOL_helpers.
         2: { apply pile. }
         apply pile_evs_subseteq.
         simpl.
-        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ1) as n1.
-        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ2) as n2.
-        unfold "`max`". simpl.
-        
+        apply evar_fresh_seq_max.
       }
-      pile p_sub_EvS q_sub_EvS E_in_EvS).
-      feed specialize pf₁.
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
         set_solver.
       }
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₂.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_subseteq.
+        simpl.
+        rewrite Nat.max_comm.
+        apply evar_fresh_seq_max.
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
