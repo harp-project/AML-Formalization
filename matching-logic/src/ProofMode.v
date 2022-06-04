@@ -5319,10 +5319,12 @@ Section FOL_helpers.
   Γ p q
   (wfp : well_formed p)
   (wfq : well_formed q)
-  (EvS : list evar)
-  (SvS : list svar)
+  (EvS : EVarSet)
+  (SvS : SVarSet)
   E ψ
   (wfψ : well_formed ψ)
+  (p_sub_EvS : (free_evars p) ⊆ EvS)
+  (q_sub_EvS : (free_evars q) ⊆ EvS)
   (depth : nat)
   (i : ProofInfo)
   (pile : ProofInfoLe
@@ -5338,8 +5340,11 @@ Section FOL_helpers.
     assert (Hsz: size' ψ <= sz) by lia.
     clear Heqsz.
 
-    move: ψ wfψ Hsz.
-    induction sz; intros ψ wfψ Hsz; destruct ψ; simpl in Hsz; try lia; simpl.
+
+    (*pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ )))) as xfrx.*)
+
+    move: ψ wfψ Hsz EvS SvS pile.
+    induction sz; intros ψ wfψ Hsz EvS SvS pile; destruct ψ; simpl in Hsz; try lia; simpl.
     {
       destruct (decide (E = x)).
       {
@@ -5372,8 +5377,8 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia))).
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia))).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
 
       eapply pf_iff_equiv_trans.
       5: { 
@@ -5476,8 +5481,8 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia))).
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia))).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile).
 
       apply prf_equiv_of_impl_of_equiv.
       { wf_auto2. }
@@ -5488,19 +5493,18 @@ Section FOL_helpers.
       { apply pf₂. }
     }
     {
-      pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) as xfrx.
-      destruct xfrx as [x frx].
+      pose proof (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ψ)) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) as xfrx.      destruct xfrx as [x frx].
 
-      (*
       (* i = pi_Generic gpi *)
       destruct i.
       {
         exfalso.
-        eapply pile_trans.
-        2: { apply pile. }
-        eapply pile_kt_impl.
-        set_solver.
-      }*)
+        eapply not_generic_in_prop.
+        apply pile.
+      }
+
+      pose proof (IH := IHsz (evar_open 0 x ϕ') EvS SvS  depth i _ pf)
+      Check wf_evar_open_from_wf_ex.
 
       apply pf_iff_split.
       { wf_auto2. }
@@ -5512,10 +5516,23 @@ Section FOL_helpers.
           3: {
             eapply syllogism_meta.
             5: {
-              
-              Check useBasicReasoning.
-              Search ProofInfoLe pi_Generic pi_Propositional.
+              useBasicReasoning.
               apply Ex_quan.
+              wf_auto2.
+            }
+            4: {
+              eapply pf_iff_proj1.
+              3: {
+                eapply pf_evar_open_free_evar_subst_equiv_sides.
+                4: {
+
+                }
+              }
+              simpl in IHsz.
+              unfold evar_open. simpl. eapply pf_iff_proj1.
+              3: {
+                eapply IHsz.
+              }
             }
           }
         }

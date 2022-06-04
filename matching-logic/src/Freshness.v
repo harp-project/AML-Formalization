@@ -464,18 +464,18 @@ Definition svar_fresh_dep {Σ : Signature} (S : list svar) : {X : svar & X ∉ S
   @existT svar (fun x => x ∉ S) (svar_fresh S) (@set_svar_fresh_is_fresh'' _ S).
 
 
-Fixpoint evar_fresh_seq {Σ : Signature} (avoid : list evar) (n : nat) : list evar :=
+Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
   match n with
   | 0 => []
   | S n' =>
-    let x := (evar_fresh avoid) in
-    x :: evar_fresh_seq (x::avoid) (n')
+    let x := (evar_fresh_s avoid) in
+    x :: evar_fresh_seq ({[x]} ∪ avoid) (n')
   end.
 
-Fixpoint svar_fresh_seq {Σ : Signature} (avoid : list svar) (n : nat) : list svar :=
+Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar :=
   match n with
    | 0 => []
    | S n' =>
-     let X := (svar_fresh avoid) in
-     X :: svar_fresh_seq (X::avoid) (n')
+     let X := (svar_fresh_s avoid) in
+     X :: svar_fresh_seq ({[X]} ∪ avoid) (n')
   end.
