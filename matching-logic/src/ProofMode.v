@@ -5342,6 +5342,33 @@ Section FOL_helpers.
     }
   Qed.
 
+  Lemma medoeip_evar_open depth E n x ψ:
+    E <> x ->
+    maximal_exists_depth_of_evar_in_pattern' depth E (evar_open n x ψ)
+    = maximal_exists_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    intros HEnex.
+    unfold evar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+      case_match; try reflexivity. subst. contradiction.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
@@ -5540,15 +5567,37 @@ Section FOL_helpers.
       wf_auto2.
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₁.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_subseteq.
+        simpl.
+        apply evar_fresh_seq_max.
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
         set_solver.
       }
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS).
+
+      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₂.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_evs_subseteq.
+        simpl.
+        rewrite Nat.max_comm.
+        apply evar_fresh_seq_max.
+      }
+      { exact p_sub_EvS. }
+      { exact q_sub_EvS. }
+      { exact E_in_EvS. }
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
@@ -5583,6 +5632,11 @@ Section FOL_helpers.
         eapply pile_trans.
         2: { apply pile. }
         apply pile_evs_subseteq.
+        assert (HxneE: x <> E).
+        {
+          clear -frx E_in_EvS. set_solver.
+        }
+        simpl.
       }
       Search free_evars evar_open.
       Check wf_evar_open_from_wf_ex.
