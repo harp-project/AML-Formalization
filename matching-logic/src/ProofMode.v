@@ -6507,165 +6507,43 @@ Qed.
     }
   Defined.
 
-  (*Search gmap.gset list.*)
-  (* EvS, SvS - sets used for generating fresh variables *)
-  Equations? eq_prf_equiv_congruence
-               Γ p q
-               (wfp : well_formed p)
-               (wfq : well_formed q)
-               (EvS : list evar)
-               (SvS : list svar)
-               E ψ
-               (wfψ : well_formed ψ)
-               (depth : nat)
-               (i : ProofInfo)
-               (pile : ProofInfoLe
-                (pi_Generic
-                  (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern E (p <---> q))),
-                  SVSubst := ∅, KT := false))
-                i
-               )
-               (pf : Γ ⊢ (p <---> q) using i) :
-                   Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i
-               by wf (size' ψ) lt
-  :=
-  @eq_prf_equiv_congruence  Γ p q wfp wfq EvS SvS E (patt_bound_evar n) wfψ depth i pile pf
-  := (@usePropositionalReasoning _ _ _ _
-       (@pf_iff_equiv_refl Σ Γ (patt_bound_evar n) wfψ)
-     ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bound_svar n) wfψ depth i pile pf
-  := (@usePropositionalReasoning _ _ _ _
-       (@pf_iff_equiv_refl Σ Γ (patt_bound_svar n) wfψ)
-      ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_evar x) wfψ depth i pile pf
-  := @pf_ite _ i (decide (E = x)) Γ
-      ((free_evar_subst (patt_free_evar x) p E) <---> (free_evar_subst (patt_free_evar x) q E))
-      (fun e => _)
-      (fun (_ : E <> x) => _ ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_free_svar X) wfψ depth i pile pf
-  := (@usePropositionalReasoning _ _ _ _
-      (@pf_iff_equiv_refl Σ Γ (patt_free_svar X) wfψ) 
-    ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_bott) wfψ depth i pile pf
-  := (@usePropositionalReasoning _ _ _ _
-      (@pf_iff_equiv_refl Σ Γ patt_bott wfψ)
-    ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (patt_sym s) wfψ depth i pile pf
-  := (@usePropositionalReasoning _ _ _ _
-       (@pf_iff_equiv_refl Σ Γ (patt_sym s) wfψ)
-    ) ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ ---> ϕ₂) wfψ depth i pile pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) depth i pile pf) => {
-    | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) depth i pile pf) => {
-      | pf₂ := @prf_equiv_of_impl_of_equiv
-                 Σ Γ
-                 (free_evar_subst ϕ₁ p E)
-                 (free_evar_subst ϕ₂ p E)
-                 (free_evar_subst ϕ₁ q E)
-                 (free_evar_subst ϕ₂ q E)
-                 i _ _ _ _
-                 pf₁ pf₂
-      }
-  } ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ϕ₁ $ ϕ₂) wfψ depth i pile pf
-  with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₁ (@well_formed_imp_proj1 Σ _ _ wfψ) depth i pile pf) => {
-  | pf₁ with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E ϕ₂ (@well_formed_imp_proj2 Σ _ _ wfψ) depth i pile pf) => {
-    | pf₂ := (@pf_iff_equiv_trans Σ Γ _ (free_evar_subst ϕ₁ q E $ free_evar_subst ϕ₂ p E) _ i _ _ _
-               (@conj_intro_meta Σ Γ _ _ i _ _
-                 (@Framing_left Σ Γ _ _ _ i _ _ (@pf_conj_elim_l_meta Σ _ _ _ i _ _ pf₁))
-                 (@Framing_left Σ Γ _ _ _ i _ _ (@pf_conj_elim_r_meta Σ _ _ _ i _ _ pf₁))
-               )
-               (@conj_intro_meta Σ Γ _ _ i _ _
-                 (@Framing_right Σ Γ _ _ _ i _ _ (@pf_conj_elim_l_meta Σ _ _ _ i _ _ pf₂))
-                 (@Framing_right Σ Γ _ _ _ i _ _ (@pf_conj_elim_r_meta Σ _ _ _ i _ _ pf₂))
-               )
-             )
-    }
-  } ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (ex, ϕ') wfψ depth i pile pf
-  with (evar_fresh_dep ((EvS ++ elements ((free_evars (ex, ϕ')) ∪ {[ E ]} ∪ (free_evars p) ∪ (free_evars q))))) => {
-  | (existT x frx) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (evar_open 0 x ϕ') (@wf_evar_open_from_wf_ex Σ x ϕ' wfψ) depth i _ pf) => {
-    | IH with (@pf_evar_open_free_evar_subst_equiv_sides Σ Γ x 0 ϕ' p q E i _ wfp wfq IH)=> {
-      | IH' with ((@pf_iff_proj1 Σ _ _ _ i _ _ IH'),(@pf_iff_proj2 Σ _ _ _ i _ _ IH')) => {
-        | (IH1, IH2) with (@useBasicReasoning _ _ _ _ (@syllogism_meta Σ Γ _ _ _ BasicReasoning _ _ _ IH1 ((@Ex_quan Σ Γ _ x _))),(@syllogism_meta Σ Γ _ _ _ i _ _ _ IH2 (@Ex_quan Σ Γ _ x _))) => {
-          | (IH3, IH4) with ((Ex_gen Γ _ _ x _ _ IH3 _),(Ex_gen Γ _ _ x _ _ IH4 _)) => {
-            | (IH3', IH4')
-               :=
-                @pf_iff_split Σ Γ (ex, free_evar_subst ϕ' p E) (ex, free_evar_subst ϕ' q E) _ _
-                  (* (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' p q E wfψ wfp wfq *)
-                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH3')
-                  (* ) *)
-                  (* (@pf_impl_ex_free_evar_subst_twice Σ Γ 1 ϕ' q p E wfψ wfq wfp *)
-                    (@strip_exists_quantify_l Σ Γ x _ _ _ _ IH4')
-                  (* ) *)
-            }
-          }
-        }
-      }
-    }
-  } ;
-
-  @eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (mu, ϕ') wfψ depth i pile pf
-  with (svar_fresh_dep (SvS ++ elements ((free_svars (mu, ϕ')) ∪ (free_svars p) ∪ (free_svars q)
-                      ∪ (free_svars (free_evar_subst ϕ' p E))
-                      ∪ (free_svars (free_evar_subst ϕ' q E))))) => {
-  | (existT X frX ) with (@eq_prf_equiv_congruence Γ p q wfp wfq EvS SvS E (svar_open 0 X ϕ') (@wf_svar_open_from_wf_mu Σ X ϕ' wfψ) pf) => {
-    | IH with (@pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Σ Γ ϕ' p q E X _ _ IH) => {
-      | IH' with ((@pf_iff_proj1 Σ _ _ _ _ _ IH'),(@pf_iff_proj2 Σ _ _ _ _ _ IH')) => {
-        | (IH1, IH2) :=
-            (@pf_iff_mu_remove_svar_quantify_svar_open Σ Γ ϕ' p q E X _ _ _ _
-              (@pf_iff_split Σ Γ _ _ _ _
-                (@mu_monotone Σ Γ _ _ X _ _ _ _ _)
-                (@mu_monotone Σ Γ _ _ X _ _ _ _ _)
-              )
-            )
-        }
-      }
-    }
-  }
-  .
-  Proof.
-    2: {
-      unshelve (eapply (@cast_proof _ _ _ _ _ (@pf_iff_equiv_refl Σ Γ (patt_free_evar x) ltac:(auto)))).
-      abstract (
-        unfold free_evar_subst; case_match; [congruence|]; reflexivity
-      ).
-    }
-    1: {
-      unshelve (eapply (@cast_proof _ _ _ _ _ pf)).
-      abstract (
-        unfold free_evar_subst; case_match; [|congruence];
-        (* rewrite !nest_ex_aux_0; *) reflexivity
-      ).
-    }
-    all: try assumption.
-    all: unfold is_true in *.
-    all: abstract (wf_auto2).
-  Defined.
-
-  Lemma prf_equiv_congruence Γ p q C:
+  Lemma prf_equiv_congruence Γ p q C
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+   (pi_Generic
+     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+    )
+   i
+  ):
     PC_wf C ->
-    Γ ⊢ (p <---> q) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))).
+    Γ ⊢ (p <---> q) using i ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))) using i.
   Proof.
     intros wfC Hiff.
-    pose proof (proved_impl_wf _ _ Hiff).
+    pose proof (proved_impl_wf _ _ (proj1_sig Hiff)).
     assert (well_formed p) by wf_auto2.
     assert (well_formed q) by wf_auto2.
     destruct C as [pcEvar pcPattern].
-    apply (
-        @eq_prf_equiv_congruence Γ p q ltac:(assumption) ltac:(assumption)
-          (elements (free_evars pcPattern ∪ free_evars p ∪ free_evars q))
-          (elements (free_svars pcPattern ∪ free_svars p ∪ free_svars q))
-      ); simpl;  assumption.
+    apply @eq_prf_equiv_congruence
+    with (EvS := (free_evars pcPattern ∪ free_evars p ∪ free_evars q ∪ {[pcEvar]}))
+         (SvS := (free_svars pcPattern ∪ free_svars p ∪ free_svars q))
+         (exdepth := 0)
+         (mudepth := 0)
+    .
+    { assumption. }
+    { assumption. }
+    { simpl. wf_auto2. }
+    { clear. set_solver. }
+    { clear. set_solver. }
+    { clear. set_solver. }
+    { simpl. clear. set_solver. }
+    { clear. set_solver. }
+    { clear. set_solver. }
+    { simpl. clear. set_solver. }
+    { simpl. apply pile. }
+    { exact Hiff. }
   Defined.
 
   Lemma uses_svar_subst_eq_prf_equiv_congruence
