@@ -6865,17 +6865,20 @@ Proof.
   - pose proof (wfal := wfl).
     unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
-    pose proof (Hwf := proved_impl_wf _ _ (proj1_sig IHl)).
-    assert (well_formed (foldr patt_imp (emplace C p) l ---> foldr patt_imp (emplace C q) l)).
+    pose proof (Hwf1 := proved_impl_wf _ _ (proj1_sig IHl)).
+    pose proof (Hwf2 := proved_impl_wf _ _ (proj1_sig Himp)).
+    assert (well_formed (emplace C p)).
     {
-      
+      unfold emplace.
+      wf_auto2.
     }
-    assert (well_formed (foldr patt_imp (emplace C p) l)).
+    assert (well_formed (emplace C q)).
     {
-      unfold patt_iff,patt_and,patt_or,patt_not in Hwf. wf_auto2.
+      unfold emplace.
+      wf_auto2.
     }
     toMyGoal.
-    { wf_auto2. Search well_formed_positive emplace. }
+    { unfold emplace. wf_auto2. }
     unfold patt_iff.
     mgSplitAnd.
     + mgIntro. mgIntro.
@@ -6896,17 +6899,38 @@ Proof.
       mgExactn 2.
 Defined.
 
-Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
-  Γ ⊢ p <---> q ->
-  @mkMyGoal Σ Γ l (emplace C q) ->
-  @mkMyGoal Σ Γ l (emplace C p).
+Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (i : ProofInfo)
+  (pile : ProofInfoLe
+  (pi_Generic
+     (ExGen := list_to_set
+                 (evar_fresh_seq
+                    (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q
+                     ∪ {[pcEvar C]})
+                    (maximal_exists_depth_of_evar_in_pattern 
+                       (pcEvar C) (pcPattern C))),
+      SVSubst := list_to_set
+                   (svar_fresh_seq
+                      (free_svars (pcPattern C) ∪ free_svars p
+                       ∪ free_svars q)
+                      (maximal_mu_depth_of_evar_in_pattern 
+                         (pcEvar C) (pcPattern C))),
+      KT := (if
+              decide
+                (0 =
+                 maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
+             is left _
+             then false
+             else true))) i):
+  Γ ⊢ p <---> q using i ->
+  @mkMyGoal Σ Γ l (emplace C q) i ->
+  @mkMyGoal Σ Γ l (emplace C p) i.
 Proof.
   intros Hpiffq H.
   unfold of_MyGoal in *. simpl in *.
   intros wfcp wfl.
   feed specialize H.
   { abstract (
-      pose proof (Hwfiff := proved_impl_wf _ _ Hpiffq);
+      pose proof (Hwfiff := proved_impl_wf _ _ (proj1_sig Hpiffq));
       unfold emplace;
       apply well_formed_free_evar_subst_0;[wf_auto2|];
       fold (PC_wf C);
@@ -6916,17 +6940,18 @@ Proof.
   }
   { exact wfl. }
 
-  eapply Modus_ponens.
-  4: apply pf_iff_proj2.
-  4: abstract (wf_auto2).
-  5: apply prf_equiv_congruence_iter.
-  7: apply Hpiffq.
-  3: apply H.
-  5: exact wfl.
-  4: eapply wf_emplaced_impl_wf_context;
+  eapply MP.
+  2: apply pf_iff_proj2.
+  2: abstract (wf_auto2).
+  3: apply prf_equiv_congruence_iter.
+  3: exact pile.
+  5: apply Hpiffq.
+  1: apply H.
+  3: exact wfl.
+  2: eapply wf_emplaced_impl_wf_context;
      apply wfcp.
-  1,3: apply proved_impl_wf in H; exact H.
-  1: abstract (apply proved_impl_wf in H; wf_auto2).
+  pose proof (@proved_impl_wf _ _ _ (proj1_sig H)).
+  wf_auto2.
 Defined.
 
 Ltac2 mutable ml_debug_rewrite := false.
