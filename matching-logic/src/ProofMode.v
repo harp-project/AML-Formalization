@@ -6358,14 +6358,18 @@ Qed.
           }
           3: {
             wf_auto2. simpl in *.
-            pose proof (Htmp := free_svars_free_evar_subst).
-            Search fresh_svar free_evar_subst.
-            Unset Printing Notations.
-            Search free_evar_subst.
-            apply svar_is_fresh_in_free_evar_subst.
-            pose proof (Htmp := @free_svars_evar_open Σ ψ).
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p).
+            clear -Htmp ψ_sub_SvS p_sub_SvS frX.
+            set_solver.
+          }
+          2: {
+            wf_auto2. simpl in *.
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q).
+            clear -Htmp ψ_sub_SvS q_sub_SvS frX.
+            set_solver.
+          }
+          {
             
-            simpl.
           }
         }
       }
