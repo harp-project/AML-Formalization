@@ -6596,37 +6596,30 @@ Proof.
   abstract (wf_auto2).
 Defined.
 
-Lemma ex_quan_monotone_nowf {Σ : Signature} Γ x ϕ₁ ϕ₂:
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
-Proof.
-  intros H.
-  pose proof (Hwf := proved_impl_wf _ _ H).
-  pose proof (well_formed_imp_proj1 Hwf).
-  pose proof (well_formed_imp_proj2 Hwf).
-  apply ex_quan_monotone; assumption.
-Defined.
-
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁).
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
-  apply ex_quan_monotone; auto.
+  apply ex_quan_monotone.
+  { apply pile_refl. }
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  mgDestructAnd 0. auto. mgExactn 0; auto.
+  mgDestructAnd 0. mgExactn 0.
 Defined.
 
 Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂).
+  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
-  apply ex_quan_monotone; auto.
+  apply ex_quan_monotone.
+  { apply pile_refl. }
   toMyGoal.
   { wf_auto2. }
   mgIntro.
@@ -6634,35 +6627,30 @@ Proof.
   mgExactn 1.
 Defined.
 
-Lemma lhs_to_and {Σ : Signature} Γ a b c:
+Lemma lhs_to_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ (a and b) ---> c ->
-  Γ ⊢ a ---> b ---> c.
+  Γ ⊢ (a and b) ---> c using i ->
+  Γ ⊢ a ---> b ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
   { wf_auto2. }
-  do 2 mgIntro. mgApplyMeta H; auto.
-  fromMyGoal. intros _ _. apply conj_intro; auto.
+  do 2 mgIntro. mgApplyMeta H.
+  fromMyGoal.
+  usePropositionalReasoning.
+  apply conj_intro.
+  { wf_auto2. }
+  { wf_auto2. }
 Defined.
 
-Program Canonical Structure lhs_to_and_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty1 P (@lhs_to_and Σ Γ a b c wfa wfb wfc) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma lhs_from_and {Σ : Signature} Γ a b c:
+Lemma lhs_from_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c ->
-  Γ ⊢ (a and b) ---> c.
+  Γ ⊢ a ---> b ---> c using i ->
+  Γ ⊢ (a and b) ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
@@ -6670,10 +6658,12 @@ Proof.
   mgIntro.
   mgAssert (b).
   { wf_auto2. }
-  { fromMyGoal. intros _ _. apply pf_conj_elim_r; auto. }
+  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_r.
+    wf_auto2. wf_auto2.
+  }
   mgAssert (a) using first 1.
   { wf_auto2. }
-  { fromMyGoal. intros _ _. apply pf_conj_elim_l; auto. }
+  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_l; wf_auto2. }
   mgAdd H.
   mgAssert ((b ---> c)).
   { wf_auto2. }
@@ -6682,28 +6672,16 @@ Proof.
   mgExactn 3.
 Defined.
 
-Program Canonical Structure lhs_from_and_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b c : Pattern)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty1 P (@lhs_from_and Σ Γ a b c wfa wfb wfc) _.
-Next Obligation.
-  solve_indif. simpl.
-  apply (@liftP_impl_P' Σ P Γ _ c [a and b] _ ltac:(reflexivity)).
-  solve_indif; auto; unfold liftP; solve_indif.
-Qed.
-
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb wfl.
   induction l.
-  - simpl. apply conj_intro; auto.
+  - simpl. apply conj_intro; assumption.
   - simpl. pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
     specialize (IHl wfl').
     toMyGoal.
@@ -6716,69 +6694,39 @@ Proof.
     { wf_auto2. }
     { mgApply 1. mgExactn 2. }
     mgClear 2. mgClear 1. mgClear 0.
-    fromMyGoal. intros _ _. apply IHl.
+    fromMyGoal. apply IHl.
 Defined.
 
-Program Canonical Structure prf_conj_split_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty0 P (@prf_conj_split Σ Γ a b l wfa wfb wfl) _.
-Next Obligation.
-  intros.
-  induction l.
-  - solve_indif.
-  - simpl. case_match. solve_indif. apply IHl.
-Qed.
-
-Lemma prf_conj_split_meta {Σ : Signature} Γ a b l:
+Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) -> 
-  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) using i -> 
+  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
 Proof.
-  intros. eapply Modus_ponens. 4: apply prf_conj_split. all: auto 10.
+  intros. eapply MP. 2: { usePropositionalReasoning. apply prf_conj_split; assumption. }
+  exact H2.
 Defined.
 
-Program Canonical Structure prf_conj_split_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty1 P (@prf_conj_split_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l:
+Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   wf l ->
-  Γ ⊢ (foldr patt_imp a l) -> 
-  Γ ⊢ (foldr patt_imp b l) ->
-  Γ ⊢ (foldr patt_imp (a and b) l).
+  Γ ⊢ (foldr patt_imp a l) using i -> 
+  Γ ⊢ (foldr patt_imp b l) using i ->
+  Γ ⊢ (foldr patt_imp (a and b) l) using i.
 Proof.
-  intros. eapply Modus_ponens. 4: apply prf_conj_split_meta. all: auto 10.
+  intros. eapply MP.
+  2: {
+    apply prf_conj_split_meta; assumption.
+  }
+  exact H3.
 Defined.
 
-Program Canonical Structure prf_conj_split_meta_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_conj_split_meta_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l:
-  @mkMyGoal Σ Γ l a ->
-  @mkMyGoal Σ Γ l b ->
-  @mkMyGoal Σ Γ l (a and b).
+Lemma MyGoal_splitAnd {Σ : Signature} Γ a b l i:
+  @mkMyGoal Σ Γ l a i ->
+  @mkMyGoal Σ Γ l b i ->
+  @mkMyGoal Σ Γ l (a and b) i.
 Proof.
   intros Ha Hb.
   unfold of_MyGoal in *. simpl in *.
@@ -6794,20 +6742,14 @@ Proof.
   { abstract (wf_auto2). }
 Defined.
 
-Program Canonical Structure MyGoal_splitAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-  := TacticProperty2 P (@MyGoal_splitAnd Σ Γ a b l) _.
-Next Obligation. unfold liftP. solve_indif. apply H. apply H0. Qed.
-
 Ltac mgSplitAnd := apply MyGoal_splitAnd.
 
 Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c ---> (a and b).
+  Γ ⊢ a ---> b ---> c ---> (a and b)
+  using PropositionalReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -6818,28 +6760,13 @@ Proof.
   - mgExactn 1.
 Defined.
 
-Local Program Canonical Structure ex_mgSplitAnd_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b c : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-        (wfc : well_formed c)
-  := ProofProperty0 P (@ex_mgSplitAnd Σ Γ a b c wfa wfb wfc) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-(* Hints *)
-#[export]
- Hint Resolve A_impl_A : core.
-
-
 Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
-      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
+  using PropositionalReasoning.
 Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
@@ -6852,7 +6779,7 @@ Proof.
     + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       (* TODO we need some [mgRevert] tactic *)
-      fromMyGoal. intros _ _. toMyGoal.
+      fromMyGoal. toMyGoal.
       { wf_auto2. }
       unshelve(mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
@@ -6861,7 +6788,7 @@ Proof.
       mgExactn 0.
     + unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
-      fromMyGoal. intros _ _. toMyGoal.
+      fromMyGoal. toMyGoal.
       { wf_auto2. }
       unshelve (mgApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
@@ -6870,68 +6797,18 @@ Proof.
       mgExactn 1.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty0 P (@prf_local_goals_equiv_impl_full_equiv Σ Γ a b l wfa wfb wfl) _.
-Next Obligation.
-  intros.
-  induction l.
-  - solve_indif.
-  - simpl. case_match. solve_indif.
-    + apply liftP_impl_P.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
-        a0 ---> foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)) ((a0 --->
-        foldr (@patt_imp Σ) (a <---> b) l --->
-        foldr (@patt_imp Σ) a l ---> foldr (@patt_imp Σ) b l)))).
-      { solve_indif. }
-      solve_indif.
-      intros.
-      simpl.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
-      { apply IHl. }
-      solve_indif.
-    + apply liftP_impl_P.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ (_) _ _ (@MyGoal_applyMeta_indifferent_S Σ P _ _ Γ _ (((a0 ---> foldr (@patt_imp Σ) (a <---> b) l) --->
-        a0 ---> foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)) ((a0 --->
-        foldr (@patt_imp Σ) (a <---> b) l --->
-        foldr (@patt_imp Σ) b l ---> foldr (@patt_imp Σ) a l)))).
-      { solve_indif. }
-      solve_indif.
-      intros.
-      simpl.
-      apply (@tp1_1_tactic_property Σ P Γ _ _ _ _ _ (@MyGoal_applyMetaIn_indifferent_S Σ P _ _ Γ [] [] _ _ _)).
-      { apply IHl. }
-      solve_indif.
-Qed.
-
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H.
-  eapply Modus_ponens.
-  4: apply prf_local_goals_equiv_impl_full_equiv; auto.
-  all: auto.
+  eapply MP.
+  2: { usePropositionalReasoning. apply prf_local_goals_equiv_impl_full_equiv; assumption. }
+  exact H.
 Defined.
-
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty1 P (@prf_local_goals_equiv_impl_full_equiv_meta Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
 
 Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
