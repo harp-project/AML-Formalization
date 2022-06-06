@@ -5493,6 +5493,36 @@ Section FOL_helpers.
   Definition maximal_mu_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
     maximal_mu_depth_of_evar_in_pattern' 0 E ψ.
 
+
+
+  Lemma svar_fresh_seq_max (SvS : SVarSet) (n1 n2 : nat) :
+    (@list_to_set svar SVarSet _ _ _ (svar_fresh_seq SvS n1)) ⊆ (list_to_set (svar_fresh_seq SvS (n1 `max` n2))).
+  Proof.
+    move: SvS n2.
+    induction n1; intros SvS n2.
+    {
+      simpl. set_solver.
+    }
+    {
+      simpl.
+      destruct n2.
+      {
+        simpl. set_solver.
+      }
+      {
+        simpl.
+        cut (@list_to_set svar SVarSet _ _ _ (svar_fresh_seq ({[svar_fresh_s SvS]} ∪ SvS) n1)
+        ⊆ list_to_set (svar_fresh_seq ({[svar_fresh_s SvS]} ∪ SvS) (n1 `max` n2))).
+        {
+          set_solver.
+        }
+        specialize (IHn1 ({[svar_fresh_s SvS]} ∪ SvS) n2).
+        apply IHn1.
+      }
+    }
+  Qed.
+
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
@@ -5508,12 +5538,15 @@ Section FOL_helpers.
   (p_sub_SvS : (free_svars p) ⊆ SvS)
   (q_sub_SvS : (free_svars q) ⊆ SvS)
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
-  (depth : nat)
+  (exdepth : nat)
+  (mudepth : nat)
   (i : ProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
-     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' depth E ψ)),
-     SVSubst := ∅, KT := false))
+     (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
+     SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
+     KT := false)
+    )
    i
   )
   (pf : Γ ⊢ (p <---> q) using i) :
@@ -5567,6 +5600,12 @@ Section FOL_helpers.
       {
         eapply pile_trans.
         2: { apply pile. }
+        simpl.
+        eapply pile_trans.
+        2: {
+          Check evar_fresh_seq_max.
+          apply pile_svs_subseteq.
+        }
         apply pile_evs_subseteq.
         simpl.
         apply evar_fresh_seq_max.
