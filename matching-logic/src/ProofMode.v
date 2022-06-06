@@ -5463,6 +5463,36 @@ Section FOL_helpers.
     }
   Qed.
 
+
+  Fixpoint maximal_mu_depth_of_evar_in_pattern' (depth : nat) (E : evar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_svar _ => 0
+    | patt_free_evar E' =>
+      match (decide (E' = E)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₁)
+        (maximal_mu_depth_of_evar_in_pattern' depth E ψ₂)
+    | patt_exists ψ' =>
+      maximal_mu_depth_of_evar_in_pattern' depth E ψ'
+    | patt_mu ψ' =>
+      maximal_mu_depth_of_evar_in_pattern' (S depth) E ψ'
+    end.
+
+  Definition maximal_mu_depth_of_evar_in_pattern (E : evar) (ψ : Pattern) : nat :=
+    maximal_mu_depth_of_evar_in_pattern' 0 E ψ.
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
