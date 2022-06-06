@@ -5369,6 +5369,30 @@ Section FOL_helpers.
     }
   Qed.
 
+  Lemma medoeip_svar_open depth E n X ψ:
+    maximal_exists_depth_of_evar_in_pattern' depth E (svar_open n X ψ)
+    = maximal_exists_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
   Lemma medoeip_notin E ψ depth:
     E ∉ free_evars ψ ->
     maximal_exists_depth_of_evar_in_pattern' depth E ψ = 0.
@@ -5544,7 +5568,7 @@ Section FOL_helpers.
     apply Hkt.
   Qed.
 
-  Lemma medosip_svar_open depth E n X ψ:
+  Lemma mmdoeip_svar_open depth E n X ψ:
     maximal_mu_depth_of_evar_in_pattern' depth E (svar_open n X ψ)
     = maximal_mu_depth_of_evar_in_pattern' depth E ψ.
   Proof.
@@ -5567,6 +5591,34 @@ Section FOL_helpers.
       rewrite IHψ. reflexivity.
     }
   Qed.
+
+  Lemma mmdoeip_evar_open depth E n x ψ:
+  E <> x ->
+  maximal_mu_depth_of_evar_in_pattern' depth E (evar_open n x ψ)
+  = maximal_mu_depth_of_evar_in_pattern' depth E ψ.
+Proof.
+  intros Hne.
+  unfold evar_open.
+  move: depth n.
+  induction ψ; intros depth n'; simpl; try reflexivity.
+  {
+    case_match; simpl; try reflexivity.
+    case_match; simpl; try reflexivity.
+    subst. contradiction.
+  }
+  {
+    rewrite IHψ1. rewrite IHψ2. reflexivity.
+  }
+  {
+    rewrite IHψ1. rewrite IHψ2. reflexivity.
+  }
+  {
+    rewrite IHψ. reflexivity.
+  }
+  {
+    rewrite IHψ. reflexivity.
+  }
+Qed.
 
   Lemma eq_prf_equiv_congruence
   Γ p q
@@ -5940,6 +5992,12 @@ Section FOL_helpers.
         }
         {
           simpl.
+          rewrite mmdoeip_evar_open.
+          { apply not_eq_sym. exact HxneE. }
+          apply reflexivity.
+        }
+        {
+          reflexivity.
         }
       }
       { clear -p_sub_EvS. set_solver. }
@@ -6001,15 +6059,23 @@ Section FOL_helpers.
           {
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            simpl.
-            rewrite medoeip_S_in.
-            { assumption. }
-            simpl.
-            unfold evar_fresh_s.
-            rewrite -Heqx.
-            clear.
-            set_solver.
+            apply pile_evs_svs_kt.
+            {
+              simpl.
+              rewrite medoeip_S_in.
+              { assumption. }
+              simpl.
+              unfold evar_fresh_s.
+              rewrite -Heqx.
+              clear.
+              set_solver.
+            }
+            {
+              clear. set_solver.
+            }
+            {
+              reflexivity.
+            }
           }
           {
             simpl.
@@ -6048,15 +6114,23 @@ Section FOL_helpers.
           {
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            simpl.
-            rewrite medoeip_S_in.
-            { assumption. }
-            simpl.
-            unfold evar_fresh_s.
-            rewrite -Heqx.
-            clear.
-            set_solver.
+            apply pile_evs_svs_kt.
+            {
+              simpl.
+              rewrite medoeip_S_in.
+              { assumption. }
+              simpl.
+              unfold evar_fresh_s.
+              rewrite -Heqx.
+              clear.
+              set_solver.
+            }
+            {
+              clear. set_solver.
+            }
+            {
+              reflexivity.
+            }
           }
           {
             simpl.
@@ -6092,7 +6166,20 @@ Section FOL_helpers.
       {
         eapply pile_trans.
         2: { apply pile. }
-        apply pile_svs_subseteq.
+        apply pile_evs_svs_kt.
+        {
+          simpl.
+          rewrite medoeip_svar_open.
+          apply reflexivity.
+        }
+        {
+          simpl.
+          rewrite mmdoeip_svar_open.
+          
+        }
+        {
+          reflexivity.
+        }
       }
 
       eapply pf_iff_mu_remove_svar_quantify_svar_open.
