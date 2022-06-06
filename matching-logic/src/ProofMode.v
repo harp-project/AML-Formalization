@@ -5738,7 +5738,7 @@ Qed.
    (pi_Generic
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
-     KT := false)
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true)
     )
    i
   )
@@ -5794,13 +5794,23 @@ Qed.
         eapply pile_trans.
         2: { apply pile. }
         simpl.
-        eapply pile_trans.
-        2: {
-          apply pile_svs_subseteq.
+        apply pile_evs_svs_kt.
+        {
+          apply evar_fresh_seq_max.
+        }
+        {
           apply svar_fresh_seq_max.
         }
-        apply pile_evs_subseteq.
-        apply evar_fresh_seq_max.
+        {
+          clear pf₁.
+          repeat case_match; simpl; try reflexivity.
+          {
+            lia.
+          }
+          {
+            lia.
+          }
+        }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5822,16 +5832,20 @@ Qed.
         eapply pile_trans.
         2: { apply pile. }
         simpl.
-        eapply pile_trans.
-        2: {
-          apply pile_svs_subseteq.
+        apply pile_evs_svs_kt.
+        {
+          simpl.
+          rewrite Nat.max_comm.
+          apply evar_fresh_seq_max.
+        }
+        {
           rewrite Nat.max_comm.
           apply svar_fresh_seq_max.
         }
-        apply pile_evs_subseteq.
-        simpl.
-        rewrite Nat.max_comm.
-        apply evar_fresh_seq_max.
+        {
+          clear pf₂.
+          repeat case_match; simpl; try reflexivity; try lia.
+        }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5973,7 +5987,11 @@ Qed.
           simpl.
           apply svar_fresh_seq_max.
         }
-        { reflexivity. }
+        {
+          clear pf₁.
+          repeat case_match; simpl; try reflexivity; simpl in *.
+          lia.
+        }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6006,7 +6024,10 @@ Qed.
           rewrite Nat.max_comm.
           apply svar_fresh_seq_max.
         }
-        { reflexivity. }
+        {
+          clear pf₂.
+          repeat case_match; simpl in *; try reflexivity; lia.
+        }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6093,7 +6114,12 @@ Qed.
           apply reflexivity.
         }
         {
-          reflexivity.
+          clear IH.
+          repeat case_match; simpl in *; try reflexivity.
+          pose proof (Htmp := n).
+          rewrite mmdoeip_evar_open in Htmp.
+          { apply not_eq_sym. exact HxneE. }
+          lia.
         }
       }
       { clear -p_sub_EvS. set_solver. }
@@ -6296,7 +6322,14 @@ Qed.
           clear. set_solver.
         }
         {
-          reflexivity.
+          clear IH.
+          repeat case_match; simpl in *; try reflexivity.
+          pose proof (Htmp := n).
+          rewrite mmdoeip_svar_open in Htmp.
+          pose proof (Htmp2 := e).
+          rewrite mmdoeip_S_in in Htmp2.
+          { exact HEinψ. }
+          inversion Htmp2.
         }
       }
       {
@@ -6369,8 +6402,75 @@ Qed.
             set_solver.
           }
           {
-            
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_svs_kt.
+            {
+              clear. set_solver.
+            }
+            {
+              simpl.
+              rewrite mmdoeip_S_in.
+              { exact HEinψ. }
+              simpl.
+              unfold svar_fresh_s.
+              rewrite -HeqX.
+              clear. set_solver.
+            }
+            {
+              repeat case_match; simpl in *; try reflexivity.
+              pose proof (Htmp := e).
+              rewrite mmdoeip_S_in in Htmp.
+              { exact HEinψ. }
+              inversion Htmp.
+            }
           }
+        }
+        3: {
+          apply mu_monotone.
+          4: {
+            unfold svar_open.
+            apply IH1.
+          }
+          3: {
+            wf_auto2. simpl in *.
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q).
+            clear -Htmp ψ_sub_SvS q_sub_SvS frX.
+            set_solver.
+          }
+          2: {
+            wf_auto2. simpl in *.
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p).
+            clear -Htmp ψ_sub_SvS p_sub_SvS frX.
+            set_solver.
+          }
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_svs_kt.
+            {
+              clear. set_solver.
+            }
+            {
+              simpl.
+              rewrite mmdoeip_S_in.
+              { exact HEinψ. }
+              simpl.
+              unfold svar_fresh_s.
+              rewrite -HeqX.
+              clear. set_solver.
+            }
+            {
+              repeat case_match; simpl in *; try reflexivity.
+              pose proof (Htmp := e).
+              rewrite mmdoeip_S_in in Htmp.
+              { exact HEinψ. }
+              inversion Htmp.
+            }
+          }          
+        }
+        {
+          wf_auto2.
         }
       }
     }
