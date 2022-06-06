@@ -6470,8 +6470,39 @@ Qed.
           }          
         }
         {
-          wf_auto2.
+          cut (X ∉ free_svars ψ.[[evar:E↦p]]).
+          {
+            wf_auto2.
+          }
+          pose proof (@free_svars_free_evar_subst Σ ψ E p).
+          clear -H frX ψ_sub_SvS p_sub_SvS.
+          set_solver.
         }
+        {
+          cut (X ∉ free_svars ψ.[[evar:E↦q]]).
+          {
+            wf_auto2.
+          }
+          pose proof (@free_svars_free_evar_subst Σ ψ E q).
+          clear -H frX ψ_sub_SvS q_sub_SvS.
+          set_solver.
+        }
+      }
+      {
+        wf_auto2.
+      }
+      {
+        wf_auto2.
+      }
+      {
+        pose proof (@free_svars_free_evar_subst Σ ψ E p).
+        clear -H frX ψ_sub_SvS p_sub_SvS.
+        set_solver.
+      }
+      {
+        pose proof (@free_svars_free_evar_subst Σ ψ E q).
+        clear -H frX ψ_sub_SvS q_sub_SvS.
+        set_solver.
       }
     }
   Defined.
