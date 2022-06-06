@@ -5620,6 +5620,102 @@ Proof.
   }
 Qed.
 
+
+  Lemma mmdoeip_notin E ψ depth:
+    E ∉ free_evars ψ ->
+    maximal_mu_depth_of_evar_in_pattern' depth E ψ = 0.
+  Proof.
+    intros Hnotin.
+    move: E depth Hnotin.
+    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
+    { case_match. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+  Qed.
+
+  Lemma mmdoeip_S_in E ψ depth:
+    E ∈ free_evars ψ ->
+    maximal_mu_depth_of_evar_in_pattern' (S depth) E ψ
+    = S (maximal_mu_depth_of_evar_in_pattern' depth E ψ).
+  Proof.
+    intros Hin.
+    move: E depth Hin.
+    induction ψ; intros E depth Hin; simpl in *.
+    { case_match. reflexivity. set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+      rewrite IHψ1. assumption.
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+      { assumption. }
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+      { assumption. }
+      simpl.
+      rewrite Nat.max_comm.
+      simpl.
+      reflexivity.
+    }
+    {
+      rewrite IHψ2. assumption.
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+      { assumption. }
+      rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+      { assumption. }
+      simpl.
+      reflexivity.
+    }
+    {
+      exfalso. set_solver.
+    }
+  }
+  { set_solver. }
+  {
+    destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+    {
+      rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+    }
+    {
+    rewrite IHψ1. assumption.
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+    { assumption. }
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ2]mmdoeip_notin.
+    { assumption. }
+    simpl.
+    rewrite Nat.max_comm.
+    simpl.
+    reflexivity.
+  }
+  {
+    rewrite IHψ2. assumption.
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+    { assumption. }
+    rewrite [maximal_mu_depth_of_evar_in_pattern' _ _ ψ1]mmdoeip_notin.
+    { assumption. }
+    simpl.
+    reflexivity.
+  }
+  {
+    exfalso. set_solver.
+  }
+}
+{
+  rewrite IHψ. assumption. reflexivity.
+}
+{
+  rewrite IHψ. assumption. reflexivity.
+}
+Qed.
+
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
