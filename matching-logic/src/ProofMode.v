@@ -6810,72 +6810,72 @@ Proof.
   exact H.
 Defined.
 
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ (foldr patt_imp g₁ l) ->
-  Γ ⊢ (foldr patt_imp g₂ l).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ (foldr patt_imp g₁ l) using i ->
+  Γ ⊢ (foldr patt_imp g₂ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
-  eapply Modus_ponens.
-  4: eapply pf_iff_proj1.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
-  all: auto.
+  eapply MP.
+  2: eapply pf_iff_proj1.
+  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  7: apply H1.
+  1: exact H2.
+  all: wf_auto2.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj1_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj1 Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l:
+Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
   wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) ->
-  Γ ⊢ (foldr patt_imp g₂ l) ->
-  Γ ⊢ (foldr patt_imp g₁ l).
+  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢ (foldr patt_imp g₂ l) using i ->
+  Γ ⊢ (foldr patt_imp g₁ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
-  eapply Modus_ponens.
-  4: eapply pf_iff_proj2.
-  6: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  9: apply H1.
-  all: auto.
+  eapply MP.
+  2: eapply pf_iff_proj2.
+  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
+  7: apply H1.
+  1: exact H2.
+  all: wf_auto2.
 Defined.
 
-Program Canonical Structure prf_local_goals_equiv_impl_full_equiv_meta_proj2_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (l : list Pattern)
-        (a b : Pattern)
-        (wfl : wf l)
-        (wfa : well_formed a)
-        (wfb : well_formed b)
-  := ProofProperty2 P (@prf_local_goals_equiv_impl_full_equiv_meta_proj2 Σ Γ a b l wfa wfb wfl) _.
-Next Obligation. solve_indif; assumption. Qed.
-
-Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l:
+Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
+  (i : ProofInfo)
+  (pile : ProofInfoLe
+  (pi_Generic
+    (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
+      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+    )
+    i
+  ):
   PC_wf C ->
   wf l ->
-  Γ ⊢ p <---> q ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l).
+  Γ ⊢ p <---> q using i ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using i.
 Proof.
   intros wfC wfl Himp.
   induction l; simpl in *.
   - apply prf_equiv_congruence; assumption.
-  - pose proof (wfal := wfl). unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+  - pose proof (wfal := wfl).
+    unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
-    pose proof (proved_impl_wf _ _ IHl).
+    pose proof (Hwf := proved_impl_wf _ _ (proj1_sig IHl)).
+    assert (well_formed (foldr patt_imp (emplace C p) l ---> foldr patt_imp (emplace C q) l)).
+    {
+      
+    }
+    assert (well_formed (foldr patt_imp (emplace C p) l)).
+    {
+      unfold patt_iff,patt_and,patt_or,patt_not in Hwf. wf_auto2.
+    }
     toMyGoal.
-    { wf_auto2. }
+    { wf_auto2. Search well_formed_positive emplace. }
     unfold patt_iff.
     mgSplitAnd.
     + mgIntro. mgIntro.
