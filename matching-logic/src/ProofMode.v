@@ -6336,13 +6336,36 @@ Qed.
         }
       }
 
+      apply pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst in IH.
+      3: { wf_auto2. }
+      2: { wf_auto2. }
+
+      unshelve (epose proof (IH1 := @pf_iff_proj1 _ _ _ _ _ _ _ IH)).
+      { wf_auto2. }
+      { wf_auto2. }
+      unshelve (epose proof (IH2 := @pf_iff_proj2 _ _ _ _ _ _ _ IH)).
+      { wf_auto2. }
+      { wf_auto2. }
+
       eapply pf_iff_mu_remove_svar_quantify_svar_open.
       5: {
         apply pf_iff_split.
         4: {
           apply mu_monotone.
           4: {
-
+            unfold svar_open.
+            apply IH2.
+          }
+          3: {
+            wf_auto2. simpl in *.
+            pose proof (Htmp := free_svars_free_evar_subst).
+            Search fresh_svar free_evar_subst.
+            Unset Printing Notations.
+            Search free_evar_subst.
+            apply svar_is_fresh_in_free_evar_subst.
+            pose proof (Htmp := @free_svars_evar_open Σ ψ).
+            
+            simpl.
           }
         }
       }
