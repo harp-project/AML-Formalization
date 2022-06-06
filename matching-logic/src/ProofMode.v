@@ -7063,18 +7063,32 @@ Ltac simplify_emplace_2 star :=
    [emplace C a = phi].
  *)
 
+ 
+ Ltac simplify_pile_side_condition_helper star :=
+  subst star;
+  unfold fresh_evar,evar_fresh_s;
+  eapply evar_is_fresh_in_richer';
+  [|apply set_evar_fresh_is_fresh'];
+  clear; simpl; set_solver.
+
  Ltac simplify_pile_side_condition star :=
   cbn;
   simplify_emplace_2 star;
   repeat (rewrite (mmdoeip_notin, medoeip_notin);
-  [(
-     subst star;
-     unfold fresh_evar,evar_fresh_s;
-     eapply evar_is_fresh_in_richer';
-     [|apply set_evar_fresh_is_fresh'];
-    clear; simpl; set_solver
-  )|]);
-  simpl.
+  [(simplify_pile_side_condition_helper star)|]);
+  simpl;
+  repeat (
+    lazymatch goal with
+    | [H: context [maximal_mu_depth_of_evar_in_pattern' _ _ _] |- _ ]
+      => rewrite mmdoeip_notin in H;
+         [(simplify_pile_side_condition_helper star)|]
+    | [H: context [maximal_exists_depth_of_evar_in_pattern' _ _ _] |- _ ]
+      => rewrite medoeip_notin in H;
+         [(simplify_pile_side_condition_helper star)|]
+    end
+  );
+  simpl in *;
+  try lia.
 
 Ltac2 Type HeatResult := {
   star_ident : ident ;
@@ -7186,57 +7200,27 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
   mgRewrite Hiff at atn.
 
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
-  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
+  mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
 (* Ltac2 Set ml_debug_rewrite := true.*)
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x i:
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x i
+  (pile : ProofInfoLe BasicReasoning i):
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' using i->
+  Γ ⊢ a <---> a' using i ->
   Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using i.
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
-  2: { simplify_pile_side_condition star.
-
-    repeat (rewrite (mmdoeip_notin, medoeip_notin);
-    [(
-      subst star;
-      unfold fresh_evar,evar_fresh_s;
-      eapply evar_is_fresh_in_richer';
-      [|apply set_evar_fresh_is_fresh'];
-      clear; simpl; set_solver
-    )|]).
-    simpl.
-    simpl. evar_fresh_is_
-
-    apply set_evar_fresh_is_fresh.
-    simpl. solve_fresh_neq.
-    Search maximal_mu_depth_of_evar_in_pattern'.
-
-    repeat break_match_goal; clear_obvious_equalities_2.
-    solve_fresh_contradictions_2 star.
-    unfold star in *.
-    solve_fresh_contradictions_2 star. (*.
-    simplify_emplace_2 star.*)
-    idtac "from here -----------------".
-    pose proof (copy := eq_sym e0).
-    assert (hcontra: x <> star).
-    { unfold star, fresh_evar. try clear copy. simpl.
-    subst.
-    solve_fresh_neq. }
-    (unfold star,fresh_evar; try clear copy; simpl; solve_fresh_neq).
-    rewrite -> h in hcontra;
-    contradiction.
-  
-    solve_fresh_contradictions_2 star.
-  simplify_emplace_2 star. simpl.  }
+  2: { apply pile. }
   mgRewrite <- Hiff at 3.
-  fromMyGoal. intros _ _.
-  apply pf_iff_equiv_refl; abstract(wf_auto2).
+  2: { apply pile. }
+  fromMyGoal.
+  usePropositionalReasoning.
+  apply pf_iff_equiv_refl. abstract(wf_auto2).
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
