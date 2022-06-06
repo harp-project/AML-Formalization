@@ -5707,8 +5707,8 @@ Section FOL_helpers.
       { apply pf₂. }
     }
     {
-      pose proof (evar_fresh_dep EvS) as xfrx.
-      destruct xfrx as [x frx].
+      pose proof (frx := @set_evar_fresh_is_fresh' Σ EvS).
+      remember (evar_fresh (elements EvS)) as x.
 
       (* i = pi_Generic gpi *)
       destruct i.
@@ -5734,18 +5734,48 @@ Section FOL_helpers.
         rewrite medoeip_evar_open.
         { apply not_eq_sym. exact HxneE. }
         simpl.
-        destruct (decide (E ∈ free_evars ψ)).
-        {
-          Search maximal_exists_depth_of_evar_in_pattern'.
-        }
         (* Two cases may happen: either E does not occur in ψ,
            and then both [maximal_exists_depth_of_evar_in_pattern] terms are identically zero;
            or E occurs in ψ, and then the first [maximal_exists_depth_of_evar_in_pattern] term
            is smaller by one than the second one, and therefore the second one generates
            one more fresh variable, and the inclusion holds.
          *)
+        destruct (decide (E ∈ free_evars ψ)).
+        {
+          rewrite medoeip_S_in.
+          { assumption. }
+          remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ) as n.
+          simpl.
+          unfold evar_fresh_s.
+          rewrite -Heqx.
+          clear. set_solver.
+        }
+        {
+          rewrite medoeip_notin.
+          { assumption. }
+          rewrite medoeip_notin.
+          { assumption. }
+          simpl.
+          clear.
+          set_solver.
+        }
       }
-      Search free_evars evar_open.
+      { clear -p_sub_EvS. set_solver. }
+      { clear -q_sub_EvS. set_solver. }
+      { clear -E_in_EvS. set_solver. }
+      { clear -ψ_sub_EvS. Search free_evars evar_open.
+        rewrite elem_of_subseteq.
+        intros x0.
+        rewrite free_evars_evar_open''.
+        intros [[H1 H2]| H2].
+        {
+          subst. clear. set_solver.
+        }
+        {
+          simpl in ψ_sub_EvS.
+          set_solver.
+        }
+      }
       Check wf_evar_open_from_wf_ex.
 
       apply pf_iff_split.
