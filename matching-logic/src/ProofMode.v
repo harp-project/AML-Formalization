@@ -6256,6 +6256,23 @@ Qed.
         apply pile.
       }
 
+      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+      2: {
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        { wf_auto2. }
+      }
+
       pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(wf_auto2) ltac:(rewrite svar_open_size'; lia)).
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
@@ -6271,10 +6288,51 @@ Qed.
         {
           simpl.
           rewrite mmdoeip_svar_open.
-          
+          rewrite mmdoeip_S_in.
+          { exact HEinψ. }
+          simpl.
+          unfold svar_fresh_s.
+          rewrite -HeqX.
+          clear. set_solver.
         }
         {
           reflexivity.
+        }
+      }
+      {
+        exact p_sub_EvS.
+      }
+      {
+        exact q_sub_EvS.
+      }
+      {
+        exact E_in_EvS.
+      }
+      {
+        rewrite free_evars_svar_open.
+        simpl in ψ_sub_EvS.
+        apply ψ_sub_EvS.
+      }
+      {
+        clear -p_sub_SvS.
+        set_solver.
+      }
+      {
+        clear -q_sub_SvS.
+        set_solver.
+      }
+      {
+        rewrite elem_of_subseteq.
+        intros X'.
+        rewrite free_svars_svar_open''.
+        intros [[H1 H2]|H1].
+        {
+          subst X'. clear. set_solver.
+        }
+        {
+          simpl in ψ_sub_SvS.
+          clear -H1 ψ_sub_SvS.
+          set_solver.
         }
       }
 
