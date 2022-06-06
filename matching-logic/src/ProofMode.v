@@ -5925,7 +5925,36 @@ Section FOL_helpers.
       }
     }
     {
+      pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
+      remember (svar_fresh (elements SvS)) as X.
 
+      (* i = pi_Generic gpi *)
+      destruct i.
+      {
+        exfalso.
+        eapply not_generic_in_prop.
+        apply pile.
+      }
+
+      pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(wf_auto2) ltac:(rewrite svar_open_size'; lia)).
+      specialize (IH EvS ({[X]} ∪ SvS)).
+      feed specialize IH.
+      {
+        eapply pile_trans.
+        2: { apply pile. }
+        apply pile_svs_subseteq.
+      }
+
+      eapply pf_iff_mu_remove_svar_quantify_svar_open.
+      5: {
+        apply pf_iff_split.
+        4: {
+          apply mu_monotone.
+          4: {
+
+          }
+        }
+      }
     }
   Defined.
 
