@@ -5718,6 +5718,23 @@ Section FOL_helpers.
         apply pile.
       }
 
+      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+      2: {
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        usePropositionalReasoning.
+        apply pf_iff_equiv_refl.
+        { wf_auto2. }
+      }
+
       pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(wf_auto2) ltac:(rewrite evar_open_size'; lia)).
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
@@ -5734,31 +5751,14 @@ Section FOL_helpers.
         rewrite medoeip_evar_open.
         { apply not_eq_sym. exact HxneE. }
         simpl.
-        (* Two cases may happen: either E does not occur in ψ,
-           and then both [maximal_exists_depth_of_evar_in_pattern] terms are identically zero;
-           or E occurs in ψ, and then the first [maximal_exists_depth_of_evar_in_pattern] term
-           is smaller by one than the second one, and therefore the second one generates
-           one more fresh variable, and the inclusion holds.
-         *)
-        destruct (decide (E ∈ free_evars ψ)).
-        {
-          rewrite medoeip_S_in.
-          { assumption. }
-          remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ) as n.
-          simpl.
-          unfold evar_fresh_s.
-          rewrite -Heqx.
-          clear. set_solver.
-        }
-        {
-          rewrite medoeip_notin.
-          { assumption. }
-          rewrite medoeip_notin.
-          { assumption. }
-          simpl.
-          clear.
-          set_solver.
-        }
+
+        rewrite medoeip_S_in.
+        { assumption. }
+        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ) as n.
+        simpl.
+        unfold evar_fresh_s.
+        rewrite -Heqx.
+        clear. set_solver.
       }
       { clear -p_sub_EvS. set_solver. }
       { clear -q_sub_EvS. set_solver. }
@@ -5776,8 +5776,18 @@ Section FOL_helpers.
           set_solver.
         }
       }
-      Check wf_evar_open_from_wf_ex.
+      apply pf_evar_open_free_evar_subst_equiv_sides in IH.
+      2: { set_solver. }
+      2: { wf_auto2. }
+      2: { wf_auto2. }
+      unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
+      { wf_auto2. }
+      { wf_auto2. }
+      unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
+      { wf_auto2. }
+      { wf_auto2. }
 
+      (* TODO: remove the well-formedness constraints on this lemma*)
       apply pf_iff_split.
       { wf_auto2. }
       { wf_auto2. }
@@ -5793,22 +5803,90 @@ Section FOL_helpers.
               wf_auto2.
             }
             4: {
-              eapply pf_iff_proj1.
-              3: {
-                eapply pf_evar_open_free_evar_subst_equiv_sides.
-                4: {
-
-                }
+                apply IH1.
               }
-              simpl in IHsz.
-              unfold evar_open. simpl. eapply pf_iff_proj1.
-              3: {
-                eapply IHsz.
-              }
-            }
+            { wf_auto2. }
+            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
+            { wf_auto2. }
+          }
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            simpl.
+            rewrite medoeip_S_in.
+            { assumption. }
+            simpl.
+            unfold evar_fresh_s.
+            rewrite -Heqx.
+            clear.
+            set_solver.
+          }
+          {
+            simpl.
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E).
+            set_solver.
           }
         }
+        {
+          simpl.
+          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E).
+          set_solver.
+        }
+        {
+          wf_auto2.
+        }
       }
+      (* this block is a symmetric version of the previous block*)
+      {
+        eapply strip_exists_quantify_l.
+        3: {
+          apply Ex_gen.
+          3: {
+            eapply syllogism_meta.
+            5: {
+              useBasicReasoning.
+              apply Ex_quan.
+              wf_auto2.
+            }
+            4: {
+                apply IH2.
+              }
+            { wf_auto2. }
+            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
+            { wf_auto2. }
+          }
+          {
+            eapply pile_trans.
+            2: { apply pile. }
+            apply pile_evs_subseteq.
+            simpl.
+            rewrite medoeip_S_in.
+            { assumption. }
+            simpl.
+            unfold evar_fresh_s.
+            rewrite -Heqx.
+            clear.
+            set_solver.
+          }
+          {
+            simpl.
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E).
+            set_solver.
+          }
+        }
+        {
+          simpl.
+          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E).
+          set_solver.
+        }
+        {
+          wf_auto2.
+        }
+      }
+    }
+    {
+      
     }
   Defined.
 
