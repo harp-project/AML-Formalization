@@ -6549,31 +6549,49 @@ Qed.
 
 End FOL_helpers.
 
-Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂:
-  well_formed ϕ₁ = true ->
-  well_formed ϕ₂ = true ->
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂).
+Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) :
+  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
-  intros wfϕ₁ wfϕ₂ H.
+  intros H.
+  pose proof (Hwf := @proved_impl_wf Σ Γ _ (proj1_sig H)).
+  assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
+  assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
   apply Ex_gen.
-  { assumption. }
-  { unfold exists_quantify. apply wf_ex_evar_quantify. assumption. }
-  2: { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
+  { exact pile. }
+  { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
 
   unfold exists_quantify.
-  eapply syllogism_intro. 4: apply H.
-  { auto. }
-  { auto. }
-  { apply wf_ex_evar_quantify. assumption. }
-  clear H wfϕ₁ ϕ₁.
+  eapply syllogism_meta. 4: apply H.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  clear H wfϕ₁ ϕ₁ Hwf.
 
-  replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
-  2: { unfold instantiate.
+  (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
+     however, without [cast_proof'] the [replace] tactics does not work,
+     maybe because of implicit parameters.
+   *)
+  eapply (cast_proof').
+  {
+    replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
+    2: { unfold instantiate.
        rewrite bevar_subst_evar_quantify_free_evar.
        now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
        reflexivity.
+    }
+    reflexivity.
   }
+        (* i = pi_Generic gpi *)
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  
+  useBasicReasoning.
   apply Ex_quan.
   abstract (wf_auto2).
 Defined.
