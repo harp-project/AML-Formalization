@@ -7224,20 +7224,16 @@ Proof.
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
-  Γ ⊢ Top.
+  Γ ⊢ Top using PropositionalReasoning.
 Proof.
   apply false_implies_everything.
   { wf_auto2. }
 Defined.
 
-Program Canonical Structure top_holds_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-  := ProofProperty0 P (@top_holds Σ Γ) _.
-Next Obligation. solve_indif; assumption. Qed.
-
 Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ ϕ <---> (ϕ <---> Top).
+  Γ ⊢ ϕ <---> (ϕ <---> Top)
+  using PropositionalReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -7245,32 +7241,22 @@ Proof.
   mgSplitAnd; mgIntro.
   - mgSplitAnd.
     + mgIntro. mgClear 0. mgClear 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       apply top_holds. (* TODO: we need something like [mgExactMeta top_holds] *)
-    + fromMyGoal. intros _ _.
+    + fromMyGoal.
       apply P1; wf_auto2.
   - mgDestructAnd 0.
     mgApply 1.
     mgClear 0.
     mgClear 0.
-    fromMyGoal. intros _ _.
+    fromMyGoal.
     apply top_holds.
 Defined.
 
-Program Canonical Structure phi_iff_phi_top_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@phi_iff_phi_top Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P.
-  unfold phi_iff_phi_top. simpl.
-  solve_indif; simpl; unfold liftP; solve_indif.
-Qed.
-
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥).
+  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥)
+  using PropositionalReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -7278,27 +7264,17 @@ Proof.
   mgSplitAnd; mgIntro.
   - mgSplitAnd.
     + mgExactn 0.
-    + mgClear 0. fromMyGoal. intros _ _.
+    + mgClear 0. fromMyGoal.
       apply false_implies_everything.
       { wf_auto2. }
   - mgDestructAnd 0.
     mgExactn 0.
 Defined.
 
-Program Canonical Structure not_phi_iff_phi_bott_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@not_phi_iff_phi_bott Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
-  solve_indif. unfold liftP. solve_indif.
-Qed.
-
-
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
-  Γ ⊢ A <---> ! ! A.
+  Γ ⊢ A <---> ! ! A
+  using PropositionalReasoning.
 Proof.
   intros wfA.
   apply pf_iff_split.
@@ -7308,29 +7284,20 @@ Proof.
     { wf_auto2. }
   - apply not_not_elim.
     { wf_auto2. }
-Defined.    
-
-Program Canonical Structure not_not_iff_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a : Pattern)
-        (wfa : well_formed a)
-  := ProofProperty0 P (@not_not_iff Σ Γ a wfa) _.
-Next Obligation.
-  intros. apply liftP_impl_P. unfold not_phi_iff_phi_bott. simpl.
-  solve_indif. unfold liftP. solve_indif.
-Qed.
+Defined.
 
 (* prenex-exists-and-left *)
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂)).
+  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
+  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
   { wf_auto2. }
   mgIntro. mgDestructAnd 0.
-  fromMyGoal. intros _ _.
+  fromMyGoal.
 
   remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
   apply strip_exists_quantify_l with (x0 := x).
@@ -7340,16 +7307,15 @@ Proof.
   }
   { wf_auto2. }
   apply Ex_gen.
+  { apply pile_refl. }
   { wf_auto2. }
-  { wf_auto2. }
-  2: { subst x. apply set_evar_fresh_is_fresh. }
   
   apply lhs_to_and.
   { wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     replace (evar_open 0 x ϕ₁ and ϕ₂)
             with (evar_open 0 x (ϕ₁ and ϕ₂)).
@@ -7363,6 +7329,7 @@ Proof.
     }
     reflexivity.
   }
+  useBasicReasoning.
   apply Ex_quan.
   wf_auto2.
 Defined.
