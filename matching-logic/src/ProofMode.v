@@ -5475,6 +5475,9 @@ Section FOL_helpers.
   (q_sub_EvS : (free_evars q) ⊆ EvS)
   (ψ_sub_EvS : (free_evars ψ) ⊆ EvS)
   (E_in_EvS : E ∈ EvS)
+  (p_sub_SvS : (free_svars p) ⊆ SvS)
+  (q_sub_SvS : (free_svars q) ⊆ SvS)
+  (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (depth : nat)
   (i : ProofInfo)
   (pile : ProofInfoLe
@@ -5490,8 +5493,13 @@ Section FOL_helpers.
     assert (Hsz: size' ψ <= sz) by lia.
     clear Heqsz.
 
-    move: ψ wfψ Hsz EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS.
-    induction sz; intros ψ wfψ Hsz EvS SvS pile p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS; destruct ψ; simpl in Hsz; try lia; simpl.
+    move: ψ wfψ Hsz EvS SvS pile
+      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS
+      p_sub_SvS q_sub_SvS ψ_sub_SvS
+    .
+    induction sz; intros ψ wfψ Hsz EvS SvS pile
+      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
+      destruct ψ; simpl in Hsz; try lia; simpl.
     {
       destruct (decide (E = x)).
       {
@@ -5541,6 +5549,12 @@ Section FOL_helpers.
         clear -ψ_sub_EvS.
         set_solver.
       }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { simpl in ψ_sub_SvS.
+        clear -ψ_sub_SvS.
+        set_solver.
+      }
       pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₂.
       {
@@ -5557,6 +5571,12 @@ Section FOL_helpers.
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
+        set_solver.
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { simpl in ψ_sub_SvS.
+        clear -ψ_sub_SvS.
         set_solver.
       }
 
@@ -5678,6 +5698,12 @@ Section FOL_helpers.
         clear -ψ_sub_EvS.
         set_solver.
       }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { simpl in ψ_sub_SvS.
+        clear -ψ_sub_SvS.
+        set_solver.
+      }
 
       pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₂.
@@ -5695,6 +5721,12 @@ Section FOL_helpers.
       {
         simpl in ψ_sub_EvS.
         clear -ψ_sub_EvS.
+        set_solver.
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { simpl in ψ_sub_SvS.
+        clear -ψ_sub_SvS.
         set_solver.
       }
 
@@ -5775,6 +5807,13 @@ Section FOL_helpers.
           simpl in ψ_sub_EvS.
           set_solver.
         }
+      }
+      { exact p_sub_SvS. }
+      { exact q_sub_SvS. }
+      { simpl in ψ_sub_SvS.
+        clear -ψ_sub_SvS.
+        rewrite free_svars_evar_open.
+        exact ψ_sub_SvS.
       }
       apply pf_evar_open_free_evar_subst_equiv_sides in IH.
       2: { set_solver. }
@@ -5886,7 +5925,7 @@ Section FOL_helpers.
       }
     }
     {
-      
+
     }
   Defined.
 
