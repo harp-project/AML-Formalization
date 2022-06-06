@@ -5523,6 +5523,51 @@ Section FOL_helpers.
   Qed.
 
 
+  Lemma pile_evs_svs_kt evs1 evs2 svs1 svs2 kt1 kt2:
+    evs1 ⊆ evs2 ->
+    svs1 ⊆ svs2 ->
+    kt1 ==> kt2 ->
+    ProofInfoLe
+      (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1))
+      (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2)).
+  Proof.
+    intros Hevs Hsvs Hkt.
+    eapply pile_trans.
+    {
+      apply pile_evs_subseteq. apply Hevs.
+    }
+    eapply pile_trans.
+    {
+      apply pile_svs_subseteq. apply Hsvs.
+    }
+    apply pile_kt_impl.
+    apply Hkt.
+  Qed.
+
+  Lemma medosip_svar_open depth E n X ψ:
+    maximal_mu_depth_of_evar_in_pattern' depth E (svar_open n X ψ)
+    = maximal_mu_depth_of_evar_in_pattern' depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity.
+    {
+      case_match; simpl; try reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ1. rewrite IHψ2. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+    {
+      rewrite IHψ. reflexivity.
+    }
+  Qed.
+
   Lemma eq_prf_equiv_congruence
   Γ p q
   (wfp : well_formed p)
@@ -5603,11 +5648,10 @@ Section FOL_helpers.
         simpl.
         eapply pile_trans.
         2: {
-          Check evar_fresh_seq_max.
           apply pile_svs_subseteq.
+          apply svar_fresh_seq_max.
         }
         apply pile_evs_subseteq.
-        simpl.
         apply evar_fresh_seq_max.
       }
       { exact p_sub_EvS. }
@@ -5629,6 +5673,13 @@ Section FOL_helpers.
       {
         eapply pile_trans.
         2: { apply pile. }
+        simpl.
+        eapply pile_trans.
+        2: {
+          apply pile_svs_subseteq.
+          rewrite Nat.max_comm.
+          apply svar_fresh_seq_max.
+        }
         apply pile_evs_subseteq.
         simpl.
         rewrite Nat.max_comm.
@@ -5655,10 +5706,14 @@ Section FOL_helpers.
         4: {
           apply Framing_right.
           {
+            unfold BasicReasoning.
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            clear. set_solver.
+            simpl.
+            apply pile_evs_svs_kt.
+            { clear. set_solver. }
+            { clear. set_solver. }
+            { reflexivity. }
           }
           {
             wf_auto2.
@@ -5675,8 +5730,10 @@ Section FOL_helpers.
           {
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            clear. set_solver.
+            apply pile_evs_svs_kt.
+            { clear. set_solver. }
+            { clear. set_solver. }
+            { reflexivity. }
           }
           {
             wf_auto2.
@@ -5702,8 +5759,10 @@ Section FOL_helpers.
           {
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            clear. set_solver.
+            apply pile_evs_svs_kt.
+            { clear. set_solver. }
+            { clear. set_solver. }
+            { reflexivity. }
           }
           {
             wf_auto2.
@@ -5720,8 +5779,10 @@ Section FOL_helpers.
           {
             eapply pile_trans.
             2: { apply pile. }
-            apply pile_evs_subseteq.
-            clear. set_solver.
+            apply pile_evs_svs_kt.
+            { clear. set_solver. }
+            { clear. set_solver. }
+            { reflexivity. }
           }
           {
             wf_auto2.
@@ -5755,9 +5816,16 @@ Section FOL_helpers.
       {
         eapply pile_trans.
         2: { apply pile. }
-        apply pile_evs_subseteq.
-        simpl.
-        apply evar_fresh_seq_max.
+        apply pile_evs_svs_kt.
+        { 
+          simpl.
+          apply evar_fresh_seq_max.
+        }
+        {
+          simpl.
+          apply svar_fresh_seq_max.
+        }
+        { reflexivity. }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5779,10 +5847,18 @@ Section FOL_helpers.
       {
         eapply pile_trans.
         2: { apply pile. }
-        apply pile_evs_subseteq.
-        simpl.
-        rewrite Nat.max_comm.
-        apply evar_fresh_seq_max.
+        apply pile_evs_svs_kt.
+        { 
+          simpl.
+          rewrite Nat.max_comm.
+          apply evar_fresh_seq_max.
+        }
+        {
+          simpl.
+          rewrite Nat.max_comm.
+          apply svar_fresh_seq_max.
+        }
+        { reflexivity. }
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5843,23 +5919,28 @@ Section FOL_helpers.
         simpl.
         eapply pile_trans.
         2: { apply pile. }
-        apply pile_evs_subseteq.
         assert (HxneE: x <> E).
         {
           clear -frx E_in_EvS. set_solver.
         }
-        simpl.
-        rewrite medoeip_evar_open.
-        { apply not_eq_sym. exact HxneE. }
-        simpl.
+        apply pile_evs_svs_kt.
+        {
+          simpl.
+          rewrite medoeip_evar_open.
+          { apply not_eq_sym. exact HxneE. }
+          simpl.
 
-        rewrite medoeip_S_in.
-        { assumption. }
-        remember (maximal_exists_depth_of_evar_in_pattern' depth E ψ) as n.
-        simpl.
-        unfold evar_fresh_s.
-        rewrite -Heqx.
-        clear. set_solver.
+          rewrite medoeip_S_in.
+          { assumption. }
+          remember (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ) as n.
+          simpl.
+          unfold evar_fresh_s.
+          rewrite -Heqx.
+          clear. set_solver.
+        }
+        {
+          simpl.
+        }
       }
       { clear -p_sub_EvS. set_solver. }
       { clear -q_sub_EvS. set_solver. }
