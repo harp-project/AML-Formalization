@@ -6899,8 +6899,10 @@ Proof.
       mgExactn 2.
 Defined.
 
-Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (i : ProofInfo)
-  (pile : ProofInfoLe
+Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (i : ProofInfo):
+  Γ ⊢ p <---> q using i ->
+  @mkMyGoal Σ Γ l (emplace C q) i ->
+  (ProofInfoLe
   (pi_Generic
      (ExGen := list_to_set
                  (evar_fresh_seq
@@ -6920,12 +6922,10 @@ Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : Patt
                  maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
              is left _
              then false
-             else true))) i):
-  Γ ⊢ p <---> q using i ->
-  @mkMyGoal Σ Γ l (emplace C q) i ->
+             else true))) i) ->
   @mkMyGoal Σ Γ l (emplace C p) i.
 Proof.
-  intros Hpiffq H.
+  intros Hpiffq H pile.
   unfold of_MyGoal in *. simpl in *.
   intros wfcp wfl.
   feed specialize H.
@@ -7011,7 +7011,7 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
         =>
           progress rewrite -> (@free_evar_subst_no_occurrence _ star p q) by (
             apply count_evar_occurrences_0;
-            unfold star;
+            subst star;
             eapply evar_is_fresh_in_richer';
             [|apply set_evar_fresh_is_fresh'];
             simpl; clear; set_solver
@@ -7022,14 +7022,22 @@ Local Ltac reduce_free_evar_subst_2 star :=
   (* unfold free_evar_subst; *)
   repeat (reduce_free_evar_subst_step_2 star).
 
+Local Tactic Notation "solve_fresh_contradictions_2'" constr(star) constr(x) constr(h) :=
+  let hcontra := fresh "Hcontra" in
+  assert (hcontra: x <> star) by (subst star; unfold fresh_evar,evar_fresh_s; try clear h; simpl; solve_fresh_neq);
+  rewrite -> h in hcontra;
+  contradiction.
+
 Local Ltac solve_fresh_contradictions_2 star :=
   unfold fresh_evar; simpl;
   match goal with
+  | h: ?x = star |- _ =>
+    idtac "symmetry";
+    let hprime := fresh "hprime" in
+    pose proof (hprime := eq_sym h);
+    solve_fresh_contradictions_2' star x hprime
   | h: star = ?x |- _
-    => let hcontra := fresh "Hcontra" in
-       assert (hcontra: x <> star) by (unfold star,fresh_evar; clear h; simpl; solve_fresh_neq);
-       rewrite -> h in hcontra;
-       contradiction
+    => solve_fresh_contradictions_2' star x h
   end.
 
 Local Ltac clear_obvious_equalities_2 :=
@@ -7055,8 +7063,22 @@ Ltac simplify_emplace_2 star :=
    [emplace C a = phi].
  *)
 
+ Ltac simplify_pile_side_condition star :=
+  cbn;
+  simplify_emplace_2 star;
+  repeat (rewrite (mmdoeip_notin, medoeip_notin);
+  [(
+     subst star;
+     unfold fresh_evar,evar_fresh_s;
+     eapply evar_is_fresh_in_richer';
+     [|apply set_evar_fresh_is_fresh'];
+    clear; simpl; set_solver
+  )|]);
+  simpl.
+
 Ltac2 Type HeatResult := {
   star_ident : ident ;
+  star_eq : ident ;
   pc : constr ;
   ctx : Pattern.context ;
   ctx_pat : constr ;
@@ -7076,7 +7098,9 @@ Ltac2 heat :=
       => (
          let fr := constr:(fresh_evar $phi) in
          let star_ident := Fresh.in_goal ident:(star) in
-         set ($star_ident := $fr);
+         let star_eq := Fresh.in_goal ident:(star_eq) in
+         (*set ($star_ident := $fr);*)
+         remember $fr as $star_ident eqn:star_eq;
          let star_hyp := Control.hyp star_ident in
          let ctxpat := Pattern.instantiate ctx constr:(patt_free_evar $star_hyp) in
          let pc := constr:((@Build_PatternCtx _ $star_hyp $ctxpat)) in
@@ -7088,17 +7112,17 @@ Ltac2 heat :=
              ))
            | ()
            ];
-         { star_ident := star_ident; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
+         { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
   lazy_match! Constr.type hiff with
-  | @ML_proof_system _ _ (?a <---> ?a')
+  | _ ⊢ (?a <---> ?a') using _
     =>
     lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p ?i)]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
@@ -7108,9 +7132,10 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
          eapply (@cast_proof_mg_goal _ $g) >
            [ rewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
-         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $hiff);
-         lazy_match! goal with
-         | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $i $hiff)  >
+         [
+         (lazy_match! goal with
+         | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p _)]
            =>
              let heq2 := Fresh.in_goal ident:(heq2) in
              let plugged := Pattern.instantiate (hr.(ctx)) a' in
@@ -7124,8 +7149,10 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_mg_goal _ $g) >
                [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [heq2 ; (hr.(star_ident))]
-         end
+             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+         end)
+         | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
+         ]
     end
   end.
 
@@ -7144,22 +7171,16 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
                    ) in
    ff Hiff atn).
 
-Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B :
-  Γ ⊢ (A <---> B) ->
-  Γ ⊢ (B <---> A).
+Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
+  Γ ⊢ (A <---> B) using i ->
+  Γ ⊢ (B <---> A) using i.
 Proof.
   intros H.
-  pose proof (wf := proved_impl_wf _ _ H).
+  pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
   assert (well_formed A) by wf_auto2.
   assert (well_formed B) by wf_auto2.
   apply pf_iff_equiv_sym; assumption.
 Defined.
-
-Program Canonical Structure pf_iff_equiv_sym_nowf_indifferent_S {Σ : Signature}
-        (P : proofbpred) {Pip : IndifProp P} {Pic : IndifCast P} (Γ : Theory)
-        (a b : Pattern)
-  := ProofProperty1 P (@pf_iff_equiv_sym_nowf Σ Γ a b) _.
-Next Obligation. solve_indif; assumption. Qed.
 
 Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
   mgRewrite Hiff at atn.
@@ -7167,17 +7188,52 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ Hiff) at atn.
 
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+(* Ltac2 Set ml_debug_rewrite := true.*)
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x i:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' ->
-  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)).
+  Γ ⊢ a <---> a' using i->
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using i.
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
+  2: { simplify_pile_side_condition star.
+
+    repeat (rewrite (mmdoeip_notin, medoeip_notin);
+    [(
+      subst star;
+      unfold fresh_evar,evar_fresh_s;
+      eapply evar_is_fresh_in_richer';
+      [|apply set_evar_fresh_is_fresh'];
+      clear; simpl; set_solver
+    )|]).
+    simpl.
+    simpl. evar_fresh_is_
+
+    apply set_evar_fresh_is_fresh.
+    simpl. solve_fresh_neq.
+    Search maximal_mu_depth_of_evar_in_pattern'.
+
+    repeat break_match_goal; clear_obvious_equalities_2.
+    solve_fresh_contradictions_2 star.
+    unfold star in *.
+    solve_fresh_contradictions_2 star. (*.
+    simplify_emplace_2 star.*)
+    idtac "from here -----------------".
+    pose proof (copy := eq_sym e0).
+    assert (hcontra: x <> star).
+    { unfold star, fresh_evar. try clear copy. simpl.
+    subst.
+    solve_fresh_neq. }
+    (unfold star,fresh_evar; try clear copy; simpl; solve_fresh_neq).
+    rewrite -> h in hcontra;
+    contradiction.
+  
+    solve_fresh_contradictions_2 star.
+  simplify_emplace_2 star. simpl.  }
   mgRewrite <- Hiff at 3.
   fromMyGoal. intros _ _.
   apply pf_iff_equiv_refl; abstract(wf_auto2).

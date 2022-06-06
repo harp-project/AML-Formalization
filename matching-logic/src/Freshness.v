@@ -398,14 +398,13 @@ Ltac remember_fresh_evars :=
 (* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
      or `x₂ = fresh_evar ...`
  *)
-Ltac solve_fresh_neq :=
-  subst; remember_fresh_evars;
+Ltac solve_fresh_neq' :=
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -419,22 +418,23 @@ Ltac solve_fresh_neq :=
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
           apply not_elem_of_singleton_1 in H;
-          first [ exact H | clear H]
+          first [ exact H | clear dependent H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
     fail
   end.
 
+Ltac solve_fresh_neq :=   subst; remember_fresh_evars; solve_fresh_neq'.
 
 Ltac solve_fresh_svar_neq :=
   subst; remember_fresh_svars;
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -448,7 +448,7 @@ Ltac solve_fresh_svar_neq :=
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
           apply not_elem_of_singleton_1 in H;
-          first [ exact H | clear H]
+          first [ exact H | clear dependent H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
