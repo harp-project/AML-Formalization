@@ -7620,20 +7620,46 @@ Proof.
     clear -Hm2.
     set_solver.
   }
-
-  Check not_exgen_x_in_prop.
-  unfold P
-intros Hevs Hsvs Hkt.
-eapply pile_trans.
-{
-  apply pile_evs_subseteq. apply Hevs.
-}
-eapply pile_trans.
-{
-  apply pile_svs_subseteq. apply Hsvs.
-}
-apply pile_kt_impl.
-apply Hkt.
+  {
+    destruct pile as [pile].
+    rewrite elem_of_subseteq.
+    intros X HX.
+    pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor; simpl.
+      { exact I. }
+      { clear. set_solver. }
+      { clear -HX. set_solver. }
+      { reflexivity. }
+    }
+    destruct pile as [Hp1 Hp2 Hp3 Hp4].
+    simpl in *.
+    clear -Hp3.
+    set_solver.
+  }
+  {
+    destruct pile as [pile].
+    pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+    destruct kt1.
+    2: { simpl. reflexivity. }
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor; simpl.
+      { exact I. }
+      { clear. set_solver. }
+      { clear. set_solver. }
+      { reflexivity. }
+    }
+    destruct pile as [Hp1 Hp2 Hp3 Hp4].
+    simpl in Hp4.
+    rewrite Hp4.
+    reflexivity.
+  }
 Qed.
 
 Lemma useGenericReasoning {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt i:
