@@ -7733,13 +7733,14 @@ Proof.
   apply H.
 Defined.
 
-Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂:
+Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) ->
-  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂).
+  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
+  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
-  intros wfϕ₁ wfϕ₂ H.
+  intros wfϕ₁ wfϕ₂ pile H.
   remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
   apply (@strip_exists_quantify_l Σ Γ x).
   { subst x.
@@ -7749,15 +7750,15 @@ Proof.
   }
   { wf_auto2. }
   apply Ex_gen.
-  1,2: wf_auto2.
-  2: {
+  { apply pile. }
+  1: {
     subst x.
     eapply evar_is_fresh_in_richer'.
     2: { apply set_evar_fresh_is_fresh'. }
     simpl. set_solver.
   }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     rewrite -[HERE in evar_open _ _ _ ---> HERE](@evar_open_not_occur Σ 0 x ϕ₂).
     {
@@ -7766,6 +7767,7 @@ Proof.
     reflexivity.
   }
   eapply forall_elim with (x0 := x) in H.
+  4: { apply pile. }
   2: wf_auto2.
   2: { subst x. apply set_evar_fresh_is_fresh. }
   unfold evar_open in *. simpl in *. exact H.
