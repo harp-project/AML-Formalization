@@ -153,14 +153,28 @@ Defined.
 Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉.
+  Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false).
 Proof.
   intros HΓ Hwfϕ.
-  assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+  assert(S1: Γ ⊢ patt_defined p_x using BasicReasoning).
+  {
+    apply use_defined_axiom.
+    apply HΓ.
+  }
+
+  remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
   pose proof (S1' := S1).
-  apply universal_generalization with (x := ev_x) in S1'; auto.
-  remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
+  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) in S1'.
+  apply universal_generalization with (x := ev_x) in S1'.
+  3: { wf_auto2. }
+  2: {
+    apply pile_evs_svs_kt.
+    { set_solver. }
+    { apply reflexivity. }
+    { reflexivity. }
+  }
 
   assert (Hx1': evar_is_fresh_in x' ϕ).
   { rewrite Heqx'.
@@ -177,45 +191,58 @@ Proof.
     set_solver.
   }
   
-  assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉).
+  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) as i.
+  assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
     replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
       with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉) in S1'.
     2: { simpl. repeat case_match; auto; contradiction. }
         
-    eapply Modus_ponens.
-    4: apply forall_variable_substitution.
-    3: apply S1'.
-    all: auto; simpl; case_match; auto. (* For some reason, [auto] is not enough here *)
+    eapply MP.
+    { apply S1'. }
+    eapply useGenericReasoning.
+    2: apply forall_variable_substitution.
+    2: wf_auto2.
+    subst i.
+    apply pile_evs_svs_kt.
+    { set_solver. }
+    { apply reflexivity. }
+    { reflexivity. }
   }
   
-  assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉).
+  assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉ using i).
   {
     toMyGoal.
     { wf_auto2. }
     mgLeft.
-    fromMyGoal. intros _ _.
+    fromMyGoal.
     apply S1''.
   }
 
-  assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉).
+  assert(S3: Γ ⊢ ⌈ patt_free_evar x' or ϕ ⌉ using i).
   {
     pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x') ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
-    apply pf_conj_elim_r_meta in Htmp; auto.
-    eapply Modus_ponens. 4: apply Htmp.
-    all: auto.
+    apply pf_conj_elim_r_meta in Htmp.
+    2-3: wf_auto2.
+    eapply MP.
+    2: {
+      rewrite Heqi.
+      eapply useBasicReasoning.
+      apply Htmp.
+    }
+    apply S2.
   }
 
-  assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉).
+  assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉ using i).
   {
-    assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ)).
+    assert(Htmp1: Γ ⊢ (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ) using i).
     {
       toMyGoal.
       { wf_auto2. }
       mgIntro.
-      mgAdd (@A_or_notA Σ Γ ϕ Hwfϕ).
+      mgAdd (@usePropositionalReasoning Σ _ _ i (@A_or_notA Σ Γ ϕ Hwfϕ)).
       mgDestructOr 0.
       - mgRight. mgExactn 0.
       - mgLeft. mgIntro.
@@ -227,28 +254,39 @@ Proof.
           mgExactn 1.
     }
     
-    assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉)).
+    assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉) using i).
     {
-      apply Framing_right. wf_auto2. apply Htmp1.
+      apply Framing_right.
+      {  
+        subst i.
+        apply pile_evs_svs_kt.
+        { set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
+      wf_auto2. apply Htmp1.
     }
     
-    eapply Modus_ponens.
-    4: apply Htmp2.
-    3: auto.
-    1,2: wf_auto2.
+    eapply MP.
+    2: apply Htmp2.
+    1: apply S3.
   }
 
-  assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉).
+  assert(S5: Γ ⊢ ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉ using i).
   {
     pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x' and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
     apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
-    eapply Modus_ponens. 4: apply Htmp.
-    3: auto.
-    1,2: wf_auto2.
+    eapply MP.
+    2: {
+      subst i.
+      useBasicReasoning.
+      apply Htmp.
+    }
+    1: apply S4.
   }
 
-  assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉).
+  assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉ using i).
   {
     pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x').
     simpl in Htmp.
