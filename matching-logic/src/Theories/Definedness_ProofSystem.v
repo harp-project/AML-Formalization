@@ -288,7 +288,7 @@ Proof.
 
   assert(S6: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉ using i).
   {
-    pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x').
+    pose proof (Htmp := @Singleton_ctx Σ Γ AC AC_patt_defined ϕ x').
     simpl in Htmp.
     unfold patt_and in Htmp at 1.
     apply not_not_elim_meta in Htmp.
@@ -299,23 +299,32 @@ Proof.
     
     toMyGoal.
     { wf_auto2. }
-    mgIntro. mgAdd Htmp.
+    mgIntro.
+    remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) as gpi.
+    rewrite Heqi.
+    mgAdd (@useBasicReasoning _ _ _ gpi Htmp).
     mgApply 0. mgIntro. mgApply 2.
     mgExactn 1.
   }
 
   pose proof (S7 := S5). unfold patt_or in S7.
 
-  assert(S8: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉).
+  assert(S8: Γ ⊢ subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉ using i).
   {
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: apply S7.
-    4: auto.
+    4: apply S6.
     1-3: wf_auto2.
   }
-  assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉)).
+  assert (S9: Γ ⊢ all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉) using i).
   {
-    eapply universal_generalization with (x := x') in S8; auto.
+    eapply universal_generalization with (x := x') in S8.
+    3: { wf_auto2. }
+    2: { subst i. apply pile_evs_svs_kt.
+      { set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
     simpl in S8.
     
     rewrite evar_quantify_subst_ctx in S8;[assumption|].
@@ -326,7 +335,7 @@ Proof.
     apply S8.
   }
 
-  assert(S10: Γ ⊢ (ex, subst_ctx AC (b0 and ϕ)) ---> ⌈ ϕ ⌉).
+  assert(S10: Γ ⊢ (ex, subst_ctx AC (b0 and ϕ)) ---> ⌈ ϕ ⌉ using i).
   {
     unfold patt_forall in S9.
     unfold patt_not in S9 at 1.
@@ -342,17 +351,23 @@ Proof.
     }
     rewrite <- Heq.
     apply Ex_gen.
-    4: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    1,2: wf_auto2.
+    2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+    1: {
+      subst i.
+      apply pile_evs_svs_kt.
+      { set_solver. }
+      { apply reflexivity. }
+      { reflexivity. }
+    }
     assumption.
   }
 
-  assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ)).
+  assert (S11: Γ ⊢ ϕ ---> ((ex, patt_bound_evar 0) and ϕ) using i).
   {
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    mgAdd (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto)).
+    mgAdd (@usePropositionalReasoning _ _ _ i (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto))).
     
     mgAssert ((ϕ ---> ex , b0 and ϕ)).
     { wf_auto2. }

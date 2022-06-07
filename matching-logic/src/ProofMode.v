@@ -3535,6 +3535,25 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma Existence (Γ : Theory) :
+    Γ ⊢ (ex , patt_bound_evar 0) using BasicReasoning.
+  Proof.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Existence.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
   Lemma pile_impl_allows_gen_x x gpi svs kt:
     ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
     x ∈ pi_generalized_evars gpi.
