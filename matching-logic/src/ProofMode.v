@@ -3512,6 +3512,29 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma Singleton_ctx (Γ : Theory) (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
+    well_formed ϕ ->
+    Γ ⊢ (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
+               (subst_ctx C2 (patt_free_evar x and (! ϕ)))))
+    using BasicReasoning.
+  Proof.
+    intros Hwf.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Singleton_ctx. apply Hwf.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
   Lemma pile_impl_allows_gen_x x gpi svs kt:
     ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
     x ∈ pi_generalized_evars gpi.
