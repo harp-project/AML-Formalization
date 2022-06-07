@@ -107,25 +107,48 @@ Proof.
   reflexivity.
 Defined.
 
+Definition BasicReasoningWithDefinedness := pi_Generic (ExGen := {[ev_x]}, SVSubst := ∅, KT := false).
+
 Lemma defined_evar Γ x:
   theory ⊆ Γ ->
-  Γ ⊢ ⌈ patt_free_evar x ⌉.
+  Γ ⊢ ⌈ patt_free_evar x ⌉
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false).
 Proof.
   intros HΓ.
-  assert(S1: Γ ⊢ patt_defined p_x) by (auto using use_defined_axiom).
+  assert(S1: Γ ⊢ patt_defined p_x using BasicReasoningWithDefinedness).
+  {
+    useBasicReasoning.
+    apply use_defined_axiom.
+    apply HΓ.
+  }
 
   pose proof (S1' := S1).
-  apply universal_generalization with (x0 := ev_x) in S1'; auto.
+  apply universal_generalization with (x0 := ev_x) in S1'.
+  3: { wf_auto2. }
+  2: { apply pile_refl. }
   replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
     with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
   2: { simpl. repeat case_match; auto; contradiction. }
-  
-  eapply Modus_ponens.
-  4: apply forall_variable_substitution.
-  3: apply S1'.
-  all: auto; simpl; case_match; auto.
+  eapply MP.
+  2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false).
+    apply pile_evs_svs_kt.
+    { clear. unfold ev_x.
+      rewrite elem_of_subseteq.
+      intros x0 Hx0. rewrite elem_of_singleton in Hx0. subst x0.
+      set_solver.
+    }
+    { apply reflexivity. }
+    { reflexivity. }
+    apply forall_variable_substitution with (x0 := x).
+    wf_auto2.
+  }
+  eapply useGenericReasoning.
+  2: { apply S1'. }
+  apply pile_evs_svs_kt.
+  { set_solver. }
+  { apply reflexivity. }
+  { reflexivity. }
 Defined.
-
   
 Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
