@@ -7055,7 +7055,6 @@ Local Ltac solve_fresh_contradictions_2 star :=
   unfold fresh_evar; simpl;
   match goal with
   | h: ?x = star |- _ =>
-    idtac "symmetry";
     let hprime := fresh "hprime" in
     pose proof (hprime := eq_sym h);
     solve_fresh_contradictions_2' star x hprime
