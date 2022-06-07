@@ -7677,14 +7677,15 @@ Proof.
   exists pf.
   destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
   simpl in *.
-  constructor.
+  destruct gpi.
+  pose proof (Htmp := @pile_evs_svs_kt_back Σ).
+  specialize (Htmp evs pi_generalized_evars0 svs pi_substituted_svars0 kt pi_uses_kt0 pile).
+  destruct Htmp as [Hevs [Hsvs Hkt] ].
+  constructor; simpl.
   { exact I. }
-  { set_solver. }
-{ set_solver. }
-{ destruct (uses_kt pf); simpl in *.
-  { inversion Hpf4. }
-  reflexivity.
-}
+  { clear -Hpf2 Hevs. set_solver. }
+  { clear -Hpf3 Hsvs. set_solver. }
+  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
 Qed.
 
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
