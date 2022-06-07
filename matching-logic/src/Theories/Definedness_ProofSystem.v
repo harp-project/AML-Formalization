@@ -372,7 +372,8 @@ Proof.
     mgAssert ((ϕ ---> ex , b0 and ϕ)).
     { wf_auto2. }
     {  mgApply 0.
-       mgAdd (Existence Γ).
+        subst i.
+       mgAdd (@useBasicReasoning _ _ _ (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) (Existence Γ)).
        mgExactn 0.
     }
     mgApply 2. mgExactn 1.
@@ -386,7 +387,7 @@ Proof.
     eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
   }
   
-  assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ)).
+  assert (S12: Γ ⊢ ϕ ---> ex, (b0 and ϕ) using i).
   {
 
     assert(well_formed (ex , (evar_quantify x' 0 (patt_free_evar x') and ϕ))).
@@ -396,18 +397,25 @@ Proof.
       all: repeat case_match; auto.
     }
     
-    assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ)))).
+    assert(Htmp: Γ ⊢ ((ex, b0) and ϕ ---> (ex, (b0 and ϕ))) using i).
     {
       toMyGoal.
       { wf_auto2. }
       mgIntro.
       mgDestructAnd 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
       2: { simpl. case_match;[reflexivity|congruence]. }
-      apply Ex_gen; auto.
+      apply Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
            unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
+      }
+      1: {
+        subst i.
+        apply pile_evs_svs_kt.
+        { set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
       }
       toMyGoal.
       { wf_auto2. }
@@ -420,7 +428,7 @@ Proof.
         - mgApply 2. mgExactn 1.
       }
       mgClear 1. mgClear 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       case_match;[|congruence].
 
       replace (patt_free_evar x' and ϕ)
@@ -432,21 +440,30 @@ Proof.
         }
         reflexivity.
       }
+      subst i.
+      useBasicReasoning.
       apply Ex_quan.
       { wf_auto2. }
     }
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: { apply Htmp. }
     4: assumption.
     1-3: wf_auto2.
   }
 
-  assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ)))).
+  assert(S13: Γ ⊢ (subst_ctx AC ϕ) ---> (subst_ctx AC (ex, (b0 and ϕ))) using i).
   {
-    apply Framing; auto.
+    apply Framing.
+    {
+      subst i. apply pile_evs_svs_kt.
+      { set_solver. }
+      { set_solver. }
+      { reflexivity. }
+    }
+    apply S12.
   }
 
-  assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉)).
+  assert(S14: Γ ⊢ (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉) using i).
   {
     pose proof (Htmp := @prf_prop_ex_iff Σ Γ AC (b0 and ϕ) x').
     feed specialize Htmp.
@@ -478,15 +495,30 @@ Proof.
     rewrite -> evar_quantify_evar_open in Htmp.
     2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
     apply pf_iff_proj1 in Htmp; auto.
-    eapply syllogism_intro.
-    5: apply S10.
-    all: auto.
+    {
+      eapply syllogism_meta.
+      5: { apply S10. }
+      4: { subst i. eapply useGenericReasoning. 2: apply Htmp.
+        apply pile_evs_svs_kt.
+        {
+          set_solver.
+        }
+        {
+          apply reflexivity.
+        }
+        {
+          reflexivity.
+        }
+      }
+      1-3: wf_auto2.
+    }
+    unfold patt_and,patt_or,patt_not.
     simpl. split_and!; auto.
     apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0); auto.
-    unfold well_formed,well_formed_closed in *. destruct_and!. auto.
+    wf_auto2.
   }
 
-  eapply syllogism_intro.
+  eapply syllogism_meta.
   5: apply S14.
   4: assumption.
   1-3: wf_auto2.
