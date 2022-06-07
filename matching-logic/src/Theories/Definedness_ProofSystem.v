@@ -44,39 +44,58 @@ Context
   {syntax : Syntax}
 .
 
-Lemma phi_impl_total_phi_meta Γ ϕ:
+Lemma phi_impl_total_phi_meta Γ ϕ i:
   well_formed ϕ ->
-  Γ ⊢ ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋.
+  ProofInfoLe BasicReasoning i ->
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ⌊ ϕ ⌋ using i.
 Proof.
-  intros wfϕ Hϕ.
+  intros wfϕ pile Hϕ.
   epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (ϕ) (ctx_app_r box _)).
-  apply ANNA; auto.
+  apply ANNA.
+  { exact pile. }
+  { apply wfϕ. }
+  exact Hϕ.
   Unshelve. wf_auto2.
 Defined.
 
 Lemma patt_iff_implies_equal :
-  forall (φ1 φ2 : Pattern) Γ, well_formed φ1 -> well_formed φ2 ->
-                              Γ ⊢ (φ1 <---> φ2) -> Γ ⊢ φ1 =ml φ2.
+  forall (φ1 φ2 : Pattern) Γ i,
+    well_formed φ1 ->
+    well_formed φ2 ->         
+    ProofInfoLe BasicReasoning i ->                 
+    Γ ⊢ (φ1 <---> φ2) using i ->
+    Γ ⊢ φ1 =ml φ2 using i .
 Proof.
-  intros φ1 φ2 Γ WF1 WF2 H.
+  intros φ1 φ2 Γ i WF1 WF2 pile H.
   epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)).
-  apply ANNA; auto.
+  apply ANNA.
+  { exact pile. }
+  { wf_auto2. }
+  { exact H. }
   Unshelve.
-  auto.
+  wf_auto2.
 Defined.
 
 Lemma patt_equal_refl :
-  forall φ Γ, well_formed φ ->
-              Γ ⊢ φ =ml φ.
+  forall φ Γ,
+  well_formed φ ->
+  Γ ⊢ φ =ml φ
+  using BasicReasoning.
 Proof.
   intros φ Γ WF. pose proof (IFF := @pf_iff_equiv_refl Σ Γ φ WF).
-  apply patt_iff_implies_equal in IFF; auto.
+  eapply usePropositionalReasoning in IFF.
+  apply patt_iff_implies_equal in IFF.
+  { apply IFF. }
+  { exact WF. }
+  { exact WF. }
+  { apply pile_refl. }
 Qed.
 
 Lemma use_defined_axiom Γ:
   theory ⊆ Γ ->
-  Γ ⊢ patt_defined p_x.
+  Γ ⊢ patt_defined p_x
+  using BasicReasoning.
 Proof.
   intros HΓ.
   apply hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
