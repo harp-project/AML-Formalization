@@ -744,54 +744,73 @@ Print ProofInfo.
     - (* Existential Quantifier *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      useBasicReasoning.
       apply Ex_quan. wf_auto2.
     - (* Existential Generalization *)
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      (*
       simpl in HnoExGen.
-      case_match;[congruence|].
+      case_match;[congruence|]. *)
       feed specialize IHpf.
-      { auto. }
-      { exact HnoExGen. }
-      { simpl in HnoSvarSubst. exact HnoSvarSubst. }
-      { simpl in HnoKT. exact HnoKT. }
+      {
+        constructor; simpl.
+        { exact I. }
+        { clear -Hpf2. set_solver. }
+        { clear -Hpf3. set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
 
-      apply reorder_meta in IHpf; auto.
-      apply reorder_meta; auto.
-      { wf_auto2. }
-      { wf_auto2. }
+      apply reorder_meta in IHpf.
+      2-4: wf_auto2.
       apply Ex_gen with (x0 := x) in IHpf.
-      2,3,5: wf_auto2.
-      { exact IHpf. }
-      { simpl. clear -n n0. set_solver. }
+      3: { simpl. set_solver. }
+      2: { apply pile_evs_svs_kt.
+        { set_solver. }
+        { set_solver. }
+        { reflexivity. }
+      }
+      apply reorder_meta in IHpf.
+      2-4: wf_auto2.
+      exact IHpf.
+      
     - (* Propagation of ⊥, left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_bott_left; assumption.
     - (* Propagation of ⊥, right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_bott_right; assumption.
     - (* Propagation of 'or', left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_disj_left; assumption.
     - (* Propagation of 'or', right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_disj_right; assumption.
     - (* Propagation of 'exists', left *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_ex_left; assumption.
     - (* Propagation of 'exists', right *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0; auto. fromMyGoal.
+      useBasicReasoning.
       apply Prop_ex_right; assumption.
     - (* Framing left *)
       assert (well_formed (phi1)).
