@@ -7701,7 +7701,8 @@ Proof.
     apply pile.
   }
   pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
-  useBasicReasoning
+  eapply useGenericReasoning. apply pile. apply Htmp.
+Defined.
 
 Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
