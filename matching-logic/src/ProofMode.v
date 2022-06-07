@@ -7720,12 +7720,17 @@ Proof.
   }
   destruct gpi.
   eapply MP.
-  2: eapply forall_variable_substitution.
-  2: eapply (@forall_variable_substitution Σ Γ _ x _).
-  { wf_auto2. }
-  { wf_auto2. }
-  2: { wf_auto2. }
-  rewrite evar_quantify_evar_open; try assumption. wf_auto2.
+  2: eapply forall_variable_substitution'.
+  2: wf_auto2.
+  2: apply pile.
+  eapply cast_proof'.
+  {
+    rewrite evar_quantify_evar_open.
+    { apply frϕ. }
+    { wf_auto2. }
+    reflexivity.
+  }
+  apply H.
 Defined.
 
 Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂:
