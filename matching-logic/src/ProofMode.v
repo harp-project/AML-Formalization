@@ -7793,16 +7793,18 @@ Proof.
     set_solver.
 Qed.
 
-Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar):
+Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar)
+  (i : ProofInfo) :
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
   bevar_occur ϕ₁ 0 = false ->
-  @mkMyGoal Σ Γ (ϕ₁::l) g -> 
- @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g.
+  @mkMyGoal Σ Γ (ϕ₁::l) g i -> 
+ @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
 Proof.
-  intros xfrg xfrl Hno0 H.
+  intros xfrg xfrl pile Hno0 H.
   mgExtractWF H1 H2.
-  fromMyGoal. intros _ _.
+  fromMyGoal.
   pose proof (H1' := H1).
   unfold wf in H1. simpl in H1. apply andb_prop in H1. destruct H1 as [H11 H12].
   apply wf_ex_quan_impl_wf in H11. 2: assumption.
@@ -7813,9 +7815,8 @@ Proof.
     unfold wf. simpl. rewrite H11 H12. reflexivity.
   }
   apply Ex_gen.
-  { wf_auto2. }
-  { wf_auto2. }
-  { assumption. }
+  { apply pile. }
+  2: { assumption. }
   simpl.
   apply evar_fresh_in_foldr.
   split; assumption.
