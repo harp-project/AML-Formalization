@@ -524,20 +524,62 @@ Proof.
   1-3: wf_auto2.
 Defined.
 
+Lemma elements_union_empty ϕ:
+  elements (free_evars ϕ ∪ ∅) = elements (free_evars ϕ).
+Proof.
+  apply f_equal.
+  set_solver.
+Qed.
+
 Lemma phi_impl_defined_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ϕ ---> ⌈ ϕ ⌉.
+  Γ ⊢ ϕ ---> ⌈ ϕ ⌉
+  using pi_Generic
+                     (ExGen := {[ev_x;
+                               evar_fresh
+                                 (elements (free_evars ϕ) )]},
+                      SVSubst := ∅, KT := false).
 Proof.
   intros HΓ wfϕ.
-  replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
-  apply in_context_impl_defined; assumption.
+  eapply cast_proof'.
+  {
+    replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
+    reflexivity.
+  }
+  eapply useGenericReasoning.
+  2: {
+    apply in_context_impl_defined; assumption.  
+  }
+  {
+    simpl.
+    apply pile_evs_svs_kt.
+    { 
+      cut (elements (free_evars ϕ ∪ ∅) = elements (free_evars ϕ)).
+      {
+        intros H'. rewrite H'. apply reflexivity.
+      }
+      rewrite elements_union_empty.
+      reflexivity.
+    }
+    {
+      apply reflexivity.
+    }
+    {
+      reflexivity.
+    }
+  }
 Defined.
 
 Lemma total_phi_impl_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋ ---> ϕ.
+  Γ ⊢ ⌊ ϕ ⌋ ---> ϕ
+  using pi_Generic
+  (ExGen := {[ev_x;
+            evar_fresh
+              (elements (free_evars ϕ) )]},
+   SVSubst := ∅, KT := false).
 Proof.
   intros HΓ wfϕ.
   unfold patt_total.
@@ -545,22 +587,39 @@ Proof.
   apply A_impl_not_not_B_meta.
   1,2: wf_auto2.
   apply modus_tollens.
-  1,2: wf_auto2.
-  exact Htmp.
+  simpl in Htmp.
+  cut (free_evars ϕ ∪ ∅ = free_evars ϕ).
+  {
+    intros H'. rewrite H' in Htmp. apply Htmp.
+  }
+  set_solver.
 Defined.
 
-Lemma total_phi_impl_phi_meta Γ ϕ:
+Lemma total_phi_impl_phi_meta Γ ϕ i:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  Γ ⊢ ⌊ ϕ ⌋ ->
-  Γ ⊢ ϕ.
+  ProofInfoLe (pi_Generic
+  (ExGen := {[ev_x;
+            evar_fresh
+              (elements (free_evars ϕ) )]},
+   SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ ⌊ ϕ ⌋ using i ->
+  Γ ⊢ ϕ using i.
 Proof.
-  intros HΓ wfϕ H.
-  eapply Modus_ponens.
-  4: apply total_phi_impl_phi.
-  1,2,5: wf_auto2.
-  2: exact HΓ.
-  exact H.
+  intros HΓ wfϕ pile H.
+  eapply MP.
+  1: exact H.
+  eapply useGenericReasoning.
+  2: apply total_phi_impl_phi.
+  {
+    eapply pile_trans. 2: apply pile.
+    apply pile_evs_svs_kt.
+    { apply reflexivity. }
+    { apply reflexivity. }
+    { reflexivity. }
+  }
+  1: exact HΓ.
+  exact wfϕ.
 Defined.
   
 
