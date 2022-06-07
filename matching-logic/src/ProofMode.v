@@ -7591,15 +7591,109 @@ Proof.
   apply modus_tollens; assumption.
 Defined.
 
-Lemma forall_elim {Σ : Signature} Γ ϕ x:
+Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2:
+ProofInfoLe
+  (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1))
+  (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2)) ->
+  evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2.
+Proof.
+  intros pile.
+  repeat split.
+  {
+    destruct pile as [pile].
+    rewrite elem_of_subseteq.
+    intros x Hx.
+    remember (fresh_evar (patt_free_evar x)) as y.
+    pose (pf1 := @A_impl_A Σ ∅ (patt_free_evar y) ltac:(wf_auto2)).
+    pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+    specialize (pile ∅ _ pf2).
+    feed specialize pile.
+    {
+      constructor.
+      { exact I. }
+      { simpl. clear -Hx. set_solver. }
+      { simpl. clear. set_solver. }
+      { simpl. reflexivity. }
+    }
+    destruct pile as [Hm1 Hm2 Hm3 Hm4].
+    simpl in *.
+    clear -Hm2.
+    set_solver.
+  }
+
+  Check not_exgen_x_in_prop.
+  unfold P
+intros Hevs Hsvs Hkt.
+eapply pile_trans.
+{
+  apply pile_evs_subseteq. apply Hevs.
+}
+eapply pile_trans.
+{
+  apply pile_svs_subseteq. apply Hsvs.
+}
+apply pile_kt_impl.
+apply Hkt.
+Qed.
+
+Lemma useGenericReasoning {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt i:
+  (ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) i) ->
+  Γ ⊢ ϕ using (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) ->
+  Γ ⊢ ϕ using i.
+Proof.
+  intros pile [pf Hpf].
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  exists pf.
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  simpl in *.
+  constructor.
+  { exact I. }
+  { set_solver. }
+{ set_solver. }
+{ destruct (uses_kt pf); simpl in *.
+  { inversion Hpf4. }
+  reflexivity.
+}
+Qed.
+
+Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
+  well_formed ϕ ->
+  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) ->
+  Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
+Proof.
+  intros wfϕ pile.
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
+  useBasicReasoning
+
+Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
   evar_is_fresh_in x ϕ ->
-  Γ ⊢ (all, ϕ) ->
-  Γ ⊢ (evar_open 0 x ϕ).
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ (all, ϕ) using i ->
+  Γ ⊢ (evar_open 0 x ϕ) using i.
 Proof.
-  intros wfϕ frϕ H.
-  eapply Modus_ponens.
-  4: apply (@forall_variable_substitution Σ Γ _ x).
+  intros wfϕ frϕ pile H.
+  destruct i.
+  {
+    exfalso.
+    eapply not_generic_in_prop.
+    apply pile.
+  }
+  destruct gpi.
+  eapply MP.
+  2: eapply forall_variable_substitution.
+  2: eapply (@forall_variable_substitution Σ Γ _ x _).
   { wf_auto2. }
   { wf_auto2. }
   2: { wf_auto2. }
