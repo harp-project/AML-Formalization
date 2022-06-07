@@ -828,13 +828,27 @@ Print ProofInfo.
       assert (well_formed (phi1 ---> phi2)).
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
-      simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
+      remember (pi_Generic
+      (ExGen := {[ev_x; evar_fresh (elements (free_evars ψ))]}
+                ∪ pi_generalized_evars gpi ∪ free_evars ψ,
+       SVSubst := pi_substituted_svars gpi ∪ free_svars ψ, KT := false)) as i'.
+
+      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -844,12 +858,24 @@ Print ProofInfo.
           mgApply 3. mgExactn 2.
       }
 
-      assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+      assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i').
       {
         replace (⌈ ! ψ ⌉ $ psi)
           with (subst_ctx (@ctx_app_l _ AC_patt_defined psi ltac:(assumption)) (! ψ))
           by reflexivity.
-        apply in_context_impl_defined; auto.
+        subst i'.
+        eapply useGenericReasoning.
+        2: apply in_context_impl_defined; auto.
+        apply pile_evs_svs_kt.
+        {
+          replace (free_evars (! ψ)) with (free_evars (ψ)).
+          2: {
+            simpl. set_solver.
+          }
+          simpl. Search psi.
+          (* TODO: we need to add annotations that depend on the use of Framing_* rules *)
+          clear. set_solver.
+        }
       }
 
       assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
