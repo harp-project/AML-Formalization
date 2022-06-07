@@ -3489,6 +3489,29 @@ Section FOL_helpers.
     }
   Defined.
 
+  Lemma hypothesis (Γ : Theory) (axiom : Pattern) :
+    well_formed axiom ->
+    (axiom ∈ Γ) ->
+    Γ ⊢ axiom
+    using BasicReasoning.
+  Proof.
+    intros Hwf Hin.
+    unshelve (eexists).
+    {
+      apply ProofSystem.hypothesis. apply Hwf. apply Hin.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( exact I )
+        |( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        ]
+      ).
+    }
+  Defined.
+
   Lemma pile_impl_allows_gen_x x gpi svs kt:
     ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
     x ∈ pi_generalized_evars gpi.
