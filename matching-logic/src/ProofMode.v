@@ -7561,25 +7561,24 @@ Proof.
   apply lhs_and_to_imp_r.
 Abort.
 
-Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x:
+Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
-  Γ ⊢ ϕ₁ ---> ϕ₂ ->
-  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂).
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
-  intros Hfr Himp.
-  pose proof (Hwf := proved_impl_wf _ _ Himp).
+  intros Hfr pile Himp.
+  pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
   pose proof (wfϕ₁ := well_formed_imp_proj1 Hwf).
   pose proof (wfϕ₂ := well_formed_imp_proj2 Hwf).
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  mgApplyMeta (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2)) in 0.
-  fromMyGoal. intros _ _.
+  mgApplyMeta (@usePropositionalReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in 0.
+  fromMyGoal.
   apply modus_tollens.
-  { wf_auto2. }
-  { wf_auto2. }
 
-  eapply cast_proof.
+  eapply cast_proof'.
   {
     replace (! evar_quantify x 0 ϕ₂)
             with (evar_quantify x 0 (! ϕ₂))
@@ -7587,9 +7586,8 @@ Proof.
     reflexivity.
   }
   apply Ex_gen.
-  { wf_auto2. }
-  { wf_auto2. }
-  2: { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
+  { exact pile. }
+  { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
   apply modus_tollens; assumption.
 Defined.
 
