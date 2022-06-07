@@ -622,30 +622,67 @@ Proof.
   exact wfϕ.
 Defined.
   
+Print ProofInfo.
+  Print GenericProofInfo.
+  Check disjoint.
 
-  Theorem deduction_theorem_noKT Γ ϕ ψ (pf : Γ ∪ {[ ψ ]} ⊢ ϕ) :
+  Theorem deduction_theorem_noKT Γ ϕ ψ
+    (gpi : GenericProofInfo)
+    (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
     well_formed ϕ ->
     well_formed ψ ->
     theory ⊆ Γ ->
-    uses_ex_gen (free_evars ψ) pf = false ->
-    uses_svar_subst (free_svars ψ) pf = false ->
-    uses_kt pf = false ->
-    Γ ⊢ ⌊ ψ ⌋ ---> ϕ.
+    pi_generalized_evars gpi ## free_evars ψ ->
+    pi_substituted_svars gpi ## free_svars ψ ->
+    pi_uses_kt gpi = false ->
+    Γ ⊢ ⌊ ψ ⌋ ---> ϕ
+    using pi_Generic
+    (ExGen := ({[ev_x; evar_fresh (elements (free_evars ψ))]} ∪ pi_generalized_evars gpi ∪ free_evars ψ),
+     SVSubst := (pi_substituted_svars gpi ∪ free_svars ψ),
+     KT := false
+    ).
   Proof.
     intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
+    destruct pf as [pf Hpf].
     induction pf.
     - (* hypothesis *)
       rename axiom into axiom0.
       (* We could use [apply elem_of_union in e; destruct e], but that would be analyzing Prop
          when building Set, which is prohibited. *)
       destruct (decide (axiom0 = ψ)).
-      + subst. apply total_phi_impl_phi; auto.
+      + subst.
+        eapply useGenericReasoning.
+        2: {
+          apply total_phi_impl_phi; assumption.
+        }
+        {
+          apply pile_evs_svs_kt.
+          {
+            clear. set_solver.
+          }
+          {
+            clear. set_solver.
+          }
+          { reflexivity. }
+        }
+        
       + assert (axiom0 ∈ Γ).
-        { set_solver. }
+        { clear -e n. set_solver. }
         toMyGoal.
         { wf_auto2. }
-        mgIntro. mgClear 0. fromMyGoal. intros _ _.
-        apply (hypothesis Γ axiom0 i H).
+        mgIntro. mgClear 0. fromMyGoal.
+        eapply useGenericReasoning.
+        2: apply (@hypothesis Σ Γ axiom0 i H).
+        apply pile_evs_svs_kt.
+        {
+          set_solver.
+        }
+        {
+          set_solver.
+        }
+        {
+          simpl. reflexivity.
+        }
     - (* P1 *)
       toMyGoal.
       { wf_auto2. }
@@ -653,26 +690,45 @@ Defined.
     - (* P2 *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
-      apply P2; auto.
+      mgIntro. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
+      apply P2; assumption.
     - (* P3 *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
-      apply P3; auto.
+      mgIntro. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
+      apply P3; assumption.
     - (* Modus Ponens *)
       assert (well_formed phi2).
       { unfold well_formed, well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto.
       }
-      simpl in HnoExGen. apply orb_false_iff in HnoExGen.
-      destruct HnoExGen as [HnoExGen1 HnoExGen2].
-      simpl in HnoSvarSubst. apply orb_false_iff in HnoSvarSubst.
-      destruct HnoSvarSubst as [HnoSvarSubst1 HnoSvarSubst2].
-      simpl in HnoKT. apply orb_false_iff in HnoKT.
-      destruct HnoKT as [HnoKT1 HnoKT2].
-      specialize (IHpf1 ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      specialize (IHpf2 ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      assert (well_formed phi1).
+      {
+        clear -pf1. apply proved_impl_wf in pf1. exact pf1.
+      }
+
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      feed specialize IHpf1.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+      }
+      { assumption. }
+      feed specialize IHpf2.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+      }
+      { wf_auto2. }
       
       toMyGoal.
       { wf_auto2. }
