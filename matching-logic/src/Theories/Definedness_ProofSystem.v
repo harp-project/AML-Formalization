@@ -649,6 +649,11 @@ Defined.
   Check map.
     (*fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))*)
 
+  Tactic Notation "remember_constraint" "as" ident(i') :=
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : GenericProofInfo)
     (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
@@ -1248,13 +1253,19 @@ Defined.
       apply Singleton_ctx. wf_auto2.
   Defined.
 
-  Lemma membership_introduction Γ ϕ:
+  Lemma membership_introduction Γ ϕ i:
+    ProofInfoLe (pi_Generic
+    (ExGen := {[ev_x; fresh_evar ϕ]},
+     SVSubst := ∅,
+     KT := false
+    )) i ->
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ϕ ->
-    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ).
+    Γ ⊢ ϕ using i ->
+    Γ ⊢ all, ((patt_bound_evar 0) ∈ml ϕ)
+    using i.
   Proof.
-    intros wfϕ HΓ Hϕ.
+    intros pile wfϕ HΓ Hϕ.
 
     remember (fresh_evar ϕ) as x.
 
@@ -1264,23 +1275,27 @@ Defined.
       subst; auto. reflexivity.
     }
     
-    
-    assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ))).
+    assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ)) using i).
     {
-      apply P1; auto.
+      usePropositionalReasoning.
+      apply P1.
+      { wf_auto2. }
+      { wf_auto2. }
     }
 
-    assert(S3: Γ ⊢ patt_free_evar x ---> ϕ).
+    assert(S3: Γ ⊢ patt_free_evar x ---> ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S2. all: auto.
+      eapply MP. 2: apply S2. apply Hϕ.
     }
 
-    assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x).
+    assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x using i).
     {
-      apply A_impl_A; auto.
+      usePropositionalReasoning.
+      apply A_impl_A.
+      wf_auto2.
     }
 
-    assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ)).
+    assert(S5: Γ ⊢ patt_free_evar x ---> (patt_free_evar x and ϕ) using i).
     {
       toMyGoal.
       { wf_auto2. }
@@ -1292,26 +1307,41 @@ Defined.
       mgAdd Hϕ. mgExactn 0.
     }
 
-    assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉).
+    assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉ using i).
     {
-      apply Framing_right. wf_auto2. assumption.
+      apply Framing_right.
+      { eapply pile_trans. 2: apply pile. apply pile_basic_generic. }
+      { wf_auto2. }
+      apply S5.
     }
     
-    assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉).
+    assert(S7: Γ ⊢ ⌈ patt_free_evar x ⌉ using i).
     {
-      apply defined_evar; assumption.
+      eapply useGenericReasoning.
+      2: apply defined_evar; assumption.
+      apply pile.
     }
 
-    assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ).
+    assert(S9: Γ ⊢ (patt_free_evar x) ∈ml ϕ using i).
     {
-      eapply Modus_ponens. 4: apply S6.
-      3: assumption.
-      1,2: wf_auto2.
+      eapply MP. 2: apply S6.
+      apply S7.
     }
 
     eapply universal_generalization with (x0 := x) in S9.
-    2: { wf_auto2. }
-    simpl in S9. case_match;[|congruence]. exact S9.
+    3: { wf_auto2. }
+    1: { simpl in S9. case_match;[|congruence]. exact S9. }
+    eapply pile_trans. 2: apply pile.
+    apply pile_evs_svs_kt.
+    {
+      clear. set_solver.
+    }
+    {
+      apply reflexivity.
+    }
+    {
+      reflexivity.
+    }
   Defined.
 
   Lemma membership_elimination Γ ϕ:
