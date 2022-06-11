@@ -1843,62 +1843,72 @@ Defined.
       with (free_evars φ1 ∪ free_evars φ2)
       by set_solver.
 
-      induction pcPattern; unfold maximal_exists_depth_of_evar_in_pattern in *;
-      simpl in *; try set_solver.
+      pose proof (@evar_fresh_seq_disj Σ (free_evars pcPattern ∪ free_evars φ1 ∪ free_evars φ2 ∪ {[pcEvar]}) (maximal_exists_depth_of_evar_in_pattern pcEvar pcPattern)).
+      set_solver.
+    }
+    {
+      simpl.
+      unfold PC_wf in WFC.
+      destruct C; simpl in *.
+
+      pose proof (@svar_fresh_seq_disj Σ (free_svars pcPattern ∪ free_svars φ1 ∪ free_svars φ2) (maximal_mu_depth_of_evar_in_pattern pcEvar pcPattern)).
+      set_solver.
+    }
+    {
+      simpl.
+      case_match.
       {
-        case_match; simpl; set_solver.
+        reflexivity.
       }
       {
-        feed specialize IHpcPattern1.
-        { wf_auto2. }
-        { destruct_and!; assumption. }
-        feed specialize IHpcPattern2.
-        { wf_auto2. }
-        { destruct_and!; assumption. }
-        remember (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern1) as n1.
-        remember (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern2) as n2.
-        remember ((free_evars pcPattern1 ∪ free_evars pcPattern2 ∪ free_evars φ1
-        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS.
-        remember ((free_evars pcPattern1 ∪ free_evars φ1
-        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS1.
-        remember ((free_evars pcPattern2 ∪ free_evars φ1
-        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS2.
-        
-        destruct n1,n2.
+        exfalso.
+        unfold PC_wf in WFC.
+        destruct C; simpl in *.
+        clear -n Hmf.
+        unfold maximal_mu_depth_of_evar_in_pattern in *.
+        apply n.
+        cut (forall depth, depth >= maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern).
         {
-          simpl in *. clear. set_solver.
+          intros H.
+          specialize (H 0). lia.
+        }
+        clear n.
+        induction pcPattern; intros depth; simpl in *;
+        try lia.
+        {
+          case_match; subst; lia.
         }
         {
-          simpl in *. unfold evar_fresh_s in *.
-          destruct (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern2).
-          {
-            clear -Heqn2. lia.
-          }
-          inversion Heqn2. subst n2. clear Heqn2.
-          
+          destruct_and!.
+          specialize (IHpcPattern1 ltac:(assumption) depth).
+          specialize (IHpcPattern2 ltac:(assumption) depth).
+          destruct (maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern1);
+          simpl in *; lia.
         }
-        
+        {
+          destruct_and!.
+          specialize (IHpcPattern1 ltac:(assumption) depth).
+          specialize (IHpcPattern2 ltac:(assumption) depth).
+          destruct (maximal_mu_depth_of_evar_in_pattern' depth pcEvar pcPattern1);
+          simpl in *; lia.
+        }
+        {
+          specialize (IHpcPattern ltac:(assumption) depth).
+          assumption.
+        }
+        {
+          inversion Hmf.
+        }
       }
     }
-    3: {
-      abstract(
-        simpl; unfold prf_equiv_congruence; destruct C as [ψ E]; simpl;
-        rewrite uses_kt_nomu_eq_prf_equiv_congruence;[apply Hmf|reflexivity|reflexivity]
-      ).
+  }
+  {
+    simpl.
+    apply pile_evs_svs_kt.
+    {
+      cbn.
     }
-    2: {
-      abstract (
-        simpl;
-        unfold prf_equiv_congruence; destruct C as [ψ E];
-        simpl;
-        match goal with
-        | [ |- uses_svar_subst ?S _ = false ]
-          => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
-        end;
-        rewrite uses_svar_subst_eq_prf_equiv_congruence;
-        [(clear;set_solver)|reflexivity|reflexivity]
-      ).
-    }
+  }
     1: {
       abstract (
         simpl;
