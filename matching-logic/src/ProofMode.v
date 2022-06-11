@@ -5782,12 +5782,14 @@ Qed.
 
 
   Lemma eq_prf_equiv_congruence
+  (sz : nat)
   Γ p q
   (wfp : well_formed p)
   (wfq : well_formed q)
   (EvS : EVarSet)
   (SvS : SVarSet)
   E ψ
+  (Hsz: size' ψ <= sz)
   (wfψ : well_formed ψ)
   (p_sub_EvS : (free_evars p) ⊆ EvS)
   (q_sub_EvS : (free_evars q) ⊆ EvS)
@@ -5810,9 +5812,11 @@ Qed.
   (pf : Γ ⊢ (p <---> q) using i) :
       Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i.
   Proof.
+
+    (*
     remember (size' ψ) as sz.
     assert (Hsz: size' ψ <= sz) by (abstract (lia)).
-    clear Heqsz.
+    clear Heqsz.*)
 
     move: ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS
@@ -6723,9 +6727,11 @@ Qed.
          (SvS := (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q))
          (exdepth := 0)
          (mudepth := 0)
+         (sz := size' (pcPattern C))
     .
     { assumption. }
     { assumption. }
+    { abstract (lia). }
     { abstract (simpl; wf_auto2). }
     { abstract (clear; set_solver). }
     { abstract (clear; set_solver). }
@@ -6743,6 +6749,8 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
+    remember (size' pcPattern) as sz.
+    cbn.
 (*
     TODO induction over the size
     unfold eq_prf_equiv_congruence.
