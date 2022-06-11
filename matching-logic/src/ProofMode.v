@@ -6731,7 +6731,7 @@ Qed.
     .
     { assumption. }
     { assumption. }
-    { abstract (lia). }
+    { apply reflexivity. }
     { abstract (simpl; wf_auto2). }
     { abstract (clear; set_solver). }
     { abstract (clear; set_solver). }
@@ -6749,7 +6749,43 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-    remember (size' pcPattern) as sz.
+    move: (reflexivity (size' pcPattern)).
+    remember (size' pcPattern) as sz in |-.
+    rewrite -{2 3}Heqsz.
+    clear Heqsz.
+    
+    induction sz.
+    {
+      intros Hrefl.
+      cbn.
+      admit.
+    }
+    {
+      intros Hrefl.
+
+      lazymatch goal with
+      | [ |- context [eq_prf_equiv_congruence ?x0 ?x1 ?x2 ?x3 ?x4 ?x5 ?x6 ?x7 ?x8 ?x9 ?x10] ]
+        => remember x0 as Hx0;
+        remember x1 as Hx1;
+        remember x2 as Hx2;
+        remember x3 as Hx3;
+        remember x4 as Hx4;
+        remember x5 as Hx5;
+        remember x6 as Hx6;
+        remember x7 as Hx7;
+        remember x8 as Hx8;
+        remember x9 as Hx9;
+        remember x10 as Hx10
+      end.
+      simpl.
+
+      Set Printing All.
+      lazymatch type of pile with
+      | ProofInfoLe ?st ?stelse => remember st as i' in |-; remember stelse as i'' in |-
+      end.
+      cbn.
+    }
+    }
     cbn.
 (*
     TODO induction over the size
