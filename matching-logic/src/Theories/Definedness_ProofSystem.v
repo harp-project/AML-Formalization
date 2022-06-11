@@ -621,33 +621,6 @@ Proof.
   1: exact HΓ.
   exact wfϕ.
 Defined.
-  Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
-    match pf with
-    | ProofSystem.hypothesis _ _ _ _ => []
-    | ProofSystem.P1 _ _ _ _ _ => []
-    | ProofSystem.P2 _ _ _ _ _ _ _ => []
-    | ProofSystem.P3 _ _ _ => []
-    | ProofSystem.Modus_ponens _ _ _ m0 m1
-      => (@framing_patterns _ _ m0) ++ (@framing_patterns _ _ m1)
-    | ProofSystem.Ex_quan _ _ _ _ => []
-    | ProofSystem.Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
-    | ProofSystem.Prop_bott_left _ _ _ => []
-    | ProofSystem.Prop_bott_right _ _ _ => []
-    | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => []
-    | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => []
-    | ProofSystem.Prop_ex_left _ _ _ _ _ => []
-    | ProofSystem.Prop_ex_right _ _ _ _ _ => []
-    | ProofSystem.Framing_left _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
-    | ProofSystem.Framing_right _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
-    | ProofSystem.Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
-    | ProofSystem.Pre_fixp _ _ _ => []
-    | ProofSystem.Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
-    | ProofSystem.Existence _ => []
-    | ProofSystem.Singleton_ctx _ _ _ _ _ _ => []
-    end.
-  
-  Check map.
-    (*fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))*)
 
   Tactic Notation "remember_constraint" "as" ident(i') :=
       match goal with
@@ -670,7 +643,7 @@ Defined.
         {[ev_x; evar_fresh (elements (free_evars ψ))]}
         ∪ pi_generalized_evars gpi
         ∪ free_evars ψ
-        ∪ (list_to_set (map (fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))) (framing_patterns (proj1_sig pf)) ))
+        ∪ (list_to_set (map (fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))) (@framing_patterns Σ _ _ (proj1_sig pf)) ))
       ),
      SVSubst := (pi_substituted_svars gpi ∪ free_svars ψ),
      KT := false
@@ -1935,6 +1908,8 @@ Defined.
         destruct C; simpl in *|-.
         rewrite [PatternContext.pcPattern _]/=.
         rewrite [PatternContext.pcEvar _]/=.
+
+        unfold prf_equiv_congruence.
 
 
         lazymatch goal with

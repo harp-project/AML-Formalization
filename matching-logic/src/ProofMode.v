@@ -6588,8 +6588,8 @@ Qed.
   Proof.
     intros wfC Hiff.
     pose proof (proved_impl_wf _ _ (proj1_sig Hiff)).
-    assert (well_formed p) by wf_auto2.
-    assert (well_formed q) by wf_auto2.
+    assert (well_formed p) by (abstract (wf_auto2)).
+    assert (well_formed q) by (abstract (wf_auto2)).
     destruct C as [pcEvar pcPattern].
     apply @eq_prf_equiv_congruence
     with (EvS := (free_evars pcPattern ∪ free_evars p ∪ free_evars q ∪ {[pcEvar]}))
@@ -6610,6 +6610,7 @@ Qed.
     { simpl. exact pile. }
     { exact Hiff. }
   Defined.
+  Print prf_equiv_congruence.
 
 
 End FOL_helpers.
