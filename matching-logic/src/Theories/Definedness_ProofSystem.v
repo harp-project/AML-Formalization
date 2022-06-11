@@ -621,11 +621,32 @@ Proof.
   1: exact HΓ.
   exact wfϕ.
 Defined.
-  
-Print ProofInfo.
-  Print GenericProofInfo.
-  Check disjoint.
 
+  Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
+    match pf with
+    | ProofSystem.hypothesis _ _ _ _ => []
+    | ProofSystem.P1 _ _ _ _ _ => []
+    | ProofSystem.P2 _ _ _ _ _ _ _ => []
+    | ProofSystem.P3 _ _ _ => []
+    | ProofSystem.Modus_ponens _ _ _ m0 m1
+      => (@framing_patterns _ _ m0) ++ (@framing_patterns _ _ m1)
+    | ProofSystem.Ex_quan _ _ _ _ => []
+    | ProofSystem.Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
+    | ProofSystem.Prop_bott_left _ _ _ => []
+    | ProofSystem.Prop_bott_right _ _ _ => []
+    | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => []
+    | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => []
+    | ProofSystem.Prop_ex_left _ _ _ _ _ => []
+    | ProofSystem.Prop_ex_right _ _ _ _ _ => []
+    | ProofSystem.Framing_left _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
+    | ProofSystem.Framing_right _ _ psi _ _ m0 => psi :: (@framing_patterns _ _ m0)
+    | ProofSystem.Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
+    | ProofSystem.Pre_fixp _ _ _ => []
+    | ProofSystem.Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
+    | ProofSystem.Existence _ => []
+    | ProofSystem.Singleton_ctx _ _ _ _ _ _ => []
+    end.
+  
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : GenericProofInfo)
     (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
@@ -878,7 +899,7 @@ Print ProofInfo.
         }
       }
 
-      assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
+      assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
       { apply Framing_left. wf_auto2. exact S2. }
 
       assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
