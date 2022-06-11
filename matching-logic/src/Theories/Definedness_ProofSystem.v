@@ -1613,12 +1613,13 @@ Defined.
   Lemma membership_not_iff Γ ϕ x:
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ).
+    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ)
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros Hwf HΓ.
     apply pf_iff_split.
     1,2: wf_auto2.
-    - apply membership_not_1; assumption.
+    - useBasicReasoning; apply membership_not_1; assumption.
     - apply membership_not_2; assumption.
   Defined.
   
