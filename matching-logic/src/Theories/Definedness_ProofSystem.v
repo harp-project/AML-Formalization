@@ -1160,19 +1160,66 @@ Defined.
           mgExactn 5.
     - (* Set variable substitution *)
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
-      case_match.
-      { congruence. }
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1 , Hpf2, Hpf3, Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { exact Hpf2. }
+        { clear -Hpf3. set_solver. }
+        { exact Hpf4. }
+      }
+      {
+        wf_auto2.
+      }
+      
+      (* TODO tactic [remember_constraint as i'] *)
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
       replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
         with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
       2: {  simpl.
            rewrite [free_svar_subst ψ psi X]free_svar_subst_fresh.
-           { assumption. }
+           {
+             clear -HnoSvarSubst Hpf3. unfold svar_is_fresh_in. set_solver.
+           }
            reflexivity.
       }
       apply Svar_subst.
-      3: auto.
-      1,2: wf_auto2.
+      3: {
+        eapply useGenericReasoning.
+        2: { apply IHpf. }
+        subst i'.
+        apply pile_evs_svs_kt.
+        {
+          simpl.
+          apply reflexivity.
+        }
+        {
+          apply reflexivity.
+        }
+        {
+          reflexivity.
+        }
+      }
+      {
+        subst i'.
+        apply pile_evs_svs_kt.
+        {
+          clear. set_solver.
+        }
+        {
+          clear -Hpf3. set_solver.
+        }
+        {
+           reflexivity.
+        }
+      }
+      { wf_auto2. }
+      
     - (* Prefixpoint *)
       toMyGoal.
       { wf_auto2. }
