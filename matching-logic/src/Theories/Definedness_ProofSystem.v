@@ -897,10 +897,19 @@ Defined.
         { apply Hpf4. }
       }
       { wf_auto2. }
-      remember (pi_Generic
-      (ExGen := {[ev_x; evar_fresh (elements (free_evars ψ))]}
-                ∪ pi_generalized_evars gpi ∪ free_evars ψ,
-       SVSubst := pi_substituted_svars gpi ∪ free_svars ψ, KT := false)) as i'.
+
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      apply useGenericReasoning with (i0 := i') in IHpf.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
 
       assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
@@ -930,43 +939,52 @@ Defined.
           2: {
             simpl. set_solver.
           }
-          simpl. Search psi.
-          (* TODO: we need to add annotations that depend on the use of Framing_* rules *)
+          simpl.
           clear.
           replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
           set_solver.
         }
+        { clear. set_solver. }
+        { reflexivity. }
       }
 
       assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
-      { apply Framing_left. wf_auto2. exact S2. }
+      { apply Framing_left. 2: wf_auto2. 2: exact S2.
+        subst i'. apply pile_basic_generic.
+      }
 
-      assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+      assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i').
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_l _ box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
         { wf_auto2. }
         { wf_auto2. }
         simpl in Htmp.
-        apply pf_iff_proj1 in Htmp; auto.
-        eapply syllogism_intro.
-        5: apply Htmp.
+        apply pf_iff_proj1 in Htmp.
+        3: wf_auto2.
+        2: wf_auto2.
+        eapply syllogism_meta.
+        5: {
+          subst i'. useBasicReasoning.
+          apply Htmp.
+        }
         4: assumption.
         all: wf_auto2.
       }
       
-      assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+      assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
       {
         toMyGoal.
         { wf_auto2. }
         mgIntro. mgAdd S3.
-        mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)).
+        (* TODO we need a tactic for adding  something with stronger constraint. *)
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
       }
 
-      assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+      assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
       {
         toMyGoal.
         { wf_auto2. }
@@ -990,10 +1008,10 @@ Defined.
       + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto)).
+        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
