@@ -479,3 +479,21 @@ Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar
      let X := (svar_fresh_s avoid) in
      X :: svar_fresh_seq ({[X]} ∪ avoid) (n')
   end.
+
+  Lemma evar_fresh_seq_disj S n:
+    list_to_set (evar_fresh_seq S n) ## S.
+  Proof.
+  move: S.
+  induction n; intros S; simpl in *; unfold evar_fresh_s in *.
+  {
+    set_solver.
+  }
+  {
+    specialize (IHn ({[evar_fresh (elements S)]} ∪ S)).
+    rewrite disjoint_union_l.
+    split.
+    2: { set_solver. }
+    rewrite disjoint_singleton_l.
+    apply set_evar_fresh_is_fresh'.
+  }
+  Qed.

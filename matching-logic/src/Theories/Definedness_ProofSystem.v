@@ -1782,26 +1782,103 @@ Defined.
     well_formed φ1 -> well_formed φ2 ->
     PC_wf C ->
     mu_free (pcPattern C) ->
-    Γ ⊢ (φ1 =ml φ2) ---> (* somewhere "and" is here, somewhere meta-implication *)
-      (emplace C φ1) <---> (emplace C φ2).
+    Γ ⊢ (φ1 =ml φ2) --->
+      (emplace C φ1) <---> (emplace C φ2)
+    using (pi_Generic
+    (ExGen := list_to_set
+                (evar_fresh_seq
+                   (free_evars (pcPattern C) ∪ free_evars φ1 ∪ free_evars φ2
+                    ∪ {[pcEvar C]})
+                   (maximal_exists_depth_of_evar_in_pattern 
+                      (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set
+                  (svar_fresh_seq
+                     (free_svars (pcPattern C) ∪ free_svars φ1
+                      ∪ free_svars φ2)
+                     (maximal_mu_depth_of_evar_in_pattern 
+                        (pcEvar C) (pcPattern C))),
+     KT := (if
+             decide
+               (0 =
+                maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
+            is left _
+            then false
+            else true))).
   Proof.
     intros HΓ WF1 WF2 WFC Hmf.
 
-    unshelve(eapply deduction_theorem_noKT).
-    remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
-    assert (Γ' ⊢ (φ1 <---> φ2)). {
-      apply hypothesis.
-      - abstract (now apply well_formed_iff).
-      - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
-    }
-    eapply prf_equiv_congruence.
-    all: try assumption.
-    all: try (abstract auto).
+    eapply useGenericReasoning.
+    2: {
+      unshelve(eapply deduction_theorem_noKT).
+      2: {
+        remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
+        remember_constraint as i.
+        assert (Γ' ⊢ (φ1 <---> φ2) using i). {
+          subst i. useBasicReasoning.
+          apply hypothesis.
+          - abstract (now apply well_formed_iff).
+          - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
+        }
+        eapply prf_equiv_congruence.
+        2: apply WFC.
+        2: apply H.
+        subst i.
+        apply pile_refl.
+      }
+
     { 
       abstract (
         apply well_formed_and; apply well_formed_imp; unfold emplace;
         apply well_formed_free_evar_subst_0; auto
       ).
+    }
+    { abstract (wf_auto2). }
+    { exact HΓ. }
+    {
+      simpl.
+      unfold PC_wf in WFC.
+      destruct C; simpl in *.
+      replace (free_evars φ1 ∪ free_evars φ2 ∪ ∅ ∪ ∅
+      ∪ (free_evars φ2 ∪ free_evars φ1 ∪ ∅) ∪ ∅)
+      with (free_evars φ1 ∪ free_evars φ2)
+      by set_solver.
+
+      induction pcPattern; unfold maximal_exists_depth_of_evar_in_pattern in *;
+      simpl in *; try set_solver.
+      {
+        case_match; simpl; set_solver.
+      }
+      {
+        feed specialize IHpcPattern1.
+        { wf_auto2. }
+        { destruct_and!; assumption. }
+        feed specialize IHpcPattern2.
+        { wf_auto2. }
+        { destruct_and!; assumption. }
+        remember (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern1) as n1.
+        remember (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern2) as n2.
+        remember ((free_evars pcPattern1 ∪ free_evars pcPattern2 ∪ free_evars φ1
+        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS.
+        remember ((free_evars pcPattern1 ∪ free_evars φ1
+        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS1.
+        remember ((free_evars pcPattern2 ∪ free_evars φ1
+        ∪ free_evars φ2 ∪ {[pcEvar]})) as EvS2.
+        
+        destruct n1,n2.
+        {
+          simpl in *. clear. set_solver.
+        }
+        {
+          simpl in *. unfold evar_fresh_s in *.
+          destruct (maximal_exists_depth_of_evar_in_pattern' 0 pcEvar pcPattern2).
+          {
+            clear -Heqn2. lia.
+          }
+          inversion Heqn2. subst n2. clear Heqn2.
+          
+        }
+        
+      }
     }
     3: {
       abstract(
