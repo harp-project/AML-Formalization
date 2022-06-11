@@ -755,7 +755,9 @@ Defined.
         { exact I. }
         { set_solver. }
         { set_solver. }
-        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb.
+          rewrite orb_comm in H2. simpl in H2. inversion H2.     
+        }
       }
       { wf_auto2. }
       
@@ -1219,23 +1221,30 @@ Defined.
         }
       }
       { wf_auto2. }
-      
+
     - (* Prefixpoint *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0; auto. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Pre_fixp. wf_auto2.
     - (* Knaster-Tarski *)
-      simpl in HnoKT. congruence.
+      simpl in HnoKT.
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      clear -Hpf4 HnoKT.
+      exfalso. congruence.
     - (* Existence *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Existence.
     - (* Singleton *)
       toMyGoal.
       { wf_auto2. }
-      mgIntro. mgClear 0. fromMyGoal. intros _ _.
+      mgIntro. mgClear 0. fromMyGoal.
+      apply useBasicReasoning.
       apply Singleton_ctx. wf_auto2.
   Defined.
 
