@@ -5853,29 +5853,26 @@ Qed.
       abstract (wf_auto2).
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(abstract(wf_auto2)) ltac:(abstract(lia))) EvS SvS).
       feed specialize pf₁.
       {
         eapply pile_trans.
         2: { apply pile. }
-        simpl.
-        apply pile_evs_svs_kt.
-        {
-          apply evar_fresh_seq_max.
-        }
-        {
-          apply svar_fresh_seq_max.
-        }
-        {
-          clear pf₁.
-          repeat case_match; simpl; try reflexivity.
-          {
-            abstract (lia).
-          }
-          {
-            abstract (lia).
-          }
-        }
+        abstract (
+        simpl;
+        apply pile_evs_svs_kt;
+        [
+        (
+          apply evar_fresh_seq_max
+        )|
+        (
+          apply svar_fresh_seq_max
+        )|
+        (
+          clear pf₁;
+          repeat case_match; simpl; try reflexivity; lia
+        )
+        ]).
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5894,7 +5891,7 @@ Qed.
           set_solver
         ).
       }
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(abstract(wf_auto2)) ltac:(abstract(lia))) EvS SvS).
       feed specialize pf₂.
       {
         eapply pile_trans.
@@ -5912,7 +5909,7 @@ Qed.
         }
         {
           clear pf₂.
-          repeat case_match; simpl; try reflexivity; try lia.
+          abstract (repeat case_match; simpl; try reflexivity; try lia).
         }
       }
       { exact p_sub_EvS. }
@@ -6204,7 +6201,7 @@ Qed.
           pose proof (Htmp := n).
           rewrite mmdoeip_evar_open in Htmp.
           { apply not_eq_sym. exact HxneE. }
-          lia.
+          abstract (lia).
         }
       }
       { clear -p_sub_EvS. abstract (set_solver). }
@@ -6621,7 +6618,7 @@ Qed.
     }
   Defined.
 
-  
+  Print eq_prf_equiv_congruence.
 
   Lemma prf_equiv_congruence Γ p q C
   (i : ProofInfo)
@@ -6672,7 +6669,8 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-    (*unfold eq_prf_equiv_congruence.
+    (*
+    unfold eq_prf_equiv_congruence.
     induction pcPattern.*)
   Abort.
 
