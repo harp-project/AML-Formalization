@@ -292,10 +292,10 @@ Proof.
            ).
     { intros. apply eval_iff_subset. apply IHHp. }
     apply eval_subset_union
-      with (ρ0 := ρ) (x0 := x) in H2.
+      with (ρ := ρ) (x := x) in H2.
     rewrite -> elem_of_subseteq. intros x0 Hphi1.
     rewrite -> elem_of_subseteq in H2.
-    destruct H2 with (x0 := x0).
+    destruct H2 with (x := x0).
     -- assert (Hinc:
                               (eval ρ (exists_quantify x phi1))
                               ⊆
@@ -670,8 +670,8 @@ Proof.
     }
     intros Hv ρ.
     rewrite eval_predicate_not.
-    + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
     + unfold M_predicate. right. apply Hemp.
+    + rewrite Hemp. clear. apply empty_impl_not_full. reflexivity.
 Qed.
 
 End soundness.
