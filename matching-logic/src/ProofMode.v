@@ -6599,15 +6599,15 @@ Qed.
     .
     { assumption. }
     { assumption. }
-    { simpl. wf_auto2. }
-    { clear. set_solver. }
-    { clear. set_solver. }
-    { clear. set_solver. }
-    { simpl. clear. set_solver. }
-    { clear. set_solver. }
-    { clear. set_solver. }
-    { simpl. clear. set_solver. }
-    { simpl. apply pile. }
+    { abstract (simpl; wf_auto2). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (simpl; clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { abstract (simpl; clear; set_solver). }
+    { simpl. exact pile. }
     { exact Hiff. }
   Defined.
 
