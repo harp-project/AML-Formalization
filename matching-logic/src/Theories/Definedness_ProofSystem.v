@@ -1566,13 +1566,15 @@ Defined.
   Lemma membership_not_2 Γ (ϕ : Pattern) x:
     well_formed ϕ = true ->
     theory ⊆ Γ ->
-    Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml.
+    Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ HΓ.
     pose proof (S1 := @defined_evar Γ x HΓ).
-    assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉).
+    remember_constraint as i.
+    assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉ using i).
     {
-      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ))))).
+      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)))) using PropositionalReasoning).
       {
         toMyGoal.
         { wf_auto2. }
@@ -1582,7 +1584,7 @@ Defined.
           mgAssert ((! ϕ)).
           { wf_auto2. }
           {
-            mgApply 2. mgClear 0. mgClear 1. fromMyGoal. intros _ _.
+            mgApply 2. mgClear 0. mgClear 1. fromMyGoal.
             apply not_not_intro; auto.
           }
           mgApply 3. mgExactn 0.
@@ -1590,20 +1592,22 @@ Defined.
           mgApply 0. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
           mgApply 2. mgIntro. mgApply 3. mgExactn 1.
       }
+      apply usePropositionalReasoning with (i0 := i) in H.
       eapply Framing_right in H.
-      eapply Modus_ponens. 4: apply H.
-      3: assumption.
-      1-3: wf_auto2.
+      2: { subst i. apply pile_basic_generic. }
+      eapply MP. 2: apply H.
+      1: assumption.
+      wf_auto2.
     }
 
     pose proof (Htmp := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
                                         ltac:(wf_auto2) ltac:(wf_auto2)).
     simpl in Htmp.
-    apply pf_iff_proj1 in Htmp; auto 10.
-    eapply Modus_ponens.
-    4: apply Htmp.
-    3: assumption.
-    1,2: wf_auto2.
+    apply pf_iff_proj1 in Htmp.
+    2-3: wf_auto2.
+    eapply MP.
+    2: subst i; useBasicReasoning; apply Htmp.
+    assumption.
   Defined.
 
   Lemma membership_not_iff Γ ϕ x:
