@@ -1627,14 +1627,16 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
-    eapply syllogism_intro.
+    eapply syllogism_meta.
     5: apply Prop_disj_right.
     1,2,3,5,6,7: wf_auto2.
-    apply Framing_right. wf_auto2.
+    apply Framing_right. 2: wf_auto2.
+    { apply pile_refl. }
     toMyGoal.
     { wf_auto2. }
     mgIntro. mgDestructAnd 0.
@@ -1653,18 +1655,21 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)).
+    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
     pose proof (H1 := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ₁) (patt_free_evar x and ϕ₂)
                                       ltac:(auto) ltac:(auto)).
-    apply pf_iff_proj2 in H1; auto 10.
-    eapply syllogism_intro.
+    apply pf_iff_proj2 in H1.
+    2,3: wf_auto2.
+    eapply syllogism_meta.
     4: apply H1.
     1-3: wf_auto2.
     simpl.
-    apply Framing_right. wf_auto2.
+    apply Framing_right. 2: wf_auto2.
+    { apply pile_refl. }
 
     toMyGoal.
     { wf_auto2. }
@@ -1681,7 +1686,8 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
