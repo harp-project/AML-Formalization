@@ -1927,7 +1927,21 @@ Defined.
       { set_solver. }
       { set_solver. }
       {
-        (* TODO *)
+        (* TODO we probably need a lemma about Congrunce lemma,
+           about how it generates Framing rules.
+           It means that we still need it to abstract all irrelevant details,
+           like well-formedness etc.
+        *)
+        destruct C; simpl in *|-.
+        rewrite [PatternContext.pcPattern _]/=.
+        rewrite [PatternContext.pcEvar _]/=.
+
+
+        lazymatch goal with
+        | [ |- context [mkGenericProofInfo ?ge ?se ?kt] ] =>
+          try remember (mkGenericProofInfo ge se kt)
+        end.
+        induction pcPattern; simpl.
       }
       Search union subseteq.
       rewrite union_subseteq_l.
