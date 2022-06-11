@@ -1777,6 +1777,7 @@ Defined.
     + apply membership_and_2; assumption.
   Defined.
 
+  (* Not so simple... *)
   Lemma equality_elimination_basic Γ φ1 φ2 C :
     theory ⊆ Γ ->
     well_formed φ1 -> well_formed φ2 ->
@@ -1785,7 +1786,11 @@ Defined.
     Γ ⊢ (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
     using (pi_Generic
-    (ExGen := list_to_set
+    (ExGen := {[ev_x]}
+              ∪ {[evar_fresh (elements (free_evars φ1 ∪ free_evars φ2))]}
+              ∪ (free_evars φ1)
+              ∪ (free_evars φ2)
+              ∪ list_to_set
                 (evar_fresh_seq
                    (free_evars (pcPattern C) ∪ free_evars φ1 ∪ free_evars φ2
                     ∪ {[pcEvar C]})
@@ -1907,6 +1912,25 @@ Defined.
     apply pile_evs_svs_kt.
     {
       cbn.
+      repeat rewrite union_empty_r_L.
+      repeat apply union_least.
+      { set_solver. }
+      { 
+        replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
+        with (free_evars φ1 ∪ free_evars φ2)
+        by (clear; set_solver).
+        set_solver.
+      }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      { set_solver. }
+      {
+        (* TODO *)
+      }
+      Search union subseteq.
+      rewrite union_subseteq_l.
     }
   }
     1: {
