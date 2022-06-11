@@ -5853,7 +5853,15 @@ Qed.
       abstract (wf_auto2).
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(abstract(wf_auto2)) ltac:(abstract(lia))) EvS SvS).
+      pose proof (pf₁ := (IHsz ψ1)).
+      feed specialize pf₁.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
         eapply pile_trans.
@@ -5891,7 +5899,15 @@ Qed.
           set_solver
         ).
       }
-      pose proof (pf₂ := (IHsz ψ2 ltac:(abstract(wf_auto2)) ltac:(abstract(lia))) EvS SvS).
+      pose proof (pf₂ := (IHsz ψ2)).
+      feed specialize pf₂.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
         eapply pile_trans.
@@ -6043,7 +6059,15 @@ Qed.
       abstract (wf_auto2).
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(abstract (wf_auto2)) ltac:(abstract(lia))) EvS SvS).
+      pose proof (pf₁ := (IHsz ψ1)).
+      feed specialize pf₁.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
         eapply pile_trans.
@@ -6083,7 +6107,15 @@ Qed.
         ).
       }
 
-      pose proof (pf₂ := (IHsz ψ2 ltac:(abstract (wf_auto2)) ltac:(abstract(lia))) EvS SvS).
+      pose proof (pf₂ := (IHsz ψ2)).
+      feed specialize pf₂.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(lia).
+      }
+      specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
         eapply pile_trans.
@@ -6165,7 +6197,14 @@ Qed.
         { abstract (wf_auto2). }
       }
 
-      pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(abstract (wf_auto2)) ltac:(abstract(rewrite evar_open_size'; lia))).
+      pose proof (IH := IHsz (evar_open 0 x ψ)).
+      feed specialize IH.
+      {
+        abstract(wf_auto2).
+      }
+      {
+        abstract(rewrite evar_open_size'; lia).
+      }
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
       {
@@ -6406,7 +6445,14 @@ Qed.
         { wf_auto2. }
       }
 
-      pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(abstract (wf_auto2)) ltac:(abstract(rewrite svar_open_size'; lia))).
+      pose proof (IH := IHsz (svar_open 0 X ψ)).
+      feed specialize IH.
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract(rewrite svar_open_size'; lia).
+      }
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
       {
@@ -6687,7 +6733,7 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-    (*
+(*    
     unfold eq_prf_equiv_congruence.
     induction pcPattern.*)
   Abort.
