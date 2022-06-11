@@ -5779,6 +5779,129 @@ Qed.
   rewrite IHψ. assumption. reflexivity.
 }
 Qed.
+Print free_evar_subst.
+  Lemma helper_app_lemma Γ ψ1 ψ2 p q E gpi
+  (wfψ1: well_formed ψ1)
+  (wfψ2: well_formed ψ2)
+  (wfp: well_formed p)
+  (wfq: well_formed q)
+  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using pi_Generic gpi)
+  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using pi_Generic gpi)
+  :
+  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using pi_Generic gpi.
+  Proof.
+    destruct gpi.
+    eapply pf_iff_equiv_trans.
+    5: { 
+      apply conj_intro_meta.
+      4: {
+        apply Framing_right.
+        {
+          abstract (
+            unfold BasicReasoning;
+            apply pile_evs_svs_kt;
+            [(clear; set_solver)
+            |(clear; set_solver)
+            |(reflexivity)
+            ]
+          ).
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          eapply pf_conj_elim_r_meta in pf₂.
+          apply pf₂.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      3: {
+        apply Framing_right.
+        {
+          abstract (
+            unfold BasicReasoning;
+            apply pile_evs_svs_kt;
+            [(clear; set_solver)
+            |(clear; set_solver)
+            |(reflexivity)
+            ]
+          ).
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          eapply pf_conj_elim_l_meta in pf₂.
+          apply pf₂.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (wf_auto2).
+      }
+     }
+     4: {
+      apply conj_intro_meta.
+      4: {
+        apply Framing_left.
+        {
+          abstract (
+            unfold BasicReasoning;
+            apply pile_evs_svs_kt;
+            [(clear; set_solver)
+            |(clear; set_solver)
+            |(reflexivity)
+            ]
+          ).
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          eapply pf_conj_elim_r_meta in pf₁.
+          apply pf₁.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      3: {
+        apply Framing_left.
+        {
+          abstract (
+            unfold BasicReasoning;
+            apply pile_evs_svs_kt;
+            [(clear; set_solver)
+            |(clear; set_solver)
+            |(reflexivity)
+            ]
+          ).
+        }
+        {
+          abstract (wf_auto2).
+        }
+        {
+          eapply pf_conj_elim_l_meta in pf₁.
+          apply pf₁.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (wf_auto2).
+      }         
+     }
+     { abstract (wf_auto2). }
+     { abstract (wf_auto2). }
+     { abstract (wf_auto2). }
+  Defined.
 
 
   Lemma eq_prf_equiv_congruence
@@ -5942,132 +6065,7 @@ Qed.
         ).
       }
 
-      eapply pf_iff_equiv_trans.
-      5: { 
-        apply conj_intro_meta.
-        4: {
-          apply Framing_right.
-          {
-            abstract (
-              subst i';
-              unfold BasicReasoning;
-              eapply pile_trans;
-              [|apply pile];
-              simpl;
-              apply pile_evs_svs_kt;
-              [(clear; set_solver)
-              |(clear; set_solver)
-              |(reflexivity)
-              ]
-            ).
-          }
-          {
-            abstract (wf_auto2).
-          }
-          {
-            eapply pf_conj_elim_r_meta in pf₂.
-            apply pf₂.
-            { abstract (wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-        }
-        3: {
-          apply Framing_right.
-          {
-            abstract (
-              subst i';
-              unfold BasicReasoning;
-              eapply pile_trans;
-              [|apply pile];
-              simpl;
-              apply pile_evs_svs_kt;
-              [(clear; set_solver)
-              |(clear; set_solver)
-              |(reflexivity)
-              ]
-            ).
-          }
-          {
-            abstract (wf_auto2).
-          }
-          {
-            eapply pf_conj_elim_l_meta in pf₂.
-            apply pf₂.
-            { abstract (wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-        }
-        {
-          abstract (wf_auto2).
-        }
-        {
-          abstract (wf_auto2).
-        }
-       }
-       4: {
-        apply conj_intro_meta.
-        4: {
-          apply Framing_left.
-          {
-            abstract (
-              subst i';
-              unfold BasicReasoning;
-              eapply pile_trans;
-              [|apply pile];
-              simpl;
-              apply pile_evs_svs_kt;
-              [(clear; set_solver)
-              |(clear; set_solver)
-              |(reflexivity)
-              ]
-            ).
-          }
-          {
-            abstract (wf_auto2).
-          }
-          {
-            eapply pf_conj_elim_r_meta in pf₁.
-            apply pf₁.
-            { abstract (wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-        }
-        3: {
-          apply Framing_left.
-          {
-            abstract (
-              subst i';
-              unfold BasicReasoning;
-              eapply pile_trans;
-              [|apply pile];
-              simpl;
-              apply pile_evs_svs_kt;
-              [(clear; set_solver)
-              |(clear; set_solver)
-              |(reflexivity)
-              ]
-            ).
-          }
-          {
-            abstract (wf_auto2).
-          }
-          {
-            eapply pf_conj_elim_l_meta in pf₁.
-            apply pf₁.
-            { abstract (wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-        }
-        {
-          abstract (wf_auto2).
-        }
-        {
-          abstract (wf_auto2).
-        }         
-       }
-       { abstract (wf_auto2). }
-       { abstract (wf_auto2). }
-       { abstract (wf_auto2). }
+      apply helper_app_lemma; try assumption; try (abstract (wf_auto2)).
     }
     {
       usePropositionalReasoning.
@@ -6713,31 +6711,33 @@ Qed.
     remember (size' pcPattern) as sz in |-.
     rewrite -{2 3}Heqsz.
     clear Heqsz.
-    
+
+    intros Hrefl.
+    lazymatch goal with
+    | [ |- context [eq_prf_equiv_congruence ?x0 ?x1 ?x2 ?x3 ?x4 ?x5 ?x6 ?x7 ?x8 ?x9 ?x10] ]
+      => remember x0 as Hx0;
+      remember x1 as Hx1;
+      remember x2 as Hx2;
+      remember x3 as Hx3;
+      remember x4 as Hx4;
+      remember x5 as Hx5;
+      remember x6 as Hx6;
+      remember x7 as Hx7;
+      remember x8 as Hx8;
+      remember x9 as Hx9;
+      remember x10 as Hx10
+    end.
+
+    unfold eq_prf_equiv_congruence.
     induction sz.
     {
-      intros Hrefl.
       cbn.
       admit.
     }
     {
-      intros Hrefl.
-
-      lazymatch goal with
-      | [ |- context [eq_prf_equiv_congruence ?x0 ?x1 ?x2 ?x3 ?x4 ?x5 ?x6 ?x7 ?x8 ?x9 ?x10] ]
-        => remember x0 as Hx0;
-        remember x1 as Hx1;
-        remember x2 as Hx2;
-        remember x3 as Hx3;
-        remember x4 as Hx4;
-        remember x5 as Hx5;
-        remember x6 as Hx6;
-        remember x7 as Hx7;
-        remember x8 as Hx8;
-        remember x9 as Hx9;
-        remember x10 as Hx10
-      end.
-      with_strategy opaque [framing_patterns proj1_sig] cbn.
+      unfold nat_rec.
+      unfold nat_rect.
+      cbn.
     }
   Abort.
 
