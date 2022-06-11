@@ -5871,9 +5871,8 @@ Qed.
       specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
-        eapply pile_trans.
-        2: { apply pile. }
         abstract (
+          eapply pile_trans;[|apply pile];
           subst i';
         simpl;
         apply pile_evs_svs_kt;
@@ -6189,15 +6188,19 @@ Qed.
 
       destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
       2: {
-        rewrite free_evar_subst_no_occurrence.
+        eapply cast_proof'.
         {
-          apply count_evar_occurrences_0.
-          assumption.
-        }
-        rewrite free_evar_subst_no_occurrence.
-        {
-          apply count_evar_occurrences_0.
-          assumption.
+          rewrite free_evar_subst_no_occurrence.
+          {
+            apply count_evar_occurrences_0.
+            assumption.
+          }
+          rewrite free_evar_subst_no_occurrence.
+          {
+            apply count_evar_occurrences_0.
+            assumption.
+          }
+          reflexivity.
         }
         usePropositionalReasoning.
         apply pf_iff_equiv_refl.
@@ -6215,17 +6218,15 @@ Qed.
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
       {
-        subst i'.
-        simpl.
-        eapply pile_trans.
-        2: { apply pile. }
-        assert (HxneE: x <> E).
-        {
-          clear -frx E_in_EvS. abstract (set_solver).
-        }
-        apply pile_evs_svs_kt.
-        {
-          abstract (
+        abstract (
+          subst i';
+          simpl;
+          eapply pile_trans;
+          [|apply pile];
+          assert (HxneE: x <> E);
+          [(clear -frx E_in_EvS; set_solver)|];
+          apply pile_evs_svs_kt;
+          [(
             simpl;
             rewrite medoeip_evar_open;
             [(apply not_eq_sym; exact HxneE)
@@ -6240,26 +6241,21 @@ Qed.
                 set_solver)
               ]
             )]
-          ).
-        }
-        {
-          abstract (
+          )
+         |(
             simpl;
             rewrite mmdoeip_evar_open;
             [(apply not_eq_sym; exact HxneE)
             |(apply reflexivity)
             ]
-          ).
-        }
-        {
-          abstract (
+          )
+        |(
             clear IH;
             repeat case_match; simpl in *; try reflexivity;
             pose proof (Htmp := n);
             rewrite mmdoeip_evar_open in Htmp;
             [(apply not_eq_sym; exact HxneE)|(lia)]
-          ).
-        }
+          )]).
       }
       { clear -p_sub_EvS. abstract (set_solver). }
       { clear -q_sub_EvS. abstract (set_solver). }
@@ -6309,36 +6305,33 @@ Qed.
             5: {
               useBasicReasoning.
               apply Ex_quan.
-              wf_auto2.
+              abstract (wf_auto2).
             }
             4: {
                 apply IH1.
               }
             { abstract (wf_auto2). }
-            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
+            { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
             { abstract (wf_auto2). }
           }
           {
-            subst i'.
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            {
-              simpl.
-              rewrite medoeip_S_in.
-              { assumption. }
-              simpl.
-              unfold evar_fresh_s.
-              rewrite -Heqx.
-              clear.
-              abstract (set_solver).
-            }
-            {
-              clear. abstract (set_solver).
-            }
-            {
-              reflexivity.
-            }
+            abstract (
+              subst i';
+              eapply pile_trans;
+              [|apply pile];
+              apply pile_evs_svs_kt;
+              [(
+              simpl;
+              rewrite medoeip_S_in;
+              [assumption|];
+              simpl;
+              unfold evar_fresh_s;
+              rewrite -Heqx;
+              clear;
+              set_solver
+              )|(clear; set_solver)
+              |reflexivity]
+            ).
           }
           {
             abstract (
@@ -6356,7 +6349,7 @@ Qed.
           ).
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }
       }
       (* this block is a symmetric version of the previous block*)
@@ -6369,36 +6362,34 @@ Qed.
             5: {
               useBasicReasoning.
               apply Ex_quan.
-              wf_auto2.
+              abstract (wf_auto2).
             }
             4: {
                 apply IH2.
               }
-            { wf_auto2. }
-            { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
+            { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
+            { abstract (wf_auto2). }
           }
           {
-            subst i'.
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            {
-              simpl.
-              rewrite medoeip_S_in.
-              { assumption. }
-              simpl.
-              unfold evar_fresh_s.
-              rewrite -Heqx.
-              clear.
-              abstract (set_solver).
-            }
-            {
-              clear. abstract (set_solver).
-            }
-            {
-              reflexivity.
-            }
+            abstract (
+              subst i';
+              eapply pile_trans;
+              [|apply pile];
+              apply pile_evs_svs_kt;
+              [(
+                simpl;
+                rewrite medoeip_S_in;
+                [assumption|];
+                simpl;
+                unfold evar_fresh_s;
+                rewrite -Heqx;
+                clear;
+                set_solver
+              )
+             |(clear; set_solver)
+             |(reflexivity)
+              ]).
           }
           {
             abstract (
@@ -6453,7 +6444,7 @@ Qed.
         }
         usePropositionalReasoning.
         apply pf_iff_equiv_refl.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
       }
 
       pose proof (IH := IHsz (svar_open 0 X ψ)).
@@ -6467,19 +6458,18 @@ Qed.
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
       {
-        subst i'.
-        eapply pile_trans.
-        2: { apply pile. }
-        apply pile_evs_svs_kt.
-        {
-          abstract (
+        abstract (
+          subst i';
+          eapply pile_trans;
+          [|apply pile];
+          apply pile_evs_svs_kt;
+          [
+            (
             simpl;
             rewrite medoeip_svar_open;
             apply reflexivity
-          ).
-        }
-        {
-          abstract (
+            )
+          |(
             simpl;
             rewrite mmdoeip_svar_open;
             rewrite mmdoeip_S_in;[exact HEinψ|];
@@ -6488,10 +6478,8 @@ Qed.
             rewrite -HeqX;
             clear;
             set_solver
-          ).
-        }
-        {
-          abstract (
+          )
+          |(
             clear IH;
             repeat case_match; simpl in *; try reflexivity;
             pose proof (Htmp := n);
@@ -6500,8 +6488,7 @@ Qed.
             rewrite mmdoeip_S_in in Htmp2;
             [exact HEinψ|];
             inversion Htmp2
-          ).
-        }
+          )]).
       }
       {
         exact p_sub_EvS.
@@ -6777,20 +6764,8 @@ Qed.
         remember x9 as Hx9;
         remember x10 as Hx10
       end.
-      simpl.
-
-      Set Printing All.
-      lazymatch type of pile with
-      | ProofInfoLe ?st ?stelse => remember st as i' in |-; remember stelse as i'' in |-
-      end.
-      cbn.
+      with_strategy opaque [framing_patterns proj1_sig] cbn.
     }
-    }
-    cbn.
-(*
-    TODO induction over the size
-    unfold eq_prf_equiv_congruence.
-    induction pcPattern.*)
   Abort.
 
 
