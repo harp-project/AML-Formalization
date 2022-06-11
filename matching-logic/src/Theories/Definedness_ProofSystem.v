@@ -638,7 +638,7 @@ Defined.
     | ProofSystem.Prop_ex_left _ _ _ _ _ => []
     | ProofSystem.Prop_ex_right _ _ _ _ _ => []
     | ProofSystem.Framing_left _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
-    | ProofSystem.Framing_right _ _ psi _ _ m0 => psi :: (@framing_patterns _ _ m0)
+    | ProofSystem.Framing_right _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
     | ProofSystem.Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
     | ProofSystem.Pre_fixp _ _ _ => []
     | ProofSystem.Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
@@ -1032,12 +1032,37 @@ Defined.
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
-      specialize (IHpf ltac:(assumption) ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      feed specialize IHpf.
+      {
+        constructor; simpl.
+        { exact I. }
+        { set_solver. }
+        { set_solver. }
+        { apply Hpf4. }
+      }
+      { wf_auto2. }
+
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      apply useGenericReasoning with (i0 := i') in IHpf.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { apply reflexivity. }
+        { reflexivity. }
+      }
+
+      assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -1047,43 +1072,62 @@ Defined.
           mgApply 3. mgExactn 2.
       }
 
-      assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+      assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
       {
         replace (psi $ ⌈ ! ψ ⌉)
           with (subst_ctx (@ctx_app_r _ psi AC_patt_defined ltac:(assumption)) (! ψ))
           by reflexivity.
-        apply in_context_impl_defined; auto.
+          subst i'.
+          eapply useGenericReasoning.
+          2: apply in_context_impl_defined; auto.
+
+          apply pile_evs_svs_kt.
+          {
+            replace (free_evars (! ψ)) with (free_evars (ψ)).
+            2: {
+              simpl. set_solver.
+            }
+            simpl.
+            clear.
+            replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+            set_solver.
+          }
+          { clear. set_solver. }
+          { reflexivity. }
       }
 
-      assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
-      { apply Framing_right. wf_auto2. exact S2. }
+      assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
+      { apply Framing_right. 2: wf_auto2. 2: exact S2.
+        subst i'. apply pile_basic_generic.
+      }
 
-      assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+      assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i').
       {
         pose proof (Htmp := @prf_prop_or_iff Σ Γ (@ctx_app_r _ psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
         { wf_auto2. }
         { wf_auto2. }
         simpl in Htmp.
-        apply pf_iff_proj1 in Htmp; auto.
-        eapply syllogism_intro.
-        5: apply Htmp.
+        apply pf_iff_proj1 in Htmp.
+        2,3: wf_auto2.
+        eapply syllogism_meta.
+        5: subst i'; useBasicReasoning; apply Htmp.
         4: assumption.
         all: wf_auto2.
       }
       
-      assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+      assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
       {
         toMyGoal.
         { wf_auto2. }
         mgIntro. mgAdd S3.
-        mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
       }
 
-      assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+      assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
       {
         toMyGoal.
         { wf_auto2. }
@@ -1107,10 +1151,10 @@ Defined.
       + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto)).
+        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@bot_elim Σ Γ (psi $ phi2) ltac:(auto)).
+        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (psi $ phi2) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
