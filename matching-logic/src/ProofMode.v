@@ -6141,9 +6141,11 @@ Qed.
       (* i = pi_Generic gpi *)
       destruct i.
       {
-        exfalso.
-        eapply not_generic_in_prop.
-        apply pile.
+        abstract (
+          exfalso;
+          eapply not_generic_in_prop;
+          apply pile
+        ).
       }
 
       destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
@@ -6176,51 +6178,56 @@ Qed.
         }
         apply pile_evs_svs_kt.
         {
-          simpl.
-          rewrite medoeip_evar_open.
-          { apply not_eq_sym. exact HxneE. }
-          simpl.
-
-          rewrite medoeip_S_in.
-          { assumption. }
-          remember (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ) as n.
-          simpl.
-          unfold evar_fresh_s.
-          rewrite -Heqx.
-          clear. abstract (set_solver).
+          abstract (
+            simpl;
+            rewrite medoeip_evar_open;
+            [(apply not_eq_sym; exact HxneE)
+            |(simpl;
+              rewrite medoeip_S_in;
+              [(assumption)
+              |(remember (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ) as n;
+                simpl;
+                unfold evar_fresh_s;
+                rewrite -Heqx;
+                clear;
+                set_solver)
+              ]
+            )]
+          ).
         }
         {
-          simpl.
-          rewrite mmdoeip_evar_open.
-          { apply not_eq_sym. exact HxneE. }
-          apply reflexivity.
+          abstract (
+            simpl;
+            rewrite mmdoeip_evar_open;
+            [(apply not_eq_sym; exact HxneE)
+            |(apply reflexivity)
+            ]
+          ).
         }
         {
-          clear IH.
-          repeat case_match; simpl in *; try reflexivity.
-          pose proof (Htmp := n).
-          rewrite mmdoeip_evar_open in Htmp.
-          { apply not_eq_sym. exact HxneE. }
-          abstract (lia).
+          abstract (
+            clear IH;
+            repeat case_match; simpl in *; try reflexivity;
+            pose proof (Htmp := n);
+            rewrite mmdoeip_evar_open in Htmp;
+            [(apply not_eq_sym; exact HxneE)|(lia)]
+          ).
         }
       }
       { clear -p_sub_EvS. abstract (set_solver). }
       { clear -q_sub_EvS. abstract (set_solver). }
       { clear -E_in_EvS. abstract (set_solver). }
-      { clear -ψ_sub_EvS. Search free_evars evar_open.
-        rewrite elem_of_subseteq.
-        intros x0.
-        rewrite free_evars_evar_open''.
-        intros [[H1 H2]| H2].
-        {
-          abstract (subst; clear; set_solver).
-        }
-        {
-          abstract (
-            simpl in ψ_sub_EvS;
-            set_solver
-          ).
-        }
+      { clear -ψ_sub_EvS.
+        abstract (
+          rewrite elem_of_subseteq;
+          intros x0;
+          rewrite free_evars_evar_open'';
+          intros [[H1 H2]| H2];
+          [
+            (subst; clear; set_solver)
+            |(simpl in ψ_sub_EvS; set_solver)
+          ]
+        ).
       }
       { exact p_sub_SvS. }
       { exact q_sub_SvS. }
