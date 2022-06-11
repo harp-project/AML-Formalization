@@ -759,6 +759,35 @@ Defined.
       }
       { wf_auto2. }
       
+      (* simplify the constraint *)
+      simpl.
+      rewrite map_app.
+      rewrite list_to_set_app_L.
+      simpl.
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+
+      (* weaken the induction hypotheses so that their constraint
+         matches the constraint of the goal *)
+      apply useGenericReasoning with (i := i') in IHpf1.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+      }
+
+      apply useGenericReasoning with (i := i') in IHpf2.
+      2: {
+        subst i'.
+        apply pile_evs_svs_kt.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+      }
+
       toMyGoal.
       { wf_auto2. }
       mgIntro.
