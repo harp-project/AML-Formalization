@@ -5820,10 +5820,10 @@ Qed.
     .
     induction sz; intros ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
-      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl;
       lazymatch type of pile with
       | ProofInfoLe ?st _ => remember st as i'
-      end.
+      end;
+      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl.
     {
       destruct (decide (E = x)).
       {
@@ -6743,8 +6743,8 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-
-    (*
+(*
+    TODO induction over the size
     unfold eq_prf_equiv_congruence.
     induction pcPattern.*)
   Abort.
