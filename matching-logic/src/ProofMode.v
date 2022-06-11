@@ -5800,23 +5800,18 @@ Qed.
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (exdepth : nat)
   (mudepth : nat)
-  (i : ProofInfo)
+  (gpi : GenericProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true)
     )
-   i
+   (pi_Generic gpi)
   )
-  (pf : Γ ⊢ (p <---> q) using i) :
-      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i.
+  (pf : Γ ⊢ (p <---> q) using (pi_Generic gpi)) :
+      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using (pi_Generic gpi).
   Proof.
-
-    (*
-    remember (size' ψ) as sz.
-    assert (Hsz: size' ψ <= sz) by (abstract (lia)).
-    clear Heqsz.*)
 
     move: ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS
@@ -6175,17 +6170,6 @@ Qed.
       pose proof (frx := @set_evar_fresh_is_fresh' Σ EvS).
       remember (evar_fresh (elements EvS)) as x.
 
-      (* i = pi_Generic gpi *)
-      destruct i.
-      {
-        abstract (
-          subst i';
-          exfalso;
-          eapply not_generic_in_prop;
-          apply pile
-        ).
-      }
-
       destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
       2: {
         eapply cast_proof'.
@@ -6414,17 +6398,6 @@ Qed.
     {
       pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
       remember (svar_fresh (elements SvS)) as X.
-
-      (* i = pi_Generic gpi *)
-      destruct i.
-      {
-        abstract (
-          subst i';
-          exfalso;
-          eapply not_generic_in_prop;
-          apply pile
-        ).
-      }
 
       destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
       2: {
@@ -6708,6 +6681,17 @@ Qed.
     }
     assert (well_formed p) by (abstract (wf_auto2)).
     assert (well_formed q) by (abstract (wf_auto2)).
+
+          (* i = pi_Generic gpi *)
+          destruct i.
+          {
+            abstract (
+              exfalso;
+              eapply not_generic_in_prop;
+              apply pile
+            ).
+          }
+    
     
     apply @eq_prf_equiv_congruence
     with (EvS := (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}))
