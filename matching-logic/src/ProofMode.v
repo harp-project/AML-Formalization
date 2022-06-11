@@ -5820,7 +5820,10 @@ Qed.
     .
     induction sz; intros ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
-      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl.
+      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl;
+      lazymatch type of pile with
+      | ProofInfoLe ?st _ => remember st as i'
+      end.
     {
       destruct (decide (E = x)).
       {
@@ -5867,6 +5870,7 @@ Qed.
         eapply pile_trans.
         2: { apply pile. }
         abstract (
+          subst i';
         simpl;
         apply pile_evs_svs_kt;
         [
@@ -5910,23 +5914,15 @@ Qed.
       specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
-        eapply pile_trans.
-        2: { apply pile. }
-        simpl.
-        apply pile_evs_svs_kt.
-        {
-          simpl.
-          rewrite Nat.max_comm.
-          apply evar_fresh_seq_max.
-        }
-        {
-          rewrite Nat.max_comm.
-          apply svar_fresh_seq_max.
-        }
-        {
-          clear pf₂.
-          abstract (repeat case_match; simpl; try reflexivity; try lia).
-        }
+        abstract (subst i';
+          eapply pile_trans;[|(apply pile)];
+          simpl;
+          apply pile_evs_svs_kt;
+          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
+          |(rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          |(clear pf₂; repeat case_match; simpl; try reflexivity; try lia)
+          ]
+        ).
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -5954,14 +5950,18 @@ Qed.
         4: {
           apply Framing_right.
           {
-            unfold BasicReasoning.
-            eapply pile_trans.
-            2: { apply pile. }
-            simpl.
-            apply pile_evs_svs_kt.
-            { abstract (clear; set_solver). }
-            { abstract (clear; set_solver). }
-            { reflexivity. }
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
           }
           {
             abstract (wf_auto2).
@@ -5976,12 +5976,18 @@ Qed.
         3: {
           apply Framing_right.
           {
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            { clear. abstract (set_solver). }
-            { clear. abstract (set_solver). }
-            { reflexivity. }
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
           }
           {
             abstract (wf_auto2).
@@ -6005,12 +6011,18 @@ Qed.
         4: {
           apply Framing_left.
           {
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            { clear. abstract (set_solver). }
-            { clear. abstract (set_solver). }
-            { reflexivity. }
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
           }
           {
             abstract (wf_auto2).
@@ -6025,12 +6037,18 @@ Qed.
         3: {
           apply Framing_left.
           {
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            { clear. abstract (set_solver). }
-            { clear. abstract (set_solver). }
-            { reflexivity. }
+            abstract (
+              subst i';
+              unfold BasicReasoning;
+              eapply pile_trans;
+              [|apply pile];
+              simpl;
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(clear; set_solver)
+              |(reflexivity)
+              ]
+            ).
           }
           {
             abstract (wf_auto2).
@@ -6070,23 +6088,16 @@ Qed.
       specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
-        eapply pile_trans.
-        2: { apply pile. }
-        apply pile_evs_svs_kt.
-        { 
-          simpl.
-          apply evar_fresh_seq_max.
-        }
-        {
-          simpl.
-          apply svar_fresh_seq_max.
-        }
-        {
-          clear pf₁.
-          abstract (
-            repeat case_match; simpl; try reflexivity; simpl in *; lia
-          ).
-        }
+        abstract (
+          subst i';
+          eapply pile_trans;
+          [|apply pile];
+          apply pile_evs_svs_kt;
+          [(simpl; apply evar_fresh_seq_max)
+          |(simpl; apply svar_fresh_seq_max)
+          |(clear pf₁;repeat case_match; simpl; try reflexivity; simpl in *; lia)
+          ]
+        ).
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6118,25 +6129,16 @@ Qed.
       specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
-        eapply pile_trans.
-        2: { apply pile. }
-        apply pile_evs_svs_kt.
-        { 
-          simpl.
-          rewrite Nat.max_comm.
-          apply evar_fresh_seq_max.
-        }
-        {
-          simpl.
-          rewrite Nat.max_comm.
-          apply svar_fresh_seq_max.
-        }
-        {
-          clear pf₂.
-          abstract (
-            repeat case_match; simpl in *; try reflexivity; lia
-          ).
-        }
+        abstract (
+          subst i';
+          eapply pile_trans;
+          [|apply pile];
+          apply pile_evs_svs_kt;
+          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
+          |(simpl; rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          |(clear pf₂; repeat case_match; simpl in *; try reflexivity; lia)
+          ]
+        ).
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6174,6 +6176,7 @@ Qed.
       destruct i.
       {
         abstract (
+          subst i';
           exfalso;
           eapply not_generic_in_prop;
           apply pile
@@ -6208,6 +6211,7 @@ Qed.
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
       {
+        subst i'.
         simpl.
         eapply pile_trans.
         2: { apply pile. }
@@ -6311,6 +6315,7 @@ Qed.
             { abstract (wf_auto2). }
           }
           {
+            subst i'.
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
@@ -6370,6 +6375,7 @@ Qed.
             { wf_auto2. }
           }
           {
+            subst i'.
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
@@ -6418,6 +6424,7 @@ Qed.
       destruct i.
       {
         abstract (
+          subst i';
           exfalso;
           eapply not_generic_in_prop;
           apply pile
@@ -6456,6 +6463,7 @@ Qed.
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
       {
+        subst i'.
         eapply pile_trans.
         2: { apply pile. }
         apply pile_evs_svs_kt.
@@ -6572,6 +6580,7 @@ Qed.
           }
           {
             abstract (
+              subst i';
               eapply pile_trans;[|apply pile];
               apply pile_evs_svs_kt;
               [(clear; set_solver)
@@ -6616,6 +6625,7 @@ Qed.
           }
           {
             abstract (
+              subst i';
               eapply pile_trans;[|apply pile];
               apply pile_evs_svs_kt;
               [(clear; set_solver)
@@ -6733,7 +6743,8 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-(*    
+
+    (*
     unfold eq_prf_equiv_congruence.
     induction pcPattern.*)
   Abort.
