@@ -480,7 +480,7 @@ Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar
      X :: svar_fresh_seq ({[X]} ∪ avoid) (n')
   end.
 
-  Lemma evar_fresh_seq_disj S n:
+  Lemma evar_fresh_seq_disj {Σ : Signature} S n:
     list_to_set (evar_fresh_seq S n) ## S.
   Proof.
   move: S.
