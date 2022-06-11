@@ -5811,7 +5811,7 @@ Qed.
       Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using i.
   Proof.
     remember (size' ψ) as sz.
-    assert (Hsz: size' ψ <= sz) by lia.
+    assert (Hsz: size' ψ <= sz) by (abstract (lia)).
     clear Heqsz.
 
     move: ψ wfψ Hsz EvS SvS pile
@@ -5820,7 +5820,7 @@ Qed.
     .
     induction sz; intros ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
-      destruct ψ; simpl in Hsz; try lia; simpl.
+      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl.
     {
       destruct (decide (E = x)).
       {
@@ -5829,28 +5829,28 @@ Qed.
       {
         usePropositionalReasoning.
         apply pf_iff_equiv_refl.
-        wf_auto2.
+        abstract (wf_auto2).
       }
     }
     {
       usePropositionalReasoning.
       apply pf_iff_equiv_refl.
-      wf_auto2.
+      abstract (wf_auto2).
     }
     {
       usePropositionalReasoning.
       apply pf_iff_equiv_refl.
-      wf_auto2.
+      abstract (wf_auto2).
     }
     {
       usePropositionalReasoning.
       apply pf_iff_equiv_refl.
-      wf_auto2.
+      abstract (wf_auto2).
     }
     {
       usePropositionalReasoning.
       apply pf_iff_equiv_refl.
-      wf_auto2.
+      abstract (wf_auto2).
     }
     {
       pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
@@ -5870,10 +5870,10 @@ Qed.
           clear pf₁.
           repeat case_match; simpl; try reflexivity.
           {
-            lia.
+            abstract (lia).
           }
           {
-            lia.
+            abstract (lia).
           }
         }
       }
@@ -5951,13 +5951,13 @@ Qed.
             { reflexivity. }
           }
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           {
             eapply pf_conj_elim_r_meta in pf₂.
             apply pf₂.
-            { wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
           }
         }
         3: {
@@ -5971,20 +5971,20 @@ Qed.
             { reflexivity. }
           }
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           {
             eapply pf_conj_elim_l_meta in pf₂.
             apply pf₂.
-            { wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
           }
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }
        }
        4: {
@@ -6000,13 +6000,13 @@ Qed.
             { reflexivity. }
           }
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           {
             eapply pf_conj_elim_r_meta in pf₁.
             apply pf₁.
-            { wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
           }
         }
         3: {
@@ -6020,33 +6020,33 @@ Qed.
             { reflexivity. }
           }
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           {
             eapply pf_conj_elim_l_meta in pf₁.
             apply pf₁.
-            { wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
+            { abstract (wf_auto2). }
           }
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }         
        }
-       { wf_auto2. }
-       { wf_auto2. }
-       { wf_auto2. }
+       { abstract (wf_auto2). }
+       { abstract (wf_auto2). }
+       { abstract (wf_auto2). }
     }
     {
       usePropositionalReasoning.
       apply pf_iff_equiv_refl.
-      wf_auto2.
+      abstract (wf_auto2).
     }
     {
-      pose proof (pf₁ := (IHsz ψ1 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
+      pose proof (pf₁ := (IHsz ψ1 ltac:(abstract (wf_auto2)) ltac:(abstract(lia))) EvS SvS).
       feed specialize pf₁.
       {
         eapply pile_trans.
@@ -6062,8 +6062,9 @@ Qed.
         }
         {
           clear pf₁.
-          repeat case_match; simpl; try reflexivity; simpl in *.
-          lia.
+          abstract (
+            repeat case_match; simpl; try reflexivity; simpl in *; lia
+          ).
         }
       }
       { exact p_sub_EvS. }
@@ -6085,7 +6086,7 @@ Qed.
         ).
       }
 
-      pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
+      pose proof (pf₂ := (IHsz ψ2 ltac:(abstract (wf_auto2)) ltac:(abstract(lia))) EvS SvS).
       feed specialize pf₂.
       {
         eapply pile_trans.
@@ -6103,7 +6104,9 @@ Qed.
         }
         {
           clear pf₂.
-          repeat case_match; simpl in *; try reflexivity; lia.
+          abstract (
+            repeat case_match; simpl in *; try reflexivity; lia
+          ).
         }
       }
       { exact p_sub_EvS. }
@@ -6127,10 +6130,10 @@ Qed.
       }
 
       apply prf_equiv_of_impl_of_equiv.
-      { wf_auto2. }
-      { wf_auto2. }
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
       { apply pf₁. }
       { apply pf₂. }
     }
@@ -6160,10 +6163,10 @@ Qed.
         }
         usePropositionalReasoning.
         apply pf_iff_equiv_refl.
-        { wf_auto2. }
+        { abstract (wf_auto2). }
       }
 
-      pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(wf_auto2) ltac:(rewrite evar_open_size'; lia)).
+      pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(abstract (wf_auto2)) ltac:(abstract(rewrite evar_open_size'; lia))).
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
       {
@@ -6391,7 +6394,7 @@ Qed.
         { wf_auto2. }
       }
 
-      pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(wf_auto2) ltac:(rewrite svar_open_size'; lia)).
+      pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(abstract (wf_auto2)) ltac:(abstract(rewrite svar_open_size'; lia))).
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
       {
@@ -6464,15 +6467,15 @@ Qed.
       }
 
       apply pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst in IH.
-      3: { wf_auto2. }
-      2: { wf_auto2. }
+      3: { abstract (wf_auto2). }
+      2: { abstract (wf_auto2). }
 
       unshelve (epose proof (IH1 := @pf_iff_proj1 _ _ _ _ _ _ _ IH)).
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
       unshelve (epose proof (IH2 := @pf_iff_proj2 _ _ _ _ _ _ _ IH)).
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
 
       eapply pf_iff_mu_remove_svar_quantify_svar_open.
       5: {
@@ -6575,7 +6578,7 @@ Qed.
         {
           cut (X ∉ free_svars ψ.[[evar:E↦p]]).
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           abstract (
             pose proof (@free_svars_free_evar_subst Σ ψ E p);
@@ -6586,7 +6589,7 @@ Qed.
         {
           cut (X ∉ free_svars ψ.[[evar:E↦q]]).
           {
-            wf_auto2.
+            abstract (wf_auto2).
           }
           abstract (
             pose proof (@free_svars_free_evar_subst Σ ψ E q);
@@ -6617,6 +6620,8 @@ Qed.
       }
     }
   Defined.
+
+  
 
   Lemma prf_equiv_congruence Γ p q C
   (i : ProofInfo)
@@ -6667,8 +6672,9 @@ Qed.
   Proof.
     unfold prf_equiv_congruence.
     destruct C; simpl in *.
-    induction pcPattern; simpl.
-  Qed.
+    (*unfold eq_prf_equiv_congruence.
+    induction pcPattern.*)
+  Abort.
 
 
 End FOL_helpers.
