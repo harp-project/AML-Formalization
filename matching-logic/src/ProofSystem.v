@@ -3,7 +3,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax monotonic wftactics.
-From stdpp Require Import base fin_sets sets propset.
+From stdpp Require Import base fin_sets sets propset gmap.
 
 From MatchingLogic.Utils Require Import extralibrary.
 
@@ -130,33 +130,46 @@ Section ml_proof_system.
          unfold Decision. Fail decide equality.
   Abort.
 
+  Lemma proved_impl_wf Γ ϕ:
+  Γ ⊢ ϕ -> well_formed ϕ.
+  Proof.
+  intros pf.
+  induction pf; auto; try (solve [wf_auto2]).
+  - unfold free_svar_subst. wf_auto2.
+    apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
+    all: fold free_svar_subst.
+    apply wfc_mu_free_svar_subst; auto.
+    apply wfc_ex_free_svar_subst; auto.
+  Qed.
+
 
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
 
-Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
+(* TODO make this return well-formed patterns. *)
+Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
   match pf with
-  | hypothesis _ _ _ _ => []
-  | P1 _ _ _ _ _ => []
-  | P2 _ _ _ _ _ _ _ => []
-  | P3 _ _ _ => []
+  | hypothesis _ _ _ _ => ∅
+  | P1 _ _ _ _ _ => ∅
+  | P2 _ _ _ _ _ _ _ => ∅
+  | P3 _ _ _ => ∅
   | Modus_ponens _ _ _ m0 m1
-    => (@framing_patterns _ _ m0) ++ (@framing_patterns _ _ m1)
-  | Ex_quan _ _ _ _ => []
+    => (@framing_patterns _ _ m0) ∪ (@framing_patterns _ _ m1)
+  | Ex_quan _ _ _ _ => ∅
   | Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
-  | Prop_bott_left _ _ _ => []
-  | Prop_bott_right _ _ _ => []
-  | Prop_disj_left _ _ _ _ _ _ _ => []
-  | Prop_disj_right _ _ _ _ _ _ _ => []
-  | Prop_ex_left _ _ _ _ _ => []
-  | Prop_ex_right _ _ _ _ _ => []
-  | Framing_left _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
-  | Framing_right _ _ _ psi _ m0 => psi :: (@framing_patterns _ _ m0)
+  | Prop_bott_left _ _ _ => ∅
+  | Prop_bott_right _ _ _ => ∅
+  | Prop_disj_left _ _ _ _ _ _ _ => ∅
+  | Prop_disj_right _ _ _ _ _ _ _ => ∅
+  | Prop_ex_left _ _ _ _ _ => ∅
+  | Prop_ex_right _ _ _ _ _ => ∅
+  | Framing_left _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
+  | Framing_right _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
   | Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
-  | Pre_fixp _ _ _ => []
+  | Pre_fixp _ _ _ => ∅
   | Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
-  | Existence _ => []
-  | Singleton_ctx _ _ _ _ _ _ => []
+  | Existence _ => ∅
+  | Singleton_ctx _ _ _ _ _ _ => ∅
   end.
 
 
@@ -376,6 +389,17 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
       | Singleton_ctx _ _ _ _ _ _ => false
       end.
   
+  Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢ ϕ) :
+    propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
+  Proof.
+    intros H.
+    induction pf; simpl in *; try apply reflexivity; try congruence.
+    {
+      destruct_and!. specialize (IHpf1 ltac:(assumption)). specialize (IHpf2 ltac:(assumption)).
+      rewrite IHpf1. rewrite IHpf2. set_solver.
+    }
+  Qed.
+
   Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢ ϕ) :
     propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
   Proof.
@@ -411,6 +435,16 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
 
+  Lemma framing_patterns_cast_proof Γ ϕ ψ (pf : Γ ⊢ ϕ) (e : ψ = ϕ) :
+    @framing_patterns Γ ψ (cast_proof e pf) = @framing_patterns Γ ϕ pf.
+  Proof.
+    induction pf; unfold cast_proof,eq_rec_r,eq_rec,eq_rect,eq_sym;simpl in *;
+    pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+    match type of e with
+    | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+    end; simpl; try reflexivity.
+  Qed.
+    
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
@@ -503,17 +537,6 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
     intros. simpl. reflexivity.
   Qed.
 
-  Lemma proved_impl_wf Γ ϕ:
-    Γ ⊢ ϕ -> well_formed ϕ.
-  Proof.
-    intros pf.
-    induction pf; auto; try (solve [wf_auto2]).
-    - unfold free_svar_subst. wf_auto2.
-      apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
-      all: fold free_svar_subst.
-      apply wfc_mu_free_svar_subst; auto.
-      apply wfc_ex_free_svar_subst; auto.
-  Qed.
 
 End ml_proof_system.
 

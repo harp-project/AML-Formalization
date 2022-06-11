@@ -416,9 +416,9 @@ Proof.
                 destruct Hx as [le [re [Hle [Hre Hx]]]].
                 rewrite mi_app in Hx.
                 rewrite -IHsz.
-                2: { lia. }
+                { lia. }
                 rewrite -IHsz.
-                2: { lia. }
+                { lia. }
                 unfold app_ext.
                 rewrite elem_of_PropSet.
                 exists (mi_f i le).
@@ -434,9 +434,9 @@ Proof.
                 rewrite elem_of_PropSet.
                 destruct Hx as [le [re [Hle [Hre Hx]]]].
                 rewrite -IHsz in Hle.
-                2: { lia. }
+                { lia. }
                 rewrite -IHsz in Hre.
-                2: { lia. }
+                { lia. }
                 apply elem_of_fmap_1 in Hle.
                 apply elem_of_fmap_1 in Hre.
                 destruct Hle as [x1 [Hx1 Hle]].
@@ -460,9 +460,9 @@ Proof.
             do 2 rewrite eval_imp_simpl.
             simpl in Hsz.
             rewrite -IHsz.
-            2: { lia. }
+            { lia. }
             rewrite -IHsz.
-            2: { lia. }
+            { lia. }
             remember (eval ρ ϕ1) as X1.
             remember (eval ρ ϕ2) as X2.
             unfold fmap.
@@ -585,7 +585,7 @@ Proof.
                 replace c with ((mi_f i) (@surj'_inv _ _ _ _ (mi_surj i) c)) in Hc by apply surj'_pf.
                 rewrite update_evar_val_compose in Hc.
                 rewrite -IHsz in Hc.
-                2: { rewrite evar_open_size'. simpl in Hsz. lia. }
+                { rewrite evar_open_size'. simpl in Hsz. lia. }
                 apply elem_of_fmap in Hc.
                 destruct Hc as [y [Hy Hc]]. subst.
                 replace (surj'_inv (mi_f i y)) with y.
@@ -639,7 +639,7 @@ Proof.
 
                 rewrite update_svar_val_compose in He.
                 rewrite -IHsz in He.
-                2: { rewrite svar_open_size'. lia. }
+                { rewrite svar_open_size'. lia. }
                 specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
                 feed specialize Hx.
                 {
@@ -683,7 +683,7 @@ Proof.
                     specialize (Hx ((mi_f i) <$> e)).
                     rewrite update_svar_val_compose in Hx.
                     rewrite -IHsz in Hx.
-                    2: { rewrite svar_open_size'. lia. }
+                    { rewrite svar_open_size'. lia. }
                     clear IHsz.
 
                     replace e with (((@surj'_inv _ _ _ _ (mi_surj i)) <$> ((mi_f i) <$> e))).

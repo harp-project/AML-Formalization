@@ -659,3 +659,34 @@ Proof.
   rewrite wfxs.
   reflexivity.
 Qed.
+
+Definition wfPattern {Σ : Signature} := {p : Pattern | well_formed p = true}.
+
+Global Instance wfPattern_eqdec {Σ : Signature} : EqDecision wfPattern.
+Proof.
+  solve_decision.
+Defined.
+
+Global Instance wfPattern_countable {Σ : Signature} : Countable wfPattern.
+Proof.
+  apply countable_sig.
+  solve_decision.
+Defined.
+
+Global Instance Pattern_infinite {Σ : Signature} :
+  Infinite Pattern.
+Proof.
+  apply inj_infinite with
+    (f := patt_free_evar)
+    (g := fun p => (match p with patt_free_evar x => Some x | _ => None end) ).
+  intros x. reflexivity.
+Defined.
+
+Global Instance wfPattern_infinite {Σ : Signature} :
+  Infinite wfPattern.
+Proof.
+  apply inj_infinite with
+    (f := fun x => exist (fun p : Pattern => well_formed p = true) (patt_free_evar x) erefl)
+    (g := fun wp => (match proj1_sig wp with patt_free_evar x => Some x | _ => None end) ).
+  intros x. reflexivity.
+Defined.

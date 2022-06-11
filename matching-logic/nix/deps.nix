@@ -37,8 +37,8 @@ let
 
         src = fetchGit {
           url = "https://github.com/mattam82/Coq-Equations.git";
-          ref = "8.14";
-          rev = "841e0bc6bce3a3021b5eb13a612190428699a2ca";
+          ref = "8.15";
+          rev = "a8548f3368cab014b0a9a79fe2fffd3127e092fa";
         };
 
         postPatch = ''
