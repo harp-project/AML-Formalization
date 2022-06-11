@@ -1512,14 +1512,15 @@ Defined.
   Lemma membership_not_1 Γ ϕ x:
     well_formed ϕ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ).
+    Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) ---> ! ((patt_free_evar x) ∈ml ϕ)
+    using BasicReasoning.
   Proof.
     intros Hwf HΓ.
     
-    pose proof (S1 := Singleton_ctx Γ AC_patt_defined AC_patt_defined ϕ x ltac:(wf_auto2)).
+    pose proof (S1 := @Singleton_ctx Σ Γ AC_patt_defined AC_patt_defined ϕ x ltac:(wf_auto2)).
     simpl in S1.
 
-    assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉).
+    assert (S2: Γ ⊢ ⌈ patt_free_evar x and ! ϕ ⌉ ---> ! ⌈ patt_free_evar x and ϕ ⌉ using BasicReasoning).
     {
 
       replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ))
@@ -1536,8 +1537,10 @@ Defined.
                using first 1.
       { wf_auto2. }        
       {
-        fromMyGoal. intros _ _.
-        apply not_not_elim; auto 10.
+        fromMyGoal.
+        usePropositionalReasoning.
+        apply not_not_elim.
+        wf_auto2.
       }
       mgClear 0.
 
@@ -1546,14 +1549,15 @@ Defined.
                using first 1.
       { wf_auto2. }
       {
-        mgAdd (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)).
+        mgAdd (@usePropositionalReasoning _ _ _ BasicReasoning (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft. mgApply 1. mgExactn 0.
       }
       mgClear 0.
 
-      mgApply 0. mgClear 0. fromMyGoal. intros _ _.
+      mgApply 0. mgClear 0. fromMyGoal.
+      usePropositionalReasoning.
       apply not_not_intro. wf_auto2.
     }
     apply S2.
