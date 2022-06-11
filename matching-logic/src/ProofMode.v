@@ -5880,16 +5880,19 @@ Qed.
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
       { exact E_in_EvS. }
-      {
-        simpl in ψ_sub_EvS.
-        clear -ψ_sub_EvS.
-        set_solver.
+      { abstract(
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
       }
       { exact p_sub_SvS. }
       { exact q_sub_SvS. }
-      { simpl in ψ_sub_SvS.
-        clear -ψ_sub_SvS.
-        set_solver.
+      { abstract(
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
       }
       pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
       feed specialize pf₂.
@@ -5916,15 +5919,20 @@ Qed.
       { exact q_sub_EvS. }
       { exact E_in_EvS. }
       {
-        simpl in ψ_sub_EvS.
-        clear -ψ_sub_EvS.
-        set_solver.
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
       }
       { exact p_sub_SvS. }
       { exact q_sub_SvS. }
-      { simpl in ψ_sub_SvS.
-        clear -ψ_sub_SvS.
-        set_solver.
+      { 
+        abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
       }
 
       eapply pf_iff_equiv_trans.
@@ -5938,8 +5946,8 @@ Qed.
             2: { apply pile. }
             simpl.
             apply pile_evs_svs_kt.
-            { clear. set_solver. }
-            { clear. set_solver. }
+            { abstract (clear; set_solver). }
+            { abstract (clear; set_solver). }
             { reflexivity. }
           }
           {
@@ -5958,8 +5966,8 @@ Qed.
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
-            { clear. set_solver. }
-            { clear. set_solver. }
+            { clear. abstract (set_solver). }
+            { clear. abstract (set_solver). }
             { reflexivity. }
           }
           {
@@ -5987,8 +5995,8 @@ Qed.
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
-            { clear. set_solver. }
-            { clear. set_solver. }
+            { clear. abstract (set_solver). }
+            { clear. abstract (set_solver). }
             { reflexivity. }
           }
           {
@@ -6007,8 +6015,8 @@ Qed.
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
-            { clear. set_solver. }
-            { clear. set_solver. }
+            { clear. abstract (set_solver). }
+            { clear. abstract (set_solver). }
             { reflexivity. }
           }
           {
@@ -6062,15 +6070,19 @@ Qed.
       { exact q_sub_EvS. }
       { exact E_in_EvS. }
       {
-        simpl in ψ_sub_EvS.
-        clear -ψ_sub_EvS.
-        set_solver.
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
       }
       { exact p_sub_SvS. }
       { exact q_sub_SvS. }
-      { simpl in ψ_sub_SvS.
-        clear -ψ_sub_SvS.
-        set_solver.
+      { abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
       }
 
       pose proof (pf₂ := (IHsz ψ2 ltac:(wf_auto2) ltac:(lia)) EvS SvS).
@@ -6098,15 +6110,20 @@ Qed.
       { exact q_sub_EvS. }
       { exact E_in_EvS. }
       {
-        simpl in ψ_sub_EvS.
-        clear -ψ_sub_EvS.
-        set_solver.
+        abstract (
+          simpl in ψ_sub_EvS;
+          clear -ψ_sub_EvS;
+          set_solver
+        ).
       }
       { exact p_sub_SvS. }
       { exact q_sub_SvS. }
-      { simpl in ψ_sub_SvS.
-        clear -ψ_sub_SvS.
-        set_solver.
+      { 
+        abstract (
+          simpl in ψ_sub_SvS;
+          clear -ψ_sub_SvS;
+          set_solver
+        ).
       }
 
       apply prf_equiv_of_impl_of_equiv.
@@ -6155,7 +6172,7 @@ Qed.
         2: { apply pile. }
         assert (HxneE: x <> E).
         {
-          clear -frx E_in_EvS. set_solver.
+          clear -frx E_in_EvS. abstract (set_solver).
         }
         apply pile_evs_svs_kt.
         {
@@ -6170,7 +6187,7 @@ Qed.
           simpl.
           unfold evar_fresh_s.
           rewrite -Heqx.
-          clear. set_solver.
+          clear. abstract (set_solver).
         }
         {
           simpl.
@@ -6187,20 +6204,22 @@ Qed.
           lia.
         }
       }
-      { clear -p_sub_EvS. set_solver. }
-      { clear -q_sub_EvS. set_solver. }
-      { clear -E_in_EvS. set_solver. }
+      { clear -p_sub_EvS. abstract (set_solver). }
+      { clear -q_sub_EvS. abstract (set_solver). }
+      { clear -E_in_EvS. abstract (set_solver). }
       { clear -ψ_sub_EvS. Search free_evars evar_open.
         rewrite elem_of_subseteq.
         intros x0.
         rewrite free_evars_evar_open''.
         intros [[H1 H2]| H2].
         {
-          subst. clear. set_solver.
+          abstract (subst; clear; set_solver).
         }
         {
-          simpl in ψ_sub_EvS.
-          set_solver.
+          abstract (
+            simpl in ψ_sub_EvS;
+            set_solver
+          ).
         }
       }
       { exact p_sub_SvS. }
@@ -6211,20 +6230,20 @@ Qed.
         exact ψ_sub_SvS.
       }
       apply pf_evar_open_free_evar_subst_equiv_sides in IH.
-      2: { set_solver. }
-      2: { wf_auto2. }
-      2: { wf_auto2. }
+      2: { abstract (set_solver). }
+      2: { abstract (wf_auto2). }
+      2: { abstract (wf_auto2). }
       unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
       unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
 
       (* TODO: remove the well-formedness constraints on this lemma*)
       apply pf_iff_split.
-      { wf_auto2. }
-      { wf_auto2. }
+      { abstract (wf_auto2). }
+      { abstract (wf_auto2). }
       {
         eapply strip_exists_quantify_l.
         3: {
@@ -6239,9 +6258,9 @@ Qed.
             4: {
                 apply IH1.
               }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
             { simpl. wf_auto2. apply wfc_ex_aux_bevar_subst. wf_auto2. wf_auto2. }
-            { wf_auto2. }
+            { abstract (wf_auto2). }
           }
           {
             eapply pile_trans.
@@ -6255,25 +6274,29 @@ Qed.
               unfold evar_fresh_s.
               rewrite -Heqx.
               clear.
-              set_solver.
+              abstract (set_solver).
             }
             {
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               reflexivity.
             }
           }
           {
-            simpl.
-            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E).
-            set_solver.
+            abstract (
+              simpl;
+              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+              set_solver
+            ).
           }
         }
         {
-          simpl.
-          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E).
-          set_solver.
+          abstract (
+            simpl;
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+            set_solver
+          ).
         }
         {
           wf_auto2.
@@ -6310,28 +6333,32 @@ Qed.
               unfold evar_fresh_s.
               rewrite -Heqx.
               clear.
-              set_solver.
+              abstract (set_solver).
             }
             {
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               reflexivity.
             }
           }
           {
-            simpl.
-            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E).
-            set_solver.
+            abstract (
+              simpl;
+              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+              set_solver
+            ).
           }
         }
         {
-          simpl.
-          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E).
-          set_solver.
+          abstract (
+            simpl;
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+            set_solver
+          ).
         }
         {
-          wf_auto2.
+          abstract (wf_auto2).
         }
       }
     }
@@ -6384,7 +6411,7 @@ Qed.
           simpl.
           unfold svar_fresh_s.
           rewrite -HeqX.
-          clear. set_solver.
+          clear. abstract (set_solver).
         }
         {
           clear IH.
@@ -6413,11 +6440,11 @@ Qed.
       }
       {
         clear -p_sub_SvS.
-        set_solver.
+        abstract (set_solver).
       }
       {
         clear -q_sub_SvS.
-        set_solver.
+        abstract (set_solver).
       }
       {
         rewrite elem_of_subseteq.
@@ -6425,12 +6452,14 @@ Qed.
         rewrite free_svars_svar_open''.
         intros [[H1 H2]|H1].
         {
-          subst X'. clear. set_solver.
+          abstract (subst X'; clear; set_solver).
         }
         {
-          simpl in ψ_sub_SvS.
-          clear -H1 ψ_sub_SvS.
-          set_solver.
+          abstract (
+            simpl in ψ_sub_SvS;
+            clear -H1 ψ_sub_SvS;
+            set_solver
+          ).
         }
       }
 
@@ -6455,23 +6484,28 @@ Qed.
             apply IH2.
           }
           3: {
-            wf_auto2. simpl in *.
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p).
-            clear -Htmp ψ_sub_SvS p_sub_SvS frX.
-            set_solver.
+            wf_auto2.
+            simpl in *.
+            abstract (
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              set_solver
+            ).
           }
           2: {
             wf_auto2. simpl in *.
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q).
-            clear -Htmp ψ_sub_SvS q_sub_SvS frX.
-            set_solver.
+            abstract (
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+              set_solver
+            ).
           }
           {
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
             {
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               simpl.
@@ -6480,7 +6514,7 @@ Qed.
               simpl.
               unfold svar_fresh_s.
               rewrite -HeqX.
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               repeat case_match; simpl in *; try reflexivity.
@@ -6499,22 +6533,26 @@ Qed.
           }
           3: {
             wf_auto2. simpl in *.
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q).
-            clear -Htmp ψ_sub_SvS q_sub_SvS frX.
-            set_solver.
+            abstract (
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+              set_solver
+            ).
           }
           2: {
             wf_auto2. simpl in *.
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p).
-            clear -Htmp ψ_sub_SvS p_sub_SvS frX.
-            set_solver.
+            abstract (
+              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              set_solver
+            ).
           }
           {
             eapply pile_trans.
             2: { apply pile. }
             apply pile_evs_svs_kt.
             {
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               simpl.
@@ -6523,7 +6561,7 @@ Qed.
               simpl.
               unfold svar_fresh_s.
               rewrite -HeqX.
-              clear. set_solver.
+              clear. abstract (set_solver).
             }
             {
               repeat case_match; simpl in *; try reflexivity.
@@ -6539,35 +6577,43 @@ Qed.
           {
             wf_auto2.
           }
-          pose proof (@free_svars_free_evar_subst Σ ψ E p).
-          clear -H frX ψ_sub_SvS p_sub_SvS.
-          set_solver.
+          abstract (
+            pose proof (@free_svars_free_evar_subst Σ ψ E p);
+            clear -H frX ψ_sub_SvS p_sub_SvS;
+            set_solver
+          ).
         }
         {
           cut (X ∉ free_svars ψ.[[evar:E↦q]]).
           {
             wf_auto2.
           }
-          pose proof (@free_svars_free_evar_subst Σ ψ E q).
-          clear -H frX ψ_sub_SvS q_sub_SvS.
-          set_solver.
+          abstract (
+            pose proof (@free_svars_free_evar_subst Σ ψ E q);
+            clear -H frX ψ_sub_SvS q_sub_SvS;
+            set_solver
+          ).
         }
       }
       {
-        wf_auto2.
+        abstract (wf_auto2).
       }
       {
-        wf_auto2.
+        abstract (wf_auto2).
       }
       {
-        pose proof (@free_svars_free_evar_subst Σ ψ E p).
-        clear -H frX ψ_sub_SvS p_sub_SvS.
-        set_solver.
+        abstract (
+          pose proof (@free_svars_free_evar_subst Σ ψ E p);
+          clear -H frX ψ_sub_SvS p_sub_SvS;
+          set_solver
+        ).
       }
       {
-        pose proof (@free_svars_free_evar_subst Σ ψ E q).
-        clear -H frX ψ_sub_SvS q_sub_SvS.
-        set_solver.
+        abstract (
+          pose proof (@free_svars_free_evar_subst Σ ψ E q);
+          clear -H frX ψ_sub_SvS q_sub_SvS;
+          set_solver
+        ).
       }
     }
   Defined.
@@ -6587,13 +6633,18 @@ Qed.
     Γ ⊢ (((emplace C p) <---> (emplace C q))) using i.
   Proof.
     intros wfC Hiff.
-    pose proof (proved_impl_wf _ _ (proj1_sig Hiff)).
+    assert (well_formed (p <---> q)).
+    { abstract (
+        pose proof (proved_impl_wf _ _ (proj1_sig Hiff));
+        assumption
+      ).
+    }
     assert (well_formed p) by (abstract (wf_auto2)).
     assert (well_formed q) by (abstract (wf_auto2)).
-    destruct C as [pcEvar pcPattern].
+    
     apply @eq_prf_equiv_congruence
-    with (EvS := (free_evars pcPattern ∪ free_evars p ∪ free_evars q ∪ {[pcEvar]}))
-         (SvS := (free_svars pcPattern ∪ free_svars p ∪ free_svars q))
+    with (EvS := (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}))
+         (SvS := (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q))
          (exdepth := 0)
          (mudepth := 0)
     .
@@ -6610,7 +6661,14 @@ Qed.
     { simpl. exact pile. }
     { exact Hiff. }
   Defined.
-  Print prf_equiv_congruence.
+
+  Lemma framing_patterns_prf_equiv_congruence Γ p q C i pile wfC pf:
+    (@framing_patterns _ _ _ (proj1_sig (@prf_equiv_congruence Γ p q C i pile wfC pf))) = [].
+  Proof.
+    unfold prf_equiv_congruence.
+    destruct C; simpl in *.
+    induction pcPattern; simpl.
+  Qed.
 
 
 End FOL_helpers.

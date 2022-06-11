@@ -1916,7 +1916,6 @@ Defined.
         | [ |- context [mkGenericProofInfo ?ge ?se ?kt] ] =>
           try remember (mkGenericProofInfo ge se kt)
         end.
-        induction pcPattern; simpl.
       }
       Search union subseteq.
       rewrite union_subseteq_l.
