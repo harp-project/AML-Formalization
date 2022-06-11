@@ -1734,21 +1734,32 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)).
+    Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂))
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
+    remember_constraint as i.
+    destruct i; [inversion Heqi|].
+    injection Heqi as Heqgpi.
+
     toMyGoal.
     { wf_auto2. }
     mgIntro.
     mgDestructAnd 0.
     unfold patt_and.
-    unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ _)); auto 10.
+
+    subst gpi.
+    unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
+    { wf_auto2. }
     mgIntro.
-    unshelve (mgApplyMeta (membership_or_1 _ _ _ _) in 2); auto 10.
+    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_or_1 _ _ _ _ _ _ HΓ)) in 2).
+    1,2: wf_auto2.
     mgDestructOr 2.
-    - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
+      { wf_auto2. }
       mgApply 2. mgExactn 0.
-    - unshelve (mgApplyMeta (membership_not_1 _ _ _) in 2); auto 10.
+    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
+      { wf_auto2. }
       mgApply 2. mgExactn 1.
   Defined.
 
@@ -1756,7 +1767,8 @@ Defined.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
-    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)).
+    Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
