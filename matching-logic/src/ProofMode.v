@@ -7752,6 +7752,20 @@ Proof.
   { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
 Qed.
 
+
+Lemma mgUseGenericReasoning
+{Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) evs svs kt :
+(ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt)) i) ->
+@mkMyGoal Σ Γ l g ((pi_Generic (ExGen := evs, SVSubst := svs, KT := kt))) ->
+@mkMyGoal Σ Γ l g i.
+Proof.
+intros Hpile H wf1 wf2.
+specialize (H wf1 wf2).
+eapply useGenericReasoning.
+2: exact H.
+apply Hpile.
+Defined.
+
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
   (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) ->

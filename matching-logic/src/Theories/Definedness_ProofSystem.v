@@ -621,7 +621,6 @@ Proof.
   1: exact HΓ.
   exact wfϕ.
 Defined.
-
   Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
     match pf with
     | ProofSystem.hypothesis _ _ _ _ => []
@@ -647,6 +646,9 @@ Defined.
     | ProofSystem.Singleton_ctx _ _ _ _ _ _ => []
     end.
   
+  Check map.
+    (*fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))*)
+
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : GenericProofInfo)
     (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
@@ -658,13 +660,19 @@ Defined.
     pi_uses_kt gpi = false ->
     Γ ⊢ ⌊ ψ ⌋ ---> ϕ
     using pi_Generic
-    (ExGen := ({[ev_x; evar_fresh (elements (free_evars ψ))]} ∪ pi_generalized_evars gpi ∪ free_evars ψ),
+    (ExGen :=
+      (
+        {[ev_x; evar_fresh (elements (free_evars ψ))]}
+        ∪ pi_generalized_evars gpi
+        ∪ free_evars ψ
+        ∪ (list_to_set (map (fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))) (framing_patterns (proj1_sig pf)) ))
+      ),
      SVSubst := (pi_substituted_svars gpi ∪ free_svars ψ),
      KT := false
     ).
   Proof.
     intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
-    destruct pf as [pf Hpf].
+    destruct pf as [pf Hpf]. simpl.
     induction pf.
     - (* hypothesis *)
       rename axiom into axiom0.
@@ -895,7 +903,9 @@ Defined.
           }
           simpl. Search psi.
           (* TODO: we need to add annotations that depend on the use of Framing_* rules *)
-          clear. set_solver.
+          clear.
+          replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+          set_solver.
         }
       }
 
