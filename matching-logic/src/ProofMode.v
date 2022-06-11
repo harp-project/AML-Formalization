@@ -6659,18 +6659,18 @@ Qed.
   Print eq_prf_equiv_congruence.
 
   Lemma prf_equiv_congruence Γ p q C
-  (i : ProofInfo)
+  (gpi : GenericProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
     )
-   i
+   (pi_Generic gpi)
   ):
     PC_wf C ->
-    Γ ⊢ (p <---> q) using i ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))) using i.
+    Γ ⊢ (p <---> q) using (pi_Generic gpi) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))) using (pi_Generic gpi).
   Proof.
     intros wfC Hiff.
     assert (well_formed (p <---> q)).
@@ -6681,17 +6681,6 @@ Qed.
     }
     assert (well_formed p) by (abstract (wf_auto2)).
     assert (well_formed q) by (abstract (wf_auto2)).
-
-          (* i = pi_Generic gpi *)
-          destruct i.
-          {
-            abstract (
-              exfalso;
-              eapply not_generic_in_prop;
-              apply pile
-            ).
-          }
-    
     
     apply @eq_prf_equiv_congruence
     with (EvS := (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}))
