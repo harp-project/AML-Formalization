@@ -6553,44 +6553,41 @@ Qed.
             apply IH1.
           }
           3: {
-            wf_auto2. simpl in *.
             abstract (
+              wf_auto2; simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
               set_solver
             ).
           }
           2: {
-            wf_auto2. simpl in *.
             abstract (
+              wf_auto2; simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
               set_solver
             ).
           }
           {
-            eapply pile_trans.
-            2: { apply pile. }
-            apply pile_evs_svs_kt.
-            {
-              clear. abstract (set_solver).
-            }
-            {
-              simpl.
-              rewrite mmdoeip_S_in.
-              { exact HEinψ. }
-              simpl.
-              unfold svar_fresh_s.
-              rewrite -HeqX.
-              clear. abstract (set_solver).
-            }
-            {
-              repeat case_match; simpl in *; try reflexivity.
-              pose proof (Htmp := e).
-              rewrite mmdoeip_S_in in Htmp.
-              { exact HEinψ. }
-              inversion Htmp.
-            }
+            abstract (
+              eapply pile_trans;[|apply pile];
+              apply pile_evs_svs_kt;
+              [(clear; set_solver)
+              |(simpl;
+                rewrite mmdoeip_S_in;
+                [(exact HEinψ)|];
+                simpl;
+                unfold svar_fresh_s;
+                rewrite -HeqX;
+                clear;
+                set_solver
+              )|];
+              repeat case_match; simpl in *; try reflexivity;
+              pose proof (Htmp := e);
+              rewrite mmdoeip_S_in in Htmp;
+              [exact HEinψ|];
+              inversion Htmp
+            ).
           }          
         }
         {
