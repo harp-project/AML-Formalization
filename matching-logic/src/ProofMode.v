@@ -113,7 +113,7 @@ Proof.
   { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
-  { rewrite propositional_implies_no_frame. }
+  { rewrite propositional_implies_no_frame;[exact H|apply reflexivity]. }
 Qed.
 
 (*
@@ -133,6 +133,7 @@ Proof.
     |(set_solver)
     |(set_solver)
     |(destruct (uses_kt pf); simpl in *; try congruence)
+    |(rewrite propositional_implies_no_frame;[exact pwi_pf_prop0|apply list_subseteq_nil])
     ].
   }
 Qed.
@@ -224,6 +225,8 @@ Section FOL_helpers.
     apply propositional_pi. reflexivity.
   Defined.
 
+  Ltac solve_pim_simple := constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)|(apply reflexivity)].
+
   Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed ϕ ->
     well_formed ψ ->
@@ -233,10 +236,7 @@ Section FOL_helpers.
     intros wfϕ wfψ.
     unshelve (eexists).
     { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
-    { abstract (
-        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-      ).
-    }
+    { abstract(solve_pim_simple). }
   Defined.
 
   Lemma P2 (Γ : Theory) (ϕ ψ ξ : Pattern) :
@@ -249,10 +249,7 @@ Section FOL_helpers.
     intros wfϕ wfψ wfξ.
     unshelve (eexists).
     { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
-    { abstract (
-        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-      ).
-    }
+    { abstract (solve_pim_simple). }
   Defined.
 
   Lemma P3 (Γ : Theory) (ϕ : Pattern) :
@@ -263,10 +260,7 @@ Section FOL_helpers.
     intros wfϕ.
     unshelve (eexists).
     { apply ProofSystem.P3. exact wfϕ. }
-    { abstract (
-        (constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)])
-      ).
-    }
+    { abstract ( solve_pim_simple ). }
   Defined.
 
   Lemma MP (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
@@ -282,7 +276,7 @@ Section FOL_helpers.
       { apply H2. }
     }
     {
-      abstract(
+      abstract (
       simpl;
       destruct H1 as [pf1 Hpf1];
       destruct H2 as [pf2 Hpf2];
@@ -294,6 +288,7 @@ Section FOL_helpers.
         | (simpl; set_solver)
         | (simpl; set_solver)
         | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+        | (simpl; apply list_nil_subseteq in pwi_pf_fp0; rewrite pwi_pf_fp0; simpl; apply pwi_pf_fp1)
         ]
       )|(
         constructor;
@@ -301,6 +296,7 @@ Section FOL_helpers.
         | (simpl; set_solver)
         | (simpl; set_solver)
         | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+        | (simpl; set_solver)
         ]
       )]).
     }
@@ -393,6 +389,7 @@ Section FOL_helpers.
       |(set_solver)
       |(set_solver)
       |(destruct (uses_kt pf); simpl in *; try congruence)
+      |(set_solver)
       ]
     )]).
   Qed.
@@ -813,10 +810,8 @@ Section FOL_helpers.
   Lemma not_basic_in_prop : ~ProofInfoLe BasicReasoning pi_Propositional.
   Proof.
     intros [HContra].
-    remember (evar_fresh []) as x.
-    pose (pf := ProofSystem.P3 ∅ (patt_free_evar x) ltac:(wf_auto2)).
-    pose (pf' := ProofSystem.Framing_left _ _ _ (patt_free_evar x) ltac:(wf_auto2) pf).
-    specialize (HContra _ _ pf').
+    pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
+    specialize (HContra _ _ pf).
     feed specialize HContra.
     {
       constructor.
@@ -824,13 +819,16 @@ Section FOL_helpers.
         simpl. exact I.
       }
       {
-        simpl. unfold pf'. set_solver.
+        simpl. unfold pf. apply reflexivity.
       }
       {
-        simpl. unfold pf'. set_solver.
+        simpl. unfold pf. apply reflexivity.
       }
       {
         simpl. reflexivity.
+      }
+      {
+        simpl. apply reflexivity.
       }
     }
     destruct HContra as [Contra1 Contra2 Contra3 Contra4].
@@ -838,7 +836,7 @@ Section FOL_helpers.
   Qed.
 
   Lemma not_exgen_x_in_prop (x : evar) :
-    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) pi_Propositional.
+    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) pi_Propositional.
   Proof.
     intros [HContra].
 
@@ -854,6 +852,7 @@ Section FOL_helpers.
       { simpl. clear. set_solver. }
       { simpl. clear. set_solver. }
       { simpl. reflexivity. }
+      { simpl. apply reflexivity. }
     }
     destruct HContra as [Hprop Hgen Hsvs Hkt].
     clear -Hgen.
