@@ -3864,7 +3864,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)]
+        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
@@ -3883,55 +3883,98 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)]
+        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
 
+
+  Tactic Notation "remember_constraint" "as" ident(i') :=
+      match goal with
+      | [|- _ using ?constraint] => remember constraint as i'
+      end.
+  
+  Tactic Notation "gapply" constr(pf) := eapply useGenericReasoning;[|apply pf].
+
+  Tactic Notation "gapply" constr(pf) "in" ident(H) :=
+    eapply useGenericReasoning in H;[|apply pf].
+
+  Ltac try_solve_pile := apply pile_evs_svs_kt; auto; try set_solver.
+
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q))) using BasicReasoning.
+    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
+    using (pi_Generic
+    (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
     intros wfp wfq.
     induction AC; simpl.
     - usePropositionalReasoning. apply pf_iff_equiv_refl; wf_auto2.
     - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
+      remember_constraint as i.
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        eapply Framing_left in H. 2: apply pile_refl.
-        eapply syllogism_meta. 4: apply H.
+        apply useGenericReasoning with (i0 := i) in H.
+        2: { subst i. 
+          apply pile_evs_svs_kt; auto. set_solver.
+        }
+        rewrite Heqi in H.
+        apply Framing_left with (ψ := p0) (wfψ := Prf) in H.
+        2: { apply pile_evs_svs_kt; auto. set_solver. }
+        eapply syllogism_meta. 4: subst i; apply H.
         all: try_wfauto2.
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_left. all: subst; wf_auto2.
+        subst i.
+        eapply useGenericReasoning.
+        2: eapply Prop_disj_left. all: subst; try_wfauto2.
+        { apply pile_evs_svs_kt; auto. set_solver. }
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_left; try_wfauto2. apply pile_refl.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+        * subst i. 
+          apply Framing_left with (wfψ := Prf).
+          { apply pile_evs_svs_kt; auto. set_solver. }
+          eapply prf_weaken_conclusion_meta_meta.
+          4: { gapply IH2. try_solve_pile. }
+          1-3: wf_auto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_left; try_wfauto2. apply pile_refl.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+        * subst i.
+          apply Framing_left with (wfψ := Prf).
+          { try_solve_pile. }
+          eapply prf_weaken_conclusion_meta_meta. 4: gapply IH2; try_solve_pile. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
     - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
+      remember_constraint as i.
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        eapply Framing_right in H.
+        apply useGenericReasoning with (i0 := i) in H.
+        2: { subst i. try_solve_pile. }
+        eapply Framing_right with (ψ := p0)(wfψ := Prf) in H.
         eapply syllogism_meta. 4: apply H.
         all: try_wfauto2.
+        2: { subst i. try_solve_pile. }
         remember (subst_ctx AC p) as p'.
         remember (subst_ctx AC q) as q'.
-        apply Prop_disj_right. all: subst; wf_auto2. apply pile_refl.
+        subst i; apply useBasicReasoning.
+        apply Prop_disj_right. all: subst; try_wfauto2.
       + eapply prf_disj_elim_meta_meta; try_wfauto2.
-        * apply Framing_right; try_wfauto2. apply pile_refl.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+        * subst i.
+          apply Framing_right with (wfψ := Prf).
+          { try_solve_pile. }
+          eapply prf_weaken_conclusion_meta_meta.
+          4: gapply IH2; try_solve_pile. all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_left_intro; wf_auto2.
-        * apply Framing_right; try_wfauto2. apply pile_refl.
-          eapply prf_weaken_conclusion_meta_meta. 4: apply IH2. all: try_wfauto2.
+        * subst i.
+          apply Framing_right with (wfψ := Prf).
+          { try_solve_pile. }
+          eapply prf_weaken_conclusion_meta_meta.
+          4: gapply IH2; try_solve_pile.
+          all: try_wfauto2.
           usePropositionalReasoning.
           apply disj_right_intro; wf_auto2.
   Defined.

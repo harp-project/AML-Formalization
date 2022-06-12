@@ -622,10 +622,6 @@ Proof.
   exact wfϕ.
 Defined.
 
-  Tactic Notation "remember_constraint" "as" ident(i') :=
-      match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
-      end.
 
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : GenericProofInfo)
