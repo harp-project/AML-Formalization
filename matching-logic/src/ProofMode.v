@@ -1496,7 +1496,7 @@ Defined.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
-    (i : ProofInfo) {pile : ProofInfoLe BasicReasoning i}
+    (i : ProofInfo) {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
     :
     well_formed A ->
     Γ ⊢ A using i ->
@@ -1529,7 +1529,7 @@ Defined.
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
-    {pile : ProofInfoLe BasicReasoning i}
+    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
   :
     well_formed A ->
     Γ ⊢ (A ---> Bot) using i ->
@@ -2092,6 +2092,9 @@ Proof.
     {
       rewrite indifferent_to_cast_uses_kt.
       apply Hpf4.
+    }
+    {
+      destruct i.
     }
   }
 Defined.

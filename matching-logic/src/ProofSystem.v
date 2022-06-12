@@ -422,6 +422,15 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
 
+  Lemma framing_patterns_cast_proof Γ ϕ (pf : Γ ⊢ ϕ) e :
+    @framing_patterns Γ ϕ (cast_proof e pf) = @framing_patterns Γ ϕ pf.
+  Proof.
+    induction pf; unfold cast_proof,eq_rec_r,eq_rec,eq_rect,eq_sym;simpl in *;
+    match type of e with
+    | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+    end; simpl; try reflexivity.
+  Qed.
+    
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
