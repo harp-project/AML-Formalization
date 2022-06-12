@@ -5903,6 +5903,172 @@ Print free_evar_subst.
      { abstract (wf_auto2). }
   Defined.
 
+  Lemma congruence_ex_helper Γ E ψ x p q gpi exdepth mudepth EvS SvS
+  (HxneqE : x ≠ E)
+  (wfψ : well_formed (ex , ψ))
+  (wfp : well_formed p)
+  (wfq : well_formed q)
+  (Heqx : x = evar_fresh (elements EvS))
+  (HEinψ: E ∈ free_evars ψ)
+  (i': ProofInfo)
+  (p_sub_EvS: free_evars p ⊆ EvS)
+  (q_sub_EvS: free_evars q ⊆ EvS)
+  (ψ_sub_EvS : free_evars ψ ⊆ EvS)
+  (Heqi': i' =
+        pi_Generic
+          (ExGen := list_to_set
+                      (evar_fresh_seq EvS
+                         (maximal_exists_depth_of_evar_in_pattern' exdepth E
+                            (ex , ψ))),
+           SVSubst := list_to_set
+                        (svar_fresh_seq SvS
+                           (maximal_mu_depth_of_evar_in_pattern' mudepth E
+                              (ex , ψ))),
+           KT := (if
+                   decide
+                     (0 =
+                      maximal_mu_depth_of_evar_in_pattern' mudepth E (ex , ψ))
+                  is left _ then false
+                  else true)))
+  (pile: ProofInfoLe i' (pi_Generic gpi))
+  (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
+     using pi_Generic gpi) :
+  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using pi_Generic gpi.
+  Proof.
+    apply pf_evar_open_free_evar_subst_equiv_sides in IH.
+    2: { exact HxneqE. }
+    2: { exact wfp. }
+    2: { exact wfq. }
+    unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
+    { abstract (wf_auto2). }
+    { abstract (wf_auto2). }
+    unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
+    { abstract (wf_auto2). }
+    { abstract (wf_auto2). }
+
+    (* TODO: remove the well-formedness constraints on this lemma*)
+    apply pf_iff_split.
+    { abstract (wf_auto2). }
+    { abstract (wf_auto2). }
+    {
+      eapply strip_exists_quantify_l.
+      3: {
+        apply Ex_gen.
+        3: {
+          eapply syllogism_meta.
+          5: {
+            useBasicReasoning.
+            apply Ex_quan.
+            abstract (wf_auto2).
+          }
+          4: {
+              apply IH1.
+            }
+          { abstract (wf_auto2). }
+          { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+        {
+          abstract (
+            subst i';
+            eapply pile_trans;
+            [|apply pile];
+            apply pile_evs_svs_kt;
+            [(
+            simpl;
+            rewrite medoeip_S_in;
+            [assumption|];
+            simpl;
+            unfold evar_fresh_s;
+            rewrite -Heqx;
+            clear;
+            set_solver
+            )|(clear; set_solver)
+            |reflexivity]
+          ).
+        }
+        {
+          abstract (
+            simpl;
+            pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
+            pose proof (Htmp2 := @free_evars_free_evar_subst Σ ψ q E);   
+            set_solver
+          ).
+        }
+      }
+      {
+        abstract (
+          simpl;
+          pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
+          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+          set_solver
+        ).
+      }
+      {
+        abstract (wf_auto2).
+      }
+    }
+    (* this block is a symmetric version of the previous block*)
+    {
+      eapply strip_exists_quantify_l.
+      3: {
+        apply Ex_gen.
+        3: {
+          eapply syllogism_meta.
+          5: {
+            useBasicReasoning.
+            apply Ex_quan.
+            abstract (wf_auto2).
+          }
+          4: {
+              apply IH2.
+            }
+          { abstract (wf_auto2). }
+          { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+        {
+          abstract (
+            subst i';
+            eapply pile_trans;
+            [|apply pile];
+            apply pile_evs_svs_kt;
+            [(
+              simpl;
+              rewrite medoeip_S_in;
+              [assumption|];
+              simpl;
+              unfold evar_fresh_s;
+              rewrite -Heqx;
+              clear;
+              set_solver
+            )
+           |(clear; set_solver)
+           |(reflexivity)
+            ]).
+        }
+        {
+          abstract (
+            simpl;
+            pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
+            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+            set_solver
+          ).
+        }
+      }
+      {
+        abstract (
+          simpl;
+          pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
+          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+          set_solver
+        ).
+      }
+      {
+        abstract (wf_auto2).
+      }
+    }
+  Defined.
 
   Lemma eq_prf_equiv_congruence
   (sz : nat)
@@ -6263,135 +6429,8 @@ Print free_evar_subst.
           exact ψ_sub_SvS
         ).
       }
-      apply pf_evar_open_free_evar_subst_equiv_sides in IH.
-      2: { abstract (set_solver). }
-      2: { abstract (wf_auto2). }
-      2: { abstract (wf_auto2). }
-      unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
-      unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
-
-      (* TODO: remove the well-formedness constraints on this lemma*)
-      apply pf_iff_split.
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
-      {
-        eapply strip_exists_quantify_l.
-        3: {
-          apply Ex_gen.
-          3: {
-            eapply syllogism_meta.
-            5: {
-              useBasicReasoning.
-              apply Ex_quan.
-              abstract (wf_auto2).
-            }
-            4: {
-                apply IH1.
-              }
-            { abstract (wf_auto2). }
-            { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-          {
-            abstract (
-              subst i';
-              eapply pile_trans;
-              [|apply pile];
-              apply pile_evs_svs_kt;
-              [(
-              simpl;
-              rewrite medoeip_S_in;
-              [assumption|];
-              simpl;
-              unfold evar_fresh_s;
-              rewrite -Heqx;
-              clear;
-              set_solver
-              )|(clear; set_solver)
-              |reflexivity]
-            ).
-          }
-          {
-            abstract (
-              simpl;
-              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
-              set_solver
-            ).
-          }
-        }
-        {
-          abstract (
-            simpl;
-            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
-            set_solver
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
-      }
-      (* this block is a symmetric version of the previous block*)
-      {
-        eapply strip_exists_quantify_l.
-        3: {
-          apply Ex_gen.
-          3: {
-            eapply syllogism_meta.
-            5: {
-              useBasicReasoning.
-              apply Ex_quan.
-              abstract (wf_auto2).
-            }
-            4: {
-                apply IH2.
-              }
-            { abstract (wf_auto2). }
-            { abstract (simpl; wf_auto2; apply wfc_ex_aux_bevar_subst; wf_auto2). }
-            { abstract (wf_auto2). }
-          }
-          {
-            abstract (
-              subst i';
-              eapply pile_trans;
-              [|apply pile];
-              apply pile_evs_svs_kt;
-              [(
-                simpl;
-                rewrite medoeip_S_in;
-                [assumption|];
-                simpl;
-                unfold evar_fresh_s;
-                rewrite -Heqx;
-                clear;
-                set_solver
-              )
-             |(clear; set_solver)
-             |(reflexivity)
-              ]).
-          }
-          {
-            abstract (
-              simpl;
-              pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
-              set_solver
-            ).
-          }
-        }
-        {
-          abstract (
-            simpl;
-            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
-            set_solver
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
-      }
+      apply congruence_ex_helper with (x := x)(EvS := EvS)(SvS := SvS)(i' := i')(exdepth := exdepth)(mudepth := mudepth); try assumption.
+      { set_solver. }
     }
     {
       pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
