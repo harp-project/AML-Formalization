@@ -1444,7 +1444,10 @@ Defined.
   Defined.
 
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
-    {pile : ProofInfoLe BasicReasoning i}
+    {pile : ProofInfoLe
+     (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
+     i
+    }
     :
     Γ ⊢ (A ---> B) using i ->
     Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)) using i.
@@ -1455,14 +1458,41 @@ Defined.
     assert (wfA: well_formed A) by wf_auto2.
     assert (wfB: well_formed B) by wf_auto2.
     clear pf HWF.
-    move: wfA wfB H.
 
-    induction C; intros WFA WFB H; simpl.
+    destruct i.
+    {
+      exfalso. eapply not_generic_in_prop. apply pile.
+    }
+
+    move: wfA wfB H.
+    induction C; intros WFA WFB H; simpl in *.
     - exact H.
-    - apply Framing_left. apply _. wf_auto2.
-      apply IHC. wf_auto2. wf_auto2. exact H.
-    - apply Framing_right. apply _. wf_auto2.
-      apply IHC. wf_auto2. wf_auto2. exact H.
+    - destruct gpi.
+      apply pile_evs_svs_kt_back in pile.
+      destruct_and!. simpl in *.
+      apply Framing_left with (wfψ := Prf).
+      {
+        apply pile_evs_svs_kt; try assumption.
+        set_solver.
+      }
+      apply IHC.
+      2,3: assumption.
+      2: exact H.
+      apply pile_evs_svs_kt; try assumption.
+      set_solver.
+    - destruct gpi.
+      apply pile_evs_svs_kt_back in pile.
+      destruct_and!. simpl in *.
+      apply Framing_right with (wfψ := Prf).
+      {
+        apply pile_evs_svs_kt; try assumption.
+        set_solver.
+      }
+      apply IHC.
+      2,3: assumption.
+      2: exact H.
+      apply pile_evs_svs_kt; try assumption.
+      set_solver.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
