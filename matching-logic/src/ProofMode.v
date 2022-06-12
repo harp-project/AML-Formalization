@@ -1011,13 +1011,13 @@ Proof.
 Qed.
 
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := [ψ])) i}
+    (wfψ : well_formed ψ)
+    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := [(exist _ ψ wfψ)])) i}
     :
-    well_formed ψ ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
   Proof.
-    intros wfψ [pf Hpf].
+    intros [pf Hpf].
     unshelve (eexists).
     {
       apply ProofSystem.Framing_left.
@@ -1044,20 +1044,46 @@ Qed.
         assumption.
       }
       {
-        destruct pile as [pile].
-        set_solver.
+        destruct gpi.
+        simpl in *.
+        apply pile_evs_svs_kt_back in pile.
+        destruct_and!.
+        (*
+        destruct pi_framing_patterns0.
+        { exfalso. set_solver. } *)
+        clear H H1 H0.
+        rewrite elem_of_subseteq.
+        intros p0 Hp0.
+        rewrite elem_of_cons in Hp0.
+        destruct Hp0 as [Hp0|Hp0].
+        {
+          subst.
+          remember ((@sval) Pattern (λ p : Pattern, well_formed p = true)) as F.
+          rewrite elem_of_subseteq in H3.
+          specialize (H3 (exist _ ψ wfψ)).
+          feed specialize H3.
+          {
+            rewrite elem_of_cons.
+            left. reflexivity.
+          }
+          subst F.
+          eapply elem_of_list_fmap_1_alt. apply H3. reflexivity.
+        }
+        {
+          set_solver.
+        }
       }
     }
   Defined.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-  {pile : ProofInfoLe BasicReasoning i}
+  (wfψ : well_formed ψ)
+  {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := [(exist _ ψ wfψ)])) i}
   :
-  well_formed ψ ->
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
 Proof.
-  intros wfψ [pf Hpf].
+  intros [pf Hpf].
   unshelve (eexists).
   {
     apply ProofSystem.Framing_right.
@@ -1067,7 +1093,7 @@ Proof.
   {
     destruct i.
     {
-      exfalso. apply not_basic_in_prop. apply pile.
+      exfalso. eapply not_generic_in_prop. apply pile.
     }
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
     constructor; simpl.
@@ -1082,6 +1108,33 @@ Proof.
     }
     {
       assumption.
+    }
+    {
+      destruct gpi.
+      simpl in *.
+      apply pile_evs_svs_kt_back in pile.
+      destruct_and!.
+      clear H H1 H0.
+      rewrite elem_of_subseteq.
+      intros p0 Hp0.
+      rewrite elem_of_cons in Hp0.
+      destruct Hp0 as [Hp0|Hp0].
+      {
+        subst.
+        remember ((@sval) Pattern (λ p : Pattern, well_formed p = true)) as F.
+        rewrite elem_of_subseteq in H3.
+        specialize (H3 (exist _ ψ wfψ)).
+        feed specialize H3.
+        {
+          rewrite elem_of_cons.
+          left. reflexivity.
+        }
+        subst F.
+        eapply elem_of_list_fmap_1_alt. apply H3. reflexivity.
+      }
+      {
+        set_solver.
+      }
     }
   }
 Defined.
