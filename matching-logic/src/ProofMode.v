@@ -2094,10 +2094,8 @@ Proof.
       apply Hpf4.
     }
     {
-      Check @framing_patterns_cast_proof.
-      Set Printing All.
-      rewrite @framing_patterns_cast_proof.
-      destruct i.
+      rewrite framing_patterns_cast_proof.
+      destruct i;assumption.
     }
   }
 Defined.
