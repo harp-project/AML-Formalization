@@ -6112,7 +6112,7 @@ Print free_evar_subst.
     abstract (destruct ψ; simpl in Hsz; lia).  
 
     lazymatch type of pile with
-    | ProofInfoLe ?st _ => set (i' := st)
+    | ProofInfoLe ?st _ => set (i' := st) in *
     end.
   
     destruct ψ; simpl in Hsz; simpl.
@@ -6746,6 +6746,7 @@ Print free_evar_subst.
     { exact Hiff. }
   Defined.
 
+  (*
   Lemma framing_patterns_prf_equiv_congruence Γ p q C i pile wfC pf:
     (@framing_patterns _ _ _ (proj1_sig (@prf_equiv_congruence Γ p q C i pile wfC pf))) = [].
   Proof.
@@ -6778,10 +6779,14 @@ Print free_evar_subst.
       admit.
     }
     {
-      unfold eq_prf_equiv_congruence.
-      unfold nat_rec.
+      cbv delta [eq_prf_equiv_congruence].
+      cbv delta [nat_rec].
+      cbv delta [nat_rect].
+      cbv beta.
+      (* I need to have a function for the PILE type *)
     }
   Abort.
+  *)
 
 
 End FOL_helpers.
