@@ -376,6 +376,17 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
       | Singleton_ctx _ _ _ _ _ _ => false
       end.
   
+  Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢ ϕ) :
+    propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = [].
+  Proof.
+    intros H.
+    induction pf; simpl in *; try apply reflexivity; try congruence.
+    {
+      destruct_and!. specialize (IHpf1 ltac:(assumption)). specialize (IHpf2 ltac:(assumption)).
+      rewrite IHpf1. rewrite IHpf2. reflexivity.
+    }
+  Qed.
+
   Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢ ϕ) :
     propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
   Proof.

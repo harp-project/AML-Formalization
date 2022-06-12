@@ -37,10 +37,11 @@ Record GenericProofInfo {Σ : Signature} :=
     pi_generalized_evars : EVarSet ;
     pi_substituted_svars : SVarSet ;
     pi_uses_kt : bool ;
+    pi_framing_patterns : list Pattern ;
   }.
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-  := (@mkGenericProofInfo _ evs svs bkt) (at level 95, no associativity).
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
+  := (@mkGenericProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
 
 Inductive ProofInfo {Σ : Signature} := pi_Propositional | pi_Generic (gpi : GenericProofInfo).
 
@@ -59,6 +60,7 @@ mkProofInfoMeaning
   pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
   pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
+  pwi_pf_fp : @framing_patterns Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_framing_patterns pi' else []) ;
 }.
 
 Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
@@ -93,7 +95,7 @@ Proof.
 Qed.
 
 Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
-Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false)).
+Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false [])).
 
 
 Lemma propositional_pi
@@ -111,6 +113,7 @@ Proof.
   { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
   { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
+  { rewrite propositional_implies_no_frame. }
 Qed.
 
 (*
