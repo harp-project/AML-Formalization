@@ -3996,6 +3996,7 @@ Section FOL_helpers.
         |( set_solver )
         |( set_solver )
         |( reflexivity )
+        |( set_solver )
         ]
       ).
     }
@@ -4019,6 +4020,7 @@ Section FOL_helpers.
         |( set_solver )
         |( set_solver )
         |( reflexivity )
+        |( set_solver )
         ]
       ).
     }
@@ -4042,6 +4044,7 @@ Section FOL_helpers.
         |( set_solver )
         |( set_solver )
         |( reflexivity )
+        |( set_solver )
         ]
       ).
     }
@@ -4061,13 +4064,14 @@ Section FOL_helpers.
         |( set_solver )
         |( set_solver )
         |( reflexivity )
+        |( set_solver )
         ]
       ).
     }
   Defined.
 
-  Lemma pile_impl_allows_gen_x x gpi svs kt:
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt)) (pi_Generic gpi) ->
+  Lemma pile_impl_allows_gen_x x gpi svs kt fp:
+    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) (pi_Generic gpi) ->
     x ∈ pi_generalized_evars gpi.
   Proof.
     intros [H].
@@ -4111,6 +4115,16 @@ Section FOL_helpers.
         apply propositional_implies_noKT.
         apply Hp1.
       }
+      {
+        case_match.
+        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
+        cut (framing_patterns ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = [] ).
+        {
+          intros. rewrite H0. set_solver.
+        }
+        apply propositional_implies_no_frame.
+        apply Hp1.
+      }
     }
     inversion H'. simpl in *. clear -pwi_pf_ge0. set_solver.
   Qed.
@@ -4120,6 +4134,7 @@ Section FOL_helpers.
             {| pi_generalized_evars := {[x]};
                pi_substituted_svars := ∅;
                pi_uses_kt := false ;
+               pi_framing_patterns := [] ;
             |}) i} :
     x ∉ free_evars ϕ₂ ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
@@ -4167,11 +4182,16 @@ Section FOL_helpers.
         inversion Hpf.
         apply pwi_pf_kt0.
       }
+      {
+        destruct i;[contradiction|].
+        inversion Hpf.
+        apply pwi_pf_fp0.
+      }
     }
   Defined.
 
-  Lemma pile_basic_generic eg svs kt:
-    ProofInfoLe BasicReasoning (pi_Generic (ExGen := eg, SVSubst := svs, KT := kt)).
+  Lemma pile_basic_generic eg svs kt fp:
+    ProofInfoLe BasicReasoning (pi_Generic (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
   Proof.
     constructor.
     intros Γ ϕ pf Hpf.
@@ -4184,6 +4204,7 @@ Section FOL_helpers.
       { inversion Hpf4. }
       simpl. reflexivity.
     }
+    { set_solver. }
   Qed.
 
   Lemma Prop_ex_left (Γ : Theory) (ϕ ψ : Pattern) :
@@ -4205,6 +4226,7 @@ Section FOL_helpers.
       { set_solver. }
       { set_solver. }
       { reflexivity. }
+      { set_solver. }
     }
   Defined.
 
@@ -4227,6 +4249,7 @@ Section FOL_helpers.
       { set_solver. }
       { set_solver. }
       { reflexivity. }
+      { set_solver. }
     }
   Defined.
 
