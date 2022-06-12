@@ -29,6 +29,7 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+Search nat_rect.
 
 Record GenericProofInfo {Σ : Signature} :=
   mkGenericProofInfo
@@ -6107,11 +6108,14 @@ Print free_evar_subst.
       p_sub_SvS q_sub_SvS ψ_sub_SvS
     .
     induction sz; intros ψ wfψ Hsz EvS SvS pile
-      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS;
-      lazymatch type of pile with
-      | ProofInfoLe ?st _ => remember st as i'
-      end;
-      destruct ψ; simpl in Hsz; try (abstract (lia)); simpl.
+      p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS.
+    abstract (destruct ψ; simpl in Hsz; lia).  
+
+    lazymatch type of pile with
+    | ProofInfoLe ?st _ => set (i' := st)
+    end.
+  
+    destruct ψ; simpl in Hsz; simpl.
     {
       destruct (decide (E = x)).
       {
@@ -6431,6 +6435,7 @@ Print free_evar_subst.
       }
       apply congruence_ex_helper with (x := x)(EvS := EvS)(SvS := SvS)(i' := i')(exdepth := exdepth)(mudepth := mudepth); try assumption.
       { set_solver. }
+      { unfold i'. reflexivity. }
     }
     {
       pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
@@ -6767,16 +6772,14 @@ Print free_evar_subst.
       remember x10 as Hx10
     end.
 
-    unfold eq_prf_equiv_congruence.
     induction sz.
     {
       cbn.
       admit.
     }
     {
+      unfold eq_prf_equiv_congruence.
       unfold nat_rec.
-      unfold nat_rect.
-      cbn.
     }
   Abort.
 
