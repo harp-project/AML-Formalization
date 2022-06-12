@@ -2194,7 +2194,12 @@ Proof.
     (
       rewrite indifferent_to_cast_uses_kt;
       apply Hpf4
-    )]).
+    )|
+    (
+      rewrite framing_patterns_cast_proof;
+      destruct i; assumption
+    )
+    ]).
   }
 Defined.
 
@@ -3824,29 +3829,25 @@ Section FOL_helpers.
   Defined.
     
   Lemma prf_prop_bott_iff Γ AC:
-    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott) using BasicReasoning.
+    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott)
+    using (pi_Generic
+    (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
-    induction AC; simpl.
-    - usePropositionalReasoning. apply pf_iff_equiv_refl; auto.
-    - apply pf_iff_iff in IHAC; auto.
-      destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; try_wfauto2.
-      + pose proof (H := IH1).
-        eapply Framing_left in H.
-        eassert (Γ ⊢ (⊥ $ ?[psi] ---> ⊥) using BasicReasoning).
-        { apply Prop_bott_left. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
-      + usePropositionalReasoning. apply bot_elim; wf_auto2.
-    - apply pf_iff_iff in IHAC; auto.
-      destruct IHAC as [IH1 IH2].
-      apply pf_iff_split; try_wfauto2.
-      + pose proof (H := IH1).
-        eapply Framing_right in H.
-        eassert (Γ ⊢ ( ?[psi] $ ⊥ ---> ⊥) using BasicReasoning).
-        { apply Prop_bott_right. shelve. }
-        eapply syllogism_meta. 5: apply H0. 4: apply H. all: try_wfauto2. apply pile_refl.
-      + usePropositionalReasoning. apply bot_elim; wf_auto2.
-        Unshelve. all: wf_auto2.
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    1: apply ctx_bot_prop.
+    1: apply pile_refl.
+    1: wf_auto2.
+    {
+      usePropositionalReasoning.
+      apply A_impl_A.
+      reflexivity.
+    }
+    {
+      usePropositionalReasoning.
+      apply bot_elim.
+      wf_auto2.
+    }
   Defined.
 
   Lemma Prop_disj_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
