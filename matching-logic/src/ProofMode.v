@@ -5215,7 +5215,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) i ->
     well_formed ϕ ->
     Γ ⊢ ϕ using i ->
     Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
@@ -5240,7 +5240,7 @@ Section FOL_helpers.
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
-    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
+    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
   Proof.
     intros wfϕ.
    
@@ -5276,7 +5276,7 @@ Section FOL_helpers.
 End FOL_helpers.
 
 Lemma not_kt_in_prop {Σ : Signature} :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true)) pi_Propositional.
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true, FP := [])) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5290,6 +5290,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
+    { apply reflexivity. }
   }
   destruct HContra as [HC1 HC2 HC3 HC4].
   unfold pf2 in HC4.
@@ -5297,8 +5298,8 @@ Proof.
   congruence.
 Qed.
 
-Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true)) (pi_Generic gpi) ->
+Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) (pi_Generic gpi) ->
   pi_uses_kt gpi.
 Proof.
   intros [H].
@@ -5313,6 +5314,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     reflexivity.
+    { apply list_subseteq_nil. }
   }
   destruct H as [H1 H2 H3 H4].
   unfold pf2 in H4. simpl in H4. exact H4.
@@ -5325,6 +5327,7 @@ Lemma Knaster_tarski {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
+           pi_framing_patterns := [] ;
         |}) i} :
 well_formed (mu, ϕ) ->
 Γ ⊢ (instantiate (mu, ϕ) ψ) ---> ψ using i ->
@@ -5358,15 +5361,20 @@ unshelve (eexists).
   {
     destruct i;[contradiction|].
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ pile).
+    pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ _ pile).
     exact Hpile.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    apply Hpf5.
   }
 }
 Defined.
 
 
 Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false)) pi_Propositional.
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := [])) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5380,6 +5388,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
+    { apply reflexivity. }
   }
   destruct HContra as [HC1 HC2 HC3 HC4].
   simpl in *.
@@ -5387,8 +5396,8 @@ Proof.
   congruence.
 Qed.
 
-Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt)) (pi_Generic gpi) ->
+Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt fp:
+  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) (pi_Generic gpi) ->
   X ∈ pi_substituted_svars gpi.
 Proof.
   intros [H].
@@ -5403,6 +5412,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     reflexivity.
+    { apply list_subseteq_nil. }
   }
   destruct H as [H1 H2 H3 H4].
   simpl in *.
@@ -5415,6 +5425,7 @@ Lemma Svar_subst {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
+           pi_framing_patterns := [] ;
         |}) i} :
   well_formed ψ ->
   Γ ⊢ ϕ using i ->
@@ -5444,7 +5455,7 @@ Proof.
   {
     destruct i;[contradiction|].
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ pile).
+    pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ _ pile).
     clear -Hpile Hpf3.
     set_solver.
   }
@@ -5452,6 +5463,11 @@ Proof.
     destruct i;[contradiction|].
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
     exact Hpf4.
+  }
+  {
+    destruct i;[contradiction|].
+    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    exact Hpf5.
   }
 }
 Defined.
@@ -5475,6 +5491,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
+    { apply reflexivity. }
   }
 Defined.
 
