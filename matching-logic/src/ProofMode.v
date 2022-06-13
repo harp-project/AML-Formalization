@@ -5500,7 +5500,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true)) i ->
+    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := [])) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i->
@@ -6230,36 +6230,48 @@ Qed.
   rewrite IHψ. assumption. reflexivity.
 }
 Qed.
-Print free_evar_subst.
-  Lemma helper_app_lemma Γ ψ1 ψ2 p q E gpi
+
+Lemma test ψ1 ψ2 p q (E : evar)
+(wfψ1: well_formed ψ1)
+(wfψ2: well_formed ψ2)
+(wfp: well_formed p)
+(wfq: well_formed q)
+: (well_formed (free_evar_subst ψ1 p E) = true).
+Proof.
+  wf_auto2.
+  Defined.
+Print test.
+
+  Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
   (wfψ1: well_formed ψ1)
   (wfψ2: well_formed ψ2)
   (wfp: well_formed p)
   (wfq: well_formed q)
-  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using pi_Generic gpi)
-  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using pi_Generic gpi)
+  (pile: ProofInfoLe (pi_Generic (
+    ExGen := ∅, 
+    SVSubst := ∅, 
+    KT := false, 
+    FP := [(exist _ (free_evar_subst ψ1 p E) (well_formed_free_evar_subst_0 E wfp wfψ1))
+          ;(exist _ (free_evar_subst ψ1 q E) (well_formed_free_evar_subst_0 E wfq wfψ1))
+          ;(exist _ (free_evar_subst ψ2 p E) (well_formed_free_evar_subst_0 E wfp wfψ2))
+          ;(exist _ (free_evar_subst ψ2 q E) (well_formed_free_evar_subst_0 E wfq wfψ2))
+          ] )) i )
+  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using i)
+  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using i)
   :
-  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using pi_Generic gpi.
+  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using i.
   Proof.
-    destruct gpi.
+    remember (well_formed_free_evar_subst_0 E wfp wfψ1) as Hwf1.
+    remember (well_formed_free_evar_subst_0 E wfq wfψ1) as Hwf2.
+    remember (well_formed_free_evar_subst_0 E wfp wfψ2) as Hwf3.
+    remember (well_formed_free_evar_subst_0 E wfq wfψ2) as Hwf4.
+
     eapply pf_iff_equiv_trans.
     5: { 
       apply conj_intro_meta.
       4: {
-        apply Framing_right.
-        {
-          abstract (
-            unfold BasicReasoning;
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(clear; set_solver)
-            |(reflexivity)
-            ]
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
+        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
+        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
         {
           eapply pf_conj_elim_r_meta in pf₂.
           apply pf₂.
@@ -6268,20 +6280,8 @@ Print free_evar_subst.
         }
       }
       3: {
-        apply Framing_right.
-        {
-          abstract (
-            unfold BasicReasoning;
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(clear; set_solver)
-            |(reflexivity)
-            ]
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
+        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
+        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
         {
           eapply pf_conj_elim_l_meta in pf₂.
           apply pf₂.
@@ -6299,20 +6299,8 @@ Print free_evar_subst.
      4: {
       apply conj_intro_meta.
       4: {
-        apply Framing_left.
-        {
-          abstract (
-            unfold BasicReasoning;
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(clear; set_solver)
-            |(reflexivity)
-            ]
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
+        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
+        { eapply pile_trans. 2: apply pile. try_solve_pile. }
         {
           eapply pf_conj_elim_r_meta in pf₁.
           apply pf₁.
@@ -6321,20 +6309,8 @@ Print free_evar_subst.
         }
       }
       3: {
-        apply Framing_left.
-        {
-          abstract (
-            unfold BasicReasoning;
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(clear; set_solver)
-            |(reflexivity)
-            ]
-          ).
-        }
-        {
-          abstract (wf_auto2).
-        }
+        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
+        { eapply pile_trans. 2: apply pile. try_solve_pile. }
         {
           eapply pf_conj_elim_l_meta in pf₁.
           apply pf₁.
@@ -6380,7 +6356,9 @@ Print free_evar_subst.
                      (0 =
                       maximal_mu_depth_of_evar_in_pattern' mudepth E (ex , ψ))
                   is left _ then false
-                  else true)))
+                  else true),
+           FP := []
+          ))
   (pile: ProofInfoLe i' (pi_Generic gpi))
   (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
      using pi_Generic gpi) :
@@ -6435,7 +6413,7 @@ Print free_evar_subst.
             clear;
             set_solver
             )|(clear; set_solver)
-            |reflexivity]
+            |reflexivity|(clear; set_solver)]
           ).
         }
         {
@@ -6495,7 +6473,7 @@ Print free_evar_subst.
               set_solver
             )
            |(clear; set_solver)
-           |(reflexivity)
+           |(reflexivity)|(clear; set_solver)
             ]).
         }
         {
@@ -6518,6 +6496,39 @@ Print free_evar_subst.
       {
         abstract (wf_auto2).
       }
+    }
+  Defined.
+
+  Fixpoint frames_on_the_way_to_hole' (E : evar) (ψ : Pattern) (wfψ : well_formed ψ = true)
+    (accumulator : list ({ f : Pattern | well_formed f = true}))
+    : list ({ f : Pattern | well_formed f = true}).
+  Proof.
+    move: accumulator.
+    induction ψ; intros accumulator.
+    { destruct (decide (x = E)).
+      { exact accumulator. }
+      { exact []. }
+    }
+    { exact []. }
+    { exact []. }
+    { exact []. }
+    { exact []. }
+    {
+      specialize (IHψ1 ltac:(wf_auto2)).
+      specialize (IHψ2 ltac:(wf_auto2)).
+      exact ((IHψ1 accumulator) ++ (IHψ2 accumulator)).
+    }
+    { exact []. }
+    {
+      assert (wfψ1 : well_formed ψ1 = true) by wf_auto2.
+      assert (wfψ2 : well_formed ψ2 = true) by wf_auto2.
+      specialize (IHψ1 wfψ1).
+      specialize (IHψ2 wfψ2).
+      exact ((IHψ1 ((exist _ ψ2 wfψ2)::accumulator)) ++ (IHψ2 ((exist _ ψ1 wfψ1)::accumulator))).
+    }
+    {
+      
+      specialize (IHψ ltac:(wf_auto2)).
     }
   Defined.
 
