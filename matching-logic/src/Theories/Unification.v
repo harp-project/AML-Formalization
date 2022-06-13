@@ -328,3 +328,239 @@ Section ProofSystemTheorems.
   Abort.
 
 End ProofSystemTheorems.
+
+Section UnificationProcedure.
+  Context {Σ : Signature} {ΣS : Syntax}.
+
+  (* Fixpoint apps_r (C : Application_context) : bool :=
+  match C with
+   | box => true
+   | ctx_app_l cc p => apps_r cc
+   | ctx_app_r p cc => false
+  end. *)
+
+  (** Based on https://www.cs.bu.edu/fac/snyder/publications/UnifChapter.pdf *)
+  Definition Unification_problem : Set := list (Pattern * Pattern) * 
+                                          list (evar * Pattern).
+
+  Fixpoint get_apps (p : Pattern) : option (symbols * list Pattern) :=
+  match p with
+  | patt_app p1 p2 =>
+    match get_apps p1 with
+    | Some (s, ps) => Some (s, ps ++ [p2])
+    | None => None
+    end
+  | patt_sym s => Some (s, [])
+  | _ => None
+  end.
+
+  Definition u_remove := remove (prod_eqdec Pattern_eqdec Pattern_eqdec).
+
+  Definition subst_ziplist (x : evar) (p : Pattern) 
+    : list (Pattern * Pattern) -> list (Pattern * Pattern) :=
+    map (fun '(p1, p2) => ( p1.[[evar: x ↦ p]] , p2.[[evar: x ↦ p]] )).
+  Definition subst_list (x : evar) (p : Pattern) 
+    : list (evar * Pattern) -> list (evar * Pattern) :=
+    map (fun '(y, p2) => ( y , p2.[[evar: x ↦ p]] )).
+
+  Reserved Notation "u ===> u'" (at level 80).
+  Inductive unify_step : Unification_problem -> option Unification_problem -> Set :=
+  (* trivial/delete *)
+  | u_trivial t U S U' :
+    (U ++ (t, t)::U', S) ===> Some (U ++ U', S)
+  (* decomposition *)
+  | u_decompose U U' S t1 t2 f ps ps' :
+    get_apps t1 = Some (f, ps) -> get_apps t2 = Some (f, ps') ->
+    length ps = length ps'
+   ->
+    (U ++ (t1, t2)::U', S) ===> Some (zip ps ps' ++ U ++ U', S)
+  (* symbol_clash *)
+  | u_clash U U' S t1 t2 f g ps ps' :
+    get_apps t1 = Some (f, ps) -> get_apps t2 = Some (g, ps') ->
+    f <> g
+   ->
+    (U ++ (t1, t2)::U', S) ===> None
+  (* orient *)
+  | u_orient U U' S t x:
+    (U ++ (t, patt_free_evar x)::U', S) ===> Some (U ++ (patt_free_evar x, t)::U', S)
+  (* occurs check *)
+  | u_check U U' S x t:
+    x ∈ free_evars t ->
+    patt_free_evar x <> t
+   ->
+    (U ++ (t, patt_free_evar x)::U', S) ===> None
+  (* elimination *)
+  | u_elim U U' S x t:
+    x ∉ free_evars t
+   ->
+    (U ++ (patt_free_evar x, t)::U', S) ===> Some (subst_ziplist x t (U ++ U'), 
+                                                   (x, t) :: subst_list x t S)
+  where "u ===> u'" := (unify_step u u').
+
+  Definition unification_to_pattern (u : Unification_problem) : Pattern :=
+    match u with
+    | (Us, Ss) => 
+        fold_right patt_and Top (map (fun '(p1, p2) => p1 =ml p2) Us)
+        and
+        fold_right patt_and Top (map (fun '(x, p2) => patt_free_evar x =ml p2) Ss)
+    end.
+
+  Definition wf_unification (u : Unification_problem) :=
+    (forall t1 t2, In (t1, t2) (fst u) -> well_formed t1 /\ well_formed t2) /\
+    (forall x t, In (x, t) (snd u) -> well_formed t).
+
+  Theorem foldr_equiv :
+    forall l p l' p0, well_formed p -> well_formed (foldr patt_and p0 l) -> well_formed (foldr patt_and p0 l') ->
+    forall Γ, Γ ⊢ foldr patt_and p0 (l ++ p::l') <---> foldr patt_and p0 (p::l ++ l').
+  Proof.
+    intros l. induction l; intros p l' p0 WFp WFl WFl' Γ.
+    * simpl. apply pf_iff_equiv_refl. wf_auto2.
+    * simpl.
+  Abort.
+
+  Theorem wf_unify_step :
+    forall u u' : Unification_problem,
+    u ===> Some u' ->
+    wf_unification u ->
+    wf_unification u'.
+  Proof.
+    intros u u' D. dependent induction D; intros WF; destruct WF as [WF1 WF2].
+    * split.
+      - intros t1 t2 HIn. simpl in HIn. apply in_app_or in HIn.
+        apply WF1. destruct HIn.
+        + now apply in_app_l.
+        + apply in_app_r. now constructor 2.
+      - intros x t0 HIn. simpl in HIn.
+        now apply (WF2 x).
+    * 
+  Abort.
+
+  Theorem wf_unify_pattern :
+    forall u, wf_unification u -> well_formed (unification_to_pattern u).
+  Proof.
+  Abort.
+
+  Theorem unification_soundness :
+    forall u u' : Unification_problem,
+    u ===> Some u' ->
+    wf_unification u ->
+    forall Γ, theory ⊆ Γ -> Γ ⊢ unification_to_pattern u ---> unification_to_pattern u'.
+  Proof.
+    intros u u' D WF.
+    assert (wf_unification u') as H.
+    { (* eapply wf_unify_step; eassumption. *) admit. }
+    dependent induction D; intros Γ HΓ.
+    * subst.
+      (* TODO: why does toMyGoal simplify??? *)
+      Opaque unification_to_pattern.
+      toMyGoal.
+      { (* apply well_formed_imp; apply wf_unify_pattern; auto. *) admit. }
+      Transparent unification_to_pattern.
+      cbn.
+      rewrite map_app. simpl map.
+      (* epose proof (@foldr_equiv (map (λ '(p1, p2), p1 =ml p2) U) (t =ml t) (map (λ '(p1, p2), p1 =ml p2) U') Top _ _ _ Γ).
+
+      mgIntro.
+      mgDestructAnd 0. mgSplitAnd. 2: mgAssumption. mgClear 1.
+      (* TODO: why can't be app folded back?
+               something is seriously wrong here *)
+      Search patt_and patt_imp ML_proof_system. *)
+      (* mgRewrite H0 at 1. *)
+     
+  Abort.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* (*   Axiom f : symbols.
+  Compute (get_apps (patt_sym f $ ⊥ $ ⊤ $ ⊥)). *)
+  Fixpoint unify_step1 (u : Unification_problem) : option Unification_problem :=
+  match u with
+  | []           => Some []
+  | (t1, t2)::xs =>
+    match unify_step1 xs with
+    | None => None
+    | Some xs' =>
+      match decide (t1 = t2) with
+      | left _ => Some xs' (* delete *)
+      | right _ =>
+        match get_apps t1, get_apps t2 with
+        | Some (s, ps), Some (s', ps') =>
+          match decide (s = s') with
+          | left _ => Some (xs' ++ zip ps ps') (* decomposition *)
+          | right _ => None (* symbol clash *)
+          end
+        | _, _ => Some xs'
+        end
+      end
+    end
+  end. *)
+
+  Definition is_free_evar (p : Pattern) : bool :=
+  match p with
+  | patt_free_evar _ => true
+  | _ => false
+  end.
+
+  Definition swap_if {A : Type} (P : A -> bool) (p : A * A): A * A :=
+  match p with
+  | (p1, p2) =>
+    match P p1, P p2 with
+    | true, _ => (p1, p2)
+    | _, true => (p2, p1)
+    | _, _    => (p1, p2)
+    end
+  end.
+
+  (* (* orient *)
+  Definition unify_step2 (u : Unification_problem) : Unification_problem :=
+     map (swap_if is_free_evar) u.
+
+  (* occurs_check *)
+  Fixpoint unify_step3 (u : Unification_problem) : option Unification_problem :=
+  match u with
+  | [] => Some []
+  | (p1, p2)::xs =>
+    match unify_step3 xs with
+    | Some xs' =>
+      match p1 with
+      | patt_free_evar x =>
+        match decide (x ∈ free_evars p2) with
+        | left _ => None
+        | right _ => Some ((p1, p2)::xs')
+        end
+      | _ => Some ((p1, p2)::xs')
+      end
+    | None => None
+    end
+  end.
+
+  (* 1x elimination *)
+  Fixpoint unify_step3 (u : Unification_problem) : Unification_problem :=
+  match u with
+  | [] => []
+  | (patt_free_evar x, p2)::xs => 
+  | (p1, p2)::xs => unify_step3 xs
+  end. *)
+
+End UnificationProcedure.
