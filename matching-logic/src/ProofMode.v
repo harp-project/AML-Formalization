@@ -3888,6 +3888,7 @@ Section FOL_helpers.
     }
   Defined.
 
+  End FOL_helpers.
 
   Tactic Notation "remember_constraint" "as" ident(i') :=
       match goal with
@@ -3900,6 +3901,10 @@ Section FOL_helpers.
     eapply useGenericReasoning in H;[|apply pf].
 
   Ltac try_solve_pile := apply pile_evs_svs_kt; auto; try set_solver.
+
+  Section FOL_helpers.
+
+  Context {Σ : Signature}.  
 
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
@@ -4263,6 +4268,13 @@ Section FOL_helpers.
     | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
     end.
 
+  Tactic Notation "change" "constraint" "in" ident(H) :=
+    let i := fresh "i" in
+    remember_constraint as i;
+    eapply useGenericReasoning with (i0 := i) in H;
+    subst i;
+    [|(try_solve_pile)].
+
 Section FOL_helpers.
   
   Context {Σ : Signature}.
@@ -4276,6 +4288,7 @@ Section FOL_helpers.
     {| pi_generalized_evars := {[x]};
        pi_substituted_svars := ∅;
        pi_uses_kt := false ;
+       pi_framing_patterns := frames_of_AC AC
     |}).
   Proof.
     intros Hx Hwf.
@@ -4351,10 +4364,13 @@ Section FOL_helpers.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
-        eapply Framing_left in IH1.
+        change constraint in IH1.
+        apply Framing_left with (ψ := p0) (wfψ := Prf) in IH1.
+        2: { try_solve_pile. }
+        
         eapply syllogism_meta. 4: apply IH1.
-        all:auto.
-        2: { apply pile_basic_generic. }
+        1-3: wf_auto2.
+        
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
@@ -4363,11 +4379,14 @@ Section FOL_helpers.
         apply Prop_ex_left. wf_auto2. wf_auto2.
       + clear IH1.
 
-        eapply Framing_left in IH2.
-        eapply syllogism_meta. 5: eapply IH2. all: auto.
-        2: { apply pile_basic_generic. }
+        change constraint in IH2.
+        apply Framing_left with (ψ := p0) (wfψ := Prf) in IH2.
+        2: { try_solve_pile. }
+        eapply syllogism_meta. 5: eapply IH2.
+        1-3: wf_auto2.
+        
         apply Ex_gen; auto.
-        { apply pile_refl. }
+        { try_solve_pile. }
         1: {
           unfold exists_quantify.
           simpl.
