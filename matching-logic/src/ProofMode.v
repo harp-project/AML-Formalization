@@ -6234,93 +6234,6 @@ Qed.
 }
 Qed.
 
-  Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
-  (wfψ1: well_formed ψ1)
-  (wfψ2: well_formed ψ2)
-  (wfp: well_formed p)
-  (wfq: well_formed q)
-  (pile: ProofInfoLe (pi_Generic (
-    ExGen := ∅, 
-    SVSubst := ∅, 
-    KT := false, 
-    FP := [(exist _ (free_evar_subst ψ1 p E) (well_formed_free_evar_subst_0 E wfp wfψ1))
-          ;(exist _ (free_evar_subst ψ1 q E) (well_formed_free_evar_subst_0 E wfq wfψ1))
-          ;(exist _ (free_evar_subst ψ2 p E) (well_formed_free_evar_subst_0 E wfp wfψ2))
-          ;(exist _ (free_evar_subst ψ2 q E) (well_formed_free_evar_subst_0 E wfq wfψ2))
-          ] )) i )
-  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using i)
-  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using i)
-  :
-  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using i.
-  Proof.
-    remember (well_formed_free_evar_subst_0 E wfp wfψ1) as Hwf1.
-    remember (well_formed_free_evar_subst_0 E wfq wfψ1) as Hwf2.
-    remember (well_formed_free_evar_subst_0 E wfp wfψ2) as Hwf3.
-    remember (well_formed_free_evar_subst_0 E wfq wfψ2) as Hwf4.
-
-    eapply pf_iff_equiv_trans.
-    5: { 
-      apply conj_intro_meta.
-      4: {
-        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
-        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
-        {
-          eapply pf_conj_elim_r_meta in pf₂.
-          apply pf₂.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      3: {
-        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
-        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
-        {
-          eapply pf_conj_elim_l_meta in pf₂.
-          apply pf₂.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      {
-        abstract (wf_auto2).
-      }
-      {
-        abstract (wf_auto2).
-      }
-     }
-     4: {
-      apply conj_intro_meta.
-      4: {
-        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
-        { eapply pile_trans. 2: apply pile. try_solve_pile. }
-        {
-          eapply pf_conj_elim_r_meta in pf₁.
-          apply pf₁.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      3: {
-        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
-        { eapply pile_trans. 2: apply pile. try_solve_pile. }
-        {
-          eapply pf_conj_elim_l_meta in pf₁.
-          apply pf₁.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      {
-        abstract (wf_auto2).
-      }
-      {
-        abstract (wf_auto2).
-      }         
-     }
-     { abstract (wf_auto2). }
-     { abstract (wf_auto2). }
-     { abstract (wf_auto2). }
-  Defined.
 
   Lemma congruence_ex_helper Γ E ψ x p q gpi exdepth mudepth EvS SvS
   (HxneqE : x ≠ E)
@@ -6602,6 +6515,95 @@ Qed.
     }
   Qed.
 
+
+  Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
+  (wfψ1: well_formed ψ1)
+  (wfψ2: well_formed ψ2)
+  (wfp: well_formed p)
+  (wfq: well_formed q)
+  (pile: ProofInfoLe (pi_Generic (
+    ExGen := ∅, 
+    SVSubst := ∅, 
+    KT := false, 
+    FP := [(exist _ (free_evar_subst ψ1 p E) (well_formed_free_evar_subst_0 E wfp wfψ1))
+          ;(exist _ (free_evar_subst ψ1 q E) (well_formed_free_evar_subst_0 E wfq wfψ1))
+          ;(exist _ (free_evar_subst ψ2 p E) (well_formed_free_evar_subst_0 E wfp wfψ2))
+          ;(exist _ (free_evar_subst ψ2 q E) (well_formed_free_evar_subst_0 E wfq wfψ2))
+          ] )) i )
+  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using i)
+  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using i)
+  :
+  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using i.
+  Proof.
+    remember (well_formed_free_evar_subst_0 E wfp wfψ1) as Hwf1.
+    remember (well_formed_free_evar_subst_0 E wfq wfψ1) as Hwf2.
+    remember (well_formed_free_evar_subst_0 E wfp wfψ2) as Hwf3.
+    remember (well_formed_free_evar_subst_0 E wfq wfψ2) as Hwf4.
+
+    eapply pf_iff_equiv_trans.
+    5: { 
+      apply conj_intro_meta.
+      4: {
+        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
+        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
+        {
+          eapply pf_conj_elim_r_meta in pf₂.
+          apply pf₂.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      3: {
+        eapply Framing_right with (ψ := free_evar_subst ψ1 q E) (wfψ := Hwf2).
+        1: { eapply pile_trans. 2: apply pile. try_solve_pile. }
+        {
+          eapply pf_conj_elim_l_meta in pf₂.
+          apply pf₂.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (wf_auto2).
+      }
+     }
+     4: {
+      apply conj_intro_meta.
+      4: {
+        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
+        { eapply pile_trans. 2: apply pile. try_solve_pile. }
+        {
+          eapply pf_conj_elim_r_meta in pf₁.
+          apply pf₁.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      3: {
+        apply Framing_left with (ψ := free_evar_subst ψ2 p E) (wfψ := Hwf3).
+        { eapply pile_trans. 2: apply pile. try_solve_pile. }
+        {
+          eapply pf_conj_elim_l_meta in pf₁.
+          apply pf₁.
+          { abstract (wf_auto2). }
+          { abstract (wf_auto2). }
+        }
+      }
+      {
+        abstract (wf_auto2).
+      }
+      {
+        abstract (wf_auto2).
+      }         
+     }
+     { abstract (wf_auto2). }
+     { abstract (wf_auto2). }
+     { abstract (wf_auto2). }
+  Defined.
+
   Lemma eq_prf_equiv_congruence
   (sz : nat)
   Γ p q
@@ -6628,7 +6630,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
-     FP := (@frames_on_the_way_to_hole' EvS SvS E sz ψ Hsz wfψ frames_acc)
+     FP := (@frames_on_the_way_to_hole' EvS SvS E ψ wfψ)
     )
    )
    (pi_Generic gpi)
@@ -6649,6 +6651,27 @@ Qed.
     | ProofInfoLe ?st _ => set (i' := st) in *
     end.
   
+    destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+    2: {
+      eapply cast_proof'.
+      {
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        rewrite free_evar_subst_no_occurrence.
+        {
+          apply count_evar_occurrences_0.
+          assumption.
+        }
+        reflexivity.
+      }
+      usePropositionalReasoning.
+      apply pf_iff_equiv_refl.
+      { abstract (wf_auto2). }
+    }
+
     destruct ψ; simpl in Hsz; simpl.
     {
       destruct (decide (E = x)).
@@ -6693,7 +6716,7 @@ Qed.
       specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
-        (*abstract*) (
+        abstract (
           eapply pile_trans;[|apply pile];
           subst i';
         apply pile_evs_svs_kt;
@@ -6707,10 +6730,8 @@ Qed.
         (
           simpl; clear pf₁;
           repeat case_match; simpl; try reflexivity; lia
-        )|
+        )|(apply frames_on_the_way_to_hole'_app_1)
         ]).
-        Set Printing All.
-        simpl.
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6729,14 +6750,7 @@ Qed.
           set_solver
         ).
       }
-      pose proof (pf₂ := (IHsz ψ2)).
-      feed specialize pf₂.
-      {
-        abstract(wf_auto2).
-      }
-      {
-        abstract(lia).
-      }
+      pose proof (pf₂ := (IHsz ψ2) ltac:(assumption) ltac:(assumption)).
       specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
@@ -6747,7 +6761,7 @@ Qed.
           [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
           |(rewrite Nat.max_comm; apply svar_fresh_seq_max)
           |(clear pf₂; repeat case_match; simpl; try reflexivity; try lia)
-          |(set_solver)
+          |(apply frames_on_the_way_to_hole'_app_2)
           ]
         ).
       }
@@ -6771,7 +6785,85 @@ Qed.
         ).
       }
 
-      eapply helper_app_lemma; try assumption; try (abstract (wf_auto2)).
+      pose proof (pile_old := pile).
+      destruct gpi.
+      unfold i' in pile.
+      apply pile_evs_svs_kt_back in pile.
+      simp frames_on_the_way_to_hole' in pile.
+      destruct_and!.
+      unfold frames_on_the_way_to_hole'_unfold_clause_7 in H5.
+      
+
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        eapply helper_app_lemma; try assumption.
+        admit.
+      }
+      {
+        eapply cast_proof'.
+        {
+          rewrite [free_evar_subst ψ2 p E]free_evar_subst_no_occurrence.
+          { apply count_evar_occurrences_0. assumption. }
+          rewrite [free_evar_subst ψ2 q E]free_evar_subst_no_occurrence.
+          { apply count_evar_occurrences_0. assumption. }
+          reflexivity.
+        }
+        apply pf_iff_split; try_wfauto2.
+        {
+          eapply Framing_left.
+          2: eapply pf_iff_proj1 in pf₁; try_wfauto2.
+          2: apply pf₁.
+          2: assumption.
+        }
+       
+        admit.
+      }
+      {
+        admit.
+      }
+      {
+        repeat rewrite free_evar_subst_no_occurrence;
+        try apply count_evar_occurrences_0; try assumption.
+        usePropositionalReasoning.
+        eapply pf_iff_equiv_refl.
+        wf_auto2.
+      }
+      2: {
+        
+      }
+
+      destruct gpi.
+      eapply helper_app_lemma; try assumption.
+      apply pile_evs_svs_kt_back in pile.
+      apply pile_evs_svs_kt.
+      { clear. abstract(set_solver). }
+      { clear. abstract(set_solver). }
+      { reflexivity. }
+      {
+        destruct_and!.
+        clear pf₁ pf₂.
+        simp frames_on_the_way_to_hole' in H5.
+      }
+      
+      
+      destruct gpi.
+      pose proof (Htmp := @helper_app_lemma Γ ψ1 ψ2 p q E). 
+      2: eapply helper_app_lemma; try (abstract (wf_auto2)).
+      4: {
+        apply pf₂.
+      }
+      3: {
+        apply pf₁.
+      }
+      1: { apply pile_refl. }
+      eapply pile_trans.
+      2: apply pile.
+      subst i'.
+      apply pile_evs_svs_kt.
+      { clear. abstract (set_solver). }
+      { clear. abstract (set_solver). }
+      { reflexivity. }
+      { simp frames_on_the_way_to_hole'. }
       admit.
     }
     {
@@ -6780,6 +6872,13 @@ Qed.
       abstract (wf_auto2).
     }
     {
+      assert (wfψ1 : well_formed ψ1 = true).
+      { clear -wfψ. abstract (wf_auto2). }
+      assert (size' ψ1 <= sz) by abstract(lia).
+      assert (wfψ2 : well_formed ψ2 = true).
+      { clear -wfψ. abstract (wf_auto2). }
+      assert (size' ψ2 <= sz) by abstract(lia).
+
       pose proof (pf₁ := (IHsz ψ1)).
       feed specialize pf₁.
       {
@@ -6877,26 +6976,7 @@ Qed.
       pose proof (frx := @set_evar_fresh_is_fresh' Σ EvS).
       remember (evar_fresh (elements EvS)) as x.
 
-      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
-      2: {
-        eapply cast_proof'.
-        {
-          rewrite free_evar_subst_no_occurrence.
-          {
-            apply count_evar_occurrences_0.
-            assumption.
-          }
-          rewrite free_evar_subst_no_occurrence.
-          {
-            apply count_evar_occurrences_0.
-            assumption.
-          }
-          reflexivity.
-        }
-        usePropositionalReasoning.
-        apply pf_iff_equiv_refl.
-        { abstract (wf_auto2). }
-      }
+      (* there used to be a destruct on whether E is in psi *)
 
       pose proof (IH := IHsz (evar_open 0 x ψ)).
       feed specialize IH.
