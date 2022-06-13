@@ -6491,81 +6491,95 @@ Qed.
     }
   Defined.
 
-  Fixpoint frames_on_the_way_to_hole'
-    (EvS : EVarSet)
-    (SvS : SVarSet)
-    (E : evar)
-    (sz : nat)
-    (ψ : Pattern)
-    (Hsz: size' ψ <= sz)
-    (wfψ : well_formed ψ = true)
-    (accumulator : list ({ f : Pattern | well_formed f = true}))
-    : list ({ f : Pattern | well_formed f = true}).
+  Equations? frames_on_the_way_to_hole'
+  (EvS : EVarSet)
+  (SvS : SVarSet)
+  (E : evar)
+  (ψ : Pattern)
+  (wfψ : well_formed ψ = true)
+  : list ({ f : Pattern | well_formed f = true})
+  by wf (size' ψ) lt :=
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_svar _) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_evar _) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_svar _) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_sym _) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bott) wfψ := [] ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) wfψ
+  with ((decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2))) => {
+    | (left _, left _) => 
+      ((exist _ ψ1 _)::(exist _ ψ2 _)::
+      ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
+      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    | (left _, right _) =>
+    ((exist _ ψ1 _)::
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    | (right _, left _) =>
+    ((exist _ ψ2 _)::
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    | (right _, right _) =>
+    (
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+  } ;
+
+  @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) wfψ
+  :=     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)) ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') wfψ
+   := (@frames_on_the_way_to_hole' (EvS ∪ {[(evar_fresh (elements EvS))]}) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') _) ;
+  
+  @frames_on_the_way_to_hole' EvS SvS E (patt_mu ψ') wfψ
+   := (@frames_on_the_way_to_hole' EvS (SvS ∪ {[(svar_fresh (elements SvS))]}) E (svar_open 0 ((svar_fresh (elements SvS))) ψ') _)
+  .
   Proof.
-    move: ψ Hsz wfψ EvS SvS accumulator.
-    induction sz; intros ψ Hsz wfψ EvS SvS accumulator.
-    { abstract (destruct ψ; simpl in Hsz; lia). }
-    destruct ψ; simpl in *.
-    { destruct (decide (x = E)).
-      { exact accumulator. }
-      { exact []. }
-    }
-    { exact []. }
-    { exact []. }
-    { exact []. }
-    { exact []. }
-    {
-      assert (well_formed ψ1) by abstract (wf_auto2).
-      assert (well_formed ψ2) by abstract (wf_auto2).
-      assert (size' ψ1 <= sz) by abstract (lia).
-      assert (size' ψ2 <= sz) by abstract (lia).
-      pose proof (IHψ1 := IHsz ψ1 ltac:(assumption)).
-      pose proof (IHψ2 := IHsz ψ2 ltac:(assumption)).
-      specialize (IHψ1 ltac:(assumption) EvS SvS).
-      specialize (IHψ2 ltac:(assumption) EvS SvS).
-      exact ((IHψ1 accumulator) ++ (IHψ2 accumulator)).
-    }
-    { exact []. }
-    {
-      assert (well_formed ψ1) by abstract (wf_auto2).
-      assert (well_formed ψ2) by abstract (wf_auto2).
-      assert (size' ψ1 <= sz) by abstract (lia).
-      assert (size' ψ2 <= sz) by abstract (lia).
-      pose proof (IHψ1 := IHsz ψ1 ltac:(assumption)).
-      pose proof (IHψ2 := IHsz ψ2 ltac:(assumption)).
-      assert (wfψ1 : well_formed ψ1 = true) by assumption.
-      assert (wfψ2 : well_formed ψ2 = true) by assumption.
-      specialize (IHψ1 wfψ1 EvS SvS).
-      specialize (IHψ2 wfψ2 EvS SvS).
-      exact ((IHψ1 ((exist _ ψ2 wfψ2)::accumulator)) ++ (IHψ2 ((exist _ ψ1 wfψ1)::accumulator))).
-    }
-    {
-      remember (evar_fresh (elements EvS)) as x.
-      assert (well_formed (evar_open 0 x ψ)) by abstract (wf_auto2).
-      assert (size' (evar_open 0 x ψ) <= sz) by (abstract (rewrite evar_open_size'; lia)).
-      pose proof (IHψ := IHsz (evar_open 0 x ψ) ltac:(assumption) ltac:(assumption) (EvS ∪ {[x]}) SvS).
-      exact (IHψ accumulator).
-    }
-    {
-      remember (svar_fresh (elements SvS)) as X.
-      assert (well_formed (svar_open 0 X ψ)) by abstract (wf_auto2).
-      assert (size' (svar_open 0 X ψ) <= sz) by (abstract (rewrite svar_open_size'; lia)).
-      pose proof (IHψ := IHsz (svar_open 0 X ψ) ltac:(assumption) ltac:(assumption) EvS (SvS ∪ {[X]})).
-      exact (IHψ accumulator).
-    }
+    all: try (abstract (solve [try_wfauto2])).
+    all: simpl in *.
+    all: try abstract(lia).
+    { rewrite evar_open_size'. abstract(lia). }
+    { rewrite svar_open_size'. abstract(lia). }
   Defined.
 
-  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E sz ψ1 ψ2 Hsz H wfψ1 wfψ frames_acc:
-  (@frames_on_the_way_to_hole' EvS SvS E sz ψ1 H wfψ1 frames_acc)
+
+  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E sz ψ1 ψ2 Hsz H wfψ1 wfψ :
+  (@frames_on_the_way_to_hole' EvS SvS E sz ψ1 H wfψ1)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (S sz) (ψ1 $ ψ2) Hsz wfψ frames_acc).
+  (@frames_on_the_way_to_hole' EvS SvS E (S sz) (ψ1 $ ψ2) Hsz wfψ).
   Proof.
     unfold frames_on_the_way_to_hole' at 2.
-    simpl. cbn. vm_compute.
     cbv delta [nat_rec].
     cbv delta [nat_rect].
     cbv beta.
     cbv fix.
+    fold nat_rect.
+    fold nat_rec.
+    fold frames_on_the_way_to_hole'.
+    cbv beta.
+    cbv 
+    (*
+    unfold frames_on_the_way_to_hole' at 2.
+    remember (frames_on_the_way_to_hole' EvS SvS E H wfψ1) as l1.*)
+    cbn. do 2 case_match.
+    {
+      fold frames_on_the_way_to_hole'.
+    }
+    simpl.
+    case_match.
+    unfold frames_on_the_way_to_hole' at 2.
+    cbv delta [nat_rec].
+    cbv delta [nat_rect].
+    cbv beta.
+    cbv fix.
+    repeat case_match.
     cbv beta.
     simpl.
     
