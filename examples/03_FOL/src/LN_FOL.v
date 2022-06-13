@@ -601,7 +601,8 @@ Section soundness_completeness.
                         d x0 HNIn).
         destruct IHφ.
         (* TODO: use size-based induction here! *)
-  Admitted.
+  (* Admitted. *)
+  Abort.
 
   Theorem plugging_forms :
     forall φ t D (I : interp D) fail rho x dbi,
@@ -651,7 +652,7 @@ Section soundness_completeness.
         destruct IHφ.
       (* TODO: use size-based induction here! *)
       (* TODO: fresh variable operations should be supported here too! *)
-  Admitted.
+  Abort.
 
   Theorem soundness :
     forall φ Γ, Γ ⊢_FOL φ -> valid Γ φ.
@@ -669,23 +670,23 @@ Section soundness_completeness.
       apply IH2. exact IH1.
     * rewrite -> sat_impl, -> sat_exs. intros.
       exists (eval D fail rho t).
-      eapply (proj1 (plugging_forms _ _ _ _ _ _ _ _ _)). exact H0.
+      (* eapply (proj1 (plugging_forms _ _ _ _ _ _ _ _ _)). exact H0. *)
       Unshelve. admit. (* TODO: fresh variable operations should be supported here too! *)
     * rewrite -> sat_impl, -> sat_exs. intros. unfold valid in *.
       destruct H1.
       remember (var_fresh (form_vars (quantify_form φ x 0))) as FF.
       apply IHHilbert_proof_sys with (rho := (update_env D rho x x0)) in H0.
       rewrite sat_impl in H0.
-      rewrite <- fresh_irrelevant_form. apply H0.
+      (* rewrite <- fresh_irrelevant_form. apply H0. *)
       (* TODO: variable replacement is consistent with update replacement *)
       (* replace x0 with (eval D I ).
       rewrite <- plugging_forms in H1. *)
-  Admitted.
+  Abort.
 
   Theorem completeness :
     forall φ Γ, valid Γ φ -> Γ ⊢_FOL φ.
   Proof.
-  Admitted.
+  Abort.
 
 End soundness_completeness.
 
