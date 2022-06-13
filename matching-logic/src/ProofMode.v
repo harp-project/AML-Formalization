@@ -35,7 +35,8 @@ Record GenericProofInfo {Σ : Signature} :=
     pi_generalized_evars : EVarSet ;
     pi_substituted_svars : SVarSet ;
     pi_uses_kt : bool ;
-    pi_framing_patterns : list ({p : Pattern | well_formed p = true}) ;
+    pi_framing_patterns : list ({p : Pattern | well_formed p = true}) ; 
+    (* pi_framing_patterns : list Pattern ; *)
   }.
 
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
@@ -59,6 +60,7 @@ mkProofInfoMeaning
   pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
   pwi_pf_fp : @framing_patterns Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then fmap proj1_sig (pi_framing_patterns pi') else []) ;
+  (* pwi_pf_fp : @framing_patterns Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_framing_patterns pi' else []) ; *)
 }.
 
 Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
@@ -959,7 +961,8 @@ Proof.
   {
     destruct pile as [pile].
     rewrite elem_of_subseteq.
-    intros [p wfp] Hp.
+    intros (*p*) [p wfp] Hp.
+    (*assert (wfp : well_formed p) by admit.*)
     pose (pf1 := @A_impl_A ∅ patt_bott ltac:(wf_auto2)).
     pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
     pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
@@ -6231,17 +6234,6 @@ Qed.
 }
 Qed.
 
-Lemma test ψ1 ψ2 p q (E : evar)
-(wfψ1: well_formed ψ1)
-(wfψ2: well_formed ψ2)
-(wfp: well_formed p)
-(wfq: well_formed q)
-: (well_formed (free_evar_subst ψ1 p E) = true).
-Proof.
-  wf_auto2.
-  Defined.
-Print test.
-
   Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
   (wfψ1: well_formed ψ1)
   (wfψ2: well_formed ψ2)
@@ -6499,12 +6491,21 @@ Print test.
     }
   Defined.
 
-  Fixpoint frames_on_the_way_to_hole' (E : evar) (ψ : Pattern) (wfψ : well_formed ψ = true)
+  Fixpoint frames_on_the_way_to_hole'
+    (EvS : EVarSet)
+    (SvS : SVarSet)
+    (E : evar)
+    (sz : nat)
+    (ψ : Pattern)
+    (Hsz: size' ψ <= sz)
+    (wfψ : well_formed ψ = true)
     (accumulator : list ({ f : Pattern | well_formed f = true}))
     : list ({ f : Pattern | well_formed f = true}).
   Proof.
-    move: accumulator.
-    induction ψ; intros accumulator.
+    move: ψ Hsz wfψ EvS SvS accumulator.
+    induction sz; intros ψ Hsz wfψ EvS SvS accumulator.
+    { abstract (destruct ψ; simpl in Hsz; lia). }
+    destruct ψ; simpl in *.
     { destruct (decide (x = E)).
       { exact accumulator. }
       { exact []. }
@@ -6514,23 +6515,61 @@ Print test.
     { exact []. }
     { exact []. }
     {
-      specialize (IHψ1 ltac:(wf_auto2)).
-      specialize (IHψ2 ltac:(wf_auto2)).
+      assert (well_formed ψ1) by abstract (wf_auto2).
+      assert (well_formed ψ2) by abstract (wf_auto2).
+      assert (size' ψ1 <= sz) by abstract (lia).
+      assert (size' ψ2 <= sz) by abstract (lia).
+      pose proof (IHψ1 := IHsz ψ1 ltac:(assumption)).
+      pose proof (IHψ2 := IHsz ψ2 ltac:(assumption)).
+      specialize (IHψ1 ltac:(assumption) EvS SvS).
+      specialize (IHψ2 ltac:(assumption) EvS SvS).
       exact ((IHψ1 accumulator) ++ (IHψ2 accumulator)).
     }
     { exact []. }
     {
-      assert (wfψ1 : well_formed ψ1 = true) by wf_auto2.
-      assert (wfψ2 : well_formed ψ2 = true) by wf_auto2.
-      specialize (IHψ1 wfψ1).
-      specialize (IHψ2 wfψ2).
+      assert (well_formed ψ1) by abstract (wf_auto2).
+      assert (well_formed ψ2) by abstract (wf_auto2).
+      assert (size' ψ1 <= sz) by abstract (lia).
+      assert (size' ψ2 <= sz) by abstract (lia).
+      pose proof (IHψ1 := IHsz ψ1 ltac:(assumption)).
+      pose proof (IHψ2 := IHsz ψ2 ltac:(assumption)).
+      assert (wfψ1 : well_formed ψ1 = true) by assumption.
+      assert (wfψ2 : well_formed ψ2 = true) by assumption.
+      specialize (IHψ1 wfψ1 EvS SvS).
+      specialize (IHψ2 wfψ2 EvS SvS).
       exact ((IHψ1 ((exist _ ψ2 wfψ2)::accumulator)) ++ (IHψ2 ((exist _ ψ1 wfψ1)::accumulator))).
     }
     {
-      
-      specialize (IHψ ltac:(wf_auto2)).
+      remember (evar_fresh (elements EvS)) as x.
+      assert (well_formed (evar_open 0 x ψ)) by abstract (wf_auto2).
+      assert (size' (evar_open 0 x ψ) <= sz) by (abstract (rewrite evar_open_size'; lia)).
+      pose proof (IHψ := IHsz (evar_open 0 x ψ) ltac:(assumption) ltac:(assumption) (EvS ∪ {[x]}) SvS).
+      exact (IHψ accumulator).
+    }
+    {
+      remember (svar_fresh (elements SvS)) as X.
+      assert (well_formed (svar_open 0 X ψ)) by abstract (wf_auto2).
+      assert (size' (svar_open 0 X ψ) <= sz) by (abstract (rewrite svar_open_size'; lia)).
+      pose proof (IHψ := IHsz (svar_open 0 X ψ) ltac:(assumption) ltac:(assumption) EvS (SvS ∪ {[X]})).
+      exact (IHψ accumulator).
     }
   Defined.
+
+  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E sz ψ1 ψ2 Hsz H wfψ1 wfψ frames_acc:
+  (@frames_on_the_way_to_hole' EvS SvS E sz ψ1 H wfψ1 frames_acc)
+  ⊆
+  (@frames_on_the_way_to_hole' EvS SvS E (S sz) (ψ1 $ ψ2) Hsz wfψ frames_acc).
+  Proof.
+    unfold frames_on_the_way_to_hole' at 2.
+    simpl. cbn. vm_compute.
+    cbv delta [nat_rec].
+    cbv delta [nat_rect].
+    cbv beta.
+    cbv fix.
+    cbv beta.
+    simpl.
+    
+  Abort.
 
   Lemma eq_prf_equiv_congruence
   (sz : nat)
@@ -6551,13 +6590,16 @@ Print test.
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (exdepth : nat)
   (mudepth : nat)
+  (frames_acc : list ({f : Pattern | well_formed f = true}))
   (gpi : GenericProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
-     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true)
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
+     FP := (@frames_on_the_way_to_hole' EvS SvS E sz ψ Hsz wfψ frames_acc)
     )
+   )
    (pi_Generic gpi)
   )
   (pf : Γ ⊢ (p <---> q) using (pi_Generic gpi)) :
@@ -6609,34 +6651,35 @@ Print test.
       abstract (wf_auto2).
     }
     {
-      pose proof (pf₁ := (IHsz ψ1)).
-      feed specialize pf₁.
-      {
-        abstract(wf_auto2).
-      }
-      {
-        abstract(lia).
-      }
+      assert (wfψ1 : well_formed ψ1 = true).
+      { clear -wfψ. abstract (wf_auto2). }
+      assert (size' ψ1 <= sz) by abstract(lia).
+      assert (wfψ2 : well_formed ψ2 = true).
+      { clear -wfψ. abstract (wf_auto2). }
+      assert (size' ψ2 <= sz) by abstract(lia).
+      
+      pose proof (pf₁ := (IHsz ψ1) ltac:(assumption) ltac:(assumption)).
       specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
-        abstract (
+        (*abstract*) (
           eapply pile_trans;[|apply pile];
           subst i';
-        simpl;
         apply pile_evs_svs_kt;
         [
         (
-          apply evar_fresh_seq_max
+          simpl; apply evar_fresh_seq_max
         )|
         (
-          apply svar_fresh_seq_max
+          simpl; apply svar_fresh_seq_max
         )|
         (
-          clear pf₁;
+          simpl; clear pf₁;
           repeat case_match; simpl; try reflexivity; lia
-        )
+        )|
         ]).
+        Set Printing All.
+        simpl.
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6673,6 +6716,7 @@ Print test.
           [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
           |(rewrite Nat.max_comm; apply svar_fresh_seq_max)
           |(clear pf₂; repeat case_match; simpl; try reflexivity; try lia)
+          |(set_solver)
           ]
         ).
       }
@@ -6696,7 +6740,8 @@ Print test.
         ).
       }
 
-      apply helper_app_lemma; try assumption; try (abstract (wf_auto2)).
+      eapply helper_app_lemma; try assumption; try (abstract (wf_auto2)).
+      admit.
     }
     {
       usePropositionalReasoning.
@@ -6723,6 +6768,7 @@ Print test.
           [(simpl; apply evar_fresh_seq_max)
           |(simpl; apply svar_fresh_seq_max)
           |(clear pf₁;repeat case_match; simpl; try reflexivity; simpl in *; lia)
+          |(set_solver)
           ]
         ).
       }
@@ -6764,6 +6810,7 @@ Print test.
           [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
           |(simpl; rewrite Nat.max_comm; apply svar_fresh_seq_max)
           |(clear pf₂; repeat case_match; simpl in *; try reflexivity; lia)
+          |(set_solver)
           ]
         ).
       }
