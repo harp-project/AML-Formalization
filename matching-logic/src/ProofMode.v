@@ -3895,9 +3895,9 @@ Section FOL_helpers.
       | [|- _ using ?constraint] => remember constraint as i'
       end.
   
-  Tactic Notation "gapply" constr(pf) := eapply useGenericReasoning;[|apply pf].
+  Tactic Notation "gapply" uconstr(pf) := eapply useGenericReasoning;[|eapply pf].
 
-  Tactic Notation "gapply" constr(pf) "in" ident(H) :=
+  Tactic Notation "gapply" uconstr(pf) "in" ident(H) :=
     eapply useGenericReasoning in H;[|apply pf].
 
   Ltac try_solve_pile := apply pile_evs_svs_kt; auto; try set_solver.
@@ -4395,10 +4395,10 @@ Section FOL_helpers.
           set_solver.
         }
         
-        apply Framing_left; auto.
-        1: {
-          apply pile_basic_generic.
-        }
+        (* TODO have some nice implicit parameters *)
+        gapply (@Framing_left _ _ _ _ _ _ Prf).
+        2: apply pile_refl.
+        1: try_solve_pile.
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
@@ -4470,24 +4470,27 @@ Section FOL_helpers.
       destruct IHAC as [IH1 IH2].
       apply pf_iff_split; auto.
       + pose proof (H := IH1).
-        eapply Framing_right in IH1.
+        change constraint in IH1.
+        apply (@Framing_right _ _ _ _ _ _ Prf) in IH1.
+        2: try_solve_pile.
         eapply syllogism_meta. 4: apply IH1.
-        all:auto.
+        1-3: wf_auto2.
         remember (subst_ctx AC (evar_open 0 x p)) as p'.
         unfold exists_quantify.
         simpl. rewrite [evar_quantify x 0 p0]evar_quantify_fresh.
         { eapply evar_is_fresh_in_app_l. apply Hx. }
-        2: { apply pile_basic_generic. }
         useBasicReasoning.
         apply Prop_ex_right. wf_auto2. wf_auto2.
       + clear IH1.
 
-        eapply Framing_right in IH2.
-        eapply syllogism_meta. 5: eapply IH2. all: auto.
-        2: { apply pile_basic_generic. }
+        change constraint in IH2.
+        eapply (@Framing_right _ _ _ _ _ _ Prf) in IH2.
+        eapply syllogism_meta. 5: eapply IH2.
+        1-3: wf_auto2.
+        2: { try_solve_pile. }
 
         apply Ex_gen; auto.
-        { apply pile_refl. }
+        { try_solve_pile. }
         1: {
           unfold exists_quantify.
           simpl.
@@ -4496,8 +4499,9 @@ Section FOL_helpers.
           set_solver.
         }
         
-        apply Framing_right; auto.
-        { apply pile_basic_generic. }
+        eapply (@Framing_right _ _ _ _ _ _ Prf).
+        { try_solve_pile. }
+        {
         unfold evar_open.
         rewrite subst_ctx_bevar_subst.
         unfold exists_quantify. simpl.
@@ -4506,6 +4510,7 @@ Section FOL_helpers.
         2: now do 2 apply andb_true_iff in Hwfex as [_ Hwfex].
         useBasicReasoning.
         apply Ex_quan; auto.
+        }
   Defined.
   
   Lemma and_of_negated_iff_not_impl Γ p1 p2:
