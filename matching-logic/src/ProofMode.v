@@ -6550,40 +6550,57 @@ Qed.
   Defined.
 
 
-  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E sz ψ1 ψ2 Hsz H wfψ1 wfψ :
-  (@frames_on_the_way_to_hole' EvS SvS E sz ψ1 H wfψ1)
+  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 wfψ1 wfψ :
+  (@frames_on_the_way_to_hole' EvS SvS E ψ1 wfψ1)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (S sz) (ψ1 $ ψ2) Hsz wfψ).
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) wfψ).
   Proof.
-    unfold frames_on_the_way_to_hole' at 2.
-    cbv delta [nat_rec].
-    cbv delta [nat_rect].
-    cbv beta.
-    cbv fix.
-    fold nat_rect.
-    fold nat_rec.
-    fold frames_on_the_way_to_hole'.
-    cbv beta.
-    cbv 
-    (*
-    unfold frames_on_the_way_to_hole' at 2.
-    remember (frames_on_the_way_to_hole' EvS SvS E H wfψ1) as l1.*)
-    cbn. do 2 case_match.
-    {
-      fold frames_on_the_way_to_hole'.
-    }
-    simpl.
-    case_match.
-    unfold frames_on_the_way_to_hole' at 2.
-    cbv delta [nat_rec].
-    cbv delta [nat_rect].
-    cbv beta.
-    cbv fix.
+    simp frames_on_the_way_to_hole'.
+    unfold frames_on_the_way_to_hole'_unfold_clause_7.
     repeat case_match.
-    cbv beta.
-    simpl.
-    
-  Abort.
+    {
+      replace (frames_on_the_way_to_hole'_obligation_3 wfψ) with wfψ1 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_8 wfψ) with wfψ1 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_13 wfψ) with wfψ1 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_17 wfψ) with wfψ1 by (apply proof_irrel).
+      set_solver.
+    }
+  Qed.
+
+  Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 wfψ2 wfψ :
+  (@frames_on_the_way_to_hole' EvS SvS E ψ2 wfψ2)
+  ⊆
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) wfψ).
+  Proof.
+    simp frames_on_the_way_to_hole'.
+    unfold frames_on_the_way_to_hole'_unfold_clause_7.
+    repeat case_match.
+    {
+      replace (frames_on_the_way_to_hole'_obligation_5 wfψ) with wfψ2 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_10 wfψ) with wfψ2 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_15 wfψ) with wfψ2 by (apply proof_irrel).
+      set_solver.
+    }
+    {
+      replace (frames_on_the_way_to_hole'_obligation_19 wfψ) with wfψ2 by (apply proof_irrel).
+      set_solver.
+    }
+  Qed.
 
   Lemma eq_prf_equiv_congruence
   (sz : nat)
