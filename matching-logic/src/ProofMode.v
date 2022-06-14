@@ -6478,7 +6478,7 @@ Qed.
 
   Ltac pi_assumption :=
     match goal with
-    | [H : _ |- _] => idtac H;  pi_exact H
+    | [H : _ |- _] => pi_exact H
     end.
 
   Ltac pi_set_solver := set_solver by (try pi_assumption).
@@ -6828,14 +6828,7 @@ Qed.
       { clear -wfψ. abstract (wf_auto2). }
       assert (size' ψ2 <= sz) by abstract(lia).
 
-      pose proof (pf₁ := (IHsz ψ1)).
-      feed specialize pf₁.
-      {
-        abstract(wf_auto2).
-      }
-      {
-        abstract(lia).
-      }
+      pose proof (pf₁ := (IHsz ψ1) ltac:(assumption) ltac:(assumption)).
       specialize (pf₁ EvS SvS).
       feed specialize pf₁.
       {
@@ -6870,14 +6863,8 @@ Qed.
         ).
       }
 
-      pose proof (pf₂ := (IHsz ψ2)).
-      feed specialize pf₂.
-      {
-        abstract(wf_auto2).
-      }
-      {
-        abstract(lia).
-      }
+      pose proof (pf₂ := (IHsz ψ2) ltac:(assumption) ltac:(assumption)).
+
       specialize (pf₂ EvS SvS).
       feed specialize pf₂.
       {
