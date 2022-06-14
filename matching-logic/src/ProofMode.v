@@ -7929,7 +7929,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
   | _ ⊢ (?a <---> ?a') using _
     =>
     lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p ?i)]
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p (pi_Generic ?gpi))]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
@@ -7939,7 +7939,9 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
          eapply (@cast_proof_mg_goal _ $g) >
            [ rewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
-         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $i $hiff)  >
+         let wfC := Fresh.in_goal ident:(wfC) in
+         assert (wfC : PC_wf $pc) > [Control.shelve () | ()];
+         eapply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $gpi _ $hiff) (*  >
          [
          (lazy_match! goal with
          | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p _)]
@@ -7959,7 +7961,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
              Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
          | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
-         ]
+         ] *)
     end
   end.
 
@@ -7996,18 +7998,19 @@ Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
 (* Ltac2 Set ml_debug_rewrite := true.*)
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x i
-  (pile : ProofInfoLe BasicReasoning i):
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x gpi:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' using i ->
-  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using i.
+  Γ ⊢ a <---> a' using (pi_Generic gpi) ->
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using (pi_Generic gpi).
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   mgRewrite Hiff at 2.
+  Check @MyGoal_rewriteIff.
+  eapply (@MyGoal_rewriteIff Σ Γ _ _).
   2: { apply pile. }
   mgRewrite <- Hiff at 3.
   2: { apply pile. }
