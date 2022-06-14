@@ -6491,30 +6491,14 @@ Qed.
     repeat case_match; pi_set_solver.
   Qed.
 
-  Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 wfψ2 wfψ :
-  (@frames_on_the_way_to_hole' EvS SvS E ψ2 wfψ2)
+  Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
+  (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q wfψ2 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) wfψ).
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     unfold frames_on_the_way_to_hole'_unfold_clause_7.
-    repeat case_match.
-    {
-      replace (frames_on_the_way_to_hole'_obligation_5 wfψ) with wfψ2 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_10 wfψ) with wfψ2 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_15 wfψ) with wfψ2 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_19 wfψ) with wfψ2 by (apply proof_irrel).
-      set_solver.
-    }
+    repeat case_match; pi_set_solver.
   Qed.
 
 
