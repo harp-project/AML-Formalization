@@ -7666,9 +7666,31 @@ Proof.
       mgExactn 2.
 Defined.
 
-Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (i : ProofInfo):
+Lemma extract_wfp {Σ : Signature} (Γ : Theory) (p q : Pattern) (i : ProofInfo):
   Γ ⊢ p <---> q using i ->
-  @mkMyGoal Σ Γ l (emplace C q) i ->
+  well_formed p.
+Proof.
+  intros H.
+  pose proof (H' := proj1_sig H).
+  apply proved_impl_wf in H'.
+  wf_auto2.
+Qed.
+
+Lemma extract_wfq {Σ : Signature} (Γ : Theory) (p q : Pattern) (i : ProofInfo):
+  Γ ⊢ p <---> q using i ->
+  well_formed q.
+Proof.
+  intros H.
+  pose proof (H' := proj1_sig H).
+  apply proved_impl_wf in H'.
+  wf_auto2.
+Qed.
+
+Lemma MyGoal_rewriteIff
+  {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : GenericProofInfo)
+  (wfC : PC_wf C)
+  (pf : Γ ⊢ p <---> q using (pi_Generic gpi)) :
+  @mkMyGoal Σ Γ l (emplace C q) (pi_Generic gpi) ->
   (ProofInfoLe
   (pi_Generic
      (ExGen := list_to_set
@@ -7689,10 +7711,15 @@ Lemma MyGoal_rewriteIff {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : Patt
                  maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
              is left _
              then false
-             else true))) i) ->
-  @mkMyGoal Σ Γ l (emplace C p) i.
+             else true
+             ),
+      FP := (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q (pi_Generic gpi) pf) (@extract_wfq Σ Γ p q (pi_Generic gpi) pf))
+      ))
+      (pi_Generic gpi)) ->
+  @mkMyGoal Σ Γ l (emplace C p) (pi_Generic gpi).
 Proof.
-  intros Hpiffq H pile.
+  rename pf into Hpiffq.
+  intros H pile.
   unfold of_MyGoal in *. simpl in *.
   intros wfcp wfl.
   feed specialize H.
@@ -7710,15 +7737,15 @@ Proof.
   eapply MP.
   2: apply pf_iff_proj2.
   2: abstract (wf_auto2).
-  3: apply prf_equiv_congruence_iter.
-  3: exact pile.
+  3: eapply prf_equiv_congruence_iter.
   5: apply Hpiffq.
+  4: assumption.
   1: apply H.
-  3: exact wfl.
-  2: eapply wf_emplaced_impl_wf_context;
-     apply wfcp.
-  pose proof (@proved_impl_wf _ _ _ (proj1_sig H)).
-  wf_auto2.
+  1: {
+    pose proof (@proved_impl_wf _ _ _ (proj1_sig H)).
+    wf_auto2.  
+  }
+  exact pile.
 Defined.
 
 Ltac2 mutable ml_debug_rewrite := false.
