@@ -6633,7 +6633,6 @@ Qed.
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (exdepth : nat)
   (mudepth : nat)
-  (frames_acc : list ({f : Pattern | well_formed f = true}))
   (gpi : GenericProofInfo)
   (pile : ProofInfoLe
    (pi_Generic
@@ -7267,19 +7266,22 @@ Qed.
 
   Lemma prf_equiv_congruence Γ p q C
   (gpi : GenericProofInfo)
+  (wfp : well_formed p = true)
+  (wfq : well_formed q = true)
+  (wfC: PC_wf C)
   (pile : ProofInfoLe
    (pi_Generic
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
-     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+     KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
+     FP := (@frames_on_the_way_to_hole' (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
     )
    (pi_Generic gpi)
   ):
-    PC_wf C ->
     Γ ⊢ (p <---> q) using (pi_Generic gpi) ->
     Γ ⊢ (((emplace C p) <---> (emplace C q))) using (pi_Generic gpi).
   Proof.
-    intros wfC Hiff.
+    intros Hiff.
     assert (well_formed (p <---> q)).
     { abstract (
         pose proof (proved_impl_wf _ _ (proj1_sig Hiff));
@@ -7288,26 +7290,24 @@ Qed.
     }
     assert (well_formed p) by (abstract (wf_auto2)).
     assert (well_formed q) by (abstract (wf_auto2)).
-    
-    apply @eq_prf_equiv_congruence
-    with (EvS := (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}))
-         (SvS := (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q))
+    destruct C as [E ψ]. simpl in *.
+    unfold emplace. simpl.
+    eapply @eq_prf_equiv_congruence
+    with (EvS := (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]}))
+         (SvS := (free_svars ψ ∪ free_svars p ∪ free_svars q))
          (exdepth := 0)
          (mudepth := 0)
-         (sz := size' (pcPattern C))
+         (sz := size' ψ)
     .
-    { assumption. }
-    { assumption. }
     { apply reflexivity. }
-    { abstract (simpl; wf_auto2). }
     { abstract (clear; set_solver). }
     { abstract (clear; set_solver). }
     { abstract (clear; set_solver). }
-    { abstract (simpl; clear; set_solver). }
     { abstract (clear; set_solver). }
     { abstract (clear; set_solver). }
-    { abstract (simpl; clear; set_solver). }
-    { simpl. exact pile. }
+    { abstract (clear; set_solver). }
+    { abstract (clear; set_solver). }
+    { eapply pile_trans;[|apply pile]. apply pile_refl. }
     { exact Hiff. }
   Defined.
 
