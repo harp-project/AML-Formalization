@@ -7311,53 +7311,10 @@ Qed.
     { exact Hiff. }
   Defined.
 
-  (*
-  Lemma framing_patterns_prf_equiv_congruence Γ p q C i pile wfC pf:
-    (@framing_patterns _ _ _ (proj1_sig (@prf_equiv_congruence Γ p q C i pile wfC pf))) = [].
-  Proof.
-    unfold prf_equiv_congruence.
-    destruct C; simpl in *.
-    move: (reflexivity (size' pcPattern)).
-    remember (size' pcPattern) as sz in |-.
-    rewrite -{2 3}Heqsz.
-    clear Heqsz.
-
-    intros Hrefl.
-    lazymatch goal with
-    | [ |- context [eq_prf_equiv_congruence ?x0 ?x1 ?x2 ?x3 ?x4 ?x5 ?x6 ?x7 ?x8 ?x9 ?x10] ]
-      => remember x0 as Hx0;
-      remember x1 as Hx1;
-      remember x2 as Hx2;
-      remember x3 as Hx3;
-      remember x4 as Hx4;
-      remember x5 as Hx5;
-      remember x6 as Hx6;
-      remember x7 as Hx7;
-      remember x8 as Hx8;
-      remember x9 as Hx9;
-      remember x10 as Hx10
-    end.
-
-    induction sz.
-    {
-      cbn.
-      admit.
-    }
-    {
-      cbv delta [eq_prf_equiv_congruence].
-      cbv delta [nat_rec].
-      cbv delta [nat_rect].
-      cbv beta.
-      (* I need to have a function for the PILE type *)
-    }
-  Abort.
-  *)
-
-
 End FOL_helpers.
 
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) :
+  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) i) :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
@@ -7407,7 +7364,7 @@ Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7422,7 +7379,7 @@ Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)).
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7652,23 +7609,26 @@ Proof.
 Defined.
 
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
-  (i : ProofInfo)
+  (wfp : well_formed p)
+  (wfq : well_formed q)
+  (wfC : PC_wf C)
+  (gpi : GenericProofInfo)
   (pile : ProofInfoLe
   (pi_Generic
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
-      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true)
+      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
+      FP := (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))  
     )
-    i
+    (pi_Generic gpi)
   ):
-  PC_wf C ->
   wf l ->
-  Γ ⊢ p <---> q using i ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using i.
+  Γ ⊢ p <---> q using (pi_Generic gpi) ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using (pi_Generic gpi).
 Proof.
-  intros wfC wfl Himp.
+  intros wfl Himp.
   induction l; simpl in *.
-  - apply prf_equiv_congruence; assumption.
+  - unshelve(eapply prf_equiv_congruence); assumption.
   - pose proof (wfal := wfl).
     unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
