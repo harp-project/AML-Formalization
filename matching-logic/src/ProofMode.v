@@ -6408,51 +6408,54 @@ Qed.
   (EvS : EVarSet)
   (SvS : SVarSet)
   (E : evar)
-  (ψ : Pattern)
+  (ψ p q : Pattern)
   (wfψ : well_formed ψ = true)
+  (wfp : well_formed p = true)
+  (wfq : well_formed q = true)
   : list ({ f : Pattern | well_formed f = true})
   by wf (size' ψ) lt :=
-  @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_free_svar _) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_svar _) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_evar _) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_evar _) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_svar _) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_svar _) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_sym _) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_sym _) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bott) wfψ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bott) _ _ _ _ _ := [] ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) wfψ
+  @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) p q _ _ _
   with ((decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2))) => {
     | (left _, left _) => 
-      ((exist _ ψ1 _)::(exist _ ψ2 _)::
-      ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
-      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+      ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ2 p E) _)::
+      (exist _ (free_evar_subst ψ1 q E) _)::(exist _ (free_evar_subst ψ2 q E) _)::
+      ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
     | (left _, right _) =>
-    ((exist _ ψ1 _)::
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ1 q E) _)::
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
     | (right _, left _) =>
-    ((exist _ ψ2 _)::
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    ((exist _ (free_evar_subst ψ2 p E) _)::(exist _ (free_evar_subst ψ2 p E) _)::
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
     | (right _, right _) =>
     (
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)))
+    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
   } ;
 
-  @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) wfψ
-  :=     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 _)) ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) p q _ _ _
+  :=     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)) ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') wfψ
-   := (@frames_on_the_way_to_hole' (EvS ∪ {[(evar_fresh (elements EvS))]}) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') _) ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') p q _ _ _
+   := (@frames_on_the_way_to_hole' (EvS ∪ {[(evar_fresh (elements EvS))]}) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') p q _ _ _) ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_mu ψ') wfψ
-   := (@frames_on_the_way_to_hole' EvS (SvS ∪ {[(svar_fresh (elements SvS))]}) E (svar_open 0 ((svar_fresh (elements SvS))) ψ') _)
+  @frames_on_the_way_to_hole' EvS SvS E (patt_mu ψ') _ _ _ _ _
+   := (@frames_on_the_way_to_hole' EvS (SvS ∪ {[(svar_fresh (elements SvS))]}) E (svar_open 0 ((svar_fresh (elements SvS))) ψ') p q _ _ _)
   .
   Proof.
     all: try (abstract (solve [try_wfauto2])).
@@ -6462,31 +6465,30 @@ Qed.
     { rewrite svar_open_size'. abstract(lia). }
   Defined.
 
+  Ltac pi_exact H := 
+    lazymatch type of H with
+    | ?H' =>
+      lazymatch goal with
+      | [|- ?g] =>
+        (cut (H' = g);[(congruence)|(repeat f_equal; try reflexivity; try apply proof_irrel)])
+      end
+    end.
 
-  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 wfψ1 wfψ :
-  (@frames_on_the_way_to_hole' EvS SvS E ψ1 wfψ1)
+  Ltac pi_assumption :=
+    match goal with
+    | [H : _ |- _] => idtac H;  pi_exact H
+    end.
+
+  Ltac pi_set_solver := set_solver by (try pi_assumption).
+
+  Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
+  (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) wfψ).
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     unfold frames_on_the_way_to_hole'_unfold_clause_7.
-    repeat case_match.
-    {
-      replace (frames_on_the_way_to_hole'_obligation_3 wfψ) with wfψ1 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_8 wfψ) with wfψ1 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_13 wfψ) with wfψ1 by (apply proof_irrel).
-      set_solver.
-    }
-    {
-      replace (frames_on_the_way_to_hole'_obligation_17 wfψ) with wfψ1 by (apply proof_irrel).
-      set_solver.
-    }
+    repeat case_match; pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 wfψ2 wfψ :
