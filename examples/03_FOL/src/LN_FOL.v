@@ -468,8 +468,191 @@ Section soundness_completeness.
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
 
   Definition valid A phi :=
-    forall (D : Set) (fail : D) (I : interp D) (rho : vars -> D),(forall Phi, List.In Phi A -> sat D fail rho Phi)
+    forall (D : Set) (fail : D) (I : interp D) (rho : vars -> D),
+    (forall Phi rho', List.In Phi A -> sat D fail rho' Phi)
       -> sat D fail rho phi.
+
+  Theorem plugging_terms :
+    forall t0 t D (I : interp D) fail rho x dbi,
+    ~List.In x (term_vars t0) ->
+    eval D fail rho (bsubst_term t0 t dbi) =
+    eval D fail (update_env D rho x (eval D fail rho t)) (bsubst_term t0 (fvar x) dbi).
+  Proof.
+    induction t0; intros t D I fail rho x0 dbi Fresh; simpl.
+    * unfold update_env. destruct decide; simpl in *; subst; auto. intuition.
+    * case_match; simpl; auto.
+      subst. unfold update_env. destruct decide; simpl; auto. congruence.
+    * do 2 rewrite map_map. f_equal. Search map eq.
+      apply map_ext_in. intros. apply IH. exact H.
+      simpl in *.
+      clear IH. induction v. inversion H.
+      inversion H; subst.
+      - simpl_existT. subst. simpl in Fresh.
+        now apply notin_app_l in Fresh.
+      - simpl_existT. subst. simpl in Fresh.
+        apply notin_app_r in Fresh. apply IHv; intros; auto.
+  Qed.
+
+  Lemma update_env_comm :
+    forall D x y d1 d2 rho, x <> y ->
+      (update_env D (update_env D rho x d1) y d2) =
+      (update_env D (update_env D rho y d2) x d1).
+  Proof.
+     intros. extensionality z.
+     unfold update_env. repeat destruct decide; simpl; auto. congruence.
+  Qed.
+
+  Lemma wf_elements :
+    forall (T : Set) (P : T -> bool) n (v : @vec T n),
+      is_true (fold_right (λ t Acc, Acc && P t) v true) ->
+      forall (e : T), In e v -> is_true (P e).
+  Proof.
+    induction v; intros H e HIn; inversion HIn; simpl_existT; subst.
+    * simpl in H. apply andb_true_iff in H. apply H.
+    * apply IHv; auto. apply andb_true_iff in H. apply H.
+  Qed.
+
+  Lemma bsubst_term_wf :
+    forall t0 t n m, wf_term t0 m -> m <= n -> bsubst_term t0 t n = t0.
+  Proof.
+    induction t0; intros t n m Wf Le; simpl; auto.
+    * repeat case_match; subst; simpl in Wf; auto; case_match; try lia; congruence.
+    * erewrite map_ext_in with (g := id). now rewrite VectorSpec.map_id.
+      intros. eapply IH in H; eauto. simpl in Wf. eapply wf_elements in Wf. exact Wf.
+      auto.
+  Qed.
+
+  Lemma bsubst_form_wf :
+    forall φ t n m, wf_form φ m -> m <= n -> bsubst_form φ t n = φ.
+  Proof.
+    induction φ; intros t n m Wf Le; simpl; auto.
+    * erewrite map_ext_in with (g := id). now rewrite VectorSpec.map_id.
+      intros. eapply bsubst_term_wf. simpl in Wf. eapply wf_elements in Wf. exact Wf.
+      auto. auto.
+    * simpl in Wf. apply andb_true_iff in Wf. erewrite IHφ1, IHφ2; auto;
+      eapply wf_increase; try apply Wf; auto.
+    * erewrite IHφ; auto. simpl in Wf. eapply wf_increase. exact Wf. lia.
+  Qed.
+
+  Lemma bsubst_term_comm_lower:
+    forall t0 t1 t2 n m,
+    n <= m
+    → wf_term t1 0
+      → wf_term t2 0
+        → bsubst_term (bsubst_term t0 t1 n) t2 m =
+          bsubst_term (bsubst_term t0 t2 (S m)) t1 n.
+  Proof.
+    induction t0; intros t1 t2 n m Hlt Wf1 Wf2; simpl; auto.
+    * repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto;
+        subst; try congruence.
+      all:  repeat case_match; try lia; auto.
+      1-2: erewrite bsubst_term_wf; eauto; lia.
+    * simpl. do 2 rewrite map_map. f_equal. apply map_ext_in.
+      intros. eapply IH in H; eauto.
+  Qed.
+
+  Lemma bsubst_form_comm_lower:
+    forall φ t1 t2 n m,
+    n <= m
+    → wf_term t1 0
+      → wf_term t2 0
+        → bsubst_form (bsubst_form φ t1 n) t2 m =
+          bsubst_form (bsubst_form φ t2 (S m)) t1 n.
+  Proof.
+    induction φ; intros t1 t2 n m Hlt Wf1 Wf2; simpl; auto.
+    * simpl. do 2 rewrite map_map. f_equal. apply map_ext_in.
+      intros. eapply bsubst_term_comm_lower; eauto.
+    * erewrite IHφ1, IHφ2; eauto.
+    * erewrite IHφ; eauto. lia.
+  Qed.
+
+  Theorem fresh_irrelevant_term :
+    forall (t : term) D fail (I : interp D) rho d x, ~List.In x (term_vars t) ->
+      eval D fail (update_env D rho x d) t = eval D fail rho t.
+  Proof.
+    induction t; intros D fail I rho d x0 HNIn; simpl; auto.
+    * unfold update_env. simpl in HNIn. destruct decide; simpl; auto.
+      exfalso. apply HNIn; auto.
+    * f_equal. apply VectorSpec.map_ext_in. intros.
+      apply IH; auto. simpl in *.
+      clear IH.
+      induction v; inversion H; simpl_existT; subst.
+      - simpl in HNIn. now apply notin_app_l in HNIn.
+      - apply IHv; auto. now apply notin_app_r in HNIn.
+  Qed.
+
+  Theorem fresh_irrelevant_form :
+    forall (φ : form) D fail (I : interp D) rho d x, ~List.In x (form_vars φ) ->
+      sat D fail (update_env D rho x d) φ <-> sat D fail rho φ.
+  Proof.
+    induction φ; intros D fail I rho d x0 HNIn; simpl; auto.
+    * do 2 rewrite sat_atom. erewrite VectorSpec.map_ext_in. reflexivity.
+      intros. apply fresh_irrelevant_term. simpl in HNIn.
+      induction v; inversion H; simpl_existT; subst.
+      - simpl in HNIn. now apply notin_app_l in HNIn.
+      - apply IHv; auto. now apply notin_app_r in HNIn.
+    * do 2 rewrite sat_impl. apply notin_app_r in HNIn as HNIn2. apply notin_app_l in HNIn.
+      now rewrite -> IHφ1, -> IHφ2.
+    * do 2 rewrite sat_exs. simpl.
+      split; intros H; destruct H as [d0 H]; exists d0.
+      - rewrite update_env_comm in H.
+        { admit. }
+        specialize (IHφ D fail I (update_env D rho (var_fresh (form_vars φ)) d0) 
+                        d x0 HNIn).
+        destruct IHφ.
+        (* TODO: use size-based induction here! *)
+  (* Admitted. *)
+  Abort.
+
+  Theorem plugging_forms :
+    forall φ t D (I : interp D) fail rho x dbi,
+    ~List.In x (form_vars φ) ->
+    sat D fail rho (bsubst_form φ t dbi) <->
+    sat D fail (update_env D rho x (eval D fail rho t)) (bsubst_form φ (fvar x) dbi).
+  Proof.
+    induction φ; intros t D I fail rho x dbi Fresh; simpl in *.
+    * split; intro Sat; now rewrite sat_fal in Sat.
+    * split; intro Sat;
+      rewrite sat_atom in Sat; rewrite sat_atom;
+      rewrite map_map in Sat; rewrite map_map.
+      - erewrite map_ext_in. exact Sat. intros. simpl.
+        symmetry. apply plugging_terms.
+        clear Sat.
+        induction v. inversion H.
+        inversion H; subst.
+        + simpl_existT. subst. simpl in Fresh.
+          now apply notin_app_l in Fresh.
+        + simpl_existT. subst. simpl in Fresh.
+          apply notin_app_r in Fresh. apply IHv; intros; auto.
+
+      - erewrite map_ext_in. exact Sat. intros. simpl.
+        apply plugging_terms.
+        clear Sat.
+        induction v. inversion H.
+        inversion H; subst.
+        + simpl_existT. subst. simpl in Fresh.
+          now apply notin_app_l in Fresh.
+        + simpl_existT. subst. simpl in Fresh.
+          apply notin_app_r in Fresh. apply IHv; intros; auto.
+    * do 2 rewrite sat_impl. intros. apply notin_app_l in Fresh as Fresh2.
+      apply notin_app_r in Fresh.
+      split; intros H H0.
+      - apply (proj1 (IHφ2 t D I fail rho x dbi Fresh)).
+        apply H. now apply (proj2 (IHφ1 t D I fail rho x dbi Fresh2)).
+      - apply (proj2 (IHφ2 t D I fail rho x dbi Fresh)).
+        apply H. now apply (proj1 (IHφ1 t D I fail rho x dbi Fresh2)).
+    * do 2 rewrite sat_exs.
+      simpl. split; intro H; destruct H; exists x0;
+      remember (var_fresh (form_vars (bsubst_form φ (fvar x) (S dbi)))) as F1;
+      remember (var_fresh (form_vars (bsubst_form φ t (S dbi)))) as F2.
+      - rewrite update_env_comm.
+        { admit. }
+        rewrite <- bsubst_form_comm_lower; auto. 2: lia.
+        specialize (IHφ t D I fail (update_env D rho F1 x0) x dbi Fresh).
+        destruct IHφ.
+      (* TODO: use size-based induction here! *)
+      (* TODO: fresh variable operations should be supported here too! *)
+  Abort.
 
   Theorem soundness :
     forall φ Γ, Γ ⊢_FOL φ -> valid Γ φ.
@@ -479,26 +662,32 @@ Section soundness_completeness.
     * do 2 rewrite sat_impl. intros. auto.
     * repeat rewrite sat_impl. intros. apply H0; auto.
     * repeat rewrite sat_impl. intros.
-      admit.
+      rewrite sat_fal in H0.
+      now apply Classical_Prop.NNPP. (* depends on ClassicalProp.classic axiom *)
     * unfold valid in *.
-      apply IHHilbert_proof_sys1 in H1 as IH1.
-      apply IHHilbert_proof_sys2 in H1 as IH2. rewrite sat_impl in IH2. now apply IH2.
+      eapply IHHilbert_proof_sys1 in H1 as IH1.
+      eapply IHHilbert_proof_sys2 in H1 as IH2. rewrite sat_impl in IH2.
+      apply IH2. exact IH1.
     * rewrite -> sat_impl, -> sat_exs. intros.
-      exists (eval D fail rho t). clear H.
-      generalize dependent φ. induction φ; intros; auto.
-      - admit.
-      - admit.
-      - admit.
-      (* TODO... *)
+      exists (eval D fail rho t).
+      (* eapply (proj1 (plugging_forms _ _ _ _ _ _ _ _ _)). exact H0. *)
+      Unshelve. admit. (* TODO: fresh variable operations should be supported here too! *)
     * rewrite -> sat_impl, -> sat_exs. intros. unfold valid in *.
-      apply IHHilbert_proof_sys in H0. rewrite sat_impl in H0. apply H0.
-      destruct H1. simpl in H1.
+      destruct H1.
       remember (var_fresh (form_vars (quantify_form φ x 0))) as FF.
-      admit. (* TODO... *)
-  Admitted.
+      apply IHHilbert_proof_sys with (rho := (update_env D rho x x0)) in H0.
+      rewrite sat_impl in H0.
+      (* rewrite <- fresh_irrelevant_form. apply H0. *)
+      (* TODO: variable replacement is consistent with update replacement *)
+      (* replace x0 with (eval D I ).
+      rewrite <- plugging_forms in H1. *)
+  Abort.
 
   Theorem completeness :
-    forall φ Γ, valid Γ φ -> Γ ⊢_FOL φ. Admitted.
+    forall φ Γ, valid Γ φ -> Γ ⊢_FOL φ.
+  Proof.
+  Abort.
+
 End soundness_completeness.
 
 Section FOL_ML_correspondence.
