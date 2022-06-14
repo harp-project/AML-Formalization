@@ -6427,12 +6427,12 @@ Qed.
   @frames_on_the_way_to_hole' EvS SvS E (patt_bott) _ _ _ _ _ := [] ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) p q _ _ _
-  with ((decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2))) => {
-    | (left _, left _) => 
+  (*with ((decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2))) => {
+    | (left _, left _) => *) :=
       ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ2 p E) _)::
       (exist _ (free_evar_subst ψ1 q E) _)::(exist _ (free_evar_subst ψ2 q E) _)::
       ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
+      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _))) (*
     | (left _, right _) =>
     ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ1 q E) _)::
     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
@@ -6445,7 +6445,7 @@ Qed.
     (
     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
     ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
-  } ;
+  }*) ;
 
   @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) p q _ _ _
   :=     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
@@ -6470,7 +6470,9 @@ Qed.
     | ?H' =>
       lazymatch goal with
       | [|- ?g] =>
-        (cut (H' = g);[(congruence)|(repeat f_equal; try reflexivity; try apply proof_irrel)])
+        (cut (H' = g);
+        [(let H0 := fresh "H0" in intros H0; rewrite -H0; exact H)|
+         (repeat f_equal; try reflexivity; try apply proof_irrel)])
       end
     end.
 
@@ -6487,7 +6489,7 @@ Qed.
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
-    unfold frames_on_the_way_to_hole'_unfold_clause_7.
+    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
     repeat case_match; pi_set_solver.
   Qed.
 
@@ -6497,7 +6499,7 @@ Qed.
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
-    unfold frames_on_the_way_to_hole'_unfold_clause_7.
+    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
     repeat case_match; pi_set_solver.
   Qed.
 
@@ -6616,7 +6618,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
-     FP := (@frames_on_the_way_to_hole' EvS SvS E ψ wfψ)
+     FP := (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
    (pi_Generic gpi)
@@ -6771,86 +6773,47 @@ Qed.
         ).
       }
 
-      pose proof (pile_old := pile).
-      destruct gpi.
-      unfold i' in pile.
-      apply pile_evs_svs_kt_back in pile.
-      simp frames_on_the_way_to_hole' in pile.
-      destruct_and!.
-      unfold frames_on_the_way_to_hole'_unfold_clause_7 in H5.
-      
-
-      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
-      {
-        eapply helper_app_lemma; try assumption.
-        admit.
-      }
-      {
-        eapply cast_proof'.
-        {
-          rewrite [free_evar_subst ψ2 p E]free_evar_subst_no_occurrence.
-          { apply count_evar_occurrences_0. assumption. }
-          rewrite [free_evar_subst ψ2 q E]free_evar_subst_no_occurrence.
-          { apply count_evar_occurrences_0. assumption. }
-          reflexivity.
-        }
-        apply pf_iff_split; try_wfauto2.
-        {
-          eapply Framing_left.
-          2: eapply pf_iff_proj1 in pf₁; try_wfauto2.
-          2: apply pf₁.
-          2: assumption.
-        }
-       
-        admit.
-      }
-      {
-        admit.
-      }
-      {
-        repeat rewrite free_evar_subst_no_occurrence;
-        try apply count_evar_occurrences_0; try assumption.
-        usePropositionalReasoning.
-        eapply pf_iff_equiv_refl.
-        wf_auto2.
-      }
-      2: {
-        
-      }
-
-      destruct gpi.
-      eapply helper_app_lemma; try assumption.
-      apply pile_evs_svs_kt_back in pile.
+      unshelve (eapply helper_app_lemma); try assumption.
+      eapply pile_trans;[|apply pile].
+      unfold i'.
       apply pile_evs_svs_kt.
-      { clear. abstract(set_solver). }
-      { clear. abstract(set_solver). }
+      { clear; set_solver. }
+      { clear; set_solver. }
       { reflexivity. }
       {
-        destruct_and!.
-        clear pf₁ pf₂.
-        simp frames_on_the_way_to_hole' in H5.
+        simp frames_on_the_way_to_hole'.
+        (* This should be automatable! *)
+        remember (well_formed_free_evar_subst_0 E wfp wfψ1) as wf1.
+        remember (well_formed_free_evar_subst_0 E wfp wfψ2) as wf2.
+        remember (well_formed_free_evar_subst_0 E wfq wfψ1) as wf3.
+        remember (well_formed_free_evar_subst_0 E wfq wfψ2) as wf4.
+        remember (frames_on_the_way_to_hole' EvS SvS E
+        (frames_on_the_way_to_hole'_obligation_5 wfψ)
+        (frames_on_the_way_to_hole'_obligation_6 wfp)
+        (frames_on_the_way_to_hole'_obligation_7 wfq) ++
+      frames_on_the_way_to_hole' EvS SvS E
+        (frames_on_the_way_to_hole'_obligation_9 wfψ)
+        (frames_on_the_way_to_hole'_obligation_10 wfp)
+        (frames_on_the_way_to_hole'_obligation_11 wfq))
+        as rest.
+        remember (frames_on_the_way_to_hole'_obligation_1 E wfψ wfp) as wf1'.
+        remember (frames_on_the_way_to_hole'_obligation_2 E wfψ wfp) as wf2'.
+        remember (frames_on_the_way_to_hole'_obligation_3 E wfψ wfq) as wf3'.
+        remember (frames_on_the_way_to_hole'_obligation_4 E wfψ wfq) as wf4'.
+        clear.
+        remember (free_evar_subst ψ1 p E) as A.
+        remember (free_evar_subst ψ1 q E) as B.
+        remember (free_evar_subst ψ2 p E) as C.
+        remember (free_evar_subst ψ2 q E) as D.
+        clear.
+        set_unfold.
+        intros.
+        destruct_or!.
+        { left. pi_assumption. }
+        { right. right. left. pi_assumption. }
+        { right. left. pi_assumption. }
+        { right. right. right. left. pi_assumption. }
       }
-      
-      
-      destruct gpi.
-      pose proof (Htmp := @helper_app_lemma Γ ψ1 ψ2 p q E). 
-      2: eapply helper_app_lemma; try (abstract (wf_auto2)).
-      4: {
-        apply pf₂.
-      }
-      3: {
-        apply pf₁.
-      }
-      1: { apply pile_refl. }
-      eapply pile_trans.
-      2: apply pile.
-      subst i'.
-      apply pile_evs_svs_kt.
-      { clear. abstract (set_solver). }
-      { clear. abstract (set_solver). }
-      { reflexivity. }
-      { simp frames_on_the_way_to_hole'. }
-      admit.
     }
     {
       usePropositionalReasoning.
