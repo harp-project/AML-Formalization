@@ -6452,10 +6452,10 @@ Qed.
     ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)) ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') p q _ _ _
-   := (@frames_on_the_way_to_hole' (EvS ∪ {[(evar_fresh (elements EvS))]}) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') p q _ _ _) ;
+   := (@frames_on_the_way_to_hole' ({[(evar_fresh (elements EvS))]} ∪ EvS) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') p q _ _ _) ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_mu ψ') _ _ _ _ _
-   := (@frames_on_the_way_to_hole' EvS (SvS ∪ {[(svar_fresh (elements SvS))]}) E (svar_open 0 ((svar_fresh (elements SvS))) ψ') p q _ _ _)
+   := (@frames_on_the_way_to_hole' EvS ({[(svar_fresh (elements SvS))]} ∪ SvS) E (svar_open 0 ((svar_fresh (elements SvS))) ψ') p q _ _ _)
   .
   Proof.
     all: try (abstract (solve [try_wfauto2])).
@@ -6503,6 +6503,28 @@ Qed.
     repeat case_match; pi_set_solver.
   Qed.
 
+  Lemma frames_on_the_way_to_hole'_imp_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
+  (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
+  ⊆
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+  Proof.
+    simp frames_on_the_way_to_hole'.
+    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
+    repeat case_match; pi_set_solver.
+  Qed.
+
+  Lemma frames_on_the_way_to_hole'_imp_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
+  (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q wfψ2 wfp wfq)
+  ⊆
+  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+  Proof.
+    simp frames_on_the_way_to_hole'.
+    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
+    repeat case_match; pi_set_solver.
+  Qed.
+  
+
+(* TODO for imp *)
 
   Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
   (wfψ1: well_formed ψ1)
@@ -6840,9 +6862,10 @@ Qed.
           [(simpl; apply evar_fresh_seq_max)
           |(simpl; apply svar_fresh_seq_max)
           |(clear pf₁;repeat case_match; simpl; try reflexivity; simpl in *; lia)
-          |(set_solver)
+          |(apply frames_on_the_way_to_hole'_imp_1)
           ]
         ).
+        
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -6876,7 +6899,7 @@ Qed.
           [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
           |(simpl; rewrite Nat.max_comm; apply svar_fresh_seq_max)
           |(clear pf₂; repeat case_match; simpl in *; try reflexivity; lia)
-          |(set_solver)
+          |(apply frames_on_the_way_to_hole'_imp_2)
           ]
         ).
       }
@@ -6914,18 +6937,14 @@ Qed.
 
       (* there used to be a destruct on whether E is in psi *)
 
-      pose proof (IH := IHsz (evar_open 0 x ψ)).
-      feed specialize IH.
-      {
-        abstract(wf_auto2).
-      }
-      {
-        abstract(rewrite evar_open_size'; lia).
-      }
+      assert (well_formed (evar_open 0 x ψ)) by abstract(wf_auto2).
+      assert (size' (evar_open 0 x ψ) <= sz) by abstract(rewrite evar_open_size'; lia).
+
+      pose proof (IH := IHsz (evar_open 0 x ψ) ltac:(assumption) ltac:(assumption)).
       specialize (IH ({[x]} ∪ EvS) SvS).
       feed specialize IH.
       {
-        abstract (
+        abstract(
           subst i';
           simpl;
           eapply pile_trans;
@@ -6962,7 +6981,9 @@ Qed.
             pose proof (Htmp := n);
             rewrite mmdoeip_evar_open in Htmp;
             [(apply not_eq_sym; exact HxneE)|(lia)]
-          )]).
+          )
+          |(simp frames_on_the_way_to_hole'; subst x; clear; pi_set_solver)
+        ]).
       }
       { clear -p_sub_EvS. abstract (set_solver). }
       { clear -q_sub_EvS. abstract (set_solver). }
@@ -6988,9 +7009,17 @@ Qed.
           exact ψ_sub_SvS
         ).
       }
-      apply congruence_ex_helper with (x := x)(EvS := EvS)(SvS := SvS)(i' := i')(exdepth := exdepth)(mudepth := mudepth); try assumption.
+      eapply congruence_ex_helper with (x := x)(EvS := EvS)(SvS := SvS)(exdepth := exdepth)(mudepth := mudepth); try assumption.
       { set_solver. }
-      { unfold i'. reflexivity. }
+      { reflexivity. }
+      { eapply pile_trans;[|apply pile].
+        unfold i'.
+        apply pile_evs_svs_kt.
+        { apply reflexivity. }
+        { apply reflexivity. }
+        { case_match; reflexivity. }
+        { apply list_subseteq_nil. }
+      }
     }
     {
       pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
