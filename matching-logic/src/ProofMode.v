@@ -7025,35 +7025,11 @@ Qed.
       pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
       remember (svar_fresh (elements SvS)) as X.
 
-      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
-      2: {
-        eapply cast_proof'.
-        {
-          rewrite free_evar_subst_no_occurrence.
-          {
-            apply count_evar_occurrences_0.
-            assumption.
-          }
-          rewrite free_evar_subst_no_occurrence.
-          {
-            apply count_evar_occurrences_0.
-            assumption.
-          }
-          reflexivity.
-        }
-        usePropositionalReasoning.
-        apply pf_iff_equiv_refl.
-        { abstract (wf_auto2). }
-      }
+      simpl in HEinψ.
 
-      pose proof (IH := IHsz (svar_open 0 X ψ)).
-      feed specialize IH.
-      {
-        abstract (wf_auto2).
-      }
-      {
-        abstract(rewrite svar_open_size'; lia).
-      }
+      assert (well_formed (svar_open 0 X ψ) = true) by (abstract(clear -wfψ;wf_auto2)).
+      assert (size' (svar_open 0 X ψ) <= sz) by abstract(rewrite svar_open_size'; lia).
+      pose proof (IH := IHsz (svar_open 0 X ψ) ltac:(assumption) ltac:(assumption)).
       specialize (IH EvS ({[X]} ∪ SvS)).
       feed specialize IH.
       {
@@ -7087,7 +7063,8 @@ Qed.
             rewrite mmdoeip_S_in in Htmp2;
             [exact HEinψ|];
             inversion Htmp2
-          )]).
+          )
+          |(simp frames_on_the_way_to_hole'; subst X; clear; pi_set_solver)]).
       }
       {
         exact p_sub_EvS.
@@ -7131,15 +7108,15 @@ Qed.
       }
 
       apply pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst in IH.
-      3: { abstract (wf_auto2). }
-      2: { abstract (wf_auto2). }
+      3: { clear -wfq. abstract (wf_auto2). }
+      2: { clear -wfp. abstract (wf_auto2). }
 
       unshelve (epose proof (IH1 := @pf_iff_proj1 _ _ _ _ _ _ _ IH)).
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
+      { clear -wfψ wfp. abstract (wf_auto2). }
+      { clear -wfψ wfq. abstract (wf_auto2). }
       unshelve (epose proof (IH2 := @pf_iff_proj2 _ _ _ _ _ _ _ IH)).
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
+      { clear -wfψ wfp. abstract (wf_auto2). }
+      { clear -wfψ wfq. abstract (wf_auto2). }
 
       eapply pf_iff_mu_remove_svar_quantify_svar_open.
       5: {
@@ -7152,6 +7129,7 @@ Qed.
           }
           3: {
             abstract (
+              clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
               wf_auto2;
               simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
@@ -7161,6 +7139,7 @@ Qed.
           }
           2: {
             abstract (
+              clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
               wf_auto2;
               simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
@@ -7182,12 +7161,11 @@ Qed.
                 rewrite -HeqX;
                 clear;
                 set_solver
-              )|];
-              repeat case_match; simpl in *; try reflexivity;
-              pose proof (Htmp := e);
-              rewrite mmdoeip_S_in in Htmp;
-              [exact HEinψ|];
-              inversion Htmp
+            )|(repeat case_match; simpl in *; try reflexivity;
+            pose proof (Htmp := e);
+            rewrite mmdoeip_S_in in Htmp;
+            [exact HEinψ|];
+            inversion Htmp)|(apply list_subseteq_nil)]
             ).
           }
         }
@@ -7199,6 +7177,7 @@ Qed.
           }
           3: {
             abstract (
+              clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
               wf_auto2; simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
@@ -7207,6 +7186,7 @@ Qed.
           }
           2: {
             abstract (
+              clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
               wf_auto2; simpl in *;
               pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
@@ -7227,62 +7207,63 @@ Qed.
                 rewrite -HeqX;
                 clear;
                 set_solver
-              )|];
-              repeat case_match; simpl in *; try reflexivity;
+              )|(repeat case_match; simpl in *; try reflexivity;
               pose proof (Htmp := e);
               rewrite mmdoeip_S_in in Htmp;
               [exact HEinψ|];
-              inversion Htmp
+              inversion Htmp)|(apply list_subseteq_nil)]
             ).
           }          
         }
         {
           cut (X ∉ free_svars ψ.[[evar:E↦p]]).
           {
+            clear -wfψ wfp.
             abstract (wf_auto2).
           }
           abstract (
-            pose proof (@free_svars_free_evar_subst Σ ψ E p);
-            clear -H frX ψ_sub_SvS p_sub_SvS;
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+            clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
             set_solver
           ).
         }
         {
           cut (X ∉ free_svars ψ.[[evar:E↦q]]).
           {
+            clear -wfψ wfq.
             abstract (wf_auto2).
           }
           abstract (
-            pose proof (@free_svars_free_evar_subst Σ ψ E q);
-            clear -H frX ψ_sub_SvS q_sub_SvS;
+            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+            clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
             set_solver
           ).
         }
       }
       {
+        clear -wfψ wfp.
         abstract (wf_auto2).
       }
       {
+        clear -wfψ wfq.
         abstract (wf_auto2).
       }
       {
         abstract (
-          pose proof (@free_svars_free_evar_subst Σ ψ E p);
-          clear -H frX ψ_sub_SvS p_sub_SvS;
+          pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+          clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
           set_solver
         ).
       }
       {
         abstract (
-          pose proof (@free_svars_free_evar_subst Σ ψ E q);
-          clear -H frX ψ_sub_SvS q_sub_SvS;
+          pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+          clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
           set_solver
         ).
       }
     }
   Defined.
-
-  Print eq_prf_equiv_congruence.
 
   Lemma prf_equiv_congruence Γ p q C
   (gpi : GenericProofInfo)
