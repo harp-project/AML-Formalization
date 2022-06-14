@@ -3924,7 +3924,7 @@ Section FOL_helpers.
       remember_constraint as i.
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        apply useGenericReasoning with (i0 := i) in H.
+        apply useGenericReasoning with (i := i) in H.
         2: { subst i. 
           apply pile_evs_svs_kt; auto. set_solver.
         }
@@ -3959,7 +3959,7 @@ Section FOL_helpers.
       remember_constraint as i.
       apply pf_iff_split; try_wfauto2.
       + pose proof (H := IH1).
-        apply useGenericReasoning with (i0 := i) in H.
+        apply useGenericReasoning with (i := i) in H.
         2: { subst i. try_solve_pile. }
         eapply Framing_right with (ψ := p0)(wfψ := Prf) in H.
         eapply syllogism_meta. 4: apply H.
@@ -4274,7 +4274,7 @@ Section FOL_helpers.
   Tactic Notation "change" "constraint" "in" ident(H) :=
     let i := fresh "i" in
     remember_constraint as i;
-    eapply useGenericReasoning with (i0 := i) in H;
+    eapply useGenericReasoning with (i := i) in H;
     subst i;
     [|(try_solve_pile)].
 
@@ -4609,7 +4609,7 @@ Section FOL_helpers.
     Γ ⊢ (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
-    eapply syllogism_meta with (B0 := patt_and A B).
+    eapply syllogism_meta with (B := patt_and A B).
     { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
@@ -4654,7 +4654,7 @@ Section FOL_helpers.
     Γ ⊢ (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
-    eapply syllogism_meta with (B0 := patt_and B A).
+    eapply syllogism_meta with (B := patt_and B A).
     { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
@@ -5625,13 +5625,13 @@ Section FOL_helpers.
       apply pile_svs_subseteq.
       set_solver.
     }
-    apply useBasicReasoning with (gpi0 := gpi) in Hpf.
+    apply useBasicReasoning with (gpi := gpi) in Hpf.
     epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
 
     eapply (@cast_proof' Σ Γ).
     1: {
-      erewrite bound_to_free_set_variable_subst with (X0 := X).
+      erewrite bound_to_free_set_variable_subst with (X := X).
       5: { apply svar_quantify_not_free. }
       4: {
            apply svar_quantify_closed_mu.
@@ -8008,6 +8008,7 @@ Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
+  (* HERE!!! *)
   mgRewrite Hiff at 2.
   Check @MyGoal_rewriteIff.
   eapply (@MyGoal_rewriteIff Σ Γ _ _).
