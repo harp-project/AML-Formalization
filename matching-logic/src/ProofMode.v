@@ -841,7 +841,7 @@ Section FOL_helpers.
   Qed.
 
   Lemma not_exgen_x_in_prop (x : evar) :
-    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) pi_Propositional.
+    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) pi_Propositional.
   Proof.
     intros [HContra].
 
@@ -857,7 +857,7 @@ Section FOL_helpers.
       { simpl. clear. set_solver. }
       { simpl. clear. set_solver. }
       { simpl. reflexivity. }
-      { simpl. apply reflexivity. }
+      { simpl. clear. set_solver. }
     }
     destruct HContra as [Hprop Hgen Hsvs Hkt].
     clear -Hgen.
@@ -1369,11 +1369,11 @@ Defined.
 
 
   Fixpoint frames_of_AC (C : Application_context)
-  : list ({ x : Pattern | well_formed x = true}) :=
+  : coWfpSet :=
   match C with
-  | box => []
-  | (@ctx_app_l _ C' p wfp) => (exist _ p wfp) :: (frames_of_AC C')
-  | (@ctx_app_r _ p C' wfp) => (exist _ p wfp) :: (frames_of_AC C')
+  | box => ∅
+  | (@ctx_app_l _ C' p wfp) => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
+  | (@ctx_app_r _ p C' wfp) => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
   end.
 
 
@@ -2064,7 +2064,9 @@ Proof.
       intros x Hx.
       specialize (Hpf2 x).
       apply Hpf2. clear Hpf2.
+      rewrite elem_of_gset_to_coGset in Hx.
       rewrite uses_of_ex_gen_correct in Hx.
+      rewrite elem_of_gset_to_coGset.
       rewrite uses_of_ex_gen_correct.
       rewrite indifferent_to_cast_uses_ex_gen in Hx.
       exact Hx.
@@ -2075,7 +2077,9 @@ Proof.
       intros x Hx.
       specialize (Hpf3 x).
       apply Hpf3. clear Hpf3.
+      rewrite elem_of_gset_to_coGset in Hx.
       rewrite uses_of_svar_subst_correct in Hx.
+      rewrite elem_of_gset_to_coGset.
       rewrite uses_of_svar_subst_correct.
       rewrite indifferent_to_cast_uses_svar_subst in Hx.
       exact Hx.
@@ -2166,7 +2170,9 @@ Proof.
       intros x Hx;
       specialize (Hpf2 x);
       apply Hpf2; clear Hpf2;
+      rewrite elem_of_gset_to_coGset in Hx;
       rewrite uses_of_ex_gen_correct in Hx;
+      rewrite elem_of_gset_to_coGset;
       rewrite uses_of_ex_gen_correct;
       rewrite indifferent_to_cast_uses_ex_gen in Hx;
       exact Hx
@@ -2177,7 +2183,9 @@ Proof.
       intros x Hx;
       specialize (Hpf3 x);
       apply Hpf3; clear Hpf3;
+      rewrite elem_of_gset_to_coGset in Hx;
       rewrite uses_of_svar_subst_correct in Hx;
+      rewrite elem_of_gset_to_coGset;
       rewrite uses_of_svar_subst_correct;
       rewrite indifferent_to_cast_uses_svar_subst in Hx;
       exact Hx
