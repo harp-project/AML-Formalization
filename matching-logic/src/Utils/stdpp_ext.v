@@ -876,7 +876,6 @@ Proof.
   intros t. specialize (H1 t).
   apply NNPP.
   intros H.
-  Search not ex.
   pose proof (H' := not_ex_not_all _ _ H).
   firstorder.
 Qed.
@@ -994,4 +993,14 @@ Proof.
   intros x y.
   do 2 rewrite elem_of_singleton.
   split; intros H'; symmetry; exact H'.
+Qed.
+
+Global Instance set_unfold_gset_to_coGset
+  {A : Type} {_eqA : EqDecision A} {_cntA : Countable A} (x : A) (X : @gmap.gset A _eqA _cntA) P
+  :
+  SetUnfoldElemOf x X P ->
+  SetUnfoldElemOf x (gset_to_coGset X) P.
+Proof.
+  intros Hunfold.
+  constructor. rewrite elem_of_gset_to_coGset. apply Hunfold.
 Qed.

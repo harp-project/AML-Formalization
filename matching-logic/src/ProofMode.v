@@ -29,9 +29,10 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+
 Definition coEVarSet {Σ : Signature} := coGset evar.
 Definition coSVarSet {Σ : Signature} := coGset svar.
-Definition coWfpSet {Σ : Signature} := coGset wfpattern.
+Definition coWfpSet {Σ : Signature} := coGset wfPattern.
 
 Record GenericProofInfo {Σ : Signature} :=
   mkGenericProofInfo
@@ -62,7 +63,7 @@ mkProofInfoMeaning
   pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
   pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
-  pwi_pf_fp : gset_to_coGset (list_to_set (@framing_patterns Σ Γ ϕ pwi_pf)) ⊆ (if pi is (pi_Generic pi') then set_map proj1_sig (pi_framing_patterns pi') else ∅) ;
+  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then (pi_framing_patterns pi') else ∅) ;
 }.
 
 Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
@@ -97,8 +98,8 @@ Proof.
 Qed.
 
 Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
-Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false [])).
-
+Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false ∅)).
+Definition AnyReasoning {Σ : Signature} : ProofInfo := pi_Generic (@mkGenericProofInfo Σ ⊤ ⊤ true ⊤).
 
 Lemma propositional_pi
   {Σ : Signature}
@@ -130,13 +131,15 @@ Proof.
   { apply Hpf. }
   { destruct gpi; simpl;
     destruct Hpf; simpl in *;
-    constructor; simpl;
-    [(exact I)
-    |(set_solver)
-    |(set_solver)
-    |(destruct (uses_kt pf); simpl in *; try congruence)
-    |(rewrite propositional_implies_no_frame;[exact pwi_pf_prop0|apply list_subseteq_nil])
-    ].
+    constructor; simpl.
+    { exact I. }
+    { set_solver. }
+    { set_solver. }
+    { destruct (uses_kt pf); simpl in *; try congruence. }
+    { rewrite propositional_implies_no_frame.
+     { exact pwi_pf_prop0. }
+     { clear. set_solver. }
+    }
   }
 Qed.
 
@@ -290,7 +293,7 @@ Section FOL_helpers.
         | (simpl; set_solver)
         | (simpl; set_solver)
         | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
-        | (simpl; apply list_nil_subseteq in pwi_pf_fp0; rewrite pwi_pf_fp0; simpl; apply pwi_pf_fp1)
+        | (simpl; set_solver)
         ]
       )|(
         constructor;

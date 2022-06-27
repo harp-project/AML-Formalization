@@ -132,7 +132,7 @@ Section ml_proof_system.
 
   Lemma proved_impl_wf Γ ϕ:
   Γ ⊢ ϕ -> well_formed ϕ.
-  Proo5f.
+  Proof.
   intros pf.
   induction pf; auto; try (solve [wf_auto2]).
   - unfold free_svar_subst. wf_auto2.
@@ -390,13 +390,13 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
       end.
   
   Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢ ϕ) :
-    propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = [].
+    propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
   Proof.
     intros H.
     induction pf; simpl in *; try apply reflexivity; try congruence.
     {
       destruct_and!. specialize (IHpf1 ltac:(assumption)). specialize (IHpf2 ltac:(assumption)).
-      rewrite IHpf1. rewrite IHpf2. reflexivity.
+      rewrite IHpf1. rewrite IHpf2. set_solver.
     }
   Qed.
 
