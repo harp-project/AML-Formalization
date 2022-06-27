@@ -881,7 +881,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
-    { apply list_subseteq_nil. }
+    { set_solver. }
   }
   destruct HContra as [HC1 HC2 HC3 HC4 HC5].
   simpl in *.
@@ -914,7 +914,7 @@ Proof.
       { simpl. clear -Hx. set_solver. }
       { simpl. clear. set_solver. }
       { simpl. reflexivity. }
-      { simpl. apply list_subseteq_nil. }
+      { simpl. set_solver. }
     }
     destruct pile as [Hm1 Hm2 Hm3 Hm4 Hm5].
     simpl in *.
@@ -935,7 +935,7 @@ Proof.
       { clear. set_solver. }
       { clear -HX. set_solver. }
       { reflexivity. }
-      { apply list_subseteq_nil. }
+      { set_solver. }
     }
     destruct pile as [Hp1 Hp2 Hp3 Hp4].
     simpl in *.
@@ -956,7 +956,7 @@ Proof.
       { clear. set_solver. }
       { clear. set_solver. }
       { reflexivity. }
-      { apply list_subseteq_nil. }
+      { set_solver. }
     }
     destruct pile as [Hp1 Hp2 Hp3 Hp4].
     simpl in Hp4.
@@ -981,13 +981,7 @@ Proof.
       { clear; set_solver. }
       { clear; set_solver. }
       { reflexivity. }
-      { simpl.
-        rewrite elem_of_subseteq. intros p' Hp'.
-        assert (p' = p) by (clear -Hp'; set_solver).
-        subst p'.
-        clear Hp'.
-        eapply elem_of_list_fmap_1_alt. apply Hp. reflexivity.
-      }
+      { simpl. set_solver. }
     }
     feed specialize pile2.
     {
@@ -996,31 +990,19 @@ Proof.
       { clear; set_solver. }
       { clear; set_solver. }
       { reflexivity. }
-      { simpl.
-        rewrite elem_of_subseteq. intros p' Hp'.
-        assert (p' = p) by (clear -Hp'; set_solver).
-        subst p'.
-        clear Hp'.
-        eapply elem_of_list_fmap_1_alt. apply Hp. reflexivity.
-      }
+      { simpl. set_solver. }
     }
     destruct pile1, pile2. simpl in *.
     rewrite elem_of_subseteq in pwi_pf_fp1.
-    specialize (pwi_pf_fp1 p ltac:(set_solver)).
-    lazymatch goal with
-    | [|- ?l ∈ _] => replace p with (proj1_sig l) in pwi_pf_fp1 by reflexivity
-    end.
-    apply elem_of_list_fmap_2_inj in pwi_pf_fp1.
-    2: { apply proj1_sig_inj. intros p''. unfold ProofIrrel. intros wfpf1 wfpf2.
-      apply proof_irrel.
-    }
+    setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp1.
+    specialize (pwi_pf_fp1 (exist _ p wfp) ltac:(set_solver)).
     exact pwi_pf_fp1.
   }
 Qed.
 
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := [(exist _ ψ wfψ)])) i}
+    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
     :
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
@@ -1051,7 +1033,7 @@ Qed.
       {
         assumption.
       }
-      {
+      { 
         destruct gpi.
         simpl in *.
         apply pile_evs_svs_kt_back in pile.
@@ -1062,7 +1044,8 @@ Qed.
         clear H H1 H0.
         rewrite elem_of_subseteq.
         intros p0 Hp0.
-        rewrite elem_of_cons in Hp0.
+        rewrite elem_of_gset_to_coGset in Hp0.
+        rewrite elem_of_union in Hp0.
         destruct Hp0 as [Hp0|Hp0].
         {
           subst.
@@ -1071,11 +1054,11 @@ Qed.
           specialize (H3 (exist _ ψ wfψ)).
           feed specialize H3.
           {
-            rewrite elem_of_cons.
-            left. reflexivity.
+            clear. set_solver.
           }
           subst F.
-          eapply elem_of_list_fmap_1_alt. apply H3. reflexivity.
+          clear -Hp0 H3.
+          set_solver.
         }
         {
           set_solver.
@@ -1086,7 +1069,7 @@ Qed.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
   (wfψ : well_formed ψ)
-  {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := [(exist _ ψ wfψ)])) i}
+  {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
   :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
@@ -1125,7 +1108,8 @@ Proof.
       clear H H1 H0.
       rewrite elem_of_subseteq.
       intros p0 Hp0.
-      rewrite elem_of_cons in Hp0.
+      rewrite elem_of_gset_to_coGset in Hp0.
+      rewrite elem_of_union in Hp0.
       destruct Hp0 as [Hp0|Hp0].
       {
         subst.
@@ -1134,11 +1118,10 @@ Proof.
         specialize (H3 (exist _ ψ wfψ)).
         feed specialize H3.
         {
-          rewrite elem_of_cons.
-          left. reflexivity.
+          clear. set_solver.
         }
         subst F.
-        eapply elem_of_list_fmap_1_alt. apply H3. reflexivity.
+        clear -Hp0 H3. set_solver.
       }
       {
         set_solver.
