@@ -7940,8 +7940,9 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
            [ rewrite $heq; reflexivity | ()];
          Std.clear [hr.(equality)];
          let wfC := Fresh.in_goal ident:(wfC) in
-         assert (wfC : PC_wf $pc) > [Control.shelve () | ()];
-         eapply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $gpi _ $hiff) (*  >
+         assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
+         let wfCpf := Control.hyp wfC in
+         apply (@MyGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
          [
          (lazy_match! goal with
          | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p _)]
@@ -7958,10 +7959,10 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_mg_goal _ $g) >
                [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+             Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
          | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
-         ] *)
+         ]
     end
   end.
 
@@ -8010,6 +8011,24 @@ Proof.
   { abstract(wf_auto2). }
   (* HERE!!! *)
   mgRewrite Hiff at 2.
+  2: {
+    simpl.
+    destruct gpi.
+    apply pile_evs_svs_kt.
+    4: {
+      Set Printing Implicit.
+      unfold patt_iff, patt_and, patt_or, patt_not.
+      Set Printing Implicit.
+      unfold patt_and.
+      Set Printing Implicit.
+      simp frames_on_the_way_to_hole'.
+      simpl.
+    }
+     simp frames_on_the_way_to_hole'.
+    Set Printing All.
+  }
+  Unshelve.
+  2: { unfold PC_wf; simpl. wf_auto2. }
   Check @MyGoal_rewriteIff.
   eapply (@MyGoal_rewriteIff Σ Γ _ _).
   2: { apply pile. }
