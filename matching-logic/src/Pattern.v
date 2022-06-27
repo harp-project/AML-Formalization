@@ -659,3 +659,16 @@ Proof.
   rewrite wfxs.
   reflexivity.
 Qed.
+
+Definition wfPattern {Σ : Signature} := {p : Pattern | well_formed p = true}.
+
+Global Instance wfPattern_eqdec {Σ : Signature} : EqDecision wfPattern.
+Proof.
+  solve_decision.
+Defined.
+
+Global Instance wfPattern_countable {Σ : Signature} : Countable wfPattern.
+Proof.
+  apply countable_sig.
+  solve_decision.
+Defined.

@@ -134,6 +134,7 @@ Section ml_proof_system.
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
 
+(* TODO make this return well-formed patterns. *)
 Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : list Pattern :=
   match pf with
   | hypothesis _ _ _ _ => []

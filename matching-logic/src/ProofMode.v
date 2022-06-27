@@ -13,7 +13,7 @@ Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
-From stdpp Require Import list tactics fin_sets.
+From stdpp Require Import list tactics fin_sets coGset.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -29,14 +29,17 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+Definition coEVarSet {Σ : Signature} := coGset evar.
+Definition coSVarSet {Σ : Signature} := coGset svar.
+Definition coWfpSet {Σ : Signature} := coGset wfpattern.
+
 Record GenericProofInfo {Σ : Signature} :=
   mkGenericProofInfo
   {
-    pi_generalized_evars : EVarSet ;
-    pi_substituted_svars : SVarSet ;
+    pi_generalized_evars : coEVarSet ;
+    pi_substituted_svars : coSVarSet ;
     pi_uses_kt : bool ;
-    pi_framing_patterns : list ({p : Pattern | well_formed p = true}) ; 
-    (* pi_framing_patterns : list Pattern ; *)
+    pi_framing_patterns : coWfpSet ; 
   }.
 
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
@@ -56,11 +59,10 @@ Record ProofInfoMeaning
 mkProofInfoMeaning
 {
   pwi_pf_prop : if pi is pi_Propositional then @propositional_only Σ Γ ϕ pwi_pf = true else True ;
-  pwi_pf_ge : @uses_of_ex_gen Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
-  pwi_pf_svs : @uses_of_svar_subst Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
+  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
+  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
   pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
-  pwi_pf_fp : @framing_patterns Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then fmap proj1_sig (pi_framing_patterns pi') else []) ;
-  (* pwi_pf_fp : @framing_patterns Σ Γ ϕ pwi_pf ⊆ (if pi is (pi_Generic pi') then pi_framing_patterns pi' else []) ; *)
+  pwi_pf_fp : gset_to_coGset (list_to_set (@framing_patterns Σ Γ ϕ pwi_pf)) ⊆ (if pi is (pi_Generic pi') then set_map proj1_sig (pi_framing_patterns pi') else ∅) ;
 }.
 
 Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
