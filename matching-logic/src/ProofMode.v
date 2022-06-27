@@ -4122,7 +4122,7 @@ Section FOL_helpers.
       {
         case_match.
         destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        cut (framing_patterns ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = [] ).
+        cut (framing_patterns ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅ ).
         {
           intros. rewrite H0. set_solver.
         }
@@ -4138,7 +4138,7 @@ Section FOL_helpers.
             {| pi_generalized_evars := {[x]};
                pi_substituted_svars := ∅;
                pi_uses_kt := false ;
-               pi_framing_patterns := [] ;
+               pi_framing_patterns := ∅ ;
             |}) i} :
     x ∉ free_evars ϕ₂ ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
@@ -4164,16 +4164,20 @@ Section FOL_helpers.
       }
       {
         destruct i;[contradiction|].
-        rewrite union_subseteq.
-        split.
+        rewrite elem_of_subseteq. intros x0 Hx0.
+        rewrite elem_of_gset_to_coGset in Hx0.
+        rewrite elem_of_union in Hx0.
+        destruct Hx0.
         {
-          rewrite -elem_of_subseteq_singleton.
+          rewrite elem_of_singleton in H. subst.
           eapply pile_impl_allows_gen_x.
           apply pile.
         }
         {
           inversion Hpf.
           apply pwi_pf_ge0.
+          rewrite elem_of_gset_to_coGset.
+          assumption.
         }
       }
       {
@@ -5214,7 +5218,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) i ->
+    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
     Γ ⊢ ϕ using i ->
     Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
@@ -5239,7 +5243,7 @@ Section FOL_helpers.
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
-    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
+    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
   Proof.
     intros wfϕ.
    
@@ -5275,7 +5279,7 @@ Section FOL_helpers.
 End FOL_helpers.
 
 Lemma not_kt_in_prop {Σ : Signature} :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true, FP := [])) pi_Propositional.
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true, FP := ∅)) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5289,7 +5293,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
-    { apply reflexivity. }
+    { clear. set_solver. }
   }
   destruct HContra as [HC1 HC2 HC3 HC4].
   unfold pf2 in HC4.
@@ -5313,7 +5317,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     reflexivity.
-    { apply list_subseteq_nil. }
+    { clear. set_solver. }
   }
   destruct H as [H1 H2 H3 H4].
   unfold pf2 in H4. simpl in H4. exact H4.
@@ -5326,7 +5330,7 @@ Lemma Knaster_tarski {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
-           pi_framing_patterns := [] ;
+           pi_framing_patterns := ∅ ;
         |}) i} :
 well_formed (mu, ϕ) ->
 Γ ⊢ (instantiate (mu, ϕ) ψ) ---> ψ using i ->
@@ -5373,7 +5377,7 @@ Defined.
 
 
 Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := [])) pi_Propositional.
+  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := ∅)) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5387,7 +5391,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     { reflexivity. }
-    { apply reflexivity. }
+    { clear. set_solver. }
   }
   destruct HContra as [HC1 HC2 HC3 HC4].
   simpl in *.
@@ -5411,7 +5415,7 @@ Proof.
     { set_solver. }
     { set_solver. }
     reflexivity.
-    { apply list_subseteq_nil. }
+    { clear. set_solver. }
   }
   destruct H as [H1 H2 H3 H4].
   simpl in *.
@@ -5424,7 +5428,7 @@ Lemma Svar_subst {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
-           pi_framing_patterns := [] ;
+           pi_framing_patterns := ∅ ;
         |}) i} :
   well_formed ψ ->
   Γ ⊢ ϕ using i ->
@@ -5499,7 +5503,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := [])) i ->
+    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i->
@@ -6258,7 +6262,7 @@ Qed.
                       maximal_mu_depth_of_evar_in_pattern' mudepth E (ex , ψ))
                   is left _ then false
                   else true),
-           FP := []
+           FP := ∅
           ))
   (pile: ProofInfoLe i' (pi_Generic gpi))
   (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
