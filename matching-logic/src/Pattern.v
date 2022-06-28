@@ -672,3 +672,12 @@ Proof.
   apply countable_sig.
   solve_decision.
 Defined.
+
+Global Instance Pattern_infinite {Σ : Signature} :
+  Infinite Pattern.
+Proof.
+  apply inj_infinite with
+    (f := patt_free_evar)
+    (g := fun p => (match p with patt_free_evar x => Some x | _ => None end) ).
+  intros x. reflexivity.
+Qed.
