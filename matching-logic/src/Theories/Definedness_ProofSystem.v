@@ -160,7 +160,7 @@ Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
-  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP).
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC).
 Proof.
   intros HΓ Hwfϕ.
   assert(S1: Γ ⊢ patt_defined p_x using BasicReasoning).
@@ -172,7 +172,7 @@ Proof.
   remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
   pose proof (S1' := S1).
-  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP)) in S1'.
+  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) in S1'.
   apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
   2: {
@@ -198,7 +198,7 @@ Proof.
     set_solver.
   }
   
-  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP)) as i.
+  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) as i.
   assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
@@ -234,17 +234,16 @@ Proof.
     simpl in Htmp.
     apply pf_conj_elim_r_meta in Htmp.
     2-3: wf_auto2.
+    apply useGenericReasoning with (i := i) in Htmp.
+    2: {
+      subst i. try_solve_pile.
+    }
     subst i.
     eapply MP.
     1: apply S2.
     1: {
-      Set Typeclasses Debug.
-      rewrite union_empty_r_L in Htmp.
-      apply Htmp.
-      eapply useBasicReasoning.
       apply Htmp.
     }
-    apply S2.
   }
 
   assert(S4: Γ ⊢ ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉ using i).
@@ -268,15 +267,17 @@ Proof.
     
     assert(Htmp2: Γ ⊢ (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉) using i).
     {
-      apply Framing_right.
+      unshelve (eapply Framing_right).
+      { wf_auto2. }
       {  
         subst i.
         apply pile_evs_svs_kt.
         { set_solver. }
         { apply reflexivity. }
         { reflexivity. }
+        { unfold defFP. clear. set_solver. }
       }
-      wf_auto2. apply Htmp1.
+      apply Htmp1.
     }
     
     eapply MP.
@@ -289,10 +290,13 @@ Proof.
     pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x' and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
     apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
+    apply useGenericReasoning with (i := i) in Htmp.
+    2: {
+      subst i. try_solve_pile.
+    }
+    subst i.
     eapply MP.
     2: {
-      subst i.
-      useBasicReasoning.
       apply Htmp.
     }
     1: apply S4.
@@ -312,7 +316,7 @@ Proof.
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) as gpi.
+    remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) as gpi.
     rewrite Heqi.
     mgAdd (@useBasicReasoning _ _ _ gpi Htmp).
     mgApply 0. mgIntro. mgApply 2.
@@ -336,6 +340,7 @@ Proof.
       { set_solver. }
       { apply reflexivity. }
       { reflexivity. }
+      { clear. set_solver. }
     }
     simpl in S8.
     
@@ -370,6 +375,7 @@ Proof.
       { set_solver. }
       { apply reflexivity. }
       { reflexivity. }
+      { clear. set_solver. }
     }
     assumption.
   }
@@ -385,7 +391,8 @@ Proof.
     { wf_auto2. }
     {  mgApply 0.
         subst i.
-       mgAdd (@useBasicReasoning _ _ _ (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false) (Existence Γ)).
+       (* TODO mgAdd should do the cast automatically *)
+       mgAdd (@useBasicReasoning _ _ _ (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) (Existence Γ)).
        mgExactn 0.
     }
     mgApply 2. mgExactn 1.
@@ -428,6 +435,7 @@ Proof.
         { set_solver. }
         { apply reflexivity. }
         { reflexivity. }
+        { clear. set_solver. }
       }
       toMyGoal.
       { wf_auto2. }
@@ -471,6 +479,7 @@ Proof.
       { set_solver. }
       { set_solver. }
       { reflexivity. }
+      { clear. set_solver. }
     }
     apply S12.
   }
@@ -521,6 +530,7 @@ Proof.
         {
           reflexivity.
         }
+        { clear. set_solver. }
       }
       1-3: wf_auto2.
     }
