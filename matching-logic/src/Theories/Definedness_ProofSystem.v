@@ -44,44 +44,48 @@ Context
   {syntax : Syntax}
 .
 
+Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}.
+
+Definition BasicReasoningWithDefFP := (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP)). 
+
 Lemma phi_impl_total_phi_meta Γ ϕ i:
   well_formed ϕ ->
-  ProofInfoLe BasicReasoning i ->
+  ProofInfoLe BasicReasoningWithDefFP i -> 
   Γ ⊢ ϕ using i ->
   Γ ⊢ ⌊ ϕ ⌋ using i.
 Proof.
   intros wfϕ pile Hϕ.
-  epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (ϕ) (ctx_app_r box _)).
+  pose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (ϕ) AC_patt_defined).
   apply ANNA.
-  { exact pile. }
+  { simpl.
+    eapply pile_trans;[|apply pile].
+    apply pile_evs_svs_kt; try set_solver.
+  }
   { apply wfϕ. }
   exact Hϕ.
-  Unshelve. wf_auto2.
 Defined.
 
 Lemma patt_iff_implies_equal :
   forall (φ1 φ2 : Pattern) Γ i,
     well_formed φ1 ->
     well_formed φ2 ->         
-    ProofInfoLe BasicReasoning i ->                 
+    ProofInfoLe BasicReasoningWithDefFP i ->
     Γ ⊢ (φ1 <---> φ2) using i ->
     Γ ⊢ φ1 =ml φ2 using i .
 Proof.
   intros φ1 φ2 Γ i WF1 WF2 pile H.
-  epose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) (ctx_app_r box _)).
+  pose proof (ANNA := @A_implies_not_not_A_ctx Σ Γ (φ1 <---> φ2) AC_patt_defined).
   apply ANNA.
-  { exact pile. }
+  { eapply pile_trans;[|apply pile]. try_solve_pile. }
   { wf_auto2. }
   { exact H. }
-  Unshelve.
-  wf_auto2.
 Defined.
 
 Lemma patt_equal_refl :
   forall φ Γ,
   well_formed φ ->
   Γ ⊢ φ =ml φ
-  using BasicReasoning.
+  using BasicReasoningWithDefFP.
 Proof.
   intros φ Γ WF. pose proof (IFF := @pf_iff_equiv_refl Σ Γ φ WF).
   eapply usePropositionalReasoning in IFF.
@@ -107,12 +111,12 @@ Proof.
   reflexivity.
 Defined.
 
-Definition BasicReasoningWithDefinedness := pi_Generic (ExGen := {[ev_x]}, SVSubst := ∅, KT := false).
+Definition BasicReasoningWithDefinedness := pi_Generic (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP).
 
 Lemma defined_evar Γ x:
   theory ⊆ Γ ->
   Γ ⊢ ⌈ patt_free_evar x ⌉
-  using pi_Generic (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false).
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
   intros HΓ.
   assert(S1: Γ ⊢ patt_defined p_x using BasicReasoningWithDefinedness).
@@ -123,14 +127,14 @@ Proof.
   }
 
   pose proof (S1' := S1).
-  apply universal_generalization with (x0 := ev_x) in S1'.
+  apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
-  2: { apply pile_refl. }
+  2: { eapply pile_trans;[|apply pile_refl]. try_solve_pile. }
   replace (evar_quantify ev_x 0 ( @patt_defined Σ syntax p_x))
     with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
   2: { simpl. repeat case_match; auto; contradiction. }
   eapply MP.
-  2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false).
+  2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false)(fp := ∅).
     apply pile_evs_svs_kt.
     { clear. unfold ev_x.
       rewrite elem_of_subseteq.
@@ -139,7 +143,8 @@ Proof.
     }
     { apply reflexivity. }
     { reflexivity. }
-    apply forall_variable_substitution with (x0 := x).
+    { clear. set_solver. }
+    apply forall_variable_substitution with (x := x).
     wf_auto2.
   }
   eapply useGenericReasoning.
@@ -148,13 +153,14 @@ Proof.
   { set_solver. }
   { apply reflexivity. }
   { reflexivity. }
+  { apply reflexivity. }
 Defined.
   
 Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
-  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false).
+  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
   intros HΓ Hwfϕ.
   assert(S1: Γ ⊢ patt_defined p_x using BasicReasoning).
@@ -166,7 +172,7 @@ Proof.
   remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
   pose proof (S1' := S1).
-  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) in S1'.
+  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP)) in S1'.
   apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
   2: {
@@ -174,6 +180,7 @@ Proof.
     { set_solver. }
     { apply reflexivity. }
     { reflexivity. }
+    { clear. set_solver. }
   }
 
   assert (Hx1': evar_is_fresh_in x' ϕ).
@@ -191,7 +198,7 @@ Proof.
     set_solver.
   }
   
-  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false)) as i.
+  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP)) as i.
   assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
@@ -209,6 +216,7 @@ Proof.
     { set_solver. }
     { apply reflexivity. }
     { reflexivity. }
+    { clear. set_solver. }
   }
   
   assert(S2: Γ ⊢ ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉ using i).
@@ -226,9 +234,13 @@ Proof.
     simpl in Htmp.
     apply pf_conj_elim_r_meta in Htmp.
     2-3: wf_auto2.
+    subst i.
     eapply MP.
-    2: {
-      rewrite Heqi.
+    1: apply S2.
+    1: {
+      Set Typeclasses Debug.
+      rewrite union_empty_r_L in Htmp.
+      apply Htmp.
       eapply useBasicReasoning.
       apply Htmp.
     }
