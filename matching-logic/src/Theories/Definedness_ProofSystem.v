@@ -561,7 +561,7 @@ Lemma phi_impl_defined_phi Γ ϕ:
                      (ExGen := {[ev_x;
                                evar_fresh
                                  (elements (free_evars ϕ) )]},
-                      SVSubst := ∅, KT := false).
+                      SVSubst := ∅, KT := false, FP := defFP).
 Proof.
   intros HΓ wfϕ.
   eapply cast_proof'.
@@ -590,6 +590,9 @@ Proof.
     {
       reflexivity.
     }
+    {
+      clear. set_solver.
+    }
   }
 Defined.
 
@@ -601,7 +604,7 @@ Lemma total_phi_impl_phi Γ ϕ:
   (ExGen := {[ev_x;
             evar_fresh
               (elements (free_evars ϕ) )]},
-   SVSubst := ∅, KT := false).
+   SVSubst := ∅, KT := false, FP := defFP).
 Proof.
   intros HΓ wfϕ.
   unfold patt_total.
@@ -624,7 +627,7 @@ Lemma total_phi_impl_phi_meta Γ ϕ i:
   (ExGen := {[ev_x;
             evar_fresh
               (elements (free_evars ϕ) )]},
-   SVSubst := ∅, KT := false)) i ->
+   SVSubst := ∅, KT := false, FP := defFP)) i ->
   Γ ⊢ ⌊ ϕ ⌋ using i ->
   Γ ⊢ ϕ using i.
 Proof.
@@ -639,6 +642,7 @@ Proof.
     { apply reflexivity. }
     { apply reflexivity. }
     { reflexivity. }
+    { apply reflexivity. }
   }
   1: exact HΓ.
   exact wfϕ.
