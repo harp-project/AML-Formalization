@@ -7303,7 +7303,7 @@ Qed.
 End FOL_helpers.
 
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])) i) :
+  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
@@ -7353,7 +7353,7 @@ Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7368,7 +7368,7 @@ Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := [])).
+  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
