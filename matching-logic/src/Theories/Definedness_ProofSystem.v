@@ -1647,7 +1647,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ ->
     theory ⊆ Γ ->
     Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ)
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros Hwf HΓ.
     apply pf_iff_split.
@@ -1661,15 +1661,16 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
-    using BasicReasoning.
+    using BasicReasoningWithDefFP.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
     eapply syllogism_meta.
-    5: apply Prop_disj_right.
+    5: gapply Prop_disj_right; try_solve_pile.
     1,2,3,5,6,7: wf_auto2.
-    apply Framing_right. 2: wf_auto2.
-    { apply pile_refl. }
+    unshelve (eapply Framing_right).
+    { wf_auto2. }
+    { try_solve_pile. }
     toMyGoal.
     { wf_auto2. }
     mgIntro. mgDestructAnd 0.
@@ -1689,7 +1690,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂))
-    using BasicReasoning.
+    using BasicReasoningWithDefFP.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
@@ -1698,11 +1699,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     apply pf_iff_proj2 in H1.
     2,3: wf_auto2.
     eapply syllogism_meta.
-    4: apply H1.
+    4: gapply H1; try_solve_pile.
     1-3: wf_auto2.
     simpl.
-    apply Framing_right. 2: wf_auto2.
-    { apply pile_refl. }
+    unshelve (eapply Framing_right).
+    { wf_auto2. }
+    { unfold BasicReasoningWithDefFP. try_solve_pile. }
 
     toMyGoal.
     { wf_auto2. }
@@ -1720,7 +1722,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
-    using BasicReasoning.
+    using BasicReasoningWithDefFP.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1729,17 +1731,29 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     + apply membership_or_2; assumption.
   Defined.
 
+
+  (*
+  Check useBasicReasoning.
+  Lemma useBasicReasoningWithDefFP Γ ϕ gpi:
+    Γ ⊢ ϕ using BasicRea
+    *)
+
   Lemma membership_and_1 Γ x ϕ₁ ϕ₂:
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     remember_constraint as i.
     destruct i; [inversion Heqi|].
     injection Heqi as Heqgpi.
+
+    epose proof (Htmp1 := (membership_or_2 _ _ _ HΓ)).
+    (* TODO: [change constraint in _] should work even in proof mode! *)
+    change constraint in Htmp1.
+    2: { subst gpi; try_solve_pile. }
 
     unfold patt_and.
     toMyGoal.
@@ -1748,8 +1762,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     unshelve (mgApplyMeta (@useBasicReasoning _ _ _ gpi (@membership_not_1 _ _ _ _ HΓ)) in 0).
     { wf_auto2. }
     mgIntro. mgApply 0. mgClear 0.
-    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ gpi (membership_or_2 _ _ _ HΓ))).
-    1,2: wf_auto2.
+    mgApplyMeta Htmp1.
     mgDestructOr 0.
     - mgLeft.
       subst gpi.
@@ -1761,6 +1774,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ) in 0).
       { wf_auto2. }
       mgExactn 0.
+      Unshelve. all: wf_auto2.
   Defined.
   
   Lemma membership_and_2 Γ x ϕ₁ ϕ₂:
