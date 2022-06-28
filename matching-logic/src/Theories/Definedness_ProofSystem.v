@@ -21,7 +21,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset.
 
 Import extralibrary.
 
@@ -648,6 +648,13 @@ Proof.
   exact wfϕ.
 Defined.
 
+Check pi_Generic.
+Print GenericProofInfo.
+Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet :=
+  match pi_framing_patterns gpi with
+  | CoFinGset _ => ⊤
+  | FinGSet fp => gset_to_coGset (list_to_set (map (fun (psi : wfPattern) => evar_fresh (elements (free_evars ψ ∪ free_evars (proj1_sig psi)))) (elements fp)))
+  end.
 
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : GenericProofInfo)
@@ -655,8 +662,8 @@ Defined.
     well_formed ϕ ->
     well_formed ψ ->
     theory ⊆ Γ ->
-    pi_generalized_evars gpi ## free_evars ψ ->
-    pi_substituted_svars gpi ## free_svars ψ ->
+    pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
+    pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
     pi_uses_kt gpi = false ->
     Γ ⊢ ⌊ ψ ⌋ ---> ϕ
     using pi_Generic
@@ -664,11 +671,12 @@ Defined.
       (
         {[ev_x; evar_fresh (elements (free_evars ψ))]}
         ∪ pi_generalized_evars gpi
-        ∪ free_evars ψ
-        ∪ (list_to_set (map (fun psi => evar_fresh (elements (free_evars ψ ∪ free_evars psi))) (@framing_patterns Σ _ _ (proj1_sig pf)) ))
+        ∪ gset_to_coGset (free_evars ψ)
+        ∪ (dt_exgen_from_fp ψ gpi)
       ),
-     SVSubst := (pi_substituted_svars gpi ∪ free_svars ψ),
-     KT := false
+     SVSubst := (pi_substituted_svars gpi ∪ (gset_to_coGset (free_svars ψ))),
+     KT := false,
+     FP := ⊤ (* TODO relax *)
     ).
   Proof.
     intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
@@ -693,6 +701,7 @@ Defined.
             clear. set_solver.
           }
           { reflexivity. }
+          { clear. set_solver. }
         }
         
       + assert (axiom0 ∈ Γ).
@@ -712,6 +721,7 @@ Defined.
         {
           simpl. reflexivity.
         }
+        { clear. set_solver. }
     - (* P1 *)
       toMyGoal.
       { wf_auto2. }
@@ -738,6 +748,8 @@ Defined.
         clear -pf1. apply proved_impl_wf in pf1. exact pf1.
       }
 
+      remember_constraint as i'.
+
       destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
       simpl in Hpf1, Hpf2, Hpf3, Hpf4.
       feed specialize IHpf1.
@@ -747,6 +759,7 @@ Defined.
         { set_solver. }
         { set_solver. }
         { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+        { clear -pwi_pf_fp. set_solver. }
       }
       { assumption. }
       feed specialize IHpf2.
@@ -758,18 +771,21 @@ Defined.
         { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb.
           rewrite orb_comm in H2. simpl in H2. inversion H2.     
         }
+        {
+          clear -pwi_pf_fp. set_solver.
+        }
       }
       { wf_auto2. }
       
+      (*
       (* simplify the constraint *)
-      simpl.
+      unfold dt_exgen_from_fp. simpl.
       rewrite map_app.
       rewrite list_to_set_app_L.
       simpl.
-      match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
-      end.
+      *)
 
+      (*
       (* weaken the induction hypotheses so that their constraint
          matches the constraint of the goal *)
       apply useGenericReasoning with (i := i') in IHpf1.
@@ -789,6 +805,7 @@ Defined.
         { clear. set_solver. }
         { reflexivity. }
       }
+      *)
 
       toMyGoal.
       { wf_auto2. }
@@ -820,17 +837,19 @@ Defined.
         { clear -Hpf2. set_solver. }
         { clear -Hpf3. set_solver. }
         { apply Hpf4. }
+        { clear -pwi_pf_fp. set_solver. }
       }
       { wf_auto2. }
 
       apply reorder_meta in IHpf.
       2-4: wf_auto2.
-      apply Ex_gen with (x0 := x) in IHpf.
+      apply Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { apply pile_evs_svs_kt.
         { set_solver. }
         { set_solver. }
         { reflexivity. }
+        { clear. set_solver. }
       }
       apply reorder_meta in IHpf.
       2-4: wf_auto2.
@@ -897,13 +916,13 @@ Defined.
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
+        { clear -pwi_pf_fp. set_solver. }
       }
       { wf_auto2. }
 
-      match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
-      end.
+      remember_constraint as i'.
 
+      (*
       apply useGenericReasoning with (i0 := i') in IHpf.
       2: {
         subst i'.
@@ -912,7 +931,7 @@ Defined.
         { apply reflexivity. }
         { reflexivity. }
       }
-
+      *)
       assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
@@ -933,8 +952,9 @@ Defined.
           with (subst_ctx (@ctx_app_l _ AC_patt_defined psi ltac:(assumption)) (! ψ))
           by reflexivity.
         subst i'.
-        eapply useGenericReasoning.
-        2: apply in_context_impl_defined; auto.
+        gapply in_context_impl_defined; auto.
+        (*eapply useGenericReasoning. *)
+        (*2: apply in_context_impl_defined; auto.*)
         apply pile_evs_svs_kt.
         {
           replace (free_evars (! ψ)) with (free_evars (ψ)).
@@ -942,17 +962,26 @@ Defined.
             simpl. set_solver.
           }
           simpl.
-          clear.
-          replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+          replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by (clear; set_solver).
+          Search psi.
+          clear -pwi_pf_fp.
+          unfold dt_exgen_from_fp.
+          case_match.
+          2: {
+            set_solver.
+          }
           set_solver.
         }
         { clear. set_solver. }
         { reflexivity. }
+        { clear. set_solver. }
       }
 
       assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
-      { apply Framing_left. 2: wf_auto2. 2: exact S2.
-        subst i'. apply pile_basic_generic.
+      { 
+        unshelve (eapply Framing_left).
+        { wf_auto2. } 2: exact S2.
+        subst i'. clear. try_solve_pile.
       }
 
       assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i').
@@ -965,10 +994,11 @@ Defined.
         apply pf_iff_proj1 in Htmp.
         3: wf_auto2.
         2: wf_auto2.
+        subst i'.
         eapply syllogism_meta.
         5: {
-          subst i'. useBasicReasoning.
-          apply Htmp.
+          gapply Htmp.
+          clear. try_solve_pile.
         }
         4: assumption.
         all: wf_auto2.
@@ -1044,14 +1074,15 @@ Defined.
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
+        { clear -pwi_pf_fp. set_solver. }
       }
       { wf_auto2. }
 
-      match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
-      end.
 
-      apply useGenericReasoning with (i0 := i') in IHpf.
+      remember_constraint as i'.
+
+      (*
+      apply useGenericReasoning with (i := i') in IHpf.
       2: {
         subst i'.
         apply pile_evs_svs_kt.
@@ -1059,7 +1090,7 @@ Defined.
         { apply reflexivity. }
         { reflexivity. }
       }
-
+      *)
       assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMyGoal.
         { wf_auto2. }
@@ -1080,8 +1111,7 @@ Defined.
           with (subst_ctx (@ctx_app_r _ psi AC_patt_defined ltac:(assumption)) (! ψ))
           by reflexivity.
           subst i'.
-          eapply useGenericReasoning.
-          2: apply in_context_impl_defined; auto.
+          gapply in_context_impl_defined; auto.
 
           apply pile_evs_svs_kt.
           {
@@ -1090,17 +1120,26 @@ Defined.
               simpl. set_solver.
             }
             simpl.
-            clear.
             replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
-            set_solver.
+
+            clear -pwi_pf_fp.
+            unfold dt_exgen_from_fp.
+            case_match; set_solver.
           }
           { clear. set_solver. }
           { reflexivity. }
+          { clear. set_solver. }
       }
 
       assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
-      { apply Framing_right. 2: wf_auto2. 2: exact S2.
-        subst i'. apply pile_basic_generic.
+      { 
+        (* TODO: have a variant of apply which automatically solves all wf constraints.
+           Like: unshelve (eapply H); try_wfauto
+        *)
+        unshelve (eapply Framing_right).
+        { wf_auto2. }
+        2: exact S2.
+        subst i'. try_solve_pile.
       }
 
       assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i').
@@ -1112,8 +1151,9 @@ Defined.
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
         2,3: wf_auto2.
+        subst i'.
         eapply syllogism_meta.
-        5: subst i'; useBasicReasoning; apply Htmp.
+        5: gapply Htmp; try_solve_pile.
         4: assumption.
         all: wf_auto2.
       }
@@ -1171,15 +1211,13 @@ Defined.
         { exact Hpf2. }
         { clear -Hpf3. set_solver. }
         { exact Hpf4. }
+        { clear -pwi_pf_fp. set_solver. }
       }
       {
         wf_auto2.
       }
       
-      (* TODO tactic [remember_constraint as i'] *)
-      match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
-      end.
+      remember_constraint as i'.
 
       replace (⌊ ψ ⌋ ---> free_svar_subst phi psi X)
         with (free_svar_subst (⌊ ψ ⌋ ---> phi) psi X).
@@ -1192,20 +1230,7 @@ Defined.
       }
       apply Svar_subst.
       3: {
-        eapply useGenericReasoning.
-        2: { apply IHpf. }
-        subst i'.
-        apply pile_evs_svs_kt.
-        {
-          simpl.
-          apply reflexivity.
-        }
-        {
-          apply reflexivity.
-        }
-        {
-          reflexivity.
-        }
+        apply IHpf.
       }
       {
         subst i'.
@@ -1219,6 +1244,7 @@ Defined.
         {
            reflexivity.
         }
+        { clear. set_solver. }
       }
       { wf_auto2. }
 
