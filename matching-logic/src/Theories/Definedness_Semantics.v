@@ -25,7 +25,7 @@ Require Import
 .
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
 
 Import extralibrary.
 
@@ -529,7 +529,7 @@ Section definedness.
   Proof.
     intros Htheory.
     rewrite eval_forall_predicate.
-    2: { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
+    { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
           (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
@@ -539,7 +539,7 @@ Section definedness.
     unfold evar_open.
     simpl_bevar_subst.
     rewrite equal_iff_interpr_same.
-    2: { apply Htheory. }
+    { apply Htheory. }
 
     rewrite eval_set_builder.
     { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
@@ -709,9 +709,9 @@ Section definedness.
   Proof.
     intros M H ϕ1 ϕ2 ρ.
     rewrite -predicate_not_full_iff_empty.
-    2: { apply T_predicate_equals. apply H. }
+    { apply T_predicate_equals. apply H. }
     rewrite equal_iff_interpr_same.
-    2: { apply H. }
+    { apply H. }
     split; intros H'; exact H'.
   Qed.
 
@@ -724,9 +724,9 @@ Section definedness.
   Proof.
     intros M H ϕ1 ϕ2 ρ.
     rewrite -predicate_not_full_iff_empty.
-    2: { apply T_predicate_subseteq. apply H. }
+    { apply T_predicate_subseteq. apply H. }
     rewrite subseteq_iff_interpr_subseteq.
-    2: { apply H. }
+    { apply H. }
     split; intros H'; exact H'.
   Qed.
 
@@ -739,8 +739,28 @@ Module equivalence_insufficient.
   Inductive exampleSymbols : Set :=
   | sym_f.
 
+  Local
   Instance exampleSymbols_eqdec : EqDecision exampleSymbols.
   Proof. unfold EqDecision. intros x y. unfold Decision. decide equality. Defined.
+
+  Local
+  Program Instance exampleSymbols_fin : Finite exampleSymbols :=
+  {|
+    enum := [sym_f] ;
+  |}.
+  Next Obligation.
+    apply NoDup_cons.
+    split.
+    {
+      intros HContra. inversion HContra.
+    }
+    {
+      apply NoDup_nil. exact I.
+    }
+  Qed.
+  Next Obligation.
+  intros []. set_solver.
+  Qed.
 
   #[local]
   Instance mySignature : Signature :=
