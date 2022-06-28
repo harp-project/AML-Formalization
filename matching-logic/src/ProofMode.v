@@ -8890,7 +8890,7 @@ Proof.
   intros wfa wfb.
   toMyGoal.
   { wf_auto2. }
-  toNNF;[|try apply pile_refl].
+  toNNF.
 Abort.
 
 #[local]
