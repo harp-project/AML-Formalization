@@ -7917,6 +7917,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
   lazy_match! Constr.type hiff with
   | _ ⊢ (?a <---> ?a') using _
     =>
+    unfold AnyReasoning;
     lazy_match! goal with
     | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p (pi_Generic ?gpi))]
       => let hr : HeatResult := heat atn a p in
@@ -7987,42 +7988,39 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
-(* Ltac2 Set ml_debug_rewrite := true.*)
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x gpi:
+Lemma pile_any {Σ : Signature} i:
+  ProofInfoLe i AnyReasoning.
+Proof.
+  destruct i.
+  {
+    apply pile_prop.
+  }
+  unfold AnyReasoning.
+  destruct gpi.
+  apply pile_evs_svs_kt.
+  { clear. set_solver. }
+  { clear. set_solver. }
+  { unfold implb. destruct pi_uses_kt0; reflexivity. }
+  { clear. set_solver. }
+Qed.
+
+
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' using (pi_Generic gpi) ->
-  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x)) using (pi_Generic gpi).
+  Γ ⊢ a <---> a' using AnyReasoning ->
+  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x))
+  using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
   (* HERE!!! *)
   mgRewrite Hiff at 2.
-  2: {
-    simpl.
-    destruct gpi.
-    apply pile_evs_svs_kt.
-    4: {
-      Set Printing Implicit.
-      unfold patt_iff, patt_and, patt_or, patt_not.
-      Set Printing Implicit.
-      unfold patt_and.
-      Set Printing Implicit.
-      simp frames_on_the_way_to_hole'.
-      simpl.
-    }
-     simp frames_on_the_way_to_hole'.
-    Set Printing All.
-  }
-  Unshelve.
-  2: { unfold PC_wf; simpl. wf_auto2. }
-  Check @MyGoal_rewriteIff.
-  eapply (@MyGoal_rewriteIff Σ Γ _ _).
-  2: { apply pile. }
+  2: { apply pile_any. }
   mgRewrite <- Hiff at 3.
-  2: { apply pile. }
+  2: { apply pile_any. }
   fromMyGoal.
   usePropositionalReasoning.
   apply pf_iff_equiv_refl. abstract(wf_auto2).
