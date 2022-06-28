@@ -7737,6 +7737,24 @@ Proof.
   exact pile.
 Defined.
 
+
+Lemma pile_any {Σ : Signature} i:
+  ProofInfoLe i AnyReasoning.
+Proof.
+  destruct i.
+  {
+    apply pile_prop.
+  }
+  unfold AnyReasoning.
+  destruct gpi.
+  apply pile_evs_svs_kt.
+  { clear. set_solver. }
+  { clear. set_solver. }
+  { unfold implb. destruct pi_uses_kt0; reflexivity. }
+  { clear. set_solver. }
+Qed.
+
+
 Ltac2 mutable ml_debug_rewrite := false.
 
 (* Calls [cont] for every subpattern [a] of pattern [phi], giving the match context as an argument *)
@@ -7870,7 +7888,8 @@ Ltac simplify_emplace_2 star :=
     end
   );
   simpl in *;
-  try lia.
+  try lia;
+  try apply pile_any.
 
 Ltac2 Type HeatResult := {
   star_ident : ident ;
@@ -7988,22 +8007,6 @@ Tactic Notation "mgRewrite" "->" constr(Hiff) "at" constr(atn) :=
 Tactic Notation "mgRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mgRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
-Lemma pile_any {Σ : Signature} i:
-  ProofInfoLe i AnyReasoning.
-Proof.
-  destruct i.
-  {
-    apply pile_prop.
-  }
-  unfold AnyReasoning.
-  destruct gpi.
-  apply pile_evs_svs_kt.
-  { clear. set_solver. }
-  { clear. set_solver. }
-  { unfold implb. destruct pi_uses_kt0; reflexivity. }
-  { clear. set_solver. }
-Qed.
-
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
@@ -8018,9 +8021,7 @@ Proof.
   { abstract(wf_auto2). }
   (* HERE!!! *)
   mgRewrite Hiff at 2.
-  2: { apply pile_any. }
   mgRewrite <- Hiff at 3.
-  2: { apply pile_any. }
   fromMyGoal.
   usePropositionalReasoning.
   apply pf_iff_equiv_refl. abstract(wf_auto2).
