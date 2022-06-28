@@ -143,6 +143,7 @@ Proof.
   }
 Qed.
 
+
 (* Originally, the notation was defined like this: *)
 (*
 Notation "Γ ⊢ ϕ 'using' pi"
@@ -1322,6 +1323,23 @@ eapply pile_trans.
   apply Hkt.
 }
 apply pile_fp_subseteq. apply Hfp.
+Qed.
+
+
+Lemma pile_any i:
+  ProofInfoLe i AnyReasoning.
+Proof.
+  destruct i.
+  {
+    apply pile_prop.
+  }
+  unfold AnyReasoning.
+  destruct gpi.
+  apply pile_evs_svs_kt.
+  { clear. set_solver. }
+  { clear. set_solver. }
+  { unfold implb. destruct pi_uses_kt0; reflexivity. }
+  { clear. set_solver. }
 Qed.
 
 
@@ -3899,7 +3917,7 @@ Section FOL_helpers.
   Tactic Notation "gapply" uconstr(pf) "in" ident(H) :=
     eapply useGenericReasoning in H;[|apply pf].
 
-  Ltac try_solve_pile := apply pile_evs_svs_kt; auto; try set_solver.
+  Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try set_solver)]).
 
   Section FOL_helpers.
 
@@ -7738,21 +7756,6 @@ Proof.
 Defined.
 
 
-Lemma pile_any {Σ : Signature} i:
-  ProofInfoLe i AnyReasoning.
-Proof.
-  destruct i.
-  {
-    apply pile_prop.
-  }
-  unfold AnyReasoning.
-  destruct gpi.
-  apply pile_evs_svs_kt.
-  { clear. set_solver. }
-  { clear. set_solver. }
-  { unfold implb. destruct pi_uses_kt0; reflexivity. }
-  { clear. set_solver. }
-Qed.
 
 
 Ltac2 mutable ml_debug_rewrite := false.
@@ -8095,7 +8098,7 @@ Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
-  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
+  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -8104,7 +8107,7 @@ Proof.
   fromMyGoal.
 
   remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
-  apply strip_exists_quantify_l with (x0 := x).
+  apply strip_exists_quantify_l with (x := x).
   { subst x. eapply evar_is_fresh_in_richer'.
     2: { apply set_evar_fresh_is_fresh'. }
     simpl. clear. set_solver.
@@ -8143,7 +8146,7 @@ Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
+  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -8152,14 +8155,14 @@ Proof.
   mgSplitAnd.
   - fromMyGoal.
     remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
-    apply strip_exists_quantify_l with (x0 := x).
+    apply strip_exists_quantify_l with (x := x).
     { subst x. apply set_evar_fresh_is_fresh. }
     (* TODO: make wf_auto2 solve this *)
     { simpl. rewrite !andbT. split_and!.
       + wf_auto2.
       + wf_auto2.
     }
-    apply strip_exists_quantify_r with (x0 := x).
+    apply strip_exists_quantify_r with (x := x).
     { subst x. eapply evar_is_fresh_in_richer'.
       2: { apply set_evar_fresh_is_fresh'. }
       simpl. clear. set_solver.
@@ -8208,7 +8211,7 @@ Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
+  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply conj_intro_meta.
@@ -8367,7 +8370,7 @@ Abort.
 
 Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
@@ -8399,7 +8402,7 @@ Defined.
 
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
-  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) ->
+  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
   Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
 Proof.
   intros wfϕ pile.
@@ -8416,7 +8419,7 @@ Defined.
 Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
   evar_is_fresh_in x ϕ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, ϕ) using i ->
   Γ ⊢ (evar_open 0 x ϕ) using i.
 Proof.
@@ -8445,7 +8448,7 @@ Defined.
 Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false)) i ->
+  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
@@ -8475,7 +8478,7 @@ Proof.
     }
     reflexivity.
   }
-  eapply forall_elim with (x0 := x) in H.
+  eapply forall_elim with (x := x) in H.
   4: { apply pile. }
   2: wf_auto2.
   2: { subst x. apply set_evar_fresh_is_fresh. }
@@ -8506,7 +8509,7 @@ Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list P
   (i : ProofInfo) :
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
+  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   bevar_occur ϕ₁ 0 = false ->
   @mkMyGoal Σ Γ (ϕ₁::l) g i -> 
  @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
@@ -8536,7 +8539,7 @@ Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ i:
   well_formed (ex, ϕ₁) ->
   well_formed (ex, ϕ₂) ->
   well_formed ϕ₃ ->
-  ProofInfoLe (pi_Generic (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false)) i ->
+  ProofInfoLe (pi_Generic (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
 Proof.
@@ -8806,7 +8809,6 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     Unshelve. all: wf_auto2.
   Qed.
 
-#[local]
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
   Γ ⊢ (!(!a) <---> a)
@@ -8826,7 +8828,6 @@ Proof.
   all: assumption.
 Defined.
 
-Check @usePropositionalReasoning.
 #[local]
 Ltac convertToNNF_rewrite_pat Ctx p i :=
   lazymatch p with
@@ -8955,9 +8956,9 @@ Ltac mgTautoBreak := repeat match goal with
     end
 end.
 
-Ltac try_solve_pile fallthrough :=
+Ltac try_solve_pile2 fallthrough :=
   lazymatch goal with
-  | [ |- ProofInfoLe _ _] => try apply pile_refl; fallthrough
+  | [ |- ProofInfoLe _ _] => try apply pile_refl; try_solve_pile; fallthrough
   | _ => idtac
   end.
 
@@ -8965,7 +8966,7 @@ Ltac try_solve_pile fallthrough :=
 Ltac mgTauto :=
   unshelve(
     try (
-      toNNF; (try_solve_pile shelve);
+      toNNF; (try_solve_pile2 shelve);
       repeat mgIntro;
       mgTautoBreak;
       findContradiction_start
@@ -8974,25 +8975,25 @@ Ltac mgTauto :=
 .
 
 #[local]
-Lemma conj_right {Σ : Signature} Γ a b:
+Example conj_right {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
-  (* If we use mgTauto or mgRewrite, we cannot use the PropositionalReasoning annotation. *)
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
   { wf_auto2. }
+  (* TODO: fail loudly if there is something else than AnyReasoning *)
   mgTauto.
 Defined.
 
 #[local]
-Lemma condtradict_taut_2 {Σ : Signature} Γ a b:
+Example condtradict_taut_2 {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢ (a ---> ((! a) ---> b))
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -9001,12 +9002,12 @@ Proof.
 Qed.
 
 #[local]
-Lemma taut {Σ : Signature} Γ a b c:
+Example taut {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
   Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c)))
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -9015,10 +9016,10 @@ Proof.
 Qed.
 
 #[local]
-Lemma condtradict_taut_1 {Σ : Signature} Γ a:
+Example condtradict_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢ !(a and !a)
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -9027,10 +9028,10 @@ Proof.
 Qed.
 
 #[local]
-Lemma notnot_taut_1 {Σ : Signature} Γ a:
+Example notnot_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢ (! ! a ---> a)
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -9043,7 +9044,7 @@ Lemma Peirce_taut {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢ ((((a ---> b) ---> a) ---> a))
-  using BasicReasoning.
+  using AnyReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
