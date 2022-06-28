@@ -1278,7 +1278,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     ProofInfoLe (pi_Generic
     (ExGen := {[ev_x; fresh_evar ϕ]},
      SVSubst := ∅,
-     KT := false
+     KT := false,
+     FP := defFP
     )) i ->
     well_formed ϕ ->
     theory ⊆ Γ ->
@@ -1330,9 +1331,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
 
     assert(S6: Γ ⊢ ⌈ patt_free_evar x ⌉ ---> ⌈ (patt_free_evar x and ϕ) ⌉ using i).
     {
-      apply Framing_right.
-      { eapply pile_trans. 2: apply pile. apply pile_basic_generic. }
-      { wf_auto2. }
+      unshelve (eapply Framing_right). 
+      { try_wfauto2. }
+      { eapply pile_trans. 2: apply pile. try_solve_pile. }
       apply S5.
     }
     
@@ -1349,7 +1350,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       apply S7.
     }
 
-    eapply universal_generalization with (x0 := x) in S9.
+    eapply universal_generalization with (x := x) in S9.
     3: { wf_auto2. }
     1: { simpl in S9. case_match;[|congruence]. exact S9. }
     eapply pile_trans. 2: apply pile.
@@ -1363,13 +1364,17 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     {
       reflexivity.
     }
+    {
+      clear. set_solver.
+    }
   Defined.
 
   Lemma membership_elimination Γ ϕ i:
     ProofInfoLe (pi_Generic
     (ExGen := {[ev_x; fresh_evar ϕ]},
     SVSubst := ∅,
-     KT := false
+     KT := false,
+     FP := defFP
     )) i ->
 
     well_formed ϕ ->
@@ -1403,6 +1408,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { clear. set_solver. }
       { apply reflexivity. }
       { reflexivity. }
+      { clear. set_solver. }
     }
 
     assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)) by wf_auto2.
@@ -1423,6 +1429,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { clear. set_solver. }
       { apply reflexivity. }
       { reflexivity. }
+      { clear. set_solver. }
     }
 
     assert (S6: Γ ⊢ ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) using i).
@@ -1478,7 +1485,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
 
     pose proof (S8 := S7).
-    apply universal_generalization with (x0 := x) in S8.
+    apply universal_generalization with (x := x) in S8.
     3: wf_auto2.
     2: {
       eapply pile_trans. 2: apply pile.
@@ -1486,6 +1493,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { clear. set_solver. }
       { apply reflexivity. }
       { reflexivity. }
+      { clear. set_solver. }
     }
 
     assert (S9: Γ ⊢ (ex, patt_bound_evar 0) ---> ϕ using i).
@@ -1514,6 +1522,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         }
         {
           reflexivity.
+        }
+        {
+          clear. set_solver.
         }
       }
     }
@@ -1588,7 +1599,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ = true ->
     theory ⊆ Γ ->
     Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ HΓ.
     pose proof (S1 := @defined_evar Γ x HΓ).
@@ -1613,12 +1624,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
           mgApply 0. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
           mgApply 2. mgIntro. mgApply 3. mgExactn 1.
       }
-      apply usePropositionalReasoning with (i0 := i) in H.
+      apply usePropositionalReasoning with (i := i) in H.
+      subst i.
       eapply Framing_right in H.
-      2: { subst i. apply pile_basic_generic. }
       eapply MP. 2: apply H.
       1: assumption.
-      wf_auto2.
+      { unfold defFP. try_solve_pile. }
     }
 
     pose proof (Htmp := @prf_prop_or_iff Σ Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
@@ -1626,8 +1637,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     simpl in Htmp.
     apply pf_iff_proj1 in Htmp.
     2-3: wf_auto2.
+    subst i.
     eapply MP.
-    2: subst i; useBasicReasoning; apply Htmp.
+    2: gapply Htmp; try_solve_pile.
     assumption.
   Defined.
 
