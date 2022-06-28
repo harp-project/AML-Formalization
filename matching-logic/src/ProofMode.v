@@ -13,7 +13,7 @@ Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
-From stdpp Require Import list tactics fin_sets coGset.
+From stdpp Require Import list tactics fin_sets coGset sets.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -6404,6 +6404,7 @@ Qed.
     }
   Defined.
 
+  (* TODO make it return a set *)
   Equations? frames_on_the_way_to_hole'
   (EvS : EVarSet)
   (SvS : SVarSet)
@@ -6412,44 +6413,32 @@ Qed.
   (wfψ : well_formed ψ = true)
   (wfp : well_formed p = true)
   (wfq : well_formed q = true)
-  : list ({ f : Pattern | well_formed f = true})
+  : coWfpSet
   by wf (size' ψ) lt :=
-  @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) _ _ _ _ _ := ∅ ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_free_svar _) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_free_svar _) _ _ _ _ _ := ∅ ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_evar _) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_evar _) _ _ _ _ _ := ∅ ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_svar _) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bound_svar _) _ _ _ _ _ := ∅ ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_sym _) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_sym _) _ _ _ _ _ := ∅ ;
   
-  @frames_on_the_way_to_hole' EvS SvS E (patt_bott) _ _ _ _ _ := [] ;
+  @frames_on_the_way_to_hole' EvS SvS E (patt_bott) _ _ _ _ _ := ∅ ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) p q _ _ _
-  (*with ((decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2))) => {
-    | (left _, left _) => *) :=
-      ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ2 p E) _)::
-      (exist _ (free_evar_subst ψ1 q E) _)::(exist _ (free_evar_subst ψ2 q E) _)::
-      ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-      ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _))) (*
-    | (left _, right _) =>
-    ((exist _ (free_evar_subst ψ1 p E) _)::(exist _ (free_evar_subst ψ1 q E) _)::
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
-    | (right _, left _) =>
-    ((exist _ (free_evar_subst ψ2 p E) _)::(exist _ (free_evar_subst ψ2 p E) _)::
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
-    | (right _, right _) =>
-    (
-    ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)))
-  }*) ;
+    :=
+      {[(exist _ (free_evar_subst ψ1 p E) _)]}
+      ∪ {[(exist _ (free_evar_subst ψ2 p E) _)]}
+      ∪ {[(exist _ (free_evar_subst ψ1 q E) _)]}
+      ∪ {[(exist _ (free_evar_subst ψ2 q E) _)]}
+      ∪ (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+      ∪ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _) ;
 
   @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) p q _ _ _
-  :=     ((@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-    ++ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _)) ;
+  := (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+     ∪ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _) ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') p q _ _ _
    := (@frames_on_the_way_to_hole' ({[(evar_fresh (elements EvS))]} ∪ EvS) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') p q _ _ _) ;
@@ -6535,11 +6524,11 @@ Qed.
     ExGen := ∅, 
     SVSubst := ∅, 
     KT := false, 
-    FP := [(exist _ (free_evar_subst ψ1 p E) (well_formed_free_evar_subst_0 E wfp wfψ1))
+    FP := {[(exist _ (free_evar_subst ψ1 p E) (well_formed_free_evar_subst_0 E wfp wfψ1))
           ;(exist _ (free_evar_subst ψ1 q E) (well_formed_free_evar_subst_0 E wfq wfψ1))
           ;(exist _ (free_evar_subst ψ2 p E) (well_formed_free_evar_subst_0 E wfp wfψ2))
           ;(exist _ (free_evar_subst ψ2 q E) (well_formed_free_evar_subst_0 E wfq wfψ2))
-          ] )) i )
+          ]} )) i )
   (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using i)
   (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using i)
   :
@@ -6639,7 +6628,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
-     FP := (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
+     FP :=  (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
    (pi_Generic gpi)
@@ -6731,15 +6720,15 @@ Qed.
         apply pile_evs_svs_kt;
         [
         (
-          simpl; apply evar_fresh_seq_max
+          simpl; clear; pose proof (Htmp := evar_fresh_seq_max); set_solver
         )|
         (
-          simpl; apply svar_fresh_seq_max
+          simpl; clear; pose proof (Htmp := svar_fresh_seq_max); set_solver
         )|
         (
           simpl; clear pf₁;
           repeat case_match; simpl; try reflexivity; lia
-        )|(apply frames_on_the_way_to_hole'_app_1)
+        )|(simpl; apply frames_on_the_way_to_hole'_app_1)
         ]).
       }
       { exact p_sub_EvS. }
@@ -6767,8 +6756,8 @@ Qed.
           eapply pile_trans;[|(apply pile)];
           simpl;
           apply pile_evs_svs_kt;
-          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
-          |(rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          [(simpl; rewrite Nat.max_comm; pose proof (Htmp := evar_fresh_seq_max); set_solver)
+          |(rewrite Nat.max_comm; pose proof (Htmp := svar_fresh_seq_max); set_solver)
           |(clear pf₂; repeat case_match; simpl; try reflexivity; try lia)
           |(apply frames_on_the_way_to_hole'_app_2)
           ]
@@ -6811,7 +6800,7 @@ Qed.
         remember (frames_on_the_way_to_hole' EvS SvS E
         (frames_on_the_way_to_hole'_obligation_5 wfψ)
         (frames_on_the_way_to_hole'_obligation_6 wfp)
-        (frames_on_the_way_to_hole'_obligation_7 wfq) ++
+        (frames_on_the_way_to_hole'_obligation_7 wfq) ∪
       frames_on_the_way_to_hole' EvS SvS E
         (frames_on_the_way_to_hole'_obligation_9 wfψ)
         (frames_on_the_way_to_hole'_obligation_10 wfp)
@@ -6830,10 +6819,10 @@ Qed.
         set_unfold.
         intros.
         destruct_or!.
-        { left. pi_assumption. }
-        { right. right. left. pi_assumption. }
-        { right. left. pi_assumption. }
-        { right. right. right. left. pi_assumption. }
+        { left. left. left. left. left. pi_assumption. }
+        { left. left. left. right. pi_assumption. }
+        { left. left. left. left. right. pi_assumption. }
+        { left. left. right. pi_assumption. }
       }
     }
     {
@@ -6858,8 +6847,8 @@ Qed.
           eapply pile_trans;
           [|apply pile];
           apply pile_evs_svs_kt;
-          [(simpl; apply evar_fresh_seq_max)
-          |(simpl; apply svar_fresh_seq_max)
+          [(simpl; pose proof evar_fresh_seq_max; set_solver)
+          |(simpl; pose proof svar_fresh_seq_max; set_solver)
           |(clear pf₁;repeat case_match; simpl; try reflexivity; simpl in *; lia)
           |(apply frames_on_the_way_to_hole'_imp_1)
           ]
@@ -6895,8 +6884,8 @@ Qed.
           eapply pile_trans;
           [|apply pile];
           apply pile_evs_svs_kt;
-          [(simpl; rewrite Nat.max_comm; apply evar_fresh_seq_max)
-          |(simpl; rewrite Nat.max_comm; apply svar_fresh_seq_max)
+          [(simpl; rewrite Nat.max_comm; clear; pose proof evar_fresh_seq_max; set_solver)
+          |(simpl; rewrite Nat.max_comm; clear; pose proof svar_fresh_seq_max; set_solver)
           |(clear pf₂; repeat case_match; simpl in *; try reflexivity; lia)
           |(apply frames_on_the_way_to_hole'_imp_2)
           ]
@@ -7017,7 +7006,7 @@ Qed.
         { apply reflexivity. }
         { apply reflexivity. }
         { case_match; reflexivity. }
-        { apply list_subseteq_nil. }
+        { clear. set_solver. }
       }
     }
     {
@@ -7164,7 +7153,7 @@ Qed.
             pose proof (Htmp := e);
             rewrite mmdoeip_S_in in Htmp;
             [exact HEinψ|];
-            inversion Htmp)|(apply list_subseteq_nil)]
+            inversion Htmp)|(clear; set_solver)]
             ).
           }
         }
@@ -7210,7 +7199,7 @@ Qed.
               pose proof (Htmp := e);
               rewrite mmdoeip_S_in in Htmp;
               [exact HEinψ|];
-              inversion Htmp)|(apply list_subseteq_nil)]
+              inversion Htmp)|(clear; set_solver)]
             ).
           }          
         }
