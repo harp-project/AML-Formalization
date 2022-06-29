@@ -1836,6 +1836,71 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     + apply membership_and_2; assumption.
   Defined.
 
+  Lemma bevar_subst_not_app_1 ψ1 ψ2 E p0:
+    well_formed_closed_ex_aux ψ1 0 ->
+    ψ1 $ ψ2 <> bevar_subst ψ1 p0 E.
+  Proof.
+    induction ψ1; intros Hwfc; simpl in *; auto.
+    { 
+      destruct_and!.
+      specialize (IHψ1_1 ltac:(assumption)).
+      specialize (IHψ1_2 ltac:(assumption)).
+      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
+      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
+      apply f_equal.
+      eapply well_formed_bevar_subst;[|apply H0].
+      lia.
+    }
+  Qed.
+
+  Lemma bevar_subst_not_app_2 ψ1 ψ2 E p0:
+    well_formed_closed_ex_aux ψ2 0 ->
+    ψ1 $ ψ2 <> bevar_subst ψ2 p0 E.
+  Proof.
+    induction ψ2; intros Hwfc; simpl in *; auto.
+    { 
+      destruct_and!.
+      specialize (IHψ2_1 ltac:(assumption)).
+      specialize (IHψ2_2 ltac:(assumption)).
+      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
+      rewrite -H3 in IHψ2_2. apply IHψ2_2. clear IHψ2_2.
+      f_equal.
+      eapply well_formed_bevar_subst;[|apply H].
+      lia.
+    }
+  Qed.
+
+
+  Lemma frames_on_the_way_to_hole'_not_eq EvS SvS x ψ p q wfψ wfp wfq
+    (ψ' : Pattern) (wfψ' : well_formed ψ' = true):
+    (exist _ ψ wfψ) ∉ (@frames_on_the_way_to_hole' Σ EvS SvS x ψ p q wfψ wfp wfq).
+  Proof.
+    move: ψ' wfψ'.
+    eapply frames_on_the_way_to_hole'_elim; intros ψ' wfψ'; intros.
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    {
+      pose proof (@well_formed_app_1 Σ _ _ wfψ0).
+      pose proof (@well_formed_app_2 Σ _ _ wfψ0).
+      specialize (H ψ1 ltac:(assumption)).
+      specialize (H0 ψ2 ltac:(assumption)).
+      intros Hcontra.
+      repeat rewrite elem_of_union in Hcontra.
+      destruct_or!.
+      {
+        rewrite elem_of_singleton in Hcontra. inversion Hcontra. clear Hcontra.
+      }
+      Set Printing All.
+      pi_set_solver.
+    }
+    { set_solver. }
+
+  Qed.
+
+
   (* Not so simple... *)
   Lemma equality_elimination_basic Γ φ1 φ2 C :
     theory ⊆ Γ ->
@@ -2038,6 +2103,25 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         }
         {
           simpl.
+          set              (λ psi : wfPattern,
+          evar_fresh
+            (elements
+               (free_evars p ∪ free_evars q
+                ∪ (free_evars q ∪ free_evars p) ∪ 
+                free_evars (`psi)))) as F in *.
+          
+          remember (maximal_exists_depth_of_evar_in_pattern' 0 E ψ1) as n1.
+          remember (maximal_exists_depth_of_evar_in_pattern' 0 E ψ2) as n2.
+          pose proof (Hmax1 := @evar_fresh_seq_max Σ ((free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
+          ∪ {[E]})) n1 n2).
+          pose proof (Hmax2 := @evar_fresh_seq_max Σ ((free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
+          ∪ {[E]})) n2 n1).
+          rewrite Nat.max_comm in Hmax2.
+          remember (free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
+          ∪ {[E]}) as Evs1.
+          set_solver.
+          Check evar_fresh_seq_max.
+          Search elements union.
           pi_set_solver.
           Search maximal_exists_depth_of_evar_in_pattern' Nat.max.
           Search list_to_set map.
