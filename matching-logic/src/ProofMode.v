@@ -6423,8 +6423,6 @@ Qed.
     }
   Defined.
 
-  Check @union.
-  (* TODO make it return a set *)
   Equations? frames_on_the_way_to_hole'
   (EvS : EVarSet)
   (SvS : SVarSet)
@@ -6449,7 +6447,7 @@ Qed.
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) p q _ _ _
     :=
-      gset_singleton (exist _ (free_evar_subst ψ1 p E) _)
+      (@singleton _ _ gset_singleton (exist _ (free_evar_subst ψ1 p E) _))
       ∪ {[(exist _ (free_evar_subst ψ2 p E) _)]}
       ∪ {[(exist _ (free_evar_subst ψ1 q E) _)]}
       ∪ {[(exist _ (free_evar_subst ψ2 q E) _)]}
@@ -6642,7 +6640,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
-     FP :=  (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
+     FP :=  gset_to_coGset (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
    (pi_Generic gpi)
