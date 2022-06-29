@@ -6423,6 +6423,7 @@ Qed.
     }
   Defined.
 
+  Check @union.
   (* TODO make it return a set *)
   Equations? frames_on_the_way_to_hole'
   (EvS : EVarSet)
@@ -6456,8 +6457,8 @@ Qed.
       ∪ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _) ;
 
   @frames_on_the_way_to_hole' EvS SvS E (patt_imp ψ1 ψ2) p q _ _ _
-  := (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
-     ∪ (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _) ;
+  := @union _ gset_union (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q _ _ _)
+     (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q _ _ _) ;
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_exists ψ') p q _ _ _
    := (@frames_on_the_way_to_hole' ({[(evar_fresh (elements EvS))]} ∪ EvS) SvS E (evar_open 0 ((evar_fresh (elements EvS))) ψ') p q _ _ _) ;
@@ -6491,7 +6492,6 @@ Qed.
 
   Ltac pi_set_solver := set_solver by (try pi_assumption).
 
-  (*Existing Instance mapset_set.*)
   Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
   (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
   ⊆
@@ -6507,8 +6507,7 @@ Qed.
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
-    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
-    repeat case_match; pi_set_solver.
+    pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
@@ -6518,7 +6517,7 @@ Qed.
   Proof.
     simp frames_on_the_way_to_hole'.
     (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
-    repeat case_match; pi_set_solver.
+    pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
@@ -6527,13 +6526,9 @@ Qed.
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
-    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
-    repeat case_match; pi_set_solver.
+    pi_set_solver.
   Qed.
   
-
-(* TODO for imp *)
-
   Lemma helper_app_lemma Γ ψ1 ψ2 p q E i
   (wfψ1: well_formed ψ1)
   (wfψ2: well_formed ψ2)
