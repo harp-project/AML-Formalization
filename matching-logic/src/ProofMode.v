@@ -7275,7 +7275,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
-     FP := (@frames_on_the_way_to_hole' (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
+     FP := gset_to_coGset (@frames_on_the_way_to_hole' (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
     )
    (pi_Generic gpi)
   ):
@@ -7619,7 +7619,7 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
-      FP := (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))  
+      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))  
     )
     (pi_Generic gpi)
   ):
@@ -7714,7 +7714,7 @@ Lemma MyGoal_rewriteIff
              then false
              else true
              ),
-      FP := (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q (pi_Generic gpi) pf) (@extract_wfq Σ Γ p q (pi_Generic gpi) pf))
+      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q (pi_Generic gpi) pf) (@extract_wfq Σ Γ p q (pi_Generic gpi) pf))
       ))
       (pi_Generic gpi)) ->
   @mkMyGoal Σ Γ l (emplace C p) (pi_Generic gpi).
@@ -7992,7 +7992,7 @@ Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
   Γ ⊢ (B <---> A) using i.
 Proof.
   intros H.
-  pose proof (Pattern.wf := proved_impl_wf _ _ (proj1_sig H)).
+  pose proof (wfp := proved_impl_wf _ _ (proj1_sig H)).
   assert (well_formed A) by wf_auto2.
   assert (well_formed B) by wf_auto2.
   apply pf_iff_equiv_sym; assumption.
