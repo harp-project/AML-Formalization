@@ -6472,6 +6472,8 @@ Qed.
     { rewrite svar_open_size'. abstract(lia). }
   Defined.
 
+End FOL_helpers.
+
   Ltac pi_exact H := 
     lazymatch type of H with
     | ?H' =>
@@ -6490,28 +6492,32 @@ Qed.
 
   Ltac pi_set_solver := set_solver by (try pi_assumption).
 
+  Section FOL_helpers.
+
+  Context {Σ : Signature}.
+
   Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
-  (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
+  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
+  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
-  (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q wfψ2 wfp wfq)
+  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
+  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
-  (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
+  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
@@ -6519,9 +6525,9 @@ Qed.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
-  (@frames_on_the_way_to_hole' EvS SvS E ψ2 p q wfψ2 wfp wfq)
+  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
   ⊆
-  (@frames_on_the_way_to_hole' EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
@@ -6640,7 +6646,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
-     FP :=  gset_to_coGset (@frames_on_the_way_to_hole' EvS SvS E ψ p q wfψ wfp wfq)
+     FP :=  gset_to_coGset (@frames_on_the_way_to_hole' Σ EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
    (pi_Generic gpi)
@@ -7275,7 +7281,7 @@ Qed.
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
-     FP := gset_to_coGset (@frames_on_the_way_to_hole' (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
+     FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
     )
    (pi_Generic gpi)
   ):

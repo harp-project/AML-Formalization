@@ -2011,7 +2011,94 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         by (clear; set_solver).
         set_solver.
       }
+      {
+        destruct C. simpl in *.
+        unfold PC_wf in WFC. simpl in WFC.
+        unfold maximal_exists_depth_of_evar_in_pattern.
+        eapply frames_on_the_way_to_hole'_elim; intros.
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          simpl.
+          pi_set_solver.
+          Search maximal_exists_depth_of_evar_in_pattern' Nat.max.
+          Search list_to_set map.
+          set_solver.
+        }
+        {
+        Check frames_on_the_way_to_hole'_elim.
+        funelim (frames_on_the_way_to_hole' ((free_evars pcPattern ∪ free_evars φ1 ∪ free_evars φ2
+        ∪ {[pcEvar]})) ((free_svars pcPattern ∪ free_svars φ1 ∪ free_svars φ2)) pcEvar WFC WF1 WF2);
+          simpl(* try simp frames_on_the_way_to_hole'; simpl*).
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          rewrite elements_empty. simpl.
+          set_solver.
+        }
+        {
+          simpl in *.
+          pose proof (wfψ1 := well_formed_app_1 wfψ).
+          pose proof (wfψ2 := well_formed_app_2 wfψ).
+          specialize (H0 Γ φ1 φ2 pcEvar (ψ1 $ ψ2) HΓ wfp wfq wfψ Hmf).
+          specialize (H Γ φ1 φ2 pcEvar (ψ1 $ ψ2) HΓ wfp wfq wfψ Hmf).
+          feed specialize H.
+          {
+            simpl. Set Printing All.
+            apply f_equal.
+            { set_solver. }
+          }
+          set_solver.
+        }
+        *)
+        induction pcPattern; simpl in *; simp frames_on_the_way_to_hole'.
+        {
+          case_match; simpl.
+          {
+            subst.
+            rewrite elements_empty. simpl.
+            set_solver.
+          }
+          {
+
+          }
+        }
+      }
       { unfold dt_exgen_from_fp.
+        simpl.
+        set_solver.
         case_match; simpl in *.
         2: {
           exfalso.
