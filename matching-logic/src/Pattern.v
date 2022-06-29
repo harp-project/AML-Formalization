@@ -680,7 +680,7 @@ Proof.
     (f := patt_free_evar)
     (g := fun p => (match p with patt_free_evar x => Some x | _ => None end) ).
   intros x. reflexivity.
-Qed.
+Defined.
 
 Global Instance wfPattern_infinite {Σ : Signature} :
   Infinite wfPattern.
@@ -689,4 +689,4 @@ Proof.
     (f := fun x => exist (fun p : Pattern => well_formed p = true) (patt_free_evar x) erefl)
     (g := fun wp => (match proj1_sig wp with patt_free_evar x => Some x | _ => None end) ).
   intros x. reflexivity.
-Qed.
+Defined.

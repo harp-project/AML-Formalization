@@ -6448,7 +6448,7 @@ Qed.
   
   @frames_on_the_way_to_hole' EvS SvS E (patt_app ψ1 ψ2) p q _ _ _
     :=
-      {[(exist _ (free_evar_subst ψ1 p E) _)]}
+      gset_singleton (exist _ (free_evar_subst ψ1 p E) _)
       ∪ {[(exist _ (free_evar_subst ψ2 p E) _)]}
       ∪ {[(exist _ (free_evar_subst ψ1 q E) _)]}
       ∪ {[(exist _ (free_evar_subst ψ2 q E) _)]}
@@ -6491,19 +6491,14 @@ Qed.
 
   Ltac pi_set_solver := set_solver by (try pi_assumption).
 
+  (*Existing Instance mapset_set.*)
   Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
   (@frames_on_the_way_to_hole' EvS SvS E ψ1 p q wfψ1 wfp wfq)
   ⊆
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
-    Set Printing All.
-    Set Typeclasses Debug.
-    apply set_unfold_2.
-    unfold WfpSet. Set Printing All. 
-    progress set_unfold.
-    (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
-    repeat case_match; pi_set_solver.
+    pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
