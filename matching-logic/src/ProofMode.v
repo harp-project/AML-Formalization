@@ -13,7 +13,7 @@ Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
-From stdpp Require Import list tactics fin_sets coGset sets.
+From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -32,6 +32,7 @@ Open Scope ml_scope.
 
 Definition coEVarSet {Σ : Signature} := coGset evar.
 Definition coSVarSet {Σ : Signature} := coGset svar.
+Definition WfpSet {Σ : Signature} := gmap.gset wfPattern.
 Definition coWfpSet {Σ : Signature} := coGset wfPattern.
 
 Record GenericProofInfo {Σ : Signature} :=
@@ -170,7 +171,7 @@ Definition MyGoal_from_goal
 
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
-  wf (mgHypotheses MG) ->
+  Pattern.wf (mgHypotheses MG) ->
   (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
   using (mgInfo MG).
 
@@ -1636,7 +1637,7 @@ Defined.
   Defined.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
-          (wfl : wf l) (wfg : well_formed g) (wfg' : well_formed g') :
+          (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
     Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
     using PropositionalReasoning.
   Proof.
@@ -1647,7 +1648,7 @@ Defined.
       fold (map well_formed) in wfl.
       destruct wfl as [wfa wfl].
       (* I do not know how to fold it, so I just assert & clear. *)
-      assert (wfl'' : wf l) by apply wfl.
+      assert (wfl'' : Pattern.wf l) by apply wfl.
       clear wfl.
       specialize (IHl wfl'').
       simpl in *.
@@ -1658,7 +1659,7 @@ Defined.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_meta Γ l g g' (i : ProofInfo):
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (g ---> g') using i ->
@@ -1671,7 +1672,7 @@ Defined.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_meta_meta Γ l g g' (i : ProofInfo):
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (g ---> g') using i ->
@@ -1713,7 +1714,7 @@ Defined.
   Defined.
 
   Lemma prf_strenghten_premise_iter Γ l₁ l₂ h h' g :
-    wf l₁ -> wf l₂ ->
+    Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
@@ -1728,7 +1729,7 @@ Defined.
     - pose proof (wfal₁ := wfl₁).
       remember (foldr patt_imp g (h::l₂)) as g1.
       remember (foldr patt_imp g (h'::l₂)) as g2.
-      unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+      unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
       destruct wfl₁ as [wfa wfl₁].
       specialize (IHl₁ wfl₁).
       remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
@@ -1773,7 +1774,7 @@ Defined.
   Defined.
 
   Lemma prf_strenghten_premise_iter_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
-    wf l₁ -> wf l₂ ->
+    Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
@@ -1789,7 +1790,7 @@ Defined.
   Defined.
 
   Lemma prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
-    wf l₁ -> wf l₂ ->
+    Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
     well_formed g ->
@@ -1845,7 +1846,7 @@ Defined.
   (* This will form a base for the tactic 'exact 0' *)
   Lemma nested_const Γ a l:
     well_formed a ->
-    wf l ->
+    Pattern.wf l ->
     Γ ⊢ (a ---> (fold_right patt_imp a l))
     using PropositionalReasoning.
   Proof.
@@ -1853,7 +1854,7 @@ Defined.
     induction l; simpl.
     - apply A_impl_A. exact wfa.
     - pose proof (wfa0l := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
       assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using PropositionalReasoning).
       {
@@ -1865,8 +1866,8 @@ Defined.
 
   Lemma nested_const_middle Γ a l₁ l₂:
     well_formed a ->
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂))
     using PropositionalReasoning.
   Proof.
@@ -1874,7 +1875,7 @@ Defined.
     induction l₁; simpl.
     - apply nested_const; wf_auto2.
     - pose proof (wfa0l₁ := wfl₁).
-      unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+      unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁). simpl in IHl₁.
       eapply MP. 2: apply P1. 1: apply IHl₁. all: wf_auto2.
   Defined.
@@ -1883,8 +1884,8 @@ Defined.
     well_formed a ->
     well_formed b ->
     well_formed g ->
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
          (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
     using PropositionalReasoning.
@@ -1893,7 +1894,7 @@ Defined.
     induction l₁; simpl in *.
     - apply reorder; wf_auto2.
     - pose proof (wfa0l₁ := wfl₁).
-      unfold wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+      unfold Pattern.wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
       specialize (IHl₁ wfl₁).
       eapply prf_weaken_conclusion_meta.
       4: apply IHl₁.
@@ -1904,8 +1905,8 @@ Defined.
     well_formed a ->
     well_formed b ->
     well_formed g ->
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     Γ ⊢ (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
     Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
   Proof.
@@ -2160,7 +2161,7 @@ Proof.
   { auto. }
   mgExtractWF wfl wfg.
   (* These two asserts by assumption only test presence of the two hypotheses *)
-  assert (wf []) by assumption.
+  assert (Pattern.wf []) by assumption.
   assert (well_formed (p ---> p)) by assumption.
 Abort.
 
@@ -2260,7 +2261,7 @@ Proof.
   apply f_equal. simpl in *.
   case_match. simpl in *.
   remember (pf wf1
-  (eq_ind_r (λ pv : list Pattern, wf pv)
+  (eq_ind_r (λ pv : list Pattern, Pattern.wf pv)
      wf2 e)).
   simpl in *.
   apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf.
@@ -2315,7 +2316,7 @@ Proof.
 
   feed specialize H.
   { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
-  { abstract (unfold wf; unfold wf in wfl; rewrite map_app foldr_app; simpl;
+  { abstract (unfold Pattern.wf; unfold Pattern.wf in wfl; rewrite map_app foldr_app; simpl;
               apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
   }
   unshelve (eapply (cast_proof' _ H)).
@@ -2378,7 +2379,7 @@ Proof.
     abstract (
       pose proof (wfgl₂ := wf_drop (length l₁) wfl₁gl₂);
       rewrite drop_app in wfgl₂;
-      unfold wf in wfgl₂;
+      unfold Pattern.wf in wfgl₂;
       simpl in wfgl₂;
       apply andb_prop in wfgl₂;
       destruct wfgl₂ as [_ wfl₂];
@@ -2512,7 +2513,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication Γ l g g':
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
@@ -2532,7 +2533,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_meta Γ l g g' (i : ProofInfo):
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ ((g ---> g') ---> (foldr patt_imp g l)) using i->
@@ -2551,14 +2552,14 @@ Section FOL_helpers.
     intros H. unfold of_MyGoal in *. simpl in *.
     intros wfg' wfgg'l.
     pose proof (Htmp := wfgg'l).
-    unfold wf in Htmp. simpl in Htmp. apply andb_prop in Htmp. destruct Htmp as [wfgg' wfl].
+    unfold Pattern.wf in Htmp. simpl in Htmp. apply andb_prop in Htmp. destruct Htmp as [wfgg' wfl].
     apply well_formed_imp_proj1 in wfgg'. specialize (H wfgg' wfgg'l).
     apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter Γ l₁ l₂ g g':
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
@@ -2568,14 +2569,14 @@ Section FOL_helpers.
     intros wfl₁ wfl₂ wfg wfg'.
     induction l₁; simpl.
     - apply prf_weaken_conclusion_iter_under_implication; auto.
-    - pose proof (wfal₁ := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+    - pose proof (wfal₁ := wfl₁). unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
       destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
       eapply prf_weaken_conclusion_meta. 4: assumption. all: wf_auto2.
   Defined.
 
   Lemma prf_weaken_conclusion_iter_under_implication_iter_meta Γ l₁ l₂ g g' i:
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
@@ -2600,7 +2601,7 @@ Section FOL_helpers.
         pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
         rewrite drop_app in wfgg'l₂;
         pose proof (Htmp := wfgg'l₂);
-        unfold wf in Htmp;
+        unfold Pattern.wf in Htmp;
         simpl in Htmp;
         apply andb_prop in Htmp;
         destruct Htmp as [wfgg' wfl₂];
@@ -2612,7 +2613,7 @@ Section FOL_helpers.
         pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
         rewrite drop_app in wfgg'l₂;
         pose proof (Htmp := wfgg'l₂);
-        unfold wf in Htmp;
+        unfold Pattern.wf in Htmp;
         simpl in Htmp;
         apply andb_prop in Htmp;
         destruct Htmp as [wfgg' wfl₂];
@@ -2627,7 +2628,7 @@ Section FOL_helpers.
         pose proof (wfgg'l₂ := wf_drop (length l₁) wfl₁gg'l₂);
         rewrite drop_app in wfgg'l₂;
         pose proof (Htmp := wfgg'l₂);
-        unfold wf in Htmp;
+        unfold Pattern.wf in Htmp;
         simpl in Htmp;
         apply andb_prop in Htmp;
         destruct Htmp as [wfgg' wfl₂];
@@ -2711,7 +2712,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ ((foldr patt_imp h l) --->
@@ -2723,7 +2724,7 @@ Section FOL_helpers.
     induction l; simpl.
     - apply modus_ponens; auto.
     - pose proof (wfal := wfl).
-      unfold wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      unfold Pattern.wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
       assert (H1: Γ ⊢ a --->
                       foldr patt_imp h l --->
@@ -2748,7 +2749,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_lemma_under_implication_meta Γ l g h i:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp h l) using i ->
@@ -2761,7 +2762,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h i:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp h l) using i ->
@@ -2786,7 +2787,7 @@ Section FOL_helpers.
     eapply prf_add_lemma_under_implication_meta_meta.
     4: apply H1. 6: apply H2. all: try assumption.
     { abstract (
-        unfold wf;
+        unfold Pattern.wf;
         rewrite map_app;
         rewrite foldr_app;
         simpl;
@@ -2798,8 +2799,8 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_lemma_under_implication_generalized Γ l1 l2 g h:
-    wf l1 ->
-    wf l2 ->
+    Pattern.wf l1 ->
+    Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
@@ -2809,7 +2810,7 @@ Section FOL_helpers.
     induction l1; simpl.
     - apply modus_ponens; wf_auto2.
     - pose proof (wfal1 := wfl1).
-      unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+      unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
       assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using PropositionalReasoning).
       { apply prf_add_assumption; wf_auto2. }
@@ -2824,8 +2825,8 @@ Section FOL_helpers.
   Defined.
   
   Lemma prf_add_lemma_under_implication_generalized_meta Γ l1 l2 g h i:
-    wf l1 ->
-    wf l2 ->
+    Pattern.wf l1 ->
+    Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp h l1) using i ->
@@ -2840,8 +2841,8 @@ Section FOL_helpers.
   Defined.
   
   Lemma prf_add_lemma_under_implication_generalized_meta_meta Γ l1 l2 g h i:
-    wf l1 ->
-    wf l2 ->
+    Pattern.wf l1 ->
+    Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp h l1) using i ->
@@ -2891,8 +2892,8 @@ Section FOL_helpers.
         rewrite take_app in wfl1;
         pose proof (wfl2 := wf_drop (length l1) wfl1l2);
         rewrite drop_app in wfl2;
-        unfold wf; rewrite map_app; rewrite foldr_app;
-        simpl; rewrite wfh; unfold wf in wfl2; rewrite wfl2;
+        unfold Pattern.wf; rewrite map_app; rewrite foldr_app;
+        simpl; rewrite wfh; unfold Pattern.wf in wfl2; rewrite wfl2;
         simpl; exact wfl1
       ).
     }
@@ -3066,7 +3067,7 @@ Section FOL_helpers.
   Defined.
   
   Lemma prf_add_proved_to_assumptions Γ l a g i:
-    wf l ->
+    Pattern.wf l ->
     well_formed a ->
     well_formed g ->
     Γ ⊢ a using i->
@@ -3078,7 +3079,7 @@ Section FOL_helpers.
       pose proof (@modus_ponens Σ Γ _ _ wfa wfg).
       eapply MP. apply Ha. usePropositionalReasoning. apply H.
     - pose proof (wfa0l := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
       simpl in IHl. simpl.
       (* < change a0 and a in the LHS > *)
@@ -3104,7 +3105,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_add_proved_to_assumptions_meta Γ l a g i:
-    wf l ->
+    Pattern.wf l ->
     well_formed a ->
     well_formed g ->
     Γ ⊢ a using i ->
@@ -3132,7 +3133,7 @@ Section FOL_helpers.
     all: try assumption.
     { abstract (pose (tmp := proj1_sig H); apply proved_impl_wf in tmp; exact tmp). }
     { abstract (
-          unfold wf;
+          unfold Pattern.wf;
           simpl;
           pose (tmp := proj1_sig H);
           apply proved_impl_wf in tmp;
@@ -3156,7 +3157,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
   
   Local Example ex_mgAdd Γ l g h i:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (h ---> g) using i ->
@@ -3173,8 +3174,8 @@ Section FOL_helpers.
 
 
   Lemma prf_clear_hyp Γ l1 l2 g h:
-    wf l1 ->
-    wf l2 ->
+    Pattern.wf l1 ->
+    Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
@@ -3183,7 +3184,7 @@ Section FOL_helpers.
     intros wfl1 wfl2 wfg wfh.
     induction l1; simpl.
     - apply P1; wf_auto2.
-    - unfold wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+    - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
 
       assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using PropositionalReasoning).
@@ -3197,8 +3198,8 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_clear_hyp_meta Γ l1 l2 g h i:
-    wf l1 ->
-    wf l2 ->
+    Pattern.wf l1 ->
+    Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp g (l1 ++ l2)) using i ->
@@ -3212,8 +3213,8 @@ Section FOL_helpers.
 
   (* TODO move somewhere else *)
   Lemma wfapp_proj_1 l₁ l₂:
-    wf (l₁ ++ l₂) = true ->
-    wf l₁ = true.
+    Pattern.wf (l₁ ++ l₂) = true ->
+    Pattern.wf l₁ = true.
   Proof.
     intros H.
     apply (wf_take (length l₁)) in H.
@@ -3222,8 +3223,8 @@ Section FOL_helpers.
   Qed.
 
   Lemma wfapp_proj_2 l₁ l₂:
-    wf (l₁ ++ l₂) = true ->
-    wf l₂ = true.
+    Pattern.wf (l₁ ++ l₂) = true ->
+    Pattern.wf l₂ = true.
   Proof.
     intros H.
     apply (wf_drop (length l₁)) in H.
@@ -3232,33 +3233,33 @@ Section FOL_helpers.
   Qed.
 
   Lemma wfl₁hl₂_proj_l₁ l₁ h l₂:
-    wf (l₁ ++ h :: l₂) ->
-    wf l₁.
+    Pattern.wf (l₁ ++ h :: l₂) ->
+    Pattern.wf l₁.
   Proof.
     apply wfapp_proj_1.
   Qed.
 
   Lemma wfl₁hl₂_proj_h l₁ h l₂:
-    wf (l₁ ++ h :: l₂) ->
+    Pattern.wf (l₁ ++ h :: l₂) ->
     well_formed h.
   Proof.
-    intros H. apply wfapp_proj_2 in H. unfold wf in H.
+    intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
     simpl in H. apply andb_prop in H as [H1 H2].
     exact H1.
   Qed.
 
   Lemma wfl₁hl₂_proj_l₂ l₁ h l₂:
-    wf (l₁ ++ h :: l₂) ->
-    wf l₂.
+    Pattern.wf (l₁ ++ h :: l₂) ->
+    Pattern.wf l₂.
   Proof.
-    intros H. apply wfapp_proj_2 in H. unfold wf in H.
+    intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
     simpl in H. apply andb_prop in H as [H1 H2].
     exact H2.
   Qed.
 
   Lemma wfl₁hl₂_proj_l₁l₂ l₁ h l₂:
-    wf (l₁ ++ h :: l₂) ->
-    wf (l₁ ++ l₂).
+    Pattern.wf (l₁ ++ h :: l₂) ->
+    Pattern.wf (l₁ ++ l₂).
   Proof.
     intros H.
     pose proof (wfl₁hl₂_proj_l₁ H).
@@ -3372,7 +3373,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma reorder_last_to_head Γ g x l:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed x ->
     Γ ⊢ ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using PropositionalReasoning.
@@ -3381,7 +3382,7 @@ Section FOL_helpers.
     induction l.
     - simpl. apply A_impl_A. wf_auto2.
     - pose proof (wfal := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
       simpl. simpl in IHl.
       eapply cast_proof'.
@@ -3401,7 +3402,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma reorder_last_to_head_meta Γ g x l i:
-    wf l ->
+    Pattern.wf l ->
     well_formed g ->
     well_formed x ->
     Γ ⊢ (foldr patt_imp g (x::l)) using i ->
@@ -3419,7 +3420,7 @@ Section FOL_helpers.
      Γ ⊢ ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
   *)
   Lemma modus_ponens_iter Γ l r:
-    wf l ->
+    Pattern.wf l ->
     well_formed r ->
     Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])) using PropositionalReasoning.
   Proof.
@@ -3427,7 +3428,7 @@ Section FOL_helpers.
     induction l.
     - simpl. apply A_impl_A. exact wfr.
     - pose proof (wfal := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
       simpl.
       eapply cast_proof'.
@@ -3500,7 +3501,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_disj_elim_iter Γ l p q r:
-    wf l ->
+    Pattern.wf l ->
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -3515,7 +3516,7 @@ Section FOL_helpers.
     induction l.
     - simpl. apply prf_disj_elim; wf_auto2.
     - pose proof (wfal := wfl).
-      unfold wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
       simpl in *.
       toMyGoal.
@@ -3536,8 +3537,8 @@ Section FOL_helpers.
   Defined.
   
   Lemma prf_disj_elim_iter_2 Γ l₁ l₂ p q r:
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -3553,7 +3554,7 @@ Section FOL_helpers.
     induction l₂; intros l₁ wfl₁.
     - simpl. apply prf_disj_elim_iter; wf_auto2.
     - pose proof (wfal₂ := wfl₂).
-      unfold wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
+      unfold Pattern.wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
 
       simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
       (* Or we can swap p and a (move a to the end of l_1) *)
@@ -3622,8 +3623,8 @@ Section FOL_helpers.
   Defined.
 
   Lemma prf_disj_elim_iter_2_meta Γ l₁ l₂ p q r i:
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -3641,8 +3642,8 @@ Section FOL_helpers.
   Defined.
   
   Lemma prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r i:
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     well_formed p ->
     well_formed q ->
     well_formed r ->
@@ -4789,7 +4790,7 @@ Proof.
       pose proof (wfapp_proj_1 Hwf);
       pose proof (wfl₁hl₂_proj_l₂ Hwf);
       pose proof (wfl₁hl₂_proj_h Hwf);
-      unfold wf;
+      unfold Pattern.wf;
       rewrite map_app;
       rewrite foldr_app;
       simpl;
@@ -4798,7 +4799,7 @@ Proof.
       apply well_formed_imp_proj2 in Himp';
       rewrite Himp';
       simpl;
-      unfold wf in H1;
+      unfold Pattern.wf in H1;
       rewrite H1;
       exact H0
     ).
@@ -4845,7 +4846,7 @@ Proof.
   mgAssert (y) using first (length (l₁ ++ [x and y])).
   { abstract (
       apply wfapp_proj_2 in Hwf;
-      unfold wf in Hwf;
+      unfold Pattern.wf in Hwf;
       simpl in Hwf;
       apply andb_prop in Hwf;
       destruct Hwf as [wfxy _];
@@ -4863,7 +4864,7 @@ Proof.
     {
       abstract (
         apply wfapp_proj_2 in Hwf;
-        unfold wf in Hwf;
+        unfold Pattern.wf in Hwf;
         simpl in Hwf;
         apply andb_prop in Hwf as [wfxy _];
         wf_auto2
@@ -4884,7 +4885,7 @@ Proof.
   mgAssert (x) using first (length (l₁ ++ [x and y])).
   { abstract (
       apply wfapp_proj_2 in Hwf;
-      unfold wf in Hwf;
+      unfold Pattern.wf in Hwf;
       simpl in Hwf;
       apply andb_prop in Hwf;
       destruct Hwf as [wfxy _];
@@ -4903,7 +4904,7 @@ Proof.
     {
       abstract (
         apply wfapp_proj_2 in Hwf;
-        unfold wf in Hwf;
+        unfold Pattern.wf in Hwf;
         simpl in Hwf;
         apply andb_prop in Hwf as [wfxy _];
         wf_auto2
@@ -6431,7 +6432,7 @@ Qed.
   (wfψ : well_formed ψ = true)
   (wfp : well_formed p = true)
   (wfq : well_formed q = true)
-  : coWfpSet
+  : gset wfPattern
   by wf (size' ψ) lt :=
   @frames_on_the_way_to_hole' EvS SvS E (patt_free_evar _) _ _ _ _ _ := ∅ ;
   
@@ -6496,6 +6497,11 @@ Qed.
   (@frames_on_the_way_to_hole' EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
+    Set Printing All.
+    Set Typeclasses Debug.
+    apply set_unfold_2.
+    unfold WfpSet. Set Printing All. 
+    progress set_unfold.
     (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
     repeat case_match; pi_set_solver.
   Qed.
@@ -7446,14 +7452,14 @@ Defined.
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
   using PropositionalReasoning.
 Proof.
   intros wfa wfb wfl.
   induction l.
   - simpl. apply conj_intro; assumption.
-  - simpl. pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
+  - simpl. pose proof (wfl' := wfl). unfold Pattern.wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
     specialize (IHl wfl').
     toMyGoal.
     { wf_auto2. }
@@ -7471,7 +7477,7 @@ Defined.
 Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp a l) using i -> 
   Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
 Proof.
@@ -7482,7 +7488,7 @@ Defined.
 Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp a l) using i -> 
   Γ ⊢ (foldr patt_imp b l) using i ->
   Γ ⊢ (foldr patt_imp (a and b) l) using i.
@@ -7534,7 +7540,7 @@ Defined.
 Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
       ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
   using PropositionalReasoning.
@@ -7542,7 +7548,7 @@ Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
   - apply A_impl_A; wf_auto2.
-  - pose proof (wfl' := wfl). unfold wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
+  - pose proof (wfl' := wfl). unfold Pattern.wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
     specialize (IHl wfl').
     toMyGoal.
     { wf_auto2. }
@@ -7571,7 +7577,7 @@ Defined.
 Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
   Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
 Proof.
@@ -7584,7 +7590,7 @@ Defined.
 Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
   Γ ⊢ (foldr patt_imp g₁ l) using i ->
   Γ ⊢ (foldr patt_imp g₂ l) using i.
@@ -7601,7 +7607,7 @@ Defined.
 Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l i:
   well_formed g₁ ->
   well_formed g₂ ->
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
   Γ ⊢ (foldr patt_imp g₂ l) using i ->
   Γ ⊢ (foldr patt_imp g₁ l) using i.
@@ -7629,7 +7635,7 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
     )
     (pi_Generic gpi)
   ):
-  wf l ->
+  Pattern.wf l ->
   Γ ⊢ p <---> q using (pi_Generic gpi) ->
   Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using (pi_Generic gpi).
 Proof.
@@ -7637,7 +7643,7 @@ Proof.
   induction l; simpl in *.
   - unshelve(eapply prf_equiv_congruence); assumption.
   - pose proof (wfal := wfl).
-    unfold wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl as [wfa wfl].
     specialize (IHl wfl).
     pose proof (Hwf1 := proved_impl_wf _ _ (proj1_sig IHl)).
     pose proof (Hwf2 := proved_impl_wf _ _ (proj1_sig Himp)).
@@ -7998,7 +8004,7 @@ Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
   Γ ⊢ (B <---> A) using i.
 Proof.
   intros H.
-  pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
+  pose proof (Pattern.wf := proved_impl_wf _ _ (proj1_sig H)).
   assert (well_formed A) by wf_auto2.
   assert (well_formed B) by wf_auto2.
   apply pf_iff_equiv_sym; assumption.
@@ -8268,16 +8274,16 @@ Defined.
 
 Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
   well_formed x ->
-  wf xs ->
+  Pattern.wf xs ->
   well_formed (foldr patt_and x xs).
 Proof.
   intros wfx wfxs.
   induction xs; simpl.
   - assumption.
   - feed specialize IHxs.
-    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
     apply well_formed_and.
-    { unfold wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
     assumption.
 Qed.
 
@@ -8285,7 +8291,7 @@ Qed.
 Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
-  wf xs ->
+  Pattern.wf xs ->
   Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
   using PropositionalReasoning.
 Proof.
@@ -8294,10 +8300,10 @@ Proof.
   - apply A_impl_A.
     { wf_auto2. }
   - pose proof (wfaxs := wfxs).
-    unfold wf in wfxs.
+    unfold Pattern.wf in wfxs.
     simpl in wfxs.
     apply andb_prop in wfxs as [wfa wfxs].
-    fold (wf xs) in wfxs.
+    fold (Pattern.wf xs) in wfxs.
     specialize (IHxs wfxs).
     simpl in IHxs.
     assert (Hwffa: well_formed (foldr patt_and x xs)).
@@ -8329,7 +8335,7 @@ Defined.
 Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
   well_formed g ->
   well_formed x ->
-  wf xs ->
+  Pattern.wf xs ->
   Γ ⊢ (foldr patt_and x xs ---> g) using i ->
   Γ ⊢ (foldr patt_imp g (x :: xs)) using i.
 Proof.
@@ -8344,7 +8350,7 @@ Defined.
 Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i :
   well_formed g ->
   well_formed x ->
-  wf xs ->
+  Pattern.wf xs ->
   forall (r : ImpReshapeS g (x::xs)),
      Γ ⊢ ((foldr (patt_and) x xs) ---> g) using i ->
      Γ ⊢ untagPattern (irs_flattened r) using i .
@@ -8518,13 +8524,13 @@ Proof.
   mgExtractWF H1 H2.
   fromMyGoal.
   pose proof (H1' := H1).
-  unfold wf in H1. simpl in H1. apply andb_prop in H1. destruct H1 as [H11 H12].
+  unfold Pattern.wf in H1. simpl in H1. apply andb_prop in H1. destruct H1 as [H11 H12].
   apply wf_ex_quan_impl_wf in H11. 2: assumption.
   unfold of_MyGoal in H. simpl in H.
   specialize (H H2).
   feed specialize H.
   {
-    unfold wf. simpl. rewrite H11 H12. reflexivity.
+    unfold Pattern.wf. simpl. rewrite H11 H12. reflexivity.
   }
   apply Ex_gen.
   { apply pile. }
@@ -8646,7 +8652,7 @@ Section FOL_helpers.
       {
         abstract (
             apply wfapp_proj_2 in wfl;
-            unfold wf in wfl;
+            unfold Pattern.wf in wfl;
             simpl in wfl;
             rewrite andbT in wfl;
             wf_auto2

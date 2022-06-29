@@ -21,7 +21,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite.
 
 Import extralibrary.
 
@@ -1782,12 +1782,24 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     remember_constraint as i.
     destruct i; [inversion Heqi|].
     injection Heqi as Heqgpi.
+
+    epose proof (Htmp1 := (@membership_or_1 _ _ _ _ _ _ HΓ)).
+    change constraint in Htmp1.
+    2: { subst gpi; try_solve_pile. }
+
+    epose proof (Htmp2 := (@membership_not_1 _ _ _ _ HΓ)).
+    change constraint in Htmp2.
+    2: { subst gpi; try_solve_pile. }
+
+    epose proof (Htmp3 := (@membership_not_1 _ _ _ _ HΓ)).
+    change constraint in Htmp3.
+    2: { subst gpi; try_solve_pile. }
 
     toMyGoal.
     { wf_auto2. }
@@ -1799,15 +1811,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
     { wf_auto2. }
     mgIntro.
-    unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_or_1 _ _ _ _ _ _ HΓ)) in 2).
-    1,2: wf_auto2.
+    
+    mgApplyMeta Htmp1 in 2.
     mgDestructOr 2.
-    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
-      { wf_auto2. }
+    - mgApplyMeta Htmp2 in 2.
       mgApply 2. mgExactn 0.
-    - unshelve (mgApplyMeta (@useBasicReasoning _ _ _ _ (@membership_not_1 _ _ _ _ HΓ)) in 2).
-      { wf_auto2. }
+    -
+      mgApplyMeta Htmp3 in 2. 
       mgApply 2. mgExactn 1.
+      Unshelve. all: wf_auto2.
   Defined.
 
   Lemma membership_and_iff Γ x ϕ₁ ϕ₂:
@@ -1815,7 +1827,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
+    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1835,14 +1847,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     using (pi_Generic
     (ExGen := {[ev_x]}
               ∪ {[evar_fresh (elements (free_evars φ1 ∪ free_evars φ2))]}
-              ∪ (free_evars φ1)
-              ∪ (free_evars φ2)
-              ∪ list_to_set
+              ∪ (gset_to_coGset (free_evars φ1))
+              ∪ (gset_to_coGset (free_evars φ2))
+              ∪ (gset_to_coGset (list_to_set
                 (evar_fresh_seq
                    (free_evars (pcPattern C) ∪ free_evars φ1 ∪ free_evars φ2
                     ∪ {[pcEvar C]})
                    (maximal_exists_depth_of_evar_in_pattern 
-                      (pcEvar C) (pcPattern C))),
+                      (pcEvar C) (pcPattern C))))),
      SVSubst := list_to_set
                   (svar_fresh_seq
                      (free_svars (pcPattern C) ∪ free_svars φ1
@@ -1855,7 +1867,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
                 maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
             is left _
             then false
-            else true))).
+            else true),
+     FP := ⊤
+    )).
   Proof.
     intros HΓ WF1 WF2 WFC Hmf.
 
@@ -1871,13 +1885,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
           - abstract (now apply well_formed_iff).
           - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
         }
-        eapply prf_equiv_congruence.
-        2: apply WFC.
-        2: apply H.
         subst i.
+        unshelve (eapply prf_equiv_congruence).
+        { apply WF1. }
+        { apply WF2. }
+        { apply WFC. }
+        2: apply H.
         apply pile_refl.
       }
-
     { 
       abstract (
         apply well_formed_and; apply well_formed_imp; unfold emplace;
@@ -1961,12 +1976,49 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       cbn.
       repeat rewrite union_empty_r_L.
       repeat apply union_least.
-      { set_solver. }
+      { 
+        case_match.
+        { 
+          replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
+          with (free_evars φ1 ∪ free_evars φ2)
+          by (clear; set_solver).
+          set_solver.
+        }
+        {
+          exfalso.
+          Search Finite Infinite.
+
+          match type of Heqc with
+          | ?l = ?r => destruct (decide (set_finite l)), (decide (set_finite r))
+          end.
+          {
+            rewrite coGset_finite_spec in s0. simpl in s0. exact s0.
+          }
+          {
+            rewrite Heqc in s. contradiction.
+          }
+          {
+            rewrite Heqc in n. contradiction.
+          }
+          {
+            epose proof list_to_set_finite. naive_solver.
+          }
+        }
+      }
       { 
         replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
         with (free_evars φ1 ∪ free_evars φ2)
         by (clear; set_solver).
         set_solver.
+      }
+      { unfold dt_exgen_from_fp.
+        case_match; simpl in *.
+        2: {
+          exfalso.
+          Check frames_on_the_way_to_hole'.
+          Set Printing All.
+          set_solver.
+        }
       }
       { set_solver. }
       { set_solver. }
