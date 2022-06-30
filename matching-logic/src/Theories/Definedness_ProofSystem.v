@@ -2878,37 +2878,43 @@ Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (subst_ctx AC (ϕ₁ and ((patt_free_evar x) ∈ml ϕ₂))) ---> ((patt_free_evar x) ∈ml ϕ₂).
+Γ ⊢ (subst_ctx AC (ϕ₁ and ((patt_free_evar x) ∈ml ϕ₂))) ---> ((patt_free_evar x) ∈ml ϕ₂)
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂.
 unfold patt_in.
-eapply syllogism_intro.
+eapply syllogism_meta.
 1,3 : wf_auto2.
 2: apply Framing.
-2: wf_auto2.
-3: apply pf_conj_elim_r.
-1-4: wf_auto2.
-eapply syllogism_intro.
+2: { apply pile_any. }
+2: usePropositionalReasoning; apply pf_conj_elim_r.
+1-3: wf_auto2.
+eapply syllogism_meta.
 1,3: wf_auto2.
-2: apply in_context_impl_defined.
-2: assumption.
-1,2: wf_auto2.
-apply def_def_phi_impl_def_phi.
+2: gapply in_context_impl_defined.
+3: exact HΓ.
+3: wf_auto2.
+2: apply pile_any.
+1: wf_auto2.
+gapply def_def_phi_impl_def_phi.
+{ apply pile_any. }
 { assumption. }
 { wf_auto2. }
 Defined.
 
 
-Lemma ceil_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+Lemma ceil_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i :
 theory ⊆ Γ ->
+ProofInfoLe BasicReasoningWithDefFP i ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ ϕ₁ ---> ϕ₂ ->
-Γ ⊢ ⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉.
+Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+Γ ⊢ ⌈ ϕ₁ ⌉ ---> ⌈ ϕ₂ ⌉ using i.
 Proof.
-intros HΓ wfϕ₁ wfϕ₂ H.
-apply Framing_right.
+intros HΓ pile wfϕ₁ wfϕ₂ H.
+unshelve (eapply Framing_right).
 { wf_auto2. }
+{ apply pile. }
 exact H.
 Defined.
 
