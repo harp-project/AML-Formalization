@@ -2127,11 +2127,37 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
   Defined.
 
+  Lemma mu_free_maximal_mu_depth_of_evar_in_pattern' n x ψ:
+    mu_free ψ ->
+    maximal_mu_depth_of_evar_in_pattern' n x ψ <= n.
+  Proof.
+    move: n.
+    induction ψ; intros n' Hmf; simpl in *; auto; try lia.
+    {
+      case_match; lia.
+    }
+    {
+      destruct_and!.
+      specialize (IHψ1 n' ltac:(assumption)).
+      specialize (IHψ2 n' ltac:(assumption)).
+      lia.
+    }
+    {
+      destruct_and!.
+      specialize (IHψ1 n' ltac:(assumption)).
+      specialize (IHψ2 n' ltac:(assumption)).
+      lia.
+    }
+    {
+      inversion Hmf.
+    }
+  Qed.
+
   Lemma equality_elimination_basic_ar_iter_1 Γ ϕ₁ ϕ₂ l C :
     theory ⊆ Γ ->
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
-    wf l ->
+    Pattern.wf l ->
     PC_wf C ->
     mu_free (pcPattern C) ->
     Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) ((ϕ₁ =ml ϕ₂) :: l)
@@ -2161,8 +2187,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     theory ⊆ Γ ->
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
-    wf l₁ ->
-    wf l₂ ->
+    Pattern.wf l₁ ->
+    Pattern.wf l₂ ->
     PC_wf C ->
     mu_free (pcPattern C) ->
     Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) (l₁ ++ (ϕ₁ =ml ϕ₂)::l₂)
@@ -2198,9 +2224,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
     apply pf_iff_proj1; auto.
 
-    Check @eq_prf_equiv_congruence.
-    eapply (@eq_prf_equiv_congruence Σ _ Γ' φ1 φ2 WF1 WF2 ({[x]} ∪ free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
-        (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)); auto.
+    unshelve(eapply (@eq_prf_equiv_congruence Σ _ Γ' φ1 φ2 WF1 WF2 ({[x]} ∪ free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
+        (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2) _ _ _ _ _ _ _ _ _ _ _ 0 0)); auto.
     1-7: abstract (set_solver).
     { apply pile_refl. }
 
@@ -2217,8 +2242,24 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
     {
       simpl.
-      set_unfold.
-      pi_set_solver.
+      cut (list_to_set
+      (evar_fresh_seq ({[x]} ∪ free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
+         (maximal_exists_depth_of_evar_in_pattern' 0 x ψ))
+    ## gset_to_coGset
+         (free_evars φ1 ∪ free_evars φ2)).
+      { set_solver. }
+      pose proof (@evar_fresh_seq_disj Σ (({[x]} ∪ free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)) (maximal_exists_depth_of_evar_in_pattern' 0 x ψ)).
+      set_solver.
+    }
+    {
+      simpl.
+      pose proof (@svar_fresh_seq_disj Σ ((free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)) (maximal_mu_depth_of_evar_in_pattern' 0 x ψ)).
+      set_solver.
+    }
+    {
+      simpl. case_match; simpl; try reflexivity.
+      pose proof (@mu_free_maximal_mu_depth_of_evar_in_pattern' 0 x ψ MF).
+      lia.
     }
   Defined.
 
