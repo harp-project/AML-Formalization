@@ -2668,25 +2668,37 @@ Defined.
 
 Ltac wfauto' := try_wfauto2.
 
-Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
+
+Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i:
 theory ⊆ Γ ->
+ProofInfoLe
+  (pi_Generic
+     (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂))]},
+      SVSubst := ∅, KT := false, FP := defFP)) i ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ ϕ₁ ⊆ml ϕ₂ ->
-Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂.
+Γ ⊢ ϕ₁ ⊆ml ϕ₂ using i ->
+Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂ using i.
 Proof.
-intros HΓ wfϕ₁ wfϕ₂ Hsub.
+intros HΓ pile wfϕ₁ wfϕ₂ Hsub.
 apply patt_iff_implies_equal; wfauto'.
+{ eapply pile_trans;[|apply pile].
+  try_solve_pile.
+}
 apply pf_iff_split; wfauto'.
 + toMyGoal.
   { wf_auto2. }
   mgIntro. mgDestructOr 0.
-  * apply total_phi_impl_phi_meta in Hsub;[|assumption|wfauto'].
-    fromMyGoal. intros _ _. apply Hsub.
-  * fromMyGoal. intros _ _. apply A_impl_A;wfauto'.
+  * apply total_phi_impl_phi_meta in Hsub;[|assumption|wfauto'|idtac].
+    { fromMyGoal. apply Hsub. }
+    { simpl. apply pile. }
+  * fromMyGoal. usePropositionalReasoning; apply A_impl_A;wfauto'.
 + toMyGoal.
   { wf_auto2. }
-  mgIntro. mgRight;wfauto'. fromMyGoal. intros _ _. apply A_impl_A; wfauto'.
+  mgIntro. mgRight.
+  fromMyGoal. 
+  usePropositionalReasoning.
+  apply A_impl_A; wfauto'.
 Defined.
 
 Lemma def_not_phi_impl_not_total_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
