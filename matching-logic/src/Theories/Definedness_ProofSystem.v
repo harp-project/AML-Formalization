@@ -2638,19 +2638,31 @@ mgRewriteBy 1 at 1.
 mgExactn 0.
 Defined.
 
-Lemma patt_equal_implies_iff {Σ : Signature} {syntax : Syntax} (ϕ1 ϕ2 : Pattern) (Γ : Theory) :
+Lemma patt_equal_implies_iff
+  {Σ : Signature} {syntax : Syntax} (ϕ1 ϕ2 : Pattern) (Γ : Theory) (i : ProofInfo) :
   theory ⊆ Γ ->
+  ProofInfoLe
+               (pi_Generic
+                  (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ1 ∪ free_evars ϕ2))]},
+                   SVSubst := ∅, KT := false, FP := defFP)) i ->
   well_formed ϕ1 ->
   well_formed ϕ2 ->
-  Γ ⊢ ϕ1 =ml ϕ2 ->
-  Γ ⊢ (ϕ1 <---> ϕ2).
+  Γ ⊢ ϕ1 =ml ϕ2 using i ->
+  Γ ⊢ (ϕ1 <---> ϕ2) using i.
 Proof.
-intros HΓ wfϕ1 wfϕ2 H.
+intros HΓ pile wfϕ1 wfϕ2 H.
 unfold "=ml" in H.
-apply total_phi_impl_phi_meta in H.
+apply total_phi_impl_phi_meta with (Γ := Γ) (i := i) in H.
 { assumption. }
 { assumption. }
 { wf_auto2. }
+{ simpl.
+  replace (free_evars ϕ1 ∪ free_evars ϕ2 ∪ ∅ ∪ ∅
+  ∪ (free_evars ϕ2 ∪ free_evars ϕ1 ∪ ∅) ∪ ∅)
+  with (free_evars ϕ1 ∪ free_evars ϕ2)
+  by set_solver.
+  apply pile.
+}
 Defined.
 
 
