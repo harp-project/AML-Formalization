@@ -2520,8 +2520,8 @@ Lemma MyGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
     (Γ : Theory) (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern) (C : PatternCtx) :
 theory ⊆ Γ ->
 mu_free (pcPattern C) ->
-@mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₂) ->
-@mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₁).
+@mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₂) AnyReasoning ->
+@mkMyGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₁) AnyReasoning .
 Proof.
 intros HΓ HmfC H.
 mgExtractWF wfl wfg.
@@ -2536,19 +2536,20 @@ remember C as C'.
 destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
 mgAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
 { unfold emplace in *. wf_auto2. }
-{ fromMyGoal. intros _ _. apply equality_elimination_basic_iter; auto.
+{ fromMyGoal. apply equality_elimination_basic_ar_iter; auto.
   { wf_auto2. }
   { wf_auto2. }
 }
 unfold patt_iff.
-unshelve(eapply (@MyGoal_applyMetaIn _ _ _ _ (@pf_conj_elim_r _ _ _ _ _ _))).
-{ wf_auto2. }
-{ wf_auto2. }
+epose proof (Htmp := (@pf_conj_elim_r _ _ _ _ _ _)).
+apply usePropositionalReasoning with (i := AnyReasoning) in Htmp.
+unshelve(eapply (@MyGoal_applyMetaIn _ _ _ _ _ Htmp)).
+clear Htmp.
 
 replace (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) with ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ []) in H
  by (rewrite app_nil_r; reflexivity).
 apply myGoal_clear_hyp with (h := ((emplace C' ϕ₂) ---> (emplace C' ϕ₁))) in H.
-unshelve (eapply (@myGoal_assert _ _ _ _ _ _ H)).
+unshelve (eapply (@myGoal_assert _ _ _ _ _ _ _ H)).
 { wf_auto2. }
 
 simpl.
@@ -2559,16 +2560,20 @@ eapply MyGoal_weakenConclusion.
 replace ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁); emplace C' ϕ₂])
 with (((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁)]) ++ [emplace C' ϕ₂]).
 2: {  rewrite -app_assoc. simpl. reflexivity. }
+usePropositionalReasoning.
 apply MyGoal_exactn.
-Qed.
+Unshelve.
+all: abstract (wf_auto2).
 
+Qed.
+Check @mkMyGoal.
 Ltac2 mgRewriteBy (n : constr) (atn : int) :=
 eapply (@cast_proof_mg_hyps)
 > [ (rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn; rewrite /skipn); reflexivity)
   | ()
   ];
 lazy_match! goal with
-| [ |- @of_MyGoal ?sgm (@mkMyGoal ?sgm ?g (?l₁ ++ (?a' =ml ?a)::?l₂) ?p)]
+| [ |- @of_MyGoal ?sgm (@mkMyGoal ?sgm ?g (?l₁ ++ (?a' =ml ?a)::?l₂) ?p AnyReasoning)]
   => 
     let hr : HeatResult := heat atn a' p in
     let heq := Control.hyp (hr.(equality)) in
@@ -2580,7 +2585,7 @@ lazy_match! goal with
     > [ ()
       | ()
       | lazy_match! goal with
-        | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p)]
+        | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p AnyReasoning)]
           =>
             let heq2 := Fresh.in_goal ident:(heq2) in
             let plugged := Pattern.instantiate (hr.(ctx)) a in
@@ -2594,7 +2599,7 @@ lazy_match! goal with
             let heq2_pf := Control.hyp heq2 in
             eapply (@cast_proof_mg_goal _ $g) >
               [ rewrite $heq2_pf; reflexivity | ()];
-            Std.clear [heq2 ; (hr.(star_ident))];
+            Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
             eapply (@cast_proof_mg_hyps)
             > [ (ltac1:(rewrite /app); reflexivity)
               | ()
@@ -2620,7 +2625,8 @@ well_formed a ->
 well_formed a' ->
 well_formed b ->
 mu_free b ->
-Γ ⊢ a $ b ---> (a' =ml a) ---> a' $ b.
+Γ ⊢ a $ b ---> (a' =ml a) ---> a' $ b
+using AnyReasoning.
 Proof.
 intros HΓ wfa wfa' wfb mfb.
 toMyGoal.
