@@ -2757,16 +2757,19 @@ gapply in_context_impl_defined.
 Defined.
 
 Lemma bott_not_defined {Σ : Signature} {syntax : Syntax} Γ :
-Γ ⊢ ! ⌈ ⊥ ⌉.
+Γ ⊢ ! ⌈ ⊥ ⌉ using BasicReasoning.
 Proof.
 apply Prop_bott_right.
 { wf_auto2. }
 Defined.
 
 Lemma not_def_phi_impl_not_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
-theory ⊆ Γ ->
-well_formed ϕ ->
-Γ ⊢ ! ⌈ ϕ ⌉ ---> ! ϕ.
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ! ⌈ ϕ ⌉ ---> ! ϕ
+  using pi_Generic
+  (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
+   SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 toMyGoal.
@@ -2775,34 +2778,42 @@ mgIntro.
 mgIntro.
 mgApply 0.
 mgClear 0.
-fromMyGoal. intros _ _.
+fromMyGoal.
 apply phi_impl_defined_phi; assumption.
 Defined.
 
 Lemma tot_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ⌊ ϕ ⌋ ---> ⌊ ⌈ ϕ ⌉ ⌋.
+Γ ⊢ ⌊ ϕ ⌋ ---> ⌊ ⌈ ϕ ⌉ ⌋
+using pi_Generic
+                     (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
+                      SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 toMyGoal.
 { wf_auto2. }
 mgIntro.
 mgIntro. mgApply 0. mgClear 0.
-fromMyGoal. intros _ _.
-apply Framing_right.
-{ wf_auto2. }
+fromMyGoal.
+gapply Framing_right.
+{ apply pile_refl. }
+{
+  apply pile_evs_svs_kt.
+  { clear. set_solver. }
+  { clear. set_solver. }
+  { reflexivity. }
+  { apply reflexivity. }
+}
 apply not_def_phi_impl_not_phi; assumption.
 Defined.
-
-
 
 Lemma def_of_pred_impl_pred {Σ : Signature} {syntax : Syntax} Γ ψ :
 theory ⊆ Γ ->
 well_formed ψ ->
 mu_free ψ ->
-Γ ⊢ (ψ =ml patt_bott) or (ψ =ml patt_top) ->
-Γ ⊢ ⌈ ψ ⌉ ---> ψ.
+Γ ⊢ (ψ =ml patt_bott) or (ψ =ml patt_top) using AnyReasoning ->
+Γ ⊢ ⌈ ψ ⌉ ---> ψ using AnyReasoning.
 Proof.
 intros HΓ wfψ Hmfψ H.
 toMyGoal.
@@ -2816,8 +2827,9 @@ mgDestructOr 0.
   { exact HΓ. }
   { simpl. reflexivity. }
   mgClear 0.
-  fromMyGoal. intros _ _.
-  apply bott_not_defined.
+  fromMyGoal.
+  gapply bott_not_defined.
+  { apply pile_any. }
 - mgRewriteBy 0 at 2.
   { exact HΓ. }
   { simpl. rewrite Hmfψ.  reflexivity. }
@@ -2830,24 +2842,35 @@ Lemma subseteq_antisym_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₁) ->
-Γ ⊢ ϕ₁ =ml ϕ₂.
+Γ ⊢ (ϕ₁ ⊆ml ϕ₂) and (ϕ₂ ⊆ml ϕ₁) using AnyReasoning ->
+Γ ⊢ ϕ₁ =ml ϕ₂ using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂ H.
 unfold "=ml".
 apply phi_impl_total_phi_meta.
 { wf_auto2. }
+{ apply pile_any. }
 toMyGoal.
 { wf_auto2. }
 mgAdd H.
 mgDestructAnd 0.
-unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 0).
-{ wf_auto2. }
-unshelve (mgApplyMeta (total_phi_impl_phi HΓ _) in 1).
-{ wf_auto2. }
+
+epose proof (Htmp := (@total_phi_impl_phi Σ syntax Γ _ HΓ _)).
+apply useGenericReasoning with (i := AnyReasoning) in Htmp.
+2: { apply pile_any. }
+unshelve (mgApplyMeta Htmp in 0).
+clear Htmp.
+
+epose proof (Htmp := (@total_phi_impl_phi Σ syntax Γ _ HΓ _)).
+apply useGenericReasoning with (i := AnyReasoning) in Htmp.
+2: { apply pile_any. }
+unshelve (mgApplyMeta Htmp in 1).
+clear Htmp.
 mgSplitAnd.
 - mgExactn 0.
 - mgExactn 1.
+Unshelve.
+all: wf_auto2.
 Defined.
 
 Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
