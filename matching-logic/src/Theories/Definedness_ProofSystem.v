@@ -1836,9 +1836,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     + apply membership_and_2; assumption.
   Defined.
 
+  (*
   Lemma bevar_subst_not_app_1 ψ1 ψ2 E p0:
     well_formed_closed_ex_aux ψ1 0 ->
-    ψ1 $ ψ2 <> bevar_subst ψ1 p0 E.
+    ψ1 $ ψ2 <> evar_subst ψ1 p0 E.
   Proof.
     induction ψ1; intros Hwfc; simpl in *; auto.
     { 
@@ -1868,7 +1869,33 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       eapply well_formed_bevar_subst;[|apply H].
       lia.
     }
-  Qed.
+  Qed.*)
+
+  About frames_on_the_way_to_hole'.
+
+
+  Arguments frames_on_the_way_to_hole' {Σ} EvS SvS E ψ p q wfψ wfp wfq.
+
+  (*
+  Lemma free_evar_subst_not_app_1 ψ1 ψ2 E p0:
+    well_formed_closed_ex_aux ψ1 0 ->
+    ψ1 $ ψ2 <> free_evar_subst ψ1 p0 E.
+  Proof.
+    induction ψ1; intros Hwfc; simpl in *; auto.
+    {
+      repeat case_match; auto. subst.
+    }
+    { 
+      destruct_and!.
+      specialize (IHψ1_1 ltac:(assumption)).
+      specialize (IHψ1_2 ltac:(assumption)).
+      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
+      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
+      apply f_equal.
+      eapply well_formed_bevar_subst;[|apply H0].
+      lia.
+    }
+  Abort.
 
 
   Lemma frames_on_the_way_to_hole'_not_eq EvS SvS x ψ p q wfψ wfp wfq
@@ -1898,14 +1925,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
     { set_solver. }
 
-  Qed.
+  Abort.
+*)
 
-
-  (* Not so simple... *)
-  Lemma equality_elimination_basic Γ φ1 φ2 C :
-    theory ⊆ Γ ->
-    well_formed φ1 -> well_formed φ2 ->
-    PC_wf C ->
+  Lemma equality_elimination_basic Γ φ1 φ2 C
+    (HΓ : theory ⊆ Γ)
+    (WF1 : well_formed φ1)
+    (WF2 :  well_formed φ2)
+    (WFC : PC_wf C) :
     mu_free (pcPattern C) ->
     Γ ⊢ (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
@@ -1919,13 +1946,27 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
                    (free_evars (pcPattern C) ∪ free_evars φ1 ∪ free_evars φ2
                     ∪ {[pcEvar C]})
                    (maximal_exists_depth_of_evar_in_pattern 
-                      (pcEvar C) (pcPattern C))))),
+                      (pcEvar C) (pcPattern C)))))
+              ∪ (gset_to_coGset (list_to_set (map
+                  (fun psi : wfPattern => evar_fresh (elements (free_evars φ1 ∪ free_evars φ2 ∪ free_evars (`psi))))
+                  ((elements
+                  (frames_on_the_way_to_hole'
+                     (free_evars (pcPattern C) ∪ free_evars φ1
+                      ∪ free_evars φ2 ∪ {[
+                      pcEvar C]})
+                     (free_svars (pcPattern C) ∪ free_svars φ1
+                      ∪ free_svars φ2) (pcEvar C) 
+                     (pcPattern C) φ1 φ2 WFC WF1 WF2)))
+                  )))
+              ,
      SVSubst := list_to_set
                   (svar_fresh_seq
                      (free_svars (pcPattern C) ∪ free_svars φ1
                       ∪ free_svars φ2)
                      (maximal_mu_depth_of_evar_in_pattern 
-                        (pcEvar C) (pcPattern C))),
+                        (pcEvar C) (pcPattern C)))
+                ∪ (gset_to_coGset
+                (free_svars φ1 ∪ free_svars φ2)),
      KT := (if
              decide
                (0 =
@@ -1936,7 +1977,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
      FP := ⊤
     )).
   Proof.
-    intros HΓ WF1 WF2 WFC Hmf.
+    intros Hmf.
 
     eapply useGenericReasoning.
     2: {
@@ -2036,200 +2077,53 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   }
   {
     simpl.
+    unfold dt_exgen_from_fp. simpl.
+    repeat rewrite union_empty_r_L.
+    replace (free_evars φ1 ∪ free_evars φ2
+    ∪ (free_evars φ2 ∪ free_evars φ1))
+    with (free_evars φ1 ∪ free_evars φ2) by set_solver.
     apply pile_evs_svs_kt.
     {
-      cbn.
-      repeat rewrite union_empty_r_L.
-      repeat apply union_least.
-      { 
-        case_match.
-        { 
-          replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
-          with (free_evars φ1 ∪ free_evars φ2)
-          by (clear; set_solver).
-          set_solver.
-        }
-        {
-          exfalso.
-          Search Finite Infinite.
-
-          match type of Heqc with
-          | ?l = ?r => destruct (decide (set_finite l)), (decide (set_finite r))
-          end.
-          {
-            rewrite coGset_finite_spec in s0. simpl in s0. exact s0.
-          }
-          {
-            rewrite Heqc in s. contradiction.
-          }
-          {
-            rewrite Heqc in n. contradiction.
-          }
-          {
-            epose proof list_to_set_finite. naive_solver.
-          }
-        }
-      }
-      { 
-        replace (free_evars φ1 ∪ free_evars φ2 ∪ (free_evars φ2 ∪ free_evars φ1))
-        with (free_evars φ1 ∪ free_evars φ2)
-        by (clear; set_solver).
-        set_solver.
-      }
-      {
-        destruct C. simpl in *.
-        unfold PC_wf in WFC. simpl in WFC.
-        unfold maximal_exists_depth_of_evar_in_pattern.
-        eapply frames_on_the_way_to_hole'_elim; intros.
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          simpl.
-          set              (λ psi : wfPattern,
-          evar_fresh
-            (elements
-               (free_evars p ∪ free_evars q
-                ∪ (free_evars q ∪ free_evars p) ∪ 
-                free_evars (`psi)))) as F in *.
-          
-          remember (maximal_exists_depth_of_evar_in_pattern' 0 E ψ1) as n1.
-          remember (maximal_exists_depth_of_evar_in_pattern' 0 E ψ2) as n2.
-          pose proof (Hmax1 := @evar_fresh_seq_max Σ ((free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
-          ∪ {[E]})) n1 n2).
-          pose proof (Hmax2 := @evar_fresh_seq_max Σ ((free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
-          ∪ {[E]})) n2 n1).
-          rewrite Nat.max_comm in Hmax2.
-          remember (free_evars ψ1 ∪ free_evars ψ2 ∪ free_evars p ∪ free_evars q
-          ∪ {[E]}) as Evs1.
-          set_solver.
-          Check evar_fresh_seq_max.
-          Search elements union.
-          pi_set_solver.
-          Search maximal_exists_depth_of_evar_in_pattern' Nat.max.
-          Search list_to_set map.
-          set_solver.
-        }
-        {
-        Check frames_on_the_way_to_hole'_elim.
-        funelim (frames_on_the_way_to_hole' ((free_evars pcPattern ∪ free_evars φ1 ∪ free_evars φ2
-        ∪ {[pcEvar]})) ((free_svars pcPattern ∪ free_svars φ1 ∪ free_svars φ2)) pcEvar WFC WF1 WF2);
-          simpl(* try simp frames_on_the_way_to_hole'; simpl*).
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          rewrite elements_empty. simpl.
-          set_solver.
-        }
-        {
-          simpl in *.
-          pose proof (wfψ1 := well_formed_app_1 wfψ).
-          pose proof (wfψ2 := well_formed_app_2 wfψ).
-          specialize (H0 Γ φ1 φ2 pcEvar (ψ1 $ ψ2) HΓ wfp wfq wfψ Hmf).
-          specialize (H Γ φ1 φ2 pcEvar (ψ1 $ ψ2) HΓ wfp wfq wfψ Hmf).
-          feed specialize H.
-          {
-            simpl. Set Printing All.
-            apply f_equal.
-            { set_solver. }
-          }
-          set_solver.
-        }
-        *)
-        induction pcPattern; simpl in *; simp frames_on_the_way_to_hole'.
-        {
-          case_match; simpl.
-          {
-            subst.
-            rewrite elements_empty. simpl.
-            set_solver.
-          }
-          {
-
-          }
-        }
-      }
-      { unfold dt_exgen_from_fp.
-        simpl.
-        set_solver.
-        case_match; simpl in *.
-        2: {
-          exfalso.
-          Check frames_on_the_way_to_hole'.
-          Set Printing All.
-          set_solver.
-        }
-      }
-      { set_solver. }
-      { set_solver. }
-      { set_solver. }
-      { set_solver. }
-      { set_solver. }
-      {
-        (* TODO we probably need a lemma about Congrunce lemma,
-           about how it generates Framing rules.
-           It means that we still need it to abstract all irrelevant details,
-           like well-formedness etc.
-        *)
-        destruct C; simpl in *|-.
-        rewrite [PatternContext.pcPattern _]/=.
-        rewrite [PatternContext.pcEvar _]/=.
-
-        unfold prf_equiv_congruence.
-
-
-        lazymatch goal with
-        | [ |- context [mkGenericProofInfo ?ge ?se ?kt] ] =>
-          try remember (mkGenericProofInfo ge se kt)
-        end.
-      }
-      Search union subseteq.
-      rewrite union_subseteq_l.
+      clear. set_solver.
+    }
+    {
+      clear. set_solver.
+    }
+    {
+      reflexivity.
+    }
+    {
+      clear. set_solver.
     }
   }
-    1: {
-      abstract (
-        simpl;
-        unfold prf_equiv_congruence; destruct C as [ψ E];
-        match goal with
-        | [ |- uses_ex_gen ?e _ = false ]
-          => replace e with (free_evars φ1 ∪ free_evars φ2) by (clear; set_solver)
-        end;
-        simpl;
-        rewrite uses_ex_gen_eq_prf_equiv_congruence;
-          [(clear; set_solver)|reflexivity|reflexivity]
-      ).
+  Defined.
+
+
+  Lemma equality_elimination_basic_ar Γ φ1 φ2 C:
+    theory ⊆ Γ ->
+    well_formed φ1 ->
+    well_formed φ2 ->
+    PC_wf C ->
+    mu_free (pcPattern C) ->
+    Γ ⊢ (φ1 =ml φ2) --->
+      (emplace C φ1) <---> (emplace C φ2)
+    using AnyReasoning.
+  Proof.
+    intros.
+    unshelve (gapply equality_elimination_basic); try assumption.
+    unfold AnyReasoning.
+    apply pile_evs_svs_kt.
+    {
+      clear. set_solver.
+    }
+    {
+      clear. set_solver.
+    }
+    {
+      case_match; simpl; reflexivity.
+    }
+    {
+      clear. set_solver.
     }
   Defined.
 
