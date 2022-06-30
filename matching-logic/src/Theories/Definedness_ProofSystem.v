@@ -2269,7 +2269,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     mu_free ψ ->
     well_formed φ1 -> well_formed φ2 -> well_formed_closed_ex_aux ψ 1 -> well_formed_closed_mu_aux ψ 0 ->
     Γ ⊢ (φ1 =ml φ2) ---> 
-      (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0).
+      (bevar_subst ψ φ1 0) ---> (bevar_subst ψ φ2 0)
+    using AnyReasoning.
   Proof.
     intros HΓ MF WF1 WF2 WF3 WF4. remember (fresh_evar ψ) as x.
     assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
@@ -2287,20 +2288,37 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   Lemma patt_eq_sym Γ φ1 φ2:
     theory ⊆ Γ ->
     well_formed φ1 -> well_formed φ2 ->
-    Γ ⊢ φ1 =ml φ2 ---> φ2 =ml φ1.
+    Γ ⊢ φ1 =ml φ2 ---> φ2 =ml φ1
+    using AnyReasoning.
   Proof.
     intros HΓ WF1 WF2.
-    unshelve (eapply deduction_theorem_noKT).
+    unshelve (gapply deduction_theorem_noKT).
+    4,5: abstract(wf_auto2).
     4: exact HΓ.
-    2,3: wf_auto.
-    remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
-    assert (Γ' ⊢ (φ1 <---> φ2)). {
-      apply hypothesis. apply well_formed_iff; auto.
-      rewrite HeqΓ'. apply elem_of_union_r. constructor.
+    3: {
+      remember_constraint as i'.
+      remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
+      assert (Γ' ⊢ (φ1 <---> φ2) using i'). {
+        subst i'. useBasicReasoning.
+        apply hypothesis. apply well_formed_iff; auto.
+        rewrite HeqΓ'. apply elem_of_union_r. constructor.
+      }
+      apply pf_iff_equiv_sym in H; auto.
+      apply patt_iff_implies_equal; auto.
+      subst i'. apply pile_refl.
     }
-    apply pf_iff_equiv_sym in H; auto.
-    apply patt_iff_implies_equal; auto.
-    all: reflexivity.
+    {
+      apply pile_any.
+    }
+    {
+      simpl. set_solver.
+    }
+    {
+      simpl. set_solver.
+    }
+    {
+      simpl. reflexivity.
+    }
   Qed.
 
   Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
@@ -2310,13 +2328,16 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   Lemma exists_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
-    Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ).
+    Γ ⊢ ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ)
+    using AnyReasoning.
   Proof.
     intros HΓ MF WF WFB WFM.
     remember (fresh_evar (φ $ φ')) as Zvar.
     remember (patt_free_evar Zvar) as Z.
-    assert (well_formed Z) as WFZ. { rewrite HeqZ. auto. }
-                                   assert (Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')). {
+    assert (well_formed Z) as WFZ.
+    { rewrite HeqZ. auto. }
+    assert (Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ') using AnyReasoning).
+    {
       pose proof (SYM1 := @patt_eq_sym Γ φ' Z ltac:(auto) ltac:(auto) WFZ).
       pose proof (SYM2 := @patt_eq_sym Γ Z φ' ltac:(assumption) WFZ ltac:(auto)).
       apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2.  
@@ -2340,43 +2361,51 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
     pose proof (@equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
     apply pf_iff_iff in H. destruct H.
-    assert (well_formed (ex, φ)) as WFEX. { wf_auto. now apply mu_free_wfp. }
-    pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
-    epose proof (PC := @prf_conclusion Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) ltac:(apply well_formed_equal;auto) _ EQ).
-    2-3: apply well_formed_equal;auto.
+    assert (well_formed (ex, φ)) as WFEX.
+    { wf_auto. now apply mu_free_wfp. }
+    2,3: wf_auto2.
+    pose proof (EQ := @Ex_quan Σ Γ φ Zvar WFEX).
+    change constraint in EQ.
+    epose proof (PC := @prf_conclusion Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
+
     assert (Γ
-              ⊢ patt_equal φ' Z ---> instantiate (ex , φ) φ' ---> ex , φ) as HSUB. {
+              ⊢ patt_equal φ' Z ---> instantiate (ex , φ) φ' ---> ex , φ using AnyReasoning) as HSUB.
+    {
       pose proof (EE := @equality_elimination2 Γ φ' Z φ HΓ
                                                ltac:(auto) ltac:(auto) ltac:(auto) WFB).
       unfold instantiate in EE.
       epose proof (PSP := @prf_strenghten_premise Σ Γ ((patt_equal φ' Z) and (instantiate (ex , φ) Z))
                                                  ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
                                                  (ex , φ) _ _ _).
-      eapply Modus_ponens. 4: apply and_impl.
-      1,2,4,5,6: wf_auto2.
-      eapply Modus_ponens. 4: eapply Modus_ponens.
-      7: exact PSP.
-      1,2,4,5: wf_auto2.
+      eapply MP.
+      2: usePropositionalReasoning; apply and_impl.
+      2,3,4: wf_auto2.
+      eapply MP.
+      2: eapply MP.
+      3: usePropositionalReasoning; exact PSP.
+      
       * unshelve (epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _)).
         1,2,3: wf_auto2.
-        unfold instantiate. eapply Modus_ponens. 4: exact AI.
-        1, 2: unfold patt_equal, patt_iff, patt_total, patt_defined; wf_auto2.
+        unfold instantiate.
+        (* TODO: tactic for modus ponens *)
+        eapply MP. 2: usePropositionalReasoning; exact AI.
         rewrite <- HeqZ in PC.
         exact PC.
       * apply and_drop. 1-3: wf_auto2.
         unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)).
         1-3: wf_auto2.
-        eapply Modus_ponens. 4: exact AI. 3: apply EE.
-        all: wf_auto2.
+        eapply MP. 2: usePropositionalReasoning; exact AI.
+        { apply EE. wf_auto2. }
     }
-    eapply Modus_ponens. 4: apply and_impl'; auto.
-    1,2,4: unfold instantiate,patt_equal,patt_total,patt_defined in *; wf_auto2.
-    apply reorder_meta; auto.
-    { wf_auto2. }
-    eapply (Ex_gen Γ _ _ Zvar) in HSUB. unfold exists_quantify in HSUB.
+    eapply MP. 2: usePropositionalReasoning; apply and_impl'; try_wfauto2.
+    
+    apply reorder_meta; try_wfauto2.
+    eapply (@Ex_gen Σ Γ _ _ Zvar) in HSUB.
+    2: { apply pile_any. }
+
+    unfold exists_quantify in HSUB.
     rewrite evar_quantify_equal_simpl in HSUB.
     rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
-    2-3: wf_auto2.
     2: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
