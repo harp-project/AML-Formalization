@@ -2438,7 +2438,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   Corollary forall_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
-    Γ ⊢ ((patt_forall φ) and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (bevar_subst φ φ' 0).
+    Γ ⊢ ((patt_forall φ) and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (bevar_subst φ φ' 0)
+    using AnyReasoning.
   Proof.
     intros HΓ MF WF WFB WFM. unfold patt_forall.
     assert (well_formed (bevar_subst φ φ' 0)) as BWF. {
@@ -2466,29 +2467,49 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       apply mu_free_wfp; simpl; now rewrite MF.
       all: simpl; wf_auto.
     }
-    unshelve (epose proof (H := @exists_functional_subst (! φ) φ' Γ HΓ _ WF _)).
+    unshelve (epose proof (H := @exists_functional_subst (! φ) φ' Γ HΓ _ WF _ _)).
     { simpl. rewrite andbT. exact MF. }
-    { wf_auto. }
+    { wf_auto2. }
+    { wf_auto2. }
     simpl in H.
     epose proof (H0 := @and_impl Σ _ _ _ _ _ _ _).
-    eapply Modus_ponens in H0. 4: apply H. 2-3: unfold patt_equal,patt_total,patt_defined;wf_auto2.
-    apply reorder_meta in H0. 2-4: auto.
-    2: { wf_auto. }
+    epose proof (H0' := @and_impl Σ _ _ _ _ _ _ _).
+    eapply usePropositionalReasoning with (i := AnyReasoning) in H0.
+    eapply MP in H0. 2: apply H.
+    apply reorder_meta in H0.
+    2-4: wf_auto2.
     
-    epose proof (H1 := @and_impl' Σ _ _ _ _ _ _ _). eapply Modus_ponens in H1. exact H1.
-    1-2: shelve.
-    apply reorder_meta. 1-3: shelve.
+    epose proof (H1 := @and_impl' Σ _ _ _ _ _ _ _).
+    eapply usePropositionalReasoning with (i := AnyReasoning) in H1.
+    eapply MP in H1. exact H1.
+    
+    apply reorder_meta. 1-3: wf_auto2.
     epose proof (H2 := @P4 Σ Γ (bevar_subst φ φ' 0) (! ex , patt_not (φ)) _ _).
     clear H H1.
-    epose proof (H := @prf_weaken_conclusion Σ Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
-    eapply Modus_ponens in H. eapply Modus_ponens in H; auto.
-    2-4: shelve.
+    epose proof (otherH := @prf_weaken_conclusion Σ Γ (ex , patt_equal φ' b0) ((bevar_subst φ φ' 0 ---> ⊥) ---> ex , (! φ)) ((bevar_subst φ φ' 0 ---> ⊥) ---> ! ! ex , (! φ)) _ _ _).
+    eapply MP in otherH.
     2: {
-      epose proof (H1 := @prf_weaken_conclusion Σ Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (! φ)) (! ! ex , (! φ)) _ _ _). eapply Modus_ponens. 4: exact H1. 1-2: shelve.
-      apply not_not_intro. shelve.
+      epose proof (H1 := @prf_weaken_conclusion Σ Γ (bevar_subst φ φ' 0 ---> ⊥) (ex , (! φ)) (! ! ex , (! φ)) _ _ _).
+      eapply MP. 2: apply H1.
+      apply not_not_intro.
+      wf_auto2.
     }
-    eapply syllogism_intro in H2. exact H2. all: auto.
+    
+    eapply usePropositionalReasoning with (i := AnyReasoning) in otherH.
+    eapply MP in otherH.
+    {
+      eapply usePropositionalReasoning with (i := AnyReasoning) in H2.
+      eapply syllogism_meta in H2.
+      3,4: wf_auto2.
+      3: apply otherH.
+      2: wf_auto2.
+      exact H2.
+    }
+    exact H0.
     Unshelve.
+    (* I do not like this. Why do we have unification variables on which nothing depends? *)
+    4,5,6: apply well_formed_bott.
+    9: exact Γ.
     all: wf_auto2.
   Qed.
 
