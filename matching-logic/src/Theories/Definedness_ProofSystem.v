@@ -2704,7 +2704,7 @@ Defined.
 Lemma def_not_phi_impl_not_total_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋.
+Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋ using PropositionalReasoning.
 Proof.
 intros HΓ wfϕ.
 toMyGoal.
@@ -2721,17 +2721,37 @@ Lemma def_def_phi_impl_def_phi
 {Σ : Signature} {syntax : Syntax} {Γ : Theory} (ϕ : Pattern) :
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌈ ϕ ⌉.
+Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌈ ϕ ⌉
+using pi_Generic
+  (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
+   SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
-eapply (cast_proof).
+eapply (cast_proof').
 { 
   remember (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box ltac:(wf_auto2)) as AC1.
   remember (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
   replace (⌈ ⌈ ϕ ⌉ ⌉) with (subst_ctx AC2 ϕ) by (subst; reflexivity).
   subst. reflexivity.
 }
-apply in_context_impl_defined.
+gapply in_context_impl_defined.
+{
+  simpl.
+  apply pile_evs_svs_kt.
+  {
+    replace (free_evars ϕ ∪ (∅ ∪ (∅ ∪ ∅))) with (free_evars ϕ) by set_solver.
+    apply reflexivity.
+  }
+  {
+    apply reflexivity.
+  }
+  {
+    reflexivity.
+  }
+  {
+    set_solver.
+  }
+}
 { exact HΓ. }
 { exact wfϕ. }
 Defined.
