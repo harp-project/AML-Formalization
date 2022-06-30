@@ -21,7 +21,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
 Import extralibrary.
 
@@ -2127,31 +2127,37 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     }
   Defined.
 
-  Lemma equality_elimination_basic_iter_1 Γ ϕ₁ ϕ₂ l C :
+  Lemma equality_elimination_basic_ar_iter_1 Γ ϕ₁ ϕ₂ l C :
     theory ⊆ Γ ->
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     wf l ->
     PC_wf C ->
     mu_free (pcPattern C) ->
-    Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) ((ϕ₁ =ml ϕ₂) :: l).
+    Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) ((ϕ₁ =ml ϕ₂) :: l)
+    using AnyReasoning.
   Proof.
     intros HΓ wfϕ₁ wfϕ₂ wfl wfC Hmf.
     induction l; simpl.
-    - apply equality_elimination_basic; assumption.
+    - apply equality_elimination_basic_ar; assumption.
     - pose proof (wfal := wfl). apply andb_prop in wfl as [wfa wfl].
       specialize (IHl wfl).
       simpl in IHl.
-      pose proof (proved_impl_wf _ _ IHl).
+      pose proof (proved_impl_wf _ _ (proj1_sig IHl)).
+
+      assert (well_formed (emplace C ϕ₁) = true) by (unfold emplace; wf_auto2).
+      assert (well_formed (emplace C ϕ₂) = true) by (unfold emplace; wf_auto2).
+      
+      wf_auto2.
       toMyGoal.
       { wf_auto2. }
       mgIntro. mgIntro. mgClear 1.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       apply IHl.
   Defined.
 
 
-  Lemma equality_elimination_basic_iter Γ ϕ₁ ϕ₂ l₁ l₂ C :
+  Lemma equality_elimination_basic_ar_iter Γ ϕ₁ ϕ₂ l₁ l₂ C :
     theory ⊆ Γ ->
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
@@ -2159,18 +2165,19 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     wf l₂ ->
     PC_wf C ->
     mu_free (pcPattern C) ->
-    Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) (l₁ ++ (ϕ₁ =ml ϕ₂)::l₂).
+    Γ ⊢ foldr patt_imp ((emplace C ϕ₁) <---> (emplace C ϕ₂)) (l₁ ++ (ϕ₁ =ml ϕ₂)::l₂)
+    using AnyReasoning.
   Proof.
     intros HΓ wfϕ₁ wfϕ₂ wfl₁ wfl₂ wfC Hmf.
     induction l₁; simpl.
-    - apply equality_elimination_basic_iter_1; assumption.
+    - apply equality_elimination_basic_ar_iter_1; assumption.
     - pose proof (wfal := wfl₁). unfold wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁ as [wfa wfl].
       specialize (IHl₁ wfl).
-      pose proof (proved_impl_wf _ _ IHl₁).
+      pose proof (proved_impl_wf _ _ (proj1_sig IHl₁)).
       toMyGoal.
       { wf_auto2. }
       mgIntro. mgClear 0.
-      fromMyGoal. intros _ _.
+      fromMyGoal.
       apply IHl₁.
   Defined.
 
@@ -2179,51 +2186,39 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     mu_free ψ ->
     well_formed φ1 -> well_formed φ2 -> well_formed ψ ->     
     Γ ⊢ (φ1 =ml φ2) ---> 
-      (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x).
+      (free_evar_subst ψ φ1 x) ---> (free_evar_subst ψ φ2 x)
+    using AnyReasoning.
   Proof.
     intros HΓ MF WF1 WF2 WFψ.
-    unshelve (eapply (deduction_theorem_noKT)); try assumption.
-    2,3: abstract(auto).
+    unshelve (gapply (deduction_theorem_noKT)); try assumption.
+    4,5 : abstract(wf_auto2).
+
+    3: {
 
     remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
-    assert (Γ' ⊢ (φ1 <---> φ2)). {
-      apply hypothesis.
+    apply pf_iff_proj1; auto.
+
+    Check @eq_prf_equiv_congruence.
+    eapply (@eq_prf_equiv_congruence Σ _ Γ' φ1 φ2 WF1 WF2 ({[x]} ∪ free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
+        (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)); auto.
+    1-7: abstract (set_solver).
+    { apply pile_refl. }
+
+    remember_constraint as i'.
+    assert (Γ' ⊢ (φ1 <---> φ2) using i'). {
+      subst i'. useBasicReasoning. apply hypothesis.
       - abstract (now apply well_formed_iff).
       - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
     }
-    apply pf_iff_proj1; auto.
-
-    apply (@eq_prf_equiv_congruence Σ Γ' φ1 φ2 WF1 WF2 (free_evars ψ ∪ free_evars φ1 ∪ free_evars φ2)
-        (free_svars ψ ∪ free_svars φ1 ∪ free_svars φ2)); auto.
-    3: {
-      abstract (
-        simpl; rewrite orbF;
-        rewrite uses_kt_nomu_eq_prf_equiv_congruence;
-        [apply MF|reflexivity|reflexivity]
-      ).
+    exact H.
     }
-    2: {
-      abstract (
-        simpl; rewrite orbF;
-        match goal with
-        | [ |- uses_svar_subst ?S _ = false ]
-          => replace S with (free_svars φ1 ∪ free_svars φ2) by (clear; set_solver)
-        end;
-        rewrite uses_svar_subst_eq_prf_equiv_congruence;
-        [(clear;set_solver)|reflexivity|reflexivity]
-     ).
+    {
+      apply pile_any.
     }
-    1: {
-      abstract (
-        simpl; rewrite orbF;
-        match goal with
-        | [ |- uses_ex_gen ?e _ = false ]
-          => replace e with (free_evars φ1 ∪ free_evars φ2) by (clear; set_solver)
-        end;
-        simpl;
-        rewrite uses_ex_gen_eq_prf_equiv_congruence;
-          [(clear; set_solver)|reflexivity|reflexivity]
-      ).
+    {
+      simpl.
+      set_unfold.
+      pi_set_solver.
     }
   Defined.
 
