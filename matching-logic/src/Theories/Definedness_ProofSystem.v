@@ -3325,7 +3325,7 @@ mgRewrite ((@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(
 mgRewrite ((@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2))) at 1.
 mgIntro.
 remember (fresh_evar ϕ) as y.
-mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
+mgApplyMeta (useAnyReasoning (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2))).
 unfold instantiate. simpl_bevar_subst. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }

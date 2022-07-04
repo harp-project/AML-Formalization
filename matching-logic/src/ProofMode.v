@@ -7875,6 +7875,7 @@ Ltac simplify_emplace_2 star :=
   clear; simpl; set_solver.
 
  Ltac simplify_pile_side_condition star :=
+  try apply pile_any;
   cbn;
   simplify_emplace_2 star;
   repeat (rewrite (mmdoeip_notin, medoeip_notin);
