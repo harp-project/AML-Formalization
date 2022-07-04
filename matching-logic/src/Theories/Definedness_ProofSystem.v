@@ -2955,24 +2955,43 @@ apply ProofMode.modus_tollens.
 exact H.
 Defined.
 
+Lemma useAnyReasoning {Σ : Signature} Γ ϕ i:
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ϕ using AnyReasoning.
+Proof.
+  intros H.
+  destruct i.
+  {
+    apply usePropositionalReasoning.
+    exact H.
+  }
+  {
+    destruct gpi.
+    eapply useGenericReasoning.
+    { apply pile_any. }
+    apply H.
+  }
+Qed.
+
 Lemma membership_imp {Σ : Signature} {syntax : Syntax} Γ x ϕ₁ ϕ₂:
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂)).
+Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ ---> ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂.
 
 toMyGoal.
 { wf_auto2. }
-mgRewrite (@impl_iff_notp_or_q Σ Γ ϕ₁ ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-mgRewrite (@membership_or_iff Σ syntax Γ x (! ϕ₁) ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2) HΓ) at 1.
-mgRewrite (@membership_not_iff Σ syntax Γ ϕ₁ x ltac:(wf_auto2) HΓ) at 1.
-mgRewrite <- (@impl_iff_notp_or_q Σ Γ (patt_free_evar x ∈ml ϕ₁) (patt_free_evar x ∈ml ϕ₂) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-fromMyGoal. intros _ _.
+mgRewrite (@usePropositionalReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ ϕ₁ ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+mgRewrite (useAnyReasoning (@membership_or_iff Σ syntax Γ x (! ϕ₁) ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2) HΓ)) at 1.
+mgRewrite (useAnyReasoning (@membership_not_iff Σ syntax Γ ϕ₁ x ltac:(wf_auto2) HΓ)) at 1.
+mgRewrite <- (@usePropositionalReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ (patt_free_evar x ∈ml ϕ₁) (patt_free_evar x ∈ml ϕ₂) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+fromMyGoal.
+usePropositionalReasoning.
 apply pf_iff_equiv_refl.
 { wf_auto2. }
-
 Defined.
 
 Lemma ceil_propagation_exists_1 {Σ : Signature} {syntax : Syntax} Γ ϕ:
