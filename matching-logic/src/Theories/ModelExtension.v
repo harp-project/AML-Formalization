@@ -1126,9 +1126,9 @@ Section with_syntax.
                                 }
                                 rewrite update_evar_val_lift_val_comm in Hc.
                                 rewrite IHszdata in Hc.
-                                4: { wf_auto2. }
-                                3: { apply is_SData_evar_open. assumption. }
-                                2: { rewrite evar_open_size'. lia. }
+                                3: { wf_auto2. }
+                                2: { apply is_SData_evar_open. assumption. }
+                                1: { rewrite evar_open_size'. lia. }
 
                                 (* [x] comes from [Domain M] *)
                                 unfold lift_set,fmap in Hc.
@@ -1152,9 +1152,9 @@ Section with_syntax.
                                 }
 
                                 rewrite IHszdata in Hin.
-                                4: { wf_auto2. }
-                                3: { constructor. assumption. }
-                                2: { simpl. lia. }
+                                3: { wf_auto2. }
+                                2: { constructor. assumption. }
+                                1: { simpl. lia. }
 
                                 exists d.
                                 destruct (indec H d ρ) as [Hin'|Hnotin'].
@@ -1210,9 +1210,9 @@ Section with_syntax.
                             destruct (Mext_indec H (lift_value c) ρ) as [Hin | Hnotin].
                             {
                                 rewrite IHszdata.
-                                4: { wf_auto2. }
-                                3: { apply is_SData_evar_open. assumption. }
-                                2: { rewrite evar_open_size'. lia. }
+                                3: { wf_auto2. }
+                                2: { apply is_SData_evar_open. assumption. }
+                                1: { rewrite evar_open_size'. lia. }
                                 unfold lift_set,fmap.
                                 with_strategy transparent [propset_fmap] unfold propset_fmap.
                                 rewrite elem_of_PropSet.
@@ -1227,9 +1227,9 @@ Section with_syntax.
                                 exfalso. rename e into Hin.
                                 unfold Minterp_inhabitant in Hin, Hnotin.
                                 rewrite IHszdata in Hnotin.
-                                4: { wf_auto2. }
-                                3: { constructor. assumption. }
-                                2: { simpl. lia. }
+                                3: { wf_auto2. }
+                                2: { constructor. assumption. }
+                                1: { simpl. lia. }
                                 clear -Hin Hnotin.
                                 unfold lift_value,lift_set,fmap in Hnotin.
                                 with_strategy transparent [propset_fmap] unfold propset_fmap in Hnotin.
@@ -1757,13 +1757,13 @@ Section with_syntax.
                     {
                         (* patt_equal ϕ₁ ϕ₂ *)
                         rewrite equal_iff_interpr_same.
-                        2: { apply Mext_satisfies_definedness. }
+                        1: { apply Mext_satisfies_definedness. }
                         rewrite equal_iff_interpr_same.
-                        2: { apply M_def. }
+                        1: { apply M_def. }
                         rewrite not_equal_iff_not_interpr_same_1.
-                        2: { apply Mext_satisfies_definedness. }
+                        1: { apply Mext_satisfies_definedness. }
                         rewrite not_equal_iff_not_interpr_same_1.
-                        2: { apply M_def. }
+                        1: { apply M_def. }
                         rewrite IHszdata.
                         { lia. }
                         { assumption. }
@@ -1778,13 +1778,13 @@ Section with_syntax.
                     {
                         (* patt_subseteq ϕ₁ ϕ₂ *)
                         rewrite subseteq_iff_interpr_subseteq.
-                        2: { apply Mext_satisfies_definedness. }
+                        1: { apply Mext_satisfies_definedness. }
                         rewrite subseteq_iff_interpr_subseteq.
-                        2: { apply M_def. }
+                        1: { apply M_def. }
                         rewrite not_subseteq_iff_not_interpr_subseteq_1.
-                        2: { apply Mext_satisfies_definedness. }
+                        1: { apply Mext_satisfies_definedness. }
                         rewrite not_subseteq_iff_not_interpr_subseteq_1.
-                        2: { apply M_def. }
+                        1: { apply M_def. }
                         rewrite IHszdata.
                         { lia. }
                         { assumption. }
