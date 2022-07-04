@@ -4094,36 +4094,35 @@ Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂).
+Γ ⊢ (ϕ₁ ⊆ml ϕ₂) ---> ((ϕ₁ or ϕ₂) =ml ϕ₂)
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂.
-unshelve (eapply deduction_theorem_noKT).
-2,3: wf_auto2.
-2: exact HΓ.
-{
+unshelve (gapply deduction_theorem_noKT).
+2: { apply pile_any. }
+3,4: wf_auto2.
+3: exact HΓ.
+2: {
   apply phi_impl_total_phi_meta.
   { wf_auto2. }
+  { apply pile_refl. }
   apply pf_iff_split.
   1,2: wf_auto2.
   - toMyGoal. wf_auto2. mgIntro. mgDestructOr 0.
-    + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂).
-      { apply hypothesis. wf_auto2. set_solver. }
+    + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂ using (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP))).
+      {
+        gapply hypothesis.
+        { try_solve_pile. }
+        { wf_auto2. }
+        clear. set_solver.
+      }
       mgApplyMeta H. mgExactn 0.
     + mgExactn 0.
-  - apply disj_right_intro; assumption.
+  - usePropositionalReasoning. apply disj_right_intro; assumption.
 }
-{
-  simpl. rewrite !orbF.
-  solve_indif. reflexivity.
-}
-{
-  simpl. rewrite !orbF.
-  solve_indif. reflexivity.
-}
-{
-  simpl. rewrite !orbF.
-  solve_indif. reflexivity.
-}
+{ simpl. clear. set_solver. }
+{ simpl. clear. set_solver. }
+{ reflexivity. }
 Defined.
 
 
@@ -4131,23 +4130,25 @@ Lemma disj_equals_greater_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ�
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂ ->
-Γ ⊢ ϕ₁ ⊆ml ϕ₂.
+Γ ⊢ (ϕ₁ or ϕ₂) =ml ϕ₂ using AnyReasoning ->
+Γ ⊢ ϕ₁ ⊆ml ϕ₂ using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂ Heq.
 toMyGoal.
 { wf_auto2. }
-unshelve (epose proof (Htmp := patt_equal_implies_iff HΓ _ _ Heq)).
+unshelve (epose proof (Htmp := patt_equal_implies_iff HΓ _ _ _ Heq)).
+{ apply pile_any. }
 { wf_auto2. }
 { wf_auto2. }
 apply pf_iff_equiv_sym in Htmp.
 3: { wf_auto2. }
 2: { wf_auto2. }
 mgRewrite Htmp at 1.
-fromMyGoal. intros _ _.
+fromMyGoal.
 unfold "⊆ml".
 apply phi_impl_total_phi_meta.
 { wf_auto2. }
+{ apply pile_any. }
 toMyGoal.
 { wf_auto2. }
 mgIntro. mgLeft. mgExactn 0.
@@ -4158,7 +4159,8 @@ theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
 mu_free ϕ₁ -> (* TODO get rid of it *)
-Γ ⊢ ((ϕ₁ or ϕ₂) =ml ϕ₂) ---> (ϕ₁ ⊆ml ϕ₂).
+Γ ⊢ ((ϕ₁ or ϕ₂) =ml ϕ₂) ---> (ϕ₁ ⊆ml ϕ₂)
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂ mfϕ₁.
 toMyGoal.
@@ -4174,10 +4176,11 @@ mgRewriteBy 0 at 1.
 { simpl. rewrite mfϕ₁. reflexivity. }
 mgClear 0.
 
-fromMyGoal. intros _ _.
+fromMyGoal.
 unfold "⊆ml".
 apply phi_impl_total_phi_meta.
 { wf_auto2. }
+{ apply pile_any. }
 toMyGoal.
 { wf_auto2. }
 mgIntro. mgLeft. mgExactn 0.
