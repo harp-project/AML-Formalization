@@ -3210,19 +3210,22 @@ Lemma ceil_compat_in_or {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ ( (⌈ ϕ₁ or ϕ₂ ⌉) <---> (⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉)).
+Γ ⊢ ( (⌈ ϕ₁ or ϕ₂ ⌉) <---> (⌈ ϕ₁ ⌉ or ⌈ ϕ₂ ⌉))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂.
 toMyGoal.
 { wf_auto2. }
 mgSplitAnd; mgIntro.
-- mgApplyMeta (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ).
+- mgApplyMeta (useAnyReasoning (@Prop_disj_right Σ Γ ϕ₁ ϕ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
   mgExactn 0.
 - mgDestructOr 0.
-  + unshelve (mgApplyMeta (Framing_right Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _)).
+  + unshelve (mgApplyMeta (useAnyReasoning (@Framing_right Σ Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _(pile_any _) _))).
+    { wf_auto2. }
     { toMyGoal. wf_auto2. mgIntro. mgLeft. mgExactn 0. }
     mgExactn 0.
-  + unshelve (mgApplyMeta (Framing_right Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _)).
+  + unshelve (mgApplyMeta (useAnyReasoning (@Framing_right Σ Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _ (pile_any _) _))).
+    { wf_auto2. }
     { toMyGoal. wf_auto2. mgIntro. mgRight. mgExactn 0. }
     mgExactn 0.
 Defined.
