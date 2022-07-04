@@ -3366,13 +3366,14 @@ Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (ϕ₁ ϕ₂ : P
 theory ⊆ Γ ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ (ϕ₁ ---> ϕ₂) ->
-Γ ⊢ (patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂).
+Γ ⊢ (ϕ₁ ---> ϕ₂) using AnyReasoning ->
+Γ ⊢ (patt_free_evar x ∈ml ϕ₁) ---> (patt_free_evar x ∈ml ϕ₂) using AnyReasoning.
 Proof.
 intros HΓ wfϕ₁ wfϕ₂ H.
 unfold patt_in.
 apply ceil_monotonic.
 { exact HΓ. }
+{ apply pile_any. }
 { wf_auto2. }
 { wf_auto2. }
 toMyGoal.
@@ -3388,10 +3389,11 @@ Defined.
 Lemma membership_symbol_ceil_left {Σ : Signature} {syntax : Syntax} Γ ϕ x:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ (patt_free_evar x ∈ml ⌈ ϕ ⌉) ---> (ex, (patt_bound_evar 0 ∈ml ϕ)).
+Γ ⊢ (patt_free_evar x ∈ml ⌈ ϕ ⌉) ---> (ex, (patt_bound_evar 0 ∈ml ϕ))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
-eapply syllogism_intro.
+eapply syllogism_meta.
 { wf_auto2. }
 2: {wf_auto2. }
 2: {
@@ -3401,6 +3403,7 @@ eapply syllogism_intro.
   2: {
     apply ceil_monotonic.
     { exact HΓ. }
+    { apply pile_any. }
     { wf_auto2. }
     2: {
       apply membership_symbol_ceil_left_aux_0.
@@ -3413,7 +3416,7 @@ eapply syllogism_intro.
 }
 { wf_auto2. }
 
-eapply syllogism_intro.
+eapply syllogism_meta.
 { wf_auto2. }
 2: {wf_auto2. }
 2: {
@@ -3421,7 +3424,8 @@ eapply syllogism_intro.
   { exact HΓ. }
   { wf_auto2. }
   2: {
-    apply ceil_propagation_exists_1.
+    gapply ceil_propagation_exists_1.
+    { apply pile_any. }
     { exact HΓ. }
     { wf_auto2. }
   }
@@ -3430,7 +3434,7 @@ eapply syllogism_intro.
 { wf_auto2. }
 
 remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
-eapply syllogism_intro.
+eapply syllogism_meta.
 { wf_auto2. }
 2: {wf_auto2. }
 2: {
@@ -3438,7 +3442,7 @@ eapply syllogism_intro.
   { exact HΓ. }
   { wf_auto2. }
   2: {
-    eapply cast_proof.
+    eapply cast_proof'.
     {
       rewrite -[⌈ ⌈ b0 and ϕ ⌉ ⌉](@evar_quantify_evar_open Σ y 0).
       { simpl.
@@ -3451,17 +3455,16 @@ eapply syllogism_intro.
       reflexivity.
     }
     apply ex_quan_monotone.
-    { wf_auto2. }
-    2: {
+    { apply pile_any. }
+    {
       unfold evar_open. simpl_bevar_subst. simpl.
       rewrite bevar_subst_not_occur.
       { wf_auto2. }
-      wf_auto2.
-      apply def_def_phi_impl_def_phi.
+      gapply def_def_phi_impl_def_phi.
+      { apply pile_any. }
       { exact HΓ. }
       { wf_auto2. }
     }
-    { wf_auto2. }
   }
   {
     unfold exists_quantify.
@@ -3513,7 +3516,7 @@ feed specialize Htmp.
 }
 mgRewrite -> Htmp at 1. clear Htmp.
 
-fromMyGoal. intros _ _.
+fromMyGoal.
 case_match; try congruence.
 rewrite evar_quantify_fresh.
 { subst y. eapply evar_is_fresh_in_richer'.
@@ -3547,8 +3550,7 @@ apply (@strip_exists_quantify_r Σ Γ y).
 }
 { simpl. split_and!; auto; wf_auto2. }
 apply ex_quan_monotone.
-{ wf_auto2. }
-{ wf_auto2. }
+{ apply pile_any. }
 unfold evar_open. simpl_bevar_subst. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
@@ -3562,13 +3564,15 @@ Defined.
 Lemma membership_symbol_ceil_right_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ (ex, (⌈ b0 and  ϕ ⌉ and b0)) ---> ϕ.
+Γ ⊢ (ex, (⌈ b0 and  ϕ ⌉ and b0)) ---> ϕ
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 apply prenex_forall_imp.
 1,2: wf_auto2.
+{ apply pile_any. }
 remember (fresh_evar (⌈ b0 and ϕ ⌉ and b0 ---> ϕ)) as x.
-eapply cast_proof.
+eapply cast_proof'.
 {
   rewrite -[HERE in (all, HERE)](@evar_quantify_evar_open Σ x 0).
   { subst x. apply set_evar_fresh_is_fresh. }
@@ -3578,17 +3582,19 @@ eapply cast_proof.
   reflexivity.
 }
 apply universal_generalization.
+{ apply pile_any. }
 { wf_auto2. }
 assert (Htmp: forall (ϕ₁ ϕ₂ ϕ₃ : Pattern),
            well_formed ϕ₁ ->
            well_formed ϕ₂ ->
            well_formed ϕ₃ ->
-           Γ ⊢ ((! (ϕ₁ and (ϕ₂ and !ϕ₃))) ---> ((ϕ₁ and ϕ₂) ---> ϕ₃))).
+           Γ ⊢ ((! (ϕ₁ and (ϕ₂ and !ϕ₃))) ---> ((ϕ₁ and ϕ₂) ---> ϕ₃)) using AnyReasoning).
 {
-  intros ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃. toMyGoal.
+  intros ϕ₁ ϕ₂ ϕ₃ wfϕ₁ wfϕ₂ wfϕ₃.
+  toMyGoal.
   { wf_auto2. }
   do 2 mgIntro. mgDestructAnd 1.
-  mgApplyMeta (@not_not_elim Σ Γ ϕ₃ wfϕ₃).
+  mgApplyMeta (useAnyReasoning (@not_not_elim Σ Γ ϕ₃ wfϕ₃)).
   mgIntro. mgApply 0. mgClear 0.
   mgSplitAnd.
   { mgExactn 0. }
@@ -3596,24 +3602,26 @@ assert (Htmp: forall (ϕ₁ ϕ₂ ϕ₃ : Pattern),
   { mgExactn 1. }
   { mgExactn 2. }
 }
-eapply Modus_ponens.
-4: apply Htmp.
+eapply MP.
+2: apply Htmp.
 all: fold bevar_subst.
-1,2,4,5,6: wf_auto2.
-1,2,4,5,6: apply wfc_ex_aux_bevar_subst; wf_auto2.
-{ apply wfc_ex_aux_bevar_subst. wf_auto2. simpl. reflexivity. }
+2,3,4: wf_auto2.
+2,3: apply wfc_ex_aux_bevar_subst; wf_auto2.
 simpl_bevar_subst. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 replace (⌈ patt_free_evar x and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ)) by reflexivity.
 replace (patt_free_evar x and ! ϕ) with (subst_ctx box (patt_free_evar x and ! ϕ)) by reflexivity.
-apply Singleton_ctx. exact wfϕ.
+gapply Singleton_ctx.
+{ apply pile_any. }
+exact wfϕ.
 Defined.
 
 Lemma membership_symbol_ceil_right {Σ : Signature} {syntax : Syntax} Γ ϕ x:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ((ex, (BoundVarSugar.b0 ∈ml ϕ)) ---> (patt_free_evar x ∈ml ⌈ ϕ ⌉)).
+Γ ⊢ ((ex, (BoundVarSugar.b0 ∈ml ϕ)) ---> (patt_free_evar x ∈ml ⌈ ϕ ⌉))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
@@ -3622,25 +3630,24 @@ rewrite -Heqy in Htmp.
 assert (x <> y).
 { solve_fresh_neq. }
 
-eapply syllogism_intro.
+eapply syllogism_meta.
 1,3: wf_auto2.
 2: {
   apply (@strip_exists_quantify_l Σ Γ y).
   { simpl. clear -Htmp. set_solver. }
   { simpl. split_and!; try reflexivity. wf_auto2. }
   apply ex_quan_monotone.
-  { wf_auto2. }
-  2: {
+  { apply pile_any. }
+  {
     unfold evar_open. simpl_bevar_subst. simpl.
     rewrite bevar_subst_not_occur.
     { wf_auto2. }
-    apply membership_symbol_ceil_aux_0 with (y0 := x); assumption.
+    apply membership_symbol_ceil_aux_0 with (y := x); assumption.
   }
-  { wf_auto2. }
 }
 { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
 
-eapply syllogism_intro.
+eapply syllogism_meta.
 3: wf_auto2.
 1: { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
 2: {
@@ -3657,7 +3664,7 @@ eapply syllogism_intro.
 }
 { wf_auto2. }
 
-eapply syllogism_intro.
+eapply syllogism_meta.
 1,3: wf_auto2.
 2: {
   apply membership_monotone.
@@ -3677,26 +3684,28 @@ eapply syllogism_intro.
   }
   { simpl. split_and!; try reflexivity. wf_auto2. }
   apply ex_quan_monotone.
-  { wf_auto2. }
-  2: {
-    eapply syllogism_intro.
+  { apply pile_any. }
+  {
+    eapply syllogism_meta.
     1: wf_auto2.
     3: {
       unfold evar_open. simpl_bevar_subst. simpl.
       rewrite bevar_subst_evar_quantify_free_evar.
       { wf_auto2. }
-      apply membership_symbol_ceil_aux_0 with (y0 := y); assumption.
+      apply membership_symbol_ceil_aux_0 with (y := y); assumption.
     }
     { wf_auto2. }
     2: {
       apply ceil_monotonic.
       { exact HΓ. }
+      { apply pile_any. }
       { wf_auto2. }
       2: {
         eapply pf_iff_proj1.
         { wf_auto2. }
         2: {
-          apply patt_and_comm.
+          (* TODO I think we should have an easier way of applying commutativity of [and] *)
+          usePropositionalReasoning. apply patt_and_comm.
           { wf_auto2. }
           { wf_auto2. }
         }
@@ -3706,13 +3715,12 @@ eapply syllogism_intro.
     }
     { wf_auto2. }
   }
-  { wf_auto2. }
 }
 { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
 }
 { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
 
-eapply syllogism_intro.
+eapply syllogism_meta.
 { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
 2: { wf_auto2. }
 2: {
@@ -3730,7 +3738,8 @@ eapply syllogism_intro.
       2: { apply set_evar_fresh_is_fresh'. }
       clear. set_solver.
     }
-    apply ceil_propagation_exists_2.
+    gapply ceil_propagation_exists_2.
+    { apply pile_any. }
     { exact HΓ. }
     { wf_auto2. }
   }
@@ -3743,6 +3752,7 @@ apply membership_monotone.
 { wf_auto2. }
 apply ceil_monotonic.
 { exact HΓ. }
+{ apply pile_any. }
 { wf_auto2. }
 { wf_auto2. }  
 apply membership_symbol_ceil_right_aux_0; assumption.
