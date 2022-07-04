@@ -3338,18 +3338,23 @@ Defined.
 Lemma ceil_and_x_ceil_phi_impl_ceil_phi {Σ : Signature} {syntax : Syntax} Γ (ϕ : Pattern) x:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ( (⌈ patt_free_evar x and ⌈ ϕ ⌉ ⌉) ---> (⌈ ϕ ⌉)).
+Γ ⊢ ( (⌈ patt_free_evar x and ⌈ ϕ ⌉ ⌉) ---> (⌈ ϕ ⌉))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
-eapply syllogism_intro.
+eapply syllogism_meta.
 { wf_auto2. }
 2: { wf_auto2. }
 3: {
-  apply def_def_phi_impl_def_phi; assumption.
+  gapply def_def_phi_impl_def_phi.
+  { apply pile_any. }
+  { assumption. }
+  { assumption. }
 }
 { wf_auto2. }
 apply ceil_monotonic.
 { exact HΓ. }
+{ apply pile_any. }
 { wf_auto2. }
 { wf_auto2. }
 toMyGoal.
