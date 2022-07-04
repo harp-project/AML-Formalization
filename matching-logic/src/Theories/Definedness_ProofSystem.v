@@ -2997,7 +2997,8 @@ Defined.
 Lemma ceil_propagation_exists_1 {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
-Γ ⊢ (⌈ ex, ϕ ⌉) ---> (ex, ⌈ ϕ ⌉).
+Γ ⊢ (⌈ ex, ϕ ⌉) ---> (ex, ⌈ ϕ ⌉)
+using BasicReasoning.
 Proof.
 intros HΓ wfϕ.
 apply Prop_ex_right.
@@ -3005,10 +3006,28 @@ apply Prop_ex_right.
 { wf_auto2. }
 Defined.
 
+(* I think that lemmas like this one should not generate fresh variable themselves,
+   but should be given them (ala "dependency injection").
+   We can always have a wrapper that generates the fresh variables.
+   But a concrete solution for this is for another PR.
+   What I want to avoid is annotations that contain fresh variable generation.
+   Maybe lemmas could be parameterized by a vector of a particular length
+   of distinct fresh variables. We could have a type for that.
+   Like, there would be a parameter
+   [fresh_vars : n_fresh_vars n [ϕ1; ϕ2]].
+   And maybe the whole Definedness module should be parameterized by a variable
+   which is used in the definedness axiom. This way, every lemma will be parameterized
+   twice - or, in general, multiple times.
+
+   This lemma is interesting in that the fresh variable that it generates
+   may be the same as the fresh variable that is used for the definedness axiom.
+   But in general, we may want to have a disjoint set of fresh variables...
+ *)
 Lemma ceil_propagation_exists_2 {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
-Γ ⊢ (ex, ⌈ ϕ ⌉) ---> (⌈ ex, ϕ ⌉).
+Γ ⊢ (ex, ⌈ ϕ ⌉) ---> (⌈ ex, ϕ ⌉)
+using pi_Generic (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 
@@ -3025,9 +3044,8 @@ replace (⌈ ϕ ⌉) with (evar_quantify x 0 (evar_open 0 x (⌈ ϕ ⌉))).
      reflexivity.
 }
 apply Ex_gen.
-{ wf_auto2. }
-{ wf_auto2. }
-2: {  simpl.
+{ try_solve_pile. }
+{  simpl.
       pose proof (Hfr := @set_evar_fresh_is_fresh _ ϕ).
       unfold evar_is_fresh_in in Hfr.
       simpl. set_solver.
@@ -3036,8 +3054,13 @@ unfold evar_open. simpl_bevar_subst.
 fold (evar_open 0 x ϕ).
 apply ceil_monotonic.
 { assumption. }
+{
+  unfold BasicReasoningWithDefFP.
+  try_solve_pile.
+}
 { wf_auto2. }
 { wf_auto2. }
+useBasicReasoning.
 apply Ex_quan.
 { wf_auto2. }
 Defined.
@@ -3045,13 +3068,14 @@ Defined.
 Lemma ceil_propagation_exists_iff {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
-Γ ⊢ (⌈ ex, ϕ ⌉) <---> (ex, ⌈ ϕ ⌉).
+Γ ⊢ (⌈ ex, ϕ ⌉) <---> (ex, ⌈ ϕ ⌉)
+using pi_Generic (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 apply pf_iff_split.
 { wf_auto2. }
 { wf_auto2. }
-- apply ceil_propagation_exists_1; assumption.
+- useBasicReasoning. apply ceil_propagation_exists_1; assumption.
 - apply ceil_propagation_exists_2; assumption.
 Defined.
 
