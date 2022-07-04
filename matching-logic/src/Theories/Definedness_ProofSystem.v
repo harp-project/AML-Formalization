@@ -3082,22 +3082,23 @@ Defined.
 Lemma membership_exists {Σ : Signature} {syntax : Syntax} Γ x ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
-Γ ⊢ (patt_free_evar x ∈ml (ex, ϕ)) <---> (ex, patt_free_evar x ∈ml ϕ).
+Γ ⊢ (patt_free_evar x ∈ml (ex, ϕ)) <---> (ex, patt_free_evar x ∈ml ϕ)
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 unfold "∈ml".
 toMyGoal.
 { wf_auto2. }
-mgRewrite <- (@ceil_propagation_exists_iff Σ syntax Γ (patt_free_evar x and ϕ) HΓ ltac:(wf_auto2)) at 1.
-fromMyGoal. intros _ _.
-assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x and ϕ))).
+mgRewrite <- (useAnyReasoning (@ceil_propagation_exists_iff Σ syntax Γ (patt_free_evar x and ϕ) HΓ ltac:(wf_auto2))) at 1.
+fromMyGoal.
+assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x and ϕ)) using AnyReasoning).
 { (* prenex-exists-and *)
   toMyGoal.
   { wf_auto2. }
-  mgRewrite (@patt_and_comm Σ Γ (patt_free_evar x) (ex, ϕ) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-  mgRewrite <- (@prenex_exists_and_iff Σ Γ ϕ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgRewrite (useAnyReasoning(@patt_and_comm Σ Γ (patt_free_evar x) (ex, ϕ) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+  mgRewrite <- (useAnyReasoning (@prenex_exists_and_iff Σ Γ ϕ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
   remember (evar_fresh (elements ({[x]} ∪ (free_evars ϕ)))) as y.
-  mgSplitAnd; fromMyGoal; intros _ _.
+  mgSplitAnd; fromMyGoal.
   - apply (@strip_exists_quantify_l Σ Γ y).
     { subst y. simpl.
       eapply not_elem_of_larger_impl_not_elem_of.
@@ -3113,8 +3114,7 @@ assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x 
     }
     { wf_auto2. }
     apply ex_quan_monotone.
-    { wf_auto2. }
-    { wf_auto2. }
+    { try_solve_pile. }
     unfold evar_open. simpl_bevar_subst.
     toMyGoal.
     { wf_auto2. }
@@ -3136,8 +3136,7 @@ assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x 
     }
     { wf_auto2. }
     apply ex_quan_monotone.
-    { wf_auto2. }
-    { wf_auto2. }
+    { try_solve_pile. }
     unfold evar_open. simpl_bevar_subst.
     toMyGoal.
     { wf_auto2. }
@@ -3148,7 +3147,8 @@ assert (Htmp: Γ ⊢ (patt_free_evar x and ex, ϕ) <---> (ex, (patt_free_evar x 
 toMyGoal.
 { wf_auto2. }
 mgRewrite Htmp at 1.
-fromMyGoal. intros _ _.
+fromMyGoal.
+usePropositionalReasoning.
 apply pf_iff_equiv_refl.
 { wf_auto2. }
 Defined.
