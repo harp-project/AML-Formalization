@@ -3157,40 +3157,41 @@ Defined.
 Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ((⌈ patt_free_evar x and ϕ ⌉) ---> (⌊ ⌈ patt_free_evar x and ϕ ⌉  ⌋)).
+Γ ⊢ ((⌈ patt_free_evar x and ϕ ⌉) ---> (⌊ ⌈ patt_free_evar x and ϕ ⌉  ⌋))
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 unfold patt_total.
-eapply syllogism_intro.
+eapply syllogism_meta.
 { wf_auto2. }
 2: { wf_auto2. }
 3: {
   apply ProofMode.modus_tollens.
-  { wf_auto2. }
-  2: {
+  {
     apply ceil_monotonic.
     { exact HΓ. }
+    { apply pile_any. }
     { wf_auto2. }
     2: {
-      apply membership_not_2.
+      gapply membership_not_2.
+      { apply pile_any. }
       { wf_auto2. }
       { exact HΓ. }
     }
     { wf_auto2. }
   }
-  { wf_auto2. }
 }
 { wf_auto2. }
 toMyGoal.
 { wf_auto2. }
 
-mgRewrite (@not_not_iff Σ Γ (⌈patt_free_evar x and ϕ ⌉) ltac:(wf_auto2)) at 1.
+mgRewrite (useAnyReasoning (@not_not_iff Σ Γ (⌈patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))) at 1.
 fold (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉).
-mgRewrite (@not_not_iff Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉) ltac:(wf_auto2)) at 1.
+mgRewrite (useAnyReasoning (@not_not_iff Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉ or ! ⌈ patt_free_evar x ∈ml (! ϕ) ⌉) ltac:(wf_auto2))) at 1.
 fold ((⌈ patt_free_evar x and ϕ ⌉ and ⌈ patt_free_evar x ∈ml (! ϕ) ⌉)).
 unfold "∈ml".
-fromMyGoal. intros _ _.
-eapply cast_proof.
+fromMyGoal.
+eapply cast_proof'.
 {
   replace (⌈ patt_free_evar x and ϕ ⌉)
           with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ))
@@ -3200,7 +3201,8 @@ eapply cast_proof.
     by reflexivity.
   reflexivity.
 }
-apply Singleton_ctx.
+gapply Singleton_ctx.
+{ apply pile_any. }
 { exact wfϕ. }
 Defined.
 
