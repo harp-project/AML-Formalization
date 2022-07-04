@@ -3289,10 +3289,12 @@ Defined.
 Lemma membership_symbol_ceil_left_aux_0 {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ϕ ---> (ex, ⌈ b0 and ϕ ⌉).
+Γ ⊢ ϕ ---> (ex, ⌈ b0 and ϕ ⌉)
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 apply membership_elimination.
+{ apply pile_any. }
 { wf_auto2. }
 { assumption. }
 remember (fresh_evar ϕ) as x.
@@ -3310,18 +3312,17 @@ replace (b0 ∈ml (ϕ ---> ex , ⌈ b0 and ϕ ⌉))
 }
 
 apply universal_generalization.
+{ apply pile_any. }
 { wf_auto2. }
 unfold evar_open. simpl_bevar_subst. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
-wf_auto2.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
-wf_auto2.
 toMyGoal.
 { wf_auto2. }
-mgRewrite (@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-mgRewrite (@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2)) at 1.
+mgRewrite ((@membership_imp Σ syntax Γ x ϕ (ex, ⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+mgRewrite ((@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2))) at 1.
 mgIntro.
 remember (fresh_evar ϕ) as y.
 mgApplyMeta (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2)).
