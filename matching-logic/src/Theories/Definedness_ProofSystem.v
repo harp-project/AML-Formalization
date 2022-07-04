@@ -2919,25 +2919,23 @@ exact H.
 Defined.
 
 
-Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ :
+Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i :
 theory ⊆ Γ ->
+ProofInfoLe BasicReasoningWithDefFP i ->
 well_formed ϕ₁ ->
 well_formed ϕ₂ ->
-Γ ⊢ ϕ₁ ---> ϕ₂ ->
-Γ ⊢ ⌊ ϕ₁ ⌋ ---> ⌊ ϕ₂ ⌋.
+Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
+Γ ⊢ ⌊ ϕ₁ ⌋ ---> ⌊ ϕ₂ ⌋ using i.
 Proof.
-intros HΓ wfϕ₁ wfϕ₂ H.
+intros HΓ pile wfϕ₁ wfϕ₂ H.
 unfold patt_total.
 apply ProofMode.modus_tollens.
-{ wf_auto2. }
-{ wf_auto2. }
 apply ceil_monotonic.
 { assumption. }
+{ exact pile. }
 { wf_auto2. }
 { wf_auto2. }
 apply ProofMode.modus_tollens.
-{ wf_auto2. }
-{ wf_auto2. }
 exact H.
 Defined.
 
