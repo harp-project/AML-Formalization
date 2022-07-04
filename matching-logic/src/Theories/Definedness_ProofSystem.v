@@ -2942,17 +2942,16 @@ Defined.
 Lemma double_not_ceil_alt {Σ : Signature} {syntax : Syntax} Γ ϕ :
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ( ⌈ ! ⌈ ϕ ⌉ ⌉ ---> (! ⌈ ϕ ⌉)) ->
-Γ ⊢ ( ⌈ ϕ ⌉ ---> ! ( ⌈ ! ⌈ ϕ ⌉ ⌉)).
+Γ ⊢ ( ⌈ ! ⌈ ϕ ⌉ ⌉ ---> (! ⌈ ϕ ⌉)) using AnyReasoning ->
+Γ ⊢ ( ⌈ ϕ ⌉ ---> ! ( ⌈ ! ⌈ ϕ ⌉ ⌉)) using AnyReasoning.
 Proof.
 intros HΓ wfϕ H.
 toMyGoal.
 { wf_auto2. }
-mgRewrite (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2)) at 1.
-fromMyGoal. intros _ _.
+Check @usePropositionalReasoning.
+mgRewrite (@usePropositionalReasoning Σ Γ _ AnyReasoning (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
+fromMyGoal.
 apply ProofMode.modus_tollens.
-{ wf_auto2. }
-{ wf_auto2. }
 exact H.
 Defined.
 
