@@ -3233,7 +3233,8 @@ Defined.
 Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ (⌈ patt_free_evar x and ϕ ⌉) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉.
+Γ ⊢ (⌈ patt_free_evar x and ϕ ⌉) ---> ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉
+using AnyReasoning.
 Proof.
 intros HΓ wfϕ.
 
@@ -3241,7 +3242,7 @@ toMyGoal.
 { wf_auto2. }
 mgIntro.
 mgApplyMeta (@membership_symbol_ceil_aux_aux_0 Σ syntax Γ x ϕ HΓ wfϕ) in 0.
-fromMyGoal. intros _ _.
+fromMyGoal.
 unfold patt_total.
 fold (⌈ ! ⌈ patt_free_evar x and ϕ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉ ⌉).
 toMyGoal.
@@ -3251,20 +3252,21 @@ mgRewrite <- (@ceil_compat_in_or Σ syntax Γ (! ⌈ patt_free_evar x and ϕ ⌉
 unshelve (mgApplyMeta (@ceil_monotonic Σ syntax Γ
                              (patt_free_evar y)
                              (! ⌈ patt_free_evar x and ϕ ⌉ or patt_free_evar y and ⌈ patt_free_evar x and ϕ ⌉)
-                             HΓ ltac:(wf_auto2) ltac:(wf_auto2) _
+                             AnyReasoning HΓ _ ltac:(wf_auto2) ltac:(wf_auto2) _
             )).
+{ apply pile_any. }
 {
 
-  assert (Helper: forall ϕ₁ ϕ₂, well_formed ϕ₁ -> well_formed ϕ₂ -> Γ ⊢ (! ϕ₁ or ϕ₂) ---> (! ϕ₁ or (ϕ₂ and ϕ₁))).
+  assert (Helper: forall ϕ₁ ϕ₂, well_formed ϕ₁ -> well_formed ϕ₂ -> Γ ⊢ (! ϕ₁ or ϕ₂) ---> (! ϕ₁ or (ϕ₂ and ϕ₁)) using AnyReasoning).
   {
     intros ϕ₁ ϕ₂ wfϕ₁ wfϕ₂.
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    mgAdd (@A_or_notA Σ Γ ϕ₁ ltac:(wf_auto2)).
+    mgAdd (useAnyReasoning (@A_or_notA Σ Γ ϕ₁ ltac:(wf_auto2))).
     mgDestructOr 0; mgDestructOr 1.
     - (* TODO: mgExFalso *)
-      mgApplyMeta (@false_implies_everything Σ Γ (! ϕ₁ or (ϕ₂ and ϕ₁)) ltac:(wf_auto2)).
+      mgApplyMeta (useAnyReasoning (@false_implies_everything Σ Γ (! ϕ₁ or (ϕ₂ and ϕ₁)) ltac:(wf_auto2))).
       mgApply 1. mgExactn 0.
     - mgRight. mgSplitAnd. mgExactn 1. mgExactn 0.
     - mgLeft. mgExactn 0.
@@ -3277,8 +3279,9 @@ unshelve (mgApplyMeta (@ceil_monotonic Σ syntax Γ
   mgRight.
   mgExactn 0.
 }
-fromMyGoal. intros _ _.
-apply defined_evar.
+fromMyGoal.
+gapply defined_evar.
+{ apply pile_any. }
 { exact HΓ. }
 Defined.
 
