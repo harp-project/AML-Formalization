@@ -404,7 +404,7 @@ Section gen.
     | P1 _ _ _ _ _ => 1
     | P2 _ _ _ _ _ _ _ => 1
     | P3 _ _ _ => 1
-    | Modus_ponens _ _ _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
+    | Modus_ponens _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
     | Ex_quan _ _ _ _ => 1
     | Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
     | Prop_bott_left _ _ _ => 1
@@ -487,7 +487,7 @@ Section gen.
               ++ acc)
            pfs' ;
 
-    proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q _ _ pfp pfpiq)))::pfs')
+    proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
            ((reverse (pattern2proof (to_NamedPattern2 q)))

@@ -278,7 +278,7 @@ Section FOL_helpers.
     intros H1 H2.
     unshelve (eexists).
     {
-      eapply (Modus_ponens _ _ _).
+      eapply (ProofSystem.Modus_ponens _ _ _).
       { apply H1. }
       { apply H2. }
     }
