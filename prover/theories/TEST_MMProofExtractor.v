@@ -344,7 +344,8 @@ Extraction "proof_1_mm.hs" MMTest.proof_1.
 Extraction "proof_2_mm.hs" MMTest.proof_2.
 Extraction "proof_3_mm.hs" MMTest.proof_3.
 Extraction "proof_4_mm.hs" MMTest.proof_4.
-Extraction "proof_5_mm.hs" MMTest.proof_5.
+(* This is too large for CI. *)
+(*Extraction "proof_5_mm.hs" MMTest.proof_5.*)
 Extraction "proof_6_mm.hs" MMTest.proof_6.
 Extraction "proof_7_mm.hs" MMTest.proof_7.
 Extraction "proof_8_mm.hs" MMTest.proof_8.
