@@ -449,25 +449,17 @@ Section FOL_helpers.
     Γ ⊢ ϕ using BasicReasoning ->
     Γ ⊢ ϕ using i.
   Proof.
-    intros [pf Hpf].
-    exists pf.
-    unfold BasicReasoning in Hpf.
-    destruct i; simpl in *; constructor; simpl.
-    (* [abstract] does not really work here *)
-    abstract(
-    destruct i;
-    [(unfold BasicReasoning in Hpf; simpl in Hpf; apply Hpf)
-    |(destruct gpi; simpl;
-      destruct Hpf; simpl in *;
-      constructor; simpl;
-      [(exact I)
-      |(set_solver)
-      |(set_solver)
-      |(destruct (uses_kt pf); simpl in *; try congruence)
-      |(set_solver)
-      ]
-    )]).
-  Qed.
+    intros H.
+    pose proof (Hpf := proj2_sig H).
+    remember (proj1_sig H) as _H.
+    exists (_H).
+    clear Heq_H.
+    abstract (
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4];
+    destruct i; constructor; simpl in *;
+    [set_solver|set_solver|idtac|set_solver];
+    (destruct (uses_kt _H); simpl in *; try congruence)).
+  Defined.
 
   Lemma reorder_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
     well_formed A ->
