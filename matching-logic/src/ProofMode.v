@@ -1177,7 +1177,7 @@ Qed.
   (* TODO rename into Prop_bot_ctx *)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
-    using pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
+    using (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
   Proof.
     remember (frames_of_AC C) as foC.
     move: foC HeqfoC.
@@ -1233,7 +1233,7 @@ Qed.
 
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
     {pile : ProofInfoLe
-     (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
+     ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
      i
     }
     :
@@ -1247,15 +1247,10 @@ Qed.
     assert (wfB: well_formed B) by wf_auto2.
     clear pf HWF.
 
-    destruct i.
-    {
-      exfalso. eapply not_generic_in_prop. apply pile.
-    }
-
     move: wfA wfB H.
     induction C; intros WFA WFB H; simpl in *.
     - exact H.
-    - destruct gpi.
+    - destruct i.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!. simpl in *.
       apply Framing_left with (wfψ := Prf).
@@ -1268,7 +1263,7 @@ Qed.
       2: exact H.
       apply pile_evs_svs_kt; try assumption.
       set_solver.
-    - destruct gpi.
+    - destruct i.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!. simpl in *.
       apply Framing_right with (wfψ := Prf).
@@ -1284,7 +1279,7 @@ Qed.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
-    (i : ProofInfo) {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
     :
     well_formed A ->
     Γ ⊢ A using i ->
@@ -1317,7 +1312,7 @@ Qed.
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
   :
     well_formed A ->
     Γ ⊢ (A ---> Bot) using i ->
@@ -1848,13 +1843,8 @@ Proof.
   }
   {
     simpl.
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     constructor.
-    {
-      destruct i;[|exact I].
-      rewrite indifferent_to_cast_propositional_only.
-      exact Hpf1.
-    }
     {
       rewrite elem_of_subseteq in Hpf2.
       rewrite elem_of_subseteq.
@@ -1954,13 +1944,8 @@ Proof.
     exact pf.
   }
   { abstract(
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4];
+    destruct Hpf as [Hpf2 Hpf3 Hpf4];
     constructor; [
-    (
-      destruct i;[|exact I];
-      rewrite indifferent_to_cast_propositional_only;
-      exact Hpf1
-    )|
     (
       rewrite elem_of_subseteq in Hpf2;
       rewrite elem_of_subseteq;
@@ -2109,18 +2094,6 @@ Ltac simplLocalContext :=
 
 #[global]
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
-
-
- Lemma mgUseBasicReasoning
-  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
-  @mkMyGoal Σ Γ l g BasicReasoning ->
-  @mkMyGoal Σ Γ l g i.
-Proof.
-  intros H wf1 wf2.
-  specialize (H wf1 wf2).
-  apply useBasicReasoning.
-  exact H.
-Defined.
 
 Ltac useBasicReasoning :=
   lazymatch goal with
@@ -3626,7 +3599,7 @@ Section FOL_helpers.
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott)
-    using (pi_Generic
+    using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
     apply pf_iff_split.
@@ -3660,7 +3633,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
+        [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
@@ -3679,7 +3652,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
+        [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
@@ -3706,7 +3679,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
-    using (pi_Generic
+    using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
     intros wfp wfq.
@@ -3793,8 +3766,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -3817,8 +3789,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -3841,8 +3812,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -3861,8 +3831,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -3872,7 +3841,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma pile_impl_allows_gen_x x gpi svs kt fp:
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) (pi_Generic gpi) ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) ( gpi) ->
     x ∈ pi_generalized_evars gpi.
   Proof.
     intros [H].
@@ -3884,54 +3853,23 @@ Section FOL_helpers.
     {
       constructor; simpl.
       {
-        exact I.
+        clear. set_solver.
       }
       {
-        case_match.
-        cut ((uses_of_ex_gen ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0) = ∅).
-        {
-          set_solver.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_no_uses_ex_gen_2.
-        apply Hp1.
+        clear. set_solver.
       }
       {
-        case_match.
-        cut (uses_of_svar_subst ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅).
-        {
-          set_solver.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_no_uses_svar_2.
-        apply Hp1.
+        reflexivity.
       }
       {
-        case_match.
-        cut (uses_kt x0 = false).
-        {
-          intros H''. rewrite H''. simpl. reflexivity.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_noKT.
-        apply Hp1.
-      }
-      {
-        case_match.
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        cut (framing_patterns ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅ ).
-        {
-          intros. rewrite H0. set_solver.
-        }
-        apply propositional_implies_no_frame.
-        apply Hp1.
+        clear. set_solver.
       }
     }
     inversion H'. simpl in *. clear -pwi_pf_ge0. set_solver.
   Qed.
 
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
-    {pile : ProofInfoLe (pi_Generic
+    {pile : ProofInfoLe (
             {| pi_generalized_evars := {[x]};
                pi_substituted_svars := ∅;
                pi_uses_kt := false ;
@@ -3952,15 +3890,8 @@ Section FOL_helpers.
     }
     {
       simpl.
-      pose proof (Hnot := not_exgen_x_in_prop).
-      specialize (Hnot x).
       constructor; simpl.
       {
-        destruct i;[|exact I].
-        contradiction.
-      }
-      {
-        destruct i;[contradiction|].
         rewrite elem_of_subseteq. intros x0 Hx0.
         rewrite elem_of_gset_to_coGset in Hx0.
         rewrite elem_of_union in Hx0.
@@ -3978,17 +3909,14 @@ Section FOL_helpers.
         }
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_svs0.
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_kt0.
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_fp0.
       }
@@ -3996,7 +3924,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma pile_basic_generic eg svs kt fp:
-    ProofInfoLe BasicReasoning (pi_Generic (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
+    ProofInfoLe BasicReasoning ( (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
   Proof.
     constructor.
     intros Γ ϕ pf Hpf.
@@ -4084,7 +4012,7 @@ Section FOL_helpers.
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
     Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
-    using (pi_Generic
+    using (
     {| pi_generalized_evars := {[x]};
        pi_substituted_svars := ∅;
        pi_uses_kt := false ;
@@ -5015,7 +4943,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
     Γ ⊢ ϕ using i ->
     Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
@@ -5040,7 +4968,7 @@ Section FOL_helpers.
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
-    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
   Proof.
     intros wfϕ.
    
@@ -5076,7 +5004,7 @@ Section FOL_helpers.
 End FOL_helpers.
 
 Lemma not_kt_in_prop {Σ : Signature} :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true, FP := ∅)) pi_Propositional.
+  ~ ProofInfoLe ( (ExGen := ∅, SVSubst := ∅, KT := true, FP := ∅)) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5099,7 +5027,7 @@ Proof.
 Qed.
 
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) (pi_Generic gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) ( gpi) ->
   pi_uses_kt gpi.
 Proof.
   intros [H].
@@ -5123,7 +5051,7 @@ Qed.
 
 Lemma Knaster_tarski {Σ : Signature}
   (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
-  {pile : ProofInfoLe (pi_Generic
+  {pile : ProofInfoLe (
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
@@ -5174,7 +5102,7 @@ Defined.
 
 
 Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := ∅)) pi_Propositional.
+  ~ ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := ∅)) pi_Propositional.
 Proof.
   intros [HContra].
   specialize (HContra ∅).
@@ -5197,7 +5125,7 @@ Proof.
 Qed.
 
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt fp:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) (pi_Generic gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) ( gpi) ->
   X ∈ pi_substituted_svars gpi.
 Proof.
   intros [H].
@@ -5221,7 +5149,7 @@ Qed.
 
 Lemma Svar_subst {Σ : Signature}
   (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
-  {pile : ProofInfoLe (pi_Generic
+  {pile : ProofInfoLe (
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
@@ -5300,7 +5228,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i->
@@ -5412,7 +5340,7 @@ Section FOL_helpers.
       apply svar_quantify_closed_ex. assumption.
     }
     
-    (* i = pi_Generic gpi *)
+    (* i =  gpi *)
     destruct i.
     {
       exfalso.
@@ -6044,7 +5972,7 @@ Qed.
   (q_sub_EvS: free_evars q ⊆ EvS)
   (ψ_sub_EvS : free_evars ψ ⊆ EvS)
   (Heqi': i' =
-        pi_Generic
+        
           (ExGen := list_to_set
                       (evar_fresh_seq EvS
                          (maximal_exists_depth_of_evar_in_pattern' exdepth E
@@ -6061,10 +5989,10 @@ Qed.
                   else true),
            FP := ∅
           ))
-  (pile: ProofInfoLe i' (pi_Generic gpi))
+  (pile: ProofInfoLe i' ( gpi))
   (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
-     using pi_Generic gpi) :
-  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using pi_Generic gpi.
+     using  gpi) :
+  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using  gpi.
   Proof.
     apply pf_evar_open_free_evar_subst_equiv_sides in IH.
     2: { exact HxneqE. }
@@ -6316,7 +6244,7 @@ End FOL_helpers.
   (wfψ2: well_formed ψ2)
   (wfp: well_formed p)
   (wfq: well_formed q)
-  (pile: ProofInfoLe (pi_Generic (
+  (pile: ProofInfoLe ( (
     ExGen := ∅, 
     SVSubst := ∅, 
     KT := false, 
@@ -6420,17 +6348,17 @@ End FOL_helpers.
   (mudepth : nat)
   (gpi : GenericProofInfo)
   (pile : ProofInfoLe
-   (pi_Generic
+   (
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
      FP :=  gset_to_coGset (@frames_on_the_way_to_hole' Σ EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
-   (pi_Generic gpi)
+   ( gpi)
   )
-  (pf : Γ ⊢ (p <---> q) using (pi_Generic gpi)) :
-      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using (pi_Generic gpi).
+  (pf : Γ ⊢ (p <---> q) using ( gpi)) :
+      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using ( gpi).
   Proof.
 
     move: ψ wfψ Hsz EvS SvS pile
@@ -7055,16 +6983,16 @@ End FOL_helpers.
   (wfq : well_formed q = true)
   (wfC: PC_wf C)
   (pile : ProofInfoLe
-   (pi_Generic
+   (
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
     )
-   (pi_Generic gpi)
+   ( gpi)
   ):
-    Γ ⊢ (p <---> q) using (pi_Generic gpi) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))) using (pi_Generic gpi).
+    Γ ⊢ (p <---> q) using ( gpi) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))) using ( gpi).
   Proof.
     intros Hiff.
     assert (well_formed (p <---> q)).
@@ -7099,7 +7027,7 @@ End FOL_helpers.
 End FOL_helpers.
 
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+  (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
@@ -7132,7 +7060,7 @@ Proof.
     }
     reflexivity.
   }
-        (* i = pi_Generic gpi *)
+        (* i =  gpi *)
   destruct i.
   {
     exfalso.
@@ -7149,7 +7077,7 @@ Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7164,7 +7092,7 @@ Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7399,17 +7327,17 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   (wfC : PC_wf C)
   (gpi : GenericProofInfo)
   (pile : ProofInfoLe
-  (pi_Generic
+  (
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
       FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))  
     )
-    (pi_Generic gpi)
+    ( gpi)
   ):
   Pattern.wf l ->
-  Γ ⊢ p <---> q using (pi_Generic gpi) ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using (pi_Generic gpi).
+  Γ ⊢ p <---> q using ( gpi) ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using ( gpi).
 Proof.
   intros wfl Himp.
   induction l; simpl in *.
@@ -7474,10 +7402,10 @@ Qed.
 Lemma MyGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : GenericProofInfo)
   (wfC : PC_wf C)
-  (pf : Γ ⊢ p <---> q using (pi_Generic gpi)) :
-  @mkMyGoal Σ Γ l (emplace C q) (pi_Generic gpi) ->
+  (pf : Γ ⊢ p <---> q using ( gpi)) :
+  @mkMyGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
-  (pi_Generic
+  (
      (ExGen := list_to_set
                  (evar_fresh_seq
                     (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q
@@ -7498,10 +7426,10 @@ Lemma MyGoal_rewriteIff
              then false
              else true
              ),
-      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q (pi_Generic gpi) pf) (@extract_wfq Σ Γ p q (pi_Generic gpi) pf))
+      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q ( gpi) pf) (@extract_wfq Σ Γ p q ( gpi) pf))
       ))
-      (pi_Generic gpi)) ->
-  @mkMyGoal Σ Γ l (emplace C p) (pi_Generic gpi).
+      ( gpi)) ->
+  @mkMyGoal Σ Γ l (emplace C p) ( gpi).
 Proof.
   rename pf into Hpiffq.
   intros H pile.
@@ -7720,7 +7648,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     =>
     unfold AnyReasoning;
     lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p (pi_Generic ?gpi))]
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p ( ?gpi))]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
@@ -7877,7 +7805,7 @@ Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
-  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -7925,7 +7853,7 @@ Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -7990,7 +7918,7 @@ Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply conj_intro_meta.
@@ -8149,7 +8077,7 @@ Abort.
 
 Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
@@ -8181,7 +8109,7 @@ Defined.
 
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
-  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
+  (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
   Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
 Proof.
   intros wfϕ pile.
@@ -8198,7 +8126,7 @@ Defined.
 Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
   evar_is_fresh_in x ϕ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, ϕ) using i ->
   Γ ⊢ (evar_open 0 x ϕ) using i.
 Proof.
@@ -8227,7 +8155,7 @@ Defined.
 Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
@@ -8288,7 +8216,7 @@ Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list P
   (i : ProofInfo) :
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   bevar_occur ϕ₁ 0 = false ->
   @mkMyGoal Σ Γ (ϕ₁::l) g i -> 
  @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
@@ -8318,7 +8246,7 @@ Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ i:
   well_formed (ex, ϕ₁) ->
   well_formed (ex, ϕ₂) ->
   well_formed ϕ₃ ->
-  ProofInfoLe (pi_Generic (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
 Proof.
