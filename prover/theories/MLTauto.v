@@ -359,7 +359,7 @@ Section ml_tauto.
         reflexivity
        |];
       assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)) using AnyReasoning);
-      [unshelve (eapply prf_equiv_congruence); unfold PC_wf; simpl; try_wfauto2; try apply pile_any; shelve|];
+      [unshelve (eapply prf_equiv_congruence); unfold PC_wf; simpl; try_wfauto2; try apply pile_any; try assumption|];
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
       unfold ctx in Hctx; unfold ctx' in Hctx; simpl in Hctx; unfold emplace in Hctx; simpl in Hctx;
@@ -508,10 +508,10 @@ Section ml_tauto.
 
       assert (Step4: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
-                                   and (! p1' or ! p2' ---> ! (! p1' or ! p2' ---> ⊥)))
+                                   and (! p1' or ! p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning
                       ->
                       (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
-                                              and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))))
+                                              and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning))
              ).
       {
         intros BigH.
@@ -528,6 +528,7 @@ Section ml_tauto.
       }
       apply Step4. clear Step4.
 
+      usePropositionalReasoning.
       apply conj_intro_meta; auto 10.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
@@ -593,11 +594,11 @@ Section ml_tauto.
 
       assert (Step1: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> negate p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
                                 
              ).
       {
@@ -617,11 +618,11 @@ Section ml_tauto.
 
       assert (Step2: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
                                 
              ).
       {
@@ -641,11 +642,11 @@ Section ml_tauto.
 
       assert (Step3: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
                                 
              ).
       {
@@ -665,11 +666,11 @@ Section ml_tauto.
 
       assert (Step4: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and ! p2' ---> ! (! p1' ---> p2'))))
+                                   and (! p1' and ! p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))))
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
                                 
              ).
       {
@@ -686,12 +687,14 @@ Section ml_tauto.
         .
       }
       apply Step4. clear Step4.
+      usePropositionalReasoning.
       apply and_of_negated_iff_not_impl; auto.
     - unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
       rewrite !andbT in Hwfp.
       fold (well_formed_closed p1') in Hwfp.
       fold (well_formed p1') in Hwfp.
+      usePropositionalReasoning.
       apply conj_intro_meta; auto.
       + apply not_not_elim; auto.
       + apply not_not_intro; auto.
@@ -746,10 +749,10 @@ Section ml_tauto.
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                and (p1 and negate p2 ---> ! (p1 ---> p2))))
+                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
                      ->
                      (Γ ⊢ ((! (p1 ---> p2) ---> p1 and negate p2)
-                                and (p1 and negate p2 ---> ! (p1 ---> p2))))
+                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
                        
              ).
       {
@@ -768,10 +771,10 @@ Section ml_tauto.
       apply Step1. clear Step1.
 
       assert (Step2: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                             and (p1 and ! p2 ---> ! (p1 ---> p2))))
+                                             and (p1 and ! p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
                      ->
                      (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                             and (p1 and negate p2 ---> ! (p1 ---> p2))))
+                                             and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
                        
              ).
       {
@@ -788,6 +791,7 @@ Section ml_tauto.
         .
       }
       apply Step2. clear Step2.
+      usePropositionalReasoning.
       apply and_impl_2; auto.
   Qed.
 
