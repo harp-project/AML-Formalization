@@ -24,11 +24,21 @@ Section freshness.
   
   Definition evar_fresh (l : list evar) : evar := fresh l.
   Definition svar_fresh (l : list svar) : svar := fresh l.
+
+  Definition evar_fresh_s (s : EVarSet) : evar := evar_fresh (elements s).
+  Definition svar_fresh_s (s : SVarSet) : svar := svar_fresh (elements s).
   
-  Definition fresh_evar ϕ := evar_fresh (elements (free_evars ϕ)).
-  Definition fresh_svar ϕ := svar_fresh (elements (free_svars ϕ)).
+  Definition fresh_evar ϕ := evar_fresh_s (free_evars ϕ).
+  Definition fresh_svar ϕ := svar_fresh_s (free_svars ϕ).
 
   (* Lemmas about fresh variables *)
+
+  Lemma set_evar_fresh_is_fresh'' (S : list evar) : (evar_fresh S) ∉ S.
+  Proof.
+    intros H.
+    pose proof (Hf := @infinite_is_fresh _ evar_infinite S).
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
+  Qed.
 
   Lemma set_evar_fresh_is_fresh' (S : EVarSet) : evar_fresh (elements S) ∉ S.
   Proof.
@@ -48,6 +58,13 @@ Section freshness.
   Qed.
 
   Hint Resolve set_evar_fresh_is_fresh : core.
+
+  Lemma set_svar_fresh_is_fresh'' (S : list svar) : (svar_fresh S) ∉ S.
+  Proof.
+    intros H.
+    pose proof (Hf := @infinite_is_fresh _ svar_infinite S).
+    unfold evar_fresh in H. unfold fresh in Hf. contradiction.
+  Qed.
 
   Lemma set_svar_fresh_is_fresh' (S : SVarSet) : svar_fresh (elements S) ∉ S.
   Proof.
@@ -344,7 +361,7 @@ End freshness.
 
 
 Ltac remember_fresh_svars :=
-  unfold fresh_svar in *;
+  unfold fresh_svar,svar_fresh_s in *;
   repeat(
       match goal with
       | |- context G [svar_fresh ?Y] =>
@@ -361,7 +378,7 @@ Ltac remember_fresh_svars :=
     ).
 
 Ltac remember_fresh_evars :=
-  unfold fresh_evar in *;
+  unfold fresh_evar,evar_fresh_s in *;
   repeat(
       match goal with
       | |- context G [evar_fresh ?Y] =>
@@ -381,14 +398,13 @@ Ltac remember_fresh_evars :=
 (* assumes a goal `x₁ ≠ x₂` and a hypothesis of the shape `x₁ = fresh_evar ...`
      or `x₂ = fresh_evar ...`
  *)
-Ltac solve_fresh_neq :=
-  subst; remember_fresh_evars;
+Ltac solve_fresh_neq' :=
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -402,22 +418,23 @@ Ltac solve_fresh_neq :=
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
           apply not_elem_of_singleton_1 in H;
-          first [ exact H | clear H]
+          first [ exact H | clear dependent H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
     fail
   end.
 
+Ltac solve_fresh_neq :=   subst; remember_fresh_evars; solve_fresh_neq'.
 
 Ltac solve_fresh_svar_neq :=
   subst; remember_fresh_svars;
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -431,10 +448,70 @@ Ltac solve_fresh_svar_neq :=
         match goal with
         | H: (not (elem_of ?x (singleton ?y))) |- _ =>
           apply not_elem_of_singleton_1 in H;
-          first [ exact H | clear H]
+          first [ exact H | clear dependent H]
         | H: (not (elem_of ?x (union ?l ?r))) |- _ => (apply not_elem_of_union in H; destruct H)
         end
       );
     fail
   end.
 
+
+
+Definition evar_fresh_dep {Σ : Signature} (S : EVarSet) : {x : evar & x ∉ S} :=
+  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (@set_evar_fresh_is_fresh' Σ S).
+
+Definition svar_fresh_dep {Σ : Signature} (S : SVarSet) : {X : svar & X ∉ S} :=
+  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (@set_svar_fresh_is_fresh' _ S).
+
+
+Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
+  match n with
+  | 0 => []
+  | S n' =>
+    let x := (evar_fresh_s avoid) in
+    x :: evar_fresh_seq ({[x]} ∪ avoid) (n')
+  end.
+
+Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar :=
+  match n with
+   | 0 => []
+   | S n' =>
+     let X := (svar_fresh_s avoid) in
+     X :: svar_fresh_seq ({[X]} ∪ avoid) (n')
+  end.
+
+  Lemma evar_fresh_seq_disj {Σ : Signature} S n:
+    list_to_set (evar_fresh_seq S n) ## S.
+  Proof.
+  move: S.
+  induction n; intros S; simpl in *; unfold evar_fresh_s in *.
+  {
+    set_solver.
+  }
+  {
+    specialize (IHn ({[evar_fresh (elements S)]} ∪ S)).
+    rewrite disjoint_union_l.
+    split.
+    2: { set_solver. }
+    rewrite disjoint_singleton_l.
+    apply set_evar_fresh_is_fresh'.
+  }
+  Qed.
+
+  Lemma svar_fresh_seq_disj {Σ : Signature} S n:
+  list_to_set (svar_fresh_seq S n) ## S.
+Proof.
+move: S.
+induction n; intros S; simpl in *; unfold evar_fresh_s in *.
+{
+  set_solver.
+}
+{
+  specialize (IHn ({[svar_fresh (elements S)]} ∪ S)).
+  rewrite disjoint_union_l.
+  split.
+  2: { set_solver. }
+  rewrite disjoint_singleton_l.
+  apply set_svar_fresh_is_fresh'.
+}
+Qed.

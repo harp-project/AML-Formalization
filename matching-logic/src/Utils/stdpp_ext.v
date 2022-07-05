@@ -1,7 +1,7 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type.
-From stdpp Require Import pmap gmap mapset fin_sets sets list propset.
+From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
@@ -94,11 +94,10 @@ Proof.
       reflexivity.
 Qed.
 
-
 (* [1,2,3,4,5] -> [5,4,3,2,1] -> [4,3,2,1] -> [1,2,3,4] *)
 Lemma rev_tail_rev_app_last A (l : list A) (xlast : A):
-  last l = Some xlast ->
-  rev (tail (rev l)) ++ [xlast] = l.
+  stdpp.list.last l = Some xlast ->
+  (rev (tail (rev l)) ++ [xlast]) = l.
 Proof.        
   move: xlast.
   induction l.
@@ -145,7 +144,7 @@ Proof.
 Qed.
 
 
-Lemma last_rev_head A (l : list A) (x : A) : last (x :: l) = hd_error (rev l ++ [x]).
+Lemma last_rev_head A (l : list A) (x : A) : stdpp.list.last (x :: l) = hd_error (rev l ++ [x]).
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -164,7 +163,7 @@ Proof.
 Qed.
 
 (* The same lemma for stdpp's `reverse *)
-Lemma last_reverse_head A (l : list A) (x : A) : last (x :: l) = hd_error (reverse l ++ [x]).
+Lemma last_reverse_head A (l : list A) (x : A) : stdpp.list.last (x :: l) = hd_error (reverse l ++ [x]).
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -225,7 +224,7 @@ Definition tail_skip_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :=
   reverse (skip_eq (reverse l)).
 
 Lemma tail_skip_eq_last_not_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :
-  ∀ x y, last (tail_skip_eq l) = Some (x, y) -> x <> y.
+  ∀ x y, stdpp.list.last (tail_skip_eq l) = Some (x, y) -> x <> y.
 Proof.
   intros x y H.
   unfold tail_skip_eq in H.
@@ -272,7 +271,7 @@ Abort.
 
 Lemma common_length_rev {A} {eqdec: EqDecision A} (x y : A) (xs ys : list A) :
   common_length (reverse (x::xs)) (y::ys) =
-  match (decide ((last (x::xs)) = Some y)) with
+  match (decide ((stdpp.list.last (x::xs)) = Some y)) with
   | left _ => S (common_length (reverse (tail (reverse (x::xs)))) ys)
   | right _ => 0
   end.
@@ -285,7 +284,7 @@ Proof.
 Abort.
 
 Lemma last_app_singleton {A} (m : A) (l : list A) :
-  last (l ++ [m]) = Some m.
+  stdpp.list.last (l ++ [m]) = Some m.
 Proof.
   induction l.
   - reflexivity.
@@ -311,24 +310,24 @@ Proof.
     move: ys H.
     induction xs as [|x xs]; intros ys H.
     + rewrite zip_with_nil_r.
-      apply Forall_nil.
+      apply stdpp.list.Forall_nil.
       exact I.
     + destruct ys as [|y ys].
-      { simpl. apply Forall_nil. exact I. }
+      { simpl. apply stdpp.list.Forall_nil. exact I. }
       simpl in H. simpl.
       inversion H. subst. simpl in H2.
-      apply Forall_cons. split.
+      apply stdpp.list.Forall_cons. split.
       { simpl. apply H2. }
       apply IHxs. apply H3.
   - intros H.
     move: ys H.
     induction xs as [|x xs]; intros ys H.
-    + simpl. apply Forall_nil. exact I.
+    + simpl. apply stdpp.list.Forall_nil. exact I.
     + destruct ys as [|y ys].
-      { simpl. apply Forall_nil. exact I. }
+      { simpl. apply stdpp.list.Forall_nil. exact I. }
       simpl in H. simpl.
       inversion H. subst. simpl in H2.
-      apply Forall_cons. split.
+      apply stdpp.list.Forall_cons. split.
       { simpl. apply H2. }
       apply IHxs. apply H3.
 Qed.
@@ -473,17 +472,17 @@ Proof.
     { rewrite drop_nil. apply H. }
     simpl in Hlen. lia.
   - destruct l as [|x l], n.
-    { simpl. apply Forall_nil. exact I. }
-    { rewrite drop_nil. apply Forall_nil. exact I. }
+    { simpl. apply stdpp.list.Forall_nil. exact I. }
+    { rewrite drop_nil. apply stdpp.list.Forall_nil. exact I. }
     { simpl. apply H. }
     simpl. apply IHlen. simpl in Hlen. lia.
     inversion H. assumption.
 Qed.
 
 Lemma last_drop {A : Type} (l : list A) (n : nat) (x : A) :
-  last l = Some x ->
+  stdpp.list.last l = Some x ->
   n < length l ->
-  last (drop n l) = Some x.
+  stdpp.list.last (drop n l) = Some x.
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -589,7 +588,7 @@ Proof.
 Qed.
 
 Lemma list_last_length {A : Type} (l : list A):
-  last l = l !! (length l - 1).
+  stdpp.list.last l = l !! (length l - 1).
 Proof.
   remember (length l) as len.
   rewrite Heqlen.
@@ -642,9 +641,9 @@ Proof.
 Qed.
 
 Lemma last_tail {A : Type} (l : list A) (lst m : A) :
-  last l = Some lst ->
+  stdpp.list.last l = Some lst ->
   head (tail l) = Some m ->
-  last (tail l) = Some lst.
+  stdpp.list.last (tail l) = Some lst.
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -877,7 +876,6 @@ Proof.
   intros t. specialize (H1 t).
   apply NNPP.
   intros H.
-  Search not ex.
   pose proof (H' := not_ex_not_all _ _ H).
   firstorder.
 Qed.
@@ -985,4 +983,24 @@ Lemma elem_of_compl {T : Type} {LE : LeibnizEquiv (propset T)} (X : propset T) (
   (x ∈ (⊤ ∖ X)) <-> (x ∉ X).
 Proof.
   split; intros H; set_solver.
+Qed.
+
+Lemma elem_of_singleton_sym
+  {A C : Type} {H : ElemOf A C} {H0 : Empty C} {H1 : Singleton A C} 
+	{H2 : Union C} {H3 :  SemiSet A C} : 
+  forall (x y : A), x ∈ (@singleton A C H1 y) <-> y ∈ (@singleton A C H1 x).
+Proof.
+  intros x y.
+  do 2 rewrite elem_of_singleton.
+  split; intros H'; symmetry; exact H'.
+Qed.
+
+Global Instance set_unfold_gset_to_coGset
+  {A : Type} {_eqA : EqDecision A} {_cntA : Countable A} (x : A) (X : @gmap.gset A _eqA _cntA) P
+  :
+  SetUnfoldElemOf x X P ->
+  SetUnfoldElemOf x (gset_to_coGset X) P.
+Proof.
+  intros Hunfold.
+  constructor. rewrite elem_of_gset_to_coGset. apply Hunfold.
 Qed.

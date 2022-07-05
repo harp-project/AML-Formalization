@@ -3,7 +3,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax monotonic wftactics.
-From stdpp Require Import base fin_sets sets propset.
+From stdpp Require Import base fin_sets sets propset gmap.
 
 From MatchingLogic.Utils Require Import extralibrary.
 
@@ -41,7 +41,6 @@ Section ml_proof_system.
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      well_formed phi1 -> well_formed (phi1 ---> phi2) -> (* If we prove that we can prove only well-formed patterns, then we can remove these well_formedness constraints here. *)
       theory ⊢ phi1 ->
       theory ⊢ (phi1 ---> phi2) ->
       theory ⊢ phi2
@@ -131,9 +130,47 @@ Section ml_proof_system.
          unfold Decision. Fail decide equality.
   Abort.
 
+  Lemma proved_impl_wf Γ ϕ:
+  Γ ⊢ ϕ -> well_formed ϕ.
+  Proof.
+  intros pf.
+  induction pf; auto; try (solve [wf_auto2]).
+  - unfold free_svar_subst. wf_auto2.
+    apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
+    all: fold free_svar_subst.
+    apply wfc_mu_free_svar_subst; auto.
+    apply wfc_ex_free_svar_subst; auto.
+  Qed.
+
 
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
+
+(* TODO make this return well-formed patterns. *)
+Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
+  match pf with
+  | hypothesis _ _ _ _ => ∅
+  | P1 _ _ _ _ _ => ∅
+  | P2 _ _ _ _ _ _ _ => ∅
+  | P3 _ _ _ => ∅
+  | Modus_ponens _ _ _ m0 m1
+    => (@framing_patterns _ _ m0) ∪ (@framing_patterns _ _ m1)
+  | Ex_quan _ _ _ _ => ∅
+  | Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
+  | Prop_bott_left _ _ _ => ∅
+  | Prop_bott_right _ _ _ => ∅
+  | Prop_disj_left _ _ _ _ _ _ _ => ∅
+  | Prop_disj_right _ _ _ _ _ _ _ => ∅
+  | Prop_ex_left _ _ _ _ _ => ∅
+  | Prop_ex_right _ _ _ _ _ => ∅
+  | Framing_left _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
+  | Framing_right _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
+  | Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
+  | Pre_fixp _ _ _ => ∅
+  | Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
+  | Existence _ => ∅
+  | Singleton_ctx _ _ _ _ _ _ => ∅
+  end.
 
 
   Fixpoint uses_ex_gen (EvS : EVarSet) Γ ϕ (pf : ML_proof_system Γ ϕ) :=
@@ -142,7 +179,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_ex_gen EvS _ _ m0
          || uses_ex_gen EvS _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -162,13 +199,70 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
+      match pf with
+      | hypothesis _ _ _ _ => ∅
+      | P1 _ _ _ _ _ => ∅
+      | P2 _ _ _ _ _ _ _ => ∅
+      | P3 _ _ _ => ∅
+      | Modus_ponens _ _ _ m0 m1
+        => uses_of_ex_gen _ _ m0
+           ∪ uses_of_ex_gen _ _ m1
+      | Ex_quan _ _ _ _ => ∅
+      | Ex_gen _ _ _ x _ _ pf _ => {[x]} ∪ uses_of_ex_gen _ _ pf
+      | Prop_bott_left _ _ _ => ∅
+      | Prop_bott_right _ _ _ => ∅
+      | Prop_disj_left _ _ _ _ _ _ _ => ∅
+      | Prop_disj_right _ _ _ _ _ _ _ => ∅
+      | Prop_ex_left _ _ _ _ _ => ∅
+      | Prop_ex_right _ _ _ _ _ => ∅
+      | Framing_left _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Framing_right _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Svar_subst _ _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+      | Pre_fixp _ _ _ => ∅
+      | Knaster_tarski _ _ phi psi m0 => uses_of_ex_gen _ _ m0
+      | Existence _ => ∅
+      | Singleton_ctx _ _ _ _ _ _ => ∅
+      end.
+  
+  Lemma uses_of_ex_gen_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (x : evar) :
+    x ∈ uses_of_ex_gen Γ ϕ pf <-> uses_ex_gen {[x]} Γ ϕ pf = true.
+  Proof.
+    induction pf; simpl; try set_solver.
+    {
+      rewrite orb_true_iff. set_solver.
+    }
+    {
+      rewrite elem_of_union. rewrite IHpf.
+      destruct (decide (x0 ∈ {[x]})) as [Hin|Hnotin].
+      {
+        rewrite elem_of_singleton in Hin. subst.
+        split; intros H. reflexivity. left. rewrite elem_of_singleton.
+        reflexivity.
+      }
+      {
+        split; intros H.
+        {
+          destruct H as [H|H].
+          {
+            exfalso. set_solver.
+          }
+          exact H.
+        }
+        {
+          right. exact H.
+        }
+      }
+    }
+  Qed.
+
   Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
     match pf with
     | hypothesis _ _ _ _ => false
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_svar_subst S _ _ m0
          || uses_svar_subst S _ _ m1
     | Ex_quan _ _ _ _ => false
@@ -188,6 +282,62 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) : SVarSet :=
+      match pf with
+      | hypothesis _ _ _ _ => ∅
+      | P1 _ _ _ _ _ => ∅
+      | P2 _ _ _ _ _ _ _ => ∅
+      | P3 _ _ _ => ∅
+      | Modus_ponens _ _ _ m0 m1
+        => uses_of_svar_subst _ _ m0
+           ∪ uses_of_svar_subst _ _ m1
+      | Ex_quan _ _ _ _ => ∅
+      | Ex_gen _ _ _ _ _ _ pf' _ => uses_of_svar_subst _ _ pf'
+      | Prop_bott_left _ _ _ => ∅
+      | Prop_bott_right _ _ _ => ∅
+      | Prop_disj_left _ _ _ _ _ _ _ => ∅
+      | Prop_disj_right _ _ _ _ _ _ _ => ∅
+      | Prop_ex_left _ _ _ _ _ => ∅
+      | Prop_ex_right _ _ _ _ _ => ∅
+      | Framing_left _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Framing_right _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+      | Svar_subst _ _ _ X _ _ m0 => {[X]} ∪ uses_of_svar_subst _ _ m0
+      | Pre_fixp _ _ _ => ∅
+      | Knaster_tarski _ _ phi psi m0 => uses_of_svar_subst _ _ m0
+      | Existence _ => ∅
+      | Singleton_ctx _ _ _ _ _ _ => ∅
+      end.
+
+  Lemma uses_of_svar_subst_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (X : svar) :
+    X ∈ uses_of_svar_subst Γ ϕ pf <-> uses_svar_subst {[X]} Γ ϕ pf = true.
+  Proof.
+    induction pf; simpl; try set_solver.
+    {
+      rewrite orb_true_iff. set_solver.
+    }
+    {
+      rewrite elem_of_union. rewrite IHpf. clear IHpf.
+      destruct (decide (X0 ∈ {[X]})) as [Hin|Hnotin].
+      {
+        rewrite elem_of_singleton in Hin. subst.
+        split; intros H. reflexivity. left. rewrite elem_of_singleton.
+        reflexivity.
+      }
+      {
+        split; intros H.
+        {
+          destruct H as [H|H].
+          {
+            exfalso. set_solver.
+          }
+          exact H.
+        }
+        {
+          right. exact H.
+        }
+      }
+    }
+  Qed.
 
   Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
     match pf with
@@ -195,7 +345,7 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | P1 _ _ _ _ _ => false
     | P2 _ _ _ _ _ _ _ => false
     | P3 _ _ _ => false
-    | Modus_ponens _ _ _ _ _ m0 m1
+    | Modus_ponens _ _ _ m0 m1
       => uses_kt _ _ m0 || uses_kt _ _ m1
     | Ex_quan _ _ _ _ => false
     | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
@@ -214,6 +364,87 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
+    Fixpoint propositional_only Γ ϕ (pf : Γ ⊢ ϕ) :=
+      match pf with
+      | hypothesis _ _ _ _ => true
+      | P1 _ _ _ _ _ => true
+      | P2 _ _ _ _ _ _ _ => true
+      | P3 _ _ _ => true
+      | Modus_ponens _ _ _ m0 m1
+        => propositional_only _ _ m0 && propositional_only _ _ m1
+      | Ex_quan _ _ _ _ => false
+      | Ex_gen _ _ _ _ _ _ pf' _ => false
+      | Prop_bott_left _ _ _ => false
+      | Prop_bott_right _ _ _ => false
+      | Prop_disj_left _ _ _ _ _ _ _ => false
+      | Prop_disj_right _ _ _ _ _ _ _ => false
+      | Prop_ex_left _ _ _ _ _ => false
+      | Prop_ex_right _ _ _ _ _ => false
+      | Framing_left _ _ _ _ _ m0 => false
+      | Framing_right _ _ _ _ _ m0 => false
+      | Svar_subst _ _ _ X _ _ m0 => false
+      | Pre_fixp _ _ _ => false
+      | Knaster_tarski _ _ phi psi m0 => false
+      | Existence _ => false
+      | Singleton_ctx _ _ _ _ _ _ => false
+      end.
+  
+  Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢ ϕ) :
+    propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
+  Proof.
+    intros H.
+    induction pf; simpl in *; try apply reflexivity; try congruence.
+    {
+      destruct_and!. specialize (IHpf1 ltac:(assumption)). specialize (IHpf2 ltac:(assumption)).
+      rewrite IHpf1. rewrite IHpf2. set_solver.
+    }
+  Qed.
+
+  Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢ ϕ) :
+    propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+
+  Lemma propositional_implies_no_uses_svar Γ ϕ (pf : ML_proof_system Γ ϕ) (SvS : SVarSet) :
+    propositional_only Γ ϕ pf = true -> uses_svar_subst SvS Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+
+  Lemma propositional_implies_no_uses_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) (EvS : EVarSet) :
+    propositional_only Γ ϕ pf = true -> uses_ex_gen EvS Γ ϕ pf = false.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+  Qed.
+  
+  Lemma propositional_implies_no_uses_ex_gen_2 Γ ϕ (pf : ML_proof_system Γ ϕ) :
+    propositional_only Γ ϕ pf = true -> uses_of_ex_gen Γ ϕ pf = ∅.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
+  Qed.
+
+  Lemma propositional_implies_no_uses_svar_2 Γ ϕ (pf : ML_proof_system Γ ϕ)  :
+    propositional_only Γ ϕ pf = true -> uses_of_svar_subst Γ ϕ pf = ∅.
+  Proof.
+    induction pf; simpl; intros H; try reflexivity; try congruence.
+    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
+  Qed.
+
+  Lemma framing_patterns_cast_proof Γ ϕ ψ (pf : Γ ⊢ ϕ) (e : ψ = ϕ) :
+    @framing_patterns Γ ψ (cast_proof e pf) = @framing_patterns Γ ϕ pf.
+  Proof.
+    induction pf; unfold cast_proof,eq_rec_r,eq_rec,eq_rect,eq_sym;simpl in *;
+    pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+    match type of e with
+    | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+    end; simpl; try reflexivity.
+  Qed.
+    
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
@@ -257,12 +488,24 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
      end; simpl; try reflexivity.
   Qed.
 
+  Lemma indifferent_to_cast_propositional_only :
+    indifferent_to_cast propositional_only.
+  Proof.
+    unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+    induction pf; unfold cast_proof; unfold eq_rec_r;
+      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+      match type of e with
+      | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+      end; simpl; try reflexivity.
+  Qed.
+
   Definition indifferent_to_prop (P : proofbpred) :=
       (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
    /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
    /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
-   /\ (forall Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2,
-        P Γ _ (Modus_ponens Γ phi1 phi2 wfphi1 wfphi2 pf1 pf2)
+   /\ (forall Γ phi1 phi2 pf1 pf2,
+        P Γ _ (Modus_ponens Γ phi1 phi2 pf1 pf2)
         = P Γ _ pf1 || P Γ _ pf2
       ).
 
@@ -294,17 +537,6 @@ Proof. intros H. rewrite <- e in H. exact H. Defined.
     intros. simpl. reflexivity.
   Qed.
 
-  Lemma proved_impl_wf Γ ϕ:
-    Γ ⊢ ϕ -> well_formed ϕ.
-  Proof.
-    intros pf.
-    induction pf; auto; try (solve [wf_auto2]).
-    - unfold free_svar_subst. wf_auto2.
-      apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
-      all: fold free_svar_subst.
-      apply wfc_mu_free_svar_subst; auto.
-      apply wfc_ex_free_svar_subst; auto.
-  Qed.
 
 End ml_proof_system.
 

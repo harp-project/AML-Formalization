@@ -2725,3 +2725,19 @@ Proof.
     { apply H. }
   }
 Qed.
+
+Lemma free_svars_free_evar_subst {Σ : Signature} ϕ x ψ:
+  free_svars (free_evar_subst ϕ ψ x) ⊆ free_svars ϕ ∪ free_svars ψ.
+Proof.
+  induction ϕ; simpl; try set_solver.
+  {
+    case_match.
+    {
+      subst. set_solver.
+    }
+    {
+      simpl. set_solver.
+    }
+  }
+Qed.
+

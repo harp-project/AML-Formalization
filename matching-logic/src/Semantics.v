@@ -545,7 +545,8 @@ Section semantics.
   Proof.
     intros x Hpred.
     pose proof (Hpredex := M_predicate_exists Hpred).
-    rewrite -[eval _ _ = ⊤]predicate_not_empty_iff_full. 2: auto.
+    rewrite -[eval _ _ = ⊤]predicate_not_empty_iff_full.
+    { apply Hpredex. }
     
     (*
         (* TODO: I would like to simplify the RHS, but cannot find a way. *)
@@ -564,7 +565,8 @@ Section semantics.
       simpl in Hx0. unfold propset_fa_union in Hx0. rewrite -> elem_of_PropSet in Hx0.
       destruct Hx0 as [c Hc].
       exists c.
-      rewrite -predicate_not_empty_iff_full. 2: assumption.
+      rewrite -predicate_not_empty_iff_full.
+      { apply Hpred. }
       rewrite Not_Empty_iff_Contains_Elements.
       exists x0. apply Hc.
     - intros [m Hm].
@@ -809,7 +811,7 @@ Section semantics.
       + rewrite Heq. rewrite update_svar_val_shadow. reflexivity.
       + rewrite update_svar_val_comm.
         { apply Hneq.  }
-        rewrite -> H with (S0 := e).
+        rewrite -> H with (S := e).
         { reflexivity. }
         { intros Contra.
           pose proof (Hfeeo := @free_svars_svar_open signature ϕ' (fresh_svar ϕ') 0).
@@ -1977,7 +1979,7 @@ Section semantics.
         {
           apply set_evar_fresh_is_fresh.
         }
-        Check eval_fresh_evar_open.
+
         epose (eval_fresh_evar_open c 0 (update_svar_val X (eval ρ psi) ρ) _ _) as HFresh.
         rewrite -> HFresh.
         clear HFresh.

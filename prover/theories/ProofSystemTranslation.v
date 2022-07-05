@@ -20,7 +20,6 @@ Section proof_system_translation.
 
   Context
     {signature : Signature}
-    {countable_symbols : Countable symbols}
   .
 
   Definition theory_translation (Gamma : Theory) : NamedTheory :=
@@ -645,7 +644,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_e. }
+      { apply remove_disjoint_keep_e. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_evars in Hnp'.
@@ -738,7 +737,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_s. }
+      { apply remove_disjoint_keep_s. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_svars in Hnp'.
@@ -958,7 +957,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_e. }
+      { apply remove_disjoint_keep_e. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_evars in Hnp'.
@@ -1008,7 +1007,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_s. }
+      { apply remove_disjoint_keep_s. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_svars in Hnp'.
@@ -1207,7 +1206,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_e. }
+      { apply remove_disjoint_keep_e. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_evars in Hnp'.
@@ -1297,7 +1296,7 @@ Qed.
       }
       destruct Hcall as [Hp' Hnp'].
       rewrite lookup_union_Some in Hnp'.
-      2: { apply remove_disjoint_keep_s. }
+      { apply remove_disjoint_keep_s. }
       destruct Hnp' as [Hnp'|Hnp'].
       {
         unfold remove_bound_svars in Hnp'.
@@ -1745,6 +1744,7 @@ Qed.
           destruct H as [e He].
           exists e.
           rewrite lookup_union_Some.
+          -- apply remove_disjoint_keep_e.
           --
             right.
             unfold keep_bound_evars.
@@ -1753,12 +1753,11 @@ Qed.
             ++
               exact He.
             ++ unfold is_bound_evar_entry. simpl. exists k'. reflexivity.
-          -- apply remove_disjoint_keep_e.
         * apply Hk.
           destruct H as [e He].
           exists e.
           rewrite lookup_union_Some in He.
-          2: { apply remove_disjoint_keep_e. }
+          { apply remove_disjoint_keep_e. }
           destruct He as [He|He].
           --
             unfold remove_bound_evars in He.
@@ -1815,7 +1814,7 @@ Qed.
               for the recursive calls.
             *)
             rewrite lookup_union_Some in Hs1.
-            2: {
+            {
               apply remove_disjoint_keep_e.
             }
             destruct Hs1 as [Hs1|Hs1].
@@ -1968,7 +1967,7 @@ Qed.
           {
             destruct Hgs as [k2 Hk2].
             rewrite lookup_union_Some in Hs1.
-            2: {
+            {
               apply remove_disjoint_keep_s.
             }
             destruct Hs1 as [Hs1|Hs1].
@@ -2047,6 +2046,7 @@ Qed.
           destruct H as [e He].
           exists e.
           rewrite lookup_union_Some.
+          -- apply remove_disjoint_keep_s.
           --
             right.
             unfold keep_bound_svars.
@@ -2055,12 +2055,11 @@ Qed.
             ++
               exact He.
             ++ unfold is_bound_svar_entry. simpl. exists k'. reflexivity.
-          -- apply remove_disjoint_keep_s.
         * apply Hk.
           destruct H as [e He].
           exists e.
           rewrite lookup_union_Some in He.
-          2: { apply remove_disjoint_keep_s. }
+          { apply remove_disjoint_keep_s. }
           destruct He as [He|He].
           --
             unfold remove_bound_svars in He.
@@ -2649,7 +2648,7 @@ Qed.
           |];
           destruct H as [_ H];
           rewrite lookup_union_Some in H;
-          [|apply remove_disjoint_keep_e];
+          [apply remove_disjoint_keep_e|];
           unfold keep_bound_evars in H;
           rewrite map_filter_lookup_Some in H;
           destruct H as [H|H];
@@ -2682,7 +2681,7 @@ Qed.
             rewrite lookup_insert_ne;
             [(apply not_eq_sym; apply Hnsame)|];
             rewrite lookup_union_Some;
-            [|apply remove_disjoint_keep_e];
+            [apply remove_disjoint_keep_e|];
             left;
             unfold remove_bound_evars;
             rewrite map_filter_lookup_Some;
@@ -2744,7 +2743,7 @@ Qed.
             rewrite lookup_insert_ne.
             { apply not_eq_sym. exact Hnsame. }
             rewrite lookup_union_Some.
-            2: { apply remove_disjoint_keep_e. }
+            { apply remove_disjoint_keep_e. }
             left.
             unfold remove_bound_evars.
             rewrite map_filter_lookup_Some.
@@ -2759,7 +2758,7 @@ Qed.
 
           destruct H as [_ H];
           rewrite lookup_union_Some in H;
-          [|apply remove_disjoint_keep_e];
+          [apply remove_disjoint_keep_e|];
           unfold keep_bound_evars in H;
           rewrite map_filter_lookup_Some in H;
           destruct H as [H|H];
@@ -2827,7 +2826,7 @@ Qed.
           |];
           destruct H as [_ H];
           rewrite lookup_union_Some in H;
-          [|apply remove_disjoint_keep_s];
+          [apply remove_disjoint_keep_s|];
           unfold keep_bound_svars in H;
           rewrite map_filter_lookup_Some in H;
           destruct H as [H|H];
@@ -2860,7 +2859,7 @@ Qed.
             rewrite lookup_insert_ne;
             [(apply not_eq_sym; apply Hnsame)|];
             rewrite lookup_union_Some;
-            [|apply remove_disjoint_keep_s];
+            [apply remove_disjoint_keep_s|];
             left;
             unfold remove_bound_svars;
             rewrite map_filter_lookup_Some;
@@ -2929,7 +2928,7 @@ Qed.
             rewrite lookup_insert_ne.
             { apply not_eq_sym. exact Hnsame. }
             rewrite lookup_union_Some.
-            2: { apply remove_disjoint_keep_s. }
+            { apply remove_disjoint_keep_s. }
             left.
             unfold remove_bound_svars.
             rewrite map_filter_lookup_Some.
@@ -2944,7 +2943,7 @@ Qed.
 
           destruct H as [_ H];
           rewrite lookup_union_Some in H;
-          [|apply remove_disjoint_keep_s];
+          [apply remove_disjoint_keep_s|];
           unfold keep_bound_evars in H;
           rewrite map_filter_lookup_Some in H;
           destruct H as [H|H];
@@ -4450,7 +4449,7 @@ Qed.
               split.
               { split; assumption. }
               rewrite lookup_union_Some.
-              2: { apply remove_disjoint_keep_e. }
+              { apply remove_disjoint_keep_e. }
               left.
               epose proof (Hextends := to_NamedPattern2'_extends_cache _ _ _ _).
               erewrite Heqp1 in Hextends. simpl in Hextends.
@@ -4478,7 +4477,7 @@ Qed.
           {
             destruct Hneq as [Hneq1 Hnq].
             rewrite lookup_union_Some in Hnq.
-            2: { apply remove_disjoint_keep_e. }
+            { apply remove_disjoint_keep_e. }
             destruct Hnq as [Hnq|Hnq].
             2: {
               unfold keep_bound_evars in Hnq.
@@ -4573,7 +4572,7 @@ Qed.
               split.
               { split; assumption. }
               rewrite lookup_union_Some.
-              2: { apply remove_disjoint_keep_e. }
+              { apply remove_disjoint_keep_e. }
               left.
               unfold remove_bound_evars.
               rewrite map_filter_lookup_Some.
@@ -4675,7 +4674,7 @@ Qed.
               split.
               { split; assumption. }
               rewrite lookup_union_Some.
-              2: { apply remove_disjoint_keep_s. }
+              { apply remove_disjoint_keep_s. }
               left.
               epose proof (Hextends := to_NamedPattern2'_extends_cache _ _ _ _).
               erewrite Heqp1 in Hextends. simpl in Hextends.
@@ -4703,7 +4702,7 @@ Qed.
           {
             destruct Hneq as [Hneq1 Hnq].
             rewrite lookup_union_Some in Hnq.
-            2: { apply remove_disjoint_keep_s. }
+            { apply remove_disjoint_keep_s. }
             destruct Hnq as [Hnq|Hnq].
             2: {
               unfold keep_bound_evars in Hnq.
@@ -4798,7 +4797,7 @@ Qed.
               split.
               { split; assumption. }
               rewrite lookup_union_Some.
-              2: { apply remove_disjoint_keep_s. }
+              { apply remove_disjoint_keep_s. }
               left.
               unfold remove_bound_svars.
               rewrite map_filter_lookup_Some.

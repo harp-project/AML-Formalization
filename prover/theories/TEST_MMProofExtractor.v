@@ -24,17 +24,14 @@ Module MMTest.
   Inductive Symbol := a | b | c .
 
 
+  #[local]
   Instance Symbol_eqdec : EqDecision Symbol.
   Proof.
     intros s1 s2. unfold Decision. decide equality.
   Defined.
 
-  Instance Σ : Signature :=
-    {| variables := StringMLVariables ;
-       symbols := Symbol ;
-    |}.
-
-  Instance symbols_countable : Countable symbols.
+  #[local]
+  Instance symbols_countable : Countable Symbol.
   Proof.
     eapply finite_countable.
     Unshelve.
@@ -77,6 +74,14 @@ Module MMTest.
         apply elem_of_list_further. apply elem_of_list_here.
         apply elem_of_list_further. apply elem_of_list_further. apply elem_of_list_here.
   Qed.
+
+
+  #[local]
+  Instance Σ : Signature :=
+    {| variables := StringMLVariables ;
+       symbols := Symbol ;
+    |}.
+
 
   Definition symbolPrinter (s : Symbol) : string :=
     match s with
@@ -272,14 +277,15 @@ Module MMTest.
   Definition ϕ10 := ((patt_exists (patt_bound_evar 0))) or ((patt_exists (patt_bound_evar 0))).
 
   Lemma ϕ10_holds:
-    ∅ ⊢ ϕ10.
+    ∅ ⊢ ϕ10 using AnyReasoning.
   Proof.
     toMyGoal.
     { wf_auto2. }
     unfold ϕ10.
     mgRight.
-    fromMyGoal. intros _ _.
-    apply Existence.
+    fromMyGoal.
+    gapply Existence.
+    { apply pile_any. }
   Defined.
   
   Compute (dependenciesForPattern symbolPrinter id id (to_NamedPattern2
@@ -293,22 +299,24 @@ Module MMTest.
           id
           _
           _
-          ϕ10_holds
+       (proj1_sig ϕ10_holds)
     )).
 
   Definition ϕ11 := instantiate (ex , patt_bound_evar 0) (patt_free_evar "y") ---> ex , patt_bound_evar 0.
   Lemma ϕ11_holds:
-    ∅ ⊢ ϕ11.
+    ∅ ⊢ ϕ11 using AnyReasoning.
   Proof.
-    apply Ex_quan.
+    gapply Ex_quan.
+    { apply pile_any. }
     { wf_auto2. }
   Qed.
 
   Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
-  Lemma ϕtest_holds: ∅ ⊢ ϕtest.
+  Lemma ϕtest_holds: ∅ ⊢ ϕtest using AnyReasoning.
   Proof.
     unfold ϕtest.
     replace (A ---> B) with (fold_right patt_imp B ([]++[A])) by reflexivity.
+    usePropositionalReasoning.
     apply prf_strenghten_premise_iter.
     all: auto.
   Defined.
@@ -321,7 +329,7 @@ Module MMTest.
           id
           _
           _
-          ϕtest_holds
+          (proj1_sig ϕtest_holds)
     )).
 
   
@@ -336,7 +344,8 @@ Extraction "proof_1_mm.hs" MMTest.proof_1.
 Extraction "proof_2_mm.hs" MMTest.proof_2.
 Extraction "proof_3_mm.hs" MMTest.proof_3.
 Extraction "proof_4_mm.hs" MMTest.proof_4.
-Extraction "proof_5_mm.hs" MMTest.proof_5.
+(* This is too large for CI. *)
+(*Extraction "proof_5_mm.hs" MMTest.proof_5.*)
 Extraction "proof_6_mm.hs" MMTest.proof_6.
 Extraction "proof_7_mm.hs" MMTest.proof_7.
 Extraction "proof_8_mm.hs" MMTest.proof_8.

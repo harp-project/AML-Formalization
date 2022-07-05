@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
-From stdpp Require Import base fin_sets sets propset.
+From stdpp Require Import base fin_sets sets propset finite.
 
 From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
@@ -23,8 +23,22 @@ Module test_1.
   Inductive Symbols := ctor| p | f .
 
 
+  #[local]
   Instance Symbols_eqdec : EqDecision Symbols.
   Proof. solve_decision. Defined.
+
+  #[local]
+  Program Instance Symbols_fin : Finite Symbols :=
+  {|
+    enum := [ctor;p;f]
+  |}.
+  Next Obligation.
+    repeat constructor; set_solver.
+  Qed.
+  Next Obligation.
+    destruct x; set_solver.
+  Qed.
+
 
   #[local]
   Instance signature : Signature :=
@@ -92,6 +106,22 @@ Module test_2.
 
     Instance Symbols_eqdec : EqDecision Symbols.
     Proof. solve_decision. Defined.
+
+    #[local]
+    Program Instance Symbols_fin : Finite Symbols :=
+    {|
+      enum := [sym_c; sym_zero; sym_succ; sym_SortNat;
+        sym_import_sorts Sorts_Syntax.inhabitant;
+        sym_import_definedness Definedness_Syntax.definedness] ;
+    |}.
+    Next Obligation.
+      repeat constructor; set_solver.
+    Qed.
+    Next Obligation.
+      destruct x; try set_solver.
+      destruct d; set_solver.
+      destruct s; set_solver.
+    Qed.
 
     Instance signature : Signature :=
       {| variables := StringMLVariables ;

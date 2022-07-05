@@ -3,7 +3,7 @@ let
   pinned = import sources."nixpkgs" { config = {}; overlays = []; };
 in
 
-{ coqVersion ? "8.14"}:
+{ coqVersion ? "8.15"}:
 with import <nixpkgs> {};
 
 let

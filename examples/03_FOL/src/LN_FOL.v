@@ -15,7 +15,7 @@ Require Export Coq.Program.Wf
                FunctionalExtensionality
                Logic.PropExtensionality
                Program.Equality.
-From stdpp Require Import countable sets.
+From stdpp Require Import countable finite sets.
 From MatchingLogic Require Export Utils.extralibrary.
 Require Export Vector PeanoNat String Arith.Lt.
 
@@ -694,6 +694,9 @@ Section FOL_ML_correspondence.
   Context {Σ_vars : FOL_variables}.
   Context {Σ_funcs : funcs_signature}.
   Context {Σ_preds : preds_signature}.
+  Print preds_signature.
+  Context {preds_countable : @Countable (@preds Σ_preds) preds_eqdec}
+          {funs_countable : @Countable (@funs Σ_funcs) funs_eqdec}.
 
   Inductive Symbols : Set :=
   | sym_fun   (name : funs)
@@ -708,6 +711,32 @@ Section FOL_ML_correspondence.
     apply Σ_preds.
   Defined.
 
+  Instance Symbols_countable : Countable Symbols.
+  Proof.
+    destruct preds_countable as [encp decp PDE].
+    inversion funs_countable as [encf decf FDE].
+    Search Countable.
+    set (enc :=
+         fun (s : Symbols) =>
+         match s with
+           | sym_fun name  => inl name
+           | sym_pred name => inr (inl name)
+           | sym_import_definedness d => (inr (inr ()))
+           end
+        ).
+    set (dec :=
+         fun (c : funs + (preds + unit)) =>
+         match c with
+           | inl name       => Some (sym_fun name)
+           | inr (inl name) => Some (sym_pred name)
+           | (inr (inr ())) => Some (sym_import_definedness (Definedness_Syntax.definedness))
+           end
+        ).
+    refine (inj_countable enc dec _).
+    destruct x; simpl; auto.
+    now destruct d.
+  Defined.
+
   Instance FOLVars : MLVariables := 
   {|
     Signature.evar := vars;
@@ -719,10 +748,12 @@ Section FOL_ML_correspondence.
     evar_infinite := var_infinite;
     svar_infinite := var_infinite;
   |}.
+
   Instance sig : Signature := 
   {|
     variables := FOLVars;
     symbols := Symbols;
+    sym_countable := Symbols_countable;
   |}.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
@@ -1314,18 +1345,18 @@ Section FOL_ML_correspondence.
 
   Proposition term_functionality :
     forall t Γ, wf_term t 0 ->
-      from_FOL_theory Γ ⊢_ML patt_exists (patt_equal (convert_term t) (patt_bound_evar 0)).
+      from_FOL_theory Γ ⊢_ML patt_exists (patt_equal (convert_term t) (patt_bound_evar 0)) using AnyReasoning.
   Proof.
     induction t using term_rect; intros.
     * simpl.
-      pose proof (Ex_quan (from_FOL_theory Γ ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x ltac:(wf_auto2)). unfold instantiate in H0.
-      simpl in H0. eapply Modus_ponens. 4: exact H0.
-      all: auto.
+      pose proof (@Ex_quan _ (from_FOL_theory Γ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x ltac:(wf_auto2)). unfold instantiate in H0.
+      simpl in H0. eapply MP.
       epose proof (@patt_equal_refl _ _ (patt_free_evar x) (from_FOL_theory Γ) _).
-      exact H1.
+      gapply H1. apply pile_any.
+      gapply H0. apply pile_any.
     * simpl in H. inversion H.
-    * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F)). {
-        apply hypothesis. apply ax_wf. apply ax_in.
+    * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F) using AnyReasoning). {
+        gapply hypothesis. apply pile_any. apply ax_wf. apply ax_in.
       } simpl in H1, H0.
       simpl. remember (@patt_sym sig (sym_fun F)) as start.
       assert (forall n ψ, bevar_subst start ψ n = start) as HIND. 
@@ -1335,16 +1366,16 @@ Section FOL_ML_correspondence.
       clear Heqstart. generalize dependent start.
       revert H0. induction v; intros.
       - cbn. simpl in H1. exact H1.
-      - cbn in *. eapply (IHv _ _ (start $ convert_term h)%ml).
-        clear IHv. separate.
+      - cbn in *. eapply (IHv _ _ (start $ convert_term h)%ml); clear IHv.
+        separate.
         specialize (H h ltac:(constructor) Γ E2).
         remember (add_forall_prefix n
             (ex ,
-             patt_equal
-               (List.fold_left
-                  (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-                  (make_list1 n) (start $ patt_bound_evar (S n))%ml)
-               BoundVarSugar.b0)) as A.
+              patt_equal
+                (List.fold_left
+                   (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+                   (make_list1 n) (start $ patt_bound_evar (S n))%ml)
+                BoundVarSugar.b0)) as A.
         pose proof (@forall_functional_subst _ _ A (convert_term h) (from_FOL_theory Γ)).
         assert (mu_free A). {
           rewrite HeqA. clear H HIND H1 HeqA E1 E2 H0 h v Γ A F WFS.
@@ -1378,7 +1409,7 @@ Section FOL_ML_correspondence.
                   auto; try lia.
               all: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         }
-        assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 )). {
+        assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) using AnyReasoning). {
           apply conj_intro_meta; auto.
           unfold well_formed. simpl. rewrite positive_term_FOL_ML.
           unfold well_formed_closed. simpl. apply wf_increase_term with (n' := 1) in E2. 2: lia.
@@ -1387,32 +1418,7 @@ Section FOL_ML_correspondence.
           eapply closed_mu_term_FOL_ML in E2'.
           split_and!; eauto.
         }
-        apply Modus_ponens in H0; auto.
-        2: {
-          unfold well_formed in *. simpl. rewrite positive_term_FOL_ML.
-          unfold well_formed_closed in *. simpl. apply wf_increase_term with (n' := 1) in E2. 2: lia.
-          pose proof (E2' := E2).
-          eapply closed_ex_term_FOL_ML in E2.
-          eapply closed_mu_term_FOL_ML in E2'.
-          simpl in *.
-          destruct_and!. split_and!; eassumption.
-        }
-        2: {
-          unfold well_formed in *. simpl. rewrite positive_term_FOL_ML.
-          unfold well_formed_closed in *. simpl.
-          eapply wf_increase_term with (n' := 1) in E2 as H4'. 2: lia.
-          pose proof (H4'' := H4').
-          eapply closed_ex_term_FOL_ML in H4'.
-          eapply closed_mu_term_FOL_ML in H4''.
-          simpl in *. destruct_and!. split_and!; auto.
-          - simpl. apply bevar_subst_positive. assumption. assumption.
-            apply positive_term_FOL_ML.
-          - eapply closed_mu_term_FOL_ML. eassumption.
-          - eassumption.
-          - apply wfc_mu_aux_bevar_subst; auto.
-          - apply wfc_ex_aux_bevar_subst; auto.
-            now apply closed_ex_term_FOL_ML.
-        }
+        apply MP in H0; auto.
         simpl in H0.
         rewrite -> HeqA, -> add_forall_prefix_subst in H0.
         simpl Nat.add in H0.
@@ -1464,15 +1470,15 @@ Section FOL_ML_correspondence.
   Theorem arrow_1 : forall (φ : form) (Γ : list form), 
     Γ ⊢_FOL φ
    -> 
-    from_FOL_theory Γ ⊢_ML convert_form φ.
+    from_FOL_theory Γ ⊢_ML convert_form φ using AnyReasoning.
   Proof.
     intros φ Γ IH. induction IH; intros.
-    * apply hypothesis. now apply wf_form_FOL_ML. now apply in_FOL_theory.
-    * simpl. apply P1; auto.
-    * apply P2; auto.
-    * apply P3; auto.
-    * eapply Modus_ponens. 3: exact IHIH1. 3: exact IHIH2. all: auto.
-      simpl in i0. separate. apply well_formed_imp; apply wf_form_FOL_ML;  auto.
+    * gapply hypothesis. apply pile_any.
+      now apply wf_form_FOL_ML. now apply in_FOL_theory.
+    * simpl. usePropositionalReasoning. apply P1; auto.
+    * usePropositionalReasoning. apply P2; auto.
+    * usePropositionalReasoning. apply P3; auto.
+    * eapply MP. exact IHIH1. exact IHIH2.
     * simpl. unfold is_true in *.
       epose proof (term_functionality t Γ i0).
       pose proof (@exists_functional_subst _ _ (convert_form φ) (convert_term t) (from_FOL_theory Γ)).
@@ -1495,8 +1501,10 @@ Section FOL_ML_correspondence.
       all: try eapply closed_mu_term_FOL_ML; try eassumption.
       all: try apply bevar_subst_closed_ex; try apply closed_ex_form_FOL_ML; try assumption.
       apply closed_ex_term_FOL_ML. assumption.
-    * simpl. rewrite quantify_form_correspondence. eapply Ex_gen; auto.
-      apply form_vars_free_vars_notin. auto.
+    * simpl. rewrite quantify_form_correspondence. gapply Ex_gen; auto.
+      1-2: apply pile_any.
+      now apply form_vars_free_vars_notin.
+      gapply IHIH. apply pile_any.
   Qed.
 
 
@@ -1515,7 +1523,7 @@ Section tests.
     unfold EqDecision, Decision; intros. decide equality.
   Defined.
 
-  Definition PA_funcs_ar (f : PA_funcs ) :=
+  Definition PA_funcs_ar (f : PA_funcs) :=
   match f with
    | Zero => 0
    | Succ => 1
@@ -1526,10 +1534,15 @@ Section tests.
   Inductive PA_preds : Set :=
     Eq : PA_preds.
 
-  Theorem pa_preds_eqdec : EqDecision PA_preds.
+  Instance pa_preds_eqdec : EqDecision PA_preds.
   Proof.
-    unfold EqDecision, Decision; intros. decide equality.
-  Qed.
+    solve_decision.
+  Defined.
+
+  Instance pa_funcs_eqdec : EqDecision PA_funcs.
+  Proof.
+    solve_decision.
+  Defined.
 
   Definition PA_preds_ar (P : PA_preds) :=
   match P with
@@ -1542,24 +1555,35 @@ Section tests.
   Instance PA_preds_signature : preds_signature :=
   {| preds := PA_preds ; preds_eqdec := pa_preds_eqdec; ar_preds := PA_preds_ar |}.
 
-  Context {Σ_vars : FOL_variables}.
-  Instance FOLVars2 : MLVariables := 
-  {|
-    Signature.evar := vars;
-    evar_eqdec := var_eqdec;
-    svar_eqdec := var_eqdec;
-    evar_countable := var_countable;
-    svar_countable := var_countable;
-    Signature.svar := vars;
-    evar_infinite := var_infinite;
-    svar_infinite := var_infinite;
+  Program Instance PA_preds_finite : Finite PA_preds := {| enum := [Eq] |}.
+  Next Obligation.
+    repeat constructor. set_solver.
+  Qed.
+  Next Obligation.
+    intros []. set_solver.
+  Qed.
+  Program Instance PA_funcs_finite : 
+    Finite (@funs PA_funcs_signature) := {| enum := [Zero;Succ;Plus;Mult] |}.
+  Next Obligation.
+    repeat constructor; set_solver.
+  Qed.
+  Next Obligation.
+    intros []; set_solver.
+  Qed.
 
-  |}.
+  Instance pa_preds_countable : Countable PA_preds.
+  Proof. apply _. Qed.
+
+  Instance pa_funcs_countable : Countable PA_funcs.
+  Proof. apply _. Qed.
+
+  Context {Σ_vars : FOL_variables}.
   Instance sig2 : Signature := 
   {|
-    variables := FOLVars;
+    variables := @FOLVars Σ_vars;
     symbols := Symbols;
-    sym_eqdec := Symbols_dec
+    sym_eqdec := Symbols_dec;
+    sym_countable := Symbols_countable;
   |}.
 
   Instance definedness_syntax2 : Definedness_Syntax.Syntax :=

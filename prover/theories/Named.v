@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From stdpp Require Import base pmap gmap fin_maps.
+From stdpp Require Import base pmap gmap fin_maps finite.
 From MatchingLogic Require Import Syntax.
 
 Require Import String.
@@ -11,7 +11,6 @@ Require Import String.
 Section named.
   Context
     {Σ : Signature}
-    {symbols_countable : Countable symbols}
   .
   
 
@@ -588,6 +587,19 @@ Section named_test.
     unfold EqDecision. intros x y. unfold Decision.
     repeat decide equality.
   Defined.
+
+  #[local]
+  Program Instance Symbols_fin : Finite Symbols
+  := {|
+    enum := [a];
+  |}.
+  Next Obligation.
+    repeat constructor; set_solver.
+  Qed.
+  Next Obligation.
+    intros []. set_solver.
+  Qed.
+
 
   Definition sig : Signature :=
     {| variables := StringMLVariables;

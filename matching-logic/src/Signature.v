@@ -21,6 +21,7 @@ Class Signature := {
   variables :> MLVariables;
   symbols : Set;
   sym_eqdec :> EqDecision symbols;
+  sym_countable :> Countable symbols;
 }.
 
 (* Later we will define signature morphisms in some file *)
