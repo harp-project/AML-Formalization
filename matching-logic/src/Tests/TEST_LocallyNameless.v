@@ -107,7 +107,6 @@ Module test_2.
     Instance Symbols_eqdec : EqDecision Symbols.
     Proof. solve_decision. Defined.
 
-    Print Sorts_Syntax.Symbols.
     #[local]
     Program Instance Symbols_fin : Finite Symbols :=
     {|
