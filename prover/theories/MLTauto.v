@@ -1509,7 +1509,8 @@ Section ml_tauto.
   Lemma abstract'_correct Γ ap ϕ
     (wfap : well_formed ap)
     (wfϕ : well_formed ϕ):
-    Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ))).
+    Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ)))
+    using AnyReasoning.
   Proof.
     funelim (abstract' _ _ _ _); try inversion e; subst; solve_match_impossibilities.
     - pose proof (wfp1 := wf_and_proj1 _ _ wfp).
@@ -1517,14 +1518,14 @@ Section ml_tauto.
       rewrite -Heqcall.
       simpl.
       match goal with
-      | |- (_ ⊢ ((_) <---> (?a and ?b))) => remember a as p1'; remember b as p2'
+      | |- (_ ⊢ ((_) <---> (?a and ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       apply and_of_equiv_is_equiv; subst; auto 10.
     - pose proof (wfp1 := wf_or_proj1 _ _ wfp).
       pose proof (wfp2 := wf_or_proj2 _ _ wfp).
       rewrite -Heqcall. simpl.
       match goal with
-      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      | |- (_ ⊢ ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       apply or_of_equiv_is_equiv; subst; auto.
     - pose proof (wfp' := wf_not_proj _ wfp).
@@ -1535,13 +1536,14 @@ Section ml_tauto.
       apply negate_equiv; auto.
     - rewrite -Heqcall.
       simpl.
+      usePropositionalReasoning.
       apply pf_iff_equiv_refl; auto.
     - pose proof (wfp1 := wf_imp_proj1 _ _ wfp).
       pose proof (wfp2 := wf_imp_proj2 _ _ wfp).
       rewrite -Heqcall.
       simpl.
       match goal with
-      | |- (_ ⊢ ((_) <---> (?a or ?b))) => remember a as p1'; remember b as p2'
+      | |- (_ ⊢ ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       eapply pf_iff_equiv_trans.
       5: {
@@ -1551,16 +1553,19 @@ Section ml_tauto.
       { subst; auto 10. }
       eapply pf_iff_equiv_trans.
       5: {
-        apply or_of_equiv_is_equiv. 6: apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
+        apply or_of_equiv_is_equiv. 6: usePropositionalReasoning; apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
         all: auto.
       }
       all: auto.
+      usePropositionalReasoning.
       apply impl_iff_notp_or_q; auto.
     - rewrite -Heqcall.
       simpl.
+      usePropositionalReasoning.
       apply p_and_notp_is_bot; auto.
     - rewrite -Heqcall.
       simpl.
+      usePropositionalReasoning.
       apply pf_iff_equiv_refl; auto.
   Qed.
       
