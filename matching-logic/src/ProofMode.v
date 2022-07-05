@@ -3928,9 +3928,8 @@ Section FOL_helpers.
   Proof.
     constructor.
     intros Γ ϕ pf Hpf.
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4]. simpl in *.
+    destruct Hpf as [Hpf2 Hpf3 Hpf4]. simpl in *.
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     { unfold implb in Hpf4. case_match.
@@ -3955,7 +3954,6 @@ Section FOL_helpers.
     }
     {
       constructor; simpl.
-      { exact I. }
       { set_solver. }
       { set_solver. }
       { reflexivity. }
@@ -3978,7 +3976,6 @@ Section FOL_helpers.
     }
     {
       constructor; simpl.
-      { exact I. }
       { set_solver. }
       { set_solver. }
       { reflexivity. }
@@ -3989,12 +3986,6 @@ Section FOL_helpers.
  
 
   End FOL_helpers.
-
-  Ltac useBasicReasoning :=
-    lazymatch goal with
-    | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
-    | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
-    end.
 
   Tactic Notation "change" "constraint" "in" ident(H) :=
     let i := fresh "i" in
