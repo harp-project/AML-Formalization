@@ -1738,14 +1738,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    remember_constraint as i.
-    destruct i; [inversion Heqi|].
-    injection Heqi as Heqgpi.
 
     epose proof (Htmp1 := (membership_or_2 _ _ _ HΓ)).
     (* TODO: [change constraint in _] should work even in proof mode! *)
     change constraint in Htmp1.
-    2: { subst gpi; try_solve_pile. }
+    remember_constraint as gpi.
 
     unfold patt_and.
     toMyGoal.
@@ -1777,29 +1774,19 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    remember_constraint as i.
-    destruct i; [inversion Heqi|].
-    injection Heqi as Heqgpi.
 
     epose proof (Htmp1 := (@membership_or_1 _ _ _ _ _ _ HΓ)).
     change constraint in Htmp1.
-    2: { subst gpi; try_solve_pile. }
-
     epose proof (Htmp2 := (@membership_not_1 _ _ _ _ HΓ)).
     change constraint in Htmp2.
-    2: { subst gpi; try_solve_pile. }
-
     epose proof (Htmp3 := (@membership_not_1 _ _ _ _ HΓ)).
     change constraint in Htmp3.
-    2: { subst gpi; try_solve_pile. }
-
     toMyGoal.
     { wf_auto2. }
     mgIntro.
     mgDestructAnd 0.
     unfold patt_and.
 
-    subst gpi.
     unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
     { wf_auto2. }
     mgIntro.
@@ -1828,97 +1815,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     + apply membership_and_2; assumption.
   Defined.
 
-  (*
-  Lemma bevar_subst_not_app_1 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ1 0 ->
-    ψ1 $ ψ2 <> evar_subst ψ1 p0 E.
-  Proof.
-    induction ψ1; intros Hwfc; simpl in *; auto.
-    { 
-      destruct_and!.
-      specialize (IHψ1_1 ltac:(assumption)).
-      specialize (IHψ1_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
-      apply f_equal.
-      eapply well_formed_bevar_subst;[|apply H0].
-      lia.
-    }
-  Qed.
-
-  Lemma bevar_subst_not_app_2 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ2 0 ->
-    ψ1 $ ψ2 <> bevar_subst ψ2 p0 E.
-  Proof.
-    induction ψ2; intros Hwfc; simpl in *; auto.
-    { 
-      destruct_and!.
-      specialize (IHψ2_1 ltac:(assumption)).
-      specialize (IHψ2_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H3 in IHψ2_2. apply IHψ2_2. clear IHψ2_2.
-      f_equal.
-      eapply well_formed_bevar_subst;[|apply H].
-      lia.
-    }
-  Qed.*)
-
-  About frames_on_the_way_to_hole'.
-
-
   Arguments frames_on_the_way_to_hole' {Σ} EvS SvS E ψ p q wfψ wfp wfq.
-
-  (*
-  Lemma free_evar_subst_not_app_1 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ1 0 ->
-    ψ1 $ ψ2 <> free_evar_subst ψ1 p0 E.
-  Proof.
-    induction ψ1; intros Hwfc; simpl in *; auto.
-    {
-      repeat case_match; auto. subst.
-    }
-    { 
-      destruct_and!.
-      specialize (IHψ1_1 ltac:(assumption)).
-      specialize (IHψ1_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
-      apply f_equal.
-      eapply well_formed_bevar_subst;[|apply H0].
-      lia.
-    }
-  Abort.
-
-
-  Lemma frames_on_the_way_to_hole'_not_eq EvS SvS x ψ p q wfψ wfp wfq
-    (ψ' : Pattern) (wfψ' : well_formed ψ' = true):
-    (exist _ ψ wfψ) ∉ (@frames_on_the_way_to_hole' Σ EvS SvS x ψ p q wfψ wfp wfq).
-  Proof.
-    move: ψ' wfψ'.
-    eapply frames_on_the_way_to_hole'_elim; intros ψ' wfψ'; intros.
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    {
-      pose proof (@well_formed_app_1 Σ _ _ wfψ0).
-      pose proof (@well_formed_app_2 Σ _ _ wfψ0).
-      specialize (H ψ1 ltac:(assumption)).
-      specialize (H0 ψ2 ltac:(assumption)).
-      intros Hcontra.
-      repeat rewrite elem_of_union in Hcontra.
-      destruct_or!.
-      {
-        rewrite elem_of_singleton in Hcontra. inversion Hcontra. clear Hcontra.
-      }
-      Set Printing All.
-      pi_set_solver.
-    }
-    { set_solver. }
-
-  Abort.
-*)
 
   Lemma equality_elimination_basic Γ φ1 φ2 C
     (HΓ : theory ⊆ Γ)
@@ -2946,23 +2843,6 @@ apply ProofMode.modus_tollens.
 exact H.
 Defined.
 
-Lemma useAnyReasoning {Σ : Signature} Γ ϕ i:
-  Γ ⊢ ϕ using i ->
-  Γ ⊢ ϕ using AnyReasoning.
-Proof.
-  intros H.
-  destruct i.
-  {
-    apply useBasicReasoning.
-    exact H.
-  }
-  {
-    destruct gpi.
-    eapply useGenericReasoning.
-    { apply pile_any. }
-    apply H.
-  }
-Qed.
 
 Lemma membership_imp {Σ : Signature} {syntax : Syntax} Γ x ϕ₁ ϕ₂:
 theory ⊆ Γ ->

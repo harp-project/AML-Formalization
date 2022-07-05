@@ -457,6 +457,7 @@ Section FOL_helpers.
     [set_solver|set_solver|idtac|set_solver];
     (destruct (uses_kt _H); simpl in *; try congruence)).
   Defined.
+  
 
   Lemma reorder_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
     well_formed A ->
@@ -1162,6 +1163,20 @@ Proof.
   { clear. set_solver. }
   { unfold implb. destruct pi_uses_kt0; reflexivity. }
   { clear. set_solver. }
+Qed.
+
+
+Lemma useAnyReasoning Γ ϕ i:
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ϕ using AnyReasoning.
+Proof.
+  intros H.
+  {
+    destruct i.
+    eapply useGenericReasoning.
+    { apply pile_any. }
+    apply H.
+  }
 Qed.
 
 

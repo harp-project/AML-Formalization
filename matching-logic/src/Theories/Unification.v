@@ -344,7 +344,7 @@ Section ProofSystemTheorems.
     * apply eq_sym, length_zero_iff_nil in Len. subst. cbn.
       toMyGoal. wf_auto2. mgIntro. mgClear 0. (* TODO: mgExact for meta theorems *)
       fromMyGoal. wf_auto2.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply (top_holds Γ).
     * destruct φ's. simpl in Len. congruence.
       simpl in Len. inversion Len. clear Len.
