@@ -4994,29 +4994,6 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Lemma not_kt_in_prop {Σ : Signature} :
-  ~ ProofInfoLe ( (ExGen := ∅, SVSubst := ∅, KT := true, FP := ∅)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-  specialize (HContra _ pf2).
-  feed specialize HContra.
-  {
-    unfold pf2. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { clear. set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4].
-  unfold pf2 in HC4.
-  simpl in HC4.
-  congruence.
-Qed.
-
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
   ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) ( gpi) ->
   pi_uses_kt gpi.
@@ -5029,14 +5006,13 @@ Proof.
   feed specialize H.
   {
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     reflexivity.
     { clear. set_solver. }
   }
   destruct H as [H1 H2 H3 H4].
-  unfold pf2 in H4. simpl in H4. exact H4.
+  unfold pf2 in H3. simpl in H3. exact H3.
 Qed.
 
 
@@ -5061,59 +5037,28 @@ unshelve (eexists).
 }
 {
   simpl.
-  pose proof (Hnot := not_kt_in_prop).
   constructor; simpl.
   {
-    destruct i;[|exact I].
-    contradiction.
-  }
-  {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf2.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf3.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ _ pile).
     exact Hpile.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     apply Hpf5.
   }
 }
 Defined.
 
 
-Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
-  ~ ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := ∅)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
-  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-  specialize (HContra _ pf2).
-  feed specialize HContra.
-  {
-    unfold pf2. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { clear. set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4].
-  simpl in *.
-  clear -HC1.
-  congruence.
-Qed.
 
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt fp:
   ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) ( gpi) ->
@@ -5127,7 +5072,6 @@ Proof.
   feed specialize H.
   {
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     reflexivity.
@@ -5135,7 +5079,7 @@ Proof.
   }
   destruct H as [H1 H2 H3 H4].
   simpl in *.
-  clear -H3. set_solver.
+  clear -H2. set_solver.
 Qed.
 
 Lemma Svar_subst {Σ : Signature}
@@ -5160,32 +5104,23 @@ Proof.
   }
 {
   simpl.
-  pose proof (Hnot := @not_svs_in_prop Σ X).
   constructor; simpl.
   {
-    destruct i;[|exact I].
-    contradiction.
-  }
-  {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf2.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ _ pile).
     clear -Hpile Hpf3.
     set_solver.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     exact Hpf4.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     exact Hpf5.
   }
 }
@@ -5206,7 +5141,6 @@ Proof.
   {
     simpl.
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     { reflexivity. }
@@ -5331,17 +5265,7 @@ Section FOL_helpers.
       apply svar_quantify_closed_ex. assumption.
     }
     
-    (* i =  gpi *)
-    destruct i.
-    {
-      exfalso.
-      apply not_kt_in_prop.
-      eapply pile_trans.
-      2: { apply pile. }
-      apply pile_svs_subseteq.
-      set_solver.
-    }
-    apply useBasicReasoning with (gpi := gpi) in Hpf.
+    apply useBasicReasoning with (i := i) in Hpf.
     epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
 
@@ -5371,13 +5295,6 @@ Section FOL_helpers.
     Unshelve.
     all: abstract(wf_auto2).
   Defined.
-
-
-  (* These [Local Private_*] lemmas are not generally useful, but we use them to keep the body
-     of [Private_prf_equiv_congruence] reasonably small. Because we want to reason about the body, too.
-     The lemmas are mostly placeholders for `wf_auto`.
-   *)
-
 
   Lemma prf_equiv_of_impl_of_equiv Γ a b a' b' i:
     well_formed a = true ->
@@ -6337,7 +6254,7 @@ End FOL_helpers.
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (exdepth : nat)
   (mudepth : nat)
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (pile : ProofInfoLe
    (
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
@@ -6969,7 +6886,7 @@ End FOL_helpers.
   Defined.
 
   Lemma prf_equiv_congruence Γ p q C
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (wfp : well_formed p = true)
   (wfq : well_formed q = true)
   (wfC: PC_wf C)
@@ -7052,13 +6969,6 @@ Proof.
     reflexivity.
   }
         (* i =  gpi *)
-  destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
-  
   useBasicReasoning.
   apply Ex_quan.
   abstract (wf_auto2).
@@ -7316,7 +7226,7 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   (wfp : well_formed p)
   (wfq : well_formed q)
   (wfC : PC_wf C)
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (pile : ProofInfoLe
   (
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
@@ -7391,7 +7301,7 @@ Proof.
 Qed.
 
 Lemma MyGoal_rewriteIff
-  {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : GenericProofInfo)
+  {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
   (pf : Γ ⊢ p <---> q using ( gpi)) :
   @mkMyGoal Σ Γ l (emplace C q) ( gpi) ->
@@ -8104,12 +8014,6 @@ Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
 Proof.
   intros wfϕ pile.
-  destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
   pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
   eapply useGenericReasoning. apply pile. apply Htmp.
 Defined.
@@ -8123,12 +8027,6 @@ Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
 Proof.
   intros wfϕ frϕ pile H.
   destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
-  destruct gpi.
   eapply MP.
   2: eapply forall_variable_substitution'.
   2: wf_auto2.
