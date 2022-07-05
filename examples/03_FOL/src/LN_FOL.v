@@ -719,6 +719,7 @@ Section FOL_ML_correspondence.
     evar_infinite := var_infinite;
     svar_infinite := var_infinite;
   |}.
+
   Instance sig : Signature := 
   {|
     variables := FOLVars;
