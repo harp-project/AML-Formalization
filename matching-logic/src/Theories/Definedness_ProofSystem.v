@@ -4187,24 +4187,26 @@ Defined.
 
 Lemma bott_not_total {Σ : Signature} {syntax : Syntax}:
   forall Γ, theory ⊆ Γ ->
-  Γ ⊢ ! ⌊ ⊥ ⌋.
+  Γ ⊢ ! ⌊ ⊥ ⌋
+  using AnyReasoning.
 Proof.
   intros Γ SubTheory.
   toMyGoal. wf_auto2.
   mgIntro. mgApply 0.
-  mgApplyMeta (@phi_impl_defined_phi _ _ _ (! ⊥) SubTheory ltac:(wf_auto2)).
+  mgApplyMeta (useAnyReasoning (@phi_impl_defined_phi _ _ _ (! ⊥) SubTheory ltac:(wf_auto2))).
   mgIntro. mgExactn 1.
 Defined.
 
 Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
   ∀ (Γ : Theory) (ϕ : Pattern),
-  theory ⊆ Γ → well_formed ϕ → Γ ⊢ ⌈ ! ϕ ⌉ <---> ! ⌊ ϕ ⌋.
+  theory ⊆ Γ → well_formed ϕ → Γ ⊢ ⌈ ! ϕ ⌉ <---> ! ⌊ ϕ ⌋
+  using AnyReasoning.
 Proof.
   intros Γ φ HΓ Wf. toMyGoal. wf_auto2.
   mgSplitAnd.
-  * mgIntro. mgApplyMeta (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf). mgExactn 0.
+  * mgIntro. mgApplyMeta (useAnyReasoning (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf)). mgExactn 0.
   * unfold patt_total.
-    pose proof (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)) as H.
+    pose proof (useAnyReasoning (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) as H.
     mgRewrite <- H at 1. mgIntro. mgExactn 0.
 Defined.
 
@@ -4212,15 +4214,21 @@ Lemma patt_or_total {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ,
   theory ⊆ Γ ->
   well_formed φ -> well_formed ψ ->
-  Γ ⊢  ⌊ φ ⌋ or ⌊ ψ ⌋ ---> ⌊ φ or ψ ⌋.
+  Γ ⊢  ⌊ φ ⌋ or ⌊ ψ ⌋ ---> ⌊ φ or ψ ⌋
+  using AnyReasoning.
 Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
   mgIntro. mgDestructOr 0.
-  * pose proof (@disj_left_intro _ Γ φ ψ Wf1 Wf2) as H.
-    apply floor_monotonic in H. 2-4: try wf_auto2.
+  * pose proof (useAnyReasoning (@disj_left_intro _ Γ φ ψ Wf1 Wf2)) as H.
+    apply floor_monotonic in H. 4,5: try wf_auto2.
+    2: { exact HΓ. }
+    2: { apply pile_any. }
     mgApplyMeta H. mgExactn 0.
-  * pose proof (@disj_right_intro _ Γ φ ψ Wf1 Wf2) as H.
-    apply floor_monotonic in H. 2-4: try wf_auto2.
+  * pose proof (useAnyReasoning (@disj_right_intro _ Γ φ ψ Wf1 Wf2)) as H.
+    apply floor_monotonic in H.
+    4,5: wf_auto2.
+    3: { apply pile_any. }
+    2: { exact HΓ. }
     mgApplyMeta H. mgExactn 0.
 Defined.
 
@@ -4228,25 +4236,27 @@ Lemma patt_defined_and {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ,
   theory ⊆ Γ ->
   well_formed φ -> well_formed ψ ->
-  Γ ⊢ ⌈ φ and ψ ⌉ ---> ⌈ φ ⌉ and ⌈ ψ ⌉.
+  Γ ⊢ ⌈ φ and ψ ⌉ ---> ⌈ φ ⌉ and ⌈ ψ ⌉
+  using AnyReasoning.
 Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
   unfold patt_and.
-  mgRewrite (@defined_not_iff_not_total _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
+  mgRewrite (useAnyReasoning (@defined_not_iff_not_total _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2))) at 1.
   do 2 mgIntro. mgApply 0. mgClear 0.
   mgApplyMeta (@patt_or_total _ _ _ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
   mgDestructOr 0.
   * mgLeft. unfold patt_total.
-    mgRewrite <- (@not_not_iff _ Γ φ Wf1) at 1. mgExactn 0.
+    mgRewrite <- (useAnyReasoning (@not_not_iff _ Γ φ Wf1)) at 1. mgExactn 0.
   * mgRight. unfold patt_total.
-    mgRewrite <- (@not_not_iff _ Γ ψ Wf2) at 1. mgExactn 0.
+    mgRewrite <- (useAnyReasoning (@not_not_iff _ Γ ψ Wf2)) at 1. mgExactn 0.
 Defined.
 
 Lemma patt_total_and {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ,
   theory ⊆ Γ ->
   well_formed φ -> well_formed ψ ->
-  Γ ⊢ ⌊ φ and ψ ⌋ <---> ⌊ φ ⌋ and ⌊ ψ ⌋.
+  Γ ⊢ ⌊ φ and ψ ⌋ <---> ⌊ φ ⌋ and ⌊ ψ ⌋
+  using AnyReasoning.
 Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMyGoal. wf_auto2.
   mgSplitAnd.
@@ -4257,10 +4267,10 @@ Proof.
     mgRewrite (@ceil_compat_in_or _ _ Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
     mgDestructOr 0.
     - mgLeft. mgRevert. unfold patt_total.
-      mgRewrite <- (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2)) at 1.
+      mgRewrite <- (useAnyReasoning (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
       mgIntro. mgExactn 0.
     - mgRight. mgRevert. unfold patt_total.
-      mgRewrite <- (@not_not_iff _ Γ ⌈ ! ψ ⌉ ltac:(wf_auto2)) at 1.
+      mgRewrite <- (useAnyReasoning (@not_not_iff _ Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
       mgIntro. mgExactn 0.
   * mgIntro. mgDestructAnd 0.
     unfold patt_and.
@@ -4274,7 +4284,8 @@ Defined.
 Lemma defined_variables_equal {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
-  Γ ⊢ ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x.
+  Γ ⊢ ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x
+  using AnyReasoning.
 Proof.
   intros x y Γ HΓ.
   toMyGoal. wf_auto2.
@@ -4289,9 +4300,16 @@ Proof.
   * mgApply 1. mgClear 1. mgIntro.
     pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
-    cbn in H0. case_match. 2: congruence.
+    
+    unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H))).
+    { exact syntax. }
+    { shelve. }
+    1-3: unfold PC_wf; simpl; wf_auto2.
+    { apply pile_refl. }
+    cbn in H0.
+    repeat case_match; try congruence; try lia.
+    apply useAnyReasoning in H0.
     apply pf_iff_proj1 in H0. 2-3: wf_auto2.
     mgApplyMeta H0 in 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
@@ -4300,19 +4318,25 @@ Proof.
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2)) (patt_free_evar x) y ltac:(wf_auto2)).
+    apply useAnyReasoning in H1.
     mgApplyMeta H1. simpl. mgSplitAnd. mgExactn 0. mgExactn 1.
   * mgApply 1. mgClear 1. mgIntro.
     pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H).
-    cbn in H0. case_match. 2: congruence.
+    unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H))).
+    { exact syntax. }
+    { shelve. }
+    1-3: unfold PC_wf; simpl; wf_auto2.
+    { apply pile_refl. }
+    cbn in H0. repeat case_match; try congruence; try lia.
+    apply useAnyReasoning in H0.
     apply pf_iff_proj1 in H0. 2-3: wf_auto2.
     mgApplyMeta H0 in 1.
     (* TODO: mgRewriteBy does not work for free evars :( *)
     pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
     epose proof (H2 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} ltac:(wf_auto2) H1).
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H1)).
     cbn in H2. case_match. 2: congruence.
     apply pf_iff_proj1 in H2. 2-3: wf_auto2.
     mgAssert (⌈ patt_free_evar x and patt_free_evar y ⌉). wf_auto2.
@@ -4323,5 +4347,9 @@ Proof.
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2)) (patt_free_evar y) x ltac:(wf_auto2)) as H3.
+    apply useAnyReasoning in H3.
     mgApplyMeta H3. simpl. mgSplitAnd. mgExactn 2. mgExactn 1.
+    Unshelve.
+    1-3: unfold PC_wf; simpl; wf_auto2.
+    apply pile_any.
 Defined.
