@@ -8423,7 +8423,7 @@ Proof.
   Unshelve.
   all: assumption.
 Defined.
-
+(* TODO: de-duplicate the code *)
 #[local]
 Ltac convertToNNF_rewrite_pat Ctx p i :=
   lazymatch p with
@@ -8432,35 +8432,35 @@ Ltac convertToNNF_rewrite_pat Ctx p i :=
         pose proof (@not_not_eq _ Ctx x ltac:(wf_auto2)) as H';
         apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx x i
     | patt_not (patt_and ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nand _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
         apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x or !y) i
     | patt_not (patt_or ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nor _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
         apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x and !y) i
     | patt_not (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@nimpl_eq_and _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
         apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (x and !y) i
     | (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@impl_eq_or _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
         apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x or y) i
     | patt_and ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
     | patt_or ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
