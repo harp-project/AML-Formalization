@@ -440,11 +440,8 @@ Section FOL_helpers.
   { clear -Hpf3 Hsvs. set_solver. }
   { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
   { clear -Hpf5 Hfp. set_solver.  }
-  Qed.
+  Defined.
 
-
-
-  (* This lemma is the reason why we could make P1,P2,P3 specialized to BasicReasoning *)
   Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
     Γ ⊢ ϕ using BasicReasoning ->
     Γ ⊢ ϕ using i.
@@ -874,88 +871,9 @@ Section FOL_helpers.
     apply bot_elim.
   Defined.
 
-  Lemma not_basic_in_prop : ~ProofInfoLe BasicReasoning pi_Propositional.
-  Proof.
-    intros [HContra].
-    pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
-    specialize (HContra _ _ pf).
-    feed specialize HContra.
-    {
-      constructor.
-      {
-        simpl. exact I.
-      }
-      {
-        simpl. unfold pf. apply reflexivity.
-      }
-      {
-        simpl. unfold pf. apply reflexivity.
-      }
-      {
-        simpl. reflexivity.
-      }
-      {
-        simpl. apply reflexivity.
-      }
-    }
-    destruct HContra as [Contra1 Contra2 Contra3 Contra4].
-    simpl in Contra1. congruence.
-  Qed.
-
-  Lemma not_exgen_x_in_prop (x : evar) :
-    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) pi_Propositional.
-  Proof.
-    intros [HContra].
-
-    remember (fresh_evar (patt_free_evar x)) as y.
-    pose (pf1 := @A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
-    pose (pf2 := @Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-    specialize (HContra _ _ pf2).
-    feed specialize HContra.
-    {
-      unfold pf2.
-      constructor.
-      { exact I. }
-      { simpl. clear. set_solver. }
-      { simpl. clear. set_solver. }
-      { simpl. reflexivity. }
-      { simpl. clear. set_solver. }
-    }
-    destruct HContra as [Hprop Hgen Hsvs Hkt].
-    clear -Hgen.
-    unfold pf2 in Hgen.
-    simpl in Hgen.
-    clear -Hgen.
-    set_solver.
-  Qed.
-
-  Lemma not_generic_in_prop evs svs kt fp :
-  ~ ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
-  specialize (HContra _ pf).
-  feed specialize HContra.
-  {
-    unfold pf. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4 HC5].
-  simpl in *.
-  clear -HC1.
-  congruence.
-Qed.
-
-
-
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
     :
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
@@ -968,15 +886,8 @@ Qed.
       exact pf.
     }
     {
-      destruct i.
-      {
-        exfalso. eapply not_generic_in_prop. apply pile.
-      }
       destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
       constructor; simpl.
-      {
-        exact I.
-      }
       {
         assumption.
       }
@@ -987,7 +898,7 @@ Qed.
         assumption.
       }
       { 
-        destruct gpi.
+        destruct i.
         simpl in *.
         apply pile_evs_svs_kt_back in pile.
         destruct_and!.
@@ -1022,7 +933,7 @@ Qed.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
   (wfψ : well_formed ψ)
-  {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+  {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
   :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
@@ -1035,16 +946,9 @@ Proof.
     exact pf.
   }
   {
-    destruct i.
-    {
-      exfalso. eapply not_generic_in_prop. apply pile.
-    }
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
     constructor; simpl.
     {
-      exact I.
-    }
-    {
       assumption.
     }
     {
@@ -1054,7 +958,7 @@ Proof.
       assumption.
     }
     {
-      destruct gpi.
+      destruct i.
       simpl in *.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!.
@@ -1095,9 +999,6 @@ Defined.
     {
       constructor; simpl.
       {
-        exact I.
-      }
-      {
         set_solver.
       }
       {
@@ -1124,9 +1025,6 @@ Defined.
     {
       constructor; simpl.
       {
-        exact I.
-      }
-      {
         set_solver.
       }
       {
@@ -1144,30 +1042,10 @@ Defined.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-
-  Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (gpi : GenericProofInfo) :
-  Γ ⊢ ϕ using BasicReasoning ->
-  Γ ⊢ ϕ using (pi_Generic gpi).
-Proof.
-  intros [pf Hpf].
-  exists pf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-  simpl in *.
-  constructor.
-  { exact I. }
-  { set_solver. }
-  { set_solver. }
-  { destruct (uses_kt pf); simpl in *.
-    { inversion Hpf4. }
-    reflexivity.
-  }
-  { set_solver. }
-Qed.
-
 Lemma mgUseBasicReasoning
-  (Γ : Theory) (l : list Pattern) (g : Pattern) (gpi : GenericProofInfo) :
+  (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
   @mkMyGoal Σ Γ l g BasicReasoning ->
-  @mkMyGoal Σ Γ l g (pi_Generic gpi).
+  @mkMyGoal Σ Γ l g i.
 Proof.
   intros H wf1 wf2.
   specialize (H wf1 wf2).
@@ -1179,15 +1057,14 @@ Defined.
 Lemma pile_evs_subseteq evs1 evs2 svs kt fp:
   evs1 ⊆ evs2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs1, SVSubst := svs, KT := kt, FP := fp))
-    (pi_Generic (ExGen := evs2, SVSubst := svs, KT := kt, FP := fp)).
+    ((ExGen := evs1, SVSubst := svs, KT := kt, FP := fp))
+    ((ExGen := evs2, SVSubst := svs, KT := kt, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { clear -Hsub Hpf2. set_solver. }
   { exact Hpf3. }
   { exact Hpf4. }
@@ -1197,15 +1074,14 @@ Qed.
 Lemma pile_svs_subseteq evs svs1 svs2 kt fp:
   svs1 ⊆ svs2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs1, KT := kt, FP := fp))
-    (pi_Generic (ExGen := evs, SVSubst := svs2, KT := kt, FP := fp)).
+    ( (ExGen := evs, SVSubst := svs1, KT := kt, FP := fp))
+    ( (ExGen := evs, SVSubst := svs2, KT := kt, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { clear -Hsub Hpf3. set_solver. }
   { exact Hpf4. }
@@ -1215,15 +1091,14 @@ Qed.
 Lemma pile_kt_impl evs svs kt1 kt2 fp:
   kt1 ==> kt2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt1, FP := fp))
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt2, FP := fp)).
+    ((ExGen := evs, SVSubst := svs, KT := kt1, FP := fp))
+    ((ExGen := evs, SVSubst := svs, KT := kt2, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { exact Hpf3. }
   { unfold implb in *.  destruct (uses_kt pf),kt1; simpl in *; try reflexivity.
@@ -1236,15 +1111,14 @@ Qed.
 Lemma pile_fp_subseteq evs svs kt fp1 fp2:
   fp1 ⊆ fp2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp1))
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp2)).
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp1))
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp2)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hfp5].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hfp5].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { exact Hpf3. }
   { exact Hpf4. }
@@ -1257,8 +1131,8 @@ svs1 ⊆ svs2 ->
 kt1 ==> kt2 ->
 fp1 ⊆ fp2 ->
 ProofInfoLe
-  (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-  (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
+  ((ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+  ((ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
 Proof.
 intros Hevs Hsvs Hkt Hfp.
 eapply pile_trans.
@@ -1281,34 +1155,14 @@ Qed.
 Lemma pile_any i:
   ProofInfoLe i AnyReasoning.
 Proof.
-  destruct i.
-  {
-    apply pile_prop.
-  }
   unfold AnyReasoning.
-  destruct gpi.
+  destruct i.
   apply pile_evs_svs_kt.
   { clear. set_solver. }
   { clear. set_solver. }
   { unfold implb. destruct pi_uses_kt0; reflexivity. }
   { clear. set_solver. }
 Qed.
-
-
-
-
-Lemma mgUseGenericReasoning
-(Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) evs svs kt fp :
-(ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-@mkMyGoal Σ Γ l g ((pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp))) ->
-@mkMyGoal Σ Γ l g i.
-Proof.
-intros Hpile H wf1 wf2.
-specialize (H wf1 wf2).
-eapply useGenericReasoning.
-2: exact H.
-apply Hpile.
-Defined.
 
 
   Fixpoint frames_of_AC (C : Application_context)
