@@ -207,9 +207,9 @@ Proof.
   }
 Defined.
 
-Arguments P1 _ (_%ml) (_%ml) _ _ : clear implicits.
-Arguments P2 _ (_%ml) (_%ml) (_%ml) _ _ _ : clear implicits.
-Arguments P3 _ (_%ml) _ : clear implicits.
+Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
+Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
+Arguments P3 {Σ} _ (_%ml) _.
 
 
 Section FOL_helpers.
@@ -223,10 +223,10 @@ Section FOL_helpers.
     using BasicReasoning.
   Proof. 
     intros WFA.
-    pose (_1 := P2 Σ Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_2 := P1 Σ Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (_3 := MP _2 _1).
-    pose (_4 := P1 Σ Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (_5 := MP _4 _3).
     exact _5.
   Defined.
@@ -238,16 +238,16 @@ Section FOL_helpers.
     using BasicReasoning.
   Proof.
     intros WFA WFB.
-    pose (H1 := P2 Σ Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (H2 := (P2 Σ Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
     pose (H3 := MP H1 H2).
-    pose (H4 := (P1 Σ Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+    pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
       (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
     pose (H5 := MP  H3 H4).
-    pose (H6 := (P2 Σ Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+    pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
       ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
     pose (H7 := MP H5 H6).
-    pose (H8 := (P1 Σ Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+    pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
     pose (H9 := MP H8 H7).
     exact H9.
   Defined.
@@ -273,15 +273,15 @@ Section FOL_helpers.
     intros WFA WFB WFC.
    
     pose (t1 := (MP
-                    (P1 Σ Γ ((A ---> B) ---> A ---> C) B ltac:(wf_auto2) ltac:(wf_auto2))
-                    (P1 Σ Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)))).
+                    (P1 Γ ((A ---> B) ---> A ---> C) B ltac:(wf_auto2) ltac:(wf_auto2))
+                    (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)))).
   
     pose(ABC := (A ---> B ---> C)).
     
     eapply MP.
     - eapply MP.
-      + apply(P1 Σ _ B A ltac:(wf_auto2) ltac:(wf_auto2)).
-      + apply(P1 Σ _ (B ---> A ---> B) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply(P1 _ B A ltac:(wf_auto2) ltac:(wf_auto2)).
+      + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)).
     - eapply MP.
       + eapply MP.
         * eapply MP.
@@ -289,16 +289,16 @@ Section FOL_helpers.
              ++ apply (@A_impl_A _ ABC ltac:(wf_auto2)).
              ++ eapply MP.
                 ** eapply MP.
-                   --- apply(P2 Σ _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-                   --- unshelve (eapply(P1 Σ _ _ (A ---> B ---> C) _ _)); wf_auto2.
+                   --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+                   --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)); wf_auto2.
                 ** apply P2; wf_auto2.
           -- eapply MP.
              ++ apply t1.
-             ++ apply(P2 Σ _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+             ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
         * eapply MP.
           -- eapply MP.
-             ++ apply(P2 Σ _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-             ++ apply(P1 Σ _ _ ABC); wf_auto2.
+             ++ apply(P2 _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+             ++ apply(P1 _ _ ABC); wf_auto2.
           -- apply P2; wf_auto2.
       + apply P2; wf_auto2.
   Defined.
