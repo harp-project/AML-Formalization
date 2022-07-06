@@ -643,7 +643,7 @@ Definition derives_using {Σ : Signature} Γ ϕ pi
 Definition derives {Σ : Signature} Γ ϕ
 := derives_using Γ ϕ AnyReasoning.
 
-Definition raw_proof_of {Σ : Signature} Γ ϕ pi:
+Definition raw_proof_of {Σ : Signature} {Γ} {ϕ} pi:
   derives_using Γ ϕ pi ->
   ML_proof_system Γ ϕ
 := fun pf => proj1_sig pf.

@@ -100,7 +100,7 @@ Module MMTest.
   Lemma ϕ₁_holds:
     ∅ ⊢ ϕ₁.
   Proof.
-    apply P1; auto.
+    gapply P1; auto; apply pile_any.
   Defined.
 
   Definition proof_1 : string :=
@@ -119,7 +119,7 @@ Module MMTest.
   Lemma ϕ₂_holds:
     ∅ ⊢ ϕ₂.
   Proof.
-    apply P2; auto.
+    gapply P2; auto; apply pile_any.
   Defined.
 
   Definition proof_2 : string :=
