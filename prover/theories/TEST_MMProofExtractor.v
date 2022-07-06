@@ -140,7 +140,7 @@ Module MMTest.
   Lemma ϕ₃_holds:
     ∅ ⊢ ϕ₃.
   Proof.
-    apply P3; auto.
+    gapply P3; auto. apply pile_any.
   Defined.
 
   Definition proof_3 : string :=
@@ -159,7 +159,7 @@ Module MMTest.
   Lemma ϕ₄_holds:
     ∅ ⊢ ϕ₄.
   Proof.
-    apply A_impl_A. auto.
+    gapply A_impl_A. apply pile_any. auto.
   Defined.
 
   Definition proof_4 : string :=
@@ -178,7 +178,7 @@ Module MMTest.
   Lemma ϕ₅_holds:
     ∅ ⊢ ϕ₅.
   Proof.
-    apply impl_iff_notp_or_q; auto.
+    gapply impl_iff_notp_or_q; auto. apply pile_any.
   Defined.
 
   Definition proof_5 : string :=
@@ -197,7 +197,7 @@ Module MMTest.
   Lemma ϕ₆_holds:
     ∅ ⊢ ϕ₆.
   Proof.
-    apply A_impl_not_not_B; auto.
+    gapply A_impl_not_not_B; auto. apply pile_any.
   Defined.
 
   Definition proof_6 : string :=
@@ -217,7 +217,7 @@ Module MMTest.
   Lemma ϕ₇_holds:
     ∅ ⊢ ϕ₇.
   Proof.
-    apply prf_weaken_conclusion; auto.
+    gapply prf_weaken_conclusion; auto. apply pile_any.
   Defined.
 
   Definition proof_7 : string :=
@@ -237,7 +237,7 @@ Module MMTest.
   Lemma ϕ₈_holds:
     ∅ ⊢ ϕ₈.
   Proof.
-    apply pf_conj_elim_l; auto.
+    gapply pf_conj_elim_l; auto. apply pile_any.
   Defined.
 
   Definition proof_8 : string :=
@@ -260,7 +260,7 @@ Module MMTest.
   Lemma ϕ9_holds:
     ∅ ⊢ ϕ9.
   Proof.
-    apply P1; auto.
+    gapply P1; auto. apply pile_any.
   Defined.
   
   Definition proof_9 : string :=
