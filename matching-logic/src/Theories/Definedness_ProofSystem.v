@@ -1724,12 +1724,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
   Defined.
 
 
-  (*
-  Check useBasicReasoning.
-  Lemma useBasicReasoningWithDefFP Γ ϕ gpi:
-    Γ ⊢i ϕ using BasicRea
-    *)
-
   Lemma membership_and_1 Γ x ϕ₁ ϕ₂:
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
@@ -2455,7 +2449,7 @@ Unshelve.
 all: abstract (wf_auto2).
 
 Qed.
-Check @mkMyGoal.
+
 Ltac2 mgRewriteBy (n : constr) (atn : int) :=
 eapply (@cast_proof_mg_hyps)
 > [ (rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn; rewrite /skipn); reflexivity)
@@ -2836,7 +2830,7 @@ Proof.
 intros HΓ wfϕ H.
 toMyGoal.
 { wf_auto2. }
-Check @useBasicReasoning.
+
 mgRewrite (@useBasicReasoning Σ Γ _ AnyReasoning (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
 fromMyGoal.
 apply ProofMode.modus_tollens.
@@ -3696,7 +3690,7 @@ assert (Htmp: Γ ⊢i ((evar_open 0 y (b0 ∈ml (! ⌈ ϕ ⌉))) ---> (evar_open
   exact HΓ.
 }
 
-Check @ex_quan_monotone.
+
 unshelve (mgApplyMeta (useAnyReasoning (@ex_quan_monotone Σ Γ  y _ _ AnyReasoning _ Htmp)) in 0).
 { apply pile_any. }
 clear Htmp.

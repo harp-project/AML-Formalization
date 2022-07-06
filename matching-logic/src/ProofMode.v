@@ -55,6 +55,7 @@ Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
 
 
 Ltac toMyGoal :=
+  unfold ProofSystem.derives;
   lazymatch goal with
   | [ |- ?G ⊢i ?phi using ?pi]
     => cut (of_MyGoal (MyGoal_from_goal G phi pi));
@@ -1962,8 +1963,8 @@ Proof.
      wf2 e)).
   simpl in *.
   apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf.
-  apply proj1_sig_eq in Heqs0. rewrite Heqs0.
-  apply proj1_sig_eq in Heqs. simpl in Heqs. rewrite -Heqs.
+  apply proj1_sig_eq in Heqd0. rewrite Heqd0.
+  apply proj1_sig_eq in Heqd. simpl in Heqd. rewrite -Heqd.
   f_equal. f_equal.
   { apply UIP_dec; apply bool_eqdec. }
   { apply UIP_dec. apply bool_eqdec. }
@@ -1981,7 +1982,7 @@ Proof.
   apply f_equal. f_equal.
   apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf. clear Heqpf. simpl.
   case_match. simpl in *.
-  apply proj1_sig_eq in Heqs. simpl in Heqs. rewrite -Heqs.
+  apply proj1_sig_eq in Heqd. simpl in Heqd. rewrite -Heqd.
   f_equal. f_equal.
   { apply UIP_dec; apply bool_eqdec. }
   { apply UIP_dec. apply bool_eqdec. }
@@ -7463,6 +7464,7 @@ Ltac2 heat :=
 .
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
+  unfold ProofSystem.derives in hiff;
   lazy_match! Constr.type hiff with
   | _ ⊢i (?a <---> ?a') using _
     =>

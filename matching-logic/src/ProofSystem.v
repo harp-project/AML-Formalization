@@ -636,12 +636,24 @@ Qed.
 Definition BasicReasoning {Σ} : ProofInfo := ((@mkProofInfo Σ ∅ ∅ false ∅)).
 Definition AnyReasoning {Σ : Signature} : ProofInfo := (@mkProofInfo Σ ⊤ ⊤ true ⊤).
 
+
+Definition derives_using {Σ : Signature} Γ ϕ pi
+:= ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }).
+
+Definition derives {Σ : Signature} Γ ϕ
+:= derives_using Γ ϕ AnyReasoning.
+
+Definition raw_proof_of {Σ : Signature} Γ ϕ pi:
+  derives_using Γ ϕ pi ->
+  ML_proof_system Γ ϕ
+:= fun pf => proj1_sig pf.
+
 Module Notations.
 
 Notation "Γ '⊢i' ϕ 'using' pi"
-:= ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }) (at level 95, no associativity).
+:= (derives_using Γ ϕ pi)  (at level 95, no associativity).
 
-Notation "Γ ⊢ ϕ" := (Γ ⊢i ϕ using AnyReasoning)
+Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
 
 End Notations.
