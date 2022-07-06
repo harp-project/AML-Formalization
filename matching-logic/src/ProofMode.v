@@ -2016,6 +2016,7 @@ Ltac simplLocalContext :=
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
 
 Ltac useBasicReasoning :=
+  unfold ProofSystem.derives;
   lazymatch goal with
   | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
   | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
