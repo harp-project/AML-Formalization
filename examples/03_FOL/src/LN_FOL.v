@@ -1091,7 +1091,7 @@ Section FOL_ML_correspondence.
   
   
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
-  Notation "Γ ⊢_ML form" := (ML_proof_system Γ form) (at level 50).
+  Notation "Γ ⊢_ML form" := (@ProofSystem.derives _ Γ form) (at level 50).
 
   Theorem in_FOL_theory : forall Γ x,
     List.In x Γ -> convert_form x ∈ from_FOL_theory Γ.
