@@ -482,7 +482,7 @@ Section soundness_completeness.
     * unfold update_env. destruct decide; simpl in *; subst; auto. intuition.
     * case_match; simpl; auto.
       subst. unfold update_env. destruct decide; simpl; auto. congruence.
-    * do 2 rewrite map_map. f_equal. Search map eq.
+    * do 2 rewrite map_map. f_equal.
       apply map_ext_in. intros. apply IH. exact H.
       simpl in *.
       clear IH. induction v. inversion H.
@@ -694,7 +694,7 @@ Section FOL_ML_correspondence.
   Context {Σ_vars : FOL_variables}.
   Context {Σ_funcs : funcs_signature}.
   Context {Σ_preds : preds_signature}.
-  Print preds_signature.
+
   Context {preds_countable : @Countable (@preds Σ_preds) preds_eqdec}
           {funs_countable : @Countable (@funs Σ_funcs) funs_eqdec}.
 
@@ -715,7 +715,6 @@ Section FOL_ML_correspondence.
   Proof.
     destruct preds_countable as [encp decp PDE].
     inversion funs_countable as [encf decf FDE].
-    Search Countable.
     set (enc :=
          fun (s : Symbols) =>
          match s with
@@ -1092,7 +1091,7 @@ Section FOL_ML_correspondence.
   
   
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
-  Notation "Γ ⊢_ML form" := (ML_proof_system Γ form) (at level 50).
+  Notation "Γ ⊢_ML form" := (@ProofSystem.derives _ Γ form) (at level 50).
 
   Theorem in_FOL_theory : forall Γ x,
     List.In x Γ -> convert_form x ∈ from_FOL_theory Γ.
@@ -1345,7 +1344,7 @@ Section FOL_ML_correspondence.
 
   Proposition term_functionality :
     forall t Γ, wf_term t 0 ->
-      from_FOL_theory Γ ⊢_ML patt_exists (patt_equal (convert_term t) (patt_bound_evar 0)) using AnyReasoning.
+      from_FOL_theory Γ ⊢_ML patt_exists (patt_equal (convert_term t) (patt_bound_evar 0)) .
   Proof.
     induction t using term_rect; intros.
     * simpl.
@@ -1355,7 +1354,7 @@ Section FOL_ML_correspondence.
       gapply H1. apply pile_any.
       gapply H0. apply pile_any.
     * simpl in H. inversion H.
-    * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F) using AnyReasoning). {
+    * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F) ). {
         gapply hypothesis. apply pile_any. apply ax_wf. apply ax_in.
       } simpl in H1, H0.
       simpl. remember (@patt_sym sig (sym_fun F)) as start.
@@ -1409,7 +1408,7 @@ Section FOL_ML_correspondence.
                   auto; try lia.
               all: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         }
-        assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) using AnyReasoning). {
+        assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) ). {
           apply conj_intro_meta; auto.
           unfold well_formed. simpl. rewrite positive_term_FOL_ML.
           unfold well_formed_closed. simpl. apply wf_increase_term with (n' := 1) in E2. 2: lia.
@@ -1470,7 +1469,7 @@ Section FOL_ML_correspondence.
   Theorem arrow_1 : forall (φ : form) (Γ : list form), 
     Γ ⊢_FOL φ
    -> 
-    from_FOL_theory Γ ⊢_ML convert_form φ using AnyReasoning.
+    from_FOL_theory Γ ⊢_ML convert_form φ .
   Proof.
     intros φ Γ IH. induction IH; intros.
     * gapply hypothesis. apply pile_any.

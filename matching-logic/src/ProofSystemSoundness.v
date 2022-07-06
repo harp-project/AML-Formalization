@@ -10,7 +10,7 @@ From MatchingLogic.Utils Require Import extralibrary.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.ProofSystem.Notations_private.
 
 Section soundness.
   Open Scope ml_scope.
@@ -174,7 +174,7 @@ Qed.
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
-  well_formed phi -> (theory ⊢ phi) -> (theory ⊨ phi).
+  well_formed phi -> (theory ⊢r phi) -> (theory ⊨ phi).
 Proof.
   intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
   intros m Hv ρ. 
