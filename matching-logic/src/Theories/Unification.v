@@ -45,8 +45,7 @@ Section ProofSystemTheorems.
   Lemma Prop₃_left: forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ ->
       well_formed φ -> well_formed φ' ->
-      Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ')
-      using AnyReasoning.
+      Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ').
   Proof.
     intros Γ φ φ' SubTheory Mufree Wf1 Wf2.
     toMyGoal. wf_auto2.
@@ -59,9 +58,9 @@ Section ProofSystemTheorems.
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
       well_formed φ -> well_formed φ' ->
-      Γ ⊢ (ex , (φ =ml b0)) using AnyReasoning ->
-      Γ ⊢ (ex , (φ' =ml b0)) using AnyReasoning ->
-      Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ') using AnyReasoning .
+      Γ ⊢ (ex , (φ =ml b0)) ->
+      Γ ⊢ (ex , (φ' =ml b0)) ->
+      Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ') .
   Proof.
     intros Γ φ φ' HΓ Mufree Wf1 Wf2 Funφ Funφ'.
     unfold patt_in, patt_equal.
@@ -113,8 +112,7 @@ Section ProofSystemTheorems.
 
   Lemma functional_pattern_defined :
     forall Γ φ, theory ⊆ Γ -> well_formed φ ->
-       Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉
-       using AnyReasoning.
+       Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
   Proof.
     intros Γ φ HΓ Wf.
     toMyGoal. wf_auto2.
@@ -137,15 +135,15 @@ Section ProofSystemTheorems.
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
       well_formed φ -> well_formed φ' ->
-      Γ ⊢ ⌈ φ' ⌉ using AnyReasoning ->
-      Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ') using AnyReasoning.
+      Γ ⊢ ⌈ φ' ⌉  ->
+      Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ') .
   Proof.
     intros Γ φ φ' HΓ MF WF1 WF2 Def.
     toMyGoal. wf_auto2.
     mgIntro.
     mgRewriteBy 0 at 1; cbn; wf_auto2.
       mgClear 0. unfold patt_in.
-      assert (Γ ⊢ ( φ' and φ' <---> φ') using AnyReasoning) as H1.
+      assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
       {
         toMyGoal. wf_auto2.
         mgSplitAnd; mgIntro.
@@ -159,9 +157,9 @@ Section ProofSystemTheorems.
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
       well_formed φ -> well_formed φ' ->
-      Γ ⊢ (ex , (φ =ml b0)) using AnyReasoning ->
-      Γ ⊢ (ex , (φ' =ml b0)) using AnyReasoning ->
-      Γ ⊢ (φ ∈ml φ') =ml (φ =ml φ') using AnyReasoning.
+      Γ ⊢ (ex , (φ =ml b0))  ->
+      Γ ⊢ (ex , (φ' =ml b0))  ->
+      Γ ⊢ (φ ∈ml φ') =ml (φ =ml φ') .
   Proof.
     intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
     unfold patt_equal at 1.
@@ -189,9 +187,9 @@ Section ProofSystemTheorems.
   Lemma Prop₃_right : forall Γ φ φ',
       theory ⊆ Γ ->
       well_formed φ -> well_formed φ' -> mu_free φ' ->
-      Γ ⊢ (ex , (φ =ml b0)) using AnyReasoning ->
-      Γ ⊢ (ex , (φ' =ml b0)) using AnyReasoning ->
-      Γ ⊢ (φ and φ') ---> (φ and (φ =ml φ')) using AnyReasoning.
+      Γ ⊢ (ex , (φ =ml b0))  ->
+      Γ ⊢ (ex , (φ' =ml b0))  ->
+      Γ ⊢ (φ and φ') ---> (φ and (φ =ml φ')) .
   Proof.
     intros Γ φ φ' HΓ Wf1 Wf2 MF Func1 Func2.
     toMyGoal. wf_auto2.
@@ -211,7 +209,7 @@ Section ProofSystemTheorems.
     well_formed φ -> well_formed φ'
   ->
     Γ ⊢ φ and φ' =ml φ' ---> φ
-    using AnyReasoning.
+    .
   Proof.
     intros φ φ' Γ WF1 WF2.
     toMyGoal. wf_auto2.
@@ -236,7 +234,7 @@ Section ProofSystemTheorems.
     well_formed φ' ->
     Γ ⊢ φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x ---> 
         φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x
-    using AnyReasoning.
+    .
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
     assert (well_formed (φ.[evar:0↦φ'])) as WFF.
@@ -261,7 +259,7 @@ Section ProofSystemTheorems.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
-                φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ'] using AnyReasoning) as Hiff. {
+                φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ'] ) as Hiff. {
       toMyGoal; wf_auto2.
       mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 1.
     }
@@ -283,7 +281,7 @@ Section ProofSystemTheorems.
     well_formed φ' ->
     Γ ⊢ φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x --->
         φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x
-    using AnyReasoning.
+    .
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
     assert (well_formed (φ.[evar:0↦φ'])) as WFF.
@@ -302,7 +300,7 @@ Section ProofSystemTheorems.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
-                φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x] using AnyReasoning) as Hiff. {
+                φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x] ) as Hiff. {
       toMyGoal; wf_auto2.
       mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 0.
     }
@@ -337,7 +335,7 @@ Section ProofSystemTheorems.
   ->
     Γ ⊢ application_chain ψ φs =ml application_chain ψ φ's --->
          fold_right (fun '(x, y) Acc => Acc and x =ml y) Top (zip φs φ's)
-    using AnyReasoning.
+    .
   Proof.
     induction φs;
     intros ψ φ's Γ Len WF WFs1 WFs2.
@@ -439,7 +437,7 @@ Section UnificationProcedure.
     forall Γ, Γ ⊢ foldr patt_and p0 (l ++ p::l') <---> foldr patt_and p0 (p::l ++ l').
   Proof.
     intros l. induction l; intros p l' p0 WFp WFl WFl' Γ.
-    * simpl. apply pf_iff_equiv_refl. wf_auto2.
+    * simpl. useBasicReasoning. apply pf_iff_equiv_refl. wf_auto2.
     * simpl.
   Abort.
 
@@ -469,7 +467,7 @@ Section UnificationProcedure.
     forall u u' : Unification_problem,
     u ===> Some u' ->
     wf_unification u ->
-    forall Γ, theory ⊆ Γ -> Γ ⊢ unification_to_pattern u ---> unification_to_pattern u' using AnyReasoning.
+    forall Γ, theory ⊆ Γ -> Γ ⊢ unification_to_pattern u ---> unification_to_pattern u' .
   Proof.
     intros u u' D WF.
     assert (wf_unification u') as H.
