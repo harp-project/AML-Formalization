@@ -30,92 +30,11 @@ Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 
 
-Definition coEVarSet {Σ : Signature} := coGset evar.
-Definition coSVarSet {Σ : Signature} := coGset svar.
-Definition WfpSet {Σ : Signature} := gmap.gset wfPattern.
-Definition coWfpSet {Σ : Signature} := coGset wfPattern.
-
-Record ProofInfo {Σ : Signature} :=
-  mkProofInfo
-  {
-    pi_generalized_evars : coEVarSet ;
-    pi_substituted_svars : coSVarSet ;
-    pi_uses_kt : bool ;
-    pi_framing_patterns : coWfpSet ; 
-  }.
-
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
-  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
-
-
-(* A proof together with some properties of it. *)
-Record ProofInfoMeaning
-  {Σ : Signature}
-  (Γ : Theory)
-  (ϕ : Pattern)
-  (pwi_pf : Γ ⊢ ϕ)
-  (pi : ProofInfo)
-  : Prop
-  :=
-mkProofInfoMeaning
-{
-  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
-  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
-  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
-  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
-}.
-
-Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
-{ pi_le :
-  forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢ ϕ),
-    @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
-}.
-
-(*
-#[global]
-Instance
-*)
-Lemma pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
-Proof.
-  constructor. intros Γ ϕ pf H. exact H.
-Qed.
-
-(*
-#[global]
-Instance
-*)
-Lemma pile_trans {Σ : Signature}
-  (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
-: ProofInfoLe i₁ i₃.
-Proof.
-  destruct PILE12 as [PILE12].
-  destruct PILE23 as [PILE23].
-  constructor. intros Γ ϕ pf.
-  specialize (PILE12 Γ ϕ pf).
-  specialize (PILE23 Γ ϕ pf).
-  tauto.
-Qed.
-
-Definition BasicReasoning {Σ} : ProofInfo := ((@mkProofInfo Σ ∅ ∅ false ∅)).
-Definition AnyReasoning {Σ : Signature} : ProofInfo := (@mkProofInfo Σ ⊤ ⊤ true ⊤).
-
-
-(* Originally, the notation was defined like this: *)
-(*
-Notation "Γ ⊢ ϕ 'using' pi"
-:= (@ProofWithInfo _ Γ ϕ pi) (at level 95, no associativity).
-*)
-(* However, this overlaps with the old notation [Γ ⊢ ϕ] and makes it unusable alone.*)
-
-Notation "G 'using' pi"
-:= ({pf : G | @ProofInfoMeaning _ _ _ pf pi }) (at level 95, no associativity).
-
-
 Record MyGoal {Σ : Signature} : Type := mkMyGoal
   { mgTheory : Theory;
     mgHypotheses: list Pattern;
     mgConclusion : Pattern ;
-    mgInfo : ProofInfo ;
+    mgInfo : ProofSystem.ProofInfo ;
   }.
 
 Definition MyGoal_from_goal
@@ -127,7 +46,7 @@ Definition MyGoal_from_goal
 Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
   well_formed (mgConclusion MG) ->
   Pattern.wf (mgHypotheses MG) ->
-  (mgTheory MG) ⊢ (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
+  (mgTheory MG) ⊢i (fold_right patt_imp (mgConclusion MG) (mgHypotheses MG))
   using (mgInfo MG).
 
   (* This is useful only for printing. *)
@@ -137,7 +56,7 @@ Coercion of_MyGoal {Σ : Signature} (MG : MyGoal) : Type :=
 
 Ltac toMyGoal :=
   lazymatch goal with
-  | [ |- ?G ⊢ ?phi using ?pi]
+  | [ |- ?G ⊢i ?phi using ?pi]
     => cut (of_MyGoal (MyGoal_from_goal G phi pi));
        unfold MyGoal_from_goal;
        [(unfold of_MyGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
@@ -150,7 +69,7 @@ Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexiv
 Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
   well_formed ϕ ->
   well_formed ψ ->
-  Γ ⊢ ϕ ---> ψ ---> ϕ 
+  Γ ⊢i ϕ ---> ψ ---> ϕ 
   using BasicReasoning.
 Proof.
   intros wfϕ wfψ.
@@ -163,7 +82,7 @@ Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
   well_formed ϕ ->
   well_formed ψ ->
   well_formed ξ ->
-  Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
+  Γ ⊢i (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
   using BasicReasoning.
 Proof.
   intros wfϕ wfψ wfξ.
@@ -174,7 +93,7 @@ Defined.
 
 Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
   well_formed ϕ ->
-  Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
+  Γ ⊢i (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
   using BasicReasoning.
 Proof.
   intros wfϕ.
@@ -184,9 +103,9 @@ Proof.
 Defined.
 
 Lemma MP {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
-  Γ ⊢ ϕ₁ using i ->
-  Γ ⊢ (ϕ₁ ---> ϕ₂) using i ->
-  Γ ⊢ ϕ₂ using i.
+  Γ ⊢i ϕ₁ using i ->
+  Γ ⊢i (ϕ₁ ---> ϕ₂) using i ->
+  Γ ⊢i ϕ₂ using i.
 Proof.
   intros H1 H2.
   unshelve (eexists).
@@ -219,7 +138,7 @@ Section FOL_helpers.
 
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) ->
-    Γ ⊢ (A ---> A)
+    Γ ⊢i (A ---> A)
     using BasicReasoning.
   Proof. 
     intros WFA.
@@ -234,7 +153,7 @@ Section FOL_helpers.
   Lemma P4m (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A))
+    Γ ⊢i ((A ---> B) ---> ((A ---> !B) ---> !A))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -254,7 +173,7 @@ Section FOL_helpers.
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A ->
-    Γ ⊢ ((A ---> !A) ---> !A)
+    Γ ⊢i ((A ---> !A) ---> !A)
     using BasicReasoning.
   Proof.
     intros WFA.
@@ -267,7 +186,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C))
+    Γ ⊢i ((A ---> B ---> C) ---> ( B ---> A ---> C))
     using BasicReasoning.
   Proof.
     intros WFA WFB WFC.
@@ -306,8 +225,8 @@ Section FOL_helpers.
   Lemma liftPi (Γ : Theory) (ϕ : Pattern) (i₁ i₂ : ProofInfo)
     {pile : ProofInfoLe i₁ i₂}
     :
-    Γ ⊢ ϕ using i₁ ->
-    Γ ⊢ ϕ using i₂.
+    Γ ⊢i ϕ using i₁ ->
+    Γ ⊢i ϕ using i₂.
   Proof.
       intros [pf Hpf].
       apply pile in Hpf.
@@ -414,18 +333,18 @@ Section FOL_helpers.
         { simpl. set_solver. }
       }
       destruct pile1, pile2. simpl in *.
-      rewrite elem_of_subseteq in pwi_pf_fp1.
-      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp1.
-      specialize (pwi_pf_fp1 (exist _ p wfp) ltac:(set_solver)).
-      exact pwi_pf_fp1.
+      rewrite elem_of_subseteq in pwi_pf_fp0.
+      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp0.
+      specialize (pwi_pf_fp0 (exist _ p wfp) ltac:(set_solver)).
+      exact pwi_pf_fp0.
     }
   Qed.
 
 
   Lemma useGenericReasoning (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
     (ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-    Γ ⊢ ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
-    Γ ⊢ ϕ using i.
+    Γ ⊢i ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
+    Γ ⊢i ϕ using i.
   Proof.
   intros pile [pf Hpf].
   exists pf.
@@ -433,7 +352,7 @@ Section FOL_helpers.
   simpl in *.
   destruct i.
   pose proof (Htmp := @pile_evs_svs_kt_back).
-  specialize (Htmp evs pi_generalized_evars0 svs pi_substituted_svars0 kt pi_uses_kt0 fp pi_framing_patterns0 pile).
+  specialize (Htmp evs pi_generalized_evars svs pi_substituted_svars kt pi_uses_kt fp pi_framing_patterns pile).
   destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
   constructor; simpl.
   { clear -Hpf2 Hevs. set_solver. }
@@ -443,8 +362,8 @@ Section FOL_helpers.
   Defined.
 
   Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
-    Γ ⊢ ϕ using BasicReasoning ->
-    Γ ⊢ ϕ using i.
+    Γ ⊢i ϕ using BasicReasoning ->
+    Γ ⊢i ϕ using i.
   Proof.
     intros H.
     pose proof (Hpf := proj2_sig H).
@@ -463,8 +382,8 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->  
-    Γ ⊢ (A ---> B ---> C) using i ->
-    Γ ⊢ (B ---> A ---> C) using i.
+    Γ ⊢i (A ---> B ---> C) using i ->
+    Γ ⊢i (B ---> A ---> C) using i.
   Proof.
     intros H H0 H1 H2.
     eapply MP. apply H2.
@@ -476,7 +395,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C))
+    Γ ⊢i ((A ---> B) ---> (B ---> C) ---> (A ---> C))
     using BasicReasoning.
   Proof.
     intros WFA WFB WFC.
@@ -494,9 +413,9 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ (B ---> C) using i ->
-    Γ ⊢ (A ---> C) using i.
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i (B ---> C) using i ->
+    Γ ⊢i (A ---> C) using i.
   Proof.
     intros H H0 H1 H2 H3.
     eapply MP.
@@ -511,7 +430,7 @@ Section FOL_helpers.
   Lemma modus_ponens (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> (A ---> B) ---> B)
+    Γ ⊢i (A ---> (A ---> B) ---> B)
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -527,7 +446,7 @@ Section FOL_helpers.
 
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
     well_formed A ->
-    Γ ⊢ (A ---> !(!A))
+    Γ ⊢i (A ---> !(!A))
     using BasicReasoning.
   Proof.
     intros WFA.
@@ -537,7 +456,7 @@ Section FOL_helpers.
   Lemma P4 (Γ : Theory) (A B : Pattern)  :
     well_formed A ->
     well_formed B -> 
-    Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A))
+    Γ ⊢i (((! A) ---> (! B)) ---> (B ---> A))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -557,7 +476,7 @@ Section FOL_helpers.
   Lemma conj_intro (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> B ---> (A and B))
+    Γ ⊢i (A ---> B ---> (A and B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -598,9 +517,9 @@ Section FOL_helpers.
   Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A using i ->
-    Γ ⊢ B using i ->
-    Γ ⊢ (A and B) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i B using i ->
+    Γ ⊢i (A and B) using i.
   Proof.
     intros WFA WFB H H0.
     eapply MP.
@@ -616,9 +535,9 @@ Section FOL_helpers.
     well_formed B ->
     well_formed C ->
     well_formed D ->
-    Γ ⊢ (A ---> B ---> C) using i ->
-    Γ ⊢ (C ---> D) using i ->
-    Γ ⊢ (A ---> B ---> D) using i.
+    Γ ⊢i (A ---> B ---> C) using i ->
+    Γ ⊢i (C ---> D) using i ->
+    Γ ⊢i (A ---> B ---> D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
     eapply MP.
@@ -642,7 +561,7 @@ Section FOL_helpers.
 
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
     well_formed A ->
-    Γ ⊢ (Bot ---> A)
+    Γ ⊢i (Bot ---> A)
     using BasicReasoning.
   Proof.
     intros WFA.
@@ -662,7 +581,7 @@ Section FOL_helpers.
   Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> (!B ---> !A) ---> B)
+    Γ ⊢i (A ---> (!B ---> !A) ---> B)
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -673,7 +592,7 @@ Section FOL_helpers.
   Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (B ---> (A or B))
+    Γ ⊢i (B ---> (A or B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -684,7 +603,7 @@ Section FOL_helpers.
   Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A ---> (A or B))
+    Γ ⊢i (A ---> (A or B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -697,8 +616,8 @@ Section FOL_helpers.
   Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ B using i ->
-    Γ ⊢ (A or B) using i.
+    Γ ⊢i B using i ->
+    Γ ⊢i (A or B) using i.
   Proof.
     intros HwfA HwfB HB.
     eapply MP.
@@ -712,8 +631,8 @@ Section FOL_helpers.
   Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A using i ->
-    Γ ⊢ (A or B) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i (A or B) using i.
   Proof.
     intros HwfA HwfB HA.
     eapply MP.
@@ -724,7 +643,7 @@ Section FOL_helpers.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A ->
-    Γ ⊢ (!(!A) ---> A)
+    Γ ⊢i (!(!A) ---> A)
     using BasicReasoning.
   Proof.
     intros WFA.
@@ -733,8 +652,8 @@ Section FOL_helpers.
 
   Lemma not_not_elim_meta Γ A (i : ProofInfo) :
     well_formed A ->
-    Γ ⊢ (! ! A) using i ->
-    Γ ⊢ A using i.
+    Γ ⊢i (! ! A) using i ->
+    Γ ⊢i A using i.
   Proof.
     intros wfA nnA.
     eapply MP.
@@ -745,7 +664,7 @@ Section FOL_helpers.
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B))
+    Γ ⊢i (((!(!A)) ---> (!(!B))) ---> (A ---> B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -758,8 +677,8 @@ Section FOL_helpers.
   Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B -> 
-    Γ ⊢ ((!(!A)) ---> (!(!B))) using i ->
-    Γ ⊢ (A ---> B) using i.
+    Γ ⊢i ((!(!A)) ---> (!(!B))) using i ->
+    Γ ⊢i (A ---> B) using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -771,7 +690,7 @@ Section FOL_helpers.
   Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B)))
+    Γ ⊢i ((A ---> B) ---> ((! ! A) ---> (! ! B)))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -803,7 +722,7 @@ Section FOL_helpers.
   Lemma contraposition (Γ : Theory) (A B : Pattern) : 
     well_formed A ->
     well_formed B -> 
-    Γ ⊢ ((A ---> B) ---> ((! B) ---> (! A)))
+    Γ ⊢i ((A ---> B) ---> ((! B) ---> (! A)))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -821,8 +740,8 @@ Section FOL_helpers.
   Lemma or_comm_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo):
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A or B) using i ->
-    Γ ⊢ (B or A) using i.
+    Γ ⊢i (A or B) using i ->
+    Γ ⊢i (B or A) using i.
   Proof.
     intros WFA WFB H. unfold patt_or in *.    
     epose proof (P4 := (@P4 Γ A (!B) _ _)).
@@ -839,8 +758,8 @@ Section FOL_helpers.
 
   Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
-    Γ ⊢ A using i ->
-    Γ ⊢ (!( !A )) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i (!( !A )) using i.
   Proof.
     intros WFA H. unfold patt_not.
     eapply MP.
@@ -855,7 +774,7 @@ Section FOL_helpers.
   Lemma P5i (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (! A ---> (A ---> B))
+    Γ ⊢i (! A ---> (A ---> B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
@@ -867,7 +786,7 @@ Section FOL_helpers.
 
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi ->
-    Γ ⊢ (Bot ---> phi) using BasicReasoning.
+    Γ ⊢i (Bot ---> phi) using BasicReasoning.
   Proof.
     apply bot_elim.
   Defined.
@@ -876,8 +795,8 @@ Section FOL_helpers.
     (wfψ : well_formed ψ)
     {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
     :
-    Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
   Proof.
     intros [pf Hpf].
     unshelve (eexists).
@@ -936,8 +855,8 @@ Section FOL_helpers.
   (wfψ : well_formed ψ)
   {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
   :
-  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
-  Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
+  Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
 Proof.
   intros [pf Hpf].
   unshelve (eexists).
@@ -990,7 +909,7 @@ Defined.
 
   Lemma Prop_bott_left (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->
-    Γ ⊢ ⊥ $ ϕ ---> ⊥ using BasicReasoning.
+    Γ ⊢i ⊥ $ ϕ ---> ⊥ using BasicReasoning.
   Proof.
     intros wfϕ.
     unshelve (eexists).
@@ -1016,7 +935,7 @@ Defined.
 
   Lemma Prop_bott_right (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->
-    Γ ⊢ ϕ $ ⊥ ---> ⊥ using BasicReasoning.
+    Γ ⊢i ϕ $ ⊥ ---> ⊥ using BasicReasoning.
   Proof.
     intros wfϕ.
     unshelve (eexists).
@@ -1064,12 +983,12 @@ Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
   constructor; simpl in *.
   { clear -Hsub Hpf2. set_solver. }
   { exact Hpf3. }
   { exact Hpf4. }
-  { apply pwi_pf_fp0. }
+  { apply Hpf5. }
 Qed.
 
 Lemma pile_svs_subseteq evs svs1 svs2 kt fp:
@@ -1081,12 +1000,12 @@ Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
   constructor; simpl in *.
   { exact Hpf2. }
   { clear -Hsub Hpf3. set_solver. }
   { exact Hpf4. }
-  { exact pwi_pf_fp0. }
+  { exact Hpf5. }
 Qed.
 
 Lemma pile_kt_impl evs svs kt1 kt2 fp:
@@ -1098,7 +1017,7 @@ Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
   constructor; simpl in *.
   { exact Hpf2. }
   { exact Hpf3. }
@@ -1106,7 +1025,7 @@ Proof.
     { exact Hsub. }
     { inversion Hpf4. }
   }
-  { apply pwi_pf_fp0. }
+  { apply Hpf5. }
 Qed.
 
 Lemma pile_fp_subseteq evs svs kt fp1 fp2:
@@ -1161,15 +1080,15 @@ Proof.
   apply pile_evs_svs_kt.
   { clear. set_solver. }
   { clear. set_solver. }
-  { unfold implb. destruct pi_uses_kt0; reflexivity. }
+  { unfold implb. destruct pi_uses_kt; reflexivity. }
   { clear. set_solver. }
 Qed.
 
 
 Lemma useAnyReasoning Γ ϕ i:
-  Γ ⊢ ϕ using i ->
-  Γ ⊢ ϕ using AnyReasoning.
-Proof.
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i ϕ using AnyReasoning.
+Proof.  
   intros H.
   {
     destruct i.
@@ -1191,7 +1110,7 @@ Qed.
 
   (* TODO rename into Prop_bot_ctx *)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
-    Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
+    Γ ⊢i ((subst_ctx C patt_bott) ---> patt_bott)
     using (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
   Proof.
     remember (frames_of_AC C) as foC.
@@ -1252,8 +1171,8 @@ Qed.
      i
     }
     :
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ ((subst_ctx C A) ---> (subst_ctx C B)) using i.
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i ((subst_ctx C A) ---> (subst_ctx C B)) using i.
   Proof.
     intros H.
     pose proof H as [pf _].
@@ -1297,8 +1216,8 @@ Qed.
     (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
     :
     well_formed A ->
-    Γ ⊢ A using i ->
-    Γ ⊢ (! (subst_ctx C ( !A ))) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i (! (subst_ctx C ( !A ))) using i.
   Proof.
     intros WFA H.
 
@@ -1316,8 +1235,8 @@ Qed.
 
   Lemma A_implies_not_not_A_alt_Γ (Γ : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
-    Γ ⊢ A using i ->
-    Γ ⊢ (!( !A )) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i (!( !A )) using i.
   Proof.
     intros WFA H. unfold patt_not.
     eapply MP.
@@ -1330,8 +1249,8 @@ Qed.
     {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
   :
     well_formed A ->
-    Γ ⊢ (A ---> Bot) using i ->
-    Γ ⊢ (subst_ctx C A ---> Bot) using i.
+    Γ ⊢i (A ---> Bot) using i ->
+    Γ ⊢i (subst_ctx C A ---> Bot) using i.
   Proof.
     intros WFA H.
     epose proof (FR := @Framing Γ C A Bot _ _ H).
@@ -1345,9 +1264,9 @@ Qed.
 
   Lemma exclusion (G : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
-    G ⊢ A using i ->
-    G ⊢ (A ---> Bot) using i ->
-    G ⊢ Bot using i.
+    G ⊢i A using i ->
+    G ⊢i (A ---> Bot) using i ->
+    G ⊢i Bot using i.
   Proof.
     intros WFA H H0.
     eapply MP.
@@ -1356,8 +1275,8 @@ Qed.
   Defined.
 
   Lemma modus_tollens Γ A B (i : ProofInfo) :
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ (!B ---> !A) using i.
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i (!B ---> !A) using i.
   Proof.
     intros H.
     pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
@@ -1372,17 +1291,17 @@ Qed.
   Lemma A_impl_not_not_B Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ ((A ---> ! !B) ---> (A ---> B))
+    Γ ⊢i ((A ---> ! !B) ---> (A ---> B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
 
-    assert (H0 : Γ ⊢ (! !B ---> B) using BasicReasoning).
+    assert (H0 : Γ ⊢i (! !B ---> B) using BasicReasoning).
     {
       apply not_not_elim. wf_auto2.
     }
 
-    assert (H1 : Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
+    assert (H1 : Γ ⊢i ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
     {
       apply syllogism; wf_auto2.
     }
@@ -1400,7 +1319,7 @@ Qed.
     well_formed A ->
     well_formed B ->
     well_formed B' ->
-    Γ ⊢ ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
+    Γ ⊢i ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
     using BasicReasoning.
   Proof.
     intros wfA wfB wfB'.
@@ -1412,11 +1331,11 @@ Qed.
     well_formed A ->
     well_formed B ->
     well_formed B' ->
-    Γ ⊢ (B ---> B') using i ->
-    Γ ⊢ ((A ---> B) ---> (A ---> B')) using i.
+    Γ ⊢i (B ---> B') using i ->
+    Γ ⊢i ((A ---> B) ---> (A ---> B')) using i.
   Proof.
     intros wfA wfB wfB' BimpB'.
-    assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
+    assert (H1: Γ ⊢i ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
     {
       apply useBasicReasoning. apply syllogism; wf_auto2.
     }
@@ -1426,7 +1345,7 @@ Qed.
 
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
-    Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
+    Γ ⊢i ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
     using BasicReasoning.
   Proof.
     induction l.
@@ -1450,8 +1369,8 @@ Qed.
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (g ---> g') using i ->
-    Γ ⊢ ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l)) using i.
+    Γ ⊢i (g ---> g') using i ->
+    Γ ⊢i ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l)) using i.
   Proof.
     intros wfl wfg wfg' gimpg'.
     eapply MP.
@@ -1463,9 +1382,9 @@ Qed.
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (g ---> g') using i ->
-    Γ ⊢ (fold_right patt_imp g l) using i ->
-    Γ ⊢ (fold_right patt_imp g' l) using i.
+    Γ ⊢i (g ---> g') using i ->
+    Γ ⊢i (fold_right patt_imp g l) using i ->
+    Γ ⊢i (fold_right patt_imp g' l) using i.
   Proof.
     intros wfl wfg wfg' gimpg' H.
     eapply MP.
@@ -1482,9 +1401,9 @@ Qed.
     well_formed A ->
     well_formed B ->
     well_formed B' ->
-    Γ ⊢ (B ---> B') using i ->
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ (A ---> B') using i.
+    Γ ⊢i (B ---> B') using i ->
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i (A ---> B') using i.
   Proof.
     intros WFA WFB WFB' H H0.
     eapply MP. 2: apply prf_weaken_conclusion_meta. 1: apply H0.
@@ -1495,7 +1414,7 @@ Qed.
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using BasicReasoning.
+    Γ ⊢i ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using BasicReasoning.
   Proof.
     intros wfA wfA' wfB.
     apply syllogism; wf_auto2.
@@ -1506,7 +1425,7 @@ Qed.
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    Γ ⊢ (h' ---> h) --->
+    Γ ⊢i (h' ---> h) --->
         foldr patt_imp g (l₁ ++ h::l₂) --->
         foldr patt_imp g (l₁ ++ h'::l₂)
     using BasicReasoning.
@@ -1523,7 +1442,7 @@ Qed.
       remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
       remember (foldr patt_imp g (l₁ ++ h'::l₂)) as b'.
 
-      assert (prf: Γ ⊢ ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using BasicReasoning).
+      assert (prf: Γ ⊢i ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using BasicReasoning).
       { apply prf_weaken_conclusion; subst; wf_auto2. }
 
       subst.
@@ -1537,11 +1456,11 @@ Qed.
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ (A' ---> A) using i ->
-    Γ ⊢ ((A ---> B) ---> (A' ---> B)) using i.
+    Γ ⊢i (A' ---> A) using i ->
+    Γ ⊢i ((A ---> B) ---> (A' ---> B)) using i.
   Proof.
     intros wfA wfA' wfB A'impA.
-    assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
+    assert (H1: Γ ⊢i ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
     {
       apply useBasicReasoning. apply syllogism; wf_auto2.
     }
@@ -1552,9 +1471,9 @@ Qed.
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ (A' ---> A) using i ->
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ (A' ---> B) using i.
+    Γ ⊢i (A' ---> A) using i ->
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i (A' ---> B) using i.
   Proof.
     intros wfA wfA' wfB A'impA AimpB.
     eapply MP. 2: apply prf_strenghten_premise_meta. 1: apply AimpB.
@@ -1566,8 +1485,8 @@ Qed.
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    Γ ⊢ (h' ---> h) using i ->
-    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) --->
+    Γ ⊢i (h' ---> h) using i ->
+    Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) --->
          foldr patt_imp g (l₁ ++ h'::l₂)
     using i.  
   Proof.
@@ -1582,9 +1501,9 @@ Qed.
     well_formed h ->
     well_formed h' ->
     well_formed g ->
-    Γ ⊢ (h' ---> h) using i ->
-    Γ ⊢ foldr patt_imp g (l₁ ++ h::l₂) using i ->
-    Γ ⊢ foldr patt_imp g (l₁ ++ h'::l₂) using i.  
+    Γ ⊢i (h' ---> h) using i ->
+    Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) using i ->
+    Γ ⊢i foldr patt_imp g (l₁ ++ h'::l₂) using i.  
   Proof.
     intros WFl₁ WFl₂ WFh WFh' WFg H H0.
     eapply MP.
@@ -1597,15 +1516,15 @@ Qed.
   Lemma rewrite_under_implication Γ g g' (i : ProofInfo):
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((g ---> g') ---> g) using i ->
-    Γ ⊢ ((g ---> g') ---> g') using i.
+    Γ ⊢i ((g ---> g') ---> g) using i ->
+    Γ ⊢i ((g ---> g') ---> g') using i.
   Proof.
     intros wfg wfg' H.
-    assert (H1 : Γ ⊢ ((g ---> g') ---> (g ---> g'))) by auto.
-    assert (H2 : Γ ⊢ (((g ---> g') ---> (g ---> g'))
+    assert (H1 : Γ ⊢i ((g ---> g') ---> (g ---> g'))) by auto.
+    assert (H2 : Γ ⊢i (((g ---> g') ---> (g ---> g'))
                         --->
                         (((g ---> g') ---> g) ---> ((g ---> g') ---> g')))) by auto using P2.
-    assert (H3 : Γ ⊢ (((g ---> g') ---> g) ---> ((g ---> g') ---> g'))).
+    assert (H3 : Γ ⊢i (((g ---> g') ---> g) ---> ((g ---> g') ---> g'))).
     { eapply Modus_ponens. 4: apply H2. all: auto 10. }
     eapply Modus_ponens. 4: apply H3. all: auto.
   Defined.
@@ -1616,15 +1535,15 @@ Qed.
     well_formed b ->
     well_formed c ->
     (* like P2 but nested a bit *)
-    Γ ⊢ (a ---> (b ---> (c ---> a)))
+    Γ ⊢i (a ---> (b ---> (c ---> a)))
     using BasicReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a))) using BasicReasoning).
+    assert (H1: Γ ⊢i ((c ---> a) ---> (b ---> (c ---> a))) using BasicReasoning).
     {
       apply P1; wf_auto2.
     }
-    assert (H2: Γ ⊢ (a ---> (c ---> a)) using BasicReasoning).
+    assert (H2: Γ ⊢i (a ---> (c ---> a)) using BasicReasoning).
     { apply P1; wf_auto2. }
 
     eapply (@syllogism_meta _ _ _ _ _ _ _ _ H2 H1).
@@ -1635,7 +1554,7 @@ Qed.
   Lemma nested_const Γ a l:
     well_formed a ->
     Pattern.wf l ->
-    Γ ⊢ (a ---> (fold_right patt_imp a l))
+    Γ ⊢i (a ---> (fold_right patt_imp a l))
     using BasicReasoning.
   Proof.
     intros wfa wfl.
@@ -1644,7 +1563,7 @@ Qed.
     - pose proof (wfa0l := wfl).
       unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
-      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
+      assert (H1 : Γ ⊢i ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
       {
         apply P1; wf_auto2.
       }
@@ -1656,7 +1575,7 @@ Qed.
     well_formed a ->
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
-    Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂))
+    Γ ⊢i (fold_right patt_imp a (l₁ ++ a :: l₂))
     using BasicReasoning.
   Proof.
     intros wfa wfl₁ wfl₂.
@@ -1674,7 +1593,7 @@ Qed.
     well_formed g ->
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
-    Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
+    Γ ⊢i ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
          (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
     using BasicReasoning.
   Proof.
@@ -1695,8 +1614,8 @@ Qed.
     well_formed g ->
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
-    Γ ⊢ (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
-    Γ ⊢ (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
+    Γ ⊢i (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
+    Γ ⊢i (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
   Proof.
     (* TODO we should have a function/lemma for creating these "meta" variants. *)
     intros WFa WFb WFg Wfl1 Wfl2 H.
@@ -1708,8 +1627,8 @@ Qed.
   Lemma A_impl_not_not_B_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> ! !B using i ->
-    Γ ⊢ A ---> B using i.
+    Γ ⊢i A ---> ! !B using i ->
+    Γ ⊢i A ---> B using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -1720,18 +1639,18 @@ Qed.
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> A using BasicReasoning.
+    Γ ⊢i A and B ---> A using BasicReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! A ---> (! A or ! B)) using BasicReasoning).
+    assert (Γ ⊢i (! A ---> (! A or ! B)) using BasicReasoning).
     { apply disj_left_intro; wf_auto2. }
 
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
+    assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
     {
       apply modus_ponens; wf_auto2.
     }
-    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
+    assert (Γ ⊢i (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
     { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
     epose proof (reorder_meta _ _ _ H1).
     apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
@@ -1743,17 +1662,17 @@ Qed.
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> B using BasicReasoning.
+    Γ ⊢i A and B ---> B using BasicReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! B ---> (! A or ! B)) using BasicReasoning).
+    assert (Γ ⊢i (! B ---> (! A or ! B)) using BasicReasoning).
     { apply disj_right_intro; wf_auto2. }
 
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
+    assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
     { apply modus_ponens; wf_auto2. }
 
-    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
+    assert (Γ ⊢i (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
     { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
     epose proof (reorder_meta  _ _ _ H1).
     apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
@@ -1765,8 +1684,8 @@ Qed.
   Lemma pf_conj_elim_l_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B using i ->
-    Γ ⊢ A using i.
+    Γ ⊢i A and B using i ->
+    Γ ⊢i A using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -1778,8 +1697,8 @@ Qed.
   Lemma pf_conj_elim_r_meta Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B using i ->
-    Γ ⊢ B using i.
+    Γ ⊢i A and B using i ->
+    Γ ⊢i B using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -1790,7 +1709,7 @@ Qed.
 
   Lemma A_or_notA Γ A :
     well_formed A ->
-    Γ ⊢ A or ! A using BasicReasoning.
+    Γ ⊢i A or ! A using BasicReasoning.
   Proof.
     intros wfA.
     unfold patt_or.
@@ -1800,13 +1719,13 @@ Qed.
   Lemma P4m_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> B using i ->
-    Γ ⊢ A ---> !B using i ->
-    Γ ⊢ !A using i.
+    Γ ⊢i A ---> B using i ->
+    Γ ⊢i A ---> !B using i ->
+    Γ ⊢i !A using i.
   Proof.
     intros wfA wfB AimpB AimpnB.
     pose proof (H1 := @P4m Γ A B wfA wfB).
-    assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A using i).
+    assert (H2 : Γ ⊢i (A ---> ! B) ---> ! A using i).
     { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
     eapply MP. 2: { apply H2. } exact AimpnB.
   Defined.
@@ -1846,8 +1765,8 @@ Qed.
 
 Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) (i : ProofInfo) :
   forall (r : ImpReshapeS g (xs)),
-     Γ ⊢ foldr (patt_imp) g (xs) using i ->
-     Γ ⊢ (untagPattern (irs_flattened r)) using i.
+     Γ ⊢i foldr (patt_imp) g (xs) using i ->
+     Γ ⊢i (untagPattern (irs_flattened r)) using i.
 Proof.
   intros r [pf Hpf].
   unshelve (eexists).
@@ -1903,7 +1822,7 @@ Local Example ex_reshape {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)) using BasicReasoning.
+  Γ ⊢i a ---> (b ---> (c ---> d)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply reshape.
@@ -1912,7 +1831,7 @@ Abort.
 
 Local Example ex_toMyGoal {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p using BasicReasoning.
+  Γ ⊢i p ---> p using BasicReasoning.
 Proof.
   intros wfp.
   toMyGoal.
@@ -1937,7 +1856,7 @@ end.
 
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p using BasicReasoning.
+  Γ ⊢i p ---> p using BasicReasoning.
 Proof.
   intros wfp.
   toMyGoal.
@@ -1949,8 +1868,8 @@ Proof.
 Abort.
 
 Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
-  Γ ⊢ ϕ using i ->
-  Γ ⊢ ψ using i.
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i ψ using i.
 Proof.
   intros [pf Hpf].
   unshelve (eexists).
@@ -2068,21 +1987,6 @@ Proof.
   { apply UIP_dec. apply bool_eqdec. }
 Qed.
 
-Lemma cast_proof_trans {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ (pf : Γ ⊢ ϕ₁) (e₂₁ : ϕ₂ = ϕ₁) (e₃₂ : ϕ₃ = ϕ₂):
-  @cast_proof Σ Γ ϕ₂ ϕ₃ e₃₂ (@cast_proof Σ Γ ϕ₁ ϕ₂ e₂₁ pf ) = (@cast_proof Σ Γ ϕ₁ ϕ₃ (eq_trans e₃₂ e₂₁) pf ).
-Proof.
-  unfold cast_proof,eq_rec_r,eq_rec,eq_rect.
-  repeat case_match.
-  replace (eq_sym (eq_trans e₃₂ e₂₁)) with (@eq_refl _ ϕ₁) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec).
-  reflexivity.
-Qed.
-
-Lemma cast_proof_refl {Σ : Signature} Γ ϕ₁ (pf : Γ ⊢ ϕ₁):
-  @cast_proof Σ Γ ϕ₁ ϕ₁ eq_refl pf = pf.
-Proof.
-  reflexivity.
-Qed.
-
 Lemma MyGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern)
   (i : ProofInfo) :
   @mkMyGoal Σ Γ (l ++ [x]) g i ->
@@ -2113,12 +2017,12 @@ Ltac simplLocalContext :=
 Ltac useBasicReasoning :=
   lazymatch goal with
   | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
-  | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
+  | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
   end.
 
 Local Example ex_mgIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢ a ---> a using i.
+  Γ ⊢i a ---> a using i.
 Proof.
   intros wfa.
   toMyGoal.
@@ -2165,7 +2069,7 @@ Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
   well_formed c = true ->
-  Γ ⊢ a ---> b ---> c ---> b using BasicReasoning.
+  Γ ⊢i a ---> b ---> c ---> b using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -2179,7 +2083,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma MyGoal_weakenConclusion' Γ l g g' (i : ProofInfo):
-    Γ ⊢ g ---> g' using i ->
+    Γ ⊢i g ---> g' using i ->
     @mkMyGoal Σ Γ l g i ->
     @mkMyGoal Σ Γ l g' i.
   Proof.
@@ -2198,14 +2102,14 @@ Section FOL_helpers.
   Lemma prf_contraction Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
+    Γ ⊢i ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
   Proof.
     intros wfa wfb.
-    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b)) using BasicReasoning).
+    assert (H1 : Γ ⊢i (a ---> ((a ---> b) ---> b)) using BasicReasoning).
     {
       apply modus_ponens; assumption.
     }
-    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
+    assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
     {
       apply P2; wf_auto2.
     }
@@ -2216,14 +2120,14 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
+    Γ ⊢i ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
+    assert (H1 : Γ ⊢i ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
     {
       apply reorder; wf_auto2.
     }
-    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
+    assert (H2 : Γ ⊢i (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
     {
       apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
       apply H1.
@@ -2231,11 +2135,11 @@ Section FOL_helpers.
     eapply prf_weaken_conclusion_meta_meta.
     4: apply H2. 1-3: wf_auto2. clear H1 H2.
 
-    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
+    assert (H3 : Γ ⊢i ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
     {
       apply syllogism; wf_auto2.
     }
-    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
+    assert (H4 : Γ ⊢i ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
     {
       apply prf_contraction; wf_auto2.
     }
@@ -2252,8 +2156,8 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> b) using i ->
-    Γ ⊢ ((a ---> (b ---> c)) ---> (a ---> c)) using i.
+    Γ ⊢i (a ---> b) using i ->
+    Γ ⊢i ((a ---> (b ---> c)) ---> (a ---> c)) using i.
   Proof.
     intros wfa wfb wfc H.
     eapply MP.
@@ -2265,9 +2169,9 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ a ---> b using i ->
-    Γ ⊢ a ---> b ---> c using i ->
-    Γ ⊢ a ---> c using i.
+    Γ ⊢i a ---> b using i ->
+    Γ ⊢i a ---> b ---> c using i ->
+    Γ ⊢i a ---> c using i.
   Proof.
     intros wfa wfb wfc H1 H2.
     eapply MP.
@@ -2282,7 +2186,7 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
+    Γ ⊢i (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
     using BasicReasoning.
   Proof.
     intros wfl wfg wfg'.
@@ -2302,8 +2206,8 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g l)) using i->
-    Γ ⊢ ((g ---> g') ---> (foldr patt_imp g' l)) using i.
+    Γ ⊢i ((g ---> g') ---> (foldr patt_imp g l)) using i->
+    Γ ⊢i ((g ---> g') ---> (foldr patt_imp g' l)) using i.
   Proof.
     intros wfl wfg wfg' H.
     eapply MP.
@@ -2328,7 +2232,7 @@ Section FOL_helpers.
     Pattern.wf l₂ ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
+    Γ ⊢i ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
          (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
     using BasicReasoning.
   Proof.
@@ -2345,8 +2249,8 @@ Section FOL_helpers.
     Pattern.wf l₂ ->
     well_formed g ->
     well_formed g' ->
-    Γ ⊢ (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
-    Γ ⊢ (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
+    Γ ⊢i (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
+    Γ ⊢i (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
   Proof.
     intros wfl₁ wfl₂ wfg wfg' H.
     eapply MP.
@@ -2416,7 +2320,7 @@ Tactic Notation "mgApply" constr(n) :=
 Local Example ex_mgApply {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ a ---> (a ---> b) ---> b using BasicReasoning.
+  Γ ⊢i a ---> (a ---> b) ---> b using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -2435,7 +2339,7 @@ Section FOL_helpers.
     well_formed q ->
     well_formed r ->
     well_formed s ->
-    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using BasicReasoning.
+    Γ ⊢i ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using BasicReasoning.
   Proof.
     intros wfp wfq wfr wfs.
     unfold patt_or.
@@ -2455,8 +2359,8 @@ Section FOL_helpers.
   Lemma prf_add_assumption Γ a b i :
     well_formed a ->
     well_formed b ->
-    Γ ⊢ b using i ->
-    Γ ⊢ (a ---> b) using i.
+    Γ ⊢i b using i ->
+    Γ ⊢i (a ---> b) using i.
   Proof.
     intros wfa wfb H.
     eapply MP.
@@ -2468,8 +2372,8 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ (a ---> (b ---> c)) using i ->
-    Γ ⊢ ((a ---> b) ---> (a ---> c)) using i.
+    Γ ⊢i (a ---> (b ---> c)) using i ->
+    Γ ⊢i ((a ---> b) ---> (a ---> c)) using i.
   Proof.
     intros wfa wfb wfc H.
     eapply MP.
@@ -2481,7 +2385,7 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ ((foldr patt_imp h l) --->
+    Γ ⊢i ((foldr patt_imp h l) --->
          ((foldr patt_imp g (l ++ [h])) --->
           (foldr patt_imp g l)))
     using BasicReasoning.
@@ -2492,20 +2396,20 @@ Section FOL_helpers.
     - pose proof (wfal := wfl).
       unfold Pattern.wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
       specialize (IHl wfl).
-      assert (H1: Γ ⊢ a --->
+      assert (H1: Γ ⊢i a --->
                       foldr patt_imp h l --->
                       foldr patt_imp g (l ++ [h]) --->
                       foldr patt_imp g l
               using BasicReasoning).
       { apply prf_add_assumption; wf_auto2. }
 
-      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) --->
+      assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l) --->
                        (a ---> foldr patt_imp g (l ++ [h]) --->
                        foldr patt_imp g l)
               using BasicReasoning).
       { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
 
-      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
+      assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
                           ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
               using BasicReasoning).
       { apply P2; wf_auto2. }
@@ -2518,8 +2422,8 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l) using i ->
-    Γ ⊢ ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
+    Γ ⊢i (foldr patt_imp h l) using i ->
+    Γ ⊢i ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
   Proof.
     intros WFl WFg WGh H.
     eapply MP.
@@ -2531,9 +2435,9 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l) using i ->
-    Γ ⊢ (foldr patt_imp g (l ++ [h])) using i ->
-    Γ ⊢ (foldr patt_imp g l) using i.
+    Γ ⊢i (foldr patt_imp h l) using i ->
+    Γ ⊢i (foldr patt_imp g (l ++ [h])) using i ->
+    Γ ⊢i (foldr patt_imp g l) using i.
   Proof.
     intros WFl WFg WGh H H0.
     eapply MP.
@@ -2569,7 +2473,7 @@ Section FOL_helpers.
     Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
+    Γ ⊢i ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
     using BasicReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
@@ -2578,11 +2482,11 @@ Section FOL_helpers.
     - pose proof (wfal1 := wfl1).
       unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
-      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
+      assert (H1: Γ ⊢i a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
       { apply prf_add_assumption; wf_auto2. }
-      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
+      assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
       { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
-      assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
+      assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
                           ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using BasicReasoning).
       { apply P2; wf_auto2. }
 
@@ -2595,8 +2499,8 @@ Section FOL_helpers.
     Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l1) using i ->
-    Γ ⊢ ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))) using i.
+    Γ ⊢i (foldr patt_imp h l1) using i ->
+    Γ ⊢i ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))) using i.
   Proof.
     intros WFl1 WFl2 WFg WGh H.
     eapply MP.
@@ -2611,9 +2515,9 @@ Section FOL_helpers.
     Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp h l1) using i ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) using i ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) using i.
+    Γ ⊢i (foldr patt_imp h l1) using i ->
+    Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i ->
+    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i.
   Proof.
     intros WFl1 WFl2 WFg WGh H H0.
     eapply MP.
@@ -2681,7 +2585,7 @@ Tactic Notation "mgAssert" "(" constr(t) ")" :=
 
 Local Example ex_mgAssert {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ (a ---> a ---> a) using BasicReasoning.
+  Γ ⊢i (a ---> a ---> a) using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -2726,7 +2630,7 @@ Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed b = true ->
   well_formed p = true ->
   well_formed q = true ->
-  Γ ⊢ a ---> p and q ---> b ---> ! ! q using BasicReasoning.
+  Γ ⊢i a ---> p and q ---> b ---> ! ! q using BasicReasoning.
 Proof.
   intros wfa wfb wfp wfq.
   toMyGoal.
@@ -2745,12 +2649,12 @@ Section FOL_helpers.
   
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
-    Γ ⊢ ((!A ---> A) ---> A) using BasicReasoning.
+    Γ ⊢i ((!A ---> A) ---> A) using BasicReasoning.
   Proof.
     intros wfA.
-    assert (H1: Γ ⊢ ((! A ---> ! ! A) ---> ! ! A) using BasicReasoning).
+    assert (H1: Γ ⊢i ((! A ---> ! ! A) ---> ! ! A) using BasicReasoning).
     { apply P4i. wf_auto2. }
-    assert (H2: Γ ⊢ ((! A ---> A) ---> (! A ---> ! ! A)) using BasicReasoning).
+    assert (H2: Γ ⊢i ((! A ---> A) ---> (! A ---> ! ! A)) using BasicReasoning).
     { eapply prf_weaken_conclusion_meta. 
       4: apply not_not_intro.
       all: wf_auto2.
@@ -2778,12 +2682,12 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r)
+    Γ ⊢i ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r)
     using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     pose proof (H1 := @Constructive_dilemma Σ Γ p r q r wfp wfr wfq wfr).
-    assert (Γ ⊢ ((r or r) ---> r) using BasicReasoning).
+    assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
     { unfold patt_or. apply P4i'. wf_auto2. }
     eapply cast_proof' in H1.
     2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
@@ -2796,8 +2700,8 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (p ---> r) using i ->
-    Γ ⊢ ((q ---> r) ---> (p or q) ---> r) using i.
+    Γ ⊢i (p ---> r) using i ->
+    Γ ⊢i ((q ---> r) ---> (p or q) ---> r) using i.
   Proof.
     intros WFp WHq WFr H.
     eapply MP. apply H. useBasicReasoning. apply prf_disj_elim.
@@ -2808,9 +2712,9 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (p ---> r) using i ->
-    Γ ⊢ (q ---> r) using i ->
-    Γ ⊢ ((p or q) ---> r) using i.
+    Γ ⊢i (p ---> r) using i ->
+    Γ ⊢i (q ---> r) using i ->
+    Γ ⊢i ((p or q) ---> r) using i.
   Proof.
     intros WFp WHq WFr H H0.
     eapply MP. apply H0. apply prf_disj_elim_meta. 4: apply H.
@@ -2821,10 +2725,10 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (p ---> r) using i ->
-    Γ ⊢ (q ---> r) using i ->
-    Γ ⊢ (p or q) using i ->
-    Γ ⊢ r using i.
+    Γ ⊢i (p ---> r) using i ->
+    Γ ⊢i (q ---> r) using i ->
+    Γ ⊢i (p or q) using i ->
+    Γ ⊢i r using i.
   Proof.
     intros WFp WHq WFr H H0 H1.
     eapply MP. apply H1.
@@ -2836,8 +2740,8 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed a ->
     well_formed g ->
-    Γ ⊢ a using i->
-    Γ ⊢ ((foldr patt_imp g (a::l)) ---> (foldr patt_imp g l)) using i.
+    Γ ⊢i a using i->
+    Γ ⊢i ((foldr patt_imp g (a::l)) ---> (foldr patt_imp g l)) using i.
   Proof.
     intros wfl wfa wfg Ha.
     induction l.
@@ -2849,7 +2753,7 @@ Section FOL_helpers.
       specialize (IHl wfl).
       simpl in IHl. simpl.
       (* < change a0 and a in the LHS > *)
-      assert (H : Γ ⊢ (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
+      assert (H : Γ ⊢i (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
       { apply reorder; wf_auto2. }
 
       eapply cast_proof'.
@@ -2862,7 +2766,7 @@ Section FOL_helpers.
       { useBasicReasoning. apply H. }
       clear H0 H.
       (* </change a0 and a > *)
-      assert (Γ ⊢ ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l)) using i).
+      assert (Γ ⊢i ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l)) using i).
       { eapply MP. 2: { useBasicReasoning. apply modus_ponens; wf_auto2. } apply Ha. }
       
       eapply prf_strenghten_premise_meta_meta. 5: apply H. all: try_wfauto2.
@@ -2874,9 +2778,9 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed a ->
     well_formed g ->
-    Γ ⊢ a using i ->
-    Γ ⊢ (foldr patt_imp g (a::l)) using i ->
-    Γ ⊢ (foldr patt_imp g l) using i.
+    Γ ⊢i a using i ->
+    Γ ⊢i (foldr patt_imp g (a::l)) using i ->
+    Γ ⊢i (foldr patt_imp g l) using i.
   Proof.
     intros WFl WFa WFg H H0.
     eapply MP.
@@ -2887,7 +2791,7 @@ Section FOL_helpers.
   Defined.
   
   Lemma MyGoal_add Γ l g h i:
-    Γ ⊢ h using i ->
+    Γ ⊢i h using i ->
     @mkMyGoal Σ Γ (h::l) g i ->
     @mkMyGoal Σ Γ l g i.
   Proof.
@@ -2926,9 +2830,9 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (h ---> g) using i ->
-    Γ ⊢ h using i ->
-    Γ ⊢ g using i.
+    Γ ⊢i (h ---> g) using i ->
+    Γ ⊢i h using i ->
+    Γ ⊢i g using i.
   Proof.
     intros WFl WFg WFh H H0. toMyGoal.
     { wf_auto2. }
@@ -2944,7 +2848,7 @@ Section FOL_helpers.
     Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
+    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
     using BasicReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
@@ -2953,7 +2857,7 @@ Section FOL_helpers.
     - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
 
-      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
+      assert (H1: Γ ⊢i a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
       {
         toMyGoal.
         { wf_auto2. }
@@ -2968,8 +2872,8 @@ Section FOL_helpers.
     Pattern.wf l2 ->
     well_formed g ->
     well_formed h ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ l2)) using i ->
-    Γ ⊢ (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
+    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i ->
+    Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
   Proof.
     intros. eapply MP.
     apply H3.
@@ -3083,7 +2987,7 @@ Local Example ex_mgClear {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> (b ---> (c ---> b)) using BasicReasoning.
+  Γ ⊢i a ---> (b ---> (c ---> b)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -3101,7 +3005,7 @@ Section FOL_helpers.
   Lemma not_concl Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
+    Γ ⊢i (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
   Proof.
     intros wfp wfq.
     eapply cast_proof'.
@@ -3123,7 +3027,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
+    Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     eapply cast_proof'.
@@ -3142,7 +3046,7 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed x ->
-    Γ ⊢ ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
+    Γ ⊢i ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
   Proof.
     intros wfl wfg wfx.
     induction l.
@@ -3171,8 +3075,8 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed x ->
-    Γ ⊢ (foldr patt_imp g (x::l)) using i ->
-    Γ ⊢ (foldr patt_imp g (l ++ [x])) using i.
+    Γ ⊢i (foldr patt_imp g (x::l)) using i ->
+    Γ ⊢i (foldr patt_imp g (l ++ [x])) using i.
   Proof.
     intros WFl WFG WFx H.
     eapply MP.
@@ -3183,12 +3087,12 @@ Section FOL_helpers.
   
   (* Iterated modus ponens.
      For l = [x₁, ..., xₙ], it says that
-     Γ ⊢ ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
+     Γ ⊢i ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
   *)
   Lemma modus_ponens_iter Γ l r:
     Pattern.wf l ->
     well_formed r ->
-    Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
+    Γ ⊢i (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
   Proof.
     intros wfl wfr.
     induction l.
@@ -3212,7 +3116,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
+    Γ ⊢i ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     toMyGoal.
@@ -3239,7 +3143,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
+    Γ ⊢i ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     toMyGoal.
@@ -3271,7 +3175,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((fold_right patt_imp r (l ++ [p]))
+    Γ ⊢i ((fold_right patt_imp r (l ++ [p]))
            --->
            ((fold_right patt_imp r (l ++ [q]))
               --->                                                                
@@ -3308,7 +3212,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
+    Γ ⊢i ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
            --->
            ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
               --->                                                                
@@ -3394,8 +3298,8 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-    Γ ⊢ ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
+    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
+    Γ ⊢i ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
               --->                                                                
               (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))) using i.
             
@@ -3413,9 +3317,9 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-    Γ ⊢ (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) using i ->
-    Γ ⊢ (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)) using i.
+    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
+    Γ ⊢i (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) using i ->
+    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)) using i.
   Proof.
     intros WFl1 WFl2 WFp WFq WFr H H0.
     eapply MP.
@@ -3491,9 +3395,9 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed c ->
-    Γ ⊢ (a ---> p ---> b ---> c) using i ->
-    Γ ⊢ (a ---> q ---> b ---> c) using i->
-    Γ ⊢ (a ---> (p or q) ---> b ---> c) using i.
+    Γ ⊢i (a ---> p ---> b ---> c) using i ->
+    Γ ⊢i (a ---> q ---> b ---> c) using i->
+    Γ ⊢i (a ---> (p or q) ---> b ---> c) using i.
   Proof.
     intros WFa WFb WFp WFq WFc H H0.
     toMyGoal.
@@ -3507,9 +3411,9 @@ Section FOL_helpers.
   Lemma pf_iff_split Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A ---> B using i ->
-    Γ ⊢ B ---> A using i ->
-    Γ ⊢ A <---> B using i.
+    Γ ⊢i A ---> B using i ->
+    Γ ⊢i B ---> A using i ->
+    Γ ⊢i A <---> B using i.
   Proof.
     intros wfA wfB AimplB BimplA.
     unfold patt_iff.
@@ -3519,8 +3423,8 @@ Section FOL_helpers.
   Lemma pf_iff_proj1 Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A <---> B using i ->
-    Γ ⊢ A ---> B using i.
+    Γ ⊢i A <---> B using i ->
+    Γ ⊢i A ---> B using i.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
     apply pf_conj_elim_l_meta in H; try_wfauto2; assumption.
@@ -3529,8 +3433,8 @@ Section FOL_helpers.
   Lemma pf_iff_proj2 Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) using i ->
-    Γ ⊢ (B ---> A) using i.
+    Γ ⊢i (A <---> B) using i ->
+    Γ ⊢i (B ---> A) using i.
   Proof.
     intros WFA WFB H. unfold patt_iff in H.
     apply pf_conj_elim_r_meta in H; try_wfauto2; assumption.
@@ -3539,8 +3443,8 @@ Section FOL_helpers.
   Lemma pf_iff_iff Γ A B i:
     well_formed A ->
     well_formed B ->
-    prod ((Γ ⊢ (A <---> B) using i) -> (prod (Γ ⊢ (A ---> B) using i) (Γ ⊢ (B ---> A) using i)))
-    ( (prod (Γ ⊢ (A ---> B) using i)  (Γ ⊢ (B ---> A) using i)) -> (Γ ⊢ (A <---> B) using i)).
+    prod ((Γ ⊢i (A <---> B) using i) -> (prod (Γ ⊢i (A ---> B) using i) (Γ ⊢i (B ---> A) using i)))
+    ( (prod (Γ ⊢i (A ---> B) using i)  (Γ ⊢i (B ---> A) using i)) -> (Γ ⊢i (A <---> B) using i)).
   Proof.
     intros WFA WFB.
     split; intros H.
@@ -3557,7 +3461,7 @@ Section FOL_helpers.
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
-    Γ ⊢ (A <---> A) using BasicReasoning.
+    Γ ⊢i (A <---> A) using BasicReasoning.
   Proof.
     intros WFA.
     apply pf_iff_split; try_wfauto2; apply A_impl_A; assumption.
@@ -3566,8 +3470,8 @@ Section FOL_helpers.
   Lemma pf_iff_equiv_sym Γ A B i:
     well_formed A ->
     well_formed B ->
-    Γ ⊢ (A <---> B) using i ->
-    Γ ⊢ (B <---> A) using i.
+    Γ ⊢i (A <---> B) using i ->
+    Γ ⊢i (B <---> A) using i.
   Proof.
     intros wfA wfB H.
     pose proof (H2 := H).
@@ -3581,9 +3485,9 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     well_formed C ->
-    Γ ⊢ (A <---> B) using i ->
-    Γ ⊢ (B <---> C) using i ->
-    Γ ⊢ (A <---> C) using i.
+    Γ ⊢i (A <---> B) using i ->
+    Γ ⊢i (B <---> C) using i ->
+    Γ ⊢i (A <---> C) using i.
   Proof.
     intros wfA wfB wfC AeqB BeqC.
     apply pf_iff_iff in AeqB; try_wfauto2. destruct AeqB as [AimpB BimpA].
@@ -3603,8 +3507,8 @@ Section FOL_helpers.
   Lemma prf_conclusion Γ a b i:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ b using i ->
-    Γ ⊢ (a ---> b) using i.
+    Γ ⊢i b using i ->
+    Γ ⊢i (a ---> b) using i.
   Proof.
     intros WFa WFb H. eapply MP.
     apply H.
@@ -3613,7 +3517,7 @@ Section FOL_helpers.
   Defined.
     
   Lemma prf_prop_bott_iff Γ AC:
-    Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott)
+    Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
     using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
@@ -3638,7 +3542,7 @@ Section FOL_helpers.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     well_formed ψ ->
-    Γ ⊢ (ϕ₁ or ϕ₂) $ ψ ---> (ϕ₁ $ ψ) or (ϕ₂ $ ψ) using BasicReasoning.
+    Γ ⊢i (ϕ₁ or ϕ₂) $ ψ ---> (ϕ₁ $ ψ) or (ϕ₂ $ ψ) using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ wfψ.
     unshelve (eexists).
@@ -3657,7 +3561,7 @@ Section FOL_helpers.
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     well_formed ψ ->
-    Γ ⊢ ψ $ (ϕ₁ or ϕ₂)  ---> (ψ $ ϕ₁) or (ψ $ ϕ₂) using BasicReasoning.
+    Γ ⊢i ψ $ (ϕ₁ or ϕ₂)  ---> (ψ $ ϕ₁) or (ψ $ ϕ₂) using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ wfψ.
     unshelve (eexists).
@@ -3676,7 +3580,7 @@ Section FOL_helpers.
 
   Tactic Notation "remember_constraint" "as" ident(i') :=
       match goal with
-      | [|- _ using ?constraint] => remember constraint as i'
+      | [|- (_ ⊢i _ using ?constraint)] => remember constraint as i'
       end.
   
   Tactic Notation "gapply" uconstr(pf) := eapply useGenericReasoning;[|eapply pf].
@@ -3693,7 +3597,7 @@ Section FOL_helpers.
   Lemma prf_prop_or_iff Γ AC p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
+    Γ ⊢i ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
     using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
@@ -3770,7 +3674,7 @@ Section FOL_helpers.
 
   Lemma Ex_quan (Γ : Theory) (ϕ : Pattern) (y : evar) :
     well_formed (patt_exists ϕ) ->
-    Γ ⊢ (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
+    Γ ⊢i (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
     using BasicReasoning.
   Proof.
     intros Hwf.
@@ -3793,7 +3697,7 @@ Section FOL_helpers.
   Lemma hypothesis (Γ : Theory) (axiom : Pattern) :
     well_formed axiom ->
     (axiom ∈ Γ) ->
-    Γ ⊢ axiom
+    Γ ⊢i axiom
     using BasicReasoning.
   Proof.
     intros Hwf Hin.
@@ -3815,7 +3719,7 @@ Section FOL_helpers.
 
   Lemma Singleton_ctx (Γ : Theory) (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
     well_formed ϕ ->
-    Γ ⊢ (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
+    Γ ⊢i (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
                (subst_ctx C2 (patt_free_evar x and (! ϕ)))))
     using BasicReasoning.
   Proof.
@@ -3837,7 +3741,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma Existence (Γ : Theory) :
-    Γ ⊢ (ex , patt_bound_evar 0) using BasicReasoning.
+    Γ ⊢i (ex , patt_bound_evar 0) using BasicReasoning.
   Proof.
     unshelve (eexists).
     {
@@ -3880,7 +3784,7 @@ Section FOL_helpers.
         clear. set_solver.
       }
     }
-    inversion H'. simpl in *. clear -pwi_pf_ge0. set_solver.
+    inversion H'. simpl in *. clear -pwi_pf_ge. set_solver.
   Qed.
 
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
@@ -3891,8 +3795,8 @@ Section FOL_helpers.
                pi_framing_patterns := ∅ ;
             |}) i} :
     x ∉ free_evars ϕ₂ ->
-    Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢ (exists_quantify x ϕ₁ ---> ϕ₂) using i.
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (exists_quantify x ϕ₁ ---> ϕ₂) using i.
   Proof.
     intros Hfev [pf Hpf].
     unshelve (eexists).
@@ -3918,22 +3822,22 @@ Section FOL_helpers.
         }
         {
           inversion Hpf.
-          apply pwi_pf_ge0.
+          apply pwi_pf_ge.
           rewrite elem_of_gset_to_coGset.
           assumption.
         }
       }
       {
         inversion Hpf.
-        apply pwi_pf_svs0.
+        apply pwi_pf_svs.
       }
       {
         inversion Hpf.
-        apply pwi_pf_kt0.
+        apply pwi_pf_kt.
       }
       {
         inversion Hpf.
-        apply pwi_pf_fp0.
+        apply pwi_pf_fp.
       }
     }
   Defined.
@@ -3957,7 +3861,7 @@ Section FOL_helpers.
   Lemma Prop_ex_left (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed (ex, ϕ) ->
     well_formed ψ ->
-    Γ ⊢ (ex , ϕ) $ ψ ---> ex , ϕ $ ψ
+    Γ ⊢i (ex , ϕ) $ ψ ---> ex , ϕ $ ψ
     using BasicReasoning.
   Proof.
     intros wfϕ wfψ.
@@ -3979,7 +3883,7 @@ Section FOL_helpers.
   Lemma Prop_ex_right (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed (ex, ϕ) ->
     well_formed ψ ->
-    Γ ⊢ ψ $ (ex , ϕ) ---> ex , ψ $ ϕ
+    Γ ⊢i ψ $ (ex , ϕ) ---> ex , ψ $ ϕ
     using BasicReasoning.
   Proof.
     intros wfϕ wfψ.
@@ -4017,7 +3921,7 @@ Section FOL_helpers.
   Lemma prf_prop_ex_iff Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
-    Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
+    Γ ⊢i ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
     using (
     {| pi_generalized_evars := {[x]};
        pi_substituted_svars := ∅;
@@ -4250,7 +4154,7 @@ Section FOL_helpers.
   Lemma and_of_negated_iff_not_impl Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2)
+    Γ ⊢i (! (! p1 ---> p2) <---> ! p1 and ! p2)
     using BasicReasoning.
   Proof.
     intros wfp1 wfp2.
@@ -4287,7 +4191,7 @@ Section FOL_helpers.
   Lemma and_impl_2 Γ p1 p2:
     well_formed p1 ->
     well_formed p2 ->
-    Γ ⊢ (! (p1 ---> p2) <---> p1 and ! p2)
+    Γ ⊢i (! (p1 ---> p2) <---> p1 and ! p2)
     using BasicReasoning.
   Proof.
     intros wfp1 wfp2.
@@ -4322,8 +4226,8 @@ Section FOL_helpers.
 
   Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A → well_formed B →
-    Γ ⊢ A using i →
-    Γ ⊢ B ---> (A and B) using i.
+    Γ ⊢i A using i →
+    Γ ⊢i B ---> (A and B) using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -4335,9 +4239,9 @@ Section FOL_helpers.
 
   Lemma and_impl_patt (A B C : Pattern) Γ (i : ProofInfo):
     well_formed A → well_formed B → well_formed C →
-    Γ ⊢ A using i ->
-    Γ ⊢ ((A and B) ---> C) using i ->
-    Γ ⊢ (B ---> C) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i ((A and B) ---> C) using i ->
+    Γ ⊢i (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
     eapply syllogism_meta with (B := patt_and A B).
@@ -4353,7 +4257,7 @@ Section FOL_helpers.
 
   Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B ->
-    Γ ⊢ (A ---> (B ---> (B and A)))
+    Γ ⊢i (A ---> (B ---> (B and A)))
     using BasicReasoning.
   Proof.
     intros WFA WFB. eapply reorder_meta.
@@ -4367,8 +4271,8 @@ Section FOL_helpers.
 
   Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern) (i : ProofInfo):
     well_formed A → well_formed B →
-    Γ ⊢ A using i →
-    Γ ⊢ B ---> (B and A) using i.
+    Γ ⊢i A using i →
+    Γ ⊢i B ---> (B and A) using i.
   Proof.
     intros WFA WFB H.
     eapply MP.
@@ -4380,9 +4284,9 @@ Section FOL_helpers.
 
   Lemma and_impl_patt2  (A B C : Pattern) Γ (i : ProofInfo):
     well_formed A → well_formed B → well_formed C →
-    Γ ⊢ A using i ->
-    Γ ⊢ ((B and A) ---> C) using i ->
-    Γ ⊢ (B ---> C) using i.
+    Γ ⊢i A using i ->
+    Γ ⊢i ((B and A) ---> C) using i ->
+    Γ ⊢i (B ---> C) using i.
   Proof.
     intros WFA WFB WFC H H0.
     eapply syllogism_meta with (B := patt_and B A).
@@ -4400,8 +4304,8 @@ Section FOL_helpers.
   Lemma patt_and_comm_meta (A B : Pattern) (Γ : Theory) (i : ProofInfo) :
     well_formed A → well_formed B
     ->
-    Γ ⊢ A and B using i ->
-    Γ ⊢ B and A using i.
+    Γ ⊢i A and B using i ->
+    Γ ⊢i B and A using i.
   Proof.
     intros WFA WFB H.
     apply pf_conj_elim_r_meta in H as P1.
@@ -4410,7 +4314,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma MyGoal_applyMeta Γ r r' i:
-    Γ ⊢ (r' ---> r) using i ->
+    Γ ⊢i (r' ---> r) using i ->
     forall l,
     @mkMyGoal Σ Γ l r' i ->
     @mkMyGoal Σ Γ l r i.
@@ -4470,7 +4374,7 @@ Ltac mgRight := apply MyGoal_right.
 
 Example ex_mgLeft {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ a ---> (a or a)
+  Γ ⊢i a ---> (a or a)
   using BasicReasoning.
 Proof.
   intros wfa.
@@ -4481,7 +4385,7 @@ Proof.
 Abort.
 
 Lemma MyGoal_applyMetaIn {Σ : Signature} Γ r r' i:
-  Γ ⊢ (r ---> r') using i ->
+  Γ ⊢i (r ---> r') using i ->
   forall l₁ l₂ g,
     @mkMyGoal Σ Γ (l₁ ++ r'::l₂) g i ->
     @mkMyGoal Σ Γ (l₁ ++ r::l₂ ) g i.
@@ -4533,7 +4437,7 @@ Tactic Notation "mgApplyMeta" uconstr(t) "in" constr(n) :=
 Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
-  Γ ⊢ p ---> (p or q)
+  Γ ⊢i p ---> (p or q)
   using BasicReasoning.
 Proof.
   intros wfp wfq.
@@ -4660,7 +4564,7 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed b ->
   well_formed p ->
   well_formed q ->
-  Γ ⊢ p and q ---> a and b ---> q ---> a
+  Γ ⊢i p and q ---> a and b ---> q ---> a
   using BasicReasoning.
 Proof.
   intros. toMyGoal.
@@ -4680,9 +4584,9 @@ Section FOL_helpers.
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i ->
-    Γ ⊢ ((p and q) <---> (p' and q')) using i.
+    Γ ⊢i (p <---> p') using i ->
+    Γ ⊢i (q <---> q') using i ->
+    Γ ⊢i ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
@@ -4728,9 +4632,9 @@ Section FOL_helpers.
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i ->
-    Γ ⊢ ((p or q) <---> (p' or q')) using i.
+    Γ ⊢i (p <---> p') using i ->
+    Γ ⊢i (q <---> q') using i ->
+    Γ ⊢i ((p or q) <---> (p' or q')) using i.
   Proof with try_wfauto2.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
@@ -4768,7 +4672,7 @@ Section FOL_helpers.
   Lemma impl_iff_notp_or_q Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ ((p ---> q) <---> (! p or q))
+    Γ ⊢i ((p ---> q) <---> (! p or q))
     using BasicReasoning.
   Proof.
     intros wfp wfq.
@@ -4793,7 +4697,7 @@ Section FOL_helpers.
 
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
-    Γ ⊢ (⊥ <---> p and ! p)
+    Γ ⊢i (⊥ <---> p and ! p)
     using BasicReasoning.
   Proof.
     intros wfp.
@@ -4813,7 +4717,7 @@ Section FOL_helpers.
     well_formed B ->
     well_formed L ->
     well_formed R ->
-    Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
+    Γ ⊢i (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
     using BasicReasoning.
   Proof.
     intros wfA wfB wfL wfR.
@@ -4845,8 +4749,8 @@ Section FOL_helpers.
     well_formed B ->
     well_formed L ->
     well_formed R ->
-    Γ ⊢ ((L and A) ---> (B or R)) using i ->
-    Γ ⊢ (L ---> ((A ---> B) or R)) using i.
+    Γ ⊢i ((L and A) ---> (B or R)) using i ->
+    Γ ⊢i (L ---> ((A ---> B) or R)) using i.
   Proof.
     intros WFA WFB WFL WFR H.
     eapply MP.
@@ -4856,9 +4760,9 @@ Section FOL_helpers.
 
   Lemma imp_trans_mixed_meta Γ A B C D i :
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢ (C ---> A) using i ->
-    Γ ⊢ (B ---> D) using i ->
-    Γ ⊢ ((A ---> B) ---> C ---> D) using i.
+    Γ ⊢i (C ---> A) using i ->
+    Γ ⊢i (B ---> D) using i ->
+    Γ ⊢i ((A ---> B) ---> C ---> D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
     epose proof (H1 := @prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
@@ -4876,8 +4780,8 @@ Section FOL_helpers.
 
   Lemma and_weaken A B C Γ i:
     well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢ (B ---> C) using i ->
-    Γ ⊢ ((A and B) ---> (A and C)) using i.
+    Γ ⊢i (B ---> C) using i ->
+    Γ ⊢i ((A and B) ---> (A and C)) using i.
   Proof.
     intros WFA WFB WFC H.
     epose proof (H0 := @and_impl' Σ Γ A B (A and C) _ _ _).
@@ -4897,9 +4801,9 @@ Section FOL_helpers.
 
   Lemma impl_and Γ A B C D i: 
     well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢ (A ---> B) using i ->
-    Γ ⊢ (C ---> D) using i ->
-    Γ ⊢ (A and C) ---> (B and D) using i.
+    Γ ⊢i (A ---> B) using i ->
+    Γ ⊢i (C ---> D) using i ->
+    Γ ⊢i (A and C) ---> (B and D) using i.
   Proof.
     intros WFA WFB WFC WFD H H0.
     toMyGoal.
@@ -4926,8 +4830,8 @@ Section FOL_helpers.
 
   Lemma and_drop A B C Γ i:
     well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢ ((A and B) ---> C) using i ->
-    Γ ⊢ ((A and B) ---> (A and C)) using i.
+    Γ ⊢i ((A and B) ---> C) using i ->
+    Γ ⊢i ((A and B) ---> (A and C)) using i.
   Proof.
     intros WFA WFB WFC H.
     toMyGoal.
@@ -4951,8 +4855,8 @@ Section FOL_helpers.
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
-    Γ ⊢ ϕ using i ->
-    Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
+    Γ ⊢i ϕ using i ->
+    Γ ⊢i patt_forall (evar_quantify x 0 ϕ) using i.
   Proof.
     intros pile wfϕ Hϕ.
     unfold patt_forall.
@@ -4973,7 +4877,7 @@ Section FOL_helpers.
 
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
-    Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
+    Γ ⊢i (all, evar_quantify x 0 ϕ) ---> ϕ
     using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
   Proof.
     intros wfϕ.
@@ -5040,8 +4944,8 @@ Lemma Knaster_tarski {Σ : Signature}
            pi_framing_patterns := ∅ ;
         |}) i} :
 well_formed (mu, ϕ) ->
-Γ ⊢ (instantiate (mu, ϕ) ψ) ---> ψ using i ->
-Γ ⊢ mu, ϕ ---> ψ using i.
+Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+Γ ⊢i mu, ϕ ---> ψ using i.
 Proof.
 intros Hfev [pf Hpf].
 unshelve (eexists).
@@ -5106,8 +5010,8 @@ Lemma Svar_subst {Σ : Signature}
            pi_framing_patterns := ∅ ;
         |}) i} :
   well_formed ψ ->
-  Γ ⊢ ϕ using i ->
-  Γ ⊢ (free_svar_subst ϕ ψ X) using i.
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i (free_svar_subst ϕ ψ X) using i.
 Proof.
   intros wfψ [pf Hpf].
   unshelve (eexists).
@@ -5144,7 +5048,7 @@ Defined.
 Lemma Pre_fixp {Σ : Signature}
   (Γ : Theory) (ϕ : Pattern) :
   well_formed (patt_mu ϕ) ->
-  Γ ⊢ (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
+  Γ ⊢i (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
   using BasicReasoning.
 Proof.
   intros wfϕ.
@@ -5171,8 +5075,8 @@ Section FOL_helpers.
     ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
-    Γ ⊢ ϕ₁ ---> ϕ₂ using i->
-    Γ ⊢ (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂))
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i->
+    Γ ⊢i (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂))
     using i.
   Proof.
     intros pile nonegϕ₁ nonegϕ₂ Himp.
@@ -5316,9 +5220,9 @@ Section FOL_helpers.
     well_formed b = true ->
     well_formed a' = true ->
     well_formed b' = true ->
-    Γ ⊢ (a <---> a') using i ->
-    Γ ⊢ (b <---> b') using i ->
-    Γ ⊢ (a ---> b) <---> (a' ---> b') using i
+    Γ ⊢i (a <---> a') using i ->
+    Γ ⊢i (b <---> b') using i ->
+    Γ ⊢i (a ---> b) <---> (a' ---> b') using i
   .
   Proof.
     intros wfa wfb wfa' wfb' Haa' Hbb'.
@@ -5375,8 +5279,8 @@ Section FOL_helpers.
     x <> E ->
     well_formed p = true ->
     well_formed q = true ->
-    Γ ⊢ free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E using i ->
-    Γ ⊢ evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E) using i.
+    Γ ⊢i free_evar_subst (evar_open n x ϕ) p E <---> free_evar_subst (evar_open n x ϕ) q E using i ->
+    Γ ⊢i evar_open n x (free_evar_subst ϕ p E) <---> evar_open n x (free_evar_subst ϕ q E) using i.
   Proof.
     intros Hx wfp wfq H.
     unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
@@ -5388,8 +5292,8 @@ Section FOL_helpers.
   Lemma strip_exists_quantify_l Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
-    Γ ⊢ (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
-    Γ ⊢ ex , P ---> Q using i.
+    Γ ⊢i (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
+    Γ ⊢i ex , P ---> Q using i.
   Proof.
     intros Hx HwfcP H.
     unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
@@ -5403,8 +5307,8 @@ Section FOL_helpers.
   Lemma strip_exists_quantify_r Γ x P Q i :
     x ∉ free_evars Q ->
     well_formed_closed_ex_aux Q 1 ->
-    Γ ⊢ P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
-    Γ ⊢ P ---> ex, Q using i.
+    Γ ⊢i P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
+    Γ ⊢i P ---> ex, Q using i.
   Proof.
     intros Hx HwfcP H.
     unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
@@ -5418,8 +5322,8 @@ Section FOL_helpers.
   Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X i:
     well_formed_closed_mu_aux p 0 = true ->
     well_formed_closed_mu_aux q 0 = true ->
-    Γ ⊢ free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E using i ->
-    Γ ⊢ bsvar_subst (free_evar_subst ϕ p E) (patt_free_svar X) 0 <--->
+    Γ ⊢i free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E using i ->
+    Γ ⊢i bsvar_subst (free_evar_subst ϕ p E) (patt_free_svar X) 0 <--->
         bsvar_subst (free_evar_subst ϕ q E) (patt_free_svar X) 0 using i.
   Proof.
     intros wfp wfq H.
@@ -5440,9 +5344,9 @@ Section FOL_helpers.
     well_formed_closed_mu_aux (free_evar_subst ϕ q E) 1 ->
     X ∉ free_svars (free_evar_subst ϕ p E) ->
     X ∉ free_svars (free_evar_subst ϕ q E) ->
-    Γ ⊢ mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E)) <--->
+    Γ ⊢i mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E)) <--->
         mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) using i ->
-    Γ ⊢ mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E using i.
+    Γ ⊢i mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E using i.
   Proof.
     intros wfp' wfq' Xfrp Xfrq H.
     unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
@@ -5496,9 +5400,9 @@ Section FOL_helpers.
     maximal_exists_depth_of_evar_in_pattern' 0 E ψ.
 
   Definition pf_ite {P : Prop} (i : ProofInfo) (dec: {P} + {~P}) (Γ : Theory) (ϕ : Pattern)
-    (pf1: P -> Γ ⊢ ϕ using i)
-    (pf2: (~P) -> Γ ⊢ ϕ using i) :
-    Γ ⊢ ϕ using i :=
+    (pf1: P -> Γ ⊢i ϕ using i)
+    (pf2: (~P) -> Γ ⊢i ϕ using i) :
+    Γ ⊢i ϕ using i :=
     match dec with
     | left pf => pf1 pf
     | right pf => pf2 pf
@@ -5913,9 +5817,9 @@ Qed.
            FP := ∅
           ))
   (pile: ProofInfoLe i' ( gpi))
-  (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
+  (IH: Γ ⊢i (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E)
      using  gpi) :
-  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using  gpi.
+  (Γ ⊢i ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E) using  gpi).
   Proof.
     apply pf_evar_open_free_evar_subst_equiv_sides in IH.
     2: { exact HxneqE. }
@@ -6176,10 +6080,10 @@ End FOL_helpers.
           ;(exist _ (free_evar_subst ψ2 p E) (well_formed_free_evar_subst_0 E wfp wfψ2))
           ;(exist _ (free_evar_subst ψ2 q E) (well_formed_free_evar_subst_0 E wfq wfψ2))
           ]} )) i )
-  (pf₁: (Γ ⊢ free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E) using i)
-  (pf₂: (Γ ⊢ free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E) using i)
+  (pf₁: Γ ⊢i free_evar_subst ψ1 p E <---> free_evar_subst ψ1 q E using i)
+  (pf₂: Γ ⊢i free_evar_subst ψ2 p E <---> free_evar_subst ψ2 q E using i)
   :
-  (Γ ⊢ (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E)) using i.
+  (Γ ⊢i (free_evar_subst ψ1 p E) $ (free_evar_subst ψ2 p E) <---> (free_evar_subst ψ1 q E) $ (free_evar_subst ψ2 q E) using i).
   Proof.
     remember (well_formed_free_evar_subst_0 E wfp wfψ1) as Hwf1.
     remember (well_formed_free_evar_subst_0 E wfq wfψ1) as Hwf2.
@@ -6280,8 +6184,8 @@ End FOL_helpers.
    )
    ( gpi)
   )
-  (pf : Γ ⊢ (p <---> q) using ( gpi)) :
-      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using ( gpi).
+  (pf : Γ ⊢i (p <---> q) using ( gpi)) :
+      Γ ⊢i (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using ( gpi).
   Proof.
 
     move: ψ wfψ Hsz EvS SvS pile
@@ -6914,8 +6818,8 @@ End FOL_helpers.
     )
    ( gpi)
   ):
-    Γ ⊢ (p <---> q) using ( gpi) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))) using ( gpi).
+    Γ ⊢i (p <---> q) using ( gpi) ->
+    Γ ⊢i (((emplace C p) <---> (emplace C q))) using ( gpi).
   Proof.
     intros Hiff.
     assert (well_formed (p <---> q)).
@@ -6951,8 +6855,8 @@ End FOL_helpers.
 
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
   (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
-  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
-  Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
+  Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
   intros H.
   pose proof (Hwf := @proved_impl_wf Σ Γ _ (proj1_sig H)).
@@ -6992,7 +6896,7 @@ Defined.
 Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
+  Γ ⊢i (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
   using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7007,7 +6911,7 @@ Defined.
 Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
-  Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
+  Γ ⊢i (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
   using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7024,8 +6928,8 @@ Lemma lhs_to_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ (a and b) ---> c using i ->
-  Γ ⊢ a ---> b ---> c using i.
+  Γ ⊢i (a and b) ---> c using i ->
+  Γ ⊢i a ---> b ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
@@ -7042,8 +6946,8 @@ Lemma lhs_from_and {Σ : Signature} Γ a b c i:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c using i ->
-  Γ ⊢ (a and b) ---> c using i.
+  Γ ⊢i a ---> b ---> c using i ->
+  Γ ⊢i (a and b) ---> c using i.
 Proof.
   intros wfa wfb wfc H.
   toMyGoal.
@@ -7069,7 +6973,7 @@ Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed a ->
   well_formed b ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
+  Γ ⊢i (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
   using BasicReasoning.
 Proof.
   intros wfa wfb wfl.
@@ -7094,8 +6998,8 @@ Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp a l) using i -> 
-  Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
+  Γ ⊢i (foldr patt_imp a l) using i -> 
+  Γ ⊢i (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
 Proof.
   intros. eapply MP. 2: { useBasicReasoning. apply prf_conj_split; assumption. }
   exact H2.
@@ -7105,9 +7009,9 @@ Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   well_formed a ->
   well_formed b ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp a l) using i -> 
-  Γ ⊢ (foldr patt_imp b l) using i ->
-  Γ ⊢ (foldr patt_imp (a and b) l) using i.
+  Γ ⊢i (foldr patt_imp a l) using i -> 
+  Γ ⊢i (foldr patt_imp b l) using i ->
+  Γ ⊢i (foldr patt_imp (a and b) l) using i.
 Proof.
   intros. eapply MP.
   2: {
@@ -7141,7 +7045,7 @@ Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> b ---> c ---> (a and b)
+  Γ ⊢i a ---> b ---> c ---> (a and b)
   using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
@@ -7157,7 +7061,7 @@ Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
   well_formed g₁ ->
   well_formed g₂ ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
+  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) --->
       ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
   using BasicReasoning.
 Proof.
@@ -7194,8 +7098,8 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l
   well_formed g₁ ->
   well_formed g₂ ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢ ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
+  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢i ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H.
   eapply MP.
@@ -7207,9 +7111,9 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ 
   well_formed g₁ ->
   well_formed g₂ ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢ (foldr patt_imp g₁ l) using i ->
-  Γ ⊢ (foldr patt_imp g₂ l) using i.
+  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢i (foldr patt_imp g₁ l) using i ->
+  Γ ⊢i (foldr patt_imp g₂ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply MP.
@@ -7224,9 +7128,9 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ 
   well_formed g₁ ->
   well_formed g₂ ->
   Pattern.wf l ->
-  Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢ (foldr patt_imp g₂ l) using i ->
-  Γ ⊢ (foldr patt_imp g₁ l) using i.
+  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
+  Γ ⊢i (foldr patt_imp g₂ l) using i ->
+  Γ ⊢i (foldr patt_imp g₁ l) using i.
 Proof.
   intros wfg₁ wfg₂ wfl H1 H2.
   eapply MP.
@@ -7252,8 +7156,8 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
     ( gpi)
   ):
   Pattern.wf l ->
-  Γ ⊢ p <---> q using ( gpi) ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using ( gpi).
+  Γ ⊢i p <---> q using ( gpi) ->
+  Γ ⊢i (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using ( gpi).
 Proof.
   intros wfl Himp.
   induction l; simpl in *.
@@ -7296,7 +7200,7 @@ Proof.
 Defined.
 
 Lemma extract_wfp {Σ : Signature} (Γ : Theory) (p q : Pattern) (i : ProofInfo):
-  Γ ⊢ p <---> q using i ->
+  Γ ⊢i p <---> q using i ->
   well_formed p.
 Proof.
   intros H.
@@ -7306,7 +7210,7 @@ Proof.
 Qed.
 
 Lemma extract_wfq {Σ : Signature} (Γ : Theory) (p q : Pattern) (i : ProofInfo):
-  Γ ⊢ p <---> q using i ->
+  Γ ⊢i p <---> q using i ->
   well_formed q.
 Proof.
   intros H.
@@ -7318,7 +7222,7 @@ Qed.
 Lemma MyGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
-  (pf : Γ ⊢ p <---> q using ( gpi)) :
+  (pf : Γ ⊢i p <---> q using ( gpi)) :
   @mkMyGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
   (
@@ -7560,7 +7464,7 @@ Ltac2 heat :=
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
   lazy_match! Constr.type hiff with
-  | _ ⊢ (?a <---> ?a') using _
+  | _ ⊢i (?a <---> ?a') using _
     =>
     unfold AnyReasoning;
     lazy_match! goal with
@@ -7617,8 +7521,8 @@ Tactic Notation "mgRewrite" constr(Hiff) "at" constr(atn) :=
    ff Hiff atn).
 
 Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
-  Γ ⊢ (A <---> B) using i ->
-  Γ ⊢ (B <---> A) using i.
+  Γ ⊢i (A <---> B) using i ->
+  Γ ⊢i (B <---> A) using i.
 Proof.
   intros H.
   pose proof (wfp := proved_impl_wf _ _ (proj1_sig H)).
@@ -7638,8 +7542,8 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢ a <---> a' using AnyReasoning ->
-  Γ ⊢ (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x))
+  Γ ⊢i a <---> a' using AnyReasoning ->
+  Γ ⊢i (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x))
   using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.
@@ -7654,7 +7558,7 @@ Proof.
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
-  Γ ⊢ Top using BasicReasoning.
+  Γ ⊢i Top using BasicReasoning.
 Proof.
   apply false_implies_everything.
   { wf_auto2. }
@@ -7662,7 +7566,7 @@ Defined.
 
 Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ ϕ <---> (ϕ <---> Top)
+  Γ ⊢i ϕ <---> (ϕ <---> Top)
   using BasicReasoning.
 Proof.
   intros wfϕ.
@@ -7685,7 +7589,7 @@ Defined.
 
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
-  Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥)
+  Γ ⊢i (! ϕ ) <---> (ϕ <---> ⊥)
   using BasicReasoning.
 Proof.
   intros wfϕ.
@@ -7703,7 +7607,7 @@ Defined.
 
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
-  Γ ⊢ A <---> ! ! A
+  Γ ⊢i A <---> ! ! A
   using BasicReasoning.
 Proof.
   intros wfA.
@@ -7720,7 +7624,7 @@ Defined.
 Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
+  Γ ⊢i ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
   using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7768,7 +7672,7 @@ Defined.
 Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
+  Γ ⊢i (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
   using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7833,7 +7737,7 @@ Defined.
 Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
+  Γ ⊢i (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
   using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7851,7 +7755,7 @@ Defined.
 Lemma patt_and_comm {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
-  Γ ⊢ (p and q) <---> (q and p)
+  Γ ⊢i (p and q) <---> (q and p)
   using BasicReasoning.
 Proof.
   intros wfp wfq.
@@ -7868,7 +7772,7 @@ Defined.
 Local Example ex_mt {Σ : Signature} Γ ϕ₁ ϕ₂:
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
-  Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁)
+  Γ ⊢i (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁)
   using BasicReasoning.
 Proof.
   intros wfϕ₁ wfϕ₂.
@@ -7909,7 +7813,7 @@ Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
   Pattern.wf xs ->
-  Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
+  Γ ⊢i (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
   using BasicReasoning.
 Proof.
   intros wfg wfx wfxs.
@@ -7953,8 +7857,8 @@ Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern
   well_formed g ->
   well_formed x ->
   Pattern.wf xs ->
-  Γ ⊢ (foldr patt_and x xs ---> g) using i ->
-  Γ ⊢ (foldr patt_imp g (x :: xs)) using i.
+  Γ ⊢i (foldr patt_and x xs ---> g) using i ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) using i.
 Proof.
   intros wfg wfx wfxs H.
   eapply MP.
@@ -7969,8 +7873,8 @@ Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i
   well_formed x ->
   Pattern.wf xs ->
   forall (r : ImpReshapeS g (x::xs)),
-     Γ ⊢ ((foldr (patt_and) x xs) ---> g) using i ->
-     Γ ⊢ untagPattern (irs_flattened r) using i .
+     Γ ⊢i ((foldr (patt_and) x xs) ---> g) using i ->
+     Γ ⊢i untagPattern (irs_flattened r) using i .
 Proof.
   intros wfg wfx wfxs r H.
   eapply cast_proof'.
@@ -7985,7 +7889,7 @@ Local Example ex_match {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)) using BasicReasoning.
+  Γ ⊢i a ---> (b ---> (c ---> d)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply lhs_and_to_imp_r.
@@ -7994,8 +7898,8 @@ Abort.
 Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
   ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-  Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
-  Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
+  Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+  Γ ⊢i ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
   intros Hfr pile Himp.
   pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
@@ -8026,7 +7930,7 @@ Defined.
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
   (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
-  Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
+  Γ ⊢i (all, evar_quantify x 0 ϕ) ---> ϕ using i.
 Proof.
   intros wfϕ pile.
   pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
@@ -8037,8 +7941,8 @@ Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
   evar_is_fresh_in x ϕ ->
   ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-  Γ ⊢ (all, ϕ) using i ->
-  Γ ⊢ (evar_open 0 x ϕ) using i.
+  Γ ⊢i (all, ϕ) using i ->
+  Γ ⊢i (evar_open 0 x ϕ) using i.
 Proof.
   intros wfϕ frϕ pile H.
   destruct i.
@@ -8060,8 +7964,8 @@ Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-  Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
-  Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
+  Γ ⊢i (all, (ϕ₁ ---> ϕ₂)) using i ->
+  Γ ⊢i (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
   intros wfϕ₁ wfϕ₂ pile H.
   remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
@@ -8151,8 +8055,8 @@ Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ i:
   well_formed (ex, ϕ₂) ->
   well_formed ϕ₃ ->
   ProofInfoLe ( (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-  Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
-  Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
+  Γ ⊢i (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
+  Γ ⊢i (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
 Proof.
   intros wfϕ₁ wfϕ₂ wfϕ₃ pile H.
   toMyGoal.
@@ -8183,9 +8087,9 @@ Abort.
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i ->
-    Γ ⊢ ((p and q) <---> (p' and q')) using i.
+    Γ ⊢i (p <---> p') using i ->
+    Γ ⊢i (q <---> q') using i ->
+    Γ ⊢i ((p and q) <---> (p' and q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
     pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
@@ -8289,9 +8193,9 @@ End FOL_helpers.
     well_formed q ->
     well_formed p' ->
     well_formed q' ->
-    Γ ⊢ (p <---> p') using i ->
-    Γ ⊢ (q <---> q') using i ->
-    Γ ⊢ ((p or q) <---> (p' or q')) using i.
+    Γ ⊢i (p <---> p') using i ->
+    Γ ⊢i (q <---> q') using i ->
+    Γ ⊢i ((p or q) <---> (p' or q')) using i.
   Proof.
     intros wfp wfq wfp' wfq' pep' qeq'.
 
@@ -8326,7 +8230,7 @@ End FOL_helpers.
 Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢( (a ---> b) <---> ((! a) or b) )
+  Γ ⊢i ( (a ---> b) <---> ((! a) or b) )
   using BasicReasoning.
 Proof.
   intros wfa wfb.
@@ -8349,7 +8253,7 @@ Qed.
 Lemma nimpl_eq_and {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢( ! (a ---> b) <---> (a and !b) )
+  Γ ⊢i ( ! (a ---> b) <---> (a and !b) )
   using BasicReasoning.
 Proof.
   intros wfa wfb.
@@ -8374,7 +8278,7 @@ Qed.
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ( !(a and b) <---> (!a or !b) )
+    Γ ⊢i ( !(a and b) <---> (!a or !b) )
     using BasicReasoning.
   Proof.
     intros wfa wfb.
@@ -8397,7 +8301,7 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
 Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ( !(a or b) <---> (!a and !b))
+    Γ ⊢i ( !(a or b) <---> (!a and !b))
     using BasicReasoning.
   Proof.
     intros wfa wfb.
@@ -8422,7 +8326,7 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
 
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
-  Γ ⊢ (!(!a) <---> a)
+  Γ ⊢i (!(!a) <---> a)
   using BasicReasoning.
 Proof.
   intros wfa.
@@ -8495,7 +8399,7 @@ Ltac toNNF :=
 #[local] Example test_toNNF {Σ : Signature} Γ a b :
   well_formed a ->
   well_formed b ->
-  Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
+  Γ ⊢i ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
   using BasicReasoning.
 Proof.
   intros wfa wfb.
@@ -8589,7 +8493,7 @@ Ltac mgTauto :=
 Example conj_right {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
+  Γ ⊢i ( (b and (a or b) and !b and ( a or a) and a) ---> ⊥)
   using AnyReasoning.
 Proof.
   intros wfa wfb.
@@ -8603,7 +8507,7 @@ Defined.
 Example condtradict_taut_2 {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ (a ---> ((! a) ---> b))
+  Γ ⊢i (a ---> ((! a) ---> b))
   using AnyReasoning.
 Proof.
   intros wfa wfb.
@@ -8617,7 +8521,7 @@ Example taut {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c)))
+  Γ ⊢i ((a ---> b) ---> ((b ---> c) ---> ((a or b)---> c)))
   using AnyReasoning.
 Proof.
   intros wfa wfb wfc.
@@ -8629,7 +8533,7 @@ Qed.
 #[local]
 Example condtradict_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ !(a and !a)
+  Γ ⊢i !(a and !a)
   using AnyReasoning.
 Proof.
   intros wfa.
@@ -8641,7 +8545,7 @@ Qed.
 #[local]
 Example notnot_taut_1 {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ (! ! a ---> a)
+  Γ ⊢i (! ! a ---> a)
   using AnyReasoning.
 Proof.
   intros wfa.
@@ -8654,7 +8558,7 @@ Qed.
 Lemma Peirce_taut {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ ((((a ---> b) ---> a) ---> a))
+  Γ ⊢i ((((a ---> b) ---> a) ---> a))
   using AnyReasoning.
 Proof.
   intros wfa wfb.
