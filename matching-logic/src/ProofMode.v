@@ -35,8 +35,8 @@ Definition coSVarSet {Σ : Signature} := coGset svar.
 Definition WfpSet {Σ : Signature} := gmap.gset wfPattern.
 Definition coWfpSet {Σ : Signature} := coGset wfPattern.
 
-Record GenericProofInfo {Σ : Signature} :=
-  mkGenericProofInfo
+Record ProofInfo {Σ : Signature} :=
+  mkProofInfo
   {
     pi_generalized_evars : coEVarSet ;
     pi_substituted_svars : coSVarSet ;
@@ -45,9 +45,8 @@ Record GenericProofInfo {Σ : Signature} :=
   }.
 
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
-  := (@mkGenericProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
+  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
 
-Inductive ProofInfo {Σ : Signature} := pi_Propositional | pi_Generic (gpi : GenericProofInfo).
 
 (* A proof together with some properties of it. *)
 Record ProofInfoMeaning
@@ -60,11 +59,10 @@ Record ProofInfoMeaning
   :=
 mkProofInfoMeaning
 {
-  pwi_pf_prop : if pi is pi_Propositional then @propositional_only Σ Γ ϕ pwi_pf = true else True ;
-  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_generalized_evars pi' else ∅) ;
-  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then pi_substituted_svars pi' else ∅) ;
-  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (if pi is (pi_Generic pi') then pi_uses_kt pi' else false) ;
-  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (if pi is (pi_Generic pi') then (pi_framing_patterns pi') else ∅) ;
+  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
+  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
+  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
 }.
 
 Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
@@ -98,51 +96,8 @@ Proof.
   tauto.
 Qed.
 
-Definition PropositionalReasoning {Σ} : ProofInfo := @pi_Propositional Σ.
-Definition BasicReasoning {Σ} : ProofInfo := (pi_Generic (@mkGenericProofInfo Σ ∅ ∅ false ∅)).
-Definition AnyReasoning {Σ : Signature} : ProofInfo := pi_Generic (@mkGenericProofInfo Σ ⊤ ⊤ true ⊤).
-
-Lemma propositional_pi
-  {Σ : Signature}
-  (Γ : Theory)
-  (ϕ : Pattern)
-  (pf : Γ ⊢ ϕ)
-  :
-  propositional_only Γ ϕ pf = true ->
-  @ProofInfoMeaning Σ Γ ϕ pf PropositionalReasoning.
-Proof.
-  intros H.
-  split; simpl.
-  { exact H. }
-  { rewrite propositional_implies_no_uses_ex_gen_2;[exact H|]. set_solver. }
-  { rewrite propositional_implies_no_uses_svar_2;[exact H|]. set_solver. }
-  { rewrite propositional_implies_noKT;[exact H|]. reflexivity. }
-  { rewrite propositional_implies_no_frame;[exact H|apply reflexivity]. }
-Qed.
-
-(*
-#[global]
-Instance
-*)
-Lemma pile_prop {Σ : Signature} (i : ProofInfo) : ProofInfoLe PropositionalReasoning i.
-Proof.
-  constructor.
-  intros Γ ϕ pf Hpf.
-  destruct i.
-  { apply Hpf. }
-  { destruct gpi; simpl;
-    destruct Hpf; simpl in *;
-    constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { destruct (uses_kt pf); simpl in *; try congruence. }
-    { rewrite propositional_implies_no_frame.
-     { exact pwi_pf_prop0. }
-     { clear. set_solver. }
-    }
-  }
-Qed.
+Definition BasicReasoning {Σ} : ProofInfo := ((@mkProofInfo Σ ∅ ∅ false ∅)).
+Definition AnyReasoning {Σ : Signature} : ProofInfo := (@mkProofInfo Σ ⊤ ⊤ true ⊤).
 
 
 (* Originally, the notation was defined like this: *)
@@ -190,6 +145,73 @@ Ltac toMyGoal :=
 
 Ltac fromMyGoal := unfold of_MyGoal; simpl; intros _ _.
 
+Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexivity)|(apply reflexivity)].
+
+Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  Γ ⊢ ϕ ---> ψ ---> ϕ 
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ.
+  unshelve (eexists).
+  { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
+  { abstract(solve_pim_simple). }
+Defined.
+
+Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed ξ ->
+  Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ wfξ.
+  unshelve (eexists).
+  { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
+  { abstract (solve_pim_simple). }
+Defined.
+
+Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  { apply ProofSystem.P3. exact wfϕ. }
+  { abstract ( solve_pim_simple ). }
+Defined.
+
+Lemma MP {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
+  Γ ⊢ ϕ₁ using i ->
+  Γ ⊢ (ϕ₁ ---> ϕ₂) using i ->
+  Γ ⊢ ϕ₂ using i.
+Proof.
+  intros H1 H2.
+  unshelve (eexists).
+  {
+    eapply (ProofSystem.Modus_ponens _ _ _).
+    { apply H1. }
+    { apply H2. }
+  }
+  {
+    abstract(
+      simpl;
+      destruct H1 as [pf1 Hpf1];
+      destruct H2 as [pf2 Hpf2];
+      destruct Hpf1,Hpf2;
+      constructor; simpl;
+      [set_solver|set_solver|(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)|set_solver]
+    ).
+  }
+Defined.
+
+Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
+Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
+Arguments P3 {Σ} _ (_%ml) _.
+
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
@@ -198,126 +220,42 @@ Section FOL_helpers.
   Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
     (well_formed A) ->
     Γ ⊢ (A ---> A)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof. 
     intros WFA.
     pose (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_3 := Modus_ponens _ _ _ _2 _1).
+    pose (_3 := MP _2 _1).
     pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_5 := Modus_ponens Γ _ _ _4 _3).
-    exists _5.
-    apply propositional_pi. reflexivity.
+    pose (_5 := MP _4 _3).
+    exact _5.
   Defined.
 
   Lemma P4m (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢ ((A ---> B) ---> ((A ---> !B) ---> !A))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H3 := Modus_ponens _ _ _ H1 H2).
+    pose (H3 := MP H1 H2).
     pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
       (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H5 := Modus_ponens _ _ _ H3 H4).
+    pose (H5 := MP  H3 H4).
     pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
       ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H7 := Modus_ponens _ _ _ H5 H6).
+    pose (H7 := MP H5 H6).
     pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H9 := Modus_ponens _ _ _ H8 H7).
-    exists H9.
-    apply propositional_pi. reflexivity.
+    pose (H9 := MP H8 H7).
+    exact H9.
   Defined.
-
-  Ltac solve_pim_simple := constructor; simpl;[(reflexivity)|(set_solver)|(set_solver)|(reflexivity)|(apply reflexivity)].
-
-  Lemma P1 (Γ : Theory) (ϕ ψ : Pattern) :
-    well_formed ϕ ->
-    well_formed ψ ->
-    Γ ⊢ ϕ ---> ψ ---> ϕ 
-    using PropositionalReasoning.
-  Proof.
-    intros wfϕ wfψ.
-    unshelve (eexists).
-    { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
-    { abstract(solve_pim_simple). }
-  Defined.
-
-  Lemma P2 (Γ : Theory) (ϕ ψ ξ : Pattern) :
-    well_formed ϕ ->
-    well_formed ψ ->
-    well_formed ξ ->
-    Γ ⊢ (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
-    using PropositionalReasoning.
-  Proof.
-    intros wfϕ wfψ wfξ.
-    unshelve (eexists).
-    { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
-    { abstract (solve_pim_simple). }
-  Defined.
-
-  Lemma P3 (Γ : Theory) (ϕ : Pattern) :
-    well_formed ϕ ->
-    Γ ⊢ (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
-    using PropositionalReasoning.
-  Proof.
-    intros wfϕ.
-    unshelve (eexists).
-    { apply ProofSystem.P3. exact wfϕ. }
-    { abstract ( solve_pim_simple ). }
-  Defined.
-
-  Lemma MP (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
-    Γ ⊢ ϕ₁ using i ->
-    Γ ⊢ (ϕ₁ ---> ϕ₂) using i ->
-    Γ ⊢ ϕ₂ using i.
-  Proof.
-    intros H1 H2.
-    unshelve (eexists).
-    {
-      eapply (ProofSystem.Modus_ponens _ _ _).
-      { apply H1. }
-      { apply H2. }
-    }
-    {
-      abstract (
-      simpl;
-      destruct H1 as [pf1 Hpf1];
-      destruct H2 as [pf2 Hpf2];
-      destruct Hpf1,Hpf2;
-      destruct i;
-      [(
-        constructor;
-        [(simpl; rewrite pwi_pf_prop0; rewrite pwi_pf_prop1; reflexivity)
-        | (simpl; set_solver)
-        | (simpl; set_solver)
-        | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
-        | (simpl; set_solver)
-        ]
-      )|(
-        constructor;
-        [(exact I)
-        | (simpl; set_solver)
-        | (simpl; set_solver)
-        | (simpl; destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
-        | (simpl; set_solver)
-        ]
-      )]).
-    }
-  Defined.
-
-  Arguments P1 _ (_%ml) (_%ml) _ _ : clear implicits.
-  Arguments P2 _ (_%ml) (_%ml) (_%ml) _ _ _ : clear implicits.
-  Arguments P3 _ (_%ml) _ : clear implicits.
-
 
   Lemma P4i (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢ ((A ---> !A) ---> !A)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA.
     eapply MP.
@@ -330,7 +268,7 @@ Section FOL_helpers.
     well_formed B ->
     well_formed C ->
     Γ ⊢ ((A ---> B ---> C) ---> ( B ---> A ---> C))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB WFC.
    
@@ -378,28 +316,148 @@ Section FOL_helpers.
   Qed.
 
 
-  (* This lemma is the reason why we could make P1,P2,P3 specialized to PropositionalReasoning *)
-  Lemma usePropositionalReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
-    Γ ⊢ ϕ using PropositionalReasoning ->
+
+  Lemma pile_evs_svs_kt_back evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
+  ProofInfoLe
+    ( (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+    ( (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
+    evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
+  Proof.
+    intros pile.
+    repeat split.
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      remember (fresh_evar (patt_free_evar x)) as y.
+      pose (pf1 := @A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor.
+        { simpl. clear -Hx. set_solver. }
+        { simpl. clear. set_solver. }
+        { simpl. reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile as [Hm2 Hm3 Hm4 Hm5].
+      simpl in *.
+      clear -Hm2.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros X HX.
+      pose (pf1 := @A_impl_A ∅ (patt_free_svar X) ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear -HX. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in *.
+      clear -Hp3.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      pose (pf1 := @A_impl_A ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+      destruct kt1.
+      2: { simpl. reflexivity. }
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in Hp4.
+      rewrite Hp4.
+      reflexivity.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros (*p*) [p wfp] Hp.
+      (*assert (wfp : well_formed p) by admit.*)
+      pose (pf1 := @A_impl_A ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose proof (pile1 := pile ∅ _ pf2).
+      pose proof (pile2 := pile ∅ _ pf3).
+      clear pile.
+      feed specialize pile1.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      feed specialize pile2.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile1, pile2. simpl in *.
+      rewrite elem_of_subseteq in pwi_pf_fp1.
+      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp1.
+      specialize (pwi_pf_fp1 (exist _ p wfp) ltac:(set_solver)).
+      exact pwi_pf_fp1.
+    }
+  Qed.
+
+
+  Lemma useGenericReasoning (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
+    (ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
+    Γ ⊢ ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
     Γ ⊢ ϕ using i.
   Proof.
-    intros [pf Hpf].
-    exists pf.
-    (* [abstract] does not really work here *)
-    abstract(
-    destruct i;
-    [(unfold PropositionalReasoning in Hpf; simpl in Hpf; apply Hpf)
-    |(destruct gpi; simpl;
-      destruct Hpf; simpl in *;
-      constructor; simpl;
-      [(exact I)
-      |(set_solver)
-      |(set_solver)
-      |(destruct (uses_kt pf); simpl in *; try congruence)
-      |(set_solver)
-      ]
-    )]).
-  Qed.
+  intros pile [pf Hpf].
+  exists pf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+  simpl in *.
+  destruct i.
+  pose proof (Htmp := @pile_evs_svs_kt_back).
+  specialize (Htmp evs pi_generalized_evars0 svs pi_substituted_svars0 kt pi_uses_kt0 fp pi_framing_patterns0 pile).
+  destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
+  constructor; simpl.
+  { clear -Hpf2 Hevs. set_solver. }
+  { clear -Hpf3 Hsvs. set_solver. }
+  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
+  { clear -Hpf5 Hfp. set_solver.  }
+  Defined.
+
+  Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
+    Γ ⊢ ϕ using BasicReasoning ->
+    Γ ⊢ ϕ using i.
+  Proof.
+    intros H.
+    pose proof (Hpf := proj2_sig H).
+    remember (proj1_sig H) as _H.
+    exists (_H).
+    clear Heq_H.
+    abstract (
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4];
+    destruct i; constructor; simpl in *;
+    [set_solver|set_solver|idtac|set_solver];
+    (destruct (uses_kt _H); simpl in *; try congruence)).
+  Defined.
+  
 
   Lemma reorder_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
     well_formed A ->
@@ -410,7 +468,7 @@ Section FOL_helpers.
   Proof.
     intros H H0 H1 H2.
     eapply MP. apply H2.
-    apply usePropositionalReasoning.
+    apply useBasicReasoning.
     apply reorder; wf_auto2.
   Defined.
 
@@ -419,7 +477,7 @@ Section FOL_helpers.
     well_formed B ->
     well_formed C ->
     Γ ⊢ ((A ---> B) ---> (B ---> C) ---> (A ---> C))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB WFC.
     apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
@@ -446,7 +504,7 @@ Section FOL_helpers.
     - eapply MP.
       + exact H3.
       + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-        apply usePropositionalReasoning.
+        apply useBasicReasoning.
         apply syllogism; wf_auto2.
   Defined.
   
@@ -454,7 +512,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> (A ---> B) ---> B)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     eapply MP.
@@ -470,7 +528,7 @@ Section FOL_helpers.
   Lemma not_not_intro (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢ (A ---> !(!A))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA.
     apply modus_ponens; wf_auto2.
@@ -480,7 +538,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B -> 
     Γ ⊢ (((! A) ---> (! B)) ---> (B ---> A))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     pose proof (m := P3 Γ A ltac:(wf_auto2)).
@@ -500,7 +558,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> B ---> (A and B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     pose proof (tB := (@A_impl_A Γ B ltac:(wf_auto2))).
@@ -549,7 +607,7 @@ Section FOL_helpers.
     - exact H0.
     - eapply MP.
       + exact H.
-      + apply usePropositionalReasoning.
+      + apply useBasicReasoning.
         apply conj_intro; wf_auto2.
   Defined.
   
@@ -570,13 +628,13 @@ Section FOL_helpers.
         * eapply MP.
           -- eapply MP.
              ++ exact H0.
-             ++ apply usePropositionalReasoning. 
+             ++ apply useBasicReasoning. 
                 eapply (P1 _ (C ---> D) B _ _).
-          -- apply usePropositionalReasoning.  
+          -- apply useBasicReasoning.  
               eapply (P2 _ B C D _ _ _).
-        * apply usePropositionalReasoning. 
+        * apply useBasicReasoning. 
           eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
-      + apply usePropositionalReasoning. 
+      + apply useBasicReasoning. 
         eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
         Unshelve.
         all: wf_auto2.
@@ -585,7 +643,7 @@ Section FOL_helpers.
   Lemma bot_elim (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢ (Bot ---> A)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA.
     eapply MP.
@@ -605,7 +663,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> (!B ---> !A) ---> B)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
@@ -616,10 +674,10 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (B ---> (A or B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
-    apply usePropositionalReasoning.
+    apply useBasicReasoning.
     apply P1; wf_auto2.
   Defined.
   
@@ -627,7 +685,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (A ---> (A or B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     eapply syllogism_4_meta.
@@ -646,7 +704,7 @@ Section FOL_helpers.
     eapply MP.
     { exact HB. }
     {
-      apply usePropositionalReasoning.
+      apply useBasicReasoning.
       apply disj_right_intro; wf_auto2.
     }
   Defined.
@@ -660,14 +718,14 @@ Section FOL_helpers.
     intros HwfA HwfB HA.
     eapply MP.
     { exact HA. }
-    apply usePropositionalReasoning.
+    apply useBasicReasoning.
     apply disj_left_intro; assumption.
   Defined.
 
   Lemma not_not_elim (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢ (!(!A) ---> A)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA.
     apply P3. exact WFA.
@@ -681,14 +739,14 @@ Section FOL_helpers.
     intros wfA nnA.
     eapply MP.
     { apply nnA. }
-    { apply usePropositionalReasoning. apply not_not_elim. exact wfA. }
+    { apply useBasicReasoning. apply not_not_elim. exact wfA. }
   Defined.
 
   Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢ (((!(!A)) ---> (!(!B))) ---> (A ---> B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     eapply syllogism_meta.
@@ -706,7 +764,7 @@ Section FOL_helpers.
     intros WFA WFB H.
     eapply MP.
     - exact H.
-    - apply usePropositionalReasoning.
+    - apply useBasicReasoning.
       apply double_neg_elim; wf_auto2.
   Defined.
 
@@ -714,7 +772,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ ((A ---> B) ---> ((! ! A) ---> (! ! B)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     
@@ -746,7 +804,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B -> 
     Γ ⊢ ((A ---> B) ---> ((! B) ---> (! A)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     epose proof (@P4 Γ (! A) (! B) _ _) as m.
@@ -769,8 +827,8 @@ Section FOL_helpers.
     intros WFA WFB H. unfold patt_or in *.    
     epose proof (P4 := (@P4 Γ A (!B) _ _)).
     epose proof (NNI := @not_not_intro Γ B _).
-    apply (usePropositionalReasoning i) in P4.
-    apply (usePropositionalReasoning i) in NNI.
+    apply (useBasicReasoning i) in P4.
+    apply (useBasicReasoning i) in NNI.
     epose proof (SI := @syllogism_meta Γ _ _ _ _ _ _ _ H NNI).
     eapply MP.
     - exact SI.
@@ -788,7 +846,7 @@ Section FOL_helpers.
     eapply MP.
     { apply H. }
     {
-      apply usePropositionalReasoning.
+      apply useBasicReasoning.
       apply not_not_intro.
       exact WFA.
     }
@@ -798,7 +856,7 @@ Section FOL_helpers.
     well_formed A ->
     well_formed B ->
     Γ ⊢ (! A ---> (A ---> B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
     eapply syllogism_meta.
@@ -809,202 +867,14 @@ Section FOL_helpers.
 
   Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
     well_formed phi ->
-    Γ ⊢ (Bot ---> phi) using PropositionalReasoning.
+    Γ ⊢ (Bot ---> phi) using BasicReasoning.
   Proof.
     apply bot_elim.
   Defined.
 
-  Lemma not_basic_in_prop : ~ProofInfoLe BasicReasoning pi_Propositional.
-  Proof.
-    intros [HContra].
-    pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
-    specialize (HContra _ _ pf).
-    feed specialize HContra.
-    {
-      constructor.
-      {
-        simpl. exact I.
-      }
-      {
-        simpl. unfold pf. apply reflexivity.
-      }
-      {
-        simpl. unfold pf. apply reflexivity.
-      }
-      {
-        simpl. reflexivity.
-      }
-      {
-        simpl. apply reflexivity.
-      }
-    }
-    destruct HContra as [Contra1 Contra2 Contra3 Contra4].
-    simpl in Contra1. congruence.
-  Qed.
-
-  Lemma not_exgen_x_in_prop (x : evar) :
-    ~ ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) pi_Propositional.
-  Proof.
-    intros [HContra].
-
-    remember (fresh_evar (patt_free_evar x)) as y.
-    pose (pf1 := @A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
-    pose (pf2 := @Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-    specialize (HContra _ _ pf2).
-    feed specialize HContra.
-    {
-      unfold pf2.
-      constructor.
-      { exact I. }
-      { simpl. clear. set_solver. }
-      { simpl. clear. set_solver. }
-      { simpl. reflexivity. }
-      { simpl. clear. set_solver. }
-    }
-    destruct HContra as [Hprop Hgen Hsvs Hkt].
-    clear -Hgen.
-    unfold pf2 in Hgen.
-    simpl in Hgen.
-    clear -Hgen.
-    set_solver.
-  Qed.
-
-  Lemma not_generic_in_prop evs svs kt fp :
-  ~ ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf := @ProofSystem.Pre_fixp Σ ∅ (patt_bound_svar 0) ltac:(wf_auto2)).
-  specialize (HContra _ pf).
-  feed specialize HContra.
-  {
-    unfold pf. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4 HC5].
-  simpl in *.
-  clear -HC1.
-  congruence.
-Qed.
-
-
-
-Lemma pile_evs_svs_kt_back evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
-ProofInfoLe
-  (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-  (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
-  evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
-Proof.
-  intros pile.
-  repeat split.
-  {
-    destruct pile as [pile].
-    rewrite elem_of_subseteq.
-    intros x Hx.
-    remember (fresh_evar (patt_free_evar x)) as y.
-    pose (pf1 := @A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
-    pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-    specialize (pile ∅ _ pf2).
-    feed specialize pile.
-    {
-      constructor.
-      { exact I. }
-      { simpl. clear -Hx. set_solver. }
-      { simpl. clear. set_solver. }
-      { simpl. reflexivity. }
-      { simpl. set_solver. }
-    }
-    destruct pile as [Hm1 Hm2 Hm3 Hm4 Hm5].
-    simpl in *.
-    clear -Hm2.
-    set_solver.
-  }
-  {
-    destruct pile as [pile].
-    rewrite elem_of_subseteq.
-    intros X HX.
-    pose (pf1 := @A_impl_A ∅ (patt_free_svar X) ltac:(wf_auto2)).
-    pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-    specialize (pile ∅ _ pf2).
-    feed specialize pile.
-    {
-      constructor; simpl.
-      { exact I. }
-      { clear. set_solver. }
-      { clear -HX. set_solver. }
-      { reflexivity. }
-      { set_solver. }
-    }
-    destruct pile as [Hp1 Hp2 Hp3 Hp4].
-    simpl in *.
-    clear -Hp3.
-    set_solver.
-  }
-  {
-    destruct pile as [pile].
-    pose (pf1 := @A_impl_A ∅ patt_bott ltac:(wf_auto2)).
-    pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-    destruct kt1.
-    2: { simpl. reflexivity. }
-    specialize (pile ∅ _ pf2).
-    feed specialize pile.
-    {
-      constructor; simpl.
-      { exact I. }
-      { clear. set_solver. }
-      { clear. set_solver. }
-      { reflexivity. }
-      { set_solver. }
-    }
-    destruct pile as [Hp1 Hp2 Hp3 Hp4].
-    simpl in Hp4.
-    rewrite Hp4.
-    reflexivity.
-  }
-  {
-    destruct pile as [pile].
-    rewrite elem_of_subseteq.
-    intros (*p*) [p wfp] Hp.
-    (*assert (wfp : well_formed p) by admit.*)
-    pose (pf1 := @A_impl_A ∅ patt_bott ltac:(wf_auto2)).
-    pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-    pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-    pose proof (pile1 := pile ∅ _ pf2).
-    pose proof (pile2 := pile ∅ _ pf3).
-    clear pile.
-    feed specialize pile1.
-    {
-      constructor; simpl.
-      { exact I. }
-      { clear; set_solver. }
-      { clear; set_solver. }
-      { reflexivity. }
-      { simpl. set_solver. }
-    }
-    feed specialize pile2.
-    {
-      constructor; simpl.
-      { exact I. }
-      { clear; set_solver. }
-      { clear; set_solver. }
-      { reflexivity. }
-      { simpl. set_solver. }
-    }
-    destruct pile1, pile2. simpl in *.
-    rewrite elem_of_subseteq in pwi_pf_fp1.
-    setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp1.
-    specialize (pwi_pf_fp1 (exist _ p wfp) ltac:(set_solver)).
-    exact pwi_pf_fp1.
-  }
-Qed.
-
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
     :
     Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢ ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
@@ -1017,15 +887,8 @@ Qed.
       exact pf.
     }
     {
-      destruct i.
-      {
-        exfalso. eapply not_generic_in_prop. apply pile.
-      }
       destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
       constructor; simpl.
-      {
-        exact I.
-      }
       {
         assumption.
       }
@@ -1036,7 +899,7 @@ Qed.
         assumption.
       }
       { 
-        destruct gpi.
+        destruct i.
         simpl in *.
         apply pile_evs_svs_kt_back in pile.
         destruct_and!.
@@ -1071,7 +934,7 @@ Qed.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
   (wfψ : well_formed ψ)
-  {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+  {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
   :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
@@ -1084,16 +947,9 @@ Proof.
     exact pf.
   }
   {
-    destruct i.
-    {
-      exfalso. eapply not_generic_in_prop. apply pile.
-    }
     destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
     constructor; simpl.
     {
-      exact I.
-    }
-    {
       assumption.
     }
     {
@@ -1103,7 +959,7 @@ Proof.
       assumption.
     }
     {
-      destruct gpi.
+      destruct i.
       simpl in *.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!.
@@ -1144,9 +1000,6 @@ Defined.
     {
       constructor; simpl.
       {
-        exact I.
-      }
-      {
         set_solver.
       }
       {
@@ -1173,9 +1026,6 @@ Defined.
     {
       constructor; simpl.
       {
-        exact I.
-      }
-      {
         set_solver.
       }
       {
@@ -1193,30 +1043,10 @@ Defined.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-
-  Lemma useBasicReasoning (Γ : Theory) (ϕ : Pattern) (gpi : GenericProofInfo) :
-  Γ ⊢ ϕ using BasicReasoning ->
-  Γ ⊢ ϕ using (pi_Generic gpi).
-Proof.
-  intros [pf Hpf].
-  exists pf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-  simpl in *.
-  constructor.
-  { exact I. }
-  { set_solver. }
-  { set_solver. }
-  { destruct (uses_kt pf); simpl in *.
-    { inversion Hpf4. }
-    reflexivity.
-  }
-  { set_solver. }
-Qed.
-
 Lemma mgUseBasicReasoning
-  (Γ : Theory) (l : list Pattern) (g : Pattern) (gpi : GenericProofInfo) :
+  (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
   @mkMyGoal Σ Γ l g BasicReasoning ->
-  @mkMyGoal Σ Γ l g (pi_Generic gpi).
+  @mkMyGoal Σ Γ l g i.
 Proof.
   intros H wf1 wf2.
   specialize (H wf1 wf2).
@@ -1228,15 +1058,14 @@ Defined.
 Lemma pile_evs_subseteq evs1 evs2 svs kt fp:
   evs1 ⊆ evs2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs1, SVSubst := svs, KT := kt, FP := fp))
-    (pi_Generic (ExGen := evs2, SVSubst := svs, KT := kt, FP := fp)).
+    ((ExGen := evs1, SVSubst := svs, KT := kt, FP := fp))
+    ((ExGen := evs2, SVSubst := svs, KT := kt, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { clear -Hsub Hpf2. set_solver. }
   { exact Hpf3. }
   { exact Hpf4. }
@@ -1246,15 +1075,14 @@ Qed.
 Lemma pile_svs_subseteq evs svs1 svs2 kt fp:
   svs1 ⊆ svs2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs1, KT := kt, FP := fp))
-    (pi_Generic (ExGen := evs, SVSubst := svs2, KT := kt, FP := fp)).
+    ( (ExGen := evs, SVSubst := svs1, KT := kt, FP := fp))
+    ( (ExGen := evs, SVSubst := svs2, KT := kt, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { clear -Hsub Hpf3. set_solver. }
   { exact Hpf4. }
@@ -1264,15 +1092,14 @@ Qed.
 Lemma pile_kt_impl evs svs kt1 kt2 fp:
   kt1 ==> kt2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt1, FP := fp))
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt2, FP := fp)).
+    ((ExGen := evs, SVSubst := svs, KT := kt1, FP := fp))
+    ((ExGen := evs, SVSubst := svs, KT := kt2, FP := fp)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { exact Hpf3. }
   { unfold implb in *.  destruct (uses_kt pf),kt1; simpl in *; try reflexivity.
@@ -1285,15 +1112,14 @@ Qed.
 Lemma pile_fp_subseteq evs svs kt fp1 fp2:
   fp1 ⊆ fp2 ->
   ProofInfoLe
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp1))
-    (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp2)).
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp1))
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp2)).
 Proof.
   intros Hsub.
   constructor.
   intros Γ ϕ pf Hpf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hfp5].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hfp5].
   constructor; simpl in *.
-  { exact Hpf1. }
   { exact Hpf2. }
   { exact Hpf3. }
   { exact Hpf4. }
@@ -1306,8 +1132,8 @@ svs1 ⊆ svs2 ->
 kt1 ==> kt2 ->
 fp1 ⊆ fp2 ->
 ProofInfoLe
-  (pi_Generic (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-  (pi_Generic (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
+  ((ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+  ((ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
 Proof.
 intros Hevs Hsvs Hkt Hfp.
 eapply pile_trans.
@@ -1330,12 +1156,8 @@ Qed.
 Lemma pile_any i:
   ProofInfoLe i AnyReasoning.
 Proof.
-  destruct i.
-  {
-    apply pile_prop.
-  }
   unfold AnyReasoning.
-  destruct gpi.
+  destruct i.
   apply pile_evs_svs_kt.
   { clear. set_solver. }
   { clear. set_solver. }
@@ -1344,47 +1166,18 @@ Proof.
 Qed.
 
 
-
-Lemma useGenericReasoning (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
-  (ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-  Γ ⊢ ϕ using (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
-  Γ ⊢ ϕ using i.
+Lemma useAnyReasoning Γ ϕ i:
+  Γ ⊢ ϕ using i ->
+  Γ ⊢ ϕ using AnyReasoning.
 Proof.
-  intros pile [pf Hpf].
-  destruct i.
+  intros H.
   {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
+    destruct i.
+    eapply useGenericReasoning.
+    { apply pile_any. }
+    apply H.
   }
-  exists pf.
-  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
-  simpl in *.
-  destruct gpi.
-  pose proof (Htmp := @pile_evs_svs_kt_back).
-  specialize (Htmp evs pi_generalized_evars0 svs pi_substituted_svars0 kt pi_uses_kt0 fp pi_framing_patterns0 pile).
-  destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
-  constructor; simpl.
-  { exact I. }
-  { clear -Hpf2 Hevs. set_solver. }
-  { clear -Hpf3 Hsvs. set_solver. }
-  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
-  { clear -Hpf5 Hfp. set_solver.  }
 Qed.
-
-
-Lemma mgUseGenericReasoning
-(Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) evs svs kt fp :
-(ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-@mkMyGoal Σ Γ l g ((pi_Generic (ExGen := evs, SVSubst := svs, KT := kt, FP := fp))) ->
-@mkMyGoal Σ Γ l g i.
-Proof.
-intros Hpile H wf1 wf2.
-specialize (H wf1 wf2).
-eapply useGenericReasoning.
-2: exact H.
-apply Hpile.
-Defined.
 
 
   Fixpoint frames_of_AC (C : Application_context)
@@ -1399,12 +1192,12 @@ Defined.
   (* TODO rename into Prop_bot_ctx *)
   Lemma Prop_bot (Γ : Theory) (C : Application_context) :
     Γ ⊢ ((subst_ctx C patt_bott) ---> patt_bott)
-    using pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
+    using (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
   Proof.
     remember (frames_of_AC C) as foC.
     move: foC HeqfoC.
     induction C; intros foC HeqfoC; simpl in *.
-    - apply usePropositionalReasoning.
+    - apply useBasicReasoning.
       apply false_implies_everything.
       wf_auto2.
     - eapply syllogism_meta.
@@ -1455,7 +1248,7 @@ Defined.
 
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
     {pile : ProofInfoLe
-     (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
+     ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
      i
     }
     :
@@ -1469,15 +1262,10 @@ Defined.
     assert (wfB: well_formed B) by wf_auto2.
     clear pf HWF.
 
-    destruct i.
-    {
-      exfalso. eapply not_generic_in_prop. apply pile.
-    }
-
     move: wfA wfB H.
     induction C; intros WFA WFB H; simpl in *.
     - exact H.
-    - destruct gpi.
+    - destruct i.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!. simpl in *.
       apply Framing_left with (wfψ := Prf).
@@ -1490,7 +1278,7 @@ Defined.
       2: exact H.
       apply pile_evs_svs_kt; try assumption.
       set_solver.
-    - destruct gpi.
+    - destruct i.
       apply pile_evs_svs_kt_back in pile.
       destruct_and!. simpl in *.
       apply Framing_right with (wfψ := Prf).
@@ -1506,7 +1294,7 @@ Defined.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
-    (i : ProofInfo) {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
     :
     well_formed A ->
     Γ ⊢ A using i ->
@@ -1534,12 +1322,12 @@ Defined.
     intros WFA H. unfold patt_not.
     eapply MP.
     { apply H. }
-    { apply usePropositionalReasoning. apply not_not_intro. exact WFA. }
+    { apply useBasicReasoning. apply not_not_intro. exact WFA. }
   Defined.
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
-    {pile : ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
   :
     well_formed A ->
     Γ ⊢ (A ---> Bot) using i ->
@@ -1577,7 +1365,7 @@ Defined.
     assert (wfB : well_formed B) by wf_auto2.
 
     eapply MP.
-    2: { apply usePropositionalReasoning. apply contraposition; wf_auto2. }
+    2: { apply useBasicReasoning. apply contraposition; wf_auto2. }
     apply H.
   Defined.
   
@@ -1585,16 +1373,16 @@ Defined.
     well_formed A ->
     well_formed B ->
     Γ ⊢ ((A ---> ! !B) ---> (A ---> B))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB.
 
-    assert (H0 : Γ ⊢ (! !B ---> B) using PropositionalReasoning).
+    assert (H0 : Γ ⊢ (! !B ---> B) using BasicReasoning).
     {
       apply not_not_elim. wf_auto2.
     }
 
-    assert (H1 : Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using PropositionalReasoning).
+    assert (H1 : Γ ⊢ ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
     {
       apply syllogism; wf_auto2.
     }
@@ -1613,7 +1401,7 @@ Defined.
     well_formed B ->
     well_formed B' ->
     Γ ⊢ ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfA wfB wfB'.
     apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
@@ -1630,7 +1418,7 @@ Defined.
     intros wfA wfB wfB' BimpB'.
     assert (H1: Γ ⊢ ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
     {
-      apply usePropositionalReasoning. apply syllogism; wf_auto2.
+      apply useBasicReasoning. apply syllogism; wf_auto2.
     }
     apply reorder_meta in H1;[|wf_auto2|wf_auto2|wf_auto2].
     eapply MP. 2: apply H1. apply BimpB'.
@@ -1639,7 +1427,7 @@ Defined.
   Lemma prf_weaken_conclusion_iter Γ l g g'
           (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
     Γ ⊢ ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     induction l.
     - apply A_impl_A. wf_auto2.
@@ -1667,7 +1455,7 @@ Defined.
   Proof.
     intros wfl wfg wfg' gimpg'.
     eapply MP.
-    2: { apply usePropositionalReasoning. apply prf_weaken_conclusion_iter; wf_auto2. }
+    2: { apply useBasicReasoning. apply prf_weaken_conclusion_iter; wf_auto2. }
     1: { apply gimpg'. }
   Defined.
 
@@ -1685,7 +1473,7 @@ Defined.
     eapply MP.
     { apply H. }
     apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    apply usePropositionalReasoning.
+    apply useBasicReasoning.
     apply prf_weaken_conclusion_iter.
     all: wf_auto2.
   Defined.
@@ -1707,7 +1495,7 @@ Defined.
     well_formed A ->
     well_formed A' ->
     well_formed B ->
-    Γ ⊢ ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using PropositionalReasoning.
+    Γ ⊢ ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using BasicReasoning.
   Proof.
     intros wfA wfA' wfB.
     apply syllogism; wf_auto2.
@@ -1721,7 +1509,7 @@ Defined.
     Γ ⊢ (h' ---> h) --->
         foldr patt_imp g (l₁ ++ h::l₂) --->
         foldr patt_imp g (l₁ ++ h'::l₂)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl₁ wfl₂ wfh wfh' wfg.
     induction l₁.
@@ -1735,7 +1523,7 @@ Defined.
       remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
       remember (foldr patt_imp g (l₁ ++ h'::l₂)) as b'.
 
-      assert (prf: Γ ⊢ ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using PropositionalReasoning).
+      assert (prf: Γ ⊢ ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using BasicReasoning).
       { apply prf_weaken_conclusion; subst; wf_auto2. }
 
       subst.
@@ -1755,7 +1543,7 @@ Defined.
     intros wfA wfA' wfB A'impA.
     assert (H1: Γ ⊢ ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
     {
-      apply usePropositionalReasoning. apply syllogism; wf_auto2.
+      apply useBasicReasoning. apply syllogism; wf_auto2.
     }
     eapply MP. 2: apply H1. apply A'impA.
   Defined.
@@ -1785,7 +1573,7 @@ Defined.
   Proof.
     intros WFl₁ WFl₂ WFh WFh' WFg H.
     eapply MP.
-    2: { apply usePropositionalReasoning. apply prf_strenghten_premise_iter; wf_auto2. }
+    2: { apply useBasicReasoning. apply prf_strenghten_premise_iter; wf_auto2. }
     exact H.
   Defined.
 
@@ -1829,14 +1617,14 @@ Defined.
     well_formed c ->
     (* like P2 but nested a bit *)
     Γ ⊢ (a ---> (b ---> (c ---> a)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a))) using PropositionalReasoning).
+    assert (H1: Γ ⊢ ((c ---> a) ---> (b ---> (c ---> a))) using BasicReasoning).
     {
       apply P1; wf_auto2.
     }
-    assert (H2: Γ ⊢ (a ---> (c ---> a)) using PropositionalReasoning).
+    assert (H2: Γ ⊢ (a ---> (c ---> a)) using BasicReasoning).
     { apply P1; wf_auto2. }
 
     eapply (@syllogism_meta _ _ _ _ _ _ _ _ H2 H1).
@@ -1848,7 +1636,7 @@ Defined.
     well_formed a ->
     Pattern.wf l ->
     Γ ⊢ (a ---> (fold_right patt_imp a l))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfl.
     induction l; simpl.
@@ -1856,7 +1644,7 @@ Defined.
     - pose proof (wfa0l := wfl).
       unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
-      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using PropositionalReasoning).
+      assert (H1 : Γ ⊢ ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
       {
         apply P1; wf_auto2.
       }
@@ -1869,7 +1657,7 @@ Defined.
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
     Γ ⊢ (fold_right patt_imp a (l₁ ++ a :: l₂))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfl₁ wfl₂.
     induction l₁; simpl.
@@ -1888,7 +1676,7 @@ Defined.
     Pattern.wf l₂ ->
     Γ ⊢ ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
          (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfb wfg wfl₁ wfl₂.
     induction l₁; simpl in *.
@@ -1913,7 +1701,7 @@ Defined.
     (* TODO we should have a function/lemma for creating these "meta" variants. *)
     intros WFa WFb WFg Wfl1 Wfl2 H.
     eapply MP.
-    2: { apply usePropositionalReasoning. apply prf_reorder_iter; wf_auto2. }
+    2: { apply useBasicReasoning. apply prf_reorder_iter; wf_auto2. }
     exact H.
   Defined.
   
@@ -1925,25 +1713,25 @@ Defined.
   Proof.
     intros WFA WFB H.
     eapply MP.
-    2: { apply usePropositionalReasoning. apply A_impl_not_not_B; wf_auto2. }
+    2: { apply useBasicReasoning. apply A_impl_not_not_B; wf_auto2. }
     exact H.
   Defined.
 
   Lemma pf_conj_elim_l Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> A using PropositionalReasoning.
+    Γ ⊢ A and B ---> A using BasicReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! A ---> (! A or ! B)) using PropositionalReasoning).
+    assert (Γ ⊢ (! A ---> (! A or ! B)) using BasicReasoning).
     { apply disj_left_intro; wf_auto2. }
 
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using PropositionalReasoning).
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
     {
       apply modus_ponens; wf_auto2.
     }
-    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using PropositionalReasoning).
+    assert (Γ ⊢ (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
     { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
     epose proof (reorder_meta _ _ _ H1).
     apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
@@ -1955,17 +1743,17 @@ Defined.
   Lemma pf_conj_elim_r Γ A B :
     well_formed A ->
     well_formed B ->
-    Γ ⊢ A and B ---> B using PropositionalReasoning.
+    Γ ⊢ A and B ---> B using BasicReasoning.
   Proof.
     intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢ (! B ---> (! A or ! B)) using PropositionalReasoning).
+    assert (Γ ⊢ (! B ---> (! A or ! B)) using BasicReasoning).
     { apply disj_right_intro; wf_auto2. }
 
-    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using PropositionalReasoning).
+    assert (Γ ⊢ ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
     { apply modus_ponens; wf_auto2. }
 
-    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using PropositionalReasoning).
+    assert (Γ ⊢ (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
     { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
     epose proof (reorder_meta  _ _ _ H1).
     apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
@@ -1982,7 +1770,7 @@ Defined.
   Proof.
     intros WFA WFB H.
     eapply MP.
-    2: { apply usePropositionalReasoning. apply pf_conj_elim_l. wf_auto2. shelve. }
+    2: { apply useBasicReasoning. apply pf_conj_elim_l. wf_auto2. shelve. }
     1: apply H.
     Unshelve. all: wf_auto2.
   Defined.
@@ -1995,14 +1783,14 @@ Defined.
   Proof.
     intros WFA WFB H.
     eapply MP.
-    2: apply usePropositionalReasoning; apply pf_conj_elim_r.
+    2: apply useBasicReasoning; apply pf_conj_elim_r.
     1: apply H.
     all: wf_auto2.
   Defined.
 
   Lemma A_or_notA Γ A :
     well_formed A ->
-    Γ ⊢ A or ! A using PropositionalReasoning.
+    Γ ⊢ A or ! A using BasicReasoning.
   Proof.
     intros wfA.
     unfold patt_or.
@@ -2019,7 +1807,7 @@ Defined.
     intros wfA wfB AimpB AimpnB.
     pose proof (H1 := @P4m Γ A B wfA wfB).
     assert (H2 : Γ ⊢ (A ---> ! B) ---> ! A using i).
-    { eapply MP. 2: { apply usePropositionalReasoning; apply H1. } exact AimpB. }
+    { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
     eapply MP. 2: { apply H2. } exact AimpnB.
   Defined.
 
@@ -2070,13 +1858,8 @@ Proof.
   }
   {
     simpl.
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     constructor.
-    {
-      destruct i;[|exact I].
-      rewrite indifferent_to_cast_propositional_only.
-      exact Hpf1.
-    }
     {
       rewrite elem_of_subseteq in Hpf2.
       rewrite elem_of_subseteq.
@@ -2120,7 +1903,7 @@ Local Example ex_reshape {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)) using PropositionalReasoning.
+  Γ ⊢ a ---> (b ---> (c ---> d)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply reshape.
@@ -2129,7 +1912,7 @@ Abort.
 
 Local Example ex_toMyGoal {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p using PropositionalReasoning.
+  Γ ⊢ p ---> p using BasicReasoning.
 Proof.
   intros wfp.
   toMyGoal.
@@ -2154,7 +1937,7 @@ end.
 
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
-  Γ ⊢ p ---> p using PropositionalReasoning.
+  Γ ⊢ p ---> p using BasicReasoning.
 Proof.
   intros wfp.
   toMyGoal.
@@ -2176,13 +1959,8 @@ Proof.
     exact pf.
   }
   { abstract(
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4];
+    destruct Hpf as [Hpf2 Hpf3 Hpf4];
     constructor; [
-    (
-      destruct i;[|exact I];
-      rewrite indifferent_to_cast_propositional_only;
-      exact Hpf1
-    )|
     (
       rewrite elem_of_subseteq in Hpf2;
       rewrite elem_of_subseteq;
@@ -2332,22 +2110,10 @@ Ltac simplLocalContext :=
 #[global]
  Ltac mgIntro := apply MyGoal_intro; simplLocalContext.
 
-
- Lemma mgUsePropositionalReasoning
-  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
-  @mkMyGoal Σ Γ l g PropositionalReasoning ->
-  @mkMyGoal Σ Γ l g i.
-Proof.
-  intros H wf1 wf2.
-  specialize (H wf1 wf2).
-  apply usePropositionalReasoning.
-  exact H.
-Defined.
-
-Ltac usePropositionalReasoning :=
+Ltac useBasicReasoning :=
   lazymatch goal with
-  | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUsePropositionalReasoning
-  | [ |- _ ⊢ _ using _ ] => apply usePropositionalReasoning
+  | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
+  | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
   end.
 
 Local Example ex_mgIntro {Σ : Signature} Γ a (i : ProofInfo) :
@@ -2358,12 +2124,12 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  usePropositionalReasoning.
+  useBasicReasoning.
   fromMyGoal. apply A_impl_A; assumption.
 Defined.
 
 Lemma MyGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g : Pattern):
-  @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g PropositionalReasoning.
+  @mkMyGoal Σ Γ (l₁ ++ g :: l₂) g BasicReasoning.
 Proof.
   mgExtractWF wfl₁gl₂ wfg.
   fromMyGoal.
@@ -2389,7 +2155,7 @@ Proof.
 Defined.
 
 Tactic Notation "mgExactn" constr(n) :=
-  usePropositionalReasoning;
+  useBasicReasoning;
   unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
   [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
   apply MyGoal_exactn.
@@ -2399,7 +2165,7 @@ Local Example ex_mgExactn {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
   well_formed c = true ->
-  Γ ⊢ a ---> b ---> c ---> b using PropositionalReasoning.
+  Γ ⊢ a ---> b ---> c ---> b using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -2432,14 +2198,14 @@ Section FOL_helpers.
   Lemma prf_contraction Γ a b:
     well_formed a ->
     well_formed b ->
-    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)) using PropositionalReasoning.
+    Γ ⊢ ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
   Proof.
     intros wfa wfb.
-    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b)) using PropositionalReasoning).
+    assert (H1 : Γ ⊢ (a ---> ((a ---> b) ---> b)) using BasicReasoning).
     {
       apply modus_ponens; assumption.
     }
-    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using PropositionalReasoning).
+    assert (H2 : Γ ⊢ ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
     {
       apply P2; wf_auto2.
     }
@@ -2450,14 +2216,14 @@ Section FOL_helpers.
     well_formed a ->
     well_formed b ->
     well_formed c ->
-    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using PropositionalReasoning.
+    Γ ⊢ ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
   Proof.
     intros wfa wfb wfc.
-    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using PropositionalReasoning).
+    assert (H1 : Γ ⊢ ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
     {
       apply reorder; wf_auto2.
     }
-    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using PropositionalReasoning).
+    assert (H2 : Γ ⊢ (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
     {
       apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
       apply H1.
@@ -2465,11 +2231,11 @@ Section FOL_helpers.
     eapply prf_weaken_conclusion_meta_meta.
     4: apply H2. 1-3: wf_auto2. clear H1 H2.
 
-    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using PropositionalReasoning).
+    assert (H3 : Γ ⊢ ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
     {
       apply syllogism; wf_auto2.
     }
-    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c)) using PropositionalReasoning).
+    assert (H4 : Γ ⊢ ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
     {
       apply prf_contraction; wf_auto2.
     }
@@ -2491,7 +2257,7 @@ Section FOL_helpers.
   Proof.
     intros wfa wfb wfc H.
     eapply MP.
-    2: { usePropositionalReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
+    2: { useBasicReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
     exact H.
   Defined.
 
@@ -2517,7 +2283,7 @@ Section FOL_helpers.
     well_formed g ->
     well_formed g' ->
     Γ ⊢ (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl wfg wfg'.
     pose proof (H1 := @prf_weaken_conclusion_iter Σ Γ l g g' wfl wfg wfg').
@@ -2541,7 +2307,7 @@ Section FOL_helpers.
   Proof.
     intros wfl wfg wfg' H.
     eapply MP.
-    2: { usePropositionalReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
+    2: { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
     { exact H. }
   Defined.
   
@@ -2564,7 +2330,7 @@ Section FOL_helpers.
     well_formed g' ->
     Γ ⊢ ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
          (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl₁ wfl₂ wfg wfg'.
     induction l₁; simpl.
@@ -2585,7 +2351,7 @@ Section FOL_helpers.
     intros wfl₁ wfl₂ wfg wfg' H.
     eapply MP.
     { apply H. }
-    { usePropositionalReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
+    { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
   Defined.
 
   Lemma MyGoal_weakenConclusion Γ l₁ l₂ g g' i:
@@ -2650,7 +2416,7 @@ Tactic Notation "mgApply" constr(n) :=
 Local Example ex_mgApply {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
-  Γ ⊢ a ---> (a ---> b) ---> b using PropositionalReasoning.
+  Γ ⊢ a ---> (a ---> b) ---> b using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -2669,7 +2435,7 @@ Section FOL_helpers.
     well_formed q ->
     well_formed r ->
     well_formed s ->
-    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using PropositionalReasoning.
+    Γ ⊢ ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using BasicReasoning.
   Proof.
     intros wfp wfq wfr wfs.
     unfold patt_or.
@@ -2695,7 +2461,7 @@ Section FOL_helpers.
     intros wfa wfb H.
     eapply MP.
     { apply H. }
-    { usePropositionalReasoning. apply P1; wf_auto2. }
+    { useBasicReasoning. apply P1; wf_auto2. }
   Defined.
 
   Lemma prf_impl_distr_meta Γ a b c i:
@@ -2708,7 +2474,7 @@ Section FOL_helpers.
     intros wfa wfb wfc H.
     eapply MP.
     { apply H. }
-    { usePropositionalReasoning. apply P2; wf_auto2. }
+    { useBasicReasoning. apply P2; wf_auto2. }
   Defined.
 
   Lemma prf_add_lemma_under_implication Γ l g h:
@@ -2718,7 +2484,7 @@ Section FOL_helpers.
     Γ ⊢ ((foldr patt_imp h l) --->
          ((foldr patt_imp g (l ++ [h])) --->
           (foldr patt_imp g l)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl wfg wfh.
     induction l; simpl.
@@ -2730,18 +2496,18 @@ Section FOL_helpers.
                       foldr patt_imp h l --->
                       foldr patt_imp g (l ++ [h]) --->
                       foldr patt_imp g l
-              using PropositionalReasoning).
+              using BasicReasoning).
       { apply prf_add_assumption; wf_auto2. }
 
       assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l) --->
                        (a ---> foldr patt_imp g (l ++ [h]) --->
                        foldr patt_imp g l)
-              using PropositionalReasoning).
+              using BasicReasoning).
       { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
 
       assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
                           ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
-              using PropositionalReasoning).
+              using BasicReasoning).
       { apply P2; wf_auto2. }
 
       eapply prf_weaken_conclusion_meta_meta.
@@ -2758,7 +2524,7 @@ Section FOL_helpers.
     intros WFl WFg WGh H.
     eapply MP.
     { apply H. }
-    { usePropositionalReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
+    { useBasicReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
   Defined.
 
   Lemma prf_add_lemma_under_implication_meta_meta Γ l g h i:
@@ -2804,7 +2570,7 @@ Section FOL_helpers.
     well_formed g ->
     well_formed h ->
     Γ ⊢ ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
     induction l1; simpl.
@@ -2812,12 +2578,12 @@ Section FOL_helpers.
     - pose proof (wfal1 := wfl1).
       unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
-      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using PropositionalReasoning).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
       { apply prf_add_assumption; wf_auto2. }
-      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using PropositionalReasoning).
+      assert (H2 : Γ ⊢ (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
       { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
       assert (H3 : Γ ⊢ ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
-                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using PropositionalReasoning).
+                          ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using BasicReasoning).
       { apply P2; wf_auto2. }
 
       eapply prf_weaken_conclusion_meta_meta.
@@ -2835,7 +2601,7 @@ Section FOL_helpers.
     intros WFl1 WFl2 WFg WGh H.
     eapply MP.
     { apply H. }
-    { usePropositionalReasoning.
+    { useBasicReasoning.
       apply prf_add_lemma_under_implication_generalized; wf_auto2.
     }
   Defined.
@@ -2915,7 +2681,7 @@ Tactic Notation "mgAssert" "(" constr(t) ")" :=
 
 Local Example ex_mgAssert {Σ : Signature} Γ a:
   well_formed a ->
-  Γ ⊢ (a ---> a ---> a) using PropositionalReasoning.
+  Γ ⊢ (a ---> a ---> a) using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -2960,7 +2726,7 @@ Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed b = true ->
   well_formed p = true ->
   well_formed q = true ->
-  Γ ⊢ a ---> p and q ---> b ---> ! ! q using PropositionalReasoning.
+  Γ ⊢ a ---> p and q ---> b ---> ! ! q using BasicReasoning.
 Proof.
   intros wfa wfb wfp wfq.
   toMyGoal.
@@ -2979,12 +2745,12 @@ Section FOL_helpers.
   
   Lemma P4i' (Γ : Theory) (A : Pattern) :
     well_formed A →
-    Γ ⊢ ((!A ---> A) ---> A) using PropositionalReasoning.
+    Γ ⊢ ((!A ---> A) ---> A) using BasicReasoning.
   Proof.
     intros wfA.
-    assert (H1: Γ ⊢ ((! A ---> ! ! A) ---> ! ! A) using PropositionalReasoning).
+    assert (H1: Γ ⊢ ((! A ---> ! ! A) ---> ! ! A) using BasicReasoning).
     { apply P4i. wf_auto2. }
-    assert (H2: Γ ⊢ ((! A ---> A) ---> (! A ---> ! ! A)) using PropositionalReasoning).
+    assert (H2: Γ ⊢ ((! A ---> A) ---> (! A ---> ! ! A)) using BasicReasoning).
     { eapply prf_weaken_conclusion_meta. 
       4: apply not_not_intro.
       all: wf_auto2.
@@ -3013,11 +2779,11 @@ Section FOL_helpers.
     well_formed q ->
     well_formed r ->
     Γ ⊢ ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     pose proof (H1 := @Constructive_dilemma Σ Γ p r q r wfp wfr wfq wfr).
-    assert (Γ ⊢ ((r or r) ---> r) using PropositionalReasoning).
+    assert (Γ ⊢ ((r or r) ---> r) using BasicReasoning).
     { unfold patt_or. apply P4i'. wf_auto2. }
     eapply cast_proof' in H1.
     2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
@@ -3034,7 +2800,7 @@ Section FOL_helpers.
     Γ ⊢ ((q ---> r) ---> (p or q) ---> r) using i.
   Proof.
     intros WFp WHq WFr H.
-    eapply MP. apply H. usePropositionalReasoning. apply prf_disj_elim.
+    eapply MP. apply H. useBasicReasoning. apply prf_disj_elim.
     all: wf_auto2.
   Defined.
   
@@ -3077,13 +2843,13 @@ Section FOL_helpers.
     induction l.
     - simpl.
       pose proof (@modus_ponens Σ Γ _ _ wfa wfg).
-      eapply MP. apply Ha. usePropositionalReasoning. apply H.
+      eapply MP. apply Ha. useBasicReasoning. apply H.
     - pose proof (wfa0l := wfl).
       unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
       specialize (IHl wfl).
       simpl in IHl. simpl.
       (* < change a0 and a in the LHS > *)
-      assert (H : Γ ⊢ (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using PropositionalReasoning).
+      assert (H : Γ ⊢ (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
       { apply reorder; wf_auto2. }
 
       eapply cast_proof'.
@@ -3093,14 +2859,14 @@ Section FOL_helpers.
       specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
       specialize (H0 (a0 ---> foldr patt_imp g l)). simpl in H0. simpl.
       simpl. apply H0. all: try_wfauto2.
-      { usePropositionalReasoning. apply H. }
+      { useBasicReasoning. apply H. }
       clear H0 H.
       (* </change a0 and a > *)
       assert (Γ ⊢ ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l)) using i).
-      { eapply MP. 2: { usePropositionalReasoning. apply modus_ponens; wf_auto2. } apply Ha. }
+      { eapply MP. 2: { useBasicReasoning. apply modus_ponens; wf_auto2. } apply Ha. }
       
       eapply prf_strenghten_premise_meta_meta. 5: apply H. all: try_wfauto2.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply reorder; wf_auto2.
   Defined.
 
@@ -3179,7 +2945,7 @@ Section FOL_helpers.
     well_formed g ->
     well_formed h ->
     Γ ⊢ (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl1 wfl2 wfg wfh.
     induction l1; simpl.
@@ -3187,7 +2953,7 @@ Section FOL_helpers.
     - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
       specialize (IHl1 wfl1).
 
-      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using PropositionalReasoning).
+      assert (H1: Γ ⊢ a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
       {
         toMyGoal.
         { wf_auto2. }
@@ -3207,7 +2973,7 @@ Section FOL_helpers.
   Proof.
     intros. eapply MP.
     apply H3.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply prf_clear_hyp; wf_auto2.
   Defined.  
 
@@ -3317,7 +3083,7 @@ Local Example ex_mgClear {Σ : Signature} Γ a b c:
   well_formed a ->
   well_formed b ->
   well_formed c ->
-  Γ ⊢ a ---> (b ---> (c ---> b)) using PropositionalReasoning.
+  Γ ⊢ a ---> (b ---> (c ---> b)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -3335,7 +3101,7 @@ Section FOL_helpers.
   Lemma not_concl Γ p q:
     well_formed p ->
     well_formed q ->
-    Γ ⊢ (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using PropositionalReasoning.
+    Γ ⊢ (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
   Proof.
     intros wfp wfq.
     eapply cast_proof'.
@@ -3357,7 +3123,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using PropositionalReasoning.
+    Γ ⊢ (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     eapply cast_proof'.
@@ -3376,7 +3142,7 @@ Section FOL_helpers.
     Pattern.wf l ->
     well_formed g ->
     well_formed x ->
-    Γ ⊢ ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using PropositionalReasoning.
+    Γ ⊢ ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
   Proof.
     intros wfl wfg wfx.
     induction l.
@@ -3411,7 +3177,7 @@ Section FOL_helpers.
     intros WFl WFG WFx H.
     eapply MP.
     apply H.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply reorder_last_to_head; wf_auto2.
   Defined.
   
@@ -3422,7 +3188,7 @@ Section FOL_helpers.
   Lemma modus_ponens_iter Γ l r:
     Pattern.wf l ->
     well_formed r ->
-    Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])) using PropositionalReasoning.
+    Γ ⊢ (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
   Proof.
     intros wfl wfr.
     induction l.
@@ -3446,7 +3212,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))) using PropositionalReasoning.
+    Γ ⊢ ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     toMyGoal.
@@ -3473,7 +3239,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     well_formed r ->
-    Γ ⊢ ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using PropositionalReasoning.
+    Γ ⊢ ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
   Proof.
     intros wfp wfq wfr.
     toMyGoal.
@@ -3510,7 +3276,7 @@ Section FOL_helpers.
            ((fold_right patt_imp r (l ++ [q]))
               --->                                                                
               (fold_right patt_imp r (l ++ [p or q]))))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfl wfp wfq wfr.
     induction l.
@@ -3547,7 +3313,7 @@ Section FOL_helpers.
            ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
               --->                                                                
               (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))))
-    using PropositionalReasoning.  
+    using BasicReasoning.  
   Proof.
     intros wfl₁ wfl₂ wfp wfq wfr.
     move: l₁ wfl₁.
@@ -3637,7 +3403,7 @@ Section FOL_helpers.
     intros WFl1 WFl2 WFp WFq WFr H.
     eapply MP.
     apply H.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply prf_disj_elim_iter_2; wf_auto2.
   Defined.
   
@@ -3791,7 +3557,7 @@ Section FOL_helpers.
 
   Lemma pf_iff_equiv_refl Γ A :
     well_formed A ->
-    Γ ⊢ (A <---> A) using PropositionalReasoning.
+    Γ ⊢ (A <---> A) using BasicReasoning.
   Proof.
     intros WFA.
     apply pf_iff_split; try_wfauto2; apply A_impl_A; assumption.
@@ -3842,13 +3608,13 @@ Section FOL_helpers.
   Proof.
     intros WFa WFb H. eapply MP.
     apply H.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply P1; wf_auto2.
   Defined.
     
   Lemma prf_prop_bott_iff Γ AC:
     Γ ⊢ ((subst_ctx AC patt_bott) <---> patt_bott)
-    using (pi_Generic
+    using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
     apply pf_iff_split.
@@ -3857,12 +3623,12 @@ Section FOL_helpers.
     1: apply pile_refl.
     1: wf_auto2.
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply A_impl_A.
       reflexivity.
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply bot_elim.
       wf_auto2.
     }
@@ -3882,7 +3648,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
+        [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
@@ -3901,7 +3667,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [(exact I)|(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
+        [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
       ).
     }
   Defined.
@@ -3928,12 +3694,12 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
-    using (pi_Generic
+    using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
     intros wfp wfq.
     induction AC; simpl.
-    - usePropositionalReasoning. apply pf_iff_equiv_refl; wf_auto2.
+    - useBasicReasoning. apply pf_iff_equiv_refl; wf_auto2.
     - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
       remember_constraint as i.
@@ -3961,13 +3727,13 @@ Section FOL_helpers.
           eapply prf_weaken_conclusion_meta_meta.
           4: { gapply IH2. try_solve_pile. }
           1-3: wf_auto2.
-          usePropositionalReasoning.
+          useBasicReasoning.
           apply disj_left_intro; wf_auto2.
         * subst i.
           apply Framing_left with (wfψ := Prf).
           { try_solve_pile. }
           eapply prf_weaken_conclusion_meta_meta. 4: gapply IH2; try_solve_pile. all: try_wfauto2.
-          usePropositionalReasoning.
+          useBasicReasoning.
           apply disj_right_intro; wf_auto2.
     - apply pf_iff_iff in IHAC; try_wfauto2.
       destruct IHAC as [IH1 IH2].
@@ -3990,7 +3756,7 @@ Section FOL_helpers.
           { try_solve_pile. }
           eapply prf_weaken_conclusion_meta_meta.
           4: gapply IH2; try_solve_pile. all: try_wfauto2.
-          usePropositionalReasoning.
+          useBasicReasoning.
           apply disj_left_intro; wf_auto2.
         * subst i.
           apply Framing_right with (wfψ := Prf).
@@ -3998,7 +3764,7 @@ Section FOL_helpers.
           eapply prf_weaken_conclusion_meta_meta.
           4: gapply IH2; try_solve_pile.
           all: try_wfauto2.
-          usePropositionalReasoning.
+          useBasicReasoning.
           apply disj_right_intro; wf_auto2.
   Defined.
 
@@ -4015,8 +3781,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -4039,8 +3804,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -4063,8 +3827,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -4083,8 +3846,7 @@ Section FOL_helpers.
     {
       abstract (
         constructor; simpl;
-        [( exact I )
-        |( set_solver )
+        [( set_solver )
         |( set_solver )
         |( reflexivity )
         |( set_solver )
@@ -4094,66 +3856,35 @@ Section FOL_helpers.
   Defined.
 
   Lemma pile_impl_allows_gen_x x gpi svs kt fp:
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) (pi_Generic gpi) ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) ( gpi) ->
     x ∈ pi_generalized_evars gpi.
   Proof.
     intros [H].
     pose (H1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-    pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) PropositionalReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
+    pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) BasicReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
     pose (H3 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig H2) ltac:(simpl; set_solver)).
     pose proof (H' := H ∅ _ H3).
     feed specialize H'.
     {
       constructor; simpl.
       {
-        exact I.
+        clear. set_solver.
       }
       {
-        case_match.
-        cut ((uses_of_ex_gen ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0) = ∅).
-        {
-          set_solver.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_no_uses_ex_gen_2.
-        apply Hp1.
+        clear. set_solver.
       }
       {
-        case_match.
-        cut (uses_of_svar_subst ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅).
-        {
-          set_solver.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_no_uses_svar_2.
-        apply Hp1.
+        reflexivity.
       }
       {
-        case_match.
-        cut (uses_kt x0 = false).
-        {
-          intros H''. rewrite H''. simpl. reflexivity.
-        }
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        apply propositional_implies_noKT.
-        apply Hp1.
-      }
-      {
-        case_match.
-        destruct p as [Hp1 Hp2 Hp3 Hp4]. simpl in *.
-        cut (framing_patterns ∅ ((⊥ ---> ⊥) ---> patt_free_evar x ---> ⊥ ---> ⊥) x0 = ∅ ).
-        {
-          intros. rewrite H0. set_solver.
-        }
-        apply propositional_implies_no_frame.
-        apply Hp1.
+        clear. set_solver.
       }
     }
     inversion H'. simpl in *. clear -pwi_pf_ge0. set_solver.
   Qed.
 
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
-    {pile : ProofInfoLe (pi_Generic
+    {pile : ProofInfoLe (
             {| pi_generalized_evars := {[x]};
                pi_substituted_svars := ∅;
                pi_uses_kt := false ;
@@ -4174,15 +3905,8 @@ Section FOL_helpers.
     }
     {
       simpl.
-      pose proof (Hnot := not_exgen_x_in_prop).
-      specialize (Hnot x).
       constructor; simpl.
       {
-        destruct i;[|exact I].
-        contradiction.
-      }
-      {
-        destruct i;[contradiction|].
         rewrite elem_of_subseteq. intros x0 Hx0.
         rewrite elem_of_gset_to_coGset in Hx0.
         rewrite elem_of_union in Hx0.
@@ -4200,17 +3924,14 @@ Section FOL_helpers.
         }
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_svs0.
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_kt0.
       }
       {
-        destruct i;[contradiction|].
         inversion Hpf.
         apply pwi_pf_fp0.
       }
@@ -4218,13 +3939,12 @@ Section FOL_helpers.
   Defined.
 
   Lemma pile_basic_generic eg svs kt fp:
-    ProofInfoLe BasicReasoning (pi_Generic (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
+    ProofInfoLe BasicReasoning ( (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
   Proof.
     constructor.
     intros Γ ϕ pf Hpf.
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4]. simpl in *.
+    destruct Hpf as [Hpf2 Hpf3 Hpf4]. simpl in *.
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     { unfold implb in Hpf4. case_match.
@@ -4249,7 +3969,6 @@ Section FOL_helpers.
     }
     {
       constructor; simpl.
-      { exact I. }
       { set_solver. }
       { set_solver. }
       { reflexivity. }
@@ -4272,7 +3991,6 @@ Section FOL_helpers.
     }
     {
       constructor; simpl.
-      { exact I. }
       { set_solver. }
       { set_solver. }
       { reflexivity. }
@@ -4283,12 +4001,6 @@ Section FOL_helpers.
  
 
   End FOL_helpers.
-
-  Ltac useBasicReasoning :=
-    lazymatch goal with
-    | [ |- of_MyGoal (@mkMyGoal _ _ _ _ _) ] => apply mgUseBasicReasoning
-    | [ |- _ ⊢ _ using _ ] => apply useBasicReasoning
-    end.
 
   Tactic Notation "change" "constraint" "in" ident(H) :=
     let i := fresh "i" in
@@ -4306,7 +4018,7 @@ Section FOL_helpers.
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
     Γ ⊢ ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
-    using (pi_Generic
+    using (
     {| pi_generalized_evars := {[x]};
        pi_substituted_svars := ∅;
        pi_uses_kt := false ;
@@ -4319,7 +4031,7 @@ Section FOL_helpers.
     - simpl in Hx.
       unfold exists_quantify.
       erewrite evar_quantify_evar_open; auto. 2: now do 2 apply andb_true_iff in Hwf as [_ Hwf].
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl. exact Hwf.
     -
       assert (Hwfex: well_formed (ex , subst_ctx AC p)).
@@ -4539,7 +4251,7 @@ Section FOL_helpers.
     well_formed p1 ->
     well_formed p2 ->
     Γ ⊢ (! (! p1 ---> p2) <---> ! p1 and ! p2)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfp1 wfp2.
     apply conj_intro_meta.
@@ -4576,7 +4288,7 @@ Section FOL_helpers.
     well_formed p1 ->
     well_formed p2 ->
     Γ ⊢ (! (p1 ---> p2) <---> p1 and ! p2)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfp1 wfp2.
     apply conj_intro_meta.
@@ -4616,7 +4328,7 @@ Section FOL_helpers.
     intros WFA WFB H.
     eapply MP.
     - exact H.
-    - usePropositionalReasoning. apply conj_intro.
+    - useBasicReasoning. apply conj_intro.
       { wf_auto2. }
       { wf_auto2. }
   Defined.
@@ -4642,7 +4354,7 @@ Section FOL_helpers.
   Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
     well_formed A -> well_formed B ->
     Γ ⊢ (A ---> (B ---> (B and A)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros WFA WFB. eapply reorder_meta.
     { wf_auto2. }
@@ -4661,7 +4373,7 @@ Section FOL_helpers.
     intros WFA WFB H.
     eapply MP.
     - exact H.
-    - usePropositionalReasoning. apply conj_intro2.
+    - useBasicReasoning. apply conj_intro2.
       { wf_auto2. }
       { wf_auto2. }
   Defined.
@@ -4727,7 +4439,7 @@ Proof.
   unfold of_MyGoal in *. simpl in *.
   intros wfxy wfl.
   eapply prf_weaken_conclusion_iter_meta_meta.
-  4: { usePropositionalReasoning. apply disj_left_intro. wf_auto2. wf_auto2. }
+  4: { useBasicReasoning. apply disj_left_intro. wf_auto2. wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
@@ -4744,7 +4456,7 @@ Proof.
   unfold of_MyGoal in *. simpl in *.
   intros wfxy wfl.
   eapply prf_weaken_conclusion_iter_meta_meta.
-  4: { usePropositionalReasoning. apply disj_right_intro. wf_auto2. wf_auto2. }
+  4: { useBasicReasoning. apply disj_right_intro. wf_auto2. wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
@@ -4759,7 +4471,7 @@ Ltac mgRight := apply MyGoal_right.
 Example ex_mgLeft {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢ a ---> (a or a)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -4822,7 +4534,7 @@ Local Example Private_ex_mgApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
   Γ ⊢ p ---> (p or q)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfp wfq.
   toMyGoal.
@@ -4870,7 +4582,7 @@ Proof.
         wf_auto2
       ).
     }
-    usePropositionalReasoning.
+    useBasicReasoning.
     mgApplyMeta (@pf_conj_elim_r Σ Γ x y ltac:(assumption) ltac:(assumption)).
     apply MyGoal_exactn.
   }
@@ -4910,7 +4622,7 @@ Proof.
         wf_auto2
       ).
     }
-    usePropositionalReasoning.
+    useBasicReasoning.
     mgApplyMeta (@pf_conj_elim_l Σ Γ x y ltac:(assumption) ltac:(assumption)).
     apply MyGoal_exactn.
   }
@@ -4949,7 +4661,7 @@ Local Example ex_mgDestructAnd {Σ : Signature} Γ a b p q:
   well_formed p ->
   well_formed q ->
   Γ ⊢ p and q ---> a and b ---> q ---> a
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros. toMyGoal.
   { wf_auto2. }
@@ -5057,7 +4769,7 @@ Section FOL_helpers.
     well_formed p ->
     well_formed q ->
     Γ ⊢ ((p ---> q) <---> (! p or q))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfp wfq.
     apply conj_intro_meta; auto.
@@ -5082,7 +4794,7 @@ Section FOL_helpers.
   Lemma p_and_notp_is_bot Γ p:
     well_formed p ->
     Γ ⊢ (⊥ <---> p and ! p)
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfp.
     apply conj_intro_meta; auto.
@@ -5102,7 +4814,7 @@ Section FOL_helpers.
     well_formed L ->
     well_formed R ->
     Γ ⊢ (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfA wfB wfL wfR.
     toMyGoal.
@@ -5138,7 +4850,7 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB WFL WFR H.
     eapply MP.
-    2: { usePropositionalReasoning. apply weird_lemma; assumption. }
+    2: { useBasicReasoning. apply weird_lemma; assumption. }
     exact H.
   Defined.
 
@@ -5150,11 +4862,11 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB WFC WFD H H0.
     epose proof (H1 := @prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
-    eapply usePropositionalReasoning in H1.
+    eapply useBasicReasoning in H1.
     eapply MP in H1.
     2: { exact H0. }
     epose proof (H2 := @prf_strenghten_premise Σ Γ A C D WFA WFC WFD).
-    eapply usePropositionalReasoning in H2.
+    eapply useBasicReasoning in H2.
     eapply MP in H2.
     2: { exact H. }
     epose proof (H3 := @syllogism_meta Σ Γ _ _ _ i _ _ _ H1 H2).
@@ -5169,15 +4881,15 @@ Section FOL_helpers.
   Proof.
     intros WFA WFB WFC H.
     epose proof (H0 := @and_impl' Σ Γ A B (A and C) _ _ _).
-    eapply MP. 2: { usePropositionalReasoning. exact H0. }
+    eapply MP. 2: { useBasicReasoning. exact H0. }
     apply reorder_meta.
     1-3: wf_auto2.
     epose proof (H1 := @prf_strenghten_premise Σ Γ C B (A ---> A and C) _ _ _).
     eapply MP.
     2: eapply MP.
-    3: { usePropositionalReasoning. exact H1. }
+    3: { useBasicReasoning. exact H1. }
     2: { exact H. }
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply conj_intro2; assumption.
     Unshelve.
     all: wf_auto2.
@@ -5237,7 +4949,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
     Γ ⊢ ϕ using i ->
     Γ ⊢ patt_forall (evar_quantify x 0 ϕ) using i.
@@ -5262,7 +4974,7 @@ Section FOL_helpers.
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ
-    using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
   Proof.
     intros wfϕ.
    
@@ -5297,31 +5009,8 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
-Lemma not_kt_in_prop {Σ : Signature} :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := true, FP := ∅)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-  pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-  specialize (HContra _ pf2).
-  feed specialize HContra.
-  {
-    unfold pf2. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { clear. set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4].
-  unfold pf2 in HC4.
-  simpl in HC4.
-  congruence.
-Qed.
-
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) (pi_Generic gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) ( gpi) ->
   pi_uses_kt gpi.
 Proof.
   intros [H].
@@ -5332,20 +5021,19 @@ Proof.
   feed specialize H.
   {
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     reflexivity.
     { clear. set_solver. }
   }
   destruct H as [H1 H2 H3 H4].
-  unfold pf2 in H4. simpl in H4. exact H4.
+  unfold pf2 in H3. simpl in H3. exact H3.
 Qed.
 
 
 Lemma Knaster_tarski {Σ : Signature}
   (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
-  {pile : ProofInfoLe (pi_Generic
+  {pile : ProofInfoLe (
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
@@ -5364,62 +5052,31 @@ unshelve (eexists).
 }
 {
   simpl.
-  pose proof (Hnot := not_kt_in_prop).
   constructor; simpl.
   {
-    destruct i;[|exact I].
-    contradiction.
-  }
-  {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf2.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf3.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     pose proof (Hpile := @pile_impl_uses_kt _ _ _ _ _ pile).
     exact Hpile.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     apply Hpf5.
   }
 }
 Defined.
 
 
-Lemma not_svs_in_prop {Σ : Signature} (X : svar) :
-  ~ ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := false, FP := ∅)) pi_Propositional.
-Proof.
-  intros [HContra].
-  specialize (HContra ∅).
-  pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
-  pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-  specialize (HContra _ pf2).
-  feed specialize HContra.
-  {
-    unfold pf2. simpl. constructor; simpl.
-    { exact I. }
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { clear. set_solver. }
-  }
-  destruct HContra as [HC1 HC2 HC3 HC4].
-  simpl in *.
-  clear -HC1.
-  congruence.
-Qed.
 
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt fp:
-  ProofInfoLe (pi_Generic (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) (pi_Generic gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt, FP := fp)) ( gpi) ->
   X ∈ pi_substituted_svars gpi.
 Proof.
   intros [H].
@@ -5430,7 +5087,6 @@ Proof.
   feed specialize H.
   {
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     reflexivity.
@@ -5438,12 +5094,12 @@ Proof.
   }
   destruct H as [H1 H2 H3 H4].
   simpl in *.
-  clear -H3. set_solver.
+  clear -H2. set_solver.
 Qed.
 
 Lemma Svar_subst {Σ : Signature}
   (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
-  {pile : ProofInfoLe (pi_Generic
+  {pile : ProofInfoLe (
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
@@ -5463,32 +5119,23 @@ Proof.
   }
 {
   simpl.
-  pose proof (Hnot := @not_svs_in_prop Σ X).
   constructor; simpl.
   {
-    destruct i;[|exact I].
-    contradiction.
-  }
-  {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply Hpf2.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     pose proof (Hpile := @pile_impl_allows_svsubst_X _ _ _ _ _ _ pile).
     clear -Hpile Hpf3.
     set_solver.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4].
     exact Hpf4.
   }
   {
-    destruct i;[contradiction|].
-    destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4 Hpf5].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     exact Hpf5.
   }
 }
@@ -5509,7 +5156,6 @@ Proof.
   {
     simpl.
     constructor; simpl.
-    { exact I. }
     { set_solver. }
     { set_solver. }
     { reflexivity. }
@@ -5522,7 +5168,7 @@ Section FOL_helpers.
   Context {Σ : Signature}.
 
   Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-    ProofInfoLe (pi_Generic (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢ ϕ₁ ---> ϕ₂ using i->
@@ -5634,17 +5280,7 @@ Section FOL_helpers.
       apply svar_quantify_closed_ex. assumption.
     }
     
-    (* i = pi_Generic gpi *)
-    destruct i.
-    {
-      exfalso.
-      apply not_kt_in_prop.
-      eapply pile_trans.
-      2: { apply pile. }
-      apply pile_svs_subseteq.
-      set_solver.
-    }
-    apply useBasicReasoning with (gpi := gpi) in Hpf.
+    apply useBasicReasoning with (i := i) in Hpf.
     epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
 
@@ -5674,13 +5310,6 @@ Section FOL_helpers.
     Unshelve.
     all: abstract(wf_auto2).
   Defined.
-
-
-  (* These [Local Private_*] lemmas are not generally useful, but we use them to keep the body
-     of [Private_prf_equiv_congruence] reasonably small. Because we want to reason about the body, too.
-     The lemmas are mostly placeholders for `wf_auto`.
-   *)
-
 
   Lemma prf_equiv_of_impl_of_equiv Γ a b a' b' i:
     well_formed a = true ->
@@ -6266,7 +5895,7 @@ Qed.
   (q_sub_EvS: free_evars q ⊆ EvS)
   (ψ_sub_EvS : free_evars ψ ⊆ EvS)
   (Heqi': i' =
-        pi_Generic
+        
           (ExGen := list_to_set
                       (evar_fresh_seq EvS
                          (maximal_exists_depth_of_evar_in_pattern' exdepth E
@@ -6283,10 +5912,10 @@ Qed.
                   else true),
            FP := ∅
           ))
-  (pile: ProofInfoLe i' (pi_Generic gpi))
+  (pile: ProofInfoLe i' ( gpi))
   (IH: (Γ ⊢ (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E))
-     using pi_Generic gpi) :
-  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using pi_Generic gpi.
+     using  gpi) :
+  (Γ ⊢ ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E)) using  gpi.
   Proof.
     apply pf_evar_open_free_evar_subst_equiv_sides in IH.
     2: { exact HxneqE. }
@@ -6538,7 +6167,7 @@ End FOL_helpers.
   (wfψ2: well_formed ψ2)
   (wfp: well_formed p)
   (wfq: well_formed q)
-  (pile: ProofInfoLe (pi_Generic (
+  (pile: ProofInfoLe ( (
     ExGen := ∅, 
     SVSubst := ∅, 
     KT := false, 
@@ -6640,19 +6269,19 @@ End FOL_helpers.
   (ψ_sub_SvS : (free_svars ψ) ⊆ SvS)
   (exdepth : nat)
   (mudepth : nat)
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (pile : ProofInfoLe
-   (pi_Generic
+   (
      (ExGen := list_to_set (evar_fresh_seq EvS (maximal_exists_depth_of_evar_in_pattern' exdepth E ψ)),
      SVSubst := list_to_set (svar_fresh_seq SvS (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern' mudepth E ψ)) is left _ then false else true,
      FP :=  gset_to_coGset (@frames_on_the_way_to_hole' Σ EvS SvS E ψ p q wfψ wfp wfq)
     )
    )
-   (pi_Generic gpi)
+   ( gpi)
   )
-  (pf : Γ ⊢ (p <---> q) using (pi_Generic gpi)) :
-      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using (pi_Generic gpi).
+  (pf : Γ ⊢ (p <---> q) using ( gpi)) :
+      Γ ⊢ (((free_evar_subst ψ p E) <---> (free_evar_subst ψ q E))) using ( gpi).
   Proof.
 
     move: ψ wfψ Hsz EvS SvS pile
@@ -6683,7 +6312,7 @@ End FOL_helpers.
         }
         reflexivity.
       }
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       { abstract (wf_auto2). }
     }
@@ -6695,28 +6324,28 @@ End FOL_helpers.
         exact pf.
       }
       {
-        usePropositionalReasoning.
+        useBasicReasoning.
         apply pf_iff_equiv_refl.
         abstract (wf_auto2).
       }
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       abstract (wf_auto2).
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       abstract (wf_auto2).
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       abstract (wf_auto2).
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       abstract (wf_auto2).
     }
@@ -6844,7 +6473,7 @@ End FOL_helpers.
       }
     }
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl.
       abstract (wf_auto2).
     }
@@ -7272,21 +6901,21 @@ End FOL_helpers.
   Defined.
 
   Lemma prf_equiv_congruence Γ p q C
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (wfp : well_formed p = true)
   (wfq : well_formed q = true)
   (wfC: PC_wf C)
   (pile : ProofInfoLe
-   (pi_Generic
+   (
      (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
      KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
     )
-   (pi_Generic gpi)
+   ( gpi)
   ):
-    Γ ⊢ (p <---> q) using (pi_Generic gpi) ->
-    Γ ⊢ (((emplace C p) <---> (emplace C q))) using (pi_Generic gpi).
+    Γ ⊢ (p <---> q) using ( gpi) ->
+    Γ ⊢ (((emplace C p) <---> (emplace C q))) using ( gpi).
   Proof.
     intros Hiff.
     assert (well_formed (p <---> q)).
@@ -7321,7 +6950,7 @@ End FOL_helpers.
 End FOL_helpers.
 
 Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-  (pile : ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+  (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
 Proof.
@@ -7354,14 +6983,7 @@ Proof.
     }
     reflexivity.
   }
-        (* i = pi_Generic gpi *)
-  destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
-  
+        (* i =  gpi *)
   useBasicReasoning.
   apply Ex_quan.
   abstract (wf_auto2).
@@ -7371,7 +6993,7 @@ Lemma ex_quan_and_proj1 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7386,7 +7008,7 @@ Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
   well_formed ϕ₁ = true ->
   well_formed ϕ₂ = true ->
   Γ ⊢ (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
-  using (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply ex_quan_monotone.
@@ -7410,7 +7032,7 @@ Proof.
   { wf_auto2. }
   do 2 mgIntro. mgApplyMeta H.
   fromMyGoal.
-  usePropositionalReasoning.
+  useBasicReasoning.
   apply conj_intro.
   { wf_auto2. }
   { wf_auto2. }
@@ -7429,12 +7051,12 @@ Proof.
   mgIntro.
   mgAssert (b).
   { wf_auto2. }
-  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_r.
+  { fromMyGoal. useBasicReasoning. apply pf_conj_elim_r.
     wf_auto2. wf_auto2.
   }
   mgAssert (a) using first 1.
   { wf_auto2. }
-  { fromMyGoal. usePropositionalReasoning. apply pf_conj_elim_l; wf_auto2. }
+  { fromMyGoal. useBasicReasoning. apply pf_conj_elim_l; wf_auto2. }
   mgAdd H.
   mgAssert ((b ---> c)).
   { wf_auto2. }
@@ -7448,7 +7070,7 @@ Lemma prf_conj_split {Σ : Signature} Γ a b l:
   well_formed b ->
   Pattern.wf l ->
   Γ ⊢ (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa wfb wfl.
   induction l.
@@ -7475,7 +7097,7 @@ Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
   Γ ⊢ (foldr patt_imp a l) using i -> 
   Γ ⊢ (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
 Proof.
-  intros. eapply MP. 2: { usePropositionalReasoning. apply prf_conj_split; assumption. }
+  intros. eapply MP. 2: { useBasicReasoning. apply prf_conj_split; assumption. }
   exact H2.
 Defined.
 
@@ -7520,7 +7142,7 @@ Local Lemma ex_mgSplitAnd {Σ : Signature} Γ a b c:
   well_formed b ->
   well_formed c ->
   Γ ⊢ a ---> b ---> c ---> (a and b)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa wfb wfc.
   toMyGoal.
@@ -7537,7 +7159,7 @@ Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
   Pattern.wf l ->
   Γ ⊢ (foldr patt_imp (g₁ <---> g₂) l) --->
       ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfg₁ wfg₂ wfl.
   induction l; simpl.
@@ -7577,7 +7199,7 @@ Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l
 Proof.
   intros wfg₁ wfg₂ wfl H.
   eapply MP.
-  2: { usePropositionalReasoning. apply prf_local_goals_equiv_impl_full_equiv; assumption. }
+  2: { useBasicReasoning. apply prf_local_goals_equiv_impl_full_equiv; assumption. }
   exact H.
 Defined.
 
@@ -7619,19 +7241,19 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   (wfp : well_formed p)
   (wfq : well_formed q)
   (wfC : PC_wf C)
-  (gpi : GenericProofInfo)
+  (gpi : ProofInfo)
   (pile : ProofInfoLe
-  (pi_Generic
+  (
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
       KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
       FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))  
     )
-    (pi_Generic gpi)
+    ( gpi)
   ):
   Pattern.wf l ->
-  Γ ⊢ p <---> q using (pi_Generic gpi) ->
-  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using (pi_Generic gpi).
+  Γ ⊢ p <---> q using ( gpi) ->
+  Γ ⊢ (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using ( gpi).
 Proof.
   intros wfl Himp.
   induction l; simpl in *.
@@ -7694,12 +7316,12 @@ Proof.
 Qed.
 
 Lemma MyGoal_rewriteIff
-  {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : GenericProofInfo)
+  {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
-  (pf : Γ ⊢ p <---> q using (pi_Generic gpi)) :
-  @mkMyGoal Σ Γ l (emplace C q) (pi_Generic gpi) ->
+  (pf : Γ ⊢ p <---> q using ( gpi)) :
+  @mkMyGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
-  (pi_Generic
+  (
      (ExGen := list_to_set
                  (evar_fresh_seq
                     (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q
@@ -7720,10 +7342,10 @@ Lemma MyGoal_rewriteIff
              then false
              else true
              ),
-      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q (pi_Generic gpi) pf) (@extract_wfq Σ Γ p q (pi_Generic gpi) pf))
+      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q ( gpi) pf) (@extract_wfq Σ Γ p q ( gpi) pf))
       ))
-      (pi_Generic gpi)) ->
-  @mkMyGoal Σ Γ l (emplace C p) (pi_Generic gpi).
+      ( gpi)) ->
+  @mkMyGoal Σ Γ l (emplace C p) ( gpi).
 Proof.
   rename pf into Hpiffq.
   intros H pile.
@@ -7942,7 +7564,7 @@ Ltac2 mgRewrite (hiff : constr) (atn : int) :=
     =>
     unfold AnyReasoning;
     lazy_match! goal with
-    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p (pi_Generic ?gpi))]
+    | [ |- of_MyGoal (@mkMyGoal ?sgm ?g ?l ?p ( ?gpi))]
       => let hr : HeatResult := heat atn a p in
          if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
@@ -8027,12 +7649,12 @@ Proof.
   mgRewrite Hiff at 2.
   mgRewrite <- Hiff at 3.
   fromMyGoal.
-  usePropositionalReasoning.
+  useBasicReasoning.
   apply pf_iff_equiv_refl. abstract(wf_auto2).
 Defined.
 
 Lemma top_holds {Σ : Signature} Γ:
-  Γ ⊢ Top using PropositionalReasoning.
+  Γ ⊢ Top using BasicReasoning.
 Proof.
   apply false_implies_everything.
   { wf_auto2. }
@@ -8041,7 +7663,7 @@ Defined.
 Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
   Γ ⊢ ϕ <---> (ϕ <---> Top)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -8064,7 +7686,7 @@ Defined.
 Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
   well_formed ϕ ->
   Γ ⊢ (! ϕ ) <---> (ϕ <---> ⊥)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfϕ.
   toMyGoal.
@@ -8082,7 +7704,7 @@ Defined.
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
   Γ ⊢ A <---> ! ! A
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfA.
   apply pf_iff_split.
@@ -8099,7 +7721,7 @@ Lemma prenex_exists_and_1 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
-  using (pi_Generic (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -8147,7 +7769,7 @@ Lemma prenex_exists_and_2 {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -8212,7 +7834,7 @@ Lemma prenex_exists_and_iff {Σ : Signature} (Γ : Theory) ϕ₁ ϕ₂:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
   Γ ⊢ (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
-  using (pi_Generic (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+  using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
 Proof.
   intros wfϕ₁ wfϕ₂.
   apply conj_intro_meta.
@@ -8230,7 +7852,7 @@ Lemma patt_and_comm {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
   Γ ⊢ (p and q) <---> (q and p)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfp wfq.
   toMyGoal.
@@ -8247,7 +7869,7 @@ Local Example ex_mt {Σ : Signature} Γ ϕ₁ ϕ₂:
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
   Γ ⊢ (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfϕ₁ wfϕ₂.
   toMyGoal.
@@ -8288,7 +7910,7 @@ Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed x ->
   Pattern.wf xs ->
   Γ ⊢ (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfg wfx wfxs.
   induction xs; simpl.
@@ -8336,7 +7958,7 @@ Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern
 Proof.
   intros wfg wfx wfxs H.
   eapply MP.
-  2: { usePropositionalReasoning. apply lhs_and_to_imp; assumption. }
+  2: { useBasicReasoning. apply lhs_and_to_imp; assumption. }
   exact H.
 Defined.
 
@@ -8363,7 +7985,7 @@ Local Example ex_match {Σ : Signature} Γ a b c d:
   well_formed b ->
   well_formed c ->
   well_formed d ->
-  Γ ⊢ a ---> (b ---> (c ---> d)) using PropositionalReasoning.
+  Γ ⊢ a ---> (b ---> (c ---> d)) using BasicReasoning.
 Proof.
   intros wfa wfb wfc wfd.
   apply lhs_and_to_imp_r.
@@ -8371,7 +7993,7 @@ Abort.
 
 Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
   evar_is_fresh_in x ϕ₁ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ ϕ₁ ---> ϕ₂ using i ->
   Γ ⊢ ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
 Proof.
@@ -8382,7 +8004,7 @@ Proof.
   toMyGoal.
   { wf_auto2. }
   mgIntro.
-  mgApplyMeta (@usePropositionalReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in 0.
+  mgApplyMeta (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in 0.
   fromMyGoal.
   apply modus_tollens.
 
@@ -8403,16 +8025,10 @@ Defined.
 
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
-  (ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
+  (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
   Γ ⊢ (all, evar_quantify x 0 ϕ) ---> ϕ using i.
 Proof.
   intros wfϕ pile.
-  destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
   pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
   eapply useGenericReasoning. apply pile. apply Htmp.
 Defined.
@@ -8420,18 +8036,12 @@ Defined.
 Lemma forall_elim {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed (ex, ϕ) ->
   evar_is_fresh_in x ϕ ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, ϕ) using i ->
   Γ ⊢ (evar_open 0 x ϕ) using i.
 Proof.
   intros wfϕ frϕ pile H.
   destruct i.
-  {
-    exfalso.
-    eapply not_generic_in_prop.
-    apply pile.
-  }
-  destruct gpi.
   eapply MP.
   2: eapply forall_variable_substitution'.
   2: wf_auto2.
@@ -8449,7 +8059,7 @@ Defined.
 Lemma prenex_forall_imp {Σ : Signature} Γ ϕ₁ ϕ₂ i:
   well_formed (ex, ϕ₁) ->
   well_formed ϕ₂ ->
-  ProofInfoLe (pi_Generic (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> (ϕ₂) using i.
 Proof.
@@ -8510,7 +8120,7 @@ Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list P
   (i : ProofInfo) :
   evar_is_fresh_in x g ->
   evar_is_fresh_in_list x l ->
-  ProofInfoLe (pi_Generic (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   bevar_occur ϕ₁ 0 = false ->
   @mkMyGoal Σ Γ (ϕ₁::l) g i -> 
  @mkMyGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
@@ -8540,7 +8150,7 @@ Local Example ex_exists {Σ : Signature} Γ ϕ₁ ϕ₂ ϕ₃ i:
   well_formed (ex, ϕ₁) ->
   well_formed (ex, ϕ₂) ->
   well_formed ϕ₃ ->
-  ProofInfoLe (pi_Generic (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   Γ ⊢ (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
   Γ ⊢ (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
 Proof.
@@ -8717,7 +8327,7 @@ Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢( (a ---> b) <---> ((! a) or b) )
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -8740,7 +8350,7 @@ Lemma nimpl_eq_and {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢( ! (a ---> b) <---> (a and !b) )
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa wfb.
   toMyGoal.
@@ -8765,7 +8375,7 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
     Γ ⊢ ( !(a and b) <---> (!a or !b) )
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfb.
     toMyGoal.
@@ -8788,7 +8398,7 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
     Γ ⊢ ( !(a or b) <---> (!a and !b))
-    using PropositionalReasoning.
+    using BasicReasoning.
   Proof.
     intros wfa wfb.
     toMyGoal.
@@ -8813,7 +8423,7 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
   Γ ⊢ (!(!a) <---> a)
-  using PropositionalReasoning.
+  using BasicReasoning.
 Proof.
   intros wfa.
   toMyGoal.
@@ -8828,44 +8438,44 @@ Proof.
   Unshelve.
   all: assumption.
 Defined.
-
+(* TODO: de-duplicate the code *)
 #[local]
 Ltac convertToNNF_rewrite_pat Ctx p i :=
   lazymatch p with
     | (! ! ?x) =>
         let H' := fresh "H" in
         pose proof (@not_not_eq _ Ctx x ltac:(wf_auto2)) as H';
-        apply (@usePropositionalReasoning _ _ _ i) in H';
+        apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx x i
     | patt_not (patt_and ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nand _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@usePropositionalReasoning _ _ _ i) in H';
+        apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x or !y) i
     | patt_not (patt_or ?x ?y) =>
         let H' := fresh "H" in
         pose proof (@deMorgan_nor _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@usePropositionalReasoning _ _ _ i) in H';
+        apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x and !y) i
     | patt_not (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@nimpl_eq_and _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@usePropositionalReasoning _ _ _ i) in H';
+        apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (x and !y) i
     | (?x ---> ?y) =>
         let H' := fresh "H" in
         pose proof (@impl_eq_or _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@usePropositionalReasoning _ _ _ i) in H';
+        apply (@useBasicReasoning _ _ _ i) in H';
         repeat (mgRewrite H' at 1);
-        clear H';
+        try clear H';
         convertToNNF_rewrite_pat Ctx (!x or y) i
     | patt_and ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
     | patt_or ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
@@ -8878,7 +8488,7 @@ Ltac toNNF :=
   match goal with
     | [ |- @of_MyGoal ?Sgm (@mkMyGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
       =>
-        mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
+        mgApplyMeta (@useBasicReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
         convertToNNF_rewrite_pat Ctx (!g) i
   end.
 
@@ -8953,7 +8563,7 @@ Ltac mgTautoBreak := repeat match goal with
     lazymatch g with
       | (⊥) =>
               breakHyps l 0
-      | _ => mgApplyMeta (@usePropositionalReasoning _ _ _ i (@false_implies_everything _ _ g _))
+      | _ => mgApplyMeta (@useBasicReasoning _ _ _ i (@false_implies_everything _ _ g _))
     end
 end.
 

@@ -46,7 +46,7 @@ Context
 
 Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}.
 
-Definition BasicReasoningWithDefFP := (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP)). 
+Definition BasicReasoningWithDefFP := ( (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP)). 
 
 Lemma phi_impl_total_phi_meta Γ ϕ i:
   well_formed ϕ ->
@@ -88,7 +88,7 @@ Lemma patt_equal_refl :
   using BasicReasoningWithDefFP.
 Proof.
   intros φ Γ WF. pose proof (IFF := @pf_iff_equiv_refl Σ Γ φ WF).
-  eapply usePropositionalReasoning in IFF.
+  eapply useBasicReasoning in IFF.
   apply patt_iff_implies_equal in IFF.
   { apply IFF. }
   { exact WF. }
@@ -111,12 +111,12 @@ Proof.
   reflexivity.
 Defined.
 
-Definition BasicReasoningWithDefinedness := pi_Generic (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP).
+Definition BasicReasoningWithDefinedness := (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP).
 
 Lemma defined_evar Γ x:
   theory ⊆ Γ ->
   Γ ⊢ ⌈ patt_free_evar x ⌉
-  using pi_Generic (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, FP := defFP).
+  using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
   intros HΓ.
   assert(S1: Γ ⊢ patt_defined p_x using BasicReasoningWithDefinedness).
@@ -160,7 +160,7 @@ Lemma in_context_impl_defined Γ AC ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
-  using pi_Generic (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC).
+  using  (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC).
 Proof.
   intros HΓ Hwfϕ.
   assert(S1: Γ ⊢ patt_defined p_x using BasicReasoning).
@@ -172,7 +172,7 @@ Proof.
   remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
 
   pose proof (S1' := S1).
-  apply useBasicReasoning with (gpi := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) in S1'.
+  apply useBasicReasoning with (i := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) in S1'.
   apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
   2: {
@@ -198,7 +198,7 @@ Proof.
     set_solver.
   }
   
-  remember (pi_Generic (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) as i.
+  remember ( (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) as i.
   assert (S1'' : Γ ⊢ ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
@@ -253,7 +253,7 @@ Proof.
       toMyGoal.
       { wf_auto2. }
       mgIntro.
-      mgAdd (@usePropositionalReasoning Σ _ _ i (@A_or_notA Σ Γ ϕ Hwfϕ)).
+      mgAdd (@useBasicReasoning Σ _ _ i (@A_or_notA Σ Γ ϕ Hwfϕ)).
       mgDestructOr 0.
       - mgRight. mgExactn 0.
       - mgLeft. mgIntro.
@@ -385,7 +385,7 @@ Proof.
     toMyGoal.
     { wf_auto2. }
     mgIntro.
-    mgAdd (@usePropositionalReasoning _ _ _ i (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto))).
+    mgAdd (@useBasicReasoning _ _ _ i (@conj_intro Σ Γ (ex, b0) ϕ ltac:(auto) ltac:(auto))).
     
     mgAssert ((ϕ ---> ex , b0 and ϕ)).
     { wf_auto2. }
@@ -557,7 +557,7 @@ Lemma phi_impl_defined_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ ϕ ---> ⌈ ϕ ⌉
-  using pi_Generic
+  using 
                      (ExGen := {[ev_x;
                                evar_fresh
                                  (elements (free_evars ϕ) )]},
@@ -600,7 +600,7 @@ Lemma total_phi_impl_phi Γ ϕ:
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ ⌊ ϕ ⌋ ---> ϕ
-  using pi_Generic
+  using 
   (ExGen := {[ev_x;
             evar_fresh
               (elements (free_evars ϕ) )]},
@@ -623,7 +623,7 @@ Defined.
 Lemma total_phi_impl_phi_meta Γ ϕ i:
   theory ⊆ Γ ->
   well_formed ϕ ->
-  ProofInfoLe (pi_Generic
+  ProofInfoLe (
   (ExGen := {[ev_x;
             evar_fresh
               (elements (free_evars ϕ) )]},
@@ -648,17 +648,15 @@ Proof.
   exact wfϕ.
 Defined.
 
-Check pi_Generic.
-Print GenericProofInfo.
-Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet :=
+Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
   match pi_framing_patterns gpi with
   | CoFinGset _ => ⊤
   | FinGSet fp => gset_to_coGset (list_to_set (map (fun (psi : wfPattern) => evar_fresh (elements (free_evars ψ ∪ free_evars (proj1_sig psi)))) (elements fp)))
   end.
 
   Theorem deduction_theorem_noKT Γ ϕ ψ
-    (gpi : GenericProofInfo)
-    (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using pi_Generic gpi) :
+    (gpi : ProofInfo)
+    (pf : Γ ∪ {[ ψ ]} ⊢ ϕ using  gpi) :
     well_formed ϕ ->
     well_formed ψ ->
     theory ⊆ Γ ->
@@ -666,7 +664,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
     pi_uses_kt gpi = false ->
     Γ ⊢ ⌊ ψ ⌋ ---> ϕ
-    using pi_Generic
+    using 
     (ExGen :=
       (
         {[ev_x; evar_fresh (elements (free_evars ψ))]}
@@ -730,13 +728,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       toMyGoal.
       { wf_auto2. }
       mgIntro. mgClear 0. fromMyGoal.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply P2; assumption.
     - (* P3 *)
       toMyGoal.
       { wf_auto2. }
       mgIntro. mgClear 0. fromMyGoal.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply P3; assumption.
     - (* Modus Ponens *)
       assert (well_formed phi2).
@@ -750,12 +748,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
 
       remember_constraint as i'.
 
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2, Hpf3, Hpf4.
       feed specialize IHpf1.
       {
         constructor; simpl.
-        { exact I. }
         { set_solver. }
         { set_solver. }
         { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
@@ -765,7 +762,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       feed specialize IHpf2.
       {
         constructor; simpl.
-        { exact I. }
         { set_solver. }
         { set_solver. }
         { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb.
@@ -825,15 +821,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       useBasicReasoning.
       apply Ex_quan. wf_auto2.
     - (* Existential Generalization *)
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2, Hpf3, Hpf4.
       (*
       simpl in HnoExGen.
       case_match;[congruence|]. *)
       feed specialize IHpf.
       {
         constructor; simpl.
-        { exact I. }
         { clear -Hpf2. set_solver. }
         { clear -Hpf3. set_solver. }
         { apply Hpf4. }
@@ -907,12 +902,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       assert (well_formed (phi1 ---> phi2)).
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2,Hpf3,Hpf4.
       feed specialize IHpf.
       {
         constructor; simpl.
-        { exact I. }
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
@@ -936,7 +930,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -1010,7 +1004,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         { wf_auto2. }
         mgIntro. mgAdd S3.
         (* TODO we need a tactic for adding  something with stronger constraint. *)
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
@@ -1040,10 +1034,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       + mgAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto))).
+        * mgAdd (@useBasicReasoning _ _ _ i' (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
@@ -1065,12 +1059,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         destruct_and!. split_and!; auto. }
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
 
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1,Hpf2,Hpf3,Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2,Hpf3,Hpf4.
       feed specialize IHpf.
       {
         constructor; simpl.
-        { exact I. }
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
@@ -1095,7 +1088,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { toMyGoal.
         { wf_auto2. }
         mgAdd IHpf. mgIntro.
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft.
@@ -1163,7 +1156,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         toMyGoal.
         { wf_auto2. }
         mgIntro. mgAdd S3.
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         - mgLeft. mgExactn 0.
         - mgRight. mgApply 1. mgApply 2. mgExactn 0.
@@ -1193,21 +1186,20 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       + mgAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
         { wf_auto2. }
         { mgApply 0. mgExactn 2. }
-        mgAdd (@usePropositionalReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
+        mgAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
         mgDestructOr 0.
         * mgExactn 0.
-        * mgAdd (@usePropositionalReasoning _ _ _ i' (@bot_elim Σ Γ (psi $ phi2) ltac:(auto))).
+        * mgAdd (@useBasicReasoning _ _ _ i' (@bot_elim Σ Γ (psi $ phi2) ltac:(auto))).
           mgApply 0.
           mgApply 3.
           mgExactn 5.
     - (* Set variable substitution *)
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1 , Hpf2, Hpf3, Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2, Hpf3, Hpf4.
       feed specialize IHpf.
       {
         constructor; simpl.
-        { exact I. }
         { exact Hpf2. }
         { clear -Hpf3. set_solver. }
         { exact Hpf4. }
@@ -1256,8 +1248,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       apply Pre_fixp. wf_auto2.
     - (* Knaster-Tarski *)
       simpl in HnoKT.
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
-      simpl in Hpf1, Hpf2, Hpf3, Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      simpl in Hpf2, Hpf3, Hpf4.
       clear -Hpf4 HnoKT.
       exfalso. congruence.
     - (* Existence *)
@@ -1275,7 +1267,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   Defined.
 
   Lemma membership_introduction Γ ϕ i:
-    ProofInfoLe (pi_Generic
+    ProofInfoLe (
     (ExGen := {[ev_x; fresh_evar ϕ]},
      SVSubst := ∅,
      KT := false,
@@ -1299,7 +1291,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     
     assert (S2: Γ ⊢ (ϕ ---> (patt_free_evar x ---> ϕ)) using i).
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply P1.
       { wf_auto2. }
       { wf_auto2. }
@@ -1312,7 +1304,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
 
     assert(S4: Γ ⊢ patt_free_evar x ---> patt_free_evar x using i).
     {
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply A_impl_A.
       wf_auto2.
     }
@@ -1370,7 +1362,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
   Defined.
 
   Lemma membership_elimination Γ ϕ i:
-    ProofInfoLe (pi_Generic
+    ProofInfoLe (
     (ExGen := {[ev_x; fresh_evar ϕ]},
     SVSubst := ∅,
      KT := false,
@@ -1445,7 +1437,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
         remember ((! ! patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ϕ) ---> ! (patt_free_evar x and ! ϕ)))
           as A.
         fromMyGoal.
-        usePropositionalReasoning.
+        useBasicReasoning.
         apply not_not_elim. wf_auto2.
       }
       mgClear 0.
@@ -1455,7 +1447,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       {
         mgApply 0. mgClear 0.
         fromMyGoal.
-        usePropositionalReasoning.
+        useBasicReasoning.
         apply not_not_intro. wf_auto2.
       }
       mgClear 0. mgClear 0.
@@ -1465,16 +1457,16 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { wf_auto2. }
       {
         fromMyGoal.
-        usePropositionalReasoning.
+        useBasicReasoning.
         apply not_not_elim. wf_auto2.
       }
       mgClear 0.
 
       unfold patt_or.
       (* TODO we probably want mgApplyMeta to implicitly perform the cast *)
-      mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_elim Σ _ _ _)).
+      mgApplyMeta (@useBasicReasoning _ _ _ i (@not_not_elim Σ _ _ _)).
       mgApply 0.
-      mgApplyMeta (@usePropositionalReasoning _ _ _ i (@not_not_intro Σ _ _ _)).
+      mgApplyMeta (@useBasicReasoning _ _ _ i (@not_not_intro Σ _ _ _)).
       mgExactn 1.
     }
 
@@ -1570,7 +1562,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       { wf_auto2. }        
       {
         fromMyGoal.
-        usePropositionalReasoning.
+        useBasicReasoning.
         apply not_not_elim.
         wf_auto2.
       }
@@ -1581,7 +1573,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
                using first 1.
       { wf_auto2. }
       {
-        mgAdd (@usePropositionalReasoning _ _ _ BasicReasoning (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))).
+        mgAdd (@useBasicReasoning _ _ _ BasicReasoning (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))).
         mgDestructOr 0.
         - mgRight. mgExactn 0.
         - mgLeft. mgApply 1. mgExactn 0.
@@ -1589,7 +1581,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       mgClear 0.
 
       mgApply 0. mgClear 0. fromMyGoal.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply not_not_intro. wf_auto2.
     }
     apply S2.
@@ -1599,14 +1591,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ = true ->
     theory ⊆ Γ ->
     Γ ⊢ ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ HΓ.
     pose proof (S1 := @defined_evar Γ x HΓ).
     remember_constraint as i.
     assert (S2: Γ ⊢ ⌈ (patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)) ⌉ using i).
     {
-      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)))) using PropositionalReasoning).
+      assert(H: Γ ⊢ (patt_free_evar x ---> ((patt_free_evar x and ϕ) or (patt_free_evar x and (! ϕ)))) using BasicReasoning).
       {
         toMyGoal.
         { wf_auto2. }
@@ -1624,7 +1616,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
           mgApply 0. mgApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
           mgApply 2. mgIntro. mgApply 3. mgExactn 1.
       }
-      apply usePropositionalReasoning with (i := i) in H.
+      apply useBasicReasoning with (i := i) in H.
       subst i.
       eapply Framing_right in H.
       eapply MP. 2: apply H.
@@ -1647,7 +1639,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ ->
     theory ⊆ Γ ->
     Γ ⊢ ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ)
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros Hwf HΓ.
     apply pf_iff_split.
@@ -1743,17 +1735,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    remember_constraint as i.
-    destruct i; [inversion Heqi|].
-    injection Heqi as Heqgpi.
 
     epose proof (Htmp1 := (membership_or_2 _ _ _ HΓ)).
     (* TODO: [change constraint in _] should work even in proof mode! *)
     change constraint in Htmp1.
-    2: { subst gpi; try_solve_pile. }
+    remember_constraint as gpi.
 
     unfold patt_and.
     toMyGoal.
@@ -1782,32 +1771,22 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
-    remember_constraint as i.
-    destruct i; [inversion Heqi|].
-    injection Heqi as Heqgpi.
 
     epose proof (Htmp1 := (@membership_or_1 _ _ _ _ _ _ HΓ)).
     change constraint in Htmp1.
-    2: { subst gpi; try_solve_pile. }
-
     epose proof (Htmp2 := (@membership_not_1 _ _ _ _ HΓ)).
     change constraint in Htmp2.
-    2: { subst gpi; try_solve_pile. }
-
     epose proof (Htmp3 := (@membership_not_1 _ _ _ _ HΓ)).
     change constraint in Htmp3.
-    2: { subst gpi; try_solve_pile. }
-
     toMyGoal.
     { wf_auto2. }
     mgIntro.
     mgDestructAnd 0.
     unfold patt_and.
 
-    subst gpi.
     unshelve (mgApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
     { wf_auto2. }
     mgIntro.
@@ -1827,7 +1806,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢ (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using pi_Generic (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1836,97 +1815,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     + apply membership_and_2; assumption.
   Defined.
 
-  (*
-  Lemma bevar_subst_not_app_1 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ1 0 ->
-    ψ1 $ ψ2 <> evar_subst ψ1 p0 E.
-  Proof.
-    induction ψ1; intros Hwfc; simpl in *; auto.
-    { 
-      destruct_and!.
-      specialize (IHψ1_1 ltac:(assumption)).
-      specialize (IHψ1_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
-      apply f_equal.
-      eapply well_formed_bevar_subst;[|apply H0].
-      lia.
-    }
-  Qed.
-
-  Lemma bevar_subst_not_app_2 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ2 0 ->
-    ψ1 $ ψ2 <> bevar_subst ψ2 p0 E.
-  Proof.
-    induction ψ2; intros Hwfc; simpl in *; auto.
-    { 
-      destruct_and!.
-      specialize (IHψ2_1 ltac:(assumption)).
-      specialize (IHψ2_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H3 in IHψ2_2. apply IHψ2_2. clear IHψ2_2.
-      f_equal.
-      eapply well_formed_bevar_subst;[|apply H].
-      lia.
-    }
-  Qed.*)
-
-  About frames_on_the_way_to_hole'.
-
-
   Arguments frames_on_the_way_to_hole' {Σ} EvS SvS E ψ p q wfψ wfp wfq.
-
-  (*
-  Lemma free_evar_subst_not_app_1 ψ1 ψ2 E p0:
-    well_formed_closed_ex_aux ψ1 0 ->
-    ψ1 $ ψ2 <> free_evar_subst ψ1 p0 E.
-  Proof.
-    induction ψ1; intros Hwfc; simpl in *; auto.
-    {
-      repeat case_match; auto. subst.
-    }
-    { 
-      destruct_and!.
-      specialize (IHψ1_1 ltac:(assumption)).
-      specialize (IHψ1_2 ltac:(assumption)).
-      intros Hcontra. inversion Hcontra; clear Hcontra; subst.
-      rewrite -H2 in IHψ1_1. apply IHψ1_1. clear IHψ1_1.
-      apply f_equal.
-      eapply well_formed_bevar_subst;[|apply H0].
-      lia.
-    }
-  Abort.
-
-
-  Lemma frames_on_the_way_to_hole'_not_eq EvS SvS x ψ p q wfψ wfp wfq
-    (ψ' : Pattern) (wfψ' : well_formed ψ' = true):
-    (exist _ ψ wfψ) ∉ (@frames_on_the_way_to_hole' Σ EvS SvS x ψ p q wfψ wfp wfq).
-  Proof.
-    move: ψ' wfψ'.
-    eapply frames_on_the_way_to_hole'_elim; intros ψ' wfψ'; intros.
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    {
-      pose proof (@well_formed_app_1 Σ _ _ wfψ0).
-      pose proof (@well_formed_app_2 Σ _ _ wfψ0).
-      specialize (H ψ1 ltac:(assumption)).
-      specialize (H0 ψ2 ltac:(assumption)).
-      intros Hcontra.
-      repeat rewrite elem_of_union in Hcontra.
-      destruct_or!.
-      {
-        rewrite elem_of_singleton in Hcontra. inversion Hcontra. clear Hcontra.
-      }
-      Set Printing All.
-      pi_set_solver.
-    }
-    { set_solver. }
-
-  Abort.
-*)
 
   Lemma equality_elimination_basic Γ φ1 φ2 C
     (HΓ : theory ⊆ Γ)
@@ -1936,7 +1825,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     mu_free (pcPattern C) ->
     Γ ⊢ (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
-    using (pi_Generic
+    using (
     (ExGen := {[ev_x]}
               ∪ {[evar_fresh (elements (free_evars φ1 ∪ free_evars φ2))]}
               ∪ (gset_to_coGset (free_evars φ1))
@@ -2378,26 +2267,26 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
                                                  ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
                                                  (ex , φ) _ _ _).
       eapply MP.
-      2: usePropositionalReasoning; apply and_impl.
+      2: useBasicReasoning; apply and_impl.
       2,3,4: wf_auto2.
       eapply MP.
       2: eapply MP.
-      3: usePropositionalReasoning; exact PSP.
+      3: useBasicReasoning; exact PSP.
       
       * unshelve (epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (bevar_subst φ Z 0) (ex , φ) _ _ _)).
         1,2,3: wf_auto2.
         unfold instantiate.
         (* TODO: tactic for modus ponens *)
-        eapply MP. 2: usePropositionalReasoning; exact AI.
+        eapply MP. 2: useBasicReasoning; exact AI.
         rewrite <- HeqZ in PC.
         exact PC.
       * apply and_drop. 1-3: wf_auto2.
         unshelve(epose proof (AI := @and_impl' Σ Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)).
         1-3: wf_auto2.
-        eapply MP. 2: usePropositionalReasoning; exact AI.
+        eapply MP. 2: useBasicReasoning; exact AI.
         { apply EE. wf_auto2. }
     }
-    eapply MP. 2: usePropositionalReasoning; apply and_impl'; try_wfauto2.
+    eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
     
     apply reorder_meta; try_wfauto2.
     eapply (@Ex_gen Σ Γ _ _ Zvar) in HSUB.
@@ -2474,13 +2363,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
     simpl in H.
     epose proof (H0 := @and_impl Σ _ _ _ _ _ _ _).
     epose proof (H0' := @and_impl Σ _ _ _ _ _ _ _).
-    eapply usePropositionalReasoning with (i := AnyReasoning) in H0.
+    eapply useBasicReasoning with (i := AnyReasoning) in H0.
     eapply MP in H0. 2: apply H.
     apply reorder_meta in H0.
     2-4: wf_auto2.
     
     epose proof (H1 := @and_impl' Σ _ _ _ _ _ _ _).
-    eapply usePropositionalReasoning with (i := AnyReasoning) in H1.
+    eapply useBasicReasoning with (i := AnyReasoning) in H1.
     eapply MP in H1. exact H1.
     
     apply reorder_meta. 1-3: wf_auto2.
@@ -2495,10 +2384,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : GenericProofInfo) : coEVarSet 
       wf_auto2.
     }
     
-    eapply usePropositionalReasoning with (i := AnyReasoning) in otherH.
+    eapply useBasicReasoning with (i := AnyReasoning) in otherH.
     eapply MP in otherH.
     {
-      eapply usePropositionalReasoning with (i := AnyReasoning) in H2.
+      eapply useBasicReasoning with (i := AnyReasoning) in H2.
       eapply syllogism_meta in H2.
       3,4: wf_auto2.
       3: apply otherH.
@@ -2542,7 +2431,7 @@ mgAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
 }
 unfold patt_iff.
 epose proof (Htmp := (@pf_conj_elim_r _ _ _ _ _ _)).
-apply usePropositionalReasoning with (i := AnyReasoning) in Htmp.
+apply useBasicReasoning with (i := AnyReasoning) in Htmp.
 unshelve(eapply (@MyGoal_applyMetaIn _ _ _ _ _ Htmp)).
 clear Htmp.
 
@@ -2560,7 +2449,7 @@ eapply MyGoal_weakenConclusion.
 replace ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁); emplace C' ϕ₂])
 with (((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁)]) ++ [emplace C' ϕ₂]).
 2: {  rewrite -app_assoc. simpl. reflexivity. }
-usePropositionalReasoning.
+useBasicReasoning.
 apply MyGoal_exactn.
 Unshelve.
 all: abstract (wf_auto2).
@@ -2642,7 +2531,7 @@ Lemma patt_equal_implies_iff
   {Σ : Signature} {syntax : Syntax} (ϕ1 ϕ2 : Pattern) (Γ : Theory) (i : ProofInfo) :
   theory ⊆ Γ ->
   ProofInfoLe
-               (pi_Generic
+               (
                   (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ1 ∪ free_evars ϕ2))]},
                    SVSubst := ∅, KT := false, FP := defFP)) i ->
   well_formed ϕ1 ->
@@ -2672,7 +2561,7 @@ Ltac wfauto' := try_wfauto2.
 Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i:
 theory ⊆ Γ ->
 ProofInfoLe
-  (pi_Generic
+  (
      (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂))]},
       SVSubst := ∅, KT := false, FP := defFP)) i ->
 well_formed ϕ₁ ->
@@ -2692,19 +2581,19 @@ apply pf_iff_split; wfauto'.
   * apply total_phi_impl_phi_meta in Hsub;[|assumption|wfauto'|idtac].
     { fromMyGoal. apply Hsub. }
     { simpl. apply pile. }
-  * fromMyGoal. usePropositionalReasoning; apply A_impl_A;wfauto'.
+  * fromMyGoal. useBasicReasoning; apply A_impl_A;wfauto'.
 + toMyGoal.
   { wf_auto2. }
   mgIntro. mgRight.
   fromMyGoal. 
-  usePropositionalReasoning.
+  useBasicReasoning.
   apply A_impl_A; wfauto'.
 Defined.
 
 Lemma def_not_phi_impl_not_total_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed ϕ ->
-Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋ using PropositionalReasoning.
+Γ ⊢ ⌈ ! ϕ ⌉ ---> ! ⌊ ϕ ⌋ using BasicReasoning.
 Proof.
 intros HΓ wfϕ.
 toMyGoal.
@@ -2722,7 +2611,7 @@ Lemma def_def_phi_impl_def_phi
 theory ⊆ Γ ->
 well_formed ϕ ->
 Γ ⊢ ⌈ ⌈ ϕ ⌉ ⌉ ---> ⌈ ϕ ⌉
-using pi_Generic
+using 
   (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
    SVSubst := ∅, KT := false, FP := defFP).
 Proof.
@@ -2767,7 +2656,7 @@ Lemma not_def_phi_impl_not_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
   theory ⊆ Γ ->
   well_formed ϕ ->
   Γ ⊢ ! ⌈ ϕ ⌉ ---> ! ϕ
-  using pi_Generic
+  using 
   (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
    SVSubst := ∅, KT := false, FP := defFP).
 Proof.
@@ -2786,7 +2675,7 @@ Lemma tot_phi_impl_tot_def_phi {Σ : Signature} {syntax : Syntax} Γ ϕ :
 theory ⊆ Γ ->
 well_formed ϕ ->
 Γ ⊢ ⌊ ϕ ⌋ ---> ⌊ ⌈ ϕ ⌉ ⌋
-using pi_Generic
+using 
                      (ExGen := {[ev_x; evar_fresh (elements (free_evars ϕ))]},
                       SVSubst := ∅, KT := false, FP := defFP).
 Proof.
@@ -2887,7 +2776,7 @@ eapply syllogism_meta.
 1,3 : wf_auto2.
 2: apply Framing.
 2: { apply pile_any. }
-2: usePropositionalReasoning; apply pf_conj_elim_r.
+2: useBasicReasoning; apply pf_conj_elim_r.
 1-3: wf_auto2.
 eapply syllogism_meta.
 1,3: wf_auto2.
@@ -2947,30 +2836,13 @@ Proof.
 intros HΓ wfϕ H.
 toMyGoal.
 { wf_auto2. }
-Check @usePropositionalReasoning.
-mgRewrite (@usePropositionalReasoning Σ Γ _ AnyReasoning (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
+Check @useBasicReasoning.
+mgRewrite (@useBasicReasoning Σ Γ _ AnyReasoning (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
 fromMyGoal.
 apply ProofMode.modus_tollens.
 exact H.
 Defined.
 
-Lemma useAnyReasoning {Σ : Signature} Γ ϕ i:
-  Γ ⊢ ϕ using i ->
-  Γ ⊢ ϕ using AnyReasoning.
-Proof.
-  intros H.
-  destruct i.
-  {
-    apply usePropositionalReasoning.
-    exact H.
-  }
-  {
-    destruct gpi.
-    eapply useGenericReasoning.
-    { apply pile_any. }
-    apply H.
-  }
-Qed.
 
 Lemma membership_imp {Σ : Signature} {syntax : Syntax} Γ x ϕ₁ ϕ₂:
 theory ⊆ Γ ->
@@ -2983,12 +2855,12 @@ intros HΓ wfϕ₁ wfϕ₂.
 
 toMyGoal.
 { wf_auto2. }
-mgRewrite (@usePropositionalReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ ϕ₁ ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+mgRewrite (@useBasicReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ ϕ₁ ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 mgRewrite (useAnyReasoning (@membership_or_iff Σ syntax Γ x (! ϕ₁) ϕ₂ ltac:(wf_auto2) ltac:(wf_auto2) HΓ)) at 1.
 mgRewrite (useAnyReasoning (@membership_not_iff Σ syntax Γ ϕ₁ x ltac:(wf_auto2) HΓ)) at 1.
-mgRewrite <- (@usePropositionalReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ (patt_free_evar x ∈ml ϕ₁) (patt_free_evar x ∈ml ϕ₂) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+mgRewrite <- (@useBasicReasoning Σ Γ _ AnyReasoning (@impl_iff_notp_or_q Σ Γ (patt_free_evar x ∈ml ϕ₁) (patt_free_evar x ∈ml ϕ₂) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 fromMyGoal.
-usePropositionalReasoning.
+useBasicReasoning.
 apply pf_iff_equiv_refl.
 { wf_auto2. }
 Defined.
@@ -3026,7 +2898,7 @@ Lemma ceil_propagation_exists_2 {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
 Γ ⊢ (ex, ⌈ ϕ ⌉) ---> (⌈ ex, ϕ ⌉)
-using pi_Generic (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
+using  (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 
@@ -3068,7 +2940,7 @@ Lemma ceil_propagation_exists_iff {Σ : Signature} {syntax : Syntax} Γ ϕ:
 theory ⊆ Γ ->
 well_formed (ex, ϕ) ->
 Γ ⊢ (⌈ ex, ϕ ⌉) <---> (ex, ⌈ ϕ ⌉)
-using pi_Generic (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
+using  (ExGen := {[ev_x; fresh_evar ϕ]}, SVSubst := ∅, KT := false, FP := defFP).
 Proof.
 intros HΓ wfϕ.
 apply pf_iff_split.
@@ -3147,7 +3019,7 @@ toMyGoal.
 { wf_auto2. }
 mgRewrite Htmp at 1.
 fromMyGoal.
-usePropositionalReasoning.
+useBasicReasoning.
 apply pf_iff_equiv_refl.
 { wf_auto2. }
 Defined.
@@ -3704,7 +3576,7 @@ eapply syllogism_meta.
         { wf_auto2. }
         2: {
           (* TODO I think we should have an easier way of applying commutativity of [and] *)
-          usePropositionalReasoning. apply patt_and_comm.
+          useBasicReasoning. apply patt_and_comm.
           { wf_auto2. }
           { wf_auto2. }
         }
@@ -3952,7 +3824,7 @@ assert (Γ ⊢ (! ! ⌊ ϕ ⌋) <---> ⌊ ϕ ⌋ using AnyReasoning).
   { wf_auto2. }
   mgSplitAnd; mgIntro.
   - fromMyGoal.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply not_not_elim.
     { wf_auto2. }
   - mgIntro. mgApply 1. mgClear 1. mgExactn 0.
@@ -4039,7 +3911,7 @@ apply syllogism_meta with (B := ⌈ ⌈ ϕ ⌉ ⌉).
     { wf_auto2. }
     mgSplitAnd; mgIntro.
     2: { 
-      usePropositionalReasoning.
+      useBasicReasoning.
       mgApplyMeta ((@false_implies_everything Σ (Γ ∪ {[! ϕ]}) (⌈ ϕ ⌉) ltac:(wf_auto2))) in 0.
       mgExactn 0.
     }
@@ -4054,7 +3926,7 @@ apply syllogism_meta with (B := ⌈ ⌈ ϕ ⌉ ⌉).
     gapply Framing_right.
     { apply pile_refl. }
     { unfold defFP. try_solve_pile. }
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply not_not_intro.
     assumption.
   }
@@ -4075,7 +3947,7 @@ apply syllogism_meta with (B := ⌈ ⌈ ϕ ⌉ ⌉).
       apply pf_iff_split.
       1,2: wf_auto2.
       + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal.
-        usePropositionalReasoning. apply top_holds.
+        useBasicReasoning. apply top_holds.
       + toMyGoal. wf_auto2. mgIntro. mgClear 0. fromMyGoal.
         gapply hypothesis.
         { try_solve_pile. }
@@ -4108,7 +3980,7 @@ unshelve (gapply deduction_theorem_noKT).
   apply pf_iff_split.
   1,2: wf_auto2.
   - toMyGoal. wf_auto2. mgIntro. mgDestructOr 0.
-    + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂ using (pi_Generic (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP))).
+    + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢ ϕ₁ ---> ϕ₂ using ( (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP))).
       {
         gapply hypothesis.
         { try_solve_pile. }
@@ -4117,7 +3989,7 @@ unshelve (gapply deduction_theorem_noKT).
       }
       mgApplyMeta H. mgExactn 0.
     + mgExactn 0.
-  - usePropositionalReasoning. apply disj_right_intro; assumption.
+  - useBasicReasoning. apply disj_right_intro; assumption.
 }
 { simpl. clear. set_solver. }
 { simpl. clear. set_solver. }
@@ -4302,7 +4174,7 @@ Proof.
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     
     unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H))).
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H))).
     { exact syntax. }
     { shelve. }
     1-3: unfold PC_wf; simpl; wf_auto2.
@@ -4324,7 +4196,7 @@ Proof.
     pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H))).
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H))).
     { exact syntax. }
     { shelve. }
     1-3: unfold PC_wf; simpl; wf_auto2.
@@ -4336,7 +4208,7 @@ Proof.
     (* TODO: mgRewriteBy does not work for free evars :( *)
     pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
     epose proof (H2 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@usePropositionalReasoning Σ Γ _ _ H1)).
+    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H1)).
     cbn in H2. case_match. 2: congruence.
     apply pf_iff_proj1 in H2. 2-3: wf_auto2.
     mgAssert (⌈ patt_free_evar x and patt_free_evar y ⌉). wf_auto2.

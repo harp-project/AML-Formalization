@@ -1475,9 +1475,9 @@ Section FOL_ML_correspondence.
     intros φ Γ IH. induction IH; intros.
     * gapply hypothesis. apply pile_any.
       now apply wf_form_FOL_ML. now apply in_FOL_theory.
-    * simpl. usePropositionalReasoning. apply P1; auto.
-    * usePropositionalReasoning. apply P2; auto.
-    * usePropositionalReasoning. apply P3; auto.
+    * simpl. useBasicReasoning. apply P1; auto.
+    * useBasicReasoning. apply P2; auto.
+    * useBasicReasoning. apply P3; auto.
     * eapply MP. exact IHIH1. exact IHIH2.
     * simpl. unfold is_true in *.
       epose proof (term_functionality t Γ i0).

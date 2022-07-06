@@ -316,7 +316,7 @@ Module MMTest.
   Proof.
     unfold ϕtest.
     replace (A ---> B) with (fold_right patt_imp B ([]++[A])) by reflexivity.
-    usePropositionalReasoning.
+    useBasicReasoning.
     apply prf_strenghten_premise_iter.
     all: auto.
   Defined.
