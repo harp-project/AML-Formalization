@@ -60,14 +60,14 @@ Section ml_tauto.
 
   Fixpoint pp_toCoq (pp : PropPattern) : Set :=
     match pp with
-    | pp_atomic p _ => (∅ ⊢ p using AnyReasoning)
-    | pp_natomic p _ => (∅ ⊢ (patt_not p) using AnyReasoning)
+    | pp_atomic p _ => (∅ ⊢ p )
+    | pp_natomic p _ => (∅ ⊢ (patt_not p) )
     | pp_and p1 p2 => prod (pp_toCoq p1) (pp_toCoq p2)
     | pp_or p1 p2 => sum (pp_toCoq p1) (pp_toCoq p2)
     end.
 
   Lemma extractProof : forall (pp : PropPattern), pp_toCoq pp
-    -> (∅ ⊢ (pp_flatten pp) using AnyReasoning).
+    -> (∅ ⊢ (pp_flatten pp) ).
   Proof.
     induction pp; simpl; intros H.
     - exact H.
@@ -318,11 +318,11 @@ Section ml_tauto.
 
   (* So that we can do: [apply (Modus_ponens_alt _ _ _ Hctx); auto] *)
   Lemma Modus_ponens_alt Γ phi1 phi2:
-    Γ ⊢ (phi1 ---> phi2) using AnyReasoning  ->
+    Γ ⊢ (phi1 ---> phi2)   ->
     well_formed phi1 ->
     well_formed (phi1 ---> phi2) ->
-    Γ ⊢ phi1 using AnyReasoning ->
-    Γ ⊢ phi2 using AnyReasoning .
+    Γ ⊢ phi1  ->
+    Γ ⊢ phi2  .
   Proof.
     intros.
     eapply MP. 2: apply H. all: auto.
@@ -330,7 +330,7 @@ Section ml_tauto.
 
   Lemma negate_equiv Γ (p : Pattern) :
     well_formed p ->
-    Γ ⊢ ((patt_not p) <---> (negate p)) using AnyReasoning.
+    Γ ⊢ ((patt_not p) <---> (negate p)) .
   Proof.
     intros Hwfp.
     remember (size' p) as sz.
@@ -358,7 +358,7 @@ Section ml_tauto.
         simpl;
         reflexivity
        |];
-      assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)) using AnyReasoning);
+      assert (Hctx: (Γ ⊢ (emplace ctx p <---> emplace ctx q)) );
       [unshelve (eapply prf_equiv_congruence); unfold PC_wf; simpl; try_wfauto2; try apply pile_any; try assumption|];
       apply pf_iff_proj1 in Hctx;
       [idtac|apply well_formed_free_evar_subst; auto|apply well_formed_free_evar_subst; auto];
@@ -438,11 +438,11 @@ Section ml_tauto.
       assert (Step1: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or negate p2')
                                    and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
-                                   using AnyReasoning
+                                   
                      ->
                      (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> negate p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
-                                             using AnyReasoning
+                                             
                     ))
              ).
       {
@@ -463,10 +463,10 @@ Section ml_tauto.
 
       assert (Step2: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
-                                   and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning
+                                   and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) 
                      ->
                      (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or negate p2')
-                                             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning))
+                                             and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) ))
              ).
       {
         intros BigH.
@@ -485,10 +485,10 @@ Section ml_tauto.
 
       assert (Step3: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
-                                   and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning
+                                   and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) 
                       ->
                       (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
-                                              and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning))
+                                              and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) ))
              ).
       {
         intros BigH.
@@ -508,10 +508,10 @@ Section ml_tauto.
 
       assert (Step4: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or ! p2')
-                                   and (! p1' or ! p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning
+                                   and (! p1' or ! p2' ---> ! (! p1' or ! p2' ---> ⊥))) 
                       ->
                       (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
-                                              and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) using AnyReasoning))
+                                              and (! p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥))) ))
              ).
       {
         intros BigH.
@@ -594,11 +594,11 @@ Section ml_tauto.
 
       assert (Step1: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2')))  )
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> negate p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
                                 
              ).
       {
@@ -618,11 +618,11 @@ Section ml_tauto.
 
       assert (Step2: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and negate p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
                                 
              ).
       {
@@ -642,11 +642,11 @@ Section ml_tauto.
 
       assert (Step3: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2'))) )
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) using AnyReasoning)
+                                   and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
                                 
              ).
       {
@@ -666,11 +666,11 @@ Section ml_tauto.
 
       assert (Step4: (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and ! p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
+                                   and (! p1' and ! p2' ---> ! (! p1' ---> p2')))  )
                      ->
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
-                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2')))  using AnyReasoning)
+                                   and (! p1' and negate p2' ---> ! (! p1' ---> p2')))  )
                                 
              ).
       {
@@ -749,10 +749,10 @@ Section ml_tauto.
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
+                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  )
                      ->
                      (Γ ⊢ ((! (p1 ---> p2) ---> p1 and negate p2)
-                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
+                                and (p1 and negate p2 ---> ! (p1 ---> p2)))  )
                        
              ).
       {
@@ -771,10 +771,10 @@ Section ml_tauto.
       apply Step1. clear Step1.
 
       assert (Step2: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                             and (p1 and ! p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
+                                             and (p1 and ! p2 ---> ! (p1 ---> p2)))  )
                      ->
                      (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
-                                             and (p1 and negate p2 ---> ! (p1 ---> p2)))  using AnyReasoning)
+                                             and (p1 and negate p2 ---> ! (p1 ---> p2)))  )
                        
              ).
       {
@@ -1510,26 +1510,29 @@ Section ml_tauto.
     (wfap : well_formed ap)
     (wfϕ : well_formed ϕ):
     Γ ⊢ (ϕ <---> (pp_flatten (abstract' ap wfap ϕ wfϕ)))
-    using AnyReasoning.
+    .
   Proof.
     funelim (abstract' _ _ _ _); try inversion e; subst; solve_match_impossibilities.
     - pose proof (wfp1 := wf_and_proj1 _ _ wfp).
       pose proof (wfp2 := wf_and_proj2 _ _ wfp).
       rewrite -Heqcall.
       simpl.
-      match goal with
-      | |- (_ ⊢ ((_) <---> (?a and ?b)) using _) => remember a as p1'; remember b as p2'
+      unfold ProofSystem.derives in *.
+      lazymatch goal with
+      | |- (_ ⊢i ((_) <---> (?a and ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       apply and_of_equiv_is_equiv; subst; auto 10.
     - pose proof (wfp1 := wf_or_proj1 _ _ wfp).
       pose proof (wfp2 := wf_or_proj2 _ _ wfp).
       rewrite -Heqcall. simpl.
+      unfold ProofSystem.derives in *.
       match goal with
-      | |- (_ ⊢ ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
+      | |- (_ ⊢i ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       apply or_of_equiv_is_equiv; subst; auto.
     - pose proof (wfp' := wf_not_proj _ wfp).
       rewrite -Heqcall. simpl.
+      unfold ProofSystem.derives in *.
       eapply pf_iff_equiv_trans.
       5: { auto. }
       all: auto.
@@ -1542,8 +1545,9 @@ Section ml_tauto.
       pose proof (wfp2 := wf_imp_proj2 _ _ wfp).
       rewrite -Heqcall.
       simpl.
+      unfold ProofSystem.derives in *.
       match goal with
-      | |- (_ ⊢ ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
+      | |- (_ ⊢i ((_) <---> (?a or ?b)) using _) => remember a as p1'; remember b as p2'
       end.
       eapply pf_iff_equiv_trans.
       5: {

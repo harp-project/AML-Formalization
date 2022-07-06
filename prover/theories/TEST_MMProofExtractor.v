@@ -111,7 +111,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₁_holds
+          (raw_proof_of ϕ₁_holds)
     )).
 
   Definition ϕ₂ := (A ---> (B ---> C)) ---> (A ---> B) ---> (A ---> C).
@@ -130,7 +130,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₂_holds
+          (raw_proof_of ϕ₂_holds)
     )).
   
   (*Compute proof₂.*)
@@ -151,7 +151,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₃_holds
+          (raw_proof_of ϕ₃_holds)
     )).
   
   Definition ϕ₄ := A ---> A.
@@ -170,7 +170,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₄_holds
+          (raw_proof_of ϕ₄_holds)
     )).
   
   Definition ϕ₅ := (A ---> B) <---> (! A or B).
@@ -189,7 +189,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₅_holds
+          (raw_proof_of ϕ₅_holds)
     )).
 
   Definition ϕ₆ := (A ---> ! ! B) ---> (A ---> B).
@@ -208,7 +208,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₆_holds
+          (raw_proof_of ϕ₆_holds)
     )).
 
 
@@ -228,7 +228,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₇_holds
+          (raw_proof_of ϕ₇_holds)
     )).
 
   
@@ -248,7 +248,7 @@ Module MMTest.
           id
           _
           _
-          ϕ₈_holds
+          (raw_proof_of ϕ₈_holds)
     )).
 
   (* Tests that existentials are printed correctly *)
@@ -271,13 +271,13 @@ Module MMTest.
           id
           _
           _
-          ϕ9_holds
+          (raw_proof_of ϕ9_holds)
     )).
   
   Definition ϕ10 := ((patt_exists (patt_bound_evar 0))) or ((patt_exists (patt_bound_evar 0))).
 
   Lemma ϕ10_holds:
-    ∅ ⊢ ϕ10 using AnyReasoning.
+    ∅ ⊢ ϕ10 .
   Proof.
     toMyGoal.
     { wf_auto2. }
@@ -299,12 +299,12 @@ Module MMTest.
           id
           _
           _
-       (proj1_sig ϕ10_holds)
+       (raw_proof_of  ϕ10_holds)
     )).
 
   Definition ϕ11 := instantiate (ex , patt_bound_evar 0) (patt_free_evar "y") ---> ex , patt_bound_evar 0.
   Lemma ϕ11_holds:
-    ∅ ⊢ ϕ11 using AnyReasoning.
+    ∅ ⊢ ϕ11 .
   Proof.
     gapply Ex_quan.
     { apply pile_any. }
@@ -312,7 +312,7 @@ Module MMTest.
   Qed.
 
   Definition ϕtest := (A ---> A) ---> (A ---> B) ---> (A ---> B).
-  Lemma ϕtest_holds: ∅ ⊢ ϕtest using AnyReasoning.
+  Lemma ϕtest_holds: ∅ ⊢ ϕtest .
   Proof.
     unfold ϕtest.
     replace (A ---> B) with (fold_right patt_imp B ([]++[A])) by reflexivity.
@@ -329,7 +329,7 @@ Module MMTest.
           id
           _
           _
-          (proj1_sig ϕtest_holds)
+          (raw_proof_of ϕtest_holds)
     )).
 
   
