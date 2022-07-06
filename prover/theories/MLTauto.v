@@ -376,7 +376,7 @@ Section ml_tauto.
     move: p Hwfp Hsz.
     induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
       funelim (negate _); try inversion e; subst;
-        try solve [(usePropositionalReasoning; apply pf_iff_equiv_refl; wf_auto2)]; auto.
+        try solve [(useBasicReasoning; apply pf_iff_equiv_refl; wf_auto2)]; auto.
     - unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
       rewrite !andbT in Hwfp.
@@ -528,7 +528,7 @@ Section ml_tauto.
       }
       apply Step4. clear Step4.
 
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply conj_intro_meta; auto 10.
       + apply not_not_elim. auto.
       + apply not_not_intro. auto.
@@ -687,14 +687,14 @@ Section ml_tauto.
         .
       }
       apply Step4. clear Step4.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply and_of_negated_iff_not_impl; auto.
     - unfold well_formed, well_formed_closed in Hwfp.
       simpl in Hwfp.
       rewrite !andbT in Hwfp.
       fold (well_formed_closed p1') in Hwfp.
       fold (well_formed p1') in Hwfp.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply conj_intro_meta; auto.
       + apply not_not_elim; auto.
       + apply not_not_intro; auto.
@@ -791,7 +791,7 @@ Section ml_tauto.
         .
       }
       apply Step2. clear Step2.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply and_impl_2; auto.
   Qed.
 
@@ -1536,7 +1536,7 @@ Section ml_tauto.
       apply negate_equiv; auto.
     - rewrite -Heqcall.
       simpl.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl; auto.
     - pose proof (wfp1 := wf_imp_proj1 _ _ wfp).
       pose proof (wfp2 := wf_imp_proj2 _ _ wfp).
@@ -1553,19 +1553,19 @@ Section ml_tauto.
       { subst; auto 10. }
       eapply pf_iff_equiv_trans.
       5: {
-        apply or_of_equiv_is_equiv. 6: usePropositionalReasoning; apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
+        apply or_of_equiv_is_equiv. 6: useBasicReasoning; apply pf_iff_equiv_refl. 5: apply negate_equiv; auto.
         all: auto.
       }
       all: auto.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply impl_iff_notp_or_q; auto.
     - rewrite -Heqcall.
       simpl.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply p_and_notp_is_bot; auto.
     - rewrite -Heqcall.
       simpl.
-      usePropositionalReasoning.
+      useBasicReasoning.
       apply pf_iff_equiv_refl; auto.
   Qed.
       
