@@ -7464,8 +7464,9 @@ Ltac2 heat :=
 .
 
 Ltac2 mgRewrite (hiff : constr) (atn : int) :=
-  unfold ProofSystem.derives in hiff;
-  lazy_match! Constr.type hiff with
+  let thiff := Constr.type hiff in
+  (* we have to unfold [derives] otherwise this might not match *)
+  lazy_match! (eval unfold ProofSystem.derives in $thiff) with
   | _ ⊢i (?a <---> ?a') using _
     =>
     unfold AnyReasoning;
@@ -7544,14 +7545,13 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
   well_formed b ->
-  Γ ⊢i a <---> a' using AnyReasoning ->
+  Γ ⊢ a <---> a' ->
   Γ ⊢i (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x))
   using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.
   toMyGoal.
   { abstract(wf_auto2). }
-  (* HERE!!! *)
   mgRewrite Hiff at 2.
   mgRewrite <- Hiff at 3.
   fromMyGoal.

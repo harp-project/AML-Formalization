@@ -957,7 +957,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           }
           simpl.
           replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by (clear; set_solver).
-          Search psi.
           clear -pwi_pf_fp.
           unfold dt_exgen_from_fp.
           case_match.
