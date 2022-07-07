@@ -4162,7 +4162,7 @@ Proof.
                                 ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
   mlIntro. mlIntro. mlDestructOr 1.
   * mlApply 1. mlClear 1. mlIntro.
-    pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
+    pose proof (H := @ProofMode_propositional.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     apply useAnyReasoning in H. mlRevert. mlRewrite H at 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
@@ -4176,7 +4176,7 @@ Proof.
     mlIntro.
     mlApplyMeta H1. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
   * mlApply 1. mlClear 1. mlIntro.
-    pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
+    pose proof (H := @ProofMode_propositional.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevert. apply useAnyReasoning in H. mlRewrite H at 1.
     pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).

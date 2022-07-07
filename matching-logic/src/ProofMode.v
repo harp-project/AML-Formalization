@@ -33,6 +33,7 @@ From MatchingLogic Require Export
   ProofMode_propositional
   ProofMode_firstorder
   ProofMode_fixpoint
+  ProofMode_reshaper
 .
 
 
@@ -444,103 +445,6 @@ Qed.
 
 
 End FOL_helpers.
-
-Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
-
-Definition reshape_nil {Σ : Signature} p := TagPattern p.
-Canonical Structure reshape_cons {Σ : Signature} p := reshape_nil p.
-
-Structure ImpReshapeS {Σ : Signature} (g : Pattern) (l : list Pattern) :=
-ImpReshape
-  { irs_flattened :> TaggedPattern ;
-    irs_pf : (untagPattern irs_flattened) = foldr patt_imp g l ;
-  }.
-
-Lemma ImpReshape_nil_pf0:
-  ∀ (Σ : Signature) (g : Pattern),
-    g = foldr patt_imp g [].
-Proof. intros. reflexivity. Qed.
-
-Canonical Structure ImpReshape_nil {Σ : Signature} (g : Pattern) : ImpReshapeS g [] :=
-  @ImpReshape Σ g [] (reshape_nil g) (ImpReshape_nil_pf0 g).
-
-
-Program Canonical Structure ImpReshape_cons
-        {Σ : Signature} (g x : Pattern) (xs : list Pattern) (r : ImpReshapeS g xs)
-: ImpReshapeS g (x::xs) :=
-  @ImpReshape Σ g (x::xs) (reshape_cons (x ---> untagPattern (reshape_cons r))) _.
-Next Obligation.
-  intros Σ g x xs r. simpl.
-  rewrite irs_pf.
-  reflexivity.
-Qed.
-
-
-Lemma reshape {Σ : Signature} (Γ : Theory) (g : Pattern) (xs: list Pattern) (i : ProofInfo) :
-  forall (r : ImpReshapeS g (xs)),
-     Γ ⊢i foldr (patt_imp) g (xs) using i ->
-     Γ ⊢i (untagPattern (irs_flattened r)) using i.
-Proof.
-  intros r [pf Hpf].
-  unshelve (eexists).
-  {
-    eapply cast_proof.
-    { rewrite irs_pf; reflexivity. }
-    exact pf.
-  }
-  {
-    simpl.
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    constructor.
-    {
-      rewrite elem_of_subseteq in Hpf2.
-      rewrite elem_of_subseteq.
-      intros x Hx.
-      specialize (Hpf2 x).
-      apply Hpf2. clear Hpf2.
-      rewrite elem_of_gset_to_coGset in Hx.
-      rewrite uses_of_ex_gen_correct in Hx.
-      rewrite elem_of_gset_to_coGset.
-      rewrite uses_of_ex_gen_correct.
-      rewrite indifferent_to_cast_uses_ex_gen in Hx.
-      exact Hx.
-    }
-    {
-      rewrite elem_of_subseteq in Hpf3.
-      rewrite elem_of_subseteq.
-      intros x Hx.
-      specialize (Hpf3 x).
-      apply Hpf3. clear Hpf3.
-      rewrite elem_of_gset_to_coGset in Hx.
-      rewrite uses_of_svar_subst_correct in Hx.
-      rewrite elem_of_gset_to_coGset.
-      rewrite uses_of_svar_subst_correct.
-      rewrite indifferent_to_cast_uses_svar_subst in Hx.
-      exact Hx.
-    }
-    {
-      rewrite indifferent_to_cast_uses_kt.
-      apply Hpf4.
-    }
-    {
-      rewrite framing_patterns_cast_proof.
-      destruct i;assumption.
-    }
-  }
-Defined.
-
-
-Local Example ex_reshape {Σ : Signature} Γ a b c d:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  well_formed d ->
-  Γ ⊢i a ---> (b ---> (c ---> d)) using BasicReasoning.
-Proof.
-  intros wfa wfb wfc wfd.
-  apply reshape.
-  (* Now the goal has the right shape *)
-Abort.
 
 
     
@@ -3011,37 +2915,6 @@ Proof.
   useBasicReasoning.
   apply pf_iff_equiv_refl. abstract(wf_auto2).
 Defined.
-
-
-(* TODO move this reshaper somewhere *)
-Lemma lhs_and_to_imp_r {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i :
-  well_formed g ->
-  well_formed x ->
-  Pattern.wf xs ->
-  forall (r : ImpReshapeS g (x::xs)),
-     Γ ⊢i ((foldr (patt_and) x xs) ---> g) using i ->
-     Γ ⊢i untagPattern (irs_flattened r) using i .
-Proof.
-  intros wfg wfx wfxs r H.
-  eapply cast_proof'.
-  { rewrite irs_pf; reflexivity. }
-  clear r.
-  apply lhs_and_to_imp_meta; assumption.
-Defined.
-
-
-Local Example ex_match {Σ : Signature} Γ a b c d:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  well_formed d ->
-  Γ ⊢i a ---> (b ---> (c ---> d)) using BasicReasoning.
-Proof.
-  intros wfa wfb wfc wfd.
-  apply lhs_and_to_imp_r.
-Abort.
-
-
  
 
 
