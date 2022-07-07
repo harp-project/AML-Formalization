@@ -660,6 +660,62 @@ Proof.
   reflexivity.
 Qed.
 
+(* TODO move somewhere else *)
+Lemma wfapp_proj_1 {Σ : Signature} l₁ l₂:
+Pattern.wf (l₁ ++ l₂) = true ->
+Pattern.wf l₁ = true.
+Proof.
+intros H.
+apply (wf_take (length l₁)) in H.
+rewrite take_app in H.
+exact H.
+Qed.
+
+Lemma wfapp_proj_2 {Σ : Signature} l₁ l₂:
+Pattern.wf (l₁ ++ l₂) = true ->
+Pattern.wf l₂ = true.
+Proof.
+intros H.
+apply (wf_drop (length l₁)) in H.
+rewrite drop_app in H.
+exact H.
+Qed.
+
+Lemma wfl₁hl₂_proj_l₁ {Σ : Signature} l₁ h l₂:
+Pattern.wf (l₁ ++ h :: l₂) ->
+Pattern.wf l₁.
+Proof.
+apply wfapp_proj_1.
+Qed.
+
+Lemma wfl₁hl₂_proj_h {Σ : Signature} l₁ h l₂:
+Pattern.wf (l₁ ++ h :: l₂) ->
+well_formed h.
+Proof.
+intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
+simpl in H. apply andb_prop in H as [H1 H2].
+exact H1.
+Qed.
+
+Lemma wfl₁hl₂_proj_l₂ {Σ : Signature} l₁ h l₂:
+Pattern.wf (l₁ ++ h :: l₂) ->
+Pattern.wf l₂.
+Proof.
+intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
+simpl in H. apply andb_prop in H as [H1 H2].
+exact H2.
+Qed.
+
+Lemma wfl₁hl₂_proj_l₁l₂ {Σ : Signature} l₁ h l₂:
+Pattern.wf (l₁ ++ h :: l₂) ->
+Pattern.wf (l₁ ++ l₂).
+Proof.
+intros H.
+pose proof (wfl₁hl₂_proj_l₁ H).
+pose proof (wfl₁hl₂_proj_l₂ H).
+apply wf_app; assumption.
+Qed.
+
 Definition wfPattern {Σ : Signature} := {p : Pattern | well_formed p = true}.
 
 Global Instance wfPattern_eqdec {Σ : Signature} : EqDecision wfPattern.

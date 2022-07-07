@@ -33,6 +33,12 @@ src/ProofSystemSoundness.v
 src/FixpointReasoning.v
 src/StringSignature.v
 src/Logic.v
+
+src/ProofMode_base.v
+src/ProofMode_propositional.v
+src/ProofMode_firstorder.v
+src/ProofMode_fixpoint.v
+src/ProofMode_reshaper.v
 src/ProofMode.v
 
 src/Theories/Definedness_Syntax.v

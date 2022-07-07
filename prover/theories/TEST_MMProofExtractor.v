@@ -279,11 +279,11 @@ Module MMTest.
   Lemma ϕ10_holds:
     ∅ ⊢ ϕ10 .
   Proof.
-    toMyGoal.
+    toMLGoal.
     { wf_auto2. }
     unfold ϕ10.
-    mgRight.
-    fromMyGoal.
+    mlRight.
+    fromMLGoal.
     gapply Existence.
     { apply pile_any. }
   Defined.
