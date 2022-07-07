@@ -3011,8 +3011,7 @@ toMyGoal.
 { wf_auto2. }
 mgRewrite Htmp at 1.
 fromMyGoal.
-useBasicReasoning.
-apply pf_iff_equiv_refl.
+aapply pf_iff_equiv_refl.
 { wf_auto2. }
 Defined.
 
