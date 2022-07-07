@@ -3590,6 +3590,9 @@ Section FOL_helpers.
   Tactic Notation "gapply" uconstr(pf) "in" ident(H) :=
     eapply useGenericReasoning in H;[|apply pf].
 
+  Tactic Notation "aapply" uconstr(pf)
+  := gapply pf; try apply pile_any.
+
   Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try set_solver)]).
 
   Section FOL_helpers.

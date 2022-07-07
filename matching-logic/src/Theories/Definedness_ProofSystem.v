@@ -2710,8 +2710,7 @@ mgDestructOr 0.
   { simpl. reflexivity. }
   mgClear 0.
   fromMyGoal.
-  gapply bott_not_defined.
-  { apply pile_any. }
+  aapply bott_not_defined.
 - mgRewriteBy 0 at 2.
   { exact HΓ. }
   { simpl. rewrite Hmfψ.  reflexivity. }
