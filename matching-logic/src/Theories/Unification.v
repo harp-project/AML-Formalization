@@ -48,10 +48,10 @@ Section ProofSystemTheorems.
       Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ').
   Proof.
     intros Γ φ φ' SubTheory Mufree Wf1 Wf2.
-    toMyGoal. wf_auto2.
-    mgIntro. mgDestructAnd 0.
-    mgRewriteBy 1 at 1. auto. wf_auto.
-    mgSplitAnd; mgExactn 0.
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd 0.
+    mlRewriteBy 1 at 1. auto. wf_auto.
+    mlSplitAnd; mlExactn 0.
   Defined.
 
   Lemma membership_imp_equal :
@@ -64,7 +64,7 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' HΓ Mufree Wf1 Wf2 Funφ Funφ'.
     unfold patt_in, patt_equal.
-    toMyGoal. wf_auto2.
+    toMLGoal. wf_auto2.
 
     (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
                        free variable *)
@@ -77,23 +77,23 @@ Section ProofSystemTheorems.
                    rewrite Wf2. auto. lia. } (* TODO: this should be auto... *)
     simpl in H.
     repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
-    mgApplyMeta H. clear H.
-    mgSplitAnd. 2: fromMyGoal; wf_auto2.
+    mlApplyMeta H. clear H.
+    mlSplitAnd. 2: fromMLGoal; wf_auto2.
     epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve. 2: { cbn. do 2 case_match; auto; lia. }
-    mgApplyMeta H. clear H.
+    mlApplyMeta H. clear H.
 
-    mgSplitAnd. 2: fromMyGoal; wf_auto2.
+    mlSplitAnd. 2: fromMLGoal; wf_auto2.
     remember (fresh_evar patt_bott) as x.
     remember (fresh_evar (patt_free_evar x)) as y.
     assert (x <> y) as XY.
     { intro. apply x_eq_fresh_impl_x_notin_free_evars in Heqy.
       subst. set_solver. } (* TODO: this should be auto... *)
-    fromMyGoal. wf_auto2.
+    fromMLGoal. wf_auto2.
 
 
-   (* TODO: mgIntro for supporting 'all' *)
+   (* TODO: mlIntro for supporting 'all' *)
 
     pose proof (@universal_generalization _ Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
     simpl in H1.
@@ -107,7 +107,7 @@ Section ProofSystemTheorems.
     apply H1.
     { wf_auto2. }
     clear H1.
-    now apply defined_variables_equal.
+    now apply overlapping_variables_equal.
   Defined.
 
   Lemma functional_pattern_defined :
@@ -115,12 +115,12 @@ Section ProofSystemTheorems.
        Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
   Proof.
     intros Γ φ HΓ Wf.
-    toMyGoal. wf_auto2.
-    mgIntro.
-    mgApplyMeta (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+    toMLGoal. wf_auto2.
+    mlIntro.
+    mlApplyMeta (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
                  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    mgSplitAnd.
-    * mgClear 0. fromMyGoal. wf_auto2.
+    mlSplitAnd.
+    * mlClear 0. fromMLGoal. wf_auto2.
       remember (fresh_evar patt_bott) as x.
       pose proof (@universal_generalization _ Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
         as H1.
@@ -128,7 +128,7 @@ Section ProofSystemTheorems.
       gapply defined_evar.
       { apply pile_any. }
       { exact HΓ. }
-    * mgExactn 0.
+    * mlExactn 0.
   Defined.
 
   Lemma equal_imp_membership :
@@ -139,18 +139,18 @@ Section ProofSystemTheorems.
       Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ') .
   Proof.
     intros Γ φ φ' HΓ MF WF1 WF2 Def.
-    toMyGoal. wf_auto2.
-    mgIntro.
-    mgRewriteBy 0 at 1; cbn; wf_auto2.
-      mgClear 0. unfold patt_in.
+    toMLGoal. wf_auto2.
+    mlIntro.
+    mlRewriteBy 0 at 1; cbn; wf_auto2.
+      mlClear 0. unfold patt_in.
       assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
       {
-        toMyGoal. wf_auto2.
-        mgSplitAnd; mgIntro.
-        - mgDestructAnd 0. mgExactn 0.
-        - mgSplitAnd; mgExactn 0.
+        toMLGoal. wf_auto2.
+        mlSplitAnd; mlIntro.
+        - mlDestructAnd 0. mlExactn 0.
+        - mlSplitAnd; mlExactn 0.
       }
-      now mgRewrite H1 at 1.
+      now mlRewrite H1 at 1.
   Defined.
 
   Lemma membership_equal_equal :
@@ -164,24 +164,24 @@ Section ProofSystemTheorems.
     intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
     unfold patt_equal at 1.
 
-    toMyGoal. wf_auto2.
-    mgIntro.
-    mgApplyMeta (useAnyReasoning (@bott_not_defined _ _ Γ)).
-    fromMyGoal. wf_auto2.
+    toMLGoal. wf_auto2.
+    mlIntro.
+    mlApplyMeta (useAnyReasoning (@bott_not_defined _ _ Γ)).
+    fromMLGoal. wf_auto2.
     
     apply ceil_monotonic; auto.
     { apply pile_any. }
     { wf_auto2. }
 
-    toMyGoal. wf_auto2.
-    mgApplyMeta (useAnyReasoning (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+    toMLGoal. wf_auto2.
+    mlApplyMeta (useAnyReasoning (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
                     ltac:(wf_auto2))).
-    mgSplitAnd; mgIntro.
-    * mgApplyMeta (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mgExactn 0.
-    * mgApplyMeta (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mgExactn 0.
+    mlSplitAnd; mlIntro.
+    * mlApplyMeta (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mlExactn 0.
+    * mlApplyMeta (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mlExactn 0.
       Unshelve.
-      toMyGoal. wf_auto2.
-      now mgApplyMeta (functional_pattern_defined HΓ Wf2).
+      toMLGoal. wf_auto2.
+      now mlApplyMeta (functional_pattern_defined HΓ Wf2).
   Defined.
 
   Lemma Prop₃_right : forall Γ φ φ',
@@ -192,17 +192,17 @@ Section ProofSystemTheorems.
       Γ ⊢ (φ and φ') ---> (φ and (φ =ml φ')) .
   Proof.
     intros Γ φ φ' HΓ Wf1 Wf2 MF Func1 Func2.
-    toMyGoal. wf_auto2.
-    mgIntro.
-    mgAssert (⌈ φ and φ' ⌉). wf_auto2.
-    (* Why can we only mgApplyMeta here, and not after mgRevert? *)
-    mgApplyMeta (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
-    mgExactn 0.
+    toMLGoal. wf_auto2.
+    mlIntro.
+    mlAssert (⌈ φ and φ' ⌉). wf_auto2.
+    (* Why can we only mlApplyMeta here, and not after mlRevert? *)
+    mlApplyMeta (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
+    mlExactn 0.
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
-    mgDestructAnd 0. mgSplitAnd.
-    * mgExactn 0.
-    * mgApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
-      mgExactn 2.
+    mlDestructAnd 0. mlSplitAnd.
+    * mlExactn 0.
+    * mlApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
+      mlExactn 2.
   Defined.
 
   Corollary delete : forall φ φ' Γ,
@@ -212,8 +212,8 @@ Section ProofSystemTheorems.
     .
   Proof.
     intros φ φ' Γ WF1 WF2.
-    toMyGoal. wf_auto2.
-    mgIntro. mgDestructAnd 0. mgExactn 0.
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd 0. mlExactn 0.
   Defined.
 
   Lemma free_evar_subst_id :
@@ -243,8 +243,8 @@ Section ProofSystemTheorems.
     assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
-    toMyGoal. wf_auto2.
-    mgIntro. mgDestructAnd 0. mgSplitAnd. 2: mgExactn 1.
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd 0. mlSplitAnd. 2: mlExactn 1.
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -260,16 +260,16 @@ Section ProofSystemTheorems.
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
                 φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ'] ) as Hiff. {
-      toMyGoal; wf_auto2.
-      mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 1.
+      toMLGoal; wf_auto2.
+      mlIntro. unfold patt_iff. mlDestructAnd 0. mlExactn 1.
     }
     
     apply useAnyReasoning in H.
     epose proof (@syllogism_meta Σ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
-    (* TODO: mgApplyMeta buggy?
+    (* TODO: mlApplyMeta buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mgRevert. mgApplyMeta H1. mgExactn 0.
+    mlRevert. mlApplyMeta H1. mlExactn 0.
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -290,8 +290,8 @@ Section ProofSystemTheorems.
     assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
-    toMyGoal. wf_auto2.
-    mgIntro. mgDestructAnd 0. mgSplitAnd. 2: mgAssumption.
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd 0. mlSplitAnd. 2: mlAssumption.
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -301,15 +301,15 @@ Section ProofSystemTheorems.
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
                 φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x] ) as Hiff. {
-      toMyGoal; wf_auto2.
-      mgIntro. unfold patt_iff. mgDestructAnd 0. mgExactn 0.
+      toMLGoal; wf_auto2.
+      mlIntro. unfold patt_iff. mlDestructAnd 0. mlExactn 0.
     }
     apply useAnyReasoning in H.
     epose proof (@syllogism_meta _ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
-    (* TODO: mgApplyMeta buggy?
+    (* TODO: mlApplyMeta buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mgRevert. mgApplyMeta H1. mgExactn 0.
+    mlRevert. mlApplyMeta H1. mlExactn 0.
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -340,8 +340,8 @@ Section ProofSystemTheorems.
     induction φs;
     intros ψ φ's Γ Len WF WFs1 WFs2.
     * apply eq_sym, length_zero_iff_nil in Len. subst. cbn.
-      toMyGoal. wf_auto2. mgIntro. mgClear 0. (* TODO: mgExact for meta theorems *)
-      fromMyGoal. wf_auto2.
+      toMLGoal. wf_auto2. mlIntro. mlClear 0. (* TODO: mlExact for meta theorems *)
+      fromMLGoal. wf_auto2.
       useBasicReasoning.
       apply (top_holds Γ).
     * destruct φ's. simpl in Len. congruence.
@@ -474,21 +474,21 @@ Section UnificationProcedure.
     { (* eapply wf_unify_step; eassumption. *) admit. }
     dependent induction D; intros Γ HΓ.
     * subst.
-      (* TODO: why does toMyGoal simplify??? *)
+      (* TODO: why does toMLGoal simplify??? *)
       Opaque unification_to_pattern.
-      toMyGoal.
+      toMLGoal.
       { (* apply well_formed_imp; apply wf_unify_pattern; auto. *) admit. }
       Transparent unification_to_pattern.
       cbn.
       rewrite map_app. simpl map.
       (* epose proof (@foldr_equiv (map (λ '(p1, p2), p1 =ml p2) U) (t =ml t) (map (λ '(p1, p2), p1 =ml p2) U') Top _ _ _ Γ).
 
-      mgIntro.
-      mgDestructAnd 0. mgSplitAnd. 2: mgAssumption. mgClear 1.
+      mlIntro.
+      mlDestructAnd 0. mlSplitAnd. 2: mlAssumption. mlClear 1.
       (* TODO: why can't be app folded back?
                something is seriously wrong here *)
       Search patt_and patt_imp ML_proof_system. *)
-      (* mgRewrite H0 at 1. *)
+      (* mlRewrite H0 at 1. *)
      
   Abort.
 
