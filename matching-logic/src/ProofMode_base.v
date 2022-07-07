@@ -347,3 +347,77 @@ match goal with
    [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
    apply MLGoal_revert
 end.
+
+
+
+
+Lemma pile_evs_subseteq {Σ : Signature} evs1 evs2 svs kt fp:
+  evs1 ⊆ evs2 ->
+  ProofInfoLe
+    ((ExGen := evs1, SVSubst := svs, KT := kt, FP := fp))
+    ((ExGen := evs2, SVSubst := svs, KT := kt, FP := fp)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+  constructor; simpl in *.
+  { clear -Hsub Hpf2. set_solver. }
+  { exact Hpf3. }
+  { exact Hpf4. }
+  { apply Hpf5. }
+Qed.
+
+Lemma pile_svs_subseteq {Σ : Signature} evs svs1 svs2 kt fp:
+  svs1 ⊆ svs2 ->
+  ProofInfoLe
+    ( (ExGen := evs, SVSubst := svs1, KT := kt, FP := fp))
+    ( (ExGen := evs, SVSubst := svs2, KT := kt, FP := fp)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+  constructor; simpl in *.
+  { exact Hpf2. }
+  { clear -Hsub Hpf3. set_solver. }
+  { exact Hpf4. }
+  { exact Hpf5. }
+Qed.
+
+Lemma pile_kt_impl {Σ : Signature} evs svs kt1 kt2 fp:
+  kt1 ==> kt2 ->
+  ProofInfoLe
+    ((ExGen := evs, SVSubst := svs, KT := kt1, FP := fp))
+    ((ExGen := evs, SVSubst := svs, KT := kt2, FP := fp)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+  constructor; simpl in *.
+  { exact Hpf2. }
+  { exact Hpf3. }
+  { unfold implb in *.  destruct (uses_kt pf),kt1; simpl in *; try reflexivity.
+    { exact Hsub. }
+    { inversion Hpf4. }
+  }
+  { apply Hpf5. }
+Qed.
+
+Lemma pile_fp_subseteq  {Σ : Signature} evs svs kt fp1 fp2:
+  fp1 ⊆ fp2 ->
+  ProofInfoLe
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp1))
+    ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp2)).
+Proof.
+  intros Hsub.
+  constructor.
+  intros Γ ϕ pf Hpf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hfp5].
+  constructor; simpl in *.
+  { exact Hpf2. }
+  { exact Hpf3. }
+  { exact Hpf4. }
+  { set_solver. }
+Qed.
