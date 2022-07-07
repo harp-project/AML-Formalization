@@ -96,6 +96,29 @@ unshelve (eexists).
 }
 Defined.
 
+Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
+well_formed axiom ->
+(axiom ∈ Γ) ->
+Γ ⊢i axiom
+using BasicReasoning.
+Proof.
+intros Hwf Hin.
+unshelve (eexists).
+{
+  apply ProofSystem.hypothesis. apply Hwf. apply Hin.
+}
+{
+  abstract (
+    constructor; simpl;
+    [( set_solver )
+    |( set_solver )
+    |( reflexivity )
+    |( set_solver )
+    ]
+  ).
+}
+Defined.
+
 Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
