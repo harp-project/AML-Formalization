@@ -36,6 +36,7 @@ src/Logic.v
 
 src/ProofMode_base.v
 src/ProofMode_propositional.v
+src/ProofMode_firstorder.v
 src/ProofMode.v
 
 src/Theories/Definedness_Syntax.v
