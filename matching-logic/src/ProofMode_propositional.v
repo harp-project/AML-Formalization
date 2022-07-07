@@ -3438,3 +3438,263 @@ Proof.
   1: exact H2.
   all: wf_auto2.
 Defined.
+
+
+
+Lemma top_holds {Σ : Signature} Γ:
+  Γ ⊢i Top using BasicReasoning.
+Proof.
+  apply false_implies_everything.
+  { wf_auto2. }
+Defined.
+
+Lemma phi_iff_phi_top {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢i ϕ <---> (ϕ <---> Top)
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd; mlIntro.
+  - mlSplitAnd.
+    + mlIntro. mlClear 0. mlClear 0.
+      fromMLGoal.
+      apply top_holds. (* TODO: we need something like [mlExactMeta top_holds] *)
+    + fromMLGoal.
+      apply P1; wf_auto2.
+  - mlDestructAnd 0.
+    mlApply 1.
+    mlClear 0.
+    mlClear 0.
+    fromMLGoal.
+    apply top_holds.
+Defined.
+
+Lemma not_phi_iff_phi_bott {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢i (! ϕ ) <---> (ϕ <---> ⊥)
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd; mlIntro.
+  - mlSplitAnd.
+    + mlExactn 0.
+    + mlClear 0. fromMLGoal.
+      apply false_implies_everything.
+      { wf_auto2. }
+  - mlDestructAnd 0.
+    mlExactn 0.
+Defined.
+
+Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢i A <---> ! ! A
+  using BasicReasoning.
+Proof.
+  intros wfA.
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  - apply not_not_intro.
+    { wf_auto2. }
+  - apply not_not_elim.
+    { wf_auto2. }
+Defined.
+
+
+Lemma patt_and_comm {Σ : Signature} Γ p q:
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢i (p and q) <---> (q and p)
+  using BasicReasoning.
+Proof.
+  intros wfp wfq.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd; mlIntro; mlDestructAnd 0; mlSplitAnd.
+  - mlExactn 1.
+  - mlExactn 0.
+  - mlExactn 1.
+  - mlExactn 0.
+Defined.
+
+
+
+(* We need to come up with tactics that make this easier. *)
+Local Example ex_mt {Σ : Signature} Γ ϕ₁ ϕ₂:
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  Γ ⊢i (! ϕ₁ ---> ! ϕ₂) ---> (ϕ₂ ---> ϕ₁)
+  using BasicReasoning.
+Proof.
+  intros wfϕ₁ wfϕ₂.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro. mlIntro.
+  unfold patt_not.
+  mlAssert (((ϕ₁ ---> ⊥) ---> ⊥)).
+  { wf_auto2. }
+  { mlIntro.
+    mlAssert ((ϕ₂ ---> ⊥)).
+    { wf_auto2. }
+    { mlApply 0. mlExactn 2. }
+    mlApply 3.
+    mlExactn 1.
+  }
+  mlApplyMeta (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
+  mlExactn 2.
+Defined.
+
+
+
+Local Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  well_formed (foldr patt_and x xs).
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  - assumption.
+  - feed specialize IHxs.
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    apply well_formed_and.
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    assumption.
+Qed.
+
+
+Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_and x xs ---> g) ---> (foldr patt_imp g (x :: xs))
+  using BasicReasoning.
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  - apply A_impl_A.
+    { wf_auto2. }
+  - pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMLGoal.
+    { wf_auto2. }
+    do 3 mlIntro.
+    mlAdd IHxs.
+    mlAssert (((foldr patt_and x xs ---> g) ---> foldr patt_imp g xs)).
+    { wf_auto2. }
+    { mlIntro.
+      mlAssert ((x ---> foldr patt_imp g xs)).
+      { wf_auto2. }
+      { mlApply 0. mlExactn 4. }
+      mlClear 0.
+      mlApply 4.
+      mlExactn 1.
+    }
+    mlClear 0.
+    mlApply 3.
+    mlClear 3.
+    mlIntro.
+    mlApply 0.
+    mlSplitAnd.
+    + mlExactn 2.
+    + mlExactn 3.
+Defined.
+
+Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_and x xs ---> g) using i ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) using i.
+Proof.
+  intros wfg wfx wfxs H.
+  eapply MP.
+  2: { useBasicReasoning. apply lhs_and_to_imp; assumption. }
+  exact H.
+Defined.
+
+
+
+
+#[local]
+Ltac tryExact l idx :=
+  match l with
+    | nil => idtac
+    | (?a :: ?m) => try mlExactn idx; tryExact m (idx + 1)
+  end.
+
+#[global]
+Ltac mlAssumption :=
+  match goal with
+    | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ] 
+      =>
+        tryExact l 0
+  end.
+
+
+
+(**********************************************************************************)
+
+
+
+
+(* This is an example and belongs to the end of this file.
+   Its only purpose is only to show as many tactics as possible.\
+ *)
+ Example ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q' i:
+ well_formed p ->
+ well_formed q ->
+ well_formed p' ->
+ well_formed q' ->
+ Γ ⊢i (p <---> p') using i ->
+ Γ ⊢i (q <---> q') using i ->
+ Γ ⊢i ((p and q) <---> (p' and q')) using i.
+Proof.
+ intros wfp wfq wfp' wfq' pep' qeq'.
+ pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+ pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+ pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+ pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+
+ toMLGoal.
+ { wf_auto2. }
+ unfold patt_iff.
+ mlSplitAnd.
+ - mlIntro.
+   mlDestructAnd 0.
+   mlSplitAnd.
+   + mlApplyMeta pip'.
+     mlExactn 0.
+   + mlApplyMeta qiq' in 1.
+     mlExactn 1.
+ - mlIntro.
+   unfold patt_and at 2.
+   unfold patt_not at 1.
+   mlIntro.
+   mlDestructOr 1.
+   + mlDestructAnd 0.
+     unfold patt_not.
+     mlApply 2.
+     mlClear 2.
+     mlClear 1.
+     fromMLGoal.
+     exact p'ip.
+   + mlAdd q'iq.
+     mlDestructAnd 1.
+     mlAssert (q).
+     { wf_auto2. }
+     { mlApply 0. mlExactn 2. }
+     unfold patt_not at 1.
+     mlApply 3.
+     mlExactn 4.
+Defined.

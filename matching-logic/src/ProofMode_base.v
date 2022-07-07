@@ -311,3 +311,39 @@ match goal with
 | _ => fail
 end.
 Abort.
+
+Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern) i :
+@mkMLGoal Σ Γ l (x ---> g) i ->
+@mkMLGoal Σ Γ (l ++ [x]) g i.
+Proof.
+intros H.
+unfold of_MLGoal in H. simpl in H.
+unfold of_MLGoal. simpl. intros wfxig wfl.
+
+feed specialize H.
+{
+  abstract (
+      apply wfapp_proj_2 in wfl;
+      unfold Pattern.wf in wfl;
+      simpl in wfl;
+      rewrite andbT in wfl;
+      wf_auto2
+    ).
+}
+{
+  abstract (apply wfapp_proj_1 in wfl; exact wfl).
+}
+
+eapply cast_proof'.
+{ rewrite foldr_app. simpl. reflexivity. }
+exact H.
+Defined.
+
+#[global]
+Ltac mlRevert :=
+match goal with
+| |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+=> eapply cast_proof_ml_hyps;
+   [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
+   apply MLGoal_revert
+end.
