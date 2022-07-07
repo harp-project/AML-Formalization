@@ -5,7 +5,9 @@ Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool.
+From Coq Require Import Ensembles Bool String.
+Local Open Scope string_scope.
+
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -232,8 +234,6 @@ Defined.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-
-
 Lemma pile_evs_svs_kt evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
 evs1 ⊆ evs2 ->
 svs1 ⊆ svs2 ->
@@ -442,14 +442,8 @@ Qed.
     all: wf_auto2.
   Defined.
 
-
-
-End FOL_helpers.
-
-
-    
-  Lemma prf_prop_bott_iff {Σ : Signature} Γ AC:
-    Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
+  Lemma prf_prop_bott_iff Γ AC:
+  Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
     using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
   Proof.
