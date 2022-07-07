@@ -100,10 +100,7 @@ Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
 
-Section with_signature.
-  Context {Σ : Signature}.
-
-  Lemma A_impl_A (Γ : Theory) (A : Pattern)  :
+  Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
     (well_formed A) ->
     Γ ⊢i (A ---> A)
     using BasicReasoning.
@@ -117,7 +114,7 @@ Section with_signature.
     exact _5.
   Defined.
 
-  Lemma P4m (Γ : Theory) (A B : Pattern) :
+  Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i ((A ---> B) ---> ((A ---> !B) ---> !A))
@@ -138,18 +135,18 @@ Section with_signature.
     exact H9.
   Defined.
 
-  Lemma P4i (Γ : Theory) (A : Pattern) :
+  Lemma P4i {Σ : Signature} (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢i ((A ---> !A) ---> !A)
     using BasicReasoning.
   Proof.
     intros WFA.
     eapply MP.
-    { apply (@A_impl_A _ A WFA). }
-    { apply (@P4m _ A A WFA WFA). }
+    { apply (@A_impl_A _ _ A WFA). }
+    { apply (@P4m _ _ A A WFA WFA). }
   Defined.
 
-  Lemma reorder (Γ : Theory) (A B C : Pattern) :
+  Lemma reorder {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
     well_formed A ->
     well_formed B ->
     well_formed C ->
@@ -172,7 +169,7 @@ Section with_signature.
       + eapply MP.
         * eapply MP.
           -- eapply MP.
-             ++ apply (@A_impl_A _ ABC ltac:(wf_auto2)).
+             ++ apply (@A_impl_A _ _ ABC ltac:(wf_auto2)).
              ++ eapply MP.
                 ** eapply MP.
                    --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -190,7 +187,7 @@ Section with_signature.
   Defined.
 
 
-  Lemma reorder_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
+  Lemma reorder_meta {Σ : Signature} (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed C ->  
@@ -203,7 +200,7 @@ Section with_signature.
     apply reorder; wf_auto2.
   Defined.
 
-  Lemma syllogism (Γ : Theory) (A B C : Pattern) :
+  Lemma syllogism {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
     well_formed A ->
     well_formed B ->
     well_formed C ->
@@ -221,7 +218,7 @@ Section with_signature.
       + apply P2; wf_auto2.
   Defined.
   
-  Lemma syllogism_meta (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
+  Lemma syllogism_meta {Σ : Signature} (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed C ->
@@ -239,7 +236,7 @@ Section with_signature.
         apply syllogism; wf_auto2.
   Defined.
   
-  Lemma modus_ponens (Γ : Theory) (A B : Pattern) :
+  Lemma modus_ponens {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (A ---> (A ---> B) ---> B)
@@ -250,13 +247,13 @@ Section with_signature.
     - apply (P1 _ A (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2)).
     - eapply MP.
       + eapply MP.
-        * apply (@A_impl_A _ (A ---> B) ltac:(wf_auto2)).
+        * apply (@A_impl_A _ _ (A ---> B) ltac:(wf_auto2)).
         * eapply (P2 _ (A ---> B) A B ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
       + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
         apply syllogism; wf_auto2.
   Defined.
 
-  Lemma not_not_intro (Γ : Theory) (A : Pattern) :
+  Lemma not_not_intro {Σ : Signature} (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢i (A ---> !(!A))
     using BasicReasoning.
@@ -265,7 +262,7 @@ Section with_signature.
     apply modus_ponens; wf_auto2.
   Defined.
 
-  Lemma P4 (Γ : Theory) (A B : Pattern)  :
+  Lemma P4 {Σ : Signature} (Γ : Theory) (A B : Pattern)  :
     well_formed A ->
     well_formed B -> 
     Γ ⊢i (((! A) ---> (! B)) ---> (B ---> A))
@@ -281,20 +278,20 @@ Section with_signature.
     pose proof (m5 := MP m3 m4).
     pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     pose proof (m7 := MP m5 m6).
-    pose proof (m8 := @reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (m8 := @reorder _ Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     apply (MP m8 m7).
   Defined.
 
-  Lemma conj_intro (Γ : Theory) (A B : Pattern) :
+  Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (A ---> B ---> (A and B))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
-    pose proof (tB := (@A_impl_A Γ B ltac:(wf_auto2))).
+    pose proof (tB := (@A_impl_A _ Γ B ltac:(wf_auto2))).
     epose proof (t1 := MP (P2 _ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _)).
-    epose proof (t2 := MP (reorder_meta _ _ _ (@P4 _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
+    epose proof (t2 := MP (reorder_meta _ _ _ (@P4 _ _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
     epose proof (t3'' := MP (P1 _ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
     epose proof (t4 := MP tB (MP t2 (P2 _ B B _ _ _ _))).
     epose proof (t5'' := 
@@ -326,7 +323,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma conj_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  Lemma conj_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A using i ->
@@ -342,7 +339,7 @@ Section with_signature.
         apply conj_intro; wf_auto2.
   Defined.
   
-  Lemma syllogism_4_meta (Γ : Theory) (A B C D : Pattern) (i : ProofInfo) :
+  Lemma syllogism_4_meta {Σ : Signature} (Γ : Theory) (A B C D : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed C ->
@@ -371,7 +368,7 @@ Section with_signature.
         all: wf_auto2.
   Defined.
 
-  Lemma bot_elim (Γ : Theory) (A : Pattern) :
+  Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢i (Bot ---> A)
     using BasicReasoning.
@@ -383,14 +380,14 @@ Section with_signature.
         * eapply MP.
           -- eapply (P1 _ Bot Bot _ _).
           -- eapply (P2 _ Bot Bot Bot _ _ _).
-        * eapply (@P4 _ Bot Bot _ _).
+        * eapply (@P4 _ _ Bot Bot _ _).
       + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
-    - eapply (@P4 _ A Bot _ _).
+    - eapply (@P4 _ _ A Bot _ _).
       Unshelve.
       all: wf_auto2.
   Defined.
 
-  Lemma modus_ponens' (Γ : Theory) (A B : Pattern) :
+  Lemma modus_ponens' {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (A ---> (!B ---> !A) ---> B)
@@ -401,7 +398,7 @@ Section with_signature.
     apply P4; wf_auto2.
   Defined.
 
-  Lemma disj_right_intro (Γ : Theory) (A B : Pattern) :
+  Lemma disj_right_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (B ---> (A or B))
@@ -412,7 +409,7 @@ Section with_signature.
     apply P1; wf_auto2.
   Defined.
   
-  Lemma disj_left_intro (Γ : Theory) (A B : Pattern) :
+  Lemma disj_left_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (A ---> (A or B))
@@ -425,7 +422,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma disj_right_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  Lemma disj_right_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i B using i ->
@@ -440,7 +437,7 @@ Section with_signature.
     }
   Defined.
 
-  Lemma disj_left_intro_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  Lemma disj_left_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A using i ->
@@ -453,7 +450,7 @@ Section with_signature.
     apply disj_left_intro; assumption.
   Defined.
 
-  Lemma not_not_elim (Γ : Theory) (A : Pattern) :
+  Lemma not_not_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
     well_formed A ->
     Γ ⊢i (!(!A) ---> A)
     using BasicReasoning.
@@ -462,7 +459,7 @@ Section with_signature.
     apply P3. exact WFA.
   Defined.
 
-  Lemma not_not_elim_meta Γ A (i : ProofInfo) :
+  Lemma not_not_elim_meta {Σ : Signature} Γ A (i : ProofInfo) :
     well_formed A ->
     Γ ⊢i (! ! A) using i ->
     Γ ⊢i A using i.
@@ -473,7 +470,7 @@ Section with_signature.
     { apply useBasicReasoning. apply not_not_elim. exact wfA. }
   Defined.
 
-  Lemma double_neg_elim (Γ : Theory) (A B : Pattern) :
+  Lemma double_neg_elim {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (((!(!A)) ---> (!(!B))) ---> (A ---> B))
@@ -486,7 +483,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma double_neg_elim_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  Lemma double_neg_elim_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B -> 
     Γ ⊢i ((!(!A)) ---> (!(!B))) using i ->
@@ -499,7 +496,7 @@ Section with_signature.
       apply double_neg_elim; wf_auto2.
   Defined.
 
-  Lemma not_not_impl_intro (Γ : Theory) (A B : Pattern) :
+  Lemma not_not_impl_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i ((A ---> B) ---> ((! ! A) ---> (! ! B)))
@@ -507,11 +504,11 @@ Section with_signature.
   Proof.
     intros WFA WFB.
     
-    epose (S1 := @syllogism Γ (! ! A) A B _ _ _).
+    epose (S1 := @syllogism _ Γ (! ! A) A B _ _ _).
     
-    epose (MP1 := MP (@not_not_elim _ A _) S1).
+    epose (MP1 := MP (@not_not_elim _ _ A _) S1).
     
-    epose(NNB := @not_not_intro Γ B _).
+    epose(NNB := @not_not_intro _ Γ B _).
 
     epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
     
@@ -531,14 +528,14 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma contraposition (Γ : Theory) (A B : Pattern) : 
+  Lemma contraposition {Σ : Signature} (Γ : Theory) (A B : Pattern) : 
     well_formed A ->
     well_formed B -> 
     Γ ⊢i ((A ---> B) ---> ((! B) ---> (! A)))
     using BasicReasoning.
   Proof.
     intros WFA WFB.
-    epose proof (@P4 Γ (! A) (! B) _ _) as m.
+    epose proof (@P4 _ Γ (! A) (! B) _ _) as m.
     apply syllogism_meta with (B := (! (! A) ---> ! (! B))).
     - shelve.
     - shelve.
@@ -549,18 +546,18 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma or_comm_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo):
+  Lemma or_comm_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo):
     well_formed A ->
     well_formed B ->
     Γ ⊢i (A or B) using i ->
     Γ ⊢i (B or A) using i.
   Proof.
     intros WFA WFB H. unfold patt_or in *.    
-    epose proof (P4 := (@P4 Γ A (!B) _ _)).
-    epose proof (NNI := @not_not_intro Γ B _).
+    epose proof (P4 := (@P4 _ Γ A (!B) _ _)).
+    epose proof (NNI := @not_not_intro  _ Γ B _).
     apply (useBasicReasoning i) in P4.
     apply (useBasicReasoning i) in NNI.
-    epose proof (SI := @syllogism_meta Γ _ _ _ _ _ _ _ H NNI).
+    epose proof (SI := @syllogism_meta _ Γ _ _ _ _ _ _ _ H NNI).
     eapply MP.
     - exact SI.
     - exact P4.
@@ -568,7 +565,7 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma A_implies_not_not_A_alt (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+  Lemma A_implies_not_not_A_alt {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
     Γ ⊢i A using i ->
     Γ ⊢i (!( !A )) using i.
@@ -583,7 +580,7 @@ Section with_signature.
     }
   Defined.
 
-  Lemma P5i (Γ : Theory) (A B : Pattern) :
+  Lemma P5i {Σ : Signature} (Γ : Theory) (A B : Pattern) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i (! A ---> (A ---> B))
@@ -596,14 +593,14 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma false_implies_everything (Γ : Theory) (phi : Pattern) :
+  Lemma false_implies_everything {Σ : Signature} (Γ : Theory) (phi : Pattern) :
     well_formed phi ->
     Γ ⊢i (Bot ---> phi) using BasicReasoning.
   Proof.
     apply bot_elim.
   Defined.
 
-  Lemma A_implies_not_not_A_alt_Γ (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+  Lemma A_implies_not_not_A_alt_Γ {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
     Γ ⊢i A using i ->
     Γ ⊢i (!( !A )) using i.
@@ -615,7 +612,7 @@ Section with_signature.
   Defined.
 
 
-  Lemma exclusion (G : Theory) (A : Pattern) (i : ProofInfo) :
+  Lemma exclusion {Σ : Signature} (G : Theory) (A : Pattern) (i : ProofInfo) :
     well_formed A ->
     G ⊢i A using i ->
     G ⊢i (A ---> Bot) using i ->
@@ -627,7 +624,7 @@ Section with_signature.
     apply H0.
   Defined.
 
-  Lemma modus_tollens Γ A B (i : ProofInfo) :
+  Lemma modus_tollens {Σ : Signature} Γ A B (i : ProofInfo) :
     Γ ⊢i (A ---> B) using i ->
     Γ ⊢i (!B ---> !A) using i.
   Proof.
@@ -641,7 +638,7 @@ Section with_signature.
     apply H.
   Defined.
   
-  Lemma A_impl_not_not_B Γ A B :
+  Lemma A_impl_not_not_B {Σ : Signature} Γ A B :
     well_formed A ->
     well_formed B ->
     Γ ⊢i ((A ---> ! !B) ---> (A ---> B))
@@ -668,7 +665,7 @@ Section with_signature.
     apply H0.
   Defined.
 
-  Lemma prf_weaken_conclusion Γ A B B' :
+  Lemma prf_weaken_conclusion {Σ : Signature} Γ A B B' :
     well_formed A ->
     well_formed B ->
     well_formed B' ->
@@ -680,7 +677,7 @@ Section with_signature.
     apply syllogism; wf_auto2.
   Defined.
 
-  Lemma prf_weaken_conclusion_meta Γ A B B' (i : ProofInfo) :
+  Lemma prf_weaken_conclusion_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed B' ->
@@ -696,7 +693,7 @@ Section with_signature.
     eapply MP. 2: apply H1. apply BimpB'.
   Defined.
 
-  Lemma prf_weaken_conclusion_iter Γ l g g'
+  Lemma prf_weaken_conclusion_iter {Σ : Signature} Γ l g g'
           (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
     Γ ⊢i ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
     using BasicReasoning.
@@ -718,7 +715,7 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma prf_weaken_conclusion_iter_meta Γ l g g' (i : ProofInfo):
+  Lemma prf_weaken_conclusion_iter_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
@@ -731,7 +728,7 @@ Section with_signature.
     1: { apply gimpg'. }
   Defined.
 
-  Lemma prf_weaken_conclusion_iter_meta_meta Γ l g g' (i : ProofInfo):
+  Lemma prf_weaken_conclusion_iter_meta_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
     Pattern.wf l ->
     well_formed g ->
     well_formed g' ->
@@ -750,7 +747,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma prf_weaken_conclusion_meta_meta Γ A B B' (i : ProofInfo) :
+  Lemma prf_weaken_conclusion_meta_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     well_formed B' ->
@@ -763,7 +760,7 @@ Section with_signature.
     4: apply H. all: wf_auto2.
   Defined.
 
-  Lemma prf_strenghten_premise Γ A A' B :
+  Lemma prf_strenghten_premise {Σ : Signature} Γ A A' B :
     well_formed A ->
     well_formed A' ->
     well_formed B ->
@@ -773,7 +770,7 @@ Section with_signature.
     apply syllogism; wf_auto2.
   Defined.
 
-  Lemma prf_strenghten_premise_iter Γ l₁ l₂ h h' g :
+  Lemma prf_strenghten_premise_iter {Σ : Signature}  Γ l₁ l₂ h h' g :
     Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
@@ -805,7 +802,7 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma prf_strenghten_premise_meta Γ A A' B (i : ProofInfo) :
+  Lemma prf_strenghten_premise_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
     well_formed A ->
     well_formed A' ->
     well_formed B ->
@@ -820,7 +817,7 @@ Section with_signature.
     eapply MP. 2: apply H1. apply A'impA.
   Defined.
 
-  Lemma prf_strenghten_premise_meta_meta Γ A A' B (i : ProofInfo) :
+  Lemma prf_strenghten_premise_meta_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
     well_formed A ->
     well_formed A' ->
     well_formed B ->
@@ -833,7 +830,7 @@ Section with_signature.
     4: apply A'impA. all: wf_auto2.
   Defined.
 
-  Lemma prf_strenghten_premise_iter_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
+  Lemma prf_strenghten_premise_iter_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
     Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
@@ -849,7 +846,7 @@ Section with_signature.
     exact H.
   Defined.
 
-  Lemma prf_strenghten_premise_iter_meta_meta Γ l₁ l₂ h h' g (i : ProofInfo) :
+  Lemma prf_strenghten_premise_iter_meta_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
     Pattern.wf l₁ -> Pattern.wf l₂ ->
     well_formed h ->
     well_formed h' ->
@@ -865,7 +862,7 @@ Section with_signature.
   Defined.
 
 
-  Local Example example_nested_const Γ a b c:
+  Local Example example_nested_const {Σ : Signature} Γ a b c:
     well_formed a ->
     well_formed b ->
     well_formed c ->
@@ -881,12 +878,12 @@ Section with_signature.
     assert (H2: Γ ⊢i (a ---> (c ---> a)) using BasicReasoning).
     { apply P1; wf_auto2. }
 
-    eapply (@syllogism_meta _ _ _ _ _ _ _ _ H2 H1).
+    eapply (@syllogism_meta _ _ _ _ _ _ _ _ _ H2 H1).
     Unshelve. all: wf_auto2.
   Defined.
 
   (* This will form a base for the tactic 'exact 0' *)
-  Lemma nested_const Γ a l:
+  Lemma nested_const {Σ : Signature} Γ a l:
     well_formed a ->
     Pattern.wf l ->
     Γ ⊢i (a ---> (fold_right patt_imp a l))
@@ -906,7 +903,7 @@ Section with_signature.
       5: apply H1. 4: assumption. all: wf_auto2.
   Defined.
 
-  Lemma nested_const_middle Γ a l₁ l₂:
+  Lemma nested_const_middle {Σ : Signature} Γ a l₁ l₂:
     well_formed a ->
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
@@ -922,7 +919,7 @@ Section with_signature.
       eapply MP. 2: apply P1. 1: apply IHl₁. all: wf_auto2.
   Defined.
 
-  Lemma prf_reorder_iter Γ a b g l₁ l₂:
+  Lemma prf_reorder_iter {Σ : Signature} Γ a b g l₁ l₂:
     well_formed a ->
     well_formed b ->
     well_formed g ->
@@ -943,7 +940,7 @@ Section with_signature.
       all: wf_auto2.
   Defined.
 
-  Lemma prf_reorder_iter_meta Γ a b g l₁ l₂ (i : ProofInfo):
+  Lemma prf_reorder_iter_meta {Σ : Signature} Γ a b g l₁ l₂ (i : ProofInfo):
     well_formed a ->
     well_formed b ->
     well_formed g ->
@@ -959,7 +956,7 @@ Section with_signature.
     exact H.
   Defined.
   
-  Lemma A_impl_not_not_B_meta Γ A B (i : ProofInfo) :
+  Lemma A_impl_not_not_B_meta {Σ : Signature} Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A ---> ! !B using i ->
@@ -971,7 +968,7 @@ Section with_signature.
     exact H.
   Defined.
 
-  Lemma pf_conj_elim_l Γ A B :
+  Lemma pf_conj_elim_l {Σ : Signature} Γ A B :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A and B ---> A using BasicReasoning.
@@ -994,7 +991,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma pf_conj_elim_r Γ A B :
+  Lemma pf_conj_elim_r {Σ : Signature} Γ A B :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A and B ---> B using BasicReasoning.
@@ -1016,7 +1013,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma pf_conj_elim_l_meta Γ A B (i : ProofInfo) :
+  Lemma pf_conj_elim_l_meta {Σ : Signature} Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A and B using i ->
@@ -1029,7 +1026,7 @@ Section with_signature.
     Unshelve. all: wf_auto2.
   Defined.
   
-  Lemma pf_conj_elim_r_meta Γ A B (i : ProofInfo) :
+  Lemma pf_conj_elim_r_meta {Σ : Signature} Γ A B (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A and B using i ->
@@ -1042,7 +1039,7 @@ Section with_signature.
     all: wf_auto2.
   Defined.
 
-  Lemma A_or_notA Γ A :
+  Lemma A_or_notA {Σ : Signature} Γ A :
     well_formed A ->
     Γ ⊢i A or ! A using BasicReasoning.
   Proof.
@@ -1051,7 +1048,7 @@ Section with_signature.
     apply A_impl_A. wf_auto2.
   Defined.
 
-  Lemma P4m_meta (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  Lemma P4m_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
     well_formed A ->
     well_formed B ->
     Γ ⊢i A ---> B using i ->
@@ -1059,10 +1056,55 @@ Section with_signature.
     Γ ⊢i !A using i.
   Proof.
     intros wfA wfB AimpB AimpnB.
-    pose proof (H1 := @P4m Γ A B wfA wfB).
+    pose proof (H1 := @P4m _ Γ A B wfA wfB).
     assert (H2 : Γ ⊢i (A ---> ! B) ---> ! A using i).
     { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
     eapply MP. 2: { apply H2. } exact AimpnB.
   Defined.
 
-End with_signature.
+
+Lemma MLGoal_exactn {Σ : Signature} (Γ : Theory) (l₁ l₂ : list Pattern) (g : Pattern):
+  @mkMLGoal Σ Γ (l₁ ++ g :: l₂) g BasicReasoning.
+Proof.
+  mlExtractWF wfl₁gl₂ wfg.
+  fromMLGoal.
+  apply nested_const_middle.
+  { exact wfg. }
+  { abstract (
+      pose proof (wfl₁ := wf_take (length l₁) wfl₁gl₂);
+      rewrite take_app in wfl₁;
+      exact wfl₁
+    ).
+  }
+  {
+    abstract (
+      pose proof (wfgl₂ := wf_drop (length l₁) wfl₁gl₂);
+      rewrite drop_app in wfgl₂;
+      unfold Pattern.wf in wfgl₂;
+      simpl in wfgl₂;
+      apply andb_prop in wfgl₂;
+      destruct wfgl₂ as [_ wfl₂];
+      exact wfl₂
+    ).
+  }
+Defined.
+
+Tactic Notation "mlExactn" constr(n) :=
+  useBasicReasoning;
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
+  apply MLGoal_exactn.
+
+
+Local Example ex_mlExactn {Σ : Signature} Γ a b c:
+  well_formed a = true ->
+  well_formed b = true ->
+  well_formed c = true ->
+  Γ ⊢i a ---> b ---> c ---> b using BasicReasoning.
+Proof.
+  intros wfa wfb wfc.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro. mlIntro. mlIntro.
+  mlExactn 1.
+Defined.
