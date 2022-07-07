@@ -4153,7 +4153,8 @@ Proof.
     - mgRevert. mgExactn 1.
 Defined.
 
-Lemma defined_variables_equal {Σ : Signature} {syntax : Syntax} :
+(* TODO: make a notation for overlapping patterns *)
+Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
   Γ ⊢ ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x
@@ -4162,28 +4163,15 @@ Proof.
   intros x y Γ HΓ.
   toMyGoal. wf_auto2.
   unfold patt_equal, patt_iff.
-  pose proof (@patt_total_and _ _ _
+  mgRewrite (@patt_total_and _ _ _
                                 (patt_free_evar y ---> patt_free_evar x)
-                                (patt_free_evar x ---> patt_free_evar y) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) as H.
-  apply pf_iff_proj2 in H. 2-3: wf_auto2.
-  mgIntro.
-  mgApplyMeta H. clear H.
-  mgIntro. mgDestructOr 1.
+                                (patt_free_evar x ---> patt_free_evar y) HΓ
+                                ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mgIntro. mgIntro. mgDestructOr 1.
   * mgApply 1. mgClear 1. mgIntro.
     pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    
-    unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H))).
-    { exact syntax. }
-    { shelve. }
-    1-3: unfold PC_wf; simpl; wf_auto2.
-    { apply pile_refl. }
-    cbn in H0.
-    repeat case_match; try congruence; try lia.
-    apply useAnyReasoning in H0.
-    apply pf_iff_proj1 in H0. 2-3: wf_auto2.
-    mgApplyMeta H0 in 1.
+    apply useAnyReasoning in H. mgRevert. mgRewrite H at 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     pose proof (H1 := @Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
@@ -4191,37 +4179,20 @@ Proof.
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2)) (patt_free_evar x) y ltac:(wf_auto2)).
     apply useAnyReasoning in H1.
+    (* TODO: having mgExactMeta would help here *)
+    mgIntro.
     mgApplyMeta H1. simpl. mgSplitAnd. mgExactn 0. mgExactn 1.
   * mgApply 1. mgClear 1. mgIntro.
     pose proof (H := @ProofMode.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    unshelve (epose proof (H0 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H))).
-    { exact syntax. }
-    { shelve. }
-    1-3: unfold PC_wf; simpl; wf_auto2.
-    { apply pile_refl. }
-    cbn in H0. repeat case_match; try congruence; try lia.
-    apply useAnyReasoning in H0.
-    apply pf_iff_proj1 in H0. 2-3: wf_auto2.
-    mgApplyMeta H0 in 1.
-    (* TODO: mgRewriteBy does not work for free evars :( *)
+    mgRevert. apply useAnyReasoning in H. mgRewrite H at 1.
     pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
-    epose proof (H2 := @prf_equiv_congruence _ Γ 
-    _ _ {| pcEvar := x; pcPattern := ⌈ patt_free_evar x ⌉  |} _ _ _ _ _ (@useBasicReasoning Σ Γ _ _ H1)).
-    cbn in H2. case_match. 2: congruence.
-    apply pf_iff_proj1 in H2. 2-3: wf_auto2.
-    mgAssert (⌈ patt_free_evar x and patt_free_evar y ⌉). wf_auto2.
-    mgClear 1. mgApplyMeta H2. mgExactn 0.
-    (* TODO: it is increadibly inconvienient to define concrete contexts *)
+    mgRevert. apply useAnyReasoning in H1. mgRewrite H1 at 1.
     pose proof (@Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2)) (patt_free_evar y) x ltac:(wf_auto2)) as H3.
-    apply useAnyReasoning in H3.
-    mgApplyMeta H3. simpl. mgSplitAnd. mgExactn 2. mgExactn 1.
-    Unshelve.
-    1-3: unfold PC_wf; simpl; wf_auto2.
-    apply pile_any.
+    apply useAnyReasoning in H3. do 2 mgIntro.
+    mgApplyMeta H3. simpl. mgSplitAnd. mgExactn 0. mgExactn 1.
 Defined.
