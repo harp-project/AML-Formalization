@@ -2809,13 +2809,13 @@ well_formed ϕ₂ ->
 Proof.
 intros HΓ pile wfϕ₁ wfϕ₂ H.
 unfold patt_total.
-apply ProofMode.modus_tollens.
+apply ProofMode_propositional.modus_tollens.
 apply ceil_monotonic.
 { assumption. }
 { exact pile. }
 { wf_auto2. }
 { wf_auto2. }
-apply ProofMode.modus_tollens.
+apply ProofMode_propositional.modus_tollens.
 exact H.
 Defined.
 
@@ -2831,7 +2831,7 @@ toMLGoal.
 
 mlRewrite (@useBasicReasoning Σ Γ _ AnyReasoning (@not_not_iff Σ Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
 fromMLGoal.
-apply ProofMode.modus_tollens.
+apply ProofMode_propositional.modus_tollens.
 exact H.
 Defined.
 
@@ -3028,7 +3028,7 @@ eapply syllogism_meta.
 { wf_auto2. }
 2: { wf_auto2. }
 3: {
-  apply ProofMode.modus_tollens.
+  apply ProofMode_propositional.modus_tollens.
   {
     apply ceil_monotonic.
     { exact HΓ. }
@@ -3713,12 +3713,12 @@ eapply cast_proof_ml_hyps.
 
 assert (Htmp: Γ ⊢i (! (ex, b0 ∈ml ϕ)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉)) using AnyReasoning).
 {
-  apply ProofMode.modus_tollens.
+  apply ProofMode_propositional.modus_tollens.
   apply membership_symbol_ceil_left; assumption.
 }
 mlApplyMeta Htmp.
 fromMLGoal.
-apply ProofMode.modus_tollens.
+apply ProofMode_propositional.modus_tollens.
 
 pose proof (Hfr' := @set_evar_fresh_is_fresh Σ ϕ).
 eapply cast_proof'.
@@ -3808,7 +3808,7 @@ fromMLGoal.
 unfold patt_total at 1.
 unfold patt_total at 2.
 unfold patt_or.
-apply ProofMode.modus_tollens.
+apply ProofMode_propositional.modus_tollens.
 
 assert (Γ ⊢i (! ! ⌊ ϕ ⌋) <---> ⌊ ϕ ⌋ using AnyReasoning).
 { toMLGoal.
