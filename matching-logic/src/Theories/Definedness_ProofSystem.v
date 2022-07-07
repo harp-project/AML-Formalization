@@ -4144,14 +4144,16 @@ Proof.
     - mgRevert. mgExactn 1.
 Defined.
 
-(* TODO: make a notation for overlapping patterns *)
+Definition overlaps_with {Σ : Signature} {syntax : Syntax} (p q : Pattern) : Pattern
+:= ⌈ p and q ⌉.
+
 Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
-  Γ ⊢i ⌈ patt_free_evar y and patt_free_evar x ⌉ ---> patt_free_evar y =ml patt_free_evar x
-  using AnyReasoning.
+  Γ ⊢ overlaps_with (patt_free_evar y) (patt_free_evar x) ---> patt_free_evar y =ml patt_free_evar x.
 Proof.
   intros x y Γ HΓ.
+  unfold overlaps_with.
   toMyGoal. wf_auto2.
   unfold patt_equal, patt_iff.
   mgRewrite (@patt_total_and _ _ _
