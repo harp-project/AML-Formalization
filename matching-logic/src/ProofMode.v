@@ -739,648 +739,8 @@ Proof.
 Abort.
 
 
-
-Section FOL_helpers.
-  
-  Context {Σ : Signature}.
-  
-  Local Example ex_mlAdd Γ l g h i:
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (h ---> g) using i ->
-    Γ ⊢i h using i ->
-    Γ ⊢i g using i.
-  Proof.
-    intros WFl WFg WFh H H0. toMLGoal.
-    { wf_auto2. }
-    mlAdd H0.
-    mlAdd H.
-    mlApply 0.    
-    mlExactn 1.
-  Defined.
-
-
-  Lemma prf_clear_hyp Γ l1 l2 g h:
-    Pattern.wf l1 ->
-    Pattern.wf l2 ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
-    using BasicReasoning.
-  Proof.
-    intros wfl1 wfl2 wfg wfh.
-    induction l1; simpl.
-    - apply P1; wf_auto2.
-    - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
-      specialize (IHl1 wfl1).
-
-      assert (H1: Γ ⊢i a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
-      {
-        toMLGoal.
-        { wf_auto2. }
-        mlAdd IHl1.
-        mlIntro. mlExactn 0.
-      }
-      apply prf_impl_distr_meta; try_wfauto2. apply H1.
-  Defined.
-
-  Lemma prf_clear_hyp_meta Γ l1 l2 g h i:
-    Pattern.wf l1 ->
-    Pattern.wf l2 ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
-  Proof.
-    intros. eapply MP.
-    apply H3.
-    useBasicReasoning.
-    apply prf_clear_hyp; wf_auto2.
-  Defined.  
-
-  
-
-  Lemma myGoal_clear_hyp Γ l1 l2 g h i:
-    @mkMLGoal Σ Γ (l1 ++ l2) g i ->
-    @mkMLGoal Σ Γ (l1 ++ h::l2) g i.
-  Proof.
-    intros H1.
-    unfold of_MLGoal in *. simpl in *. intros wfg wfl1hl2.
-    apply prf_clear_hyp_meta.
-    5: apply H1. all: try assumption.
-    { apply wfl₁hl₂_proj_l₁ in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_l₂ in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_h in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
-  Defined.
-  
-End FOL_helpers.
-
-
-Tactic Notation "mlClear" constr(n) :=
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let l1 := fresh "l1" in
-    let l2 := fresh "l2" in
-    let Heql1 := fresh "Heql1" in
-    let Heql2 := fresh "Heql2" in
-    eapply cast_proof_ml_hyps;
-    [(rewrite -[l](take_drop n); reflexivity)|];
-    remember (take n l) as l1 eqn:Heql1 in |-;
-    remember (drop n l) as l2 eqn:Heql2 in |-;
-    eapply cast_proof_ml_hyps;
-    [(rewrite -Heql1; rewrite -Heql2; reflexivity)|];
-    simpl in Heql1; simpl in Heql2;
-    let a := fresh "a" in
-    let Hd := fresh "Hd" in
-    destruct l2 as [|a l2''] eqn:Hd in *|-;[congruence|];
-    eapply cast_proof_ml_hyps;
-    [(rewrite -> Hd at 1; reflexivity)|];
-    let Heqa := fresh "Heqa" in
-    let Heql2' := fresh "Heql2'" in
-    inversion Heql2 as [[Heqa Heql2'] ]; clear Heql2;
-    apply myGoal_clear_hyp;
-    eapply cast_proof_ml_hyps;
-    [(try(rewrite -> Heql1 at 1); try(rewrite -> Heql2' at 1); reflexivity)|];
-    clear Hd Heql2' Heqa l2 l2'' a Heql1 l1;
-    eapply cast_proof_ml_hyps;[rewrite {1}[_ ++ _]/=; reflexivity|]
-  end.
-
-Local Example ex_mlClear {Σ : Signature} Γ a b c:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i a ---> (b ---> (c ---> b)) using BasicReasoning.
-Proof.
-  intros wfa wfb wfc.
-  toMLGoal.
-  { wf_auto2. }
-  repeat mlIntro.
-  mlClear 2.
-  mlClear 0.
-  mlExactn 0.
-Defined.
-
-Section FOL_helpers.
-  
-  Context {Σ : Signature}.
-  
-  Lemma not_concl Γ p q:
-    well_formed p ->
-    well_formed q ->
-    Γ ⊢i (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
-  Proof.
-    intros wfp wfq.
-    eapply cast_proof'.
-    {
-      rewrite [(p ---> q ---> (p ---> ! q) ---> ⊥)]tofold.
-      do 3 rewrite consume.
-      rewrite [(((nil ++ [p]) ++ [q]) ++ [p ---> ! q])]/=.
-      replace ([p; q; p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
-      reflexivity.
-    }
-    apply prf_reorder_iter_meta; try_wfauto2.
-    simpl.
-    fold (! q).
-    apply modus_ponens; wf_auto2.
-  Defined.
-
-  (* TODO rename or remove *)
-  Lemma helper Γ p q r:
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
-  Proof.
-    intros wfp wfq wfr.
-    eapply cast_proof'.
-    {
-      rewrite [(p ---> q ---> (p ---> q ---> r) ---> r)]tofold. repeat rewrite consume.
-      replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
-      replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
-      reflexivity.
-    }
-    apply prf_reorder_iter_meta; try_wfauto2.
-    simpl.
-    apply modus_ponens; wf_auto2.
-  Defined.
-
-  Lemma reorder_last_to_head Γ g x l:
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed x ->
-    Γ ⊢i ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
-  Proof.
-    intros wfl wfg wfx.
-    induction l.
-    - simpl. apply A_impl_A. wf_auto2.
-    - pose proof (wfal := wfl).
-      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      simpl. simpl in IHl.
-      eapply cast_proof'.
-      { rewrite -> tofold at 1. repeat rewrite -> consume. reflexivity. }
-      eapply prf_weaken_conclusion_iter_meta_meta.
-      4: { apply IHl. }
-      all: try_wfauto2.
-      eapply cast_proof'.
-      {
-        rewrite consume.
-        replace ((([] ++ [x ---> a ---> foldr patt_imp g l]) ++ [a]) ++ [x])
-          with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
-        reflexivity.
-      }
-      apply prf_reorder_iter_meta; wf_auto2.
-      simpl. apply A_impl_A. wf_auto2.
-  Defined.
-
-  Lemma reorder_last_to_head_meta Γ g x l i:
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed x ->
-    Γ ⊢i (foldr patt_imp g (x::l)) using i ->
-    Γ ⊢i (foldr patt_imp g (l ++ [x])) using i.
-  Proof.
-    intros WFl WFG WFx H.
-    eapply MP.
-    apply H.
-    useBasicReasoning.
-    apply reorder_last_to_head; wf_auto2.
-  Defined.
-  
-  (* Iterated modus ponens.
-     For l = [x₁, ..., xₙ], it says that
-     Γ ⊢i ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
-  *)
-  Lemma modus_ponens_iter Γ l r:
-    Pattern.wf l ->
-    well_formed r ->
-    Γ ⊢i (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
-  Proof.
-    intros wfl wfr.
-    induction l.
-    - simpl. apply A_impl_A. exact wfr.
-    - pose proof (wfal := wfl).
-      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      simpl.
-      eapply cast_proof'.
-      { rewrite foldr_app. simpl. rewrite consume. simpl. reflexivity. }
-      eapply cast_proof' in IHl.
-      2: { rewrite foldr_app. reflexivity. }
-      simpl in IHl.
-      eapply prf_weaken_conclusion_meta_meta.
-      4: { apply reorder_last_to_head; wf_auto2. }
-      all: try_wfauto2.
-      simpl. apply modus_ponens; wf_auto2.
-  Defined.
-  
-  Lemma and_impl Γ p q r:
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
-  Proof.
-    intros wfp wfq wfr.
-    toMLGoal.
-    { wf_auto2. }
-    repeat mlIntro.
-    unfold patt_and. mlApply 0.
-    mlIntro. unfold patt_or at 2.
-    mlAssert ((! ! p)).
-    { wf_auto2. }
-    {
-      mlAdd (@not_not_intro Σ Γ p wfp).
-      mlApply 0.
-      mlExactn 2.
-    }
-    mlAssert ((! q)).
-    { wf_auto2. }
-    {
-      mlApply 3. mlExactn 4.
-    }
-    mlApply 5. mlExactn 2.
-  Defined.
-  
-  Lemma and_impl' Γ p q r:
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
-  Proof.
-    intros wfp wfq wfr.
-    toMLGoal.
-    { wf_auto2. }
-    repeat mlIntro.
-    mlAssert (p).
-    { wf_auto2. }
-    {
-      mlAdd (@pf_conj_elim_l Σ Γ p q wfp wfq).
-      mlApply 0.
-      mlExactn 2.
-    }
-    mlAssert (q).
-    { wf_auto2. }
-    {
-      mlAdd (@pf_conj_elim_r Σ Γ p q wfp wfq).
-      mlApply 0.
-      mlExactn 2.
-    }
-    (* This pattern is basically an "apply ... in" *)
-    mlAssert ((q ---> r)).
-    { wf_auto2. }
-    { mlApply 0. mlExactn 2. }
-    mlApply 4. mlExactn 3.
-  Defined.
-
-  Lemma prf_disj_elim_iter Γ l p q r:
-    Pattern.wf l ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i ((fold_right patt_imp r (l ++ [p]))
-           --->
-           ((fold_right patt_imp r (l ++ [q]))
-              --->                                                                
-              (fold_right patt_imp r (l ++ [p or q]))))
-    using BasicReasoning.
-  Proof.
-    intros wfl wfp wfq wfr.
-    induction l.
-    - simpl. apply prf_disj_elim; wf_auto2.
-    - pose proof (wfal := wfl).
-      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-      specialize (IHl wfl).
-      simpl in *.
-      toMLGoal.
-      { wf_auto2. }
-      repeat mlIntro.
-      mlAdd IHl.
-      mlAssert ((foldr patt_imp r (l ++ [p]))).
-      { wf_auto2. }
-      { mlApply 1. mlExactn 3. }
-      mlAssert ((foldr patt_imp r (l ++ [q]))).
-      { wf_auto2. }
-      { mlApply 2. mlExactn 3. }
-      mlAssert ((foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
-      { wf_auto2. }
-      { mlApply 0. mlExactn 4. }
-      mlApply 6.
-      mlExactn 5.
-  Defined.
-  
-  Lemma prf_disj_elim_iter_2 Γ l₁ l₂ p q r:
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
-           --->
-           ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
-              --->                                                                
-              (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))))
-    using BasicReasoning.  
-  Proof.
-    intros wfl₁ wfl₂ wfp wfq wfr.
-    move: l₁ wfl₁.
-    induction l₂; intros l₁ wfl₁.
-    - simpl. apply prf_disj_elim_iter; wf_auto2.
-    - pose proof (wfal₂ := wfl₂).
-      unfold Pattern.wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
-
-      simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
-      (* Or we can swap p and a (move a to the end of l_1) *)
-      remember (foldr patt_imp r (l₁ ++ p :: a :: l₂)) as A in |-.
-      remember (foldr patt_imp r (l₁ ++ q :: a :: l₂)) as B in |-.
-      remember (foldr patt_imp r (l₁ ++ (p or q) :: a :: l₂)) as C in |-.
-      eapply cast_proof'.
-      { rewrite -HeqA. rewrite -HeqB. rewrite -HeqC. reflexivity. }
-      eapply cast_proof'.
-      {
-        rewrite -> tofold at 1. rewrite consume. rewrite consume. rewrite [_ ++ [B] ]/=.
-        rewrite -> HeqA at 1. rewrite -> HeqB at 1. rewrite -> HeqC at 1.
-        reflexivity.
-      }
-      eapply prf_weaken_conclusion_iter_meta_meta.
-      4: {
-        eapply cast_proof'.
-        {
-          replace (l₁ ++ (p or q) :: a :: l₂) with (l₁ ++ [p or q; a] ++ l₂) by reflexivity.
-          reflexivity.
-        }
-        apply prf_reorder_iter; wf_auto2.
-      }
-      all: try_wfauto2.
-      simpl.
-
-      eapply cast_proof'.
-      { 
-        rewrite -> tofold at 1. repeat rewrite consume. rewrite [_ ++ [_] ]/=.
-
-      replace
-        ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ q :: a :: l₂)])
-        with
-          ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ (foldr patt_imp r (l₁ ++ q :: a :: l₂))::[])
-        by reflexivity.
-        reflexivity.
-      }
-
-      eapply prf_strenghten_premise_iter_meta_meta with (h := foldr patt_imp r (l₁ ++ a :: q :: l₂)).
-      6: { apply prf_reorder_iter; wf_auto2. }
-      all: try_wfauto2.
-
-      eapply cast_proof'.
-      {
-        replace
-          ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ [foldr patt_imp r (l₁ ++ a :: q :: l₂)])
-          with
-          ([] ++ ((foldr patt_imp r (l₁ ++ p :: a :: l₂))::[foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
-          by reflexivity.
-        reflexivity.
-     }
-
-      eapply prf_strenghten_premise_iter_meta_meta with (h := (foldr patt_imp r (l₁ ++ a :: p :: l₂))).
-      6: {  apply prf_reorder_iter; wf_auto2. }
-      all: try_wfauto2.
-
-      simpl.
-      eapply cast_proof'.
-      {
-        replace (l₁ ++ a :: p :: l₂) with ((l₁ ++ [a]) ++ [p] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-        replace (l₁ ++ a :: q :: l₂) with ((l₁ ++ [a]) ++ [q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-        replace (l₁ ++ a :: (p or q) :: l₂) with ((l₁ ++ [a]) ++ [p or q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-        reflexivity.
-      }
-      apply IHl₂; wf_auto2.
-  Defined.
-
-  Lemma prf_disj_elim_iter_2_meta Γ l₁ l₂ p q r i:
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-    Γ ⊢i ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
-              --->                                                                
-              (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))) using i.
-            
-  Proof.
-    intros WFl1 WFl2 WFp WFq WFr H.
-    eapply MP.
-    apply H.
-    useBasicReasoning.
-    apply prf_disj_elim_iter_2; wf_auto2.
-  Defined.
-  
-  Lemma prf_disj_elim_iter_2_meta_meta Γ l₁ l₂ p q r i:
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    well_formed p ->
-    well_formed q ->
-    well_formed r ->
-    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-    Γ ⊢i (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) using i ->
-    Γ ⊢i (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)) using i.
-  Proof.
-    intros WFl1 WFl2 WFp WFq WFr H H0.
-    eapply MP.
-    2: { apply prf_disj_elim_iter_2_meta; try_wfauto2. apply H. }
-    apply H0.
-  Defined.
-
-  Lemma MLGoal_disj_elim Γ l₁ l₂ p q r i:
-    @mkMLGoal Σ Γ (l₁ ++ [p] ++ l₂) r i ->
-    @mkMLGoal Σ Γ (l₁ ++ [q] ++ l₂) r i ->
-    @mkMLGoal Σ Γ (l₁ ++ [p or q] ++ l₂) r i.
-  Proof.
-    intros H1 H2.
-    unfold of_MLGoal in *. simpl in *.
-    intros wfr Hwf.
-    apply prf_disj_elim_iter_2_meta_meta.
-    7: apply H2.
-    6: apply H1.
-    all: try assumption.
-    { abstract (apply wfl₁hl₂_proj_l₁ in Hwf; exact Hwf). }
-    { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
-    { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
-    { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
-    { abstract (
-        pose proof (wfl₁hl₂_proj_l₁ Hwf);
-        pose proof (wfl₁hl₂_proj_h Hwf);
-        pose proof (wfl₁hl₂_proj_l₂ Hwf);
-        apply wf_app; [assumption|];
-        unfold patt_or,patt_not in *;
-        wf_auto2
-      ).
-    }
-    { abstract (
-        pose proof (wfl₁hl₂_proj_l₁ Hwf);
-        pose proof (wfl₁hl₂_proj_h Hwf);
-        pose proof (wfl₁hl₂_proj_l₂ Hwf);
-        apply wf_app; [assumption|];
-        unfold patt_or,patt_not in *;
-        wf_auto2
-      ).
-    }
-  Defined.
-
-End FOL_helpers.
-
-Tactic Notation "mlDestructOr" constr(n) :=
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let Htd := fresh "Htd" in
-    eapply cast_proof_ml_hyps;
-    [(
-      epose proof (Htd :=take_drop);
-      specialize (Htd n l);
-      rewrite [take _ _]/= in Htd;
-      rewrite [drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      epose proof (Htd :=take_drop);
-      specialize (Htd 1 (drop n l));
-      rewrite [take _ _]/= in Htd;
-      rewrite ![drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd; reflexivity
-      )|];
-    apply MLGoal_disj_elim; simpl
-  end.
-
-Section FOL_helpers.
-
-  Context {Σ : Signature}.
-  
-  Local Example exd Γ a b p q c i:
-    well_formed a ->
-    well_formed b ->
-    well_formed p ->
-    well_formed q ->
-    well_formed c ->
-    Γ ⊢i (a ---> p ---> b ---> c) using i ->
-    Γ ⊢i (a ---> q ---> b ---> c) using i->
-    Γ ⊢i (a ---> (p or q) ---> b ---> c) using i.
-  Proof.
-    intros WFa WFb WFp WFq WFc H H0.
-    toMLGoal.
-    { wf_auto2. } 
-    repeat mlIntro.
-    mlDestructOr 1.
-    - fromMLGoal. apply H.
-    - fromMLGoal. apply H0.
-  Defined.
-
-  Lemma pf_iff_split Γ A B i:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A ---> B using i ->
-    Γ ⊢i B ---> A using i ->
-    Γ ⊢i A <---> B using i.
-  Proof.
-    intros wfA wfB AimplB BimplA.
-    unfold patt_iff.
-    apply conj_intro_meta; try_wfauto2; assumption.
-  Defined.
-  
-  Lemma pf_iff_proj1 Γ A B i:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A <---> B using i ->
-    Γ ⊢i A ---> B using i.
-  Proof.
-    intros WFA WFB H. unfold patt_iff in H.
-    apply pf_conj_elim_l_meta in H; try_wfauto2; assumption.
-  Defined.
-
-  Lemma pf_iff_proj2 Γ A B i:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A <---> B) using i ->
-    Γ ⊢i (B ---> A) using i.
-  Proof.
-    intros WFA WFB H. unfold patt_iff in H.
-    apply pf_conj_elim_r_meta in H; try_wfauto2; assumption.
-  Defined.
-
-  Lemma pf_iff_iff Γ A B i:
-    well_formed A ->
-    well_formed B ->
-    prod ((Γ ⊢i (A <---> B) using i) -> (prod (Γ ⊢i (A ---> B) using i) (Γ ⊢i (B ---> A) using i)))
-    ( (prod (Γ ⊢i (A ---> B) using i)  (Γ ⊢i (B ---> A) using i)) -> (Γ ⊢i (A <---> B) using i)).
-  Proof.
-    intros WFA WFB.
-    split; intros H.
-    {
-      pose proof (H1 := pf_iff_proj1 WFA WFB H).
-      pose proof (H2 := pf_iff_proj2 WFA WFB H).
-      split; assumption.
-    }
-    {
-      destruct H as [H1 H2].
-      apply pf_iff_split; assumption.
-    }
-  Defined.
-
-  Lemma pf_iff_equiv_refl Γ A :
-    well_formed A ->
-    Γ ⊢i (A <---> A) using BasicReasoning.
-  Proof.
-    intros WFA.
-    apply pf_iff_split; try_wfauto2; apply A_impl_A; assumption.
-  Defined.
-
-  Lemma pf_iff_equiv_sym Γ A B i:
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A <---> B) using i ->
-    Γ ⊢i (B <---> A) using i.
-  Proof.
-    intros wfA wfB H.
-    pose proof (H2 := H).
-    apply pf_iff_proj2 in H2; try_wfauto2.
-    rename H into H1.
-    apply pf_iff_proj1 in H1; try_wfauto2.
-    apply pf_iff_split; try_wfauto2; assumption.
-  Defined.
-
-  Lemma pf_iff_equiv_trans Γ A B C i:
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢i (A <---> B) using i ->
-    Γ ⊢i (B <---> C) using i ->
-    Γ ⊢i (A <---> C) using i.
-  Proof.
-    intros wfA wfB wfC AeqB BeqC.
-    apply pf_iff_iff in AeqB; try_wfauto2. destruct AeqB as [AimpB BimpA].
-    apply pf_iff_iff in BeqC; try_wfauto2. destruct BeqC as [BimpC CimpB].
-    apply pf_iff_iff; try_wfauto2.
-    split.
-    {
-      eapply syllogism_meta. 4,5: eassumption.
-      1-3: wf_auto2.
-    }
-    {
-      eapply syllogism_meta. 4,5: eassumption.
-      1-3: wf_auto2.
-    }
-  Defined.
-
-  Lemma prf_conclusion Γ a b i:
-    well_formed a ->
-    well_formed b ->
-    Γ ⊢i b using i ->
-    Γ ⊢i (a ---> b) using i.
-  Proof.
-    intros WFa WFb H. eapply MP.
-    apply H.
-    useBasicReasoning.
-    apply P1; wf_auto2.
-  Defined.
     
-  Lemma prf_prop_bott_iff Γ AC:
+  Lemma prf_prop_bott_iff {Σ : Signature} Γ AC:
     Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
     using (
     (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
@@ -1402,7 +762,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma Prop_disj_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+  Lemma Prop_disj_left {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     well_formed ψ ->
@@ -1421,7 +781,7 @@ Section FOL_helpers.
     }
   Defined.
   
-  Lemma Prop_disj_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
+  Lemma Prop_disj_right {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
     well_formed ϕ₁ ->
     well_formed ϕ₂ ->
     well_formed ψ ->
@@ -1440,7 +800,6 @@ Section FOL_helpers.
     }
   Defined.
 
-  End FOL_helpers.
 
   Tactic Notation "remember_constraint" "as" ident(i') :=
       match goal with
@@ -1457,11 +816,8 @@ Section FOL_helpers.
 
   Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try set_solver)]).
 
-  Section FOL_helpers.
 
-  Context {Σ : Signature}.  
-
-  Lemma prf_prop_or_iff Γ AC p q:
+  Lemma prf_prop_or_iff {Σ : Signature} Γ AC p q:
     well_formed p ->
     well_formed q ->
     Γ ⊢i ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
@@ -1539,7 +895,7 @@ Section FOL_helpers.
           apply disj_right_intro; wf_auto2.
   Defined.
 
-  Lemma Ex_quan (Γ : Theory) (ϕ : Pattern) (y : evar) :
+  Lemma Ex_quan {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (y : evar) :
     well_formed (patt_exists ϕ) ->
     Γ ⊢i (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
     using BasicReasoning.
@@ -1561,7 +917,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma hypothesis (Γ : Theory) (axiom : Pattern) :
+  Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
     well_formed axiom ->
     (axiom ∈ Γ) ->
     Γ ⊢i axiom
@@ -1584,7 +940,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma Singleton_ctx (Γ : Theory) (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
+  Lemma Singleton_ctx {Σ : Signature} (Γ : Theory) (C1 C2 : Application_context) (ϕ : Pattern) (x : evar) :
     well_formed ϕ ->
     Γ ⊢i (! ((subst_ctx C1 (patt_free_evar x and ϕ)) and
                (subst_ctx C2 (patt_free_evar x and (! ϕ)))))
@@ -1607,7 +963,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma Existence (Γ : Theory) :
+  Lemma Existence {Σ : Signature} (Γ : Theory) :
     Γ ⊢i (ex , patt_bound_evar 0) using BasicReasoning.
   Proof.
     unshelve (eexists).
@@ -1626,7 +982,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma pile_impl_allows_gen_x x gpi svs kt fp:
+  Lemma pile_impl_allows_gen_x {Σ : Signature} x gpi svs kt fp:
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) ( gpi) ->
     x ∈ pi_generalized_evars gpi.
   Proof.
@@ -1654,7 +1010,7 @@ Section FOL_helpers.
     inversion H'. simpl in *. clear -pwi_pf_ge. set_solver.
   Qed.
 
-  Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
+  Lemma Ex_gen {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
     {pile : ProofInfoLe (
             {| pi_generalized_evars := {[x]};
                pi_substituted_svars := ∅;
@@ -1709,7 +1065,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma pile_basic_generic eg svs kt fp:
+  Lemma pile_basic_generic {Σ : Signature} eg svs kt fp:
     ProofInfoLe BasicReasoning ( (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
   Proof.
     constructor.
@@ -1725,7 +1081,7 @@ Section FOL_helpers.
     { set_solver. }
   Qed.
 
-  Lemma Prop_ex_left (Γ : Theory) (ϕ ψ : Pattern) :
+  Lemma Prop_ex_left {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed (ex, ϕ) ->
     well_formed ψ ->
     Γ ⊢i (ex , ϕ) $ ψ ---> ex , ϕ $ ψ
@@ -1747,7 +1103,7 @@ Section FOL_helpers.
     }
   Defined.
 
-  Lemma Prop_ex_right (Γ : Theory) (ϕ ψ : Pattern) :
+  Lemma Prop_ex_right {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed (ex, ϕ) ->
     well_formed ψ ->
     Γ ⊢i ψ $ (ex , ϕ) ---> ex , ψ $ ϕ
@@ -1770,22 +1126,15 @@ Section FOL_helpers.
   Defined.
 
  
-
-  End FOL_helpers.
-
   Tactic Notation "change" "constraint" "in" ident(H) :=
     let i := fresh "i" in
     remember_constraint as i;
     eapply useGenericReasoning with (i := i) in H;
     subst i;
     [|(try_solve_pile)].
+   
 
-Section FOL_helpers.
-  
-  Context {Σ : Signature}.
-    
-
-  Lemma prf_prop_ex_iff Γ AC p x:
+  Lemma prf_prop_ex_iff {Σ : Signature} Γ AC p x:
     evar_is_fresh_in x (subst_ctx AC p) ->
     well_formed (patt_exists p) = true ->
     Γ ⊢i ((subst_ctx AC (patt_exists p)) <---> (exists_quantify x (subst_ctx AC (evar_open 0 x p))))
@@ -2018,708 +1367,7 @@ Section FOL_helpers.
         }
   Defined.
   
-  Lemma and_of_negated_iff_not_impl Γ p1 p2:
-    well_formed p1 ->
-    well_formed p2 ->
-    Γ ⊢i (! (! p1 ---> p2) <---> ! p1 and ! p2)
-    using BasicReasoning.
-  Proof.
-    intros wfp1 wfp2.
-    apply conj_intro_meta.
-    { wf_auto2. }
-    { wf_auto2. }
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlIntro.
-      mlApply 0.
-      mlIntro.
-      unfold patt_or.
-      mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
-      mlApply 0.
-      mlApply 2.
-      mlAdd (@not_not_intro Σ Γ (! p1) ltac:(wf_auto2)).
-      mlApply 0.
-      mlExactn 4.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlIntro.
-      unfold patt_and.
-      mlApply 0.
-      unfold patt_or.
-      mlIntro.
-      mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
-      mlApply 0.
-      mlApply 2.
-      mlAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)).
-      mlApply 0.
-      mlExactn 4.
-  Defined.
-
-  Lemma and_impl_2 Γ p1 p2:
-    well_formed p1 ->
-    well_formed p2 ->
-    Γ ⊢i (! (p1 ---> p2) <---> p1 and ! p2)
-    using BasicReasoning.
-  Proof.
-    intros wfp1 wfp2.
-    apply conj_intro_meta.
-    { wf_auto2. }
-    { wf_auto2. }
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlIntro.
-      mlApply 0.
-      mlIntro.
-      unfold patt_or.
-      mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
-      mlApply 0.
-      mlApply 2.
-      mlAdd (@not_not_intro Σ Γ p1 ltac:(wf_auto2)).
-      mlApply 0.
-      mlExactn 4.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlIntro.
-      mlApply 0.
-      unfold patt_or.
-      mlIntro.
-      mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
-      mlApply 0.
-      mlApply 2.
-      mlAdd (@not_not_elim Σ Γ p1 ltac:(wf_auto2)).
-      mlApply 0.
-      mlExactn 4.
-  Defined.
-
-  Lemma conj_intro_meta_partial (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A → well_formed B →
-    Γ ⊢i A using i →
-    Γ ⊢i B ---> (A and B) using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    - exact H.
-    - useBasicReasoning. apply conj_intro.
-      { wf_auto2. }
-      { wf_auto2. }
-  Defined.
-
-  Lemma and_impl_patt (A B C : Pattern) Γ (i : ProofInfo):
-    well_formed A → well_formed B → well_formed C →
-    Γ ⊢i A using i ->
-    Γ ⊢i ((A and B) ---> C) using i ->
-    Γ ⊢i (B ---> C) using i.
-  Proof.
-    intros WFA WFB WFC H H0.
-    eapply syllogism_meta with (B := patt_and A B).
-    { wf_auto2. }
-    { wf_auto2. }
-    { wf_auto2. }
-    2: { exact H0. }
-    apply conj_intro_meta_partial.
-    { wf_auto2. }
-    { wf_auto2. }
-    exact H.
-  Defined.
-
-  Lemma conj_intro2 (Γ : Theory) (A B : Pattern) :
-    well_formed A -> well_formed B ->
-    Γ ⊢i (A ---> (B ---> (B and A)))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB. eapply reorder_meta.
-    { wf_auto2. }
-    { wf_auto2. }
-    { wf_auto2. }
-    apply conj_intro.
-    { wf_auto2. }
-    { wf_auto2. }
-  Defined.
-
-  Lemma conj_intro_meta_partial2 (Γ : Theory) (A B : Pattern) (i : ProofInfo):
-    well_formed A → well_formed B →
-    Γ ⊢i A using i →
-    Γ ⊢i B ---> (B and A) using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    - exact H.
-    - useBasicReasoning. apply conj_intro2.
-      { wf_auto2. }
-      { wf_auto2. }
-  Defined.
-
-  Lemma and_impl_patt2  (A B C : Pattern) Γ (i : ProofInfo):
-    well_formed A → well_formed B → well_formed C →
-    Γ ⊢i A using i ->
-    Γ ⊢i ((B and A) ---> C) using i ->
-    Γ ⊢i (B ---> C) using i.
-  Proof.
-    intros WFA WFB WFC H H0.
-    eapply syllogism_meta with (B := patt_and B A).
-    { wf_auto2. }
-    { wf_auto2. }
-    { wf_auto2. }
-    2: exact H0.
-    apply conj_intro_meta_partial2.
-    { wf_auto2. }
-    { wf_auto2. }
-    exact H.
-  Defined.
-
-
-  Lemma patt_and_comm_meta (A B : Pattern) (Γ : Theory) (i : ProofInfo) :
-    well_formed A → well_formed B
-    ->
-    Γ ⊢i A and B using i ->
-    Γ ⊢i B and A using i.
-  Proof.
-    intros WFA WFB H.
-    apply pf_conj_elim_r_meta in H as P1.
-    apply pf_conj_elim_l_meta in H as P2. all: try_wfauto2.
-    apply conj_intro_meta; assumption.
-  Defined.
-
-  Lemma MLGoal_applyMeta Γ r r' i:
-    Γ ⊢i (r' ---> r) using i ->
-    forall l,
-    @mkMLGoal Σ Γ l r' i ->
-    @mkMLGoal Σ Γ l r i.
-  Proof.
-    intros Himp l H.
-    unfold of_MLGoal in *. simpl in *.
-    intros wfr wfl.
-    eapply prf_weaken_conclusion_iter_meta_meta.
-    4: apply Himp.
-    4: apply H.
-    all: try assumption.
-    1,2: pose proof (wfrr' := proved_impl_wf _ _ (proj1_sig Himp)); wf_auto2.
-  Defined.
-
-End FOL_helpers.
-
-
-Tactic Notation "mlApplyMeta" uconstr(t) :=
-  eapply (@MLGoal_applyMeta _ _ _ _ _ t).
-
-Lemma MLGoal_left {Σ : Signature} Γ l x y i:
-  @mkMLGoal Σ Γ l x i ->
-  @mkMLGoal Σ Γ l (patt_or x y) i.
-Proof.
-  intros H.
-  unfold of_MLGoal in *. simpl in *.
-  intros wfxy wfl.
-  eapply prf_weaken_conclusion_iter_meta_meta.
-  4: { useBasicReasoning. apply disj_left_intro. wf_auto2. wf_auto2. }
-  { wf_auto2. }
-  { wf_auto2. }
-  { wf_auto2. }
-  apply H.
-  { wf_auto2. }
-  { assumption. }
-Defined.
-
-Lemma MLGoal_right {Σ : Signature} Γ l x y i:
-  @mkMLGoal Σ Γ l y i ->
-  @mkMLGoal Σ Γ l (patt_or x y) i.
-Proof.
-  intros H.
-  unfold of_MLGoal in *. simpl in *.
-  intros wfxy wfl.
-  eapply prf_weaken_conclusion_iter_meta_meta.
-  4: { useBasicReasoning. apply disj_right_intro. wf_auto2. wf_auto2. }
-  { wf_auto2. }
-  { wf_auto2. }
-  { wf_auto2. }
-  apply H.
-  { wf_auto2. }
-  { assumption. }
-Defined.
-
-Ltac mlLeft := apply MLGoal_left.
-Ltac mlRight := apply MLGoal_right.
-
-Example ex_mlLeft {Σ : Signature} Γ a:
-  well_formed a ->
-  Γ ⊢i a ---> (a or a)
-  using BasicReasoning.
-Proof.
-  intros wfa.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro.
-  mlLeft.
-Abort.
-
-Lemma MLGoal_applyMetaIn {Σ : Signature} Γ r r' i:
-  Γ ⊢i (r ---> r') using i ->
-  forall l₁ l₂ g,
-    @mkMLGoal Σ Γ (l₁ ++ r'::l₂) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ r::l₂ ) g i.
-Proof.
-  intros Himp l₁ l₂ g H.
-  unfold of_MLGoal in *. simpl in *.
-  intros wfg Hwf.
-  specialize (H wfg).
-  eapply prf_strenghten_premise_iter_meta_meta.
-  6: apply Himp.
-  6: apply H.
-  { abstract (apply wfapp_proj_1 in Hwf; exact Hwf). }
-  { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
-  { abstract (pose proof (Himp' := proj1_sig Himp); apply proved_impl_wf in Himp'; wf_auto2). }
-  { abstract (apply wfl₁hl₂_proj_h in Hwf; exact Hwf). }
-  { exact wfg. }
-  { abstract(
-      pose proof (wfapp_proj_1 Hwf);
-      pose proof (wfl₁hl₂_proj_l₂ Hwf);
-      pose proof (wfl₁hl₂_proj_h Hwf);
-      unfold Pattern.wf;
-      rewrite map_app;
-      rewrite foldr_app;
-      simpl;
-      pose proof (Himp' := proj1_sig Himp);
-      apply proved_impl_wf in Himp';
-      apply well_formed_imp_proj2 in Himp';
-      rewrite Himp';
-      simpl;
-      unfold Pattern.wf in H1;
-      rewrite H1;
-      exact H0
-    ).
- }
-Defined.
-
-Tactic Notation "mlApplyMeta" uconstr(t) "in" constr(n) :=
-  eapply cast_proof_ml_hyps;
-  [(let hyps := fresh "hyps" in
-    rewrite <- (firstn_skipn n);
-    rewrite [hyps in (hyps ++ _)]/=;
-    rewrite [hyps in (_ ++ hyps)]/=;
-    reflexivity
-   )|];
-  eapply (@MLGoal_applyMetaIn _ _ _ _ _ t);
-  eapply cast_proof_ml_hyps;
-  [(rewrite /app; reflexivity)|].
-
-Local Example Private_ex_mlApplyMetaIn {Σ : Signature} Γ p q:
-  well_formed p ->
-  well_formed q ->
-  Γ ⊢i p ---> (p or q)
-  using BasicReasoning.
-Proof.
-  intros wfp wfq.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro.
-  mlApplyMeta (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in 0.
-  mlExactn 0.
-Defined.
-
-Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y i:
-    @mkMLGoal Σ Γ (l₁ ++ x::y::l₂ ) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ (x and y)::l₂) g i .
-Proof.
-  intros H.
-  unfold of_MLGoal. intros wfg Hwf. pose proof (wfg' := wfg). pose proof (Hwf' := Hwf).
-  revert wfg' Hwf'.
-  cut (of_MLGoal (@mkMLGoal Σ Γ (l₁ ++ (x and y)::l₂ ) g i)).
-  { auto. }
-  simpl in wfg, Hwf.
-
-  mlAssert (y) using first (length (l₁ ++ [x and y])).
-  { abstract (
-      apply wfapp_proj_2 in Hwf;
-      unfold Pattern.wf in Hwf;
-      simpl in Hwf;
-      apply andb_prop in Hwf;
-      destruct Hwf as [wfxy _];
-      wf_auto2
-    ).
-  }
-  {
-    eapply cast_proof_ml_hyps.
-    { replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-      2: { rewrite -app_assoc. reflexivity. }
-      rewrite take_app.
-      reflexivity.
-    }
-    assert (well_formed x).
-    {
-      abstract (
-        apply wfapp_proj_2 in Hwf;
-        unfold Pattern.wf in Hwf;
-        simpl in Hwf;
-        apply andb_prop in Hwf as [wfxy _];
-        wf_auto2
-      ).
-    }
-    useBasicReasoning.
-    mlApplyMeta (@pf_conj_elim_r Σ Γ x y ltac:(assumption) ltac:(assumption)).
-    apply MLGoal_exactn.
-  }
-
-  eapply cast_proof_ml_hyps.
-  {  
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-    2: { rewrite -app_assoc. reflexivity. }
-    rewrite take_app. rewrite drop_app. reflexivity.
-  }
-
-  mlAssert (x) using first (length (l₁ ++ [x and y])).
-  { abstract (
-      apply wfapp_proj_2 in Hwf;
-      unfold Pattern.wf in Hwf;
-      simpl in Hwf;
-      apply andb_prop in Hwf;
-      destruct Hwf as [wfxy _];
-      wf_auto2
-    ).
-  }
-  {
-    eapply cast_proof_ml_hyps.
-    {
-      replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-      2: { rewrite -app_assoc. reflexivity. }
-      rewrite take_app.
-      reflexivity.
-    }
-    assert (well_formed x).
-    {
-      abstract (
-        apply wfapp_proj_2 in Hwf;
-        unfold Pattern.wf in Hwf;
-        simpl in Hwf;
-        apply andb_prop in Hwf as [wfxy _];
-        wf_auto2
-      ).
-    }
-    useBasicReasoning.
-    mlApplyMeta (@pf_conj_elim_l Σ Γ x y ltac:(assumption) ltac:(assumption)).
-    apply MLGoal_exactn.
-  }
-
-  eapply cast_proof_ml_hyps.
-  {  
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
-    2: { rewrite -app_assoc. reflexivity. }
-    rewrite take_app. rewrite drop_app. reflexivity.
-  }
-
-  eapply cast_proof_ml_hyps.
-  {
-    rewrite -app_assoc. reflexivity.
-  }
-
- apply myGoal_clear_hyp.  
- exact H.
-Defined.
-
-Tactic Notation "mlDestructAnd" constr(n) :=
-  eapply cast_proof_ml_hyps;
-  [(let hyps := fresh "hyps" in
-    rewrite <- (firstn_skipn n);
-    rewrite [hyps in (hyps ++ _)]/=;
-    rewrite [hyps in (_ ++ hyps)]/=;
-    reflexivity
-   )|];
-  apply MLGoal_destructAnd;
-  eapply cast_proof_ml_hyps;
-  [(rewrite /app; reflexivity)|].
-
-Local Example ex_mlDestructAnd {Σ : Signature} Γ a b p q:
-  well_formed a ->
-  well_formed b ->
-  well_formed p ->
-  well_formed q ->
-  Γ ⊢i p and q ---> a and b ---> q ---> a
-  using BasicReasoning.
-Proof.
-  intros. toMLGoal.
-  { wf_auto2. }
-  do 3 mlIntro.
-  mlDestructAnd 1.
-  mlDestructAnd 0.
-  mlExactn 2.
-Defined.
-
-Section FOL_helpers.
-  
-  Context {Σ : Signature}.
-  
-  Lemma and_of_equiv_is_equiv Γ p q p' q' i:
-    well_formed p ->
-    well_formed q ->
-    well_formed p' ->
-    well_formed q' ->
-    Γ ⊢i (p <---> p') using i ->
-    Γ ⊢i (q <---> q') using i ->
-    Γ ⊢i ((p and q) <---> (p' and q')) using i.
-  Proof.
-    intros wfp wfq wfp' wfq' pep' qeq'.
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
-    
-    apply conj_intro_meta; auto.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. unfold patt_and.
-      mlIntro. mlApply 0.
-      mlDestructOr 1.
-      + apply modus_tollens in pip'; auto 10.
-        mlAdd pip'.
-        mlLeft.
-        mlApply 0.
-        mlExactn 2.
-      + apply modus_tollens in qiq'; auto 10.
-        mlAdd qiq'.
-        mlRight.
-        mlApply 0.
-        mlExactn 2.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. unfold patt_and.
-      mlIntro. mlApply 0.
-      mlDestructOr 1.
-      + mlLeft.
-        apply modus_tollens in p'ip; auto.
-        mlAdd p'ip.
-        mlApply 0.
-        mlExactn 2.
-      + mlRight.
-        apply modus_tollens in q'iq; auto.
-        mlAdd q'iq.
-        mlApply 0.
-        mlExactn 2.
-  Defined. 
-
-  Lemma or_of_equiv_is_equiv Γ p q p' q' i:
-    well_formed p ->
-    well_formed q ->
-    well_formed p' ->
-    well_formed q' ->
-    Γ ⊢i (p <---> p') using i ->
-    Γ ⊢i (q <---> q') using i ->
-    Γ ⊢i ((p or q) <---> (p' or q')) using i.
-  Proof with try_wfauto2.
-    intros wfp wfq wfp' wfq' pep' qeq'.
-    pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
-    pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip...
-    pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'...
-    pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq...
-    
-    apply conj_intro_meta; auto.
-    - toMLGoal.
-      { auto. }
-      mlIntro.
-      mlDestructOr 0.
-      + mlLeft. fromMLGoal. assumption.
-      + mlRight. fromMLGoal. assumption.
-    - toMLGoal.
-      { auto. }
-      mlIntro.
-      mlDestructOr 0.
-      + mlLeft. fromMLGoal. assumption.
-      + mlRight. fromMLGoal. assumption.
-  Defined.
-
-End FOL_helpers.
-
-
-(* TODO this should have a different name, and we should give the name [mlSplit] to a tactic
-  that works with our goals *)
-(*Ltac mlSplit := apply conj_intro_meta; auto.*)
-
-Section FOL_helpers.
-
-  Context {Σ : Signature}.
-
-  
-  Lemma impl_iff_notp_or_q Γ p q:
-    well_formed p ->
-    well_formed q ->
-    Γ ⊢i ((p ---> q) <---> (! p or q))
-    using BasicReasoning.
-  Proof.
-    intros wfp wfq.
-    apply conj_intro_meta; auto.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro.
-      mlAdd (@A_or_notA Σ Γ p wfp).
-      mlDestructOr 0.
-      + mlRight.
-        mlApply 1.
-        mlExactn 0.
-      + mlLeft.
-        mlExactn 0.
-    - toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlIntro. unfold patt_or.
-      mlApply 0.
-      mlApplyMeta (@not_not_intro _ _ p wfp).
-      mlExactn 1.
-  Defined.
-
-  Lemma p_and_notp_is_bot Γ p:
-    well_formed p ->
-    Γ ⊢i (⊥ <---> p and ! p)
-    using BasicReasoning.
-  Proof.
-    intros wfp.
-    apply conj_intro_meta; auto.
-    - apply bot_elim; auto.
-    - unfold patt_and.
-      toMLGoal.
-      { wf_auto2. }
-      mlIntro.
-      mlApply 0.
-      mlAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)).
-      mlExactn 0.
-  Defined.
-
-  Lemma weird_lemma Γ A B L R:
-    well_formed A ->
-    well_formed B ->
-    well_formed L ->
-    well_formed R ->
-    Γ ⊢i (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
-    using BasicReasoning.
-  Proof.
-    intros wfA wfB wfL wfR.
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro. mlIntro.
-    mlAdd (@A_or_notA Σ Γ A wfA).
-    mlDestructOr 0.
-    - mlAssert ((B or R)).
-      { wf_auto2. }
-      { mlApply 1.
-        unfold patt_and at 2.
-        mlIntro.
-        mlDestructOr 3.
-        + mlApply 3. mlExactn 2.
-        + mlApply 3. mlExactn 0.
-      }
-      mlDestructOr 3.
-      + mlLeft. mlIntro. mlExactn 3.
-      + mlRight. mlExactn 3.
-    - mlLeft.
-      mlIntro.
-      mlApplyMeta (@bot_elim Σ _ B wfB).
-      mlApply 0. mlExactn 3.
-  Defined.
-
-  Lemma weird_lemma_meta Γ A B L R i:
-    well_formed A ->
-    well_formed B ->
-    well_formed L ->
-    well_formed R ->
-    Γ ⊢i ((L and A) ---> (B or R)) using i ->
-    Γ ⊢i (L ---> ((A ---> B) or R)) using i.
-  Proof.
-    intros WFA WFB WFL WFR H.
-    eapply MP.
-    2: { useBasicReasoning. apply weird_lemma; assumption. }
-    exact H.
-  Defined.
-
-  Lemma imp_trans_mixed_meta Γ A B C D i :
-    well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢i (C ---> A) using i ->
-    Γ ⊢i (B ---> D) using i ->
-    Γ ⊢i ((A ---> B) ---> C ---> D) using i.
-  Proof.
-    intros WFA WFB WFC WFD H H0.
-    epose proof (H1 := @prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
-    eapply useBasicReasoning in H1.
-    eapply MP in H1.
-    2: { exact H0. }
-    epose proof (H2 := @prf_strenghten_premise Σ Γ A C D WFA WFC WFD).
-    eapply useBasicReasoning in H2.
-    eapply MP in H2.
-    2: { exact H. }
-    epose proof (H3 := @syllogism_meta Σ Γ _ _ _ i _ _ _ H1 H2).
-    exact H3.
-    Unshelve. all: wf_auto2.
-  Defined.
-
-  Lemma and_weaken A B C Γ i:
-    well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢i (B ---> C) using i ->
-    Γ ⊢i ((A and B) ---> (A and C)) using i.
-  Proof.
-    intros WFA WFB WFC H.
-    epose proof (H0 := @and_impl' Σ Γ A B (A and C) _ _ _).
-    eapply MP. 2: { useBasicReasoning. exact H0. }
-    apply reorder_meta.
-    1-3: wf_auto2.
-    epose proof (H1 := @prf_strenghten_premise Σ Γ C B (A ---> A and C) _ _ _).
-    eapply MP.
-    2: eapply MP.
-    3: { useBasicReasoning. exact H1. }
-    2: { exact H. }
-    useBasicReasoning.
-    apply conj_intro2; assumption.
-    Unshelve.
-    all: wf_auto2.
-  Defined.
-
-  Lemma impl_and Γ A B C D i: 
-    well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-    Γ ⊢i (A ---> B) using i ->
-    Γ ⊢i (C ---> D) using i ->
-    Γ ⊢i (A and C) ---> (B and D) using i.
-  Proof.
-    intros WFA WFB WFC WFD H H0.
-    toMLGoal.
-    { wf_auto2. }
-    {
-      mlAdd H.
-      mlAdd H0.
-      mlIntro.
-      mlDestructAnd 2.
-      mlIntro.
-      mlDestructOr 4.
-      {
-        mlApply 4.
-        mlApply 1.
-        mlExactn 2.
-      }
-      {
-        mlApply 4.
-        mlApply 0.
-        mlExactn 3.
-      }
-    }
-  Defined.
-
-  Lemma and_drop A B C Γ i:
-    well_formed A -> well_formed B -> well_formed C ->
-    Γ ⊢i ((A and B) ---> C) using i ->
-    Γ ⊢i ((A and B) ---> (A and C)) using i.
-  Proof.
-    intros WFA WFB WFC H.
-    toMLGoal.
-    { wf_auto2. }
-    mlAdd H.
-    mlIntro.
-    mlIntro.
-    mlDestructOr 2.
-    {
-      mlDestructAnd 1.
-      mlApply 3.
-      mlExactn 1.
-    }
-    {
-      mlApply 2.
-      mlApply 0.
-      mlExactn 1.
-    }
-  Defined.
-
-  Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
+  Lemma universal_generalization {Σ : Signature} Γ ϕ x (i : ProofInfo) :
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
     Γ ⊢i ϕ using i ->
@@ -2742,7 +1390,7 @@ Section FOL_helpers.
 
   (*Hint Resolve evar_quantify_well_formed.*)
 
-  Lemma forall_variable_substitution Γ ϕ x:
+  Lemma forall_variable_substitution {Σ : Signature} Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢i (all, evar_quantify x 0 ϕ) ---> ϕ
     using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
@@ -2777,8 +1425,6 @@ Section FOL_helpers.
     mlApply 2.
     mlExactn 4.
   Defined.
-
-End FOL_helpers.
 
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
   ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true, FP := fp)) ( gpi) ->
@@ -2934,11 +1580,7 @@ Proof.
   }
 Defined.
 
-Section FOL_helpers.
-
-  Context {Σ : Signature}.
-
-  Lemma mu_monotone Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+  Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
     ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
@@ -3082,67 +1724,8 @@ Section FOL_helpers.
     all: abstract(wf_auto2).
   Defined.
 
-  Lemma prf_equiv_of_impl_of_equiv Γ a b a' b' i:
-    well_formed a = true ->
-    well_formed b = true ->
-    well_formed a' = true ->
-    well_formed b' = true ->
-    Γ ⊢i (a <---> a') using i ->
-    Γ ⊢i (b <---> b') using i ->
-    Γ ⊢i (a ---> b) <---> (a' ---> b') using i
-  .
-  Proof.
-    intros wfa wfb wfa' wfb' Haa' Hbb'.
-    unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Haa')).
-    { wf_auto2. }
-    { wf_auto2. }
-    unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Haa')).
-    { wf_auto2. }
-    { wf_auto2. }
-    unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Hbb')).
-    { wf_auto2. }
-    { wf_auto2. }
-    unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Hbb')).
-    { wf_auto2. }
-    { wf_auto2. }
 
-    apply pf_iff_equiv_trans with (B := (a ---> b')).
-    1-3: wf_auto2.
-      + apply conj_intro_meta.
-        1-2: wf_auto2.
-        * toMLGoal.
-          { wf_auto2. }
-          mlIntro. mlIntro.
-          mlAdd Hbb'1.
-          mlApply 0.
-          mlApply 1.
-          mlExactn 2.
-        * toMLGoal.
-          { wf_auto2. }
-          mlIntro. mlIntro.
-          mlAdd Hbb'2.
-          mlApply 0.
-          mlApply 1.
-          mlExactn 2.
-      + apply conj_intro_meta.
-        1-2: wf_auto2.
-        * toMLGoal.
-          { wf_auto2. }
-          mlIntro. mlIntro.
-          mlAdd Haa'2.
-          mlApply 1.
-          mlApply 0.
-          mlExactn 2.
-        * toMLGoal.
-          { wf_auto2. }
-          mlIntro. mlIntro.
-          mlAdd Haa'1.
-          mlApply 1.
-          mlApply 0.
-          mlExactn 2.
-  Defined.
-
-  Lemma pf_evar_open_free_evar_subst_equiv_sides Γ x n ϕ p q E i:
+  Lemma pf_evar_open_free_evar_subst_equiv_sides {Σ : Signature} Γ x n ϕ p q E i:
     x <> E ->
     well_formed p = true ->
     well_formed q = true ->
@@ -3156,7 +1739,7 @@ Section FOL_helpers.
     reflexivity.
   Defined.
 
-  Lemma strip_exists_quantify_l Γ x P Q i :
+  Lemma strip_exists_quantify_l {Σ : Signature} Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
     Γ ⊢i (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
@@ -3171,7 +1754,7 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma strip_exists_quantify_r Γ x P Q i :
+  Lemma strip_exists_quantify_r {Σ : Signature} Γ x P Q i :
     x ∉ free_evars Q ->
     well_formed_closed_ex_aux Q 1 ->
     Γ ⊢i P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
@@ -3186,7 +1769,7 @@ Section FOL_helpers.
     ).
   Defined.
 
-  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst Γ ϕ p q E X i:
+  Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst {Σ : Signature} Γ ϕ p q E X i:
     well_formed_closed_mu_aux p 0 = true ->
     well_formed_closed_mu_aux q 0 = true ->
     Γ ⊢i free_evar_subst (svar_open 0 X ϕ) p E <---> free_evar_subst (svar_open 0 X ϕ) q E using i ->
@@ -3206,7 +1789,7 @@ Section FOL_helpers.
    ).
   Defined.
 
-  Lemma pf_iff_mu_remove_svar_quantify_svar_open Γ ϕ p q E X i :
+  Lemma pf_iff_mu_remove_svar_quantify_svar_open {Σ : Signature} Γ ϕ p q E X i :
     well_formed_closed_mu_aux (free_evar_subst ϕ p E) 1 ->
     well_formed_closed_mu_aux (free_evar_subst ϕ q E) 1 ->
     X ∉ free_svars (free_evar_subst ϕ p E) ->
@@ -3224,8 +1807,6 @@ Section FOL_helpers.
     ).
   Defined.
 
-
-End FOL_helpers.
 
   Add Search Blacklist "_elim".
   Add Search Blacklist "_graph_rect".
@@ -4791,222 +3372,6 @@ Proof.
   mlExactn 1.
 Defined.
 
-Lemma lhs_to_and {Σ : Signature} Γ a b c i:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i (a and b) ---> c using i ->
-  Γ ⊢i a ---> b ---> c using i.
-Proof.
-  intros wfa wfb wfc H.
-  toMLGoal.
-  { wf_auto2. }
-  do 2 mlIntro. mlApplyMeta H.
-  fromMLGoal.
-  useBasicReasoning.
-  apply conj_intro.
-  { wf_auto2. }
-  { wf_auto2. }
-Defined.
-
-Lemma lhs_from_and {Σ : Signature} Γ a b c i:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i a ---> b ---> c using i ->
-  Γ ⊢i (a and b) ---> c using i.
-Proof.
-  intros wfa wfb wfc H.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro.
-  mlAssert (b).
-  { wf_auto2. }
-  { fromMLGoal. useBasicReasoning. apply pf_conj_elim_r.
-    wf_auto2. wf_auto2.
-  }
-  mlAssert (a) using first 1.
-  { wf_auto2. }
-  { fromMLGoal. useBasicReasoning. apply pf_conj_elim_l; wf_auto2. }
-  mlAdd H.
-  mlAssert ((b ---> c)).
-  { wf_auto2. }
-  { mlApply 0. mlExactn 2. }
-  mlApply 4.
-  mlExactn 3.
-Defined.
-
-Lemma prf_conj_split {Σ : Signature} Γ a b l:
-  well_formed a ->
-  well_formed b ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp a l) ---> (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l)
-  using BasicReasoning.
-Proof.
-  intros wfa wfb wfl.
-  induction l.
-  - simpl. apply conj_intro; assumption.
-  - simpl. pose proof (wfl' := wfl). unfold Pattern.wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa0 wfl'].
-    specialize (IHl wfl').
-    toMLGoal.
-    { wf_auto2. }
-    do 3 mlIntro.
-    mlAssert ((foldr patt_imp a l)).
-    { wf_auto2. }
-    { mlApply 0. mlExactn 2. }
-    mlAssert ((foldr patt_imp b l)).
-    { wf_auto2. }
-    { mlApply 1. mlExactn 2. }
-    mlClear 2. mlClear 1. mlClear 0.
-    fromMLGoal. apply IHl.
-Defined.
-
-Lemma prf_conj_split_meta {Σ : Signature} Γ a b l (i : ProofInfo):
-  well_formed a ->
-  well_formed b ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp a l) using i -> 
-  Γ ⊢i (foldr patt_imp b l) ---> (foldr patt_imp (a and b) l) using i.
-Proof.
-  intros. eapply MP. 2: { useBasicReasoning. apply prf_conj_split; assumption. }
-  exact H2.
-Defined.
-
-Lemma prf_conj_split_meta_meta {Σ : Signature} Γ a b l (i : ProofInfo):
-  well_formed a ->
-  well_formed b ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp a l) using i -> 
-  Γ ⊢i (foldr patt_imp b l) using i ->
-  Γ ⊢i (foldr patt_imp (a and b) l) using i.
-Proof.
-  intros. eapply MP.
-  2: {
-    apply prf_conj_split_meta; assumption.
-  }
-  exact H3.
-Defined.
-
-Lemma MLGoal_splitAnd {Σ : Signature} Γ a b l i:
-  @mkMLGoal Σ Γ l a i ->
-  @mkMLGoal Σ Γ l b i ->
-  @mkMLGoal Σ Γ l (a and b) i.
-Proof.
-  intros Ha Hb.
-  unfold of_MLGoal in *. simpl in *.
-  intros wfab wfl.
-  feed specialize Ha.
-  { abstract(wf_auto2). }
-  { exact wfl. }
-  feed specialize Hb.
-  { abstract(wf_auto2). }
-  { exact wfl. }
-  apply prf_conj_split_meta_meta; auto.
-  { abstract (wf_auto2). }
-  { abstract (wf_auto2). }
-Defined.
-
-Ltac mlSplitAnd := apply MLGoal_splitAnd.
-
-Local Lemma ex_mlSplitAnd {Σ : Signature} Γ a b c:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i a ---> b ---> c ---> (a and b)
-  using BasicReasoning.
-Proof.
-  intros wfa wfb wfc.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro. mlIntro. mlIntro.
-  mlSplitAnd.
-  - mlExactn 0.
-  - mlExactn 1.
-Defined.
-
-Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
-  well_formed g₁ ->
-  well_formed g₂ ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) --->
-      ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l))
-  using BasicReasoning.
-Proof.
-  intros wfg₁ wfg₂ wfl.
-  induction l; simpl.
-  - apply A_impl_A; wf_auto2.
-  - pose proof (wfl' := wfl). unfold Pattern.wf in wfl'. simpl in wfl'. apply andb_prop in wfl' as [wfa wfl'].
-    specialize (IHl wfl').
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro. mlSplitAnd.
-    + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
-      (* TODO we need some [mlRevert] tactic *)
-      fromMLGoal. toMLGoal.
-      { wf_auto2. }
-      unshelve(mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
-      mlIntro. mlClear 0. mlIntro.
-      mlApplyMeta IHl in 0. unfold patt_iff at 1. mlDestructAnd 0.
-      mlExactn 0.
-    + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
-      fromMLGoal. toMLGoal.
-      { wf_auto2. }
-      unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
-      mlIntro. mlClear 0. mlIntro.
-      mlApplyMeta IHl in 0. unfold patt_iff at 1. mlDestructAnd 0.
-      mlExactn 1.
-Defined.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l i:
-  well_formed g₁ ->
-  well_formed g₂ ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢i ((foldr patt_imp g₁ l) <---> (foldr patt_imp g₂ l)) using i.
-Proof.
-  intros wfg₁ wfg₂ wfl H.
-  eapply MP.
-  2: { useBasicReasoning. apply prf_local_goals_equiv_impl_full_equiv; assumption. }
-  exact H.
-Defined.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj1 {Σ : Signature} Γ g₁ g₂ l i:
-  well_formed g₁ ->
-  well_formed g₂ ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢i (foldr patt_imp g₁ l) using i ->
-  Γ ⊢i (foldr patt_imp g₂ l) using i.
-Proof.
-  intros wfg₁ wfg₂ wfl H1 H2.
-  eapply MP.
-  2: eapply pf_iff_proj1.
-  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  7: apply H1.
-  1: exact H2.
-  all: wf_auto2.
-Defined.
-
-Lemma prf_local_goals_equiv_impl_full_equiv_meta_proj2 {Σ : Signature} Γ g₁ g₂ l i:
-  well_formed g₁ ->
-  well_formed g₂ ->
-  Pattern.wf l ->
-  Γ ⊢i (foldr patt_imp (g₁ <---> g₂) l) using i ->
-  Γ ⊢i (foldr patt_imp g₂ l) using i ->
-  Γ ⊢i (foldr patt_imp g₁ l) using i.
-Proof.
-  intros wfg₁ wfg₂ wfl H1 H2.
-  eapply MP.
-  2: eapply pf_iff_proj2.
-  4: apply prf_local_goals_equiv_impl_full_equiv_meta.
-  7: apply H1.
-  1: exact H2.
-  all: wf_auto2.
-Defined.
 
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
   (wfp : well_formed p)
