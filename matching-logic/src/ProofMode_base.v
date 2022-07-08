@@ -395,3 +395,31 @@ Proof.
   { exact Hpf4. }
   { set_solver. }
 Qed.
+
+
+Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(apply f_equal; rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac]
+.
+
+Tactic Notation "_mlReshapeHypsByName" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(
+    apply f_equal;
+    lazymatch goal with
+    | [|- _ = ?l] =>
+      lazymatch (eval cbv in (find_hyp n l)) with
+      | Some (?n, _) =>
+        rewrite <- (firstn_skipn n);
+        rewrite /firstn;
+        rewrite /skipn;
+        reflexivity
+      end
+    end
+    )
+  |idtac]
+.
+
+Tactic Notation "_mlReshapeHypsBack" :=
+  let hyps := fresh "hyps" in rewrite [hyps in @mkMLGoal _ _ hyps _]/app
+.
