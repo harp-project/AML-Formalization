@@ -8,16 +8,29 @@
 
   outputs = { self, nixpkgs, flake-utils }: (
     flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+        packageName = "coq-matching-logic";
+        basicDeps = [
+          pkgs.coq
+          pkgs.coqPackages.equations
+          pkgs.coqPackages.stdpp
+        ];
       in {
-        packages.hello = pkgs.hello;
+        packages.${packageName} = pkgs.coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic";
+
+          src = self;
+          propagatedBuildInputs = basicDeps;
+          enableParallelBuilding = true;
+
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+        } ) { } ;
 
         devShell = pkgs.mkShell {
-          buildInputs = [
-            pkgs.coq
-            pkgs.coqPackages.equations
-            pkgs.coqPackages.stdpp
-          ];
+          buildInputs = basicDeps;
          };
       }
     )
