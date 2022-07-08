@@ -29,13 +29,34 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
-Definition named_hypothesis {Σ : Signature} := (string * Pattern)%type.
+Record named_hypothesis {Σ : Signature} := mkNH
+  {
+    nh_name : string;
+    nh_patt : Pattern;
+  }.
+
+Notation "N : P ," :=
+  (@mkNH _ N P)
+  (at level 100, no associativity, format "N ':'  P ,", only printing).
+
 Definition hypotheses {Σ : Signature} := list named_hypothesis.
-Definition names_of {Σ : Signature} (h : hypotheses) : list string := map fst h.
-Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map snd h.
+
+Notation "" :=
+  (@nil named_hypothesis)
+  (at level 100, left associativity, only printing) : ml_scope.
+(*TODO: Ensure that this does not add parentheses*)
+Notation "x" :=
+  (@cons named_hypothesis x nil)
+  (at level 100, left associativity, format "x '//'", only printing) : ml_scope.
+Notation "x y .. z" :=
+  (@cons named_hypothesis x (cons y .. (cons z nil) ..))
+  (at level 100, left associativity, format "x '//' y '//' .. '//' z", only printing) : ml_scope.
+
+Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
+Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
 
 Definition has_name {Σ : Signature} (n : string) (nh : named_hypothesis) : Prop
-:= fst nh = n.
+:= nh_name nh = n.
 
 #[global]
 Instance has_name_dec {Σ : Signature} n nh : Decision (has_name n nh).
@@ -67,9 +88,15 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (patterns_of (mlHypotheses MG)))
   using (mlInfo MG).
 
+
+
   (* This is useful only for printing. *)
-  Notation "[ S , G ⊢ l ==> g ]  'using' pi "
-  := (@mkMLGoal S G l g pi) (at level 95, no associativity, only printing).
+  Notation "S , G ⊢ -------------------- l ==> g 'using' pi "
+  := (@mkMLGoal S G l g pi)
+  (at level 95,
+  no associativity,
+  format "S , G '//' ⊢  -------------------- '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi ",
+  only printing).
 
 
 Ltac toMLGoal :=
@@ -233,7 +260,7 @@ Defined.
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
-  @mkMLGoal Σ Γ (l ++ [(name, x)]) g i ->
+  @mkMLGoal Σ Γ (l ++ [mkNH name x]) g i ->
   @mkMLGoal Σ Γ l (x ---> g) i.
 Proof.
   intros H.
@@ -256,11 +283,31 @@ Ltac simplLocalContext :=
       => eapply cast_proof_ml_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
-#[global]
- Ltac mlIntro := apply MLGoal_intro; simplLocalContext.
+Tactic Notation "_failIfUsed" constr(name) :=
+  lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] =>
+    lazymatch (eval cbv in (find_hyp name l)) with
+    | Some _ => fail "The name" name "is already used"
+    | None => idtac
+    end
+  end.
 
- Tactic Notation "mlIntro" constr(name') :=
- apply MLGoal_intro with (name := name'); simplLocalContext.
+Tactic Notation "mlIntro" constr(name') :=
+_failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
+
+Ltac ltac_loop_aux k X :=
+  match X with
+  | 0 => k
+  | _ => (fun Y => ltac_loop_aux ltac:(idtac "hello"; k) Y)
+  end.
+
+Ltac ltac_loop X := ltac_loop_aux ltac:(idtac "done") X.
+
+Ltac mlIntros_aux cont n names :=
+  match names with
+  | 0 => cont
+  | _ => try mlIntros_aux ltac:(mlIntro n; cont)
+  end.
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
 well_formed p ->
@@ -269,7 +316,6 @@ Proof.
 intros wfp.
 toMLGoal.
 { wf_auto2. }
-Set Printing All.
 match goal with
 | [ |- of_MLGoal (@mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
 | _ => fail
@@ -279,17 +325,22 @@ Abort.
 
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢i a ---> a using i.
+  Γ ⊢i a ---> a ---> a using i.
 Proof.
   intros wfa.
   toMLGoal.
   { wf_auto2. }
+
+  mlIntros_aux "h1"%string "h2"%string "h3"%string.
+
   mlIntro "h"%string.
+  Fail mlIntro "h"%string.
+  mlIntro "h'"%string.
 Abort.
 
 Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
 @mkMLGoal Σ Γ l (x ---> g) i ->
-@mkMLGoal Σ Γ (l ++ [(n, x)]) g i.
+@mkMLGoal Σ Γ (l ++ [mkNH n x]) g i.
 Proof.
 intros H.
 unfold of_MLGoal in H. simpl in H.
