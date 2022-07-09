@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqMatchingLogic = "coq${pkgs.coq.version}-matching-logic";
+        coqMatchingLogic = "coq-matching-logic";
         basicDeps = [
           pkgs.coq
           pkgs.coqPackages.equations
@@ -26,7 +26,7 @@
           propagatedBuildInputs = basicDeps;
           enableParallelBuilding = true;
 
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/"];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
 
         devShell = pkgs.mkShell {
