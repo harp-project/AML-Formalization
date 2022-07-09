@@ -16,22 +16,15 @@
           pkgs.coqPackages.equations
           pkgs.coqPackages.stdpp
         ];
-        thisDirectory = self + "/matching-logic";
+
       in {
         packages.${coqMatchingLogic} = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = coqMatchingLogic;
-
-          
-          src = thisDirectory;
+          src = self + "/matching-logic";
           propagatedBuildInputs = basicDeps;
           enableParallelBuilding = true;
-
-          makefile = "Makefile";
-          installPhase = ''
-            pwd; false
-          '';
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
 
