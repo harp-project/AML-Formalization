@@ -20,10 +20,10 @@ jobs:
       - checkout
       - run:
           name: "Build"
-          command: cd matching-logic; nix-build --show-trace
+          command: nix build '.#coq-matching-logic'
       - run:
           name: "Example 03 (FOL) -- Build"
-          command: cd examples/03_FOL; nix-shell --run "make"
+          command: nix build '.#coq-matching-logic-example-fol'
       - run:
           name: "Prover Build & Test"
           command: cd prover; nix-shell --run "make test"

@@ -12,6 +12,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
       in {
+        # The 'matching logic in Coq' library
         packages.coq-matching-logic
         = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -27,6 +28,24 @@
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
 
+        # Documentation of the 'matching logic in Coq' library
+        packages.coq-matching-logic-doc
+        = pkgs.coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic-doc";
+          src = self + "/matching-logic";
+          propagatedBuildInputs =
+            self.outputs.packages.${system}.coq-matching-logic.propagatedBuildInputs
+          ++ [
+            pkgs.python310Packages.alectryon
+          ];
+          enableParallelBuilding = true;
+          installTargets = "install-doc";
+          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+        } ) { } ;
+
+        # Example: FOL embedded in matching logic
         packages.coq-matching-logic-example-fol
         = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -39,6 +58,24 @@
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
         
+        # Metamath exporter: Build & Test
+        packages.coq-matching-logic-mm-exporter
+        = pkgs.coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic-mm-exporter";
+          src = self + "/prover";
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+          ];
+
+          buildPhase = ''
+            make test
+          '';
+          
+          dontInstall = true;
+        } ) { } ;
+
 
         #devShell = pkgs.mkShell {
         #  buildInputs = basicDeps ++ [pkgs.python310Packages.alectryon];
