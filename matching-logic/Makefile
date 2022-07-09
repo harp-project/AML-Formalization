@@ -1,17 +1,11 @@
-$(info $(MAKEFILE_LIST))
-
 all: Makefile.coq
-	echo This is my build
-#all: Makefile.coq
-#	@+$(MAKE) -f Makefile.coq all
+	@+$(MAKE) -f Makefile.coq all
 
 html: Makefile.coq
 	@+$(MAKE) -f Makefile.coq html COQDOCEXTRAFLAGS="--gallina --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp"
 
-install:
-	echo Ahoj
-#install: Makefile.coq
-#	@+$(MAKE) -f Makefile.coq install
+install: Makefile.coq
+	@+$(MAKE) -f Makefile.coq install
 
 clean: Makefile.coq
 	@+$(MAKE) -f Makefile.coq cleanall
