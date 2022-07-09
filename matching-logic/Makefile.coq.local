@@ -1,0 +1,7 @@
+PATH_TO_COMPILED_LIBRARY ?= .
+
+coqdoc:
+	mkdir -p doc/coqdoc
+	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
+		| xargs coqdoc --utf8 --parse-comments --no-index --lib-name "File" -toc -html -gallina --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp \
+		-d doc/coqdoc

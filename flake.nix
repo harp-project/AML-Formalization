@@ -38,11 +38,11 @@
           propagatedBuildInputs =
             self.outputs.packages.${system}.coq-matching-logic.propagatedBuildInputs
           ++ [
+            pkgs.ocaml # for 'ocamldoc.opt'
             pkgs.python310Packages.alectryon
           ];
           enableParallelBuilding = true;
           installTargets = "install-doc";
-          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
 
         # Example: FOL embedded in matching logic
