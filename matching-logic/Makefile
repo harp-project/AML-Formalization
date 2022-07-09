@@ -1,5 +1,5 @@
 all: Makefile.coq
-	@+$(MAKE) -f Makefile.coq all matching_logic.glob
+	@+$(MAKE) -f Makefile.coq all
 
 install: Makefile.coq
 	@+$(MAKE) -f Makefile.coq install
