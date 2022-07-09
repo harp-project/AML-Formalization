@@ -10,27 +10,39 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqMatchingLogic = "coq-matching-logic";
-        basicDeps = [
-          pkgs.coq
-          pkgs.coqPackages.equations
-          pkgs.coqPackages.stdpp
-        ];
 
       in {
-        packages.${coqMatchingLogic} = pkgs.coqPackages.callPackage 
+        packages.coq-matching-logic
+        = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = coqMatchingLogic;
+          name = "coq-matching-logic";
           src = self + "/matching-logic";
-          propagatedBuildInputs = basicDeps;
+          propagatedBuildInputs = [
+            pkgs.coq
+            pkgs.coqPackages.equations
+            pkgs.coqPackages.stdpp
+          ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
 
-        devShell = pkgs.mkShell {
-          buildInputs = basicDeps ++ [pkgs.python310Packages.alectryon];
-         };
+        packages.coq-matching-logic-example-fol
+        = pkgs.coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic-example-fol";
+          src = self + "/examples/03_FOL";
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+          ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+        } ) { } ;
+        
+
+        #devShell = pkgs.mkShell {
+        #  buildInputs = basicDeps ++ [pkgs.python310Packages.alectryon];
+        # };
       }
     )
   );
