@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqMatchingLogic = "coq-matching-logic";
+        coqMatchingLogic = "coq${pkgs.coq.version}-matching-logic";
         basicDeps = [
           pkgs.coq
           pkgs.coqPackages.equations
@@ -20,7 +20,7 @@
         packages.${coqMatchingLogic} = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = "coq-matching-logic";
+          name = coqMatchingLogic;
 
           src = self;
           propagatedBuildInputs = basicDeps;
