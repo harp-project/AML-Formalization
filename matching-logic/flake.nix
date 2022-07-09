@@ -1,5 +1,5 @@
 {
-  description = "A template that shows all standard flake outputs";
+  description = "A Coq Library for Matching Logic";
 
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
@@ -10,14 +10,14 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        packageName = "coq-matching-logic";
+        coqMatchingLogic = "coq-matching-logic";
         basicDeps = [
           pkgs.coq
           pkgs.coqPackages.equations
           pkgs.coqPackages.stdpp
         ];
       in {
-        packages.${packageName} = pkgs.coqPackages.callPackage 
+        packages.${coqMatchingLogic} = pkgs.coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic";
@@ -26,11 +26,11 @@
           propagatedBuildInputs = basicDeps;
           enableParallelBuilding = true;
 
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/"];
         } ) { } ;
 
         devShell = pkgs.mkShell {
-          buildInputs = basicDeps;
+          buildInputs = basicDeps ++ [pkgs.python310Packages.alectryon];
          };
       }
     )
