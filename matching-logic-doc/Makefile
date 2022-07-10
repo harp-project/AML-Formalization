@@ -1,4 +1,7 @@
-PATH_TO_COMPILED_LIBRARY ?= .
+PATH_TO_COMPILED_LIBRARY ?= ../matching-logic
+DOCDIR ?= /usr/share
+COQDOCINSTALL ?= $(DOCDIR)/coq/user-contrib
+
 
 coqdoc: doc/coqdoc
 
