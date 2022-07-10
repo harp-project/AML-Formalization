@@ -1093,7 +1093,7 @@ Lemma MLGoal_exactn {Σ : Signature}
   (name : string)
   (g : Pattern)
   (info : ProofInfo) :
-  @mkMLGoal Σ Γ (l₁ ++ (name, g) :: l₂) g info.
+  @mkMLGoal Σ Γ (l₁ ++ (mkNH name g) :: l₂) g info.
 Proof.
 mlExtractWF wfl₁gl₂ wfg.
 fromMLGoal.
@@ -1103,7 +1103,7 @@ rewrite map_app.
 apply nested_const_middle.
 { exact wfg. }
 { abstract (
-    pose proof (wfl₁ := wf_take (length (map snd l₁)) wfl₁gl₂);
+    pose proof (wfl₁ := wf_take (length (patterns_of l₁)) wfl₁gl₂);
     rewrite map_app in wfl₁;
     rewrite take_app in wfl₁;
     exact wfl₁
@@ -1111,7 +1111,7 @@ apply nested_const_middle.
 }
 {
   abstract (
-    pose proof (wfgl₂ := wf_drop (length (map snd l₁)) wfl₁gl₂);
+    pose proof (wfgl₂ := wf_drop (length (patterns_of l₁)) wfl₁gl₂);
     rewrite map_app in wfgl₂;
     rewrite drop_app in wfgl₂;
     unfold Pattern.wf in wfgl₂;
@@ -1125,21 +1125,19 @@ Defined.
 
 
 Tactic Notation "mlExactn" constr(n) :=
-  useBasicReasoning;
-  eapply cast_proof_ml_hyps;
-  [(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
+  _mlReshapeHypsByIdx n;
   apply MLGoal_exactn.
 
 
 
 Lemma MLGoal_exact {Σ : Signature} Γ l name g idx info:
-  find_hyp name l = Some (idx, (name, g)) ->
+  find_hyp name l = Some (idx, (mkNH name g)) ->
   @mkMLGoal Σ Γ l g info.
 Proof.
   intros Hfound.
   setoid_rewrite -> list.list_find_Some in Hfound.
   destruct Hfound as [Hfound1 [Hfound2 Hfound3] ].
-  rewrite -[l](take_drop_middle l idx (name, g)).
+  rewrite -[l](take_drop_middle l idx (mkNH name g)).
   { exact Hfound1. }
   apply MLGoal_exactn.
 Defined.
@@ -1147,7 +1145,7 @@ Defined.
 Tactic Notation "mlExact" constr(name')
 := eapply MLGoal_exact with (name := name'); simpl; apply f_equal; reflexivity.
 
-Local Example ex_mlExactn {Σ : Signature} Γ a b c:
+Local Example ex_mlExact {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
   well_formed c = true ->
@@ -1296,8 +1294,8 @@ eapply MP.
 Defined.
 
 Lemma MLGoal_weakenConclusion_under_first_implication {Σ : Signature} Γ l name g g' i:
-@mkMLGoal Σ Γ ((name, g ---> g') :: l) g i ->
-@mkMLGoal Σ Γ ((name, g ---> g') :: l) g' i .
+@mkMLGoal Σ Γ (mkNH name (g ---> g') :: l) g i ->
+@mkMLGoal Σ Γ (mkNH name (g ---> g') :: l) g' i .
 Proof.
 intros H. unfold of_MLGoal in *. simpl in *.
 intros wfg' wfgg'l.
@@ -1339,8 +1337,8 @@ eapply MP.
 Defined.
 
 Lemma MLGoal_weakenConclusion {Σ : Signature} Γ l₁ l₂ name g g' i:
-@mkMLGoal Σ Γ (l₁ ++ (name, g ---> g') :: l₂) g i ->
-@mkMLGoal Σ Γ (l₁ ++ (name, g ---> g') :: l₂) g' i.
+@mkMLGoal Σ Γ (l₁ ++ (mkNH name (g ---> g')) :: l₂) g i ->
+@mkMLGoal Σ Γ (l₁ ++ (mkNH name (g ---> g')) :: l₂) g' i.
 Proof.
 unfold of_MLGoal in *. simpl in *.
 intros H wfg' wfl₁gg'l₂.
@@ -1352,9 +1350,9 @@ unfold patterns_of.
 rewrite map_app.
 
 apply prf_weaken_conclusion_iter_under_implication_iter_meta.
-{ abstract (pose proof (wfl₁ := wf_take (length (map snd l₁)) wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; exact wfl₁). }
+{ abstract (pose proof (wfl₁ := wf_take (length (patterns_of l₁)) wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; exact wfl₁). }
 { abstract (
-    pose proof (wfgg'l₂ := wf_drop (length (map snd l₁)) wfl₁gg'l₂);
+    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
     rewrite drop_app in wfgg'l₂;
     pose proof (Htmp := wfgg'l₂);
     unfold Pattern.wf in Htmp;
@@ -1366,7 +1364,7 @@ apply prf_weaken_conclusion_iter_under_implication_iter_meta.
 }
 {
   abstract(
-    pose proof (wfgg'l₂ := wf_drop (length (map snd l₁)) wfl₁gg'l₂);
+    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
     rewrite drop_app in wfgg'l₂;
     pose proof (Htmp := wfgg'l₂);
     unfold Pattern.wf in Htmp;
@@ -1384,7 +1382,7 @@ rewrite map_app in H.
 apply H.
 {
   abstract(
-    pose proof (wfgg'l₂ := wf_drop (length (map snd l₁)) wfl₁gg'l₂);
+    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
     rewrite drop_app in wfgg'l₂;
     pose proof (Htmp := wfgg'l₂);
     unfold Pattern.wf in Htmp;
@@ -1540,7 +1538,7 @@ Defined.
 Lemma mlGoal_assert {Σ : Signature} Γ l name g h i:
 well_formed h ->
 @mkMLGoal Σ Γ l h i ->
-@mkMLGoal Σ Γ (l ++ [(name, h)]) g i ->
+@mkMLGoal Σ Γ (l ++ [mkNH name h]) g i ->
 @mkMLGoal Σ Γ l g i.
 Proof.
 intros wfh H1 H2.
@@ -1622,7 +1620,7 @@ Defined.
 Lemma mlGoal_assert_generalized {Σ : Signature} Γ l1 l2 name g h i:
 well_formed h ->
 @mkMLGoal Σ Γ l1 h i ->
-@mkMLGoal Σ Γ (l1 ++ [(name, h)] ++ l2) g i ->
+@mkMLGoal Σ Γ (l1 ++ [mkNH name h] ++ l2) g i ->
 @mkMLGoal Σ Γ (l1 ++ l2) g i.
 Proof.
 intros wfh H1 H2.
@@ -1896,7 +1894,7 @@ Defined.
 
 Lemma MLGoal_add {Σ : Signature} Γ l name g h i:
 Γ ⊢i h using i ->
-@mkMLGoal Σ Γ ((name, h)::l) g i ->
+@mkMLGoal Σ Γ (mkNH name h::l) g i ->
 @mkMLGoal Σ Γ l g i.
 Proof.
 intros H H0.
@@ -2345,60 +2343,57 @@ eapply MP.
 apply H0.
 Defined.
 
-Lemma MLGoal_disj_elim {Σ : Signature} Γ l₁ l₂ p q r i:
-@mkMLGoal Σ Γ (l₁ ++ [p] ++ l₂) r i ->
-@mkMLGoal Σ Γ (l₁ ++ [q] ++ l₂) r i ->
-@mkMLGoal Σ Γ (l₁ ++ [p or q] ++ l₂) r i.
+Lemma MLGoal_disj_elim {Σ : Signature} Γ l₁ l₂ pn p qn q pqn r i:
+@mkMLGoal Σ Γ (l₁ ++ [mkNH pn p] ++ l₂) r i ->
+@mkMLGoal Σ Γ (l₁ ++ [mkNH qn q] ++ l₂) r i ->
+@mkMLGoal Σ Γ (l₁ ++ [mkNH pqn (p or q)] ++ l₂) r i.
 Proof.
 intros H1 H2.
 unfold of_MLGoal in *. simpl in *.
 intros wfr Hwf.
+unfold patterns_of in *.
+rewrite map_app.
+rewrite map_app in H1.
+rewrite map_app in H2.
 apply prf_disj_elim_iter_2_meta_meta.
 7: apply H2.
 6: apply H1.
-all: try assumption.
+all: try assumption; unfold patterns_of in *; rewrite map_app in Hwf.
 { abstract (apply wfl₁hl₂_proj_l₁ in Hwf; exact Hwf). }
 { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
 { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
 { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
-{ abstract (
-    pose proof (wfl₁hl₂_proj_l₁ Hwf);
-    pose proof (wfl₁hl₂_proj_h Hwf);
-    pose proof (wfl₁hl₂_proj_l₂ Hwf);
-    apply wf_app; [assumption|];
-    unfold patt_or,patt_not in *;
-    wf_auto2
-  ).
+{
+  pose proof (wfl₁hl₂_proj_l₁ Hwf).
+  pose proof (wfl₁hl₂_proj_h Hwf).
+  pose proof (wfl₁hl₂_proj_l₂ Hwf).
+  apply wf_app; [assumption|].
+  unfold patt_or,patt_not in *.
+  simpl.
+  wf_auto2.
 }
-{ abstract (
-    pose proof (wfl₁hl₂_proj_l₁ Hwf);
-    pose proof (wfl₁hl₂_proj_h Hwf);
-    pose proof (wfl₁hl₂_proj_l₂ Hwf);
-    apply wf_app; [assumption|];
-    unfold patt_or,patt_not in *;
-    wf_auto2
-  ).
+{
+  pose proof (wfl₁hl₂_proj_l₁ Hwf).
+  pose proof (wfl₁hl₂_proj_h Hwf).
+  pose proof (wfl₁hl₂_proj_l₂ Hwf).
+  apply wf_app; [assumption|].
+  unfold patt_or,patt_not in *.
+  simpl.
+  wf_auto2.
 }
 Defined.
 
-Tactic Notation "mlDestructOr" constr(n) :=
+Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
+  _failIfUsed name1; _failIfUsed name2;
   match goal with
   | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
     let Htd := fresh "Htd" in
     eapply cast_proof_ml_hyps;
-    [(
-      epose proof (Htd :=take_drop);
-      specialize (Htd n l);
-      rewrite [take _ _]/= in Htd;
-      rewrite [drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd;
-      epose proof (Htd :=take_drop);
-      specialize (Htd 1 (drop n l));
-      rewrite [take _ _]/= in Htd;
-      rewrite ![drop _ _]/= in Htd;
-      rewrite -Htd; clear Htd; reflexivity
-      )|];
-    apply MLGoal_disj_elim; simpl
+    f_equal;
+    _mlReshapeHypsByName name;
+    apply MLGoal_disj_elim with (pqn := name) (pn := name1) (qn := name2);
+    _mlReshapeHypsBack;
+    simpl
   end.
 
   Local Example exd {Σ : Signature} Γ a b p q c i:
@@ -2414,8 +2409,10 @@ Proof.
   intros WFa WFb WFp WFq WFc H H0.
   toMLGoal.
   { wf_auto2. } 
-  repeat mlIntro.
-  mlDestructOr 1.
+  mlIntro "H0".
+  mlIntro "H1".
+  mlIntro "H2".
+  mlDestructOr "H1" as "H3" "H4".
   - fromMLGoal. apply H.
   - fromMLGoal. apply H0.
 Defined.
@@ -2542,29 +2539,29 @@ apply conj_intro_meta.
 { wf_auto2. }
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro.
-  mlApply 0.
-  mlIntro.
+  mlIntro "H0". mlIntro "H1".
+  mlApply "H0".
+  mlIntro "H2".
   unfold patt_or.
-  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
-  mlApply 0.
-  mlApply 2.
-  mlAdd (@not_not_intro Σ Γ (! p1) ltac:(wf_auto2)).
-  mlApply 0.
-  mlExactn 4.
+  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)) as "H3".
+  mlApply "H3".
+  mlApply "H1".
+  mlAdd (@not_not_intro Σ Γ (! p1) ltac:(wf_auto2)) as "H4".
+  mlApply "H4".
+  mlExact "H2".
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro.
+  mlIntro "H0". mlIntro "H1".
   unfold patt_and.
-  mlApply 0.
+  mlApply "H0".
   unfold patt_or.
-  mlIntro.
-  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
-  mlApply 0.
-  mlApply 2.
-  mlAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)).
-  mlApply 0.
-  mlExactn 4.
+  mlIntro "H2".
+  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)) as "H3".
+  mlApply "H3".
+  mlApply "H1".
+  mlAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)) as "H4".
+  mlApply "H4".
+  mlExact "H2".
 Defined.
 
 Lemma and_impl_2 {Σ : Signature} Γ p1 p2:
@@ -2579,28 +2576,28 @@ apply conj_intro_meta.
 { wf_auto2. }
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro.
-  mlApply 0.
-  mlIntro.
+  mlIntro "H0". mlIntro "H1".
+  mlApply "H0".
+  mlIntro "H2".
   unfold patt_or.
-  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)).
-  mlApply 0.
-  mlApply 2.
-  mlAdd (@not_not_intro Σ Γ p1 ltac:(wf_auto2)).
-  mlApply 0.
-  mlExactn 4.
+  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)) as "H3".
+  mlApply "H3".
+  mlApply "H1".
+  mlAdd (@not_not_intro Σ Γ p1 ltac:(wf_auto2)) as "H4".
+  mlApply "H4".
+  mlExact "H2".
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro.
-  mlApply 0.
+  mlIntro "H0". mlIntro "H1".
+  mlApply "H0".
   unfold patt_or.
-  mlIntro.
-  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)).
-  mlApply 0.
-  mlApply 2.
-  mlAdd (@not_not_elim Σ Γ p1 ltac:(wf_auto2)).
-  mlApply 0.
-  mlExactn 4.
+  mlIntro "H2".
+  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)) as "H3".
+  mlApply "H3".
+  mlApply "H1".
+  mlAdd (@not_not_elim Σ Γ p1 ltac:(wf_auto2)) as "H4".
+  mlApply "H4".
+  mlExact "H2".
 Defined.
 
 Lemma conj_intro_meta_partial {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
@@ -2752,7 +2749,7 @@ Defined.
 Ltac mlLeft := apply MLGoal_left.
 Ltac mlRight := apply MLGoal_right.
 
-Example ex_mlLeft {Σ : Signature} Γ a:
+Local Example ex_mlLeft {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢i a ---> (a or a)
   using BasicReasoning.
@@ -2760,23 +2757,28 @@ Proof.
   intros wfa.
   toMLGoal.
   { wf_auto2. }
-  mlIntro.
+  mlIntro "H0".
   mlLeft.
-Abort.
+  mlExact "H0".
+Defined.
 
-Lemma MLGoal_applyMetaIn {Σ : Signature} Γ r r' i:
+Lemma MLGoal_applyMetaIn {Σ : Signature} Γ n r n' r' i:
   Γ ⊢i (r ---> r') using i ->
   forall l₁ l₂ g,
-    @mkMLGoal Σ Γ (l₁ ++ r'::l₂) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ r::l₂ ) g i.
+    @mkMLGoal Σ Γ (l₁ ++ (mkNH n' r')::l₂) g i ->
+    @mkMLGoal Σ Γ (l₁ ++ (mkNH n r)::l₂ ) g i.
 Proof.
   intros Himp l₁ l₂ g H.
   unfold of_MLGoal in *. simpl in *.
   intros wfg Hwf.
   specialize (H wfg).
+  unfold patterns_of in *.
+  rewrite map_app in H.
+  rewrite map_app.
   eapply prf_strenghten_premise_iter_meta_meta.
   6: apply Himp.
   6: apply H.
+  all: rewrite map_app in Hwf.
   { abstract (apply wfapp_proj_1 in Hwf; exact Hwf). }
   { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
   { abstract (pose proof (Himp' := proj1_sig Himp); apply proved_impl_wf in Himp'; wf_auto2). }
@@ -2802,17 +2804,12 @@ Proof.
  }
 Defined.
 
-Tactic Notation "mlApplyMeta" uconstr(t) "in" constr(n) :=
+Tactic Notation "mlApplyMeta" uconstr(t) "in" constr(name) :=
   eapply cast_proof_ml_hyps;
-  [(let hyps := fresh "hyps" in
-    rewrite <- (firstn_skipn n);
-    rewrite [hyps in (hyps ++ _)]/=;
-    rewrite [hyps in (_ ++ hyps)]/=;
-    reflexivity
-   )|];
-  eapply (@MLGoal_applyMetaIn _ _ _ _ _ t);
-  eapply cast_proof_ml_hyps;
-  [(rewrite /app; reflexivity)|].
+  f_equal;
+  _mlReshapeHypsByName name;
+  apply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
+  _mlReshapeHypsBack.
 
 Local Example Private_ex_mlApplyMetaIn {Σ : Signature} Γ p q:
   well_formed p ->
@@ -2823,23 +2820,26 @@ Proof.
   intros wfp wfq.
   toMLGoal.
   { wf_auto2. }
-  mlIntro.
-  mlApplyMeta (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in 0.
-  mlExactn 0.
+  mlIntro "H0".
+  mlApplyMeta (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
+  mlExact "H0".
 Defined.
 
-Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ x y i:
-    @mkMLGoal Σ Γ (l₁ ++ x::y::l₂ ) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ (x and y)::l₂) g i .
+Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
+    @mkMLGoal Σ Γ (l₁ ++ (mkNH nx x)::(mkNH ny y)::l₂ ) g i ->
+    @mkMLGoal Σ Γ (l₁ ++ (mkNH nxy (x and y))::l₂) g i.
 Proof.
   intros H.
   unfold of_MLGoal. intros wfg Hwf. pose proof (wfg' := wfg). pose proof (Hwf' := Hwf).
   revert wfg' Hwf'.
-  cut (of_MLGoal (@mkMLGoal Σ Γ (l₁ ++ (x and y)::l₂ ) g i)).
+  cut (of_MLGoal (@mkMLGoal Σ Γ (l₁ ++ (mkNH nxy (x and y))::l₂ ) g i)).
   { auto. }
   simpl in wfg, Hwf.
 
-  mlAssert (y) using first (length (l₁ ++ [x and y])).
+  mlAssert (ny : y) using first (length (l₁ ++ [mkNH nxy (x and y)])).
+
+  all: unfold patterns_of in Hwf; rewrite map_app in Hwf.
+
   { abstract (
       apply wfapp_proj_2 in Hwf;
       unfold Pattern.wf in Hwf;
@@ -2851,7 +2851,7 @@ Proof.
   }
   {
     eapply cast_proof_ml_hyps.
-    { replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    { replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH nxy (x and y)]) ++ l₂).
       2: { rewrite -app_assoc. reflexivity. }
       rewrite take_app.
       reflexivity.
@@ -2873,12 +2873,12 @@ Proof.
 
   eapply cast_proof_ml_hyps.
   {  
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH nxy (x and y)]) ++ l₂).
     2: { rewrite -app_assoc. reflexivity. }
     rewrite take_app. rewrite drop_app. reflexivity.
   }
 
-  mlAssert (x) using first (length (l₁ ++ [x and y])).
+  mlAssert (nx : x) using first (length (l₁ ++ [mkNH nxy (x and y)])).
   { abstract (
       apply wfapp_proj_2 in Hwf;
       unfold Pattern.wf in Hwf;
@@ -2891,7 +2891,7 @@ Proof.
   {
     eapply cast_proof_ml_hyps.
     {
-      replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+      replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁++ [mkNH nxy (x and y)]) ++ l₂).
       2: { rewrite -app_assoc. reflexivity. }
       rewrite take_app.
       reflexivity.
@@ -2913,7 +2913,7 @@ Proof.
 
   eapply cast_proof_ml_hyps.
   {  
-    replace (l₁ ++ (x and y) :: l₂) with ((l₁++ [x and y]) ++ l₂).
+    replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁++ [mkNH nxy (x and y)]) ++ l₂).
     2: { rewrite -app_assoc. reflexivity. }
     rewrite take_app. rewrite drop_app. reflexivity.
   }
@@ -2927,17 +2927,13 @@ Proof.
  exact H.
 Defined.
 
-Tactic Notation "mlDestructAnd" constr(n) :=
+Tactic Notation "mlDestructAnd" constr(name) "as" constr(name1) constr(name2) :=
+  _failIfUsed name1; _failIfUsed name2;
   eapply cast_proof_ml_hyps;
-  [(let hyps := fresh "hyps" in
-    rewrite <- (firstn_skipn n);
-    rewrite [hyps in (hyps ++ _)]/=;
-    rewrite [hyps in (_ ++ hyps)]/=;
-    reflexivity
-   )|];
-  apply MLGoal_destructAnd;
-  eapply cast_proof_ml_hyps;
-  [(rewrite /app; reflexivity)|].
+  f_equal;
+  _mlReshapeHypsByName name;
+  apply MLGoal_destructAnd with (nxy := name) (nx := name1) (ny := name2);
+  _mlReshapeHypsBack.
 
 Local Example ex_mlDestructAnd {Σ : Signature} Γ a b p q:
   well_formed a ->
@@ -2949,10 +2945,10 @@ Local Example ex_mlDestructAnd {Σ : Signature} Γ a b p q:
 Proof.
   intros. toMLGoal.
   { wf_auto2. }
-  do 3 mlIntro.
-  mlDestructAnd 1.
-  mlDestructAnd 0.
-  mlExactn 2.
+  mlIntro "H0". mlIntro "H1". mlIntro "H2".
+  mlDestructAnd "H1" as "H3" "H4".
+  mlDestructAnd "H0" as "H1" "H5".
+  mlExact "H3".
 Defined.
 
  
@@ -2974,34 +2970,34 @@ pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
 apply conj_intro_meta; auto.
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. unfold patt_and.
-  mlIntro. mlApply 0.
-  mlDestructOr 1.
+  mlIntro "H0". unfold patt_and.
+  mlIntro "H1". mlApply "H0".
+  mlDestructOr "H1" as "H2" "H3".
   + apply modus_tollens in pip'; auto 10.
-    mlAdd pip'.
+    mlAdd pip' as "H1".
     mlLeft.
-    mlApply 0.
-    mlExactn 2.
+    mlApply "H1".
+    mlExact "H2".
   + apply modus_tollens in qiq'; auto 10.
-    mlAdd qiq'.
+    mlAdd qiq' as "H1".
     mlRight.
-    mlApply 0.
-    mlExactn 2.
+    mlApply "H1".
+    mlExact "H3".
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. unfold patt_and.
-  mlIntro. mlApply 0.
-  mlDestructOr 1.
+  mlIntro "H0". unfold patt_and.
+  mlIntro "H1". mlApply "H0".
+  mlDestructOr "H1" as "H2" "H3".
   + mlLeft.
     apply modus_tollens in p'ip; auto.
-    mlAdd p'ip.
-    mlApply 0.
-    mlExactn 2.
+    mlAdd p'ip as "H1".
+    mlApply "H1".
+    mlExact "H2".
   + mlRight.
     apply modus_tollens in q'iq; auto.
-    mlAdd q'iq.
-    mlApply 0.
-    mlExactn 2.
+    mlAdd q'iq as "H1".
+    mlApply "H1".
+    mlExact "H3".
 Defined. 
 
 Lemma or_of_equiv_is_equiv {Σ : Signature} Γ p q p' q' i:
@@ -3022,14 +3018,14 @@ pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq...
 apply conj_intro_meta; auto.
 - toMLGoal.
   { auto. }
-  mlIntro.
-  mlDestructOr 0.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
   + mlLeft. fromMLGoal. assumption.
   + mlRight. fromMLGoal. assumption.
 - toMLGoal.
   { auto. }
-  mlIntro.
-  mlDestructOr 0.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
   + mlLeft. fromMLGoal. assumption.
   + mlRight. fromMLGoal. assumption.
 Defined.
@@ -3045,20 +3041,20 @@ intros wfp wfq.
 apply conj_intro_meta; auto.
 - toMLGoal.
   { wf_auto2. }
-  mlIntro.
-  mlAdd (@A_or_notA Σ Γ p wfp).
-  mlDestructOr 0.
+  mlIntro "H0".
+  mlAdd (@A_or_notA Σ Γ p wfp) as "H1".
+  mlDestructOr "H1" as "H2" "H3".
   + mlRight.
-    mlApply 1.
-    mlExactn 0.
+    mlApply "H0".
+    mlExact "H2".
   + mlLeft.
-    mlExactn 0.
+    mlExact "H3".
 - toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro. unfold patt_or.
-  mlApply 0.
+  mlIntro "H0". mlIntro "H2". unfold patt_or.
+  mlApply "H0".
   mlApplyMeta (@not_not_intro _ _ p wfp).
-  mlExactn 1.
+  mlExact "H2".
 Defined.
 
 Lemma p_and_notp_is_bot {Σ : Signature} Γ p:
@@ -3072,10 +3068,10 @@ apply conj_intro_meta; auto.
 - unfold patt_and.
   toMLGoal.
   { wf_auto2. }
-  mlIntro.
-  mlApply 0.
-  mlAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)).
-  mlExactn 0.
+  mlIntro "H0".
+  mlApply "H0".
+  mlAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)) as "H1".
+  mlExact "H1".
 Defined.
 
 Lemma weird_lemma  {Σ : Signature} Γ A B L R:
@@ -3089,25 +3085,25 @@ Proof.
 intros wfA wfB wfL wfR.
 toMLGoal.
 { wf_auto2. }
-mlIntro. mlIntro.
-mlAdd (@A_or_notA Σ Γ A wfA).
-mlDestructOr 0.
-- mlAssert ((B or R)).
+mlIntro "H0". mlIntro "H1".
+mlAdd (@A_or_notA Σ Γ A wfA) as "H2".
+mlDestructOr "H2" as "H3" "H4".
+- mlAssert ("H2" : (B or R)).
   { wf_auto2. }
-  { mlApply 1.
+  { mlApply "H0".
     unfold patt_and at 2.
-    mlIntro.
-    mlDestructOr 3.
-    + mlApply 3. mlExactn 2.
-    + mlApply 3. mlExactn 0.
+    mlIntro "H2".
+    mlDestructOr "H2" as "H4" "H5".
+    + mlApply "H4". mlExact "H1".
+    + mlApply "H5". mlExact "H3".
   }
-  mlDestructOr 3.
-  + mlLeft. mlIntro. mlExactn 3.
-  + mlRight. mlExactn 3.
+  mlDestructOr "H2" as "H4" "H5".
+  + mlLeft. mlIntro "H2". mlExact "H4".
+  + mlRight. mlExact "H5".
 - mlLeft.
-  mlIntro.
+  mlIntro "H2".
   mlApplyMeta (@bot_elim Σ _ B wfB).
-  mlApply 0. mlExactn 3.
+  mlApply "H4". mlExact "H2".
 Defined.
 
 Lemma weird_lemma_meta {Σ : Signature} Γ A B L R i:
@@ -3175,21 +3171,21 @@ intros WFA WFB WFC WFD H H0.
 toMLGoal.
 { wf_auto2. }
 {
-  mlAdd H.
-  mlAdd H0.
-  mlIntro.
-  mlDestructAnd 2.
-  mlIntro.
-  mlDestructOr 4.
+  mlAdd H as "H0".
+  mlAdd H0 as "H1".
+  mlIntro "H2".
+  mlDestructAnd "H2" as "H3" "H4".
+  mlIntro "H5".
+  mlDestructOr "H5" as "H6" "H7".
   {
-    mlApply 4.
-    mlApply 1.
-    mlExactn 2.
+    mlApply "H6".
+    mlApply "H0".
+    mlExact "H3".
   }
   {
-    mlApply 4.
-    mlApply 0.
-    mlExactn 3.
+    mlApply "H7".
+    mlApply "H1".
+    mlExact "H4".
   }
 }
 Defined.
@@ -3202,19 +3198,19 @@ Proof.
 intros WFA WFB WFC H.
 toMLGoal.
 { wf_auto2. }
-mlAdd H.
-mlIntro.
-mlIntro.
-mlDestructOr 2.
+mlAdd H as "H0".
+mlIntro "H1".
+mlIntro "H2".
+mlDestructOr "H2" as "H3" "H4".
 {
-  mlDestructAnd 1.
-  mlApply 3.
-  mlExactn 1.
+  mlDestructAnd "H1" as "H5" "H6".
+  mlApply "H3".
+  mlExact "H5".
 }
 {
-  mlApply 2.
-  mlApply 0.
-  mlExactn 1.
+  mlApply "H4".
+  mlApply "H0".
+  mlExact "H1".
 }
 Defined.
 
@@ -3249,34 +3245,34 @@ apply pf_iff_equiv_trans with (B := (a ---> b')).
     1-2: wf_auto2.
     * toMLGoal.
       { wf_auto2. }
-      mlIntro. mlIntro.
-      mlAdd Hbb'1.
-      mlApply 0.
-      mlApply 1.
-      mlExactn 2.
+      mlIntro "H0". mlIntro "H1".
+      mlAdd Hbb'1 as "H2".
+      mlApply "H2".
+      mlApply "H0".
+      mlExact "H1".
     * toMLGoal.
       { wf_auto2. }
-      mlIntro. mlIntro.
-      mlAdd Hbb'2.
-      mlApply 0.
-      mlApply 1.
-      mlExactn 2.
+      mlIntro "H0". mlIntro "H1".
+      mlAdd Hbb'2 as "H2".
+      mlApply "H2".
+      mlApply "H0".
+      mlExact "H1".
   + apply conj_intro_meta.
     1-2: wf_auto2.
     * toMLGoal.
       { wf_auto2. }
-      mlIntro. mlIntro.
-      mlAdd Haa'2.
-      mlApply 1.
-      mlApply 0.
-      mlExactn 2.
+      mlIntro "H0". mlIntro "H1".
+      mlAdd Haa'2 as "H2".
+      mlApply "H0".
+      mlApply "H2".
+      mlExact "H1".
     * toMLGoal.
       { wf_auto2. }
-      mlIntro. mlIntro.
-      mlAdd Haa'1.
-      mlApply 1.
-      mlApply 0.
-      mlExactn 2.
+      mlIntro "H0". mlIntro "H1".
+      mlAdd Haa'1 as "H2".
+      mlApply "H0".
+      mlApply "H2".
+      mlExact "H1".
 Defined.
 
 
@@ -3291,7 +3287,7 @@ Proof.
   intros wfa wfb wfc H.
   toMLGoal.
   { wf_auto2. }
-  do 2 mlIntro. mlApplyMeta H.
+  mlIntro "H0". mlIntro "H1". mlApplyMeta H.
   fromMLGoal.
   useBasicReasoning.
   apply conj_intro.
@@ -3309,21 +3305,21 @@ Proof.
   intros wfa wfb wfc H.
   toMLGoal.
   { wf_auto2. }
-  mlIntro.
-  mlAssert (b).
+  mlIntro "H0".
+  mlAssert ("H1" : b).
   { wf_auto2. }
   { fromMLGoal. useBasicReasoning. apply pf_conj_elim_r.
     wf_auto2. wf_auto2.
   }
-  mlAssert (a) using first 1.
+  mlAssert ("H2" : a) using first 1.
   { wf_auto2. }
   { fromMLGoal. useBasicReasoning. apply pf_conj_elim_l; wf_auto2. }
-  mlAdd H.
-  mlAssert ((b ---> c)).
+  mlAdd H as "H3".
+  mlAssert ("H4" : (b ---> c)).
   { wf_auto2. }
-  { mlApply 0. mlExactn 2. }
-  mlApply 4.
-  mlExactn 3.
+  { mlApply "H3". mlExact "H2". }
+  mlApply "H4".
+  mlExact "H1".
 Defined.
 
 Lemma prf_conj_split {Σ : Signature} Γ a b l:
@@ -3340,14 +3336,14 @@ Proof.
     specialize (IHl wfl').
     toMLGoal.
     { wf_auto2. }
-    do 3 mlIntro.
-    mlAssert ((foldr patt_imp a l)).
+    mlIntro "H0". mlIntro "H1". mlIntro "H2".
+    mlAssert ("H3" : (foldr patt_imp a l)).
     { wf_auto2. }
-    { mlApply 0. mlExactn 2. }
-    mlAssert ((foldr patt_imp b l)).
+    { mlApply "H0". mlExact "H2". }
+    mlAssert ("H4" : (foldr patt_imp b l)).
     { wf_auto2. }
-    { mlApply 1. mlExactn 2. }
-    mlClear 2. mlClear 1. mlClear 0.
+    { mlApply "H1". mlExact "H2". }
+    mlClear "H2". mlClear "H1". mlClear "H0".
     fromMLGoal. apply IHl.
 Defined.
 
@@ -3408,10 +3404,10 @@ Proof.
   intros wfa wfb wfc.
   toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro. mlIntro.
+  mlIntro "H0". mlIntro "H1". mlIntro "H2".
   mlSplitAnd.
-  - mlExactn 0.
-  - mlExactn 1.
+  - mlExact "H0".
+  - mlExact "H1".
 Defined.
 
 Lemma prf_local_goals_equiv_impl_full_equiv {Σ : Signature} Γ g₁ g₂ l:
@@ -3429,26 +3425,24 @@ Proof.
     specialize (IHl wfl').
     toMLGoal.
     { wf_auto2. }
-    mlIntro. mlSplitAnd.
+    mlIntro "H0". mlSplitAnd.
     + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
-      (* TODO we need some [mlRevert] tactic *)
-      fromMLGoal. toMLGoal.
-      { wf_auto2. }
+      mlRevertLast.
       unshelve(mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
-      mlIntro. mlClear 0. mlIntro.
-      mlApplyMeta IHl in 0. unfold patt_iff at 1. mlDestructAnd 0.
-      mlExactn 0.
+      mlIntro "H0". mlClear "H0". mlIntro "H0".
+      mlApplyMeta IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlExact "H1".
     + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       fromMLGoal. toMLGoal.
       { wf_auto2. }
       unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
-      mlIntro. mlClear 0. mlIntro.
-      mlApplyMeta IHl in 0. unfold patt_iff at 1. mlDestructAnd 0.
-      mlExactn 1.
+      mlIntro "H0". mlClear "H0". mlIntro "H0".
+      mlApplyMeta IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlExact "H2".
 Defined.
 
 Lemma prf_local_goals_equiv_impl_full_equiv_meta {Σ : Signature} Γ g₁ g₂ l i:
@@ -3515,17 +3509,17 @@ Proof.
   intros wfϕ.
   toMLGoal.
   { wf_auto2. }
-  mlSplitAnd; mlIntro.
+  mlSplitAnd; mlIntro "H0".
   - mlSplitAnd.
-    + mlIntro. mlClear 0. mlClear 0.
+    + mlIntro "H1". mlClear "H1". mlClear "H0".
       fromMLGoal.
       apply top_holds. (* TODO: we need something like [mlExactMeta top_holds] *)
     + fromMLGoal.
       apply P1; wf_auto2.
-  - mlDestructAnd 0.
-    mlApply 1.
-    mlClear 0.
-    mlClear 0.
+  - mlDestructAnd "H0" as "H1" "H2".
+    mlApply "H2".
+    mlClear "H2".
+    mlClear "H1".
     fromMLGoal.
     apply top_holds.
 Defined.
@@ -3538,14 +3532,14 @@ Proof.
   intros wfϕ.
   toMLGoal.
   { wf_auto2. }
-  mlSplitAnd; mlIntro.
+  mlSplitAnd; mlIntro "H0".
   - mlSplitAnd.
-    + mlExactn 0.
-    + mlClear 0. fromMLGoal.
+    + mlExact "H0".
+    + mlClear "H0". fromMLGoal.
       apply false_implies_everything.
       { wf_auto2. }
-  - mlDestructAnd 0.
-    mlExactn 0.
+  - mlDestructAnd "H0" as "H1" "H2".
+    mlExact "H1".
 Defined.
 
 Lemma not_not_iff {Σ : Signature} (Γ : Theory) (A : Pattern) :
@@ -3573,11 +3567,11 @@ Proof.
   intros wfp wfq.
   toMLGoal.
   { wf_auto2. }
-  mlSplitAnd; mlIntro; mlDestructAnd 0; mlSplitAnd.
-  - mlExactn 1.
-  - mlExactn 0.
-  - mlExactn 1.
-  - mlExactn 0.
+  mlSplitAnd; mlIntro "H0"; mlDestructAnd "H0" as "H1" "H2"; mlSplitAnd.
+  - mlExact "H2".
+  - mlExact "H1".
+  - mlExact "H2".
+  - mlExact "H1".
 Defined.
 
 
@@ -3592,19 +3586,19 @@ Proof.
   intros wfϕ₁ wfϕ₂.
   toMLGoal.
   { wf_auto2. }
-  mlIntro. mlIntro.
+  mlIntro "H0". mlIntro "H1".
   unfold patt_not.
-  mlAssert (((ϕ₁ ---> ⊥) ---> ⊥)).
+  mlAssert ("H2" : ((ϕ₁ ---> ⊥) ---> ⊥)).
   { wf_auto2. }
-  { mlIntro.
-    mlAssert ((ϕ₂ ---> ⊥)).
+  { mlIntro "H2".
+    mlAssert ("H3" : (ϕ₂ ---> ⊥)).
     { wf_auto2. }
-    { mlApply 0. mlExactn 2. }
-    mlApply 3.
-    mlExactn 1.
+    { mlApply "H0". mlExact "H2". }
+    mlApply "H3".
+    mlExact "H1".
   }
   mlApplyMeta (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
-  mlExactn 2.
+  mlExact "H2".
 Defined.
 
 
@@ -3647,26 +3641,26 @@ Proof.
     { apply well_formed_foldr_and; assumption. }
     toMLGoal.
     { wf_auto2. }
-    do 3 mlIntro.
-    mlAdd IHxs.
-    mlAssert (((foldr patt_and x xs ---> g) ---> foldr patt_imp g xs)).
+    mlIntro "H0". mlIntro "H1". mlIntro "H2".
+    mlAdd IHxs as "H3".
+    mlAssert ("H4" : ((foldr patt_and x xs ---> g) ---> foldr patt_imp g xs)).
     { wf_auto2. }
-    { mlIntro.
-      mlAssert ((x ---> foldr patt_imp g xs)).
+    { mlIntro "H5".
+      mlAssert ("H6" : (x ---> foldr patt_imp g xs)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 4. }
-      mlClear 0.
-      mlApply 4.
-      mlExactn 1.
+      { mlApply "H3". mlExact "H5". }
+      mlClear "H0".
+      mlApply "H6".
+      mlExact "H1".
     }
-    mlClear 0.
-    mlApply 3.
-    mlClear 3.
-    mlIntro.
-    mlApply 0.
+    mlClear "H3".
+    mlApply "H4".
+    mlClear "H4".
+    mlIntro "H3".
+    mlApply "H0".
     mlSplitAnd.
-    + mlExactn 2.
-    + mlExactn 3.
+    + mlExact "H2".
+    + mlExact "H3".
 Defined.
 
 Lemma lhs_and_to_imp_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
@@ -3712,15 +3706,15 @@ Proof.
   intros wfa wfb.
   toMLGoal.
   { wf_auto2. }
-  repeat mlIntro.
-  mlDestructOr 0.
-  - mlApply 0. mlIntro. mlClear 0. mlIntro.
-    mlApplyMeta (@not_not_elim _ _ _ _) in 1.
-    mlApply 0. mlAssumption.
-  - mlApply 0. mlIntro. mlClear 0. mlIntro.
-    mlDestructOr 0.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
+  - mlApply "H1". mlIntro "H2". mlClear "H1". mlIntro "H1".
+    mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H1".
+    mlApply "H2". mlAssumption.
+  - mlApply "H2". mlIntro "H0". mlClear "H2". mlIntro "H1".
+    mlDestructOr "H0" as "H2" "H3".
     + mlApplyMeta (@false_implies_everything _ _ _ _).
-      mlApply 0. mlAssumption.
+      mlApply "H2". mlAssumption.
     + mlAssumption.
   Unshelve. all: assumption.
 Qed.
@@ -3735,17 +3729,18 @@ Proof.
   intros wfa wfb.
   toMLGoal.
   { wf_auto2. }
-  repeat mlIntro.
-  mlDestructOr 0.
-  - mlApply 0. repeat mlIntro.
-    mlApply 1. mlIntro.
-    mlDestructOr 2.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
+  - mlApply "H1". mlIntro "H0".
+    unfold patt_and. mlIntro "H2".
+    mlApply "H0". mlIntro "H3".
+    mlDestructOr "H2" as "H4" "H5".
     + mlApplyMeta (false_implies_everything _ _).
-      mlApply 2. mlAssumption.
-    + mlApplyMeta (@not_not_elim _ _ _ _) in 2.
+      mlApply "H4". mlAssumption.
+    + mlApplyMeta (@not_not_elim _ _ b ltac:(wf_auto2)) in "H5".
       mlAssumption.
-  - mlApply 0. repeat mlIntro.
-    mlDestructAnd 1. mlApply 2. mlApply 3.
+  - mlApply "H2". mlIntro "H0". mlIntro "H1".
+    mlDestructAnd "H0" as "H3" "H4". mlApply "H4". mlApply "H1".
     mlAssumption.
   Unshelve. all: assumption.
 Qed.
@@ -3760,17 +3755,14 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     intros wfa wfb.
     toMLGoal.
     { wf_auto2. }
-    repeat mlIntro.
-    mlDestructOr 0.
-    - mlRevert. mlApplyMeta (@not_not_intro _ _ _ _). repeat mlIntro.
-      mlApplyMeta (@not_not_elim _ _ _ _) in 1.
-      mlApply 0. mlIntro.
-      mlDestructOr 3.
-      all: mlApply 3; mlAssumption.
-    - mlRevert. mlApplyMeta (@not_not_intro _ _ _ _). repeat mlIntro.
-      mlDestructAnd 1.
-      mlDestructOr 0.
-      all: mlApply 0; mlAssumption.
+    mlIntro "H0".
+    mlDestructOr "H0" as "H1" "H2".
+    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0".
+      mlApplyMeta (@not_not_elim _ _ (! a or ! b) ltac:(wf_auto2)) in "H0".
+      mlAssumption.
+    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0".
+      mlApplyMeta (@not_not_intro _ _ _ _).
+      mlAssumption.
     Unshelve. all: auto.
   Qed.
 
@@ -3783,20 +3775,20 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     intros wfa wfb.
     toMLGoal.
     { wf_auto2. }
-    repeat mlIntro.
-    mlDestructOr 0.
-    - mlRevert. mlApplyMeta (@not_not_intro _ _ _ _). repeat mlIntro.
-      mlApply 0.
-      mlDestructOr 1.
-      + mlApplyMeta (@not_not_elim _ _ _ _) in 1.
+    mlIntro "H0".
+    mlDestructOr "H0" as "H1" "H2".
+    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+      mlApply "H0".
+      mlDestructOr "H1" as "H2" "H3".
+      + mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H2".
         mlLeft. mlAssumption.
-      + mlApplyMeta (@not_not_elim _ _ _ _) in 1.
+      + mlApplyMeta (@not_not_elim _ _ b ltac:(wf_auto2)) in "H3".
         mlRight. mlAssumption.
-    - mlRevert. mlApplyMeta (@not_not_intro _ _ _ _). repeat mlIntro.
-      mlDestructAnd 0.
-      mlDestructOr 2.
-      + mlApply 0. mlAssumption.
-      + mlApply 1. mlAssumption.
+    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+      mlDestructAnd "H0" as "H2" "H3".
+      mlDestructOr "H1" as "H4" "H5".
+      + mlApply "H2". mlAssumption.
+      + mlApply "H3". mlAssumption.
     Unshelve. all: wf_auto2.
   Qed.
 
@@ -3808,13 +3800,13 @@ Proof.
   intros wfa.
   toMLGoal.
   { wf_auto2. }
-  mlIntro.
-  mlDestructOr 0.
-  - mlApply 0. mlIntro.
-    mlApplyMeta (@not_not_elim _ _ _ _) in 1.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
+  - mlApply "H1". mlIntro "H0".
+    mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H0".
     mlAssumption.
-  - unfold patt_not. mlApply 0. repeat mlIntro.
-    mlApply 2. mlAssumption.
+  - unfold patt_not. mlApply "H2". mlIntro "H0". mlIntro "H1".
+    mlApply "H1". mlAssumption.
   Unshelve.
   all: assumption.
 Defined.
@@ -3847,33 +3839,33 @@ Proof.
  { wf_auto2. }
  unfold patt_iff.
  mlSplitAnd.
- - mlIntro.
-   mlDestructAnd 0.
+ - mlIntro "H0".
+   mlDestructAnd "H0" as "H1" "H2".
    mlSplitAnd.
    + mlApplyMeta pip'.
      mlExactn 0.
-   + mlApplyMeta qiq' in 1.
-     mlExactn 1.
- - mlIntro.
+   + mlApplyMeta qiq' in "H2".
+     mlExact "H2".
+ - mlIntro "H0".
    unfold patt_and at 2.
    unfold patt_not at 1.
-   mlIntro.
-   mlDestructOr 1.
-   + mlDestructAnd 0.
+   mlIntro "H1".
+   mlDestructOr "H1" as "H2" "H3".
+   + mlDestructAnd "H0" as "H3" "H4".
      unfold patt_not.
-     mlApply 2.
-     mlClear 2.
-     mlClear 1.
+     mlApply "H2".
+     mlClear "H2".
+     mlClear "H4".
      fromMLGoal.
      exact p'ip.
-   + mlAdd q'iq.
-     mlDestructAnd 1.
-     mlAssert (q).
+   + mlAdd q'iq as "H1".
+     mlDestructAnd "H0" as "H2" "H4".
+     mlAssert ("Hq" : q).
      { wf_auto2. }
-     { mlApply 0. mlExactn 2. }
+     { mlApply "H1". mlExact "H4". }
      unfold patt_not at 1.
-     mlApply 3.
-     mlExactn 4.
+     mlApply "H3".
+     mlAssumption.
 Defined.
 
 
@@ -3898,20 +3890,20 @@ Defined.
     { wf_auto2. }
     unfold patt_iff.
     mlSplitAnd.
-    - mlIntro.
-      mlDestructOr 0.
+    - mlIntro "H0".
+      mlDestructOr "H0" as "H1" "H2".
       mlLeft.
       + mlApplyMeta pip'.
-        mlExactn 0.
+        mlExact "H1".
       + mlRight.
         mlApplyMeta qiq'.
-        mlExactn 0.
-    - mlIntro.
-      mlDestructOr 0.
+        mlExact "H2".
+    - mlIntro "H0".
+      mlDestructOr "H0" as "H1" "H2".
       mlLeft.
       + mlApplyMeta p'ip.
-        mlExactn 0.
+        mlExact "H1".
       + mlRight.
         mlApplyMeta q'iq.
-        mlExactn 0. 
+        mlExact "H2". 
   Defined.
