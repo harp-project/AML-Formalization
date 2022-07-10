@@ -35,9 +35,9 @@ Record named_hypothesis {Σ : Signature} := mkNH
     nh_patt : Pattern;
   }.
 
-Notation "N : P ," :=
+Notation "N :- P" :=
   (@mkNH _ N P)
-  (at level 100, no associativity, format "N ':'  P ,", only printing).
+  (at level 100, no associativity, format "N ':-'  P", only printing).
 
 Definition hypotheses {Σ : Signature} := list named_hypothesis.
 
@@ -45,12 +45,12 @@ Notation "" :=
   (@nil named_hypothesis)
   (at level 100, left associativity, only printing) : ml_scope.
 (*TODO: Ensure that this does not add parentheses*)
-Notation "x" :=
+Notation "x ," :=
   (@cons named_hypothesis x nil)
-  (at level 100, left associativity, format "x '//'", only printing) : ml_scope.
-Notation "x y .. z" :=
+  (at level 100, left associativity, format "x ','", only printing) : ml_scope.
+Notation "x , y , .. , z ," :=
   (@cons named_hypothesis x (cons y .. (cons z nil) ..))
-  (at level 100, left associativity, format "x '//' y '//' .. '//' z", only printing) : ml_scope.
+  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ','", only printing) : ml_scope.
 
 Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
 Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
@@ -95,7 +95,7 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   := (@mkMLGoal S G l g pi)
   (at level 95,
   no associativity,
-  format "S , G '//' ⊢  -------------------- '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi ",
+  format "S , G '//' ⊢  -------------------- '//' '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi '//'",
   only printing).
 
 
@@ -288,26 +288,12 @@ Tactic Notation "_failIfUsed" constr(name) :=
   | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] =>
     lazymatch (eval cbv in (find_hyp name l)) with
     | Some _ => fail "The name" name "is already used"
-    | None => idtac
+    | _ => idtac
     end
   end.
 
 Tactic Notation "mlIntro" constr(name') :=
 _failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
-
-Ltac ltac_loop_aux k X :=
-  match X with
-  | 0 => k
-  | _ => (fun Y => ltac_loop_aux ltac:(idtac "hello"; k) Y)
-  end.
-
-Ltac ltac_loop X := ltac_loop_aux ltac:(idtac "done") X.
-
-Ltac mlIntros_aux cont n names :=
-  match names with
-  | 0 => cont
-  | _ => try mlIntros_aux ltac:(mlIntro n; cont)
-  end.
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
 well_formed p ->
@@ -331,14 +317,12 @@ Proof.
   toMLGoal.
   { wf_auto2. }
 
-  mlIntros_aux "h1"%string "h2"%string "h3"%string.
-
   mlIntro "h"%string.
   Fail mlIntro "h"%string.
   mlIntro "h'"%string.
 Abort.
 
-Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
+Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
 @mkMLGoal Σ Γ l (x ---> g) i ->
 @mkMLGoal Σ Γ (l ++ [mkNH n x]) g i.
 Proof.
@@ -368,12 +352,12 @@ exact H.
 Defined.
 
 #[global]
-Ltac mlRevert :=
+Ltac mlRevertLast :=
 match goal with
 | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
 => eapply cast_proof_ml_hyps;
    [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
-   apply MLGoal_revert
+   apply MLGoal_revertLast
 end.
 
 Lemma pile_evs_subseteq {Σ : Signature} evs1 evs2 svs kt fp:
