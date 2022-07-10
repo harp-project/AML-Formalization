@@ -83,7 +83,7 @@
         packages.default = self.outputs.packages.${system}.coq-matching-logic;
         
         devShell = pkgs.mkShell {
-          buildInputs = self.output.packages.default.buildInputs ++ self.output.packages.default.propagatedBuildInputs;
+          buildInputs = self.outputs.packages.${system}.default.buildInputs ++ self.outputs.packages.${system}.default.propagatedBuildInputs;
         };
       }
     )
