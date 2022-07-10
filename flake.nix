@@ -45,7 +45,8 @@
             make coqdoc "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/MatchingLogic}"
           '';
 
-          dontInstall = true;
+          installTargets = "install-coqdoc";
+          installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];
         } ) { } ;
 
         # Example: FOL embedded in matching logic
