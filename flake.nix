@@ -73,7 +73,13 @@
           src = self + "/prover";
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
+            pkgs.metamath
+            pkgs.ghc
           ];
+
+          postPatch = ''
+            patchShebangs --build check-generated-proof-objects.sh patch-extracted-hs.sh
+          '';
 
           buildPhase = ''
             make test
