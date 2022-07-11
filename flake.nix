@@ -41,12 +41,14 @@
             pkgs.coq
           ];
           
-          buildPhase = ''
-            make coqdoc "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/MatchingLogic"
-          '';
+
+          buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/.MatchingLogic" ];
 
           installTargets = "install-coqdoc";
-          installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];
+          # We are not going to install this system-wide, so we can afford not to have the coq version in the path to the docs.
+          # We do not want to have the version in the path, since it would be harder for the CI the figure out where the docs live. 
+          # installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];
+          installFlags = [ "DOCDIR=$(out)/share/doc" "INSTALLCOQDOCROOT=coq-matching-logic" ];
         } ) { } ;
 
         # Example: FOL embedded in matching logic
