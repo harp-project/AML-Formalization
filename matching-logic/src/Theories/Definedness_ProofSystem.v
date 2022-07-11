@@ -2467,13 +2467,10 @@ Unshelve.
 all: abstract (wf_auto2).
 Defined.
 
-Ltac2 mlRewriteBy (n : constr) (atn : int) :=
-eapply (@cast_proof_ml_hyps)
-> [ (rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn; rewrite /skipn); reflexivity)
-  | ()
-  ];
+Ltac2 mlRewriteBy (name' : constr) (atn : int) :=
+_mlReshapeHypsByName name';
 lazy_match! goal with
-| [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?g (?l₁ ++ (?a' =ml ?a)::?l₂) ?p AnyReasoning)]
+| [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?g (?l₁ ++ (mkNH _ (?a' =ml ?a))::?l₂) ?p AnyReasoning)]
   => 
     let hr : HeatResult := heat atn a' p in
     let heq := Control.hyp (hr.(equality)) in
@@ -2500,22 +2497,19 @@ lazy_match! goal with
             eapply (@cast_proof_ml_goal _ $g) >
               [ rewrite $heq2_pf; reflexivity | ()];
             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
-            eapply (@cast_proof_ml_hyps)
-            > [ (ltac1:(rewrite /app); reflexivity)
-              | ()
-              ]
+            _mlReshapeHypsBack ()
         end
       ]
 end
 .
 
-Tactic Notation "mlRewriteBy" constr(n) "at" constr(atn) :=
-(let ff := ltac2:(n atn |-
+Tactic Notation "mlRewriteBy" constr(name') "at" constr(atn) :=
+(let ff := ltac2:(name'' atn |-
                     mlRewriteBy
-                      (Option.get (Ltac1.to_constr(n)))
+                      (Option.get (Ltac1.to_constr(name'')))
                       (constr_to_int (Option.get (Ltac1.to_constr(atn))))
                  ) in
- ff n atn).
+ ff name' atn).
 
 
 
@@ -2531,8 +2525,8 @@ Proof.
 intros HΓ wfa wfa' wfb mfb.
 toMLGoal.
 { wf_auto2. }
-mlIntro. mlIntro.
-mlRewriteBy 1 at 1.
+mlIntro "H0". mlIntro "H1".
+mlRewriteBy "H1" at 1.
 { assumption. }
 { simpl. assumption. }
 mlExactn 0.
