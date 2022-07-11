@@ -20,19 +20,19 @@ jobs:
       - checkout
       - run:
           name: "Build"
-          command: nix build '.#coq-matching-logic'
+          command: nix --extra-experimental-features nix-command build '.#coq-matching-logic'
       - run:
           name: "Doc"
-          command: nix build '.#coq-matching-logic-doc' --out-link 'doc-output'
+          command: nix --extra-experimental-features nix-command build '.#coq-matching-logic-doc' --out-link 'doc-output'
       - persist_to_workspace:
           root: matching-logic-doc
           paths: doc-output/share/doc/coq-matching-logic/html
       - run:
           name: "FOL -- Build"
-          command: nix build '.#coq-matching-logic-example-fol'
+          command: nix --extra-experimental-features nix-command build '.#coq-matching-logic-example-fol'
       - run:
           name: "Prover Build & Test"
-          command: nix build '.#coq-matching-logic-mm-exporter'
+          command: nix --extra-experimental-features nix-command build '.#coq-matching-logic-mm-exporter'
 
   # Inspired by https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
   docs-deploy:
