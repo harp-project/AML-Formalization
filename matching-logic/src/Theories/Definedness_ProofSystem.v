@@ -4153,39 +4153,43 @@ Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
   Γ ⊢ overlaps_with (patt_free_evar y) (patt_free_evar x) ---> patt_free_evar y =ml patt_free_evar x.
 Proof.
   intros x y Γ HΓ.
+  remember (patt_free_evar x) as pX. assert (well_formed pX) by (rewrite HeqpX;auto).
+  remember (patt_free_evar y) as pY. assert (well_formed pY) by (rewrite HeqpY;auto).
   unfold overlaps_with.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
   mlRewrite (@patt_total_and _ _ _
-                                (patt_free_evar y ---> patt_free_evar x)
-                                (patt_free_evar x ---> patt_free_evar y) HΓ
+                                (pY ---> pX)
+                                (pX ---> pY) HΓ
                                 ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
   mlIntro. mlIntro. mlDestructOr 1.
   * mlApply 1. mlClear 1. mlIntro.
-    pose proof (H := @ProofMode_propositional.nimpl_eq_and _ Γ (patt_free_evar y) (patt_free_evar x)
+    pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    apply useAnyReasoning in H. mlRevert. mlRewrite H at 1.
+    apply useAnyReasoning in MH. mlRevert. mlRewrite MH at 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
-    pose proof (H1 := @Singleton_ctx _ Γ 
+    pose proof (MH1 := @Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2)) (patt_free_evar x) y ltac:(wf_auto2)).
-    apply useAnyReasoning in H1.
+                ltac:(wf_auto2)) pX y ltac:(wf_auto2)).
+    rewrite -HeqpY in MH1.
+    apply useAnyReasoning in MH1.
     (* TODO: having mlExactMeta would help here *)
     mlIntro.
-    mlApplyMeta H1. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
+    mlApplyMeta MH1. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
   * mlApply 1. mlClear 1. mlIntro.
-    pose proof (H := @ProofMode_propositional.nimpl_eq_and _ Γ (patt_free_evar x) (patt_free_evar y)
+    pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevert. apply useAnyReasoning in H. mlRewrite H at 1.
-    pose proof (H1 := @patt_and_comm _ Γ (patt_free_evar y) (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevert. apply useAnyReasoning in H1. mlRewrite H1 at 1.
+    mlRevert. apply useAnyReasoning in MH. mlRewrite MH at 1.
+    pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
+    mlRevert. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
     pose proof (@Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2)) (patt_free_evar y) x ltac:(wf_auto2)) as H3.
-    apply useAnyReasoning in H3. do 2 mlIntro.
-    mlApplyMeta H3. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
+                ltac:(wf_auto2)) pY x ltac:(wf_auto2)) as MH2.
+    rewrite -HeqpX in MH2.
+    apply useAnyReasoning in MH2. do 2 mlIntro.
+    mlApplyMeta MH2. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
 Defined.
