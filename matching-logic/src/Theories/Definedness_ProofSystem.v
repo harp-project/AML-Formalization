@@ -254,14 +254,14 @@ Proof.
       { wf_auto2. }
       mlIntro.
       mlAdd (@useBasicReasoning Σ _ _ i (@A_or_notA Σ Γ ϕ Hwfϕ)).
-      mlDestructOr 0.
+      mlDestructOr "1".
       - mlRight. mlExactn 0.
       - mlLeft. mlIntro.
-        mlDestructOr 1.
-        + mlDestructOr 2.
-          * mlApply 2. mlExactn 1.
-          * mlApply 2. mlExactn 0.
-        + mlApply 0.
+        mlDestructOr "0".
+        + mlDestructOr "1".
+          * mlApply "0". mlExactn 1.
+          * mlApply "4". mlExactn 0.
+        + mlApply "3".
           mlExactn 1.
     }
     
@@ -319,7 +319,7 @@ Proof.
     remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) as gpi.
     rewrite Heqi.
     mlAdd (@useBasicReasoning _ _ _ gpi Htmp).
-    mlApply 0. mlIntro. mlApply 2.
+    mlApply "1". mlIntro. mlApply "2".
     mlExactn 1.
   }
 
@@ -389,13 +389,13 @@ Proof.
     
     mlAssert ((ϕ ---> ex , b0 and ϕ)).
     { wf_auto2. }
-    {  mlApply 0.
+    {  mlApply "1".
         subst i.
        (* TODO mlAdd should do the cast automatically *)
        mlAdd (@useBasicReasoning _ _ _ (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) (Existence Γ)).
        mlExactn 0.
     }
-    mlApply 2. mlExactn 1.
+    mlApply "2". mlExactn 1.
   }
 
   assert (well_formed (ex , (b0 and ϕ))).
@@ -421,7 +421,7 @@ Proof.
       toMLGoal.
       { wf_auto2. }
       mlIntro.
-      mlDestructAnd 0.
+      mlDestructAnd "0".
       fromMLGoal.
       replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
       2: { simpl. case_match;[reflexivity|congruence]. }
@@ -443,11 +443,11 @@ Proof.
       mlAssert ((patt_free_evar x' and ϕ)) using first 2.
       { wf_auto2. }
       { unfold patt_and. unfold patt_not at 1. mlIntro.
-        mlDestructOr 2.
-        - mlApply 2. mlExactn 0.
-        - mlApply 2. mlExactn 1.
+        mlDestructOr "2".
+        - mlApply "3". mlExactn 0.
+        - mlApply "4". mlExactn 1.
       }
-      mlClear 1. mlClear 0.
+      mlClear "1". mlClear "0".
       fromMLGoal.
       case_match;[|congruence].
 
@@ -706,7 +706,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { clear -e n. set_solver. }
         toMLGoal.
         { wf_auto2. }
-        mlIntro. mlClear 0. fromMLGoal.
+        mlIntro. mlClear "0". fromMLGoal.
         eapply useGenericReasoning.
         2: apply (@hypothesis Σ Γ axiom0 i H).
         apply pile_evs_svs_kt.
@@ -727,13 +727,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     - (* P2 *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
       apply P2; assumption.
     - (* P3 *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
       apply P3; assumption.
     - (* Modus Ponens *)
@@ -809,15 +809,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       mlAdd IHpf2.
       mlAssert ((phi1 ---> phi2)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 1. }
-      mlApply 2.
+      { mlApply "1". mlExactn 1. }
+      mlApply "2".
       mlAdd IHpf1.
-      mlApply 0.
+      mlApply "3".
       mlExactn 2.
     - (* Existential Quantifier *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
       apply Ex_quan. wf_auto2.
     - (* Existential Generalization *)
@@ -853,37 +853,37 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     - (* Propagation of ⊥, left *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
       apply Prop_bott_left; assumption.
     - (* Propagation of ⊥, right *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0"; auto. fromMLGoal.
       useBasicReasoning.
       apply Prop_bott_right; assumption.
     - (* Propagation of 'or', left *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0"; auto. fromMLGoal.
       useBasicReasoning.
       apply Prop_disj_left; assumption.
     - (* Propagation of 'or', right *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0"; auto. fromMLGoal.
       useBasicReasoning.
       apply Prop_disj_right; assumption.
     - (* Propagation of 'exists', left *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0"; auto. fromMLGoal.
       useBasicReasoning.
       apply Prop_ex_left; assumption.
     - (* Propagation of 'exists', right *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0; auto. fromMLGoal.
+      mlIntro. mlClear "0"; auto. fromMLGoal.
       useBasicReasoning.
       apply Prop_ex_right; assumption.
     - (* Framing left *)
@@ -931,13 +931,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { wf_auto2. }
         mlAdd IHpf. mlIntro.
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
-        mlDestructOr 0.
-        - mlRight. mlExactn 0.
+        mlDestructOr "0".
+        - mlRight. mlExact "3".
         - mlLeft.
-          mlAssert((phi1 ---> phi2)).
-          { wf_auto2. }
-          { mlApply 1. mlExactn 0. }
-          mlApply 3. mlExactn 2.
+          mlApply "4". mlExact "1".
       }
 
       assert (S3: Γ ⊢i (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i').
@@ -1004,9 +1001,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         mlIntro. mlAdd S3.
         (* TODO we need a tactic for adding  something with stronger constraint. *)
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
-        mlDestructOr 0.
-        - mlLeft. mlExactn 0.
-        - mlRight. mlApply 1. mlApply 2. mlExactn 0.
+        mlDestructOr "2".
+        - mlLeft. mlExact "3".
+        - mlRight. mlApply "1". mlApply "0". mlExactn 0.
       }
 
       assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
@@ -1016,10 +1013,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
         { wf_auto2. }
-        { mlApply 1. mlExactn 2. }
-        mlDestructOr 3.
+        { mlApply "0". mlExactn 2. }
+        mlDestructOr "3".
         - mlLeft. mlExactn 3.
-        - mlApply 0. mlRight. mlExactn 3.
+        - mlApply "1". mlRight. mlExactn 3.
       }
 
       toMLGoal.
@@ -1027,18 +1024,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       do 2 mlIntro. mlAdd S7.
       mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 2. }
-      mlDestructOr 3.
+      { mlApply "2". mlExactn 2. }
+      mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
         { wf_auto2. }
-        { mlApply 0. mlExactn 2. }
+        { mlApply "2". mlExactn 2. }
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (phi2 $ psi) ltac:(auto))).
-        mlDestructOr 0.
+        mlDestructOr "4".
         * mlExactn 0.
         * mlAdd (@useBasicReasoning _ _ _ i' (@bot_elim Σ Γ (phi2 $ psi) ltac:(auto))).
-          mlApply 0.
-          mlApply 3.
+          mlApply "4".
+          mlApply "0".
           mlExactn 5.
     - (* Framing right *)
       assert (well_formed (phi1)).
@@ -1088,13 +1085,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { wf_auto2. }
         mlAdd IHpf. mlIntro.
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
-        mlDestructOr 0.
+        mlDestructOr "2".
         - mlRight. mlExactn 0.
         - mlLeft.
           mlAssert((phi1 ---> phi2)).
           { wf_auto2. }
-          { mlApply 1. mlExactn 0. }
-          mlApply 3. mlExactn 2.
+          { mlApply "0". mlExactn 0. }
+          mlApply "2". mlExactn 2.
       }
 
       assert (S3: Γ ⊢i (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
@@ -1156,9 +1153,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { wf_auto2. }
         mlIntro. mlAdd S3.
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
-        mlDestructOr 0.
+        mlDestructOr "2".
         - mlLeft. mlExactn 0.
-        - mlRight. mlApply 1. mlApply 2. mlExactn 0.
+        - mlRight. mlApply "1". mlApply "0". mlExactn 0.
       }
 
       assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
@@ -1168,10 +1165,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
         { wf_auto2. }
-        { mlApply 1. mlExactn 2. }
-        mlDestructOr 3.
+        { mlApply "0". mlExactn 2. }
+        mlDestructOr "3".
         - mlLeft. mlExactn 3.
-        - mlApply 0. mlRight. mlExactn 3.
+        - mlApply "1". mlRight. mlExactn 3.
       }
 
       toMLGoal.
@@ -1179,18 +1176,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       do 2 mlIntro. mlAdd S7.
       mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 2. }
-      mlDestructOr 3.
+      { mlApply "2". mlExactn 2. }
+      mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
         { wf_auto2. }
-        { mlApply 0. mlExactn 2. }
+        { mlApply "2". mlExactn 2. }
         mlAdd (@useBasicReasoning _ _ _ i' (@A_or_notA Σ Γ (psi $ phi2) ltac:(auto))).
-        mlDestructOr 0.
+        mlDestructOr "4".
         * mlExactn 0.
         * mlAdd (@useBasicReasoning _ _ _ i' (@bot_elim Σ Γ (psi $ phi2) ltac:(auto))).
-          mlApply 0.
-          mlApply 3.
+          mlApply "4".
+          mlApply "0".
           mlExactn 5.
     - (* Set variable substitution *)
       simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
@@ -1242,7 +1239,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     - (* Prefixpoint *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       apply useBasicReasoning.
       apply Pre_fixp. wf_auto2.
     - (* Knaster-Tarski *)
@@ -1254,13 +1251,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     - (* Existence *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       apply useBasicReasoning.
       apply Existence.
     - (* Singleton *)
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0. fromMLGoal.
+      mlIntro. mlClear "0". fromMLGoal.
       apply useBasicReasoning.
       apply Singleton_ctx. wf_auto2.
   Defined.
@@ -1315,8 +1312,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       mlIntro. unfold patt_and. mlIntro.
       mlAssert ((! ϕ)).
       { wf_auto2. }
-      { mlApply 1. mlIntro. mlApply 2. mlExactn 0.  }
-      mlApply 2.
+      { mlApply "1". mlIntro. mlApply "2". mlExactn 0.  }
+      mlApply "2".
       mlAdd Hϕ. mlExactn 0.
     }
 
@@ -1439,17 +1436,17 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         useBasicReasoning.
         apply not_not_elim. wf_auto2.
       }
-      mlClear 0.
+      mlClear "2".
 
       mlAssert((! (patt_free_evar x and ! ϕ))) using first 2.
       { wf_auto2. }
       {
-        mlApply 0. mlClear 0.
+        mlApply "3". mlClear "3".
         fromMLGoal.
         useBasicReasoning.
         apply not_not_intro. wf_auto2.
       }
-      mlClear 0. mlClear 0.
+      mlClear "3". mlClear "0".
 
       unfold patt_and.
       mlAssert ((! patt_free_evar x or ! ! ϕ)) using first 1.
@@ -1459,12 +1456,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         useBasicReasoning.
         apply not_not_elim. wf_auto2.
       }
-      mlClear 0.
+      mlClear "2".
 
       unfold patt_or.
       (* TODO we probably want mlApplyMeta to implicitly perform the cast *)
       mlApplyMeta (@useBasicReasoning _ _ _ i (@not_not_elim Σ _ _ _)).
-      mlApply 0.
+      mlApply "0".
       mlApplyMeta (@useBasicReasoning _ _ _ i (@not_not_intro Σ _ _ _)).
       mlExactn 1.
     }
@@ -1565,7 +1562,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         apply not_not_elim.
         wf_auto2.
       }
-      mlClear 0.
+      mlClear "1".
 
       (* Symmetry of Or *)
       mlAssert ((! ⌈ patt_free_evar x and ! ϕ ⌉ or ! ⌈ patt_free_evar x and ϕ ⌉))
@@ -1573,13 +1570,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       { wf_auto2. }
       {
         mlAdd (@useBasicReasoning _ _ _ BasicReasoning (@A_or_notA Σ Γ (! ⌈ patt_free_evar x and ϕ ⌉) ltac:(wf_auto2))).
-        mlDestructOr 0.
+        mlDestructOr "0".
         - mlRight. mlExactn 0.
-        - mlLeft. mlApply 1. mlExactn 0.
+        - mlLeft. mlApply "2". mlExactn 0.
       }
-      mlClear 0.
+      mlClear "2".
 
-      mlApply 0. mlClear 0. fromMLGoal.
+      mlApply "1". mlClear "1". fromMLGoal.
       useBasicReasoning.
       apply not_not_intro. wf_auto2.
     }
@@ -1602,18 +1599,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         toMLGoal.
         { wf_auto2. }
         mlIntro. mlAdd (@A_or_notA Σ Γ ϕ ltac:(auto)).
-        mlDestructOr 0.
+        mlDestructOr "1".
         - mlLeft. unfold patt_and. mlIntro. unfold patt_or.
           mlAssert ((! ϕ)).
           { wf_auto2. }
           {
-            mlApply 2. mlClear 0. mlClear 1. fromMLGoal.
+            mlApply "1". mlClear "2". mlClear "1". fromMLGoal.
             apply not_not_intro; auto.
           }
-          mlApply 3. mlExactn 0.
+          mlApply "3". mlExactn 0.
         - mlRight. unfold patt_and. mlIntro. unfold patt_or.
-          mlApply 0. mlApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
-          mlApply 2. mlIntro. mlApply 3. mlExactn 1.
+          mlApply "3". mlApplyMeta (@not_not_elim Σ Γ ϕ ltac:(auto)).
+          mlApply "1". mlIntro. mlApply "2". mlExactn 1.
       }
       apply useBasicReasoning with (i := i) in H.
       subst i.
@@ -1664,16 +1661,16 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     { try_solve_pile. }
     toMLGoal.
     { wf_auto2. }
-    mlIntro. mlDestructAnd 0.
-    mlDestructOr 1.
+    mlIntro. mlDestructAnd "0".
+    mlDestructOr "2".
     - mlLeft. unfold patt_and. mlIntro.
-      mlDestructOr 2.
-      + mlApply 2. mlExactn 0.
-      + mlApply 2. mlExactn 1.
+      mlDestructOr "2".
+      + mlApply "3". mlExactn 0.
+      + mlApply "4". mlExactn 1.
     - mlRight. unfold patt_and. mlIntro.
-      mlDestructOr 2.
-      + mlApply 2. mlExactn 0.
-      + mlApply 2. mlExactn 1.
+      mlDestructOr "0".
+      + mlApply "2". mlExactn 0.
+      + mlApply "4". mlExactn 1.
   Defined.
 
   Lemma membership_or_2 Γ x ϕ₁ ϕ₂:
@@ -1699,13 +1696,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
     toMLGoal.
     { wf_auto2. }
-    mlIntro. mlDestructOr 0; mlDestructAnd 0.
-    - unfold patt_and. mlIntro. mlDestructOr 2.
-      + mlApply 2. mlExactn 0.
-      + mlApply 2. mlLeft. mlExactn 1.
-    - unfold patt_and. mlIntro. mlDestructOr 2.
-      + mlApply 2. mlExactn 0.
-      + mlApply 2. mlRight. mlExactn 1.
+    mlIntro. mlDestructOr "0".
+    - mlDestructAnd "1". unfold patt_and. mlIntro. mlDestructOr "1".
+      + mlApply "3". mlExactn 0.
+      + mlApply "4". mlLeft. mlExactn 1.
+    - mlDestructAnd "2". unfold patt_and. mlIntro. mlDestructOr "2".
+      + mlApply "3". mlExactn 0.
+      + mlApply "4". mlRight. mlExactn 1.
   Defined.
 
   Lemma membership_or_iff Γ x ϕ₁ ϕ₂:
@@ -1741,20 +1738,17 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    unshelve (mlApplyMeta (@useBasicReasoning _ _ _ gpi (@membership_not_1 _ _ _ _ HΓ)) in 0).
+    assert (wfϕ : well_formed (! ϕ₁ or ! ϕ₂)).
     { wf_auto2. }
-    mlIntro. mlApply 0. mlClear 0.
+    unshelve (mlApplyMeta (@useBasicReasoning _ _ _ gpi (@membership_not_1 _ _ _ wfϕ HΓ)) in "0").
+    mlIntro. mlApply "0". mlClear "0".
     mlApplyMeta Htmp1.
-    mlDestructOr 0.
+    mlDestructOr "1"; subst gpi.
     - mlLeft.
-      subst gpi.
-      unshelve (mlApplyMeta (@membership_not_2 _ _ _ _ HΓ) in 0).
-      { wf_auto2. }
+      unshelve (mlApplyMeta (@membership_not_2 _ _ _ wfϕ₁ HΓ) in "0").
       mlExactn 0.
     - mlRight.
-      subst gpi.
-      unshelve (mlApplyMeta (@membership_not_2 _ _ _ _ HΓ) in 0).
-      { wf_auto2. }
+      unshelve (mlApplyMeta (@membership_not_2 _ _ _ wfϕ₂ HΓ) in "2").
       mlExactn 0.
       Unshelve. all: wf_auto2.
   Defined.
@@ -1777,20 +1771,20 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    mlDestructAnd 0.
+    mlDestructAnd "0".
     unfold patt_and.
 
     unshelve (mlApplyMeta (@membership_not_2 _ _ _ _ HΓ)).
     { wf_auto2. }
     mlIntro.
     
-    mlApplyMeta Htmp1 in 2.
-    mlDestructOr 2.
-    - mlApplyMeta Htmp2 in 2.
-      mlApply 2. mlExactn 0.
+    mlApplyMeta Htmp1 in "0".
+    mlDestructOr "0".
+    - mlApplyMeta Htmp2 in "3".
+      mlApply "3". mlExactn 0.
     -
-      mlApplyMeta Htmp3 in 2. 
-      mlApply 2. mlExactn 1.
+      mlApplyMeta Htmp3 in "4".
+      mlApply "4". mlExactn 1.
       Unshelve. all: wf_auto2.
   Defined.
 
@@ -2059,7 +2053,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       wf_auto2.
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlIntro. mlClear 1.
+      mlIntro. mlIntro. mlClear "1".
       fromMLGoal.
       apply IHl.
   Defined.
@@ -2084,7 +2078,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       pose proof (proved_impl_wf _ _ (proj1_sig IHl₁)).
       toMLGoal.
       { wf_auto2. }
-      mlIntro. mlClear 0.
+      mlIntro. mlClear "0".
       fromMLGoal.
       apply IHl₁.
   Defined.
@@ -2399,15 +2393,15 @@ End ProofSystemTheorems.
 
 
 Lemma MLGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
-    (Γ : Theory) (l₁ l₂ : list Pattern) (ϕ₁ ϕ₂ : Pattern) (C : PatternCtx) :
+    (Γ : Theory) (l₁ l₂ : hypotheses) name (ϕ₁ ϕ₂ : Pattern) (C : PatternCtx) :
 theory ⊆ Γ ->
 mu_free (pcPattern C) ->
-@mkMLGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₂) AnyReasoning ->
-@mkMLGoal Σ Γ (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) (emplace C ϕ₁) AnyReasoning .
+@mkMLGoal Σ Γ (l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂) (emplace C ϕ₂) AnyReasoning ->
+@mkMLGoal Σ Γ (l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂) (emplace C ϕ₁) AnyReasoning .
 Proof.
 intros HΓ HmfC H.
 mlExtractWF wfl wfg.
-
+unfold patterns_of in wfl. rewrite map_app in wfl.
 pose proof (wfl₁ := wfapp_proj_1 wfl).
 apply wfapp_proj_2 in wfl.
 unfold wf in wfl. simpl in wfl.
@@ -2416,7 +2410,7 @@ destruct wfl as [wfeq wfl₂].
 pose proof (wfC := wf_emplaced_impl_wf_context wfg).
 remember C as C'.
 destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
-mlAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)).
+mlAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)). (* !!! *)
 { unfold emplace in *. wf_auto2. }
 { fromMLGoal. apply equality_elimination_basic_ar_iter; auto.
   { wf_auto2. }
