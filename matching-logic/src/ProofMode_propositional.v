@@ -1686,6 +1686,11 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
     ]
   end.
 
+Tactic Notation "mlAssert" "(" constr (t) ")" :=
+  let hyps := _getHypNames in
+  let name := eval cbv in (fresh hyps) in
+  mlAssert (name : t).
+
 Local Example ex_mlAssert {Σ : Signature} Γ a:
   well_formed a ->
   Γ ⊢i (a ---> a ---> a) using BasicReasoning.
@@ -1697,7 +1702,10 @@ Proof.
   mlAssert ("H2" : a).
   { wf_auto2. }
   { mlExact "H1". }
-  { mlExact "H2". }
+  mlAssert (a).
+  { wf_auto2. }
+  { mlExact "H1". }
+  mlExact "H2".
 Qed.
 
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
@@ -1729,6 +1737,11 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" co
     ]
   end.
 
+Tactic Notation "mlAssert" "(" constr(t) ")" "using" "first" constr(n)  :=
+  let hyps := _getHypNames in
+  let name := eval cbv in (fresh hyps) in
+  mlAssert (name : t) using first n.
+
 Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed a = true ->
   well_formed b = true ->
@@ -1742,10 +1755,13 @@ Proof.
   mlIntro "H0".
   mlIntro "H1".
   mlIntro "H2".
-  mlAssert ("H4" : p) using first 2.
 
+  mlAssert ("H4" : p) using first 2.
   { wf_auto2. }
   { admit. }
+  
+  mlAssert (p) using first 2.
+  { wf_auto2. }
   { admit. }
 Abort.
 
@@ -1923,6 +1939,10 @@ Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
     apply (@MLGoal_add Sgm Ctx l name' g _ i n)
   end.
 
+Tactic Notation "mlAdd" constr(n) :=
+  let hyps := _getHypNames in
+  let name := eval cbv in (fresh hyps) in
+  mlAdd n as name.
 
   Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
     Pattern.wf l ->
@@ -1935,8 +1955,8 @@ Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
     intros WFl WFg WFh H H0. toMLGoal.
     { wf_auto2. }
     mlAdd H0 as "H0".
-    mlAdd H as "H1".
-    mlApply "H1".
+    mlAdd H.
+    mlApply "0".
     mlExact "H0".
   Defined.
 
@@ -2396,6 +2416,12 @@ Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
     simpl
   end.
 
+Tactic Notation "mlDestructOr" constr(name) :=
+  let hyps := _getHypNames in
+  let name0 := eval cbv in (fresh hyps) in
+  let name1 := eval cbv in (fresh (name0 :: hyps)) in
+  mlDestructOr name as name0 name1.
+
   Local Example exd {Σ : Signature} Γ a b p q c i:
   well_formed a ->
   well_formed b ->
@@ -2412,7 +2438,7 @@ Proof.
   mlIntro "H0".
   mlIntro "H1".
   mlIntro "H2".
-  mlDestructOr "H1" as "H3" "H4".
+  mlDestructOr "H1".
   - fromMLGoal. apply H.
   - fromMLGoal. apply H0.
 Defined.
@@ -2935,6 +2961,12 @@ Tactic Notation "mlDestructAnd" constr(name) "as" constr(name1) constr(name2) :=
   apply MLGoal_destructAnd with (nxy := name) (nx := name1) (ny := name2);
   _mlReshapeHypsBack.
 
+Tactic Notation "mlDestructAnd" constr(name) :=
+  let hyps := _getHypNames in
+  let name0 := eval cbv in (fresh hyps) in
+  let name1 := eval cbv in (fresh (name0 :: hyps)) in
+  mlDestructAnd name as name0 name1.
+
 Local Example ex_mlDestructAnd {Σ : Signature} Γ a b p q:
   well_formed a ->
   well_formed b ->
@@ -2947,7 +2979,7 @@ Proof.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H1". mlIntro "H2".
   mlDestructAnd "H1" as "H3" "H4".
-  mlDestructAnd "H0" as "H1" "H5".
+  mlDestructAnd "H0".
   mlExact "H3".
 Defined.
 
