@@ -283,6 +283,11 @@ Ltac simplLocalContext :=
       => eapply cast_proof_ml_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
+Ltac _getHypNames :=
+  lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] => eval cbv in (names_of l)
+  end.
+
 Tactic Notation "_failIfUsed" constr(name) :=
   lazymatch goal with
   | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] =>
@@ -294,6 +299,11 @@ Tactic Notation "_failIfUsed" constr(name) :=
 
 Tactic Notation "mlIntro" constr(name') :=
 _failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
+
+Tactic Notation "mlIntro" :=
+  let hyps := _getHypNames in
+  let name' := eval cbv in (fresh hyps) in
+  mlIntro name'.
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
 well_formed p ->
@@ -311,7 +321,7 @@ Abort.
 
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢i a ---> a ---> a using i.
+  Γ ⊢i a ---> a ---> a ---> a ---> a using i.
 Proof.
   intros wfa.
   toMLGoal.
@@ -320,6 +330,7 @@ Proof.
   mlIntro "h"%string.
   Fail mlIntro "h"%string.
   mlIntro "h'"%string.
+  do 2 mlIntro.
 Abort.
 
 Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
