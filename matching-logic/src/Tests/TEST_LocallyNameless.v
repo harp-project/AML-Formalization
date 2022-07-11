@@ -8,11 +8,14 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset finite.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics.
+From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature ProofSystem ProofMode.
+From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Syntax.BoundVarSugar.
+Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.IndexManipulation.
@@ -212,3 +215,97 @@ Module test_2.
     
   End test_2.
 End test_2.
+
+
+Module test_3.
+  Section test_3.
+    Import Definedness_Syntax.
+
+    Inductive Symbols :=
+    | sym_import_definedness (d : Definedness_Syntax.Symbols)
+    | Zero | Succ (* constructors for Nats *)
+    | TT | FF
+    | even
+    .
+
+    Instance Symbols_eqdec : EqDecision Symbols.
+    Proof. solve_decision. Defined.
+
+    #[local]
+    Program Instance Symbols_fin : Finite Symbols :=
+    {|
+      enum := [Zero; Succ; TT ; FF; even;
+        sym_import_definedness Definedness_Syntax.definedness] ;
+    |}.
+    Next Obligation.
+      repeat constructor; set_solver.
+    Qed.
+    Next Obligation.
+      destruct x; try set_solver.
+      destruct d; set_solver.
+    Qed.
+
+    Instance signature : Signature :=
+      {| variables := StringMLVariables ;
+         symbols := Symbols ;
+      |}.
+
+    Instance definedness_syntax : Definedness_Syntax.Syntax :=
+      {|
+         Definedness_Syntax.inj := sym_import_definedness;
+      |}.
+
+    Open Scope string_scope.
+    Let X0 := patt_free_evar "X0".
+    Let X := patt_free_evar "X".
+    Let sym_even := patt_sym even.
+    Let sym_succ := patt_sym Succ.
+    Let sym_zero := patt_sym Zero.
+    Let sym_tt := patt_sym TT.
+    Let sym_ff := patt_sym FF.
+    (* axioms *)
+    Definition defined : Pattern := Definedness_Syntax.axiom AxDefinedness.
+    Definition ruleA : Pattern :=
+      X0 ∈ml sym_succ $ sym_succ $ X --->
+        sym_even $ X0 =ml patt_sym even $ X.
+    Definition ruleB : Pattern :=
+       X0 ∈ml sym_succ $ sym_zero --->
+        sym_even $ X0 =ml sym_ff.
+    Definition ruleC : Pattern :=
+      X0 ∈ml sym_zero --->
+        sym_even $ X0 =ml sym_tt.
+
+    Let Γₙₐₜ : Theory := {[ defined; ruleA; ruleB; ruleC ]}.
+
+    Theorem alma:
+      Γₙₐₜ ⊢ sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
+    Proof.
+      assert (Γₙₐₜ ⊢ ruleA using AnyReasoning) as RA.
+      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      assert (Γₙₐₜ ⊢ ruleC using AnyReasoning) as RC.
+      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      Search ML_proof_system patt_forall.
+      Check forall_functional_subst.
+      Check forall_variable_substitution.
+      apply universal_generalization with (x := "X") in RA as RA1.
+      2: apply pile_any. 2: auto.
+      assert ((Γₙₐₜ
+       ⊢ all ,
+           (X0 ∈ml sym_succ $ sym_succ $ b0 --->
+            sym_even $ X0 =ml patt_sym even $ b0)) using AnyReasoning) as RA1' by auto.
+      clear RA1.
+      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning). { admit. }
+      epose proof (@forall_functional_subst _ _ 
+                      ((X0 ∈ml sym_succ $ sym_succ $ b0 ---> 
+                          sym_even $ X0 =ml patt_sym even $ b0)) 
+                      (sym_succ $ sym_succ $ sym_zero) Γₙₐₜ _ ltac:(auto) ltac:(auto)
+                      ltac:(auto) ltac:(auto)).
+      apply MP in H0.
+      2: { toMyGoal. wf_auto2. mgSplitAnd. fromMyGoal. exact RA1'. fromMyGoal. exact H. }
+      assert (Γₙₐₜ
+      ⊢ (X0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero ---> sym_even $ X0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero) using AnyReasoning) by auto.
+      clear H0 RA1'.
+    Admitted.
+  End test_3.
+End test_3.
+

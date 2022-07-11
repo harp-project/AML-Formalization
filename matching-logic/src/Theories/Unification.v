@@ -545,6 +545,7 @@ Section UnificationProcedure.
       { apply well_formed_imp. admit. }
       rewrite map_app. simpl map.
       rewrite foldr_app. simpl.
+      mgIntro. mgDestructAnd 0.
     Unshelve. all: admit.
   Abort.
 
