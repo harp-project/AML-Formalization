@@ -42,7 +42,7 @@
           ];
           
 
-          buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/.MatchingLogic" ];
+          buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/MatchingLogic" ];
 
           installTargets = "install-coqdoc";
           # We are not going to install this system-wide, so we can afford not to have the coq version in the path to the docs.

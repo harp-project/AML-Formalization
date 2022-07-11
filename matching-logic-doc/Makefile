@@ -1,6 +1,5 @@
 PATH_TO_COMPILED_LIBRARY ?= ../matching-logic
 DOCDIR ?= /usr/share
-COQDOCINSTALL ?= $(DOCDIR)/coq/user-contrib
 
 default: coqdoc
 
@@ -14,9 +13,9 @@ doc/coqdoc:
 
 
 install-coqdoc: doc/coqdoc
-	install -d $(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/
+	install -d $(DOCDIR)/$(INSTALLCOQDOCROOT)/doc/coqdoc/
 	$(HIDE)for i in doc/coqdoc/*; do \
-	 dest="$(COQDOCINSTALL)/$(INSTALLCOQDOCROOT)/$$i";\
+	 dest="$(DOCDIR)/$(INSTALLCOQDOCROOT)/$$i";\
 	 install -m 0644 "$$i" "$$dest";\
 	 echo INSTALL "$$i" "$$dest";\
 	done
