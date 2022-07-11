@@ -466,6 +466,14 @@ Tactic Notation "_mlReshapeHypsByName" constr(n) :=
   |idtac]
 .
 
+Ltac2 _mlReshapeHypsByName (name' : constr) :=
+  ltac1:(name'' |- _mlReshapeHypsByName name'') (Ltac1.of_constr name')
+.
+
 Tactic Notation "_mlReshapeHypsBack" :=
   let hyps := fresh "hyps" in rewrite [hyps in @mkMLGoal _ _ hyps _]/app
+.
+
+Ltac2 _mlReshapeHypsBack () :=
+  ltac1:(_mlReshapeHypsBack)
 .
