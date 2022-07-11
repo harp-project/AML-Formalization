@@ -47,7 +47,7 @@ jobs:
           command: |
             git config user.email "jenda.tusil+ci@gmail.com"
             git config user.name "ci-build"
-            nix-env -iA 'nixos.ghp-import'
+            nix-env -iA 'nixpkgs.ghp-import'
       - add_ssh_keys:
           fingerprints:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
