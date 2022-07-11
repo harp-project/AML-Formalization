@@ -25,8 +25,8 @@ jobs:
           name: "Doc"
           command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link 'doc-output'
       - persist_to_workspace:
-          root: matching-logic-doc
-          paths: doc-output/share/doc/coq-matching-logic/html
+          root: doc-output
+          paths: share/doc/coq-matching-logic/doc
       - run:
           name: "FOL -- Build"
           command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-fol'
