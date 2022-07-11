@@ -34,29 +34,26 @@ jobs:
           name: "Prover Build & Test"
           command: nix build '.#coq-matching-logic-mm-exporter'
 
-  # Taken from https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
+  # Inspired by https://circleci.com/blog/deploying-documentation-to-github-pages-with-continuous-integration/
   docs-deploy:
     docker:
-      - image: node:8.10.0
+      - image: nixos/nix
     steps:
       - checkout
       - attach_workspace:
-          at: docs/build
-      - run:
-          name: Disable Jekyll builds
-          command: touch docs/build/html/.nojekyll
+          at: /tmp/workspace
       - run:
           name: Install and configure dependencies
           command: |
-            npm install -g --silent gh-pages@2.0.1
             git config user.email "jenda.tusil+ci@gmail.com"
             git config user.name "ci-build"
+            nix-env -iA 'ghp-import'
       - add_ssh_keys:
           fingerprints:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
       - run:
           name: Deploy docs to gh-pages branch
-          command: gh-pages --dotfiles --message "[ci skip] Updates" --dist docs/build/html
+          command: ghp-import --no-jekyll --prefix 'branch/nix-flakes/' --push --no-history --force /tmp/workspace/doc-output/share/doc/coq-matching-logic/doc/
 
 workflows:
   # Name the workflow "welcome"
@@ -66,7 +63,7 @@ workflows:
       - docs-deploy:
           requires:
             - build
-          filters:
-            branches:
-              only: master
+          # filters:
+          #  branches:
+          #    only: master
 
