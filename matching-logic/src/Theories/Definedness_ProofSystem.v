@@ -2410,22 +2410,43 @@ destruct wfl as [wfeq wfl₂].
 pose proof (wfC := wf_emplaced_impl_wf_context wfg).
 remember C as C'.
 destruct C as [CE Cψ]. unfold PC_wf in wfC. simpl in *.
-mlAssert ((emplace C' ϕ₁ <---> emplace C' ϕ₂)). (* !!! *)
+
+lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ]
+    => remember (names_of l) as names_of_l 
+end.
+
+_mlAssert_nocheck ((fresh names_of_l) : (emplace C' ϕ₁ <---> emplace C' ϕ₂)). (* !!! *)
 { unfold emplace in *. wf_auto2. }
-{ fromMLGoal. apply equality_elimination_basic_ar_iter; auto.
+{ fromMLGoal.
+  unfold patterns_of.
+  rewrite map_app.
+  simpl.
+  apply equality_elimination_basic_ar_iter; auto.
   { wf_auto2. }
   { wf_auto2. }
 }
 unfold patt_iff.
 epose proof (Htmp := (@pf_conj_elim_r _ _ _ _ _ _)).
 apply useBasicReasoning with (i := AnyReasoning) in Htmp.
-unshelve(eapply (@MLGoal_applyMetaIn _ _ _ _ _ Htmp)).
+eapply (@MLGoal_applyMetaIn Σ Γ _ _ (fresh names_of_l) _ _ Htmp).
 clear Htmp.
 
-replace (l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) with ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ []) in H
- by (rewrite app_nil_r; reflexivity).
-apply myGoal_clear_hyp with (h := ((emplace C' ϕ₂) ---> (emplace C' ϕ₁))) in H.
-unshelve (eapply (@myGoal_assert _ _ _ _ _ _ _ H)).
+replace (l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂)
+   with ((l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂) ++ [])
+   in H
+  by (rewrite app_nil_r; reflexivity).
+apply mlGoal_clear_hyp with (h := (mkNH (fresh names_of_l) ((emplace C' ϕ₂) ---> (emplace C' ϕ₁)))) in H.
+
+lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ]
+    => remember (names_of l) as names_of_l' 
+end.
+
+eapply @mlGoal_assert with (name := (fresh names_of_l')).
+2: {
+  apply H.
+}
 { wf_auto2. }
 
 simpl.
@@ -2433,15 +2454,18 @@ rewrite -app_assoc.
 simpl.
 eapply MLGoal_weakenConclusion.
 
-replace ((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁); emplace C' ϕ₂])
-with (((l₁ ++ (ϕ₁ =ml ϕ₂) :: l₂) ++ [(emplace C' ϕ₂) ---> (emplace C' ϕ₁)]) ++ [emplace C' ϕ₂]).
+replace ((l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂)
+          ++ [(mkNH (fresh names_of_l) ((emplace C' ϕ₂) ---> (emplace C' ϕ₁)));
+              (mkNH (fresh names_of_l') (emplace C' ϕ₂))])
+with (((l₁ ++ (mkNH name (ϕ₁ =ml ϕ₂)) :: l₂)
+      ++ [mkNH (fresh names_of_l) ((emplace C' ϕ₂) ---> (emplace C' ϕ₁))])
+      ++ [mkNH (fresh names_of_l') (emplace C' ϕ₂)]).
 2: {  rewrite -app_assoc. simpl. reflexivity. }
 useBasicReasoning.
 apply MLGoal_exactn.
 Unshelve.
 all: abstract (wf_auto2).
-
-Qed.
+Defined.
 
 Ltac2 mlRewriteBy (n : constr) (atn : int) :=
 eapply (@cast_proof_ml_hyps)

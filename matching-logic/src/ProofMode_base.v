@@ -285,7 +285,7 @@ Ltac simplLocalContext :=
 
 Ltac _getHypNames :=
   lazymatch goal with
-  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] => eval cbv in (names_of l)
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
   end.
 
 Tactic Notation "_failIfUsed" constr(name) :=

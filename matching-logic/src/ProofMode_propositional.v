@@ -1671,10 +1671,7 @@ eapply prf_add_lemma_under_implication_generalized_meta_meta.
 }
 Defined.
 
-
-(* TODO: make this bind tigther. *)
-Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
-  _failIfUsed name;
+Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
   match goal with
   | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
     let Hwf := fresh "Hwf" in
@@ -1686,10 +1683,18 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
     ]
   end.
 
+
+(* TODO: make this bind tigther. *)
+Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
+  _failIfUsed name;
+  _mlAssert_nocheck (name : t)
+.
+
+
 Tactic Notation "mlAssert" "(" constr (t) ")" :=
   let hyps := _getHypNames in
-  let name := eval cbv in (fresh hyps) in
-  mlAssert (name : t).
+  let name := eval lazy in (fresh hyps) in
+  mlAssert (name : (t)).
 
 Local Example ex_mlAssert {Σ : Signature} Γ a:
   well_formed a ->
