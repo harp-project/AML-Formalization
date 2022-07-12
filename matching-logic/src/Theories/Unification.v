@@ -49,9 +49,9 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' SubTheory Mufree Wf1 Wf2.
     toMLGoal. wf_auto2.
-    mlIntro. mlDestructAnd 0.
-    mlRewriteBy 1 at 1. auto. wf_auto.
-    mlSplitAnd; mlExactn 0.
+    mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
+    mlRewriteBy "H2" at 1. assumption. wf_auto.
+    mlSplitAnd; mlExact "H1".
   Defined.
 
   Lemma membership_imp_equal :
@@ -116,11 +116,11 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ HΓ Wf.
     toMLGoal. wf_auto2.
-    mlIntro.
+    mlIntro "H0".
     mlApplyMeta (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
                  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     mlSplitAnd.
-    * mlClear 0. fromMLGoal. wf_auto2.
+    * mlClear "H0". fromMLGoal. wf_auto2.
       remember (fresh_evar patt_bott) as x.
       pose proof (@universal_generalization _ Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
         as H1.
@@ -128,7 +128,7 @@ Section ProofSystemTheorems.
       gapply defined_evar.
       { apply pile_any. }
       { exact HΓ. }
-    * mlExactn 0.
+    * mlExact "H0".
   Defined.
 
   Lemma equal_imp_membership :
@@ -140,15 +140,15 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' HΓ MF WF1 WF2 Def.
     toMLGoal. wf_auto2.
-    mlIntro.
-    mlRewriteBy 0 at 1; cbn; wf_auto2.
-      mlClear 0. unfold patt_in.
+    mlIntro "H0".
+    mlRewriteBy "H0" at 1; cbn; wf_auto2.
+      mlClear "H0". unfold patt_in.
       assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
       {
         toMLGoal. wf_auto2.
-        mlSplitAnd; mlIntro.
-        - mlDestructAnd 0. mlExactn 0.
-        - mlSplitAnd; mlExactn 0.
+        mlSplitAnd; mlIntro "H1".
+        - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
+        - mlSplitAnd; mlExact "H1".
       }
       now mlRewrite H1 at 1.
   Defined.
@@ -193,16 +193,19 @@ Section ProofSystemTheorems.
   Proof.
     intros Γ φ φ' HΓ Wf1 Wf2 MF Func1 Func2.
     toMLGoal. wf_auto2.
-    mlIntro.
-    mlAssert (⌈ φ and φ' ⌉). wf_auto2.
+    mlIntro "H0".
+    mlAssert ("H1" : ⌈ φ and φ' ⌉).
+    { wf_auto2. }
     (* Why can we only mlApplyMeta here, and not after mlRevert? *)
-    mlApplyMeta (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
-    mlExactn 0.
+    {
+      mlApplyMeta (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
+      mlExact "H0".
+    }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
-    mlDestructAnd 0. mlSplitAnd.
-    * mlExactn 0.
+    mlDestructAnd "H0" as "H2" "H3". mlSplitAnd.
+    * mlExact "H2".
     * mlApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
-      mlExactn 2.
+      mlExact "H1".
   Defined.
 
   Corollary delete : forall φ φ' Γ,
@@ -213,7 +216,7 @@ Section ProofSystemTheorems.
   Proof.
     intros φ φ' Γ WF1 WF2.
     toMLGoal. wf_auto2.
-    mlIntro. mlDestructAnd 0. mlExactn 0.
+    mlIntro "H0". mlDestructAnd "H0" as "H1" "H2". mlExact "H1".
   Defined.
 
   Lemma free_evar_subst_id :
@@ -244,7 +247,9 @@ Section ProofSystemTheorems.
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
-    mlIntro. mlDestructAnd 0. mlSplitAnd. 2: mlExactn 1.
+    mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
+    mlSplitAnd.
+    2: { mlExact "H2". }
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -261,7 +266,7 @@ Section ProofSystemTheorems.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
                 φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ'] ) as Hiff. {
       toMLGoal; wf_auto2.
-      mlIntro. unfold patt_iff. mlDestructAnd 0. mlExactn 1.
+      mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
     
     apply useAnyReasoning in H.
@@ -269,7 +274,7 @@ Section ProofSystemTheorems.
     (* TODO: mlApplyMeta buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mlRevert. mlApplyMeta H1. mlExactn 0.
+    mlRevertLast. mlApplyMeta H1. mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -291,7 +296,10 @@ Section ProofSystemTheorems.
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
-    mlIntro. mlDestructAnd 0. mlSplitAnd. 2: mlAssumption.
+    mlIntro "H0".
+    mlDestructAnd "H0" as "H1" "H2".
+    mlSplitAnd.
+    2: { mlAssumption. }
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -302,14 +310,16 @@ Section ProofSystemTheorems.
     assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
                 φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x] ) as Hiff. {
       toMLGoal; wf_auto2.
-      mlIntro. unfold patt_iff. mlDestructAnd 0. mlExactn 0.
+      mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
     apply useAnyReasoning in H.
     epose proof (@syllogism_meta _ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
     (* TODO: mlApplyMeta buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mlRevert. mlApplyMeta H1. mlExactn 0.
+    mlRevertLast.
+    mlApplyMeta H1.
+    mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -324,6 +334,7 @@ Section ProofSystemTheorems.
 
      The question is, why can we assume this axiom?
   *)
+  (* TODO move this definition to a more general place. *)
   Definition application_chain (φ : Pattern) (φs : list Pattern) : Pattern :=
     fold_left (fun Acc φ => patt_app Acc φ) φs φ.
 
@@ -340,7 +351,8 @@ Section ProofSystemTheorems.
     induction φs;
     intros ψ φ's Γ Len WF WFs1 WFs2.
     * apply eq_sym, length_zero_iff_nil in Len. subst. cbn.
-      toMLGoal. wf_auto2. mlIntro. mlClear 0. (* TODO: mlExact for meta theorems *)
+      toMLGoal. wf_auto2.
+      mlIntro "H0". mlClear "H0". (* TODO: mlExact for meta theorems *)
       fromMLGoal. wf_auto2.
       useBasicReasoning.
       apply (top_holds Γ).
