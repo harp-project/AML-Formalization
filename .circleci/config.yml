@@ -53,7 +53,7 @@ jobs:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
       - run:
           name: Deploy docs to gh-pages branch
-          command: ghp-import --no-jekyll --prefix 'branch/nix-flakes/' --push --no-history --force /tmp/workspace/share/doc/coq-matching-logic/doc/
+          command: ghp-import --no-jekyll --prefix "branch/${CIRCLE_BRANCH}/" --push --no-history --force /tmp/workspace/share/doc/coq-matching-logic/doc/
 
 workflows:
   # Name the workflow "welcome"
