@@ -69,6 +69,20 @@
           ];
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
         } ) { } ;
+
+        # Example: ProofMode tutorial
+        packages.coq-matching-logic-example-proofmode
+        = pkgs.coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic-example-proofmode";
+          src = self + "/examples/02_proofmode";
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+          ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+        } ) { } ;
+ 
         
         # Metamath exporter: Build & Test
         packages.coq-matching-logic-mm-exporter
