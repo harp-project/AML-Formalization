@@ -2839,7 +2839,7 @@ Tactic Notation "mlApplyMeta" uconstr(t) "in" constr(name) :=
   eapply cast_proof_ml_hyps;
   f_equal;
   _mlReshapeHypsByName name;
-  apply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
+  eapply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
   _mlReshapeHypsBack.
 
 Local Example Private_ex_mlApplyMetaIn {Σ : Signature} Γ p q:
