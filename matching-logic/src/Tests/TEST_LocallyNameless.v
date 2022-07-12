@@ -216,7 +216,6 @@ Module test_2.
   End test_2.
 End test_2.
 
-
 Module test_3.
   Section test_3.
     Import Definedness_Syntax.
@@ -276,6 +275,11 @@ Module test_3.
         sym_even $ X0 =ml sym_tt.
 
     Let Γₙₐₜ : Theory := {[ defined; ruleA; ruleB; ruleC ]}.
+    Theorem def_theory : theory ⊆ Γₙₐₜ.
+    Proof.
+      unfold Γₙₐₜ, theory, named_axioms, NamedAxioms.theory_of_NamedAxioms; cbn.
+      admit.
+    Abort.
 
     Theorem alma:
       Γₙₐₜ ⊢ sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
@@ -284,28 +288,32 @@ Module test_3.
       { gapply hypothesis; auto. apply pile_any. set_solver. }
       assert (Γₙₐₜ ⊢ ruleC using AnyReasoning) as RC.
       { gapply hypothesis; auto. apply pile_any. set_solver. }
-      Search ML_proof_system patt_forall.
-      Check forall_functional_subst.
-      Check forall_variable_substitution.
-      apply universal_generalization with (x := "X") in RA as RA1.
+      apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
       assert ((Γₙₐₜ
        ⊢ all ,
            (X0 ∈ml sym_succ $ sym_succ $ b0 --->
             sym_even $ X0 =ml patt_sym even $ b0)) using AnyReasoning) as RA1' by auto.
       clear RA1.
-      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning). { admit. }
-      epose proof (@forall_functional_subst _ _ 
-                      ((X0 ∈ml sym_succ $ sym_succ $ b0 ---> 
-                          sym_even $ X0 =ml patt_sym even $ b0)) 
-                      (sym_succ $ sym_succ $ sym_zero) Γₙₐₜ _ ltac:(auto) ltac:(auto)
-                      ltac:(auto) ltac:(auto)).
-      apply MP in H0.
-      2: { toMyGoal. wf_auto2. mgSplitAnd. fromMyGoal. exact RA1'. fromMyGoal. exact H. }
-      assert (Γₙₐₜ
-      ⊢ (X0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero ---> sym_even $ X0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero) using AnyReasoning) by auto.
-      clear H0 RA1'.
-    Admitted.
+      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
+      { admit. }
+      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
+      { admit. }
+      mgSpecMeta RA1' with (sym_succ $ sym_succ $ sym_zero).
+      repeat rewrite simpl_bevar_subst'  in RA1'; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA1'.
+      apply universal_generalization with (x := "X0") in RA1' as RA2. (* revert Meta *)
+      2: apply pile_any. 2: auto.
+      assert ((Γₙₐₜ
+       ⊢ all ,
+           (b0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero --->
+            sym_even $ b0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero)) using AnyReasoning) as RA2' by auto.
+      clear RA2 RA1'.
+      mgSpecMeta RA2' with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
+      repeat rewrite simpl_bevar_subst'  in RA2'; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA2'.
+      Search "∈ml" ML_proof_system.
+    Abort.
   End test_3.
 End test_3.
 

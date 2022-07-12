@@ -4225,3 +4225,100 @@ Proof.
     1-3: unfold PC_wf; simpl; wf_auto2.
     apply pile_any.
 Defined.
+
+Lemma mlSpecializeMeta {Σ : Signature} {syntax : Syntax} :
+  forall Γ φ ψ, theory ⊆ Γ-> 
+  well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
+  Γ ⊢ (all , φ) using AnyReasoning -> 
+  Γ ⊢ ex , ψ =ml b0 using AnyReasoning ->
+  Γ ⊢ φ.[evar: 0 ↦ ψ] using AnyReasoning.
+Proof.
+  intros Γ φ ψ HΓ WF1 WF2 MF P1 P2.
+  toMyGoal. wf_auto2.
+  mgApplyMeta (@forall_functional_subst _ _ φ ψ _ _ _ _ _ _).
+  mgSplitAnd; fromMyGoal; auto.
+  Unshelve. all: auto. all: wf_auto.
+Defined.
+
+Tactic Notation "mgSpecMeta" ident(hyp) "with" constr(t) := 
+  unshelve (eapply (@mlSpecializeMeta _ _ _ _ t) in hyp); try wf_auto2.
+
+Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ, theory ⊆ Γ-> 
+  well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
+  Γ ⊢ (all , φ) using AnyReasoning -> 
+  Γ ⊢ ex , ψ =ml b0 using AnyReasoning ->
+  Γ ⊢ φ.[evar: 0 ↦ ψ] using AnyReasoning.
+Proof.
+  intros. mgSpecMeta H3 with ψ.
+Defined.
+
+Lemma MyGoal_mlSpecialize {Σ : Signature} {syntax : Syntax} Γ l₁ l₂ p t g:
+  theory ⊆ Γ ->
+  mu_free p -> well_formed t ->
+  @mkMyGoal Σ Γ (l₁ ++ p.[evar: 0 ↦ t]::l₂ ) g AnyReasoning ->
+  @mkMyGoal Σ Γ (l₁ ++ ((all, p) and (ex , t =ml b0))::l₂) g AnyReasoning.
+Proof.
+  intros HΓ MF WF MG.
+  unfold of_MyGoal in *. simpl in *. wf_auto2.
+  apply wfl₁hl₂_proj_h in H0 as H0'.
+  epose proof (MG H _) as MG'.
+  eapply prf_strenghten_premise_iter_meta_meta.
+  7: exact MG'. all: auto.
+  1: now apply wfl₁hl₂_proj_l₁ in H0.
+  1: now apply wfl₁hl₂_proj_l₂ in H0.
+  apply wfl₁hl₂_proj_h in H0. wf_auto2.
+  apply forall_functional_subst. 1-3: auto.
+  all: apply andb_true_iff in H0' as [_ H0'];
+       apply andb_true_iff in H0' as [H0_1 H0_2]; simpl in *; repeat rewrite andb_true_r in H0_1, H0_2; repeat rewrite andb_true_iff in H0_1, H0_2; wf_auto2.
+  Unshelve. wf_auto2.
+  1: now apply wfl₁hl₂_proj_l₁ in H0.
+  1: now apply wfl₁hl₂_proj_l₂ in H0.
+Defined.
+
+(**
+  This tactic can be used on local hypotheses shaped in the following way:
+     (all , φ) and ex , t = b0
+*)
+Tactic Notation "mgSpec" constr(n) := 
+  unshelve (eapply (@cast_proof_mg_hyps _ _ _ _ _ _ _));
+  [shelve|(rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac];
+  eapply MyGoal_mlSpecialize; [auto | wf_auto2 | wf_auto2 | simpl].
+
+Goal forall (Σ : Signature) (syntax : Syntax) Γ φ t, 
+  theory ⊆ Γ -> mu_free φ -> well_formed t -> well_formed (ex , φ) ->
+  Γ ⊢ all , φ ---> (ex , t =ml b0) ---> φ.[evar: 0 ↦ t] using AnyReasoning.
+Proof.
+  intros. toMyGoal. wf_auto2.
+  do 2 mgIntro.
+  mgAssert (((all , φ) and ex , t =ml b0)). wf_auto2. mgSplitAnd; mgAssumption.
+  mgClear 0. mgClear 0.
+  mgSpec 0. mgExactn 0.
+Defined.
+
+Lemma and_singleton {Σ : Signature} : forall Γ p,
+  well_formed p -> Γ ⊢ (p and p) <---> p using BasicReasoning.
+Proof.
+  intros.
+  toMyGoal. wf_auto2.
+  mgSplitAnd; mgIntro.
+  * mgDestructAnd 0. mgAssumption.
+  * mgSplitAnd; mgAssumption.
+Qed.
+
+Lemma membership_refl {Σ : Signature} {syntax : Syntax}:
+  forall Γ t, well_formed t -> 
+  theory ⊆ Γ-> Γ ⊢ ((ex , t =ml b0) ---> t ∈ml t) using AnyReasoning.
+Proof.
+  intros Γ t WF HΓ.
+  unfold "∈ml". toMyGoal. wf_auto2.
+  mgIntro.
+  pose proof (@and_singleton _ Γ t WF). apply useAnyReasoning in H.
+  mgRewrite H at 1.
+  admit.
+Abort.
+
+
+
+
+
