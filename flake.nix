@@ -4,9 +4,10 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    alectryon.url = "path:deps/alectryon";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, alectryon }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -36,8 +37,12 @@
           name = "coq-matching-logic-doc";
           src = self + "/matching-logic-doc";
           buildInputs = [
+            alectryon.packages.${system}.default
             self.outputs.packages.${system}.coq-matching-logic
-            pkgs.python310Packages.alectryon
+            #pkgs.python310Packages.alectryon
+            pkgs.python310Packages.pygments
+            pkgs.python310Packages.pip
+            pkgs.coqPackages.serapi
             pkgs.coq
           ];
           

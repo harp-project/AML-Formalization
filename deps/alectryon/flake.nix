@@ -6,7 +6,7 @@
         flake-utils.url = "github:numtide/flake-utils";
     };
 
-    outputs = { self, nixpkgs, flake-utils, alectryon }: (
+    outputs = { self, nixpkgs, flake-utils }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -17,23 +17,23 @@
                 pname = "alectryon";
                 version = "1.4.0";
 
-                src = fetchFromGitHub {
+                src = pkgs.fetchFromGitHub {
                     owner = "cpitclaudel";
                     repo = "alectryon";
                     rev = "739b46da22d272e748f60f3efcd2989d696fba71";
                 };
 
                 propagatedBuildInputs = [
-                   pygments
-                    dominate
-                    beautifulsoup4
-                    docutils
-                    sphinx
+                   pkgs.python310Packages.pygments
+                    pkgs.python310Packages.dominate
+                    pkgs.python310Packages.beautifulsoup4
+                    pkgs.python310Packages.docutils
+                    pkgs.python310Packages.sphinx
                 ];
 
-                doCheck = false;;
-            }
+                doCheck = false;
+            };
         }
     )
-)
+    );
 }

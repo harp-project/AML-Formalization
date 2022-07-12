@@ -19,3 +19,8 @@ install-coqdoc: doc/coqdoc
 	 install -m 0644 "$$i" "$$dest";\
 	 echo INSTALL "$$i" "$$dest";\
 	done
+
+alectryon: doc/alectryon
+
+doc/alectryon:
+		

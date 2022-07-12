@@ -1,6 +1,37 @@
 {
   "nodes": {
+    "alectryon": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1,
+        "narHash": "sha256-xTSYDq7M8Xf6ZsB/jTlO4VyhUVVG4lbt1/NQUW209HQ=",
+        "path": "deps/alectryon",
+        "type": "path"
+      },
+      "original": {
+        "path": "deps/alectryon",
+        "type": "path"
+      }
+    },
     "flake-utils": {
+      "locked": {
+        "lastModified": 1656928814,
+        "narHash": "sha256-RIFfgBuKz6Hp89yRr7+NR5tzIAbn52h8vT6vXkYjZoM=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "7e2a3b3dfd9af950a856d66b0a7d01e3c18aa249",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "flake-utils_2": {
       "locked": {
         "lastModified": 1656928814,
         "narHash": "sha256-RIFfgBuKz6Hp89yRr7+NR5tzIAbn52h8vT6vXkYjZoM=",
@@ -17,11 +48,26 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1657350950,
-        "narHash": "sha256-csFtHwaclw9T8mg67d+SYbIKG7p7TTyP09XrZFYHAYc=",
+        "lastModified": 1657623780,
+        "narHash": "sha256-Q8bUZ9YqLwNB82ovygdc3bHszGaZjDrDOh8aCfIo7n4=",
         "owner": "NixOs",
         "repo": "nixpkgs",
-        "rev": "a6d59d9ee48461e645ed5988424a229f6feec0d4",
+        "rev": "6bff61fa6c4fdc378bfd016bc1806c291cc88a39",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOs",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1657623780,
+        "narHash": "sha256-Q8bUZ9YqLwNB82ovygdc3bHszGaZjDrDOh8aCfIo7n4=",
+        "owner": "NixOs",
+        "repo": "nixpkgs",
+        "rev": "6bff61fa6c4fdc378bfd016bc1806c291cc88a39",
         "type": "github"
       },
       "original": {
@@ -32,8 +78,9 @@
     },
     "root": {
       "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "alectryon": "alectryon",
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },
