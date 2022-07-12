@@ -4066,10 +4066,10 @@ unshelve(mlApplyMeta (patt_eq_sym _ _ _) in "H0").
 { assumption. }
 { wf_auto2. }
 { wf_auto2. }
-mlRewriteBy 0 at 1.
+mlRewriteBy "H0" at 1.
 { assumption. }
 { simpl. rewrite mfϕ₁. reflexivity. }
-mlClear 0.
+mlClear "H0".
 
 fromMLGoal.
 unfold "⊆ml".
@@ -4088,9 +4088,9 @@ Lemma bott_not_total {Σ : Signature} {syntax : Syntax}:
 Proof.
   intros Γ SubTheory.
   toMLGoal. wf_auto2.
-  mlIntro. mlApply 0.
+  mlIntro "H0". mlApply "H0".
   mlApplyMeta (useAnyReasoning (@phi_impl_defined_phi _ _ _ (! ⊥) SubTheory ltac:(wf_auto2))).
-  mlIntro. mlExactn 1.
+  mlIntro "H1". mlExact "H1".
 Defined.
 
 Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
@@ -4100,10 +4100,14 @@ Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
 Proof.
   intros Γ φ HΓ Wf. toMLGoal. wf_auto2.
   mlSplitAnd.
-  * mlIntro. mlApplyMeta (useAnyReasoning (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf)). mlExactn 0.
+  * mlIntro "H0".
+    mlApplyMeta (useAnyReasoning (@def_not_phi_impl_not_total_phi _ _ Γ φ HΓ Wf)).
+    mlExact "H0".
   * unfold patt_total.
     pose proof (useAnyReasoning (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) as H.
-    mlRewrite <- H at 1. mlIntro. mlExactn 0.
+    mlRewrite <- H at 1.
+    mlIntro "H0".
+    mlExact "H0".
 Defined.
 
 Lemma patt_or_total {Σ : Signature} {syntax : Syntax}:
@@ -4114,18 +4118,21 @@ Lemma patt_or_total {Σ : Signature} {syntax : Syntax}:
   using AnyReasoning.
 Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
-  mlIntro. mlDestructOr 0.
+  mlIntro "H0".
+  mlDestructOr "H0" as "H0'" "H0'".
   * pose proof (useAnyReasoning (@disj_left_intro _ Γ φ ψ Wf1 Wf2)) as H.
     apply floor_monotonic in H. 4,5: try wf_auto2.
     2: { exact HΓ. }
     2: { apply pile_any. }
-    mlApplyMeta H. mlExactn 0.
+    mlApplyMeta H.
+    mlExact "H0'".
   * pose proof (useAnyReasoning (@disj_right_intro _ Γ φ ψ Wf1 Wf2)) as H.
     apply floor_monotonic in H.
     4,5: wf_auto2.
     3: { apply pile_any. }
     2: { exact HΓ. }
-    mlApplyMeta H. mlExactn 0.
+    mlApplyMeta H.
+    mlExact "H0'".
 Defined.
 
 Lemma patt_defined_and {Σ : Signature} {syntax : Syntax}:
@@ -4138,13 +4145,18 @@ Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
   unfold patt_and.
   mlRewrite (useAnyReasoning (@defined_not_iff_not_total _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2))) at 1.
-  do 2 mlIntro. mlApply 0. mlClear 0.
+  mlIntro "H0".
+  mlIntro "H1".
+  mlApply "H0".
+  mlClear "H0".
   mlApplyMeta (@patt_or_total _ _ _ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
-  mlDestructOr 0.
+  mlDestructOr "H1" as "H1'" "H1'".
   * mlLeft. unfold patt_total.
-    mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ φ Wf1)) at 1. mlExactn 0.
+    mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ φ Wf1)) at 1.
+    mlExact "H1'".
   * mlRight. unfold patt_total.
-    mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ ψ Wf2)) at 1. mlExactn 0.
+    mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ ψ Wf2)) at 1.
+    mlExact "H1'".
 Defined.
 
 Lemma patt_total_and {Σ : Signature} {syntax : Syntax}:
@@ -4158,23 +4170,25 @@ Proof.
   mlSplitAnd.
   * unfold patt_and.
     mlRewrite <- (@def_propagate_not _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
-    mlIntro. mlIntro. mlApply 0.
-    mlClear 0.
+    mlIntro "H1".
+    mlIntro "H2".
+    mlApply "H1".
+    mlClear "H1".
     mlRewrite (@ceil_compat_in_or _ _ Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlDestructOr 0.
-    - mlLeft. mlRevert. unfold patt_total.
+    mlDestructOr "H2" as "H2'" "H2'".
+    - mlLeft. mlRevertLast. unfold patt_total.
       mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro. mlExactn 0.
-    - mlRight. mlRevert. unfold patt_total.
+      mlIntro "H3". mlExact "H3".
+    - mlRight. mlRevertLast. unfold patt_total.
       mlRewrite <- (useAnyReasoning (@not_not_iff _ Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro. mlExactn 0.
-  * mlIntro. mlDestructAnd 0.
+      mlIntro "H3". mlExact "H3".
+  * mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
     unfold patt_and.
     mlRewrite <- (@def_propagate_not _ _ Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)) at 1.
     mlRewrite (@ceil_compat_in_or _ _ Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlIntro. mlDestructOr 2.
-    - mlRevert. mlExactn 0.
-    - mlRevert. mlExactn 1.
+    mlIntro "H3". mlDestructOr "H3" as "H3'" "H3'".
+    - mlRevertLast. mlExact "H1".
+    - mlRevertLast. mlExact "H2".
 Defined.
 
 Definition overlaps_with {Σ : Signature} {syntax : Syntax} (p q : Pattern) : Pattern
