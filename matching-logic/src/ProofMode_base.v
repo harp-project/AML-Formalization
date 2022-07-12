@@ -5,7 +5,7 @@ Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool.
+From Coq Require Import Ensembles Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -29,11 +29,49 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+Record named_hypothesis {Σ : Signature} := mkNH
+  {
+    nh_name : string;
+    nh_patt : Pattern;
+  }.
+
+Notation "N :- P" :=
+  (@mkNH _ N P)
+  (at level 100, no associativity, format "N ':-'  P", only printing).
+
+Definition hypotheses {Σ : Signature} := list named_hypothesis.
+
+Notation "" :=
+  (@nil named_hypothesis)
+  (at level 100, left associativity, only printing) : ml_scope.
+(*TODO: Ensure that this does not add parentheses*)
+Notation "x ," :=
+  (@cons named_hypothesis x nil)
+  (at level 100, left associativity, format "x ','", only printing) : ml_scope.
+Notation "x , y , .. , z ," :=
+  (@cons named_hypothesis x (cons y .. (cons z nil) ..))
+  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ','", only printing) : ml_scope.
+
+Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
+Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
+
+Definition has_name {Σ : Signature} (n : string) (nh : named_hypothesis) : Prop
+:= nh_name nh = n.
+
+#[global]
+Instance has_name_dec {Σ : Signature} n nh : Decision (has_name n nh).
+Proof.
+  unfold has_name.
+  solve_decision.
+Defined.
+
+Definition find_hyp {Σ : Signature} (name : string) (hyps : hypotheses) : option (nat * named_hypothesis)%type
+:= stdpp.list.list_find (has_name name) hyps.
 
 
 Record MLGoal {Σ : Signature} : Type := mkMLGoal
   { mlTheory : Theory;
-    mlHypotheses: list Pattern;
+    mlHypotheses: hypotheses;
     mlConclusion : Pattern ;
     mlInfo : ProofSystem.ProofInfo ;
   }.
@@ -46,13 +84,19 @@ Definition MLGoal_from_goal
 
 Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   well_formed (mlConclusion MG) ->
-  Pattern.wf (mlHypotheses MG) ->
-  (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (mlHypotheses MG))
+  Pattern.wf (patterns_of (mlHypotheses MG)) ->
+  (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (patterns_of (mlHypotheses MG)))
   using (mlInfo MG).
 
+
+
   (* This is useful only for printing. *)
-  Notation "[ S , G ⊢ l ==> g ]  'using' pi "
-  := (@mkMLGoal S G l g pi) (at level 95, no associativity, only printing).
+  Notation "S , G ⊢ -------------------- l ==> g 'using' pi "
+  := (@mkMLGoal S G l g pi)
+  (at level 95,
+  no associativity,
+  format "S , G '//' ⊢  -------------------- '//' '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi '//'",
+  only printing).
 
 
 Ltac toMLGoal :=
@@ -87,7 +131,7 @@ Defined.
 
 
 Lemma mlUseBasicReasoning
-  {Σ : Signature} (Γ : Theory) (l : list Pattern) (g : Pattern) (i : ProofInfo) :
+  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i : ProofInfo) :
   @mkMLGoal Σ Γ l g BasicReasoning ->
   @mkMLGoal Σ Γ l g i.
 Proof.
@@ -185,7 +229,7 @@ Proof.
   }
 Defined.
 
-Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : hyps = hyps') goal (i : ProofInfo) :
+Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
   @mkMLGoal Σ Γ hyps goal i ->
   @mkMLGoal Σ Γ hyps' goal i.
 Proof.
@@ -213,50 +257,10 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma cast_proof_ml_hyps_indifferent'
-      Σ P Γ hyps hyps' (e : hyps = hyps') goal (i : ProofInfo)
-      (pf : @mkMLGoal Σ Γ hyps goal i) wf1 wf2 wf3 wf4:
-  indifferent_to_cast P ->
-  P _ _ (proj1_sig (@cast_proof_ml_hyps Σ Γ hyps hyps' e goal i pf wf1 wf2)) = P _ _ (proj1_sig (pf wf3 wf4)).
-Proof.
-  intros Hp. simpl. unfold cast_proof_ml_hyps.
-  unfold proj1_sig. unfold cast_proof'. destruct pf as [pf' Hpf'] eqn:Heqpf.
-  rewrite Hp.
-  apply f_equal. simpl in *.
-  case_match. simpl in *.
-  remember (pf wf1
-  (eq_ind_r (λ pv : list Pattern, Pattern.wf pv)
-     wf2 e)).
-  simpl in *.
-  apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf.
-  apply proj1_sig_eq in Heqd0. rewrite Heqd0.
-  apply proj1_sig_eq in Heqd. simpl in Heqd. rewrite -Heqd.
-  f_equal. f_equal.
-  { apply UIP_dec; apply bool_eqdec. }
-  { apply UIP_dec. apply bool_eqdec. }
-Qed.
 
-Lemma cast_proof_ml_goal_indifferent
-      Σ P Γ hyps goal goal' (e : goal = goal') (i : ProofInfo)
-      (pf : @mkMLGoal Σ Γ hyps goal i) wf1 wf2 wf3 wf4:
-  indifferent_to_cast P ->
-  P _ _ (proj1_sig (@cast_proof_ml_goal Σ Γ hyps goal goal' e i pf wf1 wf2)) = P _ _ (proj1_sig (pf wf3 wf4)).
-Proof.
-  intros Hp. simpl. unfold cast_proof_ml_goal.
-  unfold proj1_sig. unfold cast_proof'. destruct pf as [pf' Hpf'] eqn:Heqpf.
-  rewrite Hp.
-  apply f_equal. f_equal.
-  apply proj1_sig_eq in Heqpf. simpl in Heqpf. rewrite -Heqpf. clear Heqpf. simpl.
-  case_match. simpl in *.
-  apply proj1_sig_eq in Heqd. simpl in Heqd. rewrite -Heqd.
-  f_equal. f_equal.
-  { apply UIP_dec; apply bool_eqdec. }
-  { apply UIP_dec. apply bool_eqdec. }
-Qed.
-
-Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern)
+Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
-  @mkMLGoal Σ Γ (l ++ [x]) g i ->
+  @mkMLGoal Σ Γ (l ++ [mkNH name x]) g i ->
   @mkMLGoal Σ Γ l (x ---> g) i.
 Proof.
   intros H.
@@ -265,11 +269,12 @@ Proof.
 
   feed specialize H.
   { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
-  { abstract (unfold Pattern.wf; unfold Pattern.wf in wfl; rewrite map_app foldr_app; simpl;
-              apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
+  { abstract (unfold Pattern.wf in *; unfold patterns_of;
+    rewrite map_app map_app foldr_app; simpl;
+    apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
   }
   unshelve (eapply (cast_proof' _ H)).
-  { rewrite foldr_app. reflexivity. }
+  { unfold patterns_of. rewrite map_app foldr_app. simpl. reflexivity. }
 Defined.
 
 Ltac simplLocalContext :=
@@ -278,9 +283,27 @@ Ltac simplLocalContext :=
       => eapply cast_proof_ml_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
-#[global]
- Ltac mlIntro := apply MLGoal_intro; simplLocalContext.
+Ltac _getHypNames :=
+  lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
+  end.
 
+Tactic Notation "_failIfUsed" constr(name) :=
+  lazymatch goal with
+  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] =>
+    lazymatch (eval cbv in (find_hyp name l)) with
+    | Some _ => fail "The name" name "is already used"
+    | _ => idtac
+    end
+  end.
+
+Tactic Notation "mlIntro" constr(name') :=
+_failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
+
+Tactic Notation "mlIntro" :=
+  let hyps := _getHypNames in
+  let name' := eval cbv in (fresh hyps) in
+  mlIntro name'.
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
 well_formed p ->
@@ -289,7 +312,6 @@ Proof.
 intros wfp.
 toMLGoal.
 { wf_auto2. }
-Set Printing All.
 match goal with
 | [ |- of_MLGoal (@mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
 | _ => fail
@@ -297,29 +319,30 @@ end.
 fromMLGoal.
 Abort.
 
-
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
-well_formed a ->
-Γ ⊢i a ---> a using i.
+  well_formed a ->
+  Γ ⊢i a ---> a ---> a ---> a ---> a using i.
 Proof.
-intros wfa.
-toMLGoal.
-{ wf_auto2. }
-mlIntro.
-match goal with
-| [ |- of_MLGoal (@mkMLGoal Σ Γ [a] a i) ] => idtac
-| _ => fail
-end.
+  intros wfa.
+  toMLGoal.
+  { wf_auto2. }
+
+  mlIntro "h"%string.
+  Fail mlIntro "h"%string.
+  mlIntro "h'"%string.
+  do 2 mlIntro.
 Abort.
 
-Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l : list Pattern) (x g : Pattern) i :
+Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
 @mkMLGoal Σ Γ l (x ---> g) i ->
-@mkMLGoal Σ Γ (l ++ [x]) g i.
+@mkMLGoal Σ Γ (l ++ [mkNH n x]) g i.
 Proof.
 intros H.
 unfold of_MLGoal in H. simpl in H.
 unfold of_MLGoal. simpl. intros wfxig wfl.
 
+unfold patterns_of in wfl.
+rewrite map_app in wfl.
 feed specialize H.
 {
   abstract (
@@ -335,21 +358,18 @@ feed specialize H.
 }
 
 eapply cast_proof'.
-{ rewrite foldr_app. simpl. reflexivity. }
+{ unfold patterns_of. rewrite map_app.  rewrite foldr_app. simpl. reflexivity. }
 exact H.
 Defined.
 
 #[global]
-Ltac mlRevert :=
+Ltac mlRevertLast :=
 match goal with
 | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
 => eapply cast_proof_ml_hyps;
    [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
-   apply MLGoal_revert
+   apply MLGoal_revertLast
 end.
-
-
-
 
 Lemma pile_evs_subseteq {Σ : Signature} evs1 evs2 svs kt fp:
   evs1 ⊆ evs2 ->
@@ -421,3 +441,39 @@ Proof.
   { exact Hpf4. }
   { set_solver. }
 Qed.
+
+
+Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(apply f_equal; rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac]
+.
+
+Tactic Notation "_mlReshapeHypsByName" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(
+    apply f_equal;
+    lazymatch goal with
+    | [|- _ = ?l] =>
+      lazymatch (eval cbv in (find_hyp n l)) with
+      | Some (?n, _) =>
+        rewrite <- (firstn_skipn n);
+        rewrite /firstn;
+        rewrite /skipn;
+        reflexivity
+      end
+    end
+    )
+  |idtac]
+.
+
+Ltac2 _mlReshapeHypsByName (name' : constr) :=
+  ltac1:(name'' |- _mlReshapeHypsByName name'') (Ltac1.of_constr name')
+.
+
+Tactic Notation "_mlReshapeHypsBack" :=
+  let hyps := fresh "hyps" in rewrite [hyps in @mkMLGoal _ _ hyps _]/app
+.
+
+Ltac2 _mlReshapeHypsBack () :=
+  ltac1:(_mlReshapeHypsBack)
+.

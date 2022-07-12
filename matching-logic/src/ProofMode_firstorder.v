@@ -5,7 +5,7 @@ Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool.
+From Coq Require Import Ensembles Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -163,7 +163,7 @@ apply Ex_gen.
 toMLGoal.
 { wf_auto2. }
 mlIntro. mlAdd Hϕ.
-mlApply 1. mlExactn 0.
+mlApply "0". mlExactn 0.
 Defined.
 
 (*Hint Resolve evar_quantify_well_formed.*)
@@ -186,9 +186,9 @@ toMLGoal.
 { wf_auto2. }
 mlIntro.
 mlIntro.
-mlApply 0.
+mlApply "0".
 mlIntro.
-mlApply 2.
+mlApply "2".
 pose proof (Htmp := @Ex_quan Σ Γ (evar_quantify x 0 (!ϕ)) x).
 rewrite /instantiate in Htmp.
 rewrite bevar_subst_evar_quantify_free_evar in Htmp.
@@ -198,9 +198,9 @@ rewrite bevar_subst_evar_quantify_free_evar in Htmp.
 specialize (Htmp ltac:(wf_auto2)).
 useBasicReasoning.
 mlAdd Htmp.
-mlApply 0.
+mlApply "3".
 mlIntro.
-mlApply 2.
+mlApply "1".
 mlExactn 4.
 Defined.
 
@@ -257,7 +257,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro.
-  mlDestructAnd 0. mlExactn 0.
+  mlDestructAnd "0". mlExactn 0.
 Defined.
 
 Lemma ex_quan_and_proj2 {Σ : Signature} Γ x ϕ₁ ϕ₂:
@@ -272,7 +272,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro.
-  mlDestructAnd 0.
+  mlDestructAnd "0".
   mlExactn 1.
 Defined.
 
@@ -318,7 +318,7 @@ Proof.
   intros wfϕ₁ wfϕ₂.
   toMLGoal.
   { wf_auto2. }
-  mlIntro. mlDestructAnd 0.
+  mlIntro. mlDestructAnd "0".
   fromMLGoal.
 
   remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
@@ -393,7 +393,7 @@ Proof.
     }
     toMLGoal.
     { wf_auto2. }
-    mlIntro. mlDestructAnd 0. mlExactn 0.
+    mlIntro. mlDestructAnd "0". mlExactn 0.
   - fromMLGoal.
     remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
     eapply cast_proof'.
@@ -418,7 +418,7 @@ Proof.
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    mlDestructAnd 0.
+    mlDestructAnd "0".
     mlExactn 1.
 Defined.
 
@@ -454,7 +454,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro.
-  mlApplyMeta (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in 0.
+  mlApplyMeta (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in "0".
   fromMLGoal.
   apply modus_tollens.
 
@@ -695,14 +695,14 @@ Proof.
     set_solver.
 Qed.
 
-Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : list Pattern) (g : Pattern) (x : evar)
+Lemma Ex_gen_lifted {Σ : Signature} (Γ : Theory) (ϕ₁ : Pattern) (l : hypotheses) (n : string) (g : Pattern) (x : evar)
   (i : ProofInfo) :
   evar_is_fresh_in x g ->
-  evar_is_fresh_in_list x l ->
+  evar_is_fresh_in_list x (patterns_of l) ->
   ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
   bevar_occur ϕ₁ 0 = false ->
-  @mkMLGoal Σ Γ (ϕ₁::l) g i -> 
- @mkMLGoal Σ Γ ((exists_quantify x ϕ₁)::l) g i.
+  @mkMLGoal Σ Γ (mkNH n ϕ₁::l) g i -> 
+  @mkMLGoal Σ Γ (mkNH n (exists_quantify x ϕ₁)::l) g i.
 Proof.
   intros xfrg xfrl pile Hno0 H.
   mlExtractWF H1 H2.

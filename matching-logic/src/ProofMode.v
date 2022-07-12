@@ -5,7 +5,9 @@ Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool.
+From Coq Require Import Ensembles Bool String.
+Local Open Scope string_scope.
+
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -231,8 +233,6 @@ Defined.
 
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
-
-
 
 Lemma pile_evs_svs_kt evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
 evs1 ⊆ evs2 ->
@@ -2542,7 +2542,7 @@ Proof.
     + mlIntro. mlIntro.
       mlAssert ((foldr patt_imp (emplace C p) l)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 1. }
+      { mlApply "0". mlExactn 1. }
       apply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
       mlApplyMeta IHl.
@@ -2550,7 +2550,7 @@ Proof.
     + mlIntro. mlIntro.
       mlAssert ((foldr patt_imp (emplace C q) l)).
       { wf_auto2. }
-      { mlApply 0. mlExactn 1. }
+      { mlApply "0". mlExactn 1. }
       apply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
       mlApplyMeta IHl.
@@ -2915,7 +2915,7 @@ Proof.
   useBasicReasoning.
   apply pf_iff_equiv_refl. abstract(wf_auto2).
 Defined.
- 
+
 
 
 (* TODO: de-duplicate the code *)
@@ -2964,7 +2964,7 @@ Ltac convertToNNF_rewrite_pat Ctx p i :=
 
 #[local]
 Ltac toNNF := 
-  repeat mlRevert;
+  repeat mlRevertLast;
   match goal with
     | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
       =>
@@ -2985,24 +2985,23 @@ Proof.
 Abort.
 
 #[local]
-Ltac rfindContradictionTo a ll k n:=
+Ltac rfindContradictionTo a ll k :=
   match ll with
-    | ((! a) :: ?m) =>
-        mlApply n; mlExactn k
-    | (?b :: ?m) => 
-        let nn := eval compute in ( n + 1 ) in
-         (rfindContradictionTo a m k nn)
+    | ((mkNH ?name (! a)) :: ?m) =>
+        mlApply name; mlExactn k
+    | ((mkNH _ _) :: ?m) => 
+        rfindContradictionTo a m k
     | _ => fail
   end.
 
 #[local]
 Ltac findContradiction l k:=
     match l with
-       | (?a :: ?m) => 
+       | ((mkNH _ ?a) :: ?m) => 
              match goal with
                 | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
                   =>
-                     try rfindContradictionTo a ll k 0;
+                     try rfindContradictionTo a ll k;
                      let kk := eval compute in ( k + 1 ) in
                      (findContradiction m kk)
              end
@@ -3022,27 +3021,23 @@ Ltac findContradiction_start :=
   end.
 
 #[local]
-Ltac breakHyps l n:=
-  let nn := eval compute in ( n + 1)
-  in
-  (
-    match l with
-    | ((?x and ?y) :: ?m) => 
-        mlDestructAnd n
-    | ((?x or ?y) :: ?m) => 
-        mlDestructOr n
-    | (?x :: ?m)  =>
-        breakHyps m nn
-    end
-  )
-.
+Ltac breakHyps l :=
+  match l with
+  | ((mkNH ?name (?x and ?y)) :: ?m) => 
+      mlDestructAnd name
+  | ((mkNH ?name (?x or ?y)) :: ?m) => 
+      mlDestructOr name
+  | ((mkNH ?name ?x) :: ?m)  =>
+      breakHyps m
+  end.
+
 #[local]
 Ltac mlTautoBreak := repeat match goal with
 | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ] 
   =>
     lazymatch g with
       | (⊥) =>
-              breakHyps l 0
+              breakHyps l
       | _ => mlApplyMeta (@useBasicReasoning _ _ _ i (@false_implies_everything _ _ g _))
     end
 end.
@@ -3090,7 +3085,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlTauto.
-Qed.
+Defined.
 
 #[local]
 Example taut {Σ : Signature} Γ a b c:
@@ -3104,7 +3099,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlTauto. (* Slow *)
-Qed.
+Defined.
 
 #[local]
 Example condtradict_taut_1 {Σ : Signature} Γ a:
@@ -3116,7 +3111,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlTauto.
-Qed.
+Defined.
 
 #[local]
 Example notnot_taut_1 {Σ : Signature} Γ a:
@@ -3128,7 +3123,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlTauto.
-Qed.
+Defined.
 
 #[local]
 Lemma Peirce_taut {Σ : Signature} Γ a b:
@@ -3141,4 +3136,4 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlTauto.
-Qed.
+Defined.
