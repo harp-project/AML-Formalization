@@ -147,6 +147,126 @@ Proof.
     intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄ H. toMLGoal;[wf_auto2|].
     mlRewrite <- H at 1.
     mlSplitAnd; mlIntro "H"; mlExact "H".
+
+    (* Unfortunately, we do not have [mlRewrite _ in _] yet.*)
 Qed.
 
+(* We can also use definedness and equality.
+   To do so, we have to assume that the signature contains a definedness symbol,
+   and the theory a definedness axiom.
+   Otherwise, the signature and axiom can be arbitrary.
+*)
 
+From MatchingLogic Require Import
+    Theories.Definedness_Syntax
+    Theories.Definedness_ProofSystem
+.
+Import Theories.Definedness_Syntax.Notations.
+
+(* Obviously, without the definedness symbol, we cannot use equality. *)
+Fail Example use_rewriteBy {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed ϕ₃ = true ->
+    well_formed ϕ₄ = true ->
+    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+.
+
+Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
+    (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed ϕ₃ = true ->
+    well_formed ϕ₄ = true ->
+    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+.
+Proof.
+    intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2".
+
+    (* We can rewrite using an equality from the local context. *)
+    mlRewriteBy "H1" at 1.
+    {
+        (* Oops, there is a obligation we do not know how to solve. What does that mean? *)
+        unfold theory, named_axioms, NamedAxioms.theory_of_NamedAxioms, axiom. simpl.
+        (* Aha, we are missing a Definedness axiom. *)
+        admit.
+    }
+Abort.
+
+
+Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
+    (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
+    (* This makes the difference. *)
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed ϕ₃ = true ->
+    well_formed ϕ₄ = true ->
+    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+.
+Proof.
+    intros HΓ wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2".
+
+    (* We can rewrite using an equality from the local context. *)
+    mlRewriteBy "H1" at 1.
+    { 
+        (* Now we have the appropriate assumption. *)
+        assumption.
+    }
+    {
+        (* Another constraint. Under the hood, the rewrite uses the equality elimination lemma,
+           which in turn uses deduction theorem.
+           Our deduction theorem does not support working with μ patterns yet,
+           so we have to check that the context in which we want to rewrite
+           is μ-free.
+        *)
+        simpl.
+        (* Oh.. we do not know anything about the [ϕᵢ]s. *)
+        admit.
+    }
+Abort.
+
+(* A solver for boolean tautologies. *)
+From Coq Require Import btauto.Btauto.
+(* Some helper tactics. *)
+From MatchingLogic Require Import
+    Utils.extralibrary
+    Utils.stdpp_ext
+.
+
+Open Scope ml_scope.
+
+Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
+    (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
+    Definedness_Syntax.theory ⊆ Γ ->
+    (* This makes the difference. *)
+    ((mu_free ϕ₁) && (mu_free ϕ₂) && (mu_free ϕ₃) && (mu_free ϕ₄)) = true ->
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    well_formed ϕ₃ = true ->
+    well_formed ϕ₄ = true ->
+    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+.
+Proof.
+    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2".
+
+    (* We can rewrite using an equality from the local context. *)
+    mlRewriteBy "H1" at 1.
+    { assumption. }
+    { simpl. destruct_and!. unfold is_true. rewrite H0, H2, H3. reflexivity. }
+
+    (* We could also rewrite by H2 *)
+    Restart.
+
+    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2".
+
+    mlRewriteBy "H2" at 1.
+    { assumption. }
+    { simpl. destruct_and!. unfold is_true. rewrite H0, H2, H3. reflexivity. }
+
+    mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
+Defined.
