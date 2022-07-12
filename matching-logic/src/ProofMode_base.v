@@ -47,10 +47,10 @@ Notation "" :=
 (*TODO: Ensure that this does not add parentheses*)
 Notation "x ," :=
   (@cons named_hypothesis x nil)
-  (at level 100, left associativity, format "x ','", only printing) : ml_scope.
+  (at level 100, left associativity, format "x ',' '//'", only printing) : ml_scope.
 Notation "x , y , .. , z ," :=
   (@cons named_hypothesis x (cons y .. (cons z nil) ..))
-  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ','", only printing) : ml_scope.
+  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ',' '//'", only printing) : ml_scope.
 
 Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
 Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
@@ -91,11 +91,11 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
 
 
   (* This is useful only for printing. *)
-  Notation "S , G ⊢ -------------------- l ==> g 'using' pi "
+  Notation "S , G  ⊢ l -------------------------------------- g 'using' pi "
   := (@mkMLGoal S G l g pi)
   (at level 95,
   no associativity,
-  format "S , G '//' ⊢  -------------------- '//' '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi '//'",
+  format "S , G  ⊢ '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
   only printing).
 
 
