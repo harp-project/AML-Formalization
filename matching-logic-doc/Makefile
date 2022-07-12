@@ -1,7 +1,7 @@
 PATH_TO_COMPILED_LIBRARY ?= ../matching-logic
 DOCDIR ?= /usr/share
 
-default: coqdoc
+default: coqdoc alectryon
 
 coqdoc: doc/coqdoc
 
@@ -23,4 +23,17 @@ install-coqdoc: doc/coqdoc
 alectryon: doc/alectryon
 
 doc/alectryon:
-		
+	mkdir -p doc/alectryon
+	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
+		| xargs alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
+		--frontend coq \
+		--backend webpage \
+		--output-directory doc/alectryon
+
+install-alectryon: doc/alectryon
+	install -d $(DOCDIR)/$(INSTALLCOQDOCROOT)/doc/alectryon/
+	$(HIDE)for i in doc/alectryon/*; do \
+	 dest="$(DOCDIR)/$(INSTALLCOQDOCROOT)/$$i";\
+	 install -m 0644 "$$i" "$$dest";\
+	 echo INSTALL "$$i" "$$dest";\
+	done
