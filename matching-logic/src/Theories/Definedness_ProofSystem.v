@@ -4209,11 +4209,17 @@ Proof.
                                 (pY ---> pX)
                                 (pX ---> pY) HΓ
                                 ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-  mlIntro. mlIntro. mlDestructOr 1.
-  * mlApply 1. mlClear 1. mlIntro.
+  mlIntro "H0".
+  mlIntro "H1".
+  mlDestructOr "H1" as "H1'" "H1'".
+  * mlApply "H1'".
+    mlClear "H1'".
+    mlIntro "H2".
     pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    apply useAnyReasoning in MH. mlRevert. mlRewrite MH at 1.
+    apply useAnyReasoning in MH.
+    mlRevertLast.
+    mlRewrite MH at 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     pose proof (MH1 := @Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
@@ -4223,20 +4229,26 @@ Proof.
     rewrite -HeqpY in MH1.
     apply useAnyReasoning in MH1.
     (* TODO: having mlExactMeta would help here *)
-    mlIntro.
-    mlApplyMeta MH1. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
-  * mlApply 1. mlClear 1. mlIntro.
+    mlIntro "H2".
+    mlApplyMeta MH1. simpl.
+    mlSplitAnd.
+    ** mlExact "H0".
+    ** mlExact "H2".
+  * mlApply "H1'".
+    mlClear "H1'".
+    mlIntro "H2".
     pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevert. apply useAnyReasoning in MH. mlRewrite MH at 1.
+    mlRevertLast. apply useAnyReasoning in MH. mlRewrite MH at 1.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevert. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
+    mlRevertLast. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
     pose proof (@Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2))
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
                 ltac:(wf_auto2)) pY x ltac:(wf_auto2)) as MH2.
     rewrite -HeqpX in MH2.
-    apply useAnyReasoning in MH2. do 2 mlIntro.
-    mlApplyMeta MH2. simpl. mlSplitAnd. mlExactn 0. mlExactn 1.
+    apply useAnyReasoning in MH2.
+    mlIntro "H1". mlIntro "H2".
+    mlApplyMeta MH2. simpl. mlSplitAnd. mlExact "H1". mlExact "H2".
 Defined.
