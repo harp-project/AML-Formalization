@@ -21,6 +21,7 @@
                     owner = "cpitclaudel";
                     repo = "alectryon";
                     rev = "739b46da22d272e748f60f3efcd2989d696fba71";
+                    sha256 = "n+B+f1PPODLGgL36Aj8srDngRp5ZmhKYxikEF+c+5YI=";
                 };
 
                 propagatedBuildInputs = [
