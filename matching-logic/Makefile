@@ -1,8 +1,8 @@
 all: Makefile.coq
 	@+$(MAKE) -f Makefile.coq all
 
-html: Makefile.coq
-	@+$(MAKE) -f Makefile.coq html COQDOCEXTRAFLAGS="--gallina --external https://plv.mpi-sws.org/coqdoc/stdpp/ stdpp"
+install: Makefile.coq
+	@+$(MAKE) -f Makefile.coq install
 
 clean: Makefile.coq
 	@+$(MAKE) -f Makefile.coq cleanall
@@ -16,4 +16,4 @@ force _CoqProject Makefile: ;
 %: Makefile.coq force
 	@+$(MAKE) -f Makefile.coq $@
 
-.PHONY: all clean force
+.PHONY: all clean force install
