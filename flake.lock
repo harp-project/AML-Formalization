@@ -8,11 +8,11 @@
       "locked": {
         "lastModified": 1,
         "narHash": "sha256-xx47K0QdK1jtegWogi2mEr1S+i7BE7j60WCGNZnKNkU=",
-        "path": "/nix/store/avaam55h3frnccnlrswlx1bf5kbah2a1-source/deps/alectryon",
+        "path": "/nix/store/aba2y9n21zpjihn9g0gh87zyrg6slacc-source/deps/alectryon",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/avaam55h3frnccnlrswlx1bf5kbah2a1-source/deps/alectryon",
+        "path": "/nix/store/aba2y9n21zpjihn9g0gh87zyrg6slacc-source/deps/alectryon",
         "type": "path"
       }
     },

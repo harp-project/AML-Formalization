@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Ltac2 Control.
 
 From Coq Require Import Ensembles Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -138,6 +138,157 @@ Arguments P3 {Σ} _ (_%ml) _.
     pose (_5 := MP _4 _3).
     exact _5.
   Defined.
+
+
+  Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
+  ProofInfoLe
+    ( (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+    ( (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
+    evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
+  Proof.
+    intros pile.
+    repeat split.
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      remember (fresh_evar (patt_free_evar x)) as y.
+      pose (pf1 := @A_impl_A Σ ∅ (patt_free_evar y) ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor.
+        { simpl. clear -Hx. set_solver. }
+        { simpl. clear. set_solver. }
+        { simpl. reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile as [Hm2 Hm3 Hm4 Hm5].
+      simpl in *.
+      clear -Hm2.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros X HX.
+      pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear -HX. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in *.
+      clear -Hp3.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+      destruct kt1.
+      2: { simpl. reflexivity. }
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in Hp4.
+      rewrite Hp4.
+      reflexivity.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros (*p*) [p wfp] Hp.
+      (*assert (wfp : well_formed p) by admit.*)
+      pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose proof (pile1 := pile ∅ _ pf2).
+      pose proof (pile2 := pile ∅ _ pf3).
+      clear pile.
+      feed specialize pile1.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      feed specialize pile2.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile1, pile2. simpl in *.
+      rewrite elem_of_subseteq in pwi_pf_fp0.
+      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp0.
+      specialize (pwi_pf_fp0 (exist _ p wfp) ltac:(set_solver)).
+      exact pwi_pf_fp0.
+    }
+  Qed.
+
+Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
+(ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
+Γ ⊢i ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
+Γ ⊢i ϕ using i.
+Proof.
+intros pile [pf Hpf].
+exists pf.
+destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+simpl in *.
+destruct i.
+pose proof (Htmp := @pile_evs_svs_kt_back Σ).
+specialize (Htmp evs pi_generalized_evars svs pi_substituted_svars kt pi_uses_kt fp pi_framing_patterns pile).
+destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
+constructor; simpl.
+{ clear -Hpf2 Hevs. set_solver. }
+{ clear -Hpf3 Hsvs. set_solver. }
+{ unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
+{ clear -Hpf5 Hfp. set_solver.  }
+Defined.
+
+Lemma useGenericReasoning'  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
+(ProofInfoLe i' i) ->
+Γ ⊢i ϕ using i' ->
+Γ ⊢i ϕ using i.
+Proof.
+  intros H.
+  destruct i'.
+  apply useGenericReasoning.
+  exact H.
+Qed.
+
+Lemma mlUseGenericReasoning
+  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
+  ProofInfoLe i i' ->
+  @mkMLGoal Σ Γ l g i ->
+  @mkMLGoal Σ Γ l g i'.
+Proof.
+  intros pile H wf1 wf2.
+  specialize (H wf1 wf2).
+  simpl in *.
+  destruct i.
+  eapply useGenericReasoning.
+  { apply pile. }
+  exact H.
+Defined.
 
   Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
     well_formed A ->
@@ -1713,6 +1864,18 @@ Proof.
   mlExact "H2".
 Qed.
 
+Ltac _getGoalProofInfo :=
+  lazymatch goal with
+  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+    => i
+  end.
+
+  Ltac _getGoalTheory :=
+    lazymatch goal with
+    | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+      => Ctx
+    end.
+
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
   _failIfUsed name;
   lazymatch goal with
@@ -2737,11 +2900,14 @@ all: try assumption.
 Defined.
 
 
-
-
-
-Tactic Notation "mlApplyMeta" uconstr(t) :=
+Ltac _mlApplyMetaRaw t :=
   eapply (@MLGoal_applyMeta _ _ _ _ _ t).
+
+Tactic Notation "mlApplyMetaRaw" uconstr(t) :=
+  _mlApplyMetaRaw t.
+
+Ltac2 _mlApplyMetaRaw (t : constr) :=
+  eapply (@MLGoal_applyMeta _ _ _ _ _ $t).
 
 Lemma MLGoal_left {Σ : Signature} Γ l x y i:
   @mkMLGoal Σ Γ l x i ->
@@ -2835,14 +3001,19 @@ Proof.
  }
 Defined.
 
-Tactic Notation "mlApplyMeta" uconstr(t) "in" constr(name) :=
+Ltac _mlApplyMetaRawIn t name :=
   eapply cast_proof_ml_hyps;
   f_equal;
   _mlReshapeHypsByName name;
   eapply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
   _mlReshapeHypsBack.
 
-Local Example Private_ex_mlApplyMetaIn {Σ : Signature} Γ p q:
+
+Tactic Notation "mlApplyMetaRaw" uconstr(t) "in" constr(name) :=
+  _mlApplyMetaRawIn t name.
+
+
+Local Example Private_ex_mlApplyMetaRawIn {Σ : Signature} Γ p q:
   well_formed p ->
   well_formed q ->
   Γ ⊢i p ---> (p or q)
@@ -2852,9 +3023,91 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro "H0".
-  mlApplyMeta (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
+  mlApplyMetaRaw (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
   mlExact "H0".
 Defined.
+
+Goal forall (P Q : Prop),
+  P -> Q -> (Q /\ P).
+Proof.
+  intros P Q HP HQ.
+  rewrite and_comm.
+  cut (P -> Q).
+  ltac2:(Std.cut constr:(P)).
+  { auto. }
+Abort.
+
+(*
+  All thic complicated code is here only for one reason:
+  I want to be able to first run the tactic with all the parameters
+  inferred or question marked, which results in another goal.
+  And then I want to handle the subgoals generated by the filling-in
+  underscores / question marks.
+  In particular, I want the proof mode goals to be generated first,
+  and the other, uninteresting goals, next.
+*)
+Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
+  lazy_match! Constr.type t with
+  | (?t' -> ?t's) =>
+    lazy_match! goal with
+    | [|- ?g] =>
+      let h := Fresh.in_goal ident:(h) in
+      assert(h : $t' -> $g) > [(
+        let pftprime := Fresh.in_goal ident:(pftprime) in
+        intro $pftprime;
+        let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
+        fillWithUnderscoresAndCall tac new_t
+      )|(apply &h)
+      ]
+    end
+  | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _)
+  | _ => tac t
+  end
+.
+
+(*
+  We have this double-primed version because we want to be able
+  to feed it the proof before feeding it the ProofInfoLe.
+*)
+Lemma useGenericReasoning''  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
+Γ ⊢i ϕ using i' ->
+(ProofInfoLe i' i) ->
+Γ ⊢i ϕ using i.
+Proof.
+  intros H pile.
+  eapply useGenericReasoning'.
+  { apply pile. }
+  apply H.
+Defined.
+
+Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
+  let tac' := (fun (t' : constr) =>
+    let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
+    fillWithUnderscoresAndCall tac tcast
+  ) in
+  fillWithUnderscoresAndCall tac' t
+.
+
+Ltac2 mlApplyMeta (t : constr) :=
+  _callCompletedAndCast t _mlApplyMetaRaw
+.
+
+(*
+Check @useGenericReasoning'.
+Ltac2 mlApplyMeta (t : constr) :=
+  let tac := (fun (t' : constr) =>
+    let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
+    fillWithUnderscoresAndCall _mlApplyMetaRaw tcast
+  ) in
+  fillWithUnderscoresAndCall tac t
+.
+*)
+Ltac _mlApplyMeta t :=
+  let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
+  ff t.
+
+Tactic Notation "mlApplyMeta" constr(t) :=
+  _mlApplyMeta t.
 
 Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
     @mkMLGoal Σ Γ (l₁ ++ (mkNH nx x)::(mkNH ny y)::l₂ ) g i ->
@@ -2897,9 +3150,11 @@ Proof.
         wf_auto2
       ).
     }
-    useBasicReasoning.
-    mlApplyMeta (@pf_conj_elim_r Σ Γ x y ltac:(assumption) ltac:(assumption)).
+
+    mlApplyMeta pf_conj_elim_r.
     apply MLGoal_exactn.
+    apply pile_basic_generic'.
+    1,2: wf_auto2.
   }
 
   eapply cast_proof_ml_hyps.
@@ -2937,9 +3192,10 @@ Proof.
         wf_auto2
       ).
     }
-    useBasicReasoning.
-    mlApplyMeta (@pf_conj_elim_l Σ Γ x y ltac:(assumption) ltac:(assumption)).
+    mlApplyMeta pf_conj_elim_l.
     apply MLGoal_exactn.
+    apply pile_basic_generic'.
+    1,2: assumption.
   }
 
   eapply cast_proof_ml_hyps.
@@ -3090,7 +3346,7 @@ apply conj_intro_meta; auto.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H2". unfold patt_or.
   mlApply "H0".
-  mlApplyMeta (@not_not_intro _ _ p wfp).
+  mlApplyMetaRaw (@not_not_intro _ _ p wfp).
   mlExact "H2".
 Defined.
 
@@ -3139,7 +3395,7 @@ mlDestructOr "H2" as "H3" "H4".
   + mlRight. mlExact "H5".
 - mlLeft.
   mlIntro "H2".
-  mlApplyMeta (@bot_elim Σ _ B wfB).
+  mlApplyMetaRaw (@bot_elim Σ _ B wfB).
   mlApply "H4". mlExact "H2".
 Defined.
 
@@ -3324,7 +3580,7 @@ Proof.
   intros wfa wfb wfc H.
   toMLGoal.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1". mlApplyMeta H.
+  mlIntro "H0". mlIntro "H1". mlApplyMetaRaw H.
   fromMLGoal.
   useBasicReasoning.
   apply conj_intro.
@@ -3463,22 +3719,22 @@ Proof.
     toMLGoal.
     { wf_auto2. }
     mlIntro "H0". mlSplitAnd.
-    + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+    + unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       mlRevertLast.
-      unshelve(mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      unshelve(mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       mlIntro "H0". mlClear "H0". mlIntro "H0".
-      mlApplyMeta IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlApplyMetaRaw IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
       mlExact "H1".
-    + unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+    + unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       fromMLGoal. toMLGoal.
       { wf_auto2. }
-      unshelve (mlApplyMeta (@P2 _ _ _ _ _ _ _ _)).
+      unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
       1-3: wf_auto2.
       mlIntro "H0". mlClear "H0". mlIntro "H0".
-      mlApplyMeta IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlApplyMetaRaw IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
       mlExact "H2".
 Defined.
 
@@ -3634,7 +3890,7 @@ Proof.
     mlApply "H3".
     mlExact "H1".
   }
-  mlApplyMeta (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
+  mlApplyMetaRaw (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
   mlExact "H2".
 Defined.
 
@@ -3746,11 +4002,11 @@ Proof.
   mlIntro "H0".
   mlDestructOr "H0" as "H1" "H2".
   - mlApply "H1". mlIntro "H2". mlClear "H1". mlIntro "H1".
-    mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H1".
+    mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H1".
     mlApply "H2". mlAssumption.
   - mlApply "H2". mlIntro "H0". mlClear "H2". mlIntro "H1".
     mlDestructOr "H0" as "H2" "H3".
-    + mlApplyMeta (@false_implies_everything _ _ _ _).
+    + mlApplyMetaRaw (@false_implies_everything _ _ _ _).
       mlApply "H2". mlAssumption.
     + mlAssumption.
   Unshelve. all: assumption.
@@ -3772,9 +4028,9 @@ Proof.
     unfold patt_and. mlIntro "H2".
     mlApply "H0". mlIntro "H3".
     mlDestructOr "H2" as "H4" "H5".
-    + mlApplyMeta (false_implies_everything _ _).
+    + mlApplyMetaRaw (false_implies_everything _ _).
       mlApply "H4". mlAssumption.
-    + mlApplyMeta (@not_not_elim _ _ b ltac:(wf_auto2)) in "H5".
+    + mlApplyMetaRaw (@not_not_elim _ _ b ltac:(wf_auto2)) in "H5".
       mlAssumption.
   - mlApply "H2". mlIntro "H0". mlIntro "H1".
     mlDestructAnd "H0" as "H3" "H4". mlApply "H4". mlApply "H1".
@@ -3794,11 +4050,11 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0".
-      mlApplyMeta (@not_not_elim _ _ (! a or ! b) ltac:(wf_auto2)) in "H0".
+    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0".
+      mlApplyMetaRaw (@not_not_elim _ _ (! a or ! b) ltac:(wf_auto2)) in "H0".
       mlAssumption.
-    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0".
-      mlApplyMeta (@not_not_intro _ _ _ _).
+    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0".
+      mlApplyMetaRaw (@not_not_intro _ _ _ _).
       mlAssumption.
     Unshelve. all: auto.
   Qed.
@@ -3814,14 +4070,14 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
       mlApply "H0".
       mlDestructOr "H1" as "H2" "H3".
-      + mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H2".
+      + mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H2".
         mlLeft. mlAssumption.
-      + mlApplyMeta (@not_not_elim _ _ b ltac:(wf_auto2)) in "H3".
+      + mlApplyMetaRaw (@not_not_elim _ _ b ltac:(wf_auto2)) in "H3".
         mlRight. mlAssumption.
-    - mlRevertLast. mlApplyMeta (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
       mlDestructAnd "H0" as "H2" "H3".
       mlDestructOr "H1" as "H4" "H5".
       + mlApply "H2". mlAssumption.
@@ -3840,7 +4096,7 @@ Proof.
   mlIntro "H0".
   mlDestructOr "H0" as "H1" "H2".
   - mlApply "H1". mlIntro "H0".
-    mlApplyMeta (@not_not_elim _ _ a ltac:(wf_auto2)) in "H0".
+    mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H0".
     mlAssumption.
   - unfold patt_not. mlApply "H2". mlIntro "H0". mlIntro "H1".
     mlApply "H1". mlAssumption.
@@ -3879,9 +4135,9 @@ Proof.
  - mlIntro "H0".
    mlDestructAnd "H0" as "H1" "H2".
    mlSplitAnd.
-   + mlApplyMeta pip'.
+   + mlApplyMetaRaw pip'.
      mlExactn 0.
-   + mlApplyMeta qiq' in "H2".
+   + mlApplyMetaRaw qiq' in "H2".
      mlExact "H2".
  - mlIntro "H0".
    unfold patt_and at 2.
@@ -3930,17 +4186,17 @@ Defined.
     - mlIntro "H0".
       mlDestructOr "H0" as "H1" "H2".
       mlLeft.
-      + mlApplyMeta pip'.
+      + mlApplyMetaRaw pip'.
         mlExact "H1".
       + mlRight.
-        mlApplyMeta qiq'.
+        mlApplyMetaRaw qiq'.
         mlExact "H2".
     - mlIntro "H0".
       mlDestructOr "H0" as "H1" "H2".
       mlLeft.
-      + mlApplyMeta p'ip.
+      + mlApplyMetaRaw p'ip.
         mlExact "H1".
       + mlRight.
-        mlApplyMeta q'iq.
+        mlApplyMetaRaw q'iq.
         mlExact "H2". 
   Defined.

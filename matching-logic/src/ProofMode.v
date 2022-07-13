@@ -234,58 +234,20 @@ Defined.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-Lemma pile_evs_svs_kt evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
-evs1 ⊆ evs2 ->
-svs1 ⊆ svs2 ->
-kt1 ==> kt2 ->
-fp1 ⊆ fp2 ->
-ProofInfoLe
-  ((ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-  ((ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
-Proof.
-intros Hevs Hsvs Hkt Hfp.
-eapply pile_trans.
-{
-  apply pile_evs_subseteq. apply Hevs.
-}
-eapply pile_trans.
-{
-  apply pile_svs_subseteq. apply Hsvs.
-}
-eapply pile_trans.
-{
-  apply pile_kt_impl.
-  apply Hkt.
-}
-apply pile_fp_subseteq. apply Hfp.
-Qed.
 
-
-Lemma pile_any i:
-  ProofInfoLe i AnyReasoning.
-Proof.
-  unfold AnyReasoning.
-  destruct i.
-  apply pile_evs_svs_kt.
-  { clear. set_solver. }
-  { clear. set_solver. }
-  { unfold implb. destruct pi_uses_kt; reflexivity. }
-  { clear. set_solver. }
-Qed.
-
-
-Lemma useAnyReasoning Γ ϕ i:
-  Γ ⊢i ϕ using i ->
-  Γ ⊢i ϕ using AnyReasoning.
+Lemma useAnyReasoning {Σ : Signature} Γ ϕ i:
+Γ ⊢i ϕ using i ->
+Γ ⊢i ϕ using AnyReasoning.
 Proof.  
-  intros H.
-  {
-    destruct i.
-    eapply useGenericReasoning.
-    { apply pile_any. }
-    apply H.
-  }
+intros H.
+{
+  destruct i.
+  eapply useGenericReasoning.
+  { apply pile_any. }
+  apply H.
+}
 Qed.
+
 
 
   Fixpoint frames_of_AC (C : Application_context)
@@ -647,23 +609,6 @@ End FOL_helpers.
       ).
     }
   Defined.
-
-
-  Lemma pile_basic_generic {Σ : Signature} eg svs kt fp:
-    ProofInfoLe BasicReasoning ( (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
-  Proof.
-    constructor.
-    intros Γ ϕ pf Hpf.
-    destruct Hpf as [Hpf2 Hpf3 Hpf4]. simpl in *.
-    constructor; simpl.
-    { set_solver. }
-    { set_solver. }
-    { unfold implb in Hpf4. case_match.
-      { inversion Hpf4. }
-      simpl. reflexivity.
-    }
-    { set_solver. }
-  Qed.
 
   Lemma Prop_ex_left {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
     well_formed (ex, ϕ) ->
@@ -2545,7 +2490,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
-      mlApplyMeta IHl.
+      mlApplyMetaRaw IHl.
       mlExactn 2.
     + mlIntro. mlIntro.
       mlAssert ((foldr patt_imp (emplace C q) l)).
@@ -2553,7 +2498,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
-      mlApplyMeta IHl.
+      mlApplyMetaRaw IHl.
       mlExactn 2.
 Defined.
 
@@ -2968,7 +2913,7 @@ Ltac toNNF :=
   match goal with
     | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
       =>
-        mlApplyMeta (@useBasicReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
+        mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
         convertToNNF_rewrite_pat Ctx (!g) i
   end.
 
@@ -3038,7 +2983,7 @@ Ltac mlTautoBreak := repeat match goal with
     lazymatch g with
       | (⊥) =>
               breakHyps l
-      | _ => mlApplyMeta (@useBasicReasoning _ _ _ i (@false_implies_everything _ _ g _))
+      | _ => mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@false_implies_everything _ _ g _))
     end
 end.
 
