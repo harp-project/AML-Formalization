@@ -1,33 +1,7 @@
-{ coqVersion ? "8.15"}:
-with import <nixpkgs> {};
-
-let
-
-  deps = import ./nix/deps.nix { inherit coqVersion; };
-
-  self = stdenv.mkDerivation {
-    name = "coq${deps.coq.coq-version}-matching-logic";
-
-    src = ./.;
-
-    buildInputs = [git];
-    propagatedBuildInputs = [deps.coq deps.stdpp deps.equations];
-
-    buildPhase = ''
-        make
-    '';
-
-    installFlags = [ "COQLIB=$(out)/lib/coq/${deps.coq.coq-version}/" ];
-
-    meta = {
-      description = "A Coq Library for Matching Logic";
-      homepage = "https://github.com/harp-project/AML-Formalization";
-      license = lib.licenses.lgpl21Only;
-    };
-
-    passthru = {
-      compatibleCoqVersions = v: builtins.elem v [ "8.12" "8.13" "8.14" "8.15" ];
-    };
-  };
-  in self
-
+(import (
+  fetchTarball {
+    url = "https://github.com/edolstra/flake-compat/archive/12c64ca55c1014cdc1b16ed5a804aa8576601ff2.tar.gz";
+    sha256 = "0jm6nzb83wa6ai17ly9fzpqc40wg1viib8klq8lby54agpl213w5"; }
+) {
+  src =  ../.;
+}).defaultNix

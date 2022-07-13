@@ -18,112 +18,112 @@ Section ml_proof_system.
   
   (* Proof system for AML ref. snapshot: Section 3 *)
 
-  Reserved Notation "theory ⊢ pattern" (at level 76).
+  Reserved Notation "theory ⊢r pattern" (at level 76).
   Inductive ML_proof_system (theory : Theory) :
     Pattern -> Set :=
 
   (* Hypothesis *)
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
-      (axiom ∈ theory) -> theory ⊢ axiom
+      (axiom ∈ theory) -> theory ⊢r axiom
                                               
   (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
-      theory ⊢ (phi ---> (psi ---> phi))
+      theory ⊢r (phi ---> (psi ---> phi))
   | P2 (phi psi xi : Pattern) :
       well_formed phi -> well_formed psi -> well_formed xi ->
-      theory ⊢ ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
+      theory ⊢r ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
   | P3 (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (((phi ---> Bot) ---> Bot) ---> phi)
+      theory ⊢r (((phi ---> Bot) ---> Bot) ---> phi)
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
-      theory ⊢ phi1 ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ phi2
+      theory ⊢r phi1 ->
+      theory ⊢r (phi1 ---> phi2) ->
+      theory ⊢r phi2
 
   (* Existential quantifier *)
   | Ex_quan (phi : Pattern) (y : evar) :
       well_formed (patt_exists phi) ->
-      theory ⊢ (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+      theory ⊢r (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
   | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
       well_formed phi1 -> well_formed phi2 ->
-      theory ⊢ (phi1 ---> phi2) ->
+      theory ⊢r (phi1 ---> phi2) ->
       x ∉ (free_evars phi2) ->
-      theory ⊢ (exists_quantify x phi1 ---> phi2)
+      theory ⊢r (exists_quantify x phi1 ---> phi2)
 
   (* Frame reasoning *)
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (patt_bott $ phi ---> patt_bott)
+      theory ⊢r (patt_bott $ phi ---> patt_bott)
 
   | Prop_bott_right (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (phi $ patt_bott ---> patt_bott)
+      theory ⊢r (phi $ patt_bott ---> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+      theory ⊢r (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+      theory ⊢r ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
+      theory ⊢r (((ex , phi) $ psi) ---> (ex , phi $ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+      theory ⊢r ((psi $ (ex , phi)) ---> (ex , psi $ phi))
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
       well_formed psi ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
+      theory ⊢r (phi1 ---> phi2) ->
+      theory ⊢r ((phi1 $ psi) ---> (phi2 $ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
       well_formed psi ->
-      theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
+      theory ⊢r (phi1 ---> phi2) ->
+      theory ⊢r ((psi $ phi1) ---> (psi $ phi2))
 
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
   | Svar_subst (phi psi : Pattern) (X : svar) :
       well_formed phi -> well_formed psi ->
-      theory ⊢ phi -> theory ⊢ (free_svar_subst phi psi X)
+      theory ⊢r phi -> theory ⊢r (free_svar_subst phi psi X)
 
   (* Pre-Fixpoint *)
   | Pre_fixp (phi : Pattern) :
       well_formed (patt_mu phi) ->
-      theory ⊢ (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
+      theory ⊢r (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
   (* Knaster-Tarski *)
   | Knaster_tarski (phi psi : Pattern) :
       well_formed (patt_mu phi) ->
-      theory ⊢ ((instantiate (patt_mu phi) psi) ---> psi) ->
-      theory ⊢ ((@patt_mu Σ phi) ---> psi)
+      theory ⊢r ((instantiate (patt_mu phi) psi) ---> psi) ->
+      theory ⊢r ((@patt_mu Σ phi) ---> psi)
 
   (* Technical rules *)
   (* Existence *)
-  | Existence : theory ⊢ (ex , patt_bound_evar 0)
+  | Existence : theory ⊢r (ex , patt_bound_evar 0)
 
   (* Singleton *)
   | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
       well_formed phi ->
-      theory ⊢ (! ((subst_ctx C1 (patt_free_evar x and phi)) and
+      theory ⊢r (! ((subst_ctx C1 (patt_free_evar x and phi)) and
                    (subst_ctx C2 (patt_free_evar x and (! phi)))))
 
-  where "theory ⊢ pattern" := (ML_proof_system theory pattern).
+  where "theory ⊢r pattern" := (ML_proof_system theory pattern).
 
   Instance ML_proof_system_eqdec: forall gamma phi, EqDecision (ML_proof_system gamma phi).
   Proof. intros. intros x y. 
@@ -131,7 +131,7 @@ Section ml_proof_system.
   Abort.
 
   Lemma proved_impl_wf Γ ϕ:
-  Γ ⊢ ϕ -> well_formed ϕ.
+  Γ ⊢r ϕ -> well_formed ϕ.
   Proof.
   intros pf.
   induction pf; auto; try (solve [wf_auto2]).
@@ -147,7 +147,7 @@ Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proo
 Proof. intros H. rewrite <- e in H. exact H. Defined.
 
 (* TODO make this return well-formed patterns. *)
-Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
+Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
   match pf with
   | hypothesis _ _ _ _ => ∅
   | P1 _ _ _ _ _ => ∅
@@ -256,7 +256,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     }
   Qed.
 
-  Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢ ϕ) :=
+  Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢r ϕ) :=
     match pf with
     | hypothesis _ _ _ _ => false
     | P1 _ _ _ _ _ => false
@@ -282,7 +282,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
-    Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢ ϕ) : SVarSet :=
+    Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢r ϕ) : SVarSet :=
       match pf with
       | hypothesis _ _ _ _ => ∅
       | P1 _ _ _ _ _ => ∅
@@ -339,7 +339,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     }
   Qed.
 
-  Fixpoint uses_kt Γ ϕ (pf : Γ ⊢ ϕ) :=
+  Fixpoint uses_kt Γ ϕ (pf : Γ ⊢r ϕ) :=
     match pf with
     | hypothesis _ _ _ _ => false
     | P1 _ _ _ _ _ => false
@@ -364,7 +364,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     | Singleton_ctx _ _ _ _ _ _ => false
     end.
 
-    Fixpoint propositional_only Γ ϕ (pf : Γ ⊢ ϕ) :=
+    Fixpoint propositional_only Γ ϕ (pf : Γ ⊢r ϕ) :=
       match pf with
       | hypothesis _ _ _ _ => true
       | P1 _ _ _ _ _ => true
@@ -389,7 +389,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
       | Singleton_ctx _ _ _ _ _ _ => false
       end.
   
-  Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢ ϕ) :
+  Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢r ϕ) :
     propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
   Proof.
     intros H.
@@ -400,7 +400,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     }
   Qed.
 
-  Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢ ϕ) :
+  Lemma propositional_implies_noKT Γ ϕ (pf : Γ ⊢r ϕ) :
     propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
@@ -435,7 +435,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
 
-  Lemma framing_patterns_cast_proof Γ ϕ ψ (pf : Γ ⊢ ϕ) (e : ψ = ϕ) :
+  Lemma framing_patterns_cast_proof Γ ϕ ψ (pf : Γ ⊢r ϕ) (e : ψ = ϕ) :
     @framing_patterns Γ ψ (cast_proof e pf) = @framing_patterns Γ ϕ pf.
   Proof.
     induction pf; unfold cast_proof,eq_rec_r,eq_rec,eq_rect,eq_sym;simpl in *;
@@ -445,10 +445,10 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢ ϕ) : gset wfPattern :=
     end; simpl; try reflexivity.
   Qed.
     
-  Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢ ϕ -> bool.
+  Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢r ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
-    := forall (Γ : Theory) (ϕ ψ : Pattern) (e: ψ = ϕ) (pf : Γ ⊢ ϕ),
+    := forall (Γ : Theory) (ϕ ψ : Pattern) (e: ψ = ϕ) (pf : Γ ⊢r ϕ),
          P Γ ψ (cast_proof e pf) = P Γ ϕ pf.
 
   Lemma indifferent_to_cast_uses_svar_subst SvS:
@@ -544,16 +544,17 @@ Arguments uses_svar_subst {Σ} S {Γ} {ϕ} pf : rename.
 Arguments uses_kt {Σ} {Γ} {ϕ} pf : rename.
 Arguments uses_ex_gen {Σ} E {Γ} {ϕ} pf : rename.
 
-Module Notations.
+Module Notations_private.
 
-  Notation "theory ⊢ pattern" := (ML_proof_system theory pattern) (at level 95, no associativity).
+  Notation "theory ⊢r pattern" := (ML_proof_system theory pattern) (at level 95, no associativity).
 
-End Notations.
+End Notations_private.
 
-Import Notations.
+From stdpp Require Import coGset.
+Import Notations_private.
 
 Lemma instantiate_named_axiom {Σ : Signature} (NA : NamedAxioms) (name : (NAName NA)) :
-  (theory_of_NamedAxioms NA) ⊢ (@NAAxiom Σ NA name).
+  (theory_of_NamedAxioms NA) ⊢r (@NAAxiom Σ NA name).
 Proof.
   apply hypothesis.
   { apply NAwf. }
@@ -562,3 +563,98 @@ Proof.
   exists name.
   reflexivity.
 Defined.
+
+
+
+
+Definition coEVarSet {Σ : Signature} := coGset evar.
+Definition coSVarSet {Σ : Signature} := coGset svar.
+Definition WfpSet {Σ : Signature} := gmap.gset wfPattern.
+Definition coWfpSet {Σ : Signature} := coGset wfPattern.
+
+Record ProofInfo {Σ : Signature} :=
+  mkProofInfo
+  {
+    pi_generalized_evars : coEVarSet ;
+    pi_substituted_svars : coSVarSet ;
+    pi_uses_kt : bool ;
+    pi_framing_patterns : coWfpSet ; 
+  }.
+
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
+  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
+
+
+(* A proof together with some properties of it. *)
+Record ProofInfoMeaning
+  {Σ : Signature}
+  (Γ : Theory)
+  (ϕ : Pattern)
+  (pwi_pf : Γ ⊢r ϕ)
+  (pi : ProofInfo)
+  : Prop
+  :=
+mkProofInfoMeaning
+{
+  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
+  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
+  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
+}.
+
+Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
+{ pi_le :
+  forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
+    @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
+}.
+
+(*
+#[global]
+Instance
+*)
+Lemma pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
+Proof.
+  constructor. intros Γ ϕ pf H. exact H.
+Qed.
+
+(*
+#[global]
+Instance
+*)
+Lemma pile_trans {Σ : Signature}
+  (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
+: ProofInfoLe i₁ i₃.
+Proof.
+  destruct PILE12 as [PILE12].
+  destruct PILE23 as [PILE23].
+  constructor. intros Γ ϕ pf.
+  specialize (PILE12 Γ ϕ pf).
+  specialize (PILE23 Γ ϕ pf).
+  tauto.
+Qed.
+
+Definition BasicReasoning {Σ} : ProofInfo := ((@mkProofInfo Σ ∅ ∅ false ∅)).
+Definition AnyReasoning {Σ : Signature} : ProofInfo := (@mkProofInfo Σ ⊤ ⊤ true ⊤).
+
+
+Definition derives_using {Σ : Signature} Γ ϕ pi
+:= ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }).
+
+Definition derives {Σ : Signature} Γ ϕ
+:= derives_using Γ ϕ AnyReasoning.
+
+Definition raw_proof_of {Σ : Signature} {Γ} {ϕ} {pi}:
+  derives_using Γ ϕ pi ->
+  ML_proof_system Γ ϕ
+:= fun pf => proj1_sig pf.
+
+Module Notations.
+
+Notation "Γ '⊢i' ϕ 'using' pi"
+:= (derives_using Γ ϕ pi)  (at level 95, no associativity).
+
+Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
+(at level 95, no associativity).
+
+End Notations.
+
