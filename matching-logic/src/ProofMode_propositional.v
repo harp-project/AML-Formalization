@@ -3008,6 +3008,11 @@ Ltac _mlApplyMetaRawIn t name :=
   eapply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
   _mlReshapeHypsBack.
 
+Ltac2 _mlApplyMetaRawIn (t : constr) (name : constr) :=
+  ltac1:(t' name' |- _mlApplyMetaRawIn t' name')
+    (Ltac1.of_constr t)
+    (Ltac1.of_constr name)
+.
 
 Tactic Notation "mlApplyMetaRaw" uconstr(t) "in" constr(name) :=
   _mlApplyMetaRawIn t name.
@@ -3026,16 +3031,6 @@ Proof.
   mlApplyMetaRaw (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
   mlExact "H0".
 Defined.
-
-Goal forall (P Q : Prop),
-  P -> Q -> (Q /\ P).
-Proof.
-  intros P Q HP HQ.
-  rewrite and_comm.
-  cut (P -> Q).
-  ltac2:(Std.cut constr:(P)).
-  { auto. }
-Abort.
 
 (*
   All thic complicated code is here only for one reason:
@@ -3092,6 +3087,12 @@ Ltac2 mlApplyMeta (t : constr) :=
   _callCompletedAndCast t _mlApplyMetaRaw
 .
 
+Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
+  _callCompletedAndCast t (fun t =>
+    _mlApplyMetaRawIn t name
+  )
+.
+
 (*
 Check @useGenericReasoning'.
 Ltac2 mlApplyMeta (t : constr) :=
@@ -3106,8 +3107,18 @@ Ltac _mlApplyMeta t :=
   let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
   ff t.
 
+Ltac _mlApplyMetaIn t name :=
+  let ff := ltac2:(t' name' |- mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
+  ff t name
+.
+  
 Tactic Notation "mlApplyMeta" constr(t) :=
   _mlApplyMeta t.
+
+Tactic Notation "mlApplyMeta" constr(t) "in" constr(name) :=
+  _mlApplyMeta t name
+.
+
 
 Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
     @mkMLGoal Σ Γ (l₁ ++ (mkNH nx x)::(mkNH ny y)::l₂ ) g i ->
@@ -3346,8 +3357,10 @@ apply conj_intro_meta; auto.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H2". unfold patt_or.
   mlApply "H0".
-  mlApplyMetaRaw (@not_not_intro _ _ p wfp).
+  mlApplyMeta not_not_intro.
   mlExact "H2".
+  { apply pile_basic_generic. }
+  { assumption. }
 Defined.
 
 Lemma p_and_notp_is_bot {Σ : Signature} Γ p:
