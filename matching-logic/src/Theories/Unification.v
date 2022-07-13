@@ -539,7 +539,7 @@ Section UnificationProcedure.
     * subst. admit.
     * subst; simpl.
       with_strategy opaque [unification_to_pattern] toMLGoal.
-      { apply well_formed_imp. admit. }
+      { apply well_formed_imp. admit. admit. }
       do 2 rewrite map_app. simpl map.
       do 2 rewrite foldr_app. simpl.
       remember (foldr patt_and Top (map eq_pats U')) as L1.
@@ -554,7 +554,7 @@ Section UnificationProcedure.
       mlApplyMeta (@patt_eq_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
     * subst; simpl.
       with_strategy opaque [unification_to_pattern] toMLGoal.
-      { apply well_formed_imp. admit. }
+      { apply well_formed_imp. admit. admit. }
       rewrite map_app. simpl map.
       rewrite foldr_app. simpl.
       mlIntro "H". mlDestructAnd "H" as "H0" "H1".

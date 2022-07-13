@@ -281,33 +281,33 @@ Module test_3.
       admit.
     Abort.
 
-    Theorem alma:
-      Γₙₐₜ ⊢ sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
+    Theorem example:
+      Γₙₐₜ ⊢i sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
     Proof.
-      assert (Γₙₐₜ ⊢ ruleA using AnyReasoning) as RA.
+      assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
       { gapply hypothesis; auto. apply pile_any. set_solver. }
-      assert (Γₙₐₜ ⊢ ruleC using AnyReasoning) as RC.
+      assert (Γₙₐₜ ⊢i ruleC using AnyReasoning) as RC.
       { gapply hypothesis; auto. apply pile_any. set_solver. }
       apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert ((Γₙₐₜ
-       ⊢ all ,
+      assert (Γₙₐₜ
+       ⊢i all ,
            (X0 ∈ml sym_succ $ sym_succ $ b0 --->
-            sym_even $ X0 =ml patt_sym even $ b0)) using AnyReasoning) as RA1' by auto.
+            sym_even $ X0 =ml patt_sym even $ b0) using AnyReasoning) as RA1' by auto.
       clear RA1.
-      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
+      assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
       { admit. }
-      assert (Γₙₐₜ ⊢ ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
+      assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
       { admit. }
       mgSpecMeta RA1' with (sym_succ $ sym_succ $ sym_zero).
       repeat rewrite simpl_bevar_subst'  in RA1'; wf_auto2. 2: admit. (* apply def_theory. *)
       simpl in RA1'.
       apply universal_generalization with (x := "X0") in RA1' as RA2. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert ((Γₙₐₜ
-       ⊢ all ,
+      assert (Γₙₐₜ
+       ⊢i all ,
            (b0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero --->
-            sym_even $ b0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero)) using AnyReasoning) as RA2' by auto.
+            sym_even $ b0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero) using AnyReasoning) as RA2' by auto.
       clear RA2 RA1'.
       mgSpecMeta RA2' with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
       repeat rewrite simpl_bevar_subst'  in RA2'; wf_auto2. 2: admit. (* apply def_theory. *)
