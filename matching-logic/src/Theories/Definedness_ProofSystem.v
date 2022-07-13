@@ -4335,14 +4335,29 @@ Proof.
   mlSpec "mH1". mlExact "mH1".
 Defined.
 
-Lemma and_singleton {Σ : Signature} : forall Γ p,
-  well_formed p -> Γ ⊢i (p and p) <---> p using BasicReasoning.
+(** 
+  TODO: why should x be introduced for proof info (it could be constructed "ony the fly")? Could we avoid this?
+ *)
+Lemma forall_defined {Σ : Signature} {syntax : Syntax}:
+  forall Γ i, theory ⊆ Γ ->
+  ProofInfoLe ( (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP)) i  ->
+  Γ ⊢i all , ⌈b0⌉ using i.
 Proof.
-  intros.
+  intros Γ i HΓ PI.
+  (* remember (fresh_evar ⊥) as x. *)
   toMLGoal. wf_auto2.
-  mlSplitAnd; mlIntro "H".
-  * mlDestructAnd "H". mlAssumption.
-  * mlSplitAnd; mlAssumption.
+  epose proof (@Ex_gen _ Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _ _).
+  unfold exists_quantify in H. cbn in H. case_match. 2: congruence.
+  mlIntro "H". mlApplyMeta H. fold (patt_defined b0) (patt_not ⌈b0⌉).
+  mlExact "H".
+    Unshelve.
+    * eapply pile_trans. 2: exact PI. try_solve_pile.
+    * set_solver.
+    * toMLGoal. wf_auto2. mlIntro "H". mlApply "H".
+      pose proof (defined_evar ev_x HΓ).
+      eapply liftPi in H. mlExactMeta H.
+      eapply pile_trans. 2: exact PI.
+      apply pile_evs_subseteq. set_solver.
 Defined.
 
 Lemma membership_refl {Σ : Signature} {syntax : Syntax}:
@@ -4354,10 +4369,17 @@ Proof.
   mlIntro "mH".
   pose proof (@and_singleton _ Γ t WF). apply useAnyReasoning in H.
   mlRewrite H at 1.
-  admit.
-Abort.
-
-
-
-
-
+  remember (fresh_evar t) as x.
+  mlAssert ("mH1" : ((all, ⌈patt_bound_evar 0⌉) and ex, t =ml b0)). wf_auto2. {
+    mlSplitAnd.
+    * mlClear "mH".
+      epose proof (@forall_defined _ _ Γ AnyReasoning HΓ _).
+      mlExactMeta H0.
+      Unshelve.
+      apply pile_any.
+    * mlAssumption.
+  }
+  mlClear "mH".
+  mlSpec "mH1".
+  mlExact "mH1".
+Defined.

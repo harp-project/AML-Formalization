@@ -312,7 +312,7 @@ Module test_3.
       mgSpecMeta RA2' with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
       repeat rewrite simpl_bevar_subst'  in RA2'; wf_auto2. 2: admit. (* apply def_theory. *)
       simpl in RA2'.
-      Search "∈ml" ML_proof_system.
+      Search patt_exists ML_proof_system.
     Abort.
   End test_3.
 End test_3.

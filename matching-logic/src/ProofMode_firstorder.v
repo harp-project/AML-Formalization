@@ -755,3 +755,40 @@ Proof.
   { wf_auto. }
 
 Abort.
+
+Lemma existential_instantiation {Σ : Signature} :
+  forall Γ (φ : Pattern) x y, well_formed φ -> x <> y ->  y ∉ free_evars φ ->
+    Γ ⊢i exists_quantify x φ ---> φ.[[evar: x ↦ patt_free_evar y]]
+    using (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅).
+Proof.
+  intros Γ φ x y WF xNy Hy.
+  Search derives_using patt_exists.
+  apply Ex_gen. apply pile_refl.
+  apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
+  Search free_evar_subst derives_using.
+  toMLGoal. wf_auto2.
+  mlIntro "H".
+  mlAssert ("H0" : (all , evar_quantify x 0 φ)). wf_auto2.
+Abort.
+
+Lemma MLGoal_IntroVar {Σ : Signature} : forall Γ l g i x,
+  x ∉ free_evars g ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  @mkMLGoal Σ Γ l (evar_open 0 x g) i ->
+  @mkMLGoal Σ Γ l (all , g) i.
+Proof.
+  Search derives_using foldr.
+  unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
+  Search derives_using foldr.
+  eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
+  all: try wf_auto2.
+  toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
+  epose proof (@Ex_gen _ Γ (! evar_open 0 x g) ⊥ x i _ _ _).
+  mlApplyMeta H0. unfold exists_quantify. simpl.
+  rewrite evar_quantify_evar_open; auto.
+  apply andb_true_iff in wf1 as [_ wf1].
+  apply andb_true_iff in wf1 as [_ wf1]. simpl in wf1.
+  now do 2 rewrite andb_true_r in wf1. mlExact "H0".
+ Unshelve.
+   set_solver.
+Abort.
