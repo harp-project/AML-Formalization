@@ -3051,7 +3051,8 @@ Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
         let pftprime := Fresh.in_goal ident:(pftprime) in
         intro $pftprime;
         let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-        fillWithUnderscoresAndCall tac new_t
+        fillWithUnderscoresAndCall tac new_t;
+        Std.clear [pftprime]
       )|(apply &h)
       ]
     end
@@ -3083,26 +3084,50 @@ Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
   fillWithUnderscoresAndCall tac' t
 .
 
+Ltac2 try_solve_pile_basic () :=
+  Control.enter (fun () =>
+    lazy_match! goal with
+    | [ |- (@ProofInfoLe _ _ _)] =>
+        try (solve
+          [ apply pile_any
+          | apply pile_refl
+          | apply pile_basic_generic'
+       ])
+    | [|- _] => ()
+    end
+  )
+.
+
+Ltac2 try_wfa () :=
+  Control.enter (fun () =>
+    let wfa := (fun p =>
+      if (Constr.has_evar p) then
+        ()
+      else
+      ltac1:(try_wfauto2)
+    ) in
+    lazy_match! goal with
+    | [|- well_formed ?p = true] => wfa p
+    | [|- is_true (well_formed ?p) ] => wfa p
+    | [|- _] => ()
+    end
+  )
+.
+
 Ltac2 mlApplyMeta (t : constr) :=
-  _callCompletedAndCast t _mlApplyMetaRaw
+  _callCompletedAndCast t _mlApplyMetaRaw ;
+  try_solve_pile_basic ();
+  try_wfa ()
 .
 
 Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
   _callCompletedAndCast t (fun t =>
     _mlApplyMetaRawIn t name
-  )
+  );
+  try_solve_pile_basic ();
+  try_wfa ()
 .
 
-(*
-Check @useGenericReasoning'.
-Ltac2 mlApplyMeta (t : constr) :=
-  let tac := (fun (t' : constr) =>
-    let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall _mlApplyMetaRaw tcast
-  ) in
-  fillWithUnderscoresAndCall tac t
-.
-*)
 Ltac _mlApplyMeta t :=
   let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
   ff t.
@@ -3116,7 +3141,7 @@ Tactic Notation "mlApplyMeta" constr(t) :=
   _mlApplyMeta t.
 
 Tactic Notation "mlApplyMeta" constr(t) "in" constr(name) :=
-  _mlApplyMeta t name
+  _mlApplyMetaIn t name
 .
 
 
@@ -3164,8 +3189,7 @@ Proof.
 
     mlApplyMeta pf_conj_elim_r.
     apply MLGoal_exactn.
-    apply pile_basic_generic'.
-    1,2: wf_auto2.
+    wf_auto2.
   }
 
   eapply cast_proof_ml_hyps.
@@ -3205,8 +3229,7 @@ Proof.
     }
     mlApplyMeta pf_conj_elim_l.
     apply MLGoal_exactn.
-    apply pile_basic_generic'.
-    1,2: assumption.
+    assumption.
   }
 
   eapply cast_proof_ml_hyps.
@@ -3359,8 +3382,6 @@ apply conj_intro_meta; auto.
   mlApply "H0".
   mlApplyMeta not_not_intro.
   mlExact "H2".
-  { apply pile_basic_generic. }
-  { assumption. }
 Defined.
 
 Lemma p_and_notp_is_bot {Σ : Signature} Γ p:
@@ -3379,6 +3400,11 @@ apply conj_intro_meta; auto.
   mlAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)) as "H1".
   mlExact "H1".
 Defined.
+
+Ltac mlExFalso :=
+  mlApplyMeta bot_elim
+.
+
 
 Lemma weird_lemma  {Σ : Signature} Γ A B L R:
 well_formed A ->
@@ -3408,7 +3434,7 @@ mlDestructOr "H2" as "H3" "H4".
   + mlRight. mlExact "H5".
 - mlLeft.
   mlIntro "H2".
-  mlApplyMetaRaw (@bot_elim Σ _ B wfB).
+  mlExFalso.
   mlApply "H4". mlExact "H2".
 Defined.
 
@@ -3593,7 +3619,8 @@ Proof.
   intros wfa wfb wfc H.
   toMLGoal.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1". mlApplyMetaRaw H.
+  mlIntro "H0". mlIntro "H1".
+  mlApplyMeta H.
   fromMLGoal.
   useBasicReasoning.
   apply conj_intro.
@@ -3732,22 +3759,19 @@ Proof.
     toMLGoal.
     { wf_auto2. }
     mlIntro "H0". mlSplitAnd.
-    + unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
+    + mlApplyMeta P2.
       mlRevertLast.
-      unshelve(mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
+      mlApplyMeta P2.
       mlIntro "H0". mlClear "H0". mlIntro "H0".
-      mlApplyMetaRaw IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlApplyMeta IHl in "H0".
+      unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
       mlExact "H1".
-    + unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
-      fromMLGoal. toMLGoal.
-      { wf_auto2. }
-      unshelve (mlApplyMetaRaw (@P2 _ _ _ _ _ _ _ _)).
-      1-3: wf_auto2.
+    + mlApplyMeta P2.
+      mlRevertLast.
+      mlApplyMeta P2.
       mlIntro "H0". mlClear "H0". mlIntro "H0".
-      mlApplyMetaRaw IHl in "H0". unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
+      mlApplyMeta IHl in "H0".
+      unfold patt_iff at 1. mlDestructAnd "H0" as "H1" "H2".
       mlExact "H2".
 Defined.
 
@@ -3903,7 +3927,7 @@ Proof.
     mlApply "H3".
     mlExact "H1".
   }
-  mlApplyMetaRaw (@not_not_elim Σ Γ ϕ₁ ltac:(wf_auto2)).
+  mlApplyMeta not_not_elim.
   mlExact "H2".
 Defined.
 
@@ -4015,14 +4039,13 @@ Proof.
   mlIntro "H0".
   mlDestructOr "H0" as "H1" "H2".
   - mlApply "H1". mlIntro "H2". mlClear "H1". mlIntro "H1".
-    mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H1".
+    mlApplyMeta not_not_elim in "H1".
     mlApply "H2". mlAssumption.
   - mlApply "H2". mlIntro "H0". mlClear "H2". mlIntro "H1".
     mlDestructOr "H0" as "H2" "H3".
-    + mlApplyMetaRaw (@false_implies_everything _ _ _ _).
+    + mlExFalso.
       mlApply "H2". mlAssumption.
     + mlAssumption.
-  Unshelve. all: assumption.
 Qed.
 
 
@@ -4041,14 +4064,13 @@ Proof.
     unfold patt_and. mlIntro "H2".
     mlApply "H0". mlIntro "H3".
     mlDestructOr "H2" as "H4" "H5".
-    + mlApplyMetaRaw (false_implies_everything _ _).
+    + mlExFalso.
       mlApply "H4". mlAssumption.
-    + mlApplyMetaRaw (@not_not_elim _ _ b ltac:(wf_auto2)) in "H5".
+    + mlApplyMeta not_not_elim in "H5".
       mlAssumption.
   - mlApply "H2". mlIntro "H0". mlIntro "H1".
     mlDestructAnd "H0" as "H3" "H4". mlApply "H4". mlApply "H1".
     mlAssumption.
-  Unshelve. all: assumption.
 Qed.
 
 
@@ -4063,14 +4085,15 @@ Lemma deMorgan_nand {Σ : Signature} Γ a b:
     { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0".
-      mlApplyMetaRaw (@not_not_elim _ _ (! a or ! b) ltac:(wf_auto2)) in "H0".
+    - mlRevertLast.
+      mlApplyMeta not_not_intro. mlIntro "H0".
+      mlApplyMeta not_not_elim in "H0".
       mlAssumption.
-    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0".
-      mlApplyMetaRaw (@not_not_intro _ _ _ _).
+    - mlRevertLast.
+      mlApplyMeta not_not_intro. mlIntro "H0".
+      mlApplyMeta not_not_intro.
       mlAssumption.
-    Unshelve. all: auto.
-  Qed.
+Defined.
 
 Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed a ->
@@ -4083,12 +4106,14 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+    - mlRevertLast.
+      mlApplyMeta not_not_intro.
+      mlIntro "H0". mlIntro "H1".
       mlApply "H0".
       mlDestructOr "H1" as "H2" "H3".
-      + mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H2".
+      + mlApplyMeta not_not_elim in "H2".
         mlLeft. mlAssumption.
-      + mlApplyMetaRaw (@not_not_elim _ _ b ltac:(wf_auto2)) in "H3".
+      + mlApplyMeta not_not_elim in "H3".
         mlRight. mlAssumption.
     - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
       mlDestructAnd "H0" as "H2" "H3".
