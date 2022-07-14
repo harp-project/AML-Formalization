@@ -70,21 +70,27 @@ Section ProofSystemTheorems.
                        free variable *)
     epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve. 2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
-                   apply andb_true_iff in Wf2 as [_ Wf2].
-                   (* NOTE: using eapply breaks the proof *)
-                   apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
-                   rewrite Wf2. auto. lia. } (* TODO: this should be auto... *)
+    Unshelve.
+    2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
+         apply andb_true_iff in Wf2 as [_ Wf2].
+         (* NOTE: using eapply breaks the proof *)
+         apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
+         rewrite Wf2. auto. lia.
+    } (* TODO: this should be auto... *)
     simpl in H.
     repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
-    mlApplyMetaRaw H. clear H.
-    mlSplitAnd. 2: fromMLGoal; wf_auto2.
+    mlApplyMeta H. clear H.
+    mlSplitAnd.
+    2: fromMLGoal; assumption.
+    
     epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve. 2: { cbn. do 2 case_match; auto; lia. }
-    mlApplyMetaRaw H. clear H.
+    Unshelve.
+    2: { cbn. do 2 case_match; auto; lia. }
+    mlApplyMeta H. clear H.
 
-    mlSplitAnd. 2: fromMLGoal; wf_auto2.
+    mlSplitAnd.
+    2: fromMLGoal; assumption.
     remember (fresh_evar patt_bott) as x.
     remember (fresh_evar (patt_free_evar x)) as y.
     assert (x <> y) as XY.

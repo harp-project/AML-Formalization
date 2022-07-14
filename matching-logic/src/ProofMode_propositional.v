@@ -4046,7 +4046,7 @@ Proof.
     + mlExFalso.
       mlApply "H2". mlAssumption.
     + mlAssumption.
-Qed.
+Defined.
 
 
 Lemma nimpl_eq_and {Σ : Signature} Γ a b:
@@ -4071,7 +4071,7 @@ Proof.
   - mlApply "H2". mlIntro "H0". mlIntro "H1".
     mlDestructAnd "H0" as "H3" "H4". mlApply "H4". mlApply "H1".
     mlAssumption.
-Qed.
+Defined.
 
 
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
@@ -4115,13 +4115,14 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
         mlLeft. mlAssumption.
       + mlApplyMeta not_not_elim in "H3".
         mlRight. mlAssumption.
-    - mlRevertLast. mlApplyMetaRaw (@not_not_intro _ _ _ _). mlIntro "H0". mlIntro "H1".
+    - mlRevertLast.
+      mlApplyMeta not_not_intro.
+      mlIntro "H0". mlIntro "H1".
       mlDestructAnd "H0" as "H2" "H3".
       mlDestructOr "H1" as "H4" "H5".
       + mlApply "H2". mlAssumption.
       + mlApply "H3". mlAssumption.
-    Unshelve. all: wf_auto2.
-  Qed.
+  Defined.
 
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
@@ -4134,12 +4135,10 @@ Proof.
   mlIntro "H0".
   mlDestructOr "H0" as "H1" "H2".
   - mlApply "H1". mlIntro "H0".
-    mlApplyMetaRaw (@not_not_elim _ _ a ltac:(wf_auto2)) in "H0".
+    mlApplyMeta not_not_elim in "H0".
     mlAssumption.
   - unfold patt_not. mlApply "H2". mlIntro "H0". mlIntro "H1".
     mlApply "H1". mlAssumption.
-  Unshelve.
-  all: assumption.
 Defined.
 
 
@@ -4173,9 +4172,9 @@ Proof.
  - mlIntro "H0".
    mlDestructAnd "H0" as "H1" "H2".
    mlSplitAnd.
-   + mlApplyMetaRaw pip'.
+   + mlApplyMeta pip'.
      mlExactn 0.
-   + mlApplyMetaRaw qiq' in "H2".
+   + mlApplyMeta qiq' in "H2".
      mlExact "H2".
  - mlIntro "H0".
    unfold patt_and at 2.
@@ -4224,17 +4223,17 @@ Defined.
     - mlIntro "H0".
       mlDestructOr "H0" as "H1" "H2".
       mlLeft.
-      + mlApplyMetaRaw pip'.
+      + mlApplyMeta pip'.
         mlExact "H1".
       + mlRight.
-        mlApplyMetaRaw qiq'.
+        mlApplyMeta qiq'.
         mlExact "H2".
     - mlIntro "H0".
       mlDestructOr "H0" as "H1" "H2".
       mlLeft.
-      + mlApplyMetaRaw p'ip.
+      + mlApplyMeta p'ip.
         mlExact "H1".
       + mlRight.
-        mlApplyMetaRaw q'iq.
+        mlApplyMeta q'iq.
         mlExact "H2". 
   Defined.

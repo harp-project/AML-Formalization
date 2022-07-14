@@ -235,7 +235,7 @@ Defined.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
 
-Lemma useAnyReasoning {Σ : Signature} Γ ϕ i:
+Lemma useAnyReasoning Γ ϕ i:
 Γ ⊢i ϕ using i ->
 Γ ⊢i ϕ using AnyReasoning.
 Proof.  
