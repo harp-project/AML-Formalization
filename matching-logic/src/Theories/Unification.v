@@ -70,21 +70,27 @@ Section ProofSystemTheorems.
                        free variable *)
     epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve. 2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
-                   apply andb_true_iff in Wf2 as [_ Wf2].
-                   (* NOTE: using eapply breaks the proof *)
-                   apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
-                   rewrite Wf2. auto. lia. } (* TODO: this should be auto... *)
+    Unshelve.
+    2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
+         apply andb_true_iff in Wf2 as [_ Wf2].
+         (* NOTE: using eapply breaks the proof *)
+         apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
+         rewrite Wf2. auto. lia.
+    } (* TODO: this should be auto... *)
     simpl in H.
     repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
     mlApplyMeta H. clear H.
-    mlSplitAnd. 2: fromMLGoal; wf_auto2.
+    mlSplitAnd.
+    2: fromMLGoal; assumption.
+    
     epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve. 2: { cbn. do 2 case_match; auto; lia. }
+    Unshelve.
+    2: { cbn. do 2 case_match; auto; lia. }
     mlApplyMeta H. clear H.
 
-    mlSplitAnd. 2: fromMLGoal; wf_auto2.
+    mlSplitAnd.
+    2: fromMLGoal; assumption.
     remember (fresh_evar patt_bott) as x.
     remember (fresh_evar (patt_free_evar x)) as y.
     assert (x <> y) as XY.
@@ -117,7 +123,7 @@ Section ProofSystemTheorems.
     intros Γ φ HΓ Wf.
     toMLGoal. wf_auto2.
     mlIntro "H0".
-    mlApplyMeta (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+    mlApplyMetaRaw (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
                  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     mlSplitAnd.
     * mlClear "H0". fromMLGoal. wf_auto2.
@@ -166,7 +172,7 @@ Section ProofSystemTheorems.
 
     toMLGoal. wf_auto2.
     mlIntro.
-    mlApplyMeta (useAnyReasoning (@bott_not_defined _ _ Γ)).
+    mlApplyMetaRaw (useAnyReasoning (@bott_not_defined _ _ Γ)).
     fromMLGoal. wf_auto2.
     
     apply ceil_monotonic; auto.
@@ -174,14 +180,14 @@ Section ProofSystemTheorems.
     { wf_auto2. }
 
     toMLGoal. wf_auto2.
-    mlApplyMeta (useAnyReasoning (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+    mlApplyMetaRaw (useAnyReasoning (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
                     ltac:(wf_auto2))).
     mlSplitAnd; mlIntro.
-    * mlApplyMeta (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mlExactn 0.
-    * mlApplyMeta (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mlExactn 0.
+    * mlApplyMetaRaw (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mlExactn 0.
+    * mlApplyMetaRaw (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mlExactn 0.
       Unshelve.
       toMLGoal. wf_auto2.
-      now mlApplyMeta (functional_pattern_defined HΓ Wf2).
+      now mlApplyMetaRaw (functional_pattern_defined HΓ Wf2).
   Defined.
 
   Lemma Prop₃_right : forall Γ φ φ',
@@ -196,15 +202,15 @@ Section ProofSystemTheorems.
     mlIntro "H0".
     mlAssert ("H1" : ⌈ φ and φ' ⌉).
     { wf_auto2. }
-    (* Why can we only mlApplyMeta here, and not after mlRevert? *)
+    (* Why can we only mlApplyMetaRaw here, and not after mlRevert? *)
     {
-      mlApplyMeta (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
+      mlApplyMetaRaw (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
     mlDestructAnd "H0" as "H2" "H3". mlSplitAnd.
     * mlExact "H2".
-    * mlApplyMeta (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
+    * mlApplyMetaRaw (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
       mlExact "H1".
   Defined.
 
@@ -271,10 +277,10 @@ Section ProofSystemTheorems.
     
     apply useAnyReasoning in H.
     epose proof (@syllogism_meta Σ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
-    (* TODO: mlApplyMeta buggy?
+    (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mlRevertLast. mlApplyMeta H1. mlExact "H1".
+    mlRevertLast. mlApplyMetaRaw H1. mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -314,11 +320,11 @@ Section ProofSystemTheorems.
     }
     apply useAnyReasoning in H.
     epose proof (@syllogism_meta _ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
-    (* TODO: mlApplyMeta buggy?
+    (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
     mlRevertLast.
-    mlApplyMeta H1.
+    mlApplyMetaRaw H1.
     mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.

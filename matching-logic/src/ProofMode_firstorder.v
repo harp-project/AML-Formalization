@@ -454,7 +454,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro.
-  mlApplyMeta (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in "0".
+  mlApplyMetaRaw (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in "0".
   fromMLGoal.
   apply modus_tollens.
 
@@ -470,136 +470,6 @@ Proof.
   { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
   apply modus_tollens; assumption.
 Defined.
-
-
-  (* Unfortunately, this depends on A_impl_A. It would be nice
-     if we could make it use only the bult-in proof rules
-   *)
-   Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
-   ProofInfoLe
-     ( (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-     ( (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
-     evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
-   Proof.
-     intros pile.
-     repeat split.
-     {
-       destruct pile as [pile].
-       rewrite elem_of_subseteq.
-       intros x Hx.
-       remember (fresh_evar (patt_free_evar x)) as y.
-       pose (pf1 := @A_impl_A Σ ∅ (patt_free_evar y) ltac:(wf_auto2)).
-       pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-       specialize (pile ∅ _ pf2).
-       feed specialize pile.
-       {
-         constructor.
-         { simpl. clear -Hx. set_solver. }
-         { simpl. clear. set_solver. }
-         { simpl. reflexivity. }
-         { simpl. set_solver. }
-       }
-       destruct pile as [Hm2 Hm3 Hm4 Hm5].
-       simpl in *.
-       clear -Hm2.
-       set_solver.
-     }
-     {
-       destruct pile as [pile].
-       rewrite elem_of_subseteq.
-       intros X HX.
-       pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
-       pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-       specialize (pile ∅ _ pf2).
-       feed specialize pile.
-       {
-         constructor; simpl.
-         { clear. set_solver. }
-         { clear -HX. set_solver. }
-         { reflexivity. }
-         { set_solver. }
-       }
-       destruct pile as [Hp2 Hp3 Hp4].
-       simpl in *.
-       clear -Hp3.
-       set_solver.
-     }
-     {
-       destruct pile as [pile].
-       pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-       pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-       destruct kt1.
-       2: { simpl. reflexivity. }
-       specialize (pile ∅ _ pf2).
-       feed specialize pile.
-       {
-         constructor; simpl.
-         { clear. set_solver. }
-         { clear. set_solver. }
-         { reflexivity. }
-         { set_solver. }
-       }
-       destruct pile as [Hp2 Hp3 Hp4].
-       simpl in Hp4.
-       rewrite Hp4.
-       reflexivity.
-     }
-     {
-       destruct pile as [pile].
-       rewrite elem_of_subseteq.
-       intros (*p*) [p wfp] Hp.
-       (*assert (wfp : well_formed p) by admit.*)
-       pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-       pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-       pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-       pose proof (pile1 := pile ∅ _ pf2).
-       pose proof (pile2 := pile ∅ _ pf3).
-       clear pile.
-       feed specialize pile1.
-       {
-         constructor; simpl.
-         { clear; set_solver. }
-         { clear; set_solver. }
-         { reflexivity. }
-         { simpl. set_solver. }
-       }
-       feed specialize pile2.
-       {
-         constructor; simpl.
-         { clear; set_solver. }
-         { clear; set_solver. }
-         { reflexivity. }
-         { simpl. set_solver. }
-       }
-       destruct pile1, pile2. simpl in *.
-       rewrite elem_of_subseteq in pwi_pf_fp0.
-       setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp0.
-       specialize (pwi_pf_fp0 (exist _ p wfp) ltac:(set_solver)).
-       exact pwi_pf_fp0.
-     }
-   Qed.
- 
-Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
-(ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-Γ ⊢i ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
-Γ ⊢i ϕ using i.
-Proof.
-intros pile [pf Hpf].
-exists pf.
-destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-simpl in *.
-destruct i.
-pose proof (Htmp := @pile_evs_svs_kt_back Σ).
-specialize (Htmp evs pi_generalized_evars svs pi_substituted_svars kt pi_uses_kt fp pi_framing_patterns pile).
-destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
-constructor; simpl.
-{ clear -Hpf2 Hevs. set_solver. }
-{ clear -Hpf3 Hsvs. set_solver. }
-{ unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
-{ clear -Hpf5 Hfp. set_solver.  }
-Defined.
-
-
 
 Lemma forall_variable_substitution' {Σ : Signature} Γ ϕ x (i : ProofInfo):
   well_formed ϕ ->
