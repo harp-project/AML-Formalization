@@ -557,7 +557,7 @@ Section UnificationProcedure.
       mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlDestructAnd "H0" as "H0_1" "H0_2".
       mlSplitAnd. mlSplitAnd. 1, 3: mlAssumption.
       mlClear "H0_1". mlClear "H1".
-      mlApplyMeta (@patt_eq_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
+      mlApplyMetaRaw (@patt_eq_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
     * subst; simpl.
       with_strategy opaque [unification_to_pattern] toMLGoal.
       { apply well_formed_imp. admit. admit. }

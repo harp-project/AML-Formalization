@@ -4262,7 +4262,7 @@ Lemma mlSpecializeMeta {Σ : Signature} {syntax : Syntax} :
 Proof.
   intros Γ φ ψ HΓ WF1 WF2 MF P1 P2.
   toMLGoal. wf_auto2.
-  mlApplyMeta (@forall_functional_subst _ _ φ ψ _ _ _ _ _ _).
+  mlApplyMeta forall_functional_subst.
   mlSplitAnd; fromMLGoal; auto.
   Unshelve. all: auto. all: wf_auto.
 Defined.
