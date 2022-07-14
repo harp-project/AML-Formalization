@@ -289,3 +289,19 @@ Proof.
     mlExact "H3".
 Defined.
 
+Example use_mlApplyMeta {Σ : Signature} (Γ : Theory) (a b c d : Pattern) :
+    well_formed a = true ->
+    well_formed b = true ->
+    well_formed (ex, c) = true ->
+    well_formed d = true ->
+    Γ ⊢ a ---> ((ex, c) $ d) ---> b ---> (ex, (c $ d)).
+Proof.
+    intros wfa wfb wfc wfd. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2". mlIntro "H3".
+
+    Check Prop_ex_left.
+    mlApplyMeta Prop_ex_left.
+    mlExact "H2".
+Defined.
+
+
