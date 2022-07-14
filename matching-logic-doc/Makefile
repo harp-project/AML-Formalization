@@ -25,7 +25,7 @@ alectryon: doc/alectryon
 doc/alectryon:
 	mkdir -p doc/alectryon
 	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
-		| xargs alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
+		| parallel alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
 		--frontend coq \
 		--backend webpage \
 		--output-directory doc/alectryon
