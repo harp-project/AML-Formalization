@@ -438,26 +438,28 @@ Section UnificationProcedure.
                                                    (x, t) :: subst_list x t S)
   where "u ===> u'" := (unify_step u u').
 
+  Definition eq_pats := (fun '(p1, p2) => p1 =ml p2).
+  Definition eq_vars := (fun '(x, p2) => patt_free_evar x =ml p2).
+
   Definition unification_to_pattern (u : Unification_problem) : Pattern :=
     match u with
     | (Us, Ss) => 
-        fold_right patt_and Top (map (fun '(p1, p2) => p1 =ml p2) Us)
+        foldr patt_and Top (map eq_pats Us)
         and
-        fold_right patt_and Top (map (fun '(x, p2) => patt_free_evar x =ml p2) Ss)
+        foldr patt_and Top (map eq_vars Ss)
     end.
-
+  Print Unification_problem.
   Definition wf_unification (u : Unification_problem) :=
-    (forall t1 t2, In (t1, t2) (fst u) -> well_formed t1 /\ well_formed t2) /\
-    (forall x t, In (x, t) (snd u) -> well_formed t).
+    wf (map fst u.1) && wf (map snd u.1) && wf (map snd u.2).
 
-  Theorem foldr_equiv :
+(*   Theorem foldr_equiv :
     forall l p l' p0, well_formed p -> well_formed (foldr patt_and p0 l) -> well_formed (foldr patt_and p0 l') ->
     forall Γ, Γ ⊢ foldr patt_and p0 (l ++ p::l') <---> foldr patt_and p0 (p::l ++ l').
   Proof.
     intros l. induction l; intros p l' p0 WFp WFl WFl' Γ.
     * simpl. useBasicReasoning. apply pf_iff_equiv_refl. wf_auto2.
     * simpl.
-  Abort.
+  Admitted. *)
 
   Theorem wf_unify_step :
     forall u u' : Unification_problem,
@@ -465,21 +467,42 @@ Section UnificationProcedure.
     wf_unification u ->
     wf_unification u'.
   Proof.
-    intros u u' D. dependent induction D; intros WF; destruct WF as [WF1 WF2].
-    * split.
-      - intros t1 t2 HIn. simpl in HIn. apply in_app_or in HIn.
-        apply WF1. destruct HIn.
-        + now apply in_app_l.
-        + apply in_app_r. now constructor 2.
-      - intros x t0 HIn. simpl in HIn.
-        now apply (WF2 x).
+    intros u u' D. dependent induction D; intros WF.
     * 
-  Abort.
+  Admitted.
 
   Theorem wf_unify_pattern :
     forall u, wf_unification u -> well_formed (unification_to_pattern u).
   Proof.
-  Abort.
+  Admitted.
+
+  Theorem foldr_last_element :
+    forall Γ xs x y,
+    well_formed x -> well_formed y -> wf xs ->
+    Γ ⊢i foldr patt_and (x and y) xs <--->
+    ((foldr patt_and y xs) and x) using AnyReasoning.
+  Proof.
+    induction xs; intros x y Wf1 Wf2 Wf3; simpl.
+    * gapply patt_and_comm; auto. apply pile_any.
+    * apply wf_tail' in Wf3 as Wf4.
+      specialize (IHxs x y Wf1 Wf2 Wf4).
+      unshelve(toMLGoal).
+      {
+        assert (well_formed a) by now apply andb_true_iff in Wf3.
+        apply well_formed_and; apply well_formed_imp;
+        repeat apply well_formed_and; auto;
+        apply ProofMode_propositional.well_formed_foldr_and; wf_auto2.
+      }
+      mlSplitAnd; mlIntro "H"; mlDestructAnd "H" as "H0" "H1".
+      - mlRevertLast. mlRewrite IHxs at 1. mlIntro "H1". mlDestructAnd "H1".
+        mlSplitAnd; [mlSplitAnd;mlAssumption|mlAssumption].
+      - mlRewrite IHxs at 1. mlDestructAnd "H0".
+        mlSplitAnd; [mlAssumption|mlSplitAnd;mlAssumption].
+    Unshelve.
+     4-6: apply wf_tail' in Wf3; eapply well_formed_foldr with (g := y) in Wf3;
+          [apply andb_true_iff in Wf3; wf_auto2 | wf_auto2].
+     (* convert patt_and to patt_imp in the goal *)
+  Admitted.
 
   Theorem unification_soundness :
     forall u u' : Unification_problem,
@@ -489,25 +512,59 @@ Section UnificationProcedure.
   Proof.
     intros u u' D WF.
     assert (wf_unification u') as H.
-    { (* eapply wf_unify_step; eassumption. *) admit. }
-    dependent induction D; intros Γ HΓ.
+    { eapply wf_unify_step; eassumption. }
+    inversion D; intros Γ HΓ.
     * subst.
-      (* TODO: why does toMLGoal simplify??? *)
-      Opaque unification_to_pattern.
-      toMLGoal.
-      { (* apply well_formed_imp; apply wf_unify_pattern; auto. *) admit. }
-      Transparent unification_to_pattern.
+      (* TODO: why does toMyGoal simplify??? *)
+      (* Opaque unification_to_pattern. *)
+      with_strategy opaque [unification_to_pattern] toMLGoal.
+      { apply well_formed_imp; apply wf_unify_pattern; auto. }
+      (* Transparent unification_to_pattern. *)
       cbn.
       rewrite map_app. simpl map.
-      (* epose proof (@foldr_equiv (map (λ '(p1, p2), p1 =ml p2) U) (t =ml t) (map (λ '(p1, p2), p1 =ml p2) U') Top _ _ _ Γ).
 
-      mlIntro.
-      mlDestructAnd 0. mlSplitAnd. 2: mlAssumption. mlClear 1.
-      (* TODO: why can't be app folded back?
-               something is seriously wrong here *)
-      Search patt_and patt_imp ML_proof_system. *)
-      (* mlRewrite H0 at 1. *)
-     
+      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlSplitAnd. 2: mlExact "H1".
+      mlClear "H1".
+      replace (fix app (l m : list Pattern) {struct l} : list Pattern :=
+         match l with
+         | [] => m
+         | a :: l1 => a :: app l1 m
+         end) with (@app Pattern) by reflexivity.
+      mlRevertLast.
+      rewrite map_app.
+      do 2 rewrite foldr_app. Check consume.
+      simpl.
+      apply wf_unify_pattern in WF. cbn in WF.
+      rewrite map_app in WF. rewrite foldr_app in WF.
+      simpl in WF.
+      remember (foldr patt_and Top (map eq_pats U')) as L1.
+      remember (map eq_pats U) as L2.
+      epose proof (@foldr_last_element Γ L2 (t =ml t) L1 _ _ _).
+      mlRewrite H0 at 1.
+      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlExact "H0".
+    * subst. admit.
+    * subst; simpl.
+      with_strategy opaque [unification_to_pattern] toMLGoal.
+      { apply well_formed_imp. admit. admit. }
+      do 2 rewrite map_app. simpl map.
+      do 2 rewrite foldr_app. simpl.
+      remember (foldr patt_and Top (map eq_pats U')) as L1.
+      remember (map eq_pats U) as L2.
+      epose proof (@foldr_last_element Γ L2 (t =ml patt_free_evar x) L1 _ _ _).
+      mlRewrite H0 at 1.
+      epose proof (@foldr_last_element Γ L2 (patt_free_evar x =ml t) L1 _ _ _).
+      mlRewrite H1 at 1.
+      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlSplitAnd. mlSplitAnd. 1, 3: mlAssumption.
+      mlClear "H0_1". mlClear "H1".
+      mlApplyMeta (@patt_eq_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
+    * subst; simpl.
+      with_strategy opaque [unification_to_pattern] toMLGoal.
+      { apply well_formed_imp. admit. admit. }
+      rewrite map_app. simpl map.
+      rewrite foldr_app. simpl.
+      mlIntro "H". mlDestructAnd "H" as "H0" "H1".
+    Unshelve. all: admit.
   Abort.
 
 

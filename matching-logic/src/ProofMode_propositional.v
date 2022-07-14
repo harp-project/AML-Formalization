@@ -4142,6 +4142,37 @@ Proof.
 Defined.
 
 
+Lemma and_singleton {Σ : Signature} : forall Γ p,
+  well_formed p -> Γ ⊢i (p and p) <---> p using BasicReasoning.
+Proof.
+  intros Γ p WFp.
+  toMLGoal. wf_auto2.
+  mlSplitAnd; mlIntro "H".
+  * mlDestructAnd "H". mlAssumption.
+  * mlSplitAnd; mlAssumption.
+Defined.
+
+Lemma MLGoal_ExactMeta {Σ:Signature} : forall Γ l g i,
+  Γ ⊢i g using i ->
+  @mkMLGoal Σ Γ l g i.
+Proof.
+  intros Γ l g i pf wfG wfl.
+  unfold of_MLGoal. simpl in *.
+  induction l; simpl; auto.
+  simpl in wfl. apply wf_tail' in wfl as wfl'.
+  cbn in wfl. apply andb_true_iff in wfl as [wfl _].
+  apply prf_conclusion; wf_auto2.
+Defined.
+
+Tactic Notation "mlExactMeta" uconstr(t) :=
+  apply (@MLGoal_ExactMeta _ _ _ _ _ t).
+
+Goal forall (Σ : Signature) Γ, Γ ⊢i Top using BasicReasoning.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlExactMeta (top_holds Γ).
+Defined.
+
 (**********************************************************************************)
 
 

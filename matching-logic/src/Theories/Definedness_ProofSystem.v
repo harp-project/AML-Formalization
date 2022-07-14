@@ -4252,3 +4252,134 @@ Proof.
     mlIntro "H1". mlIntro "H2".
     mlApplyMetaRaw MH2. simpl. mlSplitAnd. mlExact "H1". mlExact "H2".
 Defined.
+
+Lemma mlSpecializeMeta {Σ : Signature} {syntax : Syntax} :
+  forall Γ φ ψ, theory ⊆ Γ-> 
+  well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
+  Γ ⊢i (all , φ) using AnyReasoning -> 
+  Γ ⊢i ex , ψ =ml b0 using AnyReasoning ->
+  Γ ⊢i φ.[evar: 0 ↦ ψ] using AnyReasoning.
+Proof.
+  intros Γ φ ψ HΓ WF1 WF2 MF P1 P2.
+  toMLGoal. wf_auto2.
+  mlApplyMeta (@forall_functional_subst _ _ φ ψ _ _ _ _ _ _).
+  mlSplitAnd; fromMLGoal; auto.
+  Unshelve. all: auto. all: wf_auto.
+Defined.
+
+Tactic Notation "mgSpecMeta" ident(hyp) "with" constr(t) := 
+  unshelve (eapply (@mlSpecializeMeta _ _ _ _ t) in hyp); try wf_auto2.
+
+Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ, theory ⊆ Γ-> 
+  well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
+  Γ ⊢i (all , φ) using AnyReasoning -> 
+  Γ ⊢i ex , ψ =ml b0 using AnyReasoning ->
+  Γ ⊢i φ.[evar: 0 ↦ ψ] using AnyReasoning.
+Proof.
+  intros. mgSpecMeta H3 with ψ.
+Defined.
+
+Lemma MLGoal_mlSpecialize {Σ : Signature} {syntax : Syntax} Γ l₁ l₂ p t g name:
+  theory ⊆ Γ ->
+  mu_free p -> well_formed t ->
+  @mkMLGoal Σ Γ (l₁ ++ (mkNH name p.[evar: 0 ↦ t]) ::l₂ ) g AnyReasoning ->
+  @mkMLGoal Σ Γ (l₁ ++ (mkNH name ((all, p) and (ex , t =ml b0)))::l₂) g AnyReasoning.
+Proof.
+  intros HΓ MF WF MG.
+  unfold of_MLGoal in *. simpl in *. wf_auto2.
+  assert (well_formed (ex , p)). {
+    unfold patterns_of in H0. rewrite map_app in H0.
+    apply wfl₁hl₂_proj_h in H0; simpl in H0.
+    apply andb_true_iff in H0 as [H0'' H0'].
+    apply andb_true_iff in H0' as [H0_1 H0_2]; simpl in *; repeat rewrite andb_true_r in H0_1, H0_2; repeat rewrite andb_true_iff in H0_1, H0_2; wf_auto2.
+  }
+  epose proof (MG H _) as MG'.
+  unfold patterns_of in *. rewrite -> map_app in *. simpl.
+  eapply prf_strenghten_premise_iter_meta_meta.
+  7: exact MG'. all: auto.
+  1: now apply wfl₁hl₂_proj_l₁ in H0.
+  1: now apply wfl₁hl₂_proj_l₂ in H0.
+  apply wfl₁hl₂_proj_h in H0. wf_auto2.
+  apply wfl₁hl₂_proj_h in H0. wf_auto2.
+  apply forall_functional_subst. 1-3: auto. all: wf_auto2.
+  Unshelve.
+  all: unfold patterns_of in *; rewrite -> map_app in *; simpl in H0; wf_auto2.
+  1: now apply wfl₁hl₂_proj_l₁ in H0.
+  apply wfl₁hl₂_proj_l₂ in H0 as H0'; simpl.
+  apply wfl₁hl₂_proj_h in H0.
+  apply wf_cons; wf_auto2.
+Defined.
+
+(**
+  This tactic can be used on local hypotheses shaped in the following way:
+     (all , φ) and ex , t = b0
+*)
+Tactic Notation "mlSpecn" constr(n) := 
+  _mlReshapeHypsByIdx n;
+  apply MLGoal_mlSpecialize; [ auto | wf_auto2 | wf_auto2 | _mlReshapeHypsBack ].
+
+Tactic Notation "mlSpec" constr(name') :=
+  _mlReshapeHypsByName name';
+  apply MLGoal_mlSpecialize; [ auto | wf_auto2 | wf_auto2 | _mlReshapeHypsBack ].
+
+
+Goal forall (Σ : Signature) (syntax : Syntax) Γ φ t, 
+  theory ⊆ Γ -> mu_free φ -> well_formed t -> well_formed (ex , φ) ->
+  Γ ⊢i all , φ ---> (ex , t =ml b0) ---> φ.[evar: 0 ↦ t] using AnyReasoning.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlIntro "mH". mlIntro "mH0".
+  mlAssert ("mH1" : ((all , φ) and ex , t =ml b0)). wf_auto2. mlSplitAnd; mlAssumption.
+  mlClear "mH". mlClear "mH0".
+  mlSpec "mH1". mlExact "mH1".
+Defined.
+
+(** 
+  TODO: why should x be introduced for proof info (it could be constructed "ony the fly")? Could we avoid this?
+ *)
+Lemma forall_defined {Σ : Signature} {syntax : Syntax}:
+  forall Γ i, theory ⊆ Γ ->
+  ProofInfoLe ( (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP)) i  ->
+  Γ ⊢i all , ⌈b0⌉ using i.
+Proof.
+  intros Γ i HΓ PI.
+  (* remember (fresh_evar ⊥) as x. *)
+  toMLGoal. wf_auto2.
+  epose proof (@Ex_gen _ Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _ _).
+  unfold exists_quantify in H. cbn in H. case_match. 2: congruence.
+  mlIntro "H". mlApplyMeta H. fold (patt_defined b0) (patt_not ⌈b0⌉).
+  mlExact "H".
+    Unshelve.
+    * eapply pile_trans. 2: exact PI. try_solve_pile.
+    * set_solver.
+    * toMLGoal. wf_auto2. mlIntro "H". mlApply "H".
+      pose proof (defined_evar ev_x HΓ).
+      eapply liftPi in H. mlExactMeta H.
+      eapply pile_trans. 2: exact PI.
+      apply pile_evs_subseteq. set_solver.
+Defined.
+
+Lemma membership_refl {Σ : Signature} {syntax : Syntax}:
+  forall Γ t, well_formed t -> 
+  theory ⊆ Γ-> Γ ⊢i ((ex , t =ml b0) ---> t ∈ml t) using AnyReasoning.
+Proof.
+  intros Γ t WF HΓ.
+  unfold "∈ml". toMLGoal. wf_auto2.
+  mlIntro "mH".
+  pose proof (@and_singleton _ Γ t WF). apply useAnyReasoning in H.
+  mlRewrite H at 1.
+  remember (fresh_evar t) as x.
+  mlAssert ("mH1" : ((all, ⌈patt_bound_evar 0⌉) and ex, t =ml b0)). wf_auto2. {
+    mlSplitAnd.
+    * mlClear "mH".
+      epose proof (@forall_defined _ _ Γ AnyReasoning HΓ _).
+      mlExactMeta H0.
+      Unshelve.
+      apply pile_any.
+    * mlAssumption.
+  }
+  mlClear "mH".
+  mlSpec "mH1".
+  mlExact "mH1".
+Defined.
