@@ -270,3 +270,22 @@ Proof.
 
     mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
 Defined.
+
+Example use_mlApply {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
+    well_formed a = true ->
+    well_formed b = true ->
+    well_formed c = true ->
+    Γ ⊢ (a ---> b $ c) ---> (b $ c ---> c) ---> (a ---> c).
+Proof.
+    intros wfa wfb wfc. toMLGoal;[wf_auto2|].
+    mlIntro "H1". mlIntro "H2". mlIntro "H3".
+    (* strenghtens the concusion using H2 *)
+    mlApply "H2".
+    (* Would weaken the hypothesis H3 using H1
+       if we had it.
+     *)
+    (* (mlApply "H1" in "H3"). *)
+    mlApply "H1".
+    mlExact "H3".
+Defined.
+
