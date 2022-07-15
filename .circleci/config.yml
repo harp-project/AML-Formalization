@@ -12,10 +12,10 @@ jobs:
       - image: nixos/nix
     steps:
       - run:
-          name: "Install git"
-          command: |
-            nix-channel --update
-            nix-env --upgrade
+#          name: "Install git"
+#          command: |
+#            nix-channel --update
+#            nix-env --upgrade
 #            nix-env -iA nixpkgs.git
       - checkout
       - run:
@@ -27,6 +27,9 @@ jobs:
       - run:
           name: "Prover Build & Test"
           command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-mm-exporter'
+      - run:
+          name: "Tutorial Build"
+          command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-proofmode'
       - run:
           name: "Doc"
           command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link 'doc-output'
