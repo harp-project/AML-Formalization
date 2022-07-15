@@ -4209,6 +4209,7 @@ Proof.
                                 (pY ---> pX)
                                 (pX ---> pY) HΓ
                                 ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  fold AnyReasoning.
   mlIntro "H0".
   mlIntro "H1".
   mlDestructOr "H1" as "H1'" "H1'".
@@ -4219,7 +4220,7 @@ Proof.
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     apply useAnyReasoning in MH.
     mlRevertLast.
-    mlRewrite MH at 1.
+    mlRewrite MH at 1. fold AnyReasoning.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     pose proof (MH1 := @Singleton_ctx _ Γ 
            (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
