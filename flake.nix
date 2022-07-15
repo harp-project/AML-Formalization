@@ -4,15 +4,39 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    alectryon.url = "./deps/alectryon";
    };
 
-  outputs = { self, nixpkgs, flake-utils, alectryon }: (
+  outputs = { self, nixpkgs, flake-utils }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
       in {
+
+        # Newer version of Alectryon
+        packages.alectryon
+        = pkgs.python310Packages.buildPythonPackage rec {
+                pname = "alectryon";
+                version = "1.4.0";
+
+                src = pkgs.fetchFromGitHub {
+                    owner = "cpitclaudel";
+                    repo = "alectryon";
+                    rev = "739b46da22d272e748f60f3efcd2989d696fba71";
+                    sha256 = "n+B+f1PPODLGgL36Aj8srDngRp5ZmhKYxikEF+c+5YI=";
+                };
+
+                propagatedBuildInputs = [
+                   pkgs.python310Packages.pygments
+                    pkgs.python310Packages.dominate
+                    pkgs.python310Packages.beautifulsoup4
+                    pkgs.python310Packages.docutils
+                    pkgs.python310Packages.sphinx
+                ];
+
+                doCheck = false;
+            };
+
         # The 'matching logic in Coq' library
         packages.coq-matching-logic
         = pkgs.coqPackages.callPackage 
@@ -37,7 +61,7 @@
           name = "coq-matching-logic-doc";
           src = self + "/matching-logic-doc";
           buildInputs = [
-            alectryon.packages.${system}.default
+            self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
             # we use a newer version which is compatible with new pigments
             # pkgs.python310Packages.alectryon
