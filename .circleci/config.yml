@@ -11,7 +11,7 @@ jobs:
     docker:
       - image: nixos/nix
     steps:
-      - run:
+#      - run:
 #          name: "Install git"
 #          command: |
 #            nix-channel --update
