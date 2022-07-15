@@ -44,12 +44,10 @@ jobs:
       #- checkout
       - attach_workspace:
           at: /tmp/workspace
-      - run:
-          name: Install and configure dependencies
-          command: |
-            git config user.email "jenda.tusil+ci@gmail.com"
-            git config user.name "ci-build"
-            nix-env -iA 'nixpkgs.ghp-import'
+      #- run:
+      #    name: Install and configure dependencies
+      #    command: |
+      #      #nix-env -iA 'nixpkgs.ghp-import'
       - add_ssh_keys:
           fingerprints:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
@@ -59,6 +57,8 @@ jobs:
             git clone -b "gh-pages" "$CIRCLE_REPOSITORY_URL" gh-pages
             cd gh-pages
             git switch gh-pages
+            git config user.email "jenda.tusil+ci@gmail.com"
+            git config user.name "ci-build"
             rm -rf "./branch/${CIRCLE_BRANCH}/"
             cp -R "/tmp/workspace/share/doc/coq-matching-logic/doc/" "./branch/${CIRCLE_BRANCH}/"
             touch "./branch/${CIRCLE_BRANCH}/.nojekyll"
