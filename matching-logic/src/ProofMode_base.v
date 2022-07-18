@@ -155,6 +155,7 @@ Ltac useBasicReasoning :=
   | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
   end.
 
+  
 
 (* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
 Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
@@ -446,6 +447,73 @@ Proof.
   { exact Hpf3. }
   { exact Hpf4. }
   { set_solver. }
+Qed.
+
+
+Lemma pile_evs_svs_kt {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
+evs1 ⊆ evs2 ->
+svs1 ⊆ svs2 ->
+kt1 ==> kt2 ->
+fp1 ⊆ fp2 ->
+ProofInfoLe
+  ((ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+  ((ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)).
+Proof.
+intros Hevs Hsvs Hkt Hfp.
+eapply pile_trans.
+{
+  apply pile_evs_subseteq. apply Hevs.
+}
+eapply pile_trans.
+{
+  apply pile_svs_subseteq. apply Hsvs.
+}
+eapply pile_trans.
+{
+  apply pile_kt_impl.
+  apply Hkt.
+}
+apply pile_fp_subseteq. apply Hfp.
+Qed.
+
+
+
+
+Lemma pile_any {Σ : Signature} i:
+  ProofInfoLe i AnyReasoning.
+Proof.
+  unfold AnyReasoning.
+  destruct i.
+  apply pile_evs_svs_kt.
+  { clear. set_solver. }
+  { clear. set_solver. }
+  { unfold implb. destruct pi_uses_kt; reflexivity. }
+  { clear. set_solver. }
+Qed.
+
+
+
+Lemma pile_basic_generic {Σ : Signature} eg svs kt fp:
+ProofInfoLe BasicReasoning ( (ExGen := eg, SVSubst := svs, KT := kt, FP := fp)).
+Proof.
+constructor.
+intros Γ ϕ pf Hpf.
+destruct Hpf as [Hpf2 Hpf3 Hpf4]. simpl in *.
+constructor; simpl.
+{ set_solver. }
+{ set_solver. }
+{ unfold implb in Hpf4. case_match.
+  { inversion Hpf4. }
+  simpl. reflexivity.
+}
+{ set_solver. }
+Qed.
+
+Lemma pile_basic_generic' {Σ : Signature} i:
+ProofInfoLe BasicReasoning i.
+Proof.
+  destruct i.
+  apply pile_basic_generic.
 Qed.
 
 
