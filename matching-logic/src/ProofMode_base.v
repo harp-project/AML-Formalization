@@ -91,18 +91,18 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
 
 
   (* This is useful only for printing. *)
-  Notation "S , G ⊢ l -------------------------------------- g 'using' pi "
-  := (@mkMLGoal S G l g pi)
+  Notation "G ⊢ l -------------------------------------- g 'using' pi "
+  := (@mkMLGoal _ G l g pi)
   (at level 95,
   no associativity,
-  format "S , G  ⊢ '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
+  format "G  ⊢ '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
   only printing).
 
-  Notation "S , G ⊢ l -------------------------------------- g"
-  := (@mkMLGoal S G l g AnyReasoning)
+  Notation "G ⊢ l -------------------------------------- g"
+  := (@mkMLGoal _ G l g AnyReasoning)
   (at level 95,
   no associativity,
-  format "S , G  ⊢ '//' l -------------------------------------- '//' g '//'",
+  format "G  ⊢ '//' l -------------------------------------- '//' g '//'",
   only printing).
 
 Ltac toMLGoal :=

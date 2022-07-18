@@ -147,7 +147,7 @@ rewrite Hcount1.
 destruct (decide (1 = 0)); [inversion e|simpl].
 clear n.
 
-assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC Prf)) = 1).
+assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC p Prf)) = 1).
 { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
 simpl in HoneOcc.
 rewrite Hcount1 in HoneOcc.
@@ -164,7 +164,7 @@ pose proof (Hnotin' := Hnotin).
 apply not_elem_of_union in Hnotin'.
 destruct Hnotin' as [Hnotinp HnotinAC].
 
-assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r AC Prf)) = 1).
+assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r p AC Prf)) = 1).
 { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
 
 assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).

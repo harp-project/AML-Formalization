@@ -1,7 +1,5 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
+
 
 From stdpp Require Import base tactics sets.
 
@@ -141,6 +139,15 @@ Section with_signature.
 
   End with_signature.
 
+Module Notations.
+
+Notation "□" := box (only printing).
+Notation "p '$l' C" := (@ctx_app_l _ p C _) (at level 65).
+Notation "C '$r' p" := (@ctx_app_r _ C p _) (at level 65).
+Notation "C .[□ ↦ p ]" := (subst_ctx C p)
+   (only printing, at level 2, C at level 200, format "C .[□ ↦ p ]").
+
+End Notations.
 
 Lemma free_evars_subst_ctx {Σ : Signature} AC ϕ:
 free_evars (subst_ctx AC ϕ) = AC_free_evars AC ∪ free_evars ϕ.

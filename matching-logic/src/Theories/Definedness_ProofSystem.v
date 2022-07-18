@@ -4194,6 +4194,8 @@ Defined.
 Definition overlaps_with {Σ : Signature} {syntax : Syntax} (p q : Pattern) : Pattern
 := ⌈ p and q ⌉.
 
+Import MatchingLogic.ApplicationContext.Notations.
+
 Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
@@ -4223,15 +4225,13 @@ Proof.
     mlRewrite MH at 1. fold AnyReasoning.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     pose proof (MH1 := @Singleton_ctx _ Γ 
-           (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2))
-           (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2)) pX y ltac:(wf_auto2)).
+           (ctx_app_r ⌈ _ ⌉ box ltac:(wf_auto2))
+           (ctx_app_r ⌈ _ ⌉ box ltac:(wf_auto2)) pX y ltac:(wf_auto2)).
     rewrite -HeqpY in MH1.
-    apply useAnyReasoning in MH1.
+    apply useAnyReasoning in MH1. simpl in MH1.
     (* TODO: having mlExactMeta would help here *)
     mlIntro "H2".
-    mlApplyMetaRaw MH1. simpl.
+    mlApplyMetaRaw MH1.
     mlSplitAnd.
     ** mlExact "H0".
     ** mlExact "H2".
@@ -4244,10 +4244,8 @@ Proof.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevertLast. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
     pose proof (@Singleton_ctx _ Γ 
-           (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2))
-           (@ctx_app_r _ (patt_sym (Definedness_Syntax.inj definedness)) box 
-                ltac:(wf_auto2)) pY x ltac:(wf_auto2)) as MH2.
+           (@ctx_app_r _ ⌈ _ ⌉ box ltac:(wf_auto2))
+           (@ctx_app_r _ ⌈ _ ⌉ box ltac:(wf_auto2)) pY x ltac:(wf_auto2)) as MH2.
     rewrite -HeqpX in MH2.
     apply useAnyReasoning in MH2.
     mlIntro "H1". mlIntro "H2".
