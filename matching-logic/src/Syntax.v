@@ -39,9 +39,6 @@ Close Scope boolean_if_scope.
 Section syntax.
   Context {Σ : Signature}.
 
-
-    
-
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
   | sub_app_l ϕ₁ ϕ₂ ϕ₃ : is_subformula_of_ind ϕ₁ ϕ₂ -> is_subformula_of_ind ϕ₁ (patt_app ϕ₂ ϕ₃)
@@ -531,12 +528,13 @@ Module Notations.
   Declare Scope ml_scope.
   Delimit Scope ml_scope with ml.
   (* TODO: change Bot and Top to unicode symbols *)
+  (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise *)
   Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
   Notation "'Bot'" := patt_bott : ml_scope.
   Notation "⊥" := patt_bott : ml_scope.
   Notation "a ---> b"  := (patt_imp a b) (at level 75, right associativity) : ml_scope.
-  Notation "'ex' , phi" := (patt_exists phi) (at level 70) : ml_scope.
-  Notation "'mu' , phi" := (patt_mu phi) (at level 70) : ml_scope.
+  Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
+  Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
 
   (*Notation "AC [ p ]" := (subst_ctx AC p) (at level 90) : ml_scope.*)
   Notation "C [ p ]" := (emplace C p) (at level 90) : ml_scope.

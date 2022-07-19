@@ -281,7 +281,7 @@ Lemma strip_exists_quantify_l {Σ : Signature} Γ x P Q i :
 x ∉ free_evars P ->
 well_formed_closed_ex_aux P 1 ->
 Γ ⊢i (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
-Γ ⊢i ex , P ---> Q using i.
+Γ ⊢i (ex , P) ---> Q using i.
 Proof.
 intros Hx HwfcP H.
 unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).

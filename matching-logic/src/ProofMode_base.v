@@ -35,9 +35,9 @@ Record named_hypothesis {Σ : Signature} := mkNH
     nh_patt : Pattern;
   }.
 
-Notation "N :- P" :=
+Notation "N ∶ P" :=
   (@mkNH _ N P)
-  (at level 100, no associativity, format "N ':-'  P", only printing).
+  (at level 100, no associativity, format "N  '∶'  P", only printing).
 
 Definition hypotheses {Σ : Signature} := list named_hypothesis.
 
@@ -90,19 +90,34 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
 
 
 
-  (* This is useful only for printing. *)
-  Notation "G ⊢ l -------------------------------------- g 'using' pi "
+  (* This is useful only for printing. 
+     0x2c75 was used for the ⊢ to avoid collision *)
+  Notation "G 'Ⱶ' g 'using' pi "
+  := (@mkMLGoal _ G [] g pi)
+  (at level 95,
+  no associativity,
+  format "G  'Ⱶ' '//' g '//' 'using'  pi '//'",
+  only printing).
+
+  Notation "G 'Ⱶ' g"
+  := (@mkMLGoal _ G [] g AnyReasoning)
+  (at level 95,
+  no associativity,
+  format "G  'Ⱶ' '//'  g '//'",
+  only printing).
+
+  Notation "G 'Ⱶ' l -------------------------------------- g 'using' pi "
   := (@mkMLGoal _ G l g pi)
   (at level 95,
   no associativity,
-  format "G  ⊢ '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
+  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
   only printing).
 
-  Notation "G ⊢ l -------------------------------------- g"
+  Notation "G 'Ⱶ' l -------------------------------------- g"
   := (@mkMLGoal _ G l g AnyReasoning)
   (at level 95,
   no associativity,
-  format "G  ⊢ '//' l -------------------------------------- '//' g '//'",
+  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
   only printing).
 
 Ltac toMLGoal :=
