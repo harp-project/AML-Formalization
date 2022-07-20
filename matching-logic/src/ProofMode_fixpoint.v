@@ -71,7 +71,7 @@ Lemma Knaster_tarski {Σ : Signature}
         |}) i} :
 well_formed (mu, ϕ) ->
 Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
-Γ ⊢i mu, ϕ ---> ψ using i.
+Γ ⊢i (mu, ϕ) ---> ψ using i.
 Proof.
 intros Hfev [pf Hpf].
 unshelve (eexists).

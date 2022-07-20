@@ -936,9 +936,9 @@ End FOL_helpers.
     well_formed_closed_mu_aux (free_evar_subst ϕ q E) 1 ->
     X ∉ free_svars (free_evar_subst ϕ p E) ->
     X ∉ free_svars (free_evar_subst ϕ q E) ->
-    Γ ⊢i mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E)) <--->
-        mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E)) using i ->
-    Γ ⊢i mu , free_evar_subst ϕ p E <---> mu , free_evar_subst ϕ q E using i.
+    Γ ⊢i (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ p E))) <--->
+        (mu , svar_quantify X 0 (svar_open 0 X (free_evar_subst ϕ q E))) using i ->
+    Γ ⊢i (mu , free_evar_subst ϕ p E) <---> (mu , free_evar_subst ϕ q E) using i.
   Proof.
     intros wfp' wfq' Xfrp Xfrq H.
     unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
@@ -1409,7 +1409,7 @@ Qed.
   (pile: ProofInfoLe i' ( gpi))
   (IH: Γ ⊢i (free_evar_subst (evar_open 0 x ψ) p E) <---> (free_evar_subst (evar_open 0 x ψ) q E)
      using  gpi) :
-  (Γ ⊢i ex , (free_evar_subst ψ p E) <---> ex , (free_evar_subst ψ q E) using  gpi).
+  (Γ ⊢i (ex , (free_evar_subst ψ p E)) <---> (ex , (free_evar_subst ψ q E)) using  gpi).
   Proof.
     apply pf_evar_open_free_evar_subst_equiv_sides in IH.
     2: { exact HxneqE. }

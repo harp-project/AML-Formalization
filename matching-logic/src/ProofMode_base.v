@@ -35,9 +35,9 @@ Record named_hypothesis {Σ : Signature} := mkNH
     nh_patt : Pattern;
   }.
 
-Notation "N :- P" :=
+Notation "N ∶ P" :=
   (@mkNH _ N P)
-  (at level 100, no associativity, format "N ':-'  P", only printing).
+  (at level 100, no associativity, format "N  '∶'  P", only printing).
 
 Definition hypotheses {Σ : Signature} := list named_hypothesis.
 
@@ -47,10 +47,10 @@ Notation "" :=
 (*TODO: Ensure that this does not add parentheses*)
 Notation "x ," :=
   (@cons named_hypothesis x nil)
-  (at level 100, left associativity, format "x ','", only printing) : ml_scope.
+  (at level 100, left associativity, format "x ',' '//'", only printing) : ml_scope.
 Notation "x , y , .. , z ," :=
   (@cons named_hypothesis x (cons y .. (cons z nil) ..))
-  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ','", only printing) : ml_scope.
+  (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ',' '//'", only printing) : ml_scope.
 
 Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
 Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
@@ -90,14 +90,35 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
 
 
 
-  (* This is useful only for printing. *)
-  Notation "S , G ⊢ -------------------- l ==> g 'using' pi "
-  := (@mkMLGoal S G l g pi)
+  (* This is useful only for printing. 
+     0x2c75 was used for the ⊢ to avoid collision *)
+  Notation "G 'Ⱶ' g 'using' pi "
+  := (@mkMLGoal _ G [] g pi)
   (at level 95,
   no associativity,
-  format "S , G '//' ⊢  -------------------- '//' '//' l '//' '//' ==> '//' '//' g '//' '//' 'using'  pi '//'",
+  format "G  'Ⱶ' '//' g '//' 'using'  pi '//'",
   only printing).
 
+  Notation "G 'Ⱶ' g"
+  := (@mkMLGoal _ G [] g AnyReasoning)
+  (at level 95,
+  no associativity,
+  format "G  'Ⱶ' '//'  g '//'",
+  only printing).
+
+  Notation "G 'Ⱶ' l -------------------------------------- g 'using' pi "
+  := (@mkMLGoal _ G l g pi)
+  (at level 95,
+  no associativity,
+  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
+  only printing).
+
+  Notation "G 'Ⱶ' l -------------------------------------- g"
+  := (@mkMLGoal _ G l g AnyReasoning)
+  (at level 95,
+  no associativity,
+  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
+  only printing).
 
 Ltac toMLGoal :=
   unfold ProofSystem.derives;
