@@ -27,10 +27,6 @@ Section with_signature.
    and has to have certain properties about well-formedness
    and substitution.
 *)
-Print evar_quantify.
-Print free_evar_subst.
-Check bevar_subst_exists.
-Search free_evar_subst patt_exists.
 Class EBinder (ebinder : Pattern -> Pattern)
     (fevo: db_index -> Pattern -> Pattern -> Pattern)
     (fsvo: db_index -> Pattern -> Pattern -> Pattern)
@@ -231,17 +227,21 @@ Instance EBinder_exists : EBinder patt_exists _ _ _ _ :=
 {|
 ebinder_bevar_subst := bevar_subst_exists ;
 ebinder_bsvar_subst := bsvar_subst_exists ;
-ebinder_free_evar_subst := _;
-ebinder_free_svar_subst := _;
-ebinder_evar_quantify := _;
-ebinder_svar_quantify := _;
+ebinder_free_evar_subst := free_evar_subst_exists;
+ebinder_free_svar_subst := free_svar_subst_exists;
+ebinder_evar_quantify := evar_quantify_exists;
+ebinder_svar_quantify := svar_quantify_exists;
 |}.
 
 #[global]
-Instance SBinder_mu : SBinder patt_mu :=
+Instance SBinder_mu : SBinder patt_mu _ _ _ _ :=
 {|
 sbinder_bevar_subst := bevar_subst_mu ;
 sbinder_bsvar_subst := bsvar_subst_mu ;
+sbinder_free_evar_subst := free_evar_subst_mu;
+sbinder_free_svar_subst := free_svar_subst_mu;
+sbinder_evar_quantify := evar_quantify_mu;
+sbinder_svar_quantify := svar_quantify_mu;
 |}.
 
 
@@ -250,6 +250,10 @@ Program Instance NVNullary_bott : NVNullary patt_bott :=
 {|
 nvnullary_bevar_subst := bevar_subst_bott ;
 nvnullary_bsvar_subst := bsvar_subst_bott ;
+nvnullary_free_evar_subst := free_evar_subst_bott;
+nvnullary_free_svar_subst := free_svar_subst_bott;
+nvnullary_evar_quantify := evar_quantify_bott;
+nvnullary_svar_quantify := svar_quantify_bott;
 nvnullary_wf := well_formed_bott ;
 |}.
 
@@ -258,6 +262,10 @@ Instance NVNullary_sym s : NVNullary (patt_sym s) :=
 {|
 nvnullary_bevar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bevar_subst_sym Σ ψ wfcψ n s ;
 nvnullary_bsvar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bsvar_subst_sym Σ ψ wfcψ n s;
+nvnullary_free_evar_subst := λ ψ x, @free_evar_subst_sym Σ ψ x s;
+nvnullary_free_svar_subst := λ ψ x, @free_svar_subst_sym Σ ψ x s;
+nvnullary_evar_quantify := λ ψ x, @evar_quantify_sym Σ ψ x s;
+nvnullary_svar_quantify := λ ψ x, @svar_quantify_sym Σ ψ x s;
 nvnullary_wf := (well_formed_sym s) ;
 |}.
 
@@ -266,6 +274,10 @@ Instance Binary_app : Binary patt_app :=
 {|
 binary_bevar_subst := bevar_subst_app ;
 binary_bsvar_subst := bsvar_subst_app ;
+binary_free_evar_subst := free_evar_subst_app;
+binary_free_svar_subst := free_svar_subst_app;
+binary_evar_quantify := evar_quantify_app;
+binary_svar_quantify := svar_quantify_app;
 binary_wf := well_formed_app ;
 |}.
 
@@ -274,6 +286,10 @@ Instance Binary_imp : Binary patt_imp :=
 {|
 binary_bevar_subst := bevar_subst_imp ;
 binary_bsvar_subst := bsvar_subst_imp ;
+binary_free_evar_subst := free_evar_subst_imp;
+binary_free_svar_subst := free_svar_subst_imp;
+binary_evar_quantify := evar_quantify_imp;
+binary_svar_quantify := svar_quantify_imp;
 binary_wf := well_formed_imp ;
 |}.
 
