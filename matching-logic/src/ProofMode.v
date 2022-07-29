@@ -23,6 +23,7 @@ Import extralibrary.
 
 Import
   MatchingLogic.Syntax.Notations
+  MatchingLogic.Substitution.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
 .

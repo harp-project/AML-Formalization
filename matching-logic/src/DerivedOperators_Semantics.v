@@ -255,7 +255,8 @@ Section with_signature.
       unfold fresh_evar. simpl free_evars.
       repeat rewrite -> union_empty_r_L.
       rewrite -> union_empty_l_L.
-      rewrite -> evar_open_and.
+      unfold evar_open.
+      rewrite -> bevar_subst_and.
       remember (evar_fresh (elements (free_evars ϕ))) as x.
       apply set_eq_subseteq.
       rewrite 2!elem_of_subseteq.
@@ -269,8 +270,6 @@ Section with_signature.
         assert (Heqmm' : m = m').
         { 
           simpl in Hbound.
-          rewrite -> evar_open_bound_evar in Hbound.
-          case_match; try lia.
           rewrite -> eval_free_evar_simpl in Hbound.
           apply elem_of_singleton in Hbound. subst m.
           rewrite update_evar_val_same. reflexivity.
@@ -288,14 +287,16 @@ Section with_signature.
         exists m.
         rewrite -> eval_and_simpl. constructor.
         +
-          rewrite -> evar_open_bound_evar.
+          rewrite -> bevar_subst_bound_evar.
           case_match; try lia.
           rewrite -> eval_free_evar_simpl.
           rewrite -> update_evar_val_same. constructor.
+          wf_auto2.
         + rewrite -> elem_of_PropSet in H.
           rewrite -> set_eq_subseteq in H. destruct H as [H1 H2].
           rewrite -> elem_of_subseteq in H2.
           specialize (H2 m). apply H2. apply elem_of_top'.
+      - wf_auto2.
     Qed.
     
     Lemma eval_forall_predicate ϕ ρ :
