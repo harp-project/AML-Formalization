@@ -17,6 +17,8 @@ Require Import
     Substitution
 .
 
+Import MatchingLogic.Substitution.Notations.
+
 Section with_signature.
     Context {Σ : Signature}.
 
@@ -25,11 +27,14 @@ Section with_signature.
    and has to have certain properties about well-formedness
    and substitution.
 *)
-
-
+Print evar_quantify.
+Print free_evar_subst.
+Check bevar_subst_exists.
+Search free_evar_subst patt_exists.
 Class EBinder (ebinder : Pattern -> Pattern)
     (fevo: db_index -> Pattern -> Pattern -> Pattern )
-    (fsvo: db_index -> Pattern -> Pattern -> Pattern ) :=
+    (fsvo: db_index -> Pattern -> Pattern -> Pattern )
+    :=
 {
 ebinder_bevar_subst :
   forall ψ,
@@ -41,6 +46,9 @@ ebinder_bsvar_subst :
     well_formed_closed ψ ->
     forall n ϕ,
       bsvar_subst (ebinder ϕ) ψ n = fsvo n ψ ϕ ;
+ebinder_free_evar_subst :
+  forall ψ φ x,
+    (ebinder φ).[[evar: x ↦ ψ]] = ebinder (φ.[[evar: x ↦ ψ]])
 }.
 
 Class SBinder (sbinder : Pattern -> Pattern) :=

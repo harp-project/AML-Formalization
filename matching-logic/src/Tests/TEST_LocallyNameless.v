@@ -285,9 +285,10 @@ Module test_3.
       Γₙₐₜ ⊢i sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
     Proof.
       assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
-      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
+      (* TODO: <- create a tactic for the previous assertion *)
       assert (Γₙₐₜ ⊢i ruleC using AnyReasoning) as RC.
-      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }
       apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
       assert (Γₙₐₜ
