@@ -386,6 +386,8 @@ Qed.
 
   (* The following lemmas are trivial but useful for [rewrite !simpl_evar_open]. *)
 
+(******************************************************************************)
+(*****************BOUND ELEMENT VARIABLE SUBSTITUTION**************************)
   Lemma bevar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
     bevar_subst (patt_free_evar x) ψ n = patt_free_evar x.
   Proof. reflexivity. Qed.
@@ -431,6 +433,9 @@ Qed.
   Lemma bevar_subst_mu ψ (pf : well_formed_closed ψ) n ϕ :
     bevar_subst (patt_mu ϕ) ψ n = patt_mu (bevar_subst ϕ ψ n).
   Proof. reflexivity. Qed.
+
+(******************************************************************************)
+(********************BOUND SET VARIABLE SUBSTITUTION***************************)
 
   (* More trivial but useful lemmas *)
   Lemma bsvar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
@@ -479,6 +484,173 @@ Qed.
     bsvar_subst (patt_mu ϕ) ψ n = patt_mu (bsvar_subst ϕ ψ (S n)).
   Proof. reflexivity. Qed.
 
+(******************************************************************************)
+(*****************FREE ELEMENT VARIABLE SUBSTITUTION***************************)
+  Lemma free_evar_subst_free_evar ψ (pf : well_formed_closed ψ) (y x : evar) :
+    free_evar_subst (patt_free_evar x) ψ y = (if decide (y = x) then ψ else patt_free_evar x).
+  Proof. simpl. case_match; reflexivity. Qed.
+
+  Lemma free_evar_subst_free_svar ψ x X :
+    free_evar_subst (patt_free_svar X) ψ x = patt_free_svar X.
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_bound_evar ψ x n :
+    free_evar_subst (patt_bound_evar n) ψ x = (patt_bound_evar n).
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_bound_svar ψ x N :
+    free_evar_subst (patt_bound_svar N) ψ x = patt_bound_svar N.
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_sym ψ x s :
+    free_evar_subst (patt_sym s) ψ x = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_app ψ x ls rs :
+    free_evar_subst (patt_app ls rs) ψ x = patt_app (free_evar_subst ls ψ x) (free_evar_subst rs ψ x).
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_bott ψ x:
+    free_evar_subst patt_bott ψ x = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_imp ψ x ls rs :
+    free_evar_subst (patt_imp ls rs) ψ x = patt_imp (free_evar_subst ls ψ x) (free_evar_subst rs ψ x).
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_exists ψ x ϕ :
+    free_evar_subst (patt_exists ϕ) ψ x = patt_exists (free_evar_subst ϕ ψ x).
+  Proof. reflexivity. Qed.
+
+  Lemma free_evar_subst_mu ψ x ϕ :
+    free_evar_subst (patt_mu ϕ) ψ x = patt_mu (free_evar_subst ϕ ψ x).
+  Proof. reflexivity. Qed.
+
+(******************************************************************************)
+(********************FREE SET VARIABLE SUBSTITUTION****************************)
+  Lemma free_svar_subst_free_evar ψ (x : evar) (X : svar) :
+    free_svar_subst (patt_free_evar x) ψ X = patt_free_evar x.
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_free_svar ψ Y X :
+    free_svar_subst (patt_free_svar X) ψ Y = (if decide (Y = X) then ψ else patt_free_svar X).
+  Proof. simpl. case_match; reflexivity. Qed.
+
+  Lemma free_svar_subst_bound_evar ψ X n :
+    free_svar_subst (patt_bound_evar n) ψ X = (patt_bound_evar n).
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_bound_svar ψ X N :
+    free_svar_subst (patt_bound_svar N) ψ X = patt_bound_svar N.
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_sym ψ X s :
+    free_svar_subst (patt_sym s) ψ X = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_app ψ X ls rs :
+    free_svar_subst (patt_app ls rs) ψ X = patt_app (free_svar_subst ls ψ X) (free_svar_subst rs ψ X).
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_bott ψ X:
+    free_svar_subst patt_bott ψ X = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_imp ψ X ls rs :
+    free_svar_subst (patt_imp ls rs) ψ X = patt_imp (free_svar_subst ls ψ X) (free_svar_subst rs ψ X).
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_exists ψ X ϕ :
+    free_svar_subst (patt_exists ϕ) ψ X = patt_exists (free_svar_subst ϕ ψ X).
+  Proof. reflexivity. Qed.
+
+  Lemma free_svar_subst_mu ψ X ϕ :
+    free_svar_subst (patt_mu ϕ) ψ X = patt_mu (free_svar_subst ϕ ψ X).
+  Proof. reflexivity. Qed.
+
+(******************************************************************************)
+(********************ELEMENT VARIABLE QUANTIFICATION***************************)
+  Lemma evar_quantify_free_evar (n : db_index) (y x : evar) :
+    evar_quantify y n (patt_free_evar x) = (if decide (y = x) then patt_bound_evar n else patt_free_evar x).
+  Proof. simpl. case_match; reflexivity. Qed.
+
+  Lemma evar_quantify_free_svar n x X :
+    evar_quantify x n (patt_free_svar X) = patt_free_svar X.
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_bound_evar n x m :
+    evar_quantify x n (patt_bound_evar m) = patt_bound_evar m.
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_bound_svar n x N :
+    evar_quantify x n (patt_bound_svar N) = patt_bound_svar N.
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_sym n x s :
+    evar_quantify x n (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_app n x ls rs :
+    evar_quantify x n (patt_app ls rs) = patt_app (evar_quantify x n ls) (evar_quantify x n rs).
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_bott n x:
+    evar_quantify x n patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_imp n x ls rs :
+    evar_quantify x n (patt_imp ls rs) = patt_imp (evar_quantify x n ls) (evar_quantify x n rs).
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_exists n x ϕ :
+    evar_quantify x n (patt_exists ϕ) = patt_exists (evar_quantify x (S n) ϕ).
+  Proof. reflexivity. Qed.
+
+  Lemma evar_quantify_mu n x ϕ :
+    evar_quantify x n (patt_mu ϕ) = patt_mu (evar_quantify x n ϕ).
+  Proof. reflexivity. Qed.
+
+(******************************************************************************)
+(**********************SET VARIABLE QUANTIFICATION*****************************)
+  Lemma svar_quantify_free_evar (N : db_index) (X : svar) (x : evar) :
+    svar_quantify X N (patt_free_evar x) = patt_free_evar x.
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_free_svar N Y X :
+    svar_quantify Y N (patt_free_svar X) = (if decide (Y = X) then patt_bound_svar N else patt_free_svar X).
+  Proof. simpl. case_match; reflexivity. Qed.
+
+  Lemma svar_quantify_bound_evar N X m :
+    svar_quantify X N (patt_bound_evar m) = patt_bound_evar m.
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_bound_svar N X M :
+    svar_quantify X N (patt_bound_svar M) = patt_bound_svar M.
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_sym N X s :
+    svar_quantify X N (patt_sym s) = patt_sym s.
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_app N X ls rs :
+    svar_quantify X N (patt_app ls rs) = patt_app (svar_quantify X N ls) (svar_quantify X N rs).
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_bott N X :
+    svar_quantify X N patt_bott = patt_bott.
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_imp N X ls rs :
+    svar_quantify X N (patt_imp ls rs) = patt_imp (svar_quantify X N ls) (svar_quantify X N rs).
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_exists N X ϕ :
+    svar_quantify X N (patt_exists ϕ) = patt_exists (svar_quantify X N ϕ).
+  Proof. reflexivity. Qed.
+
+  Lemma svar_quantify_mu N X ϕ :
+    svar_quantify X N (patt_mu ϕ) = patt_mu (svar_quantify X (S N) ϕ).
+  Proof. reflexivity. Qed.
 
 End subst.
 
