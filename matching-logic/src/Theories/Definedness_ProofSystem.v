@@ -27,6 +27,7 @@ Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
 

@@ -626,6 +626,8 @@ Proof.
 
 Abort.
 
+Import Substitution.Notations. 
+
 Lemma existential_instantiation {Σ : Signature} :
   forall Γ (φ : Pattern) x y, well_formed φ -> x <> y ->  y ∉ free_evars φ ->
     Γ ⊢i exists_quantify x φ ---> φ.[[evar: x ↦ patt_free_evar y]]

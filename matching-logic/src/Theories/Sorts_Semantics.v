@@ -25,6 +25,7 @@ Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.IndexManipulation.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 
 Section with_model.
     Context

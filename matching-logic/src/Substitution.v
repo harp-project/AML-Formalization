@@ -484,19 +484,21 @@ End subst.
 
 Module Notations.
 
+Declare Scope ml_scope.
 Notation "e .[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e .[ 'evar:' dbi ↦ e' ]" ).
+format "e .[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
 Notation "e .[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e .[ 'svar:' dbi ↦ e' ]" ).
+format "e .[ 'svar:' dbi ↦ e' ]" ) : ml_scope.
 Notation "e .[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
-format "e .[[ 'evar:' x ↦ e' ]]" ).
+format "e .[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
 Notation "e .[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
-format "e .[[ 'svar:' X ↦ e' ]]" ).
-Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity).
+format "e .[[ 'svar:' X ↦ e' ]]" ) : ml_scope.
+Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
 
 End Notations.
 
 Import Notations.
+Open Scope ml_scope.
 
 Section subst.
     Context {Σ : Signature}.

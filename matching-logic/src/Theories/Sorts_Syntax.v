@@ -18,7 +18,7 @@ Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.IndexManipulation.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-
+Import MatchingLogic.Substitution.Notations.
 
 Inductive Symbols := inhabitant.
 

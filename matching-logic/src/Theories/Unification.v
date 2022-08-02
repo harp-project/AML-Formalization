@@ -29,6 +29,7 @@ Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.Substitution.Notations.
 
 Set Default Proof Mode "Classic".
 

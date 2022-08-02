@@ -25,6 +25,7 @@ Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
+  MatchingLogic.Substitution.Notations
 .
 
 Set Default Proof Mode "Classic".
