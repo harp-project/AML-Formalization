@@ -18,7 +18,7 @@ Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.IndexManipulation.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-
+Import MatchingLogic.Substitution.Notations.
 
 Inductive Symbols := inhabitant.
 
@@ -51,11 +51,11 @@ Section sorts.
   Context {self : Syntax}.
   Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
   Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    〚ϕ〛.[evar: x ↦ ψ] = 〚ϕ.[evar: x ↦ ψ]〛.
+    〚ϕ〛^[evar: x ↦ ψ] = 〚ϕ^[evar: x ↦ ψ]〛.
   Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
 
   Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) X ϕ :
-    〚ϕ〛.[svar: X ↦ ψ] = 〚ϕ.[svar: X ↦ ψ]〛.
+    〚ϕ〛^[svar: X ↦ ψ] = 〚ϕ^[svar: X ↦ ψ]〛.
   Proof. unfold patt_inhabitant_set. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
@@ -98,7 +98,7 @@ Section sorts.
     (patt_exists_of_sort s phi) (at level 70) : ml_scope.
 
   Lemma bevar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (all s , ϕ).[evar: db ↦ ψ] = all s.[evar: db ↦ ψ] , ϕ.[evar: S db ↦ ψ].
+    (all s , ϕ)^[evar: db ↦ ψ] = all s^[evar: db ↦ ψ] , ϕ^[evar: S db ↦ ψ].
   Proof.
     unfold patt_forall_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
@@ -106,7 +106,7 @@ Section sorts.
   Qed.
 
   Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (all s , ϕ).[svar: db ↦ ψ] = all s.[svar: db ↦ ψ] , ϕ.[svar: db ↦ ψ].
+    (all s , ϕ)^[svar: db ↦ ψ] = all s^[svar: db ↦ ψ] , ϕ^[svar: db ↦ ψ].
   Proof.
     unfold patt_forall_of_sort.
     repeat (rewrite simpl_bsvar_subst';[assumption|]).
@@ -117,7 +117,7 @@ Section sorts.
   Qed.
 
   Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (ex s , ϕ).[evar: db ↦ ψ] = ex s.[evar: db ↦ ψ] , ϕ.[evar: S db ↦ ψ].
+    (ex s , ϕ)^[evar: db ↦ ψ] = ex s^[evar: db ↦ ψ] , ϕ^[evar: S db ↦ ψ].
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
@@ -127,7 +127,7 @@ Section sorts.
   Qed.
 
   Lemma bsvar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (ex s , ϕ).[svar: db ↦ ψ] = ex s.[svar: db ↦ ψ] , ϕ.[svar: db ↦ ψ].
+    (ex s , ϕ)^[svar: db ↦ ψ] = ex s^[svar: db ↦ ψ] , ϕ^[svar: db ↦ ψ].
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bsvar_subst';[assumption|]).

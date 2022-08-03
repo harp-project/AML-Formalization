@@ -539,17 +539,6 @@ Module Notations.
   (*Notation "AC [ p ]" := (subst_ctx AC p) (at level 90) : ml_scope.*)
   Notation "C [ p ]" := (emplace C p) (at level 90) : ml_scope.
 
-  (* TODO check whether this is a duplicate of Substitution.Notations *)
-  Notation "e .[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-   format "e .[ 'evar:' dbi ↦ e' ]" ).
-  Notation "e .[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-   format "e .[ 'svar:' dbi ↦ e' ]" ).
-  Notation "e .[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
-   format "e .[[ 'evar:' x ↦ e' ]]" ).
-  Notation "e .[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
-   format "e .[[ 'svar:' X ↦ e' ]]" ).
-  Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity).
-
 End Notations.
 
 Module BoundVarSugar.

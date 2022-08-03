@@ -29,6 +29,7 @@ Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.Substitution.Notations.
 
 Set Default Proof Mode "Classic".
 
@@ -226,7 +227,7 @@ Section ProofSystemTheorems.
   Defined.
 
   Lemma free_evar_subst_id :
-    forall φ x, φ.[[evar: x ↦ patt_free_evar x]] = φ.
+    forall φ x, φ^[[evar: x ↦ patt_free_evar x]] = φ.
   Proof.
     induction φ; intros x'; simpl; auto.
     * case_match; subst; auto.
@@ -241,15 +242,15 @@ Section ProofSystemTheorems.
     well_formed_closed_ex_aux φ 1 ->
     well_formed_closed_mu_aux φ 0 ->
     well_formed φ' ->
-    Γ ⊢ φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x ---> 
-        φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x
+    Γ ⊢ φ^[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x ---> 
+        φ^[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x
     .
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
-    assert (well_formed (φ.[evar:0↦φ'])) as WFF.
+    assert (well_formed (φ^[evar:0↦φ'])) as WFF.
     { wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
-    assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
+    assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
@@ -257,7 +258,7 @@ Section ProofSystemTheorems.
     mlSplitAnd.
     2: { mlExact "H2". }
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
-            {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
+            {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     cbn in H.
     assert (Hwfeaψ': well_formed_closed_ex_aux φ' 0 = true).
@@ -269,8 +270,8 @@ Section ProofSystemTheorems.
     pose proof (@bound_to_free_variable_subst Σ φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
-    assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
-                φ.[evar:0↦patt_free_evar x] ---> φ.[evar:0↦φ'] ) as Hiff. {
+    assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
+                φ^[evar:0↦patt_free_evar x] ---> φ^[evar:0↦φ'] ) as Hiff. {
       toMLGoal; wf_auto2.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
@@ -290,15 +291,15 @@ Section ProofSystemTheorems.
     well_formed_closed_ex_aux φ 1 ->
     well_formed_closed_mu_aux φ 0 ->
     well_formed φ' ->
-    Γ ⊢ φ.[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x --->
-        φ.[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x
+    Γ ⊢ φ^[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x --->
+        φ^[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x
     .
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
-    assert (well_formed (φ.[evar:0↦φ'])) as WFF.
+    assert (well_formed (φ^[evar:0↦φ'])) as WFF.
     { wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
-    assert (well_formed (φ.[evar:0↦patt_free_evar x])) as WFFF. {
+    assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
       wf_auto2. apply bevar_subst_positive; auto.
         now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
@@ -307,14 +308,14 @@ Section ProofSystemTheorems.
     mlSplitAnd.
     2: { mlAssumption. }
     epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
-            {|pcEvar := x; pcPattern := φ.[evar: 0 ↦ patt_free_evar x]|} 
+            {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     cbn in H.
     pose proof (@bound_to_free_variable_subst _ φ x 1 0 φ' ltac:(lia) ltac:(clear -WF2; wf_auto2) WFp1 NotIn) as H0.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
-    assert (Γ ⊢ φ.[evar:0↦φ'] <---> φ.[evar:0↦patt_free_evar x] --->
-                φ.[evar:0↦φ'] ---> φ.[evar:0↦patt_free_evar x] ) as Hiff. {
+    assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
+                φ^[evar:0↦φ'] ---> φ^[evar:0↦patt_free_evar x] ) as Hiff. {
       toMLGoal; wf_auto2.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
@@ -399,10 +400,10 @@ Section UnificationProcedure.
 
   Definition subst_ziplist (x : evar) (p : Pattern) 
     : list (Pattern * Pattern) -> list (Pattern * Pattern) :=
-    map (fun '(p1, p2) => ( p1.[[evar: x ↦ p]] , p2.[[evar: x ↦ p]] )).
+    map (fun '(p1, p2) => ( p1^[[evar: x ↦ p]] , p2^[[evar: x ↦ p]] )).
   Definition subst_list (x : evar) (p : Pattern) 
     : list (evar * Pattern) -> list (evar * Pattern) :=
-    map (fun '(y, p2) => ( y , p2.[[evar: x ↦ p]] )).
+    map (fun '(y, p2) => ( y , p2^[[evar: x ↦ p]] )).
 
   Reserved Notation "u ===> u'" (at level 80).
   Inductive unify_step : Unification_problem -> option Unification_problem -> Set :=

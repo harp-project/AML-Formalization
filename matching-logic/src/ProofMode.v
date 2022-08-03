@@ -25,6 +25,7 @@ Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
+  MatchingLogic.Substitution.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -2345,7 +2346,7 @@ End FOL_helpers.
           }          
         }
         {
-          cut (X ∉ free_svars ψ.[[evar:E↦p]]).
+          cut (X ∉ free_svars ψ^[[evar:E↦p]]).
           {
             clear -wfψ wfp.
             abstract (wf_auto2).
@@ -2357,7 +2358,7 @@ End FOL_helpers.
           ).
         }
         {
-          cut (X ∉ free_svars ψ.[[evar:E↦q]]).
+          cut (X ∉ free_svars ψ^[[evar:E↦q]]).
           {
             clear -wfψ wfq.
             abstract (wf_auto2).
