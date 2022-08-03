@@ -485,15 +485,15 @@ End subst.
 Module Notations.
 
 Declare Scope ml_scope.
-Notation "e .[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e .[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
-Notation "e .[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e .[ 'svar:' dbi ↦ e' ]" ) : ml_scope.
-Notation "e .[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
-format "e .[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
-Notation "e .[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
-format "e .[[ 'svar:' X ↦ e' ]]" ) : ml_scope.
-Notation "e . [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
+Notation "e ^[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
+format "e ^[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
+Notation "e ^[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
+format "e ^[ 'svar:' dbi ↦ e' ]" ) : ml_scope.
+Notation "e ^[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
+format "e ^[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
+Notation "e ^[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
+format "e ^[[ 'svar:' X ↦ e' ]]" ) : ml_scope.
+Notation "e ^ [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
 
 End Notations.
 
@@ -636,7 +636,7 @@ forall phi psi n n', n' <= n ->
   well_formed_closed_mu_aux phi (S n) = true ->
   well_formed_closed_mu_aux psi n
   ->
-  well_formed_closed_mu_aux (phi.[svar:n' ↦ psi]) n = true.
+  well_formed_closed_mu_aux (phi^[svar:n' ↦ psi]) n = true.
 Proof using .
 induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
 - simpl. case_match; auto. simpl. case_match; try lia.
@@ -655,7 +655,7 @@ forall phi psi n n', n' <= n ->
   well_formed_closed_ex_aux phi (S n) = true ->
   well_formed_closed_ex_aux psi n = true
   ->
-  well_formed_closed_ex_aux (phi.[evar:n'↦psi]) n = true.
+  well_formed_closed_ex_aux (phi^[evar:n'↦psi]) n = true.
 Proof using .
 induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
 - simpl. case_match; auto. simpl. case_match; try lia.
@@ -2471,8 +2471,7 @@ Proof.
   destruct_and!. cbn in *. split_and!.
   - apply wfp_evar_open. assumption.
   - apply wfc_mu_aux_body_ex_imp1. assumption.
-  - Search well_formed_closed_ex_aux evar_open.
-    apply wfc_mu_aux_body_ex_imp3. lia. assumption.
+  - apply wfc_mu_aux_body_ex_imp3. lia. assumption.
 Qed.
 
 
@@ -2599,7 +2598,7 @@ Proof.
 Qed.
 
 Lemma wfc_ex_aux_S_bevar_subst_fe {Σ : Signature} k ϕ x:
-  well_formed_closed_ex_aux ϕ.[evar:k↦patt_free_evar x] k = true ->
+  well_formed_closed_ex_aux ϕ^[evar:k↦patt_free_evar x] k = true ->
   well_formed_closed_ex_aux ϕ (S k) = true.  
 Proof.
   intros H. move: k H.

@@ -630,14 +630,14 @@ Import Substitution.Notations.
 
 Lemma existential_instantiation {Σ : Signature} :
   forall Γ (φ : Pattern) x y, well_formed φ -> x <> y ->  y ∉ free_evars φ ->
-    Γ ⊢i exists_quantify x φ ---> φ.[[evar: x ↦ patt_free_evar y]]
+    Γ ⊢i exists_quantify x φ ---> φ^[[evar: x ↦ patt_free_evar y]]
     using (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅).
 Proof.
   intros Γ φ x y WF xNy Hy.
-  Search derives_using patt_exists.
+  (*Search derives_using patt_exists.*)
   apply Ex_gen. apply pile_refl.
   apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
-  Search free_evar_subst derives_using.
+  (*Search free_evar_subst derives_using.*)
   toMLGoal. wf_auto2.
   mlIntro "H".
   mlAssert ("H0" : (all , evar_quantify x 0 φ)). wf_auto2.
@@ -649,9 +649,9 @@ Lemma MLGoal_IntroVar {Σ : Signature} : forall Γ l g i x,
   @mkMLGoal Σ Γ l (evar_open 0 x g) i ->
   @mkMLGoal Σ Γ l (all , g) i.
 Proof.
-  Search derives_using foldr.
+  (*Search derives_using foldr.*)
   unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
-  Search derives_using foldr.
+  (*Search derives_using foldr.*)
   eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
   all: try wf_auto2.
   toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".

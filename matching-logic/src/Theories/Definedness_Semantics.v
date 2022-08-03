@@ -571,7 +571,7 @@ Section definedness.
     unfold evar_open, nest_ex.
     remember (fresh_evar
                 (patt_free_evar x
-                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂)).[evar:1↦patt_free_evar x] $ b0)) as y.
+                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] $ b0)) as y.
     rewrite fuse_nest_ex_same.
     rewrite nest_ex_same_general. 1-2: lia.
     simpl_bevar_subst. simpl. rewrite nest_ex_same.

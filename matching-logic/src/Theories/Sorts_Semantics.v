@@ -555,12 +555,12 @@ Section with_model.
       remember
       (fresh_evar
              (! patt_equal
-                  ((nest_ex (nest_ex f)).[evar:1↦patt_free_evar x₁] $ b1.[evar:1↦patt_free_evar x₁])
+                  ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
                   ⊥ --->
               patt_equal
-                ((nest_ex (nest_ex f)).[evar:1↦patt_free_evar x₁] $ b1.[evar:1↦patt_free_evar x₁])
-                ((nest_ex (nest_ex f)).[evar:1↦patt_free_evar x₁] $ b0.[evar:1↦patt_free_evar x₁]) --->
-              patt_equal b1.[evar:1↦patt_free_evar x₁] b0.[evar:1↦patt_free_evar x₁]))
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b0^[evar:1↦patt_free_evar x₁]) --->
+              patt_equal b1^[evar:1↦patt_free_evar x₁] b0^[evar:1↦patt_free_evar x₁]))
       as x₂.
 
       apply all_iff_morphism. intros m₂.
@@ -678,9 +678,9 @@ Section with_model.
       remember
       (fresh_evar
              (patt_equal
-                ((nest_ex (nest_ex f)).[evar:1↦patt_free_evar x₁] $ b1.[evar:1↦patt_free_evar x₁])
-                ((nest_ex (nest_ex f)).[evar:1↦patt_free_evar x₁] $ b0.[evar:1↦patt_free_evar x₁]) --->
-              patt_equal b1.[evar:1↦patt_free_evar x₁] b0.[evar:1↦patt_free_evar x₁]))
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b0^[evar:1↦patt_free_evar x₁]) --->
+              patt_equal b1^[evar:1↦patt_free_evar x₁] b0^[evar:1↦patt_free_evar x₁]))
       as x₂.
 
       apply all_iff_morphism. intros m₂.
@@ -781,9 +781,9 @@ Section with_model.
         rewrite Hinh.
         remember (fresh_evar ϕ) as x'.
         assert (Htmp: eval (update_evar_val x m ρ)
-          ϕ.[evar:0↦patt_free_evar x] =
+          ϕ^[evar:0↦patt_free_evar x] =
           eval (update_evar_val x' m ρ)
-          ϕ.[evar:0↦patt_free_evar x']).
+          ϕ^[evar:0↦patt_free_evar x']).
         {
           apply eval_fresh_evar_open.
           { subst x.
@@ -866,9 +866,9 @@ Section with_model.
         rewrite Hinh.
         remember (fresh_evar ϕ) as x'.
         assert (Htmp: eval (update_evar_val x m ρ)
-          ϕ.[evar:0↦patt_free_evar x] =
+          ϕ^[evar:0↦patt_free_evar x] =
           eval (update_evar_val x' m ρ)
-          ϕ.[evar:0↦patt_free_evar x']).
+          ϕ^[evar:0↦patt_free_evar x']).
         {
           apply eval_fresh_evar_open.
           { subst x.
